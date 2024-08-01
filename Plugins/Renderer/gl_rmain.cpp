@@ -1032,8 +1032,8 @@ void ClientDLL_DrawTransparentTriangles(void)
 
 	//gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
 
-	if(gExportfuncs.HUD_DrawTransparentTriangles)
-		gExportfuncs.HUD_DrawTransparentTriangles();
+	//Call ClientDLL_DrawTransparentTriangles() instead of HUD_DrawTransparentTriangles
+	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 
@@ -3679,7 +3679,10 @@ void ClientDLL_DrawNormalTriangles(void)
 
 	r_draw_legacysprite = true;
 
-	gExportfuncs.HUD_DrawNormalTriangles();
+	//Call ClientDLL_DrawNormalTriangles instead of HUD_DrawNormalTriangles
+	gPrivateFuncs.ClientDLL_DrawNormalTriangles();
+
+	//gExportfuncs.HUD_DrawNormalTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 

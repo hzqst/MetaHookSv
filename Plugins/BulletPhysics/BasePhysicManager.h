@@ -125,10 +125,8 @@ private:
 	void FreeGargantuaIndexVertexArray();
 
 	bool LoadPhysicConfigFromFiles(CClientPhysicConfig* Configs, const std::string& filename);
-
 	bool LoadPhysicConfigFromNewFile(CClientPhysicConfig* Configs, const std::string& filename);
 	bool LoadPhysicConfigFromNewFileBuffer(CClientPhysicConfig* pConfigs, const char* buf);
-
 	bool LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* Configs, const std::string& filename);
 	bool LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf);
 

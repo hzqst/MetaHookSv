@@ -3054,6 +3054,141 @@ void R_FillAddress(void)
 
 	if (1)
 	{
+		PVOID R_RenderFinalFog = NULL;
+
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
+			addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_RenderScene, 0x600, sigs);
+			Sig_AddrNotFound(R_RenderFinalFog);
+
+			R_RenderFinalFog = (decltype(R_RenderFinalFog))addr;
+
+			g_bUserFogOn = *(int**)(addr + 2);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
+			addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_RenderScene, 0x600, sigs);
+			Sig_AddrNotFound(R_RenderFinalFog);
+
+			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
+
+			g_bUserFogOn = *(int**)(addr + 2);
+		}
+		else
+		{
+			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
+			addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_RenderScene, 0x600, sigs);
+			Sig_AddrNotFound(g_bUserFogOn);
+
+			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
+
+			g_bUserFogOn = *(int**)(addr + 1);
+		}
+
+		typedef struct
+		{
+			int pushvalue;
+			DWORD candidate;
+		}R_RenderFinalFog_ctx;
+
+		R_RenderFinalFog_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(R_RenderFinalFog, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_RenderFinalFog_ctx*)context;
+
+				if (ctx->candidate &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[0].imm > 0x100)
+				{
+					int pushvalue = pinst->detail->x86.operands[0].imm;
+
+					if (!g_UserFogDensity && pushvalue == GL_FOG_DENSITY)
+					{
+						g_UserFogDensity = (decltype(g_UserFogDensity))ctx->candidate;
+						ctx->candidate = NULL;
+					}
+					else if (!g_UserFogColor && pushvalue == GL_FOG_COLOR)
+					{
+						g_UserFogColor = (decltype(g_UserFogColor))ctx->candidate;
+						ctx->candidate = NULL;
+					}
+					else if (!g_UserFogStart && pushvalue == GL_FOG_START)
+					{
+						g_UserFogStart = (decltype(g_UserFogStart))ctx->candidate;
+						ctx->candidate = NULL;
+					}
+					else if (!g_UserFogEnd && pushvalue == GL_FOG_END)
+					{
+						g_UserFogEnd = (decltype(g_UserFogEnd))ctx->candidate;
+						ctx->candidate = NULL;
+					}
+				}
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0)
+				{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
+
+					ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
+				}
+				else if (pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0)
+				{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
+
+					ctx->candidate = pinst->detail->x86.operands[0].mem.disp;
+				}
+				else if (pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+					)
+				{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
+
+					ctx->candidate = pinst->detail->x86.operands[0].imm;
+				}
+
+				else if (pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//F3 0F 10 05 B4 ED 1A 11                             movss   xmm0, flFogDensity
+
+					ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
+				}
+				if (g_UserFogDensity && g_UserFogColor && g_UserFogStart && g_UserFogEnd)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		Sig_VarNotFound(g_UserFogDensity);
+		Sig_VarNotFound(g_UserFogColor);
+		Sig_VarNotFound(g_UserFogStart);
+		Sig_VarNotFound(g_UserFogEnd);
+	}
+
+	if (1)
+	{
 		typedef struct
 		{
 			int disableFog_instcount;
@@ -3061,6 +3196,9 @@ void R_FillAddress(void)
 			int getskin_instcount;
 			PVOID r_entorigin_candidate[3];
 			int r_entorigin_candidate_count;
+			int push2300_instcount;
+			PVOID ClientDLL_DrawTransparentTriangles_candidate;
+			int ClientDLL_DrawTransparentTriangles_candidate_instcount;
 		}R_DrawTEntitiesOnList_ctx;
 
 		R_DrawTEntitiesOnList_ctx ctx = { 0 };
@@ -3297,7 +3435,69 @@ void R_FillAddress(void)
 					}
 				}
 
-			if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3)
+			if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
+			{
+				if (!ctx->push2300_instcount)
+				{
+					if (pinst->id == X86_INS_PUSH&&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x2300)
+					{
+						ctx->push2300_instcount = instCount;
+					}
+				}
+
+				if (ctx->push2300_instcount > 0 && instCount > ctx->push2300_instcount)
+				{
+					if (address[0] == 0xE8 && instLen == 5)
+					{
+						ctx->ClientDLL_DrawTransparentTriangles_candidate = (decltype(ctx->ClientDLL_DrawTransparentTriangles_candidate))pinst->detail->x86.operands[0].imm;
+						ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount = instCount;
+					}
+
+					if (ctx->ClientDLL_DrawTransparentTriangles_candidate && instCount == ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount + 1)
+					{
+						/*
+	.text:01D88E15 E8 96 2C F8 FF                                      call    ClientDLL_DrawTransparentTriangles
+	.text:01D88E1A A1 E4 23 73 02                                      mov     eax, g_bUserFogOn
+						*/
+						if (pinst->id == X86_INS_CMP &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp == (PUCHAR)g_bUserFogOn &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm == 0)
+						{
+							gPrivateFuncs.ClientDLL_DrawTransparentTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawTransparentTriangles))ctx->ClientDLL_DrawTransparentTriangles_candidate;
+						}
+						//	.text:01D88E15 E8 96 2C F8 FF                                      call    ClientDLL_DrawTransparentTriangles
+						//	.text:01D88E1A A1 E4 23 73 02                                      mov     eax, g_bUserFogOn
+						else if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp == (PUCHAR)g_bUserFogOn)
+						{
+							gPrivateFuncs.ClientDLL_DrawTransparentTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawTransparentTriangles))ctx->ClientDLL_DrawTransparentTriangles_candidate;
+						}
+
+						if (gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
+						{
+							PUCHAR code = (PUCHAR)gPrivateFuncs.ClientDLL_DrawTransparentTriangles;
+
+							if (code[0] == 0xA1)
+							{
+								gPrivateFuncs.pfnDrawTransparentTriangles = *(ULONG_PTR*)(code + 1);
+							}
+						}
+					}
+				}
+			}
+
+			if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -3312,6 +3512,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(r_blend);
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
+		Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
 
 		if (ctx.r_entorigin_candidate_count >= 2)
 		{
@@ -3949,141 +4150,6 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		PVOID R_RenderFinalFog = NULL;
-
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
-			Sig_AddrNotFound(R_RenderFinalFog);
-
-			R_RenderFinalFog = (decltype(R_RenderFinalFog))addr;
-
-			g_bUserFogOn = *(int **)(addr + 2);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
-			Sig_AddrNotFound(R_RenderFinalFog);
-
-			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
-
-			g_bUserFogOn = *(int **)(addr + 2);
-		}
-		else
-		{
-			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
-			Sig_AddrNotFound(g_bUserFogOn);
-
-			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
-
-			g_bUserFogOn = *(int **)(addr + 1);
-		}
-
-		typedef struct
-		{
-			int pushvalue;
-			DWORD candidate;
-		}R_RenderFinalFog_ctx;
-
-		R_RenderFinalFog_ctx ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges(R_RenderFinalFog, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (R_RenderFinalFog_ctx *)context;
-
-			if (ctx->candidate &&
-				pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[0].imm > 0x100)
-			{
-				int pushvalue = pinst->detail->x86.operands[0].imm;
-
-				if (!g_UserFogDensity && pushvalue == GL_FOG_DENSITY)
-				{
-					g_UserFogDensity = (decltype(g_UserFogDensity))ctx->candidate;
-					ctx->candidate = NULL;
-				}
-				else if (!g_UserFogColor && pushvalue == GL_FOG_COLOR)
-				{
-					g_UserFogColor = (decltype(g_UserFogColor))ctx->candidate;
-					ctx->candidate = NULL;
-				}
-				else if (!g_UserFogStart && pushvalue == GL_FOG_START)
-				{
-					g_UserFogStart = (decltype(g_UserFogStart))ctx->candidate;
-					ctx->candidate = NULL;
-				}
-				else if (!g_UserFogEnd && pushvalue == GL_FOG_END)
-				{
-					g_UserFogEnd = (decltype(g_UserFogEnd))ctx->candidate;
-					ctx->candidate = NULL;
-				}
-			}
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
-				ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
-			}
-			else if (pinst->id == X86_INS_FLD &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
-				ctx->candidate = pinst->detail->x86.operands[0].mem.disp;
-			}
-			else if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
-				)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
-				ctx->candidate = pinst->detail->x86.operands[0].imm;
-			}
-
-			else if (pinst->id == X86_INS_MOVSS &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-			{//F3 0F 10 05 B4 ED 1A 11                             movss   xmm0, flFogDensity
-
-				ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
-			}
-			if (g_UserFogDensity && g_UserFogColor && g_UserFogStart && g_UserFogEnd)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-		Sig_VarNotFound(g_UserFogDensity);
-		Sig_VarNotFound(g_UserFogColor);
-		Sig_VarNotFound(g_UserFogStart);
-		Sig_VarNotFound(g_UserFogEnd);
-	}
-
-	if (1)
-	{
 		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
@@ -4136,14 +4202,14 @@ void R_FillAddress(void)
 		{
 			std::map<int, ULONG_PTR> candidate_disp;
 			std::map<int, PVOID> candidate_addr;
-		}R_RenderScene_ctx;
+		}R_RenderScene_ctx2;
 
-		R_RenderScene_ctx ctx2;
+		R_RenderScene_ctx2 ctx2;
 
 		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_RenderScene_ctx *)context;
+			auto ctx = (R_RenderScene_ctx2 *)context;
 
 			if (!cl_waterlevel && pinst->id == X86_INS_CMP &&
 				pinst->detail->x86.op_count == 2 &&
@@ -4185,7 +4251,27 @@ void R_FillAddress(void)
 				}
 			}
 
-			if (cl_waterlevel)
+			if (!gPrivateFuncs.ClientDLL_DrawNormalTriangles)
+			{
+				if (address[0] == 0xE8 && instLen == 5)
+				{
+					auto candidate = (PUCHAR)pinst->detail->x86.operands[0].imm;
+
+					//.text:01D1A4E0                                     ClientDLL_DrawNormalTriangles proc near ; CODE XREF: R_RenderScene:loc_1D566A7¡ýp
+					//.text:01D1A4E0 A1 70 5B 04 02                                      mov     eax, pfnDrawNormalTriangles
+					//.text:01D1A4E5 85 C0                                               test    eax, eax
+					if (candidate[0] == 0xA1 && candidate[5] == 0x85 && candidate[6] == 0xC0)
+					{
+						auto pfnDrawNormalTriangles = *(ULONG_PTR*)(candidate + 1);
+						if (pfnDrawNormalTriangles == gPrivateFuncs.pfnDrawTransparentTriangles - sizeof(ULONG_PTR))
+						{
+							gPrivateFuncs.ClientDLL_DrawNormalTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawNormalTriangles))candidate;
+						}
+					}
+				}
+			}
+
+			if (cl_waterlevel && gPrivateFuncs.ClientDLL_DrawNormalTriangles)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -4198,6 +4284,7 @@ void R_FillAddress(void)
 		}, 0, &ctx2);
 
 		Sig_VarNotFound(cl_waterlevel);
+		Sig_FuncNotFound(ClientDLL_DrawNormalTriangles);
 
 		typedef struct
 		{

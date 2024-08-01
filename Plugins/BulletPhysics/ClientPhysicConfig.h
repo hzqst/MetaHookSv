@@ -15,13 +15,13 @@ public:
 	{
 
 	}
-
-	std::string name;
 };
 
 class CClientCollisionShapeConfig : public CBasePhysicConfig
 {
 public:
+	std::string name;
+
 	int type{ PhysicShape_None };
 
 	int direction{ PhysicShapeDirection_X };
@@ -42,6 +42,7 @@ using CClientCollisionShapeConfigSharedPtr = std::shared_ptr<CClientCollisionSha
 class CClientRigidBodyConfig : public CBasePhysicConfig
 {
 public:
+	std::string name;
 	float mass{};
 	float density{};
 	float linearfriction{};
@@ -66,6 +67,7 @@ using CClientRigidBodyConfigSharedPtr = std::shared_ptr<CClientRigidBodyConfig>;
 class CClientConstraintConfig : public CBasePhysicConfig
 {
 public:
+	std::string name;
 	int type{ PhysicConstraint_None };
 	std::string rigidbodyA;
 	std::string rigidbodyB;

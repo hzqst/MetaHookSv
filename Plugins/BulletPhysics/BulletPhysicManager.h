@@ -19,10 +19,18 @@ public:
 class CBulletCollisionShapeSharedUserData : public CBulletBaseSharedUserData
 {
 public:
+	CBulletCollisionShapeSharedUserData(btTriangleIndexVertexArray* pIndexVertexArray) : m_pIndexVertexArray(pIndexVertexArray)
+	{
+
+	}
+
 	~CBulletCollisionShapeSharedUserData()
 	{
 		if (m_pIndexVertexArray)
+		{
 			delete m_pIndexVertexArray;
+			m_pIndexVertexArray = nullptr;
+		}
 	}
 
 	btTriangleIndexVertexArray* m_pIndexVertexArray{};

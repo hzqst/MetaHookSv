@@ -35,6 +35,7 @@ public:
 	virtual bool GetOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual int GetPlayerIndex() const = 0;
+	virtual int GetFlags() const = 0;
 
 	virtual bool Update() = 0;
 	virtual void TransformOwnerEntity(int entindex) = 0;

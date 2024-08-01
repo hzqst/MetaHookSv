@@ -16,6 +16,7 @@ typedef struct
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
+	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
 	void (*R_ClearParticles)(void);
 	void (*R_DecalInit)(void);
@@ -26,6 +27,8 @@ typedef struct
 	void (*R_BeamDrawList)(void);
 	void (*R_FreeDeadParticles)(particle_t **);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
+	void (*ClientDLL_DrawTransparentTriangles)(void);
+	ULONG_PTR pfnDrawTransparentTriangles;
 	void (*R_AddTEntity)(cl_entity_t *pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);

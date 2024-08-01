@@ -9,6 +9,8 @@
 #include "BasePhysicManager.h"
 #include "ClientEntityManager.h"
 
+#include <ScopeExit/ScopeExit.h>
+
 IClientPhysicManager* g_pClientPhysicManager{};
 
 IClientPhysicManager* ClientPhysicManager()
@@ -33,6 +35,7 @@ void CBasePhysicManager::Shutdown()
 
 void CBasePhysicManager::NewMap(void)
 {
+	RemoveAllPhysicObjects(PhysicObjectFlag_Any);
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
 	GenerateBarnacleIndexVertexArray();
@@ -155,11 +158,9 @@ bool CBasePhysicManager::LoadPhysicConfigFromNewFile(CClientPhysicConfig* pConfi
 	if (!pFileContent)
 		return false;
 
-	bool bLoaded = LoadPhysicConfigFromNewFileBuffer(pConfigs, pFileContent);
+	SCOPE_EXIT{ gEngfuncs.COM_FreeFile((void*)pFileContent); };
 
-	gEngfuncs.COM_FreeFile((void*)pFileContent);
-
-	return bLoaded;
+	return LoadPhysicConfigFromNewFileBuffer(pConfigs, pFileContent);
 }
 
 bool CBasePhysicManager::LoadPhysicConfigFromNewFileBuffer(CClientPhysicConfig* pConfigs, const char* buf)
@@ -175,11 +176,9 @@ bool CBasePhysicManager::LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* pCo
 	if (!pFileContent)
 		return false;
 
-	bool bLoaded = LoadPhysicConfigFromLegacyFileBuffer(pConfigs, pFileContent);
+	SCOPE_EXIT{ gEngfuncs.COM_FreeFile((void*)pFileContent); };
 
-	gEngfuncs.COM_FreeFile((void*)pFileContent);
-
-	return bLoaded;
+	return LoadPhysicConfigFromLegacyFileBuffer(pConfigs, pFileContent);
 }
 
 bool CBasePhysicManager::LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf)
@@ -200,10 +199,10 @@ bool CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfig* pConfigs
 
 	fullname = fullname.substr(0, fullname.length() - 4);
 
-	auto fullname_phys = fullname;
-	fullname_phys += "_physic.txt";
+	auto fullname_physic = fullname;
+	fullname_physic += "_physic.txt";
 
-	if (LoadPhysicConfigFromNewFile(pConfigs, fullname_phys))
+	if (LoadPhysicConfigFromNewFile(pConfigs, fullname_physic))
 		return true;
 
 	auto fullname_ragdoll = fullname;
@@ -213,8 +212,6 @@ bool CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfig* pConfigs
 		return true;
 
 	pConfigs->state = PhysicConfigState_LoadedWithError;
-
-	gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: PhysicConfig \"%s\" loaded with error.\n", fullname.c_str());
 
 	return false;
 }
@@ -467,6 +464,8 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent)
 
 void CBasePhysicManager::CreateBarnacle(cl_entity_t* ent)
 {
+	//TODO... use ragdoll instead?
+
 	auto entindex = ent->index;
 
 	auto pPhysicObject = GetPhysicObject(entindex);
@@ -491,12 +490,14 @@ void CBasePhysicManager::CreateBarnacle(cl_entity_t* ent)
 
 void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
 {
-
+	//TODO... use ragdoll instead?
 }
 
 void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObject)
 {
 	RemovePhysicObject(entindex);
+
+	AddPhysicObjectToWorld(pPhysicObject);
 
 	m_physicObjects[entindex] = pPhysicObject;
 }
@@ -528,13 +529,19 @@ bool CBasePhysicManager::RemovePhysicObject(int entindex)
 
 void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
 {
-	for (const auto &itor : m_physicObjects)
+	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end();)
 	{
-		auto pPhysicObject = itor.second;
+		auto entindex = itor->first;
+		auto pPhysicObject = itor->second;
 
-		//TODO flags check?
+		if (pPhysicObject->GetFlags() & flags)
+		{
+			FreePhysicObject(pPhysicObject);
+			itor = m_physicObjects.erase(itor);
+			continue;
+		}
 
-		FreePhysicObject(pPhysicObject);
+		itor++;
 	}
 
 	m_physicObjects.clear();
@@ -545,7 +552,7 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 	if (frame_time <= 0)
 		return;
 
-	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end(); ++itor)
+	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end();)
 	{
 		auto entindex = itor->first;
 		auto pPhysicObject = itor->second;
@@ -553,7 +560,8 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 
 		if (!bShouldFree)
 		{
-			if (!ClientEntityManager()->IsEntityEmitted(entindex))
+			//world entity is always present
+			if (entindex > 0 && !ClientEntityManager()->IsEntityEmitted(entindex))
 			{
 				bShouldFree = true;
 			}
@@ -573,6 +581,8 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 			itor = m_physicObjects.erase(itor);
 			continue;
 		}
+
+		itor++;
 	}
 
 }

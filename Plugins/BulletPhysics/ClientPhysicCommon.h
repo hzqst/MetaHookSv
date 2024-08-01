@@ -9,6 +9,7 @@ const int PhysicConfigType_Ragdoll = 1;
 
 const int PhysicObjectFlag_Static = 1;
 const int PhysicObjectFlag_Ragdoll = 2;
+const int PhysicObjectFlag_Any = (PhysicObjectFlag_Static | PhysicObjectFlag_Ragdoll);
 
 const int PhysicRigidBodyFlag_AlwaysDynamic = 1;
 const int PhysicRigidBodyFlag_AlwaysKinematic = 2;
