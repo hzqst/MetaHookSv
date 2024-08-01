@@ -134,6 +134,12 @@ void Engine_FillAddreess(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
+		cl_entities = *(decltype(cl_entities)*)(addr + 19);
+
 #define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
 		if (1)
 		{
@@ -141,9 +147,108 @@ void Engine_FillAddreess(void)
 			Sig_AddrNotFound(gTempEnts);
 			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
+
 	}
 	else
 	{
+		//Seach "CL_Reallocate cl_entities"
+		const char sigs1[] = "CL_Reallocate cl_entities\n";
+		auto CL_Reallocate_String = Search_Pattern_Data(sigs1);
+		if (!CL_Reallocate_String)
+			CL_Reallocate_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(CL_Reallocate_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1";
+		*(DWORD*)(pattern + 1) = (DWORD)CL_Reallocate_String;
+		auto CL_Reallocate_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(CL_Reallocate_Call);
+
+		auto CL_ReallocateDynamicData = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CL_Reallocate_Call, 0x100, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				return TRUE;
+			}
+
+			if (Candidate[0] == 0x8B &&
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+			});
+
+		Sig_VarNotFound(CL_ReallocateDynamicData);
+
+		typedef struct
+		{
+			PVOID CL_Reallocate_Call;
+		}CL_ReallocateDynamicData_ctx;
+
+		CL_ReallocateDynamicData_ctx ctx = { 0 };
+
+		ctx.CL_Reallocate_Call = CL_Reallocate_Call;
+
+		g_pMetaHookAPI->DisasmRanges(CL_ReallocateDynamicData, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (CL_ReallocateDynamicData_ctx*)context;
+
+				if (!cl_max_edicts && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					// mov     eax, cl_max_edicts
+					// add     esp, 4
+
+					if (0 == memcmp(address + instLen, "\x83\xC4\x04", 3))
+					{
+						cl_max_edicts = (decltype(cl_max_edicts))pinst->detail->x86.operands[1].mem.disp;
+					}
+				}
+
+				if (!cl_entities && address > ctx->CL_Reallocate_Call && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					// mov     eax, cl_max_edicts
+					// add     esp, 4
+					cl_entities = (decltype(cl_entities))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (cl_entities && cl_max_edicts)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		Sig_VarNotFound(cl_max_edicts);
+		Sig_VarNotFound(cl_entities);
+
+#if 0
+#define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 11);
+		cl_entities = *(decltype(cl_entities)*)(addr + 16);
+#endif
+
 #define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
 		if (1)
 		{
@@ -739,14 +844,11 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 {
 	auto r = gPrivateFuncs.efxapi_R_TempModel(pos, dir, angles, life, modelIndex, soundtype);
 
-	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0)
+	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0 && g_iCreatingClCorpsePlayerIndex <= gEngfuncs.GetMaxClients())
 	{
-		int tentindex = r - gTempEnts;
-
-		ClientPhysicManager()->ChangeRagdollEntityIndex(g_iCreatingClCorpsePlayerIndex, ENTINDEX_TEMPENTITY + tentindex);
+		int entindex = r - gTempEnts + ENTINDEX_TEMPENTITY;
 
 		r->entity.curstate.iuser4 = PhyCorpseFlag;
-		r->entity.curstate.iuser3 = ENTINDEX_TEMPENTITY + tentindex;
 		r->entity.curstate.owner = g_iCreatingClCorpsePlayerIndex;
 	}
 

@@ -37,14 +37,25 @@ public:
 class CPhysicObjectCreationParameter
 {
 public:
-	CPhysicVertexArray* VertexArray{};
-	CPhysicIndexArray* IndexArray{};
+	cl_entity_t* m_entity{};
+	model_t* m_model{};
+	int m_entindex{};
+	CClientPhysicConfig* m_pPhysConfigs{};
 };
 
-class CPhysicStaticObjectCreationParameter : public CPhysicObjectCreationParameter
+class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
-	bool IsKinematic{};
+	CPhysicVertexArray* m_pVertexArray{};
+	CPhysicIndexArray* m_pIndexArray{};
+	bool m_bIsKinematic{};
+};
+
+class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
+{
+public:
+	int m_playerindex{};
+	studiohdr_t* m_studiohdr{};
 };
 
 class CBasePhysicManager : public IClientPhysicManager
@@ -72,24 +83,25 @@ public:
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
-	void ReloadConfig(void) override;
-	bool SetupBones(studiohdr_t* hdr, int entindex)  override;
-	bool SetupJiggleBones(studiohdr_t* hdr, int entindex)  override;
-	void MergeBarnacleBones(studiohdr_t* hdr, int entindex) override;
-	bool ChangeRagdollEntityIndex(int old_entindex, int new_entindex) override;
-	CClientPhysicConfigSharedPtr LoadPhysicConfig(model_t* mod) override;
-	IPhysicObject* GetPhysicObject(int entindex) override;
-	void CreateBrushModel(cl_entity_t* ent) override;
-	void CreateBarnacle(cl_entity_t* ent) override;
-	void CreateGargantua(cl_entity_t* ent) override;
-	void AddPhysicObject(int entindex, IPhysicObject* PhysicObject) override;
-	void RemovePhysicObject(int entindex) override;
-	void RemoveAllPhysicObjects(int flags) override;
-	void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
+	void LoadPhysicConfigs(void) override;
+	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
+	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
+	CClientPhysicConfigSharedPtr LoadPhysicConfigForModel(model_t* mod) override;
 
+	IPhysicObject* GetPhysicObject(int entindex) override;
+	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
+	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
+	bool RemovePhysicObject(int entindex) override;
+	void RemoveAllPhysicObjects(int flags) override;
+	bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) override;
+	void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
+
+	void CreatePhysicObjectForEntity(cl_entity_t* ent) override;
 public:
 
-	virtual IStaticObject* CreateStaticObject(cl_entity_t* ent, const CPhysicStaticObjectCreationParameter& CreationParameter) = 0;
+	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
+	virtual IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) = 0;
 
 private:
 	//WorldVertexArray and WorldIndexArray
@@ -119,4 +131,12 @@ private:
 
 	bool LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* Configs, const std::string& filename);
 	bool LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf);
+
+	void RemoveAllPhysicConfigs();
+
+	void CreateBarnacle(cl_entity_t* ent);
+	void CreateGargantua(cl_entity_t* ent);
+	void CreatePhysicObjectForStudioModel(cl_entity_t* ent);
+	void CreatePhysicObjectForBrushModel(cl_entity_t* ent);
+	void CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t* mod, int entindex, int playerindex);
 };

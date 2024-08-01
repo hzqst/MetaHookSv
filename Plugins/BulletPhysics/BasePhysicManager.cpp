@@ -4,8 +4,10 @@
 #include "privatehook.h"
 #include "enginedef.h"
 #include "plugins.h"
-#include "BasePhysicManager.h"
 #include "mathlib2.h"
+#include "CounterStrike.h"
+#include "BasePhysicManager.h"
+#include "ClientEntityManager.h"
 
 IClientPhysicManager* g_pClientPhysicManager{};
 
@@ -35,7 +37,7 @@ void CBasePhysicManager::NewMap(void)
 	GenerateBrushIndexArray();
 	GenerateBarnacleIndexVertexArray();
 	GenerateGargantuaIndexVertexArray();
-	CreateBrushModel(r_worldentity);
+	CreatePhysicObjectForBrushModel(r_worldentity);
 }
 
 void CBasePhysicManager::DebugDraw(void)
@@ -60,31 +62,77 @@ void CBasePhysicManager::StepSimulation(double frametime)
 	}
 }
 
-void CBasePhysicManager::ReloadConfig(void)
+void CBasePhysicManager::RemoveAllPhysicConfigs()
+{
+	m_physicConfigs.clear();
+}
+
+void CBasePhysicManager::LoadPhysicConfigs(void)
+{
+	RemoveAllPhysicConfigs();
+
+	int maxNum = EngineGetMaxKnownModel();
+
+	if ((int)m_physicConfigs.size() < maxNum)
+		m_physicConfigs.resize(maxNum);
+
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_studio && mod->name[0])
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				auto moddata = IEngineStudio.Mod_Extradata(mod);
+				if (moddata)
+				{
+					LoadPhysicConfigForModel(mod);
+				}
+			}
+		}
+	}
+}
+
+bool CBasePhysicManager::SetupBones(studiohdr_t* studiohdr, int entindex)
+{
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return false;
+
+	return pPhysicObject->SetupBones(studiohdr);
+}
+
+bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex)
+{
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return false;
+
+	return pPhysicObject->SetupJiggleBones(studiohdr);
+}
+
+void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* studiohdr, int entindex)
 {
 	//TODO
 }
 
-bool CBasePhysicManager::SetupBones(studiohdr_t* hdr, int entindex)
+bool CBasePhysicManager::TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex)
 {
-	//TODO
-	return false;
-}
+	auto PhysicObject = GetPhysicObject(old_entindex);
 
-bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* hdr, int entindex)
-{
-	//TODO
-	return false;
-}
+	if (PhysicObject)
+	{
+		m_physicObjects.erase(old_entindex);
 
-void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* hdr, int entindex)
-{
-	//TODO
-}
+		AddPhysicObject(new_entindex, PhysicObject);
 
-bool CBasePhysicManager::ChangeRagdollEntityIndex(int old_entindex, int new_entindex)
-{
-	//TODO
+		PhysicObject->TransformOwnerEntity(new_entindex);
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -153,7 +201,7 @@ bool CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfig* pConfigs
 	fullname = fullname.substr(0, fullname.length() - 4);
 
 	auto fullname_phys = fullname;
-	fullname_phys += "_phys.txt";
+	fullname_phys += "_physic.txt";
 
 	if (LoadPhysicConfigFromNewFile(pConfigs, fullname_phys))
 		return true;
@@ -166,20 +214,19 @@ bool CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfig* pConfigs
 
 	pConfigs->state = PhysicConfigState_LoadedWithError;
 
-	gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: Failed to load physic config file for %s\n", fullname.c_str());
+	gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: PhysicConfig \"%s\" loaded with error.\n", fullname.c_str());
 
 	return false;
 }
 
-CClientPhysicConfigSharedPtr CBasePhysicManager::LoadPhysicConfig(model_t* mod)
+CClientPhysicConfigSharedPtr CBasePhysicManager::LoadPhysicConfigForModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex == -1)
 	{
-		//invalid model index?
-		g_pMetaHookAPI->SysError("LoadPhysicConfig: Invalid model index\n");
-		return NULL;
+		g_pMetaHookAPI->SysError("LoadPhysicConfigForModel: Invalid model index\n");
+		return nullptr;
 	}
 
 	if (m_physicConfigs.size() < EngineGetMaxKnownModel())
@@ -187,9 +234,8 @@ CClientPhysicConfigSharedPtr CBasePhysicManager::LoadPhysicConfig(model_t* mod)
 
 	if (modelindex >= m_physicConfigs.size())
 	{
-		//invalid model index?
 		g_pMetaHookAPI->SysError("LoadPhysicConfig: Invalid model index\n");
-		return NULL;
+		return nullptr;
 	}
 
 	auto pConfigs = m_physicConfigs[modelindex];
@@ -206,44 +252,241 @@ CClientPhysicConfigSharedPtr CBasePhysicManager::LoadPhysicConfig(model_t* mod)
 	return pConfigs;
 }
 
-void CBasePhysicManager::CreateBrushModel(cl_entity_t* ent)
+void CBasePhysicManager::CreatePhysicObjectForEntity(cl_entity_t* ent)
 {
-	auto PhysicObject = GetPhysicObject(ent->index);
+	auto mod = ent->model;
 
-	if (PhysicObject)
+	if (!mod)
 		return;
 
-	auto IndexArray = GetIndexArrayFromBrushModel(ent->model);
+	if (mod->type == mod_studio)
+	{
+		CreatePhysicObjectForStudioModel(ent);
+	}
+	else if (mod->type == mod_brush && ent->curstate.solid == SOLID_BSP)
+	{
+		CreatePhysicObjectForBrushModel(ent);
+	}
+}
 
-	if (!IndexArray)
+void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
+{
+	//TODO Port barnacle and garg to Configs ?
+	if (ClientEntityManager()->IsEntityNetworkEntity(ent))
+	{
+		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
+		{
+			auto entindex = ent->index;
+			auto playerindex = ent->curstate.renderamt;
+			auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+			if (g_bIsCounterStrike)
+			{
+				//Counter-Strike redirects playermodel in a pretty tricky way
+				int modelindex = 0;
+				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+			}
+
+			auto PhysicObject = GetPhysicObject(entindex);
+
+			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			{
+
+			}
+			else
+			{
+				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
+					return;
+
+				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+			}
+		}
+		else if (ClientEntityManager()->IsEntityPlayer(ent))
+		{
+			auto entindex = ent->index;
+			auto playerindex = ent->index;
+			auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+			if (g_bIsCounterStrike)
+			{
+				//Counter-Strike redirects playermodel in a pretty tricky way
+				int modelindex = 0;
+				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+			}
+
+			auto PhysicObject = GetPhysicObject(entindex);
+
+			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			{
+
+			}
+			else
+			{
+				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+			}
+		}
+		else
+		{
+			if (ClientEntityManager()->IsEntityBarnacle(ent))
+			{
+				ClientEntityManager()->AddBarnacle(ent->index, 0);
+			}
+			else if (ClientEntityManager()->IsEntityGargantua(ent))
+			{
+				ClientEntityManager()->AddGargantua(ent->index, 0);
+			}
+
+			auto entindex = ent->index;
+			auto model = ent->model;
+
+			auto PhysicObject = GetPhysicObject(entindex);
+
+			if (PhysicObject && PhysicObject->GetModel() == model)
+			{
+
+			}
+			else
+			{
+				CreatePhysicObjectFromConfig(ent, model, entindex, 0);
+			}
+		}
+	}
+	else if (ClientEntityManager()->IsEntityTempEntity(ent))
+	{
+		if (ClientEntityManager()->IsEntityClientCorpse(ent))
+		{
+			auto entindex = ClientEntityManager()->GetEntityIndex(ent);
+			auto playerindex = ent->curstate.owner;
+			auto model = ent->model;
+
+			auto PhysicObject = GetPhysicObject(entindex);
+
+			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			{
+
+			}
+			else
+			{
+				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
+					return;
+
+				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+			}
+		}
+		else
+		{
+			//TODO other tempents are not supported yet?
+		}
+	}
+}
+
+void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t* mod, int entindex, int playerindex)
+{
+	auto pPhysicConfig = ClientPhysicManager()->LoadPhysicConfigForModel(mod);
+
+	if (!pPhysicConfig)
 		return;
 
-	CPhysicStaticObjectCreationParameter CreationParameter;
-	CreationParameter.VertexArray = m_worldVertexArray;
-	CreationParameter.IndexArray = IndexArray;
-	CreationParameter.IsKinematic = false;
+	if (pPhysicConfig->state != PhysicConfigState_Loaded)
+		return;
+
+	if (pPhysicConfig->type == PhysicConfigType_Ragdoll)
+	{
+		const auto playerState = R_GetPlayerState(playerindex);
+
+		auto fakePlayerState = *playerState;
+
+		fakePlayerState.number = playerindex;
+		fakePlayerState.weaponmodel = 0;
+		fakePlayerState.sequence = pPhysicConfig->sequence;
+		fakePlayerState.gaitsequence = pPhysicConfig->gaitsequence;
+		fakePlayerState.movetype = MOVETYPE_NONE;
+
+		VectorCopy(ent->curstate.angles, fakePlayerState.angles);
+		VectorCopy(ent->curstate.origin, fakePlayerState.origin);
+
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL, &fakePlayerState);
+
+		CRagdollObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = ent;
+		CreationParam.m_model = mod;
+		CreationParam.m_entindex = entindex;
+		CreationParam.m_playerindex = playerindex;
+		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+		CreationParam.m_pPhysConfigs = pPhysicConfig.get();
+
+		auto pRagdollObject = CreateRagdollObject(CreationParam);
+
+		if (!pRagdollObject)
+			return;
+
+		AddPhysicObject(entindex, pRagdollObject);
+	}
+	else
+	{
+		gEngfuncs.Con_DPrintf("CreatePhysicObjectFromConfig: Unsupported type (%d) in PhysicConfig.\n", pPhysicConfig->type);
+	}
+}
+
+void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent)
+{
+	auto entindex = ClientEntityManager()->GetEntityIndex(ent);
+	auto mod = ent->model;
+
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (pPhysicObject)
+		return;
+
+	auto pIndexArray = GetIndexArrayFromBrushModel(mod);
+
+	if (!pIndexArray)
+		return;
+
+	CStaticObjectCreationParameter CreationParam;
+	CreationParam.m_entity = ent;
+	CreationParam.m_entindex = entindex;
+	CreationParam.m_model = mod;
+	CreationParam.m_pVertexArray = m_worldVertexArray;
+	CreationParam.m_pIndexArray = pIndexArray;
+	CreationParam.m_bIsKinematic = false;
 
 	if ((ent != r_worldentity) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP))
 	{
-		CreationParameter.IsKinematic = true;
+		CreationParam.m_bIsKinematic = true;
 	}
 
-	CreateStaticObject(ent, CreationParameter);
+	auto pStaticObject = CreateStaticObject(CreationParam);
+
+	if (!pStaticObject)
+		return;
+
+	AddPhysicObject(entindex, pStaticObject);
 }
 
 void CBasePhysicManager::CreateBarnacle(cl_entity_t* ent)
 {
-	auto PhysicObject = GetPhysicObject(ent->index);
+	auto entindex = ent->index;
 
-	if (PhysicObject)
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (pPhysicObject)
 		return;
 
-	CPhysicStaticObjectCreationParameter CreationParameter;
-	CreationParameter.VertexArray = m_barnacleVertexArray;
-	CreationParameter.IndexArray = m_barnacleIndexArray;
-	CreationParameter.IsKinematic = false;
+	CStaticObjectCreationParameter CreationParam;
+	CreationParam.m_entity = ent;
+	CreationParam.m_entindex = entindex;
+	CreationParam.m_pVertexArray = m_barnacleVertexArray;
+	CreationParam.m_pIndexArray = m_barnacleIndexArray;
+	CreationParam.m_bIsKinematic = false;
 
-	CreateStaticObject(ent, CreationParameter);
+	auto pStaticObject = CreateStaticObject(CreationParam);
+
+	if (!pStaticObject)
+		return;
+
+	AddPhysicObject(entindex, pStaticObject);
 }
 
 void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
@@ -251,45 +494,86 @@ void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
 
 }
 
-void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* PhysicObject)
+void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObject)
 {
 	RemovePhysicObject(entindex);
 
-	m_physicObjects[entindex] = PhysicObject;
+	m_physicObjects[entindex] = pPhysicObject;
 }
 
-void CBasePhysicManager::RemovePhysicObject(int entindex)
+void CBasePhysicManager::FreePhysicObject(IPhysicObject *pPhysicObject)
+{
+	RemovePhysicObjectFromWorld(pPhysicObject);
+
+	pPhysicObject->Destroy();
+}
+
+bool CBasePhysicManager::RemovePhysicObject(int entindex)
 {
 	auto itor = m_physicObjects.find(entindex);
 
 	if (itor != m_physicObjects.end())
 	{
-		auto PhysicObject = itor->second;
+		auto pPhysicObject = itor->second;
 
-		RemovePhysicObjectFromWorld(PhysicObject);
-
-		PhysicObject->Destroy();
+		FreePhysicObject(pPhysicObject);
 
 		m_physicObjects.erase(itor);
+
+		return true;
 	}
+
+	return false;
 }
 
 void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
 {
 	for (const auto &itor : m_physicObjects)
 	{
-		auto PhysicObject = itor.second;
+		auto pPhysicObject = itor.second;
 
-		RemovePhysicObjectFromWorld(PhysicObject);
+		//TODO flags check?
 
-		PhysicObject->Destroy();
+		FreePhysicObject(pPhysicObject);
 	}
 
 	m_physicObjects.clear();
 }
 
-void CBasePhysicManager::UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
+void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
 {
+	if (frame_time <= 0)
+		return;
+
+	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end(); ++itor)
+	{
+		auto entindex = itor->first;
+		auto pPhysicObject = itor->second;
+		bool bShouldFree = false;
+
+		if (!bShouldFree)
+		{
+			if (!ClientEntityManager()->IsEntityEmitted(entindex))
+			{
+				bShouldFree = true;
+			}
+		}
+
+		if (!bShouldFree)
+		{
+			if (!pPhysicObject->Update())
+			{
+				bShouldFree = true;
+			}
+		}
+
+		if (bShouldFree)
+		{
+			FreePhysicObject(pPhysicObject);
+			itor = m_physicObjects.erase(itor);
+			continue;
+		}
+	}
 
 }
 

@@ -7,9 +7,13 @@
 
 #include "BasePhysicManager.h"
 
-class CBulletBaseSharedUserData : public IBaseInterface
+class CBulletBaseSharedUserData
 {
 public:
+	virtual ~CBulletBaseSharedUserData()
+	{
+
+	}
 };
 
 class CBulletCollisionShapeSharedUserData : public CBulletBaseSharedUserData
@@ -17,77 +21,118 @@ class CBulletCollisionShapeSharedUserData : public CBulletBaseSharedUserData
 public:
 	~CBulletCollisionShapeSharedUserData()
 	{
-		if (m_vertexArray)
-			delete m_vertexArray;
+		if (m_pIndexVertexArray)
+			delete m_pIndexVertexArray;
 	}
 
-	btTriangleIndexVertexArray* m_vertexArray{};
+	btTriangleIndexVertexArray* m_pIndexVertexArray{};
 };
 
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
 {
 public:
-	CBulletRigidBodySharedUserData(const std::string & name, const btRigidBody::btRigidBodyConstructionInfo &info)
+	CBulletRigidBodySharedUserData(const std::string & name, int flags, int boneindex, const btRigidBody::btRigidBodyConstructionInfo &info)
 	{
 		m_name = name;
+		m_flags = flags;
 		m_mass = info.m_mass;
 		m_inertia = info.m_localInertia;
 	}
 
 	std::string m_name;
+	int m_flags{};
+
 	float m_mass{};
 	btVector3 m_inertia{};
 	int m_group{};
 	int m_mask{};
-	int m_boneindex{};
+	int m_boneindex{ -1 };
 };
 
 class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
 {
 public:
+	CBulletConstraintSharedUserData(const CClientConstraintConfig* pConstraintConfig)
+	{
+		m_disableCollision = pConstraintConfig->disableCollision;
+	}
+
 	bool m_disableCollision{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
-CBulletBoneMotionState : public btMotionState
+CBulletBaseMotionState : public btMotionState
 {
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	CBulletBoneMotionState(const btTransform& bm, const btTransform& om) : bonematrix(bm), offsetmatrix(om)
+
+	CBulletBaseMotionState(IPhysicObject* pPhysicObject) : m_pPhysicObject(pPhysicObject)
+	{
+
+	}
+
+	IPhysicObject* GetPhysicObject() const
+	{
+		return m_pPhysicObject;
+	}
+
+	virtual bool IsBoneBased() const = 0;
+
+public:
+	IPhysicObject* m_pPhysicObject{};
+};
+
+ATTRIBUTE_ALIGNED16(class)
+CBulletBoneMotionState : public CBulletBaseMotionState
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+	CBulletBoneMotionState(IPhysicObject* pPhysicObject,const btTransform& bm, const btTransform& om) : CBulletBaseMotionState(pPhysicObject), m_bonematrix(bm), m_offsetmatrix(om), m_initialbonematrix(bm)
 	{
 
 	}
 
 	void getWorldTransform(btTransform& worldTrans) const override
 	{
-		worldTrans.mult(bonematrix, offsetmatrix);
+		worldTrans.mult(m_bonematrix, m_offsetmatrix);
 	}
 
 	void setWorldTransform(const btTransform& worldTrans) override
 	{
-		bonematrix.mult(worldTrans, offsetmatrix.inverse());
+		m_bonematrix.mult(worldTrans, m_offsetmatrix.inverse());
 	}
 
-	btTransform bonematrix;
-	btTransform offsetmatrix;
+	bool IsBoneBased() const override
+	{
+		return true;
+	}
+public:
+	btTransform m_bonematrix;
+	btTransform m_offsetmatrix;
+	btTransform m_initialbonematrix;
 };
 
+class IPhysicObject;
+
 ATTRIBUTE_ALIGNED16(class)
-CBulletEntityMotionState : public btMotionState
+CBulletEntityMotionState : public CBulletBaseMotionState
 {
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	CBulletEntityMotionState(cl_entity_t* ent) : btMotionState(), m_ent(ent)
+	CBulletEntityMotionState(IPhysicObject*pPhysicObject) : CBulletBaseMotionState(pPhysicObject)
 	{
 
 	}
 
-	void getWorldTransform(btTransform& worldTrans) const;
+	void getWorldTransform(btTransform& worldTrans) const override;
 
-	void setWorldTransform(const btTransform& worldTrans);
+	void setWorldTransform(const btTransform& worldTrans) override;
 
-	cl_entity_t* m_ent;
+	bool IsBoneBased() const override
+	{
+		return false;
+	}
 };
 
 class CBulletPhysicManager : public CBasePhysicManager
@@ -109,10 +154,9 @@ public:
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
 
-	IStaticObject* CreateStaticObject(cl_entity_t* ent, const CPhysicStaticObjectCreationParameter& CreationParameter) override;
-	IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* pConfigs) override;
+	IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) override;
+	IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) override;
+
 	void AddPhysicObjectToWorld(IPhysicObject* PhysicObject) override;
 	void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject) override;
-public:
-	
 };

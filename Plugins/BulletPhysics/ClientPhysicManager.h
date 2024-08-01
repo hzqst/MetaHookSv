@@ -30,9 +30,16 @@ public:
 		return false;
 	}
 
-	virtual int GetEntIndex() const = 0;
-	virtual bool GetOrigin(float *v) = 0;
+	virtual int GetEntityIndex() const = 0;
+	virtual cl_entity_t* GetClientEntity() const = 0;
+	virtual bool GetOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
+	virtual int GetPlayerIndex() const = 0;
+
+	virtual bool Update() = 0;
+	virtual void TransformOwnerEntity(int entindex) = 0;
+	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
 
 	virtual void AddToPhysicWorld(void* world) = 0;
 	virtual void RemoveFromPhysicWorld(void* world) = 0;
@@ -95,21 +102,25 @@ public:
 	virtual void DebugDraw(void) = 0;
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
-	virtual void ReloadConfig(void) = 0;
-	virtual bool SetupBones(studiohdr_t* hdr, int entindex) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* hdr, int entindex) = 0;
-	virtual void MergeBarnacleBones(studiohdr_t* hdr, int entindex) = 0;
-	virtual bool ChangeRagdollEntityIndex(int old_entindex, int new_entindex) = 0;
+	virtual void LoadPhysicConfigs(void) = 0;
+	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual CClientPhysicConfigSharedPtr LoadPhysicConfig(model_t* mod) = 0;
-	virtual IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config) = 0;
-	virtual void CreateBrushModel(cl_entity_t* ent) = 0;
-	virtual void CreateBarnacle(cl_entity_t* ent) = 0;
-	virtual void CreateGargantua(cl_entity_t* ent) = 0;
-	virtual void AddPhysicObject(int entindex, IPhysicObject* PhysicObject) = 0;
-	virtual void RemovePhysicObject(int entindex) = 0;
+	virtual CClientPhysicConfigSharedPtr LoadPhysicConfigForModel(model_t* mod) = 0;
+
+	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent) = 0;
+
+	//PhysicObject Management
+
+	virtual void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) = 0;
+	virtual void FreePhysicObject(IPhysicObject* pPhysicObject) = 0;
+	virtual bool RemovePhysicObject(int entindex) = 0;
 	virtual void RemoveAllPhysicObjects(int flags) = 0;
-	virtual void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+	virtual bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) = 0;
+	virtual void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+
+	//PhysicWorld Related
 	virtual void AddPhysicObjectToWorld(IPhysicObject* PhysicObject) = 0;
 	virtual void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject) = 0;
 };

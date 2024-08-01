@@ -8,9 +8,14 @@
 
 #include "ClientPhysicCommon.h"
 
-class CBasePhysicConfig : public IBaseInterface
+class CBasePhysicConfig
 {
 public:
+	virtual ~CBasePhysicConfig()
+	{
+
+	}
+
 	std::string name;
 };
 
@@ -52,9 +57,8 @@ public:
 
 	//Relocate with bone if boneindex >= 0
 	int boneindex{ -1 };
-	int pboneindex{ -1 };
-	vec3_t offset;
-	vec3_t angles;
+	vec3_t origin{};
+	vec3_t angles{};
 };
 
 using CClientRigidBodyConfigSharedPtr = std::shared_ptr<CClientRigidBodyConfig>;
@@ -65,11 +69,10 @@ public:
 	int type{ PhysicConstraint_None };
 	std::string rigidbodyA;
 	std::string rigidbodyB;
-	vec3_t originA{};
-	vec3_t anglesA{};
-	vec3_t originB{};
-	vec3_t anglesB{};
-	bool hasCollision{};
+	int boneindex{ -1 };
+	vec3_t origin{};
+	vec3_t angles{};
+	bool disableCollision{ true };
 };
 
 using CClientConstraintConfigSharedPtr = std::shared_ptr<CClientConstraintConfig>;
@@ -86,13 +89,25 @@ public:
 
 using CClientFloaterConfigSharedPtr = std::shared_ptr<CClientFloaterConfig>;
 
+class CClientRagdollAnimControlConfig : public CBasePhysicConfig
+{
+public:
+	int sequence{};
+	float frame{};
+	int activity{};
+};
+
 class CClientPhysicConfig : public CBasePhysicConfig
 {
 public:
+	int type{ PhysicConfigType_None };
 	int state{ PhysicConfigState_NotLoaded };
+	int sequence{ 0 };
+	int gaitsequence{ 0 };
 	std::vector<CClientRigidBodyConfigSharedPtr> rigidBodyConfigs;
 	std::vector<CClientConstraintConfigSharedPtr> constraintConfigs;
 	std::vector<CClientFloaterConfigSharedPtr> floaterConfigs;
+	std::vector<CClientRagdollAnimControlConfig> ragdollAnimControlConfigs;
 };
 
 using CClientPhysicConfigSharedPtr = std::shared_ptr<CClientPhysicConfig>;

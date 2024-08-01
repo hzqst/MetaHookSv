@@ -324,10 +324,6 @@ extern stvert_t stverts[MAXALIASVERTS];
 extern mtriangle_t triangles[MAXALIASTRIS];
 extern trivertx_t *poseverts[MAXALIASFRAMES];
 
-#define PhyCorpseFlag (1145141919)
-
-#define ENTINDEX_TEMPENTITY (1000000)
-
 typedef enum
 {
 	ACT_RESET,
@@ -411,3 +407,12 @@ typedef enum
 	ACT_FLINCH_LARGE,
 	ACT_HOLDBOMB
 }activity_e;
+
+#define MAX_TEMP_ENTITIES 500
+#define MAX_TEMP_ENTITIES_SVENGINE 2077
+
+//Magic Number
+#define PhyCorpseFlag (1145141919)
+
+//Magic Number
+#define ENTINDEX_TEMPENTITY (1000000)

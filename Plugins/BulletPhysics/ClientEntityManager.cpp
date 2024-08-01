@@ -7,55 +7,118 @@
 #include "ClientEntityManager.h"
 
 #include <unordered_map>
-#include <set>
+#include <unordered_set>
 
 class CClientEntityManager : public IClientEntityManager
 {
 private:
-
 	std::unordered_map<int, int> m_BarnacleMap;
 	std::unordered_map<int, int> m_GargantuaMap;
 
-	CPlayerDeathState m_PlayerDeathState[33];
-	bool m_bIsPlayerEmitted[33];
+	CPlayerDeathState m_PlayerDeathState[33]{};
+	std::unordered_set<int> m_EmittedEntity;
 
-	model_t* m_BarnacleModel;
-	model_t* m_GargantuaModel;
+	model_t* m_BarnacleModel{};
+	model_t* m_GargantuaModel{};
 
 public:
-	CClientEntityManager(void)
-	{
-		ClearAllPlayerDeathState();
-		ClearAllPlayerEmitState();
 
-		m_BarnacleModel = 0;
-		m_GargantuaModel = 0;
-	}
-
-	bool IsEntityEmitted(cl_entity_t* ent) override
+	bool IsEntityIndexTempEntity(int entindex) override
 	{
-		if (ent->player)
+		if (entindex >= ENTINDEX_TEMPENTITY && entindex < ENTINDEX_TEMPENTITY + EngineGetMaxTempEnts())
 		{
-			return ClientEntityManager()->IsPlayerEmitted(ent->index);
+			return true;
 		}
 
-		return true;
+		return false;
+	}
+
+	bool IsEntityTempEntity(cl_entity_t* ent) override
+	{
+		if ((ULONG_PTR)ent > (ULONG_PTR)gTempEnts && (ULONG_PTR)ent < (ULONG_PTR)gTempEnts + sizeof(TEMPENTITY) * EngineGetMaxTempEnts())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	bool IsEntityNetworkEntity(cl_entity_t* ent) override
+	{
+		if (ent >= EngineGetClientEntitiesBase() && ent < EngineGetClientEntitiesBase() + EngineGetMaxClientEdicts())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	bool IsEntityIndexNetworkEntity(int entindex) override
+	{
+		if (entindex >= 0 && entindex < EngineGetMaxClientEdicts())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	cl_entity_t* GetEntityByIndex(int entindex) override
+	{
+		if (IsEntityIndexNetworkEntity(entindex))
+		{
+			return gEngfuncs.GetEntityByIndex(entindex);
+		}
+
+		if (IsEntityIndexTempEntity(entindex))
+		{
+			return &gTempEnts[entindex].entity;
+		}
+
+		return nullptr;
+	}
+
+	int GetEntityIndexFromTempEntity(cl_entity_t* ent) override
+	{
+		auto pTempEnt = (TEMPENTITY*)((ULONG_PTR)ent - offsetof(TEMPENTITY, entity));
+
+		return (pTempEnt - gTempEnts) + ENTINDEX_TEMPENTITY;
+	}
+
+	int GetEntityIndexFromNetworkEntity(cl_entity_t* ent) override
+	{
+		return ent - EngineGetClientEntitiesBase();
+	}
+
+	int GetEntityIndex(cl_entity_t* ent) override
+	{
+		if (IsEntityNetworkEntity(ent))
+		{
+			return GetEntityIndexFromNetworkEntity(ent);
+		}
+
+		if (IsEntityTempEntity(ent))
+		{
+			return GetEntityIndexFromTempEntity(ent);
+		}
+
+		return -1;
 	}
 
 	bool IsEntityBarnacle(cl_entity_t* ent) override
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
 		{
-			if (m_BarnacleModel && m_BarnacleModel->needload == NL_PRESENT)
+			/*if (m_BarnacleModel && m_BarnacleModel->needload == NL_PRESENT)
 			{
 				if (m_BarnacleModel == ent->model)
 				{
 					return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
 				}
-			}
-			else if (!strcmp(ent->model->name, "models/barnacle.mdl"))
+			}*/
+			if (!strcmp(ent->model->name, "models/barnacle.mdl"))
 			{
-				m_BarnacleModel = ent->model;
+				//m_BarnacleModel = ent->model;
 
 				return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
 			}
@@ -68,16 +131,16 @@ public:
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
 		{
-			if (m_GargantuaModel && m_GargantuaModel->needload == NL_PRESENT)
+			/*if (m_GargantuaModel && m_GargantuaModel->needload == NL_PRESENT)
 			{
 				if (m_GargantuaModel == ent->model)
 				{
 					return true;
 				}
-			}
-			else if (!strcmp(ent->model->name, "models/garg.mdl"))
+			}*/
+			if (!strcmp(ent->model->name, "models/garg.mdl"))
 			{
-				m_GargantuaModel = ent->model;
+				//m_GargantuaModel = ent->model;
 
 				return true;
 			}
@@ -99,6 +162,19 @@ public:
 		return false;
 	}
 
+	bool IsEntityPlayer(cl_entity_t* ent) override
+	{
+		if (ent->player && IsEntityNetworkEntity(ent))
+		{
+			auto entindex = GetEntityIndex(ent);
+
+			if (entindex > 0 && entindex <= gEngfuncs.GetMaxClients())
+				return true;
+		}
+
+		return false;
+	}
+
 	bool IsEntityDeadPlayer(cl_entity_t* ent) override
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
@@ -106,6 +182,20 @@ public:
 			if (!ent->player && ent->curstate.renderfx == kRenderFxDeadPlayer &&
 				ent->curstate.renderamt >= 1 &&
 				ent->curstate.renderamt <= gEngfuncs.GetMaxClients())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool IsEntityClientCorpse(cl_entity_t* ent) override
+	{
+		if (IsEntityTempEntity(ent))
+		{
+			if (ent->curstate.iuser4 == PhyCorpseFlag &&
+				ent->curstate.owner >= 1 && (*currententity)->curstate.owner <= gEngfuncs.GetMaxClients())
 			{
 				return true;
 			}
@@ -265,24 +355,6 @@ public:
 			m_PlayerDeathState[entindex].vecAngles[1] += 360;
 	}
 
-	void SetPlayerEmitted(int entindex) override
-	{
-		m_bIsPlayerEmitted[entindex] = true;
-	}
-
-	bool IsPlayerEmitted(int entindex) override
-	{
-		return m_bIsPlayerEmitted[entindex];
-	}
-
-	void ClearAllPlayerEmitState() override
-	{
-		for (int i = 0; i < _ARRAYSIZE(m_bIsPlayerEmitted); ++i)
-		{
-			m_bIsPlayerEmitted[i] = false;
-		}
-	}
-
 	void FreePlayerForBarnacle(int entindex) override
 	{
 		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); )
@@ -345,6 +417,7 @@ public:
 			if (itor->second != 0)
 			{
 				auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
+
 				if (playerEntity &&
 					playerEntity->player &&
 					StudioGetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
@@ -383,7 +456,7 @@ public:
 	/*
 		Purpose: Find the barnacle entity that is catching the player
 	*/
-	cl_entity_t* FindBarnacleForPlayer(entity_state_t* player)
+	cl_entity_t* FindBarnacleForPlayer(entity_state_t* player) override
 	{
 		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); itor++)
 		{
@@ -406,7 +479,7 @@ public:
 	/*
 		Purpose: Find the gargantua entity that is catching the player
 	*/
-	cl_entity_t* FindGargantuaForPlayer(entity_state_t* player)
+	cl_entity_t* FindGargantuaForPlayer(entity_state_t* player) override
 	{
 		for (auto itor = m_GargantuaMap.begin(); itor != m_GargantuaMap.end(); itor++)
 		{
@@ -422,6 +495,31 @@ public:
 		}
 
 		return NULL;
+	}
+
+	void ClearEntityEmitStates() override
+	{
+		m_EmittedEntity.clear();
+	}
+
+	void SetEntityEmitted(int entindex) override
+	{
+		m_EmittedEntity.emplace(entindex);
+	}
+
+	void SetEntityEmitted(cl_entity_t* ent) override
+	{
+		m_EmittedEntity.emplace(GetEntityIndex(ent));
+	}
+
+	bool IsEntityEmitted(int entindex) override
+	{
+		return m_EmittedEntity.find(entindex) != m_EmittedEntity.end();
+	}
+
+	bool IsEntityEmitted(cl_entity_t* ent) override
+	{
+		return IsEntityEmitted(GetEntityIndex(ent));
 	}
 
 };
