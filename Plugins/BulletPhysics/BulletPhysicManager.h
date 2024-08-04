@@ -39,22 +39,27 @@ public:
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
 {
 public:
-	CBulletRigidBodySharedUserData(const std::string & name, int flags, int boneindex, const btRigidBody::btRigidBodyConstructionInfo &info)
+	CBulletRigidBodySharedUserData(const btRigidBody::btRigidBodyConstructionInfo& info, const std::string & name, int flags, int boneindex, int debugDrawLevel, float density)
 	{
-		m_name = name;
-		m_flags = flags;
 		m_mass = info.m_mass;
 		m_inertia = info.m_localInertia;
+
+		m_name = name;
+		m_flags = flags;
+		m_debugDrawLevel = debugDrawLevel;
+		m_density = density;
 	}
 
 	std::string m_name;
 	int m_flags{};
 
 	float m_mass{};
+	float m_density{};
 	btVector3 m_inertia{};
 	int m_group{};
 	int m_mask{};
 	int m_boneindex{ -1 };
+	int m_debugDrawLevel{ 0 };
 };
 
 class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
@@ -63,9 +68,11 @@ public:
 	CBulletConstraintSharedUserData(const CClientConstraintConfig* pConstraintConfig)
 	{
 		m_disableCollision = pConstraintConfig->disableCollision;
+		m_debugDrawLevel = pConstraintConfig->debugDrawLevel;
 	}
 
 	bool m_disableCollision{};
+	int m_debugDrawLevel{};
 };
 
 ATTRIBUTE_ALIGNED16(class)

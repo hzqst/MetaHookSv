@@ -40,7 +40,7 @@ public:
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	int m_entindex{};
-	CClientPhysicConfig* m_pPhysConfigs{};
+	CClientRagdollConfig* m_pRagdollConfig{};
 };
 
 class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
@@ -48,7 +48,7 @@ class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
 public:
 	CPhysicVertexArray* m_pVertexArray{};
 	CPhysicIndexArray* m_pIndexArray{};
-	bool m_bIsKinematic{};
+	int m_debugDrawLevel{};
 };
 
 class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
@@ -87,7 +87,7 @@ public:
 	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
-	CClientPhysicConfigSharedPtr LoadPhysicConfigForModel(model_t* mod) override;
+	CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) override;
 
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
@@ -98,11 +98,11 @@ public:
 	void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
 	void CreatePhysicObjectForEntity(cl_entity_t* ent) override;
+	void SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& ragdollIdleAnim) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
 	virtual IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) = 0;
-
 private:
 	//WorldVertexArray and WorldIndexArray
 	void GenerateWorldVertexArray();
@@ -124,11 +124,7 @@ private:
 	void GenerateGargantuaIndexVertexArray();
 	void FreeGargantuaIndexVertexArray();
 
-	bool LoadPhysicConfigFromFiles(CClientPhysicConfig* Configs, const std::string& filename);
-	bool LoadPhysicConfigFromNewFile(CClientPhysicConfig* Configs, const std::string& filename);
-	bool LoadPhysicConfigFromNewFileBuffer(CClientPhysicConfig* pConfigs, const char* buf);
-	bool LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* Configs, const std::string& filename);
-	bool LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf);
+	void LoadPhysicConfigFromFiles(CClientPhysicConfigStorage& Storage, const std::string& filename);
 
 	void RemoveAllPhysicConfigs();
 

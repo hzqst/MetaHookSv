@@ -40,7 +40,12 @@ entity_state_t* R_GetPlayerState(int index);
 bool AllowCheats();
 
 bool IsPhysicWorldEnabled();
-int GetPhysicDebugDrawLevel();
+bool IsDebugDrawEnabled();
+bool IsDebugDrawShowCCD();
+int GetRagdollObjectDebugDrawLevel();
+int GetStaticObjectDebugDrawLevel();
+int GetDynamicObjectDebugDrawLevel();
+int GetConstraintDebugDrawLevel();
 float GetSimulationTickRate();
 
 int EngineGetNumKnownModel();

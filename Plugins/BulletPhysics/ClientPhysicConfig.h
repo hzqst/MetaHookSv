@@ -8,16 +8,7 @@
 
 #include "ClientPhysicCommon.h"
 
-class CBasePhysicConfig
-{
-public:
-	virtual ~CBasePhysicConfig()
-	{
-
-	}
-};
-
-class CClientCollisionShapeConfig : public CBasePhysicConfig
+class CClientCollisionShapeConfig
 {
 public:
 	std::string name;
@@ -37,49 +28,66 @@ public:
 	//std::vector<float> multispheres;
 };
 
-using CClientCollisionShapeConfigSharedPtr = std::shared_ptr<CClientCollisionShapeConfig>;
-
-class CClientRigidBodyConfig : public CBasePhysicConfig
+class CClientRigidBodyConfig
 {
 public:
+	~CClientRigidBodyConfig()
+	{
+		for (auto p : shapes)
+		{
+			delete p;
+		}
+	}
+
 	std::string name;
-	float mass{};
-	float density{};
-	float linearfriction{};
-	float rollingfriction{};
-	float restitution{};
-	float ccdradius{};
-	float ccdthreshold{};
-	int flags{};
-	vec3_t centerofmass;
+	float mass{ 1 };
+	float density{ 1 };
+	float linearFriction{ 1 };
+	float rollingFriction{ 1 };
+	float restitution{ 0 };
+	float ccdRadius{ 0 };
+	float ccdThreshold{ 0 };
+	vec3_t centerOfMass{0};
+	int flags{ 0 };
+	int debugDrawLevel{ 0 };
+
+	//For positioning
+	int boneindex{ -1 };
+	vec3_t origin{ 0 };
+	vec3_t angles{ 0 };
+
+	//For legacy configs
+	bool isLegacyConfig{ false };
+	int pboneindex{ -1 };
+	float pboneoffset{ 0 };
 
 	//Support compound shape?
-	std::vector<CClientCollisionShapeConfigSharedPtr> shapes;
-
-	//Relocate with bone if boneindex >= 0
-	int boneindex{ -1 };
-	vec3_t origin{};
-	vec3_t angles{};
+	std::vector<CClientCollisionShapeConfig*> shapes;
 };
 
-using CClientRigidBodyConfigSharedPtr = std::shared_ptr<CClientRigidBodyConfig>;
-
-class CClientConstraintConfig : public CBasePhysicConfig
+class CClientConstraintConfig
 {
 public:
 	std::string name;
 	int type{ PhysicConstraint_None };
 	std::string rigidbodyA;
 	std::string rigidbodyB;
-	int boneindex{ -1 };
-	vec3_t origin{};
-	vec3_t angles{};
+	vec3_t origin{ 0 };
+	vec3_t angles{ 0 };
 	bool disableCollision{ true };
+	bool isFromRigidBodyB{ false };
+	int debugDrawLevel{ 0 };
+
+	//For legacy configs
+	bool isLegacyConfig{ false };
+	int boneindexA{ -1 };
+	int boneindexB{ -1 };
+	vec3_t offsetA{ 0 };
+	vec3_t offsetB{ 0 };
+	float factors[16]{ 0 };
 };
 
-using CClientConstraintConfigSharedPtr = std::shared_ptr<CClientConstraintConfig>;
-
-class CClientFloaterConfig : public CBasePhysicConfig
+class CClientFloaterConfig
 {
 public:
 	std::string rigidbody;
@@ -89,29 +97,66 @@ public:
 	float angularDamping{};
 };
 
-using CClientFloaterConfigSharedPtr = std::shared_ptr<CClientFloaterConfig>;
-
-class CClientRagdollAnimControlConfig : public CBasePhysicConfig
+class CClientRagdollAnimControlConfig
 {
 public:
 	int sequence{};
+	int gaitsequence{};
 	float frame{};
 	int activity{};
 };
 
-class CClientPhysicConfig : public CBasePhysicConfig
+class CClientPhysicConfig
 {
 public:
+	virtual ~CClientPhysicConfig()
+	{
+		for (auto p : RigidBodyConfigs)
+		{
+			delete p;
+		}
+		RigidBodyConfigs.clear();
+
+		for (auto p : ConstraintConfigs)
+		{
+			delete p;
+		}
+		ConstraintConfigs.clear();
+	}
+
+public:
 	int type{ PhysicConfigType_None };
-	int state{ PhysicConfigState_NotLoaded };
-	int sequence{ 0 };
-	int gaitsequence{ 0 };
-	std::vector<CClientRigidBodyConfigSharedPtr> rigidBodyConfigs;
-	std::vector<CClientConstraintConfigSharedPtr> constraintConfigs;
-	std::vector<CClientFloaterConfigSharedPtr> floaterConfigs;
-	std::vector<CClientRagdollAnimControlConfig> ragdollAnimControlConfigs;
+	std::vector<CClientRigidBodyConfig*> RigidBodyConfigs;
+	std::vector<CClientConstraintConfig*> ConstraintConfigs;
+};
+ 
+class CClientRagdollConfig : public CClientPhysicConfig
+{
+public:
+	CClientRagdollConfig()
+	{
+		type = PhysicConfigType_Ragdoll;
+	}
+
+	~CClientRagdollConfig()
+	{
+		for (auto p : FloaterConfigs)
+		{
+			delete p;
+		}
+		FloaterConfigs.clear();
+	}
+
+	std::vector<CClientFloaterConfig*> FloaterConfigs;
+	std::vector<CClientRagdollAnimControlConfig> AnimControlConfigs;
+	CClientRagdollAnimControlConfig IdleAnimConfig;
 };
 
-using CClientPhysicConfigSharedPtr = std::shared_ptr<CClientPhysicConfig>;
+class CClientPhysicConfigStorage
+{
+public:
+	int state{ PhysicConfigState_NotLoaded };
+	CClientPhysicConfig* pConfig{};
+};
 
-using CClientPhysicConfigs = std::vector<CClientPhysicConfigSharedPtr>;
+using CClientPhysicConfigs = std::vector<CClientPhysicConfigStorage>;

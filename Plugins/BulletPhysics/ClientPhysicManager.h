@@ -35,7 +35,7 @@ public:
 	virtual bool GetOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual int GetPlayerIndex() const = 0;
-	virtual int GetFlags() const = 0;
+	virtual int GetObjectFlags() const = 0;
 
 	virtual bool Update() = 0;
 	virtual void TransformOwnerEntity(int entindex) = 0;
@@ -108,9 +108,10 @@ public:
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual CClientPhysicConfigSharedPtr LoadPhysicConfigForModel(model_t* mod) = 0;
+	virtual CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent) = 0;
+	virtual void SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& ragdollIdleAnim) = 0;
 
 	//PhysicObject Management
 

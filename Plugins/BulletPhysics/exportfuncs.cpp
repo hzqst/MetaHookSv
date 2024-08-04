@@ -34,6 +34,11 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
+cvar_t* bv_debug_show_ccd = NULL;
+cvar_t* bv_debug_level_ragdoll = NULL;
+cvar_t* bv_debug_level_static = NULL;
+cvar_t* bv_debug_level_dynamic = NULL;
+cvar_t* bv_debug_level_constraint = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_enable = NULL;
 cvar_t *bv_syncview = NULL;
@@ -62,9 +67,34 @@ bool IsPhysicWorldEnabled()
 	return bv_enable->value > 0;
 }
 
-int GetPhysicDebugDrawLevel()
+bool IsDebugDrawEnabled()
 {
-	return (int)bv_debug->value;
+	return bv_debug->value > 0;
+}
+
+bool IsDebugDrawShowCCD()
+{
+	return bv_debug_show_ccd->value > 0;
+}
+
+int GetRagdollObjectDebugDrawLevel()
+{
+	return (int)bv_debug_level_ragdoll->value;
+}
+
+int GetStaticObjectDebugDrawLevel()
+{
+	return (int)bv_debug_level_static->value;
+}
+
+int GetDynamicObjectDebugDrawLevel()
+{
+	return (int)bv_debug_level_dynamic->value;
+}
+
+int GetConstraintDebugDrawLevel()
+{
+	return (int)bv_debug_level_constraint->value;
 }
 
 float GetSimulationTickRate()
@@ -1039,7 +1069,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 void BV_Reload_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_Ragdoll);
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_RagdollObject);
 	ClientPhysicManager()->LoadPhysicConfigs();
 }
 
@@ -1082,6 +1112,12 @@ void HUD_Init(void)
 	ClientPhysicManager()->Init();
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
+	bv_debug_show_ccd = gEngfuncs.pfnRegisterVariable("bv_debug_show_ccd", "0", FCVAR_CLIENTDLL);
+	bv_debug_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_level_ragdoll", "1", FCVAR_CLIENTDLL);
+	bv_debug_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_level_static", "1", FCVAR_CLIENTDLL);
+	bv_debug_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_level_dynamic", "1", FCVAR_CLIENTDLL);
+	bv_debug_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_level_constraint", "1", FCVAR_CLIENTDLL);
+
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1282,7 +1318,7 @@ void HUD_DrawTransparentTriangles(void)
 {
 	gExportfuncs.HUD_DrawTransparentTriangles();
 
-	if (AllowCheats() && GetPhysicDebugDrawLevel() > 0)
+	if (AllowCheats() && IsPhysicWorldEnabled())
 	{
 		ClientPhysicManager()->DebugDraw();
 	}
@@ -1310,7 +1346,7 @@ void HUD_CreateEntities(void)
 		ClientPhysicManager()->CreatePhysicObjectForEntity(ent);
 	}
 
-	for (int entindex = MAX_CLIENTS + 1; entindex < EngineGetMaxClientEdicts(); ++entindex)
+	for (int entindex = 0; entindex < EngineGetMaxClientEdicts(); ++entindex)
 	{
 		auto ent = gEngfuncs.GetEntityByIndex(entindex);
 

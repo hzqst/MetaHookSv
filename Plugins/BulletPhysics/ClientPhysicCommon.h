@@ -6,16 +6,34 @@ const int PhysicConfigState_LoadedWithError = 2;
 
 const int PhysicConfigType_None = 0;
 const int PhysicConfigType_Ragdoll = 1;
+const int PhysicConfigType_Dynamic = 2;
 
-const int PhysicObjectFlag_Static = 1;
-const int PhysicObjectFlag_Ragdoll = 2;
-const int PhysicObjectFlag_Any = (PhysicObjectFlag_Static | PhysicObjectFlag_Ragdoll);
+const int PhysicObjectFlag_StaticObject = 1;
+const int PhysicObjectFlag_RagdollObject = 2;
+const int PhysicObjectFlag_Any = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject);
 
 const int PhysicRigidBodyFlag_AlwaysDynamic = 1;
 const int PhysicRigidBodyFlag_AlwaysKinematic = 2;
 const int PhysicRigidBodyFlag_AlwaysStatic = 4;
-const int PhysicRigidBodyFlag_NoDebugDraw = 8;
-const int PhysicRigidBodyFlag_NoCollisionToOtherEntities = 0x10;//TODO
+const int PhysicRigidBodyFlag_NoCollisionToOtherEntities = 0x8;
+const int PhysicRigidBodyFlag_Jiggle = (PhysicRigidBodyFlag_AlwaysDynamic | PhysicRigidBodyFlag_NoCollisionToOtherEntities);
+
+const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;
+const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2 = 1;
+const int PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit = 2;
+const int PhysicConstraintFactorIdx_ConeTwistSoftness = 3;
+const int PhysicConstraintFactorIdx_ConeTwistBiasFactor = 4;
+const int PhysicConstraintFactorIdx_ConeTwistRelaxationFactor = 5;
+
+const int PhysicConstraintFactorIdx_HingeLowLimit = 0;
+const int PhysicConstraintFactorIdx_HingeHighLimit = 1;
+const int PhysicConstraintFactorIdx_HingeBiasFactor = 4;
+const int PhysicConstraintFactorIdx_HingeRelaxationFactor = 5;
+
+const int PhysicConstraintFactorIdx_ERP = 10;
+const int PhysicConstraintFactorIdx_CFM = 11;
+const int PhysicConstraintFactorIdx_StopERP = 12;
+const int PhysicConstraintFactorIdx_StopCFM = 13;
 
 const int PhysicShape_None = 0;
 const int PhysicShape_Box = 1;
