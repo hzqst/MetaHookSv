@@ -84,7 +84,7 @@ public:
 	int boneindexB{ -1 };
 	vec3_t offsetA{ 0 };
 	vec3_t offsetB{ 0 };
-	float factors[16]{ 0 };
+	float factors[32]{ NAN };
 };
 
 class CClientFloaterConfig

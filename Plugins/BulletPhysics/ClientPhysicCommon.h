@@ -30,10 +30,14 @@ const int PhysicConstraintFactorIdx_HingeHighLimit = 1;
 const int PhysicConstraintFactorIdx_HingeBiasFactor = 4;
 const int PhysicConstraintFactorIdx_HingeRelaxationFactor = 5;
 
-const int PhysicConstraintFactorIdx_ERP = 10;
-const int PhysicConstraintFactorIdx_CFM = 11;
-const int PhysicConstraintFactorIdx_StopERP = 12;
-const int PhysicConstraintFactorIdx_StopCFM = 13;
+const int PhysicConstraintFactorIdx_LinearERP = 10;
+const int PhysicConstraintFactorIdx_LinearCFM = 11;
+const int PhysicConstraintFactorIdx_LinearStopERP = 12;
+const int PhysicConstraintFactorIdx_LinearStopCFM = 13;
+const int PhysicConstraintFactorIdx_AngularERP = 14;
+const int PhysicConstraintFactorIdx_AngularCFM = 15;
+const int PhysicConstraintFactorIdx_AngularStopERP = 16;
+const int PhysicConstraintFactorIdx_AngularStopCFM = 17;
 
 const int PhysicShape_None = 0;
 const int PhysicShape_Box = 1;

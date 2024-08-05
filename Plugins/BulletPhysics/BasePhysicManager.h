@@ -97,8 +97,9 @@ public:
 	bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) override;
 	void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
-	void CreatePhysicObjectForEntity(cl_entity_t* ent) override;
-	void SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& ragdollIdleAnim) override;
+	void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t *mod) override;
+	void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& ragdollIdleAnim) override;
+	void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -130,7 +131,7 @@ private:
 
 	void CreateBarnacle(cl_entity_t* ent);
 	void CreateGargantua(cl_entity_t* ent);
-	void CreatePhysicObjectForStudioModel(cl_entity_t* ent);
-	void CreatePhysicObjectForBrushModel(cl_entity_t* ent);
-	void CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t* mod, int entindex, int playerindex);
+	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
+	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
+	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 };

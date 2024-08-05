@@ -61,6 +61,8 @@ public:
 	virtual bool IsEntityEmitted(int entindex) = 0;
 	virtual bool IsEntityEmitted(cl_entity_t* ent) = 0;
 	virtual void ClearEntityEmitStates() = 0;
+
+	virtual bool IsEntityInVisibleList(cl_entity_t* ent) = 0;
 };
 
 IClientEntityManager *ClientEntityManager();

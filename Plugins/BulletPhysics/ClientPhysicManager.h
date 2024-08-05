@@ -32,6 +32,7 @@ public:
 
 	virtual int GetEntityIndex() const = 0;
 	virtual cl_entity_t* GetClientEntity() const = 0;
+	virtual entity_state_t* GetClientEntityState() const = 0;
 	virtual bool GetOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual int GetPlayerIndex() const = 0;
@@ -44,6 +45,8 @@ public:
 
 	virtual void AddToPhysicWorld(void* world) = 0;
 	virtual void RemoveFromPhysicWorld(void* world) = 0;
+
+	virtual bool IsClientEntityNonSolid() const = 0;
 };
 
 class IPhysicObjectService : public IBaseInterface
@@ -110,8 +113,9 @@ public:
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
 	virtual CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
 
-	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent) = 0;
-	virtual void SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& ragdollIdleAnim) = 0;
+	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
+	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& IdleAnim) = 0;
+	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
 	//PhysicObject Management
 

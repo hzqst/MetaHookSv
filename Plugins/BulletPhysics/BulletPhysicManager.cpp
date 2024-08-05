@@ -270,6 +270,11 @@ public:
 		return m_entity;
 	}
 
+	entity_state_t* GetClientEntityState() const override
+	{
+		return &m_entity->curstate;
+	}
+
 	bool GetOrigin(float* v) override
 	{
 		return false;
@@ -340,6 +345,14 @@ public:
 		}
 	}
 
+	bool IsClientEntityNonSolid() const override
+	{
+		if (GetClientEntity() == r_worldentity)
+			return false;
+
+		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
 private:
 
 	btCollisionShape* CreateCollisionShape(const CStaticObjectCreationParameter& CreationParam)
@@ -372,11 +385,19 @@ private:
 
 		if (!pCollisionShape)
 		{
-			gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigid body because there is no CollisionShape available.\n");
+			gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for StaticObject because there is no CollisionShape available.\n");
 			return;
 		}
 
 		auto pMotionState = CreateMotionState(CreationParam);
+
+		if (!pMotionState)
+		{
+			delete pCollisionShape;
+
+			gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for StaticObject because there is no MotionState available.\n");
+			return;
+		}
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(0, pMotionState, pCollisionShape);
 		cInfo.m_friction = 1;
@@ -385,7 +406,16 @@ private:
 
 		m_pRigidBody = new btRigidBody(cInfo);
 
-		m_pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(cInfo, m_model->name, 0, -1, CreationParam.m_debugDrawLevel, 1));
+		m_pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
+			cInfo,
+			btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter,
+			btBroadphaseProxy::AllFilter & ~BulletPhysicCollisionFilterGroups::StaticObjectFilter,
+			m_model->name,
+			0,
+			-1,
+			CreationParam.m_debugDrawLevel,
+			1));
+
 
 		UpdateRigidBodyKinematic(m_pRigidBody);
 	}
@@ -468,6 +498,7 @@ public:
 	{
 		m_flLastCreateTime = gEngfuncs.GetClientTime();
 		m_entindex = CreationParam.m_entindex;
+		m_playerindex = CreationParam.m_playerindex;
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
 
@@ -512,6 +543,17 @@ public:
 		return m_entity;
 	}
 
+	entity_state_t *GetClientEntityState() const override
+	{
+		if (ClientEntityManager()->IsEntityDeadPlayer(m_entity) || ClientEntityManager()->IsEntityPlayer(m_entity))
+		{
+			if (m_playerindex >= 0)
+				return R_GetPlayerState(m_playerindex);
+		}
+
+		return &m_entity->curstate;
+	}
+
 	bool GetOrigin(float* v) override
 	{
 		if (m_pelvisRigBody)
@@ -549,7 +591,7 @@ public:
 	{
 		//TODO
 
-		ClientPhysicManager()->SetupIdleBonesForRagdoll(GetClientEntity(), GetModel(), GetEntityIndex(), GetPlayerIndex(), m_IdleAnimConfig);
+		//ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), GetClientEntityState(), GetModel(), GetEntityIndex(), GetPlayerIndex(), m_IdleAnimConfig);
 		
 	}
 
@@ -641,6 +683,7 @@ public:
 			else if (iOldActivityType > 0 && GetActivityType() == 0)
 			{
 				ResetPose(playerState);
+				return true;
 			}
 		}
 
@@ -650,6 +693,13 @@ public:
 			VectorDistance(GetClientEntity()->curstate.origin, GetClientEntity()->latched.prevorigin) > 500)
 		{
 			ResetPose(playerState);
+			return true;
+		}
+
+		if (!ClientEntityManager()->IsEntityInVisibleList(GetClientEntity()))
+		{
+			//Force bones update
+			ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), GetClientEntityState(), GetModel(), GetEntityIndex(), GetPlayerIndex());
 		}
 
 		return true;
@@ -776,6 +826,14 @@ public:
 		{
 			dynamicWorld->removeRigidBody(RigidBody);
 		}
+	}
+
+	bool IsClientEntityNonSolid() const override
+	{
+		if (GetActivityType() > 0)
+			return false;
+
+		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
 	}
 
 private:
@@ -928,11 +986,12 @@ private:
 				return nullptr;
 			}
 
-			btVector3 boneorigin = bonematrix.getOrigin();
+			const auto &boneorigin = bonematrix.getOrigin();
 
 			btVector3 pboneorigin((*pbonetransform)[pConfig->pboneindex][0][3], (*pbonetransform)[pConfig->pboneindex][1][3], (*pbonetransform)[pConfig->pboneindex][2][3]);
 
 			btVector3 vecDirection = pboneorigin - boneorigin;
+
 			vecDirection = vecDirection.normalize();
 
 			btVector3 vecOriginWorldSpace = boneorigin + vecDirection * pConfig->pboneoffset;
@@ -941,6 +1000,7 @@ private:
 			bonematrix2.setOrigin(vecOriginWorldSpace);
 
 			btVector3 fwd(0, 1, 0);
+
 			auto rigidTransformWorldSpace = MatrixLookAt(bonematrix2, pboneorigin, fwd);
 
 			btTransform offsetmatrix;
@@ -1103,9 +1163,9 @@ private:
 			return nullptr;
 		}
 
-		if (pRigidConfig->mass <= 0)
+		if (pRigidConfig->mass < 0)
 		{
-			gEngfuncs.Con_Printf("CreateRigidBody: cannot create \"%s\" because mass <= 0.\n", pRigidConfig->name.c_str());
+			gEngfuncs.Con_Printf("CreateRigidBody: cannot create \"%s\" because mass < 0.\n", pRigidConfig->name.c_str());
 			return nullptr;
 		}
 
@@ -1141,7 +1201,15 @@ private:
 
 		auto pRigidBody = new btRigidBody(cInfo);
 
-		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(cInfo, pRigidConfig->name, pRigidConfig->flags, pRigidConfig->boneindex, pRigidConfig->debugDrawLevel, pRigidConfig->density));
+		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
+			cInfo,
+			btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter,
+			btBroadphaseProxy::AllFilter,
+			pRigidConfig->name,
+			pRigidConfig->flags,
+			pRigidConfig->boneindex, 
+			pRigidConfig->debugDrawLevel, 
+			pRigidConfig->density));
 
 		pRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
 		pRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
@@ -1159,6 +1227,76 @@ private:
 		{
 		case PhysicConstraint_ConeTwist:
 		{
+			auto spanLimit1 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1];
+
+			if (isnan(spanLimit1))
+				return nullptr;
+
+			auto spanLimit2 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2];
+
+			if (isnan(spanLimit2))
+				return nullptr;
+
+			auto twistLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit];
+
+			if (isnan(twistLimit))
+				return nullptr;
+
+			auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSoftness];
+			
+			if (isnan(softness))
+				softness = 0.8f;
+
+			auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistBiasFactor];
+
+			if (isnan(biasFactor))
+				biasFactor = 0.3f;
+
+			auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistRelaxationFactor];
+
+			if (isnan(relaxationFactor))
+				relaxationFactor = 1;
+
+			auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+
+			if (isnan(LinearERP))
+				LinearERP = 0.15f;
+
+			auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+
+			if (isnan(LinearCFM))
+				LinearCFM = 0.01f;
+
+			auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
+
+			if (isnan(LinearStopERP))
+				LinearStopERP = 0.3f;
+
+			auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
+
+			if (isnan(LinearStopCFM))
+				LinearStopCFM = 0.001f;
+
+			auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
+
+			if (isnan(AngularERP))
+				AngularERP = 0.15f;
+
+			auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+
+			if (isnan(AngularCFM))
+				AngularCFM = 0.01f;
+
+			auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+
+			if (isnan(AngularStopERP))
+				AngularStopERP = 0.3f;
+
+			auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
+
+			if (isnan(AngularStopCFM))
+				AngularStopCFM = 0.01f;
+
 			const auto& worldTransA = rbA->getWorldTransform();
 
 			const auto& worldTransB = rbB->getWorldTransform();
@@ -1169,11 +1307,85 @@ private:
 			btTransform localB;
 			localB.mult(worldTransB.inverse(), globalJointTransform);
 
-			pConstraint = new btConeTwistConstraint(*rbA, *rbB, localA, localB);
+			auto pConeTwist = new btConeTwistConstraint(*rbA, *rbB, localA, localB);
+
+			pConeTwist->setLimit(spanLimit1 * M_PI, spanLimit2 * M_PI, twistLimit * M_PI, softness, biasFactor, relaxationFactor);
+
+			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
+			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
+			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
+			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
+			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+
+			pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 3);
+			pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 4);
+			pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+			pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
+
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 4);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
+			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
+
+			pConstraint = pConeTwist;
+
 			break;
 		}
 		case PhysicConstraint_Hinge:
 		{
+			auto lowLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit];
+
+			if (isnan(lowLimit))
+				return nullptr;
+
+			auto highLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit];
+
+			if (isnan(highLimit))
+				return nullptr;
+
+			auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSoftness];
+
+			if (isnan(softness))
+				softness = 0.8f;
+
+			auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistBiasFactor];
+
+			if (isnan(biasFactor))
+				biasFactor = 0.3f;
+
+			auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistRelaxationFactor];
+
+			if (isnan(relaxationFactor))
+				relaxationFactor = 1;
+
+			auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
+
+			if (isnan(AngularERP))
+				AngularERP = 0.15f;
+
+			auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+
+			if (isnan(AngularCFM))
+				AngularCFM = 0.01f;
+
+			auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+
+			if (isnan(AngularStopERP))
+				AngularStopERP = 0.3f;
+
+			auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
+
+			if (isnan(AngularStopCFM))
+				AngularStopCFM = 0.01f;
+
 			const auto& worldTransA = rbA->getWorldTransform();
 
 			const auto& worldTransB = rbB->getWorldTransform();
@@ -1184,11 +1396,41 @@ private:
 			btTransform localB;
 			localB.mult(worldTransB.inverse(), globalJointTransform);
 
-			pConstraint = new btHingeConstraint(*rbA, *rbB, localA, localB);
+			auto pHinge = new btHingeConstraint(*rbA, *rbB, localA, localB);
+
+			pHinge->setLimit(lowLimit, highLimit, softness, biasFactor, relaxationFactor);
+
+			pHinge->setParam(BT_CONSTRAINT_ERP, AngularERP, 5);
+			pHinge->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
+
+			pHinge->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
+			pHinge->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
+
+			pConstraint = pHinge;
 			break;
 		}
 		case PhysicConstraint_Point:
 		{
+			auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+
+			if (isnan(LinearERP))
+				LinearERP = 0.15f;
+
+			auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+
+			if (isnan(LinearCFM))
+				LinearCFM = 0.01f;
+
+			auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
+
+			if (isnan(LinearStopERP))
+				LinearStopERP = 0.3f;
+
+			auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
+
+			if (isnan(LinearStopCFM))
+				LinearStopCFM = 0.01f;
+
 			const auto& worldTransA = rbA->getWorldTransform();
 
 			const auto& worldTransB = rbB->getWorldTransform();
@@ -1199,7 +1441,24 @@ private:
 			btTransform localB;
 			localB.mult(worldTransB.inverse(), globalJointTransform);
 
-			pConstraint = new btPoint2PointConstraint(*rbA, *rbB, localA.getOrigin(), localB.getOrigin());
+			auto pPoint2Point = new btPoint2PointConstraint(*rbA, *rbB, localA.getOrigin(), localB.getOrigin());
+
+			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
+			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
+			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
+			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
+			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
+			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+
+			pConstraint = pPoint2Point;
+
 			break;
 		}
 		}
@@ -1487,6 +1746,42 @@ public:
 	}
 };
 
+class CBulletOverlapFilterCallback : public btOverlapFilterCallback
+{
+	// return true when pairs need collision
+	bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override
+	{
+		bool collides = (proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask) != 0;
+		collides = collides && (proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+
+		if (collides)
+		{
+			auto pClientObjectA = (btCollisionObject*)proxy0->m_clientObject;
+			auto pClientObjectB = (btCollisionObject*)proxy1->m_clientObject;
+
+			auto pRigidBodyA = btRigidBody::upcast(pClientObjectA);
+			auto pRigidBodyB = btRigidBody::upcast(pClientObjectB);
+
+			if (pRigidBodyA)
+			{
+				auto pPhysicObjectA = GetPhysicObjectFromRigidBody(pRigidBodyA);
+				if (pPhysicObjectA && pPhysicObjectA->IsClientEntityNonSolid()) {
+					return false;
+				}
+			}
+
+			if (pRigidBodyB)
+			{
+				auto pPhysicObjectB = GetPhysicObjectFromRigidBody(pRigidBodyB);
+				if (pPhysicObjectB && pPhysicObjectB->IsClientEntityNonSolid()) {
+					return false;
+				}
+			}
+		}
+		return collides;
+	}
+};
+
 void CBulletPhysicManager::Init(void)
 {
 	CBasePhysicManager::Init();
@@ -1500,7 +1795,7 @@ void CBulletPhysicManager::Init(void)
 	m_debugDraw = new CBulletPhysicsDebugDraw;
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
 
-	//m_overlapFilterCallback = new GameFilterCallback();
+	m_overlapFilterCallback = new CBulletOverlapFilterCallback();
 	m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(m_overlapFilterCallback);
 
 	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
@@ -1509,6 +1804,12 @@ void CBulletPhysicManager::Init(void)
 void CBulletPhysicManager::Shutdown()
 {
 	CBasePhysicManager::Shutdown();
+
+	if (m_overlapFilterCallback) {
+		delete m_overlapFilterCallback;
+		m_overlapFilterCallback = nullptr;
+		m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(nullptr);
+	}
 
 	if (m_debugDraw) {
 		delete m_debugDraw;
@@ -1608,7 +1909,7 @@ void CBulletPhysicManager::DebugDraw(void)
 		{
 			if (GetConstraintDebugDrawLevel() >= pSharedUserData->m_debugDrawLevel)
 			{
-				pConstraint->setDbgDrawSize(1);
+				pConstraint->setDbgDrawSize(3);
 			}
 			else
 			{

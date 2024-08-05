@@ -179,7 +179,8 @@ typedef enum
 
 #define STUDIO_RENDER 1
 #define STUDIO_EVENTS 2
-#define STUDIO_RAGDOLL 4
+#define STUDIO_RAGDOLL_SETUP_BONES 4
+#define STUDIO_RAGDOLL_UPDATE_BONES 8
 
 // lighting options
 #define STUDIO_NF_FLATSHADE		0x0001

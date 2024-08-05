@@ -37,11 +37,12 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_Any);
+	LoadPhysicConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
 	GenerateBarnacleIndexVertexArray();
 	GenerateGargantuaIndexVertexArray();
-	CreatePhysicObjectForBrushModel(r_worldentity);
+	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
 }
 
 void CBasePhysicManager::DebugDraw(void)
@@ -125,15 +126,17 @@ void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* studiohdr, int entindex
 
 bool CBasePhysicManager::TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex)
 {
-	auto PhysicObject = GetPhysicObject(old_entindex);
+	auto pPhysicObject = GetPhysicObject(old_entindex);
 
-	if (PhysicObject)
+	if (pPhysicObject)
 	{
 		m_physicObjects.erase(old_entindex);
 
-		AddPhysicObject(new_entindex, PhysicObject);
+		RemovePhysicObject(new_entindex);
 
-		PhysicObject->TransformOwnerEntity(new_entindex);
+		m_physicObjects[new_entindex] = pPhysicObject;
+
+		pPhysicObject->TransformOwnerEntity(new_entindex);
 
 		return true;
 	}
@@ -219,6 +222,7 @@ static bool ParseRigidBodyLine(CClientRagdollConfig* pRagdollConfig, const std::
 		}
 		else if (shapeType == "capsule") {
 			shapeConfig->type = PhysicShape_Capsule;
+			shapeConfig->direction = PhysicShapeDirection_Y;
 			shapeConfig->size[0] = size0;
 			shapeConfig->size[1] = size1;
 		}
@@ -257,9 +261,16 @@ static bool ParseConstraintLine(CClientRagdollConfig* pRagdollConfig, const std:
 		constraintConfig->offsetB[0] = offsetBX;
 		constraintConfig->offsetB[1] = offsetBY;
 		constraintConfig->offsetB[2] = offsetBZ;
+
+		for (int i = 0; i < _ARRAYSIZE(constraintConfig->factors); ++i)
+		{
+			constraintConfig->factors[i] = NAN;
+		}
+		
 		constraintConfig->factors[0] = factor0;
 		constraintConfig->factors[1] = factor1;
 		constraintConfig->factors[2] = factor2;
+
 		constraintConfig->isLegacyConfig = true;
 
 		if (constraintType == "point" || constraintType == "point_collision") {
@@ -421,34 +432,30 @@ CClientPhysicConfig* CBasePhysicManager::LoadPhysicConfigForModel(model_t* mod)
 
 	auto& Storage = m_physicConfigs[modelindex];
 
-	if (Storage.state != PhysicConfigState_NotLoaded)
-		return Storage.pConfig;
-
-	Storage.pConfig = new CClientPhysicConfig;
-
-	LoadPhysicConfigFromFiles(Storage, mod->name);
+	if (Storage.state == PhysicConfigState_NotLoaded)
+		LoadPhysicConfigFromFiles(Storage, mod->name);
 
 	return Storage.pConfig;
 }
 
-void CBasePhysicManager::CreatePhysicObjectForEntity(cl_entity_t* ent)
+void CBasePhysicManager::CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t *mod)
 {
-	auto mod = ent->model;
-
-	if (!mod)
-		return;
+	auto saved_currententity = (*currententity);
+	(*currententity) = ent;
 
 	if (mod->type == mod_studio)
 	{
-		CreatePhysicObjectForStudioModel(ent);
+		CreatePhysicObjectForStudioModel(ent, state, mod);
 	}
-	else if (mod->type == mod_brush && ent->curstate.solid == SOLID_BSP)
+	else if (mod->type == mod_brush && state->solid == SOLID_BSP)
 	{
-		CreatePhysicObjectForBrushModel(ent);
+		CreatePhysicObjectForBrushModel(ent, state, mod);
 	}
+
+	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
+void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod)
 {
 	//TODO Port barnacle and garg to Configs ?
 	if (ClientEntityManager()->IsEntityNetworkEntity(ent))
@@ -456,8 +463,11 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
 		{
 			auto entindex = ent->index;
-			auto playerindex = ent->curstate.renderamt;
+			auto playerindex = state->renderamt;
 			auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+			if (!model)
+				return;
 
 			if (g_bIsCounterStrike)
 			{
@@ -477,14 +487,17 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
 					return;
 
-				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
 		else if (ClientEntityManager()->IsEntityPlayer(ent))
 		{
 			auto entindex = ent->index;
-			auto playerindex = ent->index;
+			auto playerindex = state->number;
 			auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+			if (!model)
+				return;
 
 			if (g_bIsCounterStrike)
 			{
@@ -501,13 +514,16 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 			}
 			else
 			{
-				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
 		else
 		{
 			auto entindex = ent->index;
-			auto model = ent->model;
+			auto model = mod;
+
+			if (!model)
+				return;
 
 			if (ClientEntityManager()->IsEntityBarnacle(ent))
 			{
@@ -526,7 +542,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 			}
 			else
 			{
-				CreatePhysicObjectFromConfig(ent, model, entindex, 0);
+				CreatePhysicObjectFromConfig(ent, state, model, entindex, 0);
 			}
 		}
 	}
@@ -536,7 +552,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 		{
 			auto entindex = ClientEntityManager()->GetEntityIndex(ent);
 			auto playerindex = ent->curstate.owner;
-			auto model = ent->model;
+			auto model = mod;
+
+			if (!model)
+				return;
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -549,7 +568,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
 					return;
 
-				CreatePhysicObjectFromConfig(ent, model, entindex, playerindex);
+				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
 		else
@@ -559,16 +578,50 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent)
 	}
 }
 
-void CBasePhysicManager::SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig & idleAnim)
+void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex)
 {
-	auto pSavedCurrentEntity = (*currententity);
+	auto saved_currententity = (*currententity);
 	(*currententity) = ent;
 
 	if (playerindex > 0)
 	{
-		const auto playerState = R_GetPlayerState(playerindex);
+		auto fakePlayerState = *state;
 
-		auto fakePlayerState = *playerState;
+		fakePlayerState.number = playerindex;
+
+		vec3_t vecSavedOrigin, vecSavedAngles;
+		VectorCopy((*currententity)->origin, vecSavedOrigin);
+		VectorCopy((*currententity)->angles, vecSavedAngles);
+
+		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+		if (pLocalPlayer && pLocalPlayer->index == playerindex)
+		{
+			VectorCopy(r_params.simorg, (*currententity)->origin);
+			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+		}
+
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_UPDATE_BONES, &fakePlayerState);
+
+		VectorCopy(vecSavedOrigin, (*currententity)->origin);
+		VectorCopy(vecSavedAngles, (*currententity)->angles);
+	}
+	else
+	{
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_UPDATE_BONES);
+	}
+
+	(*currententity) = saved_currententity;
+}
+
+void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig & idleAnim)
+{
+	auto saved_currententity = (*currententity);
+	(*currententity) = ent;
+
+	if (playerindex > 0)
+	{
+		auto fakePlayerState = *state;
 
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
@@ -576,10 +629,22 @@ void CBasePhysicManager::SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod
 		fakePlayerState.gaitsequence = idleAnim.gaitsequence;
 		fakePlayerState.frame = idleAnim.frame;
 
-		VectorCopy(ent->curstate.angles, fakePlayerState.angles);
-		VectorCopy(ent->curstate.origin, fakePlayerState.origin);
+		vec3_t vecSavedOrigin, vecSavedAngles;
+		VectorCopy((*currententity)->origin, vecSavedOrigin);
+		VectorCopy((*currententity)->angles, vecSavedAngles);
 
-		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL, &fakePlayerState);
+		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+		if (pLocalPlayer && pLocalPlayer->index == playerindex)
+		{
+			VectorCopy(r_params.simorg, (*currententity)->origin);
+			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+		}
+
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_SETUP_BONES, &fakePlayerState);
+
+		VectorCopy(vecSavedOrigin, (*currententity)->origin);
+		VectorCopy(vecSavedAngles, (*currententity)->angles);
 	}
 	else
 	{
@@ -593,7 +658,7 @@ void CBasePhysicManager::SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod
 		ent->curstate.gaitsequence = idleAnim.gaitsequence;
 		ent->curstate.frame = idleAnim.frame;
 
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL);
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
 
 		ent->curstate.weaponmodel = 0;
 		ent->curstate.sequence = iSavedSequence;
@@ -601,10 +666,10 @@ void CBasePhysicManager::SetupIdleBonesForRagdoll(cl_entity_t* ent, model_t* mod
 		ent->curstate.frame = flSavedFrame;
 	}
 
-	(*currententity) = pSavedCurrentEntity;
+	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t* mod, int entindex, int playerindex)
+void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex)
 {
 	auto pPhysicConfig = ClientPhysicManager()->LoadPhysicConfigForModel(mod);
 
@@ -615,7 +680,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t*
 	{
 		auto pRagdollConfig = (CClientRagdollConfig*)pPhysicConfig;
 
-		SetupIdleBonesForRagdoll(ent, mod, entindex, playerindex, pRagdollConfig->IdleAnimConfig);
+		SetupBonesForRagdoll(ent, state, mod, entindex, playerindex, pRagdollConfig->IdleAnimConfig);
 
 		CRagdollObjectCreationParameter CreationParam;
 
@@ -644,11 +709,9 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, model_t*
 	}
 }
 
-void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent)
+void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod)
 {
 	auto entindex = ClientEntityManager()->GetEntityIndex(ent);
-
-	auto mod = ent->model;
 
 	auto pPhysicObject = GetPhysicObject(entindex);
 

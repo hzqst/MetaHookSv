@@ -679,6 +679,49 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
 	}
+
+	if (1)
+	{
+		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x02\x00\x00";
+		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern);
+		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
+
+		cl_numvisedicts = *(decltype(cl_numvisedicts)*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
+
+		g_pMetaHookAPI->DisasmRanges(ClientDLL_AddEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+
+				if (!cl_visedicts &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == X86_REG_ECX &&
+					pinst->detail->x86.operands[0].mem.scale == 4 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{
+					//.text:01D198C9 89 04 8D 00 3A 6E 02                                mov     cl_visedicts[ecx*4], eax
+					//.text:01D0C7C5 89 14 8D C0 F0 D5 02                                mov     cl_visedicts[ecx*4], edx
+					DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+					cl_visedicts = (decltype(cl_visedicts))imm;
+				}
+
+				if (cl_visedicts)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(cl_visedicts);
+	}
 }
 
 void Client_FillAddress(void)

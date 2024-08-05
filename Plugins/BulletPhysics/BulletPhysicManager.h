@@ -7,6 +7,14 @@
 
 #include "BasePhysicManager.h"
 
+enum BulletPhysicCollisionFilterGroups
+{
+	RagdollObjectFilter = 0x40,
+	DynamicObjectFilter = 0x80,
+	StaticObjectFilter = 0x100,
+	WorldFilter = 0x200,
+};
+
 class CBulletBaseSharedUserData
 {
 public:
@@ -39,27 +47,40 @@ public:
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
 {
 public:
-	CBulletRigidBodySharedUserData(const btRigidBody::btRigidBodyConstructionInfo& info, const std::string & name, int flags, int boneindex, int debugDrawLevel, float density)
+	CBulletRigidBodySharedUserData(const btRigidBody::btRigidBodyConstructionInfo& info,
+		int group, int mask,
+		const std::string & name,
+		int flags,
+		int boneindex,
+		int debugDrawLevel,
+		float density)
 	{
 		m_mass = info.m_mass;
 		m_inertia = info.m_localInertia;
 
+		m_group = group;
+		m_mask = mask;
+
 		m_name = name;
+
 		m_flags = flags;
+		m_boneindex = boneindex;
 		m_debugDrawLevel = debugDrawLevel;
 		m_density = density;
 	}
 
-	std::string m_name;
-	int m_flags{};
-
 	float m_mass{};
-	float m_density{};
 	btVector3 m_inertia{};
+
 	int m_group{};
 	int m_mask{};
+
+	std::string m_name;
+
+	int m_flags{};
 	int m_boneindex{ -1 };
 	int m_debugDrawLevel{ 0 };
+	float m_density{ 1 };
 };
 
 class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData

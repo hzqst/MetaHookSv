@@ -164,7 +164,7 @@ public:
 
 	bool IsEntityPlayer(cl_entity_t* ent) override
 	{
-		if (ent->player && IsEntityNetworkEntity(ent))
+		if (IsEntityNetworkEntity(ent))
 		{
 			auto entindex = GetEntityIndex(ent);
 
@@ -497,11 +497,6 @@ public:
 		return NULL;
 	}
 
-	void ClearEntityEmitStates() override
-	{
-		m_EmittedEntity.clear();
-	}
-
 	void SetEntityEmitted(int entindex) override
 	{
 		m_EmittedEntity.emplace(entindex);
@@ -522,6 +517,21 @@ public:
 		return IsEntityEmitted(GetEntityIndex(ent));
 	}
 
+	void ClearEntityEmitStates() override
+	{
+		m_EmittedEntity.clear();
+	}
+
+	bool IsEntityInVisibleList(cl_entity_t* ent) override
+	{
+		for (int i = 0; i < (*cl_numvisedicts); ++i)
+		{
+			if (cl_visedicts[i] == ent)
+				return true;
+		}
+
+		return false;
+	}
 };
 
 static CClientEntityManager g_ClientEntityManager;

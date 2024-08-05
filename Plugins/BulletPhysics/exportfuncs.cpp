@@ -60,6 +60,9 @@ cl_entity_t* r_worldentity = NULL;
 int* cl_max_edicts = NULL;
 cl_entity_t** cl_entities = NULL;
 
+int* cl_numvisedicts = NULL;
+cl_entity_t** cl_visedicts = NULL;
+
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
 bool IsPhysicWorldEnabled()
@@ -322,9 +325,22 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		return pfnDrawModel(pthis, 0, flags);
 	}
 
-	if (flags & STUDIO_RAGDOLL)
+	if (flags & STUDIO_RAGDOLL_SETUP_BONES)
 	{
-		return pfnDrawModel(pthis, 0, flags);
+		return pfnDrawModel(pthis, 0, 0);
+	}
+
+	if (flags & STUDIO_RAGDOLL_UPDATE_BONES)
+	{
+		int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
+
+		g_iRagdollRenderEntIndex = entindex;
+
+		int result = pfnDrawModel(pthis, 0, 0);
+
+		g_iRagdollRenderEntIndex = 0;
+
+		return result;
 	}
 
 	if (flags & STUDIO_RENDER)
@@ -396,9 +412,22 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 	int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
 	int playerindex = pplayer->number;
 
-	if (flags & STUDIO_RAGDOLL)
+	if (flags & STUDIO_RAGDOLL_SETUP_BONES)
 	{
 		return pfnDrawPlayer(pthis, 0, 0, pplayer);
+	}
+
+	if (flags & STUDIO_RAGDOLL_UPDATE_BONES)
+	{
+		int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
+
+		g_iRagdollRenderEntIndex = entindex;
+
+		int result = pfnDrawPlayer(pthis, 0, 0, pplayer);
+
+		g_iRagdollRenderEntIndex = 0;
+
+		return result;
 	}
 
 	if (flags & STUDIO_RENDER)
@@ -1169,10 +1198,12 @@ void HUD_TempEntUpdate(
 	{
 		auto ent = &pTemp->entity;
 
-		ClientEntityManager()->SetEntityEmitted(ent);
+		if (ent->model)
+		{
+			ClientEntityManager()->SetEntityEmitted(ent);
 
-		ClientPhysicManager()->CreatePhysicObjectForEntity(ent);
-
+			ClientPhysicManager()->CreatePhysicObjectForEntity(ent, &ent->curstate, ent->model);
+		}
 		pTemp = pTemp->next;
 	}
 
@@ -1328,6 +1359,8 @@ void HUD_CreateEntities(void)
 {
 	gExportfuncs.HUD_CreateEntities();
 
+	auto localplayer = gEngfuncs.GetLocalPlayer();
+
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		auto state = R_GetPlayerState(i);
@@ -1338,12 +1371,12 @@ void HUD_CreateEntities(void)
 		if (!state->modelindex || (state->effects & EF_NODRAW))
 			continue;
 
-		auto entindex = i + 1;
+		auto entindex = state->number;
 		auto ent = gEngfuncs.GetEntityByIndex(entindex);
 
 		ClientEntityManager()->SetEntityEmitted(ent);
 
-		ClientPhysicManager()->CreatePhysicObjectForEntity(ent);
+		ClientPhysicManager()->CreatePhysicObjectForEntity(ent, state, gEngfuncs.hudGetModelByIndex(state->modelindex));
 	}
 
 	for (int entindex = 0; entindex < EngineGetMaxClientEdicts(); ++entindex)
@@ -1365,8 +1398,12 @@ void HUD_CreateEntities(void)
 		if (ent->curstate.messagenum != (*cl_parsecount))
 			continue;
 
+		//CL_ProcessEntityUpdate not called yet..?
+		if (ent->curstate.number != entindex)
+			continue;
+
 		ClientEntityManager()->SetEntityEmitted(ent);
 
-		ClientPhysicManager()->CreatePhysicObjectForEntity(ent);
+		ClientPhysicManager()->CreatePhysicObjectForEntity(ent, &ent->curstate, ent->model);
 	}
 }
