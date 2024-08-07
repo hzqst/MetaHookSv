@@ -88,6 +88,7 @@ public:
 
 	virtual bool UpdateKinematic(int iActivityType, entity_state_t* curstate) = 0;
 	virtual void ResetPose(entity_state_t* curstate) = 0;
+	virtual void UpdatePose(entity_state_t* curstate) = 0;
 	virtual void ApplyBarnacle(cl_entity_t* barnacle_entity) = 0;
 	virtual void ApplyGargantua(cl_entity_t* gargantua_entity) = 0;
 	virtual bool SyncFirstPersonView(cl_entity_t* ent, struct ref_params_s* pparams) = 0;
@@ -114,7 +115,8 @@ public:
 	virtual CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
-	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& IdleAnim) = 0;
+	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
+	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& OverrideAnim) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
 	//PhysicObject Management

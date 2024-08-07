@@ -91,5 +91,17 @@
     <ClInclude Include="ClientPhysicCommon.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="BaseRagdollObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletRagdollObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseStaticObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletStaticObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

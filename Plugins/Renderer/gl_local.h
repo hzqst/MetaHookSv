@@ -164,6 +164,7 @@ extern float* g_iFogColor_SCClient;
 extern float* g_iStartDist_SCClient;
 extern float* g_iEndDist_SCClient;
 
+extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 
 extern bool g_bPortalClipPlaneEnabled[6];

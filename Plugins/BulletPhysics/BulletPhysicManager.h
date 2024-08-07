@@ -123,7 +123,7 @@ CBulletBoneMotionState : public CBulletBaseMotionState
 {
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	CBulletBoneMotionState(IPhysicObject* pPhysicObject,const btTransform& bm, const btTransform& om) : CBulletBaseMotionState(pPhysicObject), m_bonematrix(bm), m_offsetmatrix(om), m_initialbonematrix(bm)
+	CBulletBoneMotionState(IPhysicObject* pPhysicObject,const btTransform& bm, const btTransform& om) : CBulletBaseMotionState(pPhysicObject), m_bonematrix(bm), m_offsetmatrix(om)
 	{
 
 	}
@@ -145,7 +145,6 @@ public:
 public:
 	btTransform m_bonematrix;
 	btTransform m_offsetmatrix;
-	btTransform m_initialbonematrix;
 };
 
 class IPhysicObject;
@@ -196,3 +195,20 @@ public:
 	void AddPhysicObjectToWorld(IPhysicObject* PhysicObject) override;
 	void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject) override;
 };
+
+CBulletRigidBodySharedUserData* GetSharedUserDataFromRigidBody(btRigidBody* RigidBody);
+CBulletConstraintSharedUserData* GetSharedUserDataFromConstraint(btTypedConstraint* Constraint);
+CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape* pCollisionShape);
+
+IPhysicObject* GetPhysicObjectFromRigidBody(btRigidBody* pRigidBody);
+
+void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
+void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody);
+void OnBeforeDeleteBulletConstraint(btTypedConstraint* pConstraint);
+
+void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
+void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);
+void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler);
+void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix);
+btTransform MatrixLookAt(const btTransform& transform, const btVector3& at, const btVector3& forward);
+btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection);

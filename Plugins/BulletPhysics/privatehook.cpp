@@ -45,7 +45,9 @@ TEMPENTITY* gTempEnts = NULL;
 
 //Sven Co-op only
 int* allow_cheats = NULL;
-int* g_bRenderingPortals_SCClient = NULL;
+
+int* g_iWaterLevel = NULL;
+bool* g_bRenderingPortals_SCClient = NULL;
 
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;

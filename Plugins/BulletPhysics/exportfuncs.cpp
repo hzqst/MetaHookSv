@@ -80,6 +80,11 @@ bool IsDebugDrawShowCCD()
 	return bv_debug_show_ccd->value > 0;
 }
 
+bool ShouldSyncronizeView()
+{
+	return bv_syncview->value > 0;
+}
+
 int GetRagdollObjectDebugDrawLevel()
 {
 	return (int)bv_debug_level_ragdoll->value;
@@ -103,6 +108,11 @@ int GetConstraintDebugDrawLevel()
 float GetSimulationTickRate()
 {
 	return bv_simrate->value;
+}
+
+bool R_IsRenderingPortals()
+{
+	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient);
 }
 
 bool AllowCheats()
@@ -141,7 +151,6 @@ int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
 		pseqdesc->activity == ACT_DIESIMPLE ||
 		pseqdesc->activity == ACT_DIEBACKWARD ||
 		pseqdesc->activity == ACT_DIEFORWARD ||
-		pseqdesc->activity == ACT_DIEVIOLENT ||
 		pseqdesc->activity == ACT_DIEVIOLENT ||
 		pseqdesc->activity == ACT_DIE_HEADSHOT ||
 		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
@@ -1244,7 +1253,7 @@ void HUD_Shutdown(void)
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	memcpy(&r_params, pparams, sizeof(r_params));
-	auto local = gEngfuncs.GetLocalPlayer();
+	auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 	if (pparams->intermission)
 		goto skip;
@@ -1255,51 +1264,43 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	if (pparams->nextView)
 		goto skip;
 
-	if (g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient))
+	if (R_IsRenderingPortals())
 		goto skip;
 
-	if (local && local->player && bv_syncview->value)
+	if (pLocalPlayer && pLocalPlayer->player && ShouldSyncronizeView())
 	{
-		auto spectating_player = local;
+		auto pSpectatingPlayer = pLocalPlayer;
 
 		if (g_iUser1 && g_iUser2 && (*g_iUser1))
 		{
-			spectating_player = gEngfuncs.GetEntityByIndex((*g_iUser2));
+			pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
 		}
 
-		if (!CL_IsFirstPersonMode(spectating_player))
+		if (!CL_IsFirstPersonMode(pSpectatingPlayer))
 		{
-			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
 
-			if (PhysicObject && PhysicObject->IsRagdollObject())
+			if (pPhysicObject && pPhysicObject->IsRagdollObject())
 			{
-				auto RagdollObject = (IRagdollObject*)PhysicObject;
+				auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-				if (RagdollObject->GetActivityType() != 0)
+				if (pRagdollObject->GetActivityType() != 0)
 				{
-					vec3_t save_simorg;
-					vec3_t save_origin_spec;
+					vec3_t vecSavedSimOrgigin;
+					vec3_t vecSavedOrigin;
+					vec3_t vecNewOrigin;
 
-					VectorCopy(pparams->simorg, save_simorg);
-					VectorCopy(spectating_player->origin, save_origin_spec);
+					VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+					VectorCopy(pSpectatingPlayer->origin, vecSavedOrigin);
 
-					RagdollObject->GetOrigin(spectating_player->origin);
-					VectorCopy(spectating_player->origin, pparams->simorg);
-
-					if (spectating_player != local)
-					{
-						auto RagdollObject_Spectating = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
-
-						if (RagdollObject_Spectating)
-						{
-							RagdollObject_Spectating->GetOrigin(spectating_player->origin);
-						}
-					}
+					pRagdollObject->GetOrigin(vecNewOrigin);
+					VectorCopy(vecNewOrigin, pSpectatingPlayer->origin);
+					VectorCopy(vecNewOrigin, pparams->simorg);
 
 					gExportfuncs.V_CalcRefdef(pparams);
 
-					VectorCopy(save_origin_spec, spectating_player->origin);
-					VectorCopy(save_simorg, pparams->simorg);
+					VectorCopy(vecSavedOrigin, pSpectatingPlayer->origin);
+					VectorCopy(vecSavedSimOrgigin, pparams->simorg);
 
 					return;
 				}
@@ -1307,7 +1308,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 		}
 		else
 		{
-			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
 
 			if (PhysicObject && PhysicObject->IsRagdollObject())
 			{
@@ -1315,26 +1316,26 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 				if (RagdollObject->GetActivityType() != 0)
 				{
-					if (g_bIsCounterStrike && spectating_player->index == gEngfuncs.GetLocalPlayer()->index)
+					if (g_bIsCounterStrike && pSpectatingPlayer->index == pLocalPlayer->index)
 					{
 						if (g_iUser1 && !(*g_iUser1))
 							goto skip;
 					}
 
-					vec3_t save_simorg;
-					vec3_t save_cl_viewangles;
-					int save_health = pparams->health;
+					vec3_t vecSavedSimOrgigin;
+					vec3_t vecSavedClientViewAngles;
+					int iSavedHealth = pparams->health;
 
-					VectorCopy(pparams->simorg, save_simorg);
-					VectorCopy(pparams->cl_viewangles, save_cl_viewangles);
+					VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+					VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
 
-					RagdollObject->SyncFirstPersonView(spectating_player, pparams);
+					RagdollObject->SyncFirstPersonView(pSpectatingPlayer, pparams);
 
 					gExportfuncs.V_CalcRefdef(pparams);
 
-					VectorCopy(save_simorg, pparams->simorg);
-					VectorCopy(save_cl_viewangles, pparams->cl_viewangles);
-					pparams->health = save_health;
+					VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+					VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
+					pparams->health = iSavedHealth;
 
 					return;
 				}

@@ -42,12 +42,14 @@ public:
 	std::string name;
 	float mass{ 1 };
 	float density{ 1 };
-	float linearFriction{ 1 };
-	float rollingFriction{ 1 };
+	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
+	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
 	float restitution{ 0 };
 	float ccdRadius{ 0 };
-	float ccdThreshold{ 0 };
-	vec3_t centerOfMass{0};
+	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
+	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };
+	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
+	vec3_t centerOfMass{ 0 };
 	int flags{ 0 };
 	int debugDrawLevel{ 0 };
 

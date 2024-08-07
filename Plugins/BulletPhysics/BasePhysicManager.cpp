@@ -69,6 +69,16 @@ void CBasePhysicManager::StepSimulation(double frametime)
 
 void CBasePhysicManager::RemoveAllPhysicConfigs()
 {
+	for (auto& Storage : m_physicConfigs)
+	{
+		if (Storage.pConfig)
+		{
+			delete Storage.pConfig;
+			Storage.pConfig = nullptr;
+		}
+		Storage.state = PhysicConfigState_NotLoaded;
+	}
+
 	m_physicConfigs.clear();
 }
 
@@ -219,12 +229,14 @@ static bool ParseRigidBodyLine(CClientRagdollConfig* pRagdollConfig, const std::
 		if (shapeType == "sphere") {
 			shapeConfig->type = PhysicShape_Sphere;
 			shapeConfig->size[0] = size0;
+			rigidBodyConfig->ccdRadius = size0 * 0.2f;
 		}
 		else if (shapeType == "capsule") {
 			shapeConfig->type = PhysicShape_Capsule;
 			shapeConfig->direction = PhysicShapeDirection_Y;
 			shapeConfig->size[0] = size0;
 			shapeConfig->size[1] = size1;
+			rigidBodyConfig->ccdRadius = max(size0, size1 * 0.5f) * 0.2f;
 		}
 		else {
 			delete rigidBodyConfig;
@@ -614,7 +626,7 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig & idleAnim)
+void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex)
 {
 	auto saved_currententity = (*currententity);
 	(*currententity) = ent;
@@ -625,9 +637,52 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t *
 
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
-		fakePlayerState.sequence = idleAnim.sequence;
-		fakePlayerState.gaitsequence = idleAnim.gaitsequence;
-		fakePlayerState.frame = idleAnim.frame;
+
+		vec3_t vecSavedOrigin, vecSavedAngles;
+		VectorCopy((*currententity)->origin, vecSavedOrigin);
+		VectorCopy((*currententity)->angles, vecSavedAngles);
+
+		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+		if (pLocalPlayer && pLocalPlayer->index == playerindex)
+		{
+			VectorCopy(r_params.simorg, (*currententity)->origin);
+			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+		}
+
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_SETUP_BONES, &fakePlayerState);
+
+		VectorCopy(vecSavedOrigin, (*currententity)->origin);
+		VectorCopy(vecSavedAngles, (*currententity)->angles);
+	}
+	else
+	{
+		int iWeaponModel = ent->curstate.weaponmodel;
+
+		ent->curstate.weaponmodel = 0;
+
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
+
+		ent->curstate.weaponmodel = 0;
+	}
+
+	(*currententity) = saved_currententity;
+}
+
+void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig & OverrideAnim)
+{
+	auto saved_currententity = (*currententity);
+	(*currententity) = ent;
+
+	if (playerindex > 0)
+	{
+		auto fakePlayerState = *state;
+
+		fakePlayerState.number = playerindex;
+		fakePlayerState.weaponmodel = 0;
+		fakePlayerState.sequence = OverrideAnim.sequence;
+		fakePlayerState.gaitsequence = OverrideAnim.gaitsequence;
+		fakePlayerState.frame = OverrideAnim.frame;
 
 		vec3_t vecSavedOrigin, vecSavedAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -654,9 +709,9 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t *
 		float flSavedFrame = ent->curstate.frame;
 
 		ent->curstate.weaponmodel = 0;
-		ent->curstate.sequence = idleAnim.sequence;
-		ent->curstate.gaitsequence = idleAnim.gaitsequence;
-		ent->curstate.frame = idleAnim.frame;
+		ent->curstate.sequence = OverrideAnim.sequence;
+		ent->curstate.gaitsequence = OverrideAnim.gaitsequence;
+		ent->curstate.frame = OverrideAnim.frame;
 
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
 
@@ -680,7 +735,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pRagdollConfig = (CClientRagdollConfig*)pPhysicConfig;
 
-		SetupBonesForRagdoll(ent, state, mod, entindex, playerindex, pRagdollConfig->IdleAnimConfig);
+		SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollConfig->IdleAnimConfig);
 
 		CRagdollObjectCreationParameter CreationParam;
 

@@ -1036,10 +1036,11 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 			if (1)
 			{
-#define SCCLIENT_ISRENDERINGPORTALS_SIG "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01"
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_ISRENDERINGPORTALS_SIG);
+				const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 				Sig_AddrNotFound(g_bRenderingPortals);
-				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
+				g_iWaterLevel = (decltype(g_iWaterLevel)) * (ULONG_PTR*)(addr + 1);
+				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 20);
 			}
 
 			if (1)

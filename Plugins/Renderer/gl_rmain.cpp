@@ -145,6 +145,7 @@ int* allocated_textures = NULL;
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
 
+int* g_iWaterLevel_SCClient = NULL;
 bool *g_bRenderingPortals_SCClient = NULL;
 
 float* g_iFogColor_SCClient = NULL;
