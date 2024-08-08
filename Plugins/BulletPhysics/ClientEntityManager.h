@@ -51,8 +51,12 @@ public:
 
 	virtual void FreePlayerForBarnacle(int entindex) = 0;
 
+	virtual float GetEntityModelScaling(cl_entity_t* ent) = 0;
+	virtual float GetEntityModelScaling(cl_entity_t* ent, model_t *mod) = 0;
+
 	virtual void ClearPlayerDeathState(int entindex) = 0;
 	virtual void ClearAllPlayerDeathState() = 0;
+
 	virtual void SetPlayerDeathState(int entindex, entity_state_t* pplayer, model_t* model) = 0;
 	virtual int FindDyingPlayer(const char* modelname, vec3_t origin, vec3_t angles, int sequence, int body) = 0;
 

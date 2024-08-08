@@ -211,6 +211,49 @@ void OnBeforeDeleteBulletConstraint(btTypedConstraint *pConstraint)
 	}
 }
 
+btScalar GetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
+{
+	if (pConstraint->getConstraintType() == CONETWIST_CONSTRAINT_TYPE)
+	{
+		auto pConeTwist = (btConeTwistConstraint*)pConstraint;
+
+		auto worldPivotA = pConeTwist->getRigidBodyA().getWorldTransform() * pConeTwist->getFrameOffsetA();
+		auto worldPivotB = pConeTwist->getRigidBodyB().getWorldTransform() * pConeTwist->getFrameOffsetB();
+
+		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+	}
+	else if (pConstraint->getConstraintType() == HINGE_CONSTRAINT_TYPE)
+	{
+		auto pHinge = (btHingeConstraint*)pConstraint;
+
+		auto worldPivotA = pHinge->getRigidBodyA().getWorldTransform() * pHinge->getFrameOffsetA();
+		auto worldPivotB = pHinge->getRigidBodyB().getWorldTransform() * pHinge->getFrameOffsetB();
+
+		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+	}
+	else if (pConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
+
+		auto worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		auto worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+
+		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+	}
+
+	else if (pConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btSliderConstraint*)pConstraint;
+
+		auto worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		auto worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+
+		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+	}
+
+	return 0;
+}
+
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 {
 	if (GetPhysicObject()->IsStaticObject())

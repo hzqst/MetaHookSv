@@ -206,6 +206,8 @@ void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
 void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody);
 void OnBeforeDeleteBulletConstraint(btTypedConstraint* pConstraint);
 
+btScalar GetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
+
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
 void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);
 void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler);

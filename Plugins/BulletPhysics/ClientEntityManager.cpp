@@ -282,6 +282,32 @@ public:
 		return true;
 	}
 
+	float GetEntityModelScaling(cl_entity_t* ent) override
+	{
+		if (ent->model && ent->model->type == mod_studio)
+		{
+			if (ent->curstate.scale > 0)
+			{
+				return ent->curstate.scale;
+			}
+		}
+
+		return 1;
+	}
+
+	float GetEntityModelScaling(cl_entity_t* ent, model_t *mod) override
+	{
+		if (mod && mod->type == mod_studio)
+		{
+			if (ent->curstate.scale > 0)
+			{
+				return ent->curstate.scale;
+			}
+		}
+
+		return 1;
+	}
+
 	void ClearAllPlayerDeathState() override
 	{
 		for (int i = 0; i < _ARRAYSIZE(m_PlayerDeathState); ++i)

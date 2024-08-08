@@ -44,7 +44,7 @@ public:
 	float density{ 1 };
 	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
 	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
-	float restitution{ 0 };
+	float restitution{ BULLET_DEFAULT_RESTITUTION };
 	float ccdRadius{ 0 };
 	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
 	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };

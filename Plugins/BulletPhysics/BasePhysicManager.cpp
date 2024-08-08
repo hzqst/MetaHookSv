@@ -490,7 +490,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
-			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			if (PhysicObject && 
+				PhysicObject->GetModel() == model &&
+				PhysicObject->GetModelScaling() == ClientEntityManager()->GetEntityModelScaling(ent, model) &&
+				PhysicObject->GetPlayerIndex() == playerindex)
 			{
 
 			}
@@ -520,7 +523,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
-			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			if (PhysicObject && 
+				PhysicObject->GetModel() == model && 
+				PhysicObject->GetModelScaling() == ClientEntityManager()->GetEntityModelScaling(ent, model) &&
+				PhysicObject->GetPlayerIndex() == playerindex)
 			{
 
 			}
@@ -548,7 +554,9 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
-			if (PhysicObject && PhysicObject->GetModel() == model)
+			if (PhysicObject &&
+				PhysicObject->GetModel() == model && 
+				PhysicObject->GetModelScaling() == ClientEntityManager()->GetEntityModelScaling(ent, model))
 			{
 
 			}
@@ -571,7 +579,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
-			if (PhysicObject && PhysicObject->GetModel() == model && PhysicObject->GetPlayerIndex() == playerindex)
+			if (PhysicObject &&
+				PhysicObject->GetModel() == model &&
+				PhysicObject->GetModelScaling() == ClientEntityManager()->GetEntityModelScaling(ent, model) &&
+				PhysicObject->GetPlayerIndex() == playerindex)
 			{
 
 			}
@@ -669,7 +680,7 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig & OverrideAnim)
+void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig &OverrideAnim)
 {
 	auto saved_currententity = (*currententity);
 	(*currententity) = ent;
@@ -904,7 +915,11 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 
 		if (!bShouldFree)
 		{
-			if (!pPhysicObject->Update())
+			CPhysicObjectUpdateContext ctx;
+
+			pPhysicObject->Update(&ctx);
+
+			if(ctx.bShouldKillMe)
 			{
 				bShouldFree = true;
 			}

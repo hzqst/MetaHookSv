@@ -10,6 +10,18 @@
 #include "ClientPhysicCommon.h"
 #include "ClientPhysicConfig.h"
 
+class CPhysicObjectUpdateContext
+{
+public:
+	bool bShouldKillMe{};
+	bool bRigidbodyKinematicChanged{ };
+
+	//Only available for RagdollObject
+	bool bActivityChanged{ };
+	bool bRigidbodyPoseChanged{ };
+	bool bRigidbodyPoseUpdated{ };
+};
+
 class IPhysicObject : public IBaseInterface
 {
 public:
@@ -35,10 +47,11 @@ public:
 	virtual entity_state_t* GetClientEntityState() const = 0;
 	virtual bool GetOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
+	virtual float GetModelScaling() const = 0;
 	virtual int GetPlayerIndex() const = 0;
 	virtual int GetObjectFlags() const = 0;
 
-	virtual bool Update() = 0;
+	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransformOwnerEntity(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
@@ -86,15 +99,14 @@ public:
 		return true;
 	}
 
-	virtual bool UpdateKinematic(int iActivityType, entity_state_t* curstate) = 0;
+	virtual int GetActivityType() const = 0;
+	virtual int GetOverrideActivityType(entity_state_t* entstate) = 0;
+
 	virtual void ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdatePose(entity_state_t* curstate) = 0;
-	virtual void ApplyBarnacle(cl_entity_t* barnacle_entity) = 0;
-	virtual void ApplyGargantua(cl_entity_t* gargantua_entity) = 0;
+	virtual void ApplyBarnacle(cl_entity_t* pBarnacleEntity) = 0;
+	virtual void ApplyGargantua(cl_entity_t* pGargantuaEntity) = 0;
 	virtual bool SyncFirstPersonView(cl_entity_t* ent, struct ref_params_s* pparams) = 0;
-	virtual void ForceSleep() = 0;
-	virtual int GetOverrideActivityType(entity_state_t* entstate) = 0;
-	virtual int GetActivityType() const = 0;
 };
 
 class IClientPhysicManager : public IBaseInterface
