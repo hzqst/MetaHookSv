@@ -41,6 +41,10 @@ public:
 	{
 		return false;
 	}
+	virtual bool IsDynamicObject() const
+	{
+		return false;
+	}
 
 	virtual int GetEntityIndex() const = 0;
 	virtual cl_entity_t* GetClientEntity() const = 0;
@@ -91,6 +95,15 @@ public:
 	}
 };
 
+class IDynamicObject : public ICollisionPhysicObject
+{
+public:
+	bool IsDynamicObject() const override
+	{
+		return true;
+	}
+};
+
 class IRagdollObject : public ICollisionPhysicObject
 {
 public:
@@ -124,7 +137,7 @@ public:
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
+	virtual CClientPhysicObjectConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;

@@ -19,3 +19,6 @@
 [submodule "thirdparty/capstone_fork"]
 	path = thirdparty/capstone_fork
 	url = https://github.com/hzqst/capstone
+[submodule "thirdparty/tinyobjloader"]
+	path = thirdparty/tinyobjloader
+	url = https://github.com/hzqst/tinyobjloader

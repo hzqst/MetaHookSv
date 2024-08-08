@@ -12,6 +12,9 @@
     <Filter Include="HLSDK">
       <UniqueIdentifier>{150a014c-fe58-4253-8ec2-ac6e0f07cfea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tinyobjloader">
+      <UniqueIdentifier>{26c8ca0c-a776-47e1-b838-3e092690dc3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
@@ -46,6 +49,9 @@
     </ClCompile>
     <ClCompile Include="CounterStrike.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.cc">
+      <Filter>tinyobjloader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +108,9 @@
     </ClInclude>
     <ClInclude Include="BulletStaticObject.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.h">
+      <Filter>tinyobjloader</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

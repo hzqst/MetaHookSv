@@ -82,7 +82,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -107,7 +107,7 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -136,7 +136,7 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -168,6 +168,7 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
+    <ClCompile Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.cc" />
     <ClCompile Include="BulletPhysicManager.cpp" />
     <ClCompile Include="BasePhysicManager.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
@@ -180,6 +181,7 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="plugins.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="BasePhysicManager.h" />
     <ClInclude Include="BaseRagdollObject.h" />
     <ClInclude Include="BaseStaticObject.h" />

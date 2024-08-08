@@ -4,6 +4,7 @@ extern mh_interface_t *g_pInterface;
 extern metahook_api_t *g_pMetaHookAPI;
 extern mh_enginesave_t *g_pMetaSave;
 extern IFileSystem *g_pFileSystem;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
 
 extern int g_iEngineType;
 extern PVOID g_dwEngineBase;

@@ -190,6 +190,7 @@ public:
 	void StepSimulation(double frametime) override;
 
 	IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) override;
+	IDynamicObject* CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam) override;
 	IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) override;
 
 	void AddPhysicObjectToWorld(IPhysicObject* PhysicObject) override;

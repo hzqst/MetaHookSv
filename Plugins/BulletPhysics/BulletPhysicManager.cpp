@@ -575,11 +575,34 @@ void CBulletPhysicManager::RemovePhysicObjectFromWorld(IPhysicObject* PhysicObje
 
 IStaticObject* CBulletPhysicManager::CreateStaticObject(const CStaticObjectCreationParameter& CreationParam)
 {
+	if (!CreationParam.m_pStaticObjectConfig)
+	{
+		gEngfuncs.Con_Printf("CreateStaticObject: invalid m_pStaticObjectConfig!\n");
+		return nullptr;
+	}
+
 	return new CBulletStaticObject(CreationParam);
+}
+
+IDynamicObject* CBulletPhysicManager::CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam)
+{
+	return nullptr;
 }
 
 IRagdollObject* CBulletPhysicManager::CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam)
 {
+	if (!CreationParam.m_studiohdr)
+	{
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_studiohdr!\n");
+		return nullptr;
+	}
+
+	if (!CreationParam.m_pRagdollObjectConfig)
+	{
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pRagdollObjectConfig!\n");
+		return nullptr;
+	}
+
 	return new CBulletRagdollObject(CreationParam);
 }
 

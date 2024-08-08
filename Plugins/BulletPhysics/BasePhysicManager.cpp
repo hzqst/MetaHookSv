@@ -166,13 +166,13 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-static CClientPhysicConfig* LoadPhysicConfigFromNewFileBuffer(const char* buf)
+static CClientPhysicObjectConfig* LoadPhysicConfigFromNewFileBuffer(const char* buf)
 {
 	//TODO
 	return nullptr;
 }
 
-static CClientPhysicConfig* LoadPhysicConfigFromNewFile(const std::string& filename)
+static CClientPhysicObjectConfig* LoadPhysicConfigFromNewFile(const std::string& filename)
 {
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
@@ -193,7 +193,7 @@ static std::string trim(const std::string& str) {
 	return str.substr(first, last - first + 1);
 }
 
-static bool ParseDeathAnimLine(CClientRagdollConfig* pRagdollConfig, const std::string& line) {
+static bool ParseDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
 	std::istringstream iss(line);
 	int sequence;
 	float frame;
@@ -209,7 +209,7 @@ static bool ParseDeathAnimLine(CClientRagdollConfig* pRagdollConfig, const std::
 	return false;
 }
 
-static bool ParseRigidBodyLine(CClientRagdollConfig* pRagdollConfig, const std::string& line, int flags) {
+static bool ParseRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line, int flags) {
 	std::istringstream iss(line);
 	std::string name, shapeType;
 	int boneIndex, pBoneIndex;
@@ -251,7 +251,7 @@ static bool ParseRigidBodyLine(CClientRagdollConfig* pRagdollConfig, const std::
 	return false;
 }
 
-static bool ParseConstraintLine(CClientRagdollConfig* pRagdollConfig, const std::string& line) {
+static bool ParseConstraintLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
 	std::istringstream iss(line);
 	std::string rigidbodyA, rigidbodyB, constraintType;
 	int boneindexA, boneindexB;
@@ -309,9 +309,9 @@ static bool ParseConstraintLine(CClientRagdollConfig* pRagdollConfig, const std:
 	return false;
 }
 
-CClientPhysicConfig *LoadPhysicConfigFromLegacyFileBuffer(const char *buf)
+CClientPhysicObjectConfig*LoadPhysicConfigFromLegacyFileBuffer(const char *buf)
 {
-	auto pRagdollConfig = new CClientRagdollConfig();
+	auto pRagdollConfig = new CClientRagdollObjectConfig();
 
 	std::istringstream stream(buf);
 	std::string line;
@@ -368,7 +368,7 @@ CClientPhysicConfig *LoadPhysicConfigFromLegacyFileBuffer(const char *buf)
 	return pRagdollConfig;
 }
 
-static CClientPhysicConfig* LoadPhysicConfigFromLegacyFile(const std::string& filename)
+static CClientPhysicObjectConfig* LoadPhysicConfigFromLegacyFile(const std::string& filename)
 {
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
@@ -380,7 +380,7 @@ static CClientPhysicConfig* LoadPhysicConfigFromLegacyFile(const std::string& fi
 	return LoadPhysicConfigFromLegacyFileBuffer(pFileContent);
 }
 
-void CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfigStorage &Storage, const std::string& filename)
+void CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicObjectConfigStorage &Storage, const std::string& filename)
 {
 	std::string fullname = filename;
 
@@ -423,7 +423,7 @@ void CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfigStorage &S
 	Storage.state = PhysicConfigState_LoadedWithError;
 }
 
-CClientPhysicConfig* CBasePhysicManager::LoadPhysicConfigForModel(model_t* mod)
+CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicConfigForModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -545,11 +545,13 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			if (ClientEntityManager()->IsEntityBarnacle(ent))
 			{
-				ClientEntityManager()->AddBarnacle(entindex, 0);
+				//I don't think we need this anymore
+				//ClientEntityManager()->AddBarnacle(entindex, 0);
 			}
 			else if (ClientEntityManager()->IsEntityGargantua(ent))
 			{
-				ClientEntityManager()->AddGargantua(entindex, 0);
+				//I don't think we need this anymore
+				//ClientEntityManager()->AddGargantua(entindex, 0);
 			}
 
 			auto PhysicObject = GetPhysicObject(entindex);
@@ -742,11 +744,11 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	if (!pPhysicConfig)
 		return;
 
-	if (pPhysicConfig->type == PhysicConfigType_Ragdoll)
+	if (pPhysicConfig->type == PhysicConfigType_RagdollObject)
 	{
-		auto pRagdollConfig = (CClientRagdollConfig*)pPhysicConfig;
+		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig;
 
-		SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollConfig->IdleAnimConfig);
+		SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollObjectConfig->IdleAnimConfig);
 
 		CRagdollObjectCreationParameter CreationParam;
 
@@ -755,7 +757,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_playerindex = playerindex;
 		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
-		CreationParam.m_pRagdollConfig = pRagdollConfig;
+		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
 
 		auto pRagdollObject = CreateRagdollObject(CreationParam);
 
@@ -764,14 +766,36 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 		AddPhysicObject(entindex, pRagdollObject);
 	}
-	else if (pPhysicConfig->type == PhysicConfigType_Dynamic)
+	else if (pPhysicConfig->type == PhysicConfigType_DynamicObject)
 	{
 		//TODO
 		//CDynamicObjectCreationParameter CreationParam;
 	}
+	else if (pPhysicConfig->type == PhysicConfigType_StaticObject)
+	{
+		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig;
+
+		CStaticObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = ent;
+		CreationParam.m_entindex = entindex;
+		CreationParam.m_model = mod;
+		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
+		//CreationParam.m_pVertexArray = m_worldVertexArray;
+		//CreationParam.m_pIndexArray = pIndexArray;
+
+		//CreationParam.m_debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
+
+		auto pStaticObject = CreateStaticObject(CreationParam);
+
+		if (!pStaticObject)
+			return;
+
+		AddPhysicObject(entindex, pStaticObject);
+	}
 	else
 	{
-		gEngfuncs.Con_DPrintf("CreatePhysicObjectFromConfig: Unsupported type (%d) in PhysicConfig.\n", pPhysicConfig->type);
+		gEngfuncs.Con_DPrintf("CreatePhysicObjectFromConfig: Unsupported config type (%d).\n", pPhysicConfig->type);
 	}
 }
 
@@ -781,7 +805,7 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 
 	auto pPhysicObject = GetPhysicObject(entindex);
 
-	if (pPhysicObject)
+	if (pPhysicObject && pPhysicObject->GetModel() == mod)
 		return;
 
 	auto pIndexArray = GetIndexArrayFromBrushModel(mod);
@@ -789,14 +813,29 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	if (!pIndexArray)
 		return;
 
+	auto pCollisionShapeConfig = new CClientCollisionShapeConfig;
+
+	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
+	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
+	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
+
+	auto pRigidBodyConfig = new CClientRigidBodyConfig;
+
+	pRigidBodyConfig->name = mod->name;
+	pRigidBodyConfig->debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
+	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
+
+	auto pStaticObjectConfig = new CClientStaticObjectConfig;
+
+	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
 	CStaticObjectCreationParameter CreationParam;
 	CreationParam.m_entity = ent;
 	CreationParam.m_entindex = entindex;
 	CreationParam.m_model = mod;
-	CreationParam.m_pVertexArray = m_worldVertexArray;
-	CreationParam.m_pIndexArray = pIndexArray;
+	CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
 
-	CreationParam.m_debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
+	SCOPE_EXIT{ delete pStaticObjectConfig; };
 
 	auto pStaticObject = CreateStaticObject(CreationParam);
 
@@ -1381,4 +1420,105 @@ CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod
 	}
 
 	return m_brushIndexArray[modelindex];
+}
+
+#include "tiny_obj_loader.h"
+
+#include <istream>
+#include <streambuf>
+#include <vector>
+#include <cstring>
+
+// 自定义文件系统指针
+extern IFileSystem* g_pFileSystem;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
+
+class FileBuffer : public std::streambuf {
+public:
+	FileBuffer(const std::string& filename) {
+
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "rb");
+
+		if (!hFileHandle) {
+			throw std::runtime_error("Failed to open file: " + filename);
+		}
+
+		size_t fileSize = FILESYSTEM_ANY_SIZE(hFileHandle);
+		buffer_.resize(fileSize);
+
+		FILESYSTEM_ANY_READ(buffer_.data(), fileSize, hFileHandle);
+		FILESYSTEM_ANY_CLOSE(hFileHandle);
+
+		setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
+	}
+
+private:
+	std::vector<char> buffer_;
+};
+
+class CFileSystemStream : public std::istream {
+public:
+	CFileSystemStream(const std::string& filename) : std::istream(&buffer_), buffer_(filename) {}
+
+private:
+	FileBuffer buffer_;
+};
+
+bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray) {
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+
+	CFileSystemStream fileStream(objFilename);
+
+	bool ret = tinyobj::LoadObj(
+		&attrib,
+		&shapes,
+		&materials,
+		&warn,
+		&err,
+		&fileStream,
+		nullptr,
+		true,
+		false
+	);
+
+	if (!warn.empty()) {
+		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: (warning) %s", err.c_str());
+	}
+	if (!err.empty()) {
+		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: (error) %s", err.c_str());
+	}
+	if (!ret) {
+		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: Failed to load \"%s\".", objFilename.c_str());
+		return false;
+	}
+
+	for (const auto& shape : shapes) {
+		for (const auto& index : shape.mesh.indices) {
+			CPhysicBrushVertex vertex;
+			vertex.pos[0] = attrib.vertices[3 * index.vertex_index + 0];
+			vertex.pos[1] = attrib.vertices[3 * index.vertex_index + 1];
+			vertex.pos[2] = attrib.vertices[3 * index.vertex_index + 2];
+			vertexArray->vVertexBuffer.push_back(vertex);
+		}
+
+		size_t index_offset = 0;
+		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+			int fv = shape.mesh.num_face_vertices[f];
+			CPhysicBrushFace face;
+			face.start_vertex = static_cast<int>(index_offset);
+			face.num_vertexes = fv;
+			vertexArray->vFaceBuffer.push_back(face);
+
+			for (size_t v = 0; v < fv; v++) {
+				tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
+				indexArray->vIndexBuffer.push_back(idx.vertex_index);
+			}
+			index_offset += fv;
+		}
+	}
+
+	return true;
 }

@@ -1,12 +1,15 @@
 #pragma once
 
+#include <vector>
+
 const int PhysicConfigState_NotLoaded = 0;
 const int PhysicConfigState_Loaded = 1;
 const int PhysicConfigState_LoadedWithError = 2;
 
 const int PhysicConfigType_None = 0;
-const int PhysicConfigType_Ragdoll = 1;
-const int PhysicConfigType_Dynamic = 2;
+const int PhysicConfigType_RagdollObject = 1;
+const int PhysicConfigType_DynamicObject = 2;
+const int PhysicConfigType_StaticObject = 3;
 
 const int PhysicObjectFlag_StaticObject = 1;
 const int PhysicObjectFlag_RagdollObject = 2;
@@ -45,6 +48,7 @@ const int PhysicShape_Sphere = 2;
 const int PhysicShape_Capsule = 3;
 const int PhysicShape_Cylinder = 4;
 const int PhysicShape_MultiSphere = 5;
+const int PhysicShape_TriangleMesh = 10;
 
 const int PhysicConstraint_None = 0;
 const int PhysicConstraint_Hinge = 1;
@@ -73,3 +77,29 @@ const int PhysicShapeDirection_Z = 2;
 #define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
 #define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
 #define BULLET_MAX_TOLERANT_LINEAR_ERROR 50.0f
+
+class CPhysicBrushVertex
+{
+public:
+	vec3_t	pos{ 0 };
+};
+
+class CPhysicBrushFace
+{
+public:
+	int start_vertex{};
+	int num_vertexes{};
+};
+
+class CPhysicVertexArray
+{
+public:
+	std::vector<CPhysicBrushVertex> vVertexBuffer;
+	std::vector<CPhysicBrushFace> vFaceBuffer;
+};
+
+class CPhysicIndexArray
+{
+public:
+	std::vector<int> vIndexBuffer;
+};

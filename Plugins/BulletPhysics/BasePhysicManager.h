@@ -6,62 +6,37 @@
 #include "ClientPhysicManager.h"
 #include "ClientPhysicConfig.h"
 
-class CPhysicBrushVertex
-{
-public:
-	vec3_t	pos{ 0 };
-};
-
-class CPhysicBrushFace
-{
-public:
-	int start_vertex{};
-	int num_vertexes{};
-};
-
-class CPhysicVertexArray
-{
-public:
-	std::vector<CPhysicBrushVertex> vVertexBuffer;
-	std::vector<CPhysicBrushFace> vFaceBuffer;
-	bool bIsDynamic{};
-};
-
-class CPhysicIndexArray
-{
-public:
-	std::vector<int> vIndexBuffer;
-	bool bIsDynamic{};
-};
-
 class CPhysicObjectCreationParameter
 {
 public:
 	cl_entity_t* m_entity{};
-	model_t* m_model{};
 	int m_entindex{};
-	CClientRagdollConfig* m_pRagdollConfig{};
+	model_t* m_model{};
+	studiohdr_t* m_studiohdr{};
 };
 
 class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
-	CPhysicVertexArray* m_pVertexArray{};
-	CPhysicIndexArray* m_pIndexArray{};
-	int m_debugDrawLevel{};
+	CClientStaticObjectConfig* m_pStaticObjectConfig{};
+};
+
+class CDynamicObjectCreationParameter : public CPhysicObjectCreationParameter
+{
+public:
+	CClientDynamicObjectConfig* m_pDynamicObjectConfig{};
 };
 
 class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
 	int m_playerindex{};
-	studiohdr_t* m_studiohdr{};
+	CClientRagdollObjectConfig* m_pRagdollObjectConfig{};
 };
 
 class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
-	CPhysicVertexArray* m_worldVertexArray{};
 	CPhysicIndexArray* m_barnacleIndexArray{};
 	CPhysicVertexArray* m_barnacleVertexArray{};
 	CPhysicIndexArray* m_gargantuaIndexArray{};
@@ -71,10 +46,11 @@ protected:
 	//PhysicObject Manager
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
 
+	CPhysicVertexArray* m_worldVertexArray{};
 	std::vector<CPhysicIndexArray *> m_brushIndexArray;
 
 	//Configs
-	CClientPhysicConfigs m_physicConfigs;
+	CClientPhysicObjectConfigs m_physicConfigs;
 public:
 	void Destroy(void) override;
 	void Init(void) override;
@@ -87,7 +63,7 @@ public:
 	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
-	CClientPhysicConfig* LoadPhysicConfigForModel(model_t* mod) override;
+	CClientPhysicObjectConfig* LoadPhysicConfigForModel(model_t* mod) override;
 
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
@@ -104,7 +80,9 @@ public:
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
+	virtual IDynamicObject* CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam) = 0;
 	virtual IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) = 0;
+
 private:
 	//WorldVertexArray and WorldIndexArray
 	void GenerateWorldVertexArray();
@@ -118,15 +96,15 @@ private:
 
 	CPhysicIndexArray* GetIndexArrayFromBrushModel(model_t* mod);
 
-	//Barnacle's VertexArray and IndexArray
+	//Deprecated: Barnacle's VertexArray and IndexArray
 	void GenerateBarnacleIndexVertexArray();
 	void FreeBarnacleIndexVertexArray();
 
-	//Gargantua's VertexArray and IndexArray
+	//Deprecated: Gargantua's VertexArray and IndexArray
 	void GenerateGargantuaIndexVertexArray();
 	void FreeGargantuaIndexVertexArray();
 
-	void LoadPhysicConfigFromFiles(CClientPhysicConfigStorage& Storage, const std::string& filename);
+	void LoadPhysicConfigFromFiles(CClientPhysicObjectConfigStorage& Storage, const std::string& filename);
 
 	void RemoveAllPhysicConfigs();
 
@@ -135,4 +113,6 @@ private:
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
+
+	void LoadObjFromFile();
 };

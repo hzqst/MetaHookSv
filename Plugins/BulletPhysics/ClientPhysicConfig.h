@@ -11,6 +11,19 @@
 class CClientCollisionShapeConfig
 {
 public:
+	~CClientCollisionShapeConfig()
+	{
+		if (m_pVertexArrayStorage)
+		{
+			delete m_pVertexArrayStorage;
+		}
+
+		if (m_pIndexArrayStorage)
+		{
+			delete m_pIndexArrayStorage;
+		}
+	}
+
 	std::string name;
 
 	int type{ PhysicShape_None };
@@ -26,6 +39,12 @@ public:
 
 	//TODO
 	//std::vector<float> multispheres;
+
+	CPhysicVertexArray* m_pVertexArray{};
+	CPhysicIndexArray* m_pIndexArray{};
+
+	CPhysicVertexArray* m_pVertexArrayStorage{};
+	CPhysicIndexArray* m_pIndexArrayStorage{};
 };
 
 class CClientRigidBodyConfig
@@ -40,16 +59,7 @@ public:
 	}
 
 	std::string name;
-	float mass{ 1 };
-	float density{ 1 };
-	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
-	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
-	float restitution{ BULLET_DEFAULT_RESTITUTION };
-	float ccdRadius{ 0 };
-	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
-	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };
-	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
-	vec3_t centerOfMass{ 0 };
+
 	int flags{ 0 };
 	int debugDrawLevel{ 0 };
 
@@ -65,6 +75,17 @@ public:
 
 	//Support compound shape?
 	std::vector<CClientCollisionShapeConfig*> shapes;
+
+	float mass{ 1 };
+	float density{ 1 };
+	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
+	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
+	float restitution{ BULLET_DEFAULT_RESTITUTION };
+	float ccdRadius{ 0 };
+	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
+	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };
+	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
+	vec3_t centerOfMass{ 0 };
 };
 
 class CClientConstraintConfig
@@ -108,17 +129,32 @@ public:
 	int activity{};
 };
 
-class CClientPhysicConfig
+class CClientPhysicObjectConfig
 {
 public:
-	virtual ~CClientPhysicConfig()
+	virtual ~CClientPhysicObjectConfig()
 	{
 		for (auto p : RigidBodyConfigs)
 		{
 			delete p;
 		}
 		RigidBodyConfigs.clear();
+	}
 
+public:
+	int type{ PhysicConfigType_None };
+	std::vector<CClientRigidBodyConfig*> RigidBodyConfigs;
+};
+
+class CClientDynamicObjectConfig : public CClientPhysicObjectConfig
+{
+public:
+	CClientDynamicObjectConfig()
+	{
+		type = PhysicConfigType_DynamicObject;
+	}
+	~CClientDynamicObjectConfig()
+	{
 		for (auto p : ConstraintConfigs)
 		{
 			delete p;
@@ -126,22 +162,36 @@ public:
 		ConstraintConfigs.clear();
 	}
 
-public:
-	int type{ PhysicConfigType_None };
-	std::vector<CClientRigidBodyConfig*> RigidBodyConfigs;
 	std::vector<CClientConstraintConfig*> ConstraintConfigs;
 };
- 
-class CClientRagdollConfig : public CClientPhysicConfig
+
+class CClientStaticObjectConfig : public CClientPhysicObjectConfig
 {
 public:
-	CClientRagdollConfig()
+	CClientStaticObjectConfig()
 	{
-		type = PhysicConfigType_Ragdoll;
+		type = PhysicConfigType_StaticObject;
 	}
 
-	~CClientRagdollConfig()
+	bool isBarnacle{};
+};
+ 
+class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
+{
+public:
+	CClientRagdollObjectConfig()
 	{
+		type = PhysicConfigType_RagdollObject;
+	}
+
+	~CClientRagdollObjectConfig()
+	{
+		for (auto p : ConstraintConfigs)
+		{
+			delete p;
+		}
+		ConstraintConfigs.clear();
+
 		for (auto p : FloaterConfigs)
 		{
 			delete p;
@@ -149,16 +199,17 @@ public:
 		FloaterConfigs.clear();
 	}
 
+	std::vector<CClientConstraintConfig*> ConstraintConfigs;
 	std::vector<CClientFloaterConfig*> FloaterConfigs;
 	std::vector<CClientRagdollAnimControlConfig> AnimControlConfigs;
 	CClientRagdollAnimControlConfig IdleAnimConfig;
 };
 
-class CClientPhysicConfigStorage
+class CClientPhysicObjectConfigStorage
 {
 public:
 	int state{ PhysicConfigState_NotLoaded };
-	CClientPhysicConfig* pConfig{};
+	CClientPhysicObjectConfig* pConfig{};
 };
 
-using CClientPhysicConfigs = std::vector<CClientPhysicConfigStorage>;
+using CClientPhysicObjectConfigs = std::vector<CClientPhysicObjectConfigStorage>;
