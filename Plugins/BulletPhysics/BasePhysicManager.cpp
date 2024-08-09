@@ -39,12 +39,15 @@ void CBasePhysicManager::Shutdown()
 
 void CBasePhysicManager::NewMap(void)
 {
-	RemoveAllPhysicObjects(PhysicObjectFlag_Any);
+	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject);
 	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
-	GenerateBarnacleIndexVertexArray();
-	GenerateGargantuaIndexVertexArray();
+
+	//Deprecated, use .obj instead.
+	//GenerateBarnacleIndexVertexArray();
+	//GenerateGargantuaIndexVertexArray();
+
 	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
 }
 
@@ -169,9 +172,17 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObjectConfig* pPhysicObjectConfig)
 {
-	auto pRagdollObjectConfig = new CClientRagdollObjectConfig();
+	if (pKeyValues->GetInt("barnacle") == 1)
+	{
+		pPhysicObjectConfig->flags |= PhysicObjectFlag_Barnacle;
+	}
+
+	if (pKeyValues->GetInt("gargantua") == 1)
+	{
+		pPhysicObjectConfig->flags |= PhysicObjectFlag_Gargantua;
+	}
 
 	auto pRigidBodiesKey = pKeyValues->FindKey("RigidBodies");
 
@@ -181,11 +192,11 @@ static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues
 		{
 			auto pRigidBodyConfig = new CClientRigidBodyConfig();
 
-			pRigidBodyConfig->name = pRigidBodySubKey->GetString("name");
+			pRigidBodyConfig->name = pRigidBodySubKey->GetName();
 			pRigidBodyConfig->flags = pRigidBodySubKey->GetInt("flags");
-			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel");
-			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex");
-			
+			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel", 1);
+			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex", -1);
+
 			auto origin = pRigidBodySubKey->GetString("origin");
 
 			if (origin)
@@ -200,8 +211,8 @@ static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues
 				UTIL_ParseStringAsVector3(angles, pRigidBodyConfig->angles);
 			}
 
-			pRigidBodyConfig->mass = pRigidBodySubKey->GetFloat("mass", 1);
-			pRigidBodyConfig->density = pRigidBodySubKey->GetFloat("density", 1);
+			pRigidBodyConfig->mass = pRigidBodySubKey->GetFloat("mass", BULLET_DEFAULT_MASS);
+			pRigidBodyConfig->density = pRigidBodySubKey->GetFloat("density", BULLET_DEFAULT_DENSENTY);
 			pRigidBodyConfig->linearFriction = pRigidBodySubKey->GetFloat("linearFriction", BULLET_DEFAULT_LINEAR_FIRCTION);
 			pRigidBodyConfig->rollingFriction = pRigidBodySubKey->GetFloat("rollingFriction", BULLET_DEFAULT_ANGULAR_FIRCTION);
 			pRigidBodyConfig->restitution = pRigidBodySubKey->GetFloat("restitution", BULLET_DEFAULT_RESTITUTION);
@@ -218,7 +229,7 @@ static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues
 				{
 					auto pShapeConfig = new CClientCollisionShapeConfig();
 
-					pShapeConfig->name = pShapeSubKey->GetString("name");
+					pShapeConfig->name = pShapeSubKey->GetName();
 
 					auto type = pShapeSubKey->GetString("type");
 
@@ -247,11 +258,12 @@ static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues
 						if (!strcmp(type, "TriangleMesh"))
 						{
 							pShapeConfig->type = PhysicShape_TriangleMesh;
+							pShapeConfig->objpath = pShapeSubKey->GetString("objpath");
 						}
 					}
 
 					pShapeConfig->direction = pShapeSubKey->GetInt("direction");
-					
+
 					auto origin = pShapeSubKey->GetString("origin");
 
 					if (origin)
@@ -279,21 +291,31 @@ static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues
 						}
 					}
 
-					 pShapeConfig->objpath = pShapeSubKey->GetString("objfile");
+					pRigidBodyConfig->shapes.emplace_back(pShapeConfig);
 				}
 			}
 
-			pRagdollObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+			pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 		}
 	}
+}
+
+static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
+{
+	auto pRagdollObjectConfig = new CClientRagdollObjectConfig();
+
+	LoadBaseConfigsFromKeyValues(pKeyValues, pRagdollObjectConfig);
 
 	return pRagdollObjectConfig;
 }
 
 static CClientPhysicObjectConfig* LoadStaticObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
-	//TODO
-	return nullptr;
+	auto pStaticObjectConfig = new CClientStaticObjectConfig();
+
+	LoadBaseConfigsFromKeyValues(pKeyValues, pStaticObjectConfig);
+
+	return pStaticObjectConfig;
 }
 
 static CClientPhysicObjectConfig* LoadDynamicObjectConfigFromKeyValues(KeyValues* pKeyValues)
@@ -571,7 +593,7 @@ void CBasePhysicManager::LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConf
 	fullname = fullname.substr(0, fullname.length() - 4);
 
 	auto fullname_physic = fullname;
-	fullname_physic += "_physic.txt";
+	fullname_physic += "_physics.txt";
 
 	auto pConfig = LoadPhysicObjectConfigFromNewFile(fullname_physic);
 
@@ -936,6 +958,8 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
 
+		LoadAdditionalResourcesForConfig(pPhysicConfig);
+
 		auto pRagdollObject = CreateRagdollObject(CreationParam);
 
 		if (!pRagdollObject)
@@ -958,10 +982,8 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_model = mod;
 		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
-		//CreationParam.m_pVertexArray = m_worldVertexArray;
-		//CreationParam.m_pIndexArray = pIndexArray;
 
-		//CreationParam.m_debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
+		LoadAdditionalResourcesForConfig(pPhysicConfig);
 
 		auto pStaticObject = CreateStaticObject(CreationParam);
 
@@ -1020,38 +1042,6 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 		return;
 
 	AddPhysicObject(entindex, pStaticObject);
-}
-
-void CBasePhysicManager::CreateBarnacle(cl_entity_t* ent)
-{
-	//TODO... use ragdoll instead?
-#if 0
-	auto entindex = ent->index;
-
-	auto pPhysicObject = GetPhysicObject(entindex);
-
-	if (pPhysicObject)
-		return;
-
-	CStaticObjectCreationParameter CreationParam;
-	CreationParam.m_entity = ent;
-	CreationParam.m_entindex = entindex;
-	CreationParam.m_pVertexArray = m_barnacleVertexArray;
-	CreationParam.m_pIndexArray = m_barnacleIndexArray;
-	CreationParam.m_bIsKinematic = false;
-
-	auto pStaticObject = CreateStaticObject(CreationParam);
-
-	if (!pStaticObject)
-		return;
-
-	AddPhysicObject(entindex, pStaticObject);
-#endif
-}
-
-void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
-{
-	//TODO... use ragdoll instead?
 }
 
 void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObject)
@@ -1358,6 +1348,38 @@ void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushf
 	}
 }
 
+#if 0
+
+static std::string FormatToObj(const CPhysicVertexArray* vertexArray, const CPhysicIndexArray* indexArray)
+{
+	std::ostringstream oss;
+
+	for (const auto& vertex : vertexArray->vVertexBuffer) {
+		oss << "v " << vertex.pos[0] << " " << vertex.pos[1] << " " << vertex.pos[2] << "\n";
+	}
+
+	for (const auto& face : vertexArray->vFaceBuffer) {
+		oss << "f";
+		for (int i = 0; i < face.num_vertexes; ++i) {
+			oss << " " << (face.start_vertex + i + 1);
+		}
+		oss << "\n";
+	}
+
+	return oss.str();
+}
+
+static void SaveToObjFile(const std::string& filename, const std::string& objData) {
+
+	auto hFileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "wb");
+
+	if (hFileHandle)
+	{
+		FILESYSTEM_ANY_WRITE(objData.data(), objData.size(), hFileHandle);
+		FILESYSTEM_ANY_CLOSE(hFileHandle);
+	}
+}
+
 void CBasePhysicManager::GenerateBarnacleIndexVertexArray()
 {
 	const int BARNACLE_SEGMENTS = 12;
@@ -1456,6 +1478,10 @@ void CBasePhysicManager::GenerateBarnacleIndexVertexArray()
 	{
 		GenerateIndexArrayForBrushface(&m_barnacleVertexArray->vFaceBuffer[i], m_barnacleIndexArray);
 	}
+
+	auto objData = FormatToObj(m_barnacleVertexArray, m_barnacleIndexArray);
+
+	SaveToObjFile("models/barnacle.obj", objData);
 }
 
 void CBasePhysicManager::FreeBarnacleIndexVertexArray()
@@ -1570,6 +1596,11 @@ void CBasePhysicManager::GenerateGargantuaIndexVertexArray()
 
 		GenerateIndexArrayForBrushface(&m_gargantuaVertexArray->vFaceBuffer[i], m_gargantuaIndexArray);
 	}
+
+
+	auto objData = FormatToObj(m_gargantuaVertexArray, m_gargantuaIndexArray);
+
+	SaveToObjFile("models/garg_mouth.obj", objData);
 }
 
 void CBasePhysicManager::FreeGargantuaIndexVertexArray()
@@ -1586,6 +1617,8 @@ void CBasePhysicManager::FreeGargantuaIndexVertexArray()
 		m_gargantuaIndexArray = NULL;
 	}
 }
+
+#endif
 
 CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod)
 {
@@ -1671,30 +1704,60 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 		return false;
 	}
 
+	for (size_t i = 0;i < attrib.vertices.size(); i += 3)
+	{
+		CPhysicBrushVertex vertex;
+		vertex.pos[0] = attrib.vertices[0 + i];
+		vertex.pos[1] = attrib.vertices[1 + i];
+		vertex.pos[2] = attrib.vertices[2 + i];
+
+		vertexArray->vVertexBuffer.push_back(vertex);
+	}
+
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
-			CPhysicBrushVertex vertex;
-			vertex.pos[0] = attrib.vertices[3 * index.vertex_index + 0];
-			vertex.pos[1] = attrib.vertices[3 * index.vertex_index + 1];
-			vertex.pos[2] = attrib.vertices[3 * index.vertex_index + 2];
-			vertexArray->vVertexBuffer.push_back(vertex);
+			indexArray->vIndexBuffer.push_back(index.vertex_index);
 		}
 
+		//I'm not sure if this works or not but this won't affect the trimesh anyway
 		size_t index_offset = 0;
 		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
 			int fv = shape.mesh.num_face_vertices[f];
 			CPhysicBrushFace face;
-			face.start_vertex = static_cast<int>(index_offset);
+			face.start_vertex = index_offset;
 			face.num_vertexes = fv;
 			vertexArray->vFaceBuffer.push_back(face);
 
-			for (size_t v = 0; v < fv; v++) {
-				tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
-				indexArray->vIndexBuffer.push_back(idx.vertex_index);
-			}
 			index_offset += fv;
 		}
 	}
 
 	return true;
+}
+
+void CBasePhysicManager::LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig *pPhysicObjectConfig)
+{
+	for (auto pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
+	{
+		for (auto pShapeConfig : pRigidBodyConfig->shapes)
+		{
+			if (pShapeConfig->type == PhysicShape_TriangleMesh && !pShapeConfig->objpath.empty())
+			{
+				if (!pShapeConfig->m_pVertexArrayStorage)
+					pShapeConfig->m_pVertexArrayStorage = new CPhysicVertexArray;
+
+				if (!pShapeConfig->m_pIndexArrayStorage)
+					pShapeConfig->m_pIndexArrayStorage = new CPhysicIndexArray;
+
+				if (!pShapeConfig->m_pVertexArray && !pShapeConfig->m_pIndexArray && pShapeConfig->m_pVertexArrayStorage && pShapeConfig->m_pIndexArrayStorage)
+				{
+					if (LoadObjToPhysicArrays(pShapeConfig->objpath, pShapeConfig->m_pVertexArrayStorage, pShapeConfig->m_pIndexArrayStorage))
+					{
+						pShapeConfig->m_pVertexArray = pShapeConfig->m_pVertexArrayStorage;
+						pShapeConfig->m_pIndexArray = pShapeConfig->m_pIndexArrayStorage;
+					}
+				}
+			}
+		}
+	}
 }

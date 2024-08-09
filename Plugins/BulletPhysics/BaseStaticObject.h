@@ -12,10 +12,6 @@ public:
 		m_entindex = CreationParam.m_entindex;
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
-
-
-		//m_pVertexArray = CreationParam.m_pVertexArray;
-		//m_pIndexArray = CreationParam.m_pIndexArray;
 	}
 
 	~CBaseStaticObject()
@@ -91,12 +87,15 @@ public:
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
 	}
 
+	bool IsBarnacle() const override
+	{
+		return m_bIsBarnacle;
+	}
+
 public:
 	int m_entindex{};
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
-
-	//CPhysicVertexArray* m_pVertexArray{};
-	//CPhysicIndexArray* m_pIndexArray{};
+	bool m_bIsBarnacle{};
 };

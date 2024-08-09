@@ -145,13 +145,13 @@ bool StudioConVar::GetValues(float *vec)
 		}
 		else if (m_cvar)
 		{
-			if (m_numargs == 4 && R_ParseCvarAsColor4(m_cvar, vec))
+			if (m_numargs == 4 && UTIL_ParseCvarAsColor4(m_cvar, vec))
 				return true;
-			if (m_numargs == 3 && R_ParseCvarAsColor3(m_cvar, vec))
+			if (m_numargs == 3 && UTIL_ParseCvarAsColor3(m_cvar, vec))
 				return true;
-			if (m_numargs == 2 && R_ParseCvarAsColor2(m_cvar, vec))
+			if (m_numargs == 2 && UTIL_ParseCvarAsColor2(m_cvar, vec))
 				return true;
-			if (m_numargs == 1 && R_ParseCvarAsColor1(m_cvar, vec))
+			if (m_numargs == 1 && UTIL_ParseCvarAsColor1(m_cvar, vec))
 				return true;
 		}
 	}
@@ -167,13 +167,13 @@ bool StudioConVar::GetValues(float *vec)
 		}
 		else
 		{
-			if (m_numargs == 4 && R_ParseCvarAsVector4(m_cvar, vec))
+			if (m_numargs == 4 && UTIL_ParseCvarAsVector4(m_cvar, vec))
 				return true;
-			if (m_numargs == 3 && R_ParseCvarAsVector3(m_cvar, vec))
+			if (m_numargs == 3 && UTIL_ParseCvarAsVector3(m_cvar, vec))
 				return true;
-			if (m_numargs == 2 && R_ParseCvarAsVector2(m_cvar, vec))
+			if (m_numargs == 2 && UTIL_ParseCvarAsVector2(m_cvar, vec))
 				return true;
-			if (m_numargs == 1 && R_ParseCvarAsVector1(m_cvar, vec))
+			if (m_numargs == 1 && UTIL_ParseCvarAsVector1(m_cvar, vec))
 				return true;
 		}
 	}
@@ -252,7 +252,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor4(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsColor4(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -263,7 +263,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector4(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsVector4(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -277,7 +277,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor3(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsColor3(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -288,7 +288,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector3(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsVector3(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -302,7 +302,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor2(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsColor2(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -313,7 +313,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector2(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsVector2(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -327,7 +327,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor1(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsColor1(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -338,7 +338,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector1(value, mapcvar->GetRawMapValues()))
+			if (UTIL_ParseStringAsVector1(value, mapcvar->GetRawMapValues()))
 			{
 				mapcvar->SetMapOverride(true);
 			}
@@ -356,7 +356,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor4(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsColor4(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -367,7 +367,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector4(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsVector4(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -381,7 +381,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor3(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsColor3(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -392,7 +392,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector3(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsVector3(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -406,7 +406,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor2(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsColor2(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -417,7 +417,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector2(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsVector2(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -431,7 +431,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 	{
 		if (mapcvar->GetFlags() & ConVar_Color255)
 		{
-			if (R_ParseStringAsColor1(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsColor1(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}
@@ -442,7 +442,7 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 		}
 		else
 		{
-			if (R_ParseStringAsVector1(value, mapcvar->GetRawCvarValues()))
+			if (UTIL_ParseStringAsVector1(value, mapcvar->GetRawCvarValues()))
 			{
 
 			}

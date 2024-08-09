@@ -48,6 +48,11 @@ public:
 		return m_model_scaling;
 	}
 
+	bool IsBarnacle() const override
+	{
+		return m_bIsBarnacle;
+	}
+
 	int GetPlayerIndex() const override
 	{
 		return m_playerindex;
@@ -203,6 +208,8 @@ public:
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
+	bool m_bIsBarnacle{};
+
 	int m_iActivityType{};
 	int m_iBarnacleIndex{};
 	int m_iGargantuaIndex{};

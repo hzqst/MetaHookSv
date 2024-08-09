@@ -96,23 +96,21 @@ private:
 
 	CPhysicIndexArray* GetIndexArrayFromBrushModel(model_t* mod);
 
-	//Deprecated: Barnacle's VertexArray and IndexArray
-	void GenerateBarnacleIndexVertexArray();
-	void FreeBarnacleIndexVertexArray();
-
-	//Deprecated: Gargantua's VertexArray and IndexArray
-	void GenerateGargantuaIndexVertexArray();
-	void FreeGargantuaIndexVertexArray();
+	//Deprecated: use .obj files now
+	//void GenerateBarnacleIndexVertexArray();
+	//void FreeBarnacleIndexVertexArray();
+	//void GenerateGargantuaIndexVertexArray();
+	//void FreeGargantuaIndexVertexArray();
 
 	void LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConfigStorage& Storage, const std::string& filename);
 
 	void RemoveAllPhysicConfigs();
 
-	void CreateBarnacle(cl_entity_t* ent);
-	void CreateGargantua(cl_entity_t* ent);
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 
 	bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
+
+	void LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig* pPhysicObjectConfig);
 };

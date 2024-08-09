@@ -16,11 +16,13 @@ public:
 		if (m_pVertexArrayStorage)
 		{
 			delete m_pVertexArrayStorage;
+			m_pVertexArrayStorage = nullptr;
 		}
 
 		if (m_pIndexArrayStorage)
 		{
 			delete m_pIndexArrayStorage;
+			m_pVertexArrayStorage = nullptr;
 		}
 	}
 
@@ -146,6 +148,7 @@ public:
 
 public:
 	int type{ PhysicConfigType_None };
+	int flags{};
 	std::vector<CClientRigidBodyConfig*> RigidBodyConfigs;
 };
 
@@ -155,6 +158,7 @@ public:
 	CClientDynamicObjectConfig()
 	{
 		type = PhysicConfigType_DynamicObject;
+		flags = PhysicObjectFlag_DynamicObject;
 	}
 	~CClientDynamicObjectConfig()
 	{
@@ -174,6 +178,7 @@ public:
 	CClientStaticObjectConfig()
 	{
 		type = PhysicConfigType_StaticObject;
+		flags = PhysicObjectFlag_StaticObject;
 	}
 
 	bool isBarnacle{};
@@ -185,6 +190,7 @@ public:
 	CClientRagdollObjectConfig()
 	{
 		type = PhysicConfigType_RagdollObject;
+		flags = PhysicObjectFlag_RagdollObject;
 	}
 
 	~CClientRagdollObjectConfig()

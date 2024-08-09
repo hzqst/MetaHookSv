@@ -145,7 +145,7 @@ int* allocated_textures = NULL;
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
 
-int* g_iWaterLevel_SCClient = NULL;
+int* g_iWaterLevel = NULL;
 bool *g_bRenderingPortals_SCClient = NULL;
 
 float* g_iFogColor_SCClient = NULL;
@@ -2023,11 +2023,11 @@ void R_PreRenderView()
 
 	if (CL_IsDevOverviewMode())
 	{
-		R_ParseCvarAsColor3(dev_overview_color, vecClearColor);
+		UTIL_ParseCvarAsColor3(dev_overview_color, vecClearColor);
 	}
 	else
 	{
-		R_ParseCvarAsColor3(gl_clearcolor, vecClearColor);
+		UTIL_ParseCvarAsColor3(gl_clearcolor, vecClearColor);
 	}
 
 	GammaToLinear(vecClearColor);
@@ -2701,146 +2701,6 @@ float *R_GetAttachmentPoint(int entity, int attachment)
 		return pEntity->attachment[attachment - 1];
 
 	return pEntity->origin;
-}
-
-qboolean R_ParseStringAsColor1(const char *string, float *vec)
-{
-	vec2_t vinput;
-	if (sscanf(string, "%f", &vinput[0]) == 1)
-	{
-		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsColor2(const char *string, float *vec)
-{
-	vec2_t vinput;
-	if (sscanf(string, "%f %f", &vinput[0], &vinput[1]) == 2)
-	{
-		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsColor3(const char *string, float *vec)
-{
-	vec3_t vinput;
-	if (sscanf(string, "%f %f %f", &vinput[0], &vinput[1], &vinput[2]) == 3)
-	{
-		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
-		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsColor4(const char *string, float *vec)
-{
-	vec4_t vinput;
-	if (sscanf(string, "%f %f %f %f", &vinput[0], &vinput[1], &vinput[2], &vinput[3]) == 4)
-	{
-		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
-		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
-		vec[3] = math_clamp(vinput[3], 0, 255) / 255.0f;
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsVector1(const char *string, float *vec)
-{
-	vec2_t vinput;
-	if (sscanf(string, "%f", &vinput[0]) == 1)
-	{
-		vec[0] = vinput[0];
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsVector2(const char *string, float *vec)
-{
-	vec2_t vinput;
-	if (sscanf(string, "%f %f", &vinput[0], &vinput[1]) == 2)
-	{
-		vec[0] = vinput[0];
-		vec[1] = vinput[1];
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsVector3(const char *string, float *vec)
-{
-	vec3_t vinput;
-	if (sscanf(string, "%f %f %f", &vinput[0], &vinput[1], &vinput[2]) == 3)
-	{
-		vec[0] = vinput[0];
-		vec[1] = vinput[1];
-		vec[2] = vinput[2];
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseStringAsVector4(const char *string, float *vec)
-{
-	vec4_t vinput;
-	if (sscanf(string, "%f %f %f %f", &vinput[0], &vinput[1], &vinput[2], &vinput[3]) == 4)
-	{
-		vec[0] = vinput[0];
-		vec[1] = vinput[1];
-		vec[2] = vinput[2];
-		vec[3] = vinput[3];
-		return true;
-	}
-	return false;
-}
-
-qboolean R_ParseCvarAsColor1(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsColor1(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsColor2(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsColor2(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsColor3(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsColor3(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsColor4(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsColor4(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsVector1(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsVector1(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsVector2(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsVector2(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsVector3(cvar->string, vec);
-}
-
-qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec)
-{
-	return R_ParseStringAsVector4(cvar->string, vec);
 }
 
 double V_CalcFovV(float fov, float width, float height)

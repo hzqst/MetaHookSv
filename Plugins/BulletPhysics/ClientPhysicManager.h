@@ -64,6 +64,7 @@ public:
 	virtual void RemoveFromPhysicWorld(void* world) = 0;
 
 	virtual bool IsClientEntityNonSolid() const = 0;
+	virtual bool IsBarnacle() const = 0;
 };
 
 class IPhysicObjectService : public IBaseInterface

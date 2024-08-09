@@ -7,13 +7,16 @@ const int PhysicConfigState_Loaded = 1;
 const int PhysicConfigState_LoadedWithError = 2;
 
 const int PhysicConfigType_None = 0;
-const int PhysicConfigType_RagdollObject = 1;
+const int PhysicConfigType_StaticObject = 1;
 const int PhysicConfigType_DynamicObject = 2;
-const int PhysicConfigType_StaticObject = 3;
+const int PhysicConfigType_RagdollObject = 3;
 
-const int PhysicObjectFlag_StaticObject = 1;
-const int PhysicObjectFlag_RagdollObject = 2;
-const int PhysicObjectFlag_Any = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject);
+const int PhysicObjectFlag_StaticObject = 0x1;
+const int PhysicObjectFlag_DynamicObject = 0x2;
+const int PhysicObjectFlag_RagdollObject = 0x4;
+const int PhysicObjectFlag_Barnacle = 0x8;
+const int PhysicObjectFlag_Gargantua = 0x10;
+const int PhysicObjectFlag_AnyObject = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject | PhysicObjectFlag_DynamicObject);
 
 const int PhysicRigidBodyFlag_AlwaysDynamic = 1;
 const int PhysicRigidBodyFlag_AlwaysKinematic = 2;
@@ -74,6 +77,8 @@ const int PhysicShapeDirection_Z = 2;
 #define BULLET_DEFAULT_LINEAR_FIRCTION 1.0f
 #define BULLET_DEFAULT_ANGULAR_FIRCTION 0.2f
 #define BULLET_DEFAULT_RESTITUTION 0.0f
+#define BULLET_DEFAULT_MASS 1.0f
+#define BULLET_DEFAULT_DENSENTY 1.0f
 #define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
 #define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
 #define BULLET_MAX_TOLERANT_LINEAR_ERROR 50.0f

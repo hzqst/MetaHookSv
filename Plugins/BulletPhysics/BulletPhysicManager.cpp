@@ -10,7 +10,7 @@
 #include "BulletStaticObject.h"
 #include "BulletRagdollObject.h"
 
-//#include <glew.h>
+#include <vgui_controls/Controls.h>
 
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
@@ -268,10 +268,10 @@ void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 
 		btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
 
-		//TODO: Brush uses reverted pitch ??
+		//Brush uses reverted pitch ??
 		if (ent->curstate.solid == SOLID_BSP)
 		{
-			//vecAngles.setX(-vecAngles.x());
+			vecAngles.setX(-vecAngles.x());
 		}
 
 		EulerMatrix(vecAngles, worldTrans.getBasis());
@@ -315,9 +315,10 @@ public:
 
 	void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1) override
 	{
-		//TODO: use surface api or Renderer API
+		//The texture must be reset to zero upon drawing.
+		vgui::surface()->DrawSetTexture(-1);
+		vgui::surface()->DrawSetTexture(0);
 
-		//glBindTexture(GL_TEXTURE_2D, 0);
 		gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1.0f, kRenderTransAlpha);
 		gEngfuncs.pTriAPI->Begin(TRI_LINES);
 

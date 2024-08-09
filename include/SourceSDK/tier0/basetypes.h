@@ -239,11 +239,15 @@ struct colorVec
 #endif
 #ifdef __cplusplus
 
-struct vrect_t
+#ifndef VRECT_DEFINED
+#define VRECT_DEFINED
+typedef struct vrect_s
 {
 	int				x,y,width,height;
-	vrect_t			*pnext;
-};
+	struct vrect_s *pnext;
+}vrect_t;
+#endif
+
 
 #endif
 

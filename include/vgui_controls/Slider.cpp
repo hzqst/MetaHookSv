@@ -18,6 +18,7 @@
 #include <vgui/ISurface.h>
 #include <vgui/ILocalize.h>
 
+#include <mathlib/mathlib.h>
 #include "Slider.h"
 #include "Controls.h"
 #include "TextImage.h"
