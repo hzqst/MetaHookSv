@@ -115,18 +115,6 @@ void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, f
 #pragma optimize("", on)
 #endif
 
-float anglemod(float a)
-{
-#if 0
-	if (a >= 0)
-		a -= 360 * (int)(a / 360);
-	else
-		a += 360 * (1 + (int)(-a / 360));
-#endif
-	a = (360.0 / 65536) * ((int)(a * (65536 / 360.0)) & 65535);
-	return a;
-}
-
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, mplane_t *p)
 {
 	float dist1, dist2;
@@ -446,16 +434,6 @@ void VectorScale(const vec3_t in, vec_t scale, vec3_t out)
 	out[2] = in[2] * scale;
 }
 
-int Q_log2(int val)
-{
-	int answer = 0;
-
-	while (val >>= 1)
-		answer++;
-
-	return answer;
-}
-
 void ClearBounds(vec3_t mins, vec3_t maxs)
 {
 	mins[0] = mins[1] = mins[2] = 99999;
@@ -682,52 +660,6 @@ void QuaternionSlerp(const vec4_t p, vec4_t q, float t, vec4_t qt)
 	}
 }
 
-void FloorDivMod(double numer, double denom, int *quotient, int *rem)
-{
-	int q, r;
-	double x;
-
-	if (numer >= 0.0)
-	{
-		x = floor(numer / denom);
-		q = (int)x;
-		r = (int)floor(numer - (x * denom));
-	}
-	else
-	{
-		x = floor(-numer / denom);
-		q = -(int)x;
-		r = (int)floor(-numer - (x * denom));
-
-		if (r != 0)
-		{
-			q--;
-			r = (int)denom - r;
-		}
-	}
-
-	*quotient = q;
-	*rem = r;
-}
-
-int GreatestCommonDivisor(int i1, int i2)
-{
-	if (i1 > i2)
-	{
-		if (i2 == 0)
-			return (i1);
-
-		return GreatestCommonDivisor(i2, i1 % i2);
-	}
-	else
-	{
-		if (i1 == 0)
-			return (i2);
-
-		return GreatestCommonDivisor(i1, i2 % i1);
-	}
-}
-
 fixed16_t Invert24To16(fixed16_t val)
 {
 	if (val < 256)
@@ -846,7 +778,7 @@ int InvertMatrix(const float *m, float *out)
 #undef SWAP_ROWS
 }
 
-void SinCos(float radians, float *sine, float *cosine)
+inline void SinCos(float radians, float *sine, float *cosine)
 {
 	*sine = sinf(radians);
 	*cosine = cosf(radians);

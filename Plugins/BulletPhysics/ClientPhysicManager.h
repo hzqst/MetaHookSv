@@ -132,12 +132,12 @@ public:
 	virtual void DebugDraw(void) = 0;
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
-	virtual void LoadPhysicConfigs(void) = 0;
+	virtual void LoadPhysicObjectConfigs(void) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual CClientPhysicObjectConfig* LoadPhysicConfigForModel(model_t* mod) = 0;
+	virtual CClientPhysicObjectConfig* LoadPhysicObjectConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;

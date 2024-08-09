@@ -59,11 +59,11 @@ public:
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
-	void LoadPhysicConfigs(void) override;
+	void LoadPhysicObjectConfigs(void) override;
 	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
-	CClientPhysicObjectConfig* LoadPhysicConfigForModel(model_t* mod) override;
+	CClientPhysicObjectConfig* LoadPhysicObjectConfigForModel(model_t* mod) override;
 
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
@@ -104,7 +104,7 @@ private:
 	void GenerateGargantuaIndexVertexArray();
 	void FreeGargantuaIndexVertexArray();
 
-	void LoadPhysicConfigFromFiles(CClientPhysicObjectConfigStorage& Storage, const std::string& filename);
+	void LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConfigStorage& Storage, const std::string& filename);
 
 	void RemoveAllPhysicConfigs();
 
@@ -114,5 +114,5 @@ private:
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 
-	void LoadObjFromFile();
+	bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
 };

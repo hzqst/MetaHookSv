@@ -1108,7 +1108,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 void BV_Reload_f(void)
 {
 	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_RagdollObject);
-	ClientPhysicManager()->LoadPhysicConfigs();
+	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
 void BV_ThreadPerson_f(void)

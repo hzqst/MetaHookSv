@@ -1,5 +1,6 @@
 #include <metahook.h>
 #include <triangleapi.h>
+#include "mathlib2.h"
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "enginedef.h"
@@ -49,7 +50,7 @@ btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 
 btTransform MatrixLookAt(const btTransform& transform, const btVector3& at, const btVector3& forward)
 {
-	auto originVector = forward;
+	const auto &originVector = forward;
 	auto worldToLocalTransform = transform.inverse();
 
 	//transform the target in world position to object's local position

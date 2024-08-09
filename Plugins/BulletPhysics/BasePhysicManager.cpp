@@ -4,13 +4,16 @@
 #include "privatehook.h"
 #include "enginedef.h"
 #include "plugins.h"
-#include "mathlib2.h"
 #include "CounterStrike.h"
 #include "BasePhysicManager.h"
 #include "ClientEntityManager.h"
+#include "mathlib2.h"
+#include "util.h"
 
 #include <sstream>
 #include <ScopeExit/ScopeExit.h>
+
+#include <KeyValues.h>
 
 IClientPhysicManager* g_pClientPhysicManager{};
 
@@ -37,7 +40,7 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_Any);
-	LoadPhysicConfigs();
+	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
 	GenerateBarnacleIndexVertexArray();
@@ -82,7 +85,7 @@ void CBasePhysicManager::RemoveAllPhysicConfigs()
 	m_physicConfigs.clear();
 }
 
-void CBasePhysicManager::LoadPhysicConfigs(void)
+void CBasePhysicManager::LoadPhysicObjectConfigs(void)
 {
 	RemoveAllPhysicConfigs();
 
@@ -102,7 +105,7 @@ void CBasePhysicManager::LoadPhysicConfigs(void)
 
 				if (moddata)
 				{
-					LoadPhysicConfigForModel(mod);
+					LoadPhysicObjectConfigForModel(mod);
 				}
 			}
 		}
@@ -166,14 +169,187 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicConfigFromNewFileBuffer(const char* buf)
+static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
+{
+	auto pRagdollObjectConfig = new CClientRagdollObjectConfig();
+
+	auto pRigidBodiesKey = pKeyValues->FindKey("RigidBodies");
+
+	if (pRigidBodiesKey)
+	{
+		for (auto pRigidBodySubKey = pRigidBodiesKey->GetFirstSubKey(); pRigidBodySubKey; pRigidBodySubKey = pRigidBodySubKey->GetNextKey())
+		{
+			auto pRigidBodyConfig = new CClientRigidBodyConfig();
+
+			pRigidBodyConfig->name = pRigidBodySubKey->GetString("name");
+			pRigidBodyConfig->flags = pRigidBodySubKey->GetInt("flags");
+			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel");
+			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex");
+			
+			auto origin = pRigidBodySubKey->GetString("origin");
+
+			if (origin)
+			{
+				UTIL_ParseStringAsVector3(origin, pRigidBodyConfig->origin);
+			}
+
+			auto angles = pRigidBodySubKey->GetString("angles");
+
+			if (angles)
+			{
+				UTIL_ParseStringAsVector3(angles, pRigidBodyConfig->angles);
+			}
+
+			pRigidBodyConfig->mass = pRigidBodySubKey->GetFloat("mass", 1);
+			pRigidBodyConfig->density = pRigidBodySubKey->GetFloat("density", 1);
+			pRigidBodyConfig->linearFriction = pRigidBodySubKey->GetFloat("linearFriction", BULLET_DEFAULT_LINEAR_FIRCTION);
+			pRigidBodyConfig->rollingFriction = pRigidBodySubKey->GetFloat("rollingFriction", BULLET_DEFAULT_ANGULAR_FIRCTION);
+			pRigidBodyConfig->restitution = pRigidBodySubKey->GetFloat("restitution", BULLET_DEFAULT_RESTITUTION);
+			pRigidBodyConfig->ccdRadius = pRigidBodySubKey->GetFloat("ccdRadius", 0);
+			pRigidBodyConfig->ccdThreshold = pRigidBodySubKey->GetFloat("ccdThreshold", 0);
+			pRigidBodyConfig->linearSleepingThreshold = pRigidBodySubKey->GetFloat("linearSleepingThreshold", BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD);
+			pRigidBodyConfig->angularSleepingThreshold = pRigidBodySubKey->GetFloat("angularSleepingThreshold", BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD);
+
+			auto pShapesKey = pRigidBodySubKey->FindKey("shapes");
+
+			if (pShapesKey)
+			{
+				for (auto pShapeSubKey = pShapesKey->GetFirstSubKey(); pShapeSubKey; pShapeSubKey = pShapeSubKey->GetNextKey())
+				{
+					auto pShapeConfig = new CClientCollisionShapeConfig();
+
+					pShapeConfig->name = pShapeSubKey->GetString("name");
+
+					auto type = pShapeSubKey->GetString("type");
+
+					if (type)
+					{
+						if (!strcmp(type, "Box"))
+						{
+							pShapeConfig->type = PhysicShape_Box;
+						}
+						if (!strcmp(type, "Sphere"))
+						{
+							pShapeConfig->type = PhysicShape_Sphere;
+						}
+						if (!strcmp(type, "Capsule"))
+						{
+							pShapeConfig->type = PhysicShape_Capsule;
+						}
+						if (!strcmp(type, "Cylinder"))
+						{
+							pShapeConfig->type = PhysicShape_Cylinder;
+						}
+						if (!strcmp(type, "MultiSphere"))
+						{
+							pShapeConfig->type = PhysicShape_MultiSphere;
+						}
+						if (!strcmp(type, "TriangleMesh"))
+						{
+							pShapeConfig->type = PhysicShape_TriangleMesh;
+						}
+					}
+
+					pShapeConfig->direction = pShapeSubKey->GetInt("direction");
+					
+					auto origin = pShapeSubKey->GetString("origin");
+
+					if (origin)
+					{
+						UTIL_ParseStringAsVector3(origin, pShapeConfig->origin);
+					}
+
+					auto angles = pShapeSubKey->GetString("angles");
+
+					if (angles)
+					{
+						UTIL_ParseStringAsVector3(angles, pShapeConfig->angles);
+					}
+
+					auto size = pShapeSubKey->GetString("size");
+
+					if (size)
+					{
+						if (!UTIL_ParseStringAsVector3(size, pShapeConfig->size))
+						{
+							if (!UTIL_ParseStringAsVector2(size, pShapeConfig->size))
+							{
+								UTIL_ParseStringAsVector1(size, pShapeConfig->size);
+							}
+						}
+					}
+
+					 pShapeConfig->objpath = pShapeSubKey->GetString("objfile");
+				}
+			}
+
+			pRagdollObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+		}
+	}
+
+	return pRagdollObjectConfig;
+}
+
+static CClientPhysicObjectConfig* LoadStaticObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
 	//TODO
 	return nullptr;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicConfigFromNewFile(const std::string& filename)
+static CClientPhysicObjectConfig* LoadDynamicObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
+	//TODO
+	return nullptr;
+}
+
+static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromKeyValues(KeyValues *pKeyValues)
+{
+	auto type = pKeyValues->GetString("type");
+
+	if (type)
+	{
+		if (!strcmp(type, "RagdollObject"))
+		{
+			return LoadRagdollObjectConfigFromKeyValues(pKeyValues);
+		}
+		else if (!strcmp(type, "StaticObject"))
+		{
+			return LoadStaticObjectConfigFromKeyValues(pKeyValues);
+		}
+		else if (!strcmp(type, "DynamicObject"))
+		{
+			return LoadDynamicObjectConfigFromKeyValues(pKeyValues);
+		}
+	}
+
+	gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromKeyValues: invalid \"type\" from KeyValues!\n");
+
+	return nullptr;
+}
+
+static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromNewFile(const std::string& filename)
+{
+	auto pKeyValues = new KeyValues("PhysicObjectConfig");
+
+	SCOPE_EXIT{ delete pKeyValues; };
+
+	bool bLoaded = false;
+
+	if (g_pFileSystem_HL25)
+	{
+		bLoaded = pKeyValues->LoadFromFile((IFileSystem*)g_pFileSystem_HL25, filename.c_str());
+	}
+	else
+	{
+		bLoaded = pKeyValues->LoadFromFile(g_pFileSystem, filename.c_str());
+	}
+
+	if (!bLoaded)
+		return nullptr;
+
+	return LoadPhysicObjectConfigFromKeyValues(pKeyValues);
+
+#if 0
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
 	if (!pFileContent)
@@ -181,7 +357,8 @@ static CClientPhysicObjectConfig* LoadPhysicConfigFromNewFile(const std::string&
 
 	SCOPE_EXIT{ gEngfuncs.COM_FreeFile((void*)pFileContent); };
 
-	return LoadPhysicConfigFromNewFileBuffer(pFileContent);
+	return LoadPhysicObjectConfigFromNewFileBuffer(pFileContent);
+#endif
 }
 
 static std::string trim(const std::string& str) {
@@ -309,7 +486,7 @@ static bool ParseConstraintLine(CClientRagdollObjectConfig* pRagdollConfig, cons
 	return false;
 }
 
-CClientPhysicObjectConfig*LoadPhysicConfigFromLegacyFileBuffer(const char *buf)
+CClientPhysicObjectConfig*LoadPhysicObjectConfigFromLegacyFileBuffer(const char *buf)
 {
 	auto pRagdollConfig = new CClientRagdollObjectConfig();
 
@@ -368,7 +545,7 @@ CClientPhysicObjectConfig*LoadPhysicConfigFromLegacyFileBuffer(const char *buf)
 	return pRagdollConfig;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicConfigFromLegacyFile(const std::string& filename)
+static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromLegacyFile(const std::string& filename)
 {
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
@@ -377,16 +554,16 @@ static CClientPhysicObjectConfig* LoadPhysicConfigFromLegacyFile(const std::stri
 
 	SCOPE_EXIT{ gEngfuncs.COM_FreeFile((void*)pFileContent); };
 
-	return LoadPhysicConfigFromLegacyFileBuffer(pFileContent);
+	return LoadPhysicObjectConfigFromLegacyFileBuffer(pFileContent);
 }
 
-void CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicObjectConfigStorage &Storage, const std::string& filename)
+void CBasePhysicManager::LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConfigStorage &Storage, const std::string& filename)
 {
 	std::string fullname = filename;
 
 	if (fullname.length() < 4)
 	{
-		gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: Invalid name \"%s\"\n", filename.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: Invalid name \"%s\"\n", filename.c_str());
 		Storage.state = PhysicConfigState_LoadedWithError;
 		return;
 	}
@@ -396,40 +573,40 @@ void CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicObjectConfigStor
 	auto fullname_physic = fullname;
 	fullname_physic += "_physic.txt";
 
-	auto pConfig = LoadPhysicConfigFromNewFile(fullname_physic);
+	auto pConfig = LoadPhysicObjectConfigFromNewFile(fullname_physic);
 
 	if(pConfig)
 	{
 		Storage.pConfig = pConfig;
 		Storage.state = PhysicConfigState_Loaded;
-		gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return;
 	}
 
 	auto fullname_ragdoll = fullname;
 	fullname_ragdoll  += "_ragdoll.txt";
 
-	pConfig = LoadPhysicConfigFromLegacyFile(fullname_ragdoll);
+	pConfig = LoadPhysicObjectConfigFromLegacyFile(fullname_ragdoll);
 
 	if (pConfig)
 	{
 		Storage.pConfig = pConfig;
 		Storage.state = PhysicConfigState_Loaded;
-		gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return;
 	}
 
-	gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: Could not load physic configs for \"%s\".\n", fullname.c_str());
+	gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: Could not load physic configs for \"%s\".\n", fullname.c_str());
 	Storage.state = PhysicConfigState_LoadedWithError;
 }
 
-CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicConfigForModel(model_t* mod)
+CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicObjectConfigForModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex == -1)
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicConfigForModel: Invalid model index\n");
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfigForModel: Invalid model index\n");
 		return nullptr;
 	}
 
@@ -438,14 +615,14 @@ CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicConfigForModel(model_t*
 
 	if (modelindex >= m_physicConfigs.size())
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicConfig: Invalid model index\n");
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index\n");
 		return nullptr;
 	}
 
 	auto& Storage = m_physicConfigs[modelindex];
 
 	if (Storage.state == PhysicConfigState_NotLoaded)
-		LoadPhysicConfigFromFiles(Storage, mod->name);
+		LoadPhysicObjectConfigFromFiles(Storage, mod->name);
 
 	return Storage.pConfig;
 }
@@ -739,7 +916,7 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex)
 {
-	auto pPhysicConfig = ClientPhysicManager()->LoadPhysicConfigForModel(mod);
+	auto pPhysicConfig = ClientPhysicManager()->LoadPhysicObjectConfigForModel(mod);
 
 	if (!pPhysicConfig)
 		return;
@@ -1429,13 +1606,12 @@ CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod
 #include <vector>
 #include <cstring>
 
-// 自定义文件系统指针
 extern IFileSystem* g_pFileSystem;
 extern IFileSystem_HL25* g_pFileSystem_HL25;
 
-class FileBuffer : public std::streambuf {
+class CFileStreamBuffer : public std::streambuf {
 public:
-	FileBuffer(const std::string& filename) {
+	CFileStreamBuffer(const std::string& filename) {
 
 		auto hFileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "rb");
 
@@ -1458,13 +1634,13 @@ private:
 
 class CFileSystemStream : public std::istream {
 public:
-	CFileSystemStream(const std::string& filename) : std::istream(&buffer_), buffer_(filename) {}
+	CFileSystemStream(const std::string& filename) : std::istream(&fileStreamBuffer_), fileStreamBuffer_(filename) {}
 
 private:
-	FileBuffer buffer_;
+	CFileStreamBuffer fileStreamBuffer_;
 };
 
-bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray) {
+bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;

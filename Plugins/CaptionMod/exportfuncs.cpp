@@ -2,6 +2,8 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 
+#include <mathlib/mathlib.h>
+
 //Viewport
 #include <IVGUI2Extension.h>
 #include <VGUI/VGUI.h>

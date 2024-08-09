@@ -5,7 +5,8 @@
 #include "plugins.h"
 #include "command.h"
 #include "message.h"
-#include "qgl.h"
+
+#include "VGUI2ExtensionImport.h"
 
 #include "ClientPhysicManager.h"
 
@@ -67,6 +68,10 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Engine_FillAddreess();
 	Engine_InstallHook();
 
+	VGUI2Extension_Init();
+	BaseUI_InstallHooks();
+	GameUI_InstallHooks();
+
 	g_pClientPhysicManager = BulletPhysicManager_CreateInstance();
 }
 
@@ -85,14 +90,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	Client_FillAddress();
-
-	auto err = glewInit();
-
-	if (GLEW_OK != err)
-	{
-		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
-		return;
-	}
 }
 
 void IPluginsV4::ExitGame(int iResult)

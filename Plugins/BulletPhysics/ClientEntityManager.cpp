@@ -1,9 +1,9 @@
 #include <metahook.h>
 #include <triangleapi.h>
+#include "mathlib2.h"
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "enginedef.h"
-#include "mathlib2.h"
 #include "ClientEntityManager.h"
 
 #include <unordered_map>

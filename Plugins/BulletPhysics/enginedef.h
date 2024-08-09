@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef ENGINEDEF_H
+#define ENGINEDEF_H
+
 #include "bspfile.h"
 #include "studio.h"
 #include "com_model.h"
@@ -70,11 +73,16 @@ typedef struct glRect_SvEngine_s
 	int l, t, w, h;
 }glRect_SvEngine_t;
 
+#ifndef VRECT_DEFINED
+#define VRECT_DEFINED
+
 typedef struct vrect_s
 {
 	int x, y, width, height;
 	struct vrect_s *pnext;
 }vrect_t;
+
+#endif
 
 typedef struct
 {
@@ -417,3 +425,5 @@ typedef enum
 
 //Magic Number
 #define ENTINDEX_TEMPENTITY (1000000)
+
+#endif

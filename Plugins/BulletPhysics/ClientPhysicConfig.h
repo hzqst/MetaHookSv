@@ -39,6 +39,7 @@ public:
 
 	//TODO
 	//std::vector<float> multispheres;
+	std::string objpath;
 
 	CPhysicVertexArray* m_pVertexArray{};
 	CPhysicIndexArray* m_pIndexArray{};
@@ -85,6 +86,8 @@ public:
 	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
 	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };
 	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
+
+	//TODO?
 	vec3_t centerOfMass{ 0 };
 };
 
