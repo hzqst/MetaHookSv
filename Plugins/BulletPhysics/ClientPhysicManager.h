@@ -10,16 +10,25 @@
 #include "ClientPhysicCommon.h"
 #include "ClientPhysicConfig.h"
 
+class IPhysicObject;
+
 class CPhysicObjectUpdateContext
 {
 public:
-	bool bShouldKillMe{};
-	bool bRigidbodyKinematicChanged{ };
+	CPhysicObjectUpdateContext(IPhysicObject* pPhysicObject) : m_pPhysicObject(pPhysicObject)
+	{
+
+	}
+
+	IPhysicObject* m_pPhysicObject{};
+
+	bool m_bShouldKillMe{};
+	bool m_bRigidbodyKinematicChanged{ };
 
 	//Only available for RagdollObject
-	bool bActivityChanged{ };
-	bool bRigidbodyPoseChanged{ };
-	bool bRigidbodyPoseUpdated{ };
+	bool m_bActivityChanged{ };
+	bool m_bRigidbodyPoseChanged{ };
+	bool m_bRigidbodyPoseUpdated{ };
 };
 
 class IPhysicObject : public IBaseInterface
@@ -59,15 +68,15 @@ public:
 	virtual void TransformOwnerEntity(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
+	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) = 0;
 
 	virtual void AddToPhysicWorld(void* world) = 0;
 	virtual void RemoveFromPhysicWorld(void* world) = 0;
 
 	virtual bool IsClientEntityNonSolid() const = 0;
-	virtual bool IsBarnacle() const = 0;
 };
 
-class IPhysicObjectService : public IBaseInterface
+class IPhysicTickAction : public IBaseInterface
 {
 public:
 	virtual void Destroy()
@@ -75,7 +84,7 @@ public:
 		delete this;
 	}
 
-	virtual IPhysicObject* GetPhysicObject() const = 0;
+	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 };
 
 class ICollisionPhysicObject : public IPhysicObject
@@ -120,7 +129,7 @@ public:
 	virtual void UpdatePose(entity_state_t* curstate) = 0;
 	virtual void ApplyBarnacle(cl_entity_t* pBarnacleEntity) = 0;
 	virtual void ApplyGargantua(cl_entity_t* pGargantuaEntity) = 0;
-	virtual bool SyncFirstPersonView(cl_entity_t* ent, struct ref_params_s* pparams) = 0;
+	virtual bool SyncFirstPersonView(struct ref_params_s* pparams) = 0;
 };
 
 class IClientPhysicManager : public IBaseInterface

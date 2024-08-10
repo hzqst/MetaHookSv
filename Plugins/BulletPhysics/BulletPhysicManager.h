@@ -15,13 +15,9 @@ enum BulletPhysicCollisionFilterGroups
 	WorldFilter = 0x200,
 };
 
-class CBulletBaseSharedUserData
+class CBulletBaseSharedUserData : public IBaseInterface
 {
 public:
-	virtual ~CBulletBaseSharedUserData()
-	{
-
-	}
 };
 
 class CBulletCollisionShapeSharedUserData : public CBulletBaseSharedUserData
@@ -42,6 +38,17 @@ public:
 	}
 
 	btTriangleIndexVertexArray* m_pIndexVertexArray{};
+};
+
+class CBulletRigidBodyTickAction : public IPhysicTickAction
+{
+public:
+	CBulletRigidBodyTickAction(btRigidBody* pRigidBody) : m_pRigidBody(pRigidBody)
+	{
+
+	}
+
+	btRigidBody* m_pRigidBody{};
 };
 
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
@@ -69,6 +76,14 @@ public:
 		m_density = density;
 	}
 
+	~CBulletRigidBodySharedUserData()
+	{
+		for (auto pAction : m_actions)
+		{
+			delete pAction;
+		}
+	}
+
 	float m_mass{};
 	btVector3 m_inertia{};
 
@@ -81,6 +96,9 @@ public:
 	int m_boneindex{ -1 };
 	int m_debugDrawLevel{ 0 };
 	float m_density{ 1 };
+	bool m_addedToPhysicWorld{};
+
+	std::vector<IPhysicTickAction*> m_actions;
 };
 
 class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
@@ -88,12 +106,15 @@ class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
 public:
 	CBulletConstraintSharedUserData(const CClientConstraintConfig* pConstraintConfig)
 	{
+		name = pConstraintConfig->name;
 		m_disableCollision = pConstraintConfig->disableCollision;
 		m_debugDrawLevel = pConstraintConfig->debugDrawLevel;
 	}
 
-	bool m_disableCollision{};
+	std::string name;
 	int m_debugDrawLevel{};
+	bool m_disableCollision{};
+	bool m_addedToPhysicWorld{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -155,7 +176,12 @@ CBulletEntityMotionState : public CBulletBaseMotionState
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	CBulletEntityMotionState(IPhysicObject*pPhysicObject) : CBulletBaseMotionState(pPhysicObject)
+	CBulletEntityMotionState(IPhysicObject* pPhysicObject) : CBulletBaseMotionState(pPhysicObject)
+	{
+		m_offsetmatrix.setIdentity();
+	}
+
+	CBulletEntityMotionState(IPhysicObject *pPhysicObject, const btTransform &offsetmatrix) : CBulletBaseMotionState(pPhysicObject), m_offsetmatrix(offsetmatrix)
 	{
 
 	}
@@ -168,6 +194,8 @@ public:
 	{
 		return false;
 	}
+
+	btTransform m_offsetmatrix;
 };
 
 class CBulletPhysicManager : public CBasePhysicManager
@@ -200,14 +228,18 @@ public:
 CBulletRigidBodySharedUserData* GetSharedUserDataFromRigidBody(btRigidBody* RigidBody);
 CBulletConstraintSharedUserData* GetSharedUserDataFromConstraint(btTypedConstraint* Constraint);
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape* pCollisionShape);
-
+CBulletBaseMotionState* GetMotionStateFromRigidBody(btRigidBody* RigidBody);
 IPhysicObject* GetPhysicObjectFromRigidBody(btRigidBody* pRigidBody);
 
 void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
 void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody);
 void OnBeforeDeleteBulletConstraint(btTypedConstraint* pConstraint);
 
-btScalar GetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
+btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
+btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform);
+btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB);
+btCollisionShape* BulletCreateCollisionShape(const CPhysicObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig);
+btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
 
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
 void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);

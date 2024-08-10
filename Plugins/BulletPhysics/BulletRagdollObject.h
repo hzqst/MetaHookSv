@@ -3,6 +3,58 @@
 #include "BaseRagdollObject.h"
 #include "BulletPhysicManager.h"
 
+class CBulletRigidBodyBarnacleDragForceAction : public CBulletRigidBodyTickAction
+{
+public:
+	CBulletRigidBodyBarnacleDragForceAction(btRigidBody* pRigidBody, int iBarnacleIndex, float flForce, float flExtraHeight) : 
+		CBulletRigidBodyTickAction(pRigidBody), 
+		m_iBarnacleIndex(iBarnacleIndex), 
+		m_flForce(flForce),
+		m_flExtraHeight(flExtraHeight)
+	{
+
+	}
+
+	void Update(CPhysicObjectUpdateContext* ctx) override
+	{
+		auto pBarnacleEntity = ClientEntityManager()->GetEntityByIndex(m_iBarnacleIndex);
+
+		if (!pBarnacleEntity)
+			return;
+
+		if (!ClientEntityManager()->IsEntityBarnacle(pBarnacleEntity))
+			return;
+
+		if (pBarnacleEntity->curstate.sequence == 5)
+			return;
+
+		vec3_t vecPhysicObjectOrigin{0};
+
+		if (!ctx->m_pPhysicObject->GetOrigin(vecPhysicObjectOrigin))
+			return;
+
+		vec3_t vecClientEntityOrigin{ 0 };
+
+		VectorCopy(ctx->m_pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+
+		if (vecPhysicObjectOrigin[2] > vecClientEntityOrigin[2] + m_flExtraHeight)
+			return;
+
+		btVector3 vecForce(0, 0, m_flForce);
+
+		if (vecPhysicObjectOrigin[2] > vecClientEntityOrigin[2])
+		{
+			vecForce[2] *= (vecClientEntityOrigin[2] + m_flExtraHeight - vecPhysicObjectOrigin[2]) / m_flExtraHeight;
+		}
+
+		m_pRigidBody->applyCentralForce(vecForce);
+	}
+
+	int m_iBarnacleIndex{ -1 };
+	float m_flExtraHeight{ 24 };
+	float m_flForce{};
+};
+
 class CBulletRagdollObject : public CBaseRagdollObject
 {
 public:
@@ -73,7 +125,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			auto pMotionState = (CBulletBaseMotionState*)pRigidBody->getMotionState();
+			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
 
 			if (pMotionState->IsBoneBased())
 			{
@@ -119,13 +171,14 @@ public:
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-			auto pMotionState = (CBulletBaseMotionState*)pRigidBody->getMotionState();
+
+			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
 
 			if (pMotionState->IsBoneBased())
 			{
 				auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
 
-				if (!pRigidBody->isKinematicObject())//(pSharedUserData->m_flags & PhysicRigidBodyFlag_AlwaysDynamic)
+				if (!pRigidBody->isKinematicObject())
 				{
 					const auto& bonematrix = pBoneMotionState->m_bonematrix;
 
@@ -158,7 +211,7 @@ public:
 
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			auto pMotionState = (CBulletBaseMotionState*)pRigidBody->getMotionState();
+			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
 
 			if (pMotionState->IsBoneBased())
 			{
@@ -174,12 +227,20 @@ public:
 				pRigidBody->setInterpolationWorldTransform(newWorldTrans);
 				pRigidBody->getMotionState()->setWorldTransform(newWorldTrans);
 			}
-
-			//
 		}
+	}
 
-		//m_bUpdateKinematic = true;
-		//m_flNextUpdateKinematicTime = curstate->msg_time + 0.05f;
+	void ApplyBarnacle(cl_entity_t* pBarnacleEntity) override
+	{
+		CBaseRagdollObject::ApplyBarnacle(pBarnacleEntity);
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->setLinearVelocity(btVector3(0, 0, 0));
+			pRigidBody->setAngularVelocity(btVector3(0, 0, 0));
+
+
+		}
 	}
 
 	void Update(CPhysicObjectUpdateContext* ctx) override
@@ -191,7 +252,17 @@ public:
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			if (UpdateRigidBodyKinematic(pRigidBody, false, false))
-				ctx->bRigidbodyKinematicChanged = true;
+				ctx->m_bRigidbodyKinematicChanged = true;
+
+			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+
+			if (pSharedUserData)
+			{
+				for (auto pAction : pSharedUserData->m_actions)
+				{
+					pAction->Update(ctx);
+				}
+			}
 		}
 	}
 
@@ -205,18 +276,28 @@ public:
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
-		for (auto RigidBody : m_RigidBodies)
+		for (auto pRigidBody : m_RigidBodies)
 		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(RigidBody);
+			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			dynamicWorld->addRigidBody(RigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
+			if (!pSharedUserData->m_addedToPhysicWorld)
+			{
+				dynamicWorld->addRigidBody(pRigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
+
+				pSharedUserData->m_addedToPhysicWorld = true;
+			}
 		}
 
-		for (auto Constraint : m_Constraints)
+		for (auto pConstraint : m_Constraints)
 		{
-			auto pSharedUserData = GetSharedUserDataFromConstraint(Constraint);
+			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
 
-			dynamicWorld->addConstraint(Constraint, pSharedUserData->m_disableCollision);
+			if (!pSharedUserData->m_addedToPhysicWorld)
+			{
+				dynamicWorld->addConstraint(pConstraint, pSharedUserData->m_disableCollision);
+
+				pSharedUserData->m_addedToPhysicWorld = true;
+			}
 		}
 	}
 
@@ -224,14 +305,28 @@ public:
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
-		for (auto Constraint : m_Constraints)
+		for (auto pConstraint : m_Constraints)
 		{
-			dynamicWorld->removeConstraint(Constraint);
+			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+
+			if (pSharedUserData->m_addedToPhysicWorld)
+			{
+				dynamicWorld->removeConstraint(pConstraint);
+
+				pSharedUserData->m_addedToPhysicWorld = false;
+			}
 		}
 
-		for (auto RigidBody : m_RigidBodies)
+		for (auto pRigidBody : m_RigidBodies)
 		{
-			dynamicWorld->removeRigidBody(RigidBody);
+			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+
+			if (pSharedUserData->m_addedToPhysicWorld)
+			{
+				dynamicWorld->removeRigidBody(pRigidBody);
+
+				pSharedUserData->m_addedToPhysicWorld = false;
+			}
 		}
 	}
 
@@ -247,7 +342,7 @@ private:
 
 	void CheckConstraintLinearErrors(CPhysicObjectUpdateContext* ctx)
 	{
-		if (ctx->bRigidbodyPoseChanged)
+		if (ctx->m_bRigidbodyPoseChanged)
 			return;
 
 		bool bShouldResetPose = false;
@@ -273,7 +368,7 @@ private:
 
 			if (bShouldPerformCheck)
 			{
-				auto errorMagnitude = GetConstraintLinearErrorMagnitude(pConstraint);
+				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pConstraint);
 
 				if (errorMagnitude > BULLET_MAX_TOLERANT_LINEAR_ERROR)
 				{
@@ -287,7 +382,7 @@ private:
 		{
 			ResetPose(GetClientEntityState());
 
-			ctx->bRigidbodyPoseChanged = true;
+			ctx->m_bRigidbodyPoseChanged = true;
 		}
 	}
 
@@ -409,172 +504,6 @@ private:
 		}
 	}
 
-	btMotionState* CreateMotionState(const CRagdollObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig)
-	{
-		if (pRigidConfig->isLegacyConfig)
-		{
-			btTransform bonematrix;
-
-			Matrix3x4ToTransform((*pbonetransform)[pRigidConfig->boneindex], bonematrix);
-
-			if (!(pRigidConfig->pboneindex >= 0 && pRigidConfig->pboneindex < CreationParam.m_studiohdr->numbones))
-			{
-				gEngfuncs.Con_Printf("CreateMotionState: invalid pConfig->pboneindex (%d).\n", pRigidConfig->pboneindex);
-				return nullptr;
-			}
-
-			const auto& boneorigin = bonematrix.getOrigin();
-
-			btVector3 pboneorigin((*pbonetransform)[pRigidConfig->pboneindex][0][3], (*pbonetransform)[pRigidConfig->pboneindex][1][3], (*pbonetransform)[pRigidConfig->pboneindex][2][3]);
-
-			btVector3 vecDirection = pboneorigin - boneorigin;
-
-			vecDirection = vecDirection.normalize();
-
-			btVector3 vecOriginWorldSpace = boneorigin + vecDirection * pRigidConfig->pboneoffset;
-
-			btTransform bonematrix2 = bonematrix;
-			bonematrix2.setOrigin(vecOriginWorldSpace);
-
-			btVector3 fwd(0, 1, 0);
-
-			auto rigidTransformWorldSpace = MatrixLookAt(bonematrix2, pboneorigin, fwd);
-
-			btTransform offsetmatrix;
-
-			offsetmatrix.mult(bonematrix.inverse(), rigidTransformWorldSpace);
-
-			return new CBulletBoneMotionState(this, bonematrix, offsetmatrix);
-		}
-
-		if (pRigidConfig->boneindex >= 0 && pRigidConfig->boneindex < CreationParam.m_studiohdr->numbones)
-		{
-			btTransform bonematrix;
-
-			Matrix3x4ToTransform((*pbonetransform)[pRigidConfig->boneindex], bonematrix);
-
-			btVector3 vecOrigin(pRigidConfig->origin[0], pRigidConfig->origin[1], pRigidConfig->origin[2]);
-
-			btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
-
-			btVector3 vecAngles(pRigidConfig->angles[0], pRigidConfig->angles[1], pRigidConfig->angles[2]);
-
-			EulerMatrix(vecAngles, localTrans.getBasis());
-
-			const auto& offsetmatrix = localTrans;
-
-			return new CBulletBoneMotionState(this, bonematrix, offsetmatrix);
-		}
-
-		return new CBulletEntityMotionState(this);
-	}
-
-	btCollisionShape* CreateCollisionShapeInternal(const CRagdollObjectCreationParameter& CreationParam, const CClientCollisionShapeConfig* pConfig)
-	{
-		btCollisionShape* pShape{};
-
-		switch (pConfig->type)
-		{
-		case PhysicShape_Box:
-		{
-			btVector3 size(pConfig->size[0], pConfig->size[1], pConfig->size[2]);
-
-			pShape = new btBoxShape(size);
-
-			break;
-		}
-		case PhysicShape_Sphere:
-		{
-			auto size = btScalar(pConfig->size[0]);
-
-			pShape = new btSphereShape(size);
-
-			break;
-		}
-		case PhysicShape_Capsule:
-		{
-			if (pConfig->direction == PhysicShapeDirection_X)
-			{
-				pShape = new btCapsuleShapeX(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
-			}
-			else if (pConfig->direction == PhysicShapeDirection_Y)
-			{
-				pShape = new btCapsuleShape(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
-			}
-			else if (pConfig->direction == PhysicShapeDirection_Z)
-			{
-				pShape = new btCapsuleShapeZ(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
-			}
-
-			break;
-		}
-		case PhysicShape_Cylinder:
-		{
-			if (pConfig->direction == PhysicShapeDirection_X)
-			{
-				pShape = new btCylinderShapeX(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
-			}
-			else if (pConfig->direction == PhysicShapeDirection_Y)
-			{
-				pShape = new btCylinderShape(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
-			}
-			else if (pConfig->direction == PhysicShapeDirection_Z)
-			{
-				pShape = new btCylinderShapeZ(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
-			}
-
-			break;
-		}
-		}
-
-		return pShape;
-	}
-
-	btCollisionShape* CreateCollisionShape(const CRagdollObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pConfig)
-	{
-		if (pConfig->shapes.size() > 1)
-		{
-			auto pCompoundShape = new btCompoundShape();
-
-			for (auto pShapeConfig : pConfig->shapes)
-			{
-				auto shape = CreateCollisionShapeInternal(CreationParam, pShapeConfig);
-
-				if (shape)
-				{
-					btTransform trans;
-
-					trans.setIdentity();
-
-					EulerMatrix(btVector3(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]), trans.getBasis());
-
-					trans.setOrigin(btVector3(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]));
-
-					pCompoundShape->addChildShape(trans, shape);
-				}
-			}
-
-			if (!pCompoundShape->getNumChildShapes())
-			{
-				OnBeforeDeleteBulletCollisionShape(pCompoundShape);
-
-				delete pCompoundShape;
-
-				return nullptr;
-			}
-
-			return pCompoundShape;
-		}
-		else if (pConfig->shapes.size() == 1)
-		{
-			auto pShapeConfig = pConfig->shapes[0];
-
-			return CreateCollisionShapeInternal(CreationParam, pShapeConfig);
-		}
-
-		return nullptr;
-	}
-
 	btRigidBody* FindRigidBodyByName(const std::string& name)
 	{
 		for (auto pRigidBody : m_RigidBodies)
@@ -605,7 +534,7 @@ private:
 			return nullptr;
 		}
 
-		auto pMotionState = CreateMotionState(CreationParam, pRigidConfig);
+		auto pMotionState = BulletCreateMotionState(CreationParam, pRigidConfig, this);
 
 		if (!pMotionState)
 		{
@@ -613,7 +542,7 @@ private:
 			return nullptr;
 		}
 
-		auto pCollisionShape = CreateCollisionShape(CreationParam, pRigidConfig);
+		auto pCollisionShape = BulletCreateCollisionShape(CreationParam, pRigidConfig);
 
 		if (!pCollisionShape)
 		{
@@ -657,258 +586,6 @@ private:
 		return pRigidBody;
 	}
 
-	btTypedConstraint* CreateConstraintInternal(const CRagdollObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform)
-	{
-		btTypedConstraint* pConstraint{ };
-
-		switch (pConstraintConfig->type)
-		{
-		case PhysicConstraint_ConeTwist:
-		{
-			auto spanLimit1 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1];
-
-			if (isnan(spanLimit1))
-				return nullptr;
-
-			auto spanLimit2 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2];
-
-			if (isnan(spanLimit2))
-				return nullptr;
-
-			auto twistLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit];
-
-			if (isnan(twistLimit))
-				return nullptr;
-
-			auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSoftness];
-
-			if (isnan(softness))
-				softness = BULLET_DEFAULT_SOFTNESS;
-
-			auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistBiasFactor];
-
-			if (isnan(biasFactor))
-				biasFactor = BULLET_DEFAULT_BIAS_FACTOR;
-
-			auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistRelaxationFactor];
-
-			if (isnan(relaxationFactor))
-				relaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
-
-			auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
-
-			if (isnan(LinearERP))
-				LinearERP = BULLET_DEFAULT_LINEAR_ERP;
-
-			auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-			if (isnan(LinearCFM))
-				LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-			auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-			if (isnan(LinearStopERP))
-				LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-			auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-			if (isnan(LinearStopCFM))
-				LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-			auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
-
-			if (isnan(AngularERP))
-				AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
-
-			auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
-
-			if (isnan(AngularCFM))
-				AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
-
-			auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
-
-			if (isnan(AngularStopERP))
-				AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
-
-			auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
-
-			if (isnan(AngularStopCFM))
-				AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
-
-			const auto& worldTransA = rbA->getWorldTransform();
-
-			const auto& worldTransB = rbB->getWorldTransform();
-
-			btTransform localA;
-			localA.mult(worldTransA.inverse(), globalJointTransform);
-
-			btTransform localB;
-			localB.mult(worldTransB.inverse(), globalJointTransform);
-
-			auto pConeTwist = new btConeTwistConstraint(*rbA, *rbB, localA, localB);
-
-			pConeTwist->setLimit(spanLimit1 * M_PI, spanLimit2 * M_PI, twistLimit * M_PI, softness, biasFactor, relaxationFactor);
-
-			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-			pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
-			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-			pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
-
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
-
-			pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 3);
-			pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 4);
-			pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
-			pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
-
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 4);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
-			pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
-
-			pConstraint = pConeTwist;
-
-			break;
-		}
-		case PhysicConstraint_Hinge:
-		{
-			auto lowLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit];
-
-			if (isnan(lowLimit))
-				return nullptr;
-
-			auto highLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit];
-
-			if (isnan(highLimit))
-				return nullptr;
-
-			auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSoftness];
-
-			if (isnan(softness))
-				softness = BULLET_DEFAULT_SOFTNESS;
-
-			auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistBiasFactor];
-
-			if (isnan(biasFactor))
-				biasFactor = BULLET_DEFAULT_BIAS_FACTOR;
-
-			auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistRelaxationFactor];
-
-			if (isnan(relaxationFactor))
-				relaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
-
-			auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
-
-			if (isnan(AngularERP))
-				AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
-
-			auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
-
-			if (isnan(AngularCFM))
-				AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
-
-			auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
-
-			if (isnan(AngularStopERP))
-				AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
-
-			auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
-
-			if (isnan(AngularStopCFM))
-				AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
-
-			const auto& worldTransA = rbA->getWorldTransform();
-
-			const auto& worldTransB = rbB->getWorldTransform();
-
-			btTransform localA;
-			localA.mult(worldTransA.inverse(), globalJointTransform);
-
-			btTransform localB;
-			localB.mult(worldTransB.inverse(), globalJointTransform);
-
-			auto pHinge = new btHingeConstraint(*rbA, *rbB, localA, localB);
-
-			pHinge->setLimit(lowLimit, highLimit, softness, biasFactor, relaxationFactor);
-
-			pHinge->setParam(BT_CONSTRAINT_ERP, AngularERP, 5);
-			pHinge->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
-
-			pHinge->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
-			pHinge->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
-
-			pConstraint = pHinge;
-			break;
-		}
-		case PhysicConstraint_Point:
-		{
-			auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
-
-			if (isnan(LinearERP))
-				LinearERP = BULLET_DEFAULT_LINEAR_ERP;
-
-			auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-			if (isnan(LinearCFM))
-				LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-			auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-			if (isnan(LinearStopERP))
-				LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-			auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-			if (isnan(LinearStopCFM))
-				LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-			const auto& worldTransA = rbA->getWorldTransform();
-
-			const auto& worldTransB = rbB->getWorldTransform();
-
-			btTransform localA;
-			localA.mult(worldTransA.inverse(), globalJointTransform);
-
-			btTransform localB;
-			localB.mult(worldTransB.inverse(), globalJointTransform);
-
-			auto pPoint2Point = new btPoint2PointConstraint(*rbA, *rbB, localA.getOrigin(), localB.getOrigin());
-
-			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-			pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
-			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-			pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
-
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-			pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
-
-			pConstraint = pPoint2Point;
-
-			break;
-		}
-		}
-
-		if (!pConstraint)
-			return nullptr;
-
-		pConstraint->setUserConstraintPtr(new CBulletConstraintSharedUserData(pConstraintConfig));
-
-		return pConstraint;
-	}
-
 	btTypedConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig)
 	{
 		auto pRigidBodyA = FindRigidBodyByName(pConstraintConfig->rigidbodyA);
@@ -933,8 +610,6 @@ private:
 			return nullptr;
 		}
 
-		btTransform globalJointTransform;
-
 		if (pConstraintConfig->isLegacyConfig)
 		{
 			if (!(pConstraintConfig->boneindexA >= 0 && pConstraintConfig->boneindexA < CreationParam.m_studiohdr->numbones))
@@ -954,8 +629,8 @@ private:
 			btTransform bonematrixB;
 			Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexB], bonematrixB);
 
-			auto worldTransA = pRigidBodyA->getWorldTransform();
-			auto worldTransB = pRigidBodyB->getWorldTransform();
+			const auto& worldTransA = pRigidBodyA->getWorldTransform();
+			const auto& worldTransB = pRigidBodyB->getWorldTransform();
 
 			auto invWorldTransA = worldTransA.inverse();
 			auto invWorldTransB = worldTransB.inverse();
@@ -976,6 +651,8 @@ private:
 			//Uses bone B's direction, but uses offsetB as local origin
 			localTransB.setOrigin(offsetB);
 
+			btTransform globalJointTransform;
+
 			if (offsetA.fuzzyZero())
 			{
 				//Use B as final global joint
@@ -987,42 +664,97 @@ private:
 				globalJointTransform.mult(worldTransA, localTransA);
 			}
 
-			return CreateConstraintInternal(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
+			return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
 		}
 
-		if (pConstraintConfig->isFromRigidBodyB)
+		if (!pConstraintConfig->useSeperateFrame)
 		{
-			auto worldTransB = pRigidBodyB->getWorldTransform();
+			if (pConstraintConfig->useGlobalJointFromA)
+			{
+				const auto& worldTransA = pRigidBodyA->getWorldTransform();
 
-			btVector3 vecOrigin(pConstraintConfig->origin[0], pConstraintConfig->origin[1], pConstraintConfig->origin[2]);
+				btVector3 vecOrigin(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
 
-			btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+				btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
 
-			btVector3 vecAngles(pConstraintConfig->angles[0], pConstraintConfig->angles[1], pConstraintConfig->angles[2]);
+				btVector3 vecAngles(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
 
-			EulerMatrix(vecAngles, localTrans.getBasis());
+				EulerMatrix(vecAngles, localTrans.getBasis());
 
-			globalJointTransform.mult(worldTransB, localTrans);
+				btTransform globalJointTransform;
 
-			return CreateConstraintInternal(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
+				globalJointTransform.mult(worldTransA, localTrans);
+
+				return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform); 
+			}
+			else
+			{
+				const auto& worldTransB = pRigidBodyB->getWorldTransform();
+
+				btVector3 vecOrigin(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
+
+				btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+
+				btVector3 vecAngles(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
+
+				EulerMatrix(vecAngles, localTrans.getBasis());
+
+				btTransform globalJointTransform;
+
+				globalJointTransform.mult(worldTransB, localTrans);
+
+				return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
+			}
 		}
 		else
 		{
-			auto worldTransA = pRigidBodyA->getWorldTransform();
+			const auto& worldTransA = pRigidBodyA->getWorldTransform();
+			const auto& worldTransB = pRigidBodyB->getWorldTransform();
 
-			btVector3 vecOrigin(pConstraintConfig->origin[0], pConstraintConfig->origin[1], pConstraintConfig->origin[2]);
+			btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
+			btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
 
-			btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+			btTransform localTransA(btQuaternion(0, 0, 0, 1), vecOriginA);
+			btTransform localTransB(btQuaternion(0, 0, 0, 1), vecOriginB);
 
-			btVector3 vecAngles(pConstraintConfig->angles[0], pConstraintConfig->angles[1], pConstraintConfig->angles[2]);
+			btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
+			btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
 
-			EulerMatrix(vecAngles, localTrans.getBasis());
+			EulerMatrix(vecAnglesA, localTransA.getBasis());
+			EulerMatrix(vecAnglesB, localTransB.getBasis());
 
-			globalJointTransform.mult(worldTransA, localTrans);
+			if (pConstraintConfig->useGlobalLookAt)
+			{
+				btTransform globalJointTransformA;
 
-			return CreateConstraintInternal(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
+				globalJointTransformA.mult(worldTransA, localTransA);
+
+				globalJointTransformA.getOrigin();
+
+				btTransform globalJointTransformB;
+
+				globalJointTransformB.mult(worldTransB, localTransB);
+
+				globalJointTransformB.getOrigin();
+
+				btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
+
+				if (pConstraintConfig->useLinearReferenceFrameA)
+				{
+					auto lookAtTransA = MatrixLookAt(globalJointTransformA, globalJointTransformB.getOrigin(), vecForward);
+
+					localTransA.mult(worldTransA.inverse(), lookAtTransA);
+				}
+				else
+				{
+					auto lookAtTransB = MatrixLookAt(globalJointTransformB, globalJointTransformA.getOrigin(), vecForward);
+
+					localTransB.mult(worldTransB.inverse(), lookAtTransB);
+				}
+			}
+
+			return BulletCreateConstraintFromLocalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, localTransA, localTransB);
 		}
-
 		return nullptr;
 	}
 
@@ -1081,17 +813,12 @@ public:
 
 	std::vector<btRigidBody*> m_RigidBodies;
 	std::vector<btTypedConstraint*> m_Constraints;
-	std::vector<btRigidBody*> m_BarnacleDragBodies;
-	std::vector<btRigidBody*> m_BarnacleChewBodies;
-	std::vector<btRigidBody*> m_GargantuaDragBodies;
-	std::vector<btTypedConstraint*> m_BarnacleConstraints;
-	std::vector<btTypedConstraint*> m_GargantuaConstraints;
 	btRigidBody* m_PelvisRigBody{};
 	btRigidBody* m_HeadRigBody{};
 
 	btTransform m_BoneRelativeTransform[128]{};
-	//TODO
-	//std::vector<ragdoll_bar_control_t> m_barcontrol;
-	//std::vector<ragdoll_gar_control_t> m_garcontrol;
+
+	std::vector<std::shared_ptr<CClientConstraintConfig>> m_BarnacleConstraintConfigs;
+	std::vector<std::shared_ptr<CClientActionConfig>> m_BarnacleActionConfigs;
 
 };

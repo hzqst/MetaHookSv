@@ -70,6 +70,7 @@ public:
 	int boneindex{ -1 };
 	vec3_t origin{ 0 };
 	vec3_t angles{ 0 };
+	vec3_t forward{ 0, 1, 0 };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };
@@ -100,11 +101,22 @@ public:
 	int type{ PhysicConstraint_None };
 	std::string rigidbodyA;
 	std::string rigidbodyB;
-	vec3_t origin{ 0 };
-	vec3_t angles{ 0 };
+	vec3_t originA{ 0 };
+	vec3_t anglesA{ 0 };
+	vec3_t originB{ 0 };
+	vec3_t anglesB{ 0 };
+	vec3_t forward{ 0, 1, 0 };
 	bool disableCollision{ true };
-	bool isFromRigidBodyB{ false };
+
+	bool useSeperateFrame{ false };
+	bool useGlobalJointFromA{ true };
+
+	bool useGlobalLookAt{ true };
+	bool useLinearReferenceFrameA{ true };
+
 	int debugDrawLevel{ 0 };
+	int flags{ 0 };
+	float factors[32]{ NAN };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };
@@ -112,6 +124,15 @@ public:
 	int boneindexB{ -1 };
 	vec3_t offsetA{ 0 };
 	vec3_t offsetB{ 0 };
+};
+
+class CClientActionConfig
+{
+public:
+	std::string name;
+	int type{ PhysicAction_None };
+	std::string rigidbodyA;
+	std::string rigidbodyB;
 	float factors[32]{ NAN };
 };
 
@@ -132,6 +153,12 @@ public:
 	int gaitsequence{};
 	float frame{};
 	int activity{};
+};
+
+class CClientRagdollBarnacleControlConfig
+{
+public:
+	
 };
 
 class CClientPhysicObjectConfig
@@ -180,8 +207,6 @@ public:
 		type = PhysicConfigType_StaticObject;
 		flags = PhysicObjectFlag_StaticObject;
 	}
-
-	bool isBarnacle{};
 };
  
 class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
@@ -212,6 +237,8 @@ public:
 	std::vector<CClientFloaterConfig*> FloaterConfigs;
 	std::vector<CClientRagdollAnimControlConfig> AnimControlConfigs;
 	CClientRagdollAnimControlConfig IdleAnimConfig;
+	std::vector < std::shared_ptr<CClientConstraintConfig>> BarnacleConstraintConfigs;
+	std::vector<std::shared_ptr<CClientActionConfig>> BarnacleActionConfigs;
 };
 
 class CClientPhysicObjectConfigStorage

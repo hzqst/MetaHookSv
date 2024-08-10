@@ -193,7 +193,32 @@ static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObj
 			auto pRigidBodyConfig = new CClientRigidBodyConfig();
 
 			pRigidBodyConfig->name = pRigidBodySubKey->GetName();
-			pRigidBodyConfig->flags = pRigidBodySubKey->GetInt("flags");
+
+			if (pKeyValues->GetInt("alwaysDynamic") == 1)
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysDynamic;
+			}
+
+			if (pKeyValues->GetInt("alwaysKinematic") == 1)
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysKinematic;
+			}
+
+			if (pKeyValues->GetInt("alwaysStatic") == 1)
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysStatic;
+			}
+
+			if (pKeyValues->GetInt("noCollisionToOtherEntities") == 1)
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToOtherEntities;
+			}
+
+			if (pKeyValues->GetInt("jiggle") == 1)
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_Jiggle;
+			}
+
 			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel", 1);
 			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex", -1);
 
@@ -415,36 +440,36 @@ static bool ParseRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig, const
 	float pBoneOffset, size0, size1, mass;
 
 	if (iss >> name >> boneIndex >> pBoneIndex >> shapeType >> pBoneOffset >> size0 >> size1 >> mass) {
-		auto rigidBodyConfig = new CClientRigidBodyConfig();
-		rigidBodyConfig->name = name;
-		rigidBodyConfig->boneindex = boneIndex;
-		rigidBodyConfig->pboneindex = pBoneIndex;
-		rigidBodyConfig->pboneoffset = pBoneOffset;
-		rigidBodyConfig->mass = mass;
-		rigidBodyConfig->flags = flags;
-		rigidBodyConfig->isLegacyConfig = true;
+		auto pRigidBodyConfig = new CClientRigidBodyConfig();
+		pRigidBodyConfig->name = name;
+		pRigidBodyConfig->boneindex = boneIndex;
+		pRigidBodyConfig->pboneindex = pBoneIndex;
+		pRigidBodyConfig->pboneoffset = pBoneOffset;
+		pRigidBodyConfig->mass = mass;
+		pRigidBodyConfig->flags = flags;
+		pRigidBodyConfig->isLegacyConfig = true;
 
-		auto shapeConfig = new CClientCollisionShapeConfig();
+		auto pShapeConfig = new CClientCollisionShapeConfig();
 		if (shapeType == "sphere") {
-			shapeConfig->type = PhysicShape_Sphere;
-			shapeConfig->size[0] = size0;
-			rigidBodyConfig->ccdRadius = size0 * 0.2f;
+			pShapeConfig->type = PhysicShape_Sphere;
+			pShapeConfig->size[0] = size0;
+			pRigidBodyConfig->ccdRadius = size0 * 0.2f;
 		}
 		else if (shapeType == "capsule") {
-			shapeConfig->type = PhysicShape_Capsule;
-			shapeConfig->direction = PhysicShapeDirection_Y;
-			shapeConfig->size[0] = size0;
-			shapeConfig->size[1] = size1;
-			rigidBodyConfig->ccdRadius = max(size0, size1 * 0.5f) * 0.2f;
+			pShapeConfig->type = PhysicShape_Capsule;
+			pShapeConfig->direction = PhysicShapeDirection_Y;
+			pShapeConfig->size[0] = size0;
+			pShapeConfig->size[1] = size1;
+			pRigidBodyConfig->ccdRadius = max(size0, size1 * 0.5f) * 0.2f;
 		}
 		else {
-			delete rigidBodyConfig;
-			delete shapeConfig;
+			delete pRigidBodyConfig;
+			delete pShapeConfig;
 			return false; // Unsupported shape type
 		}
 
-		rigidBodyConfig->shapes.push_back(shapeConfig);
-		pRagdollConfig->RigidBodyConfigs.push_back(rigidBodyConfig);
+		pRigidBodyConfig->shapes.push_back(pShapeConfig);
+		pRagdollConfig->RigidBodyConfigs.push_back(pRigidBodyConfig);
 		return true;
 	}
 	return false;
@@ -478,10 +503,6 @@ static bool ParseConstraintLine(CClientRagdollObjectConfig* pRagdollConfig, cons
 			constraintConfig->factors[i] = NAN;
 		}
 		
-		constraintConfig->factors[0] = factor0;
-		constraintConfig->factors[1] = factor1;
-		constraintConfig->factors[2] = factor2;
-
 		constraintConfig->isLegacyConfig = true;
 
 		if (constraintType == "point" || constraintType == "point_collision") {
@@ -489,9 +510,14 @@ static bool ParseConstraintLine(CClientRagdollObjectConfig* pRagdollConfig, cons
 		}
 		else if (constraintType == "conetwist" || constraintType == "conetwist_collision") {
 			constraintConfig->type = PhysicConstraint_ConeTwist;
+			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1] = factor0;
+			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2] = factor1;
+			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit] = factor2;
 		}
 		else if (constraintType == "hinge" || constraintType == "hinge_collision") {
 			constraintConfig->type = PhysicConstraint_Hinge;
+			constraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit] = factor0;
+			constraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit] = factor1;
 		}
 		else {
 			delete constraintConfig;
@@ -1012,19 +1038,19 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	if (!pIndexArray)
 		return;
 
-	auto pCollisionShapeConfig = new CClientCollisionShapeConfig;
+	auto pCollisionShapeConfig = new CClientCollisionShapeConfig();
 
 	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
 	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
 	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
 
-	auto pRigidBodyConfig = new CClientRigidBodyConfig;
+	auto pRigidBodyConfig = new CClientRigidBodyConfig();
 
 	pRigidBodyConfig->name = mod->name;
 	pRigidBodyConfig->debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
 	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
 
-	auto pStaticObjectConfig = new CClientStaticObjectConfig;
+	auto pStaticObjectConfig = new CClientStaticObjectConfig();
 
 	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
@@ -1121,11 +1147,11 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 
 		if (!bShouldFree)
 		{
-			CPhysicObjectUpdateContext ctx;
+			CPhysicObjectUpdateContext ctx(pPhysicObject);
 
 			pPhysicObject->Update(&ctx);
 
-			if(ctx.bShouldKillMe)
+			if(ctx.m_bShouldKillMe)
 			{
 				bShouldFree = true;
 			}

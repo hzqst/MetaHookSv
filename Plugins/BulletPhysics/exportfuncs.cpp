@@ -34,7 +34,6 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
-cvar_t* bv_debug_show_ccd = NULL;
 cvar_t* bv_debug_level_ragdoll = NULL;
 cvar_t* bv_debug_level_static = NULL;
 cvar_t* bv_debug_level_dynamic = NULL;
@@ -73,11 +72,6 @@ bool IsPhysicWorldEnabled()
 bool IsDebugDrawEnabled()
 {
 	return bv_debug->value > 0;
-}
-
-bool IsDebugDrawShowCCD()
-{
-	return bv_debug_show_ccd->value > 0;
 }
 
 bool ShouldSyncronizeView()
@@ -1150,7 +1144,6 @@ void HUD_Init(void)
 	ClientPhysicManager()->Init();
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
-	bv_debug_show_ccd = gEngfuncs.pfnRegisterVariable("bv_debug_show_ccd", "0", FCVAR_CLIENTDLL);
 	bv_debug_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_level_ragdoll", "1", FCVAR_CLIENTDLL);
 	bv_debug_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_level_static", "1", FCVAR_CLIENTDLL);
 	bv_debug_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_level_dynamic", "1", FCVAR_CLIENTDLL);
@@ -1170,9 +1163,6 @@ void HUD_Init(void)
 	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
-
-	//gPrivateFuncs.ThreadPerson_f = g_pMetaHookAPI->HookCmd("thirdperson", BV_ThreadPerson_f);
-	//gPrivateFuncs.FirstPerson_f = g_pMetaHookAPI->HookCmd("firstperson", BV_FirstPerson_f);
 
 	//For ClCorpse hook
 
@@ -1276,70 +1266,12 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
 		}
 
-		if (!CL_IsFirstPersonMode(pSpectatingPlayer))
+		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
+
+		if (pPhysicObject)
 		{
-			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
-
-			if (pPhysicObject && pPhysicObject->IsRagdollObject())
-			{
-				auto pRagdollObject = (IRagdollObject*)pPhysicObject;
-
-				if (pRagdollObject->GetActivityType() != 0)
-				{
-					vec3_t vecSavedSimOrgigin;
-					vec3_t vecSavedOrigin;
-					vec3_t vecNewOrigin;
-
-					VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-					VectorCopy(pSpectatingPlayer->origin, vecSavedOrigin);
-
-					pRagdollObject->GetOrigin(vecNewOrigin);
-					VectorCopy(vecNewOrigin, pSpectatingPlayer->origin);
-					VectorCopy(vecNewOrigin, pparams->simorg);
-
-					gExportfuncs.V_CalcRefdef(pparams);
-
-					VectorCopy(vecSavedOrigin, pSpectatingPlayer->origin);
-					VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-
-					return;
-				}
-			}
-		}
-		else
-		{
-			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
-
-			if (PhysicObject && PhysicObject->IsRagdollObject())
-			{
-				auto RagdollObject = (IRagdollObject*)PhysicObject;
-
-				if (RagdollObject->GetActivityType() != 0)
-				{
-					if (g_bIsCounterStrike && pSpectatingPlayer->index == pLocalPlayer->index)
-					{
-						if (g_iUser1 && !(*g_iUser1))
-							goto skip;
-					}
-
-					vec3_t vecSavedSimOrgigin;
-					vec3_t vecSavedClientViewAngles;
-					int iSavedHealth = pparams->health;
-
-					VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-					VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-
-					RagdollObject->SyncFirstPersonView(pSpectatingPlayer, pparams);
-
-					gExportfuncs.V_CalcRefdef(pparams);
-
-					VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-					VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-					pparams->health = iSavedHealth;
-
-					return;
-				}
-			}
+			if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false))
+				return;
 		}
 	}
 skip:

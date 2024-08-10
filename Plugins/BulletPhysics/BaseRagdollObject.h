@@ -48,11 +48,6 @@ public:
 		return m_model_scaling;
 	}
 
-	bool IsBarnacle() const override
-	{
-		return m_bIsBarnacle;
-	}
-
 	int GetPlayerIndex() const override
 	{
 		return m_playerindex;
@@ -60,7 +55,7 @@ public:
 
 	int GetObjectFlags() const override
 	{
-		return PhysicObjectFlag_RagdollObject;
+		return m_flags;
 	}
 
 	void UpdatePose(entity_state_t* curstate) override
@@ -69,10 +64,9 @@ public:
 		ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 	}
 
-	void ApplyBarnacle(cl_entity_t* barnacle_entity) override
+	void ApplyBarnacle(cl_entity_t* pBarnacleEntity) override
 	{
-		//TODO
-
+		m_iBarnacleIndex = ClientEntityManager()->GetEntityIndex(pBarnacleEntity);
 	}
 
 	void ApplyGargantua(cl_entity_t* gargantua_entity) override
@@ -81,7 +75,7 @@ public:
 
 	}
 
-	bool SyncFirstPersonView(cl_entity_t* ent, struct ref_params_s* pparams) override
+	bool SyncFirstPersonView(struct ref_params_s* pparams) override
 	{
 		//TODO
 
@@ -132,7 +126,7 @@ public:
 
 		if (UpdateActivity(iOldActivityType, iNewActivityType, playerState))
 		{
-			ctx->bActivityChanged = true;
+			ctx->m_bActivityChanged = true;
 
 			//Transform from whatever to barnacle
 			if (iNewActivityType == 2 && iOldActivityType != 2)
@@ -159,7 +153,7 @@ public:
 			{
 				ResetPose(playerState);
 
-				ctx->bRigidbodyPoseChanged = true;
+				ctx->m_bRigidbodyPoseChanged = true;
 			}
 		}
 
@@ -167,8 +161,67 @@ public:
 		{
 			UpdatePose(GetClientEntityState());
 
-			ctx->bRigidbodyPoseUpdated = true;
+			ctx->m_bRigidbodyPoseUpdated = true;
 		}
+	}
+
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) override
+	{
+		if (GetActivityType() != 0)
+		{
+			if (bIsThirdPerson)
+			{
+				vec3_t vecSavedSimOrgigin;
+				vec3_t vecSavedOrigin;
+				vec3_t vecSavedCurStateOrigin;
+				vec3_t vecNewOrigin;
+
+				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+				VectorCopy(GetClientEntity()->origin, vecSavedOrigin);
+				VectorCopy(GetClientEntity()->curstate.origin, vecSavedCurStateOrigin);
+
+				GetOrigin(vecNewOrigin);
+
+				VectorCopy(vecNewOrigin, GetClientEntity()->origin);
+				VectorCopy(vecNewOrigin, GetClientEntity()->curstate.origin);
+				VectorCopy(vecNewOrigin, pparams->simorg);
+
+				gExportfuncs.V_CalcRefdef(pparams);
+
+				VectorCopy(vecSavedCurStateOrigin, GetClientEntity()->curstate.origin);
+				VectorCopy(vecSavedOrigin, GetClientEntity()->origin);
+				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+
+				return true;
+			}
+			else
+			{
+				if (g_bIsCounterStrike && GetEntityIndex() == gEngfuncs.GetLocalPlayer()->index)
+				{
+					if (g_iUser1 && !(*g_iUser1))
+						return false;
+				}
+
+				vec3_t vecSavedSimOrgigin;
+				vec3_t vecSavedClientViewAngles;
+				int iSavedHealth = pparams->health;
+
+				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
+
+				SyncFirstPersonView(pparams);
+
+				gExportfuncs.V_CalcRefdef(pparams);
+
+				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
+				pparams->health = iSavedHealth;
+
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 private:
@@ -208,7 +261,7 @@ public:
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
-	bool m_bIsBarnacle{};
+	int m_flags{ PhysicObjectFlag_RagdollObject };
 
 	int m_iActivityType{};
 	int m_iBarnacleIndex{};
@@ -218,7 +271,4 @@ public:
 	vec3_t m_vecFirstPersonAngleOffset{};
 	CClientRagdollAnimControlConfig m_IdleAnimConfig;
 	std::vector<CClientRagdollAnimControlConfig> m_AnimControlConfigs;
-
-	bool m_bUpdateKinematic{};
-	float m_flNextUpdateKinematicTime{};
 };

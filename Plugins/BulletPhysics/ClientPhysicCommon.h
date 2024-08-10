@@ -36,14 +36,36 @@ const int PhysicConstraintFactorIdx_HingeHighLimit = 1;
 const int PhysicConstraintFactorIdx_HingeBiasFactor = 4;
 const int PhysicConstraintFactorIdx_HingeRelaxationFactor = 5;
 
-const int PhysicConstraintFactorIdx_LinearERP = 10;
-const int PhysicConstraintFactorIdx_LinearCFM = 11;
-const int PhysicConstraintFactorIdx_LinearStopERP = 12;
-const int PhysicConstraintFactorIdx_LinearStopCFM = 13;
-const int PhysicConstraintFactorIdx_AngularERP = 14;
-const int PhysicConstraintFactorIdx_AngularCFM = 15;
-const int PhysicConstraintFactorIdx_AngularStopERP = 16;
-const int PhysicConstraintFactorIdx_AngularStopCFM = 17;
+const int PhysicConstraintFactorIdx_SliderLowerLinearLimit = 0;
+const int PhysicConstraintFactorIdx_SliderUpperLinearLimit = 1;
+const int PhysicConstraintFactorIdx_SliderLowerAngularLimit = 2;
+const int PhysicConstraintFactorIdx_SliderUpperAngularLimit = 3;
+
+const int PhysicConstraintFactorIdx_Dof6LowerLinearLimitX = 0;
+const int PhysicConstraintFactorIdx_Dof6LowerLinearLimitY = 1;
+const int PhysicConstraintFactorIdx_Dof6LowerLinearLimitZ = 2;
+const int PhysicConstraintFactorIdx_Dof6UpperLinearLimitX = 3;
+const int PhysicConstraintFactorIdx_Dof6UpperLinearLimitY = 4;
+const int PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ = 5;
+
+const int PhysicConstraintFactorIdx_Dof6LowerAngularLimitX = 6;
+const int PhysicConstraintFactorIdx_Dof6LowerAngularLimitY = 7;
+const int PhysicConstraintFactorIdx_Dof6LowerAngularLimitZ = 8;
+const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitX = 9;
+const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitY = 10;
+const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitZ = 11;
+
+const int PhysicConstraintFactorIdx_LinearERP = 20;
+const int PhysicConstraintFactorIdx_LinearCFM = 21;
+const int PhysicConstraintFactorIdx_LinearStopERP = 22;
+const int PhysicConstraintFactorIdx_LinearStopCFM = 23;
+const int PhysicConstraintFactorIdx_AngularERP = 24;
+const int PhysicConstraintFactorIdx_AngularCFM = 25;
+const int PhysicConstraintFactorIdx_AngularStopERP = 26;
+const int PhysicConstraintFactorIdx_AngularStopCFM = 27;
+
+const int PhysicConstraintFlag_Barnacle = 1;
+const int PhysicConstraintFlag_Gargantuna = 2;
 
 const int PhysicShape_None = 0;
 const int PhysicShape_Box = 1;
@@ -57,6 +79,12 @@ const int PhysicConstraint_None = 0;
 const int PhysicConstraint_Hinge = 1;
 const int PhysicConstraint_ConeTwist = 2;
 const int PhysicConstraint_Point = 3;
+const int PhysicConstraint_Slider = 4;
+const int PhysicConstraint_Dof6 = 5;
+const int PhysicConstraint_Fixed = 6;
+
+const int PhysicAction_None = 0;
+const int PhysicAction_BarnacleForce = 1;
 
 const int PhysicShapeDirection_X = 0;
 const int PhysicShapeDirection_Y = 1;
@@ -81,7 +109,7 @@ const int PhysicShapeDirection_Z = 2;
 #define BULLET_DEFAULT_DENSENTY 1.0f
 #define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
 #define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
-#define BULLET_MAX_TOLERANT_LINEAR_ERROR 50.0f
+#define BULLET_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
 
 class CPhysicBrushVertex
 {

@@ -55,7 +55,7 @@ public:
 
 	int GetObjectFlags() const override
 	{
-		return PhysicObjectFlag_StaticObject;
+		return m_flags;
 	}
 
 	void Update(CPhysicObjectUpdateContext* ctx) override
@@ -69,6 +69,11 @@ public:
 	}
 
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override
+	{
+		return false;
+	}
+
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) override
 	{
 		return false;
 	}
@@ -87,15 +92,10 @@ public:
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
 	}
 
-	bool IsBarnacle() const override
-	{
-		return m_bIsBarnacle;
-	}
-
 public:
 	int m_entindex{};
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
-	bool m_bIsBarnacle{};
+	int m_flags{ PhysicObjectFlag_StaticObject };
 };
