@@ -31,6 +31,24 @@ public:
 	bool m_bRigidbodyPoseUpdated{ };
 };
 
+class CPhysicComponentFilters
+{
+public:
+	bool m_HasWithRigidbodyFlags{ false };
+	bool m_HasWithoutRigidbodyFlags{ false };
+	bool m_HasExactMatchRigidbodyFlags{ false };
+	int m_WithRigidbodyFlags{ -1 };
+	int m_WithoutRigidbodyFlags{ 0 };
+	int m_ExactMatchRigidbodyFlags{ -1 };
+
+	bool m_HasWithConstraintFlags{};
+	bool m_HasWithoutConstraintFlags{};
+	bool m_HasExactMatchConstraintFlags{};
+	int m_WithConstraintFlags{ -1 };
+	int m_WithoutConstraintFlags{ 0 };
+	int m_ExactMatchConstraintFlags{ -1 };
+};
+
 class IPhysicObject : public IBaseInterface
 {
 public:
@@ -70,21 +88,20 @@ public:
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
 	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) = 0;
 
-	virtual void AddToPhysicWorld(void* world) = 0;
-	virtual void RemoveFromPhysicWorld(void* world) = 0;
+	virtual void AddToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
+	virtual void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;
+	virtual void FreePhysicActionsWithFilters(int with_flags, int without_flags) = 0;
+	virtual void* GetRigidBodyByName(const std::string& name) = 0;
 
 	virtual bool IsClientEntityNonSolid() const = 0;
 };
 
-class IPhysicTickAction : public IBaseInterface
+class IPhysicAction : public IBaseInterface
 {
 public:
-	virtual void Destroy()
-	{
-		delete this;
-	}
-
-	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
+	//return false to remove this action
+	virtual bool Update(CPhysicObjectUpdateContext* ctx) = 0;
+	virtual int GetActionFlags() const = 0;
 };
 
 class ICollisionPhysicObject : public IPhysicObject
@@ -127,8 +144,10 @@ public:
 
 	virtual void ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdatePose(entity_state_t* curstate) = 0;
-	virtual void ApplyBarnacle(cl_entity_t* pBarnacleEntity) = 0;
-	virtual void ApplyGargantua(cl_entity_t* pGargantuaEntity) = 0;
+	virtual void ApplyBarnacle(IPhysicObject* pBarnacleObject) = 0;
+	virtual void ApplyGargantua(IPhysicObject* pGargantuaObject) = 0;
+	virtual void ReleaseFromBarnacle() = 0;
+	virtual void ReleaseFromGargantua() = 0;
 	virtual bool SyncFirstPersonView(struct ref_params_s* pparams) = 0;
 };
 
@@ -147,25 +166,29 @@ public:
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual CClientPhysicObjectConfig* LoadPhysicObjectConfigForModel(model_t* mod) = 0;
+	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& OverrideAnim) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
+	virtual IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) = 0;
+	virtual IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* state) = 0;
+
 	//PhysicObject Management
 
 	virtual void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) = 0;
 	virtual void FreePhysicObject(IPhysicObject* pPhysicObject) = 0;
 	virtual bool RemovePhysicObject(int entindex) = 0;
-	virtual void RemoveAllPhysicObjects(int flags) = 0;
+	virtual void RemoveAllPhysicObjects(int withflags, int withoutflags) = 0;
 	virtual bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) = 0;
 	virtual void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
 
 	//PhysicWorld Related
-	virtual void AddPhysicObjectToWorld(IPhysicObject* PhysicObject) = 0;
-	virtual void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject) = 0;
+	virtual void AddPhysicObjectToWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
+	virtual void RemovePhysicObjectFromWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
+
 };
 
 extern IClientPhysicManager* g_pClientPhysicManager;

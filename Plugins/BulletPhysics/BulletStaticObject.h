@@ -34,7 +34,7 @@ public:
 		}
 	}
 
-	void AddToPhysicWorld(void* world) override
+	void AddToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -42,7 +42,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (!pSharedUserData->m_addedToPhysicWorld)
+			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
 			{
 				dynamicWorld->addRigidBody(pRigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
 
@@ -51,7 +51,7 @@ public:
 		}
 	}
 
-	void RemoveFromPhysicWorld(void* world) override
+	void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -59,13 +59,34 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (pSharedUserData->m_addedToPhysicWorld)
+			if (pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
 			{
 				dynamicWorld->removeRigidBody(pRigidBody);
 
 				pSharedUserData->m_addedToPhysicWorld = false;
 			}
 		}
+	}
+
+	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override
+	{
+
+	}
+
+	void* GetRigidBodyByName(const std::string& name)
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+
+			if (pSharedUserData)
+			{
+				if (pSharedUserData->m_name == name)
+					return pRigidBody;
+			}
+		}
+
+		return nullptr;
 	}
 
 private:
@@ -102,7 +123,7 @@ private:
 			return nullptr;
 		}
 
-		auto pCollisionShape = BulletCreateCollisionShape(CreationParam, pRigidConfig);
+		auto pCollisionShape = BulletCreateCollisionShape(pRigidConfig);
 
 		if (!pCollisionShape)
 		{
@@ -136,9 +157,9 @@ private:
 
 	void CreateRigidBodies(const CStaticObjectCreationParameter& CreationParam)
 	{
-		for (auto pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		for (const auto &pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
 		{
-			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig);
+			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
 
 			if (pRigidBody)
 			{

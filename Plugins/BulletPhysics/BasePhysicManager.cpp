@@ -39,7 +39,7 @@ void CBasePhysicManager::Shutdown()
 
 void CBasePhysicManager::NewMap(void)
 {
-	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject);
+	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
 	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -75,16 +75,6 @@ void CBasePhysicManager::StepSimulation(double frametime)
 
 void CBasePhysicManager::RemoveAllPhysicConfigs()
 {
-	for (auto& Storage : m_physicConfigs)
-	{
-		if (Storage.pConfig)
-		{
-			delete Storage.pConfig;
-			Storage.pConfig = nullptr;
-		}
-		Storage.state = PhysicConfigState_NotLoaded;
-	}
-
 	m_physicConfigs.clear();
 }
 
@@ -172,7 +162,7 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObjectConfig* pPhysicObjectConfig)
+static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObjectConfig *pPhysicObjectConfig)
 {
 	if (pKeyValues->GetInt("barnacle") == 1)
 	{
@@ -190,7 +180,7 @@ static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObj
 	{
 		for (auto pRigidBodySubKey = pRigidBodiesKey->GetFirstSubKey(); pRigidBodySubKey; pRigidBodySubKey = pRigidBodySubKey->GetNextKey())
 		{
-			auto pRigidBodyConfig = new CClientRigidBodyConfig();
+			auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
 			pRigidBodyConfig->name = pRigidBodySubKey->GetName();
 
@@ -252,7 +242,7 @@ static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObj
 			{
 				for (auto pShapeSubKey = pShapesKey->GetFirstSubKey(); pShapeSubKey; pShapeSubKey = pShapeSubKey->GetNextKey())
 				{
-					auto pShapeConfig = new CClientCollisionShapeConfig();
+					auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
 					pShapeConfig->name = pShapeSubKey->GetName();
 
@@ -325,31 +315,35 @@ static void LoadBaseConfigsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObj
 	}
 }
 
-static CClientPhysicObjectConfig* LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
-	auto pRagdollObjectConfig = new CClientRagdollObjectConfig();
+	auto pRagdollObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
 
-	LoadBaseConfigsFromKeyValues(pKeyValues, pRagdollObjectConfig);
+	pRagdollObjectConfig->flags |= PhysicObjectFlag_FromConfig;
+
+	LoadBaseConfigsFromKeyValues(pKeyValues, pRagdollObjectConfig.get());
 
 	return pRagdollObjectConfig;
 }
 
-static CClientPhysicObjectConfig* LoadStaticObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadStaticObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
-	auto pStaticObjectConfig = new CClientStaticObjectConfig();
+	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
-	LoadBaseConfigsFromKeyValues(pKeyValues, pStaticObjectConfig);
+	pStaticObjectConfig->flags |= PhysicObjectFlag_FromConfig;
+
+	LoadBaseConfigsFromKeyValues(pKeyValues, pStaticObjectConfig.get());
 
 	return pStaticObjectConfig;
 }
 
-static CClientPhysicObjectConfig* LoadDynamicObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKeyValues(KeyValues* pKeyValues)
 {
 	//TODO
 	return nullptr;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromKeyValues(KeyValues *pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromKeyValues(KeyValues *pKeyValues)
 {
 	auto type = pKeyValues->GetString("type");
 
@@ -374,7 +368,7 @@ static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromKeyValues(KeyValues 
 	return nullptr;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromNewFile(const std::string& filename)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewFile(const std::string& filename)
 {
 	auto pKeyValues = new KeyValues("PhysicObjectConfig");
 
@@ -430,6 +424,7 @@ static bool ParseDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig, const
 		pRagdollConfig->AnimControlConfigs.push_back(animConfig);
 		return true;
 	}
+	gEngfuncs.Con_DPrintf("ParseDeathAnimLine: failed to parse line \"%s\"", line.c_str());
 	return false;
 }
 
@@ -440,7 +435,7 @@ static bool ParseRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig, const
 	float pBoneOffset, size0, size1, mass;
 
 	if (iss >> name >> boneIndex >> pBoneIndex >> shapeType >> pBoneOffset >> size0 >> size1 >> mass) {
-		auto pRigidBodyConfig = new CClientRigidBodyConfig();
+		auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 		pRigidBodyConfig->name = name;
 		pRigidBodyConfig->boneindex = boneIndex;
 		pRigidBodyConfig->pboneindex = pBoneIndex;
@@ -449,7 +444,7 @@ static bool ParseRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig, const
 		pRigidBodyConfig->flags = flags;
 		pRigidBodyConfig->isLegacyConfig = true;
 
-		auto pShapeConfig = new CClientCollisionShapeConfig();
+		auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 		if (shapeType == "sphere") {
 			pShapeConfig->type = PhysicShape_Sphere;
 			pShapeConfig->size[0] = size0;
@@ -463,15 +458,14 @@ static bool ParseRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig, const
 			pRigidBodyConfig->ccdRadius = max(size0, size1 * 0.5f) * 0.2f;
 		}
 		else {
-			delete pRigidBodyConfig;
-			delete pShapeConfig;
 			return false; // Unsupported shape type
 		}
 
-		pRigidBodyConfig->shapes.push_back(pShapeConfig);
-		pRagdollConfig->RigidBodyConfigs.push_back(pRigidBodyConfig);
+		pRigidBodyConfig->shapes.emplace_back(pShapeConfig);
+		pRagdollConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 		return true;
 	}
+	gEngfuncs.Con_DPrintf("ParseRigidBodyLine: failed to parse line \"%s\"", line.c_str());
 	return false;
 }
 
@@ -486,57 +480,161 @@ static bool ParseConstraintLine(CClientRagdollObjectConfig* pRagdollConfig, cons
 	if (iss >> rigidbodyA >> rigidbodyB >> constraintType >> boneindexA >> boneindexB
 		>> offsetAX >> offsetAY >> offsetAZ >> offsetBX >> offsetBY >> offsetBZ
 		>> factor0 >> factor1 >> factor2) {
-		auto constraintConfig = new CClientConstraintConfig();
-		constraintConfig->rigidbodyA = rigidbodyA;
-		constraintConfig->rigidbodyB = rigidbodyB;
-		constraintConfig->boneindexA = boneindexA;
-		constraintConfig->boneindexB = boneindexB;
-		constraintConfig->offsetA[0] = offsetAX;
-		constraintConfig->offsetA[1] = offsetAY;
-		constraintConfig->offsetA[2] = offsetAZ;
-		constraintConfig->offsetB[0] = offsetBX;
-		constraintConfig->offsetB[1] = offsetBY;
-		constraintConfig->offsetB[2] = offsetBZ;
+		auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 
-		for (int i = 0; i < _ARRAYSIZE(constraintConfig->factors); ++i)
-		{
-			constraintConfig->factors[i] = NAN;
-		}
-		
-		constraintConfig->isLegacyConfig = true;
+		pConstraintConfig->flags = PhysicConstraintFlag_Native;
+		pConstraintConfig->rigidbodyA = rigidbodyA;
+		pConstraintConfig->rigidbodyB = rigidbodyB;
+		pConstraintConfig->boneindexA = boneindexA;
+		pConstraintConfig->boneindexB = boneindexB;
+		pConstraintConfig->offsetA[0] = offsetAX;
+		pConstraintConfig->offsetA[1] = offsetAY;
+		pConstraintConfig->offsetA[2] = offsetAZ;
+		pConstraintConfig->offsetB[0] = offsetBX;
+		pConstraintConfig->offsetB[1] = offsetBY;
+		pConstraintConfig->offsetB[2] = offsetBZ;
+
+		pConstraintConfig->isLegacyConfig = true;
 
 		if (constraintType == "point" || constraintType == "point_collision") {
-			constraintConfig->type = PhysicConstraint_Point;
+			pConstraintConfig->type = PhysicConstraint_Point;
 		}
 		else if (constraintType == "conetwist" || constraintType == "conetwist_collision") {
-			constraintConfig->type = PhysicConstraint_ConeTwist;
-			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1] = factor0;
-			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2] = factor1;
-			constraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit] = factor2;
+			pConstraintConfig->type = PhysicConstraint_ConeTwist;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1] = factor0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2] = factor1;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit] = factor2;
 		}
 		else if (constraintType == "hinge" || constraintType == "hinge_collision") {
-			constraintConfig->type = PhysicConstraint_Hinge;
-			constraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit] = factor0;
-			constraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit] = factor1;
+			pConstraintConfig->type = PhysicConstraint_Hinge;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit] = factor0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit] = factor1;
 		}
 		else {
-			delete constraintConfig;
-			return false; // Unsupported constraint type
+			gEngfuncs.Con_DPrintf("ParseConstraintLine: Unsupported constraint type \"%s\"", constraintType.c_str());
+			return false;
 		}
 
 		if (constraintType.ends_with("_collision")) {
-			constraintConfig->disableCollision = false;
+			pConstraintConfig->disableCollision = false;
+		} else {
+			pConstraintConfig->disableCollision = true;
 		}
 
-		pRagdollConfig->ConstraintConfigs.push_back(constraintConfig);
+		pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
 		return true;
 	}
+
+	gEngfuncs.Con_DPrintf("ParseConstraintLine: failed to parse line \"%s\"", line.c_str());
 	return false;
 }
 
-CClientPhysicObjectConfig*LoadPhysicObjectConfigFromLegacyFileBuffer(const char *buf)
+static bool ParseBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
+	std::istringstream iss(line);
+
+	std::string rigidbody, type;
+	float offsetX, offsetY, offsetZ;
+	float factor0, factor1, factor2;
+	if (iss >> rigidbody >> type >> offsetX >> offsetY >> offsetZ >> factor0 >> factor1 >> factor2) {
+		
+		if (type == "dof6")
+		{
+			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
+			pConstraintConfig->type = PhysicConstraint_Dof6;
+			pConstraintConfig->rigidbodyA = "@barnacle.body";
+			pConstraintConfig->rigidbodyB = rigidbody;
+			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;
+			pConstraintConfig->originA[0] = 0;
+			pConstraintConfig->originA[1] = 0;
+			pConstraintConfig->originA[2] = 0;
+			pConstraintConfig->originB[0] = offsetX;
+			pConstraintConfig->originB[1] = offsetY;
+			pConstraintConfig->originB[2] = offsetZ;
+			pConstraintConfig->forward[0] = 1;
+			pConstraintConfig->forward[1] = 0;
+			pConstraintConfig->forward[2] = 0;
+			pConstraintConfig->disableCollision = false;
+			pConstraintConfig->useGlobalJointFromA = true;
+			pConstraintConfig->useLinearReferenceFrameA = true;
+			pConstraintConfig->useLookAtOther = true;
+			pConstraintConfig->useGlobalJointOriginFromOther = true;
+			pConstraintConfig->debugDrawLevel = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX] = -99999;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitY] = -0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitZ] = -0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitX] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitY] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ] = 0;
+
+			pRagdollConfig->BarnacleConstraintConfigs.emplace_back(pConstraintConfig);
+
+			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
+			pActionConfig->type = PhysicAction_BarnacleDragForce;
+			pActionConfig->flags = PhysicActionFlag_Barnacle;
+			pActionConfig->rigidbodyA = rigidbody;
+			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude] = factor0;
+			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight] = 24;
+
+			pRagdollConfig->BarnacleActionConfigs.emplace_back(pActionConfig);
+			return true;
+		}
+		else if (type == "slider")
+		{
+			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
+			pConstraintConfig->type = PhysicConstraint_Slider;
+			pConstraintConfig->rigidbodyA = "@barnacle.body";
+			pConstraintConfig->rigidbodyB = rigidbody;
+			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;
+			pConstraintConfig->originA[0] = 0;
+			pConstraintConfig->originA[1] = 0;
+			pConstraintConfig->originA[2] = 0;
+			pConstraintConfig->originB[0] = offsetX;
+			pConstraintConfig->originB[1] = offsetY;
+			pConstraintConfig->originB[2] = offsetZ;
+			pConstraintConfig->forward[0] = 1;
+			pConstraintConfig->forward[1] = 0;
+			pConstraintConfig->forward[2] = 0;
+			pConstraintConfig->disableCollision = false;
+			pConstraintConfig->useGlobalJointFromA = true;
+			pConstraintConfig->useLinearReferenceFrameA = true;
+			pConstraintConfig->useLookAtOther = true;
+			pConstraintConfig->useGlobalJointOriginFromOther = true;
+			pConstraintConfig->debugDrawLevel = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_SliderLowerLinearLimit] = -99999;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_SliderUpperLinearLimit] = 0;
+
+			pRagdollConfig->BarnacleConstraintConfigs.emplace_back(pConstraintConfig);
+
+			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
+			pActionConfig->type = PhysicAction_BarnacleDragForce;
+			pActionConfig->flags = PhysicActionFlag_Barnacle;
+			pActionConfig->rigidbodyA = rigidbody;
+			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude] = factor0;
+			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight] = 24;
+
+			pRagdollConfig->BarnacleActionConfigs.emplace_back(pActionConfig);
+			return true;
+		}
+		else if (type == "chewlimit")
+		{
+			//TODO
+			return true;
+		}
+		else if (type == "chewforce")
+		{
+			//TODO
+			return true;
+		}
+	}
+	gEngfuncs.Con_DPrintf("ParseBarnacleLine: failed to parse line \"%s\" !\n", line.c_str());
+	return false;
+}
+
+std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileBuffer(const char *buf)
 {
-	auto pRagdollConfig = new CClientRagdollObjectConfig();
+	auto pRagdollConfig = std::make_shared<CClientRagdollObjectConfig>();
+
+	pRagdollConfig->flags |= PhysicObjectFlag_FromConfig;
 
 	std::istringstream stream(buf);
 	std::string line;
@@ -562,38 +660,37 @@ CClientPhysicObjectConfig*LoadPhysicObjectConfigFromLegacyFileBuffer(const char 
 
 		// Parse the content based on the current section
 		if (section == "DeathAnim") {
-			if (!ParseDeathAnimLine(pRagdollConfig, line)) {
-				delete pRagdollConfig;
+			if (!ParseDeathAnimLine(pRagdollConfig.get(), line)) {
 				return nullptr; // Parsing failed
 			}
 		}
 		else if (section == "RigidBody") {
-			if (!ParseRigidBodyLine(pRagdollConfig, line, 0)) {
-				delete pRagdollConfig;
+			if (!ParseRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_None)) {
 				return nullptr; // Parsing failed
 			}
 		}
 		else if (section == "JiggleBone") {
-			if (!ParseRigidBodyLine(pRagdollConfig, line, PhysicRigidBodyFlag_Jiggle)) {
-				delete pRagdollConfig;
+			if (!ParseRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_Jiggle)) {
+
 				return nullptr; // Parsing failed
 			}
 		}
 		else if (section == "Constraint") {
-			if (!ParseConstraintLine(pRagdollConfig, line)) {
-				delete pRagdollConfig;
+			if (!ParseConstraintLine(pRagdollConfig.get(), line)) {
 				return nullptr; // Parsing failed
 			}
 		}
-		else {
-
+		else if (section == "Barnacle") {
+			if (!ParseBarnacleLine(pRagdollConfig.get(), line)) {
+				return nullptr; // Parsing failed
+			}
 		}
 	}
 
 	return pRagdollConfig;
 }
 
-static CClientPhysicObjectConfig* LoadPhysicObjectConfigFromLegacyFile(const std::string& filename)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFile(const std::string& filename)
 {
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
@@ -648,13 +745,13 @@ void CBasePhysicManager::LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConf
 	Storage.state = PhysicConfigState_LoadedWithError;
 }
 
-CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicObjectConfigForModel(model_t* mod)
+std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectConfigForModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex == -1)
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicObjectConfigForModel: Invalid model index\n");
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index %d!\n", modelindex);
 		return nullptr;
 	}
 
@@ -663,7 +760,7 @@ CClientPhysicObjectConfig* CBasePhysicManager::LoadPhysicObjectConfigForModel(mo
 
 	if (modelindex >= m_physicConfigs.size())
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index\n");
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index %d!\n", modelindex);
 		return nullptr;
 	}
 
@@ -768,16 +865,17 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			if (!model)
 				return;
 
+			//I don't think we need this anymore
+			/*
 			if (ClientEntityManager()->IsEntityBarnacle(ent))
 			{
-				//I don't think we need this anymore
 				//ClientEntityManager()->AddBarnacle(entindex, 0);
 			}
 			else if (ClientEntityManager()->IsEntityGargantua(ent))
 			{
-				//I don't think we need this anymore
 				//ClientEntityManager()->AddGargantua(entindex, 0);
 			}
+			*/
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -826,42 +924,6 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			//TODO other tempents are not supported yet?
 		}
 	}
-}
-
-void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex)
-{
-	auto saved_currententity = (*currententity);
-	(*currententity) = ent;
-
-	if (playerindex > 0)
-	{
-		auto fakePlayerState = *state;
-
-		fakePlayerState.number = playerindex;
-
-		vec3_t vecSavedOrigin, vecSavedAngles;
-		VectorCopy((*currententity)->origin, vecSavedOrigin);
-		VectorCopy((*currententity)->angles, vecSavedAngles);
-
-		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-		if (pLocalPlayer && pLocalPlayer->index == playerindex)
-		{
-			VectorCopy(r_params.simorg, (*currententity)->origin);
-			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
-		}
-
-		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_UPDATE_BONES, &fakePlayerState);
-
-		VectorCopy(vecSavedOrigin, (*currententity)->origin);
-		VectorCopy(vecSavedAngles, (*currententity)->angles);
-	}
-	else
-	{
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_UPDATE_BONES);
-	}
-
-	(*currententity) = saved_currententity;
 }
 
 void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex)
@@ -962,6 +1024,86 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 	(*currententity) = saved_currententity;
 }
 
+void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex)
+{
+	auto saved_currententity = (*currententity);
+	(*currententity) = ent;
+
+	if (playerindex > 0)
+	{
+		auto fakePlayerState = *state;
+
+		fakePlayerState.number = playerindex;
+
+		vec3_t vecSavedOrigin, vecSavedAngles;
+		VectorCopy((*currententity)->origin, vecSavedOrigin);
+		VectorCopy((*currententity)->angles, vecSavedAngles);
+
+		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+		if (pLocalPlayer && pLocalPlayer->index == playerindex)
+		{
+			VectorCopy(r_params.simorg, (*currententity)->origin);
+			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+		}
+
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_UPDATE_BONES, &fakePlayerState);
+
+		VectorCopy(vecSavedOrigin, (*currententity)->origin);
+		VectorCopy(vecSavedAngles, (*currententity)->angles);
+	}
+	else
+	{
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_UPDATE_BONES);
+	}
+
+	(*currententity) = saved_currententity;
+}
+
+IPhysicObject* CBasePhysicManager::FindBarnacleObjectForPlayer(entity_state_t* playerState)
+{
+	for (const auto &itor : m_physicObjects)
+	{
+		auto pPhysicObject = itor.second;
+
+		if (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_Barnacle)
+		{
+			vec3_t vecClientEntityOrigin;
+			VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+
+			if (fabs(playerState->origin[0] - vecClientEntityOrigin[0]) < 1 &&
+				fabs(playerState->origin[1] - vecClientEntityOrigin[1]) < 1 &&
+				playerState->origin[2] < vecClientEntityOrigin[2] + 16)
+			{
+				return pPhysicObject;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicObject* CBasePhysicManager::FindGargantuaObjectForPlayer(entity_state_t* playerState)
+{
+	for (const auto& itor : m_physicObjects)
+	{
+		auto pPhysicObject = itor.second;
+
+		if (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_Gargantua)
+		{
+			vec3_t vecClientEntityOrigin;
+			VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+
+			if (VectorDistance(playerState->origin, vecClientEntityOrigin) < 128 && pPhysicObject->GetClientEntityState()->sequence == 15)
+			{
+				return pPhysicObject;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex)
 {
 	auto pPhysicConfig = ClientPhysicManager()->LoadPhysicObjectConfigForModel(mod);
@@ -971,20 +1113,27 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 	if (pPhysicConfig->type == PhysicConfigType_RagdollObject)
 	{
-		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig;
+		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig.get();
 
 		SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollObjectConfig->IdleAnimConfig);
 
 		CRagdollObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
-		CreationParam.m_model = mod;
 		CreationParam.m_entindex = entindex;
+		CreationParam.m_model = mod;
+
+		if (mod->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(ent, mod);
+		}
+
 		CreationParam.m_playerindex = playerindex;
-		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
 		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
 
-		LoadAdditionalResourcesForConfig(pPhysicConfig);
+		LoadAdditionalResourcesForConfig(pRagdollObjectConfig);
 
 		auto pRagdollObject = CreateRagdollObject(CreationParam);
 
@@ -1000,16 +1149,23 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	}
 	else if (pPhysicConfig->type == PhysicConfigType_StaticObject)
 	{
-		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig;
+		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig.get();
 
 		CStaticObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_model = mod;
+
+		if (mod->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(ent, mod);
+		}
+
 		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
 
-		LoadAdditionalResourcesForConfig(pPhysicConfig);
+		LoadAdditionalResourcesForConfig(pStaticObjectConfig);
 
 		auto pStaticObject = CreateStaticObject(CreationParam);
 
@@ -1038,29 +1194,29 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	if (!pIndexArray)
 		return;
 
-	auto pCollisionShapeConfig = new CClientCollisionShapeConfig();
+	auto pCollisionShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
 	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
 	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
 	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
 
-	auto pRigidBodyConfig = new CClientRigidBodyConfig();
+	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
 	pRigidBodyConfig->name = mod->name;
+	pRigidBodyConfig->flags = 0;
 	pRigidBodyConfig->debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
 	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
 
-	auto pStaticObjectConfig = new CClientStaticObjectConfig();
+	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
+	pStaticObjectConfig->flags |= PhysicObjectFlag_NoConfig;
 	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
 	CStaticObjectCreationParameter CreationParam;
 	CreationParam.m_entity = ent;
 	CreationParam.m_entindex = entindex;
 	CreationParam.m_model = mod;
-	CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
-
-	SCOPE_EXIT{ delete pStaticObjectConfig; };
+	CreationParam.m_pStaticObjectConfig = pStaticObjectConfig.get();
 
 	auto pStaticObject = CreateStaticObject(CreationParam);
 
@@ -1074,14 +1230,18 @@ void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObj
 {
 	RemovePhysicObject(entindex);
 
-	AddPhysicObjectToWorld(pPhysicObject);
+	CPhysicComponentFilters filters;
+
+	AddPhysicObjectToWorld(pPhysicObject, filters);
 
 	m_physicObjects[entindex] = pPhysicObject;
 }
 
 void CBasePhysicManager::FreePhysicObject(IPhysicObject *pPhysicObject)
 {
-	RemovePhysicObjectFromWorld(pPhysicObject);
+	CPhysicComponentFilters filters;
+
+	RemovePhysicObjectFromWorld(pPhysicObject, filters);
 
 	pPhysicObject->Destroy();
 }
@@ -1104,7 +1264,7 @@ bool CBasePhysicManager::RemovePhysicObject(int entindex)
 	return false;
 }
 
-void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
+void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 {
 	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end();)
 	{
@@ -1112,7 +1272,7 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
 
 		auto pPhysicObject = itor->second;
 
-		if (pPhysicObject->GetObjectFlags() & flags)
+		if ((pPhysicObject->GetObjectFlags() & withflags) && !(pPhysicObject->GetObjectFlags() & withoutflags))
 		{
 			FreePhysicObject(pPhysicObject);
 			itor = m_physicObjects.erase(itor);
@@ -1763,9 +1923,9 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 
 void CBasePhysicManager::LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig *pPhysicObjectConfig)
 {
-	for (auto pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
+	for (const auto& pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
 	{
-		for (auto pShapeConfig : pRigidBodyConfig->shapes)
+		for (const auto &pShapeConfig : pRigidBodyConfig->shapes)
 		{
 			if (pShapeConfig->type == PhysicShape_TriangleMesh && !pShapeConfig->objpath.empty())
 			{

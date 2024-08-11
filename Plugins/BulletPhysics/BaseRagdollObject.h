@@ -9,7 +9,12 @@ class CBaseRagdollObject : public IRagdollObject
 public:
 	CBaseRagdollObject(const CRagdollObjectCreationParameter& CreationParam)
 	{
-
+		m_entindex = CreationParam.m_entindex;
+		m_entity = CreationParam.m_entity;
+		m_model = CreationParam.m_model;
+		m_model_scaling = CreationParam.m_model_scaling;
+		m_playerindex = CreationParam.m_playerindex;
+		m_flags = CreationParam.m_pRagdollObjectConfig->flags;
 	}
 
 	~CBaseRagdollObject()
@@ -64,17 +69,6 @@ public:
 		ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 	}
 
-	void ApplyBarnacle(cl_entity_t* pBarnacleEntity) override
-	{
-		m_iBarnacleIndex = ClientEntityManager()->GetEntityIndex(pBarnacleEntity);
-	}
-
-	void ApplyGargantua(cl_entity_t* gargantua_entity) override
-	{
-		//TODO
-
-	}
-
 	bool SyncFirstPersonView(struct ref_params_s* pparams) override
 	{
 		//TODO
@@ -124,6 +118,16 @@ public:
 			}
 		}
 
+		if (m_iBarnacleIndex && iNewActivityType != 2)
+		{
+			ReleaseFromBarnacle();
+		}
+
+		if (m_iGargantuaIndex && iNewActivityType != 2)
+		{
+			ReleaseFromGargantua();
+		}
+
 		if (UpdateActivity(iOldActivityType, iNewActivityType, playerState))
 		{
 			ctx->m_bActivityChanged = true;
@@ -131,19 +135,19 @@ public:
 			//Transform from whatever to barnacle
 			if (iNewActivityType == 2 && iOldActivityType != 2)
 			{
-				auto BarnacleEntity = ClientEntityManager()->FindBarnacleForPlayer(playerState);
+				auto pBarnacleObject = ClientPhysicManager()->FindBarnacleObjectForPlayer(playerState);
 
-				if (BarnacleEntity)
+				if (pBarnacleObject)
 				{
-					ApplyBarnacle(BarnacleEntity);
+					ApplyBarnacle(pBarnacleObject);
 				}
 				else
 				{
-					auto GargantuaEntity = ClientEntityManager()->FindGargantuaForPlayer(playerState);
+					auto pGargantuaEntity = ClientPhysicManager()->FindGargantuaObjectForPlayer(playerState);
 
-					if (GargantuaEntity)
+					if (pGargantuaEntity)
 					{
-						ApplyGargantua(GargantuaEntity);
+						ApplyGargantua(pGargantuaEntity);
 					}
 				}
 			}
@@ -263,12 +267,16 @@ public:
 	float m_model_scaling{ 1 };
 	int m_flags{ PhysicObjectFlag_RagdollObject };
 
-	int m_iActivityType{};
-	int m_iBarnacleIndex{};
-	int m_iGargantuaIndex{};
+	int m_iActivityType{ 0 };
+	int m_iBarnacleIndex{ 0 };
+	int m_iGargantuaIndex{ 0 };
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 	vec3_t m_vecFirstPersonAngleOffset{};
+
 	CClientRagdollAnimControlConfig m_IdleAnimConfig;
 	std::vector<CClientRagdollAnimControlConfig> m_AnimControlConfigs;
+
+	std::vector<std::shared_ptr<CClientConstraintConfig>> m_BarnacleConstraintConfigs;
+	std::vector<std::shared_ptr<CClientPhysicActionConfig>> m_BarnacleActionConfigs;
 };

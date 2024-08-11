@@ -16,8 +16,11 @@ const int PhysicObjectFlag_DynamicObject = 0x2;
 const int PhysicObjectFlag_RagdollObject = 0x4;
 const int PhysicObjectFlag_Barnacle = 0x8;
 const int PhysicObjectFlag_Gargantua = 0x10;
+const int PhysicObjectFlag_NoConfig = 0x20;
+const int PhysicObjectFlag_FromConfig = 0x40;
 const int PhysicObjectFlag_AnyObject = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject | PhysicObjectFlag_DynamicObject);
 
+const int PhysicRigidBodyFlag_None = 0;
 const int PhysicRigidBodyFlag_AlwaysDynamic = 1;
 const int PhysicRigidBodyFlag_AlwaysKinematic = 2;
 const int PhysicRigidBodyFlag_AlwaysStatic = 4;
@@ -64,8 +67,10 @@ const int PhysicConstraintFactorIdx_AngularCFM = 25;
 const int PhysicConstraintFactorIdx_AngularStopERP = 26;
 const int PhysicConstraintFactorIdx_AngularStopCFM = 27;
 
-const int PhysicConstraintFlag_Barnacle = 1;
-const int PhysicConstraintFlag_Gargantuna = 2;
+const int PhysicConstraintFlag_Native = 0x1;
+const int PhysicConstraintFlag_Barnacle = 0x2;
+const int PhysicConstraintFlag_Gargantua = 0x4;
+const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicShape_None = 0;
 const int PhysicShape_Box = 1;
@@ -84,7 +89,13 @@ const int PhysicConstraint_Dof6 = 5;
 const int PhysicConstraint_Fixed = 6;
 
 const int PhysicAction_None = 0;
-const int PhysicAction_BarnacleForce = 1;
+const int PhysicAction_BarnacleDragForce = 1;
+
+const int PhysicActionFlag_Barnacle = 0x1;
+const int PhysicActionFlag_Gargantuna = 0x2;
+
+const int PhysicActionFactor_BarnacleDragForceMagnitude = 0;
+const int PhysicActionFactor_BarnacleDragForceExtraHeight = 1;
 
 const int PhysicShapeDirection_X = 0;
 const int PhysicShapeDirection_Y = 1;

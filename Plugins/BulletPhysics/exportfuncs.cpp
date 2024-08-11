@@ -1099,9 +1099,19 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
-void BV_Reload_f(void)
+void BV_ReloadAll_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_RagdollObject);
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
+	ClientPhysicManager()->LoadPhysicObjectConfigs();
+}
+
+void BV_ReloadObjects_f(void)
+{
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
+}
+
+void BV_ReloadConfigs_f(void)
+{
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
@@ -1162,7 +1172,9 @@ void HUD_Init(void)
 	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
 	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
-	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
+	gEngfuncs.pfnAddCommand("bv_reload_all", BV_ReloadAll_f);
+	gEngfuncs.pfnAddCommand("bv_reload_objects", BV_ReloadObjects_f);
+	gEngfuncs.pfnAddCommand("bv_reload_configs", BV_ReloadConfigs_f);
 
 	//For ClCorpse hook
 

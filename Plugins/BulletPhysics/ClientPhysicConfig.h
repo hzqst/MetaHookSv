@@ -53,17 +53,9 @@ public:
 class CClientRigidBodyConfig
 {
 public:
-	~CClientRigidBodyConfig()
-	{
-		for (auto p : shapes)
-		{
-			delete p;
-		}
-	}
-
 	std::string name;
 
-	int flags{ 0 };
+	int flags{ PhysicRigidBodyFlag_None };
 	int debugDrawLevel{ 0 };
 
 	//For positioning
@@ -78,7 +70,7 @@ public:
 	float pboneoffset{ 0 };
 
 	//Support compound shape?
-	std::vector<CClientCollisionShapeConfig*> shapes;
+	std::vector<std::shared_ptr<CClientCollisionShapeConfig>> shapes;
 
 	float mass{ 1 };
 	float density{ 1 };
@@ -97,6 +89,13 @@ public:
 class CClientConstraintConfig
 {
 public:
+	CClientConstraintConfig()
+	{
+		for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
+			factors[i] = NAN;
+		}
+	}
+
 	std::string name;
 	int type{ PhysicConstraint_None };
 	std::string rigidbodyA;
@@ -106,17 +105,18 @@ public:
 	vec3_t originB{ 0 };
 	vec3_t anglesB{ 0 };
 	vec3_t forward{ 0, 1, 0 };
+
 	bool disableCollision{ true };
-
-	bool useSeperateFrame{ false };
 	bool useGlobalJointFromA{ true };
-
-	bool useGlobalLookAt{ true };
+	bool useLookAtOther{ false };
+	bool useGlobalJointOriginFromOther{ false };
 	bool useLinearReferenceFrameA{ true };
 
 	int debugDrawLevel{ 0 };
 	int flags{ 0 };
-	float factors[32]{ NAN };
+	float factors[32]{  };
+
+	float maxTolerantLinearErrorMagnitude{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };
@@ -126,14 +126,22 @@ public:
 	vec3_t offsetB{ 0 };
 };
 
-class CClientActionConfig
+class CClientPhysicActionConfig
 {
 public:
+	CClientPhysicActionConfig()
+	{
+		for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
+			factors[i] = NAN;
+		}
+	}
+
 	std::string name;
-	int type{ PhysicAction_None };
 	std::string rigidbodyA;
 	std::string rigidbodyB;
-	float factors[32]{ NAN };
+	int type{ PhysicAction_None };
+	int flags{ 0 };
+	float factors[32]{  };
 };
 
 class CClientFloaterConfig
@@ -155,28 +163,12 @@ public:
 	int activity{};
 };
 
-class CClientRagdollBarnacleControlConfig
+class CClientPhysicObjectConfig : public IBaseInterface
 {
-public:
-	
-};
-
-class CClientPhysicObjectConfig
-{
-public:
-	virtual ~CClientPhysicObjectConfig()
-	{
-		for (auto p : RigidBodyConfigs)
-		{
-			delete p;
-		}
-		RigidBodyConfigs.clear();
-	}
-
 public:
 	int type{ PhysicConfigType_None };
 	int flags{};
-	std::vector<CClientRigidBodyConfig*> RigidBodyConfigs;
+	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 };
 
 class CClientDynamicObjectConfig : public CClientPhysicObjectConfig
@@ -187,16 +179,8 @@ public:
 		type = PhysicConfigType_DynamicObject;
 		flags = PhysicObjectFlag_DynamicObject;
 	}
-	~CClientDynamicObjectConfig()
-	{
-		for (auto p : ConstraintConfigs)
-		{
-			delete p;
-		}
-		ConstraintConfigs.clear();
-	}
 
-	std::vector<CClientConstraintConfig*> ConstraintConfigs;
+	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 };
 
 class CClientStaticObjectConfig : public CClientPhysicObjectConfig
@@ -218,34 +202,21 @@ public:
 		flags = PhysicObjectFlag_RagdollObject;
 	}
 
-	~CClientRagdollObjectConfig()
-	{
-		for (auto p : ConstraintConfigs)
-		{
-			delete p;
-		}
-		ConstraintConfigs.clear();
+	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
+	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
 
-		for (auto p : FloaterConfigs)
-		{
-			delete p;
-		}
-		FloaterConfigs.clear();
-	}
-
-	std::vector<CClientConstraintConfig*> ConstraintConfigs;
-	std::vector<CClientFloaterConfig*> FloaterConfigs;
 	std::vector<CClientRagdollAnimControlConfig> AnimControlConfigs;
 	CClientRagdollAnimControlConfig IdleAnimConfig;
-	std::vector < std::shared_ptr<CClientConstraintConfig>> BarnacleConstraintConfigs;
-	std::vector<std::shared_ptr<CClientActionConfig>> BarnacleActionConfigs;
+
+	std::vector<std::shared_ptr<CClientConstraintConfig>> BarnacleConstraintConfigs;
+	std::vector<std::shared_ptr<CClientPhysicActionConfig>> BarnacleActionConfigs;
 };
 
 class CClientPhysicObjectConfigStorage
 {
 public:
 	int state{ PhysicConfigState_NotLoaded };
-	CClientPhysicObjectConfig* pConfig{};
+	std::shared_ptr<CClientPhysicObjectConfig> pConfig{};
 };
 
 using CClientPhysicObjectConfigs = std::vector<CClientPhysicObjectConfigStorage>;

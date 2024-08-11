@@ -3,44 +3,41 @@
 #include "BaseRagdollObject.h"
 #include "BulletPhysicManager.h"
 
-class CBulletRigidBodyBarnacleDragForceAction : public CBulletRigidBodyTickAction
+class CBulletRigidBodyBarnacleDragForceAction : public CBulletRigidBodyAction
 {
 public:
-	CBulletRigidBodyBarnacleDragForceAction(btRigidBody* pRigidBody, int iBarnacleIndex, float flForce, float flExtraHeight) : 
-		CBulletRigidBodyTickAction(pRigidBody), 
+	CBulletRigidBodyBarnacleDragForceAction(btRigidBody* pRigidBody, int flags, int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) : 
+		CBulletRigidBodyAction(pRigidBody, flags), 
 		m_iBarnacleIndex(iBarnacleIndex), 
-		m_flForce(flForce),
+		m_flForceMagnitude(flForceMagnitude),
 		m_flExtraHeight(flExtraHeight)
 	{
 
 	}
 
-	void Update(CPhysicObjectUpdateContext* ctx) override
+	bool Update(CPhysicObjectUpdateContext* ctx) override
 	{
-		auto pBarnacleEntity = ClientEntityManager()->GetEntityByIndex(m_iBarnacleIndex);
+		auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 
-		if (!pBarnacleEntity)
-			return;
+		if (!pBarnacleObject)
+			return false;
 
-		if (!ClientEntityManager()->IsEntityBarnacle(pBarnacleEntity))
-			return;
-
-		if (pBarnacleEntity->curstate.sequence == 5)
-			return;
+		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
+			return false;
 
 		vec3_t vecPhysicObjectOrigin{0};
 
 		if (!ctx->m_pPhysicObject->GetOrigin(vecPhysicObjectOrigin))
-			return;
+			return false;
 
 		vec3_t vecClientEntityOrigin{ 0 };
 
 		VectorCopy(ctx->m_pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
 
 		if (vecPhysicObjectOrigin[2] > vecClientEntityOrigin[2] + m_flExtraHeight)
-			return;
+			return true;
 
-		btVector3 vecForce(0, 0, m_flForce);
+		btVector3 vecForce(0, 0, m_flForceMagnitude);
 
 		if (vecPhysicObjectOrigin[2] > vecClientEntityOrigin[2])
 		{
@@ -48,11 +45,12 @@ public:
 		}
 
 		m_pRigidBody->applyCentralForce(vecForce);
+		return true;
 	}
 
-	int m_iBarnacleIndex{ -1 };
+	int m_iBarnacleIndex{ 0 };
 	float m_flExtraHeight{ 24 };
-	float m_flForce{};
+	float m_flForceMagnitude{ 0 };
 };
 
 class CBulletRagdollObject : public CBaseRagdollObject
@@ -60,13 +58,11 @@ class CBulletRagdollObject : public CBaseRagdollObject
 public:
 	CBulletRagdollObject(const CRagdollObjectCreationParameter& CreationParam) : CBaseRagdollObject(CreationParam)
 	{
-		m_entindex = CreationParam.m_entindex;
-		m_playerindex = CreationParam.m_playerindex;
-		m_entity = CreationParam.m_entity;
-		m_model = CreationParam.m_model;
-
 		m_IdleAnimConfig = CreationParam.m_pRagdollObjectConfig->IdleAnimConfig;
 		m_AnimControlConfigs = CreationParam.m_pRagdollObjectConfig->AnimControlConfigs;
+
+		m_BarnacleActionConfigs = CreationParam.m_pRagdollObjectConfig->BarnacleActionConfigs;
+		m_BarnacleConstraintConfigs = CreationParam.m_pRagdollObjectConfig->BarnacleConstraintConfigs;
 
 		SaveBoneRelativeTransform(CreationParam);
 		CreateRigidBodies(CreationParam);
@@ -77,6 +73,11 @@ public:
 
 	~CBulletRagdollObject()
 	{
+		for (auto pAction : m_Actions)
+		{
+			delete pAction;
+		}
+
 		for (auto pConstraint : m_Constraints)
 		{
 			OnBeforeDeleteBulletConstraint(pConstraint);
@@ -230,17 +231,88 @@ public:
 		}
 	}
 
-	void ApplyBarnacle(cl_entity_t* pBarnacleEntity) override
+	void ApplyBarnacle(IPhysicObject *pBarnacleObject) override
 	{
-		CBaseRagdollObject::ApplyBarnacle(pBarnacleEntity);
+		if (m_iBarnacleIndex)
+			return;
+
+		m_iBarnacleIndex = pBarnacleObject->GetEntityIndex();
+
+		CRagdollObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entindex = GetEntityIndex();
+		CreationParam.m_model = GetModel();
+
+		if (GetModel()->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(GetModel());
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(GetClientEntity(), GetModel());
+		}
+
+		CreationParam.m_playerindex = GetPlayerIndex();
 
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			pRigidBody->setLinearVelocity(btVector3(0, 0, 0));
 			pRigidBody->setAngularVelocity(btVector3(0, 0, 0));
-
-
+			//pRigidBody->setInterpolationLinearVelocity(btVector3(0, 0, 0));
+			//pRigidBody->setInterpolationAngularVelocity(btVector3(0, 0, 0));
 		}
+
+		for (const auto& pActionConfig : m_BarnacleActionConfigs)
+		{
+			auto pAction = CreateActionFromConfig(pActionConfig.get());
+
+			if (pAction)
+			{
+				m_Actions.emplace_back(pAction);
+			}
+		}
+
+		for (const auto& pConstraintConfig : m_BarnacleConstraintConfigs)
+		{
+			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
+
+			if (pConstraint)
+			{
+				m_Constraints.emplace_back(pConstraint);
+			}
+		}
+
+		CPhysicComponentFilters filters;
+
+		filters.m_HasWithConstraintFlags = true;
+		filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
+
+		ClientPhysicManager()->AddPhysicObjectToWorld(this, filters);
+	}
+
+	void ReleaseFromBarnacle() override
+	{
+		if (!m_iBarnacleIndex)
+			return;
+
+		m_iBarnacleIndex = 0;
+
+		FreePhysicActionsWithFilters(PhysicActionFlag_Barnacle, 0);
+
+		CPhysicComponentFilters filters;
+
+		filters.m_HasWithConstraintFlags = true;
+		filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
+
+		ClientPhysicManager()->RemovePhysicObjectFromWorld(this, filters);
+	}
+
+	void ApplyGargantua(IPhysicObject* pGargantuaObject) override
+	{
+		//TODO
+	}
+
+	void ReleaseFromGargantua() override
+	{
+		//TODO
 	}
 
 	void Update(CPhysicObjectUpdateContext* ctx) override
@@ -253,15 +325,20 @@ public:
 		{
 			if (UpdateRigidBodyKinematic(pRigidBody, false, false))
 				ctx->m_bRigidbodyKinematicChanged = true;
+		}
 
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+		for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
+		{
+			auto pAction = (*itor);
 
-			if (pSharedUserData)
+			if (pAction->Update(ctx))
 			{
-				for (auto pAction : pSharedUserData->m_actions)
-				{
-					pAction->Update(ctx);
-				}
+				itor++;
+			}
+			else
+			{
+				delete pAction;
+				itor = m_Actions.erase(itor);
 			}
 		}
 	}
@@ -272,7 +349,7 @@ public:
 		m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
 	}
 
-	void AddToPhysicWorld(void* world) override
+	void AddToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -280,7 +357,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (!pSharedUserData->m_addedToPhysicWorld)
+			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
 			{
 				dynamicWorld->addRigidBody(pRigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
 
@@ -292,7 +369,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
 
-			if (!pSharedUserData->m_addedToPhysicWorld)
+			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForConstraint(pSharedUserData, filters))
 			{
 				dynamicWorld->addConstraint(pConstraint, pSharedUserData->m_disableCollision);
 
@@ -301,7 +378,7 @@ public:
 		}
 	}
 
-	void RemoveFromPhysicWorld(void* world) override
+	void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -321,13 +398,61 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (pSharedUserData->m_addedToPhysicWorld)
+			if (pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
 			{
 				dynamicWorld->removeRigidBody(pRigidBody);
 
 				pSharedUserData->m_addedToPhysicWorld = false;
 			}
 		}
+	}
+
+	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override
+	{
+		for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
+		{
+			auto pAction = (*itor);
+
+			if (!(pAction->GetActionFlags() & without_flags))
+			{
+				itor++;
+				continue;
+			}
+
+			if (with_flags == 0)
+			{
+				delete pAction;
+				itor = m_Actions.erase(itor);
+				continue;
+			}
+			else
+			{
+				if ((pAction->GetActionFlags() & with_flags))
+				{
+					delete pAction;
+					itor = m_Actions.erase(itor);
+					continue;
+				}
+			}
+
+			itor++;
+		}
+	}
+
+	void* GetRigidBodyByName(const std::string& name)
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+
+			if (pSharedUserData)
+			{
+				if (pSharedUserData->m_name == name)
+					return pRigidBody;
+			}
+		}
+
+		return nullptr;
 	}
 
 	bool IsClientEntityNonSolid() const override
@@ -340,6 +465,29 @@ public:
 
 private:
 
+	IPhysicAction *CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig)
+	{
+		switch (pActionConfig->type)
+		{
+		case PhysicAction_BarnacleDragForce:
+		{
+			auto pRigidBodyA = (btRigidBody *)GetRigidBodyByName(pActionConfig->rigidbodyA);
+
+			if (!pRigidBodyA)
+				return nullptr;
+
+			return new CBulletRigidBodyBarnacleDragForceAction(
+				pRigidBodyA,
+				pActionConfig->flags,
+				m_iBarnacleIndex,
+				pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude],
+				pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight]);
+		}
+		}
+
+		return nullptr;
+	}
+
 	void CheckConstraintLinearErrors(CPhysicObjectUpdateContext* ctx)
 	{
 		if (ctx->m_bRigidbodyPoseChanged)
@@ -349,10 +497,19 @@ private:
 
 		for (auto pConstraint : m_Constraints)
 		{
+			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+
+			if (pSharedUserData->m_flags & PhysicConstraintFlag_Barnacle)
+				continue;
+
+			if (pSharedUserData->m_flags & PhysicConstraintFlag_Gargantua)
+				continue;
+
 			auto &pRigidBodyA = pConstraint->getRigidBodyA();
 			auto &pRigidBodyB = pConstraint->getRigidBodyB();
 
 			bool bShouldPerformCheck = false;
+
 			if (pRigidBodyA.isKinematicObject() && !pRigidBodyB.isStaticOrKinematicObject())//A Kinematic, B Dynamic
 			{
 				bShouldPerformCheck = true;
@@ -370,7 +527,7 @@ private:
 			{
 				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pConstraint);
 
-				if (errorMagnitude > BULLET_MAX_TOLERANT_LINEAR_ERROR)
+				if (errorMagnitude > pSharedUserData->m_maxTolerantLinearErrorMagnitude)
 				{
 					bShouldResetPose = true;
 					break;
@@ -506,18 +663,34 @@ private:
 
 	btRigidBody* FindRigidBodyByName(const std::string& name)
 	{
-		for (auto pRigidBody : m_RigidBodies)
+		if (name.starts_with("@barnacle.") && m_iBarnacleIndex)
 		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+			auto findName = name.substr(sizeof("@barnacle.") - 1);
 
-			if (pSharedUserData)
+			auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
+
+			if (pBarnacleObject)
 			{
-				if (pSharedUserData->m_name == name)
-					return pRigidBody;
+				return (btRigidBody *)pBarnacleObject->GetRigidBodyByName(findName);
 			}
+
+			return nullptr;
+		}
+		else if (name.starts_with("@gargantua.") && m_iGargantuaIndex)
+		{
+			auto findName = name.substr(sizeof("@gargantua.") - 1);
+
+			auto pGargantuaObject = ClientPhysicManager()->GetPhysicObject(m_iGargantuaIndex);
+
+			if (pGargantuaObject)
+			{
+				return (btRigidBody*)pGargantuaObject->GetRigidBodyByName(findName);
+			}
+
+			return nullptr;
 		}
 
-		return nullptr;
+		return (btRigidBody *)GetRigidBodyByName(name);
 	}
 
 	btRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig)
@@ -542,7 +715,7 @@ private:
 			return nullptr;
 		}
 
-		auto pCollisionShape = BulletCreateCollisionShape(CreationParam, pRigidConfig);
+		auto pCollisionShape = BulletCreateCollisionShape(pRigidConfig);
 
 		if (!pCollisionShape)
 		{
@@ -664,97 +837,98 @@ private:
 				globalJointTransform.mult(worldTransA, localTransA);
 			}
 
-			return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
+			return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
 		}
 
-		if (!pConstraintConfig->useSeperateFrame)
+		if (pConstraintConfig->useGlobalJointFromA)
 		{
-			if (pConstraintConfig->useGlobalJointFromA)
-			{
-				const auto& worldTransA = pRigidBodyA->getWorldTransform();
+			const auto& worldTransA = pRigidBodyA->getWorldTransform();
 
-				btVector3 vecOrigin(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
+			btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
 
-				btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+			btTransform localTransA(btQuaternion(0, 0, 0, 1), vecOriginA);
 
-				btVector3 vecAngles(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
+			btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
 
-				EulerMatrix(vecAngles, localTrans.getBasis());
+			EulerMatrix(vecAnglesA, localTransA.getBasis());
 
-				btTransform globalJointTransform;
+			btTransform globalJointTransformA;
 
-				globalJointTransform.mult(worldTransA, localTrans);
+			globalJointTransformA.mult(worldTransA, localTransA);
 
-				return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform); 
-			}
-			else
+			if (pConstraintConfig->useLookAtOther)
 			{
 				const auto& worldTransB = pRigidBodyB->getWorldTransform();
 
-				btVector3 vecOrigin(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
+				btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
 
-				btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+				btTransform localTransB(btQuaternion(0, 0, 0, 1), vecOriginB);
 
-				btVector3 vecAngles(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
+				btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
 
-				EulerMatrix(vecAngles, localTrans.getBasis());
-
-				btTransform globalJointTransform;
-
-				globalJointTransform.mult(worldTransB, localTrans);
-
-				return BulletCreateConstraintFromGlobalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransform);
-			}
-		}
-		else
-		{
-			const auto& worldTransA = pRigidBodyA->getWorldTransform();
-			const auto& worldTransB = pRigidBodyB->getWorldTransform();
-
-			btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
-			btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
-
-			btTransform localTransA(btQuaternion(0, 0, 0, 1), vecOriginA);
-			btTransform localTransB(btQuaternion(0, 0, 0, 1), vecOriginB);
-
-			btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
-			btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
-
-			EulerMatrix(vecAnglesA, localTransA.getBasis());
-			EulerMatrix(vecAnglesB, localTransB.getBasis());
-
-			if (pConstraintConfig->useGlobalLookAt)
-			{
-				btTransform globalJointTransformA;
-
-				globalJointTransformA.mult(worldTransA, localTransA);
-
-				globalJointTransformA.getOrigin();
+				EulerMatrix(vecAnglesB, localTransB.getBasis());
 
 				btTransform globalJointTransformB;
 
 				globalJointTransformB.mult(worldTransB, localTransB);
 
-				globalJointTransformB.getOrigin();
-
 				btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
 
-				if (pConstraintConfig->useLinearReferenceFrameA)
-				{
-					auto lookAtTransA = MatrixLookAt(globalJointTransformA, globalJointTransformB.getOrigin(), vecForward);
+				globalJointTransformA = MatrixLookAt(globalJointTransformA, globalJointTransformB.getOrigin(), vecForward);
 
-					localTransA.mult(worldTransA.inverse(), lookAtTransA);
-				}
-				else
+				if (pConstraintConfig->useGlobalJointOriginFromOther)
 				{
-					auto lookAtTransB = MatrixLookAt(globalJointTransformB, globalJointTransformA.getOrigin(), vecForward);
-
-					localTransB.mult(worldTransB.inverse(), lookAtTransB);
+					globalJointTransformA.setOrigin(globalJointTransformB.getOrigin());
 				}
 			}
 
-			return BulletCreateConstraintFromLocalJointTransform(CreationParam, pConstraintConfig, pRigidBodyA, pRigidBodyB, localTransA, localTransB);
+			return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransformA);
 		}
+		else
+		{
+			const auto& worldTransB = pRigidBodyB->getWorldTransform();
+
+			btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
+
+			btTransform localTransB(btQuaternion(0, 0, 0, 1), vecOriginB);
+
+			btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
+
+			EulerMatrix(vecAnglesB, localTransB.getBasis());
+
+			btTransform globalJointTransformB;
+
+			globalJointTransformB.mult(worldTransB, localTransB);
+
+			if (pConstraintConfig->useLookAtOther)
+			{
+				const auto& worldTransA = pRigidBodyA->getWorldTransform();
+
+				btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
+
+				btTransform localTransA(btQuaternion(0, 0, 0, 1), vecOriginA);
+
+				btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
+
+				EulerMatrix(vecAnglesA, localTransA.getBasis());
+
+				btTransform globalJointTransformA;
+
+				globalJointTransformA.mult(worldTransA, localTransA);
+
+				btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
+
+				globalJointTransformB = MatrixLookAt(globalJointTransformB, globalJointTransformA.getOrigin(), vecForward);
+
+				if (pConstraintConfig->useGlobalJointOriginFromOther)
+				{
+					globalJointTransformB.setOrigin(globalJointTransformA.getOrigin());
+				}
+			}
+
+			return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, pRigidBodyA, pRigidBodyB, globalJointTransformB);
+		}
+
 		return nullptr;
 	}
 
@@ -765,9 +939,9 @@ private:
 
 	void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		for (auto pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
+		for (const auto &pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
 		{
-			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig);
+			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
 
 			if (pRigidBody)
 			{
@@ -790,9 +964,9 @@ private:
 
 	void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		for (auto pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
+		for (const auto &pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
 		{
-			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig);
+			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
 
 			if (pConstraint)
 			{
@@ -803,22 +977,20 @@ private:
 
 	void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		for (auto pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
+		for (const auto &pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
 		{
-			CreateFloater(CreationParam, pFloaterConfig);
+			CreateFloater(CreationParam, pFloaterConfig.get());
 		}
 	}
 
 public:
 
+	std::vector<IPhysicAction*> m_Actions;
 	std::vector<btRigidBody*> m_RigidBodies;
 	std::vector<btTypedConstraint*> m_Constraints;
 	btRigidBody* m_PelvisRigBody{};
 	btRigidBody* m_HeadRigBody{};
 
 	btTransform m_BoneRelativeTransform[128]{};
-
-	std::vector<std::shared_ptr<CClientConstraintConfig>> m_BarnacleConstraintConfigs;
-	std::vector<std::shared_ptr<CClientActionConfig>> m_BarnacleActionConfigs;
 
 };

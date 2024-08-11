@@ -265,7 +265,7 @@ btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
 	return 0;
 }
 
-btTypedConstraint* BulletCreateConstraint_ConeTwist(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_ConeTwist(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto spanLimit1 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1];
 
@@ -368,7 +368,7 @@ btTypedConstraint* BulletCreateConstraint_ConeTwist(const CPhysicObjectCreationP
 	return pConeTwist;
 }
 
-btTypedConstraint* BulletCreateConstraint_Hinge(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Hinge(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto lowLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit];
 
@@ -428,7 +428,7 @@ btTypedConstraint* BulletCreateConstraint_Hinge(const CPhysicObjectCreationParam
 	return pHinge;
 }
 
-btTypedConstraint* BulletCreateConstraint_Point(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Point(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
 
@@ -469,7 +469,7 @@ btTypedConstraint* BulletCreateConstraint_Point(const CPhysicObjectCreationParam
 	return pPoint2Point;
 }
 
-btTypedConstraint* BulletCreateConstraint_Slider(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Slider(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto LowerLinearLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_SliderLowerLinearLimit];
 
@@ -501,42 +501,52 @@ btTypedConstraint* BulletCreateConstraint_Slider(const CPhysicObjectCreationPara
 	if (isnan(LinearCFM))
 		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
 
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+
+	if (isnan(AngularCFM))
+		AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
+
 	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
 
 	if (isnan(LinearStopERP))
 		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
+
+	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+
+	if (isnan(AngularStopERP))
+		AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
 
 	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
 
 	if (isnan(LinearStopCFM))
 		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
 
+	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
+
+	if (isnan(AngularStopCFM))
+		AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
+
 	auto pSlider = new btSliderConstraint(*rbA, *rbB, localTransformA, localTransformB, pConstraintConfig->useLinearReferenceFrameA);
 
 	pSlider->setLowerLinLimit(LowerLinearLimit);
 	pSlider->setUpperLinLimit(UpperLinearLimit);
 
-	pSlider->setLowerAngLimit(LowerAngularLimit * M_PI);
-	pSlider->setUpperAngLimit(UpperAngularLimit * M_PI);
+	//pSlider->setLowerAngLimit(LowerAngularLimit * M_PI);
+	//pSlider->setUpperAngLimit(UpperAngularLimit * M_PI);
 
-	pSlider->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-	pSlider->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-	pSlider->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
 	pSlider->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pSlider->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-	pSlider->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	pSlider->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
 
 	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
+	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+
 	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
 
 	return pSlider;
 }
 
-btTypedConstraint* BulletCreateConstraint_Dof6(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Dof6(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto LowerLinearLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX];
 
@@ -572,12 +582,12 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CPhysicObjectCreationParame
 
 	btVector3 vecUpperLinearLimit(UpperLinearLimitX, UpperLinearLimitY, UpperLinearLimitZ);
 
-	auto LowerAngularLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerAngularLimitZ];
+	auto LowerAngularLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerAngularLimitX];
 
 	if (isnan(LowerAngularLimitX))
 		LowerAngularLimitX = -1;
 
-	auto LowerAngularLimitY = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerAngularLimitZ];
+	auto LowerAngularLimitY = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerAngularLimitY];
 
 	if (isnan(LowerAngularLimitY))
 		LowerAngularLimitY = -1;
@@ -589,12 +599,12 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CPhysicObjectCreationParame
 
 	btVector3 vecLowerAngularLimit(LowerAngularLimitX, LowerAngularLimitY, LowerAngularLimitZ);
 
-	auto UpperAngularLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperAngularLimitZ];
+	auto UpperAngularLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperAngularLimitX];
 
 	if (isnan(UpperAngularLimitX))
 		UpperAngularLimitX = 1;
 
-	auto UpperAngularLimitY = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperAngularLimitZ];
+	auto UpperAngularLimitY = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperAngularLimitY];
 
 	if (isnan(UpperAngularLimitY))
 		UpperAngularLimitY = 1;
@@ -637,9 +647,6 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CPhysicObjectCreationParame
 	pDof6->setAngularLowerLimit(vecLowerAngularLimit_PI);
 	pDof6->setAngularUpperLimit(vecUpperAngularLimit_PI);
 
-	pDof6->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-	pDof6->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-	pDof6->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
 	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
 	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
 	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
@@ -654,7 +661,7 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CPhysicObjectCreationParame
 	return pDof6;
 }
 
-btTypedConstraint* BulletCreateConstraint_Fixed(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Fixed(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
 
@@ -695,7 +702,7 @@ btTypedConstraint* BulletCreateConstraint_Fixed(const CPhysicObjectCreationParam
 	return pFixed;
 }
 
-btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
 {
 	btTypedConstraint* pConstraint{ };
 
@@ -703,32 +710,32 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CPhysicOb
 	{
 	case PhysicConstraint_ConeTwist:
 	{
-		pConstraint = BulletCreateConstraint_ConeTwist(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_ConeTwist(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	case PhysicConstraint_Hinge:
 	{
-		pConstraint = BulletCreateConstraint_Hinge(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Hinge(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	case PhysicConstraint_Point:
 	{
-		pConstraint = BulletCreateConstraint_Point(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Point(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	case PhysicConstraint_Slider:
 	{
-		pConstraint = BulletCreateConstraint_Slider(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Slider(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	case PhysicConstraint_Dof6:
 	{
-		pConstraint = BulletCreateConstraint_Dof6(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Dof6(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	case PhysicConstraint_Fixed:
 	{
-		pConstraint = BulletCreateConstraint_Fixed(CreationParam, pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Fixed(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
 		break;
 	}
 	}
@@ -741,7 +748,7 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CPhysicOb
 	return pConstraint;
 }
 
-btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CPhysicObjectCreationParameter& CreationParam, const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform)
+btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform)
 {
 	const auto& worldTransA = rbA->getWorldTransform();
 
@@ -753,10 +760,10 @@ btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CPhysicO
 	btTransform localTransB;
 	localTransB.mult(worldTransB.inverse(), globalJointTransform);
 
-	return BulletCreateConstraintFromLocalJointTransform(CreationParam, pConstraintConfig, rbA, rbB, localTransA, localTransB);
+	return BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, rbA, rbB, localTransA, localTransB);
 }
 
-btCollisionShape* BulletCreateCollisionShapeInternal(const CPhysicObjectCreationParameter& CreationParam, const CClientCollisionShapeConfig* pConfig)
+btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShapeConfig* pConfig)
 {
 	btCollisionShape* pShape{};
 
@@ -853,27 +860,27 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CPhysicObjectCreation
 	return pShape;
 }
 
-btCollisionShape* BulletCreateCollisionShape(const CPhysicObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig)
+btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig)
 {
 	if (pRigidConfig->shapes.size() > 1)
 	{
 		auto pCompoundShape = new btCompoundShape();
 
-		for (auto pShapeConfig : pRigidConfig->shapes)
+		for (const auto &pShapeConfig : pRigidConfig->shapes)
 		{
-			auto shape = BulletCreateCollisionShapeInternal(CreationParam, pShapeConfig);
+			auto pCollisionShape = BulletCreateCollisionShapeInternal(pShapeConfig.get());
 
-			if (shape)
+			if (pCollisionShape)
 			{
-				btTransform trans;
+				btTransform localTrans;
 
-				trans.setIdentity();
+				localTrans.setIdentity();
 
-				EulerMatrix(btVector3(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]), trans.getBasis());
+				EulerMatrix(btVector3(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]), localTrans.getBasis());
 
-				trans.setOrigin(btVector3(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]));
+				localTrans.setOrigin(btVector3(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]));
 
-				pCompoundShape->addChildShape(trans, shape);
+				pCompoundShape->addChildShape(localTrans, pCollisionShape);
 			}
 		}
 
@@ -892,7 +899,7 @@ btCollisionShape* BulletCreateCollisionShape(const CPhysicObjectCreationParamete
 	{
 		auto pShapeConfig = pRigidConfig->shapes[0];
 
-		return BulletCreateCollisionShapeInternal(CreationParam, pShapeConfig);
+		return BulletCreateCollisionShapeInternal(pShapeConfig.get());
 	}
 	else
 	{
@@ -974,6 +981,82 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	}
 
 	return nullptr;
+}
+
+bool BulletCheckPhysicComponentFiltersForRigidBody(CBulletRigidBodySharedUserData *pSharedUserData, const CPhysicComponentFilters &filters)
+{
+	if (filters.m_HasWithoutRigidbodyFlags)
+	{
+		if (pSharedUserData->m_flags & filters.m_WithoutRigidbodyFlags)
+		{
+			return false;
+		}
+	}
+
+	if (filters.m_HasExactMatchRigidbodyFlags)
+	{
+		if (pSharedUserData->m_flags == filters.m_ExactMatchRigidbodyFlags)
+		{
+			return true;
+		}
+	}
+
+	if (filters.m_HasWithRigidbodyFlags)
+	{
+		if (pSharedUserData->m_flags & filters.m_WithRigidbodyFlags)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, const CPhysicComponentFilters& filters)
+{
+	auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+
+	return BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters);
+}
+
+bool BulletCheckPhysicComponentFiltersForConstraint(CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters)
+{
+	if (filters.m_HasWithoutConstraintFlags)
+	{
+		if (pSharedUserData->m_flags & filters.m_WithoutConstraintFlags)
+		{
+			return false;
+		}
+	}
+
+	if (filters.m_HasExactMatchConstraintFlags)
+	{
+		if (pSharedUserData->m_flags == filters.m_ExactMatchConstraintFlags)
+		{
+			return true;
+		}
+	}
+
+	if (filters.m_HasWithConstraintFlags)
+	{
+		if (pSharedUserData->m_flags & filters.m_WithConstraintFlags)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, const CPhysicComponentFilters& filters)
+{
+	auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+
+	return BulletCheckPhysicComponentFiltersForConstraint(pSharedUserData, filters);
 }
 
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -1275,14 +1358,14 @@ void CBulletPhysicManager::StepSimulation(double frametime)
 	m_dynamicsWorld->stepSimulation(frametime, 4, 1.0f / GetSimulationTickRate());
 }
 
-void CBulletPhysicManager::AddPhysicObjectToWorld(IPhysicObject *PhysicObject)
+void CBulletPhysicManager::AddPhysicObjectToWorld(IPhysicObject *PhysicObject, const CPhysicComponentFilters& filters)
 {
-	PhysicObject->AddToPhysicWorld(m_dynamicsWorld);
+	PhysicObject->AddToPhysicWorld(m_dynamicsWorld, filters);
 }
 
-void CBulletPhysicManager::RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject)
+void CBulletPhysicManager::RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters)
 {
-	PhysicObject->RemoveFromPhysicWorld(m_dynamicsWorld);
+	PhysicObject->RemoveFromPhysicWorld(m_dynamicsWorld, filters);
 }
 
 IStaticObject* CBulletPhysicManager::CreateStaticObject(const CStaticObjectCreationParameter& CreationParam)
@@ -1320,5 +1403,5 @@ IRagdollObject* CBulletPhysicManager::CreateRagdollObject(const CRagdollObjectCr
 
 IClientPhysicManager* BulletPhysicManager_CreateInstance()
 {
-	return new CBulletPhysicManager;
+	return new CBulletPhysicManager();
 }

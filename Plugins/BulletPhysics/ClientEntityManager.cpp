@@ -109,17 +109,8 @@ public:
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
 		{
-			/*if (m_BarnacleModel && m_BarnacleModel->needload == NL_PRESENT)
-			{
-				if (m_BarnacleModel == ent->model)
-				{
-					return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
-				}
-			}*/
 			if (!strcmp(ent->model->name, "models/barnacle.mdl"))
 			{
-				//m_BarnacleModel = ent->model;
-
 				return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
 			}
 		}
@@ -131,17 +122,8 @@ public:
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
 		{
-			/*if (m_GargantuaModel && m_GargantuaModel->needload == NL_PRESENT)
-			{
-				if (m_GargantuaModel == ent->model)
-				{
-					return true;
-				}
-			}*/
 			if (!strcmp(ent->model->name, "models/garg.mdl"))
 			{
-				//m_GargantuaModel = ent->model;
-
 				return true;
 			}
 		}

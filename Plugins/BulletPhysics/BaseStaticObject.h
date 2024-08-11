@@ -12,6 +12,8 @@ public:
 		m_entindex = CreationParam.m_entindex;
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
+		m_model_scaling = CreationParam.m_model_scaling;
+		m_flags = CreationParam.m_pStaticObjectConfig->flags;
 	}
 
 	~CBaseStaticObject()

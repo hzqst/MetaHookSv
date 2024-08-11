@@ -13,6 +13,7 @@ public:
 	int m_entindex{};
 	model_t* m_model{};
 	studiohdr_t* m_studiohdr{};
+	float m_model_scaling{ 1 };
 };
 
 class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
@@ -63,13 +64,13 @@ public:
 	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
-	CClientPhysicObjectConfig* LoadPhysicObjectConfigForModel(model_t* mod) override;
+	std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) override;
 
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
 	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
 	bool RemovePhysicObject(int entindex) override;
-	void RemoveAllPhysicObjects(int flags) override;
+	void RemoveAllPhysicObjects(int withflags, int withoutflags) override;
 	bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) override;
 	void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
@@ -77,6 +78,9 @@ public:
 	void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
 	void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& OverrideAnim) override;
 	void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
+	
+	IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) override;
+	IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* playerState) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
