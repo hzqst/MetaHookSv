@@ -40,33 +40,6 @@ public:
 	btTriangleIndexVertexArray* m_pIndexVertexArray{};
 };
 
-class CBulletBaseAction : public IPhysicAction
-{
-public:
-	CBulletBaseAction(int flags) : m_flags(flags)
-	{
-
-	}
-
-	int GetActionFlags() const override
-	{
-		return m_flags;
-	}
-
-	int m_flags;
-};
-
-class CBulletRigidBodyAction : public CBulletBaseAction
-{
-public:
-	CBulletRigidBodyAction(btRigidBody* pRigidBody, int flags) : m_pRigidBody(pRigidBody), CBulletBaseAction(flags)
-	{
-
-	}
-
-	btRigidBody* m_pRigidBody{};
-};
-
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
 {
 public:
@@ -102,8 +75,8 @@ public:
 
 	int m_flags{};
 	int m_boneindex{ -1 };
-	int m_debugDrawLevel{ 0 };
-	float m_density{ 1 };
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	float m_density{ BULLET_DEFAULT_DENSENTY };
 	bool m_addedToPhysicWorld{};
 };
 
@@ -112,19 +85,20 @@ class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
 public:
 	CBulletConstraintSharedUserData(const CClientConstraintConfig* pConstraintConfig)
 	{
-		name = pConstraintConfig->name;
+		m_name = pConstraintConfig->name;
 		m_flags = pConstraintConfig->flags;
-		m_disableCollision = pConstraintConfig->disableCollision;
 		m_debugDrawLevel = pConstraintConfig->debugDrawLevel;
-		m_maxTolerantLinearErrorMagnitude = pConstraintConfig->maxTolerantLinearErrorMagnitude;
+		m_maxTolerantLinearError = pConstraintConfig->maxTolerantLinearError;
+		m_disableCollision = pConstraintConfig->disableCollision;
 	}
 
-	std::string name;
+	std::string m_name;
 	int m_flags;
-	int m_debugDrawLevel{};
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	float m_maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
+
 	bool m_disableCollision{};
 	bool m_addedToPhysicWorld{};
-	float m_maxTolerantLinearErrorMagnitude{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -208,6 +182,22 @@ public:
 	btTransform m_offsetmatrix;
 };
 
+class CBulletConstraintCreationContext
+{
+public:
+	btRigidBody* pRigidBodyA{};
+	btRigidBody* pRigidBodyB{};
+	btTransform worldTransA{};
+	btTransform worldTransB{};
+	btTransform invWorldTransA{};
+	btTransform invWorldTransB{};
+	btTransform localTransA{};
+	btTransform localTransB{};
+	btTransform globalJointA{};
+	btTransform globalJointB{};
+	btScalar rigidBodyDistance{};
+};
+
 class CBulletPhysicManager : public CBasePhysicManager
 {
 private:
@@ -233,6 +223,7 @@ public:
 
 	void AddPhysicObjectToWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
+	void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* pRigidBody) override;
 };
 
 CBulletRigidBodySharedUserData* GetSharedUserDataFromRigidBody(btRigidBody* RigidBody);
@@ -242,19 +233,19 @@ CBulletBaseMotionState* GetMotionStateFromRigidBody(btRigidBody* RigidBody);
 IPhysicObject* GetPhysicObjectFromRigidBody(btRigidBody* pRigidBody);
 
 void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
-void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody);
-void OnBeforeDeleteBulletConstraint(btTypedConstraint* pConstraint);
+void OnBeforeDeleteBulletRigidBody(IPhysicObject* pPhysicObject, btRigidBody* pRigidBody);
+void OnBeforeDeleteBulletConstraint(IPhysicObject* pPhysicObject, btTypedConstraint* pConstraint);
 
 btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
-btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform);
-btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB);
+btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& globalJointTransform);
+btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB);
 btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig);
-btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
+btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
 
-bool BulletCheckPhysicComponentFiltersForRigidBody(CBulletRigidBodySharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
+bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, CBulletRigidBodySharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
 bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, const CPhysicComponentFilters& filters);
 
-bool BulletCheckPhysicComponentFiltersForConstraint(CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
+bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
 bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, const CPhysicComponentFilters& filters);
 
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);

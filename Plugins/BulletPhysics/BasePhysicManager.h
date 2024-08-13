@@ -32,17 +32,47 @@ class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
 	int m_playerindex{};
+	bool m_allowNonNativeRigidBody{};
 	CClientRagdollObjectConfig* m_pRagdollObjectConfig{};
+};
+
+class CBulletBaseAction : public IPhysicAction
+{
+public:
+	CBulletBaseAction(int flags) : m_flags(flags)
+	{
+
+	}
+
+	int GetActionFlags() const override
+	{
+		return m_flags;
+	}
+
+	int m_flags;
+};
+
+class CBulletPhysicComponentAction : public CBulletBaseAction
+{
+public:
+	CBulletPhysicComponentAction(int id, int flags) : m_iPhysicComponentId(id), CBulletBaseAction(flags)
+	{
+
+	}
+
+	int m_iPhysicComponentId{};
 };
 
 class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
-	CPhysicIndexArray* m_barnacleIndexArray{};
-	CPhysicVertexArray* m_barnacleVertexArray{};
-	CPhysicIndexArray* m_gargantuaIndexArray{};
-	CPhysicVertexArray* m_gargantuaVertexArray{};
+	//CPhysicIndexArray* m_barnacleIndexArray{};
+	//CPhysicVertexArray* m_barnacleVertexArray{};
+	//CPhysicIndexArray* m_gargantuaIndexArray{};
+	//CPhysicVertexArray* m_gargantuaVertexArray{};
+
 	float m_gravity{};
+	int m_iAllocatedPhysicComponentId{};
 
 	//PhysicObject Manager
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
@@ -60,11 +90,15 @@ public:
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
-	void LoadPhysicObjectConfigs(void) override;
+
+	std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) override;
+	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) override;
+	void LoadPhysicObjectConfigs(void) override; 
+	void SavePhysicObjectConfigs(void);
+
 	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
-	std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) override;
 
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
@@ -76,11 +110,13 @@ public:
 
 	void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t *mod) override;
 	void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
-	void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& OverrideAnim) override;
+	void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) override;
 	void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
 	
 	IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) override;
 	IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* playerState) override;
+
+	int AllocatePhysicComponentId() override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -106,15 +142,18 @@ private:
 	//void GenerateGargantuaIndexVertexArray();
 	//void FreeGargantuaIndexVertexArray();
 
-	void LoadPhysicObjectConfigFromFiles(CClientPhysicObjectConfigStorage& Storage, const std::string& filename);
+	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig);
+	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage);
 
 	void RemoveAllPhysicConfigs();
 
+	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
-	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 
 	bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
 
 	void LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig* pPhysicObjectConfig);
 };
+
+void OnBeforeDeletePhysicAction(IPhysicObject* pPhysicObject, IPhysicAction* pAction);

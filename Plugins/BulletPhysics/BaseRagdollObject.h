@@ -69,13 +69,6 @@ public:
 		ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 	}
 
-	bool SyncFirstPersonView(struct ref_params_s* pparams) override
-	{
-		//TODO
-
-		return false;
-	}
-
 	int GetOverrideActivityType(entity_state_t* entstate) override
 	{
 		for (const auto& AnimControlConfig : m_AnimControlConfigs)
@@ -175,28 +168,7 @@ public:
 		{
 			if (bIsThirdPerson)
 			{
-				vec3_t vecSavedSimOrgigin;
-				vec3_t vecSavedOrigin;
-				vec3_t vecSavedCurStateOrigin;
-				vec3_t vecNewOrigin;
-
-				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				VectorCopy(GetClientEntity()->origin, vecSavedOrigin);
-				VectorCopy(GetClientEntity()->curstate.origin, vecSavedCurStateOrigin);
-
-				GetOrigin(vecNewOrigin);
-
-				VectorCopy(vecNewOrigin, GetClientEntity()->origin);
-				VectorCopy(vecNewOrigin, GetClientEntity()->curstate.origin);
-				VectorCopy(vecNewOrigin, pparams->simorg);
-
-				gExportfuncs.V_CalcRefdef(pparams);
-
-				VectorCopy(vecSavedCurStateOrigin, GetClientEntity()->curstate.origin);
-				VectorCopy(vecSavedOrigin, GetClientEntity()->origin);
-				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-
-				return true;
+				return SyncThirdPersonView(pparams, gExportfuncs.V_CalcRefdef);
 			}
 			else
 			{
@@ -206,22 +178,7 @@ public:
 						return false;
 				}
 
-				vec3_t vecSavedSimOrgigin;
-				vec3_t vecSavedClientViewAngles;
-				int iSavedHealth = pparams->health;
-
-				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-
-				SyncFirstPersonView(pparams);
-
-				gExportfuncs.V_CalcRefdef(pparams);
-
-				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-				pparams->health = iSavedHealth;
-
-				return true;
+				return SyncFirstPersonView(pparams, gExportfuncs.V_CalcRefdef);
 			}
 		}
 
@@ -238,7 +195,7 @@ private:
 		//Start death animation
 		if (iOldActivityType == 0 && iNewActivityType > 0)
 		{
-			auto found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const CClientRagdollAnimControlConfig& Config) {
+			auto found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const CClientAnimControlConfig& Config) {
 
 				if (Config.sequence == curstate->sequence)
 					return true;
@@ -272,11 +229,9 @@ public:
 	int m_iGargantuaIndex{ 0 };
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
-	vec3_t m_vecFirstPersonAngleOffset{};
 
-	CClientRagdollAnimControlConfig m_IdleAnimConfig;
-	std::vector<CClientRagdollAnimControlConfig> m_AnimControlConfigs;
+	CClientAnimControlConfig m_IdleAnimConfig;
+	std::vector<CClientAnimControlConfig> m_AnimControlConfigs;
 
-	std::vector<std::shared_ptr<CClientConstraintConfig>> m_BarnacleConstraintConfigs;
-	std::vector<std::shared_ptr<CClientPhysicActionConfig>> m_BarnacleActionConfigs;
+	CClientBarnacleControlConfig m_BarnacleControlConfig;
 };

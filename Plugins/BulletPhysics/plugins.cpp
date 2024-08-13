@@ -10,6 +10,8 @@
 
 #include "ClientPhysicManager.h"
 
+#include <glew.h>
+
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
 metahook_api_t *g_pMetaHookAPI = NULL;
@@ -73,6 +75,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	GameUI_InstallHooks();
 
 	g_pClientPhysicManager = BulletPhysicManager_CreateInstance();
+
+	glewInit();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)

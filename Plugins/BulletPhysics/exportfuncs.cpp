@@ -66,17 +66,22 @@ model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNu
 
 bool IsPhysicWorldEnabled()
 {
-	return bv_enable->value > 0;
+	return bv_enable->value >= 1;
 }
 
 bool IsDebugDrawEnabled()
 {
-	return bv_debug->value > 0;
+	return bv_debug->value >= 1;
+}
+
+bool IsDebugDrawWallHackEnabled()
+{
+	return bv_debug->value >= 2;
 }
 
 bool ShouldSyncronizeView()
 {
-	return bv_syncview->value > 0;
+	return bv_syncview->value >= 1;
 }
 
 int GetRagdollObjectDebugDrawLevel()
@@ -1115,6 +1120,11 @@ void BV_ReloadConfigs_f(void)
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
+void BV_SaveConfigs_f(void)
+{
+	ClientPhysicManager()->SavePhysicObjectConfigs();
+}
+
 void BV_ThreadPerson_f(void)
 {
 	auto localplayer = gEngfuncs.GetLocalPlayer();
@@ -1175,6 +1185,7 @@ void HUD_Init(void)
 	gEngfuncs.pfnAddCommand("bv_reload_all", BV_ReloadAll_f);
 	gEngfuncs.pfnAddCommand("bv_reload_objects", BV_ReloadObjects_f);
 	gEngfuncs.pfnAddCommand("bv_reload_configs", BV_ReloadConfigs_f);
+	gEngfuncs.pfnAddCommand("bv_save_configs", BV_SaveConfigs_f);
 
 	//For ClCorpse hook
 

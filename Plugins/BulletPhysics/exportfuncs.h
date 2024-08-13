@@ -44,6 +44,7 @@ bool AllowCheats();
 
 bool IsPhysicWorldEnabled();
 bool IsDebugDrawEnabled();
+bool IsDebugDrawWallHackEnabled();
 bool ShouldSyncronizeView();
 int GetRagdollObjectDebugDrawLevel();
 int GetStaticObjectDebugDrawLevel();

@@ -37,16 +37,20 @@ public:
 	bool m_HasWithRigidbodyFlags{ false };
 	bool m_HasWithoutRigidbodyFlags{ false };
 	bool m_HasExactMatchRigidbodyFlags{ false };
+	bool m_HasExactMatchRigidBodyComponentId{};
 	int m_WithRigidbodyFlags{ -1 };
 	int m_WithoutRigidbodyFlags{ 0 };
 	int m_ExactMatchRigidbodyFlags{ -1 };
+	int m_ExactMatchRigidBodyComponentId{ -1 };
 
 	bool m_HasWithConstraintFlags{};
 	bool m_HasWithoutConstraintFlags{};
 	bool m_HasExactMatchConstraintFlags{};
+	bool m_HasExactMatchConstraintComponentId{};
 	int m_WithConstraintFlags{ -1 };
 	int m_WithoutConstraintFlags{ 0 };
 	int m_ExactMatchConstraintFlags{ -1 };
+	int m_ExactMatchConstraintComponentId{ -1 };
 };
 
 class IPhysicObject : public IBaseInterface
@@ -90,8 +94,12 @@ public:
 
 	virtual void AddToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
 	virtual void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;
+	virtual void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* world, void* rigidbody) = 0;
 	virtual void FreePhysicActionsWithFilters(int with_flags, int without_flags) = 0;
 	virtual void* GetRigidBodyByName(const std::string& name) = 0;
+	virtual void* GetRigidBodyByComponentId(int id) = 0;
+	virtual void* GetConstraintByName(const std::string& name) = 0;
+	virtual void* GetConstraintByComponentId(int id) = 0;
 
 	virtual bool IsClientEntityNonSolid() const = 0;
 };
@@ -148,7 +156,8 @@ public:
 	virtual void ApplyGargantua(IPhysicObject* pGargantuaObject) = 0;
 	virtual void ReleaseFromBarnacle() = 0;
 	virtual void ReleaseFromGargantua() = 0;
-	virtual bool SyncFirstPersonView(struct ref_params_s* pparams) = 0;
+	virtual bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
+	virtual bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
 };
 
 class IClientPhysicManager : public IBaseInterface
@@ -161,16 +170,20 @@ public:
 	virtual void DebugDraw(void) = 0;
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
+
+	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
+	virtual std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) = 0;
 	virtual void LoadPhysicObjectConfigs(void) = 0;
+	virtual void SavePhysicObjectConfigs(void) = 0;
+
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
-	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientRagdollAnimControlConfig& OverrideAnim) = 0;
+	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
 	virtual IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) = 0;
@@ -188,7 +201,8 @@ public:
 	//PhysicWorld Related
 	virtual void AddPhysicObjectToWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
 	virtual void RemovePhysicObjectFromWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
-
+	virtual void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* pRigidBody) = 0;
+	virtual int AllocatePhysicComponentId() = 0;
 };
 
 extern IClientPhysicManager* g_pClientPhysicManager;

@@ -30,7 +30,7 @@ public:
 
 	int type{ PhysicShape_None };
 
-	int direction{ PhysicShapeDirection_X };
+	int direction{ PhysicShapeDirection_Y };
 
 	vec3_t origin{ 0 };
 
@@ -46,6 +46,7 @@ public:
 	CPhysicVertexArray* m_pVertexArray{};
 	CPhysicIndexArray* m_pIndexArray{};
 
+	//TODO: Put this shit to dedicated storage
 	CPhysicVertexArray* m_pVertexArrayStorage{};
 	CPhysicIndexArray* m_pIndexArrayStorage{};
 };
@@ -56,7 +57,7 @@ public:
 	std::string name;
 
 	int flags{ PhysicRigidBodyFlag_None };
-	int debugDrawLevel{ 0 };
+	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 
 	//For positioning
 	int boneindex{ -1 };
@@ -69,9 +70,6 @@ public:
 	int pboneindex{ -1 };
 	float pboneoffset{ 0 };
 
-	//Support compound shape?
-	std::vector<std::shared_ptr<CClientCollisionShapeConfig>> shapes;
-
 	float mass{ 1 };
 	float density{ 1 };
 	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
@@ -83,7 +81,10 @@ public:
 	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
 
 	//TODO?
-	vec3_t centerOfMass{ 0 };
+	//vec3_t centerOfMass{ 0 };
+
+	//Support compound shape?
+	std::vector<std::shared_ptr<CClientCollisionShapeConfig>> shapes;
 };
 
 class CClientConstraintConfig
@@ -110,13 +111,14 @@ public:
 	bool useGlobalJointFromA{ true };
 	bool useLookAtOther{ false };
 	bool useGlobalJointOriginFromOther{ false };
+	bool useRigidBodyDistanceAsLinearLimit{ false };
 	bool useLinearReferenceFrameA{ true };
 
-	int debugDrawLevel{ 0 };
 	int flags{ 0 };
+	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	float factors[32]{  };
 
-	float maxTolerantLinearErrorMagnitude{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
+	float maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };
@@ -136,10 +138,11 @@ public:
 		}
 	}
 
+	int type{ PhysicAction_None };
 	std::string name;
 	std::string rigidbodyA;
 	std::string rigidbodyB;
-	int type{ PhysicAction_None };
+	std::string constraint;
 	int flags{ 0 };
 	float factors[32]{  };
 };
@@ -154,7 +157,7 @@ public:
 	float angularDamping{};
 };
 
-class CClientRagdollAnimControlConfig
+class CClientAnimControlConfig
 {
 public:
 	int sequence{};
@@ -192,7 +195,22 @@ public:
 		flags = PhysicObjectFlag_StaticObject;
 	}
 };
- 
+
+class CClientBarnacleControlConfig
+{
+public:
+	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
+	std::vector<std::shared_ptr<CClientPhysicActionConfig>> ActionConfigs;
+};
+
+class CClientCameraControlConfig
+{
+public:
+	std::string rigidbody;
+	vec3_t origin{0};
+	vec3_t angles{0};
+};
+
 class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 {
 public:
@@ -200,16 +218,17 @@ public:
 	{
 		type = PhysicConfigType_RagdollObject;
 		flags = PhysicObjectFlag_RagdollObject;
+		FirstPersionViewCameraControlConfig.rigidbody = "Head";
+		ThirdPersionViewCameraControlConfig.rigidbody = "Pelvis";
 	}
 
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
-
-	std::vector<CClientRagdollAnimControlConfig> AnimControlConfigs;
-	CClientRagdollAnimControlConfig IdleAnimConfig;
-
-	std::vector<std::shared_ptr<CClientConstraintConfig>> BarnacleConstraintConfigs;
-	std::vector<std::shared_ptr<CClientPhysicActionConfig>> BarnacleActionConfigs;
+	std::vector<CClientAnimControlConfig> AnimControlConfigs;
+	CClientAnimControlConfig IdleAnimConfig;
+	CClientBarnacleControlConfig BarnacleControlConfig;
+	CClientCameraControlConfig FirstPersionViewCameraControlConfig;
+	CClientCameraControlConfig ThirdPersionViewCameraControlConfig;
 };
 
 class CClientPhysicObjectConfigStorage

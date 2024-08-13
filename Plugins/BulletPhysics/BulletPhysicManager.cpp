@@ -11,6 +11,7 @@
 #include "BulletRagdollObject.h"
 
 #include <vgui_controls/Controls.h>
+#include <glew.h>
 
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
@@ -179,8 +180,10 @@ void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape)
 	}
 }
 
-void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody)
+void OnBeforeDeleteBulletRigidBody(IPhysicObject *pPhysicObjectToDelete, btRigidBody* pRigidBody)
 {
+	ClientPhysicManager()->OnBroadcastDeleteRigidBody(pPhysicObjectToDelete, pRigidBody);
+
 	auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
 	if (pSharedUserData)
@@ -211,7 +214,7 @@ void OnBeforeDeleteBulletRigidBody(btRigidBody* pRigidBody)
 	}
 }
 
-void OnBeforeDeleteBulletConstraint(btTypedConstraint *pConstraint)
+void OnBeforeDeleteBulletConstraint(IPhysicObject *pPhysicObject, btTypedConstraint *pConstraint)
 {
 	auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
 
@@ -265,7 +268,7 @@ btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
 	return 0;
 }
 
-btTypedConstraint* BulletCreateConstraint_ConeTwist(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_ConeTwist(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
 	auto spanLimit1 = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1];
 
@@ -297,78 +300,45 @@ btTypedConstraint* BulletCreateConstraint_ConeTwist(const CClientConstraintConfi
 	if (isnan(relaxationFactor))
 		relaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
 
-	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
-
-	if (isnan(LinearERP))
-		LinearERP = BULLET_DEFAULT_LINEAR_ERP;
-
-	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-	if (isnan(LinearCFM))
-		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-	if (isnan(LinearStopERP))
-		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-	if (isnan(LinearStopCFM))
-		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-	auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
-
-	if (isnan(AngularERP))
-		AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
-
-	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
-
-	if (isnan(AngularCFM))
-		AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
-
-	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
-
-	if (isnan(AngularStopERP))
-		AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
-
-	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
-
-	if (isnan(AngularStopCFM))
-		AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
-
-	auto pConeTwist = new btConeTwistConstraint(*rbA, *rbB, localTransformA, localTransformB);
+	auto pConeTwist = new btConeTwistConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA, finalLocalTransB);
 
 	pConeTwist->setLimit(spanLimit1 * M_PI, spanLimit2 * M_PI, twistLimit * M_PI, softness, biasFactor, relaxationFactor);
 
-	pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-	pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-	pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
-	pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-	pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+	auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
 
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	if (!isnan(LinearERP))
+	{
+		pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
+		pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
+		pConeTwist->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
+	}
 
-	pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 3);
-	pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 4);
-	pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
-	pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
+	if (!isnan(LinearCFM))
+	{
+		pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+		pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
+		pConeTwist->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	}
 
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 4);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
-	pConeTwist->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
+	if (!isnan(AngularERP))
+	{
+		pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 3);
+		pConeTwist->setParam(BT_CONSTRAINT_ERP, AngularERP, 4);
+	}
+
+	if (!isnan(AngularCFM))
+	{
+		pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+		pConeTwist->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
+	}
 
 	return pConeTwist;
 }
 
-btTypedConstraint* BulletCreateConstraint_Hinge(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Hinge(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
 	auto lowLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit];
 
@@ -380,96 +350,70 @@ btTypedConstraint* BulletCreateConstraint_Hinge(const CClientConstraintConfig* p
 	if (isnan(highLimit))
 		return nullptr;
 
-	auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSoftness];
+	auto softness = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeSoftness];
 
 	if (isnan(softness))
 		softness = BULLET_DEFAULT_SOFTNESS;
 
-	auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistBiasFactor];
+	auto biasFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeBiasFactor];
 
 	if (isnan(biasFactor))
 		biasFactor = BULLET_DEFAULT_BIAS_FACTOR;
 
-	auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistRelaxationFactor];
+	auto relaxationFactor = pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeRelaxationFactor];
 
 	if (isnan(relaxationFactor))
 		relaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
 
-	auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
-
-	if (isnan(AngularERP))
-		AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
-
-	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
-
-	if (isnan(AngularCFM))
-		AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
-
-	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
-
-	if (isnan(AngularStopERP))
-		AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
-
-	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
-
-	if (isnan(AngularStopCFM))
-		AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
-
-	auto pHinge = new btHingeConstraint(*rbA, *rbB, localTransformA, localTransformB);
+	auto pHinge = new btHingeConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA, finalLocalTransB);
 
 	pHinge->setLimit(lowLimit * M_PI, highLimit * M_PI, softness, biasFactor, relaxationFactor);
 
-	pHinge->setParam(BT_CONSTRAINT_ERP, AngularERP, 5);
-	pHinge->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
+	auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
 
-	pHinge->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
-	pHinge->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
+	if (!isnan(AngularERP))
+	{
+		pHinge->setParam(BT_CONSTRAINT_ERP, AngularERP, 5);
+	}
+
+	if (!isnan(AngularCFM))
+	{
+		pHinge->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
+	}
+
+	if (!isnan(AngularStopERP))
+	{
+		pHinge->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
+	}
+
+	if (!isnan(AngularStopCFM))
+	{
+		pHinge->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
+	}
 
 	return pHinge;
 }
 
-btTypedConstraint* BulletCreateConstraint_Point(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Point(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
-	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+	auto pPoint2Point = new btPoint2PointConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA.getOrigin(), finalLocalTransB.getOrigin());
 
-	if (isnan(LinearERP))
-		LinearERP = BULLET_DEFAULT_LINEAR_ERP;
+	auto AngularERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP];
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
 
-	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+	if (!isnan(AngularERP))
+		pPoint2Point->setParam(BT_CONSTRAINT_ERP, AngularERP, -1);
 
-	if (isnan(LinearCFM))
-		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-	if (isnan(LinearStopERP))
-		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-	if (isnan(LinearStopCFM))
-		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-	auto pPoint2Point = new btPoint2PointConstraint(*rbA, *rbB, localTransformA.getOrigin(), localTransformB.getOrigin());
-
-	pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-	pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-	pPoint2Point->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
-	pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-	pPoint2Point->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
-
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-	pPoint2Point->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
-
+	if (!isnan(AngularCFM))
+		pPoint2Point->setParam(BT_CONSTRAINT_CFM, AngularCFM, -1);
+	
 	return pPoint2Point;
 }
 
-btTypedConstraint* BulletCreateConstraint_Slider(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Slider(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
 	auto LowerLinearLimit = pConstraintConfig->factors[PhysicConstraintFactorIdx_SliderLowerLinearLimit];
 
@@ -491,62 +435,50 @@ btTypedConstraint* BulletCreateConstraint_Slider(const CClientConstraintConfig* 
 	if (isnan(UpperAngularLimit))
 		UpperAngularLimit = 1;
 
-	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+	if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+	{
+		LowerLinearLimit *= ctx.rigidBodyDistance;
+		UpperLinearLimit *= ctx.rigidBodyDistance;
+	}
 
-	if (isnan(LinearERP))
-		LinearERP = BULLET_DEFAULT_LINEAR_ERP;
-
-	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-	if (isnan(LinearCFM))
-		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
-
-	if (isnan(AngularCFM))
-		AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
-
-	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-	if (isnan(LinearStopERP))
-		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
-
-	if (isnan(AngularStopERP))
-		AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
-
-	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-	if (isnan(LinearStopCFM))
-		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
-
-	if (isnan(AngularStopCFM))
-		AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
-
-	auto pSlider = new btSliderConstraint(*rbA, *rbB, localTransformA, localTransformB, pConstraintConfig->useLinearReferenceFrameA);
+	auto pSlider = new btSliderConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA, finalLocalTransB, pConstraintConfig->useLinearReferenceFrameA);
 
 	pSlider->setLowerLinLimit(LowerLinearLimit);
 	pSlider->setUpperLinLimit(UpperLinearLimit);
 
-	//pSlider->setLowerAngLimit(LowerAngularLimit * M_PI);
-	//pSlider->setUpperAngLimit(UpperAngularLimit * M_PI);
+	pSlider->setLowerAngLimit(LowerAngularLimit * M_PI);
+	pSlider->setUpperAngLimit(UpperAngularLimit * M_PI);
 
-	pSlider->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pSlider->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
+	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
 
-	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pSlider->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
 
-	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pSlider->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
+	if (!isnan(LinearCFM))
+		pSlider->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+
+	if (!isnan(LinearStopERP))
+		pSlider->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
+
+	if (!isnan(LinearStopCFM))
+		pSlider->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
+
+	if (!isnan(AngularCFM))
+		pSlider->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+
+	if (!isnan(AngularStopERP))
+		pSlider->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+
+	if (!isnan(AngularStopCFM))
+		pSlider->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
 
 	return pSlider;
 }
 
-btTypedConstraint* BulletCreateConstraint_Dof6(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Dof6(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
 	auto LowerLinearLimitX = pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX];
 
@@ -616,27 +548,13 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CClientConstraintConfig* pC
 
 	btVector3 vecUpperAngularLimit(UpperAngularLimitX, UpperAngularLimitY, UpperAngularLimitZ);
 
-	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
+	if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+	{
+		vecLowerLinearLimit *= ctx.rigidBodyDistance;
+		vecUpperLinearLimit *= ctx.rigidBodyDistance;
+	}
 
-	if (isnan(LinearERP))
-		LinearERP = BULLET_DEFAULT_LINEAR_ERP;
-
-	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-	if (isnan(LinearCFM))
-		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
-	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-	if (isnan(LinearStopERP))
-		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
-	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
-
-	if (isnan(LinearStopCFM))
-		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
-
-	auto pDof6 = new btGeneric6DofConstraint(*rbA, *rbB, localTransformA, localTransformB, pConstraintConfig->useLinearReferenceFrameA);
+	auto pDof6 = new btGeneric6DofConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA, finalLocalTransB, pConstraintConfig->useLinearReferenceFrameA);
 
 	pDof6->setLinearLowerLimit(vecLowerLinearLimit);
 	pDof6->setLinearUpperLimit(vecUpperLinearLimit);
@@ -647,62 +565,117 @@ btTypedConstraint* BulletCreateConstraint_Dof6(const CClientConstraintConfig* pC
 	pDof6->setAngularLowerLimit(vecLowerAngularLimit_PI);
 	pDof6->setAngularUpperLimit(vecUpperAngularLimit_PI);
 
-	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-	pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
+	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
+	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
 
-	pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-	pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-	pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-	pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
+
+	if (!isnan(LinearCFM))
+	{
+		pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+		pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
+		pDof6->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	}
+
+	if (!isnan(LinearStopERP))
+	{
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
+	}
+
+	if (!isnan(LinearStopCFM))
+	{
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	}
+
+	if (!isnan(AngularCFM))
+	{
+		pDof6->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+		pDof6->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
+		pDof6->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
+	}
+
+	if (!isnan(AngularStopERP))
+	{
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 4);
+		pDof6->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
+	}
+
+	if (!isnan(AngularStopCFM))
+	{
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
+		pDof6->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
+	}
 
 	return pDof6;
 }
 
-btTypedConstraint* BulletCreateConstraint_Fixed(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraint_Fixed(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
-	auto LinearERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP];
-
-	if (isnan(LinearERP))
-		LinearERP = BULLET_DEFAULT_LINEAR_ERP;
+	auto pFixed = new btFixedConstraint(*ctx.pRigidBodyA, *ctx.pRigidBodyB, finalLocalTransA, finalLocalTransB);
 
 	auto LinearCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM];
-
-	if (isnan(LinearCFM))
-		LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
-
 	auto LinearStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopERP];
-
-	if (isnan(LinearStopERP))
-		LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
-
 	auto LinearStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearStopCFM];
 
-	if (isnan(LinearStopCFM))
-		LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
+	auto AngularCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM];
+	auto AngularStopERP = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP];
+	auto AngularStopCFM = pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM];
 
-	auto pFixed = new btFixedConstraint(*rbA, *rbB, localTransformA, localTransformB);
+	if (!isnan(LinearCFM))
+	{
+		pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
+		pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
+		pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	}
 
-	pFixed->setParam(BT_CONSTRAINT_ERP, LinearERP, 0);
-	pFixed->setParam(BT_CONSTRAINT_ERP, LinearERP, 1);
-	pFixed->setParam(BT_CONSTRAINT_ERP, LinearERP, 2);
-	pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 0);
-	pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 1);
-	pFixed->setParam(BT_CONSTRAINT_CFM, LinearCFM, 2);
+	if (!isnan(LinearStopERP))
+	{
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
+	}
 
-	pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 0);
-	pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 1);
-	pFixed->setParam(BT_CONSTRAINT_STOP_ERP, LinearStopERP, 2);
-	pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
-	pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
-	pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	if (!isnan(LinearStopCFM))
+	{
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 0);
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 1);
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, LinearStopCFM, 2);
+	}
+
+	if (!isnan(AngularCFM))
+	{
+		pFixed->setParam(BT_CONSTRAINT_CFM, AngularCFM, 3);
+		pFixed->setParam(BT_CONSTRAINT_CFM, AngularCFM, 4);
+		pFixed->setParam(BT_CONSTRAINT_CFM, AngularCFM, 5);
+	}
+
+	if (!isnan(AngularStopERP))
+	{
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 3);
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 4);
+		pFixed->setParam(BT_CONSTRAINT_STOP_ERP, AngularStopERP, 5);
+	}
+
+	if (!isnan(AngularStopCFM))
+	{
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 3);
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
+		pFixed->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
+	}
 
 	return pFixed;
 }
 
-btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& localTransformA, const btTransform& localTransformB)
+btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB)
 {
 	btTypedConstraint* pConstraint{ };
 
@@ -710,32 +683,32 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientCo
 	{
 	case PhysicConstraint_ConeTwist:
 	{
-		pConstraint = BulletCreateConstraint_ConeTwist(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_ConeTwist(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	case PhysicConstraint_Hinge:
 	{
-		pConstraint = BulletCreateConstraint_Hinge(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Hinge(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	case PhysicConstraint_Point:
 	{
-		pConstraint = BulletCreateConstraint_Point(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Point(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	case PhysicConstraint_Slider:
 	{
-		pConstraint = BulletCreateConstraint_Slider(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Slider(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	case PhysicConstraint_Dof6:
 	{
-		pConstraint = BulletCreateConstraint_Dof6(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Dof6(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	case PhysicConstraint_Fixed:
 	{
-		pConstraint = BulletCreateConstraint_Fixed(pConstraintConfig, rbA, rbB, localTransformA, localTransformB);
+		pConstraint = BulletCreateConstraint_Fixed(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 		break;
 	}
 	}
@@ -743,24 +716,22 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientCo
 	if (!pConstraint)
 		return nullptr;
 
+	pConstraint->setUserConstraintId(ClientPhysicManager()->AllocatePhysicComponentId());
+
 	pConstraint->setUserConstraintPtr(new CBulletConstraintSharedUserData(pConstraintConfig));
 
 	return pConstraint;
 }
 
-btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, btRigidBody* rbA, btRigidBody* rbB, const btTransform& globalJointTransform)
+btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext &ctx, const btTransform& globalJointTransform)
 {
-	const auto& worldTransA = rbA->getWorldTransform();
+	btTransform finalLocalTransA;
+	btTransform finalLocalTransB;
 
-	const auto& worldTransB = rbB->getWorldTransform();
+	finalLocalTransA.mult(ctx.invWorldTransA, globalJointTransform);
+	finalLocalTransB.mult(ctx.invWorldTransB, globalJointTransform);
 
-	btTransform localTransA;
-	localTransA.mult(worldTransA.inverse(), globalJointTransform);
-
-	btTransform localTransB;
-	localTransB.mult(worldTransB.inverse(), globalJointTransform);
-
-	return BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, rbA, rbB, localTransA, localTransB);
+	return BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
 }
 
 btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShapeConfig* pConfig)
@@ -909,7 +880,7 @@ btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigi
 	return nullptr;
 }
 
-btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject)
+btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject)
 {
 	if (pRigidConfig->isLegacyConfig)
 	{
@@ -943,20 +914,33 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 
 		vecDirection = vecDirection.normalize();
 
-		btVector3 vecOriginWorldSpace = boneorigin + vecDirection * pRigidConfig->pboneoffset;
+		btVector3 vecWorldOrigin = boneorigin + vecDirection * pRigidConfig->pboneoffset;
 
 		btTransform bonematrix2 = bonematrix;
-		bonematrix2.setOrigin(vecOriginWorldSpace);
+
+		bonematrix2.setOrigin(vecWorldOrigin);
 
 		btVector3 vecForward(pRigidConfig->forward[0], pRigidConfig->forward[1], pRigidConfig->forward[2]);
 
-		auto rigidTransformWorldSpace = MatrixLookAt(bonematrix2, pboneorigin, vecForward);
+		auto rigidWorldTrans = MatrixLookAt(bonematrix2, pboneorigin, vecForward);
 
-		btTransform offsetmatrix;
+		btTransform localTrans;
 
-		offsetmatrix.mult(bonematrix.inverse(), rigidTransformWorldSpace);
+		localTrans.mult(bonematrix.inverse(), rigidWorldTrans);
 
-		return new CBulletBoneMotionState(pPhysicObject, bonematrix, offsetmatrix);
+		//Convert to new attribs
+		const auto& localOrigin = localTrans.getOrigin();
+		btVector3 localAngles;
+		MatrixEuler(localTrans.getBasis(), localAngles);
+		pRigidConfig->origin[0] = localOrigin.getX();
+		pRigidConfig->origin[1] = localOrigin.getY();
+		pRigidConfig->origin[2] = localOrigin.getZ();
+		pRigidConfig->angles[0] = localAngles.getX();
+		pRigidConfig->angles[1] = localAngles.getY();
+		pRigidConfig->angles[2] = localAngles.getZ();
+		//pRigidConfig->isLegacyConfig = false;
+
+		return new CBulletBoneMotionState(pPhysicObject, bonematrix, localTrans);
 	}
 
 	btVector3 vecOrigin(pRigidConfig->origin[0], pRigidConfig->origin[1], pRigidConfig->origin[2]);
@@ -983,7 +967,7 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	return nullptr;
 }
 
-bool BulletCheckPhysicComponentFiltersForRigidBody(CBulletRigidBodySharedUserData *pSharedUserData, const CPhysicComponentFilters &filters)
+bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, CBulletRigidBodySharedUserData *pSharedUserData, const CPhysicComponentFilters &filters)
 {
 	if (filters.m_HasWithoutRigidbodyFlags)
 	{
@@ -996,6 +980,14 @@ bool BulletCheckPhysicComponentFiltersForRigidBody(CBulletRigidBodySharedUserDat
 	if (filters.m_HasExactMatchRigidbodyFlags)
 	{
 		if (pSharedUserData->m_flags == filters.m_ExactMatchRigidbodyFlags)
+		{
+			return true;
+		}
+	}
+
+	if (filters.m_HasExactMatchRigidBodyComponentId)
+	{
+		if (pRigidBody->getUserIndex() == filters.m_ExactMatchRigidBodyComponentId)
 		{
 			return true;
 		}
@@ -1018,10 +1010,10 @@ bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, cons
 {
 	auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-	return BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters);
+	return BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters);
 }
 
-bool BulletCheckPhysicComponentFiltersForConstraint(CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters)
+bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters)
 {
 	if (filters.m_HasWithoutConstraintFlags)
 	{
@@ -1034,6 +1026,14 @@ bool BulletCheckPhysicComponentFiltersForConstraint(CBulletConstraintSharedUserD
 	if (filters.m_HasExactMatchConstraintFlags)
 	{
 		if (pSharedUserData->m_flags == filters.m_ExactMatchConstraintFlags)
+		{
+			return true;
+		}
+	}
+
+	if (filters.m_HasExactMatchConstraintComponentId)
+	{
+		if (pConstraint->getUserConstraintId() == filters.m_ExactMatchConstraintComponentId)
 		{
 			return true;
 		}
@@ -1056,7 +1056,7 @@ bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstrai
 {
 	auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
 
-	return BulletCheckPhysicComponentFiltersForConstraint(pSharedUserData, filters);
+	return BulletCheckPhysicComponentFiltersForConstraint(pConstraint, pSharedUserData, filters);
 }
 
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -1125,15 +1125,44 @@ public:
 		vgui::surface()->DrawSetTexture(-1);
 		vgui::surface()->DrawSetTexture(0);
 
-		gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1.0f, kRenderTransAlpha);
-		gEngfuncs.pTriAPI->Begin(TRI_LINES);
+		if (IsDebugDrawWallHackEnabled())
+		{
+			glDisable(GL_DEPTH_TEST);
 
-		vec3_t vecFrom = { from1.getX(), from1.getY(), from1.getZ() };
-		vec3_t vecTo = { to1.getX(), to1.getY(), to1.getZ() };
+			if (color1.isZero()) {
+				gEngfuncs.pTriAPI->Color4fRendermode(1, 1, 0, 1, kRenderTransAlpha);
+			}
+			else {
+				gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
+			}
+			gEngfuncs.pTriAPI->Begin(TRI_LINES);
 
-		gEngfuncs.pTriAPI->Vertex3fv(vecFrom);
-		gEngfuncs.pTriAPI->Vertex3fv(vecTo);
-		gEngfuncs.pTriAPI->End();
+			vec3_t vecFrom = { from1.getX(), from1.getY(), from1.getZ() };
+			vec3_t vecTo = { to1.getX(), to1.getY(), to1.getZ() };
+
+			gEngfuncs.pTriAPI->Vertex3fv(vecFrom);
+			gEngfuncs.pTriAPI->Vertex3fv(vecTo);
+			gEngfuncs.pTriAPI->End();
+
+			glEnable(GL_DEPTH_TEST);
+		}
+		else
+		{
+			if (color1.isZero()) {
+				gEngfuncs.pTriAPI->Color4fRendermode(1, 1, 0, 1, kRenderTransAlpha);
+			}
+			else {
+				gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
+			}
+			gEngfuncs.pTriAPI->Begin(TRI_LINES);
+
+			vec3_t vecFrom = { from1.getX(), from1.getY(), from1.getZ() };
+			vec3_t vecTo = { to1.getX(), to1.getY(), to1.getZ() };
+
+			gEngfuncs.pTriAPI->Vertex3fv(vecFrom);
+			gEngfuncs.pTriAPI->Vertex3fv(vecTo);
+			gEngfuncs.pTriAPI->End();
+		}
 	}
 
 	void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override
@@ -1212,7 +1241,7 @@ void CBulletPhysicManager::Init(void)
 	m_solver = new btSequentialImpulseConstraintSolver;
 	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
 
-	m_debugDraw = new CBulletPhysicsDebugDraw;
+	m_debugDraw = new CBulletPhysicsDebugDraw();
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
 
 	m_overlapFilterCallback = new CBulletOverlapFilterCallback();
@@ -1272,6 +1301,10 @@ void CBulletPhysicManager::DebugDraw(void)
 {
 	CBasePhysicManager::DebugDraw();
 
+	int iRagdollObjectDebugDrawLevel = GetRagdollObjectDebugDrawLevel();
+	int iStaticObjectDebugDrawLevel = GetStaticObjectDebugDrawLevel();
+	int iConstraintDebugDrawLevel = GetConstraintDebugDrawLevel();
+
 	const auto &objectArray = m_dynamicsWorld->getCollisionObjectArray();
 	for (size_t i = 0;i < objectArray.size(); ++i)
 	{
@@ -1286,7 +1319,7 @@ void CBulletPhysicManager::DebugDraw(void)
 
 			if (pPhysicObject->IsRagdollObject())
 			{
-				if (GetRagdollObjectDebugDrawLevel() >= pSharedUserData->m_debugDrawLevel)
+				if (iRagdollObjectDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iRagdollObjectDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
 				{
 					int iCollisionFlags = pCollisionObject->getCollisionFlags();
 					iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
@@ -1301,7 +1334,7 @@ void CBulletPhysicManager::DebugDraw(void)
 			}
 			else if (pPhysicObject->IsStaticObject())
 			{
-				if (GetStaticObjectDebugDrawLevel() >= pSharedUserData->m_debugDrawLevel)
+				if (iStaticObjectDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iStaticObjectDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
 				{
 					int iCollisionFlags = pCollisionObject->getCollisionFlags();
 					iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
@@ -1327,7 +1360,7 @@ void CBulletPhysicManager::DebugDraw(void)
 
 		if (pSharedUserData)
 		{
-			if (GetConstraintDebugDrawLevel() >= pSharedUserData->m_debugDrawLevel)
+			if (iConstraintDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iConstraintDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
 			{
 				pConstraint->setDbgDrawSize(3);
 			}
@@ -1366,6 +1399,19 @@ void CBulletPhysicManager::AddPhysicObjectToWorld(IPhysicObject *PhysicObject, c
 void CBulletPhysicManager::RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters)
 {
 	PhysicObject->RemoveFromPhysicWorld(m_dynamicsWorld, filters);
+}
+
+void CBulletPhysicManager::OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* pRigidBody)
+{
+	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end(); itor++)
+	{
+		auto pPhysicObject = itor->second;
+
+		if (pPhysicObject != pPhysicObjectToDelete)
+		{
+			pPhysicObject->OnBroadcastDeleteRigidBody(pPhysicObjectToDelete, m_dynamicsWorld, pRigidBody);
+		}
+	}
 }
 
 IStaticObject* CBulletPhysicManager::CreateStaticObject(const CStaticObjectCreationParameter& CreationParam)

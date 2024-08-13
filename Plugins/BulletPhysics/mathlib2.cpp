@@ -292,7 +292,7 @@ void VectorAngles(const vec3_t forward, vec3_t angles)
 	angles[2] = 0;
 }
 
-double VectorLength(vec3_t v)
+double VectorLength(const vec3_t v)
 {
 	int i;
 	double length;
@@ -306,7 +306,7 @@ double VectorLength(vec3_t v)
 	return length;
 }
 
-double VectorDistance(vec3_t v1, vec3_t v2)
+double VectorDistance(const vec3_t v1, const vec3_t v2)
 {
 	vec3_t v;
 	VectorSubtract(v1, v2, v);

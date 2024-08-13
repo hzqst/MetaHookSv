@@ -15,7 +15,7 @@ public:
 	{
 		for (auto pRigidBody : m_RigidBodies)
 		{
-			OnBeforeDeleteBulletRigidBody(pRigidBody);
+			OnBeforeDeleteBulletRigidBody(this, pRigidBody);
 
 			delete pRigidBody;
 		}
@@ -42,7 +42,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
+			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters))
 			{
 				dynamicWorld->addRigidBody(pRigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
 
@@ -59,7 +59,7 @@ public:
 		{
 			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
 
-			if (pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pSharedUserData, filters))
+			if (pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters))
 			{
 				dynamicWorld->removeRigidBody(pRigidBody);
 
@@ -68,12 +68,17 @@ public:
 		}
 	}
 
+	void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* world, void* rigidbody) override
+	{
+		
+	}
+
 	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override
 	{
 
 	}
 
-	void* GetRigidBodyByName(const std::string& name)
+	void* GetRigidBodyByName(const std::string& name) override
 	{
 		for (auto pRigidBody : m_RigidBodies)
 		{
@@ -86,6 +91,29 @@ public:
 			}
 		}
 
+		return nullptr;
+	}
+
+	void* GetRigidBodyByComponentId(int id) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->getUserIndex() == id)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	void* GetConstraintByName(const std::string& name) override
+	{
+		return nullptr;
+	}
+
+	void* GetConstraintByComponentId(int id) override
+	{
 		return nullptr;
 	}
 
@@ -93,23 +121,12 @@ private:
 
 	btRigidBody* FindRigidBodyByName(const std::string& name)
 	{
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			if (pSharedUserData)
-			{
-				if (pSharedUserData->m_name == name)
-					return pRigidBody;
-			}
-		}
-
-		return nullptr;
+		return (btRigidBody *)GetRigidBodyByName(name);
 	}
 
-	btRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, const CClientRigidBodyConfig* pRigidConfig)
+	btRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig)
 	{
-		if (FindRigidBodyByName(pRigidConfig->name))
+		if (GetRigidBodyByName(pRigidConfig->name))
 		{
 			gEngfuncs.Con_Printf("CreateRigidBody: cannot create duplicated one \"%s\".\n", pRigidConfig->name.c_str());
 			return nullptr;
@@ -140,12 +157,14 @@ private:
 
 		auto pRigidBody = new btRigidBody(cInfo);
 
+		pRigidBody->setUserIndex(ClientPhysicManager()->AllocatePhysicComponentId());
+
 		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
 			cInfo,
 			btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter,
 			btBroadphaseProxy::AllFilter & ~BulletPhysicCollisionFilterGroups::StaticObjectFilter,
 			pRigidConfig->name,
-			pRigidConfig->flags & ~PhysicRigidBodyFlag_AlwaysDynamic,
+			pRigidConfig->flags & PhysicRigidBodyFlag_AllowedOnStaticObject,
 			pRigidConfig->boneindex,
 			pRigidConfig->debugDrawLevel,
 			1));
