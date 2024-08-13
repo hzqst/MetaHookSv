@@ -292,6 +292,54 @@ int GetPhysicActionTypeFromTypeName(const char* name)
 	return type;
 }
 
+static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, std::vector<std::shared_ptr<CClientCollisionShapeConfig>> &shapes)
+{
+	auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
+
+	pShapeConfig->name = pShapeSubKey->GetName();
+
+	auto type = pShapeSubKey->GetString("type");
+
+	if (type)
+	{
+		pShapeConfig->type = GetCollisionTypeFromTypeName(type);
+	}
+
+	pShapeConfig->direction = pShapeSubKey->GetInt("direction", PhysicShapeDirection_Y);
+
+	auto origin = pShapeSubKey->GetString("origin");
+
+	if (origin)
+	{
+		UTIL_ParseStringAsVector3(origin, pShapeConfig->origin);
+	}
+
+	auto angles = pShapeSubKey->GetString("angles");
+
+	if (angles)
+	{
+		UTIL_ParseStringAsVector3(angles, pShapeConfig->angles);
+	}
+
+	auto size = pShapeSubKey->GetString("size");
+
+	if (size)
+	{
+		if (!UTIL_ParseStringAsVector3(size, pShapeConfig->size))
+		{
+			if (!UTIL_ParseStringAsVector2(size, pShapeConfig->size))
+			{
+				UTIL_ParseStringAsVector1(size, pShapeConfig->size);
+			}
+		}
+	}
+
+	pShapeConfig->objpath = pShapeSubKey->GetString("objpath");
+
+	shapes.emplace_back(pShapeConfig);
+}
+
+
 static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
 {
 	auto pRigidBodiesKey = pKeyValues->FindKey("rigidBodies");
@@ -362,55 +410,22 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 			pRigidBodyConfig->linearSleepingThreshold = pRigidBodySubKey->GetFloat("linearSleepingThreshold", BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD);
 			pRigidBodyConfig->angularSleepingThreshold = pRigidBodySubKey->GetFloat("angularSleepingThreshold", BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD);
 
-			auto pShapesKey = pRigidBodySubKey->FindKey("shapes");
+			auto pShapeKey = pRigidBodySubKey->FindKey("shape");
 
-			if (pShapesKey)
+			if (pShapeKey)
 			{
-				for (auto pShapeSubKey = pShapesKey->GetFirstSubKey(); pShapeSubKey; pShapeSubKey = pShapeSubKey->GetNextKey())
+				LoadCollisionShapeFromKeyValues(pShapeKey, pRigidBodyConfig->shapes);
+			}
+			else
+			{
+				auto pShapesKey = pRigidBodySubKey->FindKey("shapes");
+
+				if (pShapesKey)
 				{
-					auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
-
-					pShapeConfig->name = pShapeSubKey->GetName();
-
-					auto type = pShapeSubKey->GetString("type");
-
-					if (type)
+					for (auto pShapeSubKey = pShapesKey->GetFirstSubKey(); pShapeSubKey; pShapeSubKey = pShapeSubKey->GetNextKey())
 					{
-						pShapeConfig->type = GetCollisionTypeFromTypeName(type);
+						LoadCollisionShapeFromKeyValues(pShapeSubKey, pRigidBodyConfig->shapes);
 					}
-
-					pShapeConfig->direction = pShapeSubKey->GetInt("direction", PhysicShapeDirection_Y);
-
-					auto origin = pShapeSubKey->GetString("origin");
-
-					if (origin)
-					{
-						UTIL_ParseStringAsVector3(origin, pShapeConfig->origin);
-					}
-
-					auto angles = pShapeSubKey->GetString("angles");
-
-					if (angles)
-					{
-						UTIL_ParseStringAsVector3(angles, pShapeConfig->angles);
-					}
-
-					auto size = pShapeSubKey->GetString("size");
-
-					if (size)
-					{
-						if (!UTIL_ParseStringAsVector3(size, pShapeConfig->size))
-						{
-							if (!UTIL_ParseStringAsVector2(size, pShapeConfig->size))
-							{
-								UTIL_ParseStringAsVector1(size, pShapeConfig->size);
-							}
-						}
-					}
-
-					pShapeConfig->objpath = pShapeSubKey->GetString("objpath");
-
-					pRigidBodyConfig->shapes.emplace_back(pShapeConfig);
 				}
 			}
 
@@ -886,6 +901,32 @@ static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicO
 		pKeyValues->SetInt("gargantua", 1);
 }
 
+static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, const CClientCollisionShapeConfig *pCollisionShapeConfig)
+{
+	pCollisionShapeSubKey->SetString("type", GetCollisionShapeName(pCollisionShapeConfig->type));
+
+	if (pCollisionShapeConfig->direction != PhysicShapeDirection_Y)
+		pCollisionShapeSubKey->SetInt("direction", pCollisionShapeConfig->direction);
+
+	if (VectorLength(pCollisionShapeConfig->origin) > 0)
+	{
+		pCollisionShapeSubKey->SetString("origin", std::format("{0} {1} {2}", pCollisionShapeConfig->origin[0], pCollisionShapeConfig->origin[1], pCollisionShapeConfig->origin[2]).c_str());
+	}
+
+	if (VectorLength(pCollisionShapeConfig->angles) > 0)
+	{
+		pCollisionShapeSubKey->SetString("angles", std::format("{0} {1} {2}", pCollisionShapeConfig->angles[0], pCollisionShapeConfig->angles[1], pCollisionShapeConfig->angles[2]).c_str());
+	}
+
+	if (VectorLength(pCollisionShapeConfig->size) > 0)
+	{
+		pCollisionShapeSubKey->SetString("size", std::format("{0} {1} {2}", pCollisionShapeConfig->size[0], pCollisionShapeConfig->size[1], pCollisionShapeConfig->size[2]).c_str());
+	}
+
+	if (!pCollisionShapeConfig->objpath.empty())
+		pCollisionShapeSubKey->SetString("objpath", pCollisionShapeConfig->objpath.c_str());
+}
+
 static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
 {
 	if (RigidBodyConfigs.size() > 0)
@@ -945,7 +986,7 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					pRigidBodySubKey->SetFloat("linearSleepingThreshold", pRigidBodyConfig->linearSleepingThreshold);
 					pRigidBodySubKey->SetFloat("angularSleepingThreshold", pRigidBodyConfig->angularSleepingThreshold);
 
-					if (pRigidBodyConfig->shapes.size() > 0)
+					if (pRigidBodyConfig->shapes.size() > 1)
 					{
 						auto pCollisionShapesKey = pRigidBodySubKey->FindKey("shapes", true);
 
@@ -953,34 +994,25 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 						{
 							for (const auto& pCollisionShapeConfig : pRigidBodyConfig->shapes)
 							{
-								auto pCollisionShapeSubKey = pCollisionShapesKey->FindKey(pCollisionShapeConfig->name.c_str(), true);
-
-								if (pCollisionShapeSubKey)
+								if (!pCollisionShapeConfig->name.empty())
 								{
-									pCollisionShapeSubKey->SetString("type", GetCollisionShapeName(pCollisionShapeConfig->type) );
+									auto pCollisionShapeSubKey = pCollisionShapesKey->FindKey(pCollisionShapeConfig->name.c_str(), true);
 
-									if (pCollisionShapeConfig->direction != PhysicShapeDirection_Y)
-										pCollisionShapeSubKey->SetInt("direction", pCollisionShapeConfig->direction);
-
-									if (VectorLength(pCollisionShapeConfig->origin) > 0)
+									if (pCollisionShapeSubKey)
 									{
-										pCollisionShapeSubKey->SetString("origin", std::format("{0} {1} {2}", pCollisionShapeConfig->origin[0], pCollisionShapeConfig->origin[1], pCollisionShapeConfig->origin[2]).c_str());
+										AddCollisionShapeToKeyValues(pCollisionShapeSubKey, pCollisionShapeConfig.get());
 									}
-
-									if (VectorLength(pCollisionShapeConfig->angles) > 0)
-									{
-										pCollisionShapeSubKey->SetString("angles", std::format("{0} {1} {2}", pCollisionShapeConfig->angles[0], pCollisionShapeConfig->angles[1], pCollisionShapeConfig->angles[2]).c_str());
-									}
-
-									if (VectorLength(pCollisionShapeConfig->size) > 0)
-									{
-										pCollisionShapeSubKey->SetString("size", std::format("{0} {1} {2}", pCollisionShapeConfig->size[0], pCollisionShapeConfig->size[1], pCollisionShapeConfig->size[2]).c_str());
-									}
-
-									if (!pCollisionShapeConfig->objpath.empty())
-										pCollisionShapeSubKey->SetString("objpath", pCollisionShapeConfig->objpath.c_str());
 								}
 							}
+						}
+					}
+					else if (pRigidBodyConfig->shapes.size() == 1)
+					{
+						auto pCollisionShapeKey = pRigidBodySubKey->FindKey("shape", true);
+
+						if (pCollisionShapeKey)
+						{
+							AddCollisionShapeToKeyValues(pCollisionShapeKey, pRigidBodyConfig->shapes[0].get());
 						}
 					}
 				}
