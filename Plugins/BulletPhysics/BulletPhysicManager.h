@@ -237,7 +237,7 @@ void OnBeforeDeleteBulletRigidBody(IPhysicObject* pPhysicObject, btRigidBody* pR
 void OnBeforeDeleteBulletConstraint(IPhysicObject* pPhysicObject, btTypedConstraint* pConstraint);
 
 btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
-btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& globalJointTransform);
+btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& globalJointTransform);
 btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB);
 btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig);
 btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);

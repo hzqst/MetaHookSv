@@ -24,6 +24,7 @@ public:
 
 	bool m_bShouldKillMe{};
 	bool m_bRigidbodyKinematicChanged{ };
+	bool m_bConstraintStateChanged{ };
 
 	//Only available for RagdollObject
 	bool m_bActivityChanged{ };

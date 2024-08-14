@@ -477,8 +477,6 @@ public:
 		{
 			pRigidBody->setLinearVelocity(btVector3(0, 0, 0));
 			pRigidBody->setAngularVelocity(btVector3(0, 0, 0));
-			//pRigidBody->setInterpolationLinearVelocity(btVector3(0, 0, 0));
-			//pRigidBody->setInterpolationAngularVelocity(btVector3(0, 0, 0));
 		}
 
 		for (const auto& pConstraintConfig : m_BarnacleControlConfig.ConstraintConfigs)
@@ -634,6 +632,12 @@ public:
 		{
 			if (UpdateRigidBodyKinematic(pRigidBody, false, false))
 				ctx->m_bRigidbodyKinematicChanged = true;
+		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			if (UpdateConstraintState(pConstraint))
+				ctx->m_bConstraintStateChanged = true;
 		}
 
 		for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
@@ -858,8 +862,8 @@ private:
 				pRigidBodyA,
 				pActionConfig->flags,
 				m_iBarnacleIndex,
-				pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude],
-				pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight]);
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude],
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight]);
 		}
 		case PhysicAction_BarnacleChewForce:
 		{
@@ -872,8 +876,8 @@ private:
 				pRigidBodyA,
 				pActionConfig->flags,
 				m_iBarnacleIndex,
-				pActionConfig->factors[PhysicActionFactor_BarnacleChewForceMagnitude],
-				pActionConfig->factors[PhysicActionFactor_BarnacleChewForceInterval]);
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude],
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval]);
 		}
 		case PhysicAction_BarnacleConstraintLimitAdjustment:
 		{
@@ -886,8 +890,8 @@ private:
 				pConstraint,
 				pActionConfig->flags,
 				m_iBarnacleIndex,
-				pActionConfig->factors[PhysicActionFactor_BarnacleConstraintLimitAdjustmentExtraHeight],
-				pActionConfig->factors[PhysicActionFactor_BarnacleConstraintLimitAdjustmentInterval]);
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval]);
 		}
 		}
 
@@ -903,6 +907,9 @@ private:
 
 		for (auto pConstraint : m_Constraints)
 		{
+			if (!pConstraint->isEnabled())
+				continue;
+
 			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
 
 			if (pSharedUserData->m_flags & PhysicConstraintFlag_NonNative)
@@ -947,6 +954,64 @@ private:
 		}
 	}
 
+	bool UpdateConstraintState(btTypedConstraint* pConstraint)
+	{
+		auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+
+		bool bDeactivate = false;
+
+		bool bConstraintStateChanged = false;
+
+		do
+		{
+			if (GetActivityType() == 0 && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (GetActivityType() == 1 && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (GetActivityType() == 2 && m_iBarnacleIndex && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (GetActivityType() == 2 && m_iGargantuaIndex && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+		} while (0);
+
+		if (bDeactivate)
+		{
+			if (pConstraint->isEnabled())
+			{
+				pConstraint->setEnabled(false);
+
+				bConstraintStateChanged = true;
+			}
+		}
+		else
+		{
+			if (!pConstraint->isEnabled())
+			{
+				pConstraint->setEnabled(true);
+
+				bConstraintStateChanged = true;
+			}
+		}
+
+		return bConstraintStateChanged;
+	}
+
 	bool UpdateRigidBodyKinematic(btRigidBody* pRigidBody, bool bForceKinematic, bool bForceDynamic)
 	{
 		auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
@@ -976,12 +1041,6 @@ private:
 			}
 
 			if (pSharedUserData->m_flags & PhysicRigidBodyFlag_AlwaysDynamic)
-			{
-				bKinematic = false;
-				break;
-			}
-
-			if (pSharedUserData->m_flags & PhysicRigidBodyFlag_Jiggle)
 			{
 				bKinematic = false;
 				break;
@@ -1119,12 +1178,28 @@ private:
 
 		pRigidBody->setUserIndex(ClientPhysicManager()->AllocatePhysicComponentId());
 
+		int group = btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
+
+		int mask = btBroadphaseProxy::AllFilter;
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
+			mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToStaticObject)
+			mask &= ~BulletPhysicCollisionFilterGroups::StaticObjectFilter;
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
+			mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
+			mask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
+
 		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
 			cInfo,
-			btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter,
-			btBroadphaseProxy::AllFilter,
+			group,
+			mask,
 			pRigidConfig->name,
-			pRigidConfig->flags & PhysicRigidBodyFlag_AllowedOnRagdollObject,
+			pRigidConfig->flags,
 			pRigidConfig->boneindex,
 			pRigidConfig->debugDrawLevel,
 			pRigidConfig->density));
@@ -1210,28 +1285,6 @@ private:
 
 			ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
 			ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
-
-			//Convert to new attribs
-			const auto& localOriginA = ctx.localTransA.getOrigin();
-			btVector3 localAnglesA;
-			MatrixEuler(ctx.localTransA.getBasis(), localAnglesA);
-			pConstraintConfig->originA[0] = localOriginA.getX();
-			pConstraintConfig->originA[1] = localOriginA.getY();
-			pConstraintConfig->originA[2] = localOriginA.getZ();
-			pConstraintConfig->anglesA[0] = localAnglesA.getX();
-			pConstraintConfig->anglesA[1] = localAnglesA.getY();
-			pConstraintConfig->anglesA[2] = localAnglesA.getZ();
-
-			const auto& localOriginB = ctx.localTransB.getOrigin();
-			btVector3 localAnglesB;
-			MatrixEuler(ctx.localTransB.getBasis(), localAnglesB);
-			pConstraintConfig->originB[0] = localOriginB.getX();
-			pConstraintConfig->originB[1] = localOriginB.getY();
-			pConstraintConfig->originB[2] = localOriginB.getZ();
-			pConstraintConfig->anglesB[0] = localAnglesB.getX();
-			pConstraintConfig->anglesB[1] = localAnglesB.getY();
-			pConstraintConfig->anglesB[2] = localAnglesB.getZ();
-			//pConstraintConfig->isLegacyConfig = false;
 
 			if (offsetA.fuzzyZero())
 			{

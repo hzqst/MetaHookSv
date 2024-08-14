@@ -159,12 +159,27 @@ private:
 
 		pRigidBody->setUserIndex(ClientPhysicManager()->AllocatePhysicComponentId());
 
+		int group = btBroadphaseProxy::DefaultFilter;
+
+		if (GetEntityIndex() == 0)
+			group |= BulletPhysicCollisionFilterGroups::WorldFilter;
+		else
+			group |= BulletPhysicCollisionFilterGroups::StaticObjectFilter;
+
+		int mask = btBroadphaseProxy::AllFilter & ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
+			mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
+
+		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
+			mask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
+
 		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
 			cInfo,
-			btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter,
-			btBroadphaseProxy::AllFilter & ~BulletPhysicCollisionFilterGroups::StaticObjectFilter,
+			group,
+			mask,
 			pRigidConfig->name,
-			pRigidConfig->flags & PhysicRigidBodyFlag_AllowedOnStaticObject,
+			pRigidConfig->flags,
 			pRigidConfig->boneindex,
 			pRigidConfig->debugDrawLevel,
 			1));

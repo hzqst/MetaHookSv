@@ -39,7 +39,6 @@ cvar_t* bv_debug_level_static = NULL;
 cvar_t* bv_debug_level_dynamic = NULL;
 cvar_t* bv_debug_level_constraint = NULL;
 cvar_t *bv_simrate = NULL;
-cvar_t *bv_enable = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t *bv_ragdoll_sleepaftertime = NULL;
 cvar_t *bv_ragdoll_sleeplinearvel = NULL;
@@ -63,11 +62,6 @@ int* cl_numvisedicts = NULL;
 cl_entity_t** cl_visedicts = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
-
-bool IsPhysicWorldEnabled()
-{
-	return bv_enable->value >= 1;
-}
 
 bool IsDebugDrawEnabled()
 {
@@ -1170,7 +1164,6 @@ void HUD_Init(void)
 	bv_debug_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_level_constraint", "1", FCVAR_CLIENTDLL);
 
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1305,7 +1298,7 @@ void HUD_DrawTransparentTriangles(void)
 {
 	gExportfuncs.HUD_DrawTransparentTriangles();
 
-	if (AllowCheats() && IsPhysicWorldEnabled())
+	if (AllowCheats() && IsDebugDrawEnabled())
 	{
 		ClientPhysicManager()->DebugDraw();
 	}

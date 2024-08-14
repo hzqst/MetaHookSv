@@ -113,10 +113,11 @@ public:
 	bool useGlobalJointOriginFromOther{ false };
 	bool useRigidBodyDistanceAsLinearLimit{ false };
 	bool useLinearReferenceFrameA{ true };
+	int rotOrder{ PhysicRotOrder_XYZ };
 
 	int flags{ 0 };
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
-	float factors[32]{  };
+	float factors[PhysicConstraintFactorIdx_Maximum]{  };
 
 	float maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
 
@@ -144,7 +145,7 @@ public:
 	std::string rigidbodyB;
 	std::string constraint;
 	int flags{ 0 };
-	float factors[32]{  };
+	float factors[PhysicActionFactorIdx_Maximum]{  };
 };
 
 class CClientFloaterConfig

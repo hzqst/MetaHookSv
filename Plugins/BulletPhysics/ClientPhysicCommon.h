@@ -21,13 +21,27 @@ const int PhysicObjectFlag_FromConfig = 0x40000;
 const int PhysicObjectFlag_AnyObject = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject | PhysicObjectFlag_DynamicObject);
 
 const int PhysicRigidBodyFlag_None = 0;
-const int PhysicRigidBodyFlag_AlwaysDynamic = 1;
-const int PhysicRigidBodyFlag_AlwaysKinematic = 2;
-const int PhysicRigidBodyFlag_AlwaysStatic = 4;
-const int PhysicRigidBodyFlag_Jiggle = 8;
+const int PhysicRigidBodyFlag_AlwaysDynamic = 0x1;
+const int PhysicRigidBodyFlag_AlwaysKinematic = 0x2;
+const int PhysicRigidBodyFlag_AlwaysStatic = 0x4;
+const int PhysicRigidBodyFlag_NoCollisionToWorld = 0x8;
+const int PhysicRigidBodyFlag_NoCollisionToStaticObject = 0x10;
+const int PhysicRigidBodyFlag_NoCollisionToDynamicObject = 0x20;
+const int PhysicRigidBodyFlag_NoCollisionToRagdollObject = 0x40;
 
-const int PhysicRigidBodyFlag_AllowedOnStaticObject = (PhysicRigidBodyFlag_AlwaysStatic | PhysicRigidBodyFlag_AlwaysKinematic);
-const int PhysicRigidBodyFlag_AllowedOnRagdollObject = (PhysicRigidBodyFlag_AlwaysDynamic | PhysicRigidBodyFlag_AlwaysKinematic | PhysicRigidBodyFlag_Jiggle);
+const int PhysicRigidBodyFlag_AllowedOnStaticObject = (
+	PhysicRigidBodyFlag_AlwaysStatic | PhysicRigidBodyFlag_AlwaysKinematic | 
+	PhysicRigidBodyFlag_NoCollisionToWorld | PhysicRigidBodyFlag_NoCollisionToStaticObject | PhysicRigidBodyFlag_NoCollisionToDynamicObject | PhysicRigidBodyFlag_NoCollisionToRagdollObject);
+
+const int PhysicRigidBodyFlag_AllowedOnDynamicObject = (
+	PhysicRigidBodyFlag_AlwaysDynamic | PhysicRigidBodyFlag_AlwaysKinematic |
+	PhysicRigidBodyFlag_NoCollisionToWorld | PhysicRigidBodyFlag_NoCollisionToStaticObject | PhysicRigidBodyFlag_NoCollisionToDynamicObject | PhysicRigidBodyFlag_NoCollisionToRagdollObject);
+
+const int PhysicRigidBodyFlag_AllowedOnRagdollObject = (
+	PhysicRigidBodyFlag_AlwaysDynamic | PhysicRigidBodyFlag_AlwaysKinematic |
+	PhysicRigidBodyFlag_NoCollisionToWorld | PhysicRigidBodyFlag_NoCollisionToStaticObject | PhysicRigidBodyFlag_NoCollisionToDynamicObject | PhysicRigidBodyFlag_NoCollisionToRagdollObject);
+
+const int PhysicRigidBodyFactorIdx_Maximum = 32;
 
 const int PhysicConstraint_None = 0;
 const int PhysicConstraint_ConeTwist = 1;
@@ -35,10 +49,22 @@ const int PhysicConstraint_Hinge = 2;
 const int PhysicConstraint_Point = 3;
 const int PhysicConstraint_Slider = 4;
 const int PhysicConstraint_Dof6 = 5;
-const int PhysicConstraint_Fixed = 6;
+const int PhysicConstraint_Dof6Spring = 6;
+const int PhysicConstraint_Fixed = 7;
+
+const int PhysicRotOrder_XYZ = 0;
+const int PhysicRotOrder_XZY = 1;
+const int PhysicRotOrder_YXZ = 2;
+const int PhysicRotOrder_YZX = 3;
+const int PhysicRotOrder_ZXY = 4;
+const int PhysicRotOrder_ZYX = 5;
 
 const int PhysicConstraintFlag_Barnacle = 0x1;
 const int PhysicConstraintFlag_Gargantua = 0x2;
+const int PhysicConstraintFlag_DeactiveOnNormalActivity = 0x4;
+const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
+const int PhysicConstraintFlag_DeactiveOnBarnacleActivity = 0x10;
+const int PhysicConstraintFlag_DeactiveOnGargantuaActivity = 0x20;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;
@@ -73,15 +99,41 @@ const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitX = 9;
 const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitY = 10;
 const int PhysicConstraintFactorIdx_Dof6UpperAngularLimitZ = 11;
 
-const int PhysicConstraintFactorIdx_LinearERP = 20;
-const int PhysicConstraintFactorIdx_LinearCFM = 21;
-const int PhysicConstraintFactorIdx_LinearStopERP = 22;
-const int PhysicConstraintFactorIdx_LinearStopCFM = 23;
-const int PhysicConstraintFactorIdx_AngularERP = 24;
-const int PhysicConstraintFactorIdx_AngularCFM = 25;
-const int PhysicConstraintFactorIdx_AngularStopERP = 26;
-const int PhysicConstraintFactorIdx_AngularStopCFM = 27;
-const int PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset = 28;
+const int PhysicConstraintFactorIdx_Dof6SpringEnableLinearSpringX = 12;
+const int PhysicConstraintFactorIdx_Dof6SpringEnableLinearSpringY = 13;
+const int PhysicConstraintFactorIdx_Dof6SpringEnableLinearSpringZ = 14;
+
+const int PhysicConstraintFactorIdx_Dof6SpringEnableAngularSpringX = 15;
+const int PhysicConstraintFactorIdx_Dof6SpringEnableAngularSpringY = 16;
+const int PhysicConstraintFactorIdx_Dof6SpringEnableAngularSpringZ = 17;
+
+const int PhysicConstraintFactorIdx_Dof6SpringLinearStiffnessX = 18;
+const int PhysicConstraintFactorIdx_Dof6SpringLinearStiffnessY = 19;
+const int PhysicConstraintFactorIdx_Dof6SpringLinearStiffnessZ = 20;
+
+const int PhysicConstraintFactorIdx_Dof6SpringAngularStiffnessX = 21;
+const int PhysicConstraintFactorIdx_Dof6SpringAngularStiffnessY = 22;
+const int PhysicConstraintFactorIdx_Dof6SpringAngularStiffnessZ = 23;
+
+const int PhysicConstraintFactorIdx_Dof6SpringLinearDampingX = 24;
+const int PhysicConstraintFactorIdx_Dof6SpringLinearDampingY = 25;
+const int PhysicConstraintFactorIdx_Dof6SpringLinearDampingZ = 26;
+
+const int PhysicConstraintFactorIdx_Dof6SpringAngularDampingX = 27;
+const int PhysicConstraintFactorIdx_Dof6SpringAngularDampingY = 28;
+const int PhysicConstraintFactorIdx_Dof6SpringAngularDampingZ = 29;
+
+const int PhysicConstraintFactorIdx_LinearERP = 32;
+const int PhysicConstraintFactorIdx_LinearCFM = 33;
+const int PhysicConstraintFactorIdx_LinearStopERP = 34;
+const int PhysicConstraintFactorIdx_LinearStopCFM = 35;
+const int PhysicConstraintFactorIdx_AngularERP = 36;
+const int PhysicConstraintFactorIdx_AngularCFM = 37;
+const int PhysicConstraintFactorIdx_AngularStopERP = 38;
+const int PhysicConstraintFactorIdx_AngularStopCFM = 39;
+const int PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset = 40;
+
+const int PhysicConstraintFactorIdx_Maximum = 64;
 
 const int PhysicShape_None = 0;
 const int PhysicShape_Box = 1;
@@ -94,16 +146,18 @@ const int PhysicShape_TriangleMesh = 6;
 const int PhysicAction_None = 0;
 
 const int PhysicAction_BarnacleDragForce = 1;
-const int PhysicActionFactor_BarnacleDragForceMagnitude = 0;
-const int PhysicActionFactor_BarnacleDragForceExtraHeight = 1;
+const int PhysicActionFactorIdx_BarnacleDragForceMagnitude = 0;
+const int PhysicActionFactorIdx_BarnacleDragForceExtraHeight = 1;
 
 const int PhysicAction_BarnacleChewForce = 2;
-const int PhysicActionFactor_BarnacleChewForceMagnitude = 0;
-const int PhysicActionFactor_BarnacleChewForceInterval = 1;
+const int PhysicActionFactorIdx_BarnacleChewForceMagnitude = 0;
+const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 
 const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
-const int PhysicActionFactor_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
-const int PhysicActionFactor_BarnacleConstraintLimitAdjustmentInterval = 2;
+const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
+const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
+
+const int PhysicActionFactorIdx_Maximum = 16;
 
 const int PhysicActionFlag_Barnacle = 0x1;
 const int PhysicActionFlag_Gargantua = 0x2;

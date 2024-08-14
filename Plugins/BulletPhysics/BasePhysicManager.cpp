@@ -264,6 +264,10 @@ int GetConstraintTypeFromTypeName(const char* name)
 	{
 		type = PhysicConstraint_Dof6;
 	}
+	else if (!strcmp(name, "Dof6Spring"))
+	{
+		type = PhysicConstraint_Dof6Spring;
+	}
 	else if (!strcmp(name, "Fixed"))
 	{
 		type = PhysicConstraint_Fixed;
@@ -340,7 +344,7 @@ static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, std::vecto
 }
 
 
-static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
+static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigidBodyFlags, std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
 {
 	auto pRigidBodiesKey = pKeyValues->FindKey("rigidBodies");
 
@@ -352,27 +356,44 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 
 			pRigidBodyConfig->name = pRigidBodySubKey->GetName();
 
-			if (pKeyValues->GetInt("alwaysDynamic") == 1)
+			if (pRigidBodySubKey->GetBool("alwaysDynamic"))
 			{
 				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysDynamic;
 			}
 
-			if (pKeyValues->GetInt("alwaysKinematic") == 1)
+			if (pRigidBodySubKey->GetBool("alwaysKinematic"))
 			{
 				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysKinematic;
 			}
 
-			if (pKeyValues->GetInt("alwaysStatic") == 1)
+			if (pRigidBodySubKey->GetBool("alwaysStatic"))
 			{
 				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysStatic;
 			}
 
-			if (pKeyValues->GetInt("jiggle") == 1)
+			if (pRigidBodySubKey->GetBool("noCollisionToWorld"))
 			{
-				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_Jiggle;
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToWorld;
 			}
 
-			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel", 1);
+			if (pRigidBodySubKey->GetBool("noCollisionToStaticObject"))
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToStaticObject;
+			}
+
+			if (pRigidBodySubKey->GetBool("noCollisionToDynamicObject"))
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToDynamicObject;
+			}
+
+			if (pRigidBodySubKey->GetBool("noCollisionToRagdollObject"))
+			{
+				pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToRagdollObject;
+			}
+
+			pRigidBodyConfig->flags &= allowedRigidBodyFlags;
+
+			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
 			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex", -1);
 
 			auto origin = pRigidBodySubKey->GetString("origin");
@@ -497,6 +518,18 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 			if (pConstraintSubKey->GetBool("gargantua"))
 				pConstraintConfig->flags |= PhysicConstraintFlag_Gargantua;
 
+			if (pConstraintSubKey->GetBool("deactiveOnNormalActivity"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnNormalActivity;
+
+			if (pConstraintSubKey->GetBool("deactiveOnDeathActivity"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnDeathActivity;
+
+			if (pConstraintSubKey->GetBool("deactiveOnBarnacleActivity"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnBarnacleActivity;
+
+			if (pConstraintSubKey->GetBool("deactiveOnGargantuaActivity"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnGargantuaActivity;
+
 			pConstraintConfig->debugDrawLevel = pConstraintSubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
 			pConstraintConfig->disableCollision = pConstraintSubKey->GetBool("disableCollision", true);
 			pConstraintConfig->useGlobalJointFromA = pConstraintSubKey->GetBool("useGlobalJointFromA", true);
@@ -601,6 +634,46 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 					LOAD_FACTOR_FLOAT(AngularStopCFM);
 					break;
 				}
+				case PhysicConstraint_Dof6Spring:
+				{
+					LOAD_FACTOR_FLOAT(Dof6LowerLinearLimitX);
+					LOAD_FACTOR_FLOAT(Dof6LowerLinearLimitY);
+					LOAD_FACTOR_FLOAT(Dof6LowerLinearLimitZ);
+					LOAD_FACTOR_FLOAT(Dof6UpperLinearLimitX);
+					LOAD_FACTOR_FLOAT(Dof6UpperLinearLimitY);
+					LOAD_FACTOR_FLOAT(Dof6UpperLinearLimitZ);
+					LOAD_FACTOR_FLOAT(Dof6LowerAngularLimitX);
+					LOAD_FACTOR_FLOAT(Dof6LowerAngularLimitY);
+					LOAD_FACTOR_FLOAT(Dof6LowerAngularLimitZ);
+					LOAD_FACTOR_FLOAT(Dof6UpperAngularLimitX);
+					LOAD_FACTOR_FLOAT(Dof6UpperAngularLimitY);
+					LOAD_FACTOR_FLOAT(Dof6UpperAngularLimitZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableLinearSpringX);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableLinearSpringY);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableLinearSpringZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableAngularSpringX);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableAngularSpringY);
+					LOAD_FACTOR_FLOAT(Dof6SpringEnableAngularSpringZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearStiffnessX);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearStiffnessY);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearStiffnessZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularStiffnessX);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularStiffnessY);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularStiffnessZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearDampingX);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearDampingY);
+					LOAD_FACTOR_FLOAT(Dof6SpringLinearDampingZ);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularDampingX);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularDampingY);
+					LOAD_FACTOR_FLOAT(Dof6SpringAngularDampingZ);
+					LOAD_FACTOR_FLOAT(LinearCFM);
+					LOAD_FACTOR_FLOAT(LinearStopERP);
+					LOAD_FACTOR_FLOAT(LinearStopCFM);
+					LOAD_FACTOR_FLOAT(AngularCFM);
+					LOAD_FACTOR_FLOAT(AngularStopERP);
+					LOAD_FACTOR_FLOAT(AngularStopCFM);
+					break;
+				}
 				case PhysicConstraint_Fixed:
 				{
 					LOAD_FACTOR_FLOAT(LinearCFM);
@@ -689,7 +762,7 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 			if (pPhysicActionSubKey->GetBool("affectsConstraint"))
 				pPhysicActionConfig->flags |= PhysicActionFlag_AffectsConstraint;
 
-#define LOAD_FACTOR_FLOAT(name) pPhysicActionConfig->factors[PhysicActionFactor_##name] = pFactorsKey->GetFloat(#name, NAN);
+#define LOAD_FACTOR_FLOAT(name) pPhysicActionConfig->factors[PhysicActionFactorIdx_##name] = pFactorsKey->GetFloat(#name, NAN);
 
 			auto pFactorsKey = pPhysicActionSubKey->FindKey("factors");
 
@@ -764,7 +837,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 	auto pRagdollObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
 
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pRagdollObjectConfig->flags);
-	LoadRigidBodiesFromKeyValues(pKeyValues, pRagdollObjectConfig->RigidBodyConfigs);
+	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnRagdollObject, pRagdollObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
 	LoadAnimControlsFromKeyValues(pKeyValues, pRagdollObjectConfig->AnimControlConfigs);
 	LoadIdleAnimFromKeyValues(pKeyValues, pRagdollObjectConfig->IdleAnimConfig);
@@ -780,7 +853,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadStaticObjectConfigFromKeyV
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pStaticObjectConfig->flags);
-	LoadRigidBodiesFromKeyValues(pKeyValues, pStaticObjectConfig->RigidBodyConfigs);
+	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnStaticObject, pStaticObjectConfig->RigidBodyConfigs);
 
 	return pStaticObjectConfig;
 }
@@ -790,7 +863,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKey
 	auto pDynamicObjectConfig = std::make_shared<CClientDynamicObjectConfig>();
 
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pDynamicObjectConfig->flags);
-	LoadRigidBodiesFromKeyValues(pKeyValues, pDynamicObjectConfig->RigidBodyConfigs);
+	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnDynamicObject, pDynamicObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pDynamicObjectConfig->ConstraintConfigs);
 
 	return pDynamicObjectConfig;
@@ -862,7 +935,7 @@ const char* GetPhysicObjectConfigTypeName(int type)
 
 const char* GetConstraintTypeName(int type)
 {
-	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Fixed" };
+	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
 		return c_names[type];
@@ -942,16 +1015,25 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 				if (pRigidBodySubKey)
 				{
 					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysDynamic)
-						pRigidBodySubKey->SetInt("alwaysDynamic", 1);
+						pRigidBodySubKey->SetBool("alwaysDynamic", true);
 
 					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysKinematic)
-						pRigidBodySubKey->SetInt("alwaysKinematic", 1);
+						pRigidBodySubKey->SetBool("alwaysKinematic", true);
 
 					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysStatic)
-						pRigidBodySubKey->SetInt("alwaysStatic", 1);
+						pRigidBodySubKey->SetBool("alwaysStatic", true);
 
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_Jiggle)
-						pRigidBodySubKey->SetInt("jiggle", 1);
+					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
+						pRigidBodySubKey->SetBool("noCollisionToWorld", true);
+
+					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToStaticObject)
+						pRigidBodySubKey->SetBool("noCollisionToStaticObject", true);
+
+					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
+						pRigidBodySubKey->SetBool("noCollisionToDynamicObject", true);
+
+					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
+						pRigidBodySubKey->SetBool("noCollisionToRagdollObject", true);
 
 					pRigidBodySubKey->SetInt("debugDrawLevel", pRigidBodyConfig->debugDrawLevel);
 
@@ -1040,6 +1122,18 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 
 					if (pConstraintConfig->flags & PhysicConstraintFlag_Gargantua)
 						pConstraintSubKey->SetBool("gargantua", true);
+
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnNormalActivity)
+						pConstraintSubKey->SetBool("deactiveOnNormalActivity", true);
+
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnDeathActivity)
+						pConstraintSubKey->SetBool("deactiveOnDeathActivity", true);
+
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
+						pConstraintSubKey->SetBool("deactiveOnBarnacleActivity", true);
+
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
+						pConstraintSubKey->SetBool("deactiveOnGargantuaActivity", true);
 
 					pConstraintSubKey->SetString("type", GetConstraintTypeName(pConstraintConfig->type));
 
@@ -1191,6 +1285,46 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 							SET_FACTOR_FLOAT(AngularStopCFM);
 							break;
 						}
+						case PhysicConstraint_Dof6Spring:
+						{
+							SET_FACTOR_FLOAT(Dof6LowerLinearLimitX);
+							SET_FACTOR_FLOAT(Dof6LowerLinearLimitY);
+							SET_FACTOR_FLOAT(Dof6LowerLinearLimitZ);
+							SET_FACTOR_FLOAT(Dof6UpperLinearLimitX);
+							SET_FACTOR_FLOAT(Dof6UpperLinearLimitY);
+							SET_FACTOR_FLOAT(Dof6UpperLinearLimitZ);
+							SET_FACTOR_FLOAT(Dof6LowerAngularLimitX);
+							SET_FACTOR_FLOAT(Dof6LowerAngularLimitY);
+							SET_FACTOR_FLOAT(Dof6LowerAngularLimitZ);
+							SET_FACTOR_FLOAT(Dof6UpperAngularLimitX);
+							SET_FACTOR_FLOAT(Dof6UpperAngularLimitY);
+							SET_FACTOR_FLOAT(Dof6UpperAngularLimitZ);
+							SET_FACTOR_FLOAT(Dof6SpringEnableLinearSpringX);
+							SET_FACTOR_FLOAT(Dof6SpringEnableLinearSpringY);
+							SET_FACTOR_FLOAT(Dof6SpringEnableLinearSpringZ);
+							SET_FACTOR_FLOAT(Dof6SpringEnableAngularSpringX);
+							SET_FACTOR_FLOAT(Dof6SpringEnableAngularSpringY);
+							SET_FACTOR_FLOAT(Dof6SpringEnableAngularSpringZ);
+							SET_FACTOR_FLOAT(Dof6SpringLinearStiffnessX);
+							SET_FACTOR_FLOAT(Dof6SpringLinearStiffnessY);
+							SET_FACTOR_FLOAT(Dof6SpringLinearStiffnessZ);
+							SET_FACTOR_FLOAT(Dof6SpringAngularStiffnessX);
+							SET_FACTOR_FLOAT(Dof6SpringAngularStiffnessY);
+							SET_FACTOR_FLOAT(Dof6SpringAngularStiffnessZ);
+							SET_FACTOR_FLOAT(Dof6SpringLinearDampingX);
+							SET_FACTOR_FLOAT(Dof6SpringLinearDampingY);
+							SET_FACTOR_FLOAT(Dof6SpringLinearDampingZ);
+							SET_FACTOR_FLOAT(Dof6SpringAngularDampingX);
+							SET_FACTOR_FLOAT(Dof6SpringAngularDampingY);
+							SET_FACTOR_FLOAT(Dof6SpringAngularDampingZ);
+							SET_FACTOR_FLOAT(LinearCFM);
+							SET_FACTOR_FLOAT(LinearStopERP);
+							SET_FACTOR_FLOAT(LinearStopCFM);
+							SET_FACTOR_FLOAT(AngularCFM);
+							SET_FACTOR_FLOAT(AngularStopERP);
+							SET_FACTOR_FLOAT(AngularStopCFM);
+							break;
+						}
 						case PhysicConstraint_Fixed:
 						{
 							SET_FACTOR_FLOAT(LinearCFM);
@@ -1242,7 +1376,7 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 					if (pPhysicActionConfig->flags & PhysicActionFlag_AffectsConstraint)
 						pPhysicActionSubKey->SetBool("affectsConstraint", true);
 
-#define SET_FACTOR_FLOAT(name) if(!isnan(pPhysicActionConfig->factors[PhysicActionFactor_##name])) pFactorsKey->SetFloat(#name, pPhysicActionConfig->factors[PhysicActionFactor_##name]);
+#define SET_FACTOR_FLOAT(name) if(!isnan(pPhysicActionConfig->factors[PhysicActionFactorIdx_##name])) pFactorsKey->SetFloat(#name, pPhysicActionConfig->factors[PhysicActionFactorIdx_##name]);
 
 					auto pFactorsKey = pPhysicActionSubKey->FindKey("factors", true);
 					
@@ -1509,11 +1643,19 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1] = factor0;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2] = factor1;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit] = factor2;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM] = BULLET_DEFAULT_LINEAR_CFM;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP] = BULLET_DEFAULT_LINEAR_ERP;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM] = BULLET_DEFAULT_ANGULAR_CFM;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP] = BULLET_DEFAULT_ANGULAR_ERP;
 		}
 		else if (constraintType == "hinge" || constraintType == "hinge_collision") {
 			pConstraintConfig->type = PhysicConstraint_Hinge;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit] = factor0;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit] = factor1;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM] = BULLET_DEFAULT_ANGULAR_CFM;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP] = BULLET_DEFAULT_ANGULAR_ERP;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM] = BULLET_DEFAULT_ANGULAR_STOP_CFM;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopERP] = BULLET_DEFAULT_ANGULAR_STOP_ERP;
 		}
 		else {
 			gEngfuncs.Con_DPrintf("ParseConstraintLine: Unsupported constraint type \"%s\"!", constraintType.c_str());
@@ -1592,8 +1734,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbodyA = rigidbody;
-			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude] = factor0;
-			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight] = 24;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
 			return true;
@@ -1633,8 +1775,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbodyA = rigidbody;
-			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceMagnitude] = factor0;
-			pActionConfig->factors[PhysicActionFactor_BarnacleDragForceExtraHeight] = 24;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
 			return true;
@@ -1647,8 +1789,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->name = std::format("BarnacleChewForce|{}", rigidbody);
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbodyA = rigidbody;
-			pActionConfig->factors[PhysicActionFactor_BarnacleChewForceMagnitude] = factor0;
-			pActionConfig->factors[PhysicActionFactor_BarnacleChewForceInterval] = factor1;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude] = factor0;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval] = factor1;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
 			return true;
@@ -1661,8 +1803,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->type = PhysicAction_BarnacleConstraintLimitAdjustment;
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsConstraint;
 			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.body|{}", rigidbody);
-			pActionConfig->factors[PhysicActionFactor_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
-			pActionConfig->factors[PhysicActionFactor_BarnacleConstraintLimitAdjustmentInterval] = factor2;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
 			return true;
@@ -1752,7 +1894,7 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 			}
 		}
 		else if (section == "JiggleBone") {
-			if (!ParseLegacyRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_Jiggle)) {
+			if (!ParseLegacyRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_AlwaysDynamic)) {
 
 				return nullptr; // Parsing failed
 			}
@@ -2424,8 +2566,6 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 
 		itor++;
 	}
-
-	m_physicObjects.clear();
 }
 
 void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
