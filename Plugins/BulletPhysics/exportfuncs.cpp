@@ -35,10 +35,12 @@ r_studio_interface_t **gpStudioInterface;
 
 cvar_t* bv_debug = NULL;
 cvar_t *bv_debug_draw = NULL;
+cvar_t* bv_debug_draw_wallhack = NULL;
 cvar_t* bv_debug_draw_ragdoll = NULL;
 cvar_t* bv_debug_draw_static = NULL;
 cvar_t* bv_debug_draw_dynamic = NULL;
 cvar_t* bv_debug_draw_constraint = NULL;
+
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t *bv_ragdoll_sleepaftertime = NULL;
@@ -81,7 +83,7 @@ bool IsDebugDrawEnabled()
 
 bool IsDebugDrawWallHackEnabled()
 {
-	return bv_debug_draw->value >= 2;
+	return bv_debug_draw_wallhack->value >= 1;
 }
 
 bool ShouldSyncronizeView()
@@ -1170,6 +1172,7 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
+	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_ragdoll", "1", FCVAR_CLIENTDLL);
 	bv_debug_draw_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_static", "1", FCVAR_CLIENTDLL);
 	bv_debug_draw_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_dynamic", "1", FCVAR_CLIENTDLL);

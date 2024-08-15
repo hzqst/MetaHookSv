@@ -13,8 +13,7 @@
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
 #include <VGUI_controls/Frame.h>
-#include <sequence.h>
-#include <regex>
+#include "PhysicEditorDialog.h"
 
 class CViewport : public vgui::Panel
 {
