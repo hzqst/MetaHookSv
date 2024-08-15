@@ -75,7 +75,7 @@ public:
 		return false;
 	}
 
-	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) override
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{
 		return false;
 	}

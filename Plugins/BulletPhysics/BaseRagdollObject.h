@@ -162,13 +162,13 @@ public:
 		}
 	}
 
-	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) override
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{
 		if (GetActivityType() != 0)
 		{
 			if (bIsThirdPerson)
 			{
-				return SyncThirdPersonView(pparams, gExportfuncs.V_CalcRefdef);
+				return SyncThirdPersonView(pparams, callback);
 			}
 			else
 			{
@@ -178,7 +178,7 @@ public:
 						return false;
 				}
 
-				return SyncFirstPersonView(pparams, gExportfuncs.V_CalcRefdef);
+				return SyncFirstPersonView(pparams, callback);
 			}
 		}
 

@@ -91,7 +91,7 @@ public:
 	virtual void TransformOwnerEntity(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
-	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson) = 0;
+	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
 
 	virtual void AddToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
 	virtual void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;

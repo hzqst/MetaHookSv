@@ -30,10 +30,12 @@ void HUD_TempEntUpdate(
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp));
 void HUD_DrawTransparentTriangles(void);
 void HUD_Init(void);
-void V_CalcRefdef(struct ref_params_s *pparams);
 void HUD_Frame(double frametime);
 void HUD_Shutdown(void);
 void HUD_CreateEntities(void);
+void HUD_PlayerMove(struct playermove_s* ppmove, qboolean server);
+void HUD_ProcessPlayerState(struct entity_state_s* dst, const struct entity_state_s* src);
+void V_CalcRefdef(struct ref_params_s* pparams);
 
 msurface_t* GetWorldSurfaceByIndex(int index);
 int GetWorldSurfaceIndex(msurface_t* surf);
@@ -42,7 +44,7 @@ entity_state_t* R_GetPlayerState(int index);
 
 bool AllowCheats();
 
-bool IsPhysicWorldEnabled();
+bool IsDebugViewEnabled();
 bool IsDebugDrawEnabled();
 bool IsDebugDrawWallHackEnabled();
 bool ShouldSyncronizeView();
@@ -61,3 +63,8 @@ int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);
 int EngineGetMaxClientEdicts(void);
 cl_entity_t* EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
+
+#define OBS_SVEN_NONE				0
+#define OBS_SVEN_CHASE_FREE			1
+#define OBS_SVEN_ROAMING			2
+#define OBS_SVEN_CHASE_LOCKED		3

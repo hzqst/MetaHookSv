@@ -20,6 +20,7 @@
 #include "message.h"
 #include "ClientEntityManager.h"
 #include "ClientPhysicManager.h"
+#include "ClientDebugViewer.h"
 
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
@@ -33,11 +34,12 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
-cvar_t *bv_debug = NULL;
-cvar_t* bv_debug_level_ragdoll = NULL;
-cvar_t* bv_debug_level_static = NULL;
-cvar_t* bv_debug_level_dynamic = NULL;
-cvar_t* bv_debug_level_constraint = NULL;
+cvar_t *bv_debug_draw = NULL;
+cvar_t* bv_debug_draw_ragdoll = NULL;
+cvar_t* bv_debug_draw_static = NULL;
+cvar_t* bv_debug_draw_dynamic = NULL;
+cvar_t* bv_debug_draw_constraint = NULL;
+cvar_t* bv_debug_view = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t *bv_ragdoll_sleepaftertime = NULL;
@@ -63,14 +65,19 @@ cl_entity_t** cl_visedicts = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
+bool IsDebugViewEnabled()
+{
+	return bv_debug_view->value >= 1;
+}
+
 bool IsDebugDrawEnabled()
 {
-	return bv_debug->value >= 1;
+	return bv_debug_draw->value >= 1;
 }
 
 bool IsDebugDrawWallHackEnabled()
 {
-	return bv_debug->value >= 2;
+	return bv_debug_draw->value >= 2;
 }
 
 bool ShouldSyncronizeView()
@@ -80,22 +87,22 @@ bool ShouldSyncronizeView()
 
 int GetRagdollObjectDebugDrawLevel()
 {
-	return (int)bv_debug_level_ragdoll->value;
+	return (int)bv_debug_draw_ragdoll->value;
 }
 
 int GetStaticObjectDebugDrawLevel()
 {
-	return (int)bv_debug_level_static->value;
+	return (int)bv_debug_draw_static->value;
 }
 
 int GetDynamicObjectDebugDrawLevel()
 {
-	return (int)bv_debug_level_dynamic->value;
+	return (int)bv_debug_draw_dynamic->value;
 }
 
 int GetConstraintDebugDrawLevel()
 {
-	return (int)bv_debug_level_constraint->value;
+	return (int)bv_debug_draw_constraint->value;
 }
 
 float GetSimulationTickRate()
@@ -1157,11 +1164,13 @@ void HUD_Init(void)
 
 	ClientPhysicManager()->Init();
 
-	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
-	bv_debug_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_level_ragdoll", "1", FCVAR_CLIENTDLL);
-	bv_debug_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_level_static", "1", FCVAR_CLIENTDLL);
-	bv_debug_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_level_dynamic", "1", FCVAR_CLIENTDLL);
-	bv_debug_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_level_constraint", "1", FCVAR_CLIENTDLL);
+	bv_debug_view = gEngfuncs.pfnRegisterVariable("bv_debug_view", "0", FCVAR_CLIENTDLL);
+
+	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
+	bv_debug_draw_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_ragdoll", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_static", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_dynamic", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_constraint", "1", FCVAR_CLIENTDLL);
 
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1256,6 +1265,40 @@ void HUD_Shutdown(void)
 	Uninstall_Hook(efxapi_R_TempModel);
 }
 
+void HUD_PlayerMove(struct playermove_s* ppmove, qboolean server)
+{
+	/*if (IsDebugViewEnabled())
+	{
+		int iSavediUser1 = ppmove->spectator;
+
+		ppmove->iuser1 = 2;
+
+		gExportfuncs.HUD_PlayerMove(ppmove, server);
+
+		ppmove->iuser1 = iSavediUser1;
+
+		return;
+	}*/
+
+	gExportfuncs.HUD_PlayerMove(ppmove, server);
+}
+
+void HUD_ProcessPlayerState(struct entity_state_s* dst, const struct entity_state_s* src)
+{
+	/*if (IsDebugViewEnabled())
+	{
+		auto psrc = (struct entity_state_s*)src;
+		int iSavediUser1 = psrc->iuser1;
+		psrc->iuser1 = 2;
+
+		gExportfuncs.HUD_ProcessPlayerState(dst, src);
+
+		psrc->iuser1 = iSavediUser1;
+		return;
+	}*/
+	gExportfuncs.HUD_ProcessPlayerState(dst, src);
+}
+
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	memcpy(&r_params, pparams, sizeof(r_params));
@@ -1273,25 +1316,37 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	if (R_IsRenderingPortals())
 		goto skip;
 
-	if (pLocalPlayer && pLocalPlayer->player && ShouldSyncronizeView())
+	if (pLocalPlayer && pLocalPlayer->player)
 	{
-		auto pSpectatingPlayer = pLocalPlayer;
-
-		if (g_iUser1 && g_iUser2 && (*g_iUser1))
+		if (IsDebugViewEnabled())
 		{
-			pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
-		}
-
-		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
-
-		if (pPhysicObject)
-		{
-			if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false))
+			if(ClientDebugViewer()->CalcRefDef(pparams, gExportfuncs.V_CalcRefdef))
 				return;
+		}
+		else if (ShouldSyncronizeView())
+		{
+			auto pSpectatingPlayer = pLocalPlayer;
+
+			if (g_iUser1 && g_iUser2 && (*g_iUser1))
+			{
+				pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
+			}
+
+			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
+
+			if (pPhysicObject)
+			{
+				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
+				{
+					ClientDebugViewer()->SaveViewParams(pparams);
+					return;
+				}
+			}
 		}
 	}
 skip:
 	gExportfuncs.V_CalcRefdef(pparams);
+	ClientDebugViewer()->SaveViewParams(pparams);
 }
 
 void HUD_DrawTransparentTriangles(void)
