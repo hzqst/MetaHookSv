@@ -395,9 +395,6 @@
     <ClCompile Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.cc">
       <Filter>tinyobjloader</Filter>
     </ClCompile>
-    <ClCompile Include="ClientDebugViewer.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -462,9 +459,6 @@
     </ClInclude>
     <ClInclude Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.h">
       <Filter>tinyobjloader</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientDebugViewer.h">
-      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

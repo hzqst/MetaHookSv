@@ -277,7 +277,6 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="BasePhysicManager.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="ClientEntityManager.cpp" />
-    <ClCompile Include="ClientDebugViewer.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="message.cpp" />
@@ -298,7 +297,6 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="BulletStaticObject.h" />
     <ClInclude Include="ClientPhysicCommon.h" />
     <ClInclude Include="CounterStrike.h" />
-    <ClInclude Include="ClientDebugViewer.h" />
     <ClInclude Include="mathlib2.h" />
     <ClInclude Include="message.h" />
     <ClInclude Include="ClientPhysicManager.h" />
