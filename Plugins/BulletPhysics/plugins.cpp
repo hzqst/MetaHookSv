@@ -73,6 +73,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	VGUI2Extension_Init();
 	BaseUI_InstallHooks();
 	GameUI_InstallHooks();
+	ClientVGUI_InstallHooks();
 
 	g_pClientPhysicManager = BulletPhysicManager_CreateInstance();
 
@@ -101,6 +102,12 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 void IPluginsV4::ExitGame(int iResult)
 {
 	g_pClientPhysicManager->Destroy();
+
+	ClientVGUI_UninstallHooks();
+	GameUI_UninstallHooks();
+	BaseUI_UninstallHooks();
+
+	VGUI2Extension_Shutdown();
 
 	Engine_UninstallHook();
 }

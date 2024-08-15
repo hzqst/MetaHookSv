@@ -395,6 +395,12 @@
     <ClCompile Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.cc">
       <Filter>tinyobjloader</Filter>
     </ClCompile>
+    <ClCompile Include="ClientVGUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewport.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -459,6 +465,9 @@
     </ClInclude>
     <ClInclude Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.h">
       <Filter>tinyobjloader</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewport.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

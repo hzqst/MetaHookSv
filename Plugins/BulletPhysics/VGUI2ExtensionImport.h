@@ -11,3 +11,6 @@ void BaseUI_UninstallHooks(void);
 
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
+
+void ClientVGUI_InstallHooks(void);
+void ClientVGUI_UninstallHooks(void);

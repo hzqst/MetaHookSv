@@ -44,7 +44,8 @@ entity_state_t* R_GetPlayerState(int index);
 
 bool AllowCheats();
 
-bool IsDebugViewEnabled();
+bool IsDebugViewModeEnabled();
+bool IsDebugEditModeEnabled();
 bool IsDebugDrawEnabled();
 bool IsDebugDrawWallHackEnabled();
 bool ShouldSyncronizeView();

@@ -20,7 +20,6 @@
 #include "message.h"
 #include "ClientEntityManager.h"
 #include "ClientPhysicManager.h"
-#include "ClientDebugViewer.h"
 
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
@@ -34,12 +33,12 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
+cvar_t* bv_debug = NULL;
 cvar_t *bv_debug_draw = NULL;
 cvar_t* bv_debug_draw_ragdoll = NULL;
 cvar_t* bv_debug_draw_static = NULL;
 cvar_t* bv_debug_draw_dynamic = NULL;
 cvar_t* bv_debug_draw_constraint = NULL;
-cvar_t* bv_debug_view = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t *bv_ragdoll_sleepaftertime = NULL;
@@ -65,9 +64,14 @@ cl_entity_t** cl_visedicts = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
-bool IsDebugViewEnabled()
+bool IsDebugViewModeEnabled()
 {
-	return bv_debug_view->value >= 1;
+	return (int)bv_debug->value == 1;
+}
+
+bool IsDebugEditModeEnabled()
+{
+	return (int)bv_debug->value == 2;
 }
 
 bool IsDebugDrawEnabled()
@@ -1164,8 +1168,7 @@ void HUD_Init(void)
 
 	ClientPhysicManager()->Init();
 
-	bv_debug_view = gEngfuncs.pfnRegisterVariable("bv_debug_view", "0", FCVAR_CLIENTDLL);
-
+	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_ragdoll", "1", FCVAR_CLIENTDLL);
 	bv_debug_draw_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_static", "1", FCVAR_CLIENTDLL);
@@ -1318,12 +1321,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 	if (pLocalPlayer && pLocalPlayer->player)
 	{
-		if (IsDebugViewEnabled())
-		{
-			if(ClientDebugViewer()->CalcRefDef(pparams, gExportfuncs.V_CalcRefdef))
-				return;
-		}
-		else if (ShouldSyncronizeView())
+		if (ShouldSyncronizeView())
 		{
 			auto pSpectatingPlayer = pLocalPlayer;
 
@@ -1338,7 +1336,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			{
 				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
 				{
-					ClientDebugViewer()->SaveViewParams(pparams);
 					return;
 				}
 			}
@@ -1346,7 +1343,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	}
 skip:
 	gExportfuncs.V_CalcRefdef(pparams);
-	ClientDebugViewer()->SaveViewParams(pparams);
 }
 
 void HUD_DrawTransparentTriangles(void)
