@@ -33,8 +33,6 @@ void HUD_Init(void);
 void HUD_Frame(double frametime);
 void HUD_Shutdown(void);
 void HUD_CreateEntities(void);
-void HUD_PlayerMove(struct playermove_s* ppmove, qboolean server);
-void HUD_ProcessPlayerState(struct entity_state_s* dst, const struct entity_state_s* src);
 void V_CalcRefdef(struct ref_params_s* pparams);
 
 msurface_t* GetWorldSurfaceByIndex(int index);

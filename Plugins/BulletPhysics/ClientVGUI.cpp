@@ -27,19 +27,19 @@ public:
 
 	void Initialize(CreateInterfaceFn* factories, int count) override
 	{
-		if (!vgui::VGui_InitInterfacesList("CaptionMod", factories, count))
+		if (!vgui::VGui_InitInterfacesList("BulletPhysics", factories, count))
 		{
 			Sys_Error("Failed to VGui_InitInterfacesList");
 			return;
 		}
 
-		vgui::scheme()->LoadSchemeFromFile("captionmod/CaptionScheme.res", "CaptionScheme");
+		//vgui::scheme()->LoadSchemeFromFile("captionmod/CaptionScheme.res", "CaptionScheme");
 
-		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
+		if (!vgui::localize()->AddFile(g_pFullFileSystem, "bulletphysics/bulletphysics_%language%.txt"))
 		{
-			if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_english.txt"))
+			if (!vgui::localize()->AddFile(g_pFullFileSystem, "bulletphysics/bulletphysics_english.txt"))
 			{
-				Sys_Error("Failed to load captionmod/dictionary_english.txt");
+				Sys_Error("Failed to load \"bulletphysics/bulletphysics_english.txt\"");
 			}
 		}
 	}

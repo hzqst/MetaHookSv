@@ -282,6 +282,8 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
+    <ClCompile Include="PhysicDebugViewGUI.cpp" />
+    <ClCompile Include="PhysicEditorDialog.cpp" />
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="plugins.cpp" />
@@ -302,6 +304,9 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="mathlib2.h" />
     <ClInclude Include="message.h" />
     <ClInclude Include="ClientPhysicManager.h" />
+    <ClInclude Include="PhysicDebugViewGUI.h" />
+    <ClInclude Include="PhysicEditorDialog.h" />
+    <ClInclude Include="PhysicEditorInspectPage.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />

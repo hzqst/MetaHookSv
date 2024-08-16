@@ -13,7 +13,10 @@
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
 #include <VGUI_controls/Frame.h>
-#include "PhysicEditorDialog.h"
+
+class CPhysicEditorDialog;
+class CPhysicDebugViewGUI;
+typedef model_s model_t;
 
 class CViewport : public vgui::Panel
 {
@@ -24,19 +27,29 @@ public:
 	virtual ~CViewport(void);
 
 public:
-	//ClientVGUI Interface
+	void Think(void) override;
+	void Paint(void) override;
+	void SetParent(vgui::VPANEL vPanel) override;
+
+public:
 	void Start(void);
 	void Init(void);
+	void NewMap(void);
 	void VidInit(void);
-	void Think(void);
-	void Paint(void);
-	void SetParent(vgui::VPANEL vPanel);
-	void ConnectToServer(const char* game, int IP, int port);
 	void ActivateClientUI(void);
 	void HideClientUI(void);
 
+	void UpdateInspectEntity(int entindex);
+	void UpdateInspectPhysicComponent(int physicComponentId);
+
 private:
 	CPhysicEditorDialog* m_pPhysicEditorDialog{};
+	CPhysicDebugViewGUI* m_pPhysicDebugViewGUI{};
+
+	int m_iCachedInspectEntity{};
+	model_t * m_iCachedInspectModel{};
+
+	int m_iCachedInspectPhysicComponentId{};
 };
 
 extern CViewport *g_pViewPort;

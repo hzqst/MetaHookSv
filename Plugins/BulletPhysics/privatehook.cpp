@@ -6,8 +6,10 @@
 #include "privatehook.h"
 #include "exportfuncs.h"
 #include "message.h"
+
 #include "ClientPhysicManager.h"
 #include "ClientEntityManager.h"
+#include "Viewport.h"
 
 #define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
 #define R_NEWMAP_SIG_BLOB      R_NEWMAP_SIG_COMMON
@@ -879,10 +881,11 @@ void R_NewMap(void)
 {
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
-
+	
 	gPrivateFuncs.R_NewMap();
 	ClientPhysicManager()->NewMap();
 	ClientEntityManager()->NewMap();
+	g_pViewPort->NewMap();
 }
 
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype)

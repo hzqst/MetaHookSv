@@ -401,6 +401,12 @@
     <ClCompile Include="Viewport.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="PhysicEditorDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicDebugViewGUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -467,6 +473,15 @@
       <Filter>tinyobjloader</Filter>
     </ClInclude>
     <ClInclude Include="Viewport.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicEditorInspectPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicEditorDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicDebugViewGUI.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>

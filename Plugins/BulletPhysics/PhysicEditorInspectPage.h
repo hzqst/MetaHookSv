@@ -24,6 +24,4 @@ private:
 	CCvarTextEntry* m_pDynamicObjectDebugDrawLevel{};
 	CCvarTextEntry* m_pRagdollObjectDebugDrawLevel{};
 	CCvarTextEntry* m_pConstraintObjectDebugDrawLevel{};
-	vgui::TextEntry* m_pInspectingPhysicObject{};//e.g. #2 [RagdollObject] models/player/GFL_M14-c.mdl
-	vgui::TextEntry* m_pInspectingPhysicComponent{};//e.g #1 [RigidBody] Head // #2 [Constraint] NativeConstraint|Head|Pelvis
 };

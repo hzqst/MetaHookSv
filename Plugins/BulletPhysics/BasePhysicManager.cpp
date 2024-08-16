@@ -23,11 +23,111 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
-void OnBeforeDeletePhysicAction(IPhysicObject* pPhysicObject, IPhysicAction* pAction)
+bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
 {
-	//TODO?
+	if (pPhysicComponent->IsRigidBody())
+	{
+		if (filters.m_HasWithoutRigidbodyFlags)
+		{
+			if (pPhysicComponent->GetFlags() & filters.m_WithoutRigidbodyFlags)
+			{
+				return false;
+			}
+		}
+
+		if (filters.m_HasExactMatchRigidbodyFlags)
+		{
+			if (pPhysicComponent->GetFlags() == filters.m_ExactMatchRigidbodyFlags)
+			{
+				return true;
+			}
+		}
+
+		if (filters.m_HasExactMatchRigidBodyComponentId)
+		{
+			if (pPhysicComponent->GetPhysicComponentId() == filters.m_ExactMatchRigidBodyComponentId)
+			{
+				return true;
+			}
+		}
+
+		if (filters.m_HasWithRigidbodyFlags)
+		{
+			if (pPhysicComponent->GetFlags() & filters.m_WithRigidbodyFlags)
+			{
+				return true;
+			}
+
+			return false;
+		}
+		return true;
+	}
+
+	if (pPhysicComponent->IsConstraint())
+	{
+		if (filters.m_HasWithoutConstraintFlags)
+		{
+			if (pPhysicComponent->GetFlags() & filters.m_WithoutConstraintFlags)
+			{
+				return false;
+			}
+		}
+
+		if (filters.m_HasExactMatchConstraintFlags)
+		{
+			if (pPhysicComponent->GetFlags() == filters.m_ExactMatchConstraintFlags)
+			{
+				return true;
+			}
+		}
+
+		if (filters.m_HasExactMatchConstraintComponentId)
+		{
+			if (pPhysicComponent->GetPhysicComponentId() == filters.m_ExactMatchConstraintComponentId)
+			{
+				return true;
+			}
+		}
+
+		if (filters.m_HasWithConstraintFlags)
+		{
+			if (pPhysicComponent->GetFlags() & filters.m_WithConstraintFlags)
+			{
+				return true;
+			}
+
+			return false;
+		}
+		return true;
+	}
+
+	return true;
 }
- 
+
+CBasePhysicRigidBody::CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig) :
+	m_id(id),
+	m_entindex(entindex),
+	m_name(pRigidConfig->name),
+	m_flags(pRigidConfig->flags),
+	m_boneindex(pRigidConfig->boneindex),
+	m_debugDrawLevel(pRigidConfig->debugDrawLevel)
+{
+
+}
+
+CBasePhysicConstraint::CBasePhysicConstraint(
+	int id,
+	int entindex, 
+	const CClientConstraintConfig* pConstraintConfig) :
+	m_id(id),
+	m_entindex(entindex),
+	m_name(pConstraintConfig->name),
+	m_flags(pConstraintConfig->flags),
+	m_debugDrawLevel(pConstraintConfig->debugDrawLevel)
+{
+
+}
+
 void CBasePhysicManager::Destroy(void)
 {
 	delete this;
@@ -46,6 +146,8 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
+	m_iAllocatedPhysicComponentId = 0;
+
 	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -161,7 +263,7 @@ void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* studiohdr, int entindex
 	//TODO
 }
 
-bool CBasePhysicManager::TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex)
+bool CBasePhysicManager::TransferOwnershipForPhysicObject(int old_entindex, int new_entindex)
 {
 	auto pPhysicObject = GetPhysicObject(old_entindex);
 
@@ -173,7 +275,7 @@ bool CBasePhysicManager::TransformOwnerEntityForPhysicObject(int old_entindex, i
 
 		m_physicObjects[new_entindex] = pPhysicObject;
 
-		pPhysicObject->TransformOwnerEntity(new_entindex);
+		pPhysicObject->TransferOwnership(new_entindex);
 
 		return true;
 	}
@@ -1935,13 +2037,6 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 {
 	std::string fullname = filename;
 
-	//TODO remove file extension with..?
-	if (fullname.length() < 4)
-	{
-		gEngfuncs.Con_DPrintf("SavePhysicObjectConfigToFile: Invalid name \"%s\"\n", filename.c_str());
-		return false;
-	}
-
 	UTIL_RemoveFileExtension(fullname);
 
 	auto fullname_physic = fullname;
@@ -2068,7 +2163,6 @@ void CBasePhysicManager::CreatePhysicObjectForEntity(cl_entity_t* ent, entity_st
 
 void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod)
 {
-	//TODO Port barnacle and garg to Configs ?
 	if (ClientEntityManager()->IsEntityNetworkEntity(ent))
 	{
 		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
@@ -2098,9 +2192,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			}
 			else
 			{
-				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
+				if (TransferOwnershipForPhysicObject(playerindex, entindex))
 					return;
 
+				RemovePhysicObject(entindex);
 				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
@@ -2131,6 +2226,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			}
 			else
 			{
+				RemovePhysicObject(entindex);
 				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
@@ -2142,18 +2238,6 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			if (!model)
 				return;
 
-			//I don't think we need this anymore
-			/*
-			if (ClientEntityManager()->IsEntityBarnacle(ent))
-			{
-				//ClientEntityManager()->AddBarnacle(entindex, 0);
-			}
-			else if (ClientEntityManager()->IsEntityGargantua(ent))
-			{
-				//ClientEntityManager()->AddGargantua(entindex, 0);
-			}
-			*/
-
 			auto PhysicObject = GetPhysicObject(entindex);
 
 			if (PhysicObject &&
@@ -2164,6 +2248,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			}
 			else
 			{
+				RemovePhysicObject(entindex);
 				CreatePhysicObjectFromConfig(ent, state, model, entindex, 0);
 			}
 		}
@@ -2190,9 +2275,10 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			}
 			else
 			{
-				if (TransformOwnerEntityForPhysicObject(playerindex, entindex))
+				if (TransferOwnershipForPhysicObject(playerindex, entindex))
 					return;
 
+				RemovePhysicObject(entindex);
 				CreatePhysicObjectFromConfig(ent, state, model, entindex, playerindex);
 			}
 		}
@@ -2387,6 +2473,52 @@ int CBasePhysicManager::AllocatePhysicComponentId()
 	return m_iAllocatedPhysicComponentId;
 }
 
+IPhysicComponent* CBasePhysicManager::GetPhysicComponent(int physicComponentId)
+{
+	auto itor = m_physicComponents.find(physicComponentId);
+
+	if (itor != m_physicComponents.end())
+	{
+		return itor->second;
+	}
+
+	return nullptr;
+}
+
+void CBasePhysicManager::AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent)
+{
+	RemovePhysicComponent(physicComponentId);
+
+	AddPhysicComponentToWorld(pPhysicComponent);
+
+	m_physicComponents[physicComponentId] = pPhysicComponent;
+}
+
+void CBasePhysicManager::FreePhysicComponent(IPhysicComponent* pPhysicComponent)
+{
+	RemovePhysicComponentFromWorld(pPhysicComponent);
+
+	pPhysicComponent->Destroy();
+}
+
+bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
+{
+	auto itor = m_physicComponents.find(physicComponentId);
+
+	if (itor != m_physicComponents.end())
+	{
+		auto pPhysicComponent = itor->second;
+
+		FreePhysicComponent(pPhysicComponent);
+
+		m_physicComponents.erase(itor);
+
+		return true;
+	}
+
+	return false;
+}
+
 //Private impls
 
 void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex)
@@ -2515,18 +2647,18 @@ void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObj
 {
 	RemovePhysicObject(entindex);
 
-	CPhysicComponentFilters filters;
+	//CPhysicComponentFilters filters;
 
-	AddPhysicObjectToWorld(pPhysicObject, filters);
+	//AddPhysicObjectToWorld(pPhysicObject, filters);
 
 	m_physicObjects[entindex] = pPhysicObject;
 }
 
 void CBasePhysicManager::FreePhysicObject(IPhysicObject *pPhysicObject)
 {
-	CPhysicComponentFilters filters;
+	//CPhysicComponentFilters filters;
 
-	RemovePhysicObjectFromWorld(pPhysicObject, filters);
+	//RemovePhysicObjectFromWorld(pPhysicObject, filters);
 
 	pPhysicObject->Destroy();
 }
@@ -2568,8 +2700,9 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 	}
 }
 
-void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
+void CBasePhysicManager::UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
 {
+	//paused
 	if (frame_time <= 0)
 		return;
 
@@ -2577,30 +2710,24 @@ void CBasePhysicManager::UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPEN
 	{
 		auto entindex = itor->first;
 		auto pPhysicObject = itor->second;
-		bool bShouldFree = false;
 
-		if (!bShouldFree)
+		CPhysicObjectUpdateContext ctx(entindex, pPhysicObject);
+
+		if (!ctx.m_bShouldFree)
 		{
 			//world entity is always present
 			if (entindex > 0 && !ClientEntityManager()->IsEntityEmitted(entindex))
 			{
-				bShouldFree = true;
+				ctx.m_bShouldFree = true;
 			}
 		}
 
-		if (!bShouldFree)
+		if (!ctx.m_bShouldFree)
 		{
-			CPhysicObjectUpdateContext ctx(pPhysicObject);
-
 			pPhysicObject->Update(&ctx);
-
-			if(ctx.m_bShouldKillMe)
-			{
-				bShouldFree = true;
-			}
 		}
 
-		if (bShouldFree)
+		if (ctx.m_bShouldFree)
 		{
 			FreePhysicObject(pPhysicObject);
 			itor = m_physicObjects.erase(itor);

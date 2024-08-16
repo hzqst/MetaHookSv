@@ -19,7 +19,30 @@ public:
 
 	~CBaseRagdollObject()
 	{
+		for (auto pAction : m_Actions)
+		{
+			delete pAction;
+		}
 
+		m_Actions.clear();
+
+		for (auto pConstraint : m_Constraints)
+		{
+			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
+
+			delete pConstraint;
+		}
+
+		m_Constraints.clear();
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
+
+			delete pRigidBody;
+		}
+
+		m_RigidBodies.clear();
 	}
 
 	int GetEntityIndex() const override
@@ -63,10 +86,133 @@ public:
 		return m_flags;
 	}
 
+	bool IsClientEntityNonSolid() const override
+	{
+		if (GetActivityType() > 0)
+			return false;
+
+		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
 	void UpdatePose(entity_state_t* curstate) override
 	{
 		//Force bones update
 		ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
+	}
+
+	bool SetupBones(studiohdr_t* studiohdr) override
+	{
+		if (GetActivityType() == 0)
+			return false;
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->SetupBones(studiohdr);
+		}
+
+		return true;
+	}
+
+	bool ResetPose(entity_state_t* curstate) override
+	{
+		auto mod = GetModel();
+
+		if (!mod)
+			return false;
+
+		auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+		if (!studiohdr)
+			return false;
+
+		ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->ResetPose(studiohdr, curstate);
+		}
+
+		return true;
+	}
+
+	void ApplyBarnacle(IPhysicObject* pBarnacleObject) override
+	{
+		if (m_iBarnacleIndex)
+			return;
+
+		m_iBarnacleIndex = pBarnacleObject->GetEntityIndex();
+
+		CRagdollObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entindex = GetEntityIndex();
+		CreationParam.m_model = GetModel();
+
+		if (GetModel()->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(GetModel());
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(GetClientEntity(), GetModel());
+		}
+
+		CreationParam.m_playerindex = GetPlayerIndex();
+		CreationParam.m_allowNonNativeRigidBody = true;
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			vec3_t vecZero = { 0, 0, 0 };
+
+			pRigidBody->SetLinearVelocity(vecZero);
+			pRigidBody->SetAngularVelocity(vecZero);
+		}
+
+		for (const auto& pConstraintConfig : m_BarnacleControlConfig.ConstraintConfigs)
+		{
+			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
+
+			if (pConstraint)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+				m_Constraints.emplace_back(pConstraint);
+			}
+		}
+
+		for (const auto& pActionConfig : m_BarnacleControlConfig.ActionConfigs)
+		{
+			auto pAction = CreateActionFromConfig(pActionConfig.get());
+
+			if (pAction)
+			{
+				m_Actions.emplace_back(pAction);
+			}
+		}
+	}
+
+	void ReleaseFromBarnacle() override
+	{
+		if (!m_iBarnacleIndex)
+			return;
+
+		m_iBarnacleIndex = 0;
+
+		FreePhysicActionsWithFilters(PhysicActionFlag_Barnacle, 0);
+
+		CPhysicComponentFilters filters;
+
+		filters.m_HasWithConstraintFlags = true;
+		filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
+
+		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+	}
+
+	void ApplyGargantua(IPhysicObject* pGargantuaObject) override
+	{
+		//TODO
+	}
+
+	void ReleaseFromGargantua() override
+	{
+		//TODO
 	}
 
 	int GetOverrideActivityType(entity_state_t* entstate) override
@@ -86,7 +232,27 @@ public:
 		return m_iActivityType;
 	}
 
-	void Update(CPhysicObjectUpdateContext* ctx) override
+	int GetBarnacleIndex() const override
+	{
+		return m_iBarnacleIndex;
+	}
+
+	int GetGargantuaIndex() const override
+	{
+		return m_iGargantuaIndex;
+	}
+
+	bool SetupJiggleBones(studiohdr_t* studiohdr) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->SetupJiggleBones(studiohdr);
+		}
+
+		return true;
+	}
+
+	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
 	{
 		auto playerState = R_GetPlayerState(m_playerindex);
 
@@ -123,9 +289,9 @@ public:
 
 		if (UpdateActivity(iOldActivityType, iNewActivityType, playerState))
 		{
-			ctx->m_bActivityChanged = true;
+			ObjectUpdateContext->m_bActivityChanged = true;
 
-			//Transform from whatever to barnacle
+			//Transformed from whatever to barnacle
 			if (iNewActivityType == 2 && iOldActivityType != 2)
 			{
 				auto pBarnacleObject = ClientPhysicManager()->FindBarnacleObjectForPlayer(playerState);
@@ -148,17 +314,55 @@ public:
 			//Transformed from death or barnacle to idle state.
 			else if (iOldActivityType > 0 && iNewActivityType == 0)
 			{
-				ResetPose(playerState);
-
-				ctx->m_bRigidbodyPoseChanged = true;
+				ObjectUpdateContext->m_bRigidbodyResetPoseRequired = true;
 			}
 		}
 
 		if (!ClientEntityManager()->IsEntityInVisibleList(GetClientEntity()))
 		{
-			UpdatePose(GetClientEntityState());
+			ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired = true;
+		}
 
-			ctx->m_bRigidbodyPoseUpdated = true;
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
+
+			pRigidBody->Update(&ComponentUpdateContext);
+		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
+
+			pConstraint->Update(&ComponentUpdateContext);
+		}
+
+		for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
+		{
+			auto pAction = (*itor);
+
+			if (pAction->Update(ObjectUpdateContext))
+			{
+				itor++;
+			}
+			else
+			{
+				delete pAction;
+				itor = m_Actions.erase(itor);
+			}
+		}
+
+		if (ObjectUpdateContext->m_bRigidbodyResetPoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseChanged)
+		{
+			ResetPose(playerState);
+
+			ObjectUpdateContext->m_bRigidbodyPoseChanged = true;
+		}
+
+		if (ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseUpdated)
+		{
+			UpdatePose(playerState);
+			ObjectUpdateContext->m_bRigidbodyPoseUpdated = true;
 		}
 	}
 
@@ -184,6 +388,242 @@ public:
 
 		return false;
 	}
+
+	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (!pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+			{
+				pRigidBody->AddToPhysicWorld(world);
+			}
+		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			if (!pConstraint->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pConstraint, filters))
+			{
+				pConstraint->AddToPhysicWorld(world);
+			}
+		}
+	}
+
+	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
+	{
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pConstraint, filters))
+			{
+				pConstraint->RemoveFromPhysicWorld(world);
+			}
+		}
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+			{
+				pRigidBody->RemoveFromPhysicWorld(world);
+			}
+		}
+	}
+
+	void TransferOwnership(int entindex) override
+	{
+		m_entindex = entindex;
+		m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->TransferOwnership(entindex);
+		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			pConstraint->TransferOwnership(entindex);
+		}
+	}
+
+	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetName() == name)
+			{
+				return pRigidBody;
+			}
+		}
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetName() == name)
+			{
+				return pConstraint;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicComponent* GetPhysicComponentByComponentId(int id) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetPhysicComponentId() == id)
+			{
+				return pRigidBody;
+			}
+		}
+		
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetPhysicComponentId() == id)
+			{
+				return pConstraint;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicRigidBody* GetRigidBodyByName(const std::string& name) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetName() == name)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicRigidBody* GetRigidBodyByComponentId(int id) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetPhysicComponentId() == id)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicConstraint* GetConstraintByName(const std::string& name) override
+	{
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetName() == name)
+			{
+				return pConstraint;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicConstraint* GetConstraintByComponentId(int id) override
+	{
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetPhysicComponentId() == id)
+			{
+				return pConstraint;
+			}
+		}
+
+		return nullptr;
+	}
+
+	void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
+		{
+			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
+
+			if (pRigidBody)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+				CPhysicObjectUpdateContext ObjectUpdateContext(GetEntityIndex(), this);
+
+				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+				pRigidBody->Update(&ComponentUpdateContext);
+
+				m_RigidBodies.emplace_back(pRigidBody);
+
+				if (pRigidBodyConfig->boneindex >= 0)
+				{
+					m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
+				}
+			}
+		}
+	}
+
+	void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
+		{
+			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
+
+			if (pConstraint)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+				m_Constraints.emplace_back(pConstraint);
+			}
+		}
+	}
+
+	void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
+		{
+			CreateFloater(CreationParam, pFloaterConfig.get());
+		}
+	}
+
+	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
+	{
+		if (allowNonNativeRigidBody)
+		{
+			if (name.starts_with("@barnacle.") && m_iBarnacleIndex)
+			{
+				auto findName = name.substr(sizeof("@barnacle.") - 1);
+
+				auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
+
+				if (pBarnacleObject)
+				{
+					return pBarnacleObject->GetRigidBodyByName(findName);
+				}
+
+				return nullptr;
+			}
+			else if (name.starts_with("@gargantua.") && m_iGargantuaIndex)
+			{
+				auto findName = name.substr(sizeof("@gargantua.") - 1);
+
+				auto pGargantuaObject = ClientPhysicManager()->GetPhysicObject(m_iGargantuaIndex);
+
+				if (pGargantuaObject)
+				{
+					return pGargantuaObject->GetRigidBodyByName(findName);
+				}
+
+				return nullptr;
+			}
+		}
+
+		return GetRigidBodyByName(name);
+	}
+
+	virtual IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) = 0;
+	virtual IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig) = 0;
+	virtual void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig) = 0;
+	virtual IPhysicAction* CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig) = 0;
 
 private:
 
@@ -234,4 +674,8 @@ public:
 	std::vector<CClientAnimControlConfig> m_AnimControlConfigs;
 
 	CClientBarnacleControlConfig m_BarnacleControlConfig;
+
+	std::vector<IPhysicAction *> m_Actions;
+	std::vector<IPhysicRigidBody *> m_RigidBodies;
+	std::vector<IPhysicConstraint *> m_Constraints;
 };

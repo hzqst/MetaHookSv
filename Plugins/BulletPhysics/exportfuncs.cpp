@@ -5,6 +5,7 @@
 #include <cl_entity.h>
 #include <com_model.h>
 #include <triangleapi.h>
+#include <event_api.h>
 #include <cvardef.h>
 #include <entity_types.h>
 #include <pm_defs.h>
@@ -20,6 +21,7 @@
 #include "message.h"
 #include "ClientEntityManager.h"
 #include "ClientPhysicManager.h"
+#include "Viewport.h"
 
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
@@ -54,6 +56,7 @@ bool g_bIsCounterStrike = false;
 int g_iRagdollRenderEntIndex = 0;
 
 ref_params_t r_params = { 0 };
+ref_params_t r_params_final = { 0 };
 
 model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
@@ -68,12 +71,12 @@ model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNu
 
 bool IsDebugViewModeEnabled()
 {
-	return (int)bv_debug->value == 1;
+	return (int)bv_debug->value >= 1;
 }
 
 bool IsDebugEditModeEnabled()
 {
-	return (int)bv_debug->value == 2;
+	return (int)bv_debug->value >= 2;
 }
 
 bool IsDebugDrawEnabled()
@@ -1132,38 +1135,6 @@ void BV_SaveConfigs_f(void)
 	ClientPhysicManager()->SavePhysicObjectConfigs();
 }
 
-void BV_ThreadPerson_f(void)
-{
-	auto localplayer = gEngfuncs.GetLocalPlayer();
-
-	if (localplayer && localplayer->player)
-	{
-		if (StudioGetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
-		{
-			gEngfuncs.Con_Printf("Cannot change to thirdperson when playing barnacle animation.\n");
-			return;
-		}
-	}
-
-	gPrivateFuncs.ThreadPerson_f();
-}
-
-void BV_FirstPerson_f(void)
-{
-	auto localplayer = gEngfuncs.GetLocalPlayer();
-
-	if (localplayer && localplayer->player)
-	{
-		if (StudioGetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
-		{
-			gEngfuncs.Con_Printf("Cannot change to firstperson when playing barnacle animation.\n");
-			return;
-		}
-	}
-
-	gPrivateFuncs.FirstPerson_f();
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -1237,16 +1208,53 @@ void HUD_TempEntUpdate(
 		pTemp = pTemp->next;
 	}
 
-	//Update only if level is present
-
-	auto levelname = gEngfuncs.pfnGetLevelName();
-
-	if (levelname && levelname[0])
+	if (IsDebugViewModeEnabled() && VectorLength(r_params_final.viewangles) > 0)
 	{
-		ClientPhysicManager()->SetGravity(cl_gravity);
-		ClientPhysicManager()->UpdateRagdollObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
-		ClientPhysicManager()->StepSimulation(frametime);
+		vec3_t vecForward, vecRight, vecUp, vecTarget;
+		AngleVectors(r_params_final.viewangles, vecForward, vecRight, vecUp);
+		VectorScale(vecForward, 4096, vecForward);
+		VectorAdd(vecForward, r_params_final.vieworg, vecTarget);
+
+		CPhysicTraceLineHitResult hitResult;
+		ClientPhysicManager()->TraceLine(r_params_final.vieworg, vecTarget, hitResult);
+
+		bool bInspectEntityFound = false;
+		bool bInspectPhysicComponentFound = false;
+		if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
+		{
+			g_pViewPort->UpdateInspectEntity(hitResult.m_iHitEntityIndex);
+			g_pViewPort->UpdateInspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
+			bInspectEntityFound = true;
+			bInspectPhysicComponentFound = true;
+		}
+		else
+		{
+
+			auto trace = gEngfuncs.PM_TraceLine(r_params_final.vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+
+			if (trace->fraction != 1.0 && trace->ent)
+			{
+				auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
+
+				if (physent)
+				{
+					g_pViewPort->UpdateInspectEntity(physent->info);
+					bInspectEntityFound = true;
+				}
+			}
+		}
+
+		if (!bInspectEntityFound)
+			g_pViewPort->UpdateInspectEntity(0);
+
+		if (!bInspectPhysicComponentFound)
+			g_pViewPort->UpdateInspectPhysicComponent(0);
 	}
+
+	ClientPhysicManager()->SetGravity(cl_gravity);
+	ClientPhysicManager()->UpdatePhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
+	ClientPhysicManager()->StepSimulation(frametime);
+
 }
 
 void HUD_Frame(double frametime)
@@ -1269,40 +1277,6 @@ void HUD_Shutdown(void)
 	Uninstall_Hook(R_StudioDrawPlayer);
 	Uninstall_Hook(R_StudioDrawModel);
 	Uninstall_Hook(efxapi_R_TempModel);
-}
-
-void HUD_PlayerMove(struct playermove_s* ppmove, qboolean server)
-{
-	/*if (IsDebugViewEnabled())
-	{
-		int iSavediUser1 = ppmove->spectator;
-
-		ppmove->iuser1 = 2;
-
-		gExportfuncs.HUD_PlayerMove(ppmove, server);
-
-		ppmove->iuser1 = iSavediUser1;
-
-		return;
-	}*/
-
-	gExportfuncs.HUD_PlayerMove(ppmove, server);
-}
-
-void HUD_ProcessPlayerState(struct entity_state_s* dst, const struct entity_state_s* src)
-{
-	/*if (IsDebugViewEnabled())
-	{
-		auto psrc = (struct entity_state_s*)src;
-		int iSavediUser1 = psrc->iuser1;
-		psrc->iuser1 = 2;
-
-		gExportfuncs.HUD_ProcessPlayerState(dst, src);
-
-		psrc->iuser1 = iSavediUser1;
-		return;
-	}*/
-	gExportfuncs.HUD_ProcessPlayerState(dst, src);
 }
 
 void V_CalcRefdef(struct ref_params_s *pparams)
@@ -1339,6 +1313,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			{
 				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
 				{
+					memcpy(&r_params_final, pparams, sizeof(r_params_final));
 					return;
 				}
 			}
@@ -1346,6 +1321,8 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	}
 skip:
 	gExportfuncs.V_CalcRefdef(pparams);
+
+	memcpy(&r_params_final, pparams, sizeof(r_params_final));
 }
 
 void HUD_DrawTransparentTriangles(void)

@@ -92,8 +92,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
-	pExportFunc->HUD_PlayerMove = HUD_PlayerMove;
-	pExportFunc->HUD_ProcessPlayerState = HUD_ProcessPlayerState;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	Client_FillAddress();

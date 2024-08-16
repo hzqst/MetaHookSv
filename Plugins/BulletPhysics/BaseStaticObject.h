@@ -18,8 +18,16 @@ public:
 
 	~CBaseStaticObject()
 	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
 
+			delete pRigidBody;
+		}
+
+		m_RigidBodies.clear();
 	}
+
 	int GetEntityIndex() const override
 	{
 		return m_entindex;
@@ -60,9 +68,22 @@ public:
 		return m_flags;
 	}
 
-	void Update(CPhysicObjectUpdateContext* ctx) override
+	bool IsClientEntityNonSolid() const override
 	{
-		
+		if (GetClientEntity() == r_worldentity)
+			return false;
+
+		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
+	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
+
+			pRigidBody->Update(&ComponentUpdateContext);
+		}
 	}
 
 	bool SetupBones(studiohdr_t* studiohdr) override
@@ -80,19 +101,130 @@ public:
 		return false;
 	}
 
-	void TransformOwnerEntity(int entindex) override
+	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (!pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+			{
+				pRigidBody->AddToPhysicWorld(world);
+			}
+		}
+	}
+
+	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+			{
+				pRigidBody->RemoveFromPhysicWorld(world);
+			}
+		}
+	}
+
+	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override
+	{
+
+	}
+
+	void TransferOwnership(int entindex) override
 	{
 		m_entindex = entindex;
 		m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
+
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->TransferOwnership(entindex);
+		}
 	}
 
-	bool IsClientEntityNonSolid() const override
+	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override
 	{
-		if (GetClientEntity() == r_worldentity)
-			return false;
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetName() == name)
+			{
+				return pRigidBody;
+			}
+		}
 
-		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+		return nullptr;
 	}
+
+	IPhysicComponent* GetPhysicComponentByComponentId(int id) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetPhysicComponentId() == id)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicRigidBody* GetRigidBodyByName(const std::string& name) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetName() == name)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicRigidBody* GetRigidBodyByComponentId(int id) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (pRigidBody->GetPhysicComponentId() == id)
+			{
+				return pRigidBody;
+			}
+		}
+
+		return nullptr;
+	}
+
+	IPhysicConstraint* GetConstraintByName(const std::string& name) override
+	{
+		return nullptr;
+	}
+
+	IPhysicConstraint* GetConstraintByComponentId(int id) override
+	{
+		return nullptr;
+	}
+
+public:
+
+	void CreateRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		{
+			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
+
+			if (pRigidBody)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+				CPhysicObjectUpdateContext ObjectUpdateContext(GetEntityIndex(), this);
+
+				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+				pRigidBody->Update(&ComponentUpdateContext);
+
+				m_RigidBodies.emplace_back(pRigidBody);
+			}
+		}
+	}
+
+	virtual IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) = 0;
 
 public:
 	int m_entindex{};
@@ -100,4 +232,6 @@ public:
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
 	int m_flags{ PhysicObjectFlag_StaticObject };
+
+	std::vector<IPhysicRigidBody*> m_RigidBodies{};
 };

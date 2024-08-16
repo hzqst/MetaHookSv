@@ -36,10 +36,10 @@ public:
 	CClientRagdollObjectConfig* m_pRagdollObjectConfig{};
 };
 
-class CBulletBaseAction : public IPhysicAction
+class CBasePhysicAction : public IPhysicAction
 {
 public:
-	CBulletBaseAction(int flags) : m_flags(flags)
+	CBasePhysicAction(int flags) : m_flags(flags)
 	{
 
 	}
@@ -52,15 +52,106 @@ public:
 	int m_flags;
 };
 
-class CBulletPhysicComponentAction : public CBulletBaseAction
+class CPhysicComponentAction : public CBasePhysicAction
 {
 public:
-	CBulletPhysicComponentAction(int id, int flags) : m_iPhysicComponentId(id), CBulletBaseAction(flags)
+	CPhysicComponentAction(int id, int flags) : m_physicComponentId(id), CBasePhysicAction(flags)
 	{
 
 	}
 
-	int m_iPhysicComponentId{};
+	int m_physicComponentId{};
+};
+
+class CBasePhysicRigidBody : public IPhysicRigidBody
+{
+public:
+	CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig);
+
+	int GetPhysicComponentId() const override
+	{
+		return m_id;
+	}
+
+	int GetOwnerEntityIndex() const override
+	{
+		return m_entindex;
+	}
+
+	const char* GetName() const override
+	{
+		return m_name.c_str();
+	}
+
+	int GetFlags() const override
+	{
+		return m_flags;
+	}
+
+	int GetDebugDrawLevel() const override
+	{
+		return m_debugDrawLevel;
+	}
+
+	void TransferOwnership(int entindex) override
+	{
+		m_entindex = entindex;
+	}
+
+public:
+	int m_id{};
+	int m_entindex{};
+	std::string m_name;
+	int m_flags{};
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+
+	int m_boneindex{ -1 };
+};
+
+class CBasePhysicConstraint : public IPhysicConstraint
+{
+public:
+	CBasePhysicConstraint(
+		int id,
+		int entindex, 
+		const CClientConstraintConfig* pConstraintConfig);
+
+	int GetPhysicComponentId() const override
+	{
+		return m_id;
+	}
+
+	int GetOwnerEntityIndex() const override
+	{
+		return m_entindex;
+	}
+
+	const char* GetName() const override
+	{
+		return m_name.c_str();
+	}
+
+	int GetFlags() const override
+	{
+		return m_flags;
+	}
+
+	int GetDebugDrawLevel() const override
+	{
+		return m_debugDrawLevel;
+	}
+
+	void TransferOwnership(int entindex) override
+	{
+		m_entindex = entindex;
+	}
+
+public:
+	int m_id{};
+	int m_entindex{};
+	std::string m_name;
+	int m_flags{};
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 };
 
 class CBasePhysicManager : public IClientPhysicManager
@@ -74,8 +165,8 @@ protected:
 	float m_gravity{};
 	int m_iAllocatedPhysicComponentId{};
 
-	//PhysicObject Manager
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
+	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
 
 	CPhysicVertexArray* m_worldVertexArray{};
 	std::vector<CPhysicIndexArray *> m_brushIndexArray;
@@ -96,17 +187,18 @@ public:
 	void LoadPhysicObjectConfigs(void) override; 
 	void SavePhysicObjectConfigs(void);
 
-	bool SetupBones(studiohdr_t* studiohdr, int entindex)  override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex)  override;
+	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
 
+	//Physic Object
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
 	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
 	bool RemovePhysicObject(int entindex) override;
 	void RemoveAllPhysicObjects(int withflags, int withoutflags) override;
-	bool TransformOwnerEntityForPhysicObject(int old_entindex, int new_entindex) override;
-	void UpdateRagdollObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
+	bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) override;
+	void UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
 	void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t *mod) override;
 	void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) override;
@@ -116,7 +208,12 @@ public:
 	IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) override;
 	IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* playerState) override;
 
-	int AllocatePhysicComponentId() override;
+	//Physic Component
+	int AllocatePhysicComponentId() override; 
+	IPhysicComponent* GetPhysicComponent(int physicComponentId) override;
+	void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) override;
+	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
+	bool RemovePhysicComponent(int physicComponentId) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -156,4 +253,4 @@ private:
 	void LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig* pPhysicObjectConfig);
 };
 
-void OnBeforeDeletePhysicAction(IPhysicObject* pPhysicObject, IPhysicAction* pAction);
+bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters);

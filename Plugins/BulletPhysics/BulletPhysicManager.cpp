@@ -4,6 +4,7 @@
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "enginedef.h"
+#include "plugins.h"
 
 #include "ClientEntityManager.h"
 #include "BulletPhysicManager.h"
@@ -136,14 +137,364 @@ void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4])
 	memcpy(matrix3x4, matrix4x4, sizeof(float[3][4]));
 }
 
-CBulletRigidBodySharedUserData* GetSharedUserDataFromRigidBody(btRigidBody *RigidBody)
+CBulletRigidBody::CBulletRigidBody(
+	int id,
+	int entindex,
+	const CClientRigidBodyConfig* pRigidConfig,
+	const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
+	int group, int mask
+	)
+	:
+	CBasePhysicRigidBody(id, entindex, pRigidConfig),
+	m_density(pRigidConfig->density),
+	m_mass(constructionInfo.m_mass),
+	m_inertia(constructionInfo.m_localInertia),
+	m_group(group),
+	m_mask(mask)
 {
-	return (CBulletRigidBodySharedUserData*)RigidBody->getUserPointer();
+	m_pInternalRigidBody = new btRigidBody(constructionInfo);
+
+	m_pInternalRigidBody->setUserIndex(id);
+
+	m_pInternalRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
+	m_pInternalRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
+
 }
 
-CBulletConstraintSharedUserData* GetSharedUserDataFromConstraint(btTypedConstraint *Constraint)
+CBulletRigidBody::~CBulletRigidBody()
 {
-	return (CBulletConstraintSharedUserData*)Constraint->getUserConstraintPtr();
+	if (m_addedToPhysicWorld)
+	{
+		Sys_Error("CBulletRigidBody cannot be deleted before being removed from world!");
+		return;
+	}
+
+	if (m_pInternalRigidBody)
+	{
+		auto pCollisionShape = m_pInternalRigidBody->getCollisionShape();
+
+		if (pCollisionShape)
+		{
+			OnBeforeDeleteBulletCollisionShape(pCollisionShape);
+
+			delete pCollisionShape;
+
+			m_pInternalRigidBody->setCollisionShape(nullptr);
+		}
+
+		auto pMotionState = m_pInternalRigidBody->getMotionState();
+
+		if (pMotionState)
+		{
+			delete pMotionState;
+
+			m_pInternalRigidBody->setMotionState(nullptr);
+		}
+
+		delete m_pInternalRigidBody;
+
+		m_pInternalRigidBody = nullptr;
+	}
+}
+
+bool CBulletRigidBody::AddToPhysicWorld(void* world)
+{
+	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
+
+	if(!m_pInternalRigidBody)
+	{
+		gEngfuncs.Con_DPrintf("CBulletRigidBody::AddToPhysicWorld: empty m_pInternalRigidBody!\n");
+		return false;
+	}
+
+	if (!m_addedToPhysicWorld)
+	{
+		dynamicWorld->addRigidBody(m_pInternalRigidBody, m_group, m_mask);
+
+		m_addedToPhysicWorld = true;
+
+		//Notify all constraints connect to me to leave the world.
+
+		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
+
+		return true;
+	}
+
+	gEngfuncs.Con_DPrintf("CBulletRigidBody::AddToPhysicWorld: already added to world!\n");
+	return false;
+}
+
+bool CBulletRigidBody::RemoveFromPhysicWorld(void* world)
+{
+	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
+
+	if (!m_pInternalRigidBody)
+	{
+		gEngfuncs.Con_DPrintf("CBulletRigidBody::RemoveFromPhysicWorld: empty m_pInternalRigidBody!\n");
+		return false;
+	}
+
+	if (m_addedToPhysicWorld)
+	{
+		dynamicWorld->removeRigidBody(m_pInternalRigidBody);
+
+		m_addedToPhysicWorld = false;
+
+		//Notify all constraints connect to me to leave the world.
+
+		ClientPhysicManager()->OnPhysicComponentRemovedFromPhysicWorld(this);
+
+		return true;
+	}
+
+	gEngfuncs.Con_DPrintf("CBulletRigidBody::RemoveFromPhysicWorld: already removed from world!\n");
+	return false;
+}
+
+bool CBulletRigidBody::IsAddedToPhysicWorld(void* world) const
+{
+	return m_addedToPhysicWorld;
+}
+
+void CBulletRigidBody::ApplyCentralForce(const vec3_t vecForce)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtForce(vecForce[0], vecForce[1], vecForce[2]);
+
+		m_pInternalRigidBody->applyCentralForce(vec3BtForce);
+	}
+}
+
+void CBulletRigidBody::SetLinearVelocity(const vec3_t vecVelocity)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtVelocity(vecVelocity[0], vecVelocity[1], vecVelocity[2]);
+
+		m_pInternalRigidBody->setLinearVelocity(vec3BtVelocity);
+	}
+}
+
+void CBulletRigidBody::SetAngularVelocity(const vec3_t vecVelocity)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtVelocity(vecVelocity[0], vecVelocity[1], vecVelocity[2]);
+
+		m_pInternalRigidBody->setAngularVelocity(vec3BtVelocity);
+	}
+}
+
+bool CBulletRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate)
+{
+	//no impl
+	return false;
+}
+
+bool CBulletRigidBody::SetupBones(studiohdr_t* studiohdr)
+{
+	//no impl
+	return false;
+}
+
+bool CBulletRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
+{
+	//no impl
+	return false;
+}
+
+void* CBulletRigidBody::GetInternalRigidBody()
+{
+	return m_pInternalRigidBody;
+}
+
+CBulletConstraint::CBulletConstraint(
+	int id,
+	int entindex,
+	CClientConstraintConfig* pConstraintConfig,
+	btTypedConstraint* pInternalConstraint) :
+
+	CBasePhysicConstraint(id, entindex, pConstraintConfig),
+	m_maxTolerantLinearError(pConstraintConfig->maxTolerantLinearError),
+	m_disableCollision(pConstraintConfig->disableCollision),
+	m_pInternalConstraint(pInternalConstraint)
+{
+	m_pInternalConstraint = pInternalConstraint;
+	m_pInternalConstraint->setUserConstraintId(id);
+}
+
+CBulletConstraint::~CBulletConstraint()
+{
+	if (m_addedToPhysicWorld)
+	{
+		Sys_Error("CBulletConstraint cannot be deleted before being removed from world!");
+		return;
+	}
+
+	if(m_pInternalConstraint)
+	{
+		delete m_pInternalConstraint;
+		m_pInternalConstraint = nullptr;
+	}
+}
+
+
+const char* CBulletConstraint::GetTypeString() const
+{
+	if (m_pInternalConstraint)
+	{
+		switch (m_pInternalConstraint->getConstraintType())
+		{
+		case POINT2POINT_CONSTRAINT_TYPE:
+		{
+			return "PointConstraint";
+		}
+		case HINGE_CONSTRAINT_TYPE:
+		{
+			return "HingeConstraint";
+		}
+		case CONETWIST_CONSTRAINT_TYPE:
+		{
+			return "ConeTwistConstraint";
+		}
+		case D6_CONSTRAINT_TYPE:
+		{
+			return "Dof6Constraint";
+		}
+		case SLIDER_CONSTRAINT_TYPE:
+		{
+			return "SliderConstraint";
+		}
+		case D6_SPRING_CONSTRAINT_TYPE:
+		case D6_SPRING_2_CONSTRAINT_TYPE:
+		{
+			return "Dof6SpringConstraint";
+		}
+		case FIXED_CONSTRAINT_TYPE:
+		{
+			return "FixedConstraint";
+		}
+		}
+	}
+
+	return "Constraint";
+}
+
+const char* CBulletConstraint::GetTypeLocalizationTokenString() const
+{
+	if (m_pInternalConstraint)
+	{
+		switch (m_pInternalConstraint->getConstraintType())
+		{
+		case POINT2POINT_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_PointConstraint";
+		}
+		case HINGE_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_HingeConstraint";
+		}
+		case CONETWIST_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_ConeTwistConstraint";
+		}
+		case D6_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_Dof6Constraint";
+		}
+		case SLIDER_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_SliderConstraint";
+		}
+		case D6_SPRING_CONSTRAINT_TYPE:
+		case D6_SPRING_2_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_Dof6SpringConstraint";
+		}
+		case FIXED_CONSTRAINT_TYPE:
+		{
+			return "#BulletPhysics_FixedConstraint";
+		}
+		}
+	}
+
+	return "#BulletPhysics_Constraint";
+}
+
+
+bool CBulletConstraint::AddToPhysicWorld(void* world)
+{
+	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
+
+	if (!m_pInternalConstraint)
+	{
+		gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: empty m_pInternalConstraint!\n");
+		return false;
+	}
+
+	if (!m_addedToPhysicWorld)
+	{
+		//Check if RigidBodyA and RigidBodyB is in world.
+
+		dynamicWorld->addConstraint(m_pInternalConstraint, m_disableCollision);
+
+		m_addedToPhysicWorld = true;
+
+		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
+
+		return true;
+	}
+
+	gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: already added to world!\n");
+	return false;
+}
+
+bool CBulletConstraint::RemoveFromPhysicWorld(void* world)
+{
+	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
+
+	if (!m_pInternalConstraint)
+	{
+		gEngfuncs.Con_DPrintf("CBulletConstraint::RemoveFromPhysicWorld: empty m_pInternalConstraint!\n");
+		return false;
+	}
+
+	if (m_addedToPhysicWorld)
+	{
+		dynamicWorld->removeConstraint(m_pInternalConstraint);
+
+		m_addedToPhysicWorld = false;
+
+		ClientPhysicManager()->OnPhysicComponentRemovedFromPhysicWorld(this);
+
+		return true;
+	}
+
+	gEngfuncs.Con_DPrintf("CBulletConstraint::RemoveFromPhysicWorld: already removed from world!\n");
+	return false;
+}
+
+bool CBulletConstraint::IsAddedToPhysicWorld(void* world) const
+{
+	return m_addedToPhysicWorld;
+}
+
+void CBulletConstraint::Update(CPhysicComponentUpdateContext* ComponentUpdateContext)
+{
+	//no impl
+}
+
+void CBulletConstraint::ExtendLinearLimit(int axis, float value)
+{
+	//TODO...
+
+	Sys_Error("not impl yet")
+}
+
+void* CBulletConstraint::GetInternalConstraint()
+{
+	return m_pInternalConstraint;
 }
 
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape *pCollisionShape)
@@ -177,52 +528,6 @@ void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape)
 		delete pSharedUserData;
 
 		pCollisionShape->setUserPointer(nullptr);
-	}
-}
-
-void OnBeforeDeleteBulletRigidBody(IPhysicObject *pPhysicObjectToDelete, btRigidBody* pRigidBody)
-{
-	ClientPhysicManager()->OnBroadcastDeleteRigidBody(pPhysicObjectToDelete, pRigidBody);
-
-	auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-	if (pSharedUserData)
-	{
-		delete pSharedUserData;
-
-		pRigidBody->setUserPointer(nullptr);
-	}
-
-	auto pCollisionShape = pRigidBody->getCollisionShape();
-
-	if (pCollisionShape)
-	{
-		OnBeforeDeleteBulletCollisionShape(pCollisionShape);
-
-		delete pCollisionShape;
-
-		pRigidBody->setCollisionShape(nullptr);
-	}
-
-	auto pMotionState = pRigidBody->getMotionState();
-
-	if (pMotionState)
-	{
-		delete pMotionState;
-
-		pRigidBody->setMotionState(nullptr);
-	}
-}
-
-void OnBeforeDeleteBulletConstraint(IPhysicObject *pPhysicObject, btTypedConstraint *pConstraint)
-{
-	auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-	if (pSharedUserData)
-	{
-		delete pSharedUserData;
-
-		pConstraint->setUserConstraintPtr(nullptr);
 	}
 }
 
@@ -790,10 +1095,6 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientCo
 	if (!pConstraint)
 		return nullptr;
 
-	pConstraint->setUserConstraintId(ClientPhysicManager()->AllocatePhysicComponentId());
-
-	pConstraint->setUserConstraintPtr(new CBulletConstraintSharedUserData(pConstraintConfig));
-
 	return pConstraint;
 }
 
@@ -828,7 +1129,7 @@ btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(CClientConstra
 		pConstraintConfig->anglesB[0] = localAnglesB.getX();
 		pConstraintConfig->anglesB[1] = localAnglesB.getY();
 		pConstraintConfig->anglesB[2] = localAnglesB.getZ();
-		//pConstraintConfig->isLegacyConfig = false;
+		pConstraintConfig->isLegacyConfig = false;
 	}
 
 	return BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, ctx, finalLocalTransA, finalLocalTransB);
@@ -1038,7 +1339,7 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 		pRigidConfig->angles[0] = localAngles.getX();
 		pRigidConfig->angles[1] = localAngles.getY();
 		pRigidConfig->angles[2] = localAngles.getZ();
-		//pRigidConfig->isLegacyConfig = false;
+		pRigidConfig->isLegacyConfig = false;
 
 		return new CBulletBoneMotionState(pPhysicObject, bonematrix, localTrans);
 	}
@@ -1065,98 +1366,6 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	}
 
 	return nullptr;
-}
-
-bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, CBulletRigidBodySharedUserData *pSharedUserData, const CPhysicComponentFilters &filters)
-{
-	if (filters.m_HasWithoutRigidbodyFlags)
-	{
-		if (pSharedUserData->m_flags & filters.m_WithoutRigidbodyFlags)
-		{
-			return false;
-		}
-	}
-
-	if (filters.m_HasExactMatchRigidbodyFlags)
-	{
-		if (pSharedUserData->m_flags == filters.m_ExactMatchRigidbodyFlags)
-		{
-			return true;
-		}
-	}
-
-	if (filters.m_HasExactMatchRigidBodyComponentId)
-	{
-		if (pRigidBody->getUserIndex() == filters.m_ExactMatchRigidBodyComponentId)
-		{
-			return true;
-		}
-	}
-
-	if (filters.m_HasWithRigidbodyFlags)
-	{
-		if (pSharedUserData->m_flags & filters.m_WithRigidbodyFlags)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	return true;
-}
-
-bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, const CPhysicComponentFilters& filters)
-{
-	auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-	return BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters);
-}
-
-bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters)
-{
-	if (filters.m_HasWithoutConstraintFlags)
-	{
-		if (pSharedUserData->m_flags & filters.m_WithoutConstraintFlags)
-		{
-			return false;
-		}
-	}
-
-	if (filters.m_HasExactMatchConstraintFlags)
-	{
-		if (pSharedUserData->m_flags == filters.m_ExactMatchConstraintFlags)
-		{
-			return true;
-		}
-	}
-
-	if (filters.m_HasExactMatchConstraintComponentId)
-	{
-		if (pConstraint->getUserConstraintId() == filters.m_ExactMatchConstraintComponentId)
-		{
-			return true;
-		}
-	}
-
-	if (filters.m_HasWithConstraintFlags)
-	{
-		if (pSharedUserData->m_flags & filters.m_WithConstraintFlags)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
-	return true;
-}
-
-bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, const CPhysicComponentFilters& filters)
-{
-	auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-	return BulletCheckPhysicComponentFiltersForConstraint(pConstraint, pSharedUserData, filters);
 }
 
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -1410,41 +1619,47 @@ void CBulletPhysicManager::DebugDraw(void)
 	{
 		auto pCollisionObject = objectArray[i];
 
-		auto pRigidBody = btRigidBody::upcast(pCollisionObject);
+		auto pInternalRigidBody = btRigidBody::upcast(pCollisionObject);
 		
-		if (pRigidBody)
+		if (pInternalRigidBody)
 		{
-			auto pPhysicObject = GetPhysicObjectFromRigidBody(pRigidBody);
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+			auto physicComponentId = pInternalRigidBody->getUserIndex();
+			auto pPhysicComponent = GetPhysicComponent(physicComponentId);
 
-			if (pPhysicObject->IsRagdollObject())
+			auto entindex = pPhysicComponent->GetOwnerEntityIndex();
+			auto pPhysicObject = GetPhysicObject(entindex);
+
+			if (pPhysicComponent && pPhysicObject)
 			{
-				if (iRagdollObjectDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iRagdollObjectDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
+				if (pPhysicObject->IsRagdollObject())
 				{
-					int iCollisionFlags = pCollisionObject->getCollisionFlags();
-					iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-					pRigidBody->setCollisionFlags(iCollisionFlags);
+					if (iRagdollObjectDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iRagdollObjectDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
+					{
+						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
+						iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
+						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+					}
+					else
+					{
+						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
+						iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
+						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+					}
 				}
-				else
+				else if (pPhysicObject->IsStaticObject())
 				{
-					int iCollisionFlags = pCollisionObject->getCollisionFlags();
-					iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-					pCollisionObject->setCollisionFlags(iCollisionFlags);
-				}
-			}
-			else if (pPhysicObject->IsStaticObject())
-			{
-				if (iStaticObjectDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iStaticObjectDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
-				{
-					int iCollisionFlags = pCollisionObject->getCollisionFlags();
-					iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-					pCollisionObject->setCollisionFlags(iCollisionFlags);
-				}
-				else
-				{
-					int iCollisionFlags = pCollisionObject->getCollisionFlags();
-					iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-					pCollisionObject->setCollisionFlags(iCollisionFlags);
+					if (iStaticObjectDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iStaticObjectDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
+					{
+						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
+						iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
+						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+					}
+					else
+					{
+						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
+						iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
+						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+					}
 				}
 			}
 		}
@@ -1454,19 +1669,21 @@ void CBulletPhysicManager::DebugDraw(void)
 
 	for (int i = 0; i < numConstraint; ++i)
 	{
-		auto pConstraint = m_dynamicsWorld->getConstraint(i);
+		auto pInternalConstraint = m_dynamicsWorld->getConstraint(i);
 
-		auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+		auto physicComponentId = pInternalConstraint->getUserConstraintId();
 
-		if (pSharedUserData)
+		auto pPhysicComponent = GetPhysicComponent(physicComponentId);
+
+		if (pPhysicComponent)
 		{
-			if (iConstraintDebugDrawLevel > 0 && pSharedUserData->m_debugDrawLevel > 0 && iConstraintDebugDrawLevel >= pSharedUserData->m_debugDrawLevel)
+			if (iConstraintDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iConstraintDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
 			{
-				pConstraint->setDbgDrawSize(3);
+				pInternalConstraint->setDbgDrawSize(3);
 			}
 			else
 			{
-				pConstraint->setDbgDrawSize(0);
+				pInternalConstraint->setDbgDrawSize(0);
 			}
 		}
 	}
@@ -1491,25 +1708,91 @@ void CBulletPhysicManager::StepSimulation(double frametime)
 	m_dynamicsWorld->stepSimulation(frametime, 4, 1.0f / GetSimulationTickRate());
 }
 
-void CBulletPhysicManager::AddPhysicObjectToWorld(IPhysicObject *PhysicObject, const CPhysicComponentFilters& filters)
+void CBulletPhysicManager::AddPhysicComponentsToWorld(IPhysicObject *PhysicObject, const CPhysicComponentFilters& filters)
 {
-	PhysicObject->AddToPhysicWorld(m_dynamicsWorld, filters);
+	PhysicObject->AddPhysicComponentsToPhysicWorld(m_dynamicsWorld, filters);
 }
 
-void CBulletPhysicManager::RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters)
+void CBulletPhysicManager::RemovePhysicComponentsFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters)
 {
-	PhysicObject->RemoveFromPhysicWorld(m_dynamicsWorld, filters);
+	PhysicObject->RemovePhysicComponentsFromPhysicWorld(m_dynamicsWorld, filters);
 }
 
-void CBulletPhysicManager::OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* pRigidBody)
+void CBulletPhysicManager::AddPhysicComponentToWorld(IPhysicComponent* pPhysicComponent)
 {
-	for (auto itor = m_physicObjects.begin(); itor != m_physicObjects.end(); itor++)
+	pPhysicComponent->AddToPhysicWorld(m_dynamicsWorld);
+}
+
+void CBulletPhysicManager::RemovePhysicComponentFromWorld(IPhysicComponent* pPhysicComponent)
+{
+	pPhysicComponent->RemoveFromPhysicWorld(m_dynamicsWorld);
+}
+
+void CBulletPhysicManager::OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent)
+{
+	
+}
+
+void CBulletPhysicManager::OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent)
+{
+	if (pPhysicComponent->IsRigidBody())
 	{
-		auto pPhysicObject = itor->second;
+		auto pRigidBody = (IPhysicRigidBody *)pPhysicComponent;
+		auto numConstraint = m_dynamicsWorld->getNumConstraints();
 
-		if (pPhysicObject != pPhysicObjectToDelete)
+		for (int i = 0; i < numConstraint; ++i)
 		{
-			pPhysicObject->OnBroadcastDeleteRigidBody(pPhysicObjectToDelete, m_dynamicsWorld, pRigidBody);
+			auto pInternalConstraint = m_dynamicsWorld->getConstraint(i);
+
+			if (&pInternalConstraint->getRigidBodyA() == pRigidBody->GetInternalRigidBody() ||
+				&pInternalConstraint->getRigidBodyB() == pRigidBody->GetInternalRigidBody())
+			{
+				auto pConstraint = GetPhysicComponent(pInternalConstraint->getUserConstraintId());
+
+				if (pConstraint)
+				{
+					RemovePhysicComponentFromWorld(pConstraint);
+				}
+			}
+		}
+	}
+}
+
+void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult)
+{
+	btVector3 vecStartPoint(vecStart[0], vecStart[1], vecStart[2]);
+	btVector3 vecEndPoint(vecEnd[0], vecEnd[1], vecEnd[2]);
+
+	btCollisionWorld::ClosestRayResultCallback rayCallback(vecStartPoint, vecEndPoint);
+
+	m_dynamicsWorld->rayTest(vecStartPoint, vecEndPoint, rayCallback);
+
+	hitResult.m_bHasHit = rayCallback.hasHit();
+
+	if (hitResult.m_bHasHit)
+	{
+		hitResult.m_flHitFraction = rayCallback.m_closestHitFraction;
+		hitResult.m_flDistanceToHitPoint = rayCallback.m_closestHitFraction * (vecEndPoint - vecStartPoint).length();
+
+		hitResult.m_vecHitPoint[0] = rayCallback.m_hitPointWorld.getX();
+		hitResult.m_vecHitPoint[1] = rayCallback.m_hitPointWorld.getY();
+		hitResult.m_vecHitPoint[2] = rayCallback.m_hitPointWorld.getZ();
+
+		hitResult.m_vecHitPlaneNormal[0] = rayCallback.m_hitNormalWorld.getX();
+		hitResult.m_vecHitPlaneNormal[1] = rayCallback.m_hitNormalWorld.getY();
+		hitResult.m_vecHitPlaneNormal[2] = rayCallback.m_hitNormalWorld.getZ();
+
+		auto pRigidBody = (btRigidBody*)btRigidBody::upcast(rayCallback.m_collisionObject);
+
+		if (pRigidBody)
+		{
+			auto pPhysicComponent = GetPhysicComponent(pRigidBody->getUserIndex());
+
+			if (pPhysicComponent)
+			{
+				hitResult.m_iHitPhysicComponentIndex = pPhysicComponent->GetPhysicComponentId();
+				hitResult.m_iHitEntityIndex = pPhysicComponent->GetOwnerEntityIndex();
+			}
 		}
 	}
 }

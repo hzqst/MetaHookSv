@@ -39,7 +39,7 @@ public:
 
 	btTriangleIndexVertexArray* m_pIndexVertexArray{};
 };
-
+#if 0
 class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
 {
 public:
@@ -79,7 +79,6 @@ public:
 	float m_density{ BULLET_DEFAULT_DENSENTY };
 	bool m_addedToPhysicWorld{};
 };
-
 class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
 {
 public:
@@ -100,6 +99,7 @@ public:
 	bool m_disableCollision{};
 	bool m_addedToPhysicWorld{};
 };
+#endif
 
 ATTRIBUTE_ALIGNED16(class)
 CBulletBaseMotionState : public btMotionState
@@ -198,6 +198,77 @@ public:
 	btScalar rigidBodyDistance{};
 };
 
+class CBulletRigidBody : public CBasePhysicRigidBody
+{
+public:
+	CBulletRigidBody(
+		int id,
+		int entindex,
+		const CClientRigidBodyConfig* pRigidConfig,
+		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
+		int group, int mask);
+
+	~CBulletRigidBody();
+
+	bool AddToPhysicWorld(void* world) override;
+	bool RemoveFromPhysicWorld(void* world) override;
+	bool IsAddedToPhysicWorld(void* world) const override;
+
+	void ApplyCentralForce(const vec3_t vecForce) override;
+	void SetLinearVelocity(const vec3_t vecVelocity) override;
+	void SetAngularVelocity(const vec3_t vecVelocity) override;
+	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;
+	bool SetupBones(studiohdr_t* studiohdr) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+
+	void* GetInternalRigidBody() override;
+
+public:
+	float m_mass{};
+	btVector3 m_inertia{};
+	float m_density{ BULLET_DEFAULT_DENSENTY };
+	int m_group{ btBroadphaseProxy::DefaultFilter };
+	int m_mask{ btBroadphaseProxy::AllFilter  };
+
+	bool m_addedToPhysicWorld{};
+
+	btRigidBody* m_pInternalRigidBody{};
+};
+
+class CBulletConstraint : public CBasePhysicConstraint
+{
+public:
+	CBulletConstraint(
+		int id,
+		int entindex,
+		CClientConstraintConfig* pConstraintConfig,
+		btTypedConstraint* pInternalConstraint);
+
+	~CBulletConstraint();
+	
+	const char* GetTypeString() const;
+	const char* GetTypeLocalizationTokenString() const;
+
+	bool AddToPhysicWorld(void* world) override;
+	bool RemoveFromPhysicWorld(void* world) override;
+	bool IsAddedToPhysicWorld(void* world) const override;
+
+	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
+
+	void ExtendLinearLimit(int axis, float value) override;
+
+	void* GetInternalConstraint() override;
+
+public:
+
+	float m_maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
+	bool m_disableCollision{};
+
+	bool m_addedToPhysicWorld{};
+
+	btTypedConstraint* m_pInternalConstraint{};
+};
+
 class CBulletPhysicManager : public CBasePhysicManager
 {
 private:
@@ -221,32 +292,27 @@ public:
 	IDynamicObject* CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam) override;
 	IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) override;
 
-	void AddPhysicObjectToWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
-	void RemovePhysicObjectFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
-	void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* pRigidBody) override;
+	void AddPhysicComponentsToWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
+	void RemovePhysicComponentsFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
+	void AddPhysicComponentToWorld(IPhysicComponent* pPhysicComponent) override;
+	void RemovePhysicComponentFromWorld(IPhysicComponent* pPhysicComponent) override;
+	void OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent) override;
+	void OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent) override;
+
+	void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult &hitResult) override;
 };
 
-CBulletRigidBodySharedUserData* GetSharedUserDataFromRigidBody(btRigidBody* RigidBody);
-CBulletConstraintSharedUserData* GetSharedUserDataFromConstraint(btTypedConstraint* Constraint);
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape* pCollisionShape);
 CBulletBaseMotionState* GetMotionStateFromRigidBody(btRigidBody* RigidBody);
 IPhysicObject* GetPhysicObjectFromRigidBody(btRigidBody* pRigidBody);
 
 void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
-void OnBeforeDeleteBulletRigidBody(IPhysicObject* pPhysicObject, btRigidBody* pRigidBody);
-void OnBeforeDeleteBulletConstraint(IPhysicObject* pPhysicObject, btTypedConstraint* pConstraint);
 
 btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
 btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& globalJointTransform);
 btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB);
 btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig);
 btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
-
-bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, CBulletRigidBodySharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
-bool BulletCheckPhysicComponentFiltersForRigidBody(btRigidBody* pRigidBody, const CPhysicComponentFilters& filters);
-
-bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, CBulletConstraintSharedUserData* pSharedUserData, const CPhysicComponentFilters& filters);
-bool BulletCheckPhysicComponentFiltersForConstraint(btTypedConstraint* pConstraint, const CPhysicComponentFilters& filters);
 
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
 void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);

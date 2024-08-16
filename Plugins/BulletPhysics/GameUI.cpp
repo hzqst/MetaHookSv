@@ -56,7 +56,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile(g_pFileSystem, "bulletphysics/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load bulletphysics/gameui_english.txt");
+					Sys_Error("Failed to load \"bulletphysics/gameui_english.txt\"");
 				}
 			}
 		}
@@ -66,7 +66,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "bulletphysics/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load bulletphysics/gameui_english.txt");
+					Sys_Error("Failed to load \"bulletphysics/gameui_english.txt\"");
 				}
 			}
 		}
@@ -100,7 +100,7 @@ public:
 
 	void ConnectToServer(const char*& game, int& IP, int& port, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-
+		
 	}
 
 	void DisconnectFromServer(VGUI2Extension_CallbackContext* CallbackContext) override

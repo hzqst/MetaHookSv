@@ -3,12 +3,325 @@
 #include "BaseRagdollObject.h"
 #include "BulletPhysicManager.h"
 
-class CBulletBarnacleDragForceAction : public CBulletPhysicComponentAction
+class CBulletRagdollRigidBody : public CBulletRigidBody
+{
+public:
+	CBulletRagdollRigidBody(
+		int id,
+		int entindex,
+		const CClientRigidBodyConfig* pRigidConfig,
+		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
+		int group, 
+		int mask) :
+
+		CBulletRigidBody(
+			id,
+			entindex, 
+			pRigidConfig, 
+			constructionInfo,
+			group, 
+			mask)
+	{
+
+	}
+
+	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override
+	{
+		if (!m_pInternalRigidBody)
+			return false;
+
+		auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
+
+		if (pMotionState->IsBoneBased())
+		{
+			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+			{
+				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				return false;
+			}
+
+			auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
+
+			btTransform bonematrix;
+
+			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+
+			auto newWorldTrans = bonematrix * pBoneMotionState->m_offsetmatrix;
+
+			m_pInternalRigidBody->setWorldTransform(newWorldTrans);
+			m_pInternalRigidBody->setInterpolationWorldTransform(newWorldTrans);
+			m_pInternalRigidBody->getMotionState()->setWorldTransform(newWorldTrans);
+		}
+
+		return true;
+	}
+
+	bool SetupBones(studiohdr_t* studiohdr) override
+	{
+		if (!m_pInternalRigidBody)
+			return false;
+
+		auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
+
+		if (pMotionState->IsBoneBased())
+		{
+			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+			{
+				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				return false;
+			}
+
+			auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
+
+			const auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+			float bonematrix_3x4[3][4];
+			TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+
+			memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+			memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool SetupJiggleBones(studiohdr_t* studiohdr) override
+	{
+		if (!m_pInternalRigidBody)
+			return false;
+
+		auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
+
+		if (pMotionState->IsBoneBased())
+		{
+			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+			{
+				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				return false;
+			}
+
+			auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
+
+			if (!m_pInternalRigidBody->isKinematicObject())
+			{
+				const auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+				float bonematrix_3x4[3][4];
+				TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+
+				memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+				memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+			}
+			else
+			{
+				auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+				Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override
+	{
+		if (!m_pInternalRigidBody)
+			return;
+
+		auto pPhysicObject = ComponentUpdateContext->m_pObjectUpdateContext->m_pPhysicObject;
+
+		if (!pPhysicObject)
+			return;
+
+		if (!pPhysicObject->IsRagdollObject())
+			return;
+
+		auto ent = pPhysicObject->GetClientEntity();
+
+		auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+		bool bKinematic = false;
+
+		bool bKinematicStateChanged = false;
+
+		do
+		{
+			if (ComponentUpdateContext->m_bForceKinematic)
+			{
+				bKinematic = true;
+				break;
+			}
+
+			if (ComponentUpdateContext->m_bForceDynamic)
+			{
+				bKinematic = false;
+				break;
+			}
+
+			if (m_flags & PhysicRigidBodyFlag_AlwaysKinematic)
+			{
+				bKinematic = true;
+				break;
+			}
+
+			if (m_flags & PhysicRigidBodyFlag_AlwaysDynamic)
+			{
+				bKinematic = false;
+				break;
+			}
+
+			if (pRagdollObject->GetActivityType() > 0)
+			{
+				bKinematic = false;
+				break;
+			}
+			else
+			{
+				bKinematic = true;
+				break;
+			}
+
+		} while (0);
+
+		if (bKinematic)
+		{
+			int iCollisionFlags = m_pInternalRigidBody->getCollisionFlags();
+
+			if (!(iCollisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT))
+			{
+				iCollisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
+
+				m_pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+				m_pInternalRigidBody->setActivationState(DISABLE_DEACTIVATION);
+				m_pInternalRigidBody->setGravity(btVector3(0, 0, 0));
+
+				bKinematicStateChanged = true;
+			}
+		}
+		else
+		{
+			int iCollisionFlags = m_pInternalRigidBody->getCollisionFlags();
+
+			if (iCollisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT)
+			{
+				iCollisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
+
+				m_pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+				m_pInternalRigidBody->forceActivationState(ACTIVE_TAG);
+				m_pInternalRigidBody->setMassProps(m_mass, m_inertia);
+
+				bKinematicStateChanged = true;
+			}
+		}
+
+		if (bKinematicStateChanged)
+		{
+			ComponentUpdateContext->m_pObjectUpdateContext->m_bRigidbodyKinematicChanged = true;
+		}
+	}
+};
+
+class CBulletRagdollConstraint : public CBulletConstraint
+{
+public:
+	CBulletRagdollConstraint(
+		int id,
+		int entindex,
+		CClientConstraintConfig* pConstraintConfig,
+		btTypedConstraint * pInternalConstraint)
+		:
+		CBulletConstraint(
+			id,
+			entindex,
+			pConstraintConfig,
+			pInternalConstraint)
+	{
+
+	}
+
+	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override
+	{
+		if (!m_pInternalConstraint)
+			return;
+
+		bool bDeactivate = false;
+
+		bool bConstraintStateChanged = false;
+
+		auto pPhysicObject = ComponentUpdateContext->m_pObjectUpdateContext->m_pPhysicObject;
+
+		if (!pPhysicObject)
+			return;
+
+		if (!pPhysicObject->IsRagdollObject())
+			return;
+
+		auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+		do
+		{
+			if (pRagdollObject->GetActivityType() == 0 && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (pRagdollObject->GetActivityType() == 1 && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
+			{
+				bDeactivate = true;
+				break;
+			}
+
+		} while (0);
+
+		if (bDeactivate)
+		{
+			if (m_pInternalConstraint->isEnabled())
+			{
+				m_pInternalConstraint->setEnabled(false);
+
+				bConstraintStateChanged = true;
+			}
+		}
+		else
+		{
+			if (!m_pInternalConstraint->isEnabled())
+			{
+				m_pInternalConstraint->setEnabled(true);
+
+				bConstraintStateChanged = true;
+			}
+		}
+
+		if (bConstraintStateChanged)
+		{
+			ComponentUpdateContext->m_pObjectUpdateContext->m_bConstraintStateChanged = true;
+		}
+	}
+
+};
+
+class CBulletBarnacleDragForceAction : public CPhysicComponentAction
 {
 public:
 	CBulletBarnacleDragForceAction(btRigidBody* pRigidBody, int flags, int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
-		CBulletPhysicComponentAction(pRigidBody->getUserIndex(), flags),
-		m_iBarnacleIndex(iBarnacleIndex), 
+		CPhysicComponentAction(pRigidBody->getUserIndex(), flags),
+		m_iBarnacleIndex(iBarnacleIndex),
 		m_flForceMagnitude(flForceMagnitude),
 		m_flExtraHeight(flExtraHeight)
 	{
@@ -25,16 +338,21 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = (btRigidBody *)ctx->m_pPhysicObject->GetRigidBodyByComponentId(m_iPhysicComponentId);
+		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
 
-		if (!pRigidBody)
+		if (!pPhysicComponent)
 			return false;
+
+		if (!pPhysicComponent->IsRigidBody())
+			return false;
+
+		auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
-			btVector3 vecForce(0, 0, m_flForceMagnitude);
+			vec3_t vecForce = { 0, 0, m_flForceMagnitude };
 
-			pRigidBody->applyCentralForce(vecForce);
+			pRigidBody->ApplyCentralForce(vecForce);
 		}
 		else
 		{
@@ -48,18 +366,18 @@ public:
 
 				if (vecPhysicObjectOrigin[2] < vecClientEntityOrigin[2] + m_flExtraHeight)
 				{
-					btVector3 vecForce(0, 0, m_flForceMagnitude);
+					btVector3 vecForce = { 0, 0, m_flForceMagnitude };
 
 					if (vecPhysicObjectOrigin[2] > vecClientEntityOrigin[2])
 					{
 						vecForce[2] *= (vecClientEntityOrigin[2] + m_flExtraHeight - vecPhysicObjectOrigin[2]) / m_flExtraHeight;
 					}
 
-					pRigidBody->applyCentralForce(vecForce);
+					pRigidBody->ApplyCentralForce(vecForce);
 				}
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -68,11 +386,11 @@ public:
 	float m_flExtraHeight{ 24 };
 };
 
-class CBulletBarnacleChewForceAction : public CBulletPhysicComponentAction
+class CBulletBarnacleChewForceAction : public CPhysicComponentAction
 {
 public:
 	CBulletBarnacleChewForceAction(btRigidBody* pRigidBody, int flags, int iBarnacleIndex, float flForceMagnitude, float flInterval) :
-		CBulletPhysicComponentAction(pRigidBody->getUserIndex(), flags),
+		CPhysicComponentAction(pRigidBody->getUserIndex(), flags),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flForceMagnitude(flForceMagnitude),
 		m_flInterval(flInterval)
@@ -90,7 +408,7 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = (btRigidBody*)ctx->m_pPhysicObject->GetRigidBodyByComponentId(m_iPhysicComponentId);
+		auto pRigidBody = (btRigidBody*)ctx->m_pPhysicObject->GetRigidBodyByComponentId(m_physicComponentId);
 
 		if (!pRigidBody)
 			return false;
@@ -114,11 +432,11 @@ public:
 	float m_flNextChewTime{ 0 };
 };
 
-class CBulletBarnacleConstraintLimitAdjustmentAction : public CBulletPhysicComponentAction
+class CBulletBarnacleConstraintLimitAdjustmentAction : public CPhysicComponentAction
 {
 public:
 	CBulletBarnacleConstraintLimitAdjustmentAction(btTypedConstraint* pConstraint, int flags, int iBarnacleIndex, float flInterval, float flExtraHeight) :
-		CBulletPhysicComponentAction(pConstraint->getUserConstraintId(), flags),
+		CPhysicComponentAction(pConstraint->getUserConstraintId(), flags),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flInterval(flInterval),
 		m_flExtraHeight(flExtraHeight)
@@ -136,15 +454,22 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pConstraint = (btTypedConstraint*)ctx->m_pPhysicObject->GetConstraintByComponentId(m_iPhysicComponentId);
+		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
 
-		if (!pConstraint)
+		if (!pPhysicComponent)
 			return false;
+
+		if (!pPhysicComponent->IsConstraint())
+			return false;
+
+		auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
 			if (gEngfuncs.GetClientTime() > m_flNextAdjustmentTime)
 			{
+				pConstraint->ExtendLinearLimit(-1, m_flExtraHeight);
+#if 0
 				if (pConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
 				{
 					auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
@@ -235,6 +560,7 @@ public:
 						pSlider->setUpperLinLimit(currentLimit);
 					}
 				}
+#endif
 				m_flNextAdjustmentTime = gEngfuncs.GetClientTime() + m_flInterval;
 			}
 		}
@@ -290,30 +616,7 @@ public:
 
 	~CBulletRagdollObject()
 	{
-		for (auto pAction : m_Actions)
-		{
-			OnBeforeDeletePhysicAction(this, pAction);
 
-			delete pAction;
-		}
-
-		for (auto pConstraint : m_Constraints)
-		{
-			OnBeforeDeleteBulletConstraint(this, pConstraint);
-
-			delete pConstraint;
-		}
-
-		m_Constraints.clear();
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			OnBeforeDeleteBulletRigidBody(this, pRigidBody);
-
-			delete pRigidBody;
-		}
-
-		m_RigidBodies.clear();
 	}
 
 	bool GetOrigin(float* v) override
@@ -336,202 +639,34 @@ public:
 
 	bool SetupBones(studiohdr_t* studiohdr) override
 	{
-		if (GetActivityType() == 0)
-			return false;
-
-		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
-
-		for (auto pRigidBody : m_RigidBodies)
+		if (CBaseRagdollObject::SetupBones(studiohdr))
 		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
+			mstudiobone_t* pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
 
-			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
-
-			if (pMotionState->IsBoneBased())
+			for (size_t index = 0; index < m_nonKeyBones.size(); index++)
 			{
-				auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
+				auto i = m_nonKeyBones[index];
 
-				const auto& bonematrix = pBoneMotionState->m_bonematrix;
+				if (i == -1)
+					continue;
 
-				float bonematrix_3x4[3][4];
-				TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+				auto parentMatrix3x4 = (*pbonetransform)[pbones[i].parent];
 
-				memcpy((*pbonetransform)[pSharedUserData->m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
-				memcpy((*plighttransform)[pSharedUserData->m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+				btTransform parentMatrix;
+
+				Matrix3x4ToTransform(parentMatrix3x4, parentMatrix);
+
+				btTransform mergedMatrix;
+
+				mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
+
+				TransformToMatrix3x4(mergedMatrix, (*pbonetransform)[i]);
 			}
+
+			return true;
 		}
 
-		for (size_t index = 0; index < m_nonKeyBones.size(); index++)
-		{
-			auto i = m_nonKeyBones[index];
-
-			if (i == -1)
-				continue;
-
-			auto parentMatrix3x4 = (*pbonetransform)[pbones[i].parent];
-
-			btTransform parentMatrix;
-
-			Matrix3x4ToTransform(parentMatrix3x4, parentMatrix);
-
-			btTransform mergedMatrix;
-
-			mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
-
-			TransformToMatrix3x4(mergedMatrix, (*pbonetransform)[i]);
-		}
-
-		return true;
-	}
-
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override
-	{
-		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
-
-			if (pMotionState->IsBoneBased())
-			{
-				auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
-
-				if (!pRigidBody->isKinematicObject())
-				{
-					const auto& bonematrix = pBoneMotionState->m_bonematrix;
-
-					float bonematrix_3x4[3][4];
-					TransformToMatrix3x4(bonematrix, bonematrix_3x4);
-
-					memcpy((*pbonetransform)[pSharedUserData->m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
-					memcpy((*plighttransform)[pSharedUserData->m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
-				}
-				else
-				{
-					auto& bonematrix = pBoneMotionState->m_bonematrix;
-
-					Matrix3x4ToTransform((*pbonetransform)[pSharedUserData->m_boneindex], bonematrix);
-				}
-			}
-		}
-
-		return true;
-	}
-
-	void ResetPose(entity_state_t* curstate) override
-	{
-		ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			//TODO ?
-			//if (pRigidBody->isStaticOrKinematicObject())
-			//	continue;
-
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			auto pMotionState = GetMotionStateFromRigidBody(pRigidBody);
-
-			if (pMotionState->IsBoneBased())
-			{
-				auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
-
-				btTransform bonematrix;
-
-				Matrix3x4ToTransform((*pbonetransform)[pSharedUserData->m_boneindex], bonematrix);
-
-				auto newWorldTrans = bonematrix * pBoneMotionState->m_offsetmatrix;
-
-				pRigidBody->setWorldTransform(newWorldTrans);
-				pRigidBody->setInterpolationWorldTransform(newWorldTrans);
-				pRigidBody->getMotionState()->setWorldTransform(newWorldTrans);
-			}
-		}
-	}
-
-	void ApplyBarnacle(IPhysicObject *pBarnacleObject) override
-	{
-		if (m_iBarnacleIndex)
-			return;
-
-		m_iBarnacleIndex = pBarnacleObject->GetEntityIndex();
-
-		CRagdollObjectCreationParameter CreationParam;
-
-		CreationParam.m_entity = GetClientEntity();
-		CreationParam.m_entindex = GetEntityIndex();
-		CreationParam.m_model = GetModel();
-
-		if (GetModel()->type == mod_studio)
-		{
-			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(GetModel());
-			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(GetClientEntity(), GetModel());
-		}
-
-		CreationParam.m_playerindex = GetPlayerIndex();
-		CreationParam.m_allowNonNativeRigidBody = true;
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			pRigidBody->setLinearVelocity(btVector3(0, 0, 0));
-			pRigidBody->setAngularVelocity(btVector3(0, 0, 0));
-		}
-
-		for (const auto& pConstraintConfig : m_BarnacleControlConfig.ConstraintConfigs)
-		{
-			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
-
-			if (pConstraint)
-			{
-				m_Constraints.emplace_back(pConstraint);
-			}
-		}
-
-		for (const auto& pActionConfig : m_BarnacleControlConfig.ActionConfigs)
-		{
-			auto pAction = CreateActionFromConfig(pActionConfig.get());
-
-			if (pAction)
-			{
-				m_Actions.emplace_back(pAction);
-			}
-		}
-
-		CPhysicComponentFilters filters;
-
-		filters.m_HasWithConstraintFlags = true;
-		filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
-
-		ClientPhysicManager()->AddPhysicObjectToWorld(this, filters);
-	}
-
-	void ReleaseFromBarnacle() override
-	{
-		if (!m_iBarnacleIndex)
-			return;
-
-		m_iBarnacleIndex = 0;
-
-		FreePhysicActionsWithFilters(PhysicActionFlag_Barnacle, 0);
-
-		CPhysicComponentFilters filters;
-
-		filters.m_HasWithConstraintFlags = true;
-		filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
-
-		ClientPhysicManager()->RemovePhysicObjectFromWorld(this, filters);
-	}
-
-	void ApplyGargantua(IPhysicObject* pGargantuaObject) override
-	{
-		//TODO
-	}
-
-	void ReleaseFromGargantua() override
-	{
-		//TODO
+		return false;
 	}
 
 	bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override
@@ -588,7 +723,7 @@ public:
 			btVector3 vecAngles;
 			MatrixEuler(worldTransNew.getBasis(), vecAngles);
 
-			const auto &vecOrigin = worldTransNew.getOrigin();
+			const auto& vecOrigin = worldTransNew.getOrigin();
 
 			vec3_t vecGoldSrcAngles;
 			vecGoldSrcAngles[0] = -vecAngles.getX();
@@ -620,133 +755,6 @@ public:
 			return true;
 		}
 		return false;
-	}
-
-	void Update(CPhysicObjectUpdateContext* ctx) override
-	{
-		CBaseRagdollObject::Update(ctx);
-
-		CheckConstraintLinearErrors(ctx);
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			if (UpdateRigidBodyKinematic(pRigidBody, false, false))
-				ctx->m_bRigidbodyKinematicChanged = true;
-		}
-
-		for (auto pConstraint : m_Constraints)
-		{
-			if (UpdateConstraintState(pConstraint))
-				ctx->m_bConstraintStateChanged = true;
-		}
-
-		for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
-		{
-			auto pAction = (*itor);
-
-			if (pAction->Update(ctx))
-			{
-				itor++;
-			}
-			else
-			{
-				delete pAction;
-				itor = m_Actions.erase(itor);
-			}
-		}
-	}
-
-	void TransformOwnerEntity(int entindex) override
-	{
-		m_entindex = entindex;
-		m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
-	}
-
-	void AddToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
-	{
-		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters))
-			{
-				dynamicWorld->addRigidBody(pRigidBody, pSharedUserData->m_group, pSharedUserData->m_mask);
-
-				pSharedUserData->m_addedToPhysicWorld = true;
-			}
-		}
-
-		for (auto pConstraint : m_Constraints)
-		{
-			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-			if (!pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForConstraint(pConstraint, pSharedUserData, filters))
-			{
-				dynamicWorld->addConstraint(pConstraint, pSharedUserData->m_disableCollision);
-
-				pSharedUserData->m_addedToPhysicWorld = true;
-			}
-		}
-	}
-
-	void RemoveFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
-	{
-		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
-
-		for (auto pConstraint : m_Constraints)
-		{
-			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-			if (pSharedUserData->m_addedToPhysicWorld)
-			{
-				dynamicWorld->removeConstraint(pConstraint);
-
-				pSharedUserData->m_addedToPhysicWorld = false;
-			}
-		}
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			if (pSharedUserData->m_addedToPhysicWorld && BulletCheckPhysicComponentFiltersForRigidBody(pRigidBody, pSharedUserData, filters))
-			{
-				dynamicWorld->removeRigidBody(pRigidBody);
-
-				pSharedUserData->m_addedToPhysicWorld = false;
-			}
-		}
-	}
-
-	void OnBroadcastDeleteRigidBody(IPhysicObject* pPhysicObjectToDelete, void* world, void* rigidbody) override
-	{
-		auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
-		auto pRigidBody = (btRigidBody*)rigidbody;
-
-		for (auto itor = m_Constraints.begin(); itor != m_Constraints.end(); )
-		{
-			auto pConstraint = (*itor);
-
-			if (pRigidBody == &pConstraint->getRigidBodyA() || pRigidBody == &pConstraint->getRigidBodyB())
-			{
-				auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-				if (pSharedUserData->m_addedToPhysicWorld)
-				{
-					dynamicWorld->removeRigidBody(pRigidBody);
-
-					pSharedUserData->m_addedToPhysicWorld = false;
-				}
-
-				delete pConstraint;
-				itor = m_Constraints.erase(itor);
-				continue;
-			}
-
-			itor++;
-		}
 	}
 
 	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override
@@ -781,79 +789,15 @@ public:
 		}
 	}
 
-	void* GetRigidBodyByName(const std::string& name) override
-	{
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-			if (pSharedUserData)
-			{
-				if (pSharedUserData->m_name == name)
-					return pRigidBody;
-			}
-		}
-
-		return nullptr;
-	}
-
-	void* GetRigidBodyByComponentId(int id) override
-	{
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			if (pRigidBody->getUserIndex() == id)
-			{
-				return pRigidBody;
-			}
-		}
-
-		return nullptr;
-	}
-
-	void* GetConstraintByName(const std::string& name) override
-	{
-		for (auto pConstraint : m_Constraints)
-		{
-			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-			if (pSharedUserData)
-			{
-				if (pSharedUserData->m_name == name)
-					return pConstraint;
-			}
-		}
-
-		return nullptr;
-	}
-
-	void* GetConstraintByComponentId(int id) override
-	{
-		for (auto pConstraint : m_Constraints)
-		{
-			if (pConstraint->getUserConstraintId() == id)
-				return pConstraint;
-		}
-
-		return nullptr;
-	}
-
-	bool IsClientEntityNonSolid() const override
-	{
-		if (GetActivityType() > 0)
-			return false;
-
-		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
-	}
-
 private:
 
-	IPhysicAction *CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig)
+	IPhysicAction* CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig) override
 	{
 		switch (pActionConfig->type)
 		{
 		case PhysicAction_BarnacleDragForce:
 		{
-			auto pRigidBodyA = (btRigidBody *)GetRigidBodyByName(pActionConfig->rigidbodyA);
+			auto pRigidBodyA = (btRigidBody*)GetRigidBodyByName(pActionConfig->rigidbodyA);
 
 			if (!pRigidBodyA)
 				return nullptr;
@@ -898,6 +842,7 @@ private:
 		return nullptr;
 	}
 
+#if 0//TODO use Update() instead
 	void CheckConstraintLinearErrors(CPhysicObjectUpdateContext* ctx)
 	{
 		if (ctx->m_bRigidbodyPoseChanged)
@@ -915,9 +860,9 @@ private:
 			if (pSharedUserData->m_flags & PhysicConstraintFlag_NonNative)
 				continue;
 
-			auto &pRigidBodyA = pConstraint->getRigidBodyA();
+			auto& pRigidBodyA = pConstraint->getRigidBodyA();
 
-			auto &pRigidBodyB = pConstraint->getRigidBodyB();
+			auto& pRigidBodyB = pConstraint->getRigidBodyB();
 
 			bool bShouldPerformCheck = false;
 
@@ -954,185 +899,15 @@ private:
 		}
 	}
 
-	bool UpdateConstraintState(btTypedConstraint* pConstraint)
-	{
-		auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
+	//TODO use Update instead
 
-		bool bDeactivate = false;
+#endif
 
-		bool bConstraintStateChanged = false;
-
-		do
-		{
-			if (GetActivityType() == 0 && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (GetActivityType() == 1 && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (GetActivityType() == 2 && m_iBarnacleIndex && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (GetActivityType() == 2 && m_iGargantuaIndex && (pSharedUserData->m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-		} while (0);
-
-		if (bDeactivate)
-		{
-			if (pConstraint->isEnabled())
-			{
-				pConstraint->setEnabled(false);
-
-				bConstraintStateChanged = true;
-			}
-		}
-		else
-		{
-			if (!pConstraint->isEnabled())
-			{
-				pConstraint->setEnabled(true);
-
-				bConstraintStateChanged = true;
-			}
-		}
-
-		return bConstraintStateChanged;
-	}
-
-	bool UpdateRigidBodyKinematic(btRigidBody* pRigidBody, bool bForceKinematic, bool bForceDynamic)
-	{
-		auto pSharedUserData = GetSharedUserDataFromRigidBody(pRigidBody);
-
-		bool bKinematic = false;
-
-		bool bKinematicStateChanged = false;
-
-		do
-		{
-			if (bForceKinematic)
-			{
-				bKinematic = true;
-				break;
-			}
-
-			if (bForceDynamic)
-			{
-				bKinematic = false;
-				break;
-			}
-
-			if (pSharedUserData->m_flags & PhysicRigidBodyFlag_AlwaysKinematic)
-			{
-				bKinematic = true;
-				break;
-			}
-
-			if (pSharedUserData->m_flags & PhysicRigidBodyFlag_AlwaysDynamic)
-			{
-				bKinematic = false;
-				break;
-			}
-
-			if (GetActivityType() > 0)
-			{
-				bKinematic = false;
-				break;
-			}
-			else
-			{
-				bKinematic = true;
-				break;
-			}
-
-		} while (0);
-
-		if (bKinematic)
-		{
-			int iCollisionFlags = pRigidBody->getCollisionFlags();
-
-			if (!(iCollisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT))
-			{
-				iCollisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
-
-				pRigidBody->setCollisionFlags(iCollisionFlags);
-				pRigidBody->setActivationState(DISABLE_DEACTIVATION);
-				pRigidBody->setGravity(btVector3(0, 0, 0));
-
-				bKinematicStateChanged = true;
-			}
-		}
-		else
-		{
-			int iCollisionFlags = pRigidBody->getCollisionFlags();
-
-			if (iCollisionFlags & btCollisionObject::CF_KINEMATIC_OBJECT)
-			{
-				iCollisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
-
-				pRigidBody->setCollisionFlags(iCollisionFlags);
-				pRigidBody->forceActivationState(ACTIVE_TAG);
-				pRigidBody->setMassProps(pSharedUserData->m_mass, pSharedUserData->m_inertia);
-
-				bKinematicStateChanged = true;
-			}
-		}
-
-		return bKinematicStateChanged;
-	}
-
-	btRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
-	{
-		if (allowNonNativeRigidBody)
-		{
-			if (name.starts_with("@barnacle.") && m_iBarnacleIndex)
-			{
-				auto findName = name.substr(sizeof("@barnacle.") - 1);
-
-				auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
-
-				if (pBarnacleObject)
-				{
-					return (btRigidBody*)pBarnacleObject->GetRigidBodyByName(findName);
-				}
-
-				return nullptr;
-			}
-			else if (name.starts_with("@gargantua.") && m_iGargantuaIndex)
-			{
-				auto findName = name.substr(sizeof("@gargantua.") - 1);
-
-				auto pGargantuaObject = ClientPhysicManager()->GetPhysicObject(m_iGargantuaIndex);
-
-				if (pGargantuaObject)
-				{
-					return (btRigidBody*)pGargantuaObject->GetRigidBodyByName(findName);
-				}
-
-				return nullptr;
-			}
-		}
-
-		return (btRigidBody *)GetRigidBodyByName(name);
-	}
-
-	btRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig)
+	IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) override
 	{
 		if (GetRigidBodyByName(pRigidConfig->name))
 		{
-			gEngfuncs.Con_Printf("CreateRigidBody: cannot create duplicated one \"%s\".\n", pRigidConfig->name.c_str());
+			gEngfuncs.Con_Printf("CreateRigidBody: cannot create duplicated rigidbody \"%s\".\n", pRigidConfig->name.c_str());
 			return nullptr;
 		}
 
@@ -1174,10 +949,6 @@ private:
 		cInfo.m_additionalLinearDampingThresholdSqr = 1.0f * 1.0f;
 		cInfo.m_additionalAngularDampingThresholdSqr = 0.3f * 0.3f;
 
-		auto pRigidBody = new btRigidBody(cInfo);
-
-		pRigidBody->setUserIndex(ClientPhysicManager()->AllocatePhysicComponentId());
-
 		int group = btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 
 		int mask = btBroadphaseProxy::AllFilter;
@@ -1194,180 +965,189 @@ private:
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
 			mask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 
-		pRigidBody->setUserPointer(new CBulletRigidBodySharedUserData(
+		auto physicComponentId = ClientPhysicManager()->AllocatePhysicComponentId();
+
+		return new CBulletRagdollRigidBody(
+			physicComponentId,
+			CreationParam.m_entindex,
+			pRigidConfig,
 			cInfo,
 			group,
-			mask,
-			pRigidConfig->name,
-			pRigidConfig->flags,
-			pRigidConfig->boneindex,
-			pRigidConfig->debugDrawLevel,
-			pRigidConfig->density));
-
-		pRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
-		pRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
-
-		UpdateRigidBodyKinematic(pRigidBody, false, false);
-
-		return pRigidBody;
+			mask);
 	}
 
-	btTypedConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig)
+	IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig) override
 	{
-		auto pRigidBodyA = FindRigidBodyByName(pConstraintConfig->rigidbodyA, CreationParam.m_allowNonNativeRigidBody);
+		btTypedConstraint* pInternalConstraint{};
 
-		if (!pRigidBodyA)
+		do
 		{
-			gEngfuncs.Con_Printf("CreateConstraint: rigidbodyA \"%s\" not found!\n", pConstraintConfig->rigidbodyA.c_str());
-			return nullptr;
-		}
+			auto pRigidBodyA = FindRigidBodyByName(pConstraintConfig->rigidbodyA, CreationParam.m_allowNonNativeRigidBody);
 
-		auto pRigidBodyB = FindRigidBodyByName(pConstraintConfig->rigidbodyB, CreationParam.m_allowNonNativeRigidBody);
-
-		if (!pRigidBodyB)
-		{
-			gEngfuncs.Con_Printf("CreateConstraint: rigidbodyB \"%s\" not found!\n", pConstraintConfig->rigidbodyB.c_str());
-			return nullptr;
-		}
-
-		if (pRigidBodyA == pRigidBodyB)
-		{
-			gEngfuncs.Con_Printf("CreateConstraint: rigidbodyA and rigidbodyA must be different!\n");
-			return nullptr;
-		}
-
-		CBulletConstraintCreationContext ctx;
-
-		ctx.pRigidBodyA = pRigidBodyA;
-		ctx.pRigidBodyB = pRigidBodyB;
-
-		if (pConstraintConfig->isLegacyConfig)
-		{
-			if (!(pConstraintConfig->boneindexA >= 0 && pConstraintConfig->boneindexA < CreationParam.m_studiohdr->numbones))
+			if (!pRigidBodyA)
 			{
-				gEngfuncs.Con_Printf("CreateConstraint: invalid boneindexA (%d)!\n", pConstraintConfig->boneindexA);
-				return nullptr;
-			}
-			if (!(pConstraintConfig->boneindexB >= 0 && pConstraintConfig->boneindexB < CreationParam.m_studiohdr->numbones))
-			{
-				gEngfuncs.Con_Printf("CreateConstraint: invalid boneindexB (%d)!\n", pConstraintConfig->boneindexB);
+				gEngfuncs.Con_Printf("CreateConstraint: rigidbodyA \"%s\" not found!\n", pConstraintConfig->rigidbodyA.c_str());
 				return nullptr;
 			}
 
-			btTransform bonematrixA;
-			Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexA], bonematrixA);
+			auto pRigidBodyB = FindRigidBodyByName(pConstraintConfig->rigidbodyB, CreationParam.m_allowNonNativeRigidBody);
 
-			btTransform bonematrixB;
-			Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexB], bonematrixB);
+			if (!pRigidBodyB)
+			{
+				gEngfuncs.Con_Printf("CreateConstraint: rigidbodyB \"%s\" not found!\n", pConstraintConfig->rigidbodyB.c_str());
+				return nullptr;
+			}
 
-			ctx.pRigidBodyA = pRigidBodyA;
-			ctx.pRigidBodyB = pRigidBodyB;
+			if (pRigidBodyA == pRigidBodyB)
+			{
+				gEngfuncs.Con_Printf("CreateConstraint: rigidbodyA and rigidbodyA must be different!\n");
+				return nullptr;
+			}
 
-			ctx.worldTransA = pRigidBodyA->getWorldTransform();
-			ctx.worldTransB = pRigidBodyB->getWorldTransform();
+			CBulletConstraintCreationContext ctx;
+
+			ctx.pRigidBodyA = (btRigidBody*)pRigidBodyA->GetInternalRigidBody();
+			ctx.pRigidBodyB = (btRigidBody*)pRigidBodyB->GetInternalRigidBody();
+
+			if (pConstraintConfig->isLegacyConfig)
+			{
+				if (!(pConstraintConfig->boneindexA >= 0 && pConstraintConfig->boneindexA < CreationParam.m_studiohdr->numbones))
+				{
+					gEngfuncs.Con_Printf("CreateConstraint: invalid boneindexA (%d)!\n", pConstraintConfig->boneindexA);
+					return nullptr;
+				}
+				if (!(pConstraintConfig->boneindexB >= 0 && pConstraintConfig->boneindexB < CreationParam.m_studiohdr->numbones))
+				{
+					gEngfuncs.Con_Printf("CreateConstraint: invalid boneindexB (%d)!\n", pConstraintConfig->boneindexB);
+					return nullptr;
+				}
+
+				btTransform bonematrixA;
+				Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexA], bonematrixA);
+
+				btTransform bonematrixB;
+				Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexB], bonematrixB);
+
+				ctx.worldTransA = ctx.pRigidBodyA->getWorldTransform();
+				ctx.worldTransB = ctx.pRigidBodyB->getWorldTransform();
+
+				ctx.invWorldTransA = ctx.worldTransA.inverse();
+				ctx.invWorldTransB = ctx.worldTransB.inverse();
+
+				btVector3 offsetA(pConstraintConfig->offsetA[0], pConstraintConfig->offsetA[1], pConstraintConfig->offsetA[2]);
+
+				//This converts bone A's world transform into rigidbody A's local space
+				ctx.localTransA.mult(ctx.invWorldTransA, bonematrixA);
+				//Uses bone A's direction, but uses offsetA as local origin
+				ctx.localTransA.setOrigin(offsetA);
+
+				btVector3 offsetB(pConstraintConfig->offsetB[0], pConstraintConfig->offsetB[1], pConstraintConfig->offsetB[2]);
+
+				//This converts bone B's world transform into rigidbody B's local space
+				ctx.localTransB.mult(ctx.invWorldTransB, bonematrixB);
+				//Uses bone B's direction, but uses offsetB as local origin
+				ctx.localTransB.setOrigin(offsetB);
+
+				ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
+				ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
+
+				if (offsetA.fuzzyZero())
+				{
+					//Use B as final global joint transform
+					pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointB);
+					break;
+				}
+				else
+				{
+					//Use A as final global joint transform
+					pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointA);
+					break;
+				}
+
+				return nullptr;
+			}
+
+			ctx.worldTransA = ctx.pRigidBodyA->getWorldTransform();
+			ctx.worldTransB = ctx.pRigidBodyB->getWorldTransform();
 
 			ctx.invWorldTransA = ctx.worldTransA.inverse();
 			ctx.invWorldTransB = ctx.worldTransB.inverse();
 
-			btVector3 offsetA(pConstraintConfig->offsetA[0], pConstraintConfig->offsetA[1], pConstraintConfig->offsetA[2]);
+			btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
+			btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
 
-			//This converts bone A's world transform into rigidbody A's local space
-			ctx.localTransA.mult(ctx.invWorldTransA, bonematrixA);
-			//Uses bone A's direction, but uses offsetA as local origin
-			ctx.localTransA.setOrigin(offsetA);
+			ctx.localTransA = btTransform(btQuaternion(0, 0, 0, 1), vecOriginA);
+			ctx.localTransB = btTransform(btQuaternion(0, 0, 0, 1), vecOriginB);
 
-			btVector3 offsetB(pConstraintConfig->offsetB[0], pConstraintConfig->offsetB[1], pConstraintConfig->offsetB[2]);
+			btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
+			btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
 
-			//This converts bone B's world transform into rigidbody B's local space
-			ctx.localTransB.mult(ctx.invWorldTransB, bonematrixB);
-			//Uses bone B's direction, but uses offsetB as local origin
-			ctx.localTransB.setOrigin(offsetB);
+			EulerMatrix(vecAnglesA, ctx.localTransA.getBasis());
+			EulerMatrix(vecAnglesB, ctx.localTransB.getBasis());
 
 			ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
 			ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
 
-			if (offsetA.fuzzyZero())
+			if (pConstraintConfig->useGlobalJointFromA)
 			{
-				//Use B as final global joint transform
-				return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointB);
+				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
+					ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
+					if (!isnan(pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset]))
+						ctx.rigidBodyDistance += pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset];
+				}
+
+				//A look at B
+				if (pConstraintConfig->useLookAtOther)
+				{
+					btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
+
+					btTransform newGlobalJoint = MatrixLookAt(ctx.globalJointA, ctx.globalJointB.getOrigin(), vecForward);
+
+					if (pConstraintConfig->useGlobalJointOriginFromOther)
+					{
+						newGlobalJoint.setOrigin(ctx.globalJointB.getOrigin());
+					}
+
+					pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, newGlobalJoint);
+					break;
+				}
+
+				pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointA);
+				break;
 			}
 			else
 			{
-				//Use A as final global joint transform
-				return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointA);
-			}
-
-			return nullptr;
-		}
-
-		ctx.worldTransA = pRigidBodyA->getWorldTransform();
-		ctx.worldTransB = pRigidBodyB->getWorldTransform();
-
-		ctx.invWorldTransA = ctx.worldTransA.inverse();
-		ctx.invWorldTransB = ctx.worldTransB.inverse();
-
-		btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
-		btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
-
-		ctx.localTransA = btTransform(btQuaternion(0, 0, 0, 1), vecOriginA);
-		ctx.localTransB = btTransform(btQuaternion(0, 0, 0, 1), vecOriginB);
-
-		btVector3 vecAnglesA(pConstraintConfig->anglesA[0], pConstraintConfig->anglesA[1], pConstraintConfig->anglesA[2]);
-		btVector3 vecAnglesB(pConstraintConfig->anglesB[0], pConstraintConfig->anglesB[1], pConstraintConfig->anglesB[2]);
-
-		EulerMatrix(vecAnglesA, ctx.localTransA.getBasis());
-		EulerMatrix(vecAnglesB, ctx.localTransB.getBasis());
-
-		ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
-		ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
-
-		if (pConstraintConfig->useGlobalJointFromA)
-		{
-			if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
-				ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
-				if (!isnan(pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset]))
-					ctx.rigidBodyDistance += pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset];
-			}
-
-			//A look at B
-			if (pConstraintConfig->useLookAtOther)
-			{
-				btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
-
-				btTransform newGlobalJoint = MatrixLookAt(ctx.globalJointA, ctx.globalJointB.getOrigin(), vecForward);
-
-				if (pConstraintConfig->useGlobalJointOriginFromOther)
-				{
-					newGlobalJoint.setOrigin(ctx.globalJointB.getOrigin());
+				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
+					ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
 				}
 
-				return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, newGlobalJoint);
-			}
-
-			return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointA);
-		}
-		else
-		{
-			if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
-				ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
-			}
-
-			//B look at A
-			if (pConstraintConfig->useLookAtOther)
-			{
-				btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
-
-				btTransform newGlobalJoint = MatrixLookAt(ctx.globalJointB, ctx.globalJointA.getOrigin(), vecForward);
-
-				if (pConstraintConfig->useGlobalJointOriginFromOther)
+				//B look at A
+				if (pConstraintConfig->useLookAtOther)
 				{
-					newGlobalJoint.setOrigin(ctx.globalJointA.getOrigin());
+					btVector3 vecForward(pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]);
+
+					btTransform newGlobalJoint = MatrixLookAt(ctx.globalJointB, ctx.globalJointA.getOrigin(), vecForward);
+
+					if (pConstraintConfig->useGlobalJointOriginFromOther)
+					{
+						newGlobalJoint.setOrigin(ctx.globalJointA.getOrigin());
+					}
+
+					pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, newGlobalJoint);
+					break;
 				}
 
-				return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, newGlobalJoint);
+				pInternalConstraint = BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointB);
+				break;
 			}
 
-			return BulletCreateConstraintFromGlobalJointTransform(pConstraintConfig, ctx, ctx.globalJointB);
+		}while (0);
+
+		if (pInternalConstraint)
+		{
+			auto physicComponentId = ClientPhysicManager()->AllocatePhysicComponentId();
+
+			return new CBulletRagdollConstraint(physicComponentId, CreationParam.m_entindex, pConstraintConfig, pInternalConstraint);
 		}
 
 		return nullptr;
@@ -1375,44 +1155,7 @@ private:
 
 	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig)
 	{
-		//TODO
-	}
 
-	void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
-	{
-		for (const auto &pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
-		{
-			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
-
-			if (pRigidBody)
-			{
-				m_RigidBodies.emplace_back(pRigidBody);
-
-				if (pRigidBodyConfig->boneindex >= 0)
-					m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
-			}
-		}
-	}
-
-	void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
-	{
-		for (const auto &pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
-		{
-			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get());
-
-			if (pConstraint)
-			{
-				m_Constraints.emplace_back(pConstraint);
-			}
-		}
-	}
-
-	void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
-	{
-		for (const auto &pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
-		{
-			CreateFloater(CreationParam, pFloaterConfig.get());
-		}
 	}
 
 	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam)
@@ -1462,9 +1205,7 @@ private:
 	}
 
 public:
-	std::vector<IPhysicAction*> m_Actions;
-	std::vector<btRigidBody*> m_RigidBodies;
-	std::vector<btTypedConstraint*> m_Constraints;
+
 	CBulletCameraControl m_FirstPersionViewCameraControl;
 	CBulletCameraControl m_ThirdPersionViewCameraControl;
 	btTransform m_BoneRelativeTransform[128]{};
