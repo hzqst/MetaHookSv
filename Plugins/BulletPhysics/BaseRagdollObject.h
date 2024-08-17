@@ -29,8 +29,6 @@ public:
 		for (auto pConstraint : m_Constraints)
 		{
 			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-
-			delete pConstraint;
 		}
 
 		m_Constraints.clear();
@@ -38,8 +36,6 @@ public:
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-
-			delete pRigidBody;
 		}
 
 		m_RigidBodies.clear();

@@ -137,6 +137,65 @@ void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4])
 	memcpy(matrix3x4, matrix4x4, sizeof(float[3][4]));
 }
 
+//GoldSrcToBullet Scaling
+
+void FloatGoldSrcToBullet(float* v)
+{
+	(*v) *= G2BScale;
+}
+
+void FloatBulletToGoldSrc(float* v)
+{
+	(*v) *= B2GScale;
+}
+
+void TransformGoldSrcToBullet(btTransform& trans)
+{
+	auto& org = trans.getOrigin();
+
+	org.m_floats[0] *= G2BScale;
+	org.m_floats[1] *= G2BScale;
+	org.m_floats[2] *= G2BScale;
+}
+
+void Vec3GoldSrcToBullet(vec3_t vec)
+{
+	vec[0] *= G2BScale;
+	vec[1] *= G2BScale;
+	vec[2] *= G2BScale;
+}
+
+void Vector3GoldSrcToBullet(btVector3& vec)
+{
+	vec.m_floats[0] *= G2BScale;
+	vec.m_floats[1] *= G2BScale;
+	vec.m_floats[2] *= G2BScale;
+}
+
+//BulletToGoldSrc Scaling
+
+
+void TransformBulletToGoldSrc(btTransform& trans)
+{
+	trans.getOrigin().m_floats[0] *= B2GScale;
+	trans.getOrigin().m_floats[1] *= B2GScale;
+	trans.getOrigin().m_floats[2] *= B2GScale;
+}
+
+void Vec3BulletToGoldSrc(vec3_t vec)
+{
+	vec[0] *= B2GScale;
+	vec[1] *= B2GScale;
+	vec[2] *= B2GScale;
+}
+
+void Vector3BulletToGoldSrc(btVector3& vec)
+{
+	vec.m_floats[0] *= B2GScale;
+	vec.m_floats[1] *= B2GScale;
+	vec.m_floats[2] *= B2GScale;
+}
+
 CBulletRigidBody::CBulletRigidBody(
 	int id,
 	int entindex,
@@ -158,7 +217,6 @@ CBulletRigidBody::CBulletRigidBody(
 
 	m_pInternalRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
 	m_pInternalRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
-
 }
 
 CBulletRigidBody::~CBulletRigidBody()
@@ -304,6 +362,18 @@ bool CBulletRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 	return false;
 }
 
+void CBulletRigidBody::TransferOwnership(int entindex)
+{
+	CBasePhysicRigidBody::TransferOwnership(entindex);
+
+	if (m_pInternalRigidBody)
+	{
+		auto pMotionState = GetMotionStateFromRigidBody(m_pInternalRigidBody);
+
+		pMotionState->m_pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+	}
+}
+
 void* CBulletRigidBody::GetInternalRigidBody()
 {
 	return m_pInternalRigidBody;
@@ -322,6 +392,9 @@ CBulletConstraint::CBulletConstraint(
 {
 	m_pInternalConstraint = pInternalConstraint;
 	m_pInternalConstraint->setUserConstraintId(id);
+
+	m_rigidBodyAPhysicComponentId = pInternalConstraint->getRigidBodyA().getUserIndex();
+	m_rigidBodyBPhysicComponentId = pInternalConstraint->getRigidBodyB().getUserIndex();
 }
 
 CBulletConstraint::~CBulletConstraint()
@@ -338,7 +411,6 @@ CBulletConstraint::~CBulletConstraint()
 		m_pInternalConstraint = nullptr;
 	}
 }
-
 
 const char* CBulletConstraint::GetTypeString() const
 {
@@ -436,6 +508,34 @@ bool CBulletConstraint::AddToPhysicWorld(void* world)
 	if (!m_addedToPhysicWorld)
 	{
 		//Check if RigidBodyA and RigidBodyB is in world.
+
+		auto pRigidBodyA = ClientPhysicManager()->GetPhysicComponent(m_rigidBodyAPhysicComponentId);
+
+		if(!pRigidBodyA)
+		{
+			gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: pRigidBodyA not present !\n");
+			return false;
+		}
+
+		if (!pRigidBodyA->IsAddedToPhysicWorld(world))
+		{
+			gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: pRigidBodyA not added to world !\n");
+			return false;
+		}
+
+		auto pRigidBodyB = ClientPhysicManager()->GetPhysicComponent(m_rigidBodyBPhysicComponentId);
+
+		if (!pRigidBodyB)
+		{
+			gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: pRigidBodyB not present !\n");
+			return false;
+		}
+
+		if (!pRigidBodyB->IsAddedToPhysicWorld(world))
+		{
+			gEngfuncs.Con_DPrintf("CBulletConstraint::AddToPhysicWorld: pRigidBodyB not added to world !\n");
+			return false;
+		}
 
 		dynamicWorld->addConstraint(m_pInternalConstraint, m_disableCollision);
 
@@ -1145,6 +1245,8 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	{
 		btVector3 size(pConfig->size[0], pConfig->size[1], pConfig->size[2]);
 
+		Vector3GoldSrcToBullet(size);
+
 		pShape = new btBoxShape(size);
 
 		break;
@@ -1152,6 +1254,8 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	case PhysicShape_Sphere:
 	{
 		auto size = btScalar(pConfig->size[0]);
+
+		FloatGoldSrcToBullet(&size);
 
 		pShape = new btSphereShape(size);
 
@@ -1161,15 +1265,33 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	{
 		if (pConfig->direction == PhysicShapeDirection_X)
 		{
-			pShape = new btCapsuleShapeX(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
+			btScalar sizeX(pConfig->size[0]);
+			btScalar sizeY(pConfig->size[1]);
+
+			FloatGoldSrcToBullet(&sizeX);
+			FloatGoldSrcToBullet(&sizeY);
+
+			pShape = new btCapsuleShapeX(sizeX, sizeY);
 		}
 		else if (pConfig->direction == PhysicShapeDirection_Y)
 		{
-			pShape = new btCapsuleShape(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
+			btScalar sizeX(pConfig->size[0]);
+			btScalar sizeY(pConfig->size[1]);
+
+			FloatGoldSrcToBullet(&sizeX);
+			FloatGoldSrcToBullet(&sizeY);
+
+			pShape = new btCapsuleShape(sizeX, sizeY);
 		}
 		else if (pConfig->direction == PhysicShapeDirection_Z)
 		{
-			pShape = new btCapsuleShapeZ(btScalar(pConfig->size[0]), btScalar(pConfig->size[1]));
+			btScalar sizeX(pConfig->size[0]);
+			btScalar sizeY(pConfig->size[1]);
+
+			FloatGoldSrcToBullet(&sizeX);
+			FloatGoldSrcToBullet(&sizeY);
+
+			pShape = new btCapsuleShapeZ(sizeX, sizeY);
 		}
 
 		break;
@@ -1178,15 +1300,27 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	{
 		if (pConfig->direction == PhysicShapeDirection_X)
 		{
-			pShape = new btCylinderShapeX(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
+			btVector3 size(pConfig->size[0], pConfig->size[1], pConfig->size[2]);
+
+			Vector3GoldSrcToBullet(size);
+
+			pShape = new btCylinderShapeX(size);
 		}
 		else if (pConfig->direction == PhysicShapeDirection_Y)
 		{
-			pShape = new btCylinderShape(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
+			btVector3 size(pConfig->size[0], pConfig->size[1], pConfig->size[2]);
+
+			Vector3GoldSrcToBullet(size);
+
+			pShape = new btCylinderShape(size);
 		}
 		else if (pConfig->direction == PhysicShapeDirection_Z)
 		{
-			pShape = new btCylinderShapeZ(btVector3(pConfig->size[0], pConfig->size[1], pConfig->size[2]));
+			btVector3 size(pConfig->size[0], pConfig->size[1], pConfig->size[2]);
+
+			Vector3GoldSrcToBullet(size);
+
+			pShape = new btCylinderShapeZ(size);
 		}
 
 		break;
@@ -1248,9 +1382,14 @@ btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigi
 
 				localTrans.setIdentity();
 
-				EulerMatrix(btVector3(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]), localTrans.getBasis());
+				btVector3 vecAngles(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]);
+				btVector3 vecOrigin(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]);
 
-				localTrans.setOrigin(btVector3(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]));
+				Vector3GoldSrcToBullet(vecOrigin);
+
+				EulerMatrix(vecAngles, localTrans.getBasis());
+
+				localTrans.setOrigin(vecOrigin);
 
 				pCompoundShape->addChildShape(localTrans, pCollisionShape);
 			}
@@ -1301,6 +1440,8 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 
 		Matrix3x4ToTransform((*pbonetransform)[pRigidConfig->boneindex], bonematrix);
 
+		TransformGoldSrcToBullet(bonematrix);
+
 		if (!(pRigidConfig->pboneindex >= 0 && pRigidConfig->pboneindex < CreationParam.m_studiohdr->numbones))
 		{
 			gEngfuncs.Con_Printf("BulletCreateMotionState: invalid pboneindex (%d).\n", pRigidConfig->pboneindex);
@@ -1311,11 +1452,17 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 
 		btVector3 pboneorigin((*pbonetransform)[pRigidConfig->pboneindex][0][3], (*pbonetransform)[pRigidConfig->pboneindex][1][3], (*pbonetransform)[pRigidConfig->pboneindex][2][3]);
 
+		Vector3GoldSrcToBullet(pboneorigin);
+
 		btVector3 vecDirection = pboneorigin - boneorigin;
 
 		vecDirection = vecDirection.normalize();
 
-		btVector3 vecWorldOrigin = boneorigin + vecDirection * pRigidConfig->pboneoffset;
+		btScalar pboneoffset = pRigidConfig->pboneoffset;
+
+		FloatGoldSrcToBullet(&pboneoffset);
+
+		btVector3 vecWorldOrigin = boneorigin + vecDirection * pboneoffset;
 
 		btTransform bonematrix2 = bonematrix;
 
@@ -1326,7 +1473,6 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 		auto rigidWorldTrans = MatrixLookAt(bonematrix2, pboneorigin, vecForward);
 
 		btTransform localTrans;
-
 		localTrans.mult(bonematrix.inverse(), rigidWorldTrans);
 
 		//Convert to new attribs
@@ -1340,11 +1486,14 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 		pRigidConfig->angles[1] = localAngles.getY();
 		pRigidConfig->angles[2] = localAngles.getZ();
 		pRigidConfig->isLegacyConfig = false;
+		Vec3BulletToGoldSrc(pRigidConfig->origin);
 
 		return new CBulletBoneMotionState(pPhysicObject, bonematrix, localTrans);
 	}
 
 	btVector3 vecOrigin(pRigidConfig->origin[0], pRigidConfig->origin[1], pRigidConfig->origin[2]);
+	
+	Vector3GoldSrcToBullet(vecOrigin);
 
 	btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
 
@@ -1357,6 +1506,8 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 		btTransform bonematrix;
 
 		Matrix3x4ToTransform((*pbonetransform)[pRigidConfig->boneindex], bonematrix);
+
+		TransformGoldSrcToBullet(bonematrix);
 
 		return new CBulletBoneMotionState(pPhysicObject, bonematrix, localTrans);
 	}
@@ -1377,7 +1528,12 @@ void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 
 		btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
 
-		btTransform entityTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
+		Vector3GoldSrcToBullet(vecOrigin);
+
+		btTransform entityTrans;
+		entityTrans.setIdentity();
+		
+		entityTrans.setOrigin(vecOrigin);
 
 		btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
 
@@ -1437,40 +1593,31 @@ public:
 		if (IsDebugDrawWallHackEnabled())
 		{
 			glDisable(GL_DEPTH_TEST);
-
-			if (color1.isZero()) {
-				gEngfuncs.pTriAPI->Color4fRendermode(1, 1, 0, 1, kRenderTransAlpha);
-			}
-			else {
-				gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
-			}
-			gEngfuncs.pTriAPI->Begin(TRI_LINES);
-
-			vec3_t vecFrom = { from1.getX(), from1.getY(), from1.getZ() };
-			vec3_t vecTo = { to1.getX(), to1.getY(), to1.getZ() };
-
-			gEngfuncs.pTriAPI->Vertex3fv(vecFrom);
-			gEngfuncs.pTriAPI->Vertex3fv(vecTo);
-			gEngfuncs.pTriAPI->End();
-
-			glEnable(GL_DEPTH_TEST);
 		}
-		else
+
+		if (color1.isZero()) {
+			//TODO use cvar?
+			gEngfuncs.pTriAPI->Color4fRendermode(153.0f / 255.0f, 217.0f / 255.0f, 234.0f / 255.0f, 1, kRenderTransAlpha);
+		}
+		else {
+			gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
+		}
+
+		gEngfuncs.pTriAPI->Begin(TRI_LINES);
+
+		vec3_t vecFromGoldSrc = { from1.getX(), from1.getY(), from1.getZ() };
+		vec3_t vecToGoldSrc = { to1.getX(), to1.getY(), to1.getZ() };
+
+		Vec3BulletToGoldSrc(vecFromGoldSrc);
+		Vec3BulletToGoldSrc(vecToGoldSrc);
+
+		gEngfuncs.pTriAPI->Vertex3fv(vecFromGoldSrc);
+		gEngfuncs.pTriAPI->Vertex3fv(vecToGoldSrc);
+		gEngfuncs.pTriAPI->End();
+
+		if (IsDebugDrawWallHackEnabled())
 		{
-			if (color1.isZero()) {
-				gEngfuncs.pTriAPI->Color4fRendermode(1, 1, 0, 1, kRenderTransAlpha);
-			}
-			else {
-				gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
-			}
-			gEngfuncs.pTriAPI->Begin(TRI_LINES);
-
-			vec3_t vecFrom = { from1.getX(), from1.getY(), from1.getZ() };
-			vec3_t vecTo = { to1.getX(), to1.getY(), to1.getZ() };
-
-			gEngfuncs.pTriAPI->Vertex3fv(vecFrom);
-			gEngfuncs.pTriAPI->Vertex3fv(vecTo);
-			gEngfuncs.pTriAPI->End();
+			glEnable(GL_DEPTH_TEST);
 		}
 	}
 
@@ -1613,8 +1760,9 @@ void CBulletPhysicManager::DebugDraw(void)
 	int iRagdollObjectDebugDrawLevel = GetRagdollObjectDebugDrawLevel();
 	int iStaticObjectDebugDrawLevel = GetStaticObjectDebugDrawLevel();
 	int iConstraintDebugDrawLevel = GetConstraintDebugDrawLevel();
-
+	
 	const auto &objectArray = m_dynamicsWorld->getCollisionObjectArray();
+
 	for (size_t i = 0;i < objectArray.size(); ++i)
 	{
 		auto pCollisionObject = objectArray[i];
@@ -1661,6 +1809,17 @@ void CBulletPhysicManager::DebugDraw(void)
 						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
 					}
 				}
+
+				if (m_iInspectPhysicComponentId == physicComponentId)
+				{
+					//TODO use cvar?
+					btVector3 vecCustomColor(1, 1, 0);
+					pInternalRigidBody->setCustomDebugColor(vecCustomColor);
+				}
+				else
+				{
+					pInternalRigidBody->removeCustomDebugColor();
+				}
 			}
 		}
 	}
@@ -1679,7 +1838,11 @@ void CBulletPhysicManager::DebugDraw(void)
 		{
 			if (iConstraintDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iConstraintDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
 			{
-				pInternalConstraint->setDbgDrawSize(3);
+				float drawSize = 3;
+
+				FloatGoldSrcToBullet(&drawSize);
+
+				pInternalConstraint->setDbgDrawSize(drawSize);
 			}
 			else
 			{
@@ -1695,7 +1858,11 @@ void CBulletPhysicManager::SetGravity(float velocity)
 {
 	CBasePhysicManager::SetGravity(velocity);
 
-	m_dynamicsWorld->setGravity(btVector3(0, 0, m_gravity));
+	btVector3 vecGravity(0, 0, m_gravity);
+
+	Vector3GoldSrcToBullet(vecGravity);
+
+	m_dynamicsWorld->setGravity(vecGravity);
 }
 
 void CBulletPhysicManager::StepSimulation(double frametime)
@@ -1763,6 +1930,9 @@ void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTrac
 	btVector3 vecStartPoint(vecStart[0], vecStart[1], vecStart[2]);
 	btVector3 vecEndPoint(vecEnd[0], vecEnd[1], vecEnd[2]);
 
+	Vector3GoldSrcToBullet(vecStartPoint);
+	Vector3GoldSrcToBullet(vecEndPoint);
+
 	btCollisionWorld::ClosestRayResultCallback rayCallback(vecStartPoint, vecEndPoint);
 
 	m_dynamicsWorld->rayTest(vecStartPoint, vecEndPoint, rayCallback);
@@ -1774,9 +1944,13 @@ void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTrac
 		hitResult.m_flHitFraction = rayCallback.m_closestHitFraction;
 		hitResult.m_flDistanceToHitPoint = rayCallback.m_closestHitFraction * (vecEndPoint - vecStartPoint).length();
 
+		FloatBulletToGoldSrc(&hitResult.m_flDistanceToHitPoint);
+
 		hitResult.m_vecHitPoint[0] = rayCallback.m_hitPointWorld.getX();
 		hitResult.m_vecHitPoint[1] = rayCallback.m_hitPointWorld.getY();
 		hitResult.m_vecHitPoint[2] = rayCallback.m_hitPointWorld.getZ();
+
+		Vec3BulletToGoldSrc(hitResult.m_vecHitPoint);
 
 		hitResult.m_vecHitPlaneNormal[0] = rayCallback.m_hitNormalWorld.getX();
 		hitResult.m_vecHitPlaneNormal[1] = rayCallback.m_hitNormalWorld.getY();

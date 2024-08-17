@@ -190,6 +190,11 @@ const int PhysicShapeDirection_Z = 2;
 #define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
 #define BULLET_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
 
+#define INCHES_PER_METER 39.3700787402f
+
+const float B2GScale = INCHES_PER_METER;
+const float G2BScale = (1.0f / B2GScale);
+
 class CPhysicBrushVertex
 {
 public:

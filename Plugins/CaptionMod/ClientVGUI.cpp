@@ -40,7 +40,7 @@ public:
 		{
 			if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_english.txt"))
 			{
-				Sys_Error("Failed to load captionmod/dictionary_english.txt");
+				Sys_Error("Failed to load \"captionmod/dictionary_english.txt\"");
 			}
 		}
 	}

@@ -39,67 +39,6 @@ public:
 
 	btTriangleIndexVertexArray* m_pIndexVertexArray{};
 };
-#if 0
-class CBulletRigidBodySharedUserData : public CBulletBaseSharedUserData
-{
-public:
-	CBulletRigidBodySharedUserData(const btRigidBody::btRigidBodyConstructionInfo& info,
-		int group, int mask,
-		const std::string & name,
-		int flags,
-		int boneindex,
-		int debugDrawLevel,
-		float density)
-	{
-		m_mass = info.m_mass;
-		m_inertia = info.m_localInertia;
-
-		m_group = group;
-		m_mask = mask;
-
-		m_name = name;
-
-		m_flags = flags;
-		m_boneindex = boneindex;
-		m_debugDrawLevel = debugDrawLevel;
-		m_density = density;
-	}
-
-	float m_mass{};
-	btVector3 m_inertia{};
-
-	int m_group{};
-	int m_mask{};
-
-	std::string m_name;
-
-	int m_flags{};
-	int m_boneindex{ -1 };
-	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
-	float m_density{ BULLET_DEFAULT_DENSENTY };
-	bool m_addedToPhysicWorld{};
-};
-class CBulletConstraintSharedUserData : public CBulletBaseSharedUserData
-{
-public:
-	CBulletConstraintSharedUserData(const CClientConstraintConfig* pConstraintConfig)
-	{
-		m_name = pConstraintConfig->name;
-		m_flags = pConstraintConfig->flags;
-		m_debugDrawLevel = pConstraintConfig->debugDrawLevel;
-		m_maxTolerantLinearError = pConstraintConfig->maxTolerantLinearError;
-		m_disableCollision = pConstraintConfig->disableCollision;
-	}
-
-	std::string m_name;
-	int m_flags;
-	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
-	float m_maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
-
-	bool m_disableCollision{};
-	bool m_addedToPhysicWorld{};
-};
-#endif
 
 ATTRIBUTE_ALIGNED16(class)
 CBulletBaseMotionState : public btMotionState
@@ -221,6 +160,8 @@ public:
 	bool SetupBones(studiohdr_t* studiohdr) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
 
+	void TransferOwnership(int entindex) override;
+
 	void* GetInternalRigidBody() override;
 
 public:
@@ -265,6 +206,9 @@ public:
 	bool m_disableCollision{};
 
 	bool m_addedToPhysicWorld{};
+
+	int m_rigidBodyAPhysicComponentId{};
+	int m_rigidBodyBPhysicComponentId{};
 
 	btTypedConstraint* m_pInternalConstraint{};
 };
@@ -320,3 +264,8 @@ void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler);
 void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix);
 btTransform MatrixLookAt(const btTransform& transform, const btVector3& at, const btVector3& forward);
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection);
+
+void TransformGoldSrcToBullet(btTransform& trans);
+void Vector3GoldSrcToBullet(btVector3& vec);
+void TransformBulletToGoldSrc(btTransform& trans);
+void Vector3BulletToGoldSrc(btVector3& vec);

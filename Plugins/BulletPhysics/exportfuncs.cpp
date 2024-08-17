@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "mathlib2.h"
+#include "util.h"
 #include "plugins.h"
 #include "enginedef.h"
 #include "exportfuncs.h"
@@ -69,14 +70,9 @@ cl_entity_t** cl_visedicts = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
-bool IsDebugViewModeEnabled()
+bool IsDebugModeEnabled()
 {
 	return (int)bv_debug->value >= 1;
-}
-
-bool IsDebugEditModeEnabled()
-{
-	return (int)bv_debug->value >= 2;
 }
 
 bool IsDebugDrawEnabled()
@@ -377,7 +373,8 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
-				pRagdollObject->GetOrigin((*currententity)->origin);
+
+				pRagdollObject->GetGoldSrcOrigin((*currententity)->origin);
 
 				int result = pfnDrawModel(pthis, 0, flags);
 
@@ -471,7 +468,8 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
-				pRagdollObject->GetOrigin((*currententity)->origin);
+
+				pRagdollObject->GetGoldSrcOrigin((*currententity)->origin);
 
 				int iSavedWeaponModel = pplayer->weaponmodel;
 
@@ -1208,53 +1206,75 @@ void HUD_TempEntUpdate(
 		pTemp = pTemp->next;
 	}
 
-	if (IsDebugViewModeEnabled() && VectorLength(r_params_final.viewangles) > 0)
+	if (IsDebugModeEnabled())
 	{
-		vec3_t vecForward, vecRight, vecUp, vecTarget;
-		AngleVectors(r_params_final.viewangles, vecForward, vecRight, vecUp);
-		VectorScale(vecForward, 4096, vecForward);
-		VectorAdd(vecForward, r_params_final.vieworg, vecTarget);
+		int mouseX{}, mouseY{};
+		gEngfuncs.GetMousePosition(&mouseX, &mouseY);
 
-		CPhysicTraceLineHitResult hitResult;
-		ClientPhysicManager()->TraceLine(r_params_final.vieworg, vecTarget, hitResult);
-
-		bool bInspectEntityFound = false;
-		bool bInspectPhysicComponentFound = false;
-		if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
+		SCREENINFO_s scr{};
+		scr.iSize = sizeof(SCREENINFO_s);
+		if (gEngfuncs.pfnGetScreenInfo(&scr) && scr.iWidth > 0 && scr.iHeight > 0)
 		{
-			g_pViewPort->UpdateInspectEntity(hitResult.m_iHitEntityIndex);
-			g_pViewPort->UpdateInspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
-			bInspectEntityFound = true;
-			bInspectPhysicComponentFound = true;
-		}
-		else
-		{
+			vec3_t vecForward, vecRight, vecUp, vecTarget, vecScreen;
 
-			auto trace = gEngfuncs.PM_TraceLine(r_params_final.vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+			vecScreen[0] = UNPROJECT_X(mouseX, scr.iWidth);
+			vecScreen[1] = UNPROJECT_Y(mouseY, scr.iHeight);
+			vecScreen[2] = 1;
 
-			if (trace->fraction != 1.0 && trace->ent)
+			gEngfuncs.pTriAPI->ScreenToWorld(vecScreen, vecTarget);
+
+			VectorSubtract(vecTarget, r_params_final.vieworg, vecForward);
+			VectorNormalize(vecForward);
+			VectorMA(r_params_final.vieworg, 4096, vecForward, vecTarget);
+
+			CPhysicTraceLineHitResult hitResult;
+			ClientPhysicManager()->TraceLine(r_params_final.vieworg, vecTarget, hitResult);
+
+			bool bInspectEntityFound = false;
+			bool bInspectPhysicComponentFound = false;
+			if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
 			{
-				auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
+				g_pViewPort->UpdateInspectEntity(hitResult.m_iHitEntityIndex);
+				g_pViewPort->UpdateInspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
+				ClientPhysicManager()->InspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
 
-				if (physent)
+				bInspectEntityFound = true;
+				bInspectPhysicComponentFound = true;
+			}
+			else
+			{
+
+				auto trace = gEngfuncs.PM_TraceLine(r_params_final.vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+
+				if (trace->fraction != 1.0 && trace->ent)
 				{
-					g_pViewPort->UpdateInspectEntity(physent->info);
-					bInspectEntityFound = true;
+					auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
+
+					if (physent)
+					{
+						g_pViewPort->UpdateInspectEntity(physent->info);
+
+						bInspectEntityFound = true;
+					}
 				}
 			}
+
+			if (!bInspectEntityFound)
+			{
+				g_pViewPort->UpdateInspectEntity(0);
+			}
+
+			if (!bInspectPhysicComponentFound)
+			{
+				ClientPhysicManager()->InspectPhysicComponent(0);
+				g_pViewPort->UpdateInspectPhysicComponent(0);
+			}
 		}
-
-		if (!bInspectEntityFound)
-			g_pViewPort->UpdateInspectEntity(0);
-
-		if (!bInspectPhysicComponentFound)
-			g_pViewPort->UpdateInspectPhysicComponent(0);
 	}
 
 	ClientPhysicManager()->SetGravity(cl_gravity);
 	ClientPhysicManager()->UpdatePhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
 	ClientPhysicManager()->StepSimulation(frametime);
-
 }
 
 void HUD_Frame(double frametime)

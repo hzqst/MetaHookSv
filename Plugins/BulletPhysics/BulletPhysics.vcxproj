@@ -312,7 +312,6 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="ClientEntityManager.h" />
-    <ClInclude Include="qgl.h" />
     <ClInclude Include="ClientPhysicConfig.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="VGUI2ExtensionImport.h" />

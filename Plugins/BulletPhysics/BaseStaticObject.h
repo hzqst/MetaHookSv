@@ -21,8 +21,6 @@ public:
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-
-			delete pRigidBody;
 		}
 
 		m_RigidBodies.clear();
@@ -43,7 +41,7 @@ public:
 		return &m_entity->curstate;
 	}
 
-	bool GetOrigin(float* v) override
+	bool GetGoldSrcOrigin(float* v) override
 	{
 		return false;
 	}

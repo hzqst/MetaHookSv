@@ -55,7 +55,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile(g_pFileSystem, "SCModelDownloader/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load SCModelDownloader/gameui_english.txt");
+					Sys_Error("Failed to load \"SCModelDownloader/gameui_english.txt\"");
 				}
 			}
 		}
@@ -65,7 +65,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "SCModelDownloader/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load SCModelDownloader/gameui_english.txt");
+					Sys_Error("Failed to load \"SCModelDownloader/gameui_english.txt\"");
 				}
 			}
 		}

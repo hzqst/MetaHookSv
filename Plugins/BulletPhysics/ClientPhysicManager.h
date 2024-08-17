@@ -189,7 +189,7 @@ public:
 	virtual int GetEntityIndex() const = 0;
 	virtual cl_entity_t* GetClientEntity() const = 0;
 	virtual entity_state_t* GetClientEntityState() const = 0;
-	virtual bool GetOrigin(float* v) = 0;
+	virtual bool GetGoldSrcOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual float GetModelScaling() const = 0;
 	virtual int GetPlayerIndex() const = 0;
@@ -350,6 +350,9 @@ public:
 	virtual void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) = 0;
 	virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
+
+	virtual void InspectPhysicComponent(int physicComponentId) = 0;
+	virtual void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 };
 
 extern IClientPhysicManager* g_pClientPhysicManager;

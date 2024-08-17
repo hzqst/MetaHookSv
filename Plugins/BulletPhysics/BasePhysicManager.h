@@ -164,6 +164,7 @@ protected:
 
 	float m_gravity{};
 	int m_iAllocatedPhysicComponentId{};
+	int m_iInspectPhysicComponentId{};
 
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
 	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
@@ -214,6 +215,8 @@ public:
 	void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) override;
 	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
 	bool RemovePhysicComponent(int physicComponentId) override;
+	void InspectPhysicComponent(int physicComponentId) override;
+	void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -254,3 +257,8 @@ private:
 };
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters);
+
+void FloatGoldSrcToBullet(float* v);
+void FloatBulletToGoldSrc(float* v);
+void Vec3GoldSrcToBullet(vec3_t vec);
+void Vec3BulletToGoldSrc(vec3_t vec);

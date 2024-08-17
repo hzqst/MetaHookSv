@@ -146,7 +146,9 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
+
 	m_iAllocatedPhysicComponentId = 0;
+	m_iInspectPhysicComponentId = 0;
 
 	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
@@ -1745,6 +1747,7 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1] = factor0;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit2] = factor1;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_ConeTwistTwistSpanLimit] = factor2;
+
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearCFM] = BULLET_DEFAULT_LINEAR_CFM;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_LinearERP] = BULLET_DEFAULT_LINEAR_ERP;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM] = BULLET_DEFAULT_ANGULAR_CFM;
@@ -1754,6 +1757,7 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 			pConstraintConfig->type = PhysicConstraint_Hinge;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeLowLimit] = factor0;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_HingeHighLimit] = factor1;
+
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM] = BULLET_DEFAULT_ANGULAR_CFM;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP] = BULLET_DEFAULT_ANGULAR_ERP;
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularStopCFM] = BULLET_DEFAULT_ANGULAR_STOP_CFM;
@@ -2519,6 +2523,16 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	return false;
 }
 
+void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)
+{
+	m_iInspectPhysicComponentId = physicComponentId;
+}
+
+void CBasePhysicManager::InspectPhysicComponent(IPhysicComponent* pPhysicComponent)
+{
+	m_iInspectPhysicComponentId = pPhysicComponent->GetPhysicComponentId();
+}
+
 //Private impls
 
 void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex)
@@ -2647,19 +2661,11 @@ void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObj
 {
 	RemovePhysicObject(entindex);
 
-	//CPhysicComponentFilters filters;
-
-	//AddPhysicObjectToWorld(pPhysicObject, filters);
-
 	m_physicObjects[entindex] = pPhysicObject;
 }
 
 void CBasePhysicManager::FreePhysicObject(IPhysicObject *pPhysicObject)
 {
-	//CPhysicComponentFilters filters;
-
-	//RemovePhysicObjectFromWorld(pPhysicObject, filters);
-
 	pPhysicObject->Destroy();
 }
 
@@ -2702,7 +2708,6 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 
 void CBasePhysicManager::UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
 {
-	//paused
 	if (frame_time <= 0)
 		return;
 
@@ -2776,6 +2781,8 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 				Vertexes[j].pos[0] = v[0];
 				Vertexes[j].pos[1] = v[1];
 				Vertexes[j].pos[2] = v[2];
+
+				Vec3GoldSrcToBullet(Vertexes[j].pos);
 			}
 
 			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
@@ -2791,6 +2798,8 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 				Vertexes[2].pos[0] = v[0];
 				Vertexes[2].pos[1] = v[1];
 				Vertexes[2].pos[2] = v[2];
+
+				Vec3GoldSrcToBullet(Vertexes[2].pos);
 
 				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
 				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
@@ -3290,22 +3299,25 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 	);
 
 	if (!warn.empty()) {
-		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: (warning) %s", err.c_str());
+		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: (warning) %s.\n", err.c_str());
 	}
 	if (!err.empty()) {
-		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: (error) %s", err.c_str());
+		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: (error) %s.\n", err.c_str());
 	}
 	if (!ret) {
-		gEngfuncs.Con_Printf("LoadObjToPhysicArrays: Failed to load \"%s\".", objFilename.c_str());
+		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: Failed to load \"%s\".\n", objFilename.c_str());
 		return false;
 	}
 
 	for (size_t i = 0;i < attrib.vertices.size(); i += 3)
 	{
 		CPhysicBrushVertex vertex;
+
 		vertex.pos[0] = attrib.vertices[0 + i];
 		vertex.pos[1] = attrib.vertices[1 + i];
 		vertex.pos[2] = attrib.vertices[2 + i];
+
+		Vec3GoldSrcToBullet(vertex.pos);
 
 		vertexArray->vVertexBuffer.push_back(vertex);
 	}

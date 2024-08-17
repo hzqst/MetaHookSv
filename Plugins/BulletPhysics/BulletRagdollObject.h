@@ -46,6 +46,8 @@ public:
 
 			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
 
+			TransformGoldSrcToBullet(bonematrix);
+
 			auto newWorldTrans = bonematrix * pBoneMotionState->m_offsetmatrix;
 
 			m_pInternalRigidBody->setWorldTransform(newWorldTrans);
@@ -73,13 +75,16 @@ public:
 
 			auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
 
-			const auto& bonematrix = pBoneMotionState->m_bonematrix;
+			btTransform bonematrix = pBoneMotionState->m_bonematrix;
+
+			TransformBulletToGoldSrc(bonematrix);
 
 			float bonematrix_3x4[3][4];
 			TransformToMatrix3x4(bonematrix, bonematrix_3x4);
 
 			memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 			memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+
 			return true;
 		}
 
@@ -105,7 +110,9 @@ public:
 
 			if (!m_pInternalRigidBody->isKinematicObject())
 			{
-				const auto& bonematrix = pBoneMotionState->m_bonematrix;
+				btTransform bonematrix = pBoneMotionState->m_bonematrix;
+
+				TransformBulletToGoldSrc(bonematrix);
 
 				float bonematrix_3x4[3][4];
 				TransformToMatrix3x4(bonematrix, bonematrix_3x4);
@@ -118,6 +125,8 @@ public:
 				auto& bonematrix = pBoneMotionState->m_bonematrix;
 
 				Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+
+				TransformGoldSrcToBullet(bonematrix);
 			}
 
 			return true;
@@ -325,7 +334,7 @@ public:
 		m_flForceMagnitude(flForceMagnitude),
 		m_flExtraHeight(flExtraHeight)
 	{
-
+		
 	}
 
 	bool Update(CPhysicObjectUpdateContext* ctx) override
@@ -358,7 +367,7 @@ public:
 		{
 			vec3_t vecPhysicObjectOrigin{ 0 };
 
-			if (ctx->m_pPhysicObject->GetOrigin(vecPhysicObjectOrigin))
+			if (ctx->m_pPhysicObject->GetGoldSrcOrigin(vecPhysicObjectOrigin))
 			{
 				vec3_t vecClientEntityOrigin{ 0 };
 
@@ -589,6 +598,8 @@ public:
 		m_pRigidBody = nullptr;
 		m_vecOrigin = btVector3(pCameraControlConfig.origin[0], pCameraControlConfig.origin[1], pCameraControlConfig.origin[2]);
 		m_vecAngles = btVector3(pCameraControlConfig.angles[0], pCameraControlConfig.angles[1], pCameraControlConfig.angles[2]);
+
+		Vector3GoldSrcToBullet(m_vecOrigin);
 	}
 
 	btRigidBody* m_pRigidBody{};
@@ -619,7 +630,7 @@ public:
 
 	}
 
-	bool GetOrigin(float* v) override
+	bool GetGoldSrcOrigin(float* v) override
 	{
 		if (m_ThirdPersionViewCameraControl.m_pRigidBody)
 		{
@@ -630,6 +641,8 @@ public:
 			v[0] = worldOrigin.x();
 			v[1] = worldOrigin.y();
 			v[2] = worldOrigin.z();
+
+			Vec3BulletToGoldSrc(v);
 
 			return true;
 		}
@@ -659,6 +672,8 @@ public:
 				btTransform mergedMatrix;
 
 				mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
+
+				TransformBulletToGoldSrc(mergedMatrix);
 
 				TransformToMatrix3x4(mergedMatrix, (*pbonetransform)[i]);
 			}
@@ -693,6 +708,8 @@ public:
 			vecGoldSrcOrigin[0] = vecOrigin.getX();
 			vecGoldSrcOrigin[1] = vecOrigin.getY();
 			vecGoldSrcOrigin[2] = vecOrigin.getZ();
+
+			Vec3BulletToGoldSrc(vecGoldSrcOrigin);
 
 			VectorCopy(vecGoldSrcOrigin, pparams->simorg);
 
@@ -734,6 +751,8 @@ public:
 			vecGoldSrcOrigin[0] = vecOrigin.getX();
 			vecGoldSrcOrigin[1] = vecOrigin.getY();
 			vecGoldSrcOrigin[2] = vecOrigin.getZ();
+
+			Vec3BulletToGoldSrc(vecGoldSrcOrigin);
 
 			vec3_t vecSavedSimOrgigin;
 			vec3_t vecSavedClientViewAngles;
@@ -1024,9 +1043,11 @@ private:
 
 				btTransform bonematrixA;
 				Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexA], bonematrixA);
+				TransformGoldSrcToBullet(bonematrixA);
 
 				btTransform bonematrixB;
 				Matrix3x4ToTransform((*pbonetransform)[pConstraintConfig->boneindexB], bonematrixB);
+				TransformGoldSrcToBullet(bonematrixB);
 
 				ctx.worldTransA = ctx.pRigidBodyA->getWorldTransform();
 				ctx.worldTransB = ctx.pRigidBodyB->getWorldTransform();
@@ -1035,6 +1056,7 @@ private:
 				ctx.invWorldTransB = ctx.worldTransB.inverse();
 
 				btVector3 offsetA(pConstraintConfig->offsetA[0], pConstraintConfig->offsetA[1], pConstraintConfig->offsetA[2]);
+				Vector3GoldSrcToBullet(offsetA);
 
 				//This converts bone A's world transform into rigidbody A's local space
 				ctx.localTransA.mult(ctx.invWorldTransA, bonematrixA);
@@ -1042,6 +1064,7 @@ private:
 				ctx.localTransA.setOrigin(offsetA);
 
 				btVector3 offsetB(pConstraintConfig->offsetB[0], pConstraintConfig->offsetB[1], pConstraintConfig->offsetB[2]);
+				Vector3GoldSrcToBullet(offsetB);
 
 				//This converts bone B's world transform into rigidbody B's local space
 				ctx.localTransB.mult(ctx.invWorldTransB, bonematrixB);
@@ -1076,6 +1099,9 @@ private:
 			btVector3 vecOriginA(pConstraintConfig->originA[0], pConstraintConfig->originA[1], pConstraintConfig->originA[2]);
 			btVector3 vecOriginB(pConstraintConfig->originB[0], pConstraintConfig->originB[1], pConstraintConfig->originB[2]);
 
+			Vector3GoldSrcToBullet(vecOriginA);
+			Vector3GoldSrcToBullet(vecOriginB);
+
 			ctx.localTransA = btTransform(btQuaternion(0, 0, 0, 1), vecOriginA);
 			ctx.localTransB = btTransform(btQuaternion(0, 0, 0, 1), vecOriginB);
 
@@ -1090,10 +1116,18 @@ private:
 
 			if (pConstraintConfig->useGlobalJointFromA)
 			{
-				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
+				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+				{
 					ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
+
 					if (!isnan(pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset]))
-						ctx.rigidBodyDistance += pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset];
+					{
+						btScalar offset = pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset];
+
+						FloatGoldSrcToBullet(&offset);
+
+						ctx.rigidBodyDistance += offset;
+					}
 				}
 
 				//A look at B
@@ -1117,8 +1151,18 @@ private:
 			}
 			else
 			{
-				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit) {
+				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+				{
 					ctx.rigidBodyDistance = (ctx.globalJointA.getOrigin() - ctx.globalJointB.getOrigin()).length();
+
+					if (!isnan(pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset]))
+					{
+						btScalar offset = pConstraintConfig->factors[PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset];
+
+						FloatGoldSrcToBullet(&offset);
+
+						ctx.rigidBodyDistance += offset;
+					}
 				}
 
 				//B look at A
@@ -1171,17 +1215,19 @@ private:
 			if (parent == -1)
 			{
 				Matrix3x4ToTransform((*pbonetransform)[i], m_BoneRelativeTransform[i]);
+				TransformGoldSrcToBullet(m_BoneRelativeTransform[i]);
 			}
 			else
 			{
-				btTransform matrix;
-
-				Matrix3x4ToTransform((*pbonetransform)[i], matrix);
+				btTransform bonematrix;
+				Matrix3x4ToTransform((*pbonetransform)[i], bonematrix);
+				TransformGoldSrcToBullet(bonematrix);
 
 				btTransform parentmatrix;
 				Matrix3x4ToTransform((*pbonetransform)[pbones[i].parent], parentmatrix);
+				TransformGoldSrcToBullet(parentmatrix);
 
-				m_BoneRelativeTransform[i] = parentmatrix.inverse() * matrix;
+				m_BoneRelativeTransform[i] = parentmatrix.inverse() * bonematrix;
 			}
 		}
 	}

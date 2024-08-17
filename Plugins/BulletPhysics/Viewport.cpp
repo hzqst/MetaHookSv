@@ -63,6 +63,8 @@ void CViewport::Start(void)
 {
 	m_pPhysicDebugViewGUI = new CPhysicDebugViewGUI(this);
 
+	m_pPhysicDebugViewGUI->SetVisible(false);
+
 	SetVisible(false);
 }
 
@@ -78,13 +80,16 @@ void CViewport::SetParent(VPANEL vPanel)
 
 void CViewport::Think(void)
 {
-	if (IsDebugViewModeEnabled() && !m_pPhysicDebugViewGUI->IsVisible())
+	if (m_pPhysicDebugViewGUI)
 	{
-		m_pPhysicDebugViewGUI->SetVisible(true);
-	}
-	else if (!IsDebugViewModeEnabled() && m_pPhysicDebugViewGUI->IsVisible())
-	{
-		m_pPhysicDebugViewGUI->SetVisible(false);
+		if (IsDebugModeEnabled() && !m_pPhysicDebugViewGUI->IsVisible())
+		{
+			m_pPhysicDebugViewGUI->SetVisible(true);
+		}
+		else if (!IsDebugModeEnabled() && m_pPhysicDebugViewGUI->IsVisible())
+		{
+			m_pPhysicDebugViewGUI->SetVisible(false);
+		}
 	}
 }
 
@@ -226,5 +231,4 @@ void CViewport::HideClientUI(void)
 void CViewport::Paint(void)
 {
 	BaseClass::Paint();
-
 }
