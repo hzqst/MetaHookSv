@@ -61,9 +61,7 @@ CViewport::~CViewport(void)
 
 void CViewport::Start(void)
 {
-	m_pPhysicDebugViewGUI = new CPhysicDebugViewGUI(this);
-
-	m_pPhysicDebugViewGUI->SetVisible(false);
+	m_pPhysicDebugViewGUI = new CPhysicDebugViewGUI(NULL);
 
 	SetVisible(false);
 }
@@ -71,6 +69,8 @@ void CViewport::Start(void)
 void CViewport::SetParent(VPANEL vPanel)
 {
 	BaseClass::SetParent(vPanel);
+
+	m_pPhysicDebugViewGUI->SetParent(this);
 
 	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManager()->IsHighDpiSupportEnabled())
 	{

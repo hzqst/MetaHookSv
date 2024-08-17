@@ -1213,6 +1213,7 @@ void HUD_TempEntUpdate(
 
 		SCREENINFO_s scr{};
 		scr.iSize = sizeof(SCREENINFO_s);
+
 		if (gEngfuncs.pfnGetScreenInfo(&scr) && scr.iWidth > 0 && scr.iHeight > 0)
 		{
 			vec3_t vecForward, vecRight, vecUp, vecTarget, vecScreen;

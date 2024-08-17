@@ -97,7 +97,10 @@
       <AdditionalDependencies>$(Bullet3LibraryFiles);$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\bulletphysics\" "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics\" /y /e</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
