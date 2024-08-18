@@ -14,9 +14,7 @@
 #include <VGUI_controls/Panel.h>
 #include <VGUI_controls/Frame.h>
 
-class CPhysicEditorDialog;
-class CPhysicDebugViewGUI;
-typedef model_s model_t;
+class CPhysicDebugGUI;
 
 class CViewport : public vgui::Panel
 {
@@ -41,13 +39,17 @@ public:
 
 	void UpdateInspectEntity(int entindex);
 	void UpdateInspectPhysicComponent(int physicComponentId);
+	void OpenPhysicDebugGUI();
+	bool IsPhysicDebugGUIVisible() const;
 
+	int GetInspectEntityIndex() const;
+	int GetInspectEntityModelIndex() const;
+	int GetInspectPhysicComponentId() const;
 private:
-	CPhysicEditorDialog* m_pPhysicEditorDialog{};
-	CPhysicDebugViewGUI* m_pPhysicDebugViewGUI{};
+	CPhysicDebugGUI* m_pPhysicDebugViewGUI{};
 
-	int m_iCachedInspectEntity{};
-	model_t * m_iCachedInspectModel{};
+	int m_iCachedInspectEntityIndex{};
+	int m_iCachedInspectModelIndex{};
 
 	int m_iCachedInspectPhysicComponentId{};
 };

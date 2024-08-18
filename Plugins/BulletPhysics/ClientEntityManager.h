@@ -1,6 +1,7 @@
 #pragma once
 
 #include <interface.h>
+#include <metahook.h>
 #include <r_efx.h>
 #include <cl_entity.h>
 #include <com_model.h>

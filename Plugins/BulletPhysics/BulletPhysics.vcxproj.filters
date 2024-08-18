@@ -401,7 +401,7 @@
     <ClCompile Include="PhysicEditorDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicDebugViewGUI.cpp">
+    <ClCompile Include="PhysicDebugGUI.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="BulletPhysicManager.cpp">
@@ -448,13 +448,10 @@
     <ClInclude Include="Viewport.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicEditorInspectPage.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="PhysicEditorDialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicDebugViewGUI.h">
+    <ClInclude Include="PhysicDebugGUI.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="ClientPhysicManager.h">

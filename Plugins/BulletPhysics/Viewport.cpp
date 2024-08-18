@@ -15,8 +15,7 @@
 #include "exportfuncs.h"
 #include "util.h"
 
-#include "PhysicEditorDialog.h"
-#include "PhysicDebugViewGUI.h"
+#include "PhysicDebugGUI.h"
 
 #include "CounterStrike.h"
 
@@ -47,11 +46,6 @@ CViewport::CViewport() : BaseClass(NULL, "BulletPhysicsViewport")
 
 CViewport::~CViewport(void)
 {
-	if (m_pPhysicEditorDialog)
-	{
-		delete m_pPhysicEditorDialog;
-		m_pPhysicEditorDialog = nullptr;
-	}
 	if (m_pPhysicDebugViewGUI)
 	{
 		delete m_pPhysicDebugViewGUI;
@@ -61,7 +55,7 @@ CViewport::~CViewport(void)
 
 void CViewport::Start(void)
 {
-	m_pPhysicDebugViewGUI = new CPhysicDebugViewGUI(NULL);
+	m_pPhysicDebugViewGUI = new CPhysicDebugGUI(NULL);
 
 	SetVisible(false);
 }
@@ -80,17 +74,7 @@ void CViewport::SetParent(VPANEL vPanel)
 
 void CViewport::Think(void)
 {
-	if (m_pPhysicDebugViewGUI)
-	{
-		if (IsDebugModeEnabled() && !m_pPhysicDebugViewGUI->IsVisible())
-		{
-			m_pPhysicDebugViewGUI->SetVisible(true);
-		}
-		else if (!IsDebugModeEnabled() && m_pPhysicDebugViewGUI->IsVisible())
-		{
-			m_pPhysicDebugViewGUI->SetVisible(false);
-		}
-	}
+	
 }
 
 void CViewport::VidInit(void)
@@ -100,20 +84,19 @@ void CViewport::VidInit(void)
 
 void CViewport::Init(void)
 {
-
+	m_pPhysicDebugViewGUI->SetVisible(false);
 }
 
 void CViewport::NewMap(void)
 {
-	m_iCachedInspectEntity = 0;
-	m_iCachedInspectModel = nullptr;
+	m_iCachedInspectEntityIndex = 0;
+	m_iCachedInspectModelIndex = 0;
 	m_iCachedInspectPhysicComponentId = 0;
 }
 
 void CViewport::UpdateInspectEntity(int entindex)
 {
 	model_t* model = nullptr;
-
 	if (entindex > 0)
 	{
 		auto pClientEntity = ClientEntityManager()->GetEntityByIndex(entindex);
@@ -150,10 +133,12 @@ void CViewport::UpdateInspectEntity(int entindex)
 		}
 	}
 
-	if (m_iCachedInspectEntity != entindex || m_iCachedInspectModel != model)
+	int enginemodelindex = EngineGetModelIndex(model);
+
+	if (m_iCachedInspectEntityIndex != entindex || m_iCachedInspectModelIndex != enginemodelindex)
 	{
-		m_iCachedInspectEntity = entindex;
-		m_iCachedInspectModel = model;
+		m_iCachedInspectEntityIndex = entindex;
+		m_iCachedInspectModelIndex = enginemodelindex;
 
 		if (entindex > 0 && model)
 		{
@@ -216,6 +201,31 @@ void CViewport::UpdateInspectPhysicComponent(int physicComponentId)
 			m_pPhysicDebugViewGUI->ShowInspectPhysicComponentLabel(false);
 		}
 	}
+}
+
+void CViewport::OpenPhysicDebugGUI()
+{
+	m_pPhysicDebugViewGUI->SetVisible(true);
+}
+
+bool CViewport::IsPhysicDebugGUIVisible() const
+{
+	return m_pPhysicDebugViewGUI->IsVisible();
+}
+
+int CViewport::GetInspectEntityIndex() const
+{
+	return m_iCachedInspectEntityIndex;
+}
+
+int CViewport::GetInspectEntityModelIndex() const
+{
+	return m_iCachedInspectModelIndex;
+}
+
+int CViewport::GetInspectPhysicComponentId() const
+{
+	return m_iCachedInspectPhysicComponentId;
 }
 
 void CViewport::ActivateClientUI(void)

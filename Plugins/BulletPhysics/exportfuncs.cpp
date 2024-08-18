@@ -36,7 +36,7 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
-cvar_t* bv_debug = NULL;
+//cvar_t* bv_debug = NULL;
 cvar_t *bv_debug_draw = NULL;
 cvar_t* bv_debug_draw_wallhack = NULL;
 cvar_t* bv_debug_draw_ragdoll = NULL;
@@ -69,11 +69,6 @@ int* cl_numvisedicts = NULL;
 cl_entity_t** cl_visedicts = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
-
-bool IsDebugModeEnabled()
-{
-	return (int)bv_debug->value >= 1;
-}
 
 bool IsDebugDrawEnabled()
 {
@@ -1112,6 +1107,11 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
+void BV_OpenDebugUI_f(void)
+{
+	g_pViewPort->OpenPhysicDebugGUI();
+}
+
 void BV_ReloadAll_f(void)
 {
 	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
@@ -1139,7 +1139,7 @@ void HUD_Init(void)
 
 	ClientPhysicManager()->Init();
 
-	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
+	//bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_ragdoll", "1", FCVAR_CLIENTDLL);
@@ -1159,6 +1159,8 @@ void HUD_Init(void)
 	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
 	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
+	gEngfuncs.pfnAddCommand("bv_debug_ui", BV_OpenDebugUI_f);
+
 	gEngfuncs.pfnAddCommand("bv_reload_all", BV_ReloadAll_f);
 	gEngfuncs.pfnAddCommand("bv_reload_objects", BV_ReloadObjects_f);
 	gEngfuncs.pfnAddCommand("bv_reload_configs", BV_ReloadConfigs_f);
@@ -1173,6 +1175,8 @@ void HUD_Init(void)
 		gPrivateFuncs.efxapi_R_TempModel = gEngfuncs.pEfxAPI->R_TempModel;
 		Install_InlineHook(efxapi_R_TempModel);
 	}
+
+	g_pViewPort->Init();
 }
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
@@ -1206,7 +1210,7 @@ void HUD_TempEntUpdate(
 		pTemp = pTemp->next;
 	}
 
-	if (IsDebugModeEnabled())
+	if (g_pViewPort->IsPhysicDebugGUIVisible())
 	{
 		int mouseX{}, mouseY{};
 		gEngfuncs.GetMousePosition(&mouseX, &mouseY);
@@ -1267,8 +1271,8 @@ void HUD_TempEntUpdate(
 
 			if (!bInspectPhysicComponentFound)
 			{
-				ClientPhysicManager()->InspectPhysicComponent(0);
 				g_pViewPort->UpdateInspectPhysicComponent(0);
+				ClientPhysicManager()->InspectPhysicComponent(0);
 			}
 		}
 	}

@@ -207,11 +207,12 @@ inline float FloatNegate( vec_t f )
 #endif
 
 // FIXME: why are these here?  Hardly anyone actually needs them.
-#ifndef CONST_H
-struct color24
+#ifndef COLOR24_DEFINED
+#define COLOR24_DEFINED
+typedef struct color24
 {
 	byte r, g, b;
-};
+}color24_t;
 #endif
 
 typedef struct color32_s
@@ -226,7 +227,8 @@ inline bool color32::operator!=( const color32 &other ) const
 	return r != other.r || g != other.g || b != other.b || a != other.a;
 }
 
-#ifndef CONST_H
+#ifndef COLORVEC_DEFINED
+#define COLORVEC_DEFINED
 struct colorVec
 {
 	unsigned r, g, b, a;

@@ -527,6 +527,11 @@ void MH_Shutdown(void);
 
 #define METAHOOK_API_VERSION 103
 
+class ICommandLine;
+class IFileSystem;
+class IRegistry;
+class IFileSystem_HL25;
+
 typedef struct mh_interface_s
 {
 	ICommandLine *CommandLine;
