@@ -68,6 +68,11 @@ class CBasePhysicRigidBody : public IPhysicRigidBody
 public:
 	CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig);
 
+	int GetPhysicConfigId() const override
+	{
+		return m_configId;
+	}
+
 	int GetPhysicComponentId() const override
 	{
 		return m_id;
@@ -104,6 +109,7 @@ public:
 	std::string m_name;
 	int m_flags{};
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	int m_configId{};
 
 	int m_boneindex{ -1 };
 };
@@ -116,6 +122,11 @@ public:
 		int entindex, 
 		const CClientConstraintConfig* pConstraintConfig);
 
+	int GetPhysicConfigId() const override
+	{
+		return m_configId;
+	}
+
 	int GetPhysicComponentId() const override
 	{
 		return m_id;
@@ -152,6 +163,7 @@ public:
 	std::string m_name;
 	int m_flags{};
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	int m_configId{};
 };
 
 class CBasePhysicManager : public IClientPhysicManager
@@ -163,18 +175,24 @@ protected:
 	//CPhysicVertexArray* m_gargantuaVertexArray{};
 
 	float m_gravity{};
-	int m_iAllocatedPhysicComponentId{};
+
 	int m_iInspectPhysicComponentId{};
+
+	int m_iAllocatedPhysicComponentId{};
+
+	int m_iAllocatedPhysicConfigId{};
 
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
 	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
+	std::unordered_map<int, std::weak_ptr<CClientBasePhysicConfig>> m_physicConfigs;
 
 	CPhysicVertexArray* m_worldVertexArray{};
 	std::vector<CPhysicIndexArray *> m_brushIndexArray;
 
-	//Configs
-	CClientPhysicObjectConfigs m_physicConfigs;
+	CClientPhysicObjectConfigs m_physicObjectConfigs;
+
 public:
+
 	void Destroy(void) override;
 	void Init(void) override;
 	void Shutdown() override;
@@ -183,16 +201,24 @@ public:
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
 
+	//PhysicObjectConfig Management
+	bool SavePhysicObjectConfigForModel(model_t* mod) override;
+	bool SavePhysicObjectConfigForModelIndex(int modelindex) override;
 	std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) override;
 	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) override;
+	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModelIndex(int modelindex);
 	void LoadPhysicObjectConfigs(void) override; 
-	void SavePhysicObjectConfigs(void);
+	void SavePhysicObjectConfigs(void) override;
+	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage) override;
+	bool LoadPhysicObjectConfigFromBSP(model_t* mod, CClientPhysicObjectConfigStorage& Storage) override;
+	void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) override;
 
 	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
 	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
 
-	//Physic Object
+	//PhysicObject Management
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
 	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
@@ -209,14 +235,26 @@ public:
 	IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) override;
 	IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* playerState) override;
 
-	//Physic Component
+	//PhysicComponent Management
 	int AllocatePhysicComponentId() override; 
 	IPhysicComponent* GetPhysicComponent(int physicComponentId) override;
 	void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) override;
 	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
 	bool RemovePhysicComponent(int physicComponentId) override;
-	void InspectPhysicComponent(int physicComponentId) override;
+
+	//Inspect
+	void InspectPhysicComponentById(int physicComponentId) override;
 	void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) override;
+	int GetInspectPhysicComponentId() override;
+	IPhysicComponent* GetInspectPhysicComponent() override;
+
+	//BasePhysicConfig Management
+	int AllocatePhysicConfigId() override;
+	std::weak_ptr<CClientBasePhysicConfig> GetPhysicConfig(int configId) override;
+	void AddPhysicConfig(int configId, const std::shared_ptr<CClientBasePhysicConfig>& pPhysicConfig) override;
+	bool RemovePhysicConfig(int configId) override;
+	void RemoveAllPhysicConfigs() override;
+
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -241,11 +279,6 @@ private:
 	//void FreeBarnacleIndexVertexArray();
 	//void GenerateGargantuaIndexVertexArray();
 	//void FreeGargantuaIndexVertexArray();
-
-	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig);
-	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage);
-
-	void RemoveAllPhysicConfigs();
 
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);

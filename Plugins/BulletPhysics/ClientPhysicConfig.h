@@ -8,23 +8,21 @@
 
 #include "ClientPhysicCommon.h"
 
-class CClientCollisionShapeConfig
+class CClientBasePhysicConfig : public IBaseInterface
 {
 public:
-	~CClientCollisionShapeConfig()
-	{
-		if (m_pVertexArrayStorage)
-		{
-			delete m_pVertexArrayStorage;
-			m_pVertexArrayStorage = nullptr;
-		}
+	CClientBasePhysicConfig();
+	~CClientBasePhysicConfig();
 
-		if (m_pIndexArrayStorage)
-		{
-			delete m_pIndexArrayStorage;
-			m_pVertexArrayStorage = nullptr;
-		}
-	}
+	int configId{};
+	int configType{ PhysicConfigType_None };
+};
+
+class CClientCollisionShapeConfig : public CClientBasePhysicConfig
+{
+public:
+	CClientCollisionShapeConfig();
+	~CClientCollisionShapeConfig();
 
 	std::string name;
 
@@ -51,9 +49,13 @@ public:
 	CPhysicIndexArray* m_pIndexArrayStorage{};
 };
 
-class CClientRigidBodyConfig
+using CClientCollisionShapeConfigs = std::vector<std::shared_ptr<CClientCollisionShapeConfig>> ;
+
+class CClientRigidBodyConfig : public CClientBasePhysicConfig
 {
 public:
+	CClientRigidBodyConfig();
+
 	std::string name;
 
 	int flags{ PhysicRigidBodyFlag_None };
@@ -83,19 +85,14 @@ public:
 	//TODO?
 	//vec3_t centerOfMass{ 0 };
 
-	//Support compound shape?
-	std::vector<std::shared_ptr<CClientCollisionShapeConfig>> shapes;
+	//TODO: Support compound shape?
+	CClientCollisionShapeConfigs shapes;
 };
 
-class CClientConstraintConfig
+class CClientConstraintConfig : public CClientBasePhysicConfig
 {
 public:
-	CClientConstraintConfig()
-	{
-		for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
-			factors[i] = NAN;
-		}
-	}
+	CClientConstraintConfig();
 
 	std::string name;
 	int type{ PhysicConstraint_None };
@@ -129,15 +126,10 @@ public:
 	vec3_t offsetB{ 0 };
 };
 
-class CClientPhysicActionConfig
+class CClientPhysicActionConfig : public CClientBasePhysicConfig
 {
 public:
-	CClientPhysicActionConfig()
-	{
-		for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
-			factors[i] = NAN;
-		}
-	}
+	CClientPhysicActionConfig();
 
 	int type{ PhysicAction_None };
 	std::string name;
@@ -148,9 +140,11 @@ public:
 	float factors[PhysicActionFactorIdx_Maximum]{  };
 };
 
-class CClientFloaterConfig
+class CClientFloaterConfig : public CClientBasePhysicConfig
 {
 public:
+	CClientFloaterConfig();
+
 	std::string rigidbody;
 	vec3_t origin{};
 	float buoyancy{};
@@ -167,10 +161,12 @@ public:
 	int activity{};
 };
 
-class CClientPhysicObjectConfig : public IBaseInterface
+class CClientPhysicObjectConfig : public CClientBasePhysicConfig
 {
 public:
-	int type{ PhysicConfigType_None };
+	CClientPhysicObjectConfig();
+
+	int type{ PhysicObjectType_None };
 	int flags{};
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 };
@@ -178,11 +174,7 @@ public:
 class CClientDynamicObjectConfig : public CClientPhysicObjectConfig
 {
 public:
-	CClientDynamicObjectConfig()
-	{
-		type = PhysicConfigType_DynamicObject;
-		flags = PhysicObjectFlag_DynamicObject;
-	}
+	CClientDynamicObjectConfig();
 
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 };
@@ -190,11 +182,7 @@ public:
 class CClientStaticObjectConfig : public CClientPhysicObjectConfig
 {
 public:
-	CClientStaticObjectConfig()
-	{
-		type = PhysicConfigType_StaticObject;
-		flags = PhysicObjectFlag_StaticObject;
-	}
+	CClientStaticObjectConfig();
 };
 
 class CClientBarnacleControlConfig
@@ -215,13 +203,7 @@ public:
 class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 {
 public:
-	CClientRagdollObjectConfig()
-	{
-		type = PhysicConfigType_RagdollObject;
-		flags = PhysicObjectFlag_RagdollObject;
-		FirstPersionViewCameraControlConfig.rigidbody = "Head";
-		ThirdPersionViewCameraControlConfig.rigidbody = "Pelvis";
-	}
+	CClientRagdollObjectConfig();
 
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
@@ -236,6 +218,7 @@ class CClientPhysicObjectConfigStorage
 {
 public:
 	int state{ PhysicConfigState_NotLoaded };
+	std::string filename;
 	std::shared_ptr<CClientPhysicObjectConfig> pConfig{};
 };
 

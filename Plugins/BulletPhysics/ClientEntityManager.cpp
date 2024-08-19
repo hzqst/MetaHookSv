@@ -21,6 +21,8 @@ private:
 	model_t* m_BarnacleModel{};
 	model_t* m_GargantuaModel{};
 
+	int m_iInspectEntityIndex{};
+	int m_iInspectEntityModelIndex{};
 public:
 
 	bool IsEntityIndexTempEntity(int entindex) override
@@ -386,6 +388,9 @@ public:
 		m_GargantuaMap.clear();
 
 		ClearAllPlayerDeathState();
+
+		m_iInspectEntityIndex = 0;
+		m_iInspectEntityModelIndex = 0;
 	}
 
 	void AddBarnacle(int entindex, int playerindex) override
@@ -540,7 +545,32 @@ public:
 
 		return false;
 	}
+
+	void DispatchEntityModel(cl_entity_t* ent, model_t* mod) override
+	{
+		if (GetEntityIndex(ent) == m_iInspectEntityIndex)
+		{
+			m_iInspectEntityModelIndex = EngineGetModelIndex(mod);
+		}
+	}
+
+	void InspectEntityByIndex(int entindex) override
+	{
+		m_iInspectEntityIndex = entindex;
+		m_iInspectEntityModelIndex = 0;
+	}
+
+	int GetInspectEntityIndex() override
+	{
+		return m_iInspectEntityIndex;
+	}
+
+	int GetInspectEntityModelIndex() override
+	{
+		return m_iInspectEntityModelIndex;
+	}
 };
+
 
 static CClientEntityManager g_ClientEntityManager;
 

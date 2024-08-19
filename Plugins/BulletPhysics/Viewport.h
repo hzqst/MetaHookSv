@@ -26,7 +26,6 @@ public:
 
 public:
 	void Think(void) override;
-	void Paint(void) override;
 	void SetParent(vgui::VPANEL vPanel) override;
 
 public:
@@ -37,21 +36,13 @@ public:
 	void ActivateClientUI(void);
 	void HideClientUI(void);
 
-	void UpdateInspectEntity(int entindex);
-	void UpdateInspectPhysicComponent(int physicComponentId);
 	void OpenPhysicDebugGUI();
-	bool IsPhysicDebugGUIVisible() const;
+	void ClosePhysicDebugGUI();
+	void SwitchPhysicDebugGUI();
+	bool PhysicDebugGUIHasFocus();
 
-	int GetInspectEntityIndex() const;
-	int GetInspectEntityModelIndex() const;
-	int GetInspectPhysicComponentId() const;
 private:
 	CPhysicDebugGUI* m_pPhysicDebugViewGUI{};
-
-	int m_iCachedInspectEntityIndex{};
-	int m_iCachedInspectModelIndex{};
-
-	int m_iCachedInspectPhysicComponentId{};
 };
 
 extern CViewport *g_pViewPort;

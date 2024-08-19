@@ -2,14 +2,22 @@
 
 #include <vector>
 
+const int PhysicConfigType_None = 0;
+const int PhysicConfigType_PhysicObject = 1;
+const int PhysicConfigType_RigidBody = 2;
+const int PhysicConfigType_Constraint = 3;
+const int PhysicConfigType_CollisionShape = 4;
+const int PhysicConfigType_Action = 5;
+const int PhysicConfigType_Floater = 6;
+
 const int PhysicConfigState_NotLoaded = 0;
 const int PhysicConfigState_Loaded = 1;
 const int PhysicConfigState_LoadedWithError = 2;
 
-const int PhysicConfigType_None = 0;
-const int PhysicConfigType_StaticObject = 1;
-const int PhysicConfigType_DynamicObject = 2;
-const int PhysicConfigType_RagdollObject = 3;
+const int PhysicObjectType_None = 0;
+const int PhysicObjectType_StaticObject = 1;
+const int PhysicObjectType_DynamicObject = 2;
+const int PhysicObjectType_RagdollObject = 3;
 
 const int PhysicObjectFlag_Barnacle = 0x1;
 const int PhysicObjectFlag_Gargantua = 0x2;

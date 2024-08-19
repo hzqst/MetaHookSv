@@ -36,9 +36,6 @@
     <Filter Include="SourceSDK\mathlib">
       <UniqueIdentifier>{6f4122f5-05d7-4aa7-80cb-db7e07d8bfda}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Physics">
-      <UniqueIdentifier>{02cd0006-373f-4c7f-ab28-69fa59e77cc0}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
@@ -405,10 +402,10 @@
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="BulletPhysicManager.cpp">
-      <Filter>Physics</Filter>
+      <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BasePhysicManager.cpp">
-      <Filter>Physics</Filter>
+      <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -455,31 +452,31 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="ClientPhysicManager.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientPhysicCommon.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="ClientPhysicConfig.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="BulletStaticObject.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="BulletRagdollObject.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="BulletPhysicManager.h">
-      <Filter>Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseStaticObject.h">
-      <Filter>Physics</Filter>
+      <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BaseRagdollObject.h">
-      <Filter>Physics</Filter>
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseStaticObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletPhysicManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletRagdollObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletStaticObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientPhysicCommon.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientPhysicConfig.h">
+      <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BasePhysicManager.h">
-      <Filter>Physics</Filter>
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

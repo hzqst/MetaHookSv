@@ -1,6 +1,7 @@
 #pragma once
 
 #include <interface.h>
+#include <metahook.h>
 #include <cl_entity.h>
 #include <com_model.h>
 #include <studio.h>
@@ -112,6 +113,7 @@ public:
 		return "#BulletPhysics_PhysicComponent";
 	}
 
+	virtual int GetPhysicConfigId() const = 0;
 	virtual int GetPhysicComponentId() const = 0;
 	virtual int GetOwnerEntityIndex() const = 0;
 	virtual const char* GetName() const = 0;
@@ -306,10 +308,18 @@ public:
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
 
+	//PhysicObjectConfig Management
+	virtual bool SavePhysicObjectConfigForModel(model_t* mod) = 0;
+	virtual bool SavePhysicObjectConfigForModelIndex(int modelindex) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) = 0;
+	virtual std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModelIndex(int modelindex) = 0;
 	virtual void LoadPhysicObjectConfigs(void) = 0;
 	virtual void SavePhysicObjectConfigs(void) = 0;
+	virtual bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
+	virtual bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage) = 0;
+	virtual bool LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage) = 0;
+	virtual void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) = 0;
 
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
@@ -325,7 +335,7 @@ public:
 	virtual IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* state) = 0;
 	virtual void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult) = 0;
 
-	//Physic Object
+	//PhysicObject Management
 
 	virtual void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) = 0;
 	virtual void FreePhysicObject(IPhysicObject* pPhysicObject) = 0;
@@ -334,7 +344,7 @@ public:
 	virtual bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) = 0;
 	virtual void UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
 
-	//Physic World
+	//PhysicWorld
 
 	virtual void AddPhysicComponentsToWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
 	virtual void RemovePhysicComponentsFromWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
@@ -343,16 +353,26 @@ public:
 	virtual void OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent) = 0;
 	virtual void OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent) = 0;
 
-	//Physic Component
+	//PhysicComponent Management
 
 	virtual int AllocatePhysicComponentId() = 0;
-	virtual IPhysicComponent *GetPhysicComponent(int iPhysicComponentId) = 0;
+	virtual IPhysicComponent *GetPhysicComponent(int physicComponentId) = 0;
 	virtual void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) = 0;
 	virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
-	virtual void InspectPhysicComponent(int physicComponentId) = 0;
+	//Inspect
+	virtual void InspectPhysicComponentById(int physicComponentId) = 0;
 	virtual void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
+	virtual int GetInspectPhysicComponentId() = 0;
+	virtual IPhysicComponent* GetInspectPhysicComponent() = 0;
+
+	//BasePhysicConfig Management
+	virtual int AllocatePhysicConfigId() = 0;
+	virtual std::weak_ptr<CClientBasePhysicConfig> GetPhysicConfig(int configId) = 0;
+	virtual void AddPhysicConfig(int configId, const std::shared_ptr<CClientBasePhysicConfig>& pPhysicConfig) = 0;
+	virtual bool RemovePhysicConfig(int configId) = 0;
+	virtual void RemoveAllPhysicConfigs() = 0;
 };
 
 extern IClientPhysicManager* g_pClientPhysicManager;

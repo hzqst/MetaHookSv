@@ -246,10 +246,16 @@ int EngineGetMaxKnownModel()
 
 int EngineGetModelIndex(model_t *mod)
 {
-	int index = (mod - (model_t *)(mod_known));
+	auto start = (model_t*)(mod_known);
+	auto end = (model_t*)(mod_known);
+	end  += (*mod_numknown);
 
-	if (index >= 0 && index < *mod_numknown)
+	if (mod >= start && mod < end)
+	{
+		int index = (mod - (model_t*)(mod_known));
+
 		return index;
+	}
 
 	return -1;
 }
@@ -258,17 +264,11 @@ model_t *EngineGetModelByIndex(int index)
 {
 	auto pmod_known = (model_t *)(mod_known);
 	
-	if (index >= 0 && index < *mod_numknown)
+	if (index >= 0 && index < EngineGetNumKnownModel())
 		return &pmod_known[index];
 
 	return NULL;
 }
-
-void RagdollDestroyCallback(int entindex)
-{
-	ClientEntityManager()->FreePlayerForBarnacle(entindex);
-}
-
 /*
 	Purpose : StudioSetupBones hook handler
 */
@@ -1107,14 +1107,18 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
-void BV_OpenDebugUI_f(void)
+void BV_DebugUI_f(void)
 {
-	g_pViewPort->OpenPhysicDebugGUI();
+	if (AllowCheats())
+	{
+		g_pViewPort->OpenPhysicDebugGUI();
+	}
 }
 
 void BV_ReloadAll_f(void)
 {
 	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
+	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
@@ -1125,6 +1129,7 @@ void BV_ReloadObjects_f(void)
 
 void BV_ReloadConfigs_f(void)
 {
+	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
@@ -1159,7 +1164,7 @@ void HUD_Init(void)
 	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
 	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
-	gEngfuncs.pfnAddCommand("bv_debug_ui", BV_OpenDebugUI_f);
+	gEngfuncs.pfnAddCommand("bv_debug_ui", BV_DebugUI_f);
 
 	gEngfuncs.pfnAddCommand("bv_reload_all", BV_ReloadAll_f);
 	gEngfuncs.pfnAddCommand("bv_reload_objects", BV_ReloadObjects_f);
@@ -1210,73 +1215,7 @@ void HUD_TempEntUpdate(
 		pTemp = pTemp->next;
 	}
 
-	if (g_pViewPort->IsPhysicDebugGUIVisible())
-	{
-		int mouseX{}, mouseY{};
-		gEngfuncs.GetMousePosition(&mouseX, &mouseY);
-
-		SCREENINFO_s scr{};
-		scr.iSize = sizeof(SCREENINFO_s);
-
-		if (gEngfuncs.pfnGetScreenInfo(&scr) && scr.iWidth > 0 && scr.iHeight > 0)
-		{
-			vec3_t vecForward, vecRight, vecUp, vecTarget, vecScreen;
-
-			vecScreen[0] = UNPROJECT_X(mouseX, scr.iWidth);
-			vecScreen[1] = UNPROJECT_Y(mouseY, scr.iHeight);
-			vecScreen[2] = 1;
-
-			gEngfuncs.pTriAPI->ScreenToWorld(vecScreen, vecTarget);
-
-			VectorSubtract(vecTarget, r_params_final.vieworg, vecForward);
-			VectorNormalize(vecForward);
-			VectorMA(r_params_final.vieworg, 4096, vecForward, vecTarget);
-
-			CPhysicTraceLineHitResult hitResult;
-			ClientPhysicManager()->TraceLine(r_params_final.vieworg, vecTarget, hitResult);
-
-			bool bInspectEntityFound = false;
-			bool bInspectPhysicComponentFound = false;
-			if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
-			{
-				g_pViewPort->UpdateInspectEntity(hitResult.m_iHitEntityIndex);
-				g_pViewPort->UpdateInspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
-				ClientPhysicManager()->InspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
-
-				bInspectEntityFound = true;
-				bInspectPhysicComponentFound = true;
-			}
-			else
-			{
-
-				auto trace = gEngfuncs.PM_TraceLine(r_params_final.vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
-
-				if (trace->fraction != 1.0 && trace->ent)
-				{
-					auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
-
-					if (physent)
-					{
-						g_pViewPort->UpdateInspectEntity(physent->info);
-
-						bInspectEntityFound = true;
-					}
-				}
-			}
-
-			if (!bInspectEntityFound)
-			{
-				g_pViewPort->UpdateInspectEntity(0);
-			}
-
-			if (!bInspectPhysicComponentFound)
-			{
-				g_pViewPort->UpdateInspectPhysicComponent(0);
-				ClientPhysicManager()->InspectPhysicComponent(0);
-			}
-		}
-	}
-
+	
 	ClientPhysicManager()->SetGravity(cl_gravity);
 	ClientPhysicManager()->UpdatePhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
 	ClientPhysicManager()->StepSimulation(frametime);
@@ -1360,8 +1299,82 @@ void HUD_DrawTransparentTriangles(void)
 	}
 }
 
+void UpdateInspectEntity()
+{
+	bool bInspectEntityFound = false;
+	bool bInspectPhysicComponentFound = false;
+
+	if (AllowCheats())
+	{
+		if (g_pViewPort->PhysicDebugGUIHasFocus())
+		{
+			int mouseX{}, mouseY{};
+			gEngfuncs.GetMousePosition(&mouseX, &mouseY);
+
+			SCREENINFO_s scr{};
+			scr.iSize = sizeof(SCREENINFO_s);
+
+			if (gEngfuncs.pfnGetScreenInfo(&scr) && scr.iWidth > 0 && scr.iHeight > 0)
+			{
+				vec3_t vecForward, vecRight, vecUp, vecTarget, vecScreen;
+
+				vecScreen[0] = UNPROJECT_X(mouseX, scr.iWidth);
+				vecScreen[1] = UNPROJECT_Y(mouseY, scr.iHeight);
+				vecScreen[2] = 1;
+
+				gEngfuncs.pTriAPI->ScreenToWorld(vecScreen, vecTarget);
+
+				VectorSubtract(vecTarget, r_params_final.vieworg, vecForward);
+				VectorNormalize(vecForward);
+				VectorMA(r_params_final.vieworg, 4096, vecForward, vecTarget);
+
+				CPhysicTraceLineHitResult hitResult;
+				ClientPhysicManager()->TraceLine(r_params_final.vieworg, vecTarget, hitResult);
+
+				if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
+				{
+					ClientEntityManager()->InspectEntityByIndex(hitResult.m_iHitEntityIndex);
+					ClientPhysicManager()->InspectPhysicComponentById(hitResult.m_iHitPhysicComponentIndex);
+
+					bInspectEntityFound = true;
+					bInspectPhysicComponentFound = true;
+				}
+				else
+				{
+
+					auto trace = gEngfuncs.PM_TraceLine(r_params_final.vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+
+					if (trace->fraction != 1.0 && trace->ent)
+					{
+						auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
+
+						if (physent)
+						{
+							ClientEntityManager()->InspectEntityByIndex(physent->info);
+
+							bInspectEntityFound = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (!bInspectEntityFound)
+	{
+		ClientEntityManager()->InspectEntityByIndex(0);
+	}
+
+	if (!bInspectPhysicComponentFound)
+	{
+		ClientPhysicManager()->InspectPhysicComponentById(0);
+	}
+}
+
 void HUD_CreateEntities(void)
 {
+	UpdateInspectEntity();
+
 	gExportfuncs.HUD_CreateEntities();
 
 	auto localplayer = gEngfuncs.GetLocalPlayer();

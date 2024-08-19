@@ -407,6 +407,9 @@ public:
 
 	bool OnResponsePayload(const char* data, size_t size) override
 	{
+		if (g_Database.size() > 0)
+			return true;
+
 		rapidjson::Document doc;
 
 		doc.Parse(data, size);

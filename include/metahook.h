@@ -19,6 +19,11 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 
 #define HOOK_MESSAGE(x) g_pMetaHookAPI->HookUserMsg(#x, __MsgFunc_##x);
 
+//Fuck Microsoft
+#ifdef PropertySheet
+#undef PropertySheet
+#endif
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__

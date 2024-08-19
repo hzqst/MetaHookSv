@@ -447,8 +447,8 @@ ListPanel::ListPanel(Panel *parent, const char *panelName) : Panel(parent, panel
 	m_iEditModeItemID = 0;
 	m_iEditModeColumn = 0;
 
-	m_iHeaderHeight = 20;
-	m_iRowHeight = 20;
+	m_iHeaderHeight = vgui::scheme()->GetProportionalScaledValue(20);
+	m_iRowHeight = vgui::scheme()->GetProportionalScaledValue(20);
 	m_bCanSelectIndividualCells = false;
 	m_iSelectedColumn = -1;
 	m_bAllowUserAddDeleteColumns = false;
@@ -597,10 +597,10 @@ void ListPanel::AddColumnHeader(int index, const char *columnName, const char *c
 	// create the column header button
 	Button *pButton = SETUP_PANEL(new ColumnButton(this, columnName, columnText));  // the cell rendering mucks with the button visibility during the solvetraverse loop,
 																					//so force applyschemesettings to make sure its run
-	pButton->SetSize(width, 24);
+	pButton->SetSize(width, vgui::scheme()->GetProportionalScaledValue(24));
 	pButton->AddActionSignalTarget(this);
 	pButton->SetContentAlignment(Label::a_west);
-	pButton->SetTextInset(5, 0);
+	pButton->SetTextInset(vgui::scheme()->GetProportionalScaledValue(5), 0);
 
 	column.m_pHeader = pButton;
 	column.m_iMinWidth = minWidth;
@@ -1613,11 +1613,11 @@ void ListPanel::PerformLayout()
 
 	int wide, tall;
 	GetSize( wide, tall );
-	m_vbar->SetPos(wide - (m_vbar->GetWide()+WINDOW_BORDER_WIDTH), 0);
-	m_vbar->SetSize(m_vbar->GetWide(), tall - 2);
+	m_vbar->SetPos(wide - (m_vbar->GetWide()+ vgui::scheme()->GetProportionalScaledValue(WINDOW_BORDER_WIDTH)), 0);
+	m_vbar->SetSize(m_vbar->GetWide(), tall - vgui::scheme()->GetProportionalScaledValue(2));
 	m_vbar->InvalidateLayout();
 
-	int buttonMaxXPos = wide - (m_vbar->GetWide()+WINDOW_BORDER_WIDTH);
+	int buttonMaxXPos = wide - (m_vbar->GetWide()+ vgui::scheme()->GetProportionalScaledValue(WINDOW_BORDER_WIDTH));
 	
 	int nColumns = m_CurrentColumns.Count();
 	// number of bars that can be resized
@@ -1784,8 +1784,8 @@ void ListPanel::PerformLayout()
 				sizer->SetVisible(true);
 			}
 			sizer->MoveToFront();
-			sizer->SetPos(x - 4, 0);
-			sizer->SetSize(8, m_vbar->GetWide());
+			sizer->SetPos(x - vgui::scheme()->GetProportionalScaledValue(4), 0);
+			sizer->SetSize(vgui::scheme()->GetProportionalScaledValue(8), m_vbar->GetWide());
 		}
 
 		// we made it all the way through
@@ -1878,7 +1878,7 @@ void ListPanel::PerformLayout()
 					 j == m_iEditModeColumn )
 				{
 
-					m_hEditModePanel->SetPos( x + m_iTableStartX + 2, (drawcount * m_iRowHeight) + m_iTableStartY);
+					m_hEditModePanel->SetPos( x + m_iTableStartX + vgui::scheme()->GetProportionalScaledValue(2), (drawcount * m_iRowHeight) + m_iTableStartY);
 					m_hEditModePanel->SetSize( wide, m_iRowHeight - 1 );
 
 					bDone = true;
@@ -1933,7 +1933,7 @@ void ListPanel::Paint()
 	}
 
 	int vbarInset = m_vbar->IsVisible() ? m_vbar->GetWide() : 0;
-	int maxw = wide - vbarInset - 8;
+	int maxw = wide - vbarInset - vgui::scheme()->GetProportionalScaledValue(8);
 
 //	debug timing functions
 //	double startTime, endTime;
@@ -1972,13 +1972,13 @@ void ListPanel::Paint()
 				{
 					render->SetVisible(true);
 				}
-				int xpos = x + m_iTableStartX + 2;
+				int xpos = x + m_iTableStartX + vgui::scheme()->GetProportionalScaledValue(2);
 
 				render->SetPos( xpos, (drawcount * m_iRowHeight) + m_iTableStartY);
 
 				int right = min( xpos + wide, maxw );
 				int usew = right - xpos;
-				render->SetSize( usew, m_iRowHeight - 1 );
+				render->SetSize( usew, m_iRowHeight - vgui::scheme()->GetProportionalScaledValue(1) );
 
 				// mark the panel to draw immediately (since it will probably be recycled to draw other cells)
 				render->Repaint();
@@ -2020,8 +2020,8 @@ void ListPanel::Paint()
 	// if the list is empty, draw some help text
 	if (m_VisibleItems.Count() < 1 && m_pEmptyListText)
 	{
-		m_pEmptyListText->SetPos(m_iTableStartX + 8, m_iTableStartY + 4);
-		m_pEmptyListText->SetSize(wide - 8, m_iRowHeight);
+		m_pEmptyListText->SetPos(m_iTableStartX + vgui::scheme()->GetProportionalScaledValue(8), m_iTableStartY + vgui::scheme()->GetProportionalScaledValue(4));
+		m_pEmptyListText->SetSize(wide - vgui::scheme()->GetProportionalScaledValue(8), m_iRowHeight);
 		m_pEmptyListText->Paint();
 	}
 
@@ -2706,7 +2706,7 @@ void ListPanel::OnColumnResized(int col, int delta)
 		column_t& nextCol = m_ColumnsData[m_CurrentColumns[i]];
 		restColumnsMinWidth += nextCol.m_iMinWidth;
 	}
-	panelWide -= ( x + restColumnsMinWidth + m_vbar->GetWide() + WINDOW_BORDER_WIDTH );
+	panelWide -= ( x + restColumnsMinWidth + m_vbar->GetWide() + vgui::scheme()->GetProportionalScaledValue(WINDOW_BORDER_WIDTH) );
 	if ( wide > panelWide )
 	{
 		wide = panelWide;
@@ -2936,7 +2936,7 @@ void ListPanel::ResizeColumnToContents(int column)
 	}
 
 	// Introduce a slight buffer between columns
-	minRequiredWidth += 4;
+	minRequiredWidth += vgui::scheme()->GetProportionalScaledValue(4);
 
 	// call the resize
 	col.m_pHeader->GetSize(wide, tall);

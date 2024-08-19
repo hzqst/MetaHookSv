@@ -68,6 +68,13 @@ public:
 	virtual void ClearEntityEmitStates() = 0;
 
 	virtual bool IsEntityInVisibleList(cl_entity_t* ent) = 0;
+
+	//The final render model goes here
+	virtual void DispatchEntityModel(cl_entity_t* ent, model_t* mod) = 0;
+
+	virtual void InspectEntityByIndex(int entindex) = 0;
+	virtual int GetInspectEntityIndex() = 0;
+	virtual int GetInspectEntityModelIndex() = 0;
 };
 
 IClientEntityManager *ClientEntityManager();

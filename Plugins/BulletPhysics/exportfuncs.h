@@ -18,6 +18,8 @@ extern cl_entity_t** cl_entities;
 extern int* cl_numvisedicts;
 extern cl_entity_t** cl_visedicts;
 
+extern bool g_bIsCounterStrike;
+
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
 void HUD_TempEntUpdate(

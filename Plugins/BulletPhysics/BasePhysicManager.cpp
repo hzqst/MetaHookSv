@@ -104,13 +104,97 @@ bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhys
 	return true;
 }
 
+CClientBasePhysicConfig::CClientBasePhysicConfig()
+{
+	configId = ClientPhysicManager()->AllocatePhysicConfigId();
+}
+
+CClientBasePhysicConfig::~CClientBasePhysicConfig()
+{
+	ClientPhysicManager()->RemovePhysicConfig(configId);
+}
+
+CClientCollisionShapeConfig::CClientCollisionShapeConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_CollisionShape;
+}
+
+CClientCollisionShapeConfig::~CClientCollisionShapeConfig()
+{
+	if (m_pVertexArrayStorage)
+	{
+		delete m_pVertexArrayStorage;
+		m_pVertexArrayStorage = nullptr;
+	}
+
+	if (m_pIndexArrayStorage)
+	{
+		delete m_pIndexArrayStorage;
+		m_pVertexArrayStorage = nullptr;
+	}
+}
+
+CClientRigidBodyConfig::CClientRigidBodyConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_RigidBody;
+}
+
+CClientConstraintConfig::CClientConstraintConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_Constraint;
+
+	for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
+		factors[i] = NAN;
+	}
+}
+
+CClientPhysicActionConfig::CClientPhysicActionConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_Action;
+
+	for (int i = 0; i < _ARRAYSIZE(factors); ++i) {
+		factors[i] = NAN;
+	}
+}
+
+CClientFloaterConfig::CClientFloaterConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_Floater;
+}
+
+CClientPhysicObjectConfig::CClientPhysicObjectConfig() : CClientBasePhysicConfig()
+{
+	configType = PhysicConfigType_PhysicObject;
+}
+
+CClientDynamicObjectConfig::CClientDynamicObjectConfig() : CClientPhysicObjectConfig()
+{
+	type = PhysicObjectType_DynamicObject;
+	flags = PhysicObjectFlag_DynamicObject;
+}
+
+CClientStaticObjectConfig::CClientStaticObjectConfig() : CClientPhysicObjectConfig()
+{
+	type = PhysicObjectType_StaticObject;
+	flags = PhysicObjectFlag_StaticObject;
+}
+
+CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectConfig()
+{
+	type = PhysicObjectType_RagdollObject;
+	flags = PhysicObjectFlag_RagdollObject;
+	FirstPersionViewCameraControlConfig.rigidbody = "Head";
+	ThirdPersionViewCameraControlConfig.rigidbody = "Pelvis";
+}
+
 CBasePhysicRigidBody::CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig) :
 	m_id(id),
 	m_entindex(entindex),
 	m_name(pRigidConfig->name),
 	m_flags(pRigidConfig->flags),
 	m_boneindex(pRigidConfig->boneindex),
-	m_debugDrawLevel(pRigidConfig->debugDrawLevel)
+	m_debugDrawLevel(pRigidConfig->debugDrawLevel),
+	m_configId(pRigidConfig->configId)
 {
 
 }
@@ -123,7 +207,8 @@ CBasePhysicConstraint::CBasePhysicConstraint(
 	m_entindex(entindex),
 	m_name(pConstraintConfig->name),
 	m_flags(pConstraintConfig->flags),
-	m_debugDrawLevel(pConstraintConfig->debugDrawLevel)
+	m_debugDrawLevel(pConstraintConfig->debugDrawLevel),
+	m_configId(pConstraintConfig->configId)
 {
 
 }
@@ -146,17 +231,19 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
+	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_NoConfig, 0);
 
 	m_iAllocatedPhysicComponentId = 0;
 	m_iInspectPhysicComponentId = 0;
 
-	LoadPhysicObjectConfigs();
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
 
 	//Deprecated, use .obj instead.
 	//GenerateBarnacleIndexVertexArray();
 	//GenerateGargantuaIndexVertexArray();
+
+	LoadPhysicObjectConfigs();
 
 	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
 }
@@ -183,33 +270,49 @@ void CBasePhysicManager::StepSimulation(double frametime)
 	}
 }
 
-void CBasePhysicManager::RemoveAllPhysicConfigs()
+void CBasePhysicManager::RemoveAllPhysicObjectConfigs(int withflags, int withoutflags)
 {
-	m_physicConfigs.clear();
+	for (auto itor = m_physicObjectConfigs.begin(); itor != m_physicObjectConfigs.end(); itor++)
+	{
+		auto &Storage = (*itor);
+
+		if (Storage.state == PhysicConfigState_Loaded && (Storage.pConfig->flags & withflags) && (Storage.pConfig->flags & withoutflags) == 0)
+		{
+			Storage.pConfig.reset();
+			Storage.state = PhysicConfigState_NotLoaded;
+			continue;
+		}
+	}
 }
 
 void CBasePhysicManager::LoadPhysicObjectConfigs(void)
 {
-	RemoveAllPhysicConfigs();
-
 	int maxNum = EngineGetMaxKnownModel();
 
-	if ((int)m_physicConfigs.size() < maxNum)
-		m_physicConfigs.resize(maxNum);
+	if ((int)m_physicObjectConfigs.size() < maxNum)
+		m_physicObjectConfigs.resize(maxNum);
 
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
+
 		if (mod->type == mod_studio && mod->name[0])
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
-				auto moddata = IEngineStudio.Mod_Extradata(mod);
+				auto studiohdr = IEngineStudio.Mod_Extradata(mod);
 
-				if (moddata)
+				if (studiohdr)
 				{
 					LoadPhysicObjectConfigForModel(mod);
 				}
+			}
+		}
+		else if (mod->type == mod_brush)
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				LoadPhysicObjectConfigForModel(mod);
 			}
 		}
 	}
@@ -400,7 +503,7 @@ int GetPhysicActionTypeFromTypeName(const char* name)
 	return type;
 }
 
-static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, std::vector<std::shared_ptr<CClientCollisionShapeConfig>> &shapes)
+static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, CClientCollisionShapeConfigs &shapes)
 {
 	auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
@@ -445,6 +548,8 @@ static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, std::vecto
 	pShapeConfig->objpath = pShapeSubKey->GetString("objpath");
 
 	shapes.emplace_back(pShapeConfig);
+
+	ClientPhysicManager()->AddPhysicConfig(pShapeConfig->configId, pShapeConfig);
 }
 
 
@@ -555,6 +660,8 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigid
 			}
 
 			RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 		}
 	}
 }
@@ -794,6 +901,8 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 #undef LOAD_FACTOR_FLOAT
 
 			ConstraintConfigs.emplace_back(pConstraintConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
 		}
 	}
 }
@@ -897,6 +1006,10 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 			}
 
 #undef LOAD_FACTOR_FLOAT
+
+			ActionConfigs.emplace_back(pPhysicActionConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pPhysicActionConfig->configId, pPhysicActionConfig);
 		}
 	}
 }
@@ -969,6 +1082,8 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKey
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pDynamicObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnDynamicObject, pDynamicObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pDynamicObjectConfig->ConstraintConfigs);
+
+	ClientPhysicManager()->AddPhysicConfig(pDynamicObjectConfig->configId, pDynamicObjectConfig);
 
 	return pDynamicObjectConfig;
 }
@@ -1621,17 +1736,17 @@ static KeyValues* ConvertPhysicObjectConfigToKeyValues(const CClientPhysicObject
 {
 	switch (PhysicObjectConfig->type)
 	{
-	case PhysicConfigType_StaticObject:
+	case PhysicObjectType_StaticObject:
 	{
-		return ConvertStaticObjectConfigToKeyValues((CClientStaticObjectConfig*)PhysicObjectConfig);
+		return ConvertStaticObjectConfigToKeyValues((const CClientStaticObjectConfig*)PhysicObjectConfig);
 	}
-	case PhysicConfigType_DynamicObject:
+	case PhysicObjectType_DynamicObject:
 	{
-		return ConvertDynamicObjectConfigToKeyValues((CClientDynamicObjectConfig*)PhysicObjectConfig);
+		return ConvertDynamicObjectConfigToKeyValues((const CClientDynamicObjectConfig*)PhysicObjectConfig);
 	}
-	case PhysicConfigType_RagdollObject:
+	case PhysicObjectType_RagdollObject:
 	{
-		return ConvertRagdollObjectConfigToKeyValues((CClientRagdollObjectConfig*)PhysicObjectConfig);
+		return ConvertRagdollObjectConfigToKeyValues((const CClientRagdollObjectConfig*)PhysicObjectConfig);
 	}
 	}
 
@@ -1689,25 +1804,38 @@ static bool ParseLegacyRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig,
 	float pBoneOffset, size0, size1, mass;
 
 	if (iss >> name >> boneIndex >> pBoneIndex >> shapeType >> pBoneOffset >> size0 >> size1 >> mass) {
-		auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
+		const auto &ItorRigidBodyConfigWithSameName = std::find_if(pRagdollConfig->RigidBodyConfigs.begin(), pRagdollConfig->RigidBodyConfigs.end(), [&name](const std::shared_ptr<CClientRigidBodyConfig>& p) {
+			return p->name == name;
+		});
+
+		if (ItorRigidBodyConfigWithSameName != pRagdollConfig->RigidBodyConfigs.end())
+		{
+			gEngfuncs.Con_DPrintf("ParseLegacyRigidBodyLine: multiple rigidbodies with name \"%s\"", name.c_str());
+			return false;
+		}
+
+		auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 		auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
-		if (shapeType == "sphere") {
+		if (shapeType == "sphere")
+		{
 			pShapeConfig->type = PhysicShape_Sphere;
 			pShapeConfig->size[0] = size0;
 			pRigidBodyConfig->ccdRadius = size0 * 0.2f;
 		}
-		else if (shapeType == "capsule") {
+		else if (shapeType == "capsule")
+		{
 			pShapeConfig->type = PhysicShape_Capsule;
 			pShapeConfig->direction = PhysicShapeDirection_Y;
 			pShapeConfig->size[0] = size0;
 			pShapeConfig->size[1] = size1;
 			pRigidBodyConfig->ccdRadius = size0 * 0.2f;
 		}
-		else {
+		else
+		{
 			gEngfuncs.Con_DPrintf("ParseLegacyRigidBodyLine: Unsupported shape type \"%s\"", shapeType.c_str());
-			return false; // Unsupported shape type
+			return false;
 		}
 
 		pRigidBodyConfig->name = name;
@@ -1719,7 +1847,13 @@ static bool ParseLegacyRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig,
 		pRigidBodyConfig->isLegacyConfig = true;
 
 		pRigidBodyConfig->shapes.emplace_back(pShapeConfig);
+
+		ClientPhysicManager()->AddPhysicConfig(pShapeConfig->configId, pShapeConfig);
+
 		pRagdollConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
+		ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
+
 		return true;
 	}
 	gEngfuncs.Con_DPrintf("ParseLegacyRigidBodyLine: failed to parse line \"%s\"", line.c_str());
@@ -1737,10 +1871,13 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 	if (iss >> rigidbodyA >> rigidbodyB >> constraintType >> boneindexA >> boneindexB
 		>> offsetAX >> offsetAY >> offsetAZ >> offsetBX >> offsetBY >> offsetBZ
 		>> factor0 >> factor1 >> factor2) {
+
 		auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 
 		if (constraintType == "point" || constraintType == "point_collision") {
 			pConstraintConfig->type = PhysicConstraint_Point;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularCFM] = BULLET_DEFAULT_ANGULAR_CFM;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_AngularERP] = BULLET_DEFAULT_ANGULAR_ERP;
 		}
 		else if (constraintType == "conetwist" || constraintType == "conetwist_collision") {
 			pConstraintConfig->type = PhysicConstraint_ConeTwist;
@@ -1785,7 +1922,10 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 			pConstraintConfig->disableCollision = false;
 		}
 
-		pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
+		pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig); 
+		
+		ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
+
 		return true;
 	}
 
@@ -1805,7 +1945,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 		{
 			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 			pConstraintConfig->type = PhysicConstraint_Dof6;
-			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.body|{}", rigidbody);
+			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.body|{0}", rigidbody);
 			pConstraintConfig->rigidbodyA = "@barnacle.body";
 			pConstraintConfig->rigidbodyB = rigidbody;
 			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;
@@ -1835,6 +1975,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			pRagdollConfig->BarnacleControlConfig.ConstraintConfigs.emplace_back(pConstraintConfig);
 
+			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
+
 			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
 
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
@@ -1844,6 +1986,9 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
+
 			return true;
 		}
 		else if (type == "slider")
@@ -1876,6 +2021,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			pRagdollConfig->BarnacleControlConfig.ConstraintConfigs.emplace_back(pConstraintConfig);
 
+			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
+
 			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
 			pActionConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
@@ -1885,6 +2032,9 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
+
 			return true;
 		}
 		else if (type == "chewforce")
@@ -1899,20 +2049,25 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval] = factor1;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
+
 			return true;
 		}
 		else if (type == "chewlimit")
 		{
 			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
 
-			pActionConfig->name = std::format("BarnacleConstraintLimitAdjustment|{}", rigidbody);
+			pActionConfig->name = std::format("BarnacleConstraintLimitAdjustment|{0}", rigidbody);
 			pActionConfig->type = PhysicAction_BarnacleConstraintLimitAdjustment;
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsConstraint;
-			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.body|{}", rigidbody);
+			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.body|{0}", rigidbody);
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 
-			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig); 
+			
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
 			return true;
 		}
 	}
@@ -2056,6 +2211,39 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 	return false;
 }
 
+bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage)
+{
+	auto pIndexArray = GetIndexArrayFromBrushModel(mod);
+
+	if (!pIndexArray)
+	{
+		Storage.state = PhysicConfigState_LoadedWithError;
+		return false;
+	}
+
+	auto pCollisionShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
+
+	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
+	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
+	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
+
+	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
+
+	pRigidBodyConfig->name = mod->name;
+	pRigidBodyConfig->flags = 0;
+	pRigidBodyConfig->debugDrawLevel = (mod == r_worldmodel) ? 2 : 1;
+	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
+
+	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
+
+	pStaticObjectConfig->flags |= PhysicObjectFlag_NoConfig;
+	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
+	Storage.pConfig = pStaticObjectConfig;
+	Storage.state = PhysicConfigState_Loaded;
+	return true;
+}
+
 bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage &Storage)
 {
 	std::string fullname = filename;
@@ -2076,7 +2264,10 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& file
 
 	if(pConfig)
 	{
+		ClientPhysicManager()->AddPhysicConfig(pConfig->configId, pConfig);
+
 		Storage.pConfig = pConfig;
+		Storage.filename = fullname;
 		Storage.state = PhysicConfigState_Loaded;
 		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return true;
@@ -2089,7 +2280,10 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& file
 
 	if (pConfig)
 	{
+		ClientPhysicManager()->AddPhysicConfig(pConfig->configId, pConfig);
+
 		Storage.pConfig = pConfig;
+		Storage.filename = fullname;
 		Storage.state = PhysicConfigState_Loaded;
 		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return true;
@@ -2100,26 +2294,66 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& file
 	return false;
 }
 
+bool CBasePhysicManager::SavePhysicObjectConfigForModel(model_t* mod)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex == -1)
+	{
+		g_pMetaHookAPI->SysError("SavePhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
+		return false;
+	}
+
+	return SavePhysicObjectConfigForModelIndex(modelindex);
+}
+
+bool CBasePhysicManager::SavePhysicObjectConfigForModelIndex(int modelindex)
+{
+	if (modelindex >= 0 && modelindex < EngineGetNumKnownModel())
+	{
+		g_pMetaHookAPI->SysError("SavePhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
+		return false;
+	}
+
+	auto& Storage = m_physicObjectConfigs[modelindex];
+
+	if (Storage.state == PhysicConfigState_Loaded)
+	{
+		return SavePhysicObjectConfigToFile(Storage.filename, Storage.pConfig.get());
+	}
+
+	return false;
+}
+
 std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectConfigForModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex == -1)
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index %d!\n", modelindex);
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;
 	}
 
-	if (modelindex >= m_physicConfigs.size())
+	if (modelindex >= m_physicObjectConfigs.size())
 	{
-		g_pMetaHookAPI->SysError("LoadPhysicObjectConfig: Invalid model index %d!\n", modelindex);
+		g_pMetaHookAPI->SysError("LoadPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;
 	}
 
-	auto& Storage = m_physicConfigs[modelindex];
+	auto& Storage = m_physicObjectConfigs[modelindex];
 
 	if (Storage.state == PhysicConfigState_NotLoaded)
-		LoadPhysicObjectConfigFromFiles(mod->name, Storage);
+	{
+		if (mod->type == mod_studio)
+		{
+			LoadPhysicObjectConfigFromFiles(mod->name, Storage);
+		}
+		else if (mod->type == mod_brush)
+		{
+			LoadPhysicObjectConfigFromBSP(mod, Storage);
+		}
+	}
 
 	return Storage.pConfig;
 }
@@ -2134,13 +2368,18 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectCo
 		return nullptr;
 	}
 
-	if (modelindex >= m_physicConfigs.size())
+	return GetPhysicObjectConfigForModelIndex(modelindex);
+}
+
+std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectConfigForModelIndex(int modelindex)
+{
+	if (modelindex >= m_physicObjectConfigs.size())
 	{
 		g_pMetaHookAPI->SysError("GetPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;
 	}
 
-	auto& Storage = m_physicConfigs[modelindex];
+	auto& Storage = m_physicObjectConfigs[modelindex];
 
 	if (Storage.state == PhysicConfigState_Loaded)
 		return Storage.pConfig;
@@ -2185,6 +2424,8 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
 			}
 
+			ClientEntityManager()->DispatchEntityModel(ent, model);
+
 			auto PhysicObject = GetPhysicObject(entindex);
 
 			if (PhysicObject && 
@@ -2219,6 +2460,8 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
 			}
 
+			ClientEntityManager()->DispatchEntityModel(ent, model);
+
 			auto PhysicObject = GetPhysicObject(entindex);
 
 			if (PhysicObject && 
@@ -2241,6 +2484,8 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			if (!model)
 				return;
+
+			ClientEntityManager()->DispatchEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -2267,6 +2512,8 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 
 			if (!model)
 				return;
+
+			ClientEntityManager()->DispatchEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -2523,7 +2770,7 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	return false;
 }
 
-void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)
+void CBasePhysicManager::InspectPhysicComponentById(int physicComponentId)
 {
 	m_iInspectPhysicComponentId = physicComponentId;
 }
@@ -2531,6 +2778,57 @@ void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)
 void CBasePhysicManager::InspectPhysicComponent(IPhysicComponent* pPhysicComponent)
 {
 	m_iInspectPhysicComponentId = pPhysicComponent->GetPhysicComponentId();
+}
+
+int CBasePhysicManager::GetInspectPhysicComponentId()
+{
+	return m_iInspectPhysicComponentId;
+}
+
+IPhysicComponent* CBasePhysicManager::GetInspectPhysicComponent()
+{
+	return GetPhysicComponent(m_iInspectPhysicComponentId);
+}
+
+int CBasePhysicManager::AllocatePhysicConfigId()
+{
+	++m_iAllocatedPhysicConfigId;
+	return m_iAllocatedPhysicConfigId;
+}
+
+std::weak_ptr<CClientBasePhysicConfig> CBasePhysicManager::GetPhysicConfig(int configId)
+{
+	auto itor = m_physicConfigs.find(configId);
+
+	if (itor != m_physicConfigs.end())
+	{
+		return itor->second;
+	}
+
+	return std::weak_ptr<CClientBasePhysicConfig>();
+}
+
+void CBasePhysicManager::AddPhysicConfig(int configId, const std::shared_ptr<CClientBasePhysicConfig>& pPhysicConfig)
+{
+	m_physicConfigs[configId] = pPhysicConfig;
+}
+
+bool CBasePhysicManager::RemovePhysicConfig(int configId)
+{
+	auto itor = m_physicConfigs.find(configId);
+
+	if (itor != m_physicConfigs.end())
+	{
+		m_physicConfigs.erase(itor);
+		return true;
+	}
+
+	return false;
+}
+
+void CBasePhysicManager::RemoveAllPhysicConfigs()
+{
+	m_physicConfigs.clear();
 }
 
 //Private impls
@@ -2542,7 +2840,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	if (!pPhysicConfig)
 		return;
 
-	if (pPhysicConfig->type == PhysicConfigType_RagdollObject)
+	if (pPhysicConfig->type == PhysicObjectType_RagdollObject)
 	{
 		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig.get();
 
@@ -2573,12 +2871,12 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 		AddPhysicObject(entindex, pRagdollObject);
 	}
-	else if (pPhysicConfig->type == PhysicConfigType_DynamicObject)
+	else if (pPhysicConfig->type == PhysicObjectType_DynamicObject)
 	{
 		//TODO
 		//CDynamicObjectCreationParameter CreationParam;
 	}
-	else if (pPhysicConfig->type == PhysicConfigType_StaticObject)
+	else if (pPhysicConfig->type == PhysicObjectType_StaticObject)
 	{
 		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig.get();
 
@@ -2613,6 +2911,8 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod)
 {
+	ClientEntityManager()->DispatchEntityModel(ent, mod);
+
 	auto entindex = ClientEntityManager()->GetEntityIndex(ent);
 
 	auto pPhysicObject = GetPhysicObject(entindex);
@@ -2620,34 +2920,19 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	if (pPhysicObject && pPhysicObject->GetModel() == mod)
 		return;
 
-	auto pIndexArray = GetIndexArrayFromBrushModel(mod);
+	auto pPhysicConfig = LoadPhysicObjectConfigForModel(mod);
 
-	if (!pIndexArray)
+	if (!pPhysicConfig)
 		return;
 
-	auto pCollisionShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
-
-	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
-	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
-	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
-
-	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
-
-	pRigidBodyConfig->name = mod->name;
-	pRigidBodyConfig->flags = 0;
-	pRigidBodyConfig->debugDrawLevel = (ent == r_worldentity) ? 2 : 1;
-	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
-
-	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
-
-	pStaticObjectConfig->flags |= PhysicObjectFlag_NoConfig;
-	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+	if (pPhysicConfig->type != PhysicObjectType_StaticObject)
+		return;
 
 	CStaticObjectCreationParameter CreationParam;
 	CreationParam.m_entity = ent;
 	CreationParam.m_entindex = entindex;
 	CreationParam.m_model = mod;
-	CreationParam.m_pStaticObjectConfig = pStaticObjectConfig.get();
+	CreationParam.m_pStaticObjectConfig = (CClientStaticObjectConfig *)pPhysicConfig.get();
 
 	auto pStaticObject = CreateStaticObject(CreationParam);
 

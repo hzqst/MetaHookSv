@@ -1964,8 +1964,8 @@ void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTrac
 
 			if (pPhysicComponent)
 			{
-				hitResult.m_iHitPhysicComponentIndex = pPhysicComponent->GetPhysicComponentId();
 				hitResult.m_iHitEntityIndex = pPhysicComponent->GetOwnerEntityIndex();
+				hitResult.m_iHitPhysicComponentIndex = pPhysicComponent->GetPhysicComponentId();
 			}
 		}
 	}
