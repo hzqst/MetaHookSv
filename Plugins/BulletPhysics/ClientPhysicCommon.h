@@ -24,7 +24,7 @@ const int PhysicObjectFlag_Gargantua = 0x2;
 const int PhysicObjectFlag_StaticObject = 0x1000;
 const int PhysicObjectFlag_DynamicObject = 0x2000;
 const int PhysicObjectFlag_RagdollObject = 0x4000;
-const int PhysicObjectFlag_NoConfig = 0x20000;
+const int PhysicObjectFlag_FromBSP = 0x20000;
 const int PhysicObjectFlag_FromConfig = 0x40000;
 const int PhysicObjectFlag_AnyObject = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject | PhysicObjectFlag_DynamicObject);
 
@@ -150,6 +150,7 @@ const int PhysicShape_Capsule = 3;
 const int PhysicShape_Cylinder = 4;
 const int PhysicShape_MultiSphere = 5;
 const int PhysicShape_TriangleMesh = 6;
+const int PhysicShape_Compound = 7;
 
 const int PhysicAction_None = 0;
 
@@ -177,6 +178,7 @@ const int PhysicShapeDirection_Y = 1;
 const int PhysicShapeDirection_Z = 2;
 
 #define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
+#define BULLET_WORLD_DEBUG_DRAW_LEVEL 10
 #define BULLET_DEFAULT_SOFTNESS 1.0f
 #define BULLET_DEFAULT_BIAS_FACTOR 0.3f
 #define BULLET_DEFAULT_RELAXTION_FACTOR 1.0f
@@ -196,7 +198,7 @@ const int PhysicShapeDirection_Z = 2;
 #define BULLET_DEFAULT_DENSENTY 1.0f
 #define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
 #define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
-#define BULLET_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
+#define BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
 
 #define INCHES_PER_METER 39.3700787402f
 

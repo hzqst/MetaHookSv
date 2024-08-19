@@ -202,7 +202,7 @@ public:
 
 public:
 
-	float m_maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
+	float m_maxTolerantLinearError{ BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR };
 	bool m_disableCollision{};
 
 	bool m_addedToPhysicWorld{};

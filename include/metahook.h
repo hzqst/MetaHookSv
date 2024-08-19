@@ -24,6 +24,14 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 #undef PropertySheet
 #endif
 
+#ifdef PostMessage
+#undef PostMessage
+#endif
+
+#ifdef SendMessage
+#undef SendMessage
+#endif
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__

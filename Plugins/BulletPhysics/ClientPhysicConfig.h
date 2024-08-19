@@ -18,27 +18,37 @@ public:
 	int configType{ PhysicConfigType_None };
 };
 
+class CClientCollisionShapeConfig;
+
+using CClientCollisionShapeConfigSharedPtr = std::shared_ptr<CClientCollisionShapeConfig>;
+using CClientCollisionShapeConfigs = std::vector< CClientCollisionShapeConfigSharedPtr>;
+
 class CClientCollisionShapeConfig : public CClientBasePhysicConfig
 {
 public:
 	CClientCollisionShapeConfig();
 	~CClientCollisionShapeConfig();
 
-	std::string name;
+	//std::string name;
 
 	int type{ PhysicShape_None };
 
 	int direction{ PhysicShapeDirection_Y };
 
-	vec3_t origin{ 0 };
-
-	//angles only works for compound shape
-	vec3_t angles{ 0 };
-
 	vec3_t size{ 0 };
 
-	//TODO
-	//std::vector<float> multispheres;
+	//for compound shape
+	bool is_child{};
+
+	//for compound shape
+	vec3_t origin{ 0 };
+
+	//for compound shape
+	vec3_t angles{ 0 };
+
+	//TODO for multi sphere
+	std::vector<vec4_t> multispheres;
+
 	std::string objpath;
 
 	CPhysicVertexArray* m_pVertexArray{};
@@ -47,9 +57,9 @@ public:
 	//TODO: Put this shit to dedicated storage
 	CPhysicVertexArray* m_pVertexArrayStorage{};
 	CPhysicIndexArray* m_pIndexArrayStorage{};
-};
 
-using CClientCollisionShapeConfigs = std::vector<std::shared_ptr<CClientCollisionShapeConfig>> ;
+	CClientCollisionShapeConfigs compoundShapes;
+};
 
 class CClientRigidBodyConfig : public CClientBasePhysicConfig
 {
@@ -65,12 +75,12 @@ public:
 	int boneindex{ -1 };
 	vec3_t origin{ 0 };
 	vec3_t angles{ 0 };
-	vec3_t forward{ 0, 1, 0 };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };
 	int pboneindex{ -1 };
 	float pboneoffset{ 0 };
+	vec3_t forward{ 0, 1, 0 };
 
 	float mass{ 1 };
 	float density{ 1 };
@@ -85,8 +95,7 @@ public:
 	//TODO?
 	//vec3_t centerOfMass{ 0 };
 
-	//TODO: Support compound shape?
-	CClientCollisionShapeConfigs shapes;
+	CClientCollisionShapeConfigSharedPtr collisionShape;
 };
 
 class CClientConstraintConfig : public CClientBasePhysicConfig
@@ -116,7 +125,7 @@ public:
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	float factors[PhysicConstraintFactorIdx_Maximum]{  };
 
-	float maxTolerantLinearError{ BULLET_MAX_TOLERANT_LINEAR_ERROR };
+	float maxTolerantLinearError{ BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR };
 
 	//For legacy configs
 	bool isLegacyConfig{ false };

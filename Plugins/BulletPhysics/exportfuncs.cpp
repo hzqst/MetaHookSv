@@ -39,10 +39,10 @@ r_studio_interface_t **gpStudioInterface;
 //cvar_t* bv_debug = NULL;
 cvar_t *bv_debug_draw = NULL;
 cvar_t* bv_debug_draw_wallhack = NULL;
-cvar_t* bv_debug_draw_ragdoll = NULL;
-cvar_t* bv_debug_draw_static = NULL;
-cvar_t* bv_debug_draw_dynamic = NULL;
-cvar_t* bv_debug_draw_constraint = NULL;
+cvar_t* bv_debug_draw_level_ragdoll = NULL;
+cvar_t* bv_debug_draw_level_static = NULL;
+cvar_t* bv_debug_draw_level_dynamic = NULL;
+cvar_t* bv_debug_draw_level_constraint = NULL;
 
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
@@ -87,22 +87,22 @@ bool ShouldSyncronizeView()
 
 int GetRagdollObjectDebugDrawLevel()
 {
-	return (int)bv_debug_draw_ragdoll->value;
+	return (int)bv_debug_draw_level_ragdoll->value;
 }
 
 int GetStaticObjectDebugDrawLevel()
 {
-	return (int)bv_debug_draw_static->value;
+	return (int)bv_debug_draw_level_static->value;
 }
 
 int GetDynamicObjectDebugDrawLevel()
 {
-	return (int)bv_debug_draw_dynamic->value;
+	return (int)bv_debug_draw_level_dynamic->value;
 }
 
 int GetConstraintDebugDrawLevel()
 {
-	return (int)bv_debug_draw_constraint->value;
+	return (int)bv_debug_draw_level_constraint->value;
 }
 
 float GetSimulationTickRate()
@@ -1117,14 +1117,14 @@ void BV_DebugUI_f(void)
 
 void BV_ReloadAll_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
 	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 
 void BV_ReloadObjects_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_NoConfig);
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
 }
 
 void BV_ReloadConfigs_f(void)
@@ -1147,10 +1147,10 @@ void HUD_Init(void)
 	//bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL);
-	bv_debug_draw_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_ragdoll", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_static", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_dynamic", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_constraint", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_ragdoll", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_static", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_dynamic", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_constraint", "1", FCVAR_CLIENTDLL);
 
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);

@@ -23,6 +23,147 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
+const char* GetPhysicObjectConfigTypeName(int type)
+{
+	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
+
+	if (type >= 0 && type < _ARRAYSIZE(c_names))
+	{
+		return c_names[type];
+	}
+
+	return "Unknown";
+}
+
+const char* GetConstraintTypeName(int type)
+{
+	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
+
+	if (type >= 0 && type < _ARRAYSIZE(c_names))
+	{
+		return c_names[type];
+	}
+
+	return "Unknown";
+}
+
+const char* GetPhysicActionTypeName(int type)
+{
+	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment" };
+
+	if (type >= 0 && type < _ARRAYSIZE(c_names))
+	{
+		return c_names[type];
+	}
+
+	return "Unknown";
+}
+
+const char* GetCollisionShapeTypeName(int type)
+{
+	const char* c_names[] = { "None", "Box", "Sphere", "Capsule", "Cylinder", "MultiSphere", "TriangleMesh", "Compound" };
+
+	if (type >= 0 && type < _ARRAYSIZE(c_names))
+	{
+		return c_names[type];
+	}
+
+	return "Unknown";
+}
+
+int GetCollisionTypeFromTypeName(const char* name)
+{
+	int type = PhysicShape_None;
+
+	if (!strcmp(name, "Box"))
+	{
+		type = PhysicShape_Box;
+	}
+	else if (!strcmp(name, "Sphere"))
+	{
+		type = PhysicShape_Sphere;
+	}
+	else if (!strcmp(name, "Capsule"))
+	{
+		type = PhysicShape_Capsule;
+	}
+	else if (!strcmp(name, "Cylinder"))
+	{
+		type = PhysicShape_Cylinder;
+	}
+	else if (!strcmp(name, "MultiSphere"))
+	{
+		type = PhysicShape_MultiSphere;
+	}
+	else if (!strcmp(name, "TriangleMesh"))
+	{
+		type = PhysicShape_TriangleMesh;
+	}
+	else if (!strcmp(name, "Compound"))
+	{
+		type = PhysicShape_Compound;
+	}
+
+	return type;
+}
+
+int GetConstraintTypeFromTypeName(const char* name)
+{
+	int type = PhysicConstraint_None;
+
+	if (!strcmp(name, "ConeTwist"))
+	{
+		type = PhysicConstraint_ConeTwist;
+	}
+	else if (!strcmp(name, "Hinge"))
+	{
+		type = PhysicConstraint_Hinge;
+	}
+	else if (!strcmp(name, "Point"))
+	{
+		type = PhysicConstraint_Point;
+	}
+	else if (!strcmp(name, "Slider"))
+	{
+		type = PhysicConstraint_Slider;
+	}
+	else if (!strcmp(name, "Dof6"))
+	{
+		type = PhysicConstraint_Dof6;
+	}
+	else if (!strcmp(name, "Dof6Spring"))
+	{
+		type = PhysicConstraint_Dof6Spring;
+	}
+	else if (!strcmp(name, "Fixed"))
+	{
+		type = PhysicConstraint_Fixed;
+	}
+
+	return type;
+}
+
+int GetPhysicActionTypeFromTypeName(const char* name)
+{
+	int type = PhysicAction_None;
+
+	if (!strcmp(name, "BarnacleDragForce"))
+	{
+		type = PhysicAction_BarnacleDragForce;
+	}
+	else if (!strcmp(name, "BarnacleChewForce"))
+	{
+		type = PhysicAction_BarnacleChewForce;
+	}
+	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
+	{
+		type = PhysicAction_BarnacleConstraintLimitAdjustment;
+	}
+
+	return type;
+}
+
+
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
 {
 	if (pPhysicComponent->IsRigidBody())
@@ -231,7 +372,7 @@ void CBasePhysicManager::Shutdown()
 void CBasePhysicManager::NewMap(void)
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
-	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_NoConfig, 0);
+	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0);
 
 	m_iAllocatedPhysicComponentId = 0;
 	m_iInspectPhysicComponentId = 0;
@@ -415,124 +556,36 @@ static void LoadPhysicObjectFlagsFromKeyValues(KeyValues* pKeyValues, int &flags
 	}
 }
 
-int GetCollisionTypeFromTypeName(const char* name)
-{
-	int type = PhysicShape_None;
-
-	if (!strcmp(name, "Box"))
-	{
-		type = PhysicShape_Box;
-	}
-	else if (!strcmp(name, "Sphere"))
-	{
-		type = PhysicShape_Sphere;
-	}
-	else if (!strcmp(name, "Capsule"))
-	{
-		type = PhysicShape_Capsule;
-	}
-	else if (!strcmp(name, "Cylinder"))
-	{
-		type = PhysicShape_Cylinder;
-	}
-	else if (!strcmp(name, "MultiSphere"))
-	{
-		type = PhysicShape_MultiSphere;
-	}
-	else if (!strcmp(name, "TriangleMesh"))
-	{
-		type = PhysicShape_TriangleMesh;
-	}
-
-	return type;
-}
-
-int GetConstraintTypeFromTypeName(const char* name)
-{
-	int type = PhysicConstraint_None;
-
-	if (!strcmp(name, "ConeTwist"))
-	{
-		type = PhysicConstraint_ConeTwist;
-	}
-	else if (!strcmp(name, "Hinge"))
-	{
-		type = PhysicConstraint_Hinge;
-	}
-	else if (!strcmp(name, "Point"))
-	{
-		type = PhysicConstraint_Point;
-	}
-	else if (!strcmp(name, "Slider"))
-	{
-		type = PhysicConstraint_Slider;
-	}
-	else if (!strcmp(name, "Dof6"))
-	{
-		type = PhysicConstraint_Dof6;
-	}
-	else if (!strcmp(name, "Dof6Spring"))
-	{
-		type = PhysicConstraint_Dof6Spring;
-	}
-	else if (!strcmp(name, "Fixed"))
-	{
-		type = PhysicConstraint_Fixed;
-	}
-
-	return type;
-}
-
-int GetPhysicActionTypeFromTypeName(const char* name)
-{
-	int type = PhysicAction_None;
-
-	if (!strcmp(name, "BarnacleDragForce"))
-	{
-		type = PhysicAction_BarnacleDragForce;
-	}
-	else if (!strcmp(name, "BarnacleChewForce"))
-	{
-		type = PhysicAction_BarnacleChewForce;
-	}
-	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
-	{
-		type = PhysicAction_BarnacleConstraintLimitAdjustment;
-	}
-
-	return type;
-}
-
-static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, CClientCollisionShapeConfigs &shapes)
+static CClientCollisionShapeConfigSharedPtr LoadCollisionShapeFromKeyValues(KeyValues* pCollisionShapeKey, bool bIsChild)
 {
 	auto pShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
-	pShapeConfig->name = pShapeSubKey->GetName();
-
-	auto type = pShapeSubKey->GetString("type");
+	auto type = pCollisionShapeKey->GetString("type");
 
 	if (type)
 	{
 		pShapeConfig->type = GetCollisionTypeFromTypeName(type);
 	}
 
-	pShapeConfig->direction = pShapeSubKey->GetInt("direction", PhysicShapeDirection_Y);
+	pShapeConfig->is_child = bIsChild;
 
-	auto origin = pShapeSubKey->GetString("origin");
+	pShapeConfig->direction = pCollisionShapeKey->GetInt("direction", PhysicShapeDirection_Y);
+
+	auto origin = pCollisionShapeKey->GetString("origin");
 
 	if (origin)
 	{
 		UTIL_ParseStringAsVector3(origin, pShapeConfig->origin);
 	}
 
-	auto angles = pShapeSubKey->GetString("angles");
+	auto angles = pCollisionShapeKey->GetString("angles");
 
 	if (angles)
 	{
 		UTIL_ParseStringAsVector3(angles, pShapeConfig->angles);
 	}
 
-	auto size = pShapeSubKey->GetString("size");
+	auto size = pCollisionShapeKey->GetString("size");
 
 	if (size)
 	{
@@ -545,13 +598,24 @@ static void LoadCollisionShapeFromKeyValues(KeyValues * pShapeSubKey, CClientCol
 		}
 	}
 
-	pShapeConfig->objpath = pShapeSubKey->GetString("objpath");
+	pShapeConfig->objpath = pCollisionShapeKey->GetString("objpath");
 
-	shapes.emplace_back(pShapeConfig);
+	auto pCompoundShapesKey = pCollisionShapeKey->FindKey("compoundShapes");
 
-	ClientPhysicManager()->AddPhysicConfig(pShapeConfig->configId, pShapeConfig);
+	if (pCompoundShapesKey)
+	{
+		for (auto pSubShapeKey = pCompoundShapesKey->GetFirstSubKey(); pSubShapeKey; pSubShapeKey = pSubShapeKey->GetNextKey())
+		{
+			auto shape = LoadCollisionShapeFromKeyValues(pSubShapeKey, true);
+
+			ClientPhysicManager()->AddPhysicConfig(shape->configId, shape);
+
+			pShapeConfig->compoundShapes.emplace_back(shape);
+		}
+	}
+
+	return pShapeConfig;
 }
-
 
 static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigidBodyFlags, std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
 {
@@ -603,6 +667,7 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigid
 			pRigidBodyConfig->flags &= allowedRigidBodyFlags;
 
 			pRigidBodyConfig->debugDrawLevel = pRigidBodySubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
+
 			pRigidBodyConfig->boneindex = pRigidBodySubKey->GetInt("boneindex", -1);
 
 			auto origin = pRigidBodySubKey->GetString("origin");
@@ -640,23 +705,15 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigid
 			pRigidBodyConfig->linearSleepingThreshold = pRigidBodySubKey->GetFloat("linearSleepingThreshold", BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD);
 			pRigidBodyConfig->angularSleepingThreshold = pRigidBodySubKey->GetFloat("angularSleepingThreshold", BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD);
 
-			auto pShapeKey = pRigidBodySubKey->FindKey("shape");
+			auto pCollisionShapeKey = pRigidBodySubKey->FindKey("collisionShape");
 
-			if (pShapeKey)
+			if (pCollisionShapeKey)
 			{
-				LoadCollisionShapeFromKeyValues(pShapeKey, pRigidBodyConfig->shapes);
-			}
-			else
-			{
-				auto pShapesKey = pRigidBodySubKey->FindKey("shapes");
+				auto shape = LoadCollisionShapeFromKeyValues(pCollisionShapeKey, false);
 
-				if (pShapesKey)
-				{
-					for (auto pShapeSubKey = pShapesKey->GetFirstSubKey(); pShapeSubKey; pShapeSubKey = pShapeSubKey->GetNextKey())
-					{
-						LoadCollisionShapeFromKeyValues(pShapeSubKey, pRigidBodyConfig->shapes);
-					}
-				}
+				ClientPhysicManager()->AddPhysicConfig(shape->configId, shape);
+
+				pRigidBodyConfig->collisionShape = shape;
 			}
 
 			RigidBodyConfigs.emplace_back(pRigidBodyConfig);
@@ -748,7 +805,7 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 			pConstraintConfig->useGlobalJointOriginFromOther = pConstraintSubKey->GetBool("useGlobalJointOriginFromOther", false);
 			pConstraintConfig->useRigidBodyDistanceAsLinearLimit = pConstraintSubKey->GetBool("useRigidBodyDistanceAsLinearLimit", false);
 			pConstraintConfig->useLinearReferenceFrameA = pConstraintSubKey->GetBool("useLinearReferenceFrameA", true);
-			pConstraintConfig->maxTolerantLinearError = pConstraintSubKey->GetFloat("maxTolerantLinearError", BULLET_MAX_TOLERANT_LINEAR_ERROR);
+			pConstraintConfig->maxTolerantLinearError = pConstraintSubKey->GetFloat("maxTolerantLinearError", BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR);
 
 			pConstraintConfig->isLegacyConfig = pConstraintSubKey->GetBool("isLegacyConfig", false);
 			pConstraintConfig->boneindexA = pConstraintSubKey->GetInt("boneindexA", -1);
@@ -1140,48 +1197,6 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewF
 	return LoadPhysicObjectConfigFromKeyValues(pKeyValues);
 }
 
-const char* GetPhysicObjectConfigTypeName(int type)
-{
-	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
-
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-
-	return "Unknown";
-}
-
-const char* GetConstraintTypeName(int type)
-{
-	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-	return "Unknown";
-}
-
-const char* GetPhysicActionTypeName(int type)
-{
-	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment" };
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-	return "Unknown";
-}
-
-const char* GetCollisionShapeName(int type)
-{
-	const char* c_names[] = { "None", "Box", "Sphere", "Capsule", "Cylinder", "MultiSphere", "TriangleMesh" };
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-	return "Unknown";
-}
-
 static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pPhysicObjectConfig)
 {
 	pKeyValues->SetString("type", GetPhysicObjectConfigTypeName(pPhysicObjectConfig->type));
@@ -1195,7 +1210,7 @@ static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicO
 
 static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, const CClientCollisionShapeConfig *pCollisionShapeConfig)
 {
-	pCollisionShapeSubKey->SetString("type", GetCollisionShapeName(pCollisionShapeConfig->type));
+	pCollisionShapeSubKey->SetString("type", GetCollisionShapeTypeName(pCollisionShapeConfig->type));
 
 	if (pCollisionShapeConfig->direction != PhysicShapeDirection_Y)
 		pCollisionShapeSubKey->SetInt("direction", pCollisionShapeConfig->direction);
@@ -1216,7 +1231,27 @@ static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, cons
 	}
 
 	if (!pCollisionShapeConfig->objpath.empty())
+	{
 		pCollisionShapeSubKey->SetString("objpath", pCollisionShapeConfig->objpath.c_str());
+	}
+
+	if (pCollisionShapeConfig->compoundShapes.size() > 0)
+	{
+		auto pCompoundShapesKey = pCollisionShapeSubKey->FindKey("compoundShapes", true);
+
+		if (pCompoundShapesKey)
+		{
+			for (const auto& pCollisionShapeConfig : pCollisionShapeConfig->compoundShapes)
+			{
+				auto pCollisionShapeSubKey = pCompoundShapesKey->CreateNewKey();
+
+				if (pCollisionShapeSubKey)
+				{
+					AddCollisionShapeToKeyValues(pCollisionShapeSubKey, pCollisionShapeConfig.get());
+				}
+			}
+		}
+	}
 }
 
 static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<std::shared_ptr<CClientRigidBodyConfig>> &RigidBodyConfigs)
@@ -1287,33 +1322,13 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					pRigidBodySubKey->SetFloat("linearSleepingThreshold", pRigidBodyConfig->linearSleepingThreshold);
 					pRigidBodySubKey->SetFloat("angularSleepingThreshold", pRigidBodyConfig->angularSleepingThreshold);
 
-					if (pRigidBodyConfig->shapes.size() > 1)
+					if (pRigidBodyConfig->collisionShape)
 					{
-						auto pCollisionShapesKey = pRigidBodySubKey->FindKey("shapes", true);
-
-						if (pCollisionShapesKey)
-						{
-							for (const auto& pCollisionShapeConfig : pRigidBodyConfig->shapes)
-							{
-								if (!pCollisionShapeConfig->name.empty())
-								{
-									auto pCollisionShapeSubKey = pCollisionShapesKey->FindKey(pCollisionShapeConfig->name.c_str(), true);
-
-									if (pCollisionShapeSubKey)
-									{
-										AddCollisionShapeToKeyValues(pCollisionShapeSubKey, pCollisionShapeConfig.get());
-									}
-								}
-							}
-						}
-					}
-					else if (pRigidBodyConfig->shapes.size() == 1)
-					{
-						auto pCollisionShapeKey = pRigidBodySubKey->FindKey("shape", true);
+						auto pCollisionShapeKey = pRigidBodySubKey->FindKey("collisionShape", true);
 
 						if (pCollisionShapeKey)
 						{
-							AddCollisionShapeToKeyValues(pCollisionShapeKey, pRigidBodyConfig->shapes[0].get());
+							AddCollisionShapeToKeyValues(pCollisionShapeKey, pRigidBodyConfig->collisionShape.get());
 						}
 					}
 				}
@@ -1405,7 +1420,7 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					if (pConstraintConfig->debugDrawLevel != BULLET_DEFAULT_DEBUG_DRAW_LEVEL)
 						pConstraintSubKey->SetInt("debugDrawLevel", pConstraintConfig->debugDrawLevel); 
 
-					if(pConstraintConfig->maxTolerantLinearError != BULLET_MAX_TOLERANT_LINEAR_ERROR)
+					if(pConstraintConfig->maxTolerantLinearError != BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR)
 						pConstraintSubKey->SetFloat("maxTolerantLinearError", pConstraintConfig->maxTolerantLinearError);
 
 					if (pConstraintConfig->isLegacyConfig != false)
@@ -1846,7 +1861,7 @@ static bool ParseLegacyRigidBodyLine(CClientRagdollObjectConfig* pRagdollConfig,
 		pRigidBodyConfig->flags = flags;
 		pRigidBodyConfig->isLegacyConfig = true;
 
-		pRigidBodyConfig->shapes.emplace_back(pShapeConfig);
+		pRigidBodyConfig->collisionShape = pShapeConfig;
 
 		ClientPhysicManager()->AddPhysicConfig(pShapeConfig->configId, pShapeConfig);
 
@@ -2231,13 +2246,18 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 
 	pRigidBodyConfig->name = mod->name;
 	pRigidBodyConfig->flags = 0;
-	pRigidBodyConfig->debugDrawLevel = (mod == r_worldmodel) ? 2 : 1;
-	pRigidBodyConfig->shapes.emplace_back(pCollisionShapeConfig);
+	pRigidBodyConfig->debugDrawLevel = (mod == r_worldmodel) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
+	pRigidBodyConfig->collisionShape = pCollisionShapeConfig;
+
+	ClientPhysicManager()->AddPhysicConfig(pCollisionShapeConfig->configId, pCollisionShapeConfig);
 
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
-	pStaticObjectConfig->flags |= PhysicObjectFlag_NoConfig;
+	pStaticObjectConfig->flags |= PhysicObjectFlag_FromBSP;
+
 	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
+	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 
 	Storage.pConfig = pStaticObjectConfig;
 	Storage.state = PhysicConfigState_Loaded;
@@ -3628,29 +3648,41 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 	return true;
 }
 
+void CBasePhysicManager::LoadAdditionalResourcesForCollisionShapeConfig(CClientCollisionShapeConfig *pCollisionShapeConfig)
+{
+	if (pCollisionShapeConfig->type == PhysicShape_TriangleMesh && !pCollisionShapeConfig->objpath.empty())
+	{
+		if (!pCollisionShapeConfig->m_pVertexArrayStorage)
+			pCollisionShapeConfig->m_pVertexArrayStorage = new CPhysicVertexArray();
+
+		if (!pCollisionShapeConfig->m_pIndexArrayStorage)
+			pCollisionShapeConfig->m_pIndexArrayStorage = new CPhysicIndexArray();
+
+		if (!pCollisionShapeConfig->m_pVertexArray && !pCollisionShapeConfig->m_pIndexArray && pCollisionShapeConfig->m_pVertexArrayStorage && pCollisionShapeConfig->m_pIndexArrayStorage)
+		{
+			if (LoadObjToPhysicArrays(pCollisionShapeConfig->objpath, pCollisionShapeConfig->m_pVertexArrayStorage, pCollisionShapeConfig->m_pIndexArrayStorage))
+			{
+				pCollisionShapeConfig->m_pVertexArray = pCollisionShapeConfig->m_pVertexArrayStorage;
+				pCollisionShapeConfig->m_pIndexArray = pCollisionShapeConfig->m_pIndexArrayStorage;
+			}
+		}
+	}
+	else if (pCollisionShapeConfig->type == PhysicShape_Compound && pCollisionShapeConfig->compoundShapes.size() > 0)
+	{
+		for (const auto& pSubShapeConfig : pCollisionShapeConfig->compoundShapes)
+		{
+			LoadAdditionalResourcesForCollisionShapeConfig(pSubShapeConfig.get());
+		}
+	}
+}
+
 void CBasePhysicManager::LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig *pPhysicObjectConfig)
 {
 	for (const auto& pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
 	{
-		for (const auto &pShapeConfig : pRigidBodyConfig->shapes)
+		if (pRigidBodyConfig->collisionShape)
 		{
-			if (pShapeConfig->type == PhysicShape_TriangleMesh && !pShapeConfig->objpath.empty())
-			{
-				if (!pShapeConfig->m_pVertexArrayStorage)
-					pShapeConfig->m_pVertexArrayStorage = new CPhysicVertexArray();
-
-				if (!pShapeConfig->m_pIndexArrayStorage)
-					pShapeConfig->m_pIndexArrayStorage = new CPhysicIndexArray();
-
-				if (!pShapeConfig->m_pVertexArray && !pShapeConfig->m_pIndexArray && pShapeConfig->m_pVertexArrayStorage && pShapeConfig->m_pIndexArrayStorage)
-				{
-					if (LoadObjToPhysicArrays(pShapeConfig->objpath, pShapeConfig->m_pVertexArrayStorage, pShapeConfig->m_pIndexArrayStorage))
-					{
-						pShapeConfig->m_pVertexArray = pShapeConfig->m_pVertexArrayStorage;
-						pShapeConfig->m_pIndexArray = pShapeConfig->m_pIndexArrayStorage;
-					}
-				}
-			}
+			LoadAdditionalResourcesForCollisionShapeConfig(pRigidBodyConfig->collisionShape.get());
 		}
 	}
 }

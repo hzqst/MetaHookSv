@@ -1361,20 +1361,13 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 
 		pShape = pTriMesh;
 	}
-	}
-
-	return pShape;
-}
-
-btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig)
-{
-	if (pRigidConfig->shapes.size() > 1)
+	case PhysicShape_Compound:
 	{
 		auto pCompoundShape = new btCompoundShape();
 
-		for (const auto &pShapeConfig : pRigidConfig->shapes)
+		for (const auto& pSubShapeConfig : pConfig->compoundShapes)
 		{
-			auto pCollisionShape = BulletCreateCollisionShapeInternal(pShapeConfig.get());
+			auto pCollisionShape = BulletCreateCollisionShapeInternal(pSubShapeConfig.get());
 
 			if (pCollisionShape)
 			{
@@ -1382,8 +1375,8 @@ btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigi
 
 				localTrans.setIdentity();
 
-				btVector3 vecAngles(pShapeConfig->angles[0], pShapeConfig->angles[1], pShapeConfig->angles[2]);
-				btVector3 vecOrigin(pShapeConfig->origin[0], pShapeConfig->origin[1], pShapeConfig->origin[2]);
+				btVector3 vecAngles(pSubShapeConfig->angles[0], pSubShapeConfig->angles[1], pSubShapeConfig->angles[2]);
+				btVector3 vecOrigin(pSubShapeConfig->origin[0], pSubShapeConfig->origin[1], pSubShapeConfig->origin[2]);
 
 				Vector3GoldSrcToBullet(vecOrigin);
 
@@ -1397,24 +1390,34 @@ btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigi
 
 		if (!pCompoundShape->getNumChildShapes())
 		{
+			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: childShapes cannot be empty!\n");
+
 			OnBeforeDeleteBulletCollisionShape(pCompoundShape);
 
 			delete pCompoundShape;
 
-			return nullptr;
+			pCompoundShape = nullptr;
 		}
 
-		return pCompoundShape;
+		pShape = pCompoundShape;
+		break;
 	}
-	else if (pRigidConfig->shapes.size() == 1)
-	{
-		auto pShapeConfig = pRigidConfig->shapes[0];
+	}
 
-		return BulletCreateCollisionShapeInternal(pShapeConfig.get());
+	return pShape;
+}
+
+btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig)
+{
+	if (pRigidConfig->collisionShape)
+	{
+		const auto pShapeConfig = pRigidConfig->collisionShape.get();
+
+		return BulletCreateCollisionShapeInternal(pShapeConfig);
 	}
 	else
 	{
-		gEngfuncs.Con_Printf("BulletCreateCollisionShape: no shape available!\n");
+		gEngfuncs.Con_Printf("BulletCreateCollisionShape: no available collisionShape!\n");
 	}
 
 	return nullptr;
