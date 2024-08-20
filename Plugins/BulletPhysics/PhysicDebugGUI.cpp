@@ -132,6 +132,7 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 						if (pPhysicObject)
 						{
 							auto model = pPhysicObject->GetModel();
+
 							auto modelindex = EngineGetModelIndex(model);
 
 							auto pPhysicObjectConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);

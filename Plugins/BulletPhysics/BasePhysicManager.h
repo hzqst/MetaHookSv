@@ -176,9 +176,9 @@ protected:
 
 	float m_gravity{};
 
+	vec3_t m_inspectingColor{ 1, 1, 0 };
 	uint64 m_inspectingPhysicObjectId{};
 	int m_inspectingPhysicComponentId{};
-
 	int m_allocatedPhysicConfigId{};
 	int m_allocatedPhysicComponentId{};
 
@@ -245,6 +245,8 @@ public:
 	bool RemovePhysicComponent(int physicComponentId) override;
 
 	//Inspect System
+	void SetInspectColor(const vec3_t inspectColor) override;
+
 	void InspectPhysicComponent(int physicComponentId) override;
 	int GetInspectingPhysicComponentId() const override;
 

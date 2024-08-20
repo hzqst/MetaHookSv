@@ -380,6 +380,8 @@ public:
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
 	//Inspect System
+	virtual void SetInspectColor(const vec3_t inspectColor) = 0;
+
 	virtual void InspectPhysicComponent(int physicComponentId) = 0;
 	virtual int GetInspectingPhysicComponentId() const = 0;
 

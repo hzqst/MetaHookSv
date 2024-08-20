@@ -19,7 +19,6 @@ CRigidBodyListPanel::CRigidBodyListPanel(vgui::Panel* parent, const char* pName)
 
 }
 
-
 CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
 	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicConfig(pPhysicConfig)
 {
@@ -122,7 +121,6 @@ void CRigidBodyPage::OnOpenContextMenu(int itemId)
 
 	vgui::Menu::PlaceContextMenu(this, menu);
 }
-
 
 void CRigidBodyPage::OnOpenRigidBodyEditor(int configId)
 {
@@ -622,8 +620,8 @@ CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name
 
 	SetTitle("#BulletPhysics_RigidBodyEditor", false);
 
-	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(460), vgui::scheme()->GetProportionalScaledValue(480));
-	SetSize(vgui::scheme()->GetProportionalScaledValue(460), vgui::scheme()->GetProportionalScaledValue(480));
+	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
+	SetSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
 
 	m_pName = new vgui::TextEntry(this, "Name");
 	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
@@ -644,6 +642,13 @@ CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name
 	m_pCCDThreshold = new vgui::TextEntry(this, "CCDThreshold");
 	m_pLinearSleepingThreshold = new vgui::TextEntry(this, "LinearSleepingThreshold");
 	m_pAngularSleepingThreshold = new vgui::TextEntry(this, "AngularSleepingThreshold");
+	m_pAlwaysDynamic = new vgui::CheckButton(this, "AlwaysDynamic", "#BulletPhysics_AlwaysDynamic");
+	m_pAlwaysKinematic = new vgui::CheckButton(this, "AlwaysKinematic", "#BulletPhysics_AlwaysKinematic");
+	m_pAlwaysStatic = new vgui::CheckButton(this, "AlwaysStatic", "#BulletPhysics_AlwaysStatic");
+	m_pNoCollisionToWorld = new vgui::CheckButton(this, "NoCollisionToWorld", "#BulletPhysics_NoCollisionToWorld");
+	m_pNoCollisionToStaticObject = new vgui::CheckButton(this, "NoCollisionToStaticObject", "#BulletPhysics_NoCollisionToStaticObject");
+	m_pNoCollisionToDynamicObject = new vgui::CheckButton(this, "NoCollisionToDynamicObject", "#BulletPhysics_NoCollisionToDynamicObject");
+	m_pNoCollisionToRagdollObject = new vgui::CheckButton(this, "NoCollisionToRagdollObject", "#BulletPhysics_NoCollisionToRagdollObject");
 
 	vgui::HFont hFallbackFont = vgui::scheme()->GetIScheme(GetScheme())->GetFont("DefaultVerySmallFallBack", false);
 
@@ -816,115 +821,79 @@ void CRigidBodyEditDialog::LoadConfigIntoControls()
 {
 	m_pName->SetText(m_pRigidBodyConfig->name.c_str());
 
-	auto debugDrawLevel = std::format("{0}", m_pRigidBodyConfig->debugDrawLevel);
-	m_pDebugDrawLevel->SetText(debugDrawLevel.c_str());
-
 	LoadBoneIntoControls(m_pRigidBodyConfig->boneindex);
 
 	LoadShapeIntoControls(m_pRigidBodyConfig->collisionShape);
 
-	auto originX = std::format("{0}", m_pRigidBodyConfig->origin[0]);
-	m_pOriginX->SetText(originX.c_str());
+#define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pRigidBodyConfig->from); m_p##to->SetText(str##to.c_str());}
 
-	auto originY = std::format("{0}", m_pRigidBodyConfig->origin[1]);
-	m_pOriginY->SetText(originY.c_str());
+	LOAD_INTO_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel);
+	LOAD_INTO_TEXT_ENTRY(origin[0], OriginX);
+	LOAD_INTO_TEXT_ENTRY(origin[1], OriginY);
+	LOAD_INTO_TEXT_ENTRY(origin[2], OriginZ);
+	LOAD_INTO_TEXT_ENTRY(angles[0], AnglesX);
+	LOAD_INTO_TEXT_ENTRY(angles[1], AnglesY);
+	LOAD_INTO_TEXT_ENTRY(angles[2], AnglesZ);
+	LOAD_INTO_TEXT_ENTRY(mass, Mass);
+	LOAD_INTO_TEXT_ENTRY(density, Density);
+	LOAD_INTO_TEXT_ENTRY(linearFriction, LinearFriction);
+	LOAD_INTO_TEXT_ENTRY(rollingFriction, RollingFriction);
+	LOAD_INTO_TEXT_ENTRY(restitution, Restitution);
+	LOAD_INTO_TEXT_ENTRY(ccdRadius, CCDRadius);
+	LOAD_INTO_TEXT_ENTRY(ccdThreshold, CCDThreshold);
+	LOAD_INTO_TEXT_ENTRY(linearSleepingThreshold, LinearSleepingThreshold);
+	LOAD_INTO_TEXT_ENTRY(angularSleepingThreshold, AngularSleepingThreshold);
+#undef LOAD_INTO_TEXT_ENTRY
 
-	auto originZ = std::format("{0}", m_pRigidBodyConfig->origin[2]);
-	m_pOriginZ->SetText(originZ.c_str());
-
-	auto anglesX = std::format("{0}", m_pRigidBodyConfig->angles[0]);
-	m_pAnglesX->SetText(anglesX.c_str());
-
-	auto anglesY = std::format("{0}", m_pRigidBodyConfig->angles[1]);
-	m_pAnglesY->SetText(anglesY.c_str());
-
-	auto anglesZ = std::format("{0}", m_pRigidBodyConfig->angles[2]);
-	m_pAnglesZ->SetText(anglesZ.c_str());
-
-	auto mass = std::format("{0}", m_pRigidBodyConfig->mass);
-	m_pMass->SetText(mass.c_str());
-
-	auto density = std::format("{0}", m_pRigidBodyConfig->density);
-	m_pDensity->SetText(density.c_str());
-
-	auto linearFriction = std::format("{0}", m_pRigidBodyConfig->linearFriction);
-	m_pLinearFriction->SetText(linearFriction.c_str());
-
-	auto rollingFriction = std::format("{0}", m_pRigidBodyConfig->rollingFriction);
-	m_pRollingFriction->SetText(rollingFriction.c_str());
-
-	auto restitution = std::format("{0}", m_pRigidBodyConfig->restitution);
-	m_pRestitution->SetText(restitution.c_str());
-
-	auto ccdRadius = std::format("{0}", m_pRigidBodyConfig->ccdRadius);
-	m_pCCDRadius->SetText(ccdRadius.c_str());
-
-	auto ccdThreshold = std::format("{0}", m_pRigidBodyConfig->ccdThreshold);
-	m_pCCDThreshold->SetText(ccdThreshold.c_str());
-
-	auto linearSleepingThreshold = std::format("{0}", m_pRigidBodyConfig->linearSleepingThreshold);
-	m_pLinearSleepingThreshold->SetText(linearSleepingThreshold.c_str());
-
-	auto angularSleepingThreshold = std::format("{0}", m_pRigidBodyConfig->angularSleepingThreshold);
-	m_pAngularSleepingThreshold->SetText(angularSleepingThreshold.c_str());
+#define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pRigidBodyConfig->from & PhysicRigidBodyFlag_##to) ? true : false);
+	LOAD_INTO_CHECK_BUTTON(flags, AlwaysDynamic);
+	LOAD_INTO_CHECK_BUTTON(flags, AlwaysKinematic);
+	LOAD_INTO_CHECK_BUTTON(flags, AlwaysStatic);
+	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToWorld);
+	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToStaticObject);
+	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
+	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToRagdollObject);
+#undef LOAD_INTO_CHECK_BUTTON
 }
 
 void CRigidBodyEditDialog::SaveConfigFromControls()
 {
 	char szText[256];
 
-	m_pName->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->name = szText;
+#define SAVE_FROM_TEXT_ENTRY(to, from, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pRigidBodyConfig->to = processor(szText);}
 
-	m_pDebugDrawLevel->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->debugDrawLevel = atoi(szText);
+	SAVE_FROM_TEXT_ENTRY(name, Name, std::string);
+
+	SAVE_FROM_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel, atoi);
 
 	m_pRigidBodyConfig->boneindex = GetCurrentSelectedBoneIndex();
 
-	m_pOriginX->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->origin[0] = atof(szText);
+	SAVE_FROM_TEXT_ENTRY(origin[0], OriginX, atof);
+	SAVE_FROM_TEXT_ENTRY(origin[1], OriginY, atof);
+	SAVE_FROM_TEXT_ENTRY(origin[2], OriginZ, atof);
+	SAVE_FROM_TEXT_ENTRY(angles[0], AnglesX, atof);
+	SAVE_FROM_TEXT_ENTRY(angles[1], AnglesY, atof);
+	SAVE_FROM_TEXT_ENTRY(angles[2], AnglesZ, atof);
+	SAVE_FROM_TEXT_ENTRY(mass, Mass, atof);
+	SAVE_FROM_TEXT_ENTRY(density, Density, atof);
+	SAVE_FROM_TEXT_ENTRY(linearFriction, LinearFriction, atof);
+	SAVE_FROM_TEXT_ENTRY(rollingFriction, RollingFriction, atof);
+	SAVE_FROM_TEXT_ENTRY(restitution, Restitution, atof);
+	SAVE_FROM_TEXT_ENTRY(ccdRadius, CCDRadius, atof);
+	SAVE_FROM_TEXT_ENTRY(ccdThreshold, CCDThreshold, atof);
+	SAVE_FROM_TEXT_ENTRY(linearSleepingThreshold, LinearSleepingThreshold, atof);
+	SAVE_FROM_TEXT_ENTRY(angularSleepingThreshold, AngularSleepingThreshold, atof);
+#undef SAVE_FROM_TEXT_ENTRY
 
-	m_pOriginY->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->origin[1] = atof(szText);
-
-	m_pOriginZ->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->origin[2] = atof(szText);
-
-	m_pAnglesX->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->angles[0] = atof(szText);
-
-	m_pAnglesY->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->angles[1] = atof(szText);
-
-	m_pAnglesZ->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->angles[2] = atof(szText);
-
-	m_pMass->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->mass = atof(szText);
-
-	m_pDensity->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->density = atof(szText);
-
-	m_pLinearFriction->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->linearFriction = atof(szText);
-
-	m_pRollingFriction->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->rollingFriction = atof(szText);
-
-	m_pRestitution->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->restitution = atof(szText);
-
-	m_pCCDRadius->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->ccdRadius = atof(szText);
-
-	m_pCCDThreshold->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->ccdThreshold = atof(szText);
-
-	m_pLinearSleepingThreshold->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->linearSleepingThreshold = atof(szText);
-
-	m_pAngularSleepingThreshold->GetText(szText, sizeof(szText));
-	m_pRigidBodyConfig->angularSleepingThreshold = atof(szText);
+#define SAVE_FROM_CHECK_BUTTON(to, from) if (m_p##from->IsSelected()) { m_pRigidBodyConfig->to |= PhysicRigidBodyFlag_##from; } else { m_pRigidBodyConfig->to &= ~PhysicRigidBodyFlag_##from; }
+	SAVE_FROM_CHECK_BUTTON(flags, AlwaysDynamic);
+	SAVE_FROM_CHECK_BUTTON(flags, AlwaysKinematic);
+	SAVE_FROM_CHECK_BUTTON(flags, AlwaysStatic);
+	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToWorld);
+	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToStaticObject);
+	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
+	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToRagdollObject);
+#undef SAVE_FROM_CHECK_BUTTON
 }
 
 int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()

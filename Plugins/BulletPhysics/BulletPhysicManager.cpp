@@ -1820,9 +1820,9 @@ void CBulletPhysicManager::DebugDraw(void)
 
 				if ((m_inspectingPhysicComponentId && m_inspectingPhysicComponentId == physicComponentId) || (m_inspectingPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectingPhysicObjectId)))
 				{
-					//TODO use cvar?
-					btVector3 vecCustomColor(1, 1, 0);
-					pInternalRigidBody->setCustomDebugColor(vecCustomColor);
+					btVector3 customColor(m_inspectingColor[0], m_inspectingColor[1], m_inspectingColor[2]);
+
+					pInternalRigidBody->setCustomDebugColor(customColor);
 				}
 				else
 				{

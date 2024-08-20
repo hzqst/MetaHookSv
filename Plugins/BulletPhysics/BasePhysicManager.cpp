@@ -376,6 +376,9 @@ void CBasePhysicManager::NewMap(void)
 	m_allocatedPhysicComponentId = 0;
 	m_inspectingPhysicComponentId = 0;
 	m_inspectingPhysicObjectId = 0;
+	m_inspectingColor[0] = 1;
+	m_inspectingColor[1] = 1;
+	m_inspectingColor[2] = 0;
 
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -417,7 +420,9 @@ void CBasePhysicManager::RemoveAllPhysicObjectConfigs(int withflags, int without
 	{
 		auto &Storage = (*itor);
 
-		if (Storage.state == PhysicConfigState_Loaded && (Storage.pConfig->flags & withflags) && (Storage.pConfig->flags & withoutflags) == 0)
+		if (Storage.state == PhysicConfigState_Loaded && 
+			(Storage.pConfig->flags & withflags) && 
+			(Storage.pConfig->flags & withoutflags) == 0)
 		{
 			Storage.pConfig.reset();
 			Storage.state = PhysicConfigState_NotLoaded;
@@ -2396,20 +2401,12 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectC
 
 std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectConfigForModel(model_t* mod)
 {
-	int modelindex = EngineGetModelIndex(mod);
-
-	if (modelindex == -1)
-	{
-		g_pMetaHookAPI->SysError("GetPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
-		return nullptr;
-	}
-
-	return GetPhysicObjectConfigForModelIndex(modelindex);
+	return GetPhysicObjectConfigForModelIndex(EngineGetModelIndex(mod));
 }
 
 std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectConfigForModelIndex(int modelindex)
 {
-	if (modelindex >= m_physicObjectConfigs.size())
+	if (modelindex >= m_physicObjectConfigs.size() || modelindex < 0)
 	{
 		g_pMetaHookAPI->SysError("GetPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;
@@ -2804,6 +2801,11 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	}
 
 	return false;
+}
+
+void CBasePhysicManager::SetInspectColor(const vec3_t inspectColor)
+{
+	VectorCopy(inspectColor, m_inspectingColor);
 }
 
 void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)

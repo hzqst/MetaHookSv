@@ -53,7 +53,7 @@
 		"visible"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
-		"textAlignment"	"east"
+		"textAlignment"	"west"
 	}
 	"InspectContentLabel2"
 	{
@@ -68,14 +68,14 @@
 		"visible"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
-		"textAlignment"	"east"
+		"textAlignment"	"west"
 	}
 	"InspectModeLabel"
 	{
 		"ControlName"	"Label"
 		"fieldName"		"InspectModeLabel"
 		"xpos"			"20"
-		"ypos"			"24"
+		"ypos"			"48"
 		"wide"			"240"
 		"tall"			"24"
 		"autoResize"	"0"

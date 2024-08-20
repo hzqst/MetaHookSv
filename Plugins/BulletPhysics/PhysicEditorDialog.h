@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vgui_controls/Button.h>
+#include <vgui_controls/CheckButton.h>
 #include <vgui_controls/TextEntry.h>
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/ListPanel.h>
@@ -159,6 +160,13 @@ private:
 	vgui::TextEntry* m_pCCDThreshold{};
 	vgui::TextEntry* m_pLinearSleepingThreshold{};
 	vgui::TextEntry* m_pAngularSleepingThreshold{};
+	vgui::CheckButton* m_pAlwaysDynamic{};
+	vgui::CheckButton* m_pAlwaysKinematic{};
+	vgui::CheckButton* m_pAlwaysStatic{};
+	vgui::CheckButton* m_pNoCollisionToWorld{};
+	vgui::CheckButton* m_pNoCollisionToStaticObject{};
+	vgui::CheckButton* m_pNoCollisionToDynamicObject{};
+	vgui::CheckButton* m_pNoCollisionToRagdollObject{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
