@@ -1818,9 +1818,15 @@ void CBulletPhysicManager::DebugDraw(void)
 					}
 				}
 
-				if ((m_inspectingPhysicComponentId && m_inspectingPhysicComponentId == physicComponentId) || (m_inspectingPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectingPhysicObjectId)))
+				if ((m_selectedPhysicComponentId && m_selectedPhysicComponentId == physicComponentId) || (m_selectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_selectedPhysicObjectId)))
 				{
-					btVector3 customColor(m_inspectingColor[0], m_inspectingColor[1], m_inspectingColor[2]);
+					btVector3 customColor(m_selectedColor[0], m_selectedColor[1], m_selectedColor[2]);
+
+					pInternalRigidBody->setCustomDebugColor(customColor);
+				}
+				else if ((m_inspectedPhysicComponentId && m_inspectedPhysicComponentId == physicComponentId) || (m_inspectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectedPhysicObjectId)))
+				{
+					btVector3 customColor(m_inspectedColor[0], m_inspectedColor[1], m_inspectedColor[2]);
 
 					pInternalRigidBody->setCustomDebugColor(customColor);
 				}

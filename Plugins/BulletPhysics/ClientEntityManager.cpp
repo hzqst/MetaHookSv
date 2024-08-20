@@ -554,7 +554,7 @@ public:
 		}
 	}
 
-	void InspectEntityByIndex(int entindex) override
+	void SetInspectedEntityIndex(int entindex) override
 	{
 		m_iInspectEntityIndex = entindex;
 		m_iInspectEntityModelIndex = 0;

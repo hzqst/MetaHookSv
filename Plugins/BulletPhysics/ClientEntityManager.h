@@ -72,7 +72,7 @@ public:
 	//The final render model goes here
 	virtual void DispatchEntityModel(cl_entity_t* ent, model_t* mod) = 0;
 
-	virtual void InspectEntityByIndex(int entindex) = 0;
+	virtual void SetInspectedEntityIndex(int entindex) = 0;
 	virtual int GetInspectEntityIndex() = 0;
 	virtual int GetInspectEntityModelIndex() = 0;
 };

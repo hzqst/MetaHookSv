@@ -374,11 +374,18 @@ void CBasePhysicManager::NewMap(void)
 	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0);
 
 	m_allocatedPhysicComponentId = 0;
-	m_inspectingPhysicComponentId = 0;
-	m_inspectingPhysicObjectId = 0;
-	m_inspectingColor[0] = 1;
-	m_inspectingColor[1] = 1;
-	m_inspectingColor[2] = 0;
+
+	m_inspectedPhysicComponentId = 0;
+	m_inspectedPhysicObjectId = 0;
+	m_inspectedColor[0] = 194.f / 255.0f;
+	m_inspectedColor[1] = 230.f / 255.0f;
+	m_inspectedColor[2] = 234.f / 255.0f;
+
+	m_selectedPhysicComponentId = 0;
+	m_selectedPhysicObjectId = 0;
+	m_selectedColor[0] = 1;
+	m_selectedColor[1] = 1;
+	m_selectedColor[2] = 0;
 
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -2803,29 +2810,54 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	return false;
 }
 
-void CBasePhysicManager::SetInspectColor(const vec3_t inspectColor)
+void CBasePhysicManager::SetInspectedColor(const vec3_t inspectedColor)
 {
-	VectorCopy(inspectColor, m_inspectingColor);
+	VectorCopy(inspectedColor, m_inspectedColor);
 }
 
-void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)
+void CBasePhysicManager::SetSelectedColor(const vec3_t selectedColor)
 {
-	m_inspectingPhysicComponentId = physicComponentId;
+	VectorCopy(selectedColor, m_selectedColor);
 }
 
-int CBasePhysicManager::GetInspectingPhysicComponentId() const
+void CBasePhysicManager::SetInspectedPhysicComponentId(int physicComponentId)
 {
-	return m_inspectingPhysicComponentId;
+	m_inspectedPhysicComponentId = physicComponentId;
 }
 
-void CBasePhysicManager::InspectPhysicObject(uint64 physicObjectId)
+int CBasePhysicManager::GetInspectedPhysicComponentId() const
 {
-	m_inspectingPhysicObjectId = physicObjectId;
+	return m_inspectedPhysicComponentId;
 }
 
-uint64 CBasePhysicManager::GetInspectingPhysicObjectId() const
+void CBasePhysicManager::SetSelectedPhysicComponentId(int physicComponentId)
 {
-	return m_inspectingPhysicObjectId;
+	m_selectedPhysicComponentId = physicComponentId;
+}
+
+int CBasePhysicManager::GetSelectedPhysicComponentId() const
+{
+	return m_selectedPhysicComponentId;
+}
+
+void CBasePhysicManager::SetInspectedPhysicObjectId(uint64 physicObjectId)
+{
+	m_inspectedPhysicObjectId = physicObjectId;
+}
+
+uint64 CBasePhysicManager::GetInspectedPhysicObjectId() const
+{
+	return m_inspectedPhysicObjectId;
+}
+
+void CBasePhysicManager::SetSelectedPhysicObjectId(uint64 physicObjectId)
+{
+	m_selectedPhysicObjectId = physicObjectId;
+}
+
+uint64 CBasePhysicManager::GetSelectedPhysicObjectId() const
+{
+	return m_selectedPhysicObjectId;
 }
 
 int CBasePhysicManager::AllocatePhysicConfigId()

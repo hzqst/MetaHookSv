@@ -78,9 +78,9 @@ void CPhysicDebugGUI::NewMap()
 
 void CPhysicDebugGUI::UpdateInspectStuffs()
 {
-	ClientEntityManager()->InspectEntityByIndex(0);
-	ClientPhysicManager()->InspectPhysicObject(0);
-	ClientPhysicManager()->InspectPhysicComponent(0);
+	ClientEntityManager()->SetInspectedEntityIndex(0);
+	ClientPhysicManager()->SetInspectedPhysicObjectId(0);
+	ClientPhysicManager()->SetInspectedPhysicComponentId(0);
 
 	if (AllowCheats() && HasFocus())
 	{
@@ -100,13 +100,13 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 
 			gEngfuncs.pTriAPI->ScreenToWorld(vecScreen, vecTarget);
 
-			VectorSubtract(vecTarget, r_vieworg, vecForward);
+			VectorSubtract(vecTarget, EngineGetRendererViewOrigin(), vecForward);
 			VectorNormalize(vecForward);
-			VectorMA(r_vieworg, 4096, vecForward, vecTarget);
+			VectorMA(EngineGetRendererViewOrigin(), 8192, vecForward, vecTarget);
 
 			if (m_InspectMode == PhysicInspectMode::Entity)
 			{
-				auto trace = gEngfuncs.PM_TraceLine(r_vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+				auto trace = gEngfuncs.PM_TraceLine(EngineGetRendererViewOrigin(), vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
 
 				if (trace->fraction != 1.0 && trace->ent)
 				{
@@ -114,14 +114,14 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 
 					if (physent)
 					{
-						ClientEntityManager()->InspectEntityByIndex(physent->info);
+						ClientEntityManager()->SetInspectedEntityIndex(physent->info);
 					}
 				}
 			}
 			else
 			{
 				CPhysicTraceLineHitResult hitResult;
-				ClientPhysicManager()->TraceLine(r_vieworg, vecTarget, hitResult);
+				ClientPhysicManager()->TraceLine(EngineGetRendererViewOrigin(), vecTarget, hitResult);
 
 				if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
 				{
@@ -141,13 +141,13 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 							{
 								uint64 physicObjectId = PACK_PHYSIC_OBJECT_ID(hitResult.m_iHitEntityIndex, modelindex);
 
-								ClientPhysicManager()->InspectPhysicObject(physicObjectId);
+								ClientPhysicManager()->SetInspectedPhysicObjectId(physicObjectId);
 							}
 						}
 					}
 					else
 					{
-						ClientPhysicManager()->InspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
+						ClientPhysicManager()->SetInspectedPhysicComponentId(hitResult.m_iHitPhysicComponentIndex);
 					}
 				}
 			}
@@ -157,7 +157,7 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 
 void CPhysicDebugGUI::Reset()
 {
-	UpdateInspectMode(PhysicInspectMode::PhysicObject);
+	UpdateInspectMode(PhysicInspectMode::Entity);
 	UpdateEditMode(PhysicEditMode::None);
 
 	SetVisible(false);
@@ -174,17 +174,19 @@ void CPhysicDebugGUI::OnThink()
 	{
 	case PhysicInspectMode::Entity:
 	{
-		UpdateInspectClientEntity();
+		UpdateInspectedClientEntity(false);
 		break;
 	}
 	case PhysicInspectMode::PhysicObject:
 	{
-		UpdateInspectPhysicObject();
+		if (false == UpdateInspectedPhysicObject(true));
+			UpdateInspectedPhysicObject(false);
 		break;
 	}
 	case PhysicInspectMode::RigidBody:
 	{
-		UpdateInspectRigidBody();
+		if (false == UpdateInspectedRigidBody(true))
+			UpdateInspectedRigidBody(false);
 		break;
 	}
 	}
@@ -206,6 +208,9 @@ void CPhysicDebugGUI::UpdateInspectMode(PhysicInspectMode mode)
 	{
 		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_RigidBody");
 	}
+
+	ClientPhysicManager()->SetSelectedPhysicObjectId(0);
+	ClientPhysicManager()->SetSelectedPhysicComponentId(0);
 }
 
 void CPhysicDebugGUI::UpdateEditMode(PhysicEditMode mode)
@@ -215,7 +220,37 @@ void CPhysicDebugGUI::UpdateEditMode(PhysicEditMode mode)
 
 void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 {
-	if (code == vgui::MOUSE_RIGHT)
+	if (code == vgui::MOUSE_LEFT)
+	{
+		if (m_InspectMode == PhysicInspectMode::Entity)
+		{
+
+		}
+		else if (m_InspectMode == PhysicInspectMode::PhysicObject)
+		{
+			uint64 physicObjectId = ClientPhysicManager()->GetInspectedPhysicObjectId();
+
+			if (physicObjectId)
+			{
+				ClientPhysicManager()->SetSelectedPhysicObjectId(physicObjectId);
+			}
+		}
+		else if (m_InspectMode == PhysicInspectMode::RigidBody)
+		{
+			int physicComponentId = ClientPhysicManager()->GetInspectedPhysicComponentId();
+
+			if (physicComponentId > 0)
+			{
+				auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+				if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+				{
+					ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+				}
+			}
+		}
+	}
+	else if (code == vgui::MOUSE_RIGHT)
 	{
 		if (m_InspectMode == PhysicInspectMode::Entity)
 		{
@@ -250,7 +285,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 		}
 		else if (m_InspectMode == PhysicInspectMode::PhysicObject)
 		{
-			uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
+			uint64 physicObjectId = ClientPhysicManager()->GetInspectedPhysicObjectId();
 
 			if (physicObjectId)
 			{
@@ -269,7 +304,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 		}
 		else if (m_InspectMode == PhysicInspectMode::RigidBody)
 		{
-			int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
+			int physicComponentId = ClientPhysicManager()->GetInspectedPhysicComponentId();
 
 			if (physicComponentId > 0)
 			{
@@ -336,7 +371,7 @@ void CPhysicDebugGUI::OnMouseDoublePressed(vgui::MouseCode code)
 	{
 		if (m_InspectMode == PhysicInspectMode::PhysicObject)
 		{
-			uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
+			uint64 physicObjectId = ClientPhysicManager()->GetInspectedPhysicObjectId();
 
 			if (physicObjectId)
 			{
@@ -346,7 +381,7 @@ void CPhysicDebugGUI::OnMouseDoublePressed(vgui::MouseCode code)
 		}
 		else if (m_InspectMode == PhysicInspectMode::RigidBody)
 		{
-			int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
+			int physicComponentId = ClientPhysicManager()->GetInspectedPhysicComponentId();
 
 			if (physicComponentId)
 			{
@@ -375,7 +410,7 @@ void CPhysicDebugGUI::OnMouseDoublePressed(vgui::MouseCode code)
 	BaseClass::OnMouseDoublePressed(code);
 }
 
-void CPhysicDebugGUI::UpdateInspectClientEntity()
+bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 {
 	int entindex = ClientEntityManager()->GetInspectEntityIndex();
 	int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
@@ -413,13 +448,17 @@ void CPhysicDebugGUI::UpdateInspectClientEntity()
 			vgui::localize()->Find("#BulletPhysics_Frame"), curstate->frame);
 
 		ShowInspectContentLabel2(str2.c_str());
+
+		return true;
 	}
+
+	return false;
 }
 
-void CPhysicDebugGUI::UpdateInspectPhysicObject()
+bool CPhysicDebugGUI::UpdateInspectedPhysicObject(bool bSelected)
 {
-	uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
-
+	uint64 physicObjectId = bSelected ? ClientPhysicManager()->GetSelectedPhysicObjectId() : ClientPhysicManager()->GetInspectedPhysicObjectId();
+	
 	if (physicObjectId)
 	{
 		auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
@@ -435,13 +474,17 @@ void CPhysicDebugGUI::UpdateInspectPhysicObject()
 			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_PhysicObject"), entindex, wszModelName);
 
 			ShowInspectContentLabel(str.c_str());
+
+			return true;
 		}
 	}
+
+	return false;
 }
 
-void CPhysicDebugGUI::UpdateInspectRigidBody()
+bool CPhysicDebugGUI::UpdateInspectedRigidBody(bool bSelected)
 {
-	int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
+	int physicComponentId = bSelected ? ClientPhysicManager()->GetSelectedPhysicComponentId() : ClientPhysicManager()->GetInspectedPhysicComponentId();
 
 	if (physicComponentId)
 	{
@@ -463,8 +506,11 @@ void CPhysicDebugGUI::UpdateInspectRigidBody()
 
 			ShowInspectContentLabel2(str2.c_str());
 
+			return true;
 		}
 	}
+
+	return false;
 }
 
 void CPhysicDebugGUI::ShowInspectContentLabel(const wchar_t* wszText)

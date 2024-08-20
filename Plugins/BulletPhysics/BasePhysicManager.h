@@ -176,9 +176,14 @@ protected:
 
 	float m_gravity{};
 
-	vec3_t m_inspectingColor{ 1, 1, 0 };
-	uint64 m_inspectingPhysicObjectId{};
-	int m_inspectingPhysicComponentId{};
+	vec3_t m_inspectedColor{ 0 };
+	uint64 m_inspectedPhysicObjectId{};
+	int m_inspectedPhysicComponentId{};
+
+	vec3_t m_selectedColor{ 0 };
+	uint64 m_selectedPhysicObjectId{};
+	int m_selectedPhysicComponentId{};
+
 	int m_allocatedPhysicConfigId{};
 	int m_allocatedPhysicComponentId{};
 
@@ -244,14 +249,21 @@ public:
 	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
 	bool RemovePhysicComponent(int physicComponentId) override;
 
-	//Inspect System
-	void SetInspectColor(const vec3_t inspectColor) override;
+	//Inspect / Select System
+	void SetInspectedColor(const vec3_t inspectedColor) override;
+	void SetSelectedColor(const vec3_t selectedColor) override;
 
-	void InspectPhysicComponent(int physicComponentId) override;
-	int GetInspectingPhysicComponentId() const override;
+	void SetInspectedPhysicComponentId(int physicComponentId) override;
+	int  GetInspectedPhysicComponentId() const override;
 
-	void InspectPhysicObject(uint64 physicObjectId) override;
-	uint64 GetInspectingPhysicObjectId() const override;
+	void SetSelectedPhysicComponentId(int physicComponentId) override;
+	int  GetSelectedPhysicComponentId() const override;
+
+	void   SetInspectedPhysicObjectId(uint64 physicObjectId) override;
+	uint64 GetInspectedPhysicObjectId() const override;
+
+	void   SetSelectedPhysicObjectId(uint64 physicObjectId) override;
+	uint64 GetSelectedPhysicObjectId() const override;
 
 	//BasePhysicConfig Management
 	int AllocatePhysicConfigId() override;

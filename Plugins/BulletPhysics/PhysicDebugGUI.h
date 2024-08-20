@@ -43,9 +43,9 @@ protected:
 	void OpenEditPhysicObjectDialog(uint64 physicObjectId);
 	void OpenEditRigidBodyDialog(int configId, uint64 physicObjectId);
 
-	void UpdateInspectClientEntity();
-	void UpdateInspectPhysicObject();
-	void UpdateInspectRigidBody();
+	bool UpdateInspectedClientEntity(bool bSelected);
+	bool UpdateInspectedPhysicObject(bool bSelected);
+	bool UpdateInspectedRigidBody(bool bSelected);
 	void UpdateInspectMode(PhysicInspectMode mode);
 	void UpdateEditMode(PhysicEditMode mode);
 

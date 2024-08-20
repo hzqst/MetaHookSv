@@ -21,6 +21,9 @@ extern cl_entity_t** cl_entities;
 extern int* cl_numvisedicts;
 extern cl_entity_t** cl_visedicts;
 
+extern float* g_ChromeOrigin;
+extern float* r_origin;
+
 extern bool g_bIsCounterStrike;
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
@@ -56,6 +59,8 @@ int GetDynamicObjectDebugDrawLevel();
 int GetConstraintDebugDrawLevel();
 float GetSimulationTickRate();
 
+bool R_IsRenderingPortals();
+float* EngineGetRendererViewOrigin();
 int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel();
 int EngineGetModelIndex(model_t* mod);

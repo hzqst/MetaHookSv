@@ -57,7 +57,6 @@ bool g_bIsCounterStrike = false;
 int g_iRagdollRenderEntIndex = 0;
 
 ref_params_t r_params = { 0 };
-vec3_t r_vieworg = { 0 };
 
 model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
@@ -67,6 +66,9 @@ cl_entity_t** cl_entities = NULL;
 
 int* cl_numvisedicts = NULL;
 cl_entity_t** cl_visedicts = NULL;
+
+float* g_ChromeOrigin = NULL;
+float* r_origin = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
@@ -113,6 +115,11 @@ float GetSimulationTickRate()
 bool R_IsRenderingPortals()
 {
 	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient);
+}
+
+float* EngineGetRendererViewOrigin()
+{
+	return r_origin;
 }
 
 bool AllowCheats()
@@ -614,6 +621,149 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 			}, 0, NULL);
 
 		Sig_VarNotFound(r_model);
+	}
+
+	if (1)
+	{
+		typedef struct
+		{
+			int r_origin_candidate_count;
+			PVOID r_origin_candidate[3];
+			int g_ChromeOrigin_candidate_count;
+			PVOID g_ChromeOrigin_candidate[3];
+		}SetChromeOrigin_ctx;
+
+		SetChromeOrigin_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetChromeOrigin, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (SetChromeOrigin_ctx*)context;
+
+				if (pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//D9 05 00 40 F5 03 fld     r_origin
+					if (ctx->r_origin_candidate_count < 3)
+					{
+						ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						ctx->r_origin_candidate_count++;
+					}
+				}
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					if (ctx->r_origin_candidate_count < 3)
+					{
+						ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+						ctx->r_origin_candidate_count++;
+					}
+				}
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					if (ctx->r_origin_candidate_count < 3)
+					{
+						ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].imm;
+						ctx->r_origin_candidate_count++;
+					}
+				}
+				else if (pinst->id == X86_INS_MOVQ &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					if (ctx->r_origin_candidate_count < 3)
+					{
+						ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+						ctx->r_origin_candidate_count++;
+					}
+				}
+
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
+					if (ctx->g_ChromeOrigin_candidate_count < 3)
+					{
+						ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						ctx->g_ChromeOrigin_candidate_count++;
+					}
+				}
+				else if (pinst->id == X86_INS_MOVQ &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
+					if (ctx->g_ChromeOrigin_candidate_count < 3)
+					{
+						ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						ctx->g_ChromeOrigin_candidate_count++;
+					}
+				}
+				else if (pinst->id == X86_INS_FSTP &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//D9 1D A0 39 DB 08 fstp    g_ChromeOrigin
+					if (ctx->g_ChromeOrigin_candidate_count < 3)
+					{
+						ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						ctx->g_ChromeOrigin_candidate_count++;
+					}
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		if (ctx.r_origin_candidate_count >= 2)
+		{
+			std::qsort(ctx.r_origin_candidate, ctx.r_origin_candidate_count, sizeof(ctx.r_origin_candidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+				});
+			r_origin = (decltype(r_origin))ctx.r_origin_candidate[0];
+		}
+
+		if (ctx.g_ChromeOrigin_candidate_count >= 2)
+		{
+			std::qsort(ctx.g_ChromeOrigin_candidate, ctx.g_ChromeOrigin_candidate_count, sizeof(ctx.g_ChromeOrigin_candidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+				});
+			g_ChromeOrigin = (decltype(g_ChromeOrigin))ctx.g_ChromeOrigin_candidate[0];
+		}
+
+		Sig_VarNotFound(r_origin);
+		Sig_VarNotFound(g_ChromeOrigin);
 	}
 
 	if ((void*)(*ppinterface)->StudioDrawPlayer > g_dwClientTextBase && (void*)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
@@ -1277,7 +1427,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			{
 				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
 				{
-					VectorCopy(pparams->vieworg, r_vieworg);
 					return;
 				}
 			}
@@ -1285,7 +1434,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	}
 skip:
 	gExportfuncs.V_CalcRefdef(pparams);
-	VectorCopy(pparams->vieworg, r_vieworg);
 }
 
 void HUD_DrawTransparentTriangles(void)

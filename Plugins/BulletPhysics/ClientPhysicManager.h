@@ -379,14 +379,19 @@ public:
 	virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
-	//Inspect System
-	virtual void SetInspectColor(const vec3_t inspectColor) = 0;
+	//Inspection / Selection System
+	virtual void SetInspectedColor(const vec3_t inspectedColor) = 0;
+	virtual void SetSelectedColor(const vec3_t selectedColor) = 0;
 
-	virtual void InspectPhysicComponent(int physicComponentId) = 0;
-	virtual int GetInspectingPhysicComponentId() const = 0;
+	virtual void SetInspectedPhysicComponentId(int physicComponentId) = 0;
+	virtual int  GetInspectedPhysicComponentId() const = 0;
+	virtual void SetSelectedPhysicComponentId(int physicComponentId) = 0;
+	virtual int  GetSelectedPhysicComponentId() const = 0;
 
-	virtual void InspectPhysicObject(uint64 physicObjectId) = 0;
-	virtual uint64 GetInspectingPhysicObjectId() const = 0;
+	virtual void   SetInspectedPhysicObjectId(uint64 physicObjectId) = 0;
+	virtual uint64 GetInspectedPhysicObjectId() const = 0;
+	virtual void   SetSelectedPhysicObjectId(uint64 physicObjectId) = 0;
+	virtual uint64 GetSelectedPhysicObjectId() const = 0;
 
 	//BasePhysicConfig Management
 	virtual int AllocatePhysicConfigId() = 0;
