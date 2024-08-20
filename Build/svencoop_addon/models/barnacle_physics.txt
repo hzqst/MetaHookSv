@@ -22,7 +22,7 @@
 			"ccdThreshold"		"0.000000"
 			"linearSleepingThreshold"		"5.000000"
 			"angularSleepingThreshold"		"3.000000"
-			"shape"
+			"collisionshape"
 			{
 				"type"		"TriangleMesh"
 				"objpath"		"models/barnacle.obj"
