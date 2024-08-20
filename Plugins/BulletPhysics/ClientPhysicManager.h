@@ -11,6 +11,10 @@
 #include "ClientPhysicCommon.h"
 #include "ClientPhysicConfig.h"
 
+#define PACK_PHYSIC_OBJECT_ID(entindex, modelindex) ((((uint64)entindex) & 0x00000000FFFFFFFFull) | ((((uint64)modelindex) << 32) & 0xFFFFFFFF00000000ull))
+#define UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId) (int)(physicObjectId & 0x00000000FFFFFFFFull)
+#define UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId) (int)((physicObjectId >> 32) & 0x00000000FFFFFFFFull)
+
 class IPhysicObject;
 
 class CPhysicObjectUpdateContext
@@ -140,6 +144,13 @@ public:
 		return "#BulletPhysics_RigidBody";
 	}
 
+	bool IsRigidBody() const override
+	{
+		return true;
+	}
+
+	virtual float GetMass() const = 0;
+
 	virtual void ApplyCentralForce(const vec3_t vecForce) = 0;
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
@@ -152,6 +163,11 @@ public:
 class IPhysicConstraint : public IPhysicComponent
 {
 public:
+	bool IsConstraint() const override
+	{
+		return true;
+	}
+
 	virtual void ExtendLinearLimit(int axis, float value) = 0;
 	virtual void* GetInternalConstraint() = 0;
 };
@@ -324,9 +340,7 @@ public:
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
 
-	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
@@ -337,12 +351,16 @@ public:
 
 	//PhysicObject Management
 
+	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
+	virtual IPhysicObject* GetPhysicObjectEx(uint64 physicObjectId) = 0;
 	virtual void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) = 0;
 	virtual void FreePhysicObject(IPhysicObject* pPhysicObject) = 0;
 	virtual bool RemovePhysicObject(int entindex) = 0;
+	virtual bool RemovePhysicObjectEx(uint64 physicObjectId) = 0;
 	virtual void RemoveAllPhysicObjects(int withflags, int withoutflags) = 0;
 	virtual bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) = 0;
 	virtual void UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 
 	//PhysicWorld
 
@@ -361,11 +379,12 @@ public:
 	virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
-	//Inspect
-	virtual void InspectPhysicComponentById(int physicComponentId) = 0;
-	virtual void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
-	virtual int GetInspectPhysicComponentId() = 0;
-	virtual IPhysicComponent* GetInspectPhysicComponent() = 0;
+	//Inspect System
+	virtual void InspectPhysicComponent(int physicComponentId) = 0;
+	virtual int GetInspectingPhysicComponentId() const = 0;
+
+	virtual void InspectPhysicObject(uint64 physicObjectId) = 0;
+	virtual uint64 GetInspectingPhysicObjectId() const = 0;
 
 	//BasePhysicConfig Management
 	virtual int AllocatePhysicConfigId() = 0;

@@ -407,6 +407,9 @@
     <ClCompile Include="BasePhysicManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="PhysicGUICommon.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -477,6 +480,9 @@
     </ClInclude>
     <ClInclude Include="BasePhysicManager.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicGUICommon.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

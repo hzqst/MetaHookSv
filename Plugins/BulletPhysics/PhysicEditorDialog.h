@@ -27,12 +27,14 @@ class CRigidBodyPage : public vgui::PropertyPage
 public:
 	DECLARE_CLASS_SIMPLE(CRigidBodyPage, vgui::PropertyPage);
 
-	CRigidBodyPage(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig);
+	CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig);
 	
 private:
 
 	MESSAGE_FUNC_INT(OnOpenContextMenu, "OpenContextMenu", itemID);
 	MESSAGE_FUNC_INT(OnRefreshRigidBody, "RefreshRigidBody", configId);
+	MESSAGE_FUNC_INT(OnEditRigidBody, "EditRigidBody", configId);
+	MESSAGE_FUNC_INT(OnDeleteRigidBody, "DeleteRigidBody", configId);
 	MESSAGE_FUNC(OnRefreshRigidBodies, "RefreshRigidBodies");
 
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
@@ -42,9 +44,7 @@ private:
 	void LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig* pRigidBodyConfig);
 	void ReloadAllRigidBodiesIntoListPanelItem();
 	void OnCreateNewRigidBody();
-	void OnEditRigidBody(const char* command);
-	void OnDeleteRigidBody(const char* command);
-	void OpenRigidBodyEditor(int configId);
+	void OnOpenRigidBodyEditor(int configId);
 
 	typedef vgui::PropertyPage BaseClass;
 private:
@@ -53,8 +53,7 @@ private:
 	CRigidBodyListPanel* m_pRigidBodyListPanel{};
 	vgui::Button* m_pCreateNewRigidBody{};
 
-	int m_iInspectEntityIndex{};
-	int m_iEngineModelIndex{};
+	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicConfig;
 };
 
@@ -63,7 +62,7 @@ class CCollisionShapeEditDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CCollisionShapeEditDialog, vgui::Frame);
 
-	CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig);
+	CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig);
 	~CCollisionShapeEditDialog();
 
 	void Activate(void) override;
@@ -111,8 +110,7 @@ private:
 	vgui::Label* m_pObjPathLabel{};
 	vgui::TextEntry* m_pObjPath{};
 
-	int m_iInspectEntityIndex{};
-	int m_iEngineModelIndex{};
+	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientCollisionShapeConfig> m_pCollisionShapeConfig;
 };
 
@@ -121,7 +119,7 @@ class CRigidBodyEditDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CRigidBodyEditDialog, vgui::Frame);
 
-	CRigidBodyEditDialog(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig);
+	CRigidBodyEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig);
 	~CRigidBodyEditDialog();
 
 	void Activate(void) override;
@@ -162,8 +160,7 @@ private:
 	vgui::TextEntry* m_pLinearSleepingThreshold{};
 	vgui::TextEntry* m_pAngularSleepingThreshold{};
 
-	int m_iInspectEntityIndex{};
-	int m_iEngineModelIndex{};
+	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
 };
 
@@ -172,7 +169,7 @@ class CPhysicEditorDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CPhysicEditorDialog, vgui::Frame);
 
-	CPhysicEditorDialog(vgui::Panel *parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicConfig);
+	CPhysicEditorDialog(vgui::Panel *parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicConfig);
 	~CPhysicEditorDialog();
 
 private:
@@ -182,7 +179,6 @@ private:
 	vgui::PropertySheet* m_pTabPanel{};
 	CRigidBodyPage* m_pRigidBodyPage{};
 
-	int m_iInspectEntityIndex{};
-	int m_iEngineModelIndex{};
+	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicConfig;
 };

@@ -41,6 +41,8 @@ public:
 	void SwitchPhysicDebugGUI();
 	bool PhysicDebugGUIHasFocus();
 
+	void UpdateInspectStuffs();
+
 private:
 	CPhysicDebugGUI* m_pPhysicDebugViewGUI{};
 };

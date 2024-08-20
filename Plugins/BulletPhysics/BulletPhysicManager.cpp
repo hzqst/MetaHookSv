@@ -379,6 +379,11 @@ void* CBulletRigidBody::GetInternalRigidBody()
 	return m_pInternalRigidBody;
 }
 
+float CBulletRigidBody::GetMass() const
+{
+	return m_mass;
+}
+
 CBulletConstraint::CBulletConstraint(
 	int id,
 	int entindex,
@@ -1813,7 +1818,7 @@ void CBulletPhysicManager::DebugDraw(void)
 					}
 				}
 
-				if (m_iInspectPhysicComponentId == physicComponentId)
+				if ((m_inspectingPhysicComponentId && m_inspectingPhysicComponentId == physicComponentId) || (m_inspectingPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectingPhysicObjectId)))
 				{
 					//TODO use cvar?
 					btVector3 vecCustomColor(1, 1, 0);
@@ -1937,6 +1942,7 @@ void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTrac
 	Vector3GoldSrcToBullet(vecEndPoint);
 
 	btCollisionWorld::ClosestRayResultCallback rayCallback(vecStartPoint, vecEndPoint);
+	//rayCallback.m_collisionFilterGroup = 
 
 	m_dynamicsWorld->rayTest(vecStartPoint, vecEndPoint, rayCallback);
 

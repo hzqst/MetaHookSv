@@ -40,10 +40,10 @@
 		"enabled"		"1"
 		"tabPosition"	"0"
 	}
-	"InspectEntityLabel"
+	"InspectContentLabel"
 	{
 		"ControlName"	"Label"
-		"fieldName"		"InspectEntityLabel"
+		"fieldName"		"InspectContentLabel"
 		"xpos"			"r640"
 		"ypos"			"r48"
 		"wide"			"640"
@@ -53,12 +53,12 @@
 		"visible"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
-		"textAlignment"	"right"
+		"textAlignment"	"east"
 	}
-	"InspectPhysicComponentLabel"
+	"InspectContentLabel2"
 	{
 		"ControlName"	"Label"
-		"fieldName"		"InspectPhysicComponentLabel"
+		"fieldName"		"InspectContentLabel2"
 		"xpos"			"r640"
 		"ypos"			"r24"
 		"wide"			"640"
@@ -68,7 +68,22 @@
 		"visible"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
-		"textAlignment"	"right"
+		"textAlignment"	"east"
+	}
+	"InspectModeLabel"
+	{
+		"ControlName"	"Label"
+		"fieldName"		"InspectModeLabel"
+		"xpos"			"20"
+		"ypos"			"24"
+		"wide"			"240"
+		"tall"			"24"
+		"autoResize"	"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"	"0"
+		"textAlignment"	"west"
 	}
 	"Close"
 	{

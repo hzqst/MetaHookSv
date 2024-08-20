@@ -8,7 +8,9 @@
 #include "ClientEntityManager.h"
 #include "ClientPhysicManager.h"
 
+#include "privatehook.h"
 #include "exportfuncs.h"
+#include "util.h"
 
 #include <format>
 
@@ -24,11 +26,9 @@ CPhysicDebugGUI::CPhysicDebugGUI(vgui::Panel* parent) : Frame(parent, "PhysicDeb
 	m_pTopBar = new vgui::Panel(this, "TopBar");
 	m_pBottomBarBlank = new vgui::Panel(this, "BottomBarBlank");
 
-	m_pInspectEntityLabel = new vgui::Label(this, "InspectEntityLabel", "");
-	m_pInspectEntityLabel->SetVisible(false);
-
-	m_pInspectPhysicComponentLabel = new vgui::Label(this, "InspectPhysicComponentLabel", "");
-	m_pInspectPhysicComponentLabel->SetVisible(false);
+	m_pInspectContentLabel = new vgui::Label(this, "InspectContentLabel", "");
+	m_pInspectContentLabel2 = new vgui::Label(this, "InspectContentLabel2", "");
+	m_pInspectModeLabel = new vgui::Label(this, "InspectModeLabel", "");
 
 	m_pClose = new vgui::Button(this, "Close", L"#GameUI_Close", this, "Close");
 
@@ -42,102 +42,285 @@ CPhysicDebugGUI::~CPhysicDebugGUI()
 {
 
 }
-#if 0
+
 void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 {
-	if (code == vgui::KEY_ESCAPE)
+	if (code == vgui::KEY_F1)
 	{
-		Close();
+		UpdateInspectMode(PhysicInspectMode::Entity);
+		return;
+	}
+
+	if (code == vgui::KEY_F2)
+	{
+		UpdateInspectMode(PhysicInspectMode::PhysicObject);
+		return;
+	}
+
+	if (code == vgui::KEY_F3)
+	{
+		UpdateInspectMode(PhysicInspectMode::RigidBody);
 		return;
 	}
 
 	BaseClass::OnKeyCodeTyped(code);
 }
-#endif
+
+void CPhysicDebugGUI::Init()
+{
+	Reset();
+}
+
+void CPhysicDebugGUI::NewMap()
+{
+	Reset();
+}
+
+void CPhysicDebugGUI::UpdateInspectStuffs()
+{
+	ClientEntityManager()->InspectEntityByIndex(0);
+	ClientPhysicManager()->InspectPhysicObject(0);
+	ClientPhysicManager()->InspectPhysicComponent(0);
+
+	if (AllowCheats() && HasFocus())
+	{
+		int mouseX{}, mouseY{};
+		gEngfuncs.GetMousePosition(&mouseX, &mouseY);
+
+		SCREENINFO_s scr{};
+		scr.iSize = sizeof(SCREENINFO_s);
+
+		if (gEngfuncs.pfnGetScreenInfo(&scr) && scr.iWidth > 0 && scr.iHeight > 0)
+		{
+			vec3_t vecForward, vecRight, vecUp, vecTarget, vecScreen;
+
+			vecScreen[0] = UNPROJECT_X(mouseX, scr.iWidth);
+			vecScreen[1] = UNPROJECT_Y(mouseY, scr.iHeight);
+			vecScreen[2] = 1;
+
+			gEngfuncs.pTriAPI->ScreenToWorld(vecScreen, vecTarget);
+
+			VectorSubtract(vecTarget, r_vieworg, vecForward);
+			VectorNormalize(vecForward);
+			VectorMA(r_vieworg, 4096, vecForward, vecTarget);
+
+			if (m_InspectMode == PhysicInspectMode::Entity)
+			{
+				auto trace = gEngfuncs.PM_TraceLine(r_vieworg, vecTarget, PM_TRACELINE_PHYSENTSONLY, 2, -1);
+
+				if (trace->fraction != 1.0 && trace->ent)
+				{
+					auto physent = gEngfuncs.pEventAPI->EV_GetPhysent(trace->ent);
+
+					if (physent)
+					{
+						ClientEntityManager()->InspectEntityByIndex(physent->info);
+					}
+				}
+			}
+			else
+			{
+				CPhysicTraceLineHitResult hitResult;
+				ClientPhysicManager()->TraceLine(r_vieworg, vecTarget, hitResult);
+
+				if (hitResult.m_bHasHit && hitResult.m_iHitPhysicComponentIndex > 1)//1 == world
+				{
+					if (m_InspectMode == PhysicInspectMode::PhysicObject)
+					{
+						auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(hitResult.m_iHitEntityIndex);
+
+						if (pPhysicObject)
+						{
+							auto model = pPhysicObject->GetModel();
+							auto modelindex = EngineGetModelIndex(model);
+
+							auto pPhysicObjectConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
+
+							if (pPhysicObjectConfig && (pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+							{
+								uint64 physicObjectId = PACK_PHYSIC_OBJECT_ID(hitResult.m_iHitEntityIndex, modelindex);
+
+								ClientPhysicManager()->InspectPhysicObject(physicObjectId);
+							}
+						}
+					}
+					else
+					{
+						ClientPhysicManager()->InspectPhysicComponent(hitResult.m_iHitPhysicComponentIndex);
+					}
+				}
+			}
+		}
+	}
+}
+
+void CPhysicDebugGUI::Reset()
+{
+	UpdateInspectMode(PhysicInspectMode::PhysicObject);
+	UpdateEditMode(PhysicEditMode::None);
+
+	SetVisible(false);
+}
 
 void CPhysicDebugGUI::OnThink()
 {
 	BaseClass::OnThink();
 
-	int entindex = ClientEntityManager()->GetInspectEntityIndex();
-	int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
-	int physicComponentId = ClientPhysicManager()->GetInspectPhysicComponentId();
+	HideInspectContentLabel();
+	HideInspectContentLabel2();
 
-	UpdateInspectEntity(entindex, modelindex);
-	UpdateInspectPhysicComponent(physicComponentId);
+	switch (m_InspectMode)
+	{
+	case PhysicInspectMode::Entity:
+	{
+		UpdateInspectClientEntity();
+		break;
+	}
+	case PhysicInspectMode::PhysicObject:
+	{
+		UpdateInspectPhysicObject();
+		break;
+	}
+	case PhysicInspectMode::RigidBody:
+	{
+		UpdateInspectRigidBody();
+		break;
+	}
+	}
+}
+
+void CPhysicDebugGUI::UpdateInspectMode(PhysicInspectMode mode)
+{
+	m_InspectMode = mode;
+
+	if (m_InspectMode == PhysicInspectMode::Entity)
+	{
+		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Entity");
+	}
+	else if (m_InspectMode == PhysicInspectMode::PhysicObject)
+	{
+		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_PhysicObject");
+	}
+	else if (m_InspectMode == PhysicInspectMode::RigidBody)
+	{
+		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_RigidBody");
+	}
+}
+
+void CPhysicDebugGUI::UpdateEditMode(PhysicEditMode mode)
+{
+	m_EditMode = mode;
 }
 
 void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 {
 	if (code == vgui::MOUSE_RIGHT)
 	{
-		int entindex = ClientEntityManager()->GetInspectEntityIndex();
-		int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
-		int physicComponentId = ClientPhysicManager()->GetInspectPhysicComponentId();
-
-		if (entindex > 0 && modelindex > 0)
+		if (m_InspectMode == PhysicInspectMode::Entity)
 		{
-			auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
+			int entindex = ClientEntityManager()->GetInspectEntityIndex();
+			int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
 
-			if (pPhysicConfig && (pPhysicConfig->flags & PhysicObjectFlag_FromConfig))
+			if (entindex > 0 && modelindex > 0)
 			{
-				auto model = EngineGetModelByIndex(modelindex);
+				auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+				auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
 
-				if (model && model->type == mod_studio)
+				if (!pPhysicObject && !pPhysicConfig)
 				{
-					auto menu = new vgui::Menu(this, "contextmenu");
+					auto model = EngineGetModelByIndex(modelindex);
 
-					menu->SetAutoDelete(true);
-
-					auto command_0 = std::format("EditPhysicObject|{0}|{1}", entindex, modelindex);
-
-					menu->AddMenuItem("#BulletPhysics_EditPhysicObject", new KeyValues("Command", "command", command_0.c_str()), this);
-
-					if (physicComponentId > 0)
+					if (model && model->type == mod_studio)
 					{
-						auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+						auto menu = new vgui::Menu(this, "contextmenu");
 
-						if (pPhysicComponent && pPhysicComponent->IsRigidBody())
-						{
-							wchar_t szName[64] = { 0 };
-							wchar_t szBuf[256] = { 0 };
-							
-							vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), szName, sizeof(szName));
+						menu->SetAutoDelete(true);
 
-							auto command_EditRigidBodyEx = std::format("EditRigidBodyEx|{0}|{1}|{2}", pPhysicComponent->GetPhysicConfigId(), entindex, modelindex);
-							vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, szName);
-							menu->AddMenuItem("EditRigidBodyEx", szBuf, new KeyValues("Command", "command", command_EditRigidBodyEx.c_str()), this);
+						auto kv = new KeyValues("CreatePhysicObject");
+						kv->SetUint64("physicObjectId", PACK_PHYSIC_OBJECT_ID(entindex, modelindex));
 
-							auto command_DeleteRigidBodyEx = std::format("DeleteRigidBodyEx|{0}|{1}|{2}", pPhysicComponent->GetPhysicConfigId(), entindex, modelindex);
-							vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szName);
-							menu->AddMenuItem("DeleteRigidBodyEx", szBuf, new KeyValues("Command", "command", command_DeleteRigidBodyEx.c_str()), this);
-						}
+						menu->AddMenuItem("#BulletPhysics_CreatePhysicObject", kv, this);
+
+						vgui::Menu::PlaceContextMenu(this, menu);
+						return;
 					}
-
-					vgui::Menu::PlaceContextMenu(this, menu);
-					return;
 				}
 			}
-			else
+		}
+		else if (m_InspectMode == PhysicInspectMode::PhysicObject)
+		{
+			uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
+
+			if (physicObjectId)
 			{
-				auto model = EngineGetModelByIndex(modelindex);
+				auto menu = new vgui::Menu(this, "contextmenu");
 
-				if (model && model->type == mod_studio)
+				menu->SetAutoDelete(true);
+
+				auto kv = new KeyValues("EditPhysicObject");
+				kv->SetUint64("physicObjectId", physicObjectId);
+
+				menu->AddMenuItem("#BulletPhysics_EditPhysicObject", kv, this);
+
+				vgui::Menu::PlaceContextMenu(this, menu);
+				return;
+			}
+		}
+		else if (m_InspectMode == PhysicInspectMode::RigidBody)
+		{
+			int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
+
+			if (physicComponentId > 0)
+			{
+				auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+				if (pPhysicComponent && pPhysicComponent->IsRigidBody())
 				{
-					auto menu = new vgui::Menu(this, "contextmenu");
+					int entindex = pPhysicComponent->GetOwnerEntityIndex();
 
-					menu->SetAutoDelete(true);
+					auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
 
-					auto command_0 = std::format("CreateStaticObject|{0}|{1}", entindex, modelindex);
-					auto command_1 = std::format("CreateDynamicObject|{0}|{1}", entindex, modelindex);
-					auto command_2 = std::format("CreateRagdollObject|{0}|{1}", entindex, modelindex);
+					if (pPhysicObject)
+					{
+						int modelindex = EngineGetModelIndex(pPhysicObject->GetModel());
 
-					menu->AddMenuItem("#BulletPhysics_CreateStaticObject", new KeyValues("Command", "command", command_0.c_str()), this);
-					menu->AddMenuItem("#BulletPhysics_CreateDynamicObject", new KeyValues("Command", "command", command_1.c_str()), this);
-					menu->AddMenuItem("#BulletPhysics_CreateRagdollObject", new KeyValues("Command", "command", command_2.c_str()), this);
+						auto physicObjectId = PACK_PHYSIC_OBJECT_ID(entindex, modelindex);
 
-					vgui::Menu::PlaceContextMenu(this, menu);
-					return;
+						auto menu = new vgui::Menu(this, "contextmenu");
+
+						menu->SetAutoDelete(true);
+
+						wchar_t szName[64] = { 0 };
+						wchar_t szBuf[256] = { 0 };
+
+						vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), szName, sizeof(szName));
+
+						auto kv = new KeyValues("EditRigidBodyEx");
+						kv->SetInt("configId", physicComponentId);
+						kv->SetUint64("physicObjectId", physicObjectId);
+						vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, szName);
+						menu->AddMenuItem("EditRigidBodyEx", szBuf, kv, this);
+
+						kv = new KeyValues("MoveRigidBodyEx");
+						kv->SetInt("configId", physicComponentId);
+						kv->SetUint64("physicObjectId", physicObjectId);
+						vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveRigidBody"), 1, szName);
+						menu->AddMenuItem("MoveRigidBodyEx", szBuf, kv, this);
+
+						kv = new KeyValues("RotateRigidBodyEx");
+						kv->SetInt("configId", physicComponentId);
+						kv->SetUint64("physicObjectId", physicObjectId);
+						vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateRigidBody"), 1, szName);
+						menu->AddMenuItem("RotateRigidBodyEx", szBuf, kv, this);
+
+						kv = new KeyValues("DeleteRigidBodyEx");
+						kv->SetInt("configId", physicComponentId);
+						kv->SetUint64("physicObjectId", physicObjectId);
+						vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szName);
+						menu->AddMenuItem("DeleteRigidBodyEx", szBuf, kv, this);
+
+						vgui::Menu::PlaceContextMenu(this, menu);
+					}
 				}
 			}
 		}
@@ -148,132 +331,161 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 
 void CPhysicDebugGUI::OnMouseDoublePressed(vgui::MouseCode code)
 {
-	if (code == vgui::MOUSE_LEFT && vgui::input()->IsKeyDown(vgui::KEY_LCONTROL))
+	if (code == vgui::MOUSE_LEFT)
 	{
-		int entindex = ClientEntityManager()->GetInspectEntityIndex();
-		int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
-
-		if (entindex > 0 && modelindex > 0)
+		if (m_InspectMode == PhysicInspectMode::PhysicObject)
 		{
-			auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
+			uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
 
-			if (pPhysicConfig && (pPhysicConfig->flags & PhysicObjectFlag_FromConfig))
+			if (physicObjectId)
 			{
-				auto model = EngineGetModelByIndex(modelindex);
+				OpenEditPhysicObjectDialog(physicObjectId);
+				return;
+			}
+		}
+		else if (m_InspectMode == PhysicInspectMode::RigidBody)
+		{
+			int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
 
-				if (model && model->type == mod_studio)
+			if (physicComponentId)
+			{
+				auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+				if (pPhysicComponent && pPhysicComponent->IsRigidBody())
 				{
-					OpenEditPhysicObjectDialog(entindex, modelindex);
+					int entindex = pPhysicComponent->GetOwnerEntityIndex();
+
+					auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+
+					if (pPhysicObject)
+					{
+						int modelindex = EngineGetModelIndex(pPhysicObject->GetModel());
+
+						auto physicObjectId = PACK_PHYSIC_OBJECT_ID(entindex, modelindex);
+
+						OpenEditRigidBodyDialog(pPhysicComponent->GetPhysicConfigId(), physicObjectId);
+						return;
+					}
 				}
 			}
 		}
-	}
-	else if (code == vgui::MOUSE_LEFT && vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-	{
-
-
 	}
 
 	BaseClass::OnMouseDoublePressed(code);
 }
 
-void CPhysicDebugGUI::UpdateInspectEntity(int entindex, int modelindex)
+void CPhysicDebugGUI::UpdateInspectClientEntity()
 {
-	if (m_iCachedInspectEntityIndex != entindex || m_iCachedInspectModelIndex != modelindex)
+	int entindex = ClientEntityManager()->GetInspectEntityIndex();
+	int modelindex = ClientEntityManager()->GetInspectEntityModelIndex();
+	int playerindex = 0;
+
+	auto ent = ClientEntityManager()->GetEntityByIndex(entindex);
+	auto model = EngineGetModelByIndex(modelindex);
+
+	if (entindex > 0 && ent && model)
 	{
-		m_iCachedInspectEntityIndex = entindex;
-		m_iCachedInspectModelIndex = modelindex;
+		wchar_t wszModelName[64] = { 0 };
 
-		auto model = EngineGetModelByIndex(modelindex);
+		vgui::localize()->ConvertANSIToUnicode(model->name, wszModelName, sizeof(wszModelName));
 
-		if (entindex > 0 && model)
+		auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_Entity"), entindex, wszModelName);
+
+		ShowInspectContentLabel(str.c_str());
+
+		auto curstate = &ent->curstate;
+
+		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
 		{
-			wchar_t wszIndex[32] = { 0 };
-			wchar_t wszModel[64] = { 0 };
-			wchar_t wszBuf[512] = { 0 };
-
-			swprintf_s(wszIndex, L"%d", entindex);
-
-			vgui::localize()->ConvertANSIToUnicode(model->name, wszModel, sizeof(wszModel));
-
-			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
-
-			if (pPhysicObject)
-			{
-				vgui::localize()->ConstructString(wszBuf, sizeof(wszBuf), vgui::localize()->Find("#BulletPhysics_InspectingPhysicObject"), 3, vgui::localize()->Find(pPhysicObject->GetTypeLocalizationTokenString()), wszIndex, wszModel);
-			}
-			else
-			{
-				vgui::localize()->ConstructString(wszBuf, sizeof(wszBuf), vgui::localize()->Find("#BulletPhysics_InspectingEntity"), 2, wszIndex, wszModel);
-			}
-
-			SetInspectEntityLabelText(wszBuf);
-			ShowInspectEntityLabel(true);
+			playerindex = ent->curstate.renderamt;
+			curstate = R_GetPlayerState(playerindex);
 		}
-		else
+		else if (ClientEntityManager()->IsEntityPlayer(ent))
 		{
-			SetInspectEntityLabelText(L"");
-			ShowInspectEntityLabel(false);
+			playerindex = ent->curstate.number;
+			curstate = R_GetPlayerState(playerindex);
+		}
+
+		auto str2 = std::format(L"{0}: {1}, {2}: {3}, {4}: {5}", 
+			vgui::localize()->Find("#BulletPhysics_Sequence"), curstate->sequence, 
+			vgui::localize()->Find("#BulletPhysics_GaitSequence"), curstate->gaitsequence,
+			vgui::localize()->Find("#BulletPhysics_Frame"), curstate->frame);
+
+		ShowInspectContentLabel2(str2.c_str());
+	}
+}
+
+void CPhysicDebugGUI::UpdateInspectPhysicObject()
+{
+	uint64 physicObjectId = ClientPhysicManager()->GetInspectingPhysicObjectId();
+
+	if (physicObjectId)
+	{
+		auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
+
+		if (pPhysicObject)
+		{
+			wchar_t wszModelName[64] = { 0 };
+
+			auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
+
+			vgui::localize()->ConvertANSIToUnicode(pPhysicObject->GetModel()->name, wszModelName, sizeof(wszModelName));
+
+			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_PhysicObject"), entindex, wszModelName);
+
+			ShowInspectContentLabel(str.c_str());
 		}
 	}
 }
 
-void CPhysicDebugGUI::UpdateInspectPhysicComponent(int physicComponentId)
+void CPhysicDebugGUI::UpdateInspectRigidBody()
 {
-	if (m_iCachedInspectPhysicComponentId != physicComponentId)
-	{
-		m_iCachedInspectPhysicComponentId = physicComponentId;
+	int physicComponentId = ClientPhysicManager()->GetInspectingPhysicComponentId();
 
+	if (physicComponentId)
+	{
 		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
 
-		if (pPhysicComponent)
+		if (pPhysicComponent && pPhysicComponent->IsRigidBody())
 		{
-			wchar_t wszIndex[32] = { 0 };
-			wchar_t wszName[64] = { 0 };
-			wchar_t wszBuf[512] = { 0 };
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			swprintf_s(wszIndex, L"%d", physicComponentId);
+			wchar_t wszName[64] = { 0 };
 
 			vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszName, sizeof(wszName));
 
-			vgui::localize()->ConstructString(wszBuf, sizeof(wszBuf), vgui::localize()->Find("#BulletPhysics_InspectingPhysicComponent"), 3, vgui::localize()->Find(pPhysicComponent->GetTypeLocalizationTokenString()), wszIndex, wszName);
+			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_RigidBody"), pPhysicComponent->GetPhysicComponentId(), wszName);
 
-			SetInspectPhysicComponentLabelText(wszBuf);
-			ShowInspectPhysicComponentLabel(true);
-		}
-		else
-		{
-			SetInspectPhysicComponentLabelText(L"");
-			ShowInspectPhysicComponentLabel(false);
+			ShowInspectContentLabel(str.c_str());
+
+			auto str2 = std::format(L"{0}: {1}", vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
+
+			ShowInspectContentLabel2(str2.c_str());
+
 		}
 	}
 }
 
-void CPhysicDebugGUI::SetInspectEntityLabelText(const wchar_t* wszText)
+void CPhysicDebugGUI::ShowInspectContentLabel(const wchar_t* wszText)
 {
-	m_pInspectEntityLabel->SetText(wszText);
+	m_pInspectContentLabel->SetText(wszText);
+	m_pInspectContentLabel->SetVisible(true);
 }
 
-void CPhysicDebugGUI::ShowInspectEntityLabel(bool bVisible)
+void CPhysicDebugGUI::HideInspectContentLabel()
 {
-	m_pInspectEntityLabel->SetVisible(bVisible);
+	m_pInspectContentLabel->SetVisible(false);
 }
 
-void CPhysicDebugGUI::SetInspectPhysicComponentLabelText(const wchar_t* wszText)
+void CPhysicDebugGUI::ShowInspectContentLabel2(const wchar_t* wszText)
 {
-	m_pInspectPhysicComponentLabel->SetText(wszText);
+	m_pInspectContentLabel2->SetText(wszText);
+	m_pInspectContentLabel2->SetVisible(true);
 }
 
-void CPhysicDebugGUI::ShowInspectPhysicComponentLabel(bool bVisible)
+void CPhysicDebugGUI::HideInspectContentLabel2()
 {
-	m_pInspectPhysicComponentLabel->SetVisible(bVisible);
-}
-
-void CPhysicDebugGUI::NewMap()
-{
-	m_iCachedInspectEntityIndex = 0;
-	m_iCachedInspectModelIndex = 0;
-	m_iCachedInspectPhysicComponentId = 0;
+	m_pInspectContentLabel2->SetVisible(false);
 }
 
 bool CPhysicDebugGUI::HasFocus()
@@ -294,6 +506,7 @@ bool CPhysicDebugGUI::HasFocus()
 	{
 		return true;
 	}
+
 	return false;
 }
 
@@ -312,14 +525,17 @@ void CPhysicDebugGUI::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	SetBorder(NULL);
 
-	m_pInspectEntityLabel->SetFont(pScheme->GetFont("EngineFont", IsProportional()));
-	m_pInspectPhysicComponentLabel->SetFont(pScheme->GetFont("EngineFont", IsProportional()));
+	m_pInspectContentLabel->SetFont(pScheme->GetFont("EngineFont", IsProportional()));
+	m_pInspectContentLabel2->SetFont(pScheme->GetFont("EngineFont", IsProportional()));
+	m_pInspectModeLabel->SetFont(pScheme->GetFont("EngineFont", IsProportional()));
 
-	m_pInspectEntityLabel->SetFgColor(Color(255, 255, 255, 255));
-	m_pInspectPhysicComponentLabel->SetFgColor(Color(255, 255, 255, 255));
+	m_pInspectContentLabel->SetFgColor(Color(255, 255, 255, 255));
+	m_pInspectContentLabel2->SetFgColor(Color(255, 255, 255, 255));
+	m_pInspectModeLabel->SetFgColor(Color(255, 255, 255, 255));
 
-	m_pInspectEntityLabel->SetPaintBackgroundEnabled(false);
-	m_pInspectPhysicComponentLabel->SetPaintBackgroundEnabled(false);
+	m_pInspectContentLabel->SetPaintBackgroundEnabled(false);
+	m_pInspectContentLabel2->SetPaintBackgroundEnabled(false);
+	m_pInspectModeLabel->SetPaintBackgroundEnabled(false);
 }
 
 void CPhysicDebugGUI::PerformLayout(void)
@@ -344,27 +560,15 @@ void CPhysicDebugGUI::OnCommand(const char* command)
 	{
 		
 	}
-	else if (!strncmp(command, "CreateRagdollObject|", sizeof("CreateRagdollObject|") - 1))
-	{
-		OnCreateRagdollObject(command + sizeof("CreateRagdollObject|") - 1);
-	}
-	else if (!strncmp(command, "EditPhysicObject|", sizeof("EditPhysicObject|") - 1))
-	{
-		OnEditPhysicObject(command + sizeof("EditPhysicObject|") - 1);
-	}
 	else
 	{
 		BaseClass::OnCommand(command);
 	}
 }
 
-void CPhysicDebugGUI::OnCreateRagdollObject(const char* command)
+void CPhysicDebugGUI::OnCreatePhysicObject(uint64 physicObjectId)
 {
-	int entindex{};
-	int modelindex{};
-
-	if (2 != sscanf_s(command, "%d|%d", &entindex, &modelindex))
-		return;
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
 
 	auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
 
@@ -374,19 +578,15 @@ void CPhysicDebugGUI::OnCreateRagdollObject(const char* command)
 	//TODO
 }
 
-void CPhysicDebugGUI::OnEditPhysicObject(const char* command)
+void CPhysicDebugGUI::OnEditPhysicObject(uint64 physicObjectId)
 {
-	int entindex{};
-	int modelindex{};
-
-	if (2 != sscanf_s(command, "%d|%d", &entindex, &modelindex))
-		return;
-
-	OpenEditPhysicObjectDialog(entindex, modelindex);
+	OpenEditPhysicObjectDialog(physicObjectId);
 }
 
-void CPhysicDebugGUI::OpenEditPhysicObjectDialog(int entindex, int modelindex)
+void CPhysicDebugGUI::OpenEditPhysicObjectDialog(uint64 physicObjectId)
 {
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
+
 	auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
 
 	if (!pPhysicConfig)
@@ -395,7 +595,39 @@ void CPhysicDebugGUI::OpenEditPhysicObjectDialog(int entindex, int modelindex)
 	if (!(pPhysicConfig->flags & PhysicObjectFlag_FromConfig))
 		return;
 
-	auto dialog = new CPhysicEditorDialog(this, "PhysicEditorDialog", entindex, modelindex, pPhysicConfig);
+	auto dialog = new CPhysicEditorDialog(this, "PhysicEditorDialog", physicObjectId, pPhysicConfig);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
+}
+
+void CPhysicDebugGUI::OpenEditRigidBodyDialog(int configId, uint64 physicObjectId)
+{
+	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
+
+	if (!pRigidBodyConfig)
+		return;
+
+	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", physicObjectId, pRigidBodyConfig);
+	dialog->AddActionSignalTarget(this);
+	dialog->DoModal();
+}
+
+void CPhysicDebugGUI::OnEditRigidBodyEx(int configId, uint64 physicObjectId)
+{
+	OpenEditRigidBodyDialog(configId, physicObjectId);
+}
+
+void CPhysicDebugGUI::OnMoveRigidBodyEx(int configId, uint64 physicObjectId)
+{
+
+}
+
+void CPhysicDebugGUI::OnRotateRigidBodyEx(int configId, uint64 physicObjectId)
+{
+
+}
+
+void CPhysicDebugGUI::OnDeleteRigidBodyEx(int configId, uint64 physicObjectId)
+{
+
 }

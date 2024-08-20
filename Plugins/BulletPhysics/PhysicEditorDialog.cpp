@@ -8,126 +8,9 @@
 #include "exportfuncs.h"
 
 #include "ClientPhysicManager.h"
+#include "PhysicGUICommon.h"
 
 #include <format>
-#include <sstream>
-
-const char* tokens_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
-
-const char* tokens_CollisionShapeDirection[] = { "#BulletPhysics_ShapeDirectionX", "#BulletPhysics_ShapeDirectionY", "#BulletPhysics_ShapeDirectionZ" };
-
-std::wstring UTIL_FormatShapeNameInternal(int type)
-{
-	if (type >= 0 && type < _ARRAYSIZE(tokens_CollisionShape))
-	{
-		return vgui::localize()->Find(tokens_CollisionShape[type]);
-	}
-
-	return vgui::localize()->Find("#BulletPhysics_Unknown");
-}
-
-std::wstring UTIL_FormatShapeName(const CClientRigidBodyConfig *pRigidBodyConfig)
-{
-	if (pRigidBodyConfig->collisionShape)
-	{
-		return UTIL_FormatShapeNameInternal(pRigidBodyConfig->collisionShape->type);
-	}
-
-	return L"--";
-}
-
-std::wstring UTIL_FormatRigidBodyFlags(int flags)
-{
-	std::wstringstream ss;
-
-	if (flags & PhysicRigidBodyFlag_AlwaysDynamic) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_AlwaysDynamic") << L") ";
-	}
-
-	if (flags & PhysicRigidBodyFlag_AlwaysKinematic) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_AlwaysKinematic") << L") ";
-	}
-
-	if (flags & PhysicRigidBodyFlag_NoCollisionToWorld) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToWorld") << L") ";
-	}
-
-	if (flags & PhysicRigidBodyFlag_NoCollisionToStaticObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToStaticObject") << L") ";
-	}
-
-	if (flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToDynamicObject") << L") ";
-	}
-
-	if (flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToRagdollObject") << L") ";
-	}
-
-	return ss.str();
-}
-
-std::string UTIL_FormatBoneNameEx(studiohdr_t * studiohdr, int boneindex)
-{
-	if (!(boneindex >= 0 && boneindex < studiohdr->numbones))
-	{
-		return "--";
-	}
-
-	auto pbone = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
-
-	std::string name = pbone[boneindex].name;
-
-	return std::format("#{0} ({1})", boneindex, name);
-}
-
-const char *UTIL_GetBoneName(studiohdr_t* studiohdr, int boneindex)
-{
-	if (!(boneindex >= 0 && boneindex < studiohdr->numbones))
-	{
-		return "--";
-	}
-
-	auto pbone = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
-
-	return pbone[boneindex].name;
-}
-
-std::string UTIL_FormatBoneName(int modelindex, int boneindex)
-{
-	auto model = EngineGetModelByIndex(modelindex);
-
-	if (!model)
-	{
-		return "--";
-	}
-
-	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(model);
-
-	if (!studiohdr)
-	{
-		return "--";
-	}
-
-	return UTIL_FormatBoneNameEx(studiohdr, boneindex);
-}
-
-std::shared_ptr<CClientRigidBodyConfig> UTIL_GetRigidConfigFromConfigId(int configId)
-{
-	auto pPhysicConfig = ClientPhysicManager()->GetPhysicConfig(configId);
-
-	auto pLockedPhysicConfig = pPhysicConfig.lock();
-
-	if (!pLockedPhysicConfig)
-		return nullptr;
-
-	if (pLockedPhysicConfig->configType != PhysicConfigType_RigidBody)
-		return nullptr;
-
-	std::shared_ptr<CClientRigidBodyConfig> pRigidBodyConfig = std::static_pointer_cast<CClientRigidBodyConfig>(pLockedPhysicConfig);
-
-	return pRigidBodyConfig;
-}
 
 //RigidBody List
 
@@ -137,19 +20,20 @@ CRigidBodyListPanel::CRigidBodyListPanel(vgui::Panel* parent, const char* pName)
 }
 
 
-CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
-	BaseClass(parent, name), m_iInspectEntityIndex(entindex), m_iEngineModelIndex(modelindex), m_pPhysicConfig(pPhysicConfig)
+CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicConfig(pPhysicConfig)
 {
 	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
 
 	m_pRigidBodyListPanel = new CRigidBodyListPanel(this, "RigidBodyListPanel");
 
-	m_pRigidBodyListPanel->AddColumnHeader(0, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(1, "shape","#BulletPhysics_Shape", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(2, "bone", "#BulletPhysics_Bone", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(3, "mass", "#BulletPhysics_Mass", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(4, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
-
+	m_pRigidBodyListPanel->AddColumnHeader(0, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
+	m_pRigidBodyListPanel->AddColumnHeader(1, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(2, "shape","#BulletPhysics_Shape", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(3, "bone", "#BulletPhysics_Bone", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(4, "mass", "#BulletPhysics_Mass", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(5, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
+	m_pRigidBodyListPanel->SetSortColumn(0);
 	m_pRigidBodyListPanel->SetMultiselectEnabled(false);
 
 	m_pCreateNewRigidBody = new vgui::Button(this, "CreateNewRigidBody", L"#BulletPhysics_CreateNewRigidBody", this, "CreateNewRigidBody");
@@ -183,7 +67,7 @@ void CRigidBodyPage::OnKeyCodeTyped(vgui::KeyCode code)
 
 			auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
 
-			OpenRigidBodyEditor(configId);
+			OnOpenRigidBodyEditor(configId);
 
 			return;
 		}
@@ -198,34 +82,14 @@ void CRigidBodyPage::OnCommand(const char* command)
 	{
 
 	}
-	else if (!strcmp(command, "CreateNewRigidBody"))
+	else if (!stricmp(command, "CreateNewRigidBody"))
 	{
 		OnCreateNewRigidBody();
-	}
-	else if (!strncmp(command, "EditRigidBody|", sizeof("EditRigidBody|") - 1))
-	{
-		OnEditRigidBody(command + sizeof("EditRigidBody|") - 1);
-	}
-	else if (!strncmp(command, "DeleteRigidBody|", sizeof("DeleteRigidBody|") - 1))
-	{
-		OnDeleteRigidBody(command + sizeof("DeleteRigidBody|") - 1);
 	}
 	else
 	{
 		BaseClass::OnCommand(command);
 	}
-}
-
-void CRigidBodyPage::OpenRigidBodyEditor(int configId)
-{
-	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
-
-	if (!pRigidBodyConfig)
-		return;
-
-	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", m_iInspectEntityIndex, m_iEngineModelIndex, pRigidBodyConfig);
-	dialog->AddActionSignalTarget(this);
-	dialog->DoModal();
 }
 
 void CRigidBodyPage::OnOpenContextMenu(int itemId)
@@ -250,15 +114,31 @@ void CRigidBodyPage::OnOpenContextMenu(int itemId)
 	wchar_t szBuf[256] = { 0 };
 	vgui::localize()->ConvertANSIToUnicode(pRigidBodyConfig->name.c_str(), szName, sizeof(szName));
 
-	auto command_EditRigidBody = std::format("EditRigidBody|{0}", configId);
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, szName);
-	menu->AddMenuItem("EditRigidBody", szBuf, new KeyValues("Command", "command", command_EditRigidBody.c_str()), this);
+	menu->AddMenuItem("EditRigidBody", szBuf, new KeyValues("EditRigidBody", "configId", configId), this);
 
-	auto command_DeleteRigidBody = std::format("DeleteRigidBody|{0}", configId);
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szName);
-	menu->AddMenuItem("DeleteRigidBody", szBuf, new KeyValues("Command", "command", command_DeleteRigidBody.c_str()), this);
-	
+	menu->AddMenuItem("DeleteRigidBody", szBuf, new KeyValues("DeleteRigidBody", "configId", configId), this);
+
 	vgui::Menu::PlaceContextMenu(this, menu);
+}
+
+
+void CRigidBodyPage::OnOpenRigidBodyEditor(int configId)
+{
+	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
+
+	if (!pRigidBodyConfig)
+		return;
+
+	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", m_physicObjectId, pRigidBodyConfig);
+	dialog->AddActionSignalTarget(this);
+	dialog->DoModal();
+}
+
+void CRigidBodyPage::OnEditRigidBody(int configId)
+{
+	OnOpenRigidBodyEditor(configId);
 }
 
 void CRigidBodyPage::OnRefreshRigidBody(int configId)
@@ -294,17 +174,19 @@ void CRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig *
 
 	kv->SetString("name", pRigidBodyConfig->name.c_str());
 
-	auto shape = UTIL_FormatShapeName(pRigidBodyConfig);
+	std::wstring shape = pRigidBodyConfig->collisionShape ? UTIL_GetCollisionShapeTypeLocalizedName(pRigidBodyConfig->collisionShape->type) : L"--";
 
 	kv->SetWString("shape", shape.c_str());
 
-	auto bone = UTIL_FormatBoneName(m_iEngineModelIndex, pRigidBodyConfig->boneindex);
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(m_physicObjectId);
 
-	kv->SetString("bone", bone.c_str());
+	auto bonename = UTIL_GetFormattedBoneName(modelindex, pRigidBodyConfig->boneindex);
+
+	kv->SetString("bone", bonename.c_str());
 
 	kv->SetFloat("mass", pRigidBodyConfig->mass);
 
-	auto flags = UTIL_FormatRigidBodyFlags(pRigidBodyConfig->flags);
+	auto flags = UTIL_GetFormattedRigidBodyFlags(pRigidBodyConfig->flags);
 
 	kv->SetWString("flags", flags.c_str());
 
@@ -327,7 +209,7 @@ void CRigidBodyPage::OnCreateNewRigidBody()
 {
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
-	pRigidBodyConfig->name = std::format("NewRigidBody_{0}", pRigidBodyConfig->configId);
+	pRigidBodyConfig->name = std::format("Unnamed_{0}", pRigidBodyConfig->configId);
 
 	m_pPhysicConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
@@ -335,26 +217,11 @@ void CRigidBodyPage::OnCreateNewRigidBody()
 
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 
-	ClientPhysicManager()->RemovePhysicObject(m_iInspectEntityIndex);
+	ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 }
 
-void CRigidBodyPage::OnEditRigidBody(const char* command)
+void CRigidBodyPage::OnDeleteRigidBody(int configId)
 {
-	int configId{};
-
-	if (1 != sscanf_s(command, "%d", &configId))
-		return;
-
-	OpenRigidBodyEditor(configId);
-}
-
-void CRigidBodyPage::OnDeleteRigidBody(const char *command)
-{
-	int configId{};
-
-	if (1 != sscanf_s(command, "%d", &configId))
-		return;
-
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
 
 	if (!pRigidBodyConfig)
@@ -376,6 +243,7 @@ void CRigidBodyPage::OnDeleteRigidBody(const char *command)
 	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
 	{
 		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+
 		if (userData == configId)
 		{
 			m_pRigidBodyListPanel->RemoveItem(i);
@@ -383,16 +251,13 @@ void CRigidBodyPage::OnDeleteRigidBody(const char *command)
 		}
 	}
 
-	//ReloadAllRigidBodiesIntoListPanelItem();
-
-	PostActionSignal(new KeyValues("RefreshPhysicObject", "entindex", m_iInspectEntityIndex));
-	//ClientPhysicManager()->RemovePhysicObject(m_iInspectEntityIndex);
+	ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 }
 
 //CollisionShape Editor
 
-CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig) :
-	BaseClass(parent, name), m_iInspectEntityIndex(entindex), m_iEngineModelIndex(modelindex), m_pCollisionShapeConfig(pCollisionShapeConfig)
+CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pCollisionShapeConfig(pCollisionShapeConfig)
 {
 	SetDeleteSelfOnClose(true);
 
@@ -466,6 +331,7 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshCollisionShape"));
+		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 		Close();
 		return;
 	}
@@ -473,6 +339,7 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshCollisionShape"));
+		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 		return;
 	}
 
@@ -481,13 +348,13 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 
 void CCollisionShapeEditDialog::LoadAvailableShapesIntoControls()
 {
-	for (int i = 0; i < _ARRAYSIZE(tokens_CollisionShape); ++i)
+	for (int i = 0; i < PhysicShape_Maximum; ++i)
 	{
 		auto kv = new KeyValues("UserData");
 
 		kv->SetInt("type", i);
 
-		m_pShape->AddItem(tokens_CollisionShape[i], kv);
+		m_pShape->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
 
 		kv->deleteThis();
 	}
@@ -511,13 +378,15 @@ void CCollisionShapeEditDialog::LoadShapeIntoControls()
 
 void CCollisionShapeEditDialog::LoadAvailableShapeDirectionsIntoControls()
 {
-	for (int i = 0; i < _ARRAYSIZE(tokens_CollisionShapeDirection); ++i)
+	for (int i = 0; i < PhysicShapeDirection_Maximum; ++i)
 	{
 		auto kv = new KeyValues("UserData");
 
 		kv->SetInt("direction", i);
 
-		m_pDirection->AddItem(tokens_CollisionShapeDirection[i], kv);
+		const char* XYZ[] = { "X", "Y", "Z" };
+
+		m_pDirection->AddItem(XYZ[i], kv);
 
 		kv->deleteThis();
 	}
@@ -746,8 +615,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 
 //RigidBody Editor
 
-CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name, int entindex, int modelindex, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig) :
-	BaseClass(parent, name), m_iInspectEntityIndex(entindex), m_iEngineModelIndex(modelindex), m_pRigidBodyConfig(pRigidBodyConfig)
+CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pRigidBodyConfig(pRigidBodyConfig)
 {
 	SetDeleteSelfOnClose(true);
 
@@ -816,6 +685,7 @@ void CRigidBodyEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
+		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 		Close();
 		return;
 	}
@@ -823,6 +693,7 @@ void CRigidBodyEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
+		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
 		return;
 	}
 	else if (!strcmp(command, "EditCollisionShape"))
@@ -848,7 +719,7 @@ void CRigidBodyEditDialog::OnEditCollisionShape()
 		ClientPhysicManager()->AddPhysicConfig(m_pRigidBodyConfig->collisionShape->configId, m_pRigidBodyConfig->collisionShape);
 	}
 
-	auto dialog = new CCollisionShapeEditDialog(this, "CollisionShapeEditDialog", m_iInspectEntityIndex, m_iEngineModelIndex, m_pRigidBodyConfig->collisionShape);
+	auto dialog = new CCollisionShapeEditDialog(this, "CollisionShapeEditDialog", m_physicObjectId, m_pRigidBodyConfig->collisionShape);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 }
@@ -866,7 +737,9 @@ void CRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 		kv->deleteThis();
 	}
 
-	auto model = EngineGetModelByIndex(m_iEngineModelIndex);
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(m_physicObjectId);
+
+	auto model = EngineGetModelByIndex(modelindex);
 
 	if (model && model->type == mod_studio)
 	{
@@ -878,10 +751,10 @@ void CRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 			{
 				auto kv = new KeyValues("UserData");
 
-				kv->SetString("name", UTIL_GetBoneName(studiohdr, i));
+				kv->SetString("name", UTIL_GetBoneRawName(studiohdr, i));
 				kv->SetInt("boneindex", i);
 
-				auto bone = UTIL_FormatBoneNameEx(studiohdr, i);
+				auto bone = UTIL_GetFormattedBoneNameEx(studiohdr, i);
 
 				m_pBone->AddItem(bone.c_str(), kv);
 
@@ -909,13 +782,13 @@ void CRigidBodyEditDialog::LoadBoneIntoControls(int boneindex)
 
 void CRigidBodyEditDialog::LoadAvailableShapesIntoControls()
 {
-	for (int i = 0; i < _ARRAYSIZE(tokens_CollisionShape); ++i)
+	for (int i = 0; i < PhysicShape_Maximum; ++i)
 	{
 		auto kv = new KeyValues("UserData");
 
 		kv->SetInt("type", i);
 
-		m_pShape->AddItem(tokens_CollisionShape[i], kv);
+		m_pShape->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
 
 		kv->deleteThis();
 	}
@@ -1054,7 +927,6 @@ void CRigidBodyEditDialog::SaveConfigFromControls()
 	m_pRigidBodyConfig->angularSleepingThreshold = atof(szText);
 }
 
-
 int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()
 {
 	int boneindex = -1;
@@ -1069,17 +941,16 @@ int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()
 	return boneindex;
 }
 
-
 //Physic Editor
 
-CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, int entindex, int modelindex, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
-	BaseClass(parent, name), m_iInspectEntityIndex(entindex), m_iEngineModelIndex(modelindex), m_pPhysicConfig(pPhysicConfig)
+CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicConfig(pPhysicConfig)
 {
 	SetDeleteSelfOnClose(true);
 
 	SetTitle("#BulletPhysics_PhysicEditor", false);
 
-	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", entindex, modelindex, pPhysicConfig);
+	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", m_physicObjectId, pPhysicConfig);
 	m_pRigidBodyPage->MakeReadyForUse();
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));

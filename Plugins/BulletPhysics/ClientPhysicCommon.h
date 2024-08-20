@@ -2,22 +2,50 @@
 
 #include <vector>
 
-const int PhysicConfigType_None = 0;
-const int PhysicConfigType_PhysicObject = 1;
-const int PhysicConfigType_RigidBody = 2;
-const int PhysicConfigType_Constraint = 3;
-const int PhysicConfigType_CollisionShape = 4;
-const int PhysicConfigType_Action = 5;
-const int PhysicConfigType_Floater = 6;
+enum PhysicConfigType
+{
+	PhysicConfigType_None,
+	PhysicConfigType_PhysicObject,
+	PhysicConfigType_RigidBody,
+	PhysicConfigType_Constraint,
+	PhysicConfigType_CollisionShape,
+	PhysicConfigType_Action,
+	PhysicConfigType_Floater
+};
 
-const int PhysicConfigState_NotLoaded = 0;
-const int PhysicConfigState_Loaded = 1;
-const int PhysicConfigState_LoadedWithError = 2;
+//const int PhysicConfigType_None = 0;
+//const int PhysicConfigType_PhysicObject = 1;
+//const int PhysicConfigType_RigidBody = 2;
+//const int PhysicConfigType_Constraint = 3;
+//const int PhysicConfigType_CollisionShape = 4;
+//const int PhysicConfigType_Action = 5;
+//const int PhysicConfigType_Floater = 6;
 
-const int PhysicObjectType_None = 0;
-const int PhysicObjectType_StaticObject = 1;
-const int PhysicObjectType_DynamicObject = 2;
-const int PhysicObjectType_RagdollObject = 3;
+enum PhysicConfigState
+{
+	PhysicConfigState_NotLoaded = 0,
+	PhysicConfigState_Loaded,
+	PhysicConfigState_LoadedWithError
+};
+
+//const int PhysicConfigState_NotLoaded = 0;
+//const int PhysicConfigState_Loaded = 1;
+//const int PhysicConfigState_LoadedWithError = 2;
+
+enum PhysicObjectType
+{
+	PhysicObjectType_None,
+	PhysicObjectType_StaticObject,
+	PhysicObjectType_DynamicObject,
+	PhysicObjectType_RagdollObject,
+	PhysicObjectType_Maximum
+};
+
+//const int PhysicObjectType_None = 0;
+//const int PhysicObjectType_StaticObject = 1;
+//const int PhysicObjectType_DynamicObject = 2;
+//const int PhysicObjectType_RagdollObject = 3;
+//const int PhysicObjectType_Maximum = 4;
 
 const int PhysicObjectFlag_Barnacle = 0x1;
 const int PhysicObjectFlag_Gargantua = 0x2;
@@ -51,14 +79,28 @@ const int PhysicRigidBodyFlag_AllowedOnRagdollObject = (
 
 const int PhysicRigidBodyFactorIdx_Maximum = 32;
 
-const int PhysicConstraint_None = 0;
-const int PhysicConstraint_ConeTwist = 1;
-const int PhysicConstraint_Hinge = 2;
-const int PhysicConstraint_Point = 3;
-const int PhysicConstraint_Slider = 4;
-const int PhysicConstraint_Dof6 = 5;
-const int PhysicConstraint_Dof6Spring = 6;
-const int PhysicConstraint_Fixed = 7;
+enum PhysicConstraint
+{
+	PhysicConstraint_None = 0,
+	PhysicConstraint_ConeTwist,
+	PhysicConstraint_Hinge,
+	PhysicConstraint_Point,
+	PhysicConstraint_Slider,
+	PhysicConstraint_Dof6,
+	PhysicConstraint_Dof6Spring,
+	PhysicConstraint_Fixed,
+	PhysicConstraint_Maximum
+};
+
+//const int PhysicConstraint_None = 0;
+//const int PhysicConstraint_ConeTwist = 1;
+//const int PhysicConstraint_Hinge = 2;
+//const int PhysicConstraint_Point = 3;
+//const int PhysicConstraint_Slider = 4;
+//const int PhysicConstraint_Dof6 = 5;
+//const int PhysicConstraint_Dof6Spring = 6;
+//const int PhysicConstraint_Fixed = 7;
+//const int PhysicConstraint_Maximum = 8;
 
 const int PhysicRotOrder_XYZ = 0;
 const int PhysicRotOrder_XZY = 1;
@@ -143,28 +185,53 @@ const int PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset = 40;
 
 const int PhysicConstraintFactorIdx_Maximum = 64;
 
-const int PhysicShape_None = 0;
-const int PhysicShape_Box = 1;
-const int PhysicShape_Sphere = 2;
-const int PhysicShape_Capsule = 3;
-const int PhysicShape_Cylinder = 4;
-const int PhysicShape_MultiSphere = 5;
-const int PhysicShape_TriangleMesh = 6;
-const int PhysicShape_Compound = 7;
+enum PhysicShape
+{
+	PhysicShape_None,
+	PhysicShape_Box,
+	PhysicShape_Sphere,
+	PhysicShape_Capsule,
+	PhysicShape_Cylinder,
+	PhysicShape_MultiSphere,
+	PhysicShape_TriangleMesh,
+	PhysicShape_Compound,
+	PhysicShape_Maximum
+};
 
-const int PhysicAction_None = 0;
+//const int PhysicShape_None = 0;
+//const int PhysicShape_Box = 1;
+//const int PhysicShape_Sphere = 2;
+//const int PhysicShape_Capsule = 3;
+//const int PhysicShape_Cylinder = 4;
+//const int PhysicShape_MultiSphere = 5;
+//const int PhysicShape_TriangleMesh = 6;
+//const int PhysicShape_Compound = 7;
+//const int PhysicShape_Maximum = 8;
 
-const int PhysicAction_BarnacleDragForce = 1;
+enum PhysicAction
+{
+	PhysicAction_None = 0,
+	PhysicAction_BarnacleDragForce,
+	PhysicAction_BarnacleChewForce,
+	PhysicAction_BarnacleConstraintLimitAdjustment,
+	PhysicAction_Maximum
+};
+
+//const int PhysicAction_None = 0;
+
+//const int PhysicAction_BarnacleDragForce = 1;
 const int PhysicActionFactorIdx_BarnacleDragForceMagnitude = 0;
 const int PhysicActionFactorIdx_BarnacleDragForceExtraHeight = 1;
 
-const int PhysicAction_BarnacleChewForce = 2;
+//const int PhysicAction_BarnacleChewForce = 2;
 const int PhysicActionFactorIdx_BarnacleChewForceMagnitude = 0;
 const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 
-const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
+//const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
+
+//const int PhysicAction_Maximum = 4;
 
 const int PhysicActionFactorIdx_Maximum = 16;
 
@@ -173,9 +240,17 @@ const int PhysicActionFlag_Gargantua = 0x2;
 const int PhysicActionFlag_AffectsRigidBody = 0x4;
 const int PhysicActionFlag_AffectsConstraint = 0x8;
 
-const int PhysicShapeDirection_X = 0;
-const int PhysicShapeDirection_Y = 1;
-const int PhysicShapeDirection_Z = 2;
+enum PhysicShapeDirection
+{
+	PhysicShapeDirection_X = 0,
+	PhysicShapeDirection_Y,
+	PhysicShapeDirection_Z,
+	PhysicShapeDirection_Maximum
+};
+
+//const int PhysicShapeDirection_X = 0;
+//const int PhysicShapeDirection_Y = 1;
+//const int PhysicShapeDirection_Z = 2;
 
 #define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
 #define BULLET_WORLD_DEBUG_DRAW_LEVEL 10

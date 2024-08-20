@@ -176,11 +176,11 @@ protected:
 
 	float m_gravity{};
 
-	int m_iInspectPhysicComponentId{};
+	uint64 m_inspectingPhysicObjectId{};
+	int m_inspectingPhysicComponentId{};
 
-	int m_iAllocatedPhysicComponentId{};
-
-	int m_iAllocatedPhysicConfigId{};
+	int m_allocatedPhysicConfigId{};
+	int m_allocatedPhysicComponentId{};
 
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
 	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
@@ -220,9 +220,11 @@ public:
 
 	//PhysicObject Management
 	IPhysicObject* GetPhysicObject(int entindex) override;
+	IPhysicObject* GetPhysicObjectEx(uint64 physicObjectId) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
 	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
 	bool RemovePhysicObject(int entindex) override;
+	bool RemovePhysicObjectEx(uint64 physicObjectId) override;
 	void RemoveAllPhysicObjects(int withflags, int withoutflags) override;
 	bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) override;
 	void UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
@@ -242,11 +244,12 @@ public:
 	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
 	bool RemovePhysicComponent(int physicComponentId) override;
 
-	//Inspect
-	void InspectPhysicComponentById(int physicComponentId) override;
-	void InspectPhysicComponent(IPhysicComponent* pPhysicComponent) override;
-	int GetInspectPhysicComponentId() override;
-	IPhysicComponent* GetInspectPhysicComponent() override;
+	//Inspect System
+	void InspectPhysicComponent(int physicComponentId) override;
+	int GetInspectingPhysicComponentId() const override;
+
+	void InspectPhysicObject(uint64 physicObjectId) override;
+	uint64 GetInspectingPhysicObjectId() const override;
 
 	//BasePhysicConfig Management
 	int AllocatePhysicConfigId() override;

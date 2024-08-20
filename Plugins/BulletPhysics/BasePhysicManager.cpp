@@ -23,7 +23,7 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
-const char* GetPhysicObjectConfigTypeName(int type)
+const char* UTIL_GetPhysicObjectConfigTypeName(int type)
 {
 	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
 
@@ -35,7 +35,7 @@ const char* GetPhysicObjectConfigTypeName(int type)
 	return "Unknown";
 }
 
-const char* GetConstraintTypeName(int type)
+const char* UTIL_GetConstraintTypeName(int type)
 {
 	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
 
@@ -47,7 +47,7 @@ const char* GetConstraintTypeName(int type)
 	return "Unknown";
 }
 
-const char* GetPhysicActionTypeName(int type)
+const char* UTIL_GetPhysicActionTypeName(int type)
 {
 	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment" };
 
@@ -59,7 +59,7 @@ const char* GetPhysicActionTypeName(int type)
 	return "Unknown";
 }
 
-const char* GetCollisionShapeTypeName(int type)
+const char* UTIL_GetCollisionShapeTypeName(int type)
 {
 	const char* c_names[] = { "None", "Box", "Sphere", "Capsule", "Cylinder", "MultiSphere", "TriangleMesh", "Compound" };
 
@@ -71,7 +71,7 @@ const char* GetCollisionShapeTypeName(int type)
 	return "Unknown";
 }
 
-int GetCollisionTypeFromTypeName(const char* name)
+int UTIL_GetCollisionTypeFromTypeName(const char* name)
 {
 	int type = PhysicShape_None;
 
@@ -107,7 +107,7 @@ int GetCollisionTypeFromTypeName(const char* name)
 	return type;
 }
 
-int GetConstraintTypeFromTypeName(const char* name)
+int UTIL_GetConstraintTypeFromTypeName(const char* name)
 {
 	int type = PhysicConstraint_None;
 
@@ -143,7 +143,7 @@ int GetConstraintTypeFromTypeName(const char* name)
 	return type;
 }
 
-int GetPhysicActionTypeFromTypeName(const char* name)
+int UTIL_GetPhysicActionTypeFromTypeName(const char* name)
 {
 	int type = PhysicAction_None;
 
@@ -162,7 +162,6 @@ int GetPhysicActionTypeFromTypeName(const char* name)
 
 	return type;
 }
-
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
 {
@@ -374,8 +373,9 @@ void CBasePhysicManager::NewMap(void)
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
 	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0);
 
-	m_iAllocatedPhysicComponentId = 0;
-	m_iInspectPhysicComponentId = 0;
+	m_allocatedPhysicComponentId = 0;
+	m_inspectingPhysicComponentId = 0;
+	m_inspectingPhysicObjectId = 0;
 
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -541,6 +541,22 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
+IPhysicObject* CBasePhysicManager::GetPhysicObjectEx(uint64 physicObjectId)
+{
+	auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
+
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return nullptr;
+
+	if (pPhysicObject->GetModel() != EngineGetModelByIndex(modelindex))
+		return nullptr;
+
+	return pPhysicObject;
+}
+
 static void LoadPhysicObjectFlagsFromKeyValues(KeyValues* pKeyValues, int &flags)
 {
 	flags |= PhysicObjectFlag_FromConfig;
@@ -564,7 +580,7 @@ static CClientCollisionShapeConfigSharedPtr LoadCollisionShapeFromKeyValues(KeyV
 
 	if (type)
 	{
-		pShapeConfig->type = GetCollisionTypeFromTypeName(type);
+		pShapeConfig->type = UTIL_GetCollisionTypeFromTypeName(type);
 	}
 
 	pShapeConfig->is_child = bIsChild;
@@ -739,7 +755,7 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 
 			if (type)
 			{
-				pConstraintConfig->type = GetConstraintTypeFromTypeName(type);
+				pConstraintConfig->type = UTIL_GetConstraintTypeFromTypeName(type);
 			}
 
 			pConstraintConfig->rigidbodyA = pConstraintSubKey->GetString("rigidbodyA");
@@ -1013,7 +1029,7 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 
 			if (type)
 			{
-				pPhysicActionConfig->type = GetPhysicActionTypeFromTypeName(type);
+				pPhysicActionConfig->type = UTIL_GetPhysicActionTypeFromTypeName(type);
 			}
 
 			pPhysicActionConfig->rigidbodyA = pPhysicActionSubKey->GetString("rigidbodyA");
@@ -1199,7 +1215,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewF
 
 static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pPhysicObjectConfig)
 {
-	pKeyValues->SetString("type", GetPhysicObjectConfigTypeName(pPhysicObjectConfig->type));
+	pKeyValues->SetString("type", UTIL_GetPhysicObjectConfigTypeName(pPhysicObjectConfig->type));
 
 	if (pPhysicObjectConfig->flags & PhysicObjectFlag_Barnacle)
 		pKeyValues->SetInt("barnacle", 1);
@@ -1210,7 +1226,7 @@ static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicO
 
 static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, const CClientCollisionShapeConfig *pCollisionShapeConfig)
 {
-	pCollisionShapeSubKey->SetString("type", GetCollisionShapeTypeName(pCollisionShapeConfig->type));
+	pCollisionShapeSubKey->SetString("type", UTIL_GetCollisionShapeTypeName(pCollisionShapeConfig->type));
 
 	if (pCollisionShapeConfig->direction != PhysicShapeDirection_Y)
 		pCollisionShapeSubKey->SetInt("direction", pCollisionShapeConfig->direction);
@@ -1369,7 +1385,7 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
 						pConstraintSubKey->SetBool("deactiveOnGargantuaActivity", true);
 
-					pConstraintSubKey->SetString("type", GetConstraintTypeName(pConstraintConfig->type));
+					pConstraintSubKey->SetString("type", UTIL_GetConstraintTypeName(pConstraintConfig->type));
 
 					pConstraintSubKey->SetString("rigidbodyA", pConstraintConfig->rigidbodyA.c_str());
 					pConstraintSubKey->SetString("rigidbodyB", pConstraintConfig->rigidbodyB.c_str());
@@ -1593,7 +1609,7 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 
 				if (pPhysicActionSubKey)
 				{
-					pPhysicActionSubKey->SetString("type", GetPhysicActionTypeName(pPhysicActionConfig->type));
+					pPhysicActionSubKey->SetString("type", UTIL_GetPhysicActionTypeName(pPhysicActionConfig->type));
 					pPhysicActionSubKey->SetString("rigidbodyA", pPhysicActionConfig->rigidbodyA.c_str());
 					pPhysicActionSubKey->SetString("rigidbodyB", pPhysicActionConfig->rigidbodyB.c_str());
 					pPhysicActionSubKey->SetString("constraint", pPhysicActionConfig->constraint.c_str());
@@ -2740,8 +2756,8 @@ IPhysicObject* CBasePhysicManager::FindGargantuaObjectForPlayer(entity_state_t* 
 
 int CBasePhysicManager::AllocatePhysicComponentId()
 {
-	++m_iAllocatedPhysicComponentId;
-	return m_iAllocatedPhysicComponentId;
+	++m_allocatedPhysicComponentId;
+	return m_allocatedPhysicComponentId;
 }
 
 IPhysicComponent* CBasePhysicManager::GetPhysicComponent(int physicComponentId)
@@ -2790,30 +2806,30 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	return false;
 }
 
-void CBasePhysicManager::InspectPhysicComponentById(int physicComponentId)
+void CBasePhysicManager::InspectPhysicComponent(int physicComponentId)
 {
-	m_iInspectPhysicComponentId = physicComponentId;
+	m_inspectingPhysicComponentId = physicComponentId;
 }
 
-void CBasePhysicManager::InspectPhysicComponent(IPhysicComponent* pPhysicComponent)
+int CBasePhysicManager::GetInspectingPhysicComponentId() const
 {
-	m_iInspectPhysicComponentId = pPhysicComponent->GetPhysicComponentId();
+	return m_inspectingPhysicComponentId;
 }
 
-int CBasePhysicManager::GetInspectPhysicComponentId()
+void CBasePhysicManager::InspectPhysicObject(uint64 physicObjectId)
 {
-	return m_iInspectPhysicComponentId;
+	m_inspectingPhysicObjectId = physicObjectId;
 }
 
-IPhysicComponent* CBasePhysicManager::GetInspectPhysicComponent()
+uint64 CBasePhysicManager::GetInspectingPhysicObjectId() const
 {
-	return GetPhysicComponent(m_iInspectPhysicComponentId);
+	return m_inspectingPhysicObjectId;
 }
 
 int CBasePhysicManager::AllocatePhysicConfigId()
 {
-	++m_iAllocatedPhysicConfigId;
-	return m_iAllocatedPhysicConfigId;
+	++m_allocatedPhysicConfigId;
+	return m_allocatedPhysicConfigId;
 }
 
 std::weak_ptr<CClientBasePhysicConfig> CBasePhysicManager::GetPhysicConfig(int configId)
@@ -2990,6 +3006,22 @@ bool CBasePhysicManager::RemovePhysicObject(int entindex)
 	}
 
 	return false;
+}
+
+bool CBasePhysicManager::RemovePhysicObjectEx(uint64 physicObjectId)
+{
+	auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
+
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return false;
+
+	if (pPhysicObject->GetModel() != EngineGetModelByIndex(modelindex))
+		return false;
+
+	return RemovePhysicObject(entindex);
 }
 
 void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)

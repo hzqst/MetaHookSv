@@ -93,7 +93,7 @@ extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 
 extern ref_params_t r_params;
-extern ref_params_t r_params_final;
+extern vec3_t r_vieworg;
 
 //For Counter-Strike
 typedef struct extra_player_info_s

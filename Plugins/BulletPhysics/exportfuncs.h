@@ -3,6 +3,9 @@
 #include <r_studioint.h>
 #include <com_model.h>
 #include <cl_entity.h>
+#include <triangleapi.h>
+#include <event_api.h>
+#include <pm_defs.h>
 
 extern cl_enginefunc_t gEngfuncs;
 extern cl_exportfuncs_t gExportfuncs;

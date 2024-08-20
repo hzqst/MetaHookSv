@@ -164,6 +164,8 @@ public:
 
 	void* GetInternalRigidBody() override;
 
+	float GetMass() const override;
+
 public:
 	float m_mass{};
 	btVector3 m_inertia{};

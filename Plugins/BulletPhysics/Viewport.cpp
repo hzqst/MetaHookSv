@@ -82,7 +82,7 @@ void CViewport::VidInit(void)
 
 void CViewport::Init(void)
 {
-	m_pPhysicDebugViewGUI->SetVisible(false);
+	m_pPhysicDebugViewGUI->Init();
 }
 
 void CViewport::NewMap(void)
@@ -126,4 +126,9 @@ void CViewport::ActivateClientUI(void)
 void CViewport::HideClientUI(void)
 {
 	SetVisible(false);
+}
+
+void CViewport::UpdateInspectStuffs()
+{
+	m_pPhysicDebugViewGUI->UpdateInspectStuffs();
 }
