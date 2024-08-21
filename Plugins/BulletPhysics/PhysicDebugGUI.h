@@ -4,6 +4,8 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/Button.h>
 #include <vgui_controls/Menu.h>
+#include <vgui_controls/TextImage.h>
+#include <vgui_controls/QueryBox.h>
 
 enum class PhysicInspectMode
 {
@@ -54,6 +56,9 @@ protected:
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
 
 	void Reset();
+
+	void SaveOpenPrompt();
+	void SaveConfirm();
 
 	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
 	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);

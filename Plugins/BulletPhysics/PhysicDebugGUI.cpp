@@ -1,5 +1,4 @@
 #include "PhysicDebugGUI.h"
-#include <vgui_controls/TextImage.h>
 
 #include "PhysicEditorDialog.h"
 
@@ -424,7 +423,7 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 
 							auto pPhysicObjectConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
 
-							if (pPhysicObjectConfig && (pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+							if (pPhysicObjectConfig)
 							{
 								uint64 physicObjectId = PACK_PHYSIC_OBJECT_ID(hitResult.m_iHitEntityIndex, modelindex);
 
@@ -743,13 +742,64 @@ bool CPhysicDebugGUI::UpdateInspectedRigidBody(bool bSelected)
 
 			vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszName, sizeof(wszName));
 
-			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_RigidBody"), pPhysicComponent->GetPhysicComponentId(), wszName);
+			auto str = std::format(L"{0} (#{1}): {2} / {3}: {4}", vgui::localize()->Find("#BulletPhysics_RigidBody"), pPhysicComponent->GetPhysicComponentId(), wszName, vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
 
 			ShowInspectContentLabel(str.c_str());
 
-			auto str2 = std::format(L"{0}: {1}", vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
+			auto pRigidConfig = UTIL_GetRigidConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
 
-			ShowInspectContentLabel2(str2.c_str());
+			if (pRigidConfig)
+			{
+				auto str2 = std::format(L"{0}: ({1:.2f}, {2:.2f}, {3:.2f}) / {4}: ({5:.2f}, {6:.2f}, {7:.2f})",
+					vgui::localize()->Find("#BulletPhysics_Origin"), pRigidConfig->origin[0], pRigidConfig->origin[1], pRigidConfig->origin[2],
+					vgui::localize()->Find("#BulletPhysics_Angles"), pRigidConfig->angles[0], pRigidConfig->angles[1], pRigidConfig->angles[2]);
+
+				if (pRigidConfig->collisionShape)
+				{
+					str2 += L" / ";
+
+					switch (pRigidConfig->collisionShape->type)
+					{
+					case PhysicShape_Box:
+					{
+						str2 += std::format(L"{0}: ({1:.2f}, {2:.2f}, {3:.2f})", vgui::localize()->Find("#BulletPhysics_Size"), pRigidConfig->collisionShape->size[0], pRigidConfig->collisionShape->size[1], pRigidConfig->collisionShape->size[2]);
+						break;
+					}
+					case PhysicShape_Sphere:
+					{
+						str2 += std::format(L"{0}: ({1:.2f})", vgui::localize()->Find("#BulletPhysics_Box"), pRigidConfig->collisionShape->size[0]);
+						break;
+					}
+					case PhysicShape_Capsule:
+					{
+						str2 += std::format(L"{0}: ({1:.2f}, {2:.2f})", vgui::localize()->Find("#BulletPhysics_Capsule"), pRigidConfig->collisionShape->size[0], pRigidConfig->collisionShape->size[1]);
+						break;
+					}
+					case PhysicShape_Cylinder:
+					{
+						str2 += std::format(L"{0}: ({1:.2f}, {2:.2f})", vgui::localize()->Find("#BulletPhysics_Cylinder"), pRigidConfig->collisionShape->size[0], pRigidConfig->collisionShape->size[1]);
+						break;
+					}
+					case PhysicShape_MultiSphere:
+					{
+						str2 += vgui::localize()->Find("#BulletPhysics_MultiSphere");
+						break;
+					}
+					case PhysicShape_TriangleMesh:
+					{
+						str2 += vgui::localize()->Find("#BulletPhysics_TriangleMesh");
+						break;
+					}
+					case PhysicShape_Compound:
+					{
+						str2 += vgui::localize()->Find("#BulletPhysics_Compound");
+						break;
+					}
+					}
+				}
+
+				ShowInspectContentLabel2(str2.c_str());
+			}
 
 			return true;
 		}
@@ -797,17 +847,23 @@ bool CPhysicDebugGUI::OpenInspectPhysicObjectMenu(bool bSelected)
 
 	if (physicObjectId)
 	{
-		auto menu = new vgui::Menu(this, "contextmenu");
+		auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
 
-		menu->SetAutoDelete(true);
+		if (pPhysicObject && (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_FromConfig))
+		{
+			auto menu = new vgui::Menu(this, "contextmenu");
 
-		auto kv = new KeyValues("EditPhysicObject");
-		kv->SetUint64("physicObjectId", physicObjectId);
+			menu->SetAutoDelete(true);
 
-		menu->AddMenuItem("#BulletPhysics_EditPhysicObject", kv, this);
+			auto kv = new KeyValues("EditPhysicObject");
 
-		vgui::Menu::PlaceContextMenu(this, menu);
-		return true;
+			kv->SetUint64("physicObjectId", physicObjectId);
+
+			menu->AddMenuItem("#BulletPhysics_EditPhysicObject", kv, this);
+
+			vgui::Menu::PlaceContextMenu(this, menu);
+			return true;
+		}
 	}
 
 	return false;
@@ -828,7 +884,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 
 			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
 
-			if (pPhysicObject)
+			if (pPhysicObject && (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_FromConfig))
 			{
 				auto menu = new vgui::Menu(this, "contextmenu");
 
@@ -978,11 +1034,47 @@ void CPhysicDebugGUI::PerformLayout(void)
 	m_pTopBar->SetSize(screenWidth, h);
 }
 
+void CPhysicDebugGUI::SaveOpenPrompt()
+{
+	auto box = new vgui::QueryBox("#BulletPhysics_SaveConfirmationTitle", "#BulletPhysics_SaveConfirmationText", this);
+	box->SetOKButtonText("#GameUI_OK");
+	box->SetOKCommand(new KeyValues("Command", "command", "SaveConfirm"));
+	box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
+	box->AddActionSignalTarget(this);
+	box->DoModal();
+}
+
+void CPhysicDebugGUI::SaveConfirm()
+{
+	ClientPhysicManager()->SavePhysicObjectConfigs();
+}
+
 void CPhysicDebugGUI::OnCommand(const char* command)
 {
 	if (!stricmp(command, "OK"))
 	{
 		
+	}
+	else if (!strcmp(command, "Reload"))
+	{
+		ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
+		ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
+		ClientPhysicManager()->LoadPhysicObjectConfigs();
+		return;
+	}
+	else if (!strcmp(command, "SaveOpenPrompt"))
+	{
+		SaveOpenPrompt();
+		return;
+	}
+	else if (!strcmp(command, "SaveConfirm"))
+	{
+		SaveConfirm();
+		return;
+	}
+	else if (!strcmp(command, "SaveAllConfirm"))
+	{
+
 	}
 	else
 	{
@@ -1007,7 +1099,6 @@ void CPhysicDebugGUI::OnEditPhysicObject(KeyValues *kv)
 	auto configId = kv->GetInt("configId");
 	auto physicComponentId = kv->GetInt("physicComponentId");
 	auto physicObjectId = kv->GetUint64("physicObjectId");
-
 
 	OpenEditPhysicObjectDialog(physicObjectId);
 }
@@ -1182,9 +1273,6 @@ bool CPhysicDebugGUI::UpdateRigidBodyConfigSize(int physicComponentId, int axis,
 				if (pRigidBodyConfig->collisionShape)
 				{
 					pRigidBodyConfig->collisionShape->size[axis] += value;
-
-					if (pRigidBodyConfig->collisionShape->size[axis] < 0)
-						pRigidBodyConfig->collisionShape->size[axis] = 0;
 				}
 
 				return pPhysicObject->Rebuild(pPhysicObjectConfig.get());

@@ -150,7 +150,7 @@ class IUtilHTTPClient : public IBaseInterface
 {
 public:
     virtual void Destroy() = 0;
-    virtual void Init(CUtilHTTPClientCreationContext *context) = 0;
+    virtual void Init(const CUtilHTTPClientCreationContext *context) = 0;
     virtual void Shutdown() = 0;
     virtual void RunFrame() = 0;
     virtual bool ParseUrlEx(const char* url, IURLParsedResult* result) = 0;
@@ -163,6 +163,4 @@ public:
     virtual IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) = 0;
 };
 
-IUtilHTTPClient* UtilHTTPClient();
-
-#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_003"
+#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_004"

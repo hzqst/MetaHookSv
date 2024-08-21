@@ -54,7 +54,7 @@ public:
 	CPhysicVertexArray* m_pVertexArray{};
 	CPhysicIndexArray* m_pIndexArray{};
 
-	//TODO: Put this shit to dedicated storage
+	//TODO: Put this shit to dedicated storage?
 	CPhysicVertexArray* m_pVertexArrayStorage{};
 	CPhysicIndexArray* m_pIndexArrayStorage{};
 

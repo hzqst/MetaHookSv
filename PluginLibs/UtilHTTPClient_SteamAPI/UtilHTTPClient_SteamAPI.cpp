@@ -788,7 +788,7 @@ public:
 		delete this;
 	}
 
-	void Init(CUtilHTTPClientCreationContext* context) override
+	void Init(const CUtilHTTPClientCreationContext* context) override
 	{
 		if (context->m_bUseCookieContainer)
 		{

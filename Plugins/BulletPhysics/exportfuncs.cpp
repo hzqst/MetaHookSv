@@ -1279,7 +1279,7 @@ void BV_ReloadObjects_f(void)
 
 void BV_ReloadConfigs_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
 }
 

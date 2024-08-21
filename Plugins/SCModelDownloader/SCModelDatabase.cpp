@@ -79,9 +79,9 @@ public:
 			return;
 		}
 
-		auto payload = ResponseInstance->GetPayload();
+		auto pPayload = ResponseInstance->GetPayload();
 
-		if (!m_pQueryTask->OnResponsePayload((const char*)payload->GetBytes(), payload->GetLength()))
+		if (!m_pQueryTask->OnResponsePayload((const char*)pPayload->GetBytes(), pPayload->GetLength()))
 		{
 			m_pQueryTask->OnFailure();
 			return;
