@@ -185,6 +185,7 @@ void(__fastcall *m_pfnSurfaceSetCursorPos)(void *pthis, int, int x, int y);
 void(__fastcall *m_pfnSetCursor)(void *pthis, int, HCursor cursor);
 
 void(__fastcall* m_pfnGetProportionalBase)(void* pthis, int, int& width, int& height);
+void(__fastcall* m_pfnCalculateMouseVisible)(void* pthis);
 
 static CSurfaceProxy g_SurfaceProxy;
 
@@ -849,7 +850,8 @@ void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 
 void CSurfaceProxy::CalculateMouseVisible(void)
 {
-	g_pSurface->CalculateMouseVisible();
+	//g_pSurface->CalculateMouseVisible();
+	m_pfnCalculateMouseVisible(g_pSurface);
 }
 
 bool CSurfaceProxy::NeedKBInput(void)
@@ -1728,7 +1730,9 @@ void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 
 void CSurfaceProxy_HL25::CalculateMouseVisible(void)
 {
-	g_pSurface_HL25->CalculateMouseVisible();
+	//g_pSurface_HL25->CalculateMouseVisible();
+
+	m_pfnCalculateMouseVisible(g_pSurface_HL25);
 }
 
 bool CSurfaceProxy_HL25::NeedKBInput(void)
@@ -1902,6 +1906,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
@@ -1911,6 +1916,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
@@ -1927,6 +1933,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
@@ -1936,6 +1943,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void*)pVFTable[64], (void**)&m_pfnGetCharacterWidth);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void*)pVFTable[65], (void**)&m_pfnGetTextSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
+		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 83, (void*)pVFTable[83], (void**)&m_pfnCalculateMouseVisible);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void*)pVFTable[89], (void**)&m_pfnGetFontAscent);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 	}

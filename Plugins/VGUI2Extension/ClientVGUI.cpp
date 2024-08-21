@@ -5,6 +5,7 @@
 #include <vgui/IScheme.h>
 #include <vgui/IVGui.h>
 #include <vgui/IInput.h>
+#include <vgui/IMouseControl.h>
 #include <vgui.h>
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
@@ -963,12 +964,21 @@ void NewClientVGUI::Start(void)
 {
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
 
-	//TODO: Need to fix for HL25?
-	if (g_pSurface)
+	if (g_pSurface_HL25)
 	{
-		//Fix a bug that VGUI1 mouse disappear
-		auto pSurface4 = (DWORD)g_pSurface + 4;
-		*(PUCHAR)(pSurface4 + 0x4B) = 0;
+		//Fix a bug that VGUI1 mouse disappear ?
+	//	int offset_m_bVGUI2MouseControl = 4 + 0x4B;
+	//	*(PUCHAR)((ULONG_PTR)g_pSurface + offset_m_bVGUI2MouseControl) = 0;
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface_HL25 + sizeof(ULONG_PTR));
+		pMouseControl->SetVGUI2MouseControl(false);
+	}
+	else if (g_pSurface)
+	{
+		//Fix a bug that VGUI1 mouse disappear ?
+	//	int offset_m_bVGUI2MouseControl = 4 + 0x4B;
+	//	*(PUCHAR)((ULONG_PTR)g_pSurface + offset_m_bVGUI2MouseControl) = 0;
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface + sizeof(ULONG_PTR));
+		pMouseControl->SetVGUI2MouseControl(false);
 	}
 }
 
@@ -993,6 +1003,7 @@ bool NewClientVGUI::UseVGUI1(void)
 
 	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
+		//Must be true for Sven Co-op and other VGUI1 games
 		real_ret = true;
 	}
 

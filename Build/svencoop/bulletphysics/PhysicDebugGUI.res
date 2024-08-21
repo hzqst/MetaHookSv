@@ -136,6 +136,23 @@
 		"command"			"SaveOpenPrompt"
 		"tooltiptext"		"#BulletPhysics_Save_ToolTips"
 	}
+	"InspectMode"
+	{
+		"ControlName"		"ComboBox"
+		"fieldName"		"InspectMode"
+		"xpos"		"340"
+		"ypos"		"8"
+		"wide"		"120"
+		"tall"		"24"
+		"autoResize"	"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"0"
+		"textHidden"	"0"
+		"editable"		"0"
+		"maxchars"		"-1"
+	}
 	"Close"
 	{
 		"ControlName"		"Button"

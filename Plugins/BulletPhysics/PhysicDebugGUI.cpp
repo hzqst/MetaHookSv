@@ -26,12 +26,16 @@ CPhysicDebugGUI::CPhysicDebugGUI(vgui::Panel* parent) : Frame(parent, "PhysicDeb
 	m_pTopBar = new vgui::Panel(this, "TopBar");
 	m_pBottomBarBlank = new vgui::Panel(this, "BottomBarBlank");
 
+	m_pReload = new vgui::Button(this, "Reload", L"#BulletPhysics_Reload", this, "Reload");
+	m_pSave = new vgui::Button(this, "Save", L"#BulletPhysics_Save", this, "SaveOpenPrompt");
+	m_pInspectMode = new vgui::ComboBox(this, "InspectMode", 0, false);
+
+	m_pClose = new vgui::Button(this, "Close", L"#GameUI_Close", this, "Close");
+
 	m_pInspectContentLabel = new vgui::Label(this, "InspectContentLabel", "");
 	m_pInspectContentLabel2 = new vgui::Label(this, "InspectContentLabel2", "");
 	m_pInspectModeLabel = new vgui::Label(this, "InspectModeLabel", "");
 	m_pEditModeLabel = new vgui::Label(this, "EditModeLabel", "");
-
-	m_pClose = new vgui::Button(this, "Close", L"#GameUI_Close", this, "Close");
 
 	SetPaintBorderEnabled(false);
 	SetPaintBackgroundEnabled(false);
@@ -750,7 +754,8 @@ bool CPhysicDebugGUI::UpdateInspectedRigidBody(bool bSelected)
 
 			if (pRigidConfig)
 			{
-				auto str2 = std::format(L"{0}: ({1:.2f}, {2:.2f}, {3:.2f}) / {4}: ({5:.2f}, {6:.2f}, {7:.2f})",
+				auto str2 = std::format(L"[{0}] {1}: ({2:.2f}, {3:.2f}, {4:.2f}) / {5}: ({6:.2f}, {7:.2f}, {8:.2f})",
+					vgui::localize()->Find("#BulletPhysics_Config"),
 					vgui::localize()->Find("#BulletPhysics_Origin"), pRigidConfig->origin[0], pRigidConfig->origin[1], pRigidConfig->origin[2],
 					vgui::localize()->Find("#BulletPhysics_Angles"), pRigidConfig->angles[0], pRigidConfig->angles[1], pRigidConfig->angles[2]);
 

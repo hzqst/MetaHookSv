@@ -266,7 +266,7 @@ void CBasePhysicManager::NewMap(void)
 
 void CBasePhysicManager::DebugDraw(void)
 {
-	gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
+	
 }
 
 void CBasePhysicManager::SetGravity(float velocity)

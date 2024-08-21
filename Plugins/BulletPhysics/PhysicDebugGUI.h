@@ -85,9 +85,15 @@ protected:
 
 protected:
 
-	vgui::Button* m_pClose{};
 	vgui::Panel* m_pTopBar{};
 	vgui::Panel* m_pBottomBarBlank{};
+
+	vgui::Button* m_pReload{};
+	vgui::Button* m_pSave{};
+	vgui::ComboBox* m_pInspectMode{};
+
+	vgui::Button* m_pClose{};
+
 	vgui::Label* m_pInspectContentLabel{};
 	vgui::Label* m_pInspectContentLabel2{};
 	vgui::Label* m_pInspectModeLabel{};

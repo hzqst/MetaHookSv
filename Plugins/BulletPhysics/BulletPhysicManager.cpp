@@ -1611,6 +1611,8 @@ public:
 			gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
 		}
 
+		gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
+
 		gEngfuncs.pTriAPI->Begin(TRI_LINES);
 
 		vec3_t vecFromGoldSrc = { from1.getX(), from1.getY(), from1.getZ() };
