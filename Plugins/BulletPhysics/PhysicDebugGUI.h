@@ -16,7 +16,8 @@ enum class PhysicEditMode
 {
 	None,
 	Move,
-	Rotate
+	Rotate,
+	Resize
 };
 
 class CPhysicDebugGUI : public vgui::Frame
@@ -41,6 +42,7 @@ protected:
 	MESSAGE_FUNC_PARAMS(OnEditRigidBodyEx, "EditRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnRotateRigidBodyEx, "RotateRigidBodyEx", kv);
+	MESSAGE_FUNC_PARAMS(OnResizeRigidBodyEx, "ResizeRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnDeleteRigidBodyEx, "DeleteRigidBodyEx", kv);
 
 	void OnThink() override;
@@ -74,6 +76,7 @@ protected:
 
 	bool UpdateRigidBodyConfigOrigin(int physicComponentId, int axis, float value);
 	bool UpdateRigidBodyConfigAngles(int physicComponentId, int axis, float value);
+	bool UpdateRigidBodyConfigSize(int physicComponentId, int axis, float value);
 
 protected:
 
