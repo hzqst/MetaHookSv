@@ -85,6 +85,21 @@
 		"tabPosition"	"0"
 		"textAlignment"	"west"
 	}
+	"EditModeLabel"
+	{
+		"ControlName"	"Label"
+		"fieldName"		"EditModeLabel"
+		"xpos"			"20"
+		"ypos"			"72"
+		"wide"			"360"
+		"tall"			"80"
+		"autoResize"	"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"	"0"
+		"textAlignment"	"northwest"
+	}
 	"Close"
 	{
 		"ControlName"		"Button"

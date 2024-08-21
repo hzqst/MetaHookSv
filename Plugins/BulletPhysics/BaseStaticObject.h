@@ -3,6 +3,7 @@
 #include "exportfuncs.h"
 #include "ClientEntityManager.h"
 #include "BasePhysicManager.h"
+#include "PhysicUTIL.h"
 
 class CBaseStaticObject : public IStaticObject
 {
@@ -14,6 +15,7 @@ public:
 		m_model = CreationParam.m_model;
 		m_model_scaling = CreationParam.m_model_scaling;
 		m_flags = CreationParam.m_pStaticObjectConfig->flags;
+		m_configId = CreationParam.m_pStaticObjectConfig->configId;
 	}
 
 	~CBaseStaticObject()
@@ -56,6 +58,11 @@ public:
 		return m_model_scaling;
 	}
 
+	uint64 GetPhysicObjectId() const override
+	{
+		return PACK_PHYSIC_OBJECT_ID(m_entindex, EngineGetModelIndex(m_model));
+	}
+
 	int GetPlayerIndex() const override
 	{
 		return 0;
@@ -66,12 +73,50 @@ public:
 		return m_flags;
 	}
 
+	int GetPhysicConfigId() const override
+	{
+		return m_configId;
+	}
+
 	bool IsClientEntityNonSolid() const override
 	{
 		if (GetClientEntity() == r_worldentity)
 			return false;
 
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
+	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override
+	{
+		if (pPhysicObjectConfig->type != PhysicObjectType_StaticObject)
+		{
+			gEngfuncs.Con_DPrintf("Rebuild: pPhysicObjectConfig->type mismatch!\n");
+			return false;
+		}
+
+		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicObjectConfig;
+
+		CStaticObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entindex = GetEntityIndex();
+		CreationParam.m_model = GetModel();
+
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(CreationParam.m_model);
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
+		}
+
+		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
+
+		CPhysicComponentFilters filters;
+
+		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+		RebuildRigidBodies(CreationParam);
+
+		return true;
 	}
 
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
@@ -205,7 +250,7 @@ public:
 	{
 		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
 		{
-			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get());
+			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
 
 			if (pRigidBody)
 			{
@@ -222,14 +267,67 @@ public:
 		}
 	}
 
-	virtual IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) = 0;
+	virtual IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
+
+protected:
+
+		void RebuildRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+		{
+			std::vector<IPhysicRigidBody*> newRigidBodies;
+
+			std::vector<IPhysicRigidBody*> oldRigidBodies = m_RigidBodies;
+
+			m_RigidBodies.clear();
+
+			for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+			{
+				auto configId = pRigidBodyConfig->configId;
+				auto foundOld = std::find_if(oldRigidBodies.begin(), oldRigidBodies.end(), [configId](IPhysicRigidBody* pRigidBodyOld) {
+					return pRigidBodyOld->GetPhysicConfigId() == configId;
+					});
+
+				if (foundOld != oldRigidBodies.end())
+				{
+					auto oldPhysicComponentId = (*foundOld)->GetPhysicComponentId();
+
+					auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), oldPhysicComponentId);
+
+					if (pNewRigidBody)
+					{
+						newRigidBodies.emplace_back(pNewRigidBody);
+					}
+				}
+				else
+				{
+					auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
+
+					if (pNewRigidBody)
+					{
+						newRigidBodies.emplace_back(pNewRigidBody);
+					}
+				}
+			}
+
+			for (auto pRigidBody : oldRigidBodies)
+			{
+				ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
+			}
+
+			for (auto pRigidBody : newRigidBodies)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+			}
+
+			m_RigidBodies = newRigidBodies;
+		}
 
 public:
+
 	int m_entindex{};
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
 	int m_flags{ PhysicObjectFlag_StaticObject };
-
+	int m_configId{};
 	std::vector<IPhysicRigidBody*> m_RigidBodies{};
 };

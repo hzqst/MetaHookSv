@@ -499,7 +499,6 @@ const char* CBulletConstraint::GetTypeLocalizationTokenString() const
 	return "#BulletPhysics_Constraint";
 }
 
-
 bool CBulletConstraint::AddToPhysicWorld(void* world)
 {
 	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
@@ -587,7 +586,7 @@ bool CBulletConstraint::IsAddedToPhysicWorld(void* world) const
 
 void CBulletConstraint::Update(CPhysicComponentUpdateContext* ComponentUpdateContext)
 {
-	//no impl
+
 }
 
 void CBulletConstraint::ExtendLinearLimit(int axis, float value)
@@ -1365,6 +1364,7 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 		pTriMesh->setUserPointer(new CBulletCollisionShapeSharedUserData(pIndexVertexArray));
 
 		pShape = pTriMesh;
+		break;
 	}
 	case PhysicShape_Compound:
 	{

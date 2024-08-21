@@ -28,7 +28,7 @@ class CRigidBodyPage : public vgui::PropertyPage
 public:
 	DECLARE_CLASS_SIMPLE(CRigidBodyPage, vgui::PropertyPage);
 
-	CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig);
+	CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
 	
 private:
 
@@ -55,7 +55,7 @@ private:
 	vgui::Button* m_pCreateNewRigidBody{};
 
 	uint64 m_physicObjectId{};
-	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicConfig;
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
 };
 
 class CCollisionShapeEditDialog : public vgui::Frame
@@ -63,7 +63,10 @@ class CCollisionShapeEditDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CCollisionShapeEditDialog, vgui::Frame);
 
-	CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig);
+	CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId,
+		const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
+		const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig,
+		const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig);
 	~CCollisionShapeEditDialog();
 
 	void Activate(void) override;
@@ -112,6 +115,8 @@ private:
 	vgui::TextEntry* m_pObjPath{};
 
 	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
+	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
 	std::shared_ptr<CClientCollisionShapeConfig> m_pCollisionShapeConfig;
 };
 
@@ -120,7 +125,10 @@ class CRigidBodyEditDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CRigidBodyEditDialog, vgui::Frame);
 
-	CRigidBodyEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig);
+	CRigidBodyEditDialog(vgui::Panel* parent, const char* name, 
+		uint64 physicObjectId,
+		const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig, 
+		const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig);
 	~CRigidBodyEditDialog();
 
 	void Activate(void) override;
@@ -169,6 +177,7 @@ private:
 	vgui::CheckButton* m_pNoCollisionToRagdollObject{};
 
 	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
 	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
 };
 
@@ -177,7 +186,7 @@ class CPhysicEditorDialog : public vgui::Frame
 public:
 	DECLARE_CLASS_SIMPLE(CPhysicEditorDialog, vgui::Frame);
 
-	CPhysicEditorDialog(vgui::Panel *parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicConfig);
+	CPhysicEditorDialog(vgui::Panel *parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicObjectConfig);
 	~CPhysicEditorDialog();
 
 private:
@@ -188,5 +197,5 @@ private:
 	CRigidBodyPage* m_pRigidBodyPage{};
 
 	uint64 m_physicObjectId{};
-	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicConfig;
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
 };

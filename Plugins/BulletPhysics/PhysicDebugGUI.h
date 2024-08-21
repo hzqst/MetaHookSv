@@ -5,7 +5,19 @@
 #include <vgui_controls/Button.h>
 #include <vgui_controls/Menu.h>
 
-#include "PhysicGUICommon.h"
+enum class PhysicInspectMode
+{
+	Entity,
+	PhysicObject,
+	RigidBody,
+};
+
+enum class PhysicEditMode
+{
+	None,
+	Move,
+	Rotate
+};
 
 class CPhysicDebugGUI : public vgui::Frame
 {
@@ -25,13 +37,12 @@ public:
 protected:
 
 	MESSAGE_FUNC_UINT64(OnCreatePhysicObject, "CreatePhysicObject", physicObjectId);
-	MESSAGE_FUNC_UINT64(OnEditPhysicObject, "EditPhysicObject", physicObjectId);
-	MESSAGE_FUNC_INT_UINT64(OnEditRigidBodyEx, "EditRigidBodyEx", configId, physicObjectId);
-	MESSAGE_FUNC_INT_UINT64(OnMoveRigidBodyEx, "MoveRigidBodyEx", configId, physicObjectId);
-	MESSAGE_FUNC_INT_UINT64(OnRotateRigidBodyEx, "RotateRigidBodyEx", configId, physicObjectId);
-	MESSAGE_FUNC_INT_UINT64(OnDeleteRigidBodyEx, "DeleteRigidBodyEx", configId, physicObjectId);
+	MESSAGE_FUNC_PARAMS(OnEditPhysicObject, "EditPhysicObject", kv);
+	MESSAGE_FUNC_PARAMS(OnEditRigidBodyEx, "EditRigidBodyEx", kv);
+	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);
+	MESSAGE_FUNC_PARAMS(OnRotateRigidBodyEx, "RotateRigidBodyEx", kv);
+	MESSAGE_FUNC_PARAMS(OnDeleteRigidBodyEx, "DeleteRigidBodyEx", kv);
 
-	void Reset();
 	void OnThink() override;
 	void PerformLayout(void) override;
 	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
@@ -40,8 +51,10 @@ protected:
 	void OnMouseDoublePressed(vgui::MouseCode code) override;
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
 
-	void OpenEditPhysicObjectDialog(uint64 physicObjectId);
-	void OpenEditRigidBodyDialog(int configId, uint64 physicObjectId);
+	void Reset();
+
+	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
+	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);
 
 	bool UpdateInspectedClientEntity(bool bSelected);
 	bool UpdateInspectedPhysicObject(bool bSelected);
@@ -49,11 +62,18 @@ protected:
 	void UpdateInspectMode(PhysicInspectMode mode);
 	void UpdateEditMode(PhysicEditMode mode);
 
+	bool OpenInspectClientEntityMenu(bool bSelected);
+	bool OpenInspectPhysicObjectMenu(bool bSelected);
+	bool OpenInspectPhysicComponentMenu(bool bSelected);
+
 	void ShowInspectContentLabel(const wchar_t* wszText);
 	void HideInspectContentLabel();
 
 	void ShowInspectContentLabel2(const wchar_t* wszText);
 	void HideInspectContentLabel2();
+
+	bool UpdateRigidBodyConfigOrigin(int physicComponentId, int axis, float value);
+	bool UpdateRigidBodyConfigAngles(int physicComponentId, int axis, float value);
 
 protected:
 
@@ -63,6 +83,7 @@ protected:
 	vgui::Label* m_pInspectContentLabel{};
 	vgui::Label* m_pInspectContentLabel2{};
 	vgui::Label* m_pInspectModeLabel{};
+	vgui::Label* m_pEditModeLabel{};
 
 	PhysicInspectMode m_InspectMode{ PhysicInspectMode::Entity };
 	PhysicEditMode m_EditMode{ PhysicEditMode::None };

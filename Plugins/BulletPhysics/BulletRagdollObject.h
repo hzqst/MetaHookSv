@@ -922,7 +922,7 @@ private:
 
 #endif
 
-	IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) override
+	IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) override
 	{
 		if (GetRigidBodyByName(pRigidConfig->name))
 		{
@@ -984,10 +984,8 @@ private:
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
 			mask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 
-		auto physicComponentId = ClientPhysicManager()->AllocatePhysicComponentId();
-
 		return new CBulletRagdollRigidBody(
-			physicComponentId,
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			CreationParam.m_entindex,
 			pRigidConfig,
 			cInfo,
@@ -995,7 +993,7 @@ private:
 			mask);
 	}
 
-	IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig) override
+	IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) override
 	{
 		btTypedConstraint* pInternalConstraint{};
 
@@ -1189,9 +1187,7 @@ private:
 
 		if (pInternalConstraint)
 		{
-			auto physicComponentId = ClientPhysicManager()->AllocatePhysicComponentId();
-
-			return new CBulletRagdollConstraint(physicComponentId, CreationParam.m_entindex, pConstraintConfig, pInternalConstraint);
+			return new CBulletRagdollConstraint(physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(), CreationParam.m_entindex, pConstraintConfig, pInternalConstraint);
 		}
 
 		return nullptr;

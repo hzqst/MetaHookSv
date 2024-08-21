@@ -8,7 +8,7 @@
 #include "exportfuncs.h"
 
 #include "ClientPhysicManager.h"
-#include "PhysicGUICommon.h"
+#include "PhysicUTIL.h"
 
 #include <format>
 
@@ -19,8 +19,8 @@ CRigidBodyListPanel::CRigidBodyListPanel(vgui::Panel* parent, const char* pName)
 
 }
 
-CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
-	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicConfig(pPhysicConfig)
+CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
 {
 	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
 
@@ -129,7 +129,7 @@ void CRigidBodyPage::OnOpenRigidBodyEditor(int configId)
 	if (!pRigidBodyConfig)
 		return;
 
-	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", m_physicObjectId, pRigidBodyConfig);
+	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", m_physicObjectId, m_pPhysicObjectConfig, pRigidBodyConfig);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 }
@@ -197,7 +197,7 @@ void CRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
 {
 	m_pRigidBodyListPanel->RemoveAll();
 
-	for (const auto &pConfig : m_pPhysicConfig->RigidBodyConfigs)
+	for (const auto &pConfig : m_pPhysicObjectConfig->RigidBodyConfigs)
 	{
 		LoadRigidBodyAsListPanelItem(pConfig.get());
 	}
@@ -209,35 +209,17 @@ void CRigidBodyPage::OnCreateNewRigidBody()
 
 	pRigidBodyConfig->name = std::format("Unnamed_{0}", pRigidBodyConfig->configId);
 
-	m_pPhysicConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
 	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 
-	ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+	ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 }
 
 void CRigidBodyPage::OnDeleteRigidBody(int configId)
 {
-	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
-
-	if (!pRigidBodyConfig)
-		return;
-
-	for (auto itor = m_pPhysicConfig->RigidBodyConfigs.begin(); itor != m_pPhysicConfig->RigidBodyConfigs.end(); )
-	{
-		const auto &p = (*itor);
-
-		if (p == pRigidBodyConfig)
-		{
-			itor = m_pPhysicConfig->RigidBodyConfigs.erase(itor);
-			break;
-		}
-
-		itor++;
-	}
-
 	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
 	{
 		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
@@ -249,13 +231,24 @@ void CRigidBodyPage::OnDeleteRigidBody(int configId)
 		}
 	}
 
-	ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+	if (UTIL_RemoveRigidBodyFromPhysicObjectConfig(m_pPhysicObjectConfig.get(), configId))
+	{
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+	}
 }
 
 //CollisionShape Editor
 
-CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig) :
-	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pCollisionShapeConfig(pCollisionShapeConfig)
+CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const char* name, 
+	uint64 physicObjectId,
+	const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
+	const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig,
+	const std::shared_ptr<CClientCollisionShapeConfig>& pCollisionShapeConfig) :
+	BaseClass(parent, name),
+	m_physicObjectId(physicObjectId),
+	m_pPhysicObjectConfig(pPhysicObjectConfig),
+	m_pRigidBodyConfig(pRigidBodyConfig),
+	m_pCollisionShapeConfig(pCollisionShapeConfig)
 {
 	SetDeleteSelfOnClose(true);
 
@@ -329,7 +322,7 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshCollisionShape"));
-		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		Close();
 		return;
 	}
@@ -337,7 +330,7 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshCollisionShape"));
-		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		return;
 	}
 
@@ -613,8 +606,14 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 
 //RigidBody Editor
 
-CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig) :
-	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pRigidBodyConfig(pRigidBodyConfig)
+CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name,
+	uint64 physicObjectId, 
+	const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig, 
+	const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig) :
+	BaseClass(parent, name),
+	m_physicObjectId(physicObjectId),
+	m_pPhysicObjectConfig(pPhysicObjectConfig),
+	m_pRigidBodyConfig(pRigidBodyConfig)
 {
 	SetDeleteSelfOnClose(true);
 
@@ -690,7 +689,7 @@ void CRigidBodyEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
-		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		Close();
 		return;
 	}
@@ -698,7 +697,7 @@ void CRigidBodyEditDialog::OnCommand(const char* command)
 	{
 		SaveConfigFromControls();
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
-		ClientPhysicManager()->RemovePhysicObjectEx(m_physicObjectId);
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		return;
 	}
 	else if (!strcmp(command, "EditCollisionShape"))
@@ -724,7 +723,7 @@ void CRigidBodyEditDialog::OnEditCollisionShape()
 		ClientPhysicManager()->AddPhysicConfig(m_pRigidBodyConfig->collisionShape->configId, m_pRigidBodyConfig->collisionShape);
 	}
 
-	auto dialog = new CCollisionShapeEditDialog(this, "CollisionShapeEditDialog", m_physicObjectId, m_pRigidBodyConfig->collisionShape);
+	auto dialog = new CCollisionShapeEditDialog(this, "CollisionShapeEditDialog", m_physicObjectId, m_pPhysicObjectConfig, m_pRigidBodyConfig, m_pRigidBodyConfig->collisionShape);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 }
@@ -912,14 +911,14 @@ int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()
 
 //Physic Editor
 
-CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicConfig) :
-	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicConfig(pPhysicConfig)
+CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
 {
 	SetDeleteSelfOnClose(true);
 
 	SetTitle("#BulletPhysics_PhysicEditor", false);
 
-	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", m_physicObjectId, pPhysicConfig);
+	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", m_physicObjectId, pPhysicObjectConfig);
 	m_pRigidBodyPage->MakeReadyForUse();
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));

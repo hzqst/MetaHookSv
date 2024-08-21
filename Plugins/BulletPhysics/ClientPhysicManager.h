@@ -210,10 +210,13 @@ public:
 	virtual bool GetGoldSrcOrigin(float* v) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual float GetModelScaling() const = 0;
+	virtual uint64 GetPhysicObjectId() const = 0;
 	virtual int GetPlayerIndex() const = 0;
-	virtual int GetObjectFlags() const = 0;
+	virtual int GetObjectFlags() const = 0;	
+	virtual int GetPhysicConfigId() const = 0;
 	virtual bool IsClientEntityNonSolid() const = 0;
 
+	virtual bool Rebuild(const CClientPhysicObjectConfig *pPhysicObjectConfig) = 0;
 	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransferOwnership(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
@@ -337,14 +340,6 @@ public:
 	virtual bool LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage) = 0;
 	virtual void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) = 0;
 
-	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
-
-	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
-	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
-	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
-
 	virtual IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) = 0;
 	virtual IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* state) = 0;
 	virtual void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult) = 0;
@@ -359,8 +354,19 @@ public:
 	virtual bool RemovePhysicObjectEx(uint64 physicObjectId) = 0;
 	virtual void RemoveAllPhysicObjects(int withflags, int withoutflags) = 0;
 	virtual bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) = 0;
-	virtual void UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+	virtual bool RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
+	virtual bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
+	virtual void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+	
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
+
+	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
+
+	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
+	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
+	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
 	//PhysicWorld
 

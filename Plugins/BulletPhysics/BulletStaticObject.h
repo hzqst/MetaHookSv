@@ -115,7 +115,7 @@ public:
 
 	}
 
-	IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig) override
+	IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) override
 	{
 		if (GetRigidBodyByName(pRigidConfig->name))
 		{
@@ -162,10 +162,8 @@ public:
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
 			mask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 
-		auto physicComponentId = ClientPhysicManager()->AllocatePhysicComponentId();
-
 		return new CBulletStaticRigidBody(
-			physicComponentId,
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			CreationParam.m_entindex,
 			pRigidConfig,
 			cInfo,

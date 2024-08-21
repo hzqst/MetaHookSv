@@ -1367,7 +1367,7 @@ void HUD_TempEntUpdate(
 
 	
 	ClientPhysicManager()->SetGravity(cl_gravity);
-	ClientPhysicManager()->UpdatePhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
+	ClientPhysicManager()->UpdateAllPhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
 	ClientPhysicManager()->StepSimulation(frametime);
 }
 

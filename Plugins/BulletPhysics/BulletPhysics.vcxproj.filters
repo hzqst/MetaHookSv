@@ -407,7 +407,7 @@
     <ClCompile Include="BasePhysicManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicGUICommon.cpp">
+    <ClCompile Include="PhysicUTIL.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
   </ItemGroup>
@@ -481,7 +481,7 @@
     <ClInclude Include="BasePhysicManager.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicGUICommon.h">
+    <ClInclude Include="PhysicUTIL.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>

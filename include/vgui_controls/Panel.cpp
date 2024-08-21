@@ -4342,6 +4342,16 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 						typedef void (Panel::*MessageFunc_IntInt_t)(int, int);
 						(this->*((MessageFunc_IntInt_t)pMap->func))( param1->GetInt(), param2->GetInt() );
 					}
+					else if ((DATATYPE_INT == pMap->firstParamType) && (DATATYPE_UINT64 == pMap->secondParamType))
+					{
+						typedef void (Panel::* MessageFunc_IntInt_t)(int, int);
+						(this->*((MessageFunc_IntInt_t)pMap->func))(param1->GetInt(), param2->GetUint64());
+					}
+					else if ((DATATYPE_UINT64 == pMap->firstParamType) && (DATATYPE_INT == pMap->secondParamType))
+					{
+						typedef void (Panel::* MessageFunc_IntInt_t)(int, int);
+						(this->*((MessageFunc_IntInt_t)pMap->func))(param1->GetUint64(), param2->GetInt());
+					}
 					else if ( (DATATYPE_PTR == pMap->firstParamType) && (DATATYPE_INT == pMap->secondParamType) )
 					{
 						typedef void (Panel::*MessageFunc_PtrInt_t)(void *, int);

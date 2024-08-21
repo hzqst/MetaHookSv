@@ -4,9 +4,12 @@
 #include "privatehook.h"
 #include "enginedef.h"
 #include "plugins.h"
+
 #include "CounterStrike.h"
 #include "BasePhysicManager.h"
 #include "ClientEntityManager.h"
+#include "PhysicUTIL.h"
+
 #include "mathlib2.h"
 #include "util.h"
 
@@ -21,146 +24,6 @@ IClientPhysicManager* g_pClientPhysicManager{};
 IClientPhysicManager* ClientPhysicManager()
 {
 	return g_pClientPhysicManager;
-}
-
-const char* UTIL_GetPhysicObjectConfigTypeName(int type)
-{
-	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
-
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-
-	return "Unknown";
-}
-
-const char* UTIL_GetConstraintTypeName(int type)
-{
-	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
-
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-
-	return "Unknown";
-}
-
-const char* UTIL_GetPhysicActionTypeName(int type)
-{
-	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment" };
-
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-
-	return "Unknown";
-}
-
-const char* UTIL_GetCollisionShapeTypeName(int type)
-{
-	const char* c_names[] = { "None", "Box", "Sphere", "Capsule", "Cylinder", "MultiSphere", "TriangleMesh", "Compound" };
-
-	if (type >= 0 && type < _ARRAYSIZE(c_names))
-	{
-		return c_names[type];
-	}
-
-	return "Unknown";
-}
-
-int UTIL_GetCollisionTypeFromTypeName(const char* name)
-{
-	int type = PhysicShape_None;
-
-	if (!strcmp(name, "Box"))
-	{
-		type = PhysicShape_Box;
-	}
-	else if (!strcmp(name, "Sphere"))
-	{
-		type = PhysicShape_Sphere;
-	}
-	else if (!strcmp(name, "Capsule"))
-	{
-		type = PhysicShape_Capsule;
-	}
-	else if (!strcmp(name, "Cylinder"))
-	{
-		type = PhysicShape_Cylinder;
-	}
-	else if (!strcmp(name, "MultiSphere"))
-	{
-		type = PhysicShape_MultiSphere;
-	}
-	else if (!strcmp(name, "TriangleMesh"))
-	{
-		type = PhysicShape_TriangleMesh;
-	}
-	else if (!strcmp(name, "Compound"))
-	{
-		type = PhysicShape_Compound;
-	}
-
-	return type;
-}
-
-int UTIL_GetConstraintTypeFromTypeName(const char* name)
-{
-	int type = PhysicConstraint_None;
-
-	if (!strcmp(name, "ConeTwist"))
-	{
-		type = PhysicConstraint_ConeTwist;
-	}
-	else if (!strcmp(name, "Hinge"))
-	{
-		type = PhysicConstraint_Hinge;
-	}
-	else if (!strcmp(name, "Point"))
-	{
-		type = PhysicConstraint_Point;
-	}
-	else if (!strcmp(name, "Slider"))
-	{
-		type = PhysicConstraint_Slider;
-	}
-	else if (!strcmp(name, "Dof6"))
-	{
-		type = PhysicConstraint_Dof6;
-	}
-	else if (!strcmp(name, "Dof6Spring"))
-	{
-		type = PhysicConstraint_Dof6Spring;
-	}
-	else if (!strcmp(name, "Fixed"))
-	{
-		type = PhysicConstraint_Fixed;
-	}
-
-	return type;
-}
-
-int UTIL_GetPhysicActionTypeFromTypeName(const char* name)
-{
-	int type = PhysicAction_None;
-
-	if (!strcmp(name, "BarnacleDragForce"))
-	{
-		type = PhysicAction_BarnacleDragForce;
-	}
-	else if (!strcmp(name, "BarnacleChewForce"))
-	{
-		type = PhysicAction_BarnacleChewForce;
-	}
-	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
-	{
-		type = PhysicAction_BarnacleConstraintLimitAdjustment;
-	}
-
-	return type;
 }
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
@@ -200,6 +63,7 @@ bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhys
 
 			return false;
 		}
+
 		return true;
 	}
 
@@ -238,6 +102,7 @@ bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhys
 
 			return false;
 		}
+
 		return true;
 	}
 
@@ -539,6 +404,34 @@ bool CBasePhysicManager::TransferOwnershipForPhysicObject(int old_entindex, int 
 	}
 
 	return false;
+}
+
+bool CBasePhysicManager::RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig)
+{
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (pPhysicObject)
+	{
+		return pPhysicObject->Rebuild(pPhysicObjectConfig);
+	}
+
+	return false;
+}
+
+bool CBasePhysicManager::RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig)
+{
+	auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
+	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
+
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return false;
+
+	if (pPhysicObject->GetModel() != EngineGetModelByIndex(modelindex))
+		return false;
+
+	return pPhysicObject->Rebuild(pPhysicObjectConfig);
 }
 
 IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
@@ -3077,7 +2970,7 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 	}
 }
 
-void CBasePhysicManager::UpdatePhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
+void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
 {
 	if (frame_time <= 0)
 		return;
