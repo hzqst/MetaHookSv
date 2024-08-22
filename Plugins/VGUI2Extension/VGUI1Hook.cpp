@@ -252,6 +252,12 @@ public:
 	void AppHandler(void* pevent, void* userData) override {
 		//VGUI1 SDL event handler, TODO: non-SDL version?
 
+		if (!ClientVGUI_UseVGUI1())
+		{
+			m_pfnEngineSurfaceWrap_AppHandler(this, 0, pevent, userData);
+			return;
+		}
+
 		if (GameUI_HasExclusiveInput())
 			return;
 
