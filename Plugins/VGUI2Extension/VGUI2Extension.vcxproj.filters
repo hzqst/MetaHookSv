@@ -511,5 +511,8 @@
     <ClInclude Include="util.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="VGUI1_AIO.h">
+      <Filter>VGUI1</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

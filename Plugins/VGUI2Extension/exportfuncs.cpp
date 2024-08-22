@@ -149,6 +149,8 @@ void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 
 void HUD_Init(void)
 {
+	VGUI1_PostInstallHooks();
+
 	gExportfuncs.HUD_Init();
 }
 

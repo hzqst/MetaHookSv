@@ -3728,6 +3728,11 @@ void GameUI_FillAddress(void)
 	Sig_FuncNotFound(GameUI_Menu_MakeItemsVisibleInScrollRange);
 }
 
+bool GameUI_HasExclusiveInput()
+{
+	return g_pGameUI->HasExclusiveInput();
+}
+
 void GameUI_InstallHooks(void)
 {
 	auto hGameUI = g_hGameUI;

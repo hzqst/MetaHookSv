@@ -963,23 +963,6 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 void NewClientVGUI::Start(void)
 {
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
-
-	if (g_pSurface_HL25)
-	{
-		//Fix a bug that VGUI1 mouse disappear ?
-	//	int offset_m_bVGUI2MouseControl = 4 + 0x4B;
-	//	*(PUCHAR)((ULONG_PTR)g_pSurface + offset_m_bVGUI2MouseControl) = 0;
-		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface_HL25 + sizeof(ULONG_PTR));
-		pMouseControl->SetVGUI2MouseControl(false);
-	}
-	else if (g_pSurface)
-	{
-		//Fix a bug that VGUI1 mouse disappear ?
-	//	int offset_m_bVGUI2MouseControl = 4 + 0x4B;
-	//	*(PUCHAR)((ULONG_PTR)g_pSurface + offset_m_bVGUI2MouseControl) = 0;
-		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface + sizeof(ULONG_PTR));
-		pMouseControl->SetVGUI2MouseControl(false);
-	}
 }
 
 void NewClientVGUI::SetParent(vgui::VPANEL parent)
@@ -989,9 +972,9 @@ void NewClientVGUI::SetParent(vgui::VPANEL parent)
 
 bool NewClientVGUI::UseVGUI1(void)
 {
-	bool fake_ret = false;
-	bool real_ret = false;
-	bool ret = false;
+	bool fake_ret = true;
+	bool real_ret = true;
+	bool ret = true;
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
@@ -1331,6 +1314,14 @@ void NativeClientUI_UninstallHooks(void)
 	Uninstall_Hook(ClientVGUI_LoadControlSettings);
 	Uninstall_Hook(ClientVGUI_KeyValues_LoadFromFile);
 	Uninstall_Hook(ClientVGUI_Panel_Init);
+}
+
+bool ClientVGUI_UseVGUI1()
+{
+	if(g_pClientVGUI)
+		return g_pClientVGUI->UseVGUI1();
+
+	return true;
 }
 
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)

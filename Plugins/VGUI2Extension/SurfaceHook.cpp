@@ -11,6 +11,7 @@
 #include "exportfuncs.h"
 #include "DpiManagerInternal.h"
 #include "Cursor.h"
+#include "VGUI1_AIO.h"
 #include <intrin.h>
 
 extern bool g_IsNativeClientUIHDProportional;
@@ -22,8 +23,12 @@ extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 int GetPatchedGetFontTall(int fontTall);
 
-HFont g_hCurrentFont;
-int g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA;
+void VGUI1_SetCursor(vgui1_Scheme::SchemeCursor SchemeCursor);
+void VGUI1_LockCursor();
+void VGUI1_UnlockCursor();
+
+HFont g_hCurrentFont = NULL;
+int g_iCurrentTextR = 0, g_iCurrentTextG = 0, g_iCurrentTextB = 0, g_iCurrentTextA = 0;
 
 int g_iProportionalBaseWidth = 640;
 int g_iProportionalBaseHeight = 480;
@@ -149,6 +154,8 @@ void(__fastcall *m_pfnDrawSetTextFont)(void *pthis, int, HFont font);
 void(__fastcall *m_pfnDrawUnicodeChar)(void *pthis, int, wchar_t wch);
 void(__fastcall *m_pfnDrawUnicodeCharAdd)(void *pthis, int, wchar_t wch);
 bool(__fastcall *m_pfnSupportsFeature)(void *pthis, int, SurfaceFeature_e feature);
+void(__fastcall* m_pfnUnlockCursor)(void* pthis, int);
+void(__fastcall* m_pfnLockCursor)(void* pthis, int);
 bool(__fastcall *m_pfnAddGlyphSetToFont)(void *pthis, int, HFont font, const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
 void(__fastcall *m_pfnAddCustomFontFile)(void *pthis, int, const char *fontFileName);
 int(__fastcall *m_pfnGetFontTall)(void *pthis, int, HFont font);
@@ -590,6 +597,80 @@ void CSurfaceProxy::Invalidate(VPANEL panel)
 
 void CSurfaceProxy::SetCursor(HCursor cursor)
 {
+	switch (cursor)
+	{
+	case dc_none:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_none);
+		break;
+	}
+	case dc_arrow:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_arrow);
+		break;
+	}
+	case dc_ibeam:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_ibeam);
+		break;
+	}
+	case dc_hourglass:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_hourglass);
+		break;
+	}
+	case dc_waitarrow:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_hourglass);
+		break;
+	}
+	case dc_crosshair:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_crosshair);
+		break;
+	}
+	case dc_up:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_up);
+		break;
+	}
+	case dc_sizenwse:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_sizenwse);
+		break;
+	}
+	case dc_sizenesw:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_sizenesw);
+		break;
+	}
+	case dc_sizewe:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_sizewe);
+		break;
+	}
+	case dc_sizens:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_sizens);
+		break;
+	}
+	case dc_sizeall:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_sizeall);
+		break;
+	}
+	case dc_no:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_no);
+		break;
+	}
+	case dc_hand:
+	{
+		VGUI1_SetCursor(vgui1_Scheme::scu_hand);
+		break;
+	}
+	}
+
 	m_pfnSetCursor(this, 0, cursor);
 }
 
@@ -646,12 +727,14 @@ VPANEL CSurfaceProxy::GetModalPanel(void)
 
 void CSurfaceProxy::UnlockCursor(void)
 {
-	g_pSurface->UnlockCursor();
+	VGUI1_UnlockCursor();
+	m_pfnUnlockCursor(this, 0);
 }
 
 void CSurfaceProxy::LockCursor(void)
 {
-	g_pSurface->LockCursor();
+	VGUI1_LockCursor();
+	m_pfnLockCursor(this, 0);
 }
 
 void CSurfaceProxy::SetTranslateExtendedKeys(bool state)
@@ -1526,12 +1609,12 @@ VPANEL CSurfaceProxy_HL25::GetModalPanel(void)
 
 void CSurfaceProxy_HL25::UnlockCursor(void)
 {
-	g_pSurface_HL25->UnlockCursor();
+	VGUI1_UnlockCursor();
 }
 
 void CSurfaceProxy_HL25::LockCursor(void)
 {
-	g_pSurface_HL25->LockCursor();
+	VGUI1_LockCursor();
 }
 
 void CSurfaceProxy_HL25::SetTranslateExtendedKeys(bool state)
@@ -1906,8 +1989,10 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
-		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
@@ -1933,8 +2018,10 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
+		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 45, (void*)pVFTable[45], (void**)&m_pfnSetCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
+		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 54, (void*)pVFTable[54], (void**)&m_pfnUnlockCursor);
+		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 55, (void*)pVFTable[55], (void**)&m_pfnLockCursor);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void*)pVFTable[61], (void**)&m_pfnAddCustomFontFile);

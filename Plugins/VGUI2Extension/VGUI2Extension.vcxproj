@@ -302,6 +302,7 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="Scheme2.h" />
     <ClInclude Include="Surface2.h" />
     <ClInclude Include="util.h" />
+    <ClInclude Include="VGUI1_AIO.h" />
     <ClInclude Include="VGUI2ExtensionInternal.h" />
     <ClInclude Include="Win32Font.h" />
   </ItemGroup>

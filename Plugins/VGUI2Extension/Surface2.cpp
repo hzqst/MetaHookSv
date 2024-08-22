@@ -4,6 +4,7 @@
 #endif
 
 #include <vgui/ISurface.h>
+#include <vgui/IMouseControl.h>
 #include <vgui/Cursor.h>
 #include <vgui_controls/MemoryBitmap.h>
 #include "strtools.h"
@@ -1290,6 +1291,37 @@ IHTMLChromeController* CSurface2::AccessChromeHTMLController()
 	}
 	return g_pSurface->AccessChromeHTMLController();
 }
+
+bool CSurface2::VGUI2MouseControl(void)
+{
+	if (g_pSurface_HL25)
+	{
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface_HL25 + sizeof(ULONG_PTR));
+		return pMouseControl->VGUI2MouseControl();
+	}
+	else if (g_pSurface)
+	{
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface + sizeof(ULONG_PTR));
+		return pMouseControl->VGUI2MouseControl();
+	}
+
+	return false;
+}
+
+void CSurface2::SetVGUI2MouseControl(bool state)
+{
+	if (g_pSurface_HL25)
+	{
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface_HL25 + sizeof(ULONG_PTR));
+		pMouseControl->SetVGUI2MouseControl(state);
+	}
+	else if (g_pSurface)
+	{
+		IMouseControl* pMouseControl = (IMouseControl*)((ULONG_PTR)g_pSurface + sizeof(ULONG_PTR));
+		pMouseControl->SetVGUI2MouseControl(state);
+	}
+}
+
 // screen size changing
 void CSurface2::OnScreenSizeChanged(int nOldWidth, int nOldHeight)
 {
