@@ -972,6 +972,8 @@ private:
 
 		int mask = btBroadphaseProxy::AllFilter;
 
+		mask &= ~BulletPhysicCollisionFilterGroups::InspecteeFilter;
+
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 			mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
 

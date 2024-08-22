@@ -35,7 +35,7 @@ CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 phy
 	m_pRigidBodyListPanel->SetSortColumn(0);
 	m_pRigidBodyListPanel->SetMultiselectEnabled(false);
 
-	m_pCreateNewRigidBody = new vgui::Button(this, "CreateNewRigidBody", L"#BulletPhysics_CreateNewRigidBody", this, "CreateNewRigidBody");
+	m_pCreateRigidBody = new vgui::Button(this, "CreateRigidBody", L"#BulletPhysics_CreateRigidBody", this, "CreateRigidBody");
 
 	LoadControlSettings("bulletphysics/RigidBodyPage.res", "GAME");
 
@@ -81,9 +81,9 @@ void CRigidBodyPage::OnCommand(const char* command)
 	{
 
 	}
-	else if (!stricmp(command, "CreateNewRigidBody"))
+	else if (!stricmp(command, "CreateRigidBody"))
 	{
-		OnCreateNewRigidBody();
+		OnCreateRigidBody();
 	}
 	else
 	{
@@ -115,6 +115,9 @@ void CRigidBodyPage::OnOpenContextMenu(int itemId)
 
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, szName);
 	menu->AddMenuItem("EditRigidBody", szBuf, new KeyValues("EditRigidBody", "configId", configId), this);
+
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, szName);
+	menu->AddMenuItem("CloneRigidBody", szBuf, new KeyValues("CloneRigidBody", "configId", configId), this);
 
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szName);
 	menu->AddMenuItem("DeleteRigidBody", szBuf, new KeyValues("DeleteRigidBody", "configId", configId), this);
@@ -203,19 +206,43 @@ void CRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
 	}
 }
 
-void CRigidBodyPage::OnCreateNewRigidBody()
+void CRigidBodyPage::OnCreateRigidBody()
 {
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
-	pRigidBodyConfig->name = std::format("Unnamed_{0}", pRigidBodyConfig->configId);
+	pRigidBodyConfig->name = std::format("Unnamed ({0})", pRigidBodyConfig->configId);
+
+	pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
+	pRigidBodyConfig->collisionShape->type = PhysicShape_Sphere;
+	pRigidBodyConfig->collisionShape->size[0] = 3;
 
 	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
 	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 
+	ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
+}
+
+void CRigidBodyPage::OnCloneRigidBody(int configId)
+{
+	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
+
+	if (!pRigidBodyConfig)
+		return;
+
+	auto pClonedRigidBodyConfig = UTIL_CloneRigidBodyConfig(pRigidBodyConfig.get());
+
+	pClonedRigidBodyConfig->name = std::format("{0}_Clone ({1})", pRigidBodyConfig->name, pClonedRigidBodyConfig->configId);
+
+	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pClonedRigidBodyConfig);
+
+	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
 
 	ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
+	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 }
 
 void CRigidBodyPage::OnDeleteRigidBody(int configId)
@@ -278,8 +305,8 @@ CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const 
 	m_pAnglesY = new vgui::TextEntry(this, "AnglesY");
 	m_pAnglesZ = new vgui::TextEntry(this, "AnglesZ");
 
-	m_pObjPathLabel = new vgui::Label(this, "ObjPathLabel", "#BulletPhysics_ObjPath");
-	m_pObjPath = new vgui::TextEntry(this, "ObjPath");
+	m_pResourcePathLabel = new vgui::Label(this, "ResourcePathLabel", "#BulletPhysics_ResourcePath");
+	m_pResourcePath = new vgui::TextEntry(this, "ResourcePath");
 
 	LoadAvailableShapesIntoControls();
 	LoadAvailableShapeDirectionsIntoControls();
@@ -432,7 +459,7 @@ void CCollisionShapeEditDialog::LoadConfigIntoControls()
 	auto anglesZ = std::format("{0}", m_pCollisionShapeConfig->angles[2]);
 	m_pAnglesZ->SetText(anglesZ.c_str());
 
-	m_pObjPath->SetText(m_pCollisionShapeConfig->objpath.c_str());
+	m_pResourcePath->SetText(m_pCollisionShapeConfig->resourcePath.c_str());
 }
 
 void CCollisionShapeEditDialog::SaveConfigFromControls()
@@ -442,35 +469,25 @@ void CCollisionShapeEditDialog::SaveConfigFromControls()
 
 	char szText[256] = { 0 };
 
-	m_pSizeX->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->size[0] = atof(szText);
+#define SAVE_FLOAT_FROM_TEXT_ENTRY(from, to, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pCollisionShapeConfig->to = processor(szText); }
 
-	m_pSizeY->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->size[1] = atof(szText);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(SizeX, size[0], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(SizeY, size[1], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(SizeZ, size[2], atof);
 
-	m_pSizeZ->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->size[2] = atof(szText);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(OriginX, origin[0], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(OriginY, origin[1], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(OriginZ, origin[2], atof);
 
-	m_pOriginX->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->origin[0] = atof(szText);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesX, angles[0], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesY, angles[1], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesZ, angles[2], atof);
 
-	m_pOriginY->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->origin[1] = atof(szText);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesX, angles[0], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesY, angles[1], atof);
+	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesZ, angles[2], atof);
 
-	m_pOriginZ->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->origin[2] = atof(szText);
-
-	m_pAnglesX->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->angles[0] = atof(szText);
-
-	m_pAnglesY->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->angles[1] = atof(szText);
-
-	m_pAnglesZ->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->angles[2] = atof(szText);
-
-	m_pObjPath->GetText(szText, sizeof(szText));
-	m_pCollisionShapeConfig->objpath = szText;
+	SAVE_FLOAT_FROM_TEXT_ENTRY(ResourcePath, resourcePath, std::string);
 }
 
 int CCollisionShapeEditDialog::GetCurrentSelectedShapeType()
@@ -514,8 +531,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 		m_pSizeY->SetVisible(true);
 		m_pSizeZ->SetVisible(true);
 
-		m_pObjPathLabel->SetVisible(false);
-		m_pObjPath->SetVisible(false);
+		m_pResourcePathLabel->SetVisible(false);
+		m_pResourcePath->SetVisible(false);
 		break;
 	}
 	case PhysicShape_Sphere: {
@@ -528,8 +545,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 		m_pSizeY->SetVisible(false);
 		m_pSizeZ->SetVisible(false);
 
-		m_pObjPathLabel->SetVisible(false);
-		m_pObjPath->SetVisible(false);
+		m_pResourcePathLabel->SetVisible(false);
+		m_pResourcePath->SetVisible(false);
 		break;
 	}
 	case PhysicShape_Capsule:
@@ -543,8 +560,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 		m_pSizeY->SetVisible(true);
 		m_pSizeZ->SetVisible(false);
 
-		m_pObjPathLabel->SetVisible(false);
-		m_pObjPath->SetVisible(false);
+		m_pResourcePathLabel->SetVisible(false);
+		m_pResourcePath->SetVisible(false);
 		break;
 	}
 	case PhysicShape_TriangleMesh: {
@@ -557,8 +574,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 		m_pSizeY->SetVisible(false);
 		m_pSizeZ->SetVisible(false);
 
-		m_pObjPathLabel->SetVisible(true);
-		m_pObjPath->SetVisible(true);
+		m_pResourcePathLabel->SetVisible(true);
+		m_pResourcePath->SetVisible(true);
 		break;
 	}
 	default:{
@@ -571,8 +588,8 @@ void CCollisionShapeEditDialog::UpdateControlStates()
 		m_pSizeY->SetVisible(false);
 		m_pSizeZ->SetVisible(false);
 
-		m_pObjPathLabel->SetVisible(false);
-		m_pObjPath->SetVisible(false);
+		m_pResourcePathLabel->SetVisible(false);
+		m_pResourcePath->SetVisible(false);
 		break;
 	}
 	}

@@ -81,6 +81,14 @@ public:
 	bool m_bForceStatic{};
 };
 
+const int PhysicTraceLineMask_World = 0x1;
+const int PhysicTraceLineMask_StaticObject = 0x2;
+const int PhysicTraceLineMask_DynamicObject = 0x4;
+const int PhysicTraceLineMask_RagdollObject = 0x8;
+const int PhysicTraceLineMask_RigidBody = 0x10;
+const int PhysicTraceLineMask_Constraint = 0x20;
+const int PhysicTraceLineMask_Floater = 0x40;
+
 class CPhysicTraceLineHitResult
 {
 public:
@@ -135,11 +143,11 @@ public:
 class IPhysicRigidBody : public IPhysicComponent
 {
 public:
-	virtual const char* GetTypeString() const
+	const char* GetTypeString() const override
 	{
 		return "RigidBody";
 	}
-	virtual const char* GetTypeLocalizationTokenString() const
+	const char* GetTypeLocalizationTokenString() const override
 	{
 		return "#BulletPhysics_RigidBody";
 	}
@@ -163,6 +171,14 @@ public:
 class IPhysicConstraint : public IPhysicComponent
 {
 public:
+	const char* GetTypeString() const override
+	{
+		return "Constraint";
+	}
+	const char* GetTypeLocalizationTokenString() const override
+	{
+		  return "#BulletPhysics_Constraint";
+	}
 	bool IsConstraint() const override
 	{
 		return true;
@@ -331,18 +347,17 @@ public:
 	virtual bool SavePhysicObjectConfigForModel(model_t* mod) = 0;
 	virtual bool SavePhysicObjectConfigForModelIndex(int modelindex) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
+	virtual std::shared_ptr<CClientPhysicObjectConfig> CreateEmptyPhysicObjectConfigForModel(model_t* mod, int PhysicObjectType) = 0;
+	virtual std::shared_ptr<CClientPhysicObjectConfig> CreateEmptyPhysicObjectConfigForModelIndex(int modelindex, int PhysicObjectType) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModelIndex(int modelindex) = 0;
 	virtual void LoadPhysicObjectConfigs(void) = 0;
 	virtual void SavePhysicObjectConfigs(void) = 0;
 	virtual bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
-	virtual bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage) = 0;
-	virtual bool LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage) = 0;
 	virtual void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) = 0;
 
 	virtual IPhysicObject* FindBarnacleObjectForPlayer(entity_state_t* state) = 0;
 	virtual IPhysicObject* FindGargantuaObjectForPlayer(entity_state_t* state) = 0;
-	virtual void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult) = 0;
 
 	//PhysicObject Management
 
@@ -357,7 +372,7 @@ public:
 	virtual bool RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
-	
+
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
@@ -399,12 +414,19 @@ public:
 	virtual void   SetSelectedPhysicObjectId(uint64 physicObjectId) = 0;
 	virtual uint64 GetSelectedPhysicObjectId() const = 0;
 
+	virtual void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult) = 0;
+
 	//BasePhysicConfig Management
+
 	virtual int AllocatePhysicConfigId() = 0;
 	virtual std::weak_ptr<CClientBasePhysicConfig> GetPhysicConfig(int configId) = 0;
 	virtual void AddPhysicConfig(int configId, const std::shared_ptr<CClientBasePhysicConfig>& pPhysicConfig) = 0;
 	virtual bool RemovePhysicConfig(int configId) = 0;
 	virtual void RemoveAllPhysicConfigs() = 0;
+
+	//VertexIndexArray Management
+	virtual std::shared_ptr<CPhysicIndexArray> LoadIndexArrayFromResource(const std::string& resourcePath) = 0;
+	virtual void FreeAllIndexArrays(int withflags, int withoutflags) = 0;
 };
 
 extern IClientPhysicManager* g_pClientPhysicManager;

@@ -398,6 +398,9 @@ CBulletConstraint::CBulletConstraint(
 	m_pInternalConstraint = pInternalConstraint;
 	m_pInternalConstraint->setUserConstraintId(id);
 
+	m_pInternalRigidBodyA = CreateInternalRigidBody(false);
+	m_pInternalRigidBodyB = CreateInternalRigidBody(true);
+
 	m_rigidBodyAPhysicComponentId = pInternalConstraint->getRigidBodyA().getUserIndex();
 	m_rigidBodyBPhysicComponentId = pInternalConstraint->getRigidBodyB().getUserIndex();
 }
@@ -414,6 +417,18 @@ CBulletConstraint::~CBulletConstraint()
 	{
 		delete m_pInternalConstraint;
 		m_pInternalConstraint = nullptr;
+	}
+
+	if (m_pInternalRigidBodyA)
+	{
+		delete m_pInternalRigidBodyA;
+		m_pInternalRigidBodyA = nullptr;
+	}
+
+	if (m_pInternalRigidBodyB)
+	{
+		delete m_pInternalRigidBodyB;
+		m_pInternalRigidBodyB = nullptr;
 	}
 }
 
@@ -543,6 +558,16 @@ bool CBulletConstraint::AddToPhysicWorld(void* world)
 
 		dynamicWorld->addConstraint(m_pInternalConstraint, m_disableCollision);
 
+		if (m_pInternalRigidBodyA)
+		{
+			dynamicWorld->addRigidBody(m_pInternalRigidBodyA, ConstraintFilter | InspecteeFilter, InspectorFilter);
+		}
+
+		if (m_pInternalRigidBodyB)
+		{
+			dynamicWorld->addRigidBody(m_pInternalRigidBodyB, ConstraintFilter | InspecteeFilter, InspectorFilter);
+		}
+
 		m_addedToPhysicWorld = true;
 
 		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
@@ -593,12 +618,39 @@ void CBulletConstraint::ExtendLinearLimit(int axis, float value)
 {
 	//TODO...
 
-	Sys_Error("not impl yet")
+	Sys_Error("ExtendLinearLimit TODO")
 }
 
 void* CBulletConstraint::GetInternalConstraint()
 {
 	return m_pInternalConstraint;
+}
+
+btRigidBody* CBulletConstraint::CreateInternalRigidBody(bool attachToJointB)
+{
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(m_entindex);
+
+	if (!pPhysicObject)
+		return nullptr;
+
+	auto pMotionState = new CFollowConstraintMotionState(pPhysicObject, m_pInternalConstraint, attachToJointB);
+
+	auto size = btScalar(3.0f);
+
+	FloatGoldSrcToBullet(&size);
+
+	auto pCollisionShape = new btSphereShape(size);
+
+	btRigidBody::btRigidBodyConstructionInfo cInfo(0, pMotionState, pCollisionShape);
+
+	auto pRigidBody = new btRigidBody(cInfo);
+
+	pRigidBody->setUserIndex(m_id);
+	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+
+	return pRigidBody;
 }
 
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape *pCollisionShape)
@@ -1331,37 +1383,31 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	}
 	case PhysicShape_TriangleMesh:
 	{
-		if (!pConfig->m_pVertexArray)
+		if (pConfig->resourcePath.empty())
 		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: m_pVertexArray cannot be null!\n");
+			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: resourcePath cannot be empty!\n");
 			break;
 		}
 
-		if (!pConfig->m_pIndexArray)
+		auto pIndexArray = ClientPhysicManager()->LoadIndexArrayFromResource(pConfig->resourcePath);
+
+		if (!pIndexArray)
 		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: m_pIndexArray cannot be null!\n");
+			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: could not find IndexArray for \"%s\"!\n", pConfig->resourcePath.c_str());
 			break;
 		}
 
-		if (!pConfig->m_pIndexArray->vIndexBuffer.size())
-		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: vIndexBuffer cannot be empty!\n");
-			break;
-		}
+		auto pTriangleIndexVertexArray = new btTriangleIndexVertexArray(
+			pIndexArray->vIndexBuffer.size() / 3, pIndexArray->vIndexBuffer.data(), 3 * sizeof(int),
+			pIndexArray->pVertexArray->vVertexBuffer.size(), (float*)pIndexArray->pVertexArray->vVertexBuffer.data(), sizeof(CPhysicBrushVertex));
 
-		if (!pConfig->m_pVertexArray->vVertexBuffer.size())
-		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: vVertexBuffer cannot be empty!\n");
-			break;
-		}
+		auto pSharedData = new CBulletCollisionShapeSharedUserData();
 
-		auto pIndexVertexArray = new btTriangleIndexVertexArray(
-			pConfig->m_pIndexArray->vIndexBuffer.size() / 3, pConfig->m_pIndexArray->vIndexBuffer.data(), 3 * sizeof(int),
-			pConfig->m_pVertexArray->vVertexBuffer.size(), (float*)pConfig->m_pVertexArray->vVertexBuffer.data(), sizeof(CPhysicBrushVertex));
+		pSharedData->m_pIndexArray = pIndexArray;
 
-		auto pTriMesh = new btBvhTriangleMeshShape(pIndexVertexArray, true, true);
+		auto pTriMesh = new btBvhTriangleMeshShape(pTriangleIndexVertexArray, true, true);
 
-		pTriMesh->setUserPointer(new CBulletCollisionShapeSharedUserData(pIndexVertexArray));
+		pTriMesh->setUserPointer(pSharedData);
 
 		pShape = pTriMesh;
 		break;
@@ -1529,32 +1575,29 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 {
-	if (GetPhysicObject()->IsStaticObject())
+	auto entindex = GetPhysicObject()->GetEntityIndex();
+	auto ent = GetPhysicObject()->GetClientEntity();
+
+	btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
+
+	Vector3GoldSrcToBullet(vecOrigin);
+
+	btTransform entityTrans;
+	entityTrans.setIdentity();
+
+	entityTrans.setOrigin(vecOrigin);
+
+	btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
+
+	//Brush uses reverted pitch
+	if (ent->curstate.solid == SOLID_BSP)
 	{
-		auto entindex = GetPhysicObject()->GetEntityIndex();
-		auto ent = GetPhysicObject()->GetClientEntity();
-
-		btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
-
-		Vector3GoldSrcToBullet(vecOrigin);
-
-		btTransform entityTrans;
-		entityTrans.setIdentity();
-		
-		entityTrans.setOrigin(vecOrigin);
-
-		btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
-
-		//Brush uses reverted pitch
-		if (ent->curstate.solid == SOLID_BSP)
-		{
-			vecAngles.setX(-vecAngles.x());
-		}
-
-		EulerMatrix(vecAngles, entityTrans.getBasis());
-
-		worldTrans.mult(entityTrans, m_offsetmatrix);
+		vecAngles.setX(-vecAngles.x());
 	}
+
+	EulerMatrix(vecAngles, entityTrans.getBasis());
+
+	worldTrans.mult(entityTrans, m_offsetmatrix);
 }
 
 void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
@@ -1950,7 +1993,8 @@ void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTrac
 	Vector3GoldSrcToBullet(vecEndPoint);
 
 	btCollisionWorld::ClosestRayResultCallback rayCallback(vecStartPoint, vecEndPoint);
-	//rayCallback.m_collisionFilterGroup = 
+	rayCallback.m_collisionFilterGroup |= BulletPhysicCollisionFilterGroups::InspectorFilter;
+	rayCallback.m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::InspecteeFilter;
 
 	m_dynamicsWorld->rayTest(vecStartPoint, vecEndPoint, rayCallback);
 

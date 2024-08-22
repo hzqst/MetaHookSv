@@ -24,3 +24,6 @@ std::shared_ptr<CClientConstraintConfig> UTIL_GetConstraintConfigFromConfigId(in
 std::shared_ptr<CClientPhysicObjectConfig> UTIL_GetPhysicObjectConfigFromConfigId(int configId);
 
 bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicConfig, int rigidBodyConfigId);
+std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape);
+std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientRigidBodyConfig* pOldConfig);
+std::string UTIL_FormatAbsoluteModelName(model_t* mod);

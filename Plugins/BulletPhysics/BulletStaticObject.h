@@ -154,7 +154,11 @@ public:
 		else
 			group |= BulletPhysicCollisionFilterGroups::StaticObjectFilter;
 
-		int mask = btBroadphaseProxy::AllFilter & ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
+		int mask = btBroadphaseProxy::AllFilter;
+
+		mask &= ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
+
+		mask &= ~BulletPhysicCollisionFilterGroups::InspecteeFilter;
 
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
 			mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;

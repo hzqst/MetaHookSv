@@ -75,3 +75,8 @@ int EngineGetMaxTempEnts(void);
 #define OBS_SVEN_CHASE_FREE			1
 #define OBS_SVEN_ROAMING			2
 #define OBS_SVEN_CHASE_LOCKED		3
+
+void BV_ReloadObjects_f(void);
+void BV_ReloadConfigs_f(void);
+void BV_ReloadAll_f(void);
+void BV_SaveConfigs_f(void);

@@ -39,7 +39,11 @@ public:
 
 protected:
 
-	MESSAGE_FUNC_UINT64(OnCreatePhysicObject, "CreatePhysicObject", physicObjectId);
+	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
+	MESSAGE_FUNC_UINT64(OnCreateStaticObject, "CreateStaticObject", physicObjectId);
+	MESSAGE_FUNC_UINT64(OnCreateDynamicObject, "CreateDynamicObject", physicObjectId);
+	MESSAGE_FUNC_UINT64(OnCreateRagdollObject, "CreateRagdollObject", physicObjectId);
+	MESSAGE_FUNC_UINT64(OnCreateRigidBody, "CreateRigidBody", physicObjectId);
 	MESSAGE_FUNC_PARAMS(OnEditPhysicObject, "EditPhysicObject", kv);
 	MESSAGE_FUNC_PARAMS(OnEditRigidBodyEx, "EditRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);
@@ -61,6 +65,7 @@ protected:
 	void SaveConfirm();
 
 	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
+	bool OpenEditPhysicObjectDialogEx(uint64 physicObjectId, int physicObjectConfigId);
 	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);
 
 	bool UpdateInspectedClientEntity(bool bSelected);
@@ -83,6 +88,8 @@ protected:
 	bool UpdateRigidBodyConfigAngles(int physicComponentId, int axis, float value);
 	bool UpdateRigidBodyConfigSize(int physicComponentId, int axis, float value);
 
+	void LoadAvailableInspectModeIntoControls();
+	void LoadAvailableEditModeIntoControls();
 protected:
 
 	vgui::Panel* m_pTopBar{};

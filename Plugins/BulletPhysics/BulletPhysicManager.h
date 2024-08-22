@@ -9,10 +9,13 @@
 
 enum BulletPhysicCollisionFilterGroups
 {
-	RagdollObjectFilter = 0x40,
-	DynamicObjectFilter = 0x80,
-	StaticObjectFilter = 0x100,
-	WorldFilter = 0x200,
+	WorldFilter = 0x40,
+	StaticObjectFilter = 0x80,
+	DynamicObjectFilter = 0x100,
+	RagdollObjectFilter = 0x200,
+	ConstraintFilter = 0x400,
+	InspecteeFilter = 0x400,
+	InspectorFilter = 0x800,
 };
 
 class CBulletBaseSharedUserData : public IBaseInterface
@@ -23,21 +26,22 @@ public:
 class CBulletCollisionShapeSharedUserData : public CBulletBaseSharedUserData
 {
 public:
-	CBulletCollisionShapeSharedUserData(btTriangleIndexVertexArray* pIndexVertexArray) : m_pIndexVertexArray(pIndexVertexArray)
+	CBulletCollisionShapeSharedUserData()
 	{
 
 	}
 
 	~CBulletCollisionShapeSharedUserData()
 	{
-		if (m_pIndexVertexArray)
+		if (m_pTriangleIndexVertexArray)
 		{
-			delete m_pIndexVertexArray;
-			m_pIndexVertexArray = nullptr;
+			delete m_pTriangleIndexVertexArray;
+			m_pTriangleIndexVertexArray = nullptr;
 		}
 	}
 
-	btTriangleIndexVertexArray* m_pIndexVertexArray{};
+	std::shared_ptr<CPhysicIndexArray> m_pIndexArray;
+	btTriangleIndexVertexArray* m_pTriangleIndexVertexArray{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -91,8 +95,6 @@ public:
 	btTransform m_offsetmatrix;
 };
 
-class IPhysicObject;
-
 ATTRIBUTE_ALIGNED16(class)
 CBulletEntityMotionState : public CBulletBaseMotionState
 {
@@ -119,6 +121,41 @@ public:
 	}
 
 	btTransform m_offsetmatrix;
+};
+
+ATTRIBUTE_ALIGNED16(class)
+CFollowConstraintMotionState : public CBulletBaseMotionState
+{
+public:
+	CFollowConstraintMotionState(IPhysicObject * pPhysicObject, btTypedConstraint * constraint, bool attachToJointB) : CBulletBaseMotionState(pPhysicObject), m_constraint(constraint), m_attachToJointB(attachToJointB)
+	{
+
+	}
+
+	void getWorldTransform(btTransform & worldTrans) const override
+	{
+		if (m_attachToJointB)
+		{
+			worldTrans = m_constraint->getRigidBodyB().getWorldTransform();
+		}
+		else
+		{
+			worldTrans = m_constraint->getRigidBodyA().getWorldTransform();
+		}
+	}
+
+	void setWorldTransform(const btTransform & worldTrans) override
+	{
+
+	}
+
+	bool IsBoneBased() const override
+	{
+		return false;
+	}
+
+	btTypedConstraint * m_constraint{};
+	bool m_attachToJointB{};
 };
 
 class CBulletConstraintCreationContext
@@ -202,6 +239,10 @@ public:
 
 	void* GetInternalConstraint() override;
 
+private:
+
+	btRigidBody* CreateInternalRigidBody(bool attachToJointB);
+
 public:
 
 	float m_maxTolerantLinearError{ BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR };
@@ -213,6 +254,10 @@ public:
 	int m_rigidBodyBPhysicComponentId{};
 
 	btTypedConstraint* m_pInternalConstraint{};
+
+	//For rayTest only
+	btRigidBody* m_pInternalRigidBodyA{};
+	btRigidBody* m_pInternalRigidBodyB{};
 };
 
 class CBulletPhysicManager : public CBasePhysicManager

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 enum PhysicConfigType
 {
@@ -280,6 +281,11 @@ enum PhysicShapeDirection
 const float B2GScale = INCHES_PER_METER;
 const float G2BScale = (1.0f / B2GScale);
 
+const int PhysicIndexArrayFlag_FromBSP = 0x1;
+const int PhysicIndexArrayFlag_LoadFailed = 0x2;
+const int PhysicIndexArrayFlag_FromOBJ = 0x4;
+const int PhysicIndexArrayFlag_FromExternal = (PhysicIndexArrayFlag_FromOBJ);
+
 class CPhysicBrushVertex
 {
 public:
@@ -303,5 +309,7 @@ public:
 class CPhysicIndexArray
 {
 public:
+	std::shared_ptr<CPhysicVertexArray> pVertexArray;
 	std::vector<int> vIndexBuffer;
+	int flags{};
 };

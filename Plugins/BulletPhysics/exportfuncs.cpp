@@ -1265,13 +1265,6 @@ void BV_DebugUI_f(void)
 	}
 }
 
-void BV_ReloadAll_f(void)
-{
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
-	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
-	ClientPhysicManager()->LoadPhysicObjectConfigs();
-}
-
 void BV_ReloadObjects_f(void)
 {
 	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
@@ -1279,8 +1272,15 @@ void BV_ReloadObjects_f(void)
 
 void BV_ReloadConfigs_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
+	ClientPhysicManager()->FreeAllIndexArrays(PhysicIndexArrayFlag_FromExternal, PhysicIndexArrayFlag_FromBSP);
+	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
 	ClientPhysicManager()->LoadPhysicObjectConfigs();
+}
+
+void BV_ReloadAll_f(void)
+{
+	BV_ReloadConfigs_f();
+	BV_ReloadObjects_f();
 }
 
 void BV_SaveConfigs_f(void)

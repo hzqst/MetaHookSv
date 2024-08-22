@@ -306,3 +306,74 @@ bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhy
 
 	return false;
 }
+
+std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape)
+{
+	auto pNewShape = std::make_shared<CClientCollisionShapeConfig>();
+	pNewShape->configId = pOldShape->configId;
+	pNewShape->configType = pOldShape->configType;
+	pNewShape->type = pOldShape->type;
+	pNewShape->direction = pOldShape->direction;
+	VectorCopy(pOldShape->size, pNewShape->size);
+	pNewShape->is_child = pOldShape->is_child;
+	VectorCopy(pOldShape->origin, pNewShape->origin);
+	VectorCopy(pOldShape->angles, pNewShape->angles);
+	//pNewShape->multispheres = pOldShape->multispheres;
+	pNewShape->resourcePath = pOldShape->resourcePath;
+
+	for (auto& oldChildShape : pOldShape->compoundShapes) {
+		auto pClonedShape = UTIL_CloneCollisionShapeConfig(oldChildShape.get());
+		pNewShape->compoundShapes.push_back(pClonedShape);
+	}
+
+	return pNewShape;
+}
+
+std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientRigidBodyConfig* pOldConfig)
+{
+	auto pCloneConfig = std::make_shared<CClientRigidBodyConfig>();
+	pCloneConfig->name = pOldConfig->name;
+	pCloneConfig->configId = pOldConfig->configId;
+	pCloneConfig->configType = pOldConfig->configType;
+	pCloneConfig->flags = pOldConfig->flags;
+	pCloneConfig->debugDrawLevel = pOldConfig->debugDrawLevel;
+	pCloneConfig->boneindex = pOldConfig->boneindex;
+	VectorCopy(pOldConfig->origin, pCloneConfig->origin);
+	VectorCopy(pOldConfig->angles, pCloneConfig->angles);
+	pCloneConfig->isLegacyConfig = pOldConfig->isLegacyConfig;
+	pCloneConfig->pboneindex = pOldConfig->pboneindex;
+	pCloneConfig->pboneoffset = pOldConfig->pboneoffset;
+	VectorCopy(pOldConfig->forward, pCloneConfig->forward);
+	pCloneConfig->mass = pOldConfig->mass;
+	pCloneConfig->density = pOldConfig->density;
+	pCloneConfig->linearFriction = pOldConfig->linearFriction;
+	pCloneConfig->rollingFriction = pOldConfig->rollingFriction;
+	pCloneConfig->restitution = pOldConfig->restitution;
+	pCloneConfig->ccdRadius = pOldConfig->ccdRadius;
+	pCloneConfig->ccdThreshold = pOldConfig->ccdThreshold;
+	pCloneConfig->linearSleepingThreshold = pOldConfig->linearSleepingThreshold;
+	pCloneConfig->angularSleepingThreshold = pOldConfig->angularSleepingThreshold;
+
+	if (pOldConfig->collisionShape) {
+		pCloneConfig->collisionShape = UTIL_CloneCollisionShapeConfig(pOldConfig->collisionShape.get());
+	}
+
+	return pCloneConfig;
+}
+
+std::string UTIL_FormatAbsoluteModelName(model_t* mod)
+{
+	if (mod->type == mod_brush)
+	{
+		if (mod != r_worldmodel)
+		{
+			return std::format("{0}/{1}", r_worldmodel->name, mod->name);
+		}
+		else
+		{
+			return r_worldmodel->name;
+		}
+	}
+
+	return mod->name;
+}

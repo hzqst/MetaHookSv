@@ -124,21 +124,6 @@ CClientCollisionShapeConfig::CClientCollisionShapeConfig() : CClientBasePhysicCo
 	configType = PhysicConfigType_CollisionShape;
 }
 
-CClientCollisionShapeConfig::~CClientCollisionShapeConfig()
-{
-	if (m_pVertexArrayStorage)
-	{
-		delete m_pVertexArrayStorage;
-		m_pVertexArrayStorage = nullptr;
-	}
-
-	if (m_pIndexArrayStorage)
-	{
-		delete m_pIndexArrayStorage;
-		m_pVertexArrayStorage = nullptr;
-	}
-}
-
 CClientRigidBodyConfig::CClientRigidBodyConfig() : CClientBasePhysicConfig()
 {
 	configType = PhysicConfigType_RigidBody;
@@ -519,7 +504,7 @@ static CClientCollisionShapeConfigSharedPtr LoadCollisionShapeFromKeyValues(KeyV
 		}
 	}
 
-	pShapeConfig->objpath = pCollisionShapeKey->GetString("objpath");
+	pShapeConfig->resourcePath = pCollisionShapeKey->GetString("resourcePath");
 
 	auto pCompoundShapesKey = pCollisionShapeKey->FindKey("compoundShapes");
 
@@ -1151,9 +1136,9 @@ static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, cons
 		pCollisionShapeSubKey->SetString("size", std::format("{0} {1} {2}", pCollisionShapeConfig->size[0], pCollisionShapeConfig->size[1], pCollisionShapeConfig->size[2]).c_str());
 	}
 
-	if (!pCollisionShapeConfig->objpath.empty())
+	if (pCollisionShapeConfig->resourcePath.size() > 0)
 	{
-		pCollisionShapeSubKey->SetString("objpath", pCollisionShapeConfig->objpath.c_str());
+		pCollisionShapeSubKey->SetString("resourcePath", pCollisionShapeConfig->resourcePath.c_str());
 	}
 
 	if (pCollisionShapeConfig->compoundShapes.size() > 0)
@@ -2149,9 +2134,11 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 
 bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage)
 {
-	auto pIndexArray = GetIndexArrayFromBrushModel(mod);
+	auto resourcePath = UTIL_FormatAbsoluteModelName(mod);
 
-	if (!pIndexArray)
+	auto pIndexArray = LoadIndexArrayFromResource(resourcePath);
+
+	if (!pIndexArray || !pIndexArray->vIndexBuffer.size() || (pIndexArray->flags & PhysicIndexArrayFlag_LoadFailed))
 	{
 		Storage.state = PhysicConfigState_LoadedWithError;
 		return false;
@@ -2160,8 +2147,7 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	auto pCollisionShapeConfig = std::make_shared<CClientCollisionShapeConfig>();
 
 	pCollisionShapeConfig->type = PhysicShape_TriangleMesh;
-	pCollisionShapeConfig->m_pVertexArray = m_worldVertexArray;
-	pCollisionShapeConfig->m_pIndexArray = pIndexArray;
+	pCollisionShapeConfig->resourcePath = resourcePath;
 
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
@@ -2185,6 +2171,39 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	return true;
 }
 
+void CBasePhysicManager::OverwritePhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicObjectConfig)
+{
+	ClientPhysicManager()->AddPhysicConfig(pPhysicObjectConfig->configId, pPhysicObjectConfig);
+
+	Storage.pConfig = pPhysicObjectConfig;
+	Storage.filename = filename;
+	Storage.state = PhysicConfigState_Loaded;
+}
+
+bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType)
+{
+	switch (PhysicObjectType)
+	{
+	case PhysicObjectType_StaticObject:
+	{
+		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientStaticObjectConfig>());
+		return true;
+	}
+	case PhysicObjectType_DynamicObject:
+	{
+		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientDynamicObjectConfig>());
+		return true;
+	}
+	case PhysicObjectType_RagdollObject:
+	{
+		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientRagdollObjectConfig>());
+		return true;
+	}
+	}
+
+	return false;
+}
+
 bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage &Storage)
 {
 	std::string fullname = filename;
@@ -2205,11 +2224,8 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& file
 
 	if(pConfig)
 	{
-		ClientPhysicManager()->AddPhysicConfig(pConfig->configId, pConfig);
+		OverwritePhysicObjectConfig(filename, Storage, pConfig);
 
-		Storage.pConfig = pConfig;
-		Storage.filename = fullname;
-		Storage.state = PhysicConfigState_Loaded;
 		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return true;
 	}
@@ -2221,11 +2237,8 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& file
 
 	if (pConfig)
 	{
-		ClientPhysicManager()->AddPhysicConfig(pConfig->configId, pConfig);
+		OverwritePhysicObjectConfig(filename, Storage, pConfig);
 
-		Storage.pConfig = pConfig;
-		Storage.filename = fullname;
-		Storage.state = PhysicConfigState_Loaded;
 		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
 		return true;
 	}
@@ -2293,6 +2306,64 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectC
 		else if (mod->type == mod_brush)
 		{
 			LoadPhysicObjectConfigFromBSP(mod, Storage);
+		}
+	}
+
+	return Storage.pConfig;
+}
+
+std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::CreateEmptyPhysicObjectConfigForModelIndex(int modelindex, int PhysicObjectType)
+{
+	auto mod = EngineGetModelByIndex(modelindex);
+
+	if (!mod)
+	{
+		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
+		return nullptr;
+	}
+
+	if (modelindex >= m_physicObjectConfigs.size())
+	{
+		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
+		return nullptr;
+	}
+
+	auto& Storage = m_physicObjectConfigs[modelindex];
+
+	if (!Storage.pConfig)
+	{
+		if (mod->type == mod_studio)
+		{
+			CreateEmptyPhysicObjectConfig(mod->name, Storage, PhysicObjectType);
+		}
+	}
+
+	return Storage.pConfig;
+}
+
+std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::CreateEmptyPhysicObjectConfigForModel(model_t* mod, int PhysicObjectType)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex == -1)
+	{
+		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
+		return nullptr;
+	}
+
+	if (modelindex >= m_physicObjectConfigs.size())
+	{
+		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
+		return nullptr;
+	}
+
+	auto& Storage = m_physicObjectConfigs[modelindex];
+
+	if (Storage.state == PhysicConfigState_NotLoaded)
+	{
+		if (mod->type == mod_studio)
+		{
+			CreateEmptyPhysicObjectConfig(mod->name, Storage, PhysicObjectType);
 		}
 	}
 
@@ -3010,9 +3081,9 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 
 void CBasePhysicManager::GenerateWorldVertexArray()
 {
-	FreeWorldVertexArray();
+	//FreeWorldVertexArray();
 
-	m_worldVertexArray = new CPhysicVertexArray();
+	m_worldVertexArray = std::make_shared<CPhysicVertexArray>();
 
 	CPhysicBrushVertex Vertexes[3];
 
@@ -3080,13 +3151,13 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 	m_worldVertexArray->vVertexBuffer.shrink_to_fit();
 }
 
-void CBasePhysicManager::FreeWorldVertexArray()
+/*void CBasePhysicManager::FreeWorldVertexArray()
 {
 	if (m_worldVertexArray) {
 		delete m_worldVertexArray;
 		m_worldVertexArray = NULL;
 	}
-}
+}*/
 
 /*
 	Purpose : Generate IndexArray for world and all brush models
@@ -3094,12 +3165,12 @@ void CBasePhysicManager::FreeWorldVertexArray()
 
 void CBasePhysicManager::GenerateBrushIndexArray()
 {
-	FreeAllBrushIndexArray();
+	FreeAllIndexArrays(PhysicIndexArrayFlag_FromBSP, 0);
 
 	int maxNum = EngineGetMaxKnownModel();
 
-	if ((int)m_brushIndexArray.size() < maxNum)
-		m_brushIndexArray.resize(maxNum);
+	//if ((int)m_brushIndexArray.size() < maxNum)
+	//	m_brushIndexArray.resize(maxNum);
 
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -3109,24 +3180,38 @@ void CBasePhysicManager::GenerateBrushIndexArray()
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
-				m_brushIndexArray[i] = new CPhysicIndexArray();
-				GenerateIndexArrayForBrushModel(mod, m_worldVertexArray, m_brushIndexArray[i]);
+				//m_brushIndexArray[i] = std::make_shared<CPhysicIndexArray>();
+				//m_brushIndexArray[i]->flags |= PhysicIndexArrayFlag_FromBSP;
+
+				auto pIndexArray = std::make_shared<CPhysicIndexArray>();
+				pIndexArray->flags |= PhysicIndexArrayFlag_FromBSP;
+				pIndexArray->pVertexArray = m_worldVertexArray;
+
+				GenerateIndexArrayForBrushModel(mod, m_worldVertexArray.get(), pIndexArray.get());
+
+				auto name = UTIL_FormatAbsoluteModelName(mod);
+
+				m_indexArrayResources[name] = pIndexArray;
 			}
 		}
 	}
 }
 
-void CBasePhysicManager::FreeAllBrushIndexArray()
+void CBasePhysicManager::FreeAllIndexArrays(int withflags, int withoutflags)
 {
-	for (size_t i = 0; i < m_brushIndexArray.size(); ++i)
+	//m_brushIndexArray.clear();
+	for (auto itor = m_indexArrayResources.begin(); itor != m_indexArrayResources.end(); )
 	{
-		if (m_brushIndexArray[i])
+		const auto& pIndexArray = itor->second;
+
+		if ((pIndexArray->flags & withflags) && !(pIndexArray->flags & withoutflags))
 		{
-			delete m_brushIndexArray[i];
-			m_brushIndexArray[i] = NULL;
+			itor = m_indexArrayResources.erase(itor);
+			continue;
 		}
+
+		itor++;
 	}
-	m_brushIndexArray.clear();
 }
 
 void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray)
@@ -3487,9 +3572,7 @@ void CBasePhysicManager::FreeGargantuaIndexVertexArray()
 	}
 }
 
-#endif
-
-CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod)
+std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -3500,6 +3583,8 @@ CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod
 
 	return m_brushIndexArray[modelindex];
 }
+
+#endif
 
 #include "tiny_obj_loader.h"
 
@@ -3542,13 +3627,14 @@ private:
 	CFileStreamBuffer fileStreamBuffer_;
 };
 
-bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray) {
+bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& resourcePath, std::shared_ptr<CPhysicIndexArray> &pIndexArray)
+{
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 
-	CFileSystemStream fileStream(objFilename);
+	CFileSystemStream fileStream(resourcePath);
 
 	bool ret = tinyobj::LoadObj(
 		&attrib,
@@ -3569,9 +3655,11 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: (error) %s.\n", err.c_str());
 	}
 	if (!ret) {
-		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: Failed to load \"%s\".\n", objFilename.c_str());
+		gEngfuncs.Con_DPrintf("LoadObjToPhysicArrays: Failed to load \"%s\".\n", resourcePath.c_str());
 		return false;
 	}
+
+	auto &pVertexArray = pIndexArray->pVertexArray;
 
 	for (size_t i = 0;i < attrib.vertices.size(); i += 3)
 	{
@@ -3583,12 +3671,12 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 
 		Vec3GoldSrcToBullet(vertex.pos);
 
-		vertexArray->vVertexBuffer.push_back(vertex);
+		pVertexArray->vVertexBuffer.push_back(vertex);
 	}
 
 	for (const auto& shape : shapes) {
 		for (const auto& index : shape.mesh.indices) {
-			indexArray->vIndexBuffer.push_back(index.vertex_index);
+			pIndexArray->vIndexBuffer.push_back(index.vertex_index);
 		}
 
 		//I'm not sure if this works or not but this won't affect the trimesh anyway
@@ -3598,7 +3686,7 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 			CPhysicBrushFace face;
 			face.start_vertex = index_offset;
 			face.num_vertexes = fv;
-			vertexArray->vFaceBuffer.push_back(face);
+			pVertexArray->vFaceBuffer.push_back(face);
 
 			index_offset += fv;
 		}
@@ -3607,24 +3695,44 @@ bool CBasePhysicManager::LoadObjToPhysicArrays(const std::string& objFilename, C
 	return true;
 }
 
+std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::LoadIndexArrayFromResource(const std::string& resourcePath)
+{
+	auto found = m_indexArrayResources.find(resourcePath);
+
+	if (found != m_indexArrayResources.end())
+	{
+		return found->second;
+	}
+
+	const auto extension = V_GetFileExtension(resourcePath.c_str());
+
+	if (0 == stricmp(extension, ".obj"))
+	{
+		auto pVertexArray = std::make_shared<CPhysicVertexArray>();
+
+		auto pIndexArray = std::make_shared<CPhysicIndexArray>();
+
+		pIndexArray->flags |= PhysicIndexArrayFlag_FromOBJ;
+
+		pIndexArray->pVertexArray = pVertexArray;
+
+		if(!LoadObjToPhysicArrays(resourcePath, pIndexArray))
+			pIndexArray->flags |= PhysicIndexArrayFlag_LoadFailed;
+
+		m_indexArrayResources[resourcePath] = pIndexArray;
+
+		return pIndexArray;
+	}
+
+	gEngfuncs.Con_DPrintf("LoadIndexArrayFromResource: could not load \"%s\", unsupported file extension!\n", resourcePath.c_str());
+	return nullptr;
+}
+
 void CBasePhysicManager::LoadAdditionalResourcesForCollisionShapeConfig(CClientCollisionShapeConfig *pCollisionShapeConfig)
 {
-	if (pCollisionShapeConfig->type == PhysicShape_TriangleMesh && !pCollisionShapeConfig->objpath.empty())
+	if (pCollisionShapeConfig->type == PhysicShape_TriangleMesh && pCollisionShapeConfig->resourcePath.size() > 0)
 	{
-		if (!pCollisionShapeConfig->m_pVertexArrayStorage)
-			pCollisionShapeConfig->m_pVertexArrayStorage = new CPhysicVertexArray();
-
-		if (!pCollisionShapeConfig->m_pIndexArrayStorage)
-			pCollisionShapeConfig->m_pIndexArrayStorage = new CPhysicIndexArray();
-
-		if (!pCollisionShapeConfig->m_pVertexArray && !pCollisionShapeConfig->m_pIndexArray && pCollisionShapeConfig->m_pVertexArrayStorage && pCollisionShapeConfig->m_pIndexArrayStorage)
-		{
-			if (LoadObjToPhysicArrays(pCollisionShapeConfig->objpath, pCollisionShapeConfig->m_pVertexArrayStorage, pCollisionShapeConfig->m_pIndexArrayStorage))
-			{
-				pCollisionShapeConfig->m_pVertexArray = pCollisionShapeConfig->m_pVertexArrayStorage;
-				pCollisionShapeConfig->m_pIndexArray = pCollisionShapeConfig->m_pIndexArrayStorage;
-			}
-		}
+		LoadIndexArrayFromResource(pCollisionShapeConfig->resourcePath);
 	}
 	else if (pCollisionShapeConfig->type == PhysicShape_Compound && pCollisionShapeConfig->compoundShapes.size() > 0)
 	{

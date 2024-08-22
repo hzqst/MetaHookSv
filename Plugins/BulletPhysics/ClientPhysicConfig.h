@@ -27,9 +27,6 @@ class CClientCollisionShapeConfig : public CClientBasePhysicConfig
 {
 public:
 	CClientCollisionShapeConfig();
-	~CClientCollisionShapeConfig();
-
-	//std::string name;
 
 	int type{ PhysicShape_None };
 
@@ -47,16 +44,9 @@ public:
 	vec3_t angles{ 0 };
 
 	//TODO for multi sphere
-	std::vector<vec4_t> multispheres;
+	//std::vector<vec4_t> multispheres;
 
-	std::string objpath;
-
-	CPhysicVertexArray* m_pVertexArray{};
-	CPhysicIndexArray* m_pIndexArray{};
-
-	//TODO: Put this shit to dedicated storage?
-	CPhysicVertexArray* m_pVertexArrayStorage{};
-	CPhysicIndexArray* m_pIndexArrayStorage{};
+	std::string resourcePath;
 
 	CClientCollisionShapeConfigs compoundShapes;
 };

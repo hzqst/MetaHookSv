@@ -30,10 +30,10 @@
 		"tabPosition"		"0"
 		"paintbackground"		"1"
 	}
-	"CreateNewRigidBody"
+	"CreateRigidBody"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"CreateNewRigidBody"
+		"fieldName"		"CreateRigidBody"
 		"xpos"		"480"
 		"ypos"		"244"
 		"wide"		"120"
@@ -44,9 +44,9 @@
 		"enabled"		"1"
 		"tabPosition"		"1"
 		"paintbackground"		"1"
-		"labelText"		"#BulletPhysics_CreateNewRigidBody"
+		"labelText"		"#BulletPhysics_CreateRigidBody"
 		"textAlignment"		"west"
 		"wrap"		"0"
-		"command"		"CreateNewRigidBody"
+		"command"		"CreateRigidBody"
 	}
 }

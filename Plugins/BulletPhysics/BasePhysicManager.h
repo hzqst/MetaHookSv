@@ -191,10 +191,12 @@ protected:
 	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
 	std::unordered_map<int, std::weak_ptr<CClientBasePhysicConfig>> m_physicConfigs;
 
-	CPhysicVertexArray* m_worldVertexArray{};
-	std::vector<CPhysicIndexArray *> m_brushIndexArray;
+	std::shared_ptr<CPhysicVertexArray> m_worldVertexArray;
+	//std::vector<std::shared_ptr<CPhysicIndexArray>> m_brushIndexArray;
 
 	CClientPhysicObjectConfigs m_physicObjectConfigs;
+
+	std::unordered_map<std::string, std::shared_ptr<CPhysicIndexArray>> m_indexArrayResources;
 
 public:
 
@@ -210,13 +212,13 @@ public:
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;
 	bool SavePhysicObjectConfigForModelIndex(int modelindex) override;
 	std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) override;
+	std::shared_ptr<CClientPhysicObjectConfig> CreateEmptyPhysicObjectConfigForModel(model_t* mod, int PhysicObjectType) override;
+	std::shared_ptr<CClientPhysicObjectConfig> CreateEmptyPhysicObjectConfigForModelIndex(int modelindex, int PhysicObjectType) override;
 	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModel(model_t* mod) override;
 	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModelIndex(int modelindex);
 	void LoadPhysicObjectConfigs(void) override; 
 	void SavePhysicObjectConfigs(void) override;
 	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) override;
-	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage) override;
-	bool LoadPhysicObjectConfigFromBSP(model_t* mod, CClientPhysicObjectConfigStorage& Storage) override;
 	void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) override;
 
 	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
@@ -275,6 +277,9 @@ public:
 	bool RemovePhysicConfig(int configId) override;
 	void RemoveAllPhysicConfigs() override;
 
+	//VertexIndexArray Management
+	std::shared_ptr<CPhysicIndexArray> LoadIndexArrayFromResource(const std::string& resourcePath) override;
+	void FreeAllIndexArrays(int withflags, int withoutflags) override;
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
@@ -284,30 +289,35 @@ public:
 private:
 	//WorldVertexArray and WorldIndexArray
 	void GenerateWorldVertexArray();
-	void FreeWorldVertexArray();
 	void GenerateBrushIndexArray();
-	void FreeAllBrushIndexArray();
 	void GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
 	void GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
 	void GenerateIndexArrayForSurface(msurface_t* psurf, CPhysicVertexArray* vertexarray, CPhysicIndexArray* indexarray);
 	void GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* indexArray);
 
-	CPhysicIndexArray* GetIndexArrayFromBrushModel(model_t* mod);
+	//Deprecated: use Resource Management now
+#if 0
+	//std::shared_ptr<CPhysicIndexArray> GetIndexArrayFromBrushModel(model_t* mod);
 
-	//Deprecated: use .obj files now
 	//void GenerateBarnacleIndexVertexArray();
 	//void FreeBarnacleIndexVertexArray();
 	//void GenerateGargantuaIndexVertexArray();
 	//void FreeGargantuaIndexVertexArray();
-
+#endif
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 
-	bool LoadObjToPhysicArrays(const std::string& objFilename, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
-
 	void LoadAdditionalResourcesForConfig(CClientPhysicObjectConfig* pPhysicObjectConfig);
 	void LoadAdditionalResourcesForCollisionShapeConfig(CClientCollisionShapeConfig* pCollisionShapeConfig);
+
+	bool CreateEmptyPhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType);
+	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage);
+	bool LoadPhysicObjectConfigFromBSP(model_t* mod, CClientPhysicObjectConfigStorage& Storage);
+	void OverwritePhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
+
+	bool LoadObjToPhysicArrays(const std::string& resourcePath, std::shared_ptr<CPhysicIndexArray>& pIndexArray);
+
 };
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters);

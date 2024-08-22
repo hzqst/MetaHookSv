@@ -35,6 +35,7 @@ private:
 	MESSAGE_FUNC_INT(OnOpenContextMenu, "OpenContextMenu", itemID);
 	MESSAGE_FUNC_INT(OnRefreshRigidBody, "RefreshRigidBody", configId);
 	MESSAGE_FUNC_INT(OnEditRigidBody, "EditRigidBody", configId);
+	MESSAGE_FUNC_INT(OnCloneRigidBody, "CloneRigidBody", configId);
 	MESSAGE_FUNC_INT(OnDeleteRigidBody, "DeleteRigidBody", configId);
 	MESSAGE_FUNC(OnRefreshRigidBodies, "RefreshRigidBodies");
 
@@ -44,15 +45,15 @@ private:
 
 	void LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig* pRigidBodyConfig);
 	void ReloadAllRigidBodiesIntoListPanelItem();
-	void OnCreateNewRigidBody();
 	void OnOpenRigidBodyEditor(int configId);
+	void OnCreateRigidBody();
 
 	typedef vgui::PropertyPage BaseClass;
 private:
 	vgui::HFont m_hFont{};
 
 	CRigidBodyListPanel* m_pRigidBodyListPanel{};
-	vgui::Button* m_pCreateNewRigidBody{};
+	vgui::Button* m_pCreateRigidBody{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
@@ -111,8 +112,8 @@ private:
 	vgui::TextEntry* m_pAnglesY{};
 	vgui::TextEntry* m_pAnglesZ{};
 
-	vgui::Label* m_pObjPathLabel{};
-	vgui::TextEntry* m_pObjPath{};
+	vgui::Label* m_pResourcePathLabel{};
+	vgui::TextEntry* m_pResourcePath{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
