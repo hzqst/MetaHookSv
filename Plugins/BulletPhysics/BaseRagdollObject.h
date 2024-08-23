@@ -459,6 +459,11 @@ public:
 		return true;
 	}
 
+	bool MergeBones(studiohdr_t* studiohdr) override
+	{
+		return false;
+	}
+
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		for (auto pRigidBody : m_RigidBodies)

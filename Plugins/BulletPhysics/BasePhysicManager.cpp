@@ -362,9 +362,14 @@ bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex)
 	return pPhysicObject->SetupJiggleBones(studiohdr);
 }
 
-void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* studiohdr, int entindex)
+bool CBasePhysicManager::MergeBones(studiohdr_t* studiohdr, int entindex)
 {
-	//TODO
+	auto pPhysicObject = GetPhysicObject(entindex);
+
+	if (!pPhysicObject)
+		return false;
+
+	return pPhysicObject->MergeBones(studiohdr);
 }
 
 bool CBasePhysicManager::TransferOwnershipForPhysicObject(int old_entindex, int new_entindex)

@@ -189,6 +189,7 @@ public:
 	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;
 	bool SetupBones(studiohdr_t* studiohdr) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+	bool MergeBones(studiohdr_t* studiohdr) override;
 
 	void TransferOwnership(int entindex) override;
 

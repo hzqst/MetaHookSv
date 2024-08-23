@@ -159,6 +159,11 @@ public:
 		return false;
 	}
 
+	bool MergeBones(studiohdr_t* studiohdr) override
+	{
+		return false;
+	}
+
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{
 		return false;

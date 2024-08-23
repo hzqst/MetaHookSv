@@ -12,14 +12,9 @@
 class CClientEntityManager : public IClientEntityManager
 {
 private:
-	std::unordered_map<int, int> m_BarnacleMap;
-	std::unordered_map<int, int> m_GargantuaMap;
 
 	CPlayerDeathState m_PlayerDeathState[33]{};
 	std::unordered_set<int> m_EmittedEntity;
-
-	model_t* m_BarnacleModel{};
-	model_t* m_GargantuaModel{};
 
 	int m_iInspectEntityIndex{};
 	int m_iInspectEntityModelIndex{};
@@ -365,149 +360,12 @@ public:
 			m_PlayerDeathState[entindex].vecAngles[1] += 360;
 	}
 
-	void FreePlayerForBarnacle(int entindex) override
-	{
-		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); )
-		{
-			if (itor->second == entindex)
-			{
-				itor->second = 0;
-				return;
-			}
-
-			itor++;
-		}
-	}
-
 	void NewMap(void) override
 	{
-		m_BarnacleModel = NULL;
-		m_BarnacleMap.clear();
-
-		m_GargantuaModel = NULL;
-		m_GargantuaMap.clear();
-
 		ClearAllPlayerDeathState();
 
 		m_iInspectEntityIndex = 0;
 		m_iInspectEntityModelIndex = 0;
-	}
-
-	void AddBarnacle(int entindex, int playerindex) override
-	{
-		auto itor = m_BarnacleMap.find(entindex);
-		if (itor == m_BarnacleMap.end())
-		{
-			m_BarnacleMap[entindex] = playerindex;
-		}
-		else if (itor->second == 0 && playerindex != 0)
-		{
-			itor->second = playerindex;
-		}
-	}
-
-	void AddGargantua(int entindex, int playerindex)
-	{
-		auto itor = m_GargantuaMap.find(entindex);
-		if (itor == m_GargantuaMap.end())
-		{
-			m_GargantuaMap[entindex] = playerindex;
-		}
-		else if (itor->second == 0 && playerindex != 0)
-		{
-			itor->second = playerindex;
-		}
-	}
-
-	/*
-		Purpose: Find the player entity that is caught by the barnacle (which is specified by the given entindex)
-	*/
-	cl_entity_t* FindPlayerForBarnacle(int entindex)
-	{
-		auto itor = m_BarnacleMap.find(entindex);
-		if (itor != m_BarnacleMap.end())
-		{
-			if (itor->second != 0)
-			{
-				auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
-
-				if (playerEntity &&
-					playerEntity->player &&
-					StudioGetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
-				{
-					return playerEntity;
-				}
-			}
-		}
-
-		return NULL;
-	}
-
-	/*
-		Purpose: Find the player entity that is caught by the gargantua (which is specified by the given entindex)
-	*/
-	cl_entity_t* FindPlayerForGargantua(int entindex)
-	{
-		auto itor = m_GargantuaMap.find(entindex);
-		if (itor != m_GargantuaMap.end())
-		{
-			if (itor->second != 0)
-			{
-				auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
-				if (playerEntity &&
-					playerEntity->player &&
-					StudioGetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
-				{
-					return playerEntity;
-				}
-			}
-		}
-
-		return NULL;
-	}
-
-	/*
-		Purpose: Find the barnacle entity that is catching the player
-	*/
-	cl_entity_t* FindBarnacleForPlayer(entity_state_t* player) override
-	{
-		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); itor++)
-		{
-			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
-			if (IsEntityBarnacle(ent))
-			{
-				if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
-					fabs(player->origin[1] - ent->origin[1]) < 1 &&
-					player->origin[2] < ent->origin[2] + 16)
-				{
-					itor->second = player->number;
-					return ent;
-				}
-			}
-		}
-
-		return NULL;
-	}
-
-	/*
-		Purpose: Find the gargantua entity that is catching the player
-	*/
-	cl_entity_t* FindGargantuaForPlayer(entity_state_t* player) override
-	{
-		for (auto itor = m_GargantuaMap.begin(); itor != m_GargantuaMap.end(); itor++)
-		{
-			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
-			if (IsEntityGargantua(ent) && ent->curstate.sequence == 15)
-			{
-				if (VectorDistance(player->origin, ent->origin) < 128)
-				{
-					itor->second = player->number;
-					return ent;
-				}
-			}
-		}
-
-		return NULL;
 	}
 
 	void SetEntityEmitted(int entindex) override

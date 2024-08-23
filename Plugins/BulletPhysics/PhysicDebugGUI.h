@@ -68,6 +68,7 @@ protected:
 	void SaveOpenPrompt();
 	void SaveConfirm();
 
+	bool DeleteRigidBodyByComponentId(int physicComponentId);
 	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
 	bool OpenEditPhysicObjectDialogEx(uint64 physicObjectId, int physicObjectConfigId);
 	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);

@@ -370,16 +370,26 @@ bool CBulletRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 	return false;
 }
 
+bool CBulletRigidBody::MergeBones(studiohdr_t* studiohdr)
+{
+	return false;
+}
+
+
 void CBulletRigidBody::TransferOwnership(int entindex)
 {
 	CBasePhysicRigidBody::TransferOwnership(entindex);
 
-	if (m_pInternalRigidBody)
+	//We don't need this
+	/*if (m_pInternalRigidBody)
 	{
 		auto pMotionState = GetMotionStateFromRigidBody(m_pInternalRigidBody);
 
-		pMotionState->m_pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
-	}
+		if (pMotionState)
+		{
+			pMotionState->m_pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+		}
+	}*/
 }
 
 void* CBulletRigidBody::GetInternalRigidBody()

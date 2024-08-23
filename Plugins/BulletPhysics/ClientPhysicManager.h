@@ -192,6 +192,7 @@ public:
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
+	virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
 	virtual void* GetInternalRigidBody() = 0;
 };
 
@@ -268,6 +269,7 @@ public:
 	virtual void TransferOwnership(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
+	virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
 	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
@@ -376,7 +378,7 @@ public:
 
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual bool MergeBones(studiohdr_t* studiohdr, int entindex) = 0;
 
 	virtual void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult) = 0;
 

@@ -421,7 +421,7 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = (btRigidBody*)ctx->m_pPhysicObject->GetRigidBodyByComponentId(m_physicComponentId);
+		auto pRigidBody = (btRigidBody*)ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
 
 		if (!pRigidBody)
 			return false;

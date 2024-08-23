@@ -273,15 +273,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 
 	pfnSetupBones(pthis, dummy);
 
-	if (ClientEntityManager()->IsEntityBarnacle((*currententity)))
-	{
-		auto player = ClientEntityManager()->FindPlayerForBarnacle((*currententity)->index);
-
-		if (player)
-		{
-			ClientPhysicManager()->MergeBarnacleBones((*pstudiohdr), player->index);
-		}
-	}
+	ClientPhysicManager()->MergeBones((*pstudiohdr), g_iRagdollRenderEntIndex);
 
 	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 		return;

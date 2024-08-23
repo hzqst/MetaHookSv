@@ -36,21 +36,13 @@ public:
 	virtual bool IsEntityTempEntity(cl_entity_t* ent) = 0;
 	virtual bool IsEntityNetworkEntity(cl_entity_t* ent) = 0;
 
-	virtual void AddGargantua(int entindex, int playerindex) = 0;
-	virtual void AddBarnacle(int entindex, int playerindex) = 0;
 	virtual void NewMap(void) = 0;
 
-	virtual cl_entity_t* FindGargantuaForPlayer(entity_state_t* entstate) = 0;
-	virtual cl_entity_t* FindBarnacleForPlayer(entity_state_t* entstate) = 0;
-	virtual cl_entity_t* FindPlayerForBarnacle(int entindex) = 0;
-	virtual cl_entity_t* FindPlayerForGargantua(int entindex) = 0;
 	virtual cl_entity_t* GetEntityByIndex(int entindex) = 0;
 
 	virtual int GetEntityIndexFromTempEntity(cl_entity_t* ent) = 0;
 	virtual int GetEntityIndexFromNetworkEntity(cl_entity_t* ent) = 0;
 	virtual int GetEntityIndex(cl_entity_t* ent) = 0;
-
-	virtual void FreePlayerForBarnacle(int entindex) = 0;
 
 	virtual float GetEntityModelScaling(cl_entity_t* ent) = 0;
 	virtual float GetEntityModelScaling(cl_entity_t* ent, model_t *mod) = 0;

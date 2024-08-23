@@ -49,7 +49,6 @@ public:
 
 	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
 	{
-#if 0
 		if (g_pFileSystem)
 		{
 			if (!vgui::localize()->AddFile(g_pFileSystem, "bulletphysics/gameui_%language%.txt"))
@@ -70,7 +69,6 @@ public:
 				}
 			}
 		}
-#endif
 	}
 
 	void Shutdown(void) override

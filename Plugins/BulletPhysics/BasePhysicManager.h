@@ -241,7 +241,7 @@ public:
 
 	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
-	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
+	bool MergeBones(studiohdr_t* studiohdr, int entindex) override;
 
 	//PhysicObjectConfig Management
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;

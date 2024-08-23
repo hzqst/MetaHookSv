@@ -90,6 +90,41 @@ CPhysicDebugGUI::~CPhysicDebugGUI()
 
 }
 
+static int ConvertKeyCodeToAxis(vgui::KeyCode code)
+{
+	switch (code)
+	{
+	case vgui::KEY_LEFT:
+	case vgui::KEY_RIGHT:
+		return 0;
+	case vgui::KEY_UP:
+	case vgui::KEY_DOWN:
+		return 1;
+	case vgui::KEY_PAGEUP:
+	case vgui::KEY_PAGEDOWN:
+		return 2;
+	}
+
+	return 0;
+}
+
+static int ConvertKeyCodeToSign(vgui::KeyCode code)
+{
+	switch (code)
+	{
+	case vgui::KEY_LEFT:
+	case vgui::KEY_UP:
+	case vgui::KEY_PAGEUP:
+		return -1;
+	case vgui::KEY_PAGEDOWN:
+	case vgui::KEY_RIGHT:
+	case vgui::KEY_DOWN:
+		return 1;
+	}
+
+	return 1;
+}
+
 void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 {
 	if (code == vgui::KEY_F1)
@@ -122,315 +157,121 @@ void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 		return;
 	}
 
+	if (code == vgui::KEY_S && vgui::input()->IsKeyDown(vgui::KEY_LCONTROL))
+	{
+		SaveOpenPrompt();
+		return;
+	}
+
+	if (code == vgui::KEY_R && vgui::input()->IsKeyDown(vgui::KEY_LCONTROL))
+	{
+		BV_ReloadAll_f();
+		return;
+	}
+
+	if (!vgui::input()->IsKeyDown(vgui::KEY_LCONTROL) &&
+		!vgui::input()->IsKeyDown(vgui::KEY_LSHIFT) &&
+		!vgui::input()->IsKeyDown(vgui::KEY_LALT))
+	{
+		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
+
+		if (physicComponentId)
+		{
+			if (code == vgui::KEY_E)
+			{
+				auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+				if (pPhysicComponent)
+				{
+					if (pPhysicComponent->IsRigidBody())
+					{
+						OpenEditRigidBodyDialog(pPhysicComponent->GetOwnerPhysicObject()->GetPhysicObjectId(), pPhysicComponent->GetOwnerPhysicObject()->GetPhysicConfigId(), pPhysicComponent->GetPhysicConfigId());
+						return;
+					}
+					else if (pPhysicComponent->IsConstraint())
+					{
+						//TODO
+					}
+				}
+			}
+			else if (code == vgui::KEY_DELETE)
+			{
+				if (DeleteRigidBodyByComponentId(physicComponentId))
+				{
+					return;
+				}
+			}
+			else if (m_EditMode != PhysicEditMode::Move && code == vgui::KEY_M)
+			{
+				UpdateEditMode(PhysicEditMode::Move);
+				return;
+			}
+			else if (m_EditMode != PhysicEditMode::Rotate && code == vgui::KEY_R)
+			{
+				UpdateEditMode(PhysicEditMode::Rotate);
+				return;
+			}
+			else if (m_EditMode != PhysicEditMode::Resize && code == vgui::KEY_S)
+			{
+				UpdateEditMode(PhysicEditMode::Resize);
+				return;
+			}
+		}
+	}
+
 	//Move
-#define UPDATE_ORIGIN_STEP 0.1f
-	if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_LEFT)
+	if (code == vgui::KEY_LEFT || code == vgui::KEY_RIGHT || code == vgui::KEY_UP || code == vgui::KEY_DOWN || code == vgui::KEY_PAGEUP || code == vgui::KEY_PAGEDOWN)
 	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
+		if (m_EditMode == PhysicEditMode::Move)
 		{
-			float step = -UPDATE_ORIGIN_STEP;
+			auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
 
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
+			if (physicComponentId > 0)
+			{
+				float step = 0.1f;
 
-			if (UpdateRigidBodyConfigOrigin(physicComponentId, 0, step))
-				return;
+				if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
+					step *= 10.0f;
+				else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
+					step *= 0.1f;
+
+				if (UpdateRigidBodyConfigOrigin(physicComponentId, ConvertKeyCodeToAxis(code), ConvertKeyCodeToSign(code) * step))
+					return;
+			}
 		}
-	}
-	else if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_RIGHT)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
+		else if (m_EditMode == PhysicEditMode::Rotate)
 		{
-			float step = UPDATE_ORIGIN_STEP;
+			auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
 
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
+			if (physicComponentId > 0)
+			{
+				float step = 0.1f;
 
-			if (UpdateRigidBodyConfigOrigin(physicComponentId, 0, step))
-				return;
+				if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
+					step *= 10.0f;
+				else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
+					step *= 0.1f;
+
+				if (UpdateRigidBodyConfigAngles(physicComponentId, ConvertKeyCodeToAxis(code), ConvertKeyCodeToSign(code) * step))
+					return;
+			}
 		}
-	}
-	else if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_UP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
+		else if (m_EditMode == PhysicEditMode::Resize)
 		{
-			float step = UPDATE_ORIGIN_STEP;
+			auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
 
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
+			if (physicComponentId > 0)
+			{
+				float step = 0.1f;
 
-			if (UpdateRigidBodyConfigOrigin(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_DOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
+				if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
+					step *= 10.0f;
+				else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
+					step *= 0.1f;
 
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_ORIGIN_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigOrigin(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_PAGEUP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_ORIGIN_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigOrigin(physicComponentId, 2, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Move && code == vgui::KEY_PAGEDOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_ORIGIN_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if(UpdateRigidBodyConfigOrigin(physicComponentId, 2, step))
-				return;
-		}
-	}
-	//Rotate
-#define UPDATE_ANGLES_STEP 0.1f
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_LEFT)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 0, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_RIGHT)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 0, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_UP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_DOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_PAGEUP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 2, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Rotate && code == vgui::KEY_PAGEDOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_ANGLES_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigAngles(physicComponentId, 2, step))
-				return;
-		}
-	}//Resize
-#define UPDATE_RESIZE_STEP 0.1f
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_LEFT)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 0, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_RIGHT)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 0, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_UP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_DOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 1, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_PAGEUP)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 2, step))
-				return;
-		}
-	}
-	else if (m_EditMode == PhysicEditMode::Resize && code == vgui::KEY_PAGEDOWN)
-	{
-		auto physicComponentId = ClientPhysicManager()->GetSelectedPhysicComponentId();
-
-		if (physicComponentId > 0)
-		{
-			float step = -UPDATE_RESIZE_STEP;
-
-			if (vgui::input()->IsKeyDown(vgui::KEY_LSHIFT))
-				step *= 10.0f;
-			else if (vgui::input()->IsKeyDown(vgui::KEY_LALT))
-				step *= 0.1f;
-
-			if (UpdateRigidBodyConfigSize(physicComponentId, 2, step))
-				return;
+				if (UpdateRigidBodyConfigSize(physicComponentId, ConvertKeyCodeToAxis(code), ConvertKeyCodeToSign(code) * step))
+					return;
+			}
 		}
 	}
 
@@ -537,7 +378,7 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 
 				ClientPhysicManager()->TraceLine(traceParam, hitResult);
 
-				if (hitResult.m_bHasHit)//1 == world
+				if (hitResult.m_bHasHit)
 				{
 					if (m_InspectMode == PhysicInspectMode::PhysicObject)
 					{
@@ -920,11 +761,44 @@ bool CPhysicDebugGUI::UpdateInspectedRigidBody(bool bSelected)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			wchar_t wszName[64] = { 0 };
+			wchar_t wszComponentName[64] = { 0 };
 
-			vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszName, sizeof(wszName));
+			vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszComponentName, sizeof(wszComponentName));
 
-			auto str = std::format(L"{0} (#{1}): {2} / {3}: {4}", vgui::localize()->Find("#BulletPhysics_RigidBody"), pPhysicComponent->GetPhysicComponentId(), wszName, vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
+			auto str = std::format(L"{0} (#{1}): {2} / {3}: {4}", 
+				vgui::localize()->Find("#BulletPhysics_RigidBody"), 
+				pPhysicComponent->GetPhysicComponentId(),
+				wszComponentName,
+				vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
+
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_AlwaysDynamic)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysDynamic"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_AlwaysKinematic)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysKinematic"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_AlwaysStatic)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysStatic"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_NoCollisionToWorld)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToWorld"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_NoCollisionToStaticObject)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToStaticObject"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToDynamicObject"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToRagdollObject"));
+			}
 
 			ShowInspectContentLabel(str.c_str());
 
@@ -1012,70 +886,87 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 
 			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find(pPhysicComponent->GetTypeLocalizationTokenString()), pPhysicComponent->GetPhysicComponentId(), wszName);
 
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_Barnacle)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Barnacle"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_Gargantua)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Gargantua"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnNormalActivity)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnNormalActivity"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnDeathActivity)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnDeathActivity"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnBarnacleActivity"));
+			}
+			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
+			{
+				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnGargantuaActivity"));
+			}
+
+			ShowInspectContentLabel(str.c_str());
+
 			auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
 
 			if (pConstraintConfig)
 			{
+				auto str2 = std::format(L"{0}: ", vgui::localize()->Find("#BulletPhysics_Config"));
+				
 				if (pConstraintConfig->useGlobalJointFromA)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromA"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromA"));
 				}
 				else
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromB"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromB"));
 				}
 				if (pConstraintConfig->disableCollision)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DisableCollision"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DisableCollision"));
 				}
-#if 0
 				if (pConstraintConfig->useLookAtOther)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
 				}
 				if (pConstraintConfig->useGlobalJointOriginFromOther)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
 				}
 				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
 				}
 				if (pConstraintConfig->useLinearReferenceFrameA)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameA"));
+					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameA"));
 				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_Barnacle)
+
+				ShowInspectContentLabel2(str2.c_str());
+
+				std::wstring str3;
+
+				bool bUseRigidBodyA = pConstraintConfig->useGlobalJointFromA;
+				bool bUseRigidBodyB = !pConstraintConfig->useGlobalJointFromA;
+
+				if (pConstraintConfig->useLookAtOther || pConstraintConfig->useGlobalJointOriginFromOther)
 				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Barnacle"));
+					bUseRigidBodyA = true;
+					bUseRigidBodyB = true;
 				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_Gargantua)
-				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Gargantua"));
-				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnNormalActivity)
-				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnNormalActivity"));
-				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnDeathActivity)
-				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnDeathActivity"));
-				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
-				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnBarnacleActivity"));
-				}
-				if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
-				{
-					str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnGargantuaActivity"));
-				}
-#endif
-				if (1)
+
+				if (bUseRigidBodyA)
 				{
 					wchar_t wszRigidBodyName[64] = { 0 };
 					vgui::localize()->ConvertANSIToUnicode(pConstraintConfig->rigidbodyA.c_str(), wszRigidBodyName, sizeof(wszRigidBodyName));
 
-					auto str2 = std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f})",
+					str3 += std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f}). ",
 						vgui::localize()->Find("#BulletPhysics_RigidBodyA"),
 						wszRigidBodyName,
 						vgui::localize()->Find("#BulletPhysics_Origin"),
@@ -1087,15 +978,14 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 						pConstraintConfig->anglesA[1],
 						pConstraintConfig->anglesA[2]);
 
-					ShowInspectContentLabel2(str2.c_str());
 				}
 
-				if (1)
+				if (bUseRigidBodyB)
 				{
 					wchar_t wszRigidBodyName[64] = { 0 };
 					vgui::localize()->ConvertANSIToUnicode(pConstraintConfig->rigidbodyB.c_str(), wszRigidBodyName, sizeof(wszRigidBodyName));
 
-					auto str2 = std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f})",
+					str3 += std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f}). ",
 						vgui::localize()->Find("#BulletPhysics_RigidBodyB"),
 						wszRigidBodyName,
 						vgui::localize()->Find("#BulletPhysics_Origin"),
@@ -1106,12 +996,12 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 						pConstraintConfig->anglesB[0],
 						pConstraintConfig->anglesB[1],
 						pConstraintConfig->anglesB[2]);
-
-					ShowInspectContentLabel3(str2.c_str());
 				}
+
+				if(str3.size() > 0)
+					ShowInspectContentLabel3(str3.c_str());
 			}
 
-			ShowInspectContentLabel(str.c_str());
 
 			return true;
 		}
@@ -1128,6 +1018,7 @@ bool CPhysicDebugGUI::OpenInspectClientEntityMenu(bool bSelected)
 	if (entindex > 0 && modelindex > 0)
 	{
 		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+
 		auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
 
 		if (!pPhysicObject && !pPhysicConfig)
@@ -1171,7 +1062,8 @@ bool CPhysicDebugGUI::OpenInspectClientEntityMenu(bool bSelected)
 				return true;
 			}
 		}
-		else if(pPhysicObject && pPhysicConfig)
+
+		if(pPhysicObject && pPhysicConfig)
 		{
 			auto model = EngineGetModelByIndex(modelindex);
 
@@ -1275,7 +1167,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 
 				char szFileName[64] = { 0 };
 				wchar_t wszFileName[64] = { 0 };
-				wchar_t szComponentName[64] = { 0 };
+				wchar_t wszComponentName[64] = { 0 };
 				wchar_t szBuf[256] = { 0 };
 
 				V_FileBase(pPhysicObject->GetModel()->name, szFileName, sizeof(szFileName));
@@ -1289,14 +1181,14 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 
 				menu->AddMenuItem("EditPhysicObject", szBuf, kv, this);
 
-				vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), szComponentName, sizeof(szComponentName));
+				vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszComponentName, sizeof(wszComponentName));
 
 				kv = new KeyValues("EditRigidBodyEx");
 				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("EditRigidBodyEx", szBuf, kv, this);
 
 				kv = new KeyValues("MoveRigidBodyEx");
@@ -1304,7 +1196,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("MoveRigidBodyEx", szBuf, kv, this);
 
 				kv = new KeyValues("RotateRigidBodyEx");
@@ -1312,7 +1204,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("RotateRigidBodyEx", szBuf, kv, this);
 
 				kv = new KeyValues("ResizeRigidBodyEx");
@@ -1320,7 +1212,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ResizeRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ResizeRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("ResizeRigidBodyEx", szBuf, kv, this);
 
 				kv = new KeyValues("CloneRigidBodyEx");
@@ -1328,7 +1220,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("CloneRigidBodyEx", szBuf, kv, this);
 
 				kv = new KeyValues("DeleteRigidBodyEx");
@@ -1336,7 +1228,7 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 				kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
 				kv->SetInt("rigidBodyConfigId", pPhysicComponent->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szComponentName);
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, wszComponentName);
 				menu->AddMenuItem("DeleteRigidBodyEx", szBuf, kv, this);
 
 				vgui::Menu::PlaceContextMenu(this, menu);
@@ -1597,9 +1489,12 @@ void CPhysicDebugGUI::OnEditPhysicObject(KeyValues *kv)
 
 bool CPhysicDebugGUI::OpenEditPhysicObjectDialog(uint64 physicObjectId)
 {
-	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId);
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
 
-	auto pPhysicConfig = ClientPhysicManager()->GetPhysicObjectConfigForModelIndex(modelindex);
+	if (!pPhysicObject)
+		return false;
+
+	auto pPhysicConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
 
 	if (!pPhysicConfig)
 		return false;
@@ -1747,6 +1642,31 @@ void CPhysicDebugGUI::OnCloneRigidBodyEx(KeyValues* kv)
 
 }
 
+bool CPhysicDebugGUI::DeleteRigidBodyByComponentId(int physicComponentId)
+{
+	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+	if (pPhysicComponent)
+	{
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
+
+		if (pPhysicObject)
+		{
+			auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
+
+			if (pPhysicObjectConfig)
+			{
+				if (UTIL_RemoveRigidBodyFromPhysicObjectConfig(pPhysicObjectConfig.get(), pPhysicComponent->GetPhysicConfigId()))
+				{
+					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void CPhysicDebugGUI::OnDeleteRigidBodyEx(KeyValues* kv)
 {
 	auto physicObjectId = kv->GetUint64("physicObjectId");
@@ -1771,11 +1691,12 @@ bool CPhysicDebugGUI::UpdateRigidBodyConfigOrigin(int physicComponentId, int axi
 
 	if (pPhysicComponent)
 	{
-		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pPhysicComponent->GetOwnerEntityIndex());
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
 
 		if (pPhysicObject)
 		{
 			auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+
 			auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
 
 			if (pRigidBodyConfig && pPhysicObjectConfig)
@@ -1796,11 +1717,12 @@ bool CPhysicDebugGUI::UpdateRigidBodyConfigAngles(int physicComponentId, int axi
 
 	if (pPhysicComponent)
 	{
-		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pPhysicComponent->GetOwnerEntityIndex());
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
 
 		if (pPhysicObject)
 		{
 			auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+
 			auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
 
 			if (pRigidBodyConfig && pPhysicObjectConfig)
@@ -1821,11 +1743,12 @@ bool CPhysicDebugGUI::UpdateRigidBodyConfigSize(int physicComponentId, int axis,
 
 	if (pPhysicComponent)
 	{
-		auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pPhysicComponent->GetOwnerEntityIndex());
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
 
 		if (pPhysicObject)
 		{
 			auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+
 			auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
 
 			if (pRigidBodyConfig && pPhysicObjectConfig)
