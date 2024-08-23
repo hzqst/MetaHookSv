@@ -89,7 +89,7 @@ public:
 
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
 	{
-		if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && m_debugDrawLevel >= ctx->m_staticObjectLevel)
+		if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && ctx->m_staticObjectLevel >= m_debugDrawLevel )
 			return true;
 
 		return false;

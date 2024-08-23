@@ -1234,7 +1234,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
-void BV_DebugUI_f(void)
+void BV_OpenDebugUI_f(void)
 {
 	if (AllowCheats())
 	{
@@ -1296,7 +1296,7 @@ void HUD_Init(void)
 	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
 	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
-	gEngfuncs.pfnAddCommand("bv_debug_ui", BV_DebugUI_f);
+	gEngfuncs.pfnAddCommand("bv_open_debug_ui", BV_OpenDebugUI_f);
 
 	gEngfuncs.pfnAddCommand("bv_reload_all", BV_ReloadAll_f);
 	gEngfuncs.pfnAddCommand("bv_reload_objects", BV_ReloadObjects_f);
