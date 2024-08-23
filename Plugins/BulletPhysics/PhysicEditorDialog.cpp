@@ -240,9 +240,31 @@ void CRigidBodyPage::OnCloneRigidBody(int configId)
 
 	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
 
-	ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
-
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
+
+	//Update PhysicObject
+
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(m_physicObjectId);
+
+	if (pPhysicObject->Rebuild(m_pPhysicObjectConfig.get()))
+	{
+		int clonedRigidBodyId = 0;
+
+		pPhysicObject->EnumPhysicComponents([pClonedRigidBodyConfig, &clonedRigidBodyId](IPhysicComponent* pPhysicCompoent) {
+
+			if (pPhysicCompoent->GetPhysicConfigId() == pClonedRigidBodyConfig->configId)
+			{
+				clonedRigidBodyId = pPhysicCompoent->GetPhysicComponentId();
+				return true;
+			}
+
+			return false;
+		});
+
+		if (clonedRigidBodyId) {
+			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedRigidBodyId);
+		}
+	}
 }
 
 void CRigidBodyPage::OnDeleteRigidBody(int configId)

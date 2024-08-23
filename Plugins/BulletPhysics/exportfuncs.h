@@ -6,6 +6,7 @@
 #include <triangleapi.h>
 #include <event_api.h>
 #include <pm_defs.h>
+#include <cvardef.h>
 
 extern cl_enginefunc_t gEngfuncs;
 extern cl_exportfuncs_t gExportfuncs;
@@ -25,6 +26,16 @@ extern float* g_ChromeOrigin;
 extern float* r_origin;
 
 extern bool g_bIsCounterStrike;
+
+extern cvar_t* bv_debug_draw_level_ragdoll;
+extern cvar_t* bv_debug_draw_level_static;
+extern cvar_t* bv_debug_draw_level_dynamic;
+extern cvar_t* bv_debug_draw_level_rigidbody;
+extern cvar_t* bv_debug_draw_level_constraint;
+extern cvar_t* bv_debug_draw_level_floater;
+extern cvar_t* bv_debug_draw_constraint_color;
+extern cvar_t* bv_debug_draw_inspected_color;
+extern cvar_t* bv_debug_draw_selected_color;
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
@@ -53,10 +64,6 @@ bool AllowCheats();
 bool IsDebugDrawEnabled();
 bool IsDebugDrawWallHackEnabled();
 bool ShouldSyncronizeView();
-int GetRagdollObjectDebugDrawLevel();
-int GetStaticObjectDebugDrawLevel();
-int GetDynamicObjectDebugDrawLevel();
-int GetConstraintDebugDrawLevel();
 float GetSimulationTickRate();
 
 bool R_IsRenderingPortals();

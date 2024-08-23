@@ -11,11 +11,27 @@
 #include "ClientPhysicCommon.h"
 #include "ClientPhysicConfig.h"
 
+#include <functional>
+
 #define PACK_PHYSIC_OBJECT_ID(entindex, modelindex) ((((uint64)entindex) & 0x00000000FFFFFFFFull) | ((((uint64)modelindex) << 32) & 0xFFFFFFFF00000000ull))
 #define UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId) (int)(physicObjectId & 0x00000000FFFFFFFFull)
 #define UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(physicObjectId) (int)((physicObjectId >> 32) & 0x00000000FFFFFFFFull)
 
 class IPhysicObject;
+
+class CPhysicDebugDrawContext
+{
+public:
+	int m_staticObjectLevel{};
+	int m_dynamicObjectLevel{};
+	int m_ragdollObjectLevel{};
+	int m_rigidbodyLevel{};
+	int m_constraintLevel{};
+	int m_floaterLevel{};
+	vec3_t m_constraintColor{};
+	vec3_t m_inspectedColor{};
+	vec3_t m_selectedColor{};
+};
 
 class CPhysicObjectUpdateContext
 {
@@ -81,13 +97,22 @@ public:
 	bool m_bForceStatic{};
 };
 
-const int PhysicTraceLineMask_World = 0x1;
-const int PhysicTraceLineMask_StaticObject = 0x2;
-const int PhysicTraceLineMask_DynamicObject = 0x4;
-const int PhysicTraceLineMask_RagdollObject = 0x8;
-const int PhysicTraceLineMask_RigidBody = 0x10;
-const int PhysicTraceLineMask_Constraint = 0x20;
-const int PhysicTraceLineMask_Floater = 0x40;
+const int PhysicTraceLineFlag_World = 0x1;
+const int PhysicTraceLineFlag_StaticObject = 0x2;
+const int PhysicTraceLineFlag_DynamicObject = 0x4;
+const int PhysicTraceLineFlag_RagdollObject = 0x8;
+const int PhysicTraceLineFlag_RigidBody = 0x10;
+const int PhysicTraceLineFlag_Constraint = 0x20;
+const int PhysicTraceLineFlag_Floater = 0x40;
+
+class CPhysicTraceLineParameters
+{
+public:
+	vec3_t vecStart{0};
+	vec3_t vecEnd{0};
+	int withflags{ -1 };
+	int withoutflags{ 0 };
+};
 
 class CPhysicTraceLineHitResult
 {
@@ -128,9 +153,11 @@ public:
 	virtual int GetPhysicConfigId() const = 0;
 	virtual int GetPhysicComponentId() const = 0;
 	virtual int GetOwnerEntityIndex() const = 0;
+	virtual IPhysicObject*GetOwnerPhysicObject() const = 0;
 	virtual const char* GetName() const = 0;
 	virtual int GetFlags() const = 0;
 	virtual int GetDebugDrawLevel() const = 0;
+	virtual bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const = 0;
 
 	virtual bool AddToPhysicWorld(void* world) = 0;
 	virtual bool RemoveFromPhysicWorld(void* world) = 0;
@@ -188,6 +215,8 @@ public:
 	virtual void* GetInternalConstraint() = 0;
 };
 
+using fnEnumPhysicComponentCallback = std::function<bool(IPhysicComponent*)>;
+
 class IPhysicObject : public IBaseInterface
 {
 public:
@@ -231,7 +260,9 @@ public:
 	virtual int GetObjectFlags() const = 0;	
 	virtual int GetPhysicConfigId() const = 0;
 	virtual bool IsClientEntityNonSolid() const = 0;
+	virtual bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext *ctx) const = 0;
 
+	virtual bool EnumPhysicComponents(const fnEnumPhysicComponentCallback &callback) = 0;
 	virtual bool Rebuild(const CClientPhysicObjectConfig *pPhysicObjectConfig) = 0;
 	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransferOwnership(int entindex) = 0;
@@ -343,7 +374,14 @@ public:
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
 
+	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
+
+	virtual void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult) = 0;
+
 	//PhysicObjectConfig Management
+
 	virtual bool SavePhysicObjectConfigForModel(model_t* mod) = 0;
 	virtual bool SavePhysicObjectConfigForModelIndex(int modelindex) = 0;
 	virtual std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigForModel(model_t* mod) = 0;
@@ -375,10 +413,6 @@ public:
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 
-	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) = 0;
-
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
@@ -401,8 +435,6 @@ public:
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
 	//Inspection / Selection System
-	virtual void SetInspectedColor(const vec3_t inspectedColor) = 0;
-	virtual void SetSelectedColor(const vec3_t selectedColor) = 0;
 
 	virtual void SetInspectedPhysicComponentId(int physicComponentId) = 0;
 	virtual int  GetInspectedPhysicComponentId() const = 0;
@@ -414,7 +446,7 @@ public:
 	virtual void   SetSelectedPhysicObjectId(uint64 physicObjectId) = 0;
 	virtual uint64 GetSelectedPhysicObjectId() const = 0;
 
-	virtual void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult) = 0;
+	virtual const CPhysicDebugDrawContext* GetDebugDrawContext() const = 0;
 
 	//BasePhysicConfig Management
 

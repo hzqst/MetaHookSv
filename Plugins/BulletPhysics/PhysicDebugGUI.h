@@ -12,6 +12,8 @@ enum class PhysicInspectMode
 	Entity,
 	PhysicObject,
 	RigidBody,
+	Constraint,
+	Floater,
 };
 
 enum class PhysicEditMode
@@ -36,6 +38,7 @@ public:
 	void UpdateInspectStuffs();
 
 	bool HasFocus() override;
+	void Activate() override;
 
 protected:
 
@@ -49,6 +52,7 @@ protected:
 	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnRotateRigidBodyEx, "RotateRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnResizeRigidBodyEx, "ResizeRigidBodyEx", kv);
+	MESSAGE_FUNC_PARAMS(OnCloneRigidBodyEx, "CloneRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnDeleteRigidBodyEx, "DeleteRigidBodyEx", kv);
 
 	void OnThink() override;
@@ -71,6 +75,7 @@ protected:
 	bool UpdateInspectedClientEntity(bool bSelected);
 	bool UpdateInspectedPhysicObject(bool bSelected);
 	bool UpdateInspectedRigidBody(bool bSelected);
+	bool UpdateInspectedConstraint(bool bSelected);
 	void UpdateInspectMode(PhysicInspectMode mode);
 	void UpdateEditMode(PhysicEditMode mode);
 
@@ -83,6 +88,9 @@ protected:
 
 	void ShowInspectContentLabel2(const wchar_t* wszText);
 	void HideInspectContentLabel2();
+
+	void ShowInspectContentLabel3(const wchar_t* wszText);
+	void HideInspectContentLabel3();
 
 	bool UpdateRigidBodyConfigOrigin(int physicComponentId, int axis, float value);
 	bool UpdateRigidBodyConfigAngles(int physicComponentId, int axis, float value);
@@ -103,6 +111,7 @@ protected:
 
 	vgui::Label* m_pInspectContentLabel{};
 	vgui::Label* m_pInspectContentLabel2{};
+	vgui::Label* m_pInspectContentLabel3{};
 	vgui::Label* m_pInspectModeLabel{};
 	vgui::Label* m_pEditModeLabel{};
 

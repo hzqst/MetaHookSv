@@ -1,6 +1,56 @@
 #include <metahook.h>
-#include "util.h"
 #include "mathlib2.h"
+#include "util.h"
+
+qboolean UTIL_ParseStringAsColor1(const char* string, float* vec)
+{
+	vec2_t vinput;
+	if (sscanf(string, "%f", &vinput[0]) == 1)
+	{
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		return true;
+	}
+	return false;
+}
+
+qboolean UTIL_ParseStringAsColor2(const char* string, float* vec)
+{
+	vec2_t vinput;
+	if (sscanf(string, "%f %f", &vinput[0], &vinput[1]) == 2)
+	{
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
+		return true;
+	}
+	return false;
+}
+
+qboolean UTIL_ParseStringAsColor3(const char* string, float* vec)
+{
+	vec3_t vinput;
+	if (sscanf(string, "%f %f %f", &vinput[0], &vinput[1], &vinput[2]) == 3)
+	{
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
+		return true;
+	}
+	return false;
+}
+
+qboolean UTIL_ParseStringAsColor4(const char* string, float* vec)
+{
+	vec4_t vinput;
+	if (sscanf(string, "%f %f %f %f", &vinput[0], &vinput[1], &vinput[2], &vinput[3]) == 4)
+	{
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
+		vec[3] = math_clamp(vinput[3], 0, 255) / 255.0f;
+		return true;
+	}
+	return false;
+}
 
 qboolean UTIL_ParseStringAsVector1(const char* string, float* vec)
 {

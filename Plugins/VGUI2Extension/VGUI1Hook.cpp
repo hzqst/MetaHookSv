@@ -14,8 +14,9 @@
 #include "exportfuncs.h"
 #include "VGUI1_AIO.h"
 
-bool ClientVGUI_UseVGUI1();
+bool ClientVGUI_NativeClientHasVGUI1();
 bool GameUI_HasExclusiveInput();
+
 void __fastcall EngineSurfaceWrap_WndProcHandler(void* pthis, int, void* hwnd, unsigned int msg, unsigned int wparam, long lparam);
 void __fastcall EngineSurfaceWrap_AppHandler(void* pthis, int, void* pevent, void *pdata);
 void __fastcall EngineSurfaceWrap_setCursor(void* pthis, int, void *pCursor);
@@ -151,7 +152,7 @@ public:
 	void enableMouseCapture(bool state) override { }
 	void setCursor(void* cursor) override {
 
-		if (!ClientVGUI_UseVGUI1())
+		if (!ClientVGUI_NativeClientHasVGUI1())
 		{
 			m_pfnEngineSurfaceWrap_setCursor(this, 0, cursor);
 			return;
@@ -175,7 +176,7 @@ public:
 	void WndProcHandler(void* hwnd, unsigned int msg, unsigned int wparam, long lparam) override {
 		//VGUI1 SDL event handler, TODO: non-SDL version?
 
-		if (!ClientVGUI_UseVGUI1())
+		if (!ClientVGUI_NativeClientHasVGUI1())
 		{
 			m_pfnEngineSurfaceWrap_WndProcHandler(this, 0, hwnd, msg, wparam, lparam);
 			return;
@@ -240,7 +241,7 @@ public:
 	void enableMouseCapture(bool state) override { }
 	void setCursor(void* cursor) override {
 
-		if (!ClientVGUI_UseVGUI1())
+		if (!ClientVGUI_NativeClientHasVGUI1())
 		{
 			m_pfnEngineSurfaceWrap_setCursor(this, 0, cursor);
 			return;
@@ -262,9 +263,8 @@ public:
 	void popMakeCurrent(void* panel) override { }
 	void applyChanges() override { }
 	void AppHandler(void* pevent, void* userData) override {
-		//VGUI1 SDL event handler, TODO: non-SDL version?
 
-		if (!ClientVGUI_UseVGUI1())
+		if (!ClientVGUI_NativeClientHasVGUI1())
 		{
 			m_pfnEngineSurfaceWrap_AppHandler(this, 0, pevent, userData);
 			return;

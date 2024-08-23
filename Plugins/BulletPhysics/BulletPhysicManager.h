@@ -13,9 +13,14 @@ enum BulletPhysicCollisionFilterGroups
 	StaticObjectFilter = 0x80,
 	DynamicObjectFilter = 0x100,
 	RagdollObjectFilter = 0x200,
-	ConstraintFilter = 0x400,
-	InspecteeFilter = 0x400,
-	InspectorFilter = 0x800,
+	InspectorFilter = 0x400,
+	ConstraintFilter = 0x800,
+	FloaterFilter = 0x1000,
+};
+
+enum BulletPhysicCollisionFlags
+{
+	CF_DISABLE_VISUALIZE_OBJECT_PERMANENT = 0x1000,
 };
 
 class CBulletBaseSharedUserData : public IBaseInterface
@@ -127,34 +132,21 @@ ATTRIBUTE_ALIGNED16(class)
 CFollowConstraintMotionState : public CBulletBaseMotionState
 {
 public:
-	CFollowConstraintMotionState(IPhysicObject * pPhysicObject, btTypedConstraint * constraint, bool attachToJointB) : CBulletBaseMotionState(pPhysicObject), m_constraint(constraint), m_attachToJointB(attachToJointB)
+	CFollowConstraintMotionState(IPhysicObject * pPhysicObject, btTypedConstraint * constraint, bool attachToJointB) : CBulletBaseMotionState(pPhysicObject), m_pInternalConstraint(constraint), m_attachToJointB(attachToJointB)
 	{
 
 	}
 
-	void getWorldTransform(btTransform & worldTrans) const override
-	{
-		if (m_attachToJointB)
-		{
-			worldTrans = m_constraint->getRigidBodyB().getWorldTransform();
-		}
-		else
-		{
-			worldTrans = m_constraint->getRigidBodyA().getWorldTransform();
-		}
-	}
+	void getWorldTransform(btTransform& worldTrans) const override;
 
-	void setWorldTransform(const btTransform & worldTrans) override
-	{
-
-	}
+	void setWorldTransform(const btTransform& worldTrans) override;
 
 	bool IsBoneBased() const override
 	{
 		return false;
 	}
 
-	btTypedConstraint * m_constraint{};
+	btTypedConstraint * m_pInternalConstraint{};
 	bool m_attachToJointB{};
 };
 
@@ -180,6 +172,7 @@ public:
 	CBulletRigidBody(
 		int id,
 		int entindex,
+		IPhysicObject* pPhysicObject,
 		const CClientRigidBodyConfig* pRigidConfig,
 		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
 		int group, int mask);
@@ -221,6 +214,7 @@ public:
 	CBulletConstraint(
 		int id,
 		int entindex,
+		IPhysicObject* pPhysicObject,
 		CClientConstraintConfig* pConstraintConfig,
 		btTypedConstraint* pInternalConstraint);
 
@@ -242,7 +236,7 @@ public:
 private:
 
 	btRigidBody* CreateInternalRigidBody(bool attachToJointB);
-
+	void FreeInternalRigidBody(btRigidBody* pRigidBody);
 public:
 
 	float m_maxTolerantLinearError{ BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR };
@@ -290,7 +284,7 @@ public:
 	void OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent) override;
 	void OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent) override;
 
-	void TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult &hitResult) override;
+	void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult &hitResult) override;
 };
 
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape* pCollisionShape);
@@ -299,6 +293,7 @@ IPhysicObject* GetPhysicObjectFromRigidBody(btRigidBody* pRigidBody);
 
 void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape);
 
+bool BulletGetConstraintGlobalPivotTransform(btTypedConstraint* pConstraint, btTransform& worldPivotA, btTransform& worldPivotB);
 btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint* pConstraint);
 btTypedConstraint* BulletCreateConstraintFromGlobalJointTransform(CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& globalJointTransform);
 btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientConstraintConfig* pConstraintConfig, const CBulletConstraintCreationContext& ctx, const btTransform& finalLocalTransA, const btTransform& finalLocalTransB);
@@ -311,6 +306,7 @@ void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler);
 void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix);
 btTransform MatrixLookAt(const btTransform& transform, const btVector3& at, const btVector3& forward);
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection);
+btVector3 GetVector3FromVec3(const vec3_t src);
 
 void TransformGoldSrcToBullet(btTransform& trans);
 void Vector3GoldSrcToBullet(btVector3& vec);

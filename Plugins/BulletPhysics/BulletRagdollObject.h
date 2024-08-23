@@ -9,6 +9,7 @@ public:
 	CBulletRagdollRigidBody(
 		int id,
 		int entindex,
+		IPhysicObject* pPhysicObject,
 		const CClientRigidBodyConfig* pRigidConfig,
 		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
 		int group, 
@@ -17,6 +18,7 @@ public:
 		CBulletRigidBody(
 			id,
 			entindex, 
+			pPhysicObject,
 			pRigidConfig, 
 			constructionInfo,
 			group, 
@@ -239,12 +241,14 @@ public:
 	CBulletRagdollConstraint(
 		int id,
 		int entindex,
+		IPhysicObject* pPhysicObject,
 		CClientConstraintConfig* pConstraintConfig,
 		btTypedConstraint * pInternalConstraint)
 		:
 		CBulletConstraint(
 			id,
 			entindex,
+			pPhysicObject,
 			pConstraintConfig,
 			pInternalConstraint)
 	{
@@ -972,7 +976,7 @@ private:
 
 		int mask = btBroadphaseProxy::AllFilter;
 
-		mask &= ~BulletPhysicCollisionFilterGroups::InspecteeFilter;
+		mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::FloaterFilter);
 
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 			mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
@@ -989,6 +993,7 @@ private:
 		return new CBulletRagdollRigidBody(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			CreationParam.m_entindex,
+			this,
 			pRigidConfig,
 			cInfo,
 			group,
@@ -1189,7 +1194,12 @@ private:
 
 		if (pInternalConstraint)
 		{
-			return new CBulletRagdollConstraint(physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(), CreationParam.m_entindex, pConstraintConfig, pInternalConstraint);
+			return new CBulletRagdollConstraint(
+				physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(), 
+				CreationParam.m_entindex, 
+				this,
+				pConstraintConfig,
+				pInternalConstraint);
 		}
 
 		return nullptr;

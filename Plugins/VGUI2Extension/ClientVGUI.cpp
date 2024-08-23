@@ -30,6 +30,7 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 extern vgui::ISurface* g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
+bool g_NativeClientHasVGUI1 = true;
 bool g_IsNativeClientVGUI2 = false;
 bool g_IsNativeClientUIHDProportional = false;
 
@@ -50,6 +51,11 @@ static void (__fastcall *m_pfnCClientVGUI_HideScoreBoard)(void *pthis, int) = NU
 static void (__fastcall *m_pfnCClientVGUI_HideAllVGUIMenu)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_ActivateClientUI)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_HideClientUI)(void *pthis, int) = NULL;
+
+bool ClientVGUI_NativeClientHasVGUI1()
+{
+	return g_NativeClientHasVGUI1;
+}
 
 /*
 ============================================================
@@ -776,6 +782,8 @@ void CClientVGUIProxy::Start(void)
 	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
+
+	g_NativeClientHasVGUI1 = UseVGUI1();
 }
 
 void CClientVGUIProxy::SetParent(vgui::VPANEL parent)
@@ -963,6 +971,8 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 void NewClientVGUI::Start(void)
 {
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
+
+	g_NativeClientHasVGUI1 = UseVGUI1();
 }
 
 void NewClientVGUI::SetParent(vgui::VPANEL parent)

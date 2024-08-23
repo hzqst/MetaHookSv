@@ -177,9 +177,14 @@ CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectCo
 	ThirdPersionViewCameraControlConfig.rigidbody = "Pelvis";
 }
 
-CBasePhysicRigidBody::CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig) :
+CBasePhysicRigidBody::CBasePhysicRigidBody(
+	int id, 
+	int entindex,
+	IPhysicObject* pPhysicObject, 
+	const CClientRigidBodyConfig* pRigidConfig) :
 	m_id(id),
 	m_entindex(entindex),
+	m_pPhysicObject(pPhysicObject),
 	m_name(pRigidConfig->name),
 	m_flags(pRigidConfig->flags),
 	m_boneindex(pRigidConfig->boneindex),
@@ -191,10 +196,12 @@ CBasePhysicRigidBody::CBasePhysicRigidBody(int id, int entindex, const CClientRi
 
 CBasePhysicConstraint::CBasePhysicConstraint(
 	int id,
-	int entindex, 
+	int entindex,
+	IPhysicObject* pPhysicObject,
 	const CClientConstraintConfig* pConstraintConfig) :
 	m_id(id),
 	m_entindex(entindex),
+	m_pPhysicObject(pPhysicObject),
 	m_name(pConstraintConfig->name),
 	m_flags(pConstraintConfig->flags),
 	m_debugDrawLevel(pConstraintConfig->debugDrawLevel),
@@ -227,15 +234,9 @@ void CBasePhysicManager::NewMap(void)
 
 	m_inspectedPhysicComponentId = 0;
 	m_inspectedPhysicObjectId = 0;
-	m_inspectedColor[0] = 194.f / 255.0f;
-	m_inspectedColor[1] = 230.f / 255.0f;
-	m_inspectedColor[2] = 234.f / 255.0f;
 
 	m_selectedPhysicComponentId = 0;
 	m_selectedPhysicObjectId = 0;
-	m_selectedColor[0] = 1;
-	m_selectedColor[1] = 1;
-	m_selectedColor[2] = 0;
 
 	GenerateWorldVertexArray();
 	GenerateBrushIndexArray();
@@ -247,11 +248,6 @@ void CBasePhysicManager::NewMap(void)
 	LoadPhysicObjectConfigs();
 
 	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
-}
-
-void CBasePhysicManager::DebugDraw(void)
-{
-	
 }
 
 void CBasePhysicManager::SetGravity(float velocity)
@@ -2161,6 +2157,7 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
 	pStaticObjectConfig->flags |= PhysicObjectFlag_FromBSP;
+	pStaticObjectConfig->debugDrawLevel = (mod == r_worldmodel) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
 
 	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
@@ -2774,16 +2771,6 @@ bool CBasePhysicManager::RemovePhysicComponent(int physicComponentId)
 	return false;
 }
 
-void CBasePhysicManager::SetInspectedColor(const vec3_t inspectedColor)
-{
-	VectorCopy(inspectedColor, m_inspectedColor);
-}
-
-void CBasePhysicManager::SetSelectedColor(const vec3_t selectedColor)
-{
-	VectorCopy(selectedColor, m_selectedColor);
-}
-
 void CBasePhysicManager::SetInspectedPhysicComponentId(int physicComponentId)
 {
 	m_inspectedPhysicComponentId = physicComponentId;
@@ -2822,6 +2809,11 @@ void CBasePhysicManager::SetSelectedPhysicObjectId(uint64 physicObjectId)
 uint64 CBasePhysicManager::GetSelectedPhysicObjectId() const
 {
 	return m_selectedPhysicObjectId;
+}
+
+const CPhysicDebugDrawContext* CBasePhysicManager::GetDebugDrawContext() const
+{
+	return &m_debugDrawContext;
 }
 
 int CBasePhysicManager::AllocatePhysicConfigId()

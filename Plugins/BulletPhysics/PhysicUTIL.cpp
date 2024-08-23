@@ -310,7 +310,6 @@ bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhy
 std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape)
 {
 	auto pNewShape = std::make_shared<CClientCollisionShapeConfig>();
-	pNewShape->configId = pOldShape->configId;
 	pNewShape->configType = pOldShape->configType;
 	pNewShape->type = pOldShape->type;
 	pNewShape->direction = pOldShape->direction;
@@ -333,7 +332,6 @@ std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientR
 {
 	auto pCloneConfig = std::make_shared<CClientRigidBodyConfig>();
 	pCloneConfig->name = pOldConfig->name;
-	pCloneConfig->configId = pOldConfig->configId;
 	pCloneConfig->configType = pOldConfig->configType;
 	pCloneConfig->flags = pOldConfig->flags;
 	pCloneConfig->debugDrawLevel = pOldConfig->debugDrawLevel;

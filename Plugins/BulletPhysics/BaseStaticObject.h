@@ -14,8 +14,9 @@ public:
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
 		m_model_scaling = CreationParam.m_model_scaling;
-		m_flags = CreationParam.m_pStaticObjectConfig->flags;
 		m_configId = CreationParam.m_pStaticObjectConfig->configId;
+		m_flags = CreationParam.m_pStaticObjectConfig->flags;
+		m_debugDrawLevel = CreationParam.m_pStaticObjectConfig->debugDrawLevel;
 	}
 
 	~CBaseStaticObject()
@@ -84,6 +85,25 @@ public:
 			return false;
 
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
+	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
+	{
+		if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && m_debugDrawLevel >= ctx->m_staticObjectLevel)
+			return true;
+
+		return false;
+	}
+
+	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (callback(pRigidBody))
+				return true;
+		}
+
+		return false;
 	}
 
 	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override
@@ -271,55 +291,49 @@ public:
 
 protected:
 
-		void RebuildRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	void RebuildRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	{
+		std::map<int, int> configIdToComponentIdMap;
+
+		for (auto pRigidBody : m_RigidBodies)
 		{
-			std::vector<IPhysicRigidBody*> newRigidBodies;
+			configIdToComponentIdMap[pRigidBody->GetPhysicConfigId()] = pRigidBody->GetPhysicComponentId();
 
-			std::vector<IPhysicRigidBody*> oldRigidBodies = m_RigidBodies;
-
-			m_RigidBodies.clear();
-
-			for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
-			{
-				auto configId = pRigidBodyConfig->configId;
-				auto foundOld = std::find_if(oldRigidBodies.begin(), oldRigidBodies.end(), [configId](IPhysicRigidBody* pRigidBodyOld) {
-					return pRigidBodyOld->GetPhysicConfigId() == configId;
-					});
-
-				if (foundOld != oldRigidBodies.end())
-				{
-					auto oldPhysicComponentId = (*foundOld)->GetPhysicComponentId();
-
-					auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), oldPhysicComponentId);
-
-					if (pNewRigidBody)
-					{
-						newRigidBodies.emplace_back(pNewRigidBody);
-					}
-				}
-				else
-				{
-					auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
-
-					if (pNewRigidBody)
-					{
-						newRigidBodies.emplace_back(pNewRigidBody);
-					}
-				}
-			}
-
-			for (auto pRigidBody : oldRigidBodies)
-			{
-				ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-			}
-
-			for (auto pRigidBody : newRigidBodies)
-			{
-				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-			}
-
-			m_RigidBodies = newRigidBodies;
+			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
 		}
+
+		m_RigidBodies.clear();
+
+		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		{
+			auto found = configIdToComponentIdMap.find(pRigidBodyConfig->configId);
+
+			if (found != configIdToComponentIdMap.end())
+			{
+				auto oldPhysicComponentId = found->second;
+
+				auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), oldPhysicComponentId);
+
+				if (pNewRigidBody)
+				{
+					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+
+					m_RigidBodies.emplace_back(pNewRigidBody);
+				}
+			}
+			else
+			{
+				auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
+
+				if (pNewRigidBody)
+				{
+					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+
+					m_RigidBodies.emplace_back(pNewRigidBody);
+				}
+			}
+		}
+	}
 
 public:
 
@@ -328,6 +342,7 @@ public:
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
 	int m_flags{ PhysicObjectFlag_StaticObject };
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
 	std::vector<IPhysicRigidBody*> m_RigidBodies{};
 };

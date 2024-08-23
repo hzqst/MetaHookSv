@@ -5,6 +5,7 @@
 #include "privatehook.h"
 #include "enginedef.h"
 #include "plugins.h"
+#include "util.h"
 
 #include "ClientEntityManager.h"
 #include "BulletPhysicManager.h"
@@ -13,6 +14,11 @@
 
 #include <vgui_controls/Controls.h>
 #include <glew.h>
+
+btVector3 GetVector3FromVec3(const vec3_t src)
+{
+	return btVector3(src[0], src[1], src[2]);
+}
 
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
@@ -199,12 +205,13 @@ void Vector3BulletToGoldSrc(btVector3& vec)
 CBulletRigidBody::CBulletRigidBody(
 	int id,
 	int entindex,
+	IPhysicObject* pPhysicObject,
 	const CClientRigidBodyConfig* pRigidConfig,
 	const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
 	int group, int mask
 	)
 	:
-	CBasePhysicRigidBody(id, entindex, pRigidConfig),
+	CBasePhysicRigidBody(id, entindex, pPhysicObject, pRigidConfig),
 	m_density(pRigidConfig->density),
 	m_mass(constructionInfo.m_mass),
 	m_inertia(constructionInfo.m_localInertia),
@@ -214,6 +221,7 @@ CBulletRigidBody::CBulletRigidBody(
 	m_pInternalRigidBody = new btRigidBody(constructionInfo);
 
 	m_pInternalRigidBody->setUserIndex(id);
+	m_pInternalRigidBody->setUserPointer(this);
 
 	m_pInternalRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
 	m_pInternalRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
@@ -387,16 +395,22 @@ float CBulletRigidBody::GetMass() const
 CBulletConstraint::CBulletConstraint(
 	int id,
 	int entindex,
+	IPhysicObject* pPhysicObject,
 	CClientConstraintConfig* pConstraintConfig,
 	btTypedConstraint* pInternalConstraint) :
 
-	CBasePhysicConstraint(id, entindex, pConstraintConfig),
+	CBasePhysicConstraint(id, entindex, pPhysicObject, pConstraintConfig),
 	m_maxTolerantLinearError(pConstraintConfig->maxTolerantLinearError),
 	m_disableCollision(pConstraintConfig->disableCollision),
 	m_pInternalConstraint(pInternalConstraint)
 {
 	m_pInternalConstraint = pInternalConstraint;
 	m_pInternalConstraint->setUserConstraintId(id);
+	m_pInternalConstraint->setUserConstraintPtr(this);
+
+	float drawSize = 3;
+	FloatGoldSrcToBullet(&drawSize);
+	m_pInternalConstraint->setDbgDrawSize(drawSize);
 
 	m_pInternalRigidBodyA = CreateInternalRigidBody(false);
 	m_pInternalRigidBodyB = CreateInternalRigidBody(true);
@@ -413,7 +427,7 @@ CBulletConstraint::~CBulletConstraint()
 		return;
 	}
 
-	if(m_pInternalConstraint)
+	if (m_pInternalConstraint)
 	{
 		delete m_pInternalConstraint;
 		m_pInternalConstraint = nullptr;
@@ -421,13 +435,13 @@ CBulletConstraint::~CBulletConstraint()
 
 	if (m_pInternalRigidBodyA)
 	{
-		delete m_pInternalRigidBodyA;
+		FreeInternalRigidBody(m_pInternalRigidBodyA);
 		m_pInternalRigidBodyA = nullptr;
 	}
 
 	if (m_pInternalRigidBodyB)
 	{
-		delete m_pInternalRigidBodyB;
+		FreeInternalRigidBody(m_pInternalRigidBodyB);
 		m_pInternalRigidBodyB = nullptr;
 	}
 }
@@ -560,12 +574,12 @@ bool CBulletConstraint::AddToPhysicWorld(void* world)
 
 		if (m_pInternalRigidBodyA)
 		{
-			dynamicWorld->addRigidBody(m_pInternalRigidBodyA, ConstraintFilter | InspecteeFilter, InspectorFilter);
+			dynamicWorld->addRigidBody(m_pInternalRigidBodyA, BulletPhysicCollisionFilterGroups::ConstraintFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
 		}
 
 		if (m_pInternalRigidBodyB)
 		{
-			dynamicWorld->addRigidBody(m_pInternalRigidBodyB, ConstraintFilter | InspecteeFilter, InspectorFilter);
+			dynamicWorld->addRigidBody(m_pInternalRigidBodyB, BulletPhysicCollisionFilterGroups::ConstraintFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
 		}
 
 		m_addedToPhysicWorld = true;
@@ -592,6 +606,16 @@ bool CBulletConstraint::RemoveFromPhysicWorld(void* world)
 	if (m_addedToPhysicWorld)
 	{
 		dynamicWorld->removeConstraint(m_pInternalConstraint);
+
+		if (m_pInternalRigidBodyA)
+		{
+			dynamicWorld->removeRigidBody(m_pInternalRigidBodyA);
+		}
+
+		if (m_pInternalRigidBodyB)
+		{
+			dynamicWorld->removeRigidBody(m_pInternalRigidBodyB);
+		}
 
 		m_addedToPhysicWorld = false;
 
@@ -628,29 +652,53 @@ void* CBulletConstraint::GetInternalConstraint()
 
 btRigidBody* CBulletConstraint::CreateInternalRigidBody(bool attachToJointB)
 {
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(m_entindex);
+	auto pMotionState = new CFollowConstraintMotionState(m_pPhysicObject, m_pInternalConstraint, attachToJointB);
 
-	if (!pPhysicObject)
-		return nullptr;
+	auto size = btVector3(2, 2, 2);
 
-	auto pMotionState = new CFollowConstraintMotionState(pPhysicObject, m_pInternalConstraint, attachToJointB);
+	Vector3GoldSrcToBullet(size);
 
-	auto size = btScalar(3.0f);
-
-	FloatGoldSrcToBullet(&size);
-
-	auto pCollisionShape = new btSphereShape(size);
+	auto pCollisionShape = new btBoxShape(size);
 
 	btRigidBody::btRigidBodyConstructionInfo cInfo(0, pMotionState, pCollisionShape);
 
 	auto pRigidBody = new btRigidBody(cInfo);
 
 	pRigidBody->setUserIndex(m_id);
+	pRigidBody->setUserPointer(this);
 	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+	pRigidBody->setCollisionFlags(pRigidBody->getCollisionFlags() | BulletPhysicCollisionFlags::CF_DISABLE_VISUALIZE_OBJECT_PERMANENT);
+
+	pRigidBody->setActivationState(DISABLE_DEACTIVATION);
 
 	return pRigidBody;
+}
+
+void CBulletConstraint::FreeInternalRigidBody(btRigidBody *pRigidBody)
+{
+	auto pCollisionShape = pRigidBody->getCollisionShape();
+
+	if (pCollisionShape)
+	{
+		OnBeforeDeleteBulletCollisionShape(pCollisionShape);
+
+		delete pCollisionShape;
+
+		pRigidBody->setCollisionShape(nullptr);
+	}
+
+	auto pMotionState = pRigidBody->getMotionState();
+
+	if (pMotionState)
+	{
+		delete pMotionState;
+
+		pRigidBody->setMotionState(nullptr);
+	}
+
+	delete pRigidBody;
 }
 
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape *pCollisionShape)
@@ -687,42 +735,72 @@ void OnBeforeDeleteBulletCollisionShape(btCollisionShape* pCollisionShape)
 	}
 }
 
-btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
+bool BulletGetConstraintGlobalPivotTransform(btTypedConstraint* pConstraint, btTransform & worldPivotA, btTransform& worldPivotB)
 {
 	if (pConstraint->getConstraintType() == CONETWIST_CONSTRAINT_TYPE)
 	{
 		auto pConeTwist = (btConeTwistConstraint*)pConstraint;
 
-		auto worldPivotA = pConeTwist->getRigidBodyA().getWorldTransform() * pConeTwist->getFrameOffsetA();
-		auto worldPivotB = pConeTwist->getRigidBodyB().getWorldTransform() * pConeTwist->getFrameOffsetB();
+		worldPivotA = pConeTwist->getRigidBodyA().getWorldTransform() * pConeTwist->getFrameOffsetA();
+		worldPivotB = pConeTwist->getRigidBodyB().getWorldTransform() * pConeTwist->getFrameOffsetB();
 
-		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+		return true;
 	}
 	else if (pConstraint->getConstraintType() == HINGE_CONSTRAINT_TYPE)
 	{
 		auto pHinge = (btHingeConstraint*)pConstraint;
 
-		auto worldPivotA = pHinge->getRigidBodyA().getWorldTransform() * pHinge->getFrameOffsetA();
-		auto worldPivotB = pHinge->getRigidBodyB().getWorldTransform() * pHinge->getFrameOffsetB();
+		worldPivotA = pHinge->getRigidBodyA().getWorldTransform() * pHinge->getFrameOffsetA();
+		worldPivotB = pHinge->getRigidBodyB().getWorldTransform() * pHinge->getFrameOffsetB();
 
-		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+		return true;
 	}
 	else if (pConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
 	{
 		auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
 
-		auto worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		auto worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
 
-		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
+		return true;
+	}
+	else if (pConstraint->getConstraintType() == D6_SPRING_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btGeneric6DofSpringConstraint*)pConstraint;
+
+		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+
+		return true;
+	}
+	else if (pConstraint->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btGeneric6DofSpring2Constraint*)pConstraint;
+
+		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+
+		return true;
 	}
 	else if (pConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
 	{
 		auto pDof6 = (btSliderConstraint*)pConstraint;
 
-		auto worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		auto worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
+		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
 
+		return true;
+	}
+	return false;
+}
+
+btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
+{
+	btTransform worldPivotA;
+	btTransform worldPivotB;
+
+	if (BulletGetConstraintGlobalPivotTransform(pConstraint, worldPivotA, worldPivotB))
+	{
 		return (worldPivotB.getOrigin() - worldPivotA.getOrigin()).length();
 	}
 
@@ -1605,6 +1683,28 @@ void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
 
 }
 
+void CFollowConstraintMotionState::getWorldTransform(btTransform& worldTrans) const
+{
+	btTransform worldPivotA;
+	btTransform worldPivotB;
+	if (BulletGetConstraintGlobalPivotTransform(m_pInternalConstraint, worldPivotA, worldPivotB))
+	{
+		if (m_attachToJointB)
+		{
+			worldTrans = worldPivotB;
+		}
+		else
+		{
+			worldTrans = worldPivotA;
+		}
+	}
+}
+
+void CFollowConstraintMotionState::setWorldTransform(const btTransform& worldTrans)
+{
+
+}
+
 ATTRIBUTE_ALIGNED16(class)
 CBulletPhysicsDebugDraw : public btIDebugDraw
 {
@@ -1646,13 +1746,7 @@ public:
 			glDisable(GL_DEPTH_TEST);
 		}
 
-		if (color1.isZero()) {
-			//TODO use cvar?
-			gEngfuncs.pTriAPI->Color4fRendermode(153.0f / 255.0f, 217.0f / 255.0f, 234.0f / 255.0f, 1, kRenderTransAlpha);
-		}
-		else {
-			gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
-		}
+		gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
 
 		gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
 
@@ -1717,20 +1811,30 @@ class CBulletOverlapFilterCallback : public btOverlapFilterCallback
 			auto pClientObjectA = (btCollisionObject*)proxy0->m_clientObject;
 			auto pClientObjectB = (btCollisionObject*)proxy1->m_clientObject;
 
-			auto pRigidBodyA = btRigidBody::upcast(pClientObjectA);
-			auto pRigidBodyB = btRigidBody::upcast(pClientObjectB);
+			auto pInternalRigidBodyA = btRigidBody::upcast(pClientObjectA);
+			auto pInternalRigidBodyB = btRigidBody::upcast(pClientObjectB);
 
-			if (pRigidBodyA)
+			IPhysicComponent* pPhysicComponentA{};
+			IPhysicComponent* pPhysicComponentB{};
+
+			IPhysicObject* pPhysicObjectA{};
+			IPhysicObject* pPhysicObjectB{};
+
+			if (pInternalRigidBodyA)
 			{
-				auto pPhysicObjectA = GetPhysicObjectFromRigidBody(pRigidBodyA);
+				pPhysicComponentA = (IPhysicComponent*)pInternalRigidBodyA->getUserPointer();
+				pPhysicObjectA = pPhysicComponentA->GetOwnerPhysicObject();
+
 				if (pPhysicObjectA && pPhysicObjectA->IsClientEntityNonSolid()) {
 					return false;
 				}
 			}
 
-			if (pRigidBodyB)
+			if (pInternalRigidBodyB)
 			{
-				auto pPhysicObjectB = GetPhysicObjectFromRigidBody(pRigidBodyB);
+				pPhysicComponentB = (IPhysicComponent*)pInternalRigidBodyB->getUserPointer();
+				pPhysicObjectB = pPhysicComponentB->GetOwnerPhysicObject();
+
 				if (pPhysicObjectB && pPhysicObjectB->IsClientEntityNonSolid()) {
 					return false;
 				}
@@ -1740,6 +1844,277 @@ class CBulletOverlapFilterCallback : public btOverlapFilterCallback
 	}
 };
 
+class CBulletDiscreteDynamicsWorld : public btDiscreteDynamicsWorld
+{
+public:
+	CBulletDiscreteDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration) :
+		btDiscreteDynamicsWorld(dispatcher, pairCache, constraintSolver, collisionConfiguration)
+	{
+
+	}
+
+	void debugDrawConstraint(btTypedConstraint* constraint) override
+	{
+		const auto debugDrawContext = ClientPhysicManager()->GetDebugDrawContext();
+
+		bool drawFrames = (getDebugDrawer()->getDebugMode() & btIDebugDraw::DBG_DrawConstraints) != 0;
+		bool drawLimits = (getDebugDrawer()->getDebugMode() & btIDebugDraw::DBG_DrawConstraintLimits) != 0;
+
+		btScalar dbgDrawSize = constraint->getDbgDrawSize();
+
+		if (dbgDrawSize <= btScalar(0.f))
+			return;
+
+		auto pPhysicComponent = (IPhysicComponent *)constraint->getUserConstraintPtr();
+
+		if (!pPhysicComponent)
+			return;
+
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
+
+		if (!pPhysicObject)
+			return;
+
+		if (!pPhysicObject->ShouldDrawOnDebugDraw(debugDrawContext) || !pPhysicComponent->ShouldDrawOnDebugDraw(debugDrawContext))
+			return;
+
+		btVector3 color = GetVector3FromVec3(debugDrawContext->m_constraintColor);
+
+		if (ClientPhysicManager()->GetSelectedPhysicComponentId() == pPhysicComponent->GetPhysicComponentId())
+		{
+			color = GetVector3FromVec3(debugDrawContext->m_selectedColor);
+		}
+		else if (ClientPhysicManager()->GetInspectedPhysicComponentId() == pPhysicComponent->GetPhysicComponentId())
+		{
+			color = GetVector3FromVec3(debugDrawContext->m_inspectedColor);
+		}
+
+		switch (constraint->getConstraintType())
+		{
+		case POINT2POINT_CONSTRAINT_TYPE:
+		{
+			btPoint2PointConstraint* p2pC = (btPoint2PointConstraint*)constraint;
+			btTransform tr;
+			tr.setIdentity();
+			btVector3 pivot = p2pC->getPivotInA();
+			pivot = p2pC->getRigidBodyA().getCenterOfMassTransform() * pivot;
+			tr.setOrigin(pivot);
+			getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			// that ideally should draw the same frame
+			pivot = p2pC->getPivotInB();
+			pivot = p2pC->getRigidBodyB().getCenterOfMassTransform() * pivot;
+			tr.setOrigin(pivot);
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+		}
+		break;
+		case HINGE_CONSTRAINT_TYPE:
+		{
+			btHingeConstraint* pHinge = (btHingeConstraint*)constraint;
+			btTransform tr = pHinge->getRigidBodyA().getCenterOfMassTransform() * pHinge->getAFrame();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			tr = pHinge->getRigidBodyB().getCenterOfMassTransform() * pHinge->getBFrame();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			btScalar minAng = pHinge->getLowerLimit();
+			btScalar maxAng = pHinge->getUpperLimit();
+			if (minAng == maxAng)
+			{
+				break;
+			}
+			bool drawSect = true;
+			if (!pHinge->hasLimit())
+			{
+				minAng = btScalar(0.f);
+				maxAng = SIMD_2_PI;
+				drawSect = false;
+			}
+			if (drawLimits)
+			{
+				btVector3& center = tr.getOrigin();
+				btVector3 normal = tr.getBasis().getColumn(2);
+				btVector3 axis = tr.getBasis().getColumn(0);
+				getDebugDrawer()->drawArc(center, normal, axis, dbgDrawSize, dbgDrawSize, minAng, maxAng, color, drawSect);
+			}
+		}
+		break;
+		case CONETWIST_CONSTRAINT_TYPE:
+		{
+			btConeTwistConstraint* pCT = (btConeTwistConstraint*)constraint;
+			btTransform tr = pCT->getRigidBodyA().getCenterOfMassTransform() * pCT->getAFrame();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			tr = pCT->getRigidBodyB().getCenterOfMassTransform() * pCT->getBFrame();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			if (drawLimits)
+			{
+				//const btScalar length = btScalar(5);
+				const btScalar length = dbgDrawSize;
+				static int nSegments = 8 * 4;
+				btScalar fAngleInRadians = btScalar(2. * 3.1415926) * (btScalar)(nSegments - 1) / btScalar(nSegments);
+				btVector3 pPrev = pCT->GetPointForAngle(fAngleInRadians, length);
+				pPrev = tr * pPrev;
+				for (int i = 0; i < nSegments; i++)
+				{
+					fAngleInRadians = btScalar(2. * 3.1415926) * (btScalar)i / btScalar(nSegments);
+					btVector3 pCur = pCT->GetPointForAngle(fAngleInRadians, length);
+					pCur = tr * pCur;
+					getDebugDrawer()->drawLine(pPrev, pCur, color);
+
+					if (i % (nSegments / 8) == 0)
+						getDebugDrawer()->drawLine(tr.getOrigin(), pCur, color);
+
+					pPrev = pCur;
+				}
+				btScalar tws = pCT->getTwistSpan();
+				btScalar twa = pCT->getTwistAngle();
+				bool useFrameB = (pCT->getRigidBodyB().getInvMass() > btScalar(0.f));
+				if (useFrameB)
+				{
+					tr = pCT->getRigidBodyB().getCenterOfMassTransform() * pCT->getBFrame();
+				}
+				else
+				{
+					tr = pCT->getRigidBodyA().getCenterOfMassTransform() * pCT->getAFrame();
+				}
+				btVector3 pivot = tr.getOrigin();
+				btVector3 normal = tr.getBasis().getColumn(0);
+				btVector3 axis1 = tr.getBasis().getColumn(1);
+				getDebugDrawer()->drawArc(pivot, normal, axis1, dbgDrawSize, dbgDrawSize, -twa - tws, -twa + tws, color, true);
+			}
+		}
+		break;
+		case D6_SPRING_CONSTRAINT_TYPE:
+		case D6_CONSTRAINT_TYPE:
+		{
+			btGeneric6DofConstraint* p6DOF = (btGeneric6DofConstraint*)constraint;
+			btTransform tr = p6DOF->getCalculatedTransformA();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			tr = p6DOF->getCalculatedTransformB();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			if (drawLimits)
+			{
+				tr = p6DOF->getCalculatedTransformA();
+				const btVector3& center = p6DOF->getCalculatedTransformB().getOrigin();
+				btVector3 up = tr.getBasis().getColumn(2);
+				btVector3 axis = tr.getBasis().getColumn(0);
+				btScalar minTh = p6DOF->getRotationalLimitMotor(1)->m_loLimit;
+				btScalar maxTh = p6DOF->getRotationalLimitMotor(1)->m_hiLimit;
+				btScalar minPs = p6DOF->getRotationalLimitMotor(2)->m_loLimit;
+				btScalar maxPs = p6DOF->getRotationalLimitMotor(2)->m_hiLimit;
+				getDebugDrawer()->drawSpherePatch(center, up, axis, dbgDrawSize * btScalar(.9f), minTh, maxTh, minPs, maxPs, color);
+				axis = tr.getBasis().getColumn(1);
+				btScalar ay = p6DOF->getAngle(1);
+				btScalar az = p6DOF->getAngle(2);
+				btScalar cy = btCos(ay);
+				btScalar sy = btSin(ay);
+				btScalar cz = btCos(az);
+				btScalar sz = btSin(az);
+				btVector3 ref;
+				ref[0] = cy * cz * axis[0] + cy * sz * axis[1] - sy * axis[2];
+				ref[1] = -sz * axis[0] + cz * axis[1];
+				ref[2] = cz * sy * axis[0] + sz * sy * axis[1] + cy * axis[2];
+				tr = p6DOF->getCalculatedTransformB();
+				btVector3 normal = -tr.getBasis().getColumn(0);
+				btScalar minFi = p6DOF->getRotationalLimitMotor(0)->m_loLimit;
+				btScalar maxFi = p6DOF->getRotationalLimitMotor(0)->m_hiLimit;
+				if (minFi > maxFi)
+				{
+					getDebugDrawer()->drawArc(center, normal, ref, dbgDrawSize, dbgDrawSize, -SIMD_PI, SIMD_PI, color, false);
+				}
+				else if (minFi < maxFi)
+				{
+					getDebugDrawer()->drawArc(center, normal, ref, dbgDrawSize, dbgDrawSize, minFi, maxFi, color, true);
+				}
+				tr = p6DOF->getCalculatedTransformA();
+				btVector3 bbMin = p6DOF->getTranslationalLimitMotor()->m_lowerLimit;
+				btVector3 bbMax = p6DOF->getTranslationalLimitMotor()->m_upperLimit;
+				getDebugDrawer()->drawBox(bbMin, bbMax, tr, color);
+			}
+		}
+		break;
+		///note: the code for D6_SPRING_2_CONSTRAINT_TYPE is identical to D6_CONSTRAINT_TYPE, the D6_CONSTRAINT_TYPE+D6_SPRING_CONSTRAINT_TYPE will likely become obsolete/deprecated at some stage
+		case D6_SPRING_2_CONSTRAINT_TYPE:
+		{
+			{
+				btGeneric6DofSpring2Constraint* p6DOF = (btGeneric6DofSpring2Constraint*)constraint;
+				btTransform tr = p6DOF->getCalculatedTransformA();
+				if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+				tr = p6DOF->getCalculatedTransformB();
+				if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+				if (drawLimits)
+				{
+					tr = p6DOF->getCalculatedTransformA();
+					const btVector3& center = p6DOF->getCalculatedTransformB().getOrigin();
+					btVector3 up = tr.getBasis().getColumn(2);
+					btVector3 axis = tr.getBasis().getColumn(0);
+					btScalar minTh = p6DOF->getRotationalLimitMotor(1)->m_loLimit;
+					btScalar maxTh = p6DOF->getRotationalLimitMotor(1)->m_hiLimit;
+					if (minTh <= maxTh)
+					{
+						btScalar minPs = p6DOF->getRotationalLimitMotor(2)->m_loLimit;
+						btScalar maxPs = p6DOF->getRotationalLimitMotor(2)->m_hiLimit;
+						getDebugDrawer()->drawSpherePatch(center, up, axis, dbgDrawSize * btScalar(.9f), minTh, maxTh, minPs, maxPs, color);
+					}
+					axis = tr.getBasis().getColumn(1);
+					btScalar ay = p6DOF->getAngle(1);
+					btScalar az = p6DOF->getAngle(2);
+					btScalar cy = btCos(ay);
+					btScalar sy = btSin(ay);
+					btScalar cz = btCos(az);
+					btScalar sz = btSin(az);
+					btVector3 ref;
+					ref[0] = cy * cz * axis[0] + cy * sz * axis[1] - sy * axis[2];
+					ref[1] = -sz * axis[0] + cz * axis[1];
+					ref[2] = cz * sy * axis[0] + sz * sy * axis[1] + cy * axis[2];
+					tr = p6DOF->getCalculatedTransformB();
+					btVector3 normal = -tr.getBasis().getColumn(0);
+					btScalar minFi = p6DOF->getRotationalLimitMotor(0)->m_loLimit;
+					btScalar maxFi = p6DOF->getRotationalLimitMotor(0)->m_hiLimit;
+					if (minFi > maxFi)
+					{
+						getDebugDrawer()->drawArc(center, normal, ref, dbgDrawSize, dbgDrawSize, -SIMD_PI, SIMD_PI, color, false);
+					}
+					else if (minFi < maxFi)
+					{
+						getDebugDrawer()->drawArc(center, normal, ref, dbgDrawSize, dbgDrawSize, minFi, maxFi, color, true);
+					}
+					tr = p6DOF->getCalculatedTransformA();
+					btVector3 bbMin = p6DOF->getTranslationalLimitMotor()->m_lowerLimit;
+					btVector3 bbMax = p6DOF->getTranslationalLimitMotor()->m_upperLimit;
+					getDebugDrawer()->drawBox(bbMin, bbMax, tr, color);
+				}
+			}
+			break;
+		}
+		case SLIDER_CONSTRAINT_TYPE:
+		{
+			btSliderConstraint* pSlider = (btSliderConstraint*)constraint;
+			btTransform tr = pSlider->getCalculatedTransformA();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			tr = pSlider->getCalculatedTransformB();
+			if (drawFrames) getDebugDrawer()->drawTransform(tr, dbgDrawSize);
+			if (drawLimits)
+			{
+				btTransform tr = pSlider->getUseLinearReferenceFrameA() ? pSlider->getCalculatedTransformA() : pSlider->getCalculatedTransformB();
+				btVector3 li_min = tr * btVector3(pSlider->getLowerLinLimit(), 0.f, 0.f);
+				btVector3 li_max = tr * btVector3(pSlider->getUpperLinLimit(), 0.f, 0.f);
+				getDebugDrawer()->drawLine(li_min, li_max, color);
+				btVector3 normal = tr.getBasis().getColumn(0);
+				btVector3 axis = tr.getBasis().getColumn(1);
+				btScalar a_min = pSlider->getLowerAngLimit();
+				btScalar a_max = pSlider->getUpperAngLimit();
+				const btVector3& center = pSlider->getCalculatedTransformB().getOrigin();
+				getDebugDrawer()->drawArc(center, normal, axis, dbgDrawSize, dbgDrawSize, a_min, a_max, color, true);
+			}
+		}
+		break;
+		default:
+			break;
+		}
+		return;
+	}
+
+};
+
+
 void CBulletPhysicManager::Init(void)
 {
 	CBasePhysicManager::Init();
@@ -1748,7 +2123,7 @@ void CBulletPhysicManager::Init(void)
 	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
 	m_overlappingPairCache = new btDbvtBroadphase();
 	m_solver = new btSequentialImpulseConstraintSolver;
-	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
+	m_dynamicsWorld = new CBulletDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
 
 	m_debugDraw = new CBulletPhysicsDebugDraw();
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
@@ -1808,12 +2183,26 @@ void CBulletPhysicManager::NewMap(void)
 
 void CBulletPhysicManager::DebugDraw(void)
 {
-	CBasePhysicManager::DebugDraw();
+	m_debugDrawContext.m_staticObjectLevel = (int)bv_debug_draw_level_static->value;
+	m_debugDrawContext.m_dynamicObjectLevel = (int)bv_debug_draw_level_dynamic->value;
+	m_debugDrawContext.m_ragdollObjectLevel = (int)bv_debug_draw_level_ragdoll->value;
+	m_debugDrawContext.m_rigidbodyLevel = (int)bv_debug_draw_level_rigidbody->value;
+	m_debugDrawContext.m_constraintLevel = (int)bv_debug_draw_level_constraint->value;
+	m_debugDrawContext.m_floaterLevel = (int)bv_debug_draw_level_floater->value;
 
-	int iRagdollObjectDebugDrawLevel = GetRagdollObjectDebugDrawLevel();
-	int iStaticObjectDebugDrawLevel = GetStaticObjectDebugDrawLevel();
-	int iConstraintDebugDrawLevel = GetConstraintDebugDrawLevel();
-	
+	if (!UTIL_ParseStringAsColor3(bv_debug_draw_constraint_color->string, m_debugDrawContext.m_constraintColor))
+	{
+		VectorClear(m_debugDrawContext.m_constraintColor);
+	}
+	if (!UTIL_ParseStringAsColor3(bv_debug_draw_inspected_color->string, m_debugDrawContext.m_inspectedColor))
+	{
+		VectorClear(m_debugDrawContext.m_inspectedColor);
+	}
+	if (!UTIL_ParseStringAsColor3(bv_debug_draw_selected_color->string, m_debugDrawContext.m_selectedColor))
+	{
+		VectorClear(m_debugDrawContext.m_selectedColor);
+	}
+
 	const auto &objectArray = m_dynamicsWorld->getCollisionObjectArray();
 
 	for (size_t i = 0;i < objectArray.size(); ++i)
@@ -1822,19 +2211,19 @@ void CBulletPhysicManager::DebugDraw(void)
 
 		auto pInternalRigidBody = btRigidBody::upcast(pCollisionObject);
 		
-		if (pInternalRigidBody)
+		if (pInternalRigidBody && !(pInternalRigidBody->getCollisionFlags() & BulletPhysicCollisionFlags::CF_DISABLE_VISUALIZE_OBJECT_PERMANENT))
 		{
 			auto physicComponentId = pInternalRigidBody->getUserIndex();
 			auto pPhysicComponent = GetPhysicComponent(physicComponentId);
 
-			auto entindex = pPhysicComponent->GetOwnerEntityIndex();
-			auto pPhysicObject = GetPhysicObject(entindex);
-
-			if (pPhysicComponent && pPhysicObject)
+			if (pPhysicComponent)
 			{
-				if (pPhysicObject->IsRagdollObject())
+				auto entindex = pPhysicComponent->GetOwnerEntityIndex();
+				auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
+				
+				if (pPhysicObject)
 				{
-					if (iRagdollObjectDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iRagdollObjectDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
+					if ((pPhysicObject->ShouldDrawOnDebugDraw(&m_debugDrawContext) && pPhysicComponent->ShouldDrawOnDebugDraw(&m_debugDrawContext)))
 					{
 						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
 						iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
@@ -1846,43 +2235,28 @@ void CBulletPhysicManager::DebugDraw(void)
 						iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
 						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
 					}
-				}
-				else if (pPhysicObject->IsStaticObject())
-				{
-					if (iStaticObjectDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iStaticObjectDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
+
+					if ((m_selectedPhysicComponentId && m_selectedPhysicComponentId == physicComponentId) || (m_selectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_selectedPhysicObjectId)))
 					{
-						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
-						iCollisionFlags &= ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+						auto customColor = GetVector3FromVec3(m_debugDrawContext.m_selectedColor);
+
+						pInternalRigidBody->setCustomDebugColor(customColor);
+					}
+					else if ((m_inspectedPhysicComponentId && m_inspectedPhysicComponentId == physicComponentId) || (m_inspectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectedPhysicObjectId)))
+					{
+						auto customColor = GetVector3FromVec3(m_debugDrawContext.m_inspectedColor);
+
+						pInternalRigidBody->setCustomDebugColor(customColor);
 					}
 					else
 					{
-						int iCollisionFlags = pInternalRigidBody->getCollisionFlags();
-						iCollisionFlags |= btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT;
-						pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+						pInternalRigidBody->removeCustomDebugColor();
 					}
-				}
-
-				if ((m_selectedPhysicComponentId && m_selectedPhysicComponentId == physicComponentId) || (m_selectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_selectedPhysicObjectId)))
-				{
-					btVector3 customColor(m_selectedColor[0], m_selectedColor[1], m_selectedColor[2]);
-
-					pInternalRigidBody->setCustomDebugColor(customColor);
-				}
-				else if ((m_inspectedPhysicComponentId && m_inspectedPhysicComponentId == physicComponentId) || (m_inspectedPhysicObjectId && entindex == UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(m_inspectedPhysicObjectId)))
-				{
-					btVector3 customColor(m_inspectedColor[0], m_inspectedColor[1], m_inspectedColor[2]);
-
-					pInternalRigidBody->setCustomDebugColor(customColor);
-				}
-				else
-				{
-					pInternalRigidBody->removeCustomDebugColor();
 				}
 			}
 		}
 	}
-
+#if 0
 	auto numConstraint = m_dynamicsWorld->getNumConstraints();
 
 	for (int i = 0; i < numConstraint; ++i)
@@ -1895,21 +2269,27 @@ void CBulletPhysicManager::DebugDraw(void)
 
 		if (pPhysicComponent)
 		{
-			if (iConstraintDebugDrawLevel > 0 && pPhysicComponent->GetDebugDrawLevel() > 0 && iConstraintDebugDrawLevel >= pPhysicComponent->GetDebugDrawLevel())
-			{
-				float drawSize = 3;
+			auto entindex = pPhysicComponent->GetOwnerEntityIndex();
+			auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
 
-				FloatGoldSrcToBullet(&drawSize);
-
-				pInternalConstraint->setDbgDrawSize(drawSize);
-			}
-			else
+			if (pPhysicObject)
 			{
-				pInternalConstraint->setDbgDrawSize(0);
+				if (pPhysicObject->ShouldDrawOnDebugDraw(&m_debugDrawContext) && pPhysicComponent->ShouldDrawOnDebugDraw(&m_debugDrawContext))
+				{
+					float drawSize = 3;
+
+					FloatGoldSrcToBullet(&drawSize);
+
+					pInternalConstraint->setDbgDrawSize(drawSize);
+				}
+				else
+				{
+					pInternalConstraint->setDbgDrawSize(0);
+				}
 			}
 		}
 	}
-
+#endif
 	m_dynamicsWorld->debugDrawWorld();
 }
 
@@ -1961,6 +2341,7 @@ void CBulletPhysicManager::OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponen
 
 void CBulletPhysicManager::OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent)
 {
+	//TODO optimize?
 	if (pPhysicComponent->IsRigidBody())
 	{
 		auto pRigidBody = (IPhysicRigidBody *)pPhysicComponent;
@@ -1984,26 +2365,139 @@ void CBulletPhysicManager::OnPhysicComponentRemovedFromPhysicWorld(IPhysicCompon
 	}
 }
 
-void CBulletPhysicManager::TraceLine(vec3_t vecStart, vec3_t vecEnd, CPhysicTraceLineHitResult& hitResult)
+class CTraceLineRayTestCallback : public btCollisionWorld::ClosestRayResultCallback
 {
-	btVector3 vecStartPoint(vecStart[0], vecStart[1], vecStart[2]);
-	btVector3 vecEndPoint(vecEnd[0], vecEnd[1], vecEnd[2]);
+public:
+	btVector3 m_vecStartGoldSrc{  };
+	btVector3 m_vecEndGoldSrc{  };
 
-	Vector3GoldSrcToBullet(vecStartPoint);
-	Vector3GoldSrcToBullet(vecEndPoint);
+	CTraceLineRayTestCallback(const CPhysicTraceLineParameters& traceParam) : btCollisionWorld::ClosestRayResultCallback(btVector3(), btVector3())
+	{
+		m_vecStartGoldSrc = GetVector3FromVec3(traceParam.vecStart);
+		m_vecEndGoldSrc = GetVector3FromVec3(traceParam.vecEnd);
 
-	btCollisionWorld::ClosestRayResultCallback rayCallback(vecStartPoint, vecEndPoint);
-	rayCallback.m_collisionFilterGroup |= BulletPhysicCollisionFilterGroups::InspectorFilter;
-	rayCallback.m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::InspecteeFilter;
+		m_rayFromWorld = m_vecStartGoldSrc;
+		m_rayToWorld = m_vecEndGoldSrc;
 
-	m_dynamicsWorld->rayTest(vecStartPoint, vecEndPoint, rayCallback);
+		Vector3GoldSrcToBullet(m_rayFromWorld);
+		Vector3GoldSrcToBullet(m_rayToWorld);
+
+		m_collisionFilterGroup = BulletPhysicCollisionFilterGroups::InspectorFilter;
+
+		if (traceParam.withflags != -1)
+		{
+			m_collisionFilterMask = 0;
+
+			if (traceParam.withflags & PhysicTraceLineFlag_RigidBody)
+			{
+				m_collisionFilterMask |= btBroadphaseProxy::DefaultFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_Constraint)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::ConstraintFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_Floater)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::FloaterFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_World)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::WorldFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_StaticObject)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::StaticObjectFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_DynamicObject)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
+			}
+			if (traceParam.withflags & PhysicTraceLineFlag_RagdollObject)
+			{
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
+			}
+		}
+		if (traceParam.withoutflags != 0)
+		{
+			if (traceParam.withoutflags & PhysicTraceLineFlag_RigidBody)
+			{
+				m_collisionFilterMask &= ~btBroadphaseProxy::DefaultFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_Constraint)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::ConstraintFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_Floater)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::FloaterFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_World)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_StaticObject)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::StaticObjectFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_DynamicObject)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
+			}
+			if (traceParam.withoutflags & PhysicTraceLineFlag_RagdollObject)
+			{
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
+			}
+		}
+	}
+
+	bool needsCollision(btBroadphaseProxy* proxy0) const override
+	{
+		bool collides = (proxy0->m_collisionFilterGroup & m_collisionFilterMask) != 0;
+		collides = collides && (m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+
+		if (collides)
+		{
+			auto pClientObjectA = (btCollisionObject*)proxy0->m_clientObject;
+
+			auto pInternalRigidBodyA = btRigidBody::upcast(pClientObjectA);
+
+			IPhysicComponent* pPhysicComponentA{};
+
+			IPhysicObject* pPhysicObjectA{};
+
+			if (pInternalRigidBodyA)
+			{
+				pPhysicComponentA = (IPhysicComponent*)pInternalRigidBodyA->getUserPointer();
+
+				if (pPhysicComponentA)
+				{
+					pPhysicObjectA = pPhysicComponentA->GetOwnerPhysicObject();
+
+					if (!pPhysicObjectA->ShouldDrawOnDebugDraw(ClientPhysicManager()->GetDebugDrawContext()))
+						return false;
+
+					if (!pPhysicComponentA->ShouldDrawOnDebugDraw(ClientPhysicManager()->GetDebugDrawContext()))
+						return false;
+				}
+			}
+		}
+
+		return collides;
+	}
+};
+
+void CBulletPhysicManager::TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult)
+{
+	CTraceLineRayTestCallback rayCallback(traceParam);
+	
+	m_dynamicsWorld->rayTest(rayCallback.m_rayFromWorld, rayCallback.m_rayToWorld, rayCallback);
 
 	hitResult.m_bHasHit = rayCallback.hasHit();
 
 	if (hitResult.m_bHasHit)
 	{
 		hitResult.m_flHitFraction = rayCallback.m_closestHitFraction;
-		hitResult.m_flDistanceToHitPoint = rayCallback.m_closestHitFraction * (vecEndPoint - vecStartPoint).length();
+		hitResult.m_flDistanceToHitPoint = rayCallback.m_closestHitFraction * (rayCallback.m_vecStartGoldSrc - rayCallback.m_vecEndGoldSrc).length();
 
 		FloatBulletToGoldSrc(&hitResult.m_flDistanceToHitPoint);
 

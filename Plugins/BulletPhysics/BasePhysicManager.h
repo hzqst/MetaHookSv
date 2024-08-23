@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <unordered_map>
 
 #include "ClientPhysicManager.h"
@@ -66,7 +67,11 @@ public:
 class CBasePhysicRigidBody : public IPhysicRigidBody
 {
 public:
-	CBasePhysicRigidBody(int id, int entindex, const CClientRigidBodyConfig* pRigidConfig);
+	CBasePhysicRigidBody(
+		int id,
+		int entindex, 
+		IPhysicObject *pPhysicObject, 
+		const CClientRigidBodyConfig* pRigidConfig);
 
 	int GetPhysicConfigId() const override
 	{
@@ -81,6 +86,11 @@ public:
 	int GetOwnerEntityIndex() const override
 	{
 		return m_entindex;
+	}
+
+	IPhysicObject* GetOwnerPhysicObject() const override
+	{
+		return m_pPhysicObject;
 	}
 
 	const char* GetName() const override
@@ -98,6 +108,13 @@ public:
 		return m_debugDrawLevel;
 	}
 
+	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
+	{
+		if (m_debugDrawLevel > 0 && ctx->m_ragdollObjectLevel > 0 && ctx->m_ragdollObjectLevel >= m_debugDrawLevel)
+			return true;
+		return false;
+	}
+
 	void TransferOwnership(int entindex) override
 	{
 		m_entindex = entindex;
@@ -106,6 +123,7 @@ public:
 public:
 	int m_id{};
 	int m_entindex{};
+	IPhysicObject* m_pPhysicObject{};
 	std::string m_name;
 	int m_flags{};
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
@@ -119,7 +137,8 @@ class CBasePhysicConstraint : public IPhysicConstraint
 public:
 	CBasePhysicConstraint(
 		int id,
-		int entindex, 
+		int entindex,
+		IPhysicObject* pPhysicObject,
 		const CClientConstraintConfig* pConstraintConfig);
 
 	int GetPhysicConfigId() const override
@@ -137,6 +156,11 @@ public:
 		return m_entindex;
 	}
 
+	IPhysicObject* GetOwnerPhysicObject() const override
+	{
+		return m_pPhysicObject;
+	}
+
 	const char* GetName() const override
 	{
 		return m_name.c_str();
@@ -152,6 +176,14 @@ public:
 		return m_debugDrawLevel;
 	}
 
+	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
+	{
+		if (m_debugDrawLevel > 0 && ctx->m_constraintLevel > 0 && ctx->m_constraintLevel >= m_debugDrawLevel)
+			return true;
+
+		return false;
+	}
+
 	void TransferOwnership(int entindex) override
 	{
 		m_entindex = entindex;
@@ -160,6 +192,7 @@ public:
 public:
 	int m_id{};
 	int m_entindex{};
+	IPhysicObject* m_pPhysicObject{};
 	std::string m_name;
 	int m_flags{};
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
@@ -176,11 +209,9 @@ protected:
 
 	float m_gravity{};
 
-	vec3_t m_inspectedColor{ 0 };
 	uint64 m_inspectedPhysicObjectId{};
 	int m_inspectedPhysicComponentId{};
 
-	vec3_t m_selectedColor{ 0 };
 	uint64 m_selectedPhysicObjectId{};
 	int m_selectedPhysicComponentId{};
 
@@ -198,15 +229,19 @@ protected:
 
 	std::unordered_map<std::string, std::shared_ptr<CPhysicIndexArray>> m_indexArrayResources;
 
+	CPhysicDebugDrawContext m_debugDrawContext;
 public:
 
 	void Destroy(void) override;
 	void Init(void) override;
 	void Shutdown() override;
 	void NewMap(void) override;
-	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
+
+	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
+	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
 
 	//PhysicObjectConfig Management
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;
@@ -220,10 +255,6 @@ public:
 	void SavePhysicObjectConfigs(void) override;
 	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) override;
 	void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) override;
-
-	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
-	void MergeBarnacleBones(studiohdr_t* studiohdr, int entindex) override;
 
 	//PhysicObject Management
 	IPhysicObject* GetPhysicObject(int entindex) override;
@@ -255,8 +286,6 @@ public:
 	bool RemovePhysicComponent(int physicComponentId) override;
 
 	//Inspect / Select System
-	void SetInspectedColor(const vec3_t inspectedColor) override;
-	void SetSelectedColor(const vec3_t selectedColor) override;
 
 	void SetInspectedPhysicComponentId(int physicComponentId) override;
 	int  GetInspectedPhysicComponentId() const override;
@@ -270,6 +299,8 @@ public:
 	void   SetSelectedPhysicObjectId(uint64 physicObjectId) override;
 	uint64 GetSelectedPhysicObjectId() const override;
 
+	const CPhysicDebugDrawContext* GetDebugDrawContext() const override;
+
 	//BasePhysicConfig Management
 	int AllocatePhysicConfigId() override;
 	std::weak_ptr<CClientBasePhysicConfig> GetPhysicConfig(int configId) override;
@@ -280,6 +311,7 @@ public:
 	//VertexIndexArray Management
 	std::shared_ptr<CPhysicIndexArray> LoadIndexArrayFromResource(const std::string& resourcePath) override;
 	void FreeAllIndexArrays(int withflags, int withoutflags) override;
+	
 public:
 
 	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;

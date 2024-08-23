@@ -36,19 +36,24 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
-//cvar_t* bv_debug = NULL;
 cvar_t *bv_debug_draw = NULL;
 cvar_t* bv_debug_draw_wallhack = NULL;
 cvar_t* bv_debug_draw_level_ragdoll = NULL;
 cvar_t* bv_debug_draw_level_static = NULL;
 cvar_t* bv_debug_draw_level_dynamic = NULL;
+cvar_t* bv_debug_draw_level_rigidbody = NULL;
 cvar_t* bv_debug_draw_level_constraint = NULL;
+cvar_t* bv_debug_draw_level_floater = NULL;
+cvar_t* bv_debug_draw_constraint_color = NULL;
+cvar_t* bv_debug_draw_inspected_color = NULL;
+cvar_t* bv_debug_draw_selected_color = NULL;
 
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
-cvar_t *bv_ragdoll_sleepaftertime = NULL;
-cvar_t *bv_ragdoll_sleeplinearvel = NULL;
-cvar_t *bv_ragdoll_sleepangularvel = NULL;
+//cvar_t *bv_ragdoll_sleepaftertime = NULL;
+//cvar_t *bv_ragdoll_sleeplinearvel = NULL;
+//cvar_t *bv_ragdoll_sleepangularvel = NULL;
+
 cvar_t *chase_active = NULL;
 cvar_t* sv_cheats = NULL;
 
@@ -85,26 +90,6 @@ bool IsDebugDrawWallHackEnabled()
 bool ShouldSyncronizeView()
 {
 	return bv_syncview->value >= 1;
-}
-
-int GetRagdollObjectDebugDrawLevel()
-{
-	return (int)bv_debug_draw_level_ragdoll->value;
-}
-
-int GetStaticObjectDebugDrawLevel()
-{
-	return (int)bv_debug_draw_level_static->value;
-}
-
-int GetDynamicObjectDebugDrawLevel()
-{
-	return (int)bv_debug_draw_level_dynamic->value;
-}
-
-int GetConstraintDebugDrawLevel()
-{
-	return (int)bv_debug_draw_level_constraint->value;
 }
 
 float GetSimulationTickRate()
@@ -1296,17 +1281,22 @@ void HUD_Init(void)
 
 	//bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
-	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL);
-	bv_debug_draw_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_ragdoll", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_static", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_dynamic", "1", FCVAR_CLIENTDLL);
-	bv_debug_draw_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_constraint", "1", FCVAR_CLIENTDLL);
+	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_static", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_dynamic", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_ragdoll", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_rigidbody = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_rigidbody", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_constraint", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_floater = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_floater", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_constraint_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_constraint_color", "54 136 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_inspected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_inspected_color", "0 255 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_selected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_selected_color", "255 255 0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_ragdoll_sleepangularvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepangularvel", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//bv_ragdoll_sleepangularvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepangularvel", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	sv_cheats = gEngfuncs.pfnGetCvarPointer("sv_cheats");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");

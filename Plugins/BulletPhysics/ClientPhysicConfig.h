@@ -167,6 +167,7 @@ public:
 
 	int type{ PhysicObjectType_None };
 	int flags{};
+	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 };
 

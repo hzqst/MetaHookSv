@@ -9,11 +9,19 @@ public:
 	CBulletStaticRigidBody(
 		int id,
 		int entindex,
+		IPhysicObject* pPhysicObject,
 		const CClientRigidBodyConfig* pRigidConfig,
 		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
 		int group, int mask)
 		:
-		CBulletRigidBody(id, entindex, pRigidConfig, constructionInfo, group, mask)
+		CBulletRigidBody(
+			id,
+			entindex,
+			pPhysicObject,
+			pRigidConfig,
+			constructionInfo, 
+			group,
+			mask)
 	{
 
 	}
@@ -158,7 +166,7 @@ public:
 
 		mask &= ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
 
-		mask &= ~BulletPhysicCollisionFilterGroups::InspecteeFilter;
+		mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::FloaterFilter);
 
 		if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
 			mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
@@ -169,6 +177,7 @@ public:
 		return new CBulletStaticRigidBody(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			CreationParam.m_entindex,
+			this,
 			pRigidConfig,
 			cInfo,
 			group,

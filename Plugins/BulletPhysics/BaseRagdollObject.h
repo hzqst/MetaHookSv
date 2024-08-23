@@ -14,8 +14,9 @@ public:
 		m_model = CreationParam.m_model;
 		m_model_scaling = CreationParam.m_model_scaling;
 		m_playerindex = CreationParam.m_playerindex;
-		m_flags = CreationParam.m_pRagdollObjectConfig->flags;
 		m_configId = CreationParam.m_pRagdollObjectConfig->configId;
+		m_flags = CreationParam.m_pRagdollObjectConfig->flags;
+		m_debugDrawLevel = CreationParam.m_pRagdollObjectConfig->debugDrawLevel;
 	}
 
 	~CBaseRagdollObject()
@@ -99,6 +100,31 @@ public:
 			return false;
 
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
+	}
+
+	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
+	{
+		if (m_debugDrawLevel > 0 && ctx->m_ragdollObjectLevel > 0 && m_debugDrawLevel >= ctx->m_ragdollObjectLevel)
+			return true;
+
+		return false;
+	}
+
+	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			if (callback(pRigidBody))
+				return true;
+		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			if (callback(pConstraint))
+				return true;
+		}
+
+		return false;
 	}
 
 	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override
@@ -673,28 +699,32 @@ private:
 
 	void RebuildRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		std::vector<IPhysicRigidBody*> newRigidBodies;
+		std::map<int, int> configIdToComponentIdMap;
 
-		std::vector<IPhysicRigidBody*> oldRigidBodies = m_RigidBodies;
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			configIdToComponentIdMap[pRigidBody->GetPhysicConfigId()] = pRigidBody->GetPhysicComponentId();
+
+			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
+		}
 
 		m_RigidBodies.clear();
 
 		for (const auto& pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
 		{
-			auto configId = pRigidBodyConfig->configId;
-			auto foundOld = std::find_if(oldRigidBodies.begin(), oldRigidBodies.end(), [configId](IPhysicRigidBody* pRigidBodyOld) {
-				return pRigidBodyOld->GetPhysicConfigId() == configId;
-				});
+			auto found = configIdToComponentIdMap.find(pRigidBodyConfig->configId);
 
-			if (foundOld != oldRigidBodies.end())
+			if (found != configIdToComponentIdMap.end())
 			{
-				auto oldPhysicComponentId = (*foundOld)->GetPhysicComponentId();
+				auto oldPhysicComponentId = found->second;
 
 				auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), oldPhysicComponentId);
 
 				if (pNewRigidBody)
 				{
-					newRigidBodies.emplace_back(pNewRigidBody);
+					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+
+					m_RigidBodies.emplace_back(pNewRigidBody);
 				}
 			}
 			else
@@ -703,48 +733,41 @@ private:
 
 				if (pNewRigidBody)
 				{
-					newRigidBodies.emplace_back(pNewRigidBody);
+					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+
+					m_RigidBodies.emplace_back(pNewRigidBody);
 				}
 			}
 		}
-
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-		}
-
-		for (auto pRigidBody : newRigidBodies)
-		{
-			ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-		}
-
-		m_RigidBodies = newRigidBodies;
 	}
 
 	void RebuildConstraints(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		std::vector<IPhysicConstraint*> newConstraints;
+		std::map<int, int> configIdToComponentIdMap;
 
-		std::vector<IPhysicConstraint*> oldConstraints = m_Constraints;
+		for (auto pConstraint : m_Constraints)
+		{
+			configIdToComponentIdMap[pConstraint->GetPhysicConfigId()] = pConstraint->GetPhysicComponentId();
 
+			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
+		}
 		m_Constraints.clear();
 
 		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
 		{
-			auto configId = pConstraintConfig->configId;
-			auto foundOld = std::find_if(oldConstraints.begin(), oldConstraints.end(), [configId](IPhysicConstraint* pConstraintOld) {
-				return pConstraintOld->GetPhysicConfigId() == configId;
-				});
+			auto found = configIdToComponentIdMap.find(pConstraintConfig->configId);
 
-			if (foundOld != oldConstraints.end())
+			if (found != configIdToComponentIdMap.end())
 			{
-				auto oldPhysicComponentId = (*foundOld)->GetPhysicComponentId();
+				auto oldPhysicComponentId = found->second;
 
 				auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfig.get(), oldPhysicComponentId);
 
 				if (pNewConstraint)
 				{
-					newConstraints.emplace_back(pNewConstraint);
+					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
+
+					m_Constraints.emplace_back(pNewConstraint);
 				}
 			}
 			else
@@ -753,22 +776,12 @@ private:
 
 				if (pNewConstraint)
 				{
-					newConstraints.emplace_back(pNewConstraint);
+					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
+
+					m_Constraints.emplace_back(pNewConstraint);
 				}
 			}
 		}
-
-		for (auto pConstraint : oldConstraints)
-		{
-			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-		}
-
-		for (auto pConstraint : newConstraints)
-		{
-			ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-		}
-
-		m_Constraints = newConstraints;
 	}
 
 	bool UpdateActivity(int iOldActivityType, int iNewActivityType, entity_state_t* curstate)
@@ -807,6 +820,7 @@ public:
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
 	int m_flags{ PhysicObjectFlag_RagdollObject };
+	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
 
 	int m_iActivityType{ 0 };

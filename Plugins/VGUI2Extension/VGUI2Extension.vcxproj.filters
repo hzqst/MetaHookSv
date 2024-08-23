@@ -206,9 +206,6 @@
     <ClCompile Include="BaseUI.cpp">
       <Filter>BaseUI</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\AnalogBar.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
@@ -451,6 +448,9 @@
     </ClCompile>
     <ClCompile Include="util.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
+      <Filter>VGUI2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
