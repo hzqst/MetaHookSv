@@ -264,6 +264,6 @@ public:
 
 }
 
-#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_004"
+#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_005"
 
 #endif
