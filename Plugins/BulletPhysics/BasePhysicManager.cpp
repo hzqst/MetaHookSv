@@ -173,8 +173,8 @@ CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectCo
 {
 	type = PhysicObjectType_RagdollObject;
 	flags = PhysicObjectFlag_RagdollObject;
-	FirstPersionViewCameraControlConfig.rigidbody = "Head";
-	ThirdPersionViewCameraControlConfig.rigidbody = "Pelvis";
+	FirstPersonViewCameraControlConfig.rigidbody = "Head";
+	ThirdPersonViewCameraControlConfig.rigidbody = "Pelvis";
 }
 
 CBasePhysicRigidBody::CBasePhysicRigidBody(
@@ -451,6 +451,21 @@ IPhysicObject* CBasePhysicManager::GetPhysicObjectEx(uint64 physicObjectId)
 		return nullptr;
 
 	return pPhysicObject;
+}
+
+static void LoadVerifyStuffsFromKeyValues(KeyValues* pKeyValues, CClientPhysicObjectConfig *pConfig)
+{
+	if (pKeyValues->GetBool("verifyBoneChunk"))
+	{
+		pConfig->verifyBoneChunk = true;
+		pConfig->crc32BoneChunk = pKeyValues->GetInt("crc32BoneChunk");
+	}
+
+	if (pKeyValues->GetBool("verifyStudioModel"))
+	{
+		pConfig->verifyStudioModel = true;
+		pConfig->crc32StudioModel = pKeyValues->GetInt("crc32StudioModel");
+	}
 }
 
 static void LoadPhysicObjectFlagsFromKeyValues(KeyValues* pKeyValues, int &flags)
@@ -1022,14 +1037,15 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 {
 	auto pRagdollObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
 
+	LoadVerifyStuffsFromKeyValues(pKeyValues, pRagdollObjectConfig.get());
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pRagdollObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnRagdollObject, pRagdollObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
 	LoadAnimControlsFromKeyValues(pKeyValues, pRagdollObjectConfig->AnimControlConfigs);
 	LoadIdleAnimFromKeyValues(pKeyValues, pRagdollObjectConfig->IdleAnimConfig);
 	LoadBarnacleControlFromKeyValues(pKeyValues, pRagdollObjectConfig->BarnacleControlConfig);
-	LoadCameraControlFromKeyValues(pKeyValues, "firstPersionViewCameraControl", pRagdollObjectConfig->FirstPersionViewCameraControlConfig);
-	LoadCameraControlFromKeyValues(pKeyValues, "thirdPersionViewCameraControl", pRagdollObjectConfig->ThirdPersionViewCameraControlConfig);
+	LoadCameraControlFromKeyValues(pKeyValues, "firstPersonViewCameraControl", pRagdollObjectConfig->FirstPersonViewCameraControlConfig);
+	LoadCameraControlFromKeyValues(pKeyValues, "thirdPersonViewCameraControl", pRagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
 	return pRagdollObjectConfig;
 }
@@ -1038,6 +1054,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadStaticObjectConfigFromKeyV
 {
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
+	LoadVerifyStuffsFromKeyValues(pKeyValues, pStaticObjectConfig.get());
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pStaticObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnStaticObject, pStaticObjectConfig->RigidBodyConfigs);
 
@@ -1048,6 +1065,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKey
 {
 	auto pDynamicObjectConfig = std::make_shared<CClientDynamicObjectConfig>();
 
+	LoadVerifyStuffsFromKeyValues(pKeyValues, pDynamicObjectConfig.get());
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pDynamicObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnDynamicObject, pDynamicObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pDynamicObjectConfig->ConstraintConfigs);
@@ -1107,6 +1125,21 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewF
 		return nullptr;
 
 	return LoadPhysicObjectConfigFromKeyValues(pKeyValues);
+}
+
+static void AddVerifyStuffsFromKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pConfig)
+{
+	if (pConfig->verifyBoneChunk)
+	{
+		pKeyValues->SetBool("verifyBoneChunk", true);
+		pKeyValues->SetInt("crc32BoneChunk", pConfig->crc32BoneChunk);
+	}
+
+	if (pConfig->verifyStudioModel)
+	{
+		pKeyValues->SetBool("verifyStudioModel", true);
+		pKeyValues->SetInt("crc32StudioModel", pConfig->crc32StudioModel);
+	}
 }
 
 static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pPhysicObjectConfig)
@@ -1631,6 +1664,7 @@ static KeyValues* ConvertStaticObjectConfigToKeyValues(const CClientStaticObject
 {
 	auto pKeyValues = new KeyValues("PhysicObjectConfig");
 
+	AddVerifyStuffsFromKeyValues(pKeyValues, StaticObjectConfig);
 	AddBaseConfigToKeyValues(pKeyValues, StaticObjectConfig);
 	AddRigidBodiesToKeyValues(pKeyValues, StaticObjectConfig->RigidBodyConfigs);
 
@@ -1639,22 +1673,29 @@ static KeyValues* ConvertStaticObjectConfigToKeyValues(const CClientStaticObject
 
 static KeyValues* ConvertDynamicObjectConfigToKeyValues(const CClientDynamicObjectConfig* DynamicObjectConfig)
 {
-	//TODO
-	return nullptr;
+	auto pKeyValues = new KeyValues("PhysicObjectConfig");
+
+	AddVerifyStuffsFromKeyValues(pKeyValues, DynamicObjectConfig);
+	AddBaseConfigToKeyValues(pKeyValues, DynamicObjectConfig);
+	AddRigidBodiesToKeyValues(pKeyValues, DynamicObjectConfig->RigidBodyConfigs);
+	AddConstraintsToKeyValues(pKeyValues, DynamicObjectConfig->ConstraintConfigs);
+
+	return pKeyValues;
 }
 
 static KeyValues* ConvertRagdollObjectConfigToKeyValues(const CClientRagdollObjectConfig* RagdollObjectConfig)
 {
 	auto pKeyValues = new KeyValues("PhysicObjectConfig");
 
+	AddVerifyStuffsFromKeyValues(pKeyValues, RagdollObjectConfig);
 	AddBaseConfigToKeyValues(pKeyValues, RagdollObjectConfig);
 	AddRigidBodiesToKeyValues(pKeyValues, RagdollObjectConfig->RigidBodyConfigs);
 	AddConstraintsToKeyValues(pKeyValues, RagdollObjectConfig->ConstraintConfigs);
 	AddAnimControlToKeyValues(pKeyValues, RagdollObjectConfig->AnimControlConfigs);
 	AddIdleAnimToKeyValues(pKeyValues, RagdollObjectConfig->IdleAnimConfig);
 	AddBarnacleControlToKeyValues(pKeyValues, RagdollObjectConfig->BarnacleControlConfig);
-	AddCameraControlToKeyValues(pKeyValues, "firstPersionViewCameraControl", RagdollObjectConfig->FirstPersionViewCameraControlConfig);
-	AddCameraControlToKeyValues(pKeyValues, "thirdPersionViewCameraControl", RagdollObjectConfig->ThirdPersionViewCameraControlConfig);
+	AddCameraControlToKeyValues(pKeyValues, "firstPersonViewCameraControl", RagdollObjectConfig->FirstPersonViewCameraControlConfig);
+	AddCameraControlToKeyValues(pKeyValues, "thirdPersonViewCameraControl", RagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
 	return pKeyValues;
 }
@@ -2011,30 +2052,30 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 
 		if (type == "FirstPerson_AngleOffset")
 		{
-			pRagdollConfig->FirstPersionViewCameraControlConfig.angles[0] = offsetX;
-			pRagdollConfig->FirstPersionViewCameraControlConfig.angles[1] = offsetY;
-			pRagdollConfig->FirstPersionViewCameraControlConfig.angles[2] = offsetZ;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[0] = offsetX;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[1] = offsetY;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[2] = offsetZ;
 			return true;
 		}
 		else if (type == "FirstPerson_OriginOffset")
 		{
-			pRagdollConfig->FirstPersionViewCameraControlConfig.origin[0] = offsetX;
-			pRagdollConfig->FirstPersionViewCameraControlConfig.origin[1] = offsetY;
-			pRagdollConfig->FirstPersionViewCameraControlConfig.origin[2] = offsetZ;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[0] = offsetX;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[1] = offsetY;
+			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[2] = offsetZ;
 			return true;
 		}
 		else if (type == "ThirdPerson_AngleOffset")
 		{
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.angles[0] = offsetX;
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.angles[1] = offsetY;
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.angles[2] = offsetZ;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[0] = offsetX;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[1] = offsetY;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[2] = offsetZ;
 			return true;
 		}
 		else if (type == "ThirdPerson_OriginOffset")
 		{
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.origin[0] = offsetX;
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.origin[1] = offsetY;
-			pRagdollConfig->ThirdPersionViewCameraControlConfig.origin[2] = offsetZ;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[0] = offsetX;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[1] = offsetY;
+			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[2] = offsetZ;
 			return true;
 		}
 	}
@@ -2895,8 +2936,9 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	if (pPhysicConfig->type == PhysicObjectType_RagdollObject)
 	{
 		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig.get();
-
-		SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollObjectConfig->IdleAnimConfig);
+		
+		if (mod->type == mod_studio)
+			SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollObjectConfig->IdleAnimConfig);
 
 		CRagdollObjectCreationParameter CreationParam;
 
@@ -2925,12 +2967,40 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	}
 	else if (pPhysicConfig->type == PhysicObjectType_DynamicObject)
 	{
-		//TODO
-		//CDynamicObjectCreationParameter CreationParam;
+		auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicConfig.get();
+
+		if (mod->type == mod_studio)
+			SetupBonesForRagdoll(ent, state, mod, entindex, playerindex);
+
+		CDynamicObjectCreationParameter CreationParam;
+
+		CreationParam.m_entity = ent;
+		CreationParam.m_entindex = entindex;
+		CreationParam.m_model = mod;
+
+		if (mod->type == mod_studio)
+		{
+			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(ent, mod);
+		}
+
+		CreationParam.m_pDynamicObjectConfig = pDynamicObjectConfig;
+
+		LoadAdditionalResourcesForConfig(pDynamicObjectConfig);
+
+		auto pDynamicObject = CreateDynamicObject(CreationParam);
+
+		if (!pDynamicObject)
+			return;
+
+		AddPhysicObject(entindex, pDynamicObject);
 	}
 	else if (pPhysicConfig->type == PhysicObjectType_StaticObject)
 	{
 		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig.get();
+
+		if (mod->type == mod_studio)
+			SetupBonesForRagdoll(ent, state, mod, entindex, playerindex);
 
 		CStaticObjectCreationParameter CreationParam;
 
@@ -3069,7 +3139,7 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 		auto entindex = itor->first;
 		auto pPhysicObject = itor->second;
 
-		CPhysicObjectUpdateContext ctx(entindex, pPhysicObject);
+		CPhysicObjectUpdateContext ctx;
 
 		if (!ctx.m_bShouldFree)
 		{

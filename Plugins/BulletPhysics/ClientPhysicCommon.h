@@ -116,6 +116,7 @@ const int PhysicConstraintFlag_DeactiveOnNormalActivity = 0x4;
 const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
 const int PhysicConstraintFlag_DeactiveOnBarnacleActivity = 0x10;
 const int PhysicConstraintFlag_DeactiveOnGargantuaActivity = 0x20;
+const int PhysicConstraintFlag_NoResetPoseOnErrorCorrection = 0x40;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;

@@ -171,8 +171,8 @@ public:
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	bool verifyBoneChunk{};
 	bool verifyStudioModel{};
-	int checkSumBoneChunk{};
-	int checkSumStudioModel{};
+	int crc32BoneChunk{};
+	int crc32StudioModel{};
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 };
 
@@ -215,8 +215,8 @@ public:
 	std::vector<CClientAnimControlConfig> AnimControlConfigs;
 	CClientAnimControlConfig IdleAnimConfig;
 	CClientBarnacleControlConfig BarnacleControlConfig;
-	CClientCameraControlConfig FirstPersionViewCameraControlConfig;
-	CClientCameraControlConfig ThirdPersionViewCameraControlConfig;
+	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
+	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
 };
 
 class CClientPhysicObjectConfigStorage

@@ -353,7 +353,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
 
-				pRagdollObject->GetGoldSrcOrigin((*currententity)->origin);
+				pRagdollObject->GetGoldSrcOriginAngles((*currententity)->origin, nullptr);
 
 				int result = pfnDrawModel(pthis, 0, flags);
 
@@ -448,7 +448,7 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
 
-				pRagdollObject->GetGoldSrcOrigin((*currententity)->origin);
+				pRagdollObject->GetGoldSrcOriginAngles((*currententity)->origin, nullptr);
 
 				int iSavedWeaponModel = pplayer->weaponmodel;
 

@@ -31,10 +31,7 @@ public:
 		if (!m_pInternalRigidBody)
 			return;
 
-		auto pPhysicObject = ComponentUpdateContext->m_pObjectUpdateContext->m_pPhysicObject;
-
-		if (!pPhysicObject)
-			return;
+		auto pPhysicObject = GetOwnerPhysicObject();
 
 		if (!pPhysicObject->IsStaticObject())
 			return;

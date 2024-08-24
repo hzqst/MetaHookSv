@@ -484,5 +484,11 @@
     <ClInclude Include="PhysicUTIL.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
+    <ClInclude Include="BaseDynamicObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletDynamicObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

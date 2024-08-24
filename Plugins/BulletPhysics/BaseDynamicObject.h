@@ -5,22 +5,29 @@
 #include "BasePhysicManager.h"
 #include "PhysicUTIL.h"
 
-class CBaseStaticObject : public IStaticObject
+class CBaseDynamicObject : public IDynamicObject
 {
 public:
-	CBaseStaticObject(const CStaticObjectCreationParameter& CreationParam)
+	CBaseDynamicObject(const CDynamicObjectCreationParameter& CreationParam)
 	{
 		m_entindex = CreationParam.m_entindex;
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
 		m_model_scaling = CreationParam.m_model_scaling;
-		m_configId = CreationParam.m_pStaticObjectConfig->configId;
-		m_flags = CreationParam.m_pStaticObjectConfig->flags;
-		m_debugDrawLevel = CreationParam.m_pStaticObjectConfig->debugDrawLevel;
+		m_configId = CreationParam.m_pDynamicObjectConfig->configId;
+		m_flags = CreationParam.m_pDynamicObjectConfig->flags;
+		m_debugDrawLevel = CreationParam.m_pDynamicObjectConfig->debugDrawLevel;
 	}
 
-	~CBaseStaticObject()
+	~CBaseDynamicObject()
 	{
+		for (auto pConstraint : m_Constraints)
+		{
+			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
+		}
+
+		m_Constraints.clear();
+
 		for (auto pRigidBody : m_RigidBodies)
 		{
 			ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
@@ -94,7 +101,7 @@ public:
 
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override
 	{
-		if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && ctx->m_staticObjectLevel >= m_debugDrawLevel )
+		if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && ctx->m_staticObjectLevel >= m_debugDrawLevel)
 			return true;
 
 		return false;
@@ -123,15 +130,15 @@ public:
 
 	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override
 	{
-		if (pPhysicObjectConfig->type != PhysicObjectType_StaticObject)
+		if (pPhysicObjectConfig->type != PhysicObjectType_DynamicObject)
 		{
 			gEngfuncs.Con_DPrintf("Rebuild: pPhysicObjectConfig->type mismatch!\n");
 			return false;
 		}
 
-		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicObjectConfig;
+		auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicObjectConfig;
 
-		CStaticObjectCreationParameter CreationParam;
+		CDynamicObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = GetClientEntity();
 		CreationParam.m_entindex = GetEntityIndex();
@@ -143,7 +150,7 @@ public:
 			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
 		}
 
-		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
+		CreationParam.m_pDynamicObjectConfig = pDynamicObjectConfig;
 
 		if (GetModel()->type == mod_studio)
 			ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), GetClientEntityState(), GetModel(), m_entindex, 0);
@@ -153,6 +160,8 @@ public:
 		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
 		RebuildRigidBodies(CreationParam);
+
+		RebuildConstraints(CreationParam);
 
 		return true;
 	}
@@ -223,6 +232,11 @@ public:
 		{
 			pRigidBody->TransferOwnership(entindex);
 		}
+
+		for (auto pConstraint : m_Constraints)
+		{
+			pConstraint->TransferOwnership(entindex);
+		}
 	}
 
 	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override
@@ -279,19 +293,40 @@ public:
 
 	IPhysicConstraint* GetConstraintByName(const std::string& name) override
 	{
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetName() == name)
+			{
+				return pConstraint;
+			}
+		}
+
 		return nullptr;
 	}
 
 	IPhysicConstraint* GetConstraintByComponentId(int id) override
 	{
+		for (auto pConstraint : m_Constraints)
+		{
+			if (pConstraint->GetPhysicComponentId() == id)
+			{
+				return pConstraint;
+			}
+		}
+
 		return nullptr;
 	}
 
 public:
 
-	void CreateRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
 	{
-		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		return GetRigidBodyByName(name);
+	}
+
+	void CreateRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pRigidBodyConfig : CreationParam.m_pDynamicObjectConfig->RigidBodyConfigs)
 		{
 			auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
 
@@ -310,11 +345,27 @@ public:
 		}
 	}
 
-	virtual IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
+	void CreateConstraints(const CDynamicObjectCreationParameter& CreationParam)
+	{
+		for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
+		{
+			auto pConstraint = CreateConstraint(CreationParam, pConstraintConfig.get(), 0);
+
+			if (pConstraint)
+			{
+				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+				m_Constraints.emplace_back(pConstraint);
+			}
+		}
+	}
+
+	virtual IPhysicRigidBody* CreateRigidBody(const CDynamicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
+	virtual IPhysicConstraint* CreateConstraint(const CDynamicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
 
 protected:
 
-	void RebuildRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	void RebuildRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
 	{
 		std::map<int, int> configIdToComponentIdMap;
 
@@ -327,7 +378,7 @@ protected:
 
 		m_RigidBodies.clear();
 
-		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		for (const auto& pRigidBodyConfig : CreationParam.m_pDynamicObjectConfig->RigidBodyConfigs)
 		{
 			auto found = configIdToComponentIdMap.find(pRigidBodyConfig->configId);
 
@@ -358,14 +409,58 @@ protected:
 		}
 	}
 
+	void RebuildConstraints(const CDynamicObjectCreationParameter& CreationParam)
+	{
+		std::map<int, int> configIdToComponentIdMap;
+
+		for (auto pConstraint : m_Constraints)
+		{
+			configIdToComponentIdMap[pConstraint->GetPhysicConfigId()] = pConstraint->GetPhysicComponentId();
+
+			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
+		}
+		m_Constraints.clear();
+
+		for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
+		{
+			auto found = configIdToComponentIdMap.find(pConstraintConfig->configId);
+
+			if (found != configIdToComponentIdMap.end())
+			{
+				auto oldPhysicComponentId = found->second;
+
+				auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfig.get(), oldPhysicComponentId);
+
+				if (pNewConstraint)
+				{
+					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
+
+					m_Constraints.emplace_back(pNewConstraint);
+				}
+			}
+			else
+			{
+				auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfig.get(), 0);
+
+				if (pNewConstraint)
+				{
+					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
+
+					m_Constraints.emplace_back(pNewConstraint);
+				}
+			}
+		}
+	}
+
 public:
 
 	int m_entindex{};
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
-	int m_flags{ PhysicObjectFlag_StaticObject };
+	int m_flags{ PhysicObjectFlag_DynamicObject };
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
 	std::vector<IPhysicRigidBody*> m_RigidBodies{};
+	std::vector<IPhysicConstraint*> m_Constraints;
 };

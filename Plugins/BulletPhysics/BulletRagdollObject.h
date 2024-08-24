@@ -142,10 +142,7 @@ public:
 		if (!m_pInternalRigidBody)
 			return;
 
-		auto pPhysicObject = ComponentUpdateContext->m_pObjectUpdateContext->m_pPhysicObject;
-
-		if (!pPhysicObject)
-			return;
+		auto pPhysicObject = GetOwnerPhysicObject();
 
 		if (!pPhysicObject->IsRagdollObject())
 			return;
@@ -264,7 +261,7 @@ public:
 
 		bool bConstraintStateChanged = false;
 
-		auto pPhysicObject = ComponentUpdateContext->m_pObjectUpdateContext->m_pPhysicObject;
+		auto pPhysicObject = GetOwnerPhysicObject();
 
 		if (!pPhysicObject)
 			return;
@@ -326,14 +323,13 @@ public:
 			ComponentUpdateContext->m_pObjectUpdateContext->m_bConstraintStateChanged = true;
 		}
 	}
-
 };
 
 class CBulletBarnacleDragForceAction : public CPhysicComponentAction
 {
 public:
-	CBulletBarnacleDragForceAction(btRigidBody* pRigidBody, int flags, int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
-		CPhysicComponentAction(pRigidBody->getUserIndex(), flags),
+	CBulletBarnacleDragForceAction(IPhysicObject* pPhysicObject, int entindex, int flags, int physicComponentId, int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
+		CPhysicComponentAction(pPhysicObject, entindex, flags, physicComponentId),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flForceMagnitude(flForceMagnitude),
 		m_flExtraHeight(flExtraHeight)
@@ -351,15 +347,7 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
-
-		if (!pPhysicComponent)
-			return false;
-
-		if (!pPhysicComponent->IsRigidBody())
-			return false;
-
-		auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+		auto pRigidBody = GetPhysicComponentAsRigidBody();
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
@@ -371,11 +359,11 @@ public:
 		{
 			vec3_t vecPhysicObjectOrigin{ 0 };
 
-			if (ctx->m_pPhysicObject->GetGoldSrcOrigin(vecPhysicObjectOrigin))
+			if (m_pPhysicObject->GetGoldSrcOriginAngles(vecPhysicObjectOrigin, nullptr))
 			{
 				vec3_t vecClientEntityOrigin{ 0 };
 
-				VectorCopy(ctx->m_pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+				VectorCopy(m_pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
 
 				if (vecPhysicObjectOrigin[2] < vecClientEntityOrigin[2] + m_flExtraHeight)
 				{
@@ -402,8 +390,8 @@ public:
 class CBulletBarnacleChewForceAction : public CPhysicComponentAction
 {
 public:
-	CBulletBarnacleChewForceAction(btRigidBody* pRigidBody, int flags, int iBarnacleIndex, float flForceMagnitude, float flInterval) :
-		CPhysicComponentAction(pRigidBody->getUserIndex(), flags),
+	CBulletBarnacleChewForceAction(IPhysicObject* pPhysicObject, int entindex, int flags, int physicComponentId, int iBarnacleIndex, float flForceMagnitude, float flInterval) :
+		CPhysicComponentAction(pPhysicObject, entindex, flags, physicComponentId),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flForceMagnitude(flForceMagnitude),
 		m_flInterval(flInterval)
@@ -421,16 +409,15 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = (btRigidBody*)ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
-
-		if (!pRigidBody)
-			return false;
+		auto pRigidBody = GetPhysicComponentAsRigidBody();
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
 			if (gEngfuncs.GetClientTime() > m_flNextChewTime)
 			{
-				pRigidBody->applyCentralImpulse(btVector3(0, 0, m_flForceMagnitude));
+				vec3_t vecForce = { 0, 0, m_flForceMagnitude };
+
+				pRigidBody->ApplyCentralForce(vecForce);
 
 				m_flNextChewTime = gEngfuncs.GetClientTime() + m_flInterval;
 			}
@@ -448,8 +435,8 @@ public:
 class CBulletBarnacleConstraintLimitAdjustmentAction : public CPhysicComponentAction
 {
 public:
-	CBulletBarnacleConstraintLimitAdjustmentAction(btTypedConstraint* pConstraint, int flags, int iBarnacleIndex, float flInterval, float flExtraHeight) :
-		CPhysicComponentAction(pConstraint->getUserConstraintId(), flags),
+	CBulletBarnacleConstraintLimitAdjustmentAction(IPhysicObject* pPhysicObject, int entindex, int flags, int physicComponentId, int iBarnacleIndex, float flInterval, float flExtraHeight) :
+		CPhysicComponentAction(pPhysicObject, entindex, flags, physicComponentId),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flInterval(flInterval),
 		m_flExtraHeight(flExtraHeight)
@@ -467,15 +454,7 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
-
-		if (!pPhysicComponent)
-			return false;
-
-		if (!pPhysicComponent->IsConstraint())
-			return false;
-
-		auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
+		auto pConstraint = GetPhysicComponentAsConstraint();
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
@@ -587,30 +566,6 @@ public:
 	float m_flNextAdjustmentTime{ 0 };
 };
 
-class CBulletCameraControl
-{
-public:
-	CBulletCameraControl()
-	{
-		m_pRigidBody = nullptr;
-		m_vecOrigin = btVector3(0, 0, 0);
-		m_vecAngles = btVector3(0, 0, 0);
-	}
-
-	CBulletCameraControl(const CClientCameraControlConfig& pCameraControlConfig)
-	{
-		m_pRigidBody = nullptr;
-		m_vecOrigin = btVector3(pCameraControlConfig.origin[0], pCameraControlConfig.origin[1], pCameraControlConfig.origin[2]);
-		m_vecAngles = btVector3(pCameraControlConfig.angles[0], pCameraControlConfig.angles[1], pCameraControlConfig.angles[2]);
-
-		Vector3GoldSrcToBullet(m_vecOrigin);
-	}
-
-	btRigidBody* m_pRigidBody{};
-	btVector3 m_vecOrigin{};
-	btVector3 m_vecAngles{};
-};
-
 class CBulletRagdollObject : public CBaseRagdollObject
 {
 public:
@@ -626,7 +581,8 @@ public:
 		CreateFloaters(CreationParam);
 		SetupNonKeyBones(CreationParam);
 
-		InitCameraControl(CreationParam);
+		InitCameraControl(&CreationParam.m_pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+		InitCameraControl(&CreationParam.m_pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
 	}
 
 	~CBulletRagdollObject()
@@ -634,21 +590,23 @@ public:
 
 	}
 
-	bool GetGoldSrcOrigin(float* v) override
+	bool GetGoldSrcOriginAngles(float* origin, float* angles) override
 	{
-		if (m_ThirdPersionViewCameraControl.m_pRigidBody)
+		if (m_ThirdPersonViewCameraControl.m_physicComponentId)
 		{
-			const auto& worldTransform = m_ThirdPersionViewCameraControl.m_pRigidBody->getWorldTransform();
+			 auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
 
-			const auto& worldOrigin = worldTransform.getOrigin();
+			 if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			 {
+				 auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			v[0] = worldOrigin.x();
-			v[1] = worldOrigin.y();
-			v[2] = worldOrigin.z();
+				 return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
+			 }		
+		}
 
-			Vec3BulletToGoldSrc(v);
-
-			return true;
+		if (GetRigidBodyCount() == 1)
+		{
+			return GetRigidBodyByIndex(0)->GetGoldSrcOriginAngles(origin, angles);
 		}
 
 		return false;
@@ -690,38 +648,30 @@ public:
 
 	bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override
 	{
-		if (m_ThirdPersionViewCameraControl.m_pRigidBody)
+		if (m_ThirdPersonViewCameraControl.m_physicComponentId)
 		{
-			vec3_t vecSavedSimOrgigin;
+			auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
 
-			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+			if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			{
+				auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			const auto& worldTrans = m_ThirdPersionViewCameraControl.m_pRigidBody->getWorldTransform();
+				vec3_t vecGoldSrcNewOrigin;
 
-			btTransform localTrans;
-			localTrans.setIdentity();
-			localTrans.setOrigin(m_FirstPersionViewCameraControl.m_vecOrigin);
-			EulerMatrix(m_FirstPersionViewCameraControl.m_vecAngles, localTrans.getBasis());
+				pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, nullptr);
 
-			btTransform worldTransNew;
-			worldTransNew.mult(worldTrans, localTrans);
+				vec3_t vecSavedSimOrgigin;
 
-			const auto& vecOrigin = worldTransNew.getOrigin();
+				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
 
-			vec3_t vecGoldSrcOrigin;
-			vecGoldSrcOrigin[0] = vecOrigin.getX();
-			vecGoldSrcOrigin[1] = vecOrigin.getY();
-			vecGoldSrcOrigin[2] = vecOrigin.getZ();
+				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
 
-			Vec3BulletToGoldSrc(vecGoldSrcOrigin);
+				callback(pparams);
 
-			VectorCopy(vecGoldSrcOrigin, pparams->simorg);
+				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
 
-			callback(pparams);
-
-			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-
-			return true;
+				return true;
+			}
 		}
 
 		return false;
@@ -729,53 +679,37 @@ public:
 
 	bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override
 	{
-		if (m_FirstPersionViewCameraControl.m_pRigidBody)
+		if (m_FirstPersonViewCameraControl.m_physicComponentId)
 		{
-			const auto& worldTrans = m_FirstPersionViewCameraControl.m_pRigidBody->getWorldTransform();
+			auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
 
-			btTransform localTrans;
-			localTrans.setIdentity();
-			localTrans.setOrigin(m_FirstPersionViewCameraControl.m_vecOrigin);
-			EulerMatrix(m_FirstPersionViewCameraControl.m_vecAngles, localTrans.getBasis());
+			if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			{
+				auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			btTransform worldTransNew;
-			worldTransNew.mult(worldTrans, localTrans);
+				vec3_t vecGoldSrcNewOrigin, vecGoldSrcNewAngles;
 
-			btVector3 vecAngles;
-			MatrixEuler(worldTransNew.getBasis(), vecAngles);
+				pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles);
 
-			const auto& vecOrigin = worldTransNew.getOrigin();
+				vec3_t vecSavedSimOrgigin;
+				vec3_t vecSavedClientViewAngles;
+				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
+				int iSavedHealth = pparams->health;
 
-			vec3_t vecGoldSrcAngles;
-			vecGoldSrcAngles[0] = -vecAngles.getX();
-			vecGoldSrcAngles[1] = vecAngles.getY();
-			vecGoldSrcAngles[2] = vecAngles.getZ();
+				pparams->viewheight[2] = 0;
+				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
+				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
+				pparams->health = 1;
 
-			vec3_t vecGoldSrcOrigin;
-			vecGoldSrcOrigin[0] = vecOrigin.getX();
-			vecGoldSrcOrigin[1] = vecOrigin.getY();
-			vecGoldSrcOrigin[2] = vecOrigin.getZ();
+				callback(pparams);
 
-			Vec3BulletToGoldSrc(vecGoldSrcOrigin);
+				pparams->health = iSavedHealth;
+				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
 
-			vec3_t vecSavedSimOrgigin;
-			vec3_t vecSavedClientViewAngles;
-			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-			VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-			int iSavedHealth = pparams->health;
-
-			pparams->viewheight[2] = 0;
-			VectorCopy(vecGoldSrcOrigin, pparams->simorg);
-			VectorCopy(vecGoldSrcAngles, pparams->cl_viewangles);
-			pparams->health = 1;
-
-			callback(pparams);
-
-			pparams->health = iSavedHealth;
-			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-			VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-
-			return true;
+				return true;
+			}
 		}
 		return false;
 	}
@@ -812,7 +746,13 @@ public:
 		}
 	}
 
-private:
+	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
+	{
+		CBaseRagdollObject::Update(ObjectUpdateContext);
+		CheckConstraintLinearErrors(ObjectUpdateContext);
+	}
+
+protected:
 
 	IPhysicAction* CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig) override
 	{
@@ -820,42 +760,57 @@ private:
 		{
 		case PhysicAction_BarnacleDragForce:
 		{
-			auto pRigidBodyA = (btRigidBody*)GetRigidBodyByName(pActionConfig->rigidbodyA);
+			auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbodyA);
 
 			if (!pRigidBodyA)
+			{
+				gEngfuncs.Con_DPrintf("CreateActionFromConfig: rigidbody \"%s\" not found!\n", pActionConfig->rigidbodyA.c_str());
 				return nullptr;
+			}
 
 			return new CBulletBarnacleDragForceAction(
-				pRigidBodyA,
+				this,
+				GetEntityIndex(),
 				pActionConfig->flags,
+				pRigidBodyA->GetPhysicComponentId(),
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude],
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight]);
 		}
 		case PhysicAction_BarnacleChewForce:
 		{
-			auto pRigidBodyA = (btRigidBody*)GetRigidBodyByName(pActionConfig->rigidbodyA);
+			auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbodyA);
 
 			if (!pRigidBodyA)
+			{
+				gEngfuncs.Con_DPrintf("CreateActionFromConfig: rigidbody \"%s\" not found!\n", pActionConfig->rigidbodyA.c_str());
 				return nullptr;
+			}
 
 			return new CBulletBarnacleChewForceAction(
-				pRigidBodyA,
+				this,
+				GetEntityIndex(),
 				pActionConfig->flags,
+				pRigidBodyA->GetPhysicComponentId(),
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude],
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval]);
 		}
 		case PhysicAction_BarnacleConstraintLimitAdjustment:
 		{
-			auto pConstraint = (btTypedConstraint*)GetConstraintByName(pActionConfig->constraint);
+			auto pConstraint = GetConstraintByName(pActionConfig->constraint);
 
 			if (!pConstraint)
+			{
+				gEngfuncs.Con_DPrintf("CreateActionFromConfig: constraint \"%s\" not found!\n", pActionConfig->constraint.c_str());
 				return nullptr;
+			}
 
 			return new CBulletBarnacleConstraintLimitAdjustmentAction(
-				pConstraint,
+				this,
+				GetEntityIndex(),
 				pActionConfig->flags,
+				pConstraint->GetPhysicComponentId(),
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval]);
@@ -865,27 +820,27 @@ private:
 		return nullptr;
 	}
 
-#if 0//TODO use Update() instead
 	void CheckConstraintLinearErrors(CPhysicObjectUpdateContext* ctx)
 	{
 		if (ctx->m_bRigidbodyPoseChanged)
 			return;
 
-		bool bShouldResetPose = false;
-
 		for (auto pConstraint : m_Constraints)
 		{
-			if (!pConstraint->isEnabled())
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_NonNative)
 				continue;
 
-			auto pSharedUserData = GetSharedUserDataFromConstraint(pConstraint);
-
-			if (pSharedUserData->m_flags & PhysicConstraintFlag_NonNative)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_NoResetPoseOnErrorCorrection)
 				continue;
 
-			auto& pRigidBodyA = pConstraint->getRigidBodyA();
+			auto pInternalConstraint = (btTypedConstraint *)pConstraint->GetInternalConstraint();
 
-			auto& pRigidBodyB = pConstraint->getRigidBodyB();
+			if (!pInternalConstraint->isEnabled())
+				continue;
+
+			auto& pRigidBodyA = pInternalConstraint->getRigidBodyA();
+
+			auto& pRigidBodyB = pInternalConstraint->getRigidBodyA();
 
 			bool bShouldPerformCheck = false;
 
@@ -904,27 +859,19 @@ private:
 
 			if (bShouldPerformCheck)
 			{
-				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pConstraint);
+				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pInternalConstraint);
 
-				if (errorMagnitude > pSharedUserData->m_maxTolerantLinearError)
+				if (errorMagnitude > pConstraint->GetMaxTolerantLinearError())
 				{
-					bShouldResetPose = true;
-					break;
+					ResetPose(GetClientEntityState());
+
+					ctx->m_bRigidbodyPoseChanged = true;
+
+					return;
 				}
 			}
 		}
-
-		if (bShouldResetPose)
-		{
-			ResetPose(GetClientEntityState());
-
-			ctx->m_bRigidbodyPoseChanged = true;
-		}
 	}
-
-	//TODO use Update instead
-
-#endif
 
 	IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) override
 	{
@@ -1207,12 +1154,15 @@ private:
 
 	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig)
 	{
-
+		//TODO
 	}
 
 	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam)
 	{
-		auto pbones = (mstudiobone_t*)((byte*)CreationParam.m_studiohdr + CreationParam.m_studiohdr->boneindex);
+		if (!CreationParam.m_studiohdr)
+			return;
+
+		const auto pbones = (mstudiobone_t*)((byte*)CreationParam.m_studiohdr + CreationParam.m_studiohdr->boneindex);
 
 		//Save bone relative transform
 
@@ -1249,18 +1199,19 @@ private:
 		}
 	}
 
-	void InitCameraControl(const CRagdollObjectCreationParameter& CreationParam)
+	void InitCameraControl(const CClientCameraControlConfig *pCameraControlConfig, CPhysicCameraControl &CameraControl)
 	{
-		m_FirstPersionViewCameraControl = CreationParam.m_pRagdollObjectConfig->FirstPersionViewCameraControlConfig;
-		m_FirstPersionViewCameraControl.m_pRigidBody = (btRigidBody*)GetRigidBodyByName(CreationParam.m_pRagdollObjectConfig->FirstPersionViewCameraControlConfig.rigidbody);
-
-		m_ThirdPersionViewCameraControl = CreationParam.m_pRagdollObjectConfig->ThirdPersionViewCameraControlConfig;
-		m_ThirdPersionViewCameraControl.m_pRigidBody = (btRigidBody*)GetRigidBodyByName(CreationParam.m_pRagdollObjectConfig->ThirdPersionViewCameraControlConfig.rigidbody);
+		CameraControl = (*pCameraControlConfig);
+		
+		auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
+		
+		if (pRigidBody)
+		{
+			CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
+		}
 	}
 
 public:
 
-	CBulletCameraControl m_FirstPersionViewCameraControl;
-	CBulletCameraControl m_ThirdPersionViewCameraControl;
 	btTransform m_BoneRelativeTransform[128]{};
 };

@@ -110,6 +110,16 @@ public:
 		return false;
 	}
 
+	int GetRigidBodyCount() const override
+	{
+		return (int)m_RigidBodies.size();
+	}
+
+	IPhysicRigidBody* GetRigidBodyByIndex(int index) const override
+	{
+		return m_RigidBodies.at(index);
+	}
+
 	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override
 	{
 		for (auto pRigidBody : m_RigidBodies)
@@ -137,8 +147,6 @@ public:
 
 		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicObjectConfig;
 
-		ClientPhysicManager()->SetupBonesForRagdollEx(GetClientEntity(), GetClientEntityState(), GetModel(), GetEntityIndex(), GetPlayerIndex(), pRagdollObjectConfig->IdleAnimConfig);
-
 		CRagdollObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = GetClientEntity();
@@ -152,6 +160,9 @@ public:
 		}
 
 		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
+
+		if (GetModel()->type == mod_studio)
+			ClientPhysicManager()->SetupBonesForRagdollEx(GetClientEntity(), GetClientEntityState(), GetModel(), GetEntityIndex(), GetPlayerIndex(), pRagdollObjectConfig->IdleAnimConfig);
 
 		CPhysicComponentFilters filters;
 
@@ -320,6 +331,21 @@ public:
 		return true;
 	}
 
+	bool SetupJiggleBones(studiohdr_t* studiohdr) override
+	{
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->SetupJiggleBones(studiohdr);
+		}
+
+		return true;
+	}
+
+	bool MergeBones(studiohdr_t* studiohdr) override
+	{
+		return false;
+	}
+
 	bool ResetPose(entity_state_t* curstate) override
 	{
 		auto mod = GetModel();
@@ -332,7 +358,8 @@ public:
 		if (!studiohdr)
 			return false;
 
-		ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
+		if (GetModel()->type == mod_studio)
+			ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 
 		for (auto pRigidBody : m_RigidBodies)
 		{
@@ -449,21 +476,6 @@ public:
 		return m_iGargantuaIndex;
 	}
 
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override
-	{
-		for (auto pRigidBody : m_RigidBodies)
-		{
-			pRigidBody->SetupJiggleBones(studiohdr);
-		}
-
-		return true;
-	}
-
-	bool MergeBones(studiohdr_t* studiohdr) override
-	{
-		return false;
-	}
-
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
 	{
 		for (auto pRigidBody : m_RigidBodies)
@@ -515,6 +527,11 @@ public:
 		for (auto pConstraint : m_Constraints)
 		{
 			pConstraint->TransferOwnership(entindex);
+		}
+
+		for (auto pAction : m_Actions)
+		{
+			pAction->TransferOwnership(entindex);
 		}
 	}
 
@@ -621,7 +638,7 @@ public:
 			{
 				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
 
-				CPhysicObjectUpdateContext ObjectUpdateContext(GetEntityIndex(), this);
+				CPhysicObjectUpdateContext ObjectUpdateContext;
 
 				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
 
@@ -629,7 +646,9 @@ public:
 
 				m_RigidBodies.emplace_back(pRigidBody);
 
-				if (pRigidBodyConfig->boneindex >= 0)
+				if (CreationParam.m_studiohdr &&
+					pRigidBodyConfig->boneindex >= 0 &&
+					pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
 				{
 					m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
 				}
@@ -831,6 +850,7 @@ public:
 	int m_iActivityType{ 0 };
 	int m_iBarnacleIndex{ 0 };
 	int m_iGargantuaIndex{ 0 };
+
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 
@@ -842,4 +862,7 @@ public:
 	std::vector<IPhysicAction *> m_Actions;
 	std::vector<IPhysicRigidBody *> m_RigidBodies;
 	std::vector<IPhysicConstraint *> m_Constraints;
+
+	CPhysicCameraControl m_FirstPersonViewCameraControl;
+	CPhysicCameraControl m_ThirdPersonViewCameraControl;
 };

@@ -10,6 +10,7 @@
 #include "ClientEntityManager.h"
 #include "BulletPhysicManager.h"
 #include "BulletStaticObject.h"
+#include "BulletDynamicObject.h"
 #include "BulletRagdollObject.h"
 
 #include <vgui_controls/Controls.h>
@@ -375,26 +376,105 @@ bool CBulletRigidBody::MergeBones(studiohdr_t* studiohdr)
 	return false;
 }
 
-
-void CBulletRigidBody::TransferOwnership(int entindex)
-{
-	CBasePhysicRigidBody::TransferOwnership(entindex);
-
-	//We don't need this
-	/*if (m_pInternalRigidBody)
-	{
-		auto pMotionState = GetMotionStateFromRigidBody(m_pInternalRigidBody);
-
-		if (pMotionState)
-		{
-			pMotionState->m_pPhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
-		}
-	}*/
-}
-
 void* CBulletRigidBody::GetInternalRigidBody()
 {
 	return m_pInternalRigidBody;
+}
+
+bool CBulletRigidBody::GetGoldSrcOriginAngles(float* origin, float* angles)
+{
+	auto ent = GetOwnerPhysicObject()->GetClientEntity();
+
+	const auto& worldTrans = m_pInternalRigidBody->getWorldTransform();
+
+	if (origin)
+	{
+		const auto& vecOrigin = worldTrans.getOrigin();
+
+		origin[0] = vecOrigin.getX();
+		origin[1] = vecOrigin.getY();
+		origin[2] = vecOrigin.getZ();
+
+		Vec3BulletToGoldSrc(origin);
+	}
+
+	if (angles)
+	{
+		btVector3 vecAngles;
+		MatrixEuler(worldTrans.getBasis(), vecAngles);
+
+		if (ent->curstate.solid == SOLID_BSP)
+		{
+			vecAngles.setX(-vecAngles.x());
+		}
+
+		angles[0] = vecAngles.getX();
+		angles[1] = vecAngles.getY();
+		angles[2] = vecAngles.getZ();
+
+		//Clamp to -3600~3600
+		for (int i = 0; i < 3; i++)
+		{
+			if (angles[i] < -3600.0f || angles[i] > 3600.0f)
+				angles[i] = fmod(angles[i], 3600.0f);
+		}
+	}
+
+	return true;
+}
+
+bool CBulletRigidBody::GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float* angles)
+{
+	auto ent = GetOwnerPhysicObject()->GetClientEntity();
+
+	const auto& worldTrans = m_pInternalRigidBody->getWorldTransform();
+
+	auto localOrigin = GetVector3FromVec3(localoffset_origin);
+	auto localAngles = GetVector3FromVec3(localoffset_angles);
+
+	Vector3GoldSrcToBullet(localOrigin);
+
+	btTransform localTrans;
+	localTrans.setIdentity();
+	localTrans.setOrigin(localOrigin);
+	EulerMatrix(localAngles, localTrans.getBasis());
+
+	btTransform worldTransNew;
+	worldTransNew.mult(worldTrans, localTrans);
+
+	if (origin)
+	{
+		const auto& vecNewOrigin = worldTransNew.getOrigin();
+
+		origin[0] = vecNewOrigin.getX();
+		origin[1] = vecNewOrigin.getY();
+		origin[2] = vecNewOrigin.getZ();
+
+		Vec3BulletToGoldSrc(origin);
+	}
+
+	if (angles)
+	{
+		btVector3 vecNewAngles;
+		MatrixEuler(worldTransNew.getBasis(), vecNewAngles);
+
+		if (ent->curstate.solid == SOLID_BSP)
+		{
+			vecNewAngles.setX(-vecNewAngles.x());
+		}
+
+		angles[0] = vecNewAngles.getX();
+		angles[1] = vecNewAngles.getY();
+		angles[2] = vecNewAngles.getZ();
+
+		//Clamp to -3600~3600
+		for (int i = 0; i < 3; i++)
+		{
+			if (angles[i] < -3600.0f || angles[i] > 3600.0f)
+				angles[i] = fmod(angles[i], 3600.0f);
+		}
+	}
+	return true;
 }
 
 float CBulletRigidBody::GetMass() const
@@ -653,6 +733,11 @@ void CBulletConstraint::ExtendLinearLimit(int axis, float value)
 	//TODO...
 
 	Sys_Error("ExtendLinearLimit TODO")
+}
+
+float CBulletConstraint::GetMaxTolerantLinearError() const
+{
+	return m_maxTolerantLinearError;
 }
 
 void* CBulletConstraint::GetInternalConstraint()
@@ -1661,36 +1746,95 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	return nullptr;
 }
 
+/*
+	Upload GoldSrc origin and angles to bullet engine
+*/
 void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 {
-	auto entindex = GetPhysicObject()->GetEntityIndex();
 	auto ent = GetPhysicObject()->GetClientEntity();
 
-	btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
-
-	Vector3GoldSrcToBullet(vecOrigin);
-
-	btTransform entityTrans;
-	entityTrans.setIdentity();
-
-	entityTrans.setOrigin(vecOrigin);
-
-	btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
-
-	//Brush uses reverted pitch
-	if (ent->curstate.solid == SOLID_BSP)
+	if (GetPhysicObject()->IsStaticObject())
 	{
-		vecAngles.setX(-vecAngles.x());
+		btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
+
+		Vector3GoldSrcToBullet(vecOrigin);
+
+		btTransform entityTrans;
+		entityTrans.setIdentity();
+
+		entityTrans.setOrigin(vecOrigin);
+
+		btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
+
+		//Brush uses reverted pitch
+		if (ent->curstate.solid == SOLID_BSP)
+		{
+			vecAngles.setX(-vecAngles.x());
+		}
+
+		EulerMatrix(vecAngles, entityTrans.getBasis());
+
+		worldTrans.mult(entityTrans, m_offsetmatrix);
 	}
+	else
+	{
+		if (m_worldTransformInitialized)
+		{
+			worldTrans = m_worldTransform;
+		}
+		else
+		{
+			btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
 
-	EulerMatrix(vecAngles, entityTrans.getBasis());
+			Vector3GoldSrcToBullet(vecOrigin);
 
-	worldTrans.mult(entityTrans, m_offsetmatrix);
+			btTransform entityTrans;
+			entityTrans.setIdentity();
+
+			entityTrans.setOrigin(vecOrigin);
+
+			btVector3 vecAngles(ent->curstate.angles[0], ent->curstate.angles[1], ent->curstate.angles[2]);
+
+			//Brush uses reverted pitch
+			if (ent->curstate.solid == SOLID_BSP)
+			{
+				vecAngles.setX(-vecAngles.x());
+			}
+
+			EulerMatrix(vecAngles, worldTrans.getBasis());
+
+			m_worldTransform = worldTrans;
+			m_worldTransformInitialized = true;
+		}
+	}
 }
 
+/*
+	Download GoldSrc origin and angles from bullet engine
+*/
 void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
 {
+	if (GetPhysicObject()->IsStaticObject())
+		return;
 
+	if (GetPhysicObject()->GetRigidBodyCount() != 1)
+		return;
+
+	auto ent = GetPhysicObject()->GetClientEntity();
+
+	auto pRigidBody = GetPhysicObject()->GetRigidBodyByIndex(0);
+
+	vec3_t origin;
+	vec3_t angles;
+
+	if (pRigidBody->GetGoldSrcOriginAngles(origin, angles))
+	{
+		VectorCopy(origin, ent->origin);
+		VectorCopy(origin, ent->curstate.origin);
+
+		VectorCopy(angles, ent->angles);
+		VectorCopy(angles, ent->curstate.angles);
+	}
 }
 
 void CFollowConstraintMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -2549,20 +2693,26 @@ IStaticObject* CBulletPhysicManager::CreateStaticObject(const CStaticObjectCreat
 
 IDynamicObject* CBulletPhysicManager::CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam)
 {
-	return nullptr;
+	if (!CreationParam.m_pDynamicObjectConfig)
+	{
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pRagdollObjectConfig!\n");
+		return nullptr;
+	}
+
+	return new CBulletDynamicObject(CreationParam);
 }
 
 IRagdollObject* CBulletPhysicManager::CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam)
 {
-	if (!CreationParam.m_studiohdr)
-	{
-		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_studiohdr!\n");
-		return nullptr;
-	}
-
 	if (!CreationParam.m_pRagdollObjectConfig)
 	{
 		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pRagdollObjectConfig!\n");
+		return nullptr;
+	}
+
+	if (!CreationParam.m_studiohdr)
+	{
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_studiohdr!\n");
 		return nullptr;
 	}
 

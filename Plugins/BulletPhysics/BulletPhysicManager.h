@@ -109,6 +109,8 @@ public:
 	CBulletEntityMotionState(IPhysicObject* pPhysicObject) : CBulletBaseMotionState(pPhysicObject)
 	{
 		m_offsetmatrix.setIdentity();
+		m_worldTransform.setIdentity();
+		m_worldTransformInitialized = false;
 	}
 
 	CBulletEntityMotionState(IPhysicObject *pPhysicObject, const btTransform &offsetmatrix) : CBulletBaseMotionState(pPhysicObject), m_offsetmatrix(offsetmatrix)
@@ -126,6 +128,9 @@ public:
 	}
 
 	btTransform m_offsetmatrix;
+
+	mutable btTransform m_worldTransform;
+	mutable bool m_worldTransformInitialized;
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -191,9 +196,10 @@ public:
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
 	bool MergeBones(studiohdr_t* studiohdr) override;
 
-	void TransferOwnership(int entindex) override;
-
 	void* GetInternalRigidBody() override;
+
+	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
+	bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float* angles) override;
 
 	float GetMass() const override;
 
@@ -231,6 +237,7 @@ public:
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
 
 	void ExtendLinearLimit(int axis, float value) override;
+	float GetMaxTolerantLinearError() const override;
 
 	void* GetInternalConstraint() override;
 

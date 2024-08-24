@@ -36,16 +36,6 @@ public:
 class CPhysicObjectUpdateContext
 {
 public:
-	CPhysicObjectUpdateContext(int entindex, IPhysicObject* pPhysicObject) : m_entindex(entindex), m_pPhysicObject(pPhysicObject)
-	{
-
-	}
-
-	CPhysicObjectUpdateContext() = delete;
-
-	int m_entindex{};
-	IPhysicObject* m_pPhysicObject{};
-
 	bool m_bShouldFree{};
 	bool m_bRigidbodyKinematicChanged{ };
 	bool m_bConstraintStateChanged{ };
@@ -126,6 +116,25 @@ public:
 	int m_iHitPhysicComponentIndex{};
 };
 
+class CPhysicCameraControl
+{
+public:
+	CPhysicCameraControl()
+	{
+
+	}
+
+	CPhysicCameraControl(const CClientCameraControlConfig& pCameraControlConfig)
+	{
+		VectorCopy(pCameraControlConfig.origin, m_origin);
+		VectorCopy(pCameraControlConfig.origin, m_angles);
+	}
+
+	int m_physicComponentId{};
+	vec3_t m_origin{ 0 };
+	vec3_t m_angles{ 0 };
+};
+
 class IPhysicComponent : public IBaseInterface
 {
 public:
@@ -178,8 +187,6 @@ public:
 		return true;
 	}
 
-	virtual float GetMass() const = 0;
-
 	virtual void ApplyCentralForce(const vec3_t vecForce) = 0;
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
@@ -188,6 +195,10 @@ public:
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
 	virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
 	virtual void* GetInternalRigidBody() = 0;
+	virtual bool GetGoldSrcOriginAngles(float* origin, float * angles) = 0;
+	virtual bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float * angles) = 0;
+	virtual float GetMass() const = 0;
+
 };
 
 class IPhysicConstraint : public IPhysicComponent
@@ -207,6 +218,7 @@ public:
 	}
 
 	virtual void ExtendLinearLimit(int axis, float value) = 0;
+	virtual float GetMaxTolerantLinearError() const = 0;
 	virtual void* GetInternalConstraint() = 0;
 };
 
@@ -241,7 +253,7 @@ public:
 	virtual int GetEntityIndex() const = 0;
 	virtual cl_entity_t* GetClientEntity() const = 0;
 	virtual entity_state_t* GetClientEntityState() const = 0;
-	virtual bool GetGoldSrcOrigin(float* v) = 0;
+	virtual bool GetGoldSrcOriginAngles(float* origin, float* angles) = 0;
 	virtual model_t* GetModel() const = 0;
 	virtual float GetModelScaling() const = 0;
 	virtual uint64 GetPhysicObjectId() const = 0;
@@ -250,6 +262,8 @@ public:
 	virtual int GetPhysicConfigId() const = 0;
 	virtual bool IsClientEntityNonSolid() const = 0;
 	virtual bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext *ctx) const = 0;
+	virtual int GetRigidBodyCount() const = 0;
+	virtual IPhysicRigidBody *GetRigidBodyByIndex(int index) const = 0;
 
 	virtual bool EnumPhysicComponents(const fnEnumPhysicComponentCallback &callback) = 0;
 	virtual bool Rebuild(const CClientPhysicObjectConfig *pPhysicObjectConfig) = 0;
@@ -276,6 +290,10 @@ class IPhysicAction : public IBaseInterface
 public:
 	//return false to remove this action
 	virtual bool Update(CPhysicObjectUpdateContext* ctx) = 0;
+	virtual void TransferOwnership(int entindex) = 0;
+
+	virtual IPhysicObject* GetOwnerPhysicObject() const = 0;
+	virtual int GetOwnerEntityIndex() const = 0;
 	virtual int GetActionFlags() const = 0;
 };
 

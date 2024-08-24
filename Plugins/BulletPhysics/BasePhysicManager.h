@@ -26,6 +26,7 @@ public:
 class CDynamicObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
+	bool m_allowNonNativeRigidBody{};
 	CClientDynamicObjectConfig* m_pDynamicObjectConfig{};
 };
 
@@ -40,9 +41,24 @@ public:
 class CBasePhysicAction : public IPhysicAction
 {
 public:
-	CBasePhysicAction(int flags) : m_flags(flags)
+	CBasePhysicAction(IPhysicObject *pPhysicObject, int entindex, int flags) : m_pPhysicObject(pPhysicObject), m_entindex(entindex), m_flags(flags)
 	{
 
+	}
+
+	void TransferOwnership(int entindex) override
+	{
+		m_entindex = entindex;
+	}
+
+	IPhysicObject* GetOwnerPhysicObject() const override
+	{
+		return m_pPhysicObject;
+	}
+
+	int GetOwnerEntityIndex() const override
+	{
+		return m_entindex;
 	}
 
 	int GetActionFlags() const override
@@ -50,17 +66,45 @@ public:
 		return m_flags;
 	}
 
-	int m_flags;
+
+	IPhysicObject* m_pPhysicObject{};
+	int m_entindex{ };
+	int m_flags{};
 };
 
 class CPhysicComponentAction : public CBasePhysicAction
 {
 public:
-	CPhysicComponentAction(int id, int flags) : m_physicComponentId(id), CBasePhysicAction(flags)
+	CPhysicComponentAction(IPhysicObject* pPhysicObject, int entindex, int flags, int physicComponentId) : CBasePhysicAction(pPhysicObject, entindex, flags), m_physicComponentId(physicComponentId)
 	{
 
 	}
 
+	IPhysicComponent* GetPhysicComponent() const
+	{
+		return  ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
+	}
+
+
+	IPhysicRigidBody* GetPhysicComponentAsRigidBody() const
+	{
+		auto pPhysicComponent = GetPhysicComponent();
+
+		if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			return (IPhysicRigidBody*)pPhysicComponent;
+
+		return nullptr;
+	}
+
+	IPhysicConstraint* GetPhysicComponentAsConstraint() const
+	{
+		auto pPhysicComponent = GetPhysicComponent();
+
+		if (pPhysicComponent && pPhysicComponent->IsConstraint())
+			return (IPhysicConstraint*)pPhysicComponent;
+
+		return nullptr;
+	}
 	int m_physicComponentId{};
 };
 
@@ -112,6 +156,7 @@ public:
 	{
 		if (m_debugDrawLevel > 0 && ctx->m_ragdollObjectLevel > 0 && ctx->m_ragdollObjectLevel >= m_debugDrawLevel)
 			return true;
+
 		return false;
 	}
 
