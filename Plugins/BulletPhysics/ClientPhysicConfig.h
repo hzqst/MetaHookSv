@@ -169,6 +169,10 @@ public:
 	int type{ PhysicObjectType_None };
 	int flags{};
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	bool verifyBoneChunk{};
+	bool verifyStudioModel{};
+	int checkSumBoneChunk{};
+	int checkSumStudioModel{};
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 };
 

@@ -141,14 +141,8 @@ public:
 	{
 		return false;
 	}
-	virtual const char* GetTypeString() const
-	{
-		return "PhysicComponent";
-	}
-	virtual const char* GetTypeLocalizationTokenString() const
-	{
-		return "#BulletPhysics_PhysicComponent";
-	}
+	virtual const char* GetTypeString() const = 0;
+	virtual const char* GetTypeLocalizationTokenString() const = 0;
 
 	virtual int GetPhysicConfigId() const = 0;
 	virtual int GetPhysicComponentId() const = 0;
@@ -241,14 +235,8 @@ public:
 	{
 		return false;
 	}
-	virtual const char* GetTypeString() const
-	{
-		return "PhysicObject";
-	}
-	virtual const char * GetTypeLocalizationTokenString() const
-	{
-		return "#BulletPhysics_PhysicObject";
-	}
+	virtual const char* GetTypeString() const = 0;
+	virtual const char* GetTypeLocalizationTokenString() const = 0;
 
 	virtual int GetEntityIndex() const = 0;
 	virtual cl_entity_t* GetClientEntity() const = 0;

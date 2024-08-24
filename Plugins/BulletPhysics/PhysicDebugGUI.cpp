@@ -688,14 +688,6 @@ bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 
 	if (entindex > 0 && ent && model)
 	{
-		wchar_t wszModelName[64] = { 0 };
-
-		vgui::localize()->ConvertANSIToUnicode(model->name, wszModelName, sizeof(wszModelName));
-
-		auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_Entity"), entindex, wszModelName);
-
-		ShowInspectContentLabel(str.c_str());
-
 		auto curstate = &ent->curstate;
 
 		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
@@ -708,6 +700,16 @@ bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 			playerindex = ent->curstate.number;
 			curstate = R_GetPlayerState(playerindex);
 		}
+
+		wchar_t wszModelName[64] = { 0 };
+
+		auto modelname = UTIL_FormatAbsoluteModelName(model);
+
+		vgui::localize()->ConvertANSIToUnicode(modelname.c_str(), wszModelName, sizeof(wszModelName));
+
+		auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_Entity"), entindex, wszModelName);
+
+		ShowInspectContentLabel(str.c_str());
 
 		auto str2 = std::format(L"{0}: {1}, {2}: {3}, {4}: {5}", 
 			vgui::localize()->Find("#BulletPhysics_Sequence"), curstate->sequence, 
@@ -736,9 +738,11 @@ bool CPhysicDebugGUI::UpdateInspectedPhysicObject(bool bSelected)
 
 			auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
 
-			vgui::localize()->ConvertANSIToUnicode(pPhysicObject->GetModel()->name, wszModelName, sizeof(wszModelName));
+			auto modelname = UTIL_FormatAbsoluteModelName(pPhysicObject->GetModel());
 
-			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find("#BulletPhysics_PhysicObject"), entindex, wszModelName);
+			vgui::localize()->ConvertANSIToUnicode(modelname.c_str(), wszModelName, sizeof(wszModelName));
+
+			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find(pPhysicObject->GetTypeLocalizationTokenString()), entindex, wszModelName);
 
 			ShowInspectContentLabel(str.c_str());
 
