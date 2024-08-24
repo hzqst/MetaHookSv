@@ -25,3 +25,6 @@
 [submodule "thirdparty/Musa.Veil_fork"]
 	path = thirdparty/Musa.Veil_fork
 	url = https://github.com/hzqst/Musa.Veil
+[submodule "thirdparty/Chocobo1Hash"]
+	path = thirdparty/Chocobo1Hash
+	url = https://github.com/hzqst/Chocobo1Hash
