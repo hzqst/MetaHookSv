@@ -215,8 +215,13 @@ void CRigidBodyPage::OnCreateRigidBody()
 	pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
 	pRigidBodyConfig->collisionShape->type = PhysicShape_Sphere;
 	pRigidBodyConfig->collisionShape->size[0] = 3;
+	pRigidBodyConfig->collisionShape->configModified = true;
+
+	pRigidBodyConfig->configModified = true;
 
 	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
+	m_pPhysicObjectConfig->configModified = true;
 
 	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 
@@ -236,7 +241,11 @@ void CRigidBodyPage::OnCloneRigidBody(int configId)
 
 	pClonedRigidBodyConfig->name = std::format("{0}_Clone ({1})", pRigidBodyConfig->name, pClonedRigidBodyConfig->configId);
 
+	pClonedRigidBodyConfig->configModified = true;
+
 	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pClonedRigidBodyConfig);
+
+	m_pPhysicObjectConfig->configModified = true;
 
 	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
 
@@ -370,16 +379,16 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	if (!stricmp(command, "OK"))
 	{
 		SaveConfigFromControls();
-		PostActionSignal(new KeyValues("RefreshCollisionShape"));
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+		PostActionSignal(new KeyValues("RefreshCollisionShape"));
 		Close();
 		return;
 	}
 	else if (!stricmp(command, "Apply"))
 	{
 		SaveConfigFromControls();
-		PostActionSignal(new KeyValues("RefreshCollisionShape"));
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+		PostActionSignal(new KeyValues("RefreshCollisionShape"));
 		return;
 	}
 
@@ -510,6 +519,9 @@ void CCollisionShapeEditDialog::SaveConfigFromControls()
 	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesZ, angles[2], atof);
 
 	SAVE_FLOAT_FROM_TEXT_ENTRY(ResourcePath, resourcePath, std::string);
+#undef SAVE_FLOAT_FROM_TEXT_ENTRY
+
+	m_pCollisionShapeConfig->configModified = true;
 }
 
 int CCollisionShapeEditDialog::GetCurrentSelectedShapeType()
@@ -759,6 +771,10 @@ void CRigidBodyEditDialog::OnEditCollisionShape()
 	{
 		m_pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
 
+		m_pRigidBodyConfig->collisionShape->configModified = true;
+
+		m_pRigidBodyConfig->configModified = true;
+
 		ClientPhysicManager()->AddPhysicConfig(m_pRigidBodyConfig->collisionShape->configId, m_pRigidBodyConfig->collisionShape);
 	}
 
@@ -932,6 +948,8 @@ void CRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToRagdollObject);
 #undef SAVE_FROM_CHECK_BUTTON
+
+	m_pRigidBodyConfig->configModified = true;
 }
 
 int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()

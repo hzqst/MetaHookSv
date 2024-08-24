@@ -16,6 +16,7 @@ public:
 
 	int configId{};
 	int configType{ PhysicConfigType_None };
+	bool configModified{};
 };
 
 class CClientCollisionShapeConfig;

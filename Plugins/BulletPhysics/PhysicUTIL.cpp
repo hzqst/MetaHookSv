@@ -289,15 +289,18 @@ std::shared_ptr<CClientPhysicObjectConfig> UTIL_GetPhysicObjectConfigFromConfigI
 	return pPhysicObjectConfig;
 }
 
-bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhysicConfig, int rigidBodyConfigId)
+bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhysicObjectConfig, int rigidBodyConfigId)
 {
-	for (auto itor = pPhysicConfig->RigidBodyConfigs.begin(); itor != pPhysicConfig->RigidBodyConfigs.end(); )
+	for (auto itor = pPhysicObjectConfig->RigidBodyConfigs.begin(); itor != pPhysicObjectConfig->RigidBodyConfigs.end(); )
 	{
 		const auto& p = (*itor);
 
 		if (p->configId == rigidBodyConfigId)
 		{
-			itor = pPhysicConfig->RigidBodyConfigs.erase(itor);
+			itor = pPhysicObjectConfig->RigidBodyConfigs.erase(itor);
+
+			pPhysicObjectConfig->configModified = true;
+
 			return true;
 		}
 
@@ -309,28 +312,30 @@ bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhy
 
 std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape)
 {
-	auto pNewShape = std::make_shared<CClientCollisionShapeConfig>();
-	pNewShape->configType = pOldShape->configType;
-	pNewShape->type = pOldShape->type;
-	pNewShape->direction = pOldShape->direction;
-	VectorCopy(pOldShape->size, pNewShape->size);
-	pNewShape->is_child = pOldShape->is_child;
-	VectorCopy(pOldShape->origin, pNewShape->origin);
-	VectorCopy(pOldShape->angles, pNewShape->angles);
-	//pNewShape->multispheres = pOldShape->multispheres;
-	pNewShape->resourcePath = pOldShape->resourcePath;
+	auto pCloneShape = std::make_shared<CClientCollisionShapeConfig>();
+	pCloneShape->configModified = true;
+	pCloneShape->configType = pOldShape->configType;
+	pCloneShape->type = pOldShape->type;
+	pCloneShape->direction = pOldShape->direction;
+	VectorCopy(pOldShape->size, pCloneShape->size);
+	pCloneShape->is_child = pOldShape->is_child;
+	VectorCopy(pOldShape->origin, pCloneShape->origin);
+	VectorCopy(pOldShape->angles, pCloneShape->angles);
+	//pCloneShape->multispheres = pOldShape->multispheres;
+	pCloneShape->resourcePath = pOldShape->resourcePath;
 
 	for (auto& oldChildShape : pOldShape->compoundShapes) {
 		auto pClonedShape = UTIL_CloneCollisionShapeConfig(oldChildShape.get());
-		pNewShape->compoundShapes.push_back(pClonedShape);
+		pCloneShape->compoundShapes.push_back(pClonedShape);
 	}
 
-	return pNewShape;
+	return pCloneShape;
 }
 
 std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientRigidBodyConfig* pOldConfig)
 {
 	auto pCloneConfig = std::make_shared<CClientRigidBodyConfig>();
+	pCloneConfig->configModified = true;
 	pCloneConfig->name = pOldConfig->name;
 	pCloneConfig->configType = pOldConfig->configType;
 	pCloneConfig->flags = pOldConfig->flags;
@@ -374,4 +379,81 @@ std::string UTIL_FormatAbsoluteModelName(model_t* mod)
 	}
 
 	return mod->name;
+}
+
+bool UTIL_IsCollisionShapeConfigModified(const CClientCollisionShapeConfig* pCollisionShapeConfig)
+{
+	if (pCollisionShapeConfig->configModified)
+		return true;
+
+	for (const auto& pSubShapeConfig : pCollisionShapeConfig->compoundShapes)
+	{
+		if (UTIL_IsCollisionShapeConfigModified(pSubShapeConfig.get()))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicObjectConfig)
+{
+	if (pPhysicObjectConfig->configModified)
+		return true;
+
+	for (const auto& pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
+	{
+		if (pRigidBodyConfig->configModified)
+			return true;
+
+		const auto &pCollisionShapeConfig = pRigidBodyConfig->collisionShape;
+
+		if (pCollisionShapeConfig)
+		{
+			if(UTIL_IsCollisionShapeConfigModified(pCollisionShapeConfig.get()))
+				return true;
+		}
+	}
+
+	if (pPhysicObjectConfig->type == PhysicObjectType_DynamicObject)
+	{
+		const auto pDynamicObjectConfig = (const CClientDynamicObjectConfig*)pPhysicObjectConfig;
+
+		for (const auto& pConstraintConfig : pDynamicObjectConfig->ConstraintConfigs)
+		{
+			if (pConstraintConfig->configModified)
+				return true;
+		}
+	}
+	else if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
+	{
+		const auto pRagdollObjectConfig = (const CClientRagdollObjectConfig*)pPhysicObjectConfig;
+
+		for (const auto& pConstraintConfig : pRagdollObjectConfig->ConstraintConfigs)
+		{
+			if (pConstraintConfig->configModified)
+				return true;
+		}
+
+		for (const auto& pFloaterConfig : pRagdollObjectConfig->FloaterConfigs)
+		{
+			if (pFloaterConfig->configModified)
+				return true;
+		}
+
+		for (const auto& pActionConfig : pRagdollObjectConfig->BarnacleControlConfig.ActionConfigs)
+		{
+			if (pActionConfig->configModified)
+				return true;
+		}
+
+		for (const auto& pConstraintConfig : pRagdollObjectConfig->BarnacleControlConfig.ConstraintConfigs)
+		{
+			if (pConstraintConfig->configModified)
+				return true;
+		}
+	}
+
+	return false;
 }

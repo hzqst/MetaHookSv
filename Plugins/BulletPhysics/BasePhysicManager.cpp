@@ -319,6 +319,7 @@ void CBasePhysicManager::LoadPhysicObjectConfigs(void)
 
 void CBasePhysicManager::SavePhysicObjectConfigs(void)
 {
+	int iSavedCount = 0;
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
@@ -334,12 +335,16 @@ void CBasePhysicManager::SavePhysicObjectConfigs(void)
 
 					if (pConfig)
 					{
-						SavePhysicObjectConfigToFile(mod->name, pConfig.get());
+						if (SavePhysicObjectConfigToFile(mod->name, pConfig.get()))
+						{
+							iSavedCount++;
+						}
 					}
 				}
 			}
 		}
 	}
+	gEngfuncs.Con_Printf("SavePhysicObjectConfigs: %d config(s) saved !\n", iSavedCount);
 }
 
 bool CBasePhysicManager::SetupBones(studiohdr_t* studiohdr, int entindex)
@@ -2116,6 +2121,16 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLega
 
 bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig)
 {
+	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+	{
+		return false;
+	}
+
+	if(!UTIL_IsPhysicObjectConfigModified(pPhysicObjectConfig))
+	{
+		return false;
+	}
+
 	std::string fullname = filename;
 
 	UTIL_RemoveFileExtension(fullname);
@@ -2168,18 +2183,18 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 
 	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
 
-	Storage.pConfig = pStaticObjectConfig;
-	Storage.state = PhysicConfigState_Loaded;
+	OverwritePhysicObjectConfig(resourcePath, Storage, pStaticObjectConfig);
+
 	return true;
 }
 
 void CBasePhysicManager::OverwritePhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicObjectConfig)
 {
-	ClientPhysicManager()->AddPhysicConfig(pPhysicObjectConfig->configId, pPhysicObjectConfig);
-
 	Storage.pConfig = pPhysicObjectConfig;
 	Storage.filename = filename;
 	Storage.state = PhysicConfigState_Loaded;
+
+	ClientPhysicManager()->AddPhysicConfig(pPhysicObjectConfig->configId, pPhysicObjectConfig);
 }
 
 bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType)
@@ -2188,17 +2203,23 @@ bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filena
 	{
 	case PhysicObjectType_StaticObject:
 	{
-		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientStaticObjectConfig>());
+		auto pPhysicObjectConfig = std::make_shared<CClientStaticObjectConfig>();
+		pPhysicObjectConfig->configModified = true;
+		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	case PhysicObjectType_DynamicObject:
 	{
-		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientDynamicObjectConfig>());
+		auto pPhysicObjectConfig = std::make_shared<CClientDynamicObjectConfig>();
+		pPhysicObjectConfig->configModified = true;
+		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	case PhysicObjectType_RagdollObject:
 	{
-		OverwritePhysicObjectConfig(filename, Storage, std::make_shared<CClientRagdollObjectConfig>());
+		auto pPhysicObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
+		pPhysicObjectConfig->configModified = true;
+		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	}

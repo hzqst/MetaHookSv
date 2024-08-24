@@ -917,7 +917,7 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 
 			if (pConstraintConfig)
 			{
-				auto str2 = std::format(L"{0}: ", vgui::localize()->Find("#BulletPhysics_Config"));
+				auto str2 = std::format(L"[{0}]: ", vgui::localize()->Find("#BulletPhysics_Config"));
 				
 				if (pConstraintConfig->useGlobalJointFromA)
 				{
@@ -1271,7 +1271,6 @@ void CPhysicDebugGUI::HideInspectContentLabel3()
 {
 	m_pInspectContentLabel3->SetVisible(false);
 }
-
 
 void CPhysicDebugGUI::Activate()
 {

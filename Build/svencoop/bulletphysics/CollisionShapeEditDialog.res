@@ -315,10 +315,10 @@
 		"NumericInputOnly"	"0"
 		"unicode"			"0"
 	}
-	"ObjPathLabel"
+	"ResourcePathLabel"
 	{
 		"ControlName"	"Label"
-		"fieldName"		"ObjPathLabel"
+		"fieldName"		"ResourcePathLabel"
 		"xpos"			"20"
 		"ypos"			"240"
 		"wide"			"80"
@@ -327,15 +327,15 @@
 		"pinCorner"		"0"
 		"visible"		"1"
 		"enabled"		"1"
-		"labelText"		"#BulletPhysics_ObjPath"
+		"labelText"		"#BulletPhysics_ResourcePath"
 		"textAlignment"	"west"
 		"dulltext"		"0"
 		"brighttext"	"0"
 	}
-	"ObjPath"
+	"ResourcePath"
 	{
 		"ControlName"		"TextEntry"
-		"fieldName"		"ObjPath"
+		"fieldName"		"ResourcePath"
 		"xpos"			"100"
 		"ypos"			"240"
 		"wide"			"240"

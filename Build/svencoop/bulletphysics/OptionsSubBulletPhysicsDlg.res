@@ -239,7 +239,7 @@
 		"ControlName"		"Label"
 		"fieldName"		"DebugDrawSvCheatsLabel"
 		"xpos"		"380"
-		"ypos"		"36"
+		"ypos"		"35"
 		"wide"		"200"
 		"tall"		"24"
 		"autoResize"	"0"
