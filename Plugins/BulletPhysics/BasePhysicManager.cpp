@@ -1913,8 +1913,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 		{
 			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 			pConstraintConfig->type = PhysicConstraint_Dof6;
-			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.body|{0}", rigidbody);
-			pConstraintConfig->rigidbodyA = "@barnacle.body";
+			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.Body|{0}", rigidbody);
+			pConstraintConfig->rigidbodyA = "@barnacle.Body";
 			pConstraintConfig->rigidbodyB = rigidbody;
 			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;
 			pConstraintConfig->originA[0] = 0;
@@ -1963,8 +1963,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 		{
 			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 			pConstraintConfig->type = PhysicConstraint_Slider;
-			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.body|{}", rigidbody);
-			pConstraintConfig->rigidbodyA = "@barnacle.body";
+			pConstraintConfig->name = std::format("BarnacleConstraint|@barnacle.Body|{}", rigidbody);
+			pConstraintConfig->rigidbodyA = "@barnacle.Body";
 			pConstraintConfig->rigidbodyB = rigidbody;
 			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;
 			pConstraintConfig->originA[0] = 0;
@@ -2029,7 +2029,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->name = std::format("BarnacleConstraintLimitAdjustment|{0}", rigidbody);
 			pActionConfig->type = PhysicAction_BarnacleConstraintLimitAdjustment;
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsConstraint;
-			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.body|{0}", rigidbody);
+			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.Body|{0}", rigidbody);
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 

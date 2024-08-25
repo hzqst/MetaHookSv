@@ -1277,7 +1277,6 @@ void Engine_FillAddress(void)
 							}
 						}
 
-
 						if (ctx->instCountPush0 && ctx->instCountPushEngineSurface007 && instCount < ctx->instCountPushEngineSurface007 + 16)
 						{
 							if (pinst->id == X86_INS_MOV &&
@@ -1286,16 +1285,6 @@ void Engine_FillAddress(void)
 								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
 								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 								pinst->detail->x86.operands[1].type == X86_OP_REG)
-							{
-								staticEngineSurface = (decltype(staticEngineSurface))pinst->detail->x86.operands[0].mem.disp;
-								return TRUE;
-							}
-
-							if (pinst->id == X86_INS_PUSH &&
-								pinst->detail->x86.op_count == 1 &&
-								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 							{
 								staticEngineSurface = (decltype(staticEngineSurface))pinst->detail->x86.operands[0].mem.disp;
 								return TRUE;

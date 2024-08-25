@@ -1,10 +1,10 @@
 "PhysicObjectConfig"
 {
-	"type"		"StaticObject"
+	"type"		"RagdollObject"
 	"barnacle"		"1"
 	"rigidBodies"
 	{
-		"body"
+		"Body"
 		{
 			"alwaysKinematic"		"1"
 			"debugDrawLevel"		"1"
@@ -26,6 +26,29 @@
 			{
 				"type"		"TriangleMesh"
 				"objpath"		"models/barnacle.obj"
+			}
+		}
+		"Tongue6"
+		{
+			"debugDrawLevel"		"1"
+			"boneindex"				"16"
+			"forward"				"0 1 0"
+			"isLegacyConfig"		"0"
+			"pboneindex"			"-1"
+			"pboneoffset"			"0.000000"
+			"mass"					"1.000000"
+			"density"				"1.000000"
+			"linearFriction"		"1.000000"
+			"rollingFriction"		"0.200000"
+			"restitution"			"0.000000"
+			"ccdRadius"				"0.000000"
+			"ccdThreshold"			"0.000000"
+			"linearSleepingThreshold"		"5.000000"
+			"angularSleepingThreshold"		"3.000000"
+			"collisionshape"
+			{
+				"type"		"Capsule"
+				"size"		"1 1 0"
 			}
 		}
 	}
