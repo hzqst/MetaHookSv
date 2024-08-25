@@ -32,11 +32,14 @@ public:
 	
 private:
 
+	MESSAGE_FUNC(OnResetData, "ResetData");
 	MESSAGE_FUNC_INT(OnOpenContextMenu, "OpenContextMenu", itemID);
 	MESSAGE_FUNC_INT(OnRefreshRigidBody, "RefreshRigidBody", configId);
 	MESSAGE_FUNC_INT(OnEditRigidBody, "EditRigidBody", configId);
 	MESSAGE_FUNC_INT(OnCloneRigidBody, "CloneRigidBody", configId);
 	MESSAGE_FUNC_INT(OnDeleteRigidBody, "DeleteRigidBody", configId);
+	MESSAGE_FUNC_INT(OnShiftUpRigidBody, "ShiftUpRigidBody", configId);
+	MESSAGE_FUNC_INT(OnShiftDownRigidBody, "ShiftDownRigidBody", configId);
 	MESSAGE_FUNC(OnRefreshRigidBodies, "RefreshRigidBodies");
 
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
@@ -47,12 +50,16 @@ private:
 	void ReloadAllRigidBodiesIntoListPanelItem();
 	void OnOpenRigidBodyEditor(int configId);
 	void OnCreateRigidBody();
+	void SelectRigidBodyItem(int configId);
+	void DeleteRigidBodyItem(int configId);
 
 	typedef vgui::PropertyPage BaseClass;
 private:
 	vgui::HFont m_hFont{};
 
 	CRigidBodyListPanel* m_pRigidBodyListPanel{};
+	vgui::Button* m_pShiftUpRigidBody{};
+	vgui::Button* m_pShiftDownRigidBody{};
 	vgui::Button* m_pCreateRigidBody{};
 
 	uint64 m_physicObjectId{};

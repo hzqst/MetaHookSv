@@ -193,7 +193,7 @@ public:
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
-	virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
+	//virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
 	virtual void* GetInternalRigidBody() = 0;
 	virtual bool GetGoldSrcOriginAngles(float* origin, float * angles) = 0;
 	virtual bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float * angles) = 0;
@@ -271,7 +271,7 @@ public:
 	virtual void TransferOwnership(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
-	virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
+	//virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
 	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
@@ -384,7 +384,7 @@ public:
 
 	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
 	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual bool MergeBones(studiohdr_t* studiohdr, int entindex) = 0;
+	//virtual bool MergeBones(studiohdr_t* studiohdr, int entindex) = 0;
 
 	virtual void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult) = 0;
 

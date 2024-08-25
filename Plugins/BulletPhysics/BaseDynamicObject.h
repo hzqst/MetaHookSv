@@ -53,7 +53,7 @@ public:
 
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override
 	{
-		if (GetRigidBodyCount() == 1)
+		if (GetRigidBodyCount() > 0)
 		{
 			return GetRigidBodyByIndex(0)->GetGoldSrcOriginAngles(origin, angles);
 		}
@@ -183,13 +183,18 @@ public:
 
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override
 	{
-		return false;
+		for (auto pRigidBody : m_RigidBodies)
+		{
+			pRigidBody->SetupJiggleBones(studiohdr);
+		}
+
+		return true;
 	}
 
-	bool MergeBones(studiohdr_t* studiohdr) override
+	/*bool MergeBones(studiohdr_t* studiohdr) override
 	{
 		return false;
-	}
+	}*/
 
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{

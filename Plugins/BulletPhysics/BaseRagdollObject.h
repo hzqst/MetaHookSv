@@ -341,10 +341,10 @@ public:
 		return true;
 	}
 
-	bool MergeBones(studiohdr_t* studiohdr) override
+	/*bool MergeBones(studiohdr_t* studiohdr) override
 	{
 		return false;
-	}
+	}*/
 
 	bool ResetPose(entity_state_t* curstate) override
 	{

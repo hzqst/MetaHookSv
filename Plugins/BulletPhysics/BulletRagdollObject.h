@@ -347,7 +347,10 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = GetPhysicComponentAsRigidBody();
+		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_physicComponentId);
+
+		if (!pRigidBody)
+			return false;
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
@@ -409,7 +412,10 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pRigidBody = GetPhysicComponentAsRigidBody();
+		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_physicComponentId);
+
+		if (!pRigidBody)
+			return false;
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
@@ -454,7 +460,10 @@ public:
 		if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 			return false;
 
-		auto pConstraint = GetPhysicComponentAsConstraint();
+		auto pConstraint = UTIL_GetPhysicComponentAsConstraint(m_physicComponentId);
+
+		if (!pConstraint)
+			return false;
 
 		if (pBarnacleObject->GetClientEntityState()->sequence == 5)
 		{
@@ -594,17 +603,15 @@ public:
 	{
 		if (m_ThirdPersonViewCameraControl.m_physicComponentId)
 		{
-			 auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
+			auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
 
-			 if (pPhysicComponent && pPhysicComponent->IsRigidBody())
-			 {
-				 auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
-
-				 return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
-			 }		
+			if (pRigidBody)
+			{
+				return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
+			}
 		}
 
-		if (GetRigidBodyCount() == 1)
+		if (GetRigidBodyCount() > 0)
 		{
 			return GetRigidBodyByIndex(0)->GetGoldSrcOriginAngles(origin, angles);
 		}
@@ -650,12 +657,10 @@ public:
 	{
 		if (m_ThirdPersonViewCameraControl.m_physicComponentId)
 		{
-			auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
+			auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
 
-			if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			if (pRigidBody)
 			{
-				auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
-
 				vec3_t vecGoldSrcNewOrigin;
 
 				pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, nullptr);
@@ -681,34 +686,33 @@ public:
 	{
 		if (m_FirstPersonViewCameraControl.m_physicComponentId)
 		{
-			auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_ThirdPersonViewCameraControl.m_physicComponentId);
+			auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_FirstPersonViewCameraControl.m_physicComponentId);
 
-			if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+			if (pRigidBody)
 			{
-				auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
-
 				vec3_t vecGoldSrcNewOrigin, vecGoldSrcNewAngles;
 
-				pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles);
+				if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_FirstPersonViewCameraControl.m_origin, m_FirstPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles))
+				{
+					vec3_t vecSavedSimOrgigin;
+					vec3_t vecSavedClientViewAngles;
+					VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+					VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
+					int iSavedHealth = pparams->health;
 
-				vec3_t vecSavedSimOrgigin;
-				vec3_t vecSavedClientViewAngles;
-				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-				int iSavedHealth = pparams->health;
+					pparams->viewheight[2] = 0;
+					VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
+					VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
+					pparams->health = 1;
 
-				pparams->viewheight[2] = 0;
-				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
-				pparams->health = 1;
+					callback(pparams);
 
-				callback(pparams);
+					pparams->health = iSavedHealth;
+					VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+					VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
 
-				pparams->health = iSavedHealth;
-				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-
-				return true;
+					return true;
+				}
 			}
 		}
 		return false;

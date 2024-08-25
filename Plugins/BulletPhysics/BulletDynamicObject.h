@@ -26,6 +26,50 @@ public:
 
 	}
 
+	bool SetupJiggleBones(studiohdr_t* studiohdr) override
+	{
+		if (!m_pInternalRigidBody)
+			return false;
+
+		auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
+
+		if (pMotionState->IsBoneBased())
+		{
+			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+			{
+				Sys_Error("CBulletDynamicRigidBody::SetupJiggleBones invalid m_boneindex!");
+				return false;
+			}
+
+			auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
+
+			if (!m_pInternalRigidBody->isKinematicObject())
+			{
+				btTransform bonematrix = pBoneMotionState->m_bonematrix;
+
+				TransformBulletToGoldSrc(bonematrix);
+
+				float bonematrix_3x4[3][4];
+				TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+
+				memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+				memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+			}
+			else
+			{
+				auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+				Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+
+				TransformGoldSrcToBullet(bonematrix);
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override
 	{
 		if (!m_pInternalRigidBody)
@@ -38,32 +82,21 @@ public:
 
 		auto ent = pPhysicObject->GetClientEntity();
 
-		bool bKinematic = false;
+		bool bKinematic = true;
 
 		bool bKinematicStateChanged = false;
 
 		do
 		{
+			if (m_flags & PhysicRigidBodyFlag_AlwaysDynamic)
+			{
+				bKinematic = false;
+				break;
+			}
+
 			if (m_flags & PhysicRigidBodyFlag_AlwaysKinematic)
 			{
 				bKinematic = true;
-				break;
-			}
-
-			if (m_flags & PhysicRigidBodyFlag_AlwaysStatic)
-			{
-				bKinematic = false;
-				break;
-			}
-
-			if ((ent != r_worldentity) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP))
-			{
-				bKinematic = true;
-				break;
-			}
-			else
-			{
-				bKinematic = false;
 				break;
 			}
 
@@ -77,9 +110,9 @@ public:
 			{
 				iCollisionFlags |= btCollisionObject::CF_KINEMATIC_OBJECT;
 
-				m_pInternalRigidBody->setActivationState(DISABLE_DEACTIVATION);
-
 				m_pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+				m_pInternalRigidBody->setActivationState(DISABLE_DEACTIVATION);
+				m_pInternalRigidBody->setGravity(btVector3(0, 0, 0));
 
 				bKinematicStateChanged = true;
 			}
@@ -92,9 +125,9 @@ public:
 			{
 				iCollisionFlags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
 
-				m_pInternalRigidBody->setActivationState(ACTIVE_TAG);
-
 				m_pInternalRigidBody->setCollisionFlags(iCollisionFlags);
+				m_pInternalRigidBody->forceActivationState(ACTIVE_TAG);
+				m_pInternalRigidBody->setMassProps(m_mass, m_inertia);
 
 				bKinematicStateChanged = true;
 			}
@@ -129,74 +162,7 @@ public:
 
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override
 	{
-		if (!m_pInternalConstraint)
-			return;
-
-		bool bDeactivate = false;
-
-		bool bConstraintStateChanged = false;
-
-		auto pPhysicObject = GetOwnerPhysicObject();
-
-		if (!pPhysicObject)
-			return;
-
-		if (!pPhysicObject->IsDynamicObject())
-			return;
-
-		auto pRagdollObject = (IRagdollObject*)pPhysicObject;
-
-		do
-		{
-			if (pRagdollObject->GetActivityType() == 0 && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (pRagdollObject->GetActivityType() == 1 && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
-			{
-				bDeactivate = true;
-				break;
-			}
-
-		} while (0);
-
-		if (bDeactivate)
-		{
-			if (m_pInternalConstraint->isEnabled())
-			{
-				m_pInternalConstraint->setEnabled(false);
-
-				bConstraintStateChanged = true;
-			}
-		}
-		else
-		{
-			if (!m_pInternalConstraint->isEnabled())
-			{
-				m_pInternalConstraint->setEnabled(true);
-
-				bConstraintStateChanged = true;
-			}
-		}
-
-		if (bConstraintStateChanged)
-		{
-			ComponentUpdateContext->m_pObjectUpdateContext->m_bConstraintStateChanged = true;
-		}
+		//do nothing
 	}
 };
 

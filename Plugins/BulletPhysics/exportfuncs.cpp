@@ -273,7 +273,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 
 	pfnSetupBones(pthis, dummy);
 
-	ClientPhysicManager()->MergeBones((*pstudiohdr), g_iRagdollRenderEntIndex);
+	//ClientPhysicManager()->MergeBones((*pstudiohdr), g_iRagdollRenderEntIndex);
 
 	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 		return;

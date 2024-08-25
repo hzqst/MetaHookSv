@@ -181,7 +181,6 @@ void Vector3GoldSrcToBullet(btVector3& vec)
 
 //BulletToGoldSrc Scaling
 
-
 void TransformBulletToGoldSrc(btTransform& trans)
 {
 	trans.getOrigin().m_floats[0] *= B2GScale;
@@ -371,10 +370,10 @@ bool CBulletRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 	return false;
 }
 
-bool CBulletRigidBody::MergeBones(studiohdr_t* studiohdr)
+/*bool CBulletRigidBody::MergeBones(studiohdr_t* studiohdr)
 {
 	return false;
-}
+}*/
 
 void* CBulletRigidBody::GetInternalRigidBody()
 {
@@ -1817,7 +1816,7 @@ void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
 	if (GetPhysicObject()->IsStaticObject())
 		return;
 
-	if (GetPhysicObject()->GetRigidBodyCount() != 1)
+	if (!GetPhysicObject()->GetRigidBodyCount())
 		return;
 
 	auto ent = GetPhysicObject()->GetClientEntity();
@@ -2451,7 +2450,7 @@ void CBulletPhysicManager::SetGravity(float velocity)
 {
 	CBasePhysicManager::SetGravity(velocity);
 
-	btVector3 vecGravity(0, 0, m_gravity);
+	btVector3 vecGravity(0, 0, -m_gravity);
 
 	Vector3GoldSrcToBullet(vecGravity);
 

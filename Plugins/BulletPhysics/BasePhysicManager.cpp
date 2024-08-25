@@ -250,9 +250,9 @@ void CBasePhysicManager::NewMap(void)
 	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
 }
 
-void CBasePhysicManager::SetGravity(float velocity)
+void CBasePhysicManager::SetGravity(float value)
 {
-	m_gravity = -velocity;
+	m_gravity = value;
 }
 
 void CBasePhysicManager::StepSimulation(double frametime)
@@ -367,7 +367,7 @@ bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex)
 	return pPhysicObject->SetupJiggleBones(studiohdr);
 }
 
-bool CBasePhysicManager::MergeBones(studiohdr_t* studiohdr, int entindex)
+/*bool CBasePhysicManager::MergeBones(studiohdr_t* studiohdr, int entindex)
 {
 	auto pPhysicObject = GetPhysicObject(entindex);
 
@@ -375,7 +375,7 @@ bool CBasePhysicManager::MergeBones(studiohdr_t* studiohdr, int entindex)
 		return false;
 
 	return pPhysicObject->MergeBones(studiohdr);
-}
+}*/
 
 bool CBasePhysicManager::TransferOwnershipForPhysicObject(int old_entindex, int new_entindex)
 {

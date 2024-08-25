@@ -26,21 +26,29 @@ CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 phy
 
 	m_pRigidBodyListPanel = new CRigidBodyListPanel(this, "RigidBodyListPanel");
 
-	m_pRigidBodyListPanel->AddColumnHeader(0, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-	m_pRigidBodyListPanel->AddColumnHeader(1, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(2, "shape","#BulletPhysics_Shape", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(3, "bone", "#BulletPhysics_Bone", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(4, "mass", "#BulletPhysics_Mass", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(5, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
+	m_pRigidBodyListPanel->AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
+	m_pRigidBodyListPanel->AddColumnHeader(1, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
+	m_pRigidBodyListPanel->AddColumnHeader(2, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(3, "shape","#BulletPhysics_Shape", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(4, "bone", "#BulletPhysics_Bone", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(5, "mass", "#BulletPhysics_Mass", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
+	m_pRigidBodyListPanel->AddColumnHeader(6, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
 	m_pRigidBodyListPanel->SetSortColumn(0);
 	m_pRigidBodyListPanel->SetMultiselectEnabled(false);
-
+	
+	m_pShiftUpRigidBody = new vgui::Button(this, "ShiftUpRigidBody", L"#BulletPhysics_ShiftUp", this, "ShiftUpRigidBody");
+	m_pShiftDownRigidBody = new vgui::Button(this, "ShiftDownRigidBody", L"#BulletPhysics_ShiftDown", this, "ShiftDownRigidBody");
 	m_pCreateRigidBody = new vgui::Button(this, "CreateRigidBody", L"#BulletPhysics_CreateRigidBody", this, "CreateRigidBody");
 
 	LoadControlSettings("bulletphysics/RigidBodyPage.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 
+	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
+}
+
+void CRigidBodyPage::OnResetData()
+{
 	ReloadAllRigidBodiesIntoListPanelItem();
 }
 
@@ -85,6 +93,22 @@ void CRigidBodyPage::OnCommand(const char* command)
 	{
 		OnCreateRigidBody();
 	}
+	else if (!stricmp(command, "ShiftUpRigidBody"))
+	{
+		auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
+
+		auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+
+		OnShiftUpRigidBody(configId);
+	}
+	else if (!stricmp(command, "ShiftDownRigidBody"))
+	{
+		auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
+
+		auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+
+		OnShiftDownRigidBody(configId);
+	}
 	else
 	{
 		BaseClass::OnCommand(command);
@@ -119,6 +143,12 @@ void CRigidBodyPage::OnOpenContextMenu(int itemId)
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, szName);
 	menu->AddMenuItem("CloneRigidBody", szBuf, new KeyValues("CloneRigidBody", "configId", configId), this);
 
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ShiftUpRigidBody"), 1, szName);
+	menu->AddMenuItem("ShiftUpRigidBody", szBuf, new KeyValues("ShiftUpRigidBody", "configId", configId), this);
+
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ShiftDownRigidBody"), 1, szName);
+	menu->AddMenuItem("ShiftDownRigidBody", szBuf, new KeyValues("ShiftDownRigidBody", "configId", configId), this);
+
 	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, szName);
 	menu->AddMenuItem("DeleteRigidBody", szBuf, new KeyValues("DeleteRigidBody", "configId", configId), this);
 
@@ -149,17 +179,9 @@ void CRigidBodyPage::OnRefreshRigidBody(int configId)
 	if (!pRigidBodyConfig)
 		return;
 
-	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
-	{
-		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+	DeleteRigidBodyItem(configId);
 
-		if (userData == configId)
-		{
-			m_pRigidBodyListPanel->RemoveItem(i);
-			LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
-			break;
-		}
-	}
+	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 }
 
 void CRigidBodyPage::OnRefreshRigidBodies()
@@ -171,6 +193,8 @@ void CRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig *
 {
 	auto kv = new KeyValues("RigidBody");
 
+	kv->SetInt("index", UTIL_GetRigidBodyIndex(m_pPhysicObjectConfig.get(), pRigidBodyConfig));
+
 	kv->SetInt("configId", pRigidBodyConfig->configId);
 
 	kv->SetString("name", pRigidBodyConfig->name.c_str());
@@ -181,9 +205,9 @@ void CRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig *
 
 	auto modelindex = UNPACK_PHYSIC_OBJECT_ID_TO_MODELINDEX(m_physicObjectId);
 
-	auto bonename = UTIL_GetFormattedBoneName(modelindex, pRigidBodyConfig->boneindex);
+	auto bone = UTIL_GetFormattedBoneName(modelindex, pRigidBodyConfig->boneindex);
 
-	kv->SetString("bone", bonename.c_str());
+	kv->SetString("bone", bone.c_str());
 
 	kv->SetFloat("mass", pRigidBodyConfig->mass);
 
@@ -203,6 +227,52 @@ void CRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
 	for (const auto &pConfig : m_pPhysicObjectConfig->RigidBodyConfigs)
 	{
 		LoadRigidBodyAsListPanelItem(pConfig.get());
+	}
+}
+
+void CRigidBodyPage::SelectRigidBodyItem(int configId)
+{
+	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
+	{
+		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+
+		if (userData == configId)
+		{
+			m_pRigidBodyListPanel->SetSingleSelectedItem(i);
+			break;
+		}
+	}
+}
+
+void CRigidBodyPage::DeleteRigidBodyItem(int configId)
+{
+	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
+	{
+		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+
+		if (userData == configId)
+		{
+			m_pRigidBodyListPanel->RemoveItem(i);
+			break;
+		}
+	}
+}
+
+void CRigidBodyPage::OnShiftUpRigidBody(int configId)
+{
+	if (UTIL_ShiftUpRigidBodyIndex(m_pPhysicObjectConfig.get(), configId))
+	{
+		ReloadAllRigidBodiesIntoListPanelItem();
+		SelectRigidBodyItem(configId);
+	}
+}
+
+void CRigidBodyPage::OnShiftDownRigidBody(int configId)
+{
+	if (UTIL_ShiftDownRigidBodyIndex(m_pPhysicObjectConfig.get(), configId))
+	{
+		ReloadAllRigidBodiesIntoListPanelItem();
+		SelectRigidBodyItem(configId);
 	}
 }
 
@@ -249,7 +319,7 @@ void CRigidBodyPage::OnCloneRigidBody(int configId)
 
 	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
 
-	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
+	LoadRigidBodyAsListPanelItem(pClonedRigidBodyConfig.get());
 
 	//Update PhysicObject
 
@@ -732,6 +802,7 @@ void CRigidBodyEditDialog::OnResetData()
 void CRigidBodyEditDialog::OnRefreshCollisionShape()
 {
 	LoadShapeIntoControls(m_pRigidBodyConfig->collisionShape);
+	PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
 }
 
 void CRigidBodyEditDialog::OnCommand(const char* command)

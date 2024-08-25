@@ -80,31 +80,6 @@ public:
 
 	}
 
-	IPhysicComponent* GetPhysicComponent() const
-	{
-		return  ClientPhysicManager()->GetPhysicComponent(m_physicComponentId);
-	}
-
-
-	IPhysicRigidBody* GetPhysicComponentAsRigidBody() const
-	{
-		auto pPhysicComponent = GetPhysicComponent();
-
-		if (pPhysicComponent && pPhysicComponent->IsRigidBody())
-			return (IPhysicRigidBody*)pPhysicComponent;
-
-		return nullptr;
-	}
-
-	IPhysicConstraint* GetPhysicComponentAsConstraint() const
-	{
-		auto pPhysicComponent = GetPhysicComponent();
-
-		if (pPhysicComponent && pPhysicComponent->IsConstraint())
-			return (IPhysicConstraint*)pPhysicComponent;
-
-		return nullptr;
-	}
 	int m_physicComponentId{};
 };
 
@@ -281,12 +256,12 @@ public:
 	void Init(void) override;
 	void Shutdown() override;
 	void NewMap(void) override;
-	void SetGravity(float velocity) override;
+	void SetGravity(float value) override;
 	void StepSimulation(double frametime) override;
 
 	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
-	bool MergeBones(studiohdr_t* studiohdr, int entindex) override;
+	//bool MergeBones(studiohdr_t* studiohdr, int entindex) override;
 
 	//PhysicObjectConfig Management
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;

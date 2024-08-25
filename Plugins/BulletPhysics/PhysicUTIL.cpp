@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <format>
+#include <algorithm>
 
 const char* VGUI2Token_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
 
@@ -453,6 +454,158 @@ bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicO
 			if (pConstraintConfig->configModified)
 				return true;
 		}
+	}
+
+	return false;
+}
+
+IPhysicRigidBody* UTIL_GetPhysicComponentAsRigidBody(int physicComponentId)
+{
+	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+	if (pPhysicComponent && pPhysicComponent->IsRigidBody())
+	{
+		return (IPhysicRigidBody*)pPhysicComponent;
+	}
+
+	return nullptr;
+}
+
+IPhysicConstraint* UTIL_GetPhysicComponentAsConstraint(int physicComponentId)
+{
+	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+	if (pPhysicComponent && pPhysicComponent->IsConstraint())
+	{
+		return (IPhysicConstraint*)pPhysicComponent;
+	}
+
+	return nullptr;
+}
+
+int UTIL_GetRigidBodyIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		return currentIndex;
+	}
+
+	return -1;
+}
+
+int UTIL_GetRigidBodyIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientRigidBodyConfig* pRigidBodyConfig)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pRigidBodyConfig](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr.get() == pRigidBodyConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		return currentIndex;
+	}
+
+	return -1;
+}
+
+bool UTIL_ShiftUpRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		std::size_t prevIndex = currentIndex - 1;
+
+		// Swap the current element with the previous one
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftUpRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientRigidBodyConfig* pRigidBodyConfig)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pRigidBodyConfig](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr.get() == pRigidBodyConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		std::size_t prevIndex = currentIndex - 1;
+
+		// Swap the current element with the previous one
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the next element
+		std::size_t nextIndex = currentIndex + 1;
+
+		// Swap the current element with the next one
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientRigidBodyConfig* pRigidBodyConfig)
+{
+	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pRigidBodyConfig](const std::shared_ptr<CClientRigidBodyConfig>& ptr) {
+		return ptr.get() == pRigidBodyConfig;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the next element
+		std::size_t nextIndex = currentIndex + 1;
+
+		// Swap the current element with the next one
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
+
+		return true;
 	}
 
 	return false;
