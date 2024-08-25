@@ -21,10 +21,7 @@
 using namespace vgui;
 
 
-enum
-{
-	SPLITTER_HANDLE_WIDTH = 4
-};
+#define SPLITTER_HANDLE_WIDTH 4
 
 
 //-----------------------------------------------------------------------------

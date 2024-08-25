@@ -5,6 +5,7 @@
 #include <vgui/IScheme.h>
 #include <vgui/IVGui.h>
 #include <vgui/IInput.h>
+#include <vgui/IMouseControl.h>
 #include <vgui.h>
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
@@ -29,6 +30,7 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 extern vgui::ISurface* g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
+bool g_NativeClientHasVGUI1 = true;
 bool g_IsNativeClientVGUI2 = false;
 bool g_IsNativeClientUIHDProportional = false;
 
@@ -49,6 +51,11 @@ static void (__fastcall *m_pfnCClientVGUI_HideScoreBoard)(void *pthis, int) = NU
 static void (__fastcall *m_pfnCClientVGUI_HideAllVGUIMenu)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_ActivateClientUI)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_HideClientUI)(void *pthis, int) = NULL;
+
+bool ClientVGUI_NativeClientHasVGUI1()
+{
+	return g_NativeClientHasVGUI1;
+}
 
 /*
 ============================================================
@@ -775,6 +782,8 @@ void CClientVGUIProxy::Start(void)
 	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
+
+	g_NativeClientHasVGUI1 = UseVGUI1();
 }
 
 void CClientVGUIProxy::SetParent(vgui::VPANEL parent)
@@ -963,13 +972,7 @@ void NewClientVGUI::Start(void)
 {
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
 
-	//TODO: Need to fix for HL25?
-	if (g_pSurface)
-	{
-		//Fix a bug that VGUI1 mouse disappear
-		auto pSurface4 = (DWORD)g_pSurface + 4;
-		*(PUCHAR)(pSurface4 + 0x4B) = 0;
-	}
+	g_NativeClientHasVGUI1 = UseVGUI1();
 }
 
 void NewClientVGUI::SetParent(vgui::VPANEL parent)
@@ -979,9 +982,9 @@ void NewClientVGUI::SetParent(vgui::VPANEL parent)
 
 bool NewClientVGUI::UseVGUI1(void)
 {
-	bool fake_ret = false;
-	bool real_ret = false;
-	bool ret = false;
+	bool fake_ret = true;
+	bool real_ret = true;
+	bool ret = true;
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
@@ -993,6 +996,7 @@ bool NewClientVGUI::UseVGUI1(void)
 
 	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
+		//Must be true for Sven Co-op and other VGUI1 games
 		real_ret = true;
 	}
 
@@ -1320,6 +1324,14 @@ void NativeClientUI_UninstallHooks(void)
 	Uninstall_Hook(ClientVGUI_LoadControlSettings);
 	Uninstall_Hook(ClientVGUI_KeyValues_LoadFromFile);
 	Uninstall_Hook(ClientVGUI_Panel_Init);
+}
+
+bool ClientVGUI_UseVGUI1()
+{
+	if(g_pClientVGUI)
+		return g_pClientVGUI->UseVGUI1();
+
+	return true;
 }
 
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)

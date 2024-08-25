@@ -5,7 +5,12 @@
 #include "plugins.h"
 #include "command.h"
 #include "message.h"
-#include "qgl.h"
+
+#include "VGUI2ExtensionImport.h"
+
+#include "ClientPhysicManager.h"
+
+#include <glew.h>
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
@@ -64,6 +69,15 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	Engine_FillAddreess();
 	Engine_InstallHook();
+
+	VGUI2Extension_Init();
+	BaseUI_InstallHooks();
+	GameUI_InstallHooks();
+	ClientVGUI_InstallHooks();
+
+	g_pClientPhysicManager = BulletPhysicManager_CreateInstance();
+
+	glewInit();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -75,24 +89,24 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_CreateEntities = HUD_CreateEntities;
 	pExportFunc->HUD_TempEntUpdate = HUD_TempEntUpdate;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
-	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
+	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	Client_FillAddress();
-
-	auto err = glewInit();
-
-	if (GLEW_OK != err)
-	{
-		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
-		return;
-	}
 }
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	g_pClientPhysicManager->Destroy();
+
+	ClientVGUI_UninstallHooks();
+	GameUI_UninstallHooks();
+	BaseUI_UninstallHooks();
+
+	VGUI2Extension_Shutdown();
+
 	Engine_UninstallHook();
 }
 

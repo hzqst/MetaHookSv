@@ -6,8 +6,10 @@
 #include "privatehook.h"
 #include "exportfuncs.h"
 #include "message.h"
-#include "physics.h"
+
+#include "ClientPhysicManager.h"
 #include "ClientEntityManager.h"
+#include "Viewport.h"
 
 #define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
 #define R_NEWMAP_SIG_BLOB      R_NEWMAP_SIG_COMMON
@@ -45,7 +47,9 @@ TEMPENTITY* gTempEnts = NULL;
 
 //Sven Co-op only
 int* allow_cheats = NULL;
-int* g_bRenderingPortals_SCClient = NULL;
+
+int* g_iWaterLevel = NULL;
+bool* g_bRenderingPortals_SCClient = NULL;
 
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
@@ -132,8 +136,125 @@ void Engine_FillAddreess(void)
 	}
 	Sig_FuncNotFound(R_RecursiveWorldNode);
 
+	if (1)
+	{
+		//Seach "CL_Reallocate cl_entities"
+		const char sigs1[] = "CL_Reallocate cl_entities\n";
+		auto CL_Reallocate_String = Search_Pattern_Data(sigs1);
+		if (!CL_Reallocate_String)
+			CL_Reallocate_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(CL_Reallocate_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)CL_Reallocate_String;
+		auto CL_Reallocate_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(CL_Reallocate_Call);
+
+		auto CL_ReallocateDynamicData = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CL_Reallocate_Call, 0x100, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				return TRUE;
+			}
+
+			if (Candidate[0] == 0x8B &&
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				return TRUE;
+			}
+
+			if (Candidate[0] == 0xFF &&
+				Candidate[2] == 0x24)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+			});
+
+		Sig_VarNotFound(CL_ReallocateDynamicData);
+
+		typedef struct
+		{
+			PVOID CL_Reallocate_Call;
+		}CL_ReallocateDynamicData_ctx;
+
+		CL_ReallocateDynamicData_ctx ctx = { 0 };
+
+		ctx.CL_Reallocate_Call = CL_Reallocate_Call;
+
+		g_pMetaHookAPI->DisasmRanges(CL_ReallocateDynamicData, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (CL_ReallocateDynamicData_ctx*)context;
+
+				if (!cl_max_edicts && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					// mov     eax, cl_max_edicts
+					// add     esp, 4
+
+					if (0 == memcmp(address + instLen, "\x83\xC4\x04", 3))
+					{
+						cl_max_edicts = (decltype(cl_max_edicts))pinst->detail->x86.operands[1].mem.disp;
+					}
+				}
+
+				if (!cl_max_edicts && pinst->id == X86_INS_IMUL &&
+					pinst->detail->x86.op_count == 3 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[2].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					cl_max_edicts = (decltype(cl_max_edicts))pinst->detail->x86.operands[1].mem.disp;
+				}
+
+				if (!cl_entities && address > ctx->CL_Reallocate_Call && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					// mov     eax, cl_max_edicts
+					// add     esp, 4
+					cl_entities = (decltype(cl_entities))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (cl_entities && cl_max_edicts)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		Sig_VarNotFound(cl_max_edicts);
+		Sig_VarNotFound(cl_entities);
+	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+#if 0
+#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
+		cl_entities = *(decltype(cl_entities)*)(addr + 19);
+#endif
 #define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
 		if (1)
 		{
@@ -141,9 +262,19 @@ void Engine_FillAddreess(void)
 			Sig_AddrNotFound(gTempEnts);
 			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
+
 	}
 	else
 	{
+	
+#if 0
+#define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 11);
+		cl_entities = *(decltype(cl_entities)*)(addr + 16);
+#endif
+
 #define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
 		if (1)
 		{
@@ -574,6 +705,49 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
 	}
+
+	if (1)
+	{
+		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x2A\x00\x00";
+		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern);
+		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
+
+		cl_numvisedicts = *(decltype(cl_numvisedicts)*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
+
+		g_pMetaHookAPI->DisasmRanges(ClientDLL_AddEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+
+				if (!cl_visedicts &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == X86_REG_ECX &&
+					pinst->detail->x86.operands[0].mem.scale == 4 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{
+					//.text:01D198C9 89 04 8D 00 3A 6E 02                                mov     cl_visedicts[ecx*4], eax
+					//.text:01D0C7C5 89 14 8D C0 F0 D5 02                                mov     cl_visedicts[ecx*4], edx
+					DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+					cl_visedicts = (decltype(cl_visedicts))imm;
+				}
+
+				if (cl_visedicts)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(cl_visedicts);
+	}
 }
 
 void Client_FillAddress(void)
@@ -680,10 +854,37 @@ void Client_FillAddress(void)
 		{
 			if (1)
 			{
-				const char pattern[] = "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01";
-				DWORD addr = (DWORD)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				const char pattern[] = "\x6A\x00\x6A\x00\x6A\x00\x8B\x2A\xFF\x50\x2A";
+				auto addr = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 				Sig_AddrNotFound(g_bRenderingPortals);
-				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
+
+				g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+						pinst->detail->x86.operands[1].imm == 1)
+					{
+						g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))pinst->detail->x86.operands[0].mem.disp;
+						return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, NULL);
+
+				Sig_VarNotFound(g_bRenderingPortals_SCClient);
 			}
 
 			g_bIsSvenCoop = true;
@@ -729,24 +930,22 @@ void R_NewMap(void)
 {
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
-
+	
 	gPrivateFuncs.R_NewMap();
-	gPhysicsManager.NewMap();
+	ClientPhysicManager()->NewMap();
 	ClientEntityManager()->NewMap();
+	g_pViewPort->NewMap();
 }
 
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype)
 {
 	auto r = gPrivateFuncs.efxapi_R_TempModel(pos, dir, angles, life, modelIndex, soundtype);
 
-	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0)
+	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0 && g_iCreatingClCorpsePlayerIndex <= gEngfuncs.GetMaxClients())
 	{
-		int tentindex = r - gTempEnts;
-
-		gPhysicsManager.ChangeRagdollEntIndex(g_iCreatingClCorpsePlayerIndex, ENTINDEX_TEMPENTITY + tentindex);
+		int entindex = r - gTempEnts + ENTINDEX_TEMPENTITY;
 
 		r->entity.curstate.iuser4 = PhyCorpseFlag;
-		r->entity.curstate.iuser3 = ENTINDEX_TEMPENTITY + tentindex;
 		r->entity.curstate.owner = g_iCreatingClCorpsePlayerIndex;
 	}
 

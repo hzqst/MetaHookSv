@@ -18,11 +18,6 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t** gpStudioInterface;
 
-#define OBS_SVEN_NONE				0
-#define OBS_SVEN_CHASE_FREE			1
-#define OBS_SVEN_ROAMING			2	
-#define OBS_SVEN_CHASE_LOCKED		3
-
 cvar_t* cl_chasedist = NULL;
 cvar_t* cl_waterdist = NULL;
 

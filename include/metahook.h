@@ -19,6 +19,19 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 
 #define HOOK_MESSAGE(x) g_pMetaHookAPI->HookUserMsg(#x, __MsgFunc_##x);
 
+//Fuck Microsoft
+#ifdef PropertySheet
+#undef PropertySheet
+#endif
+
+#ifdef PostMessage
+#undef PostMessage
+#endif
+
+#ifdef SendMessage
+#undef SendMessage
+#endif
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__
@@ -526,6 +539,11 @@ void MH_Shutdown(void);
 #include <IRegistry.h>
 
 #define METAHOOK_API_VERSION 103
+
+class ICommandLine;
+class IFileSystem;
+class IRegistry;
+class IFileSystem_HL25;
 
 typedef struct mh_interface_s
 {

@@ -206,9 +206,6 @@
     <ClCompile Include="BaseUI.cpp">
       <Filter>BaseUI</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\AnalogBar.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
@@ -452,6 +449,9 @@
     <ClCompile Include="util.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -510,6 +510,9 @@
     </ClInclude>
     <ClInclude Include="util.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="VGUI1_AIO.h">
+      <Filter>VGUI1</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

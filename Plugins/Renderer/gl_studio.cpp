@@ -768,7 +768,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			}
 			else
 			{
-				R_ParseCvarAsColor3(r_studio_celshade_shadow_color, color);
+				UTIL_ParseCvarAsColor3(r_studio_celshade_shadow_color, color);
 			}
 
 			glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
@@ -785,7 +785,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec3_t offset = { 0 };
-				R_ParseCvarAsVector3(r_studio_celshade_head_offset, offset);
+				UTIL_ParseCvarAsVector3(r_studio_celshade_head_offset, offset);
 				glUniform3f(prog.r_celshade_head_offset, offset[0], offset[1], offset[2]);
 			}
 		}
@@ -801,7 +801,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec2_t value = { 0 };
-				R_ParseCvarAsVector2(r_studio_celshade_lightdir_adjust, value);
+				UTIL_ParseCvarAsVector2(r_studio_celshade_lightdir_adjust, value);
 				glUniform2f(prog.r_celshade_lightdir_adjust, value[0], value[1]);
 			}
 		}
@@ -852,7 +852,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			}
 			else
 			{
-				R_ParseCvarAsVector2(r_studio_rimlight_color, values);
+				UTIL_ParseCvarAsVector2(r_studio_rimlight_color, values);
 			}
 
 			glUniform2f(prog.r_rimlight_smooth2, values[0], values[1]);
@@ -867,7 +867,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			}
 			else
 			{
-				R_ParseCvarAsColor3(r_studio_rimlight_color, color);
+				UTIL_ParseCvarAsColor3(r_studio_rimlight_color, color);
 			}
 			glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
 		}
@@ -906,7 +906,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			}
 			else
 			{
-				R_ParseCvarAsVector2(r_studio_rimdark_color, values);
+				UTIL_ParseCvarAsVector2(r_studio_rimdark_color, values);
 			}
 
 			glUniform2f(prog.r_rimdark_smooth2, values[0], values[1]);
@@ -922,7 +922,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			}
 			else
 			{
-				R_ParseCvarAsColor3(r_studio_rimdark_color, color);
+				UTIL_ParseCvarAsColor3(r_studio_rimdark_color, color);
 			}
 
 			glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
@@ -951,7 +951,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec4_t values = { 0 };
-				R_ParseCvarAsVector4(r_studio_hair_specular_noise, values);
+				UTIL_ParseCvarAsVector4(r_studio_hair_specular_noise, values);
 				glUniform4f(prog.r_hair_specular_noise, values[0], values[1], values[2], values[3]);
 			}
 		}
@@ -967,7 +967,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec3_t values = { 0 };
-				R_ParseCvarAsVector3(r_studio_hair_specular_intensity, values);
+				UTIL_ParseCvarAsVector3(r_studio_hair_specular_intensity, values);
 				glUniform3f(prog.r_hair_specular_intensity, values[0], values[1], values[2]);
 			}
 		}
@@ -995,7 +995,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec4_t values = { 0 };
-				R_ParseCvarAsVector4(r_studio_hair_specular_noise2, values);
+				UTIL_ParseCvarAsVector4(r_studio_hair_specular_noise2, values);
 				glUniform4f(prog.r_hair_specular_noise2, values[0], values[1], values[2], values[3]);
 			}
 		}
@@ -1011,7 +1011,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec3_t values = { 0 };
-				R_ParseCvarAsVector3(r_studio_hair_specular_intensity2, values);
+				UTIL_ParseCvarAsVector3(r_studio_hair_specular_intensity2, values);
 				glUniform3f(prog.r_hair_specular_intensity2, values[0], values[1], values[2]);
 			}
 		}
@@ -1027,7 +1027,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec2_t values = { 0 };
-				R_ParseCvarAsVector2(r_studio_hair_specular_smooth, values);
+				UTIL_ParseCvarAsVector2(r_studio_hair_specular_smooth, values);
 				glUniform2f(prog.r_hair_specular_smooth, values[0], values[1]);
 			}
 		}
@@ -1043,7 +1043,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			else
 			{
 				vec2_t values = { 0 };
-				R_ParseCvarAsVector2(r_studio_hair_shadow_offset, values);
+				UTIL_ParseCvarAsVector2(r_studio_hair_shadow_offset, values);
 				glUniform2f(prog.r_hair_shadow_offset, values[0], values[1]);
 			}
 		}
@@ -3340,31 +3340,31 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 		}\
 	}
 
-	REGISTER_CELSHADE_KEY_VALUE(base_specular, R_ParseStringAsVector2);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_specular, R_ParseStringAsVector4);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_midpoint, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_softness, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_shadow_color, R_ParseStringAsColor3);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_head_offset, R_ParseStringAsVector3);
-	REGISTER_CELSHADE_KEY_VALUE(celshade_lightdir_adjust, R_ParseStringAsVector2);
-	REGISTER_CELSHADE_KEY_VALUE(outline_size, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(outline_dark, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(rimlight_power, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(rimlight_smooth, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(rimlight_smooth2, R_ParseStringAsVector2);
-	REGISTER_CELSHADE_KEY_VALUE(rimlight_color, R_ParseStringAsColor3);
-	REGISTER_CELSHADE_KEY_VALUE(rimdark_power, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(rimdark_smooth, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(rimdark_smooth2, R_ParseStringAsVector2);
-	REGISTER_CELSHADE_KEY_VALUE(rimdark_color, R_ParseStringAsColor3);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_exp, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_intensity, R_ParseStringAsVector3);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_noise, R_ParseStringAsVector4);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_exp2, R_ParseStringAsVector1);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_intensity2, R_ParseStringAsVector3);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_noise2, R_ParseStringAsVector4);
-	REGISTER_CELSHADE_KEY_VALUE(hair_specular_smooth, R_ParseStringAsVector2);
-	REGISTER_CELSHADE_KEY_VALUE(hair_shadow_offset, R_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(base_specular, UTIL_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_specular, UTIL_ParseStringAsVector4);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_midpoint, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_softness, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_shadow_color, UTIL_ParseStringAsColor3);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_head_offset, UTIL_ParseStringAsVector3);
+	REGISTER_CELSHADE_KEY_VALUE(celshade_lightdir_adjust, UTIL_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(outline_size, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(outline_dark, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(rimlight_power, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(rimlight_smooth, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(rimlight_smooth2, UTIL_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(rimlight_color, UTIL_ParseStringAsColor3);
+	REGISTER_CELSHADE_KEY_VALUE(rimdark_power, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(rimdark_smooth, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(rimdark_smooth2, UTIL_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(rimdark_color, UTIL_ParseStringAsColor3);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_exp, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_intensity, UTIL_ParseStringAsVector3);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_noise, UTIL_ParseStringAsVector4);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_exp2, UTIL_ParseStringAsVector1);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_intensity2, UTIL_ParseStringAsVector3);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_noise2, UTIL_ParseStringAsVector4);
+	REGISTER_CELSHADE_KEY_VALUE(hair_specular_smooth, UTIL_ParseStringAsVector2);
+	REGISTER_CELSHADE_KEY_VALUE(hair_shadow_offset, UTIL_ParseStringAsVector2);
 
 #undef REGISTER_CELSHADE_KEY_VALUE
 }

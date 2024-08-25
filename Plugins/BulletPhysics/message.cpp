@@ -40,6 +40,9 @@ int __MsgFunc_ClCorpse(const char *pszName, int iSize, void *pbuf)
 
 	g_bIsCreatingClCorpse = true;
 	
+	//TODO Find player with:
+	//pev->effects |= EF_NOINTERP;
+	//pev->framerate = 0;
 	if (PlayerID <= 0 || PlayerID > gEngfuncs.GetMaxClients())
 	{
 		g_iCreatingClCorpsePlayerIndex = ClientEntityManager()->FindDyingPlayer(szModel, vOrigin, vAngles, Sequence, Body);

@@ -82,8 +82,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);$(Chocobo1HashDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <DisableSpecificWarnings>4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -97,7 +97,10 @@
       <AdditionalDependencies>$(Bullet3LibraryFiles);$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\bulletphysics\" "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics\" /y /e</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
@@ -107,8 +110,8 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);$(Chocobo1HashDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -136,8 +139,8 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);$(ScopeExitIncludeDirectory);$(TinyObjLoaderDirectory);$(Chocobo1HashDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -168,32 +171,157 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
-    <ClCompile Include="BulletPhysicMnager.cpp" />
+    <ClCompile Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.cc" />
+    <ClCompile Include="..\..\include\SourceSDK\filesystem.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\filesystem_helpers.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\3dnow.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\mathlib_base.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\assert_dialog.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\cpu.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\dbg.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\fasttimer.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memdbg.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memstd.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem_helpers.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\minidump.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\platform.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\generichash.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\KeyValues.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\KeyValuesSystem.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\random.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\AnalogBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\AnimatingImagePanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\AnimationController.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\BitmapImagePanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\BuildFactoryHelper.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\BuildGroup.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\BuildModeDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Button.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CheckButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CheckButtonList.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CircularProgressBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ComboBox.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\consoledialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ControllerMap.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Controls.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\DirectorySelectDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Divider.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\EditablePanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ExpandButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\FileOpenDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\FocusNavGroup.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Frame.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\GraphPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\HTML.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Image.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ImageList.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ImagePanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\InputDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\KeyBindingHelpDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\KeyBoardEditorDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\KeyRepeat.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Label.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ListPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ListViewPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Menu.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MenuBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MenuButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MenuItem.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MessageBox.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MessageDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Panel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\PanelListPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ProgressBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ProgressBox.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\PropertyDialog.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\PropertyPage.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\PropertySheet.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\QueryBox.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\RadioButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\RichText.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\RotatingProgressBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\savedocumentquery.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ScrollableEditablePanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ScrollBar.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ScrollBarSlider.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\SectionedListPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Slider.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Splitter.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\subrectimage.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\TextEntry.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\TextImage.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ToggleButton.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\Tooltip.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\ToolWindow.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\TreeView.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\TreeViewListControl.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\URLLabel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="BaseUI.cpp" />
+    <ClCompile Include="BulletPhysicManager.cpp" />
     <ClCompile Include="BasePhysicManager.cpp" />
+    <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
-    <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="ClientEntityManager.cpp" />
+    <ClCompile Include="GameUI.cpp" />
+    <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
+    <ClCompile Include="PhysicDebugGUI.cpp" />
+    <ClCompile Include="PhysicEditorDialog.cpp" />
+    <ClCompile Include="PhysicUTIL.cpp" />
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
-    <ClCompile Include="physics.cpp" />
     <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="util.cpp" />
+    <ClCompile Include="VGUI2ExtensionImport.cpp" />
+    <ClCompile Include="Viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="BaseDynamicObject.h" />
     <ClInclude Include="BasePhysicManager.h" />
+    <ClInclude Include="BaseRagdollObject.h" />
+    <ClInclude Include="BaseStaticObject.h" />
+    <ClInclude Include="BulletDynamicObject.h" />
     <ClInclude Include="BulletPhysicManager.h" />
+    <ClInclude Include="BulletRagdollObject.h" />
+    <ClInclude Include="BulletStaticObject.h" />
+    <ClInclude Include="ClientPhysicCommon.h" />
     <ClInclude Include="CounterStrike.h" />
+    <ClInclude Include="mathlib2.h" />
     <ClInclude Include="message.h" />
-    <ClInclude Include="PhysicManager.h" />
+    <ClInclude Include="ClientPhysicManager.h" />
+    <ClInclude Include="PhysicDebugGUI.h" />
+    <ClInclude Include="PhysicEditorDialog.h" />
+    <ClInclude Include="PhysicUTIL.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
-    <ClInclude Include="mathlib2.h" />
-    <ClInclude Include="physics.h" />
     <ClInclude Include="ClientEntityManager.h" />
-    <ClInclude Include="qgl.h" />
+    <ClInclude Include="ClientPhysicConfig.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="VGUI2ExtensionImport.h" />
+    <ClInclude Include="Viewport.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

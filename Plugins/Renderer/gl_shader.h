@@ -48,8 +48,6 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 
 void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size);
 
-#define math_clamp(value, mi, ma) min(max(value, mi), ma)
-
 #define SHADER_DEFINE(name) name##_program_t name;
 
 #define SHADER_UNIFORM(name, loc, locstring) name##.loc = glGetUniformLocation(name.program, locstring);

@@ -151,7 +151,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile(g_pFileSystem, "captionmod/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load captionmod/gameui_english.txt");
+					Sys_Error("Failed to load \"captionmod/gameui_english.txt\"");
 				}
 			}
 		}
@@ -161,7 +161,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "captionmod/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load captionmod/gameui_english.txt");
+					Sys_Error("Failed to load \"captionmod/gameui_english.txt\"");
 				}
 			}
 		}

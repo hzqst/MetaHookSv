@@ -743,15 +743,21 @@ typedef enum {false, true}	qboolean;
 typedef int qboolean;
 #endif
 
-typedef struct
+#ifndef COLOR24_DEFINED
+#define COLOR24_DEFINED
+typedef struct color24
 {
 	byte r, g, b;
-} color24;
+} color24_t;
+#endif
 
-typedef struct
+#ifndef COLORVEC_DEFINED
+#define COLORVEC_DEFINED
+struct colorVec
 {
 	unsigned r, g, b, a;
-} colorVec;
+};
+#endif
 
 #ifdef _WIN32
 #pragma pack(push,2)

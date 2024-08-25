@@ -985,6 +985,7 @@ void Engine_FillAddress(void)
 
 			return FALSE;
 		}, 0, NULL);
+
 	Sig_VarNotFound(hostparam_basedir);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -1224,6 +1225,91 @@ void Engine_FillAddress(void)
 				break;
 			}
 		}
+	}
+
+	if (1)
+	{
+		const char pattern[] = "\x68\xF0\x00\x00\x00\x68\x40\x01\x00\x00\x6A\x00\x6A\x00";
+
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
+		while (1)
+		{
+			auto pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, pattern);
+			if (pFound)
+			{
+				auto pStartDisasm = pFound + Sig_Length(pattern);
+
+				typedef struct
+				{
+					int instCountPush0;
+					int instCountPushEngineSurface007;
+				}VGuiWrap_Startup_SearchContext;
+
+				VGuiWrap_Startup_SearchContext ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(pStartDisasm, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto ctx = (VGuiWrap_Startup_SearchContext*)context;
+						auto pinst = (cs_insn*)inst;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm == 0)
+						{
+							ctx->instCountPush0 = instCount;
+						}
+
+						if (!ctx->instCountPushEngineSurface007 && ctx->instCountPush0 && instCount >= ctx->instCountPush0 + 1 && instCount <= ctx->instCountPush0 + 3 &&
+							pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+								|| ((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineDataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+								))
+						{
+							const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
+
+							if (!memcmp(pPushString, "EngineSurface007", sizeof("EngineSurface007")))
+							{
+								ctx->instCountPushEngineSurface007 = instCount;
+							}
+						}
+
+						if (ctx->instCountPush0 && ctx->instCountPushEngineSurface007 && instCount < ctx->instCountPushEngineSurface007 + 16)
+						{
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+								pinst->detail->x86.operands[1].type == X86_OP_REG)
+							{
+								staticEngineSurface = (decltype(staticEngineSurface))pinst->detail->x86.operands[0].mem.disp;
+								return TRUE;
+							}
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, 0, & ctx);
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+		
+		Sig_VarNotFound(staticEngineSurface);
+
 	}
 }
 

@@ -19,3 +19,12 @@
 [submodule "thirdparty/capstone_fork"]
 	path = thirdparty/capstone_fork
 	url = https://github.com/hzqst/capstone
+[submodule "thirdparty/tinyobjloader"]
+	path = thirdparty/tinyobjloader
+	url = https://github.com/hzqst/tinyobjloader
+[submodule "thirdparty/Musa.Veil_fork"]
+	path = thirdparty/Musa.Veil_fork
+	url = https://github.com/hzqst/Musa.Veil
+[submodule "thirdparty/Chocobo1Hash"]
+	path = thirdparty/Chocobo1Hash
+	url = https://github.com/hzqst/Chocobo1Hash

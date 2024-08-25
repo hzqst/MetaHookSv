@@ -857,25 +857,81 @@ void Client_FillAddress(void)
 
 		if (1)
 		{
-			char pattern[] = "\x6A\x00\x50\x6A\xFF\x6A\x08\xE8\x2A\x2A\x2A\x2A\x2A\x2A\xE8";
+			char pattern[] = "\x6A\x00\x50\x6A\xFF\x6A\x08\xE8";
 			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-			Sig_VarNotFound("ScClient_SoundEngine_PlayFMODSound");
+			Sig_AddrNotFound("ScClient_SoundEngine_PlayFMODSound");
 
-			gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound))GetCallAddress(addr + Sig_Length(pattern) - 1);
+			g_pMetaHookAPI->DisasmRanges(addr + Sig_Length(pattern) - 1, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+
+				if (address[0] == 0xE8)
+				{
+					auto target = GetCallAddress(address);
+
+					typedef struct
+					{
+						bool bFoundPush11B0D4;
+					}ScClient_SoundEngine_PlayFMODSoundContext;
+
+					ScClient_SoundEngine_PlayFMODSoundContext ctx2 = {0};
+
+					g_pMetaHookAPI->DisasmRanges(target, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+						auto ctx2 = (ScClient_SoundEngine_PlayFMODSoundContext*)context;
+						auto pinst = (cs_insn*)inst;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm >= 0x100000)
+						{
+							ctx2->bFoundPush11B0D4 = true;
+							return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, & ctx2);
+
+					if (ctx2.bFoundPush11B0D4)
+					{
+						return FALSE;
+					}
+
+					gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound))target;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, NULL);
+
+			
 		}
 
 		if (1)
 		{
 			char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
 			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-			Sig_VarNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
+			Sig_AddrNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
 
 			gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))addr;
 		}
 
 		if(1)
 		{
-			char pattern[] = "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58";
+			char pattern[] = "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1";
 			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_FuncNotFound(GetClientColor);
 		}

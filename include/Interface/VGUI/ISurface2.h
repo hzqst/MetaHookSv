@@ -258,10 +258,12 @@ public:
 	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier) = 0;
 	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser) = 0;
 	virtual IHTMLChromeController* AccessChromeHTMLController() = 0;
+	virtual bool VGUI2MouseControl(void) = 0;
+	virtual void SetVGUI2MouseControl(bool state) = 0;
 };
 
 }
 
-#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_004"
+#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_005"
 
 #endif

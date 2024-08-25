@@ -748,9 +748,6 @@
     <ClInclude Include="..\..\include\vgui_controls\WizardSubPanel.h">
       <Filter>vgui_controls</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\KeyValues.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="VGUI2ExtensionImport.h">
       <Filter>VGUI2</Filter>
     </ClInclude>

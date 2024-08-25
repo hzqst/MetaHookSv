@@ -16,7 +16,8 @@
 
 #include <tier0/dbg.h>
 #include <tier0/platform.h>
-#include <mathlib/mathlib.h>
+//Why mathlib???
+//#include <mathlib/mathlib.h>
 
 #include <tier0/memalloc.h>
 #include <tier0/memdbgon.h>
@@ -145,6 +146,9 @@ void CUtlBlockMemory<T,I>::Swap( CUtlBlockMemory< T, I > &mem )
 //-----------------------------------------------------------------------------
 // Set the size by which the memory grows - round up to the next power of 2
 //-----------------------------------------------------------------------------
+
+FORCEINLINE uint SmallestPowerOfTwoGreaterOrEqual(uint x);
+
 template< class T, class I >
 void CUtlBlockMemory<T,I>::Init( int nGrowSize /* = 0 */, int nInitSize /* = 0 */ )
 {

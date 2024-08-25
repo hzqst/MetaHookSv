@@ -82,6 +82,7 @@ void HUD_Frame(double frame)
 	gExportfuncs.HUD_Frame(frame);
 
 	SCModelDatabase()->RunFrame();
+	UtilHTTPClient()->RunFrame();
 }
 
 void HUD_Init(void)

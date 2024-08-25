@@ -319,7 +319,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\KeyValues.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimatingImagePanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimationController.h" />

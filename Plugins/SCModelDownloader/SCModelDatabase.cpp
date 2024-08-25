@@ -79,9 +79,9 @@ public:
 			return;
 		}
 
-		auto payload = ResponseInstance->GetPayload();
+		auto pPayload = ResponseInstance->GetPayload();
 
-		if (!m_pQueryTask->OnResponsePayload((const char*)payload->GetBytes(), payload->GetLength()))
+		if (!m_pQueryTask->OnResponsePayload((const char*)pPayload->GetBytes(), pPayload->GetLength()))
 		{
 			m_pQueryTask->OnFailure();
 			return;
@@ -407,6 +407,9 @@ public:
 
 	bool OnResponsePayload(const char* data, size_t size) override
 	{
+		if (g_Database.size() > 0)
+			return true;
+
 		rapidjson::Document doc;
 
 		doc.Parse(data, size);

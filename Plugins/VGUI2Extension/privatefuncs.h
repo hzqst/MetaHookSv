@@ -9,7 +9,7 @@
 #include <cvardef.h>
 #include "enginedef.h"
 
-struct vgui1_TextImage;
+class vgui1_TextImage;
 class KeyValues;
 
 typedef struct walk_context_s
@@ -33,9 +33,12 @@ typedef struct
 	void(__fastcall* EngineVGUI2_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 
 	//VGUI1
+	void* (__cdecl* vgui_App_getInstance)();
 	void (__fastcall *vgui_TextImage_paint)(vgui1_TextImage *pthis, int, void *panel);
+	void** vftable_vgui1_TextImage;
+	void** vftable_vgui1_Color;
 
-	//VGUI2
+	//VGUI2;
 	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
 
 	//Engine init
@@ -160,6 +163,9 @@ extern char*(*hostparam_basedir);
 extern HWND g_MainWnd;
 extern char m_szCurrentGameLanguage[128];
 
+//VGUI1 engineSurfaceWrapper
+extern void* staticEngineSurface;
+
 extern private_funcs_t gPrivateFuncs;
 
 const char* GetCurrentGameLanguage();
@@ -194,6 +200,7 @@ void ServerBrowser_UninstallHooks(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc); 
 void NativeClientUI_UninstallHooks(void);
 void VGUI1_InstallHooks(void);
+void VGUI1_PostInstallHooks(void);
 void VGUI1_Shutdown(void);
 void Surface_InstallHooks(void);
 void Surface_UninstallHooks(void);

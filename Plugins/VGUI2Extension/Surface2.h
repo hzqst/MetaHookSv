@@ -203,24 +203,27 @@ public:
 	void SetWorkspaceInsets( int left, int top, int right, int bottom );
 
 	// Lower level char drawing code, call DrawGet then pass in info to DrawRender
-	bool DrawGetUnicodeCharRenderInfo( wchar_t ch, CharRenderInfo &info );
-	void DrawRenderCharFromInfo( const CharRenderInfo &info );
+	bool DrawGetUnicodeCharRenderInfo( wchar_t ch, CharRenderInfo &info ) override;
+	void DrawRenderCharFromInfo( const CharRenderInfo &info ) override;
 
 	// global alpha setting functions
 	// affect all subsequent draw calls - shouldn't normally be used directly, only in Panel::PaintTraverse()
-	void DrawSetAlphaMultiplier( float alpha );
-	float DrawGetAlphaMultiplier( void );
+	void DrawSetAlphaMultiplier( float alpha ) override;
+	float DrawGetAlphaMultiplier( void ) override;
 
 	// web browser
-	virtual void SetAllowHTMLJavaScript(bool state);
-	virtual void SetLanguage(const char* pchLang);
-	virtual const char* GetLanguage();
-	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall);
-	virtual void DrawSetTextureBGRA(int id, const unsigned char* pchData, int wide, int tall);
-	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier);
-	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser);
-	virtual IHTMLChromeController* AccessChromeHTMLController();
-	
+	void SetAllowHTMLJavaScript(bool state) override;
+	void SetLanguage(const char* pchLang) override;
+	const char* GetLanguage() override;
+	void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall) override;
+	void DrawSetTextureBGRA(int id, const unsigned char* pchData, int wide, int tall) override;
+	void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier) override;
+	void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser) override;
+	IHTMLChromeController* AccessChromeHTMLController() override;
+
+	bool VGUI2MouseControl(void) override;
+	void SetVGUI2MouseControl(bool state) override;
+
 	// video mode changing
 	void OnScreenSizeChanged( int nOldWidth, int nOldHeight );
 
