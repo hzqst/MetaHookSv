@@ -318,6 +318,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		return pfnDrawModel(pthis, 0, flags);
 	}
 
+
 	if (flags & STUDIO_RAGDOLL_SETUP_BONES)
 	{
 		return pfnDrawModel(pthis, 0, 0);
