@@ -31,6 +31,8 @@ std::string UTIL_FormatAbsoluteModelName(model_t* mod);
 
 bool UTIL_IsCollisionShapeConfigModified(const CClientCollisionShapeConfig* pCollisionShapeConfig);
 bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicObjectConfig);
+void UTIL_SetCollisionShapeConfigUnmodified(CClientCollisionShapeConfig* pCollisionShapeConfig);
+void UTIL_SetPhysicObjectConfigUnmodified(CClientPhysicObjectConfig* pPhysicObjectConfig);
 
 IPhysicRigidBody* UTIL_GetPhysicComponentAsRigidBody(int physicComponentId);
 IPhysicConstraint* UTIL_GetPhysicComponentAsConstraint(int physicComponentId);

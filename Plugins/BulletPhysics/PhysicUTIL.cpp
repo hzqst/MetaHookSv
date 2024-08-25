@@ -471,6 +471,67 @@ bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicO
 	return false;
 }
 
+void UTIL_SetCollisionShapeConfigUnmodified(CClientCollisionShapeConfig* pCollisionShapeConfig)
+{
+	pCollisionShapeConfig->configModified = false;
+
+	for (const auto& pSubShapeConfig : pCollisionShapeConfig->compoundShapes)
+	{
+		UTIL_SetCollisionShapeConfigUnmodified(pSubShapeConfig.get());
+	}
+}
+
+void UTIL_SetPhysicObjectConfigUnmodified(CClientPhysicObjectConfig* pPhysicObjectConfig)
+{
+	pPhysicObjectConfig->configModified = false;
+
+	for (const auto& pRigidBodyConfig : pPhysicObjectConfig->RigidBodyConfigs)
+	{
+		pRigidBodyConfig->configModified = false;
+
+		const auto& pCollisionShapeConfig = pRigidBodyConfig->collisionShape;
+
+		if (pCollisionShapeConfig)
+		{
+			UTIL_SetCollisionShapeConfigUnmodified(pCollisionShapeConfig.get());
+		}
+	}
+
+	if (pPhysicObjectConfig->type == PhysicObjectType_DynamicObject)
+	{
+		const auto pDynamicObjectConfig = (const CClientDynamicObjectConfig*)pPhysicObjectConfig;
+
+		for (const auto& pConstraintConfig : pDynamicObjectConfig->ConstraintConfigs)
+		{
+			pConstraintConfig->configModified = false;
+		}
+	}
+	else if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
+	{
+		const auto pRagdollObjectConfig = (const CClientRagdollObjectConfig*)pPhysicObjectConfig;
+
+		for (const auto& pConstraintConfig : pRagdollObjectConfig->ConstraintConfigs)
+		{
+			pConstraintConfig->configModified = false;
+		}
+
+		for (const auto& pFloaterConfig : pRagdollObjectConfig->FloaterConfigs)
+		{
+			pFloaterConfig->configModified = false;
+		}
+
+		for (const auto& pActionConfig : pRagdollObjectConfig->BarnacleControlConfig.ActionConfigs)
+		{
+			pActionConfig->configModified = false;
+		}
+
+		for (const auto& pConstraintConfig : pRagdollObjectConfig->BarnacleControlConfig.ConstraintConfigs)
+		{
+			pConstraintConfig->configModified = false;
+		}
+	}
+}
+
 IPhysicRigidBody* UTIL_GetPhysicComponentAsRigidBody(int physicComponentId)
 {
 	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);

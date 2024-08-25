@@ -2155,6 +2155,8 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 
 	if (SavePhysicObjectConfigToNewFile(fullname_physic, pPhysicObjectConfig))
 	{
+		UTIL_SetPhysicObjectConfigUnmodified(pPhysicObjectConfig);
+
 		gEngfuncs.Con_Printf("SavePhysicObjectConfigToFile: \"%s\" saved !\n", fullname_physic.c_str());
 		return true;
 	}

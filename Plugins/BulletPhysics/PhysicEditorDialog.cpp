@@ -41,6 +41,11 @@ CBaseObjectConfigPage::CBaseObjectConfigPage(vgui::Panel* parent, const char* na
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
+void CBaseObjectConfigPage::OnApplyChanges()
+{
+	SaveConfigFromControls();
+}
+
 void CBaseObjectConfigPage::OnResetData()
 {
 	LoadConfigIntoControls();
@@ -1170,4 +1175,25 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 CPhysicEditorDialog::~CPhysicEditorDialog()
 {
 
+}
+
+void CPhysicEditorDialog::OnCommand(const char* command)
+{
+	if (!stricmp(command, "OK"))
+	{
+		m_pTabPanel->ApplyChanges();
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
+		Close();
+		return;
+	}
+	else if (!stricmp(command, "Apply"))
+	{
+		m_pTabPanel->ApplyChanges();
+		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
+		return;
+	}
+
+	BaseClass::OnCommand(command);
 }

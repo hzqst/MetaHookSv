@@ -33,6 +33,8 @@ public:
 
 private:
 
+	MESSAGE_FUNC(OnApplyChanges, "ApplyChanges");
+
 	MESSAGE_FUNC(OnResetData, "ResetData");
 
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
@@ -234,6 +236,8 @@ public:
 	~CPhysicEditorDialog();
 
 private:
+
+	void OnCommand(const char* command) override;
 
 	typedef vgui::Frame BaseClass;
 
