@@ -329,6 +329,12 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
+The channel `RED` will be used as the intensity of the specular.
+
+The channel `GREEN` will be used as the intensity of the Screen-Space-Reflection.
+
+The channel `BLUE` will be used as the ratio of the Spherized-Normal on "face" textures。(This only affects textures with STUDIO_NF_CELSHADE_FACE)
+
 ### Cvars
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
@@ -339,7 +345,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 
 ## StudioModel alpha-transparent texture
 
-Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from a opaque entity.
+Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from an opaque entity.
 
 You will have to replace the basetexture with an external texture with alpha-channel supported, like DXT5-BC7 DDS,TGA or PNG.
 
