@@ -48,13 +48,15 @@ enum PhysicObjectType
 //const int PhysicObjectType_RagdollObject = 3;
 //const int PhysicObjectType_Maximum = 4;
 
+//Flags are always runtime
+
 const int PhysicObjectFlag_Barnacle = 0x1;
 const int PhysicObjectFlag_Gargantua = 0x2;
 const int PhysicObjectFlag_StaticObject = 0x1000;
 const int PhysicObjectFlag_DynamicObject = 0x2000;
 const int PhysicObjectFlag_RagdollObject = 0x4000;
-const int PhysicObjectFlag_FromBSP = 0x20000;
-const int PhysicObjectFlag_FromConfig = 0x40000;
+const int PhysicObjectFlag_FromBSP = 0x8000;
+const int PhysicObjectFlag_FromConfig = 0x10000;
 const int PhysicObjectFlag_AnyObject = (PhysicObjectFlag_StaticObject | PhysicObjectFlag_RagdollObject | PhysicObjectFlag_DynamicObject);
 
 const int PhysicRigidBodyFlag_None = 0;

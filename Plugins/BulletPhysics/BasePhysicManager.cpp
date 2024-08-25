@@ -2209,6 +2209,13 @@ void CBasePhysicManager::OverwritePhysicObjectConfig(const std::string& filename
 	Storage.filename = filename;
 	Storage.state = PhysicConfigState_Loaded;
 
+	pPhysicObjectConfig->fileName = filename;
+
+	char szShortName[64] = {0};
+	V_FileBase(filename.c_str(), szShortName, sizeof(szShortName));
+
+	pPhysicObjectConfig->shortName = szShortName;
+
 	ClientPhysicManager()->AddPhysicConfig(pPhysicObjectConfig->configId, pPhysicObjectConfig);
 }
 

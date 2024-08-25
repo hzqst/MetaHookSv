@@ -6,6 +6,18 @@
 #include <format>
 #include <algorithm>
 
+const char* VGUI2Token_PhysicObject[] = { "#BulletPhysics_None", "#BulletPhysics_StaticObject", "#BulletPhysics_DynamicObject", "#BulletPhysics_RagdollObject" };
+
+const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type)
+{
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicObject))
+	{
+		return VGUI2Token_PhysicObject[type];
+	}
+
+	return "#BulletPhysics_None";
+}
+
 const char* VGUI2Token_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
 
 const char* UTIL_GetCollisionShapeTypeLocalizationToken(int type)

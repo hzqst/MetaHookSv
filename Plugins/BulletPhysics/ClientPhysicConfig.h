@@ -174,7 +174,12 @@ public:
 	bool verifyStudioModel{};
 	int crc32BoneChunk{};
 	int crc32StudioModel{};
+
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
+
+	//Never Change
+	std::string fileName;
+	std::string shortName;
 };
 
 class CClientDynamicObjectConfig : public CClientPhysicObjectConfig

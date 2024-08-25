@@ -19,6 +19,101 @@ CRigidBodyListPanel::CRigidBodyListPanel(vgui::Panel* parent, const char* pName)
 
 }
 
+CBaseObjectConfigPage::CBaseObjectConfigPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
+	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
+{
+	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
+
+	m_pStaticObject = new vgui::CheckButton(this, "StaticObject", "#BulletPhysics_StaticObject");
+	m_pDynamicObject = new vgui::CheckButton(this, "DynamicObject", "#BulletPhysics_DynamicObject");
+	m_pRagdollObject = new vgui::CheckButton(this, "RagdollObject", "#BulletPhysics_RagdollObject");
+	m_pFromBSP = new vgui::CheckButton(this, "FromBSP", "#BulletPhysics_FromBSP");
+	m_pFromConfig = new vgui::CheckButton(this, "FromConfig", "#BulletPhysics_FromConfig");
+	m_pBarnacle = new vgui::CheckButton(this, "Barnacle", "#BulletPhysics_Barnacle");
+	m_pGargantua = new vgui::CheckButton(this, "Gargantua", "#BulletPhysics_Gargantua");
+
+	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
+
+	LoadControlSettings("bulletphysics/BaseObjectConfigPage.res", "GAME");
+
+	vgui::ivgui()->AddTickSignal(GetVPanel());
+
+	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
+}
+
+void CBaseObjectConfigPage::OnResetData()
+{
+	LoadConfigIntoControls();
+}
+
+void CBaseObjectConfigPage::ApplySchemeSettings(vgui::IScheme* pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("ListSmall", IsProportional());
+
+	if (!m_hFont)
+		m_hFont = pScheme->GetFont("DefaultSmall", IsProportional());
+
+	//m_pRigidBodyListPanel->SetFont(m_hFont);
+}
+
+void CBaseObjectConfigPage::OnKeyCodeTyped(vgui::KeyCode code)
+{
+	if (code == vgui::KEY_ENTER)
+	{
+		
+	}
+
+	BaseClass::OnKeyCodeTyped(code);
+}
+
+void CBaseObjectConfigPage::OnCommand(const char* command)
+{
+	if (!stricmp(command, "OK"))
+	{
+
+	}
+	else
+	{
+		BaseClass::OnCommand(command);
+	}
+}
+
+void CBaseObjectConfigPage::LoadConfigIntoControls()
+{
+#define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pPhysicObjectConfig->from); m_p##to->SetText(str##to.c_str());}
+	LOAD_INTO_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel);
+#undef LOAD_INTO_TEXT_ENTRY
+
+#define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pPhysicObjectConfig->from & PhysicObjectFlag_##to) ? true : false);
+	LOAD_INTO_CHECK_BUTTON(flags, StaticObject);
+	LOAD_INTO_CHECK_BUTTON(flags, DynamicObject);
+	LOAD_INTO_CHECK_BUTTON(flags, RagdollObject);
+	LOAD_INTO_CHECK_BUTTON(flags, FromBSP);
+	LOAD_INTO_CHECK_BUTTON(flags, FromConfig);
+	LOAD_INTO_CHECK_BUTTON(flags, Barnacle);
+	LOAD_INTO_CHECK_BUTTON(flags, Gargantua);
+#undef LOAD_INTO_CHECK_BUTTON
+}
+
+void CBaseObjectConfigPage::SaveConfigFromControls()
+{
+	char szText[256];
+#define SAVE_FROM_TEXT_ENTRY(to, from, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pPhysicObjectConfig->to = processor(szText);}
+
+	SAVE_FROM_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel, atoi);
+
+#undef SAVE_FROM_TEXT_ENTRY
+
+#define SAVE_FROM_CHECK_BUTTON(to, from) if (m_p##from->IsSelected()) { m_pPhysicObjectConfig->to |= PhysicObjectFlag_##from; } else { m_pPhysicObjectConfig->to &= ~PhysicObjectFlag_##from; }
+	SAVE_FROM_CHECK_BUTTON(flags, Barnacle);
+	SAVE_FROM_CHECK_BUTTON(flags, Gargantua);
+#undef SAVE_FROM_CHECK_BUTTON
+
+	m_pPhysicObjectConfig->configModified = true;
+}
+
 CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
 	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
 {
@@ -983,16 +1078,14 @@ void CRigidBodyEditDialog::LoadConfigIntoControls()
 
 void CRigidBodyEditDialog::SaveConfigFromControls()
 {
+	m_pRigidBodyConfig->boneindex = GetCurrentSelectedBoneIndex();
+
 	char szText[256];
 
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pRigidBodyConfig->to = processor(szText);}
 
 	SAVE_FROM_TEXT_ENTRY(name, Name, std::string);
-
 	SAVE_FROM_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel, atoi);
-
-	m_pRigidBodyConfig->boneindex = GetCurrentSelectedBoneIndex();
-
 	SAVE_FROM_TEXT_ENTRY(origin[0], OriginX, atof);
 	SAVE_FROM_TEXT_ENTRY(origin[1], OriginY, atof);
 	SAVE_FROM_TEXT_ENTRY(origin[2], OriginZ, atof);
@@ -1008,6 +1101,7 @@ void CRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_TEXT_ENTRY(ccdThreshold, CCDThreshold, atof);
 	SAVE_FROM_TEXT_ENTRY(linearSleepingThreshold, LinearSleepingThreshold, atof);
 	SAVE_FROM_TEXT_ENTRY(angularSleepingThreshold, AngularSleepingThreshold, atof);
+
 #undef SAVE_FROM_TEXT_ENTRY
 
 #define SAVE_FROM_CHECK_BUTTON(to, from) if (m_p##from->IsSelected()) { m_pRigidBodyConfig->to |= PhysicRigidBodyFlag_##from; } else { m_pRigidBodyConfig->to &= ~PhysicRigidBodyFlag_##from; }
@@ -1044,7 +1138,15 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 {
 	SetDeleteSelfOnClose(true);
 
-	SetTitle("#BulletPhysics_PhysicEditor", false);
+	wchar_t wszShortName[64] = { 0 };
+	vgui::localize()->ConvertANSIToUnicode(pPhysicObjectConfig->shortName.c_str(), wszShortName, sizeof(wszShortName));
+
+	auto title = std::format(L"{0} ({1} - {2})", vgui::localize()->Find("#BulletPhysics_PhysicEditor"), vgui::localize()->Find(UTIL_GetPhysicObjectTypeLocalizationToken(pPhysicObjectConfig->type)), wszShortName);
+
+	SetTitle(title.c_str(), false);
+
+	m_pBaseObjectConfigPage = new CBaseObjectConfigPage(this, "BaseObjectConfigPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pBaseObjectConfigPage->MakeReadyForUse();
 
 	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", m_physicObjectId, pPhysicObjectConfig);
 	m_pRigidBodyPage->MakeReadyForUse();
@@ -1054,12 +1156,13 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 
 	m_pTabPanel = new vgui::PropertySheet(this, "PhysicTabs");
 	m_pTabPanel->SetTabWidth(vgui::scheme()->GetProportionalScaledValue(72));
+	m_pTabPanel->AddPage(m_pBaseObjectConfigPage, "#BulletPhysics_Base");
 	m_pTabPanel->AddPage(m_pRigidBodyPage, "#BulletPhysics_RigidBody");
 	m_pTabPanel->AddActionSignalTarget(this);
 
 	LoadControlSettings("bulletphysics/PhysicEditorDialog.res", "GAME");
 
-	m_pTabPanel->SetActivePage(m_pRigidBodyPage);
+	m_pTabPanel->SetActivePage(m_pBaseObjectConfigPage);
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 }

@@ -877,46 +877,44 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 
 	if (physicComponentId)
 	{
-		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+		auto pConstraint = UTIL_GetPhysicComponentAsConstraint(physicComponentId);
 
-		if (pPhysicComponent && pPhysicComponent->IsConstraint())
+		if (pConstraint)
 		{
-			auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
-
 			wchar_t wszName[64] = { 0 };
 
-			vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszName, sizeof(wszName));
+			vgui::localize()->ConvertANSIToUnicode(pConstraint->GetName(), wszName, sizeof(wszName));
 
-			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find(pPhysicComponent->GetTypeLocalizationTokenString()), pPhysicComponent->GetPhysicComponentId(), wszName);
+			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find(pConstraint->GetTypeLocalizationTokenString()), pConstraint->GetPhysicComponentId(), wszName);
 
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_Barnacle)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_Barnacle)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Barnacle"));
 			}
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_Gargantua)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_Gargantua)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Gargantua"));
 			}
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnNormalActivity)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnNormalActivity)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnNormalActivity"));
 			}
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnDeathActivity)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnDeathActivity)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnDeathActivity"));
 			}
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnBarnacleActivity"));
 			}
-			if (pPhysicComponent->GetFlags() & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
 			{
 				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnGargantuaActivity"));
 			}
 
 			ShowInspectContentLabel(str.c_str());
 
-			auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+			auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(pConstraint->GetPhysicConfigId());
 
 			if (pConstraintConfig)
 			{
@@ -1068,9 +1066,7 @@ bool CPhysicDebugGUI::OpenInspectClientEntityMenu(bool bSelected)
 
 		if(pPhysicObject && pPhysicConfig)
 		{
-			auto model = EngineGetModelByIndex(modelindex);
-
-			if (model)
+			if (pPhysicConfig->flags & PhysicObjectFlag_FromConfig)
 			{
 				auto menu = new vgui::Menu(this, "contextmenu");
 
@@ -1080,7 +1076,7 @@ bool CPhysicDebugGUI::OpenInspectClientEntityMenu(bool bSelected)
 				wchar_t wszFileName[64] = { 0 };
 				wchar_t szBuf[256] = { 0 };
 
-				V_FileBase(model->name, szFileName, sizeof(szFileName));
+				V_FileBase(pPhysicConfig->shortName.c_str(), szFileName, sizeof(szFileName));
 				vgui::localize()->ConvertANSIToUnicode(szFileName, wszFileName, sizeof(wszFileName));
 
 				auto kv = new KeyValues("EditPhysicObject");
@@ -1466,6 +1462,9 @@ void CPhysicDebugGUI::OnCreateRigidBody(uint64 physicObjectId)
 	if (!pPhysicObjectConfig)
 		return;
 
+	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+		return;
+
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
 	pRigidBodyConfig->name = std::format("Unnamed ({0})", pRigidBodyConfig->configId);
@@ -1605,6 +1604,9 @@ void CPhysicDebugGUI::OnCloneRigidBodyEx(KeyValues* kv)
 	if (!pPhysicObjectConfig)
 		return;
 
+	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+		return;
+
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(rigidBodyConfigId);
 
 	if (!pRigidBodyConfig)
@@ -1661,6 +1663,9 @@ bool CPhysicDebugGUI::DeleteRigidBodyByComponentId(int physicComponentId)
 
 			if (pPhysicObjectConfig)
 			{
+				if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+					return false;
+
 				if (UTIL_RemoveRigidBodyFromPhysicObjectConfig(pPhysicObjectConfig.get(), pPhysicComponent->GetPhysicConfigId()))
 				{
 					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());

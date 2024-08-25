@@ -4,6 +4,7 @@
 
 #include <string>
 
+const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type);
 const char* UTIL_GetCollisionShapeTypeLocalizationToken(int type);
 std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type);
 std::wstring UTIL_GetFormattedRigidBodyFlags(int flags);

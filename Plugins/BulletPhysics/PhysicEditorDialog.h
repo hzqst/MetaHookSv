@@ -11,6 +11,7 @@
 
 #include "ClientPhysicConfig.h"
 
+
 class CRigidBodyListPanel : public vgui::ListPanel
 {
 public:
@@ -21,6 +22,41 @@ public:
 private:
 
 	typedef vgui::ListPanel BaseClass;
+};
+
+class CBaseObjectConfigPage : public vgui::PropertyPage
+{
+public:
+	DECLARE_CLASS_SIMPLE(CBaseObjectConfigPage, vgui::PropertyPage);
+
+	CBaseObjectConfigPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
+
+private:
+
+	MESSAGE_FUNC(OnResetData, "ResetData");
+
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
+	void OnCommand(const char* command) override;
+	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
+
+	void LoadConfigIntoControls();
+	void SaveConfigFromControls();
+
+	typedef vgui::PropertyPage BaseClass;
+private:
+	vgui::HFont m_hFont{};
+
+	vgui::CheckButton* m_pStaticObject{};
+	vgui::CheckButton* m_pDynamicObject{};
+	vgui::CheckButton* m_pRagdollObject{};
+	vgui::CheckButton* m_pFromBSP{};
+	vgui::CheckButton* m_pFromConfig{};
+	vgui::CheckButton* m_pBarnacle{};
+	vgui::CheckButton* m_pGargantua{};
+	vgui::TextEntry* m_pDebugDrawLevel{};
+
+	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
 };
 
 class CRigidBodyPage : public vgui::PropertyPage
@@ -202,6 +238,7 @@ private:
 	typedef vgui::Frame BaseClass;
 
 	vgui::PropertySheet* m_pTabPanel{};
+	CBaseObjectConfigPage* m_pBaseObjectConfigPage{};
 	CRigidBodyPage* m_pRigidBodyPage{};
 
 	uint64 m_physicObjectId{};
