@@ -905,22 +905,10 @@ static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CCl
 			AnimControlConfig.gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
 			AnimControlConfig.frame = pAnimControlSubKey->GetFloat("frame");
 			AnimControlConfig.activity = pAnimControlSubKey->GetInt("activity");
+			AnimControlConfig.idle = pAnimControlSubKey->GetBool("idle");
 
 			AnimControlConfigs.emplace_back(AnimControlConfig);
 		}
-	}
-}
-
-static void LoadIdleAnimFromKeyValues(KeyValues* pKeyValues, CClientAnimControlConfig& IdleAnimConfigs)
-{
-	auto pIdleAnimKey = pKeyValues->FindKey("idleAnim");
-
-	if (pIdleAnimKey)
-	{
-		IdleAnimConfigs.sequence = pIdleAnimKey->GetInt("sequence");
-		IdleAnimConfigs.gaitsequence = pIdleAnimKey->GetInt("gaitsequence");
-		IdleAnimConfigs.frame = pIdleAnimKey->GetFloat("frame");
-		IdleAnimConfigs.activity = pIdleAnimKey->GetInt("activity");
 	}
 }
 
@@ -1042,7 +1030,6 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnRagdollObject, pRagdollObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
 	LoadAnimControlsFromKeyValues(pKeyValues, pRagdollObjectConfig->AnimControlConfigs);
-	LoadIdleAnimFromKeyValues(pKeyValues, pRagdollObjectConfig->IdleAnimConfig);
 	LoadBarnacleControlFromKeyValues(pKeyValues, pRagdollObjectConfig->BarnacleControlConfig);
 	LoadCameraControlFromKeyValues(pKeyValues, "firstPersonViewCameraControl", pRagdollObjectConfig->FirstPersonViewCameraControlConfig);
 	LoadCameraControlFromKeyValues(pKeyValues, "thirdPersonViewCameraControl", pRagdollObjectConfig->ThirdPersonViewCameraControlConfig);
@@ -1610,22 +1597,10 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<C
 					pAnimControlSubKey->SetInt("gaitsequence", AnimControl.gaitsequence);
 					pAnimControlSubKey->SetFloat("frame", AnimControl.frame);
 					pAnimControlSubKey->SetInt("activity", AnimControl.activity);
+					pAnimControlSubKey->SetBool("idle", AnimControl.idle);
 				}
 			}
 		}
-	}
-}
-
-static void AddIdleAnimToKeyValues(KeyValues* pKeyValues, const CClientAnimControlConfig& IdleAnimConfigs)
-{
-	auto pIdleAnimKey = pKeyValues->FindKey("idleAnim", true);
-
-	if (pIdleAnimKey)
-	{
-		pIdleAnimKey->SetInt("sequence", IdleAnimConfigs.sequence);
-		pIdleAnimKey->SetInt("gaitsequence", IdleAnimConfigs.gaitsequence);
-		pIdleAnimKey->SetFloat("frame", IdleAnimConfigs.frame);
-		pIdleAnimKey->SetInt("activity", IdleAnimConfigs.activity);
 	}
 }
 
@@ -1692,7 +1667,6 @@ static KeyValues* ConvertRagdollObjectConfigToKeyValues(const CClientRagdollObje
 	AddRigidBodiesToKeyValues(pKeyValues, RagdollObjectConfig->RigidBodyConfigs);
 	AddConstraintsToKeyValues(pKeyValues, RagdollObjectConfig->ConstraintConfigs);
 	AddAnimControlToKeyValues(pKeyValues, RagdollObjectConfig->AnimControlConfigs);
-	AddIdleAnimToKeyValues(pKeyValues, RagdollObjectConfig->IdleAnimConfig);
 	AddBarnacleControlToKeyValues(pKeyValues, RagdollObjectConfig->BarnacleControlConfig);
 	AddCameraControlToKeyValues(pKeyValues, "firstPersonViewCameraControl", RagdollObjectConfig->FirstPersonViewCameraControlConfig);
 	AddCameraControlToKeyValues(pKeyValues, "thirdPersonViewCameraControl", RagdollObjectConfig->ThirdPersonViewCameraControlConfig);
@@ -2937,12 +2911,10 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig.get();
 		
-		if (mod->type == mod_studio)
-			SetupBonesForRagdollEx(ent, state, mod, entindex, playerindex, pRagdollObjectConfig->IdleAnimConfig);
-
 		CRagdollObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
+		CreationParam.m_entstate = state;
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_model = mod;
 
@@ -2969,12 +2941,10 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicConfig.get();
 
-		if (mod->type == mod_studio)
-			SetupBonesForRagdoll(ent, state, mod, entindex, playerindex);
-
 		CDynamicObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
+		CreationParam.m_entstate = state;
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_model = mod;
 
@@ -2983,6 +2953,8 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(ent, mod);
 		}
+
+		CreationParam.m_playerindex = playerindex;
 
 		CreationParam.m_pDynamicObjectConfig = pDynamicObjectConfig;
 
@@ -2999,12 +2971,10 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig.get();
 
-		if (mod->type == mod_studio)
-			SetupBonesForRagdoll(ent, state, mod, entindex, playerindex);
-
 		CStaticObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
+		CreationParam.m_entstate = state;
 		CreationParam.m_entindex = entindex;
 		CreationParam.m_model = mod;
 
@@ -3013,6 +2983,8 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 			CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(ent, mod);
 		}
+
+		CreationParam.m_playerindex = playerindex;
 
 		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
 
@@ -3052,6 +3024,7 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 
 	CStaticObjectCreationParameter CreationParam;
 	CreationParam.m_entity = ent;
+	CreationParam.m_entstate = state;
 	CreationParam.m_entindex = entindex;
 	CreationParam.m_model = mod;
 	CreationParam.m_pStaticObjectConfig = (CClientStaticObjectConfig *)pPhysicConfig.get();

@@ -232,6 +232,7 @@ const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 //const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
+const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis = 3;
 
 //const int PhysicAction_Maximum = 4;
 

@@ -727,11 +727,109 @@ void CBulletConstraint::Update(CPhysicComponentUpdateContext* ComponentUpdateCon
 
 }
 
-void CBulletConstraint::ExtendLinearLimit(int axis, float value)
+bool CBulletConstraint::ExtendLinearLimit(int axis, float value)
 {
-	//TODO...
+	if (!m_pInternalConstraint)
+		return false;
 
-	Sys_Error("ExtendLinearLimit TODO")
+	FloatGoldSrcToBullet(&value);
+
+	if (m_pInternalConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btGeneric6DofConstraint*)m_pInternalConstraint;
+
+		if (axis == -1)
+		{
+			btVector3 currentLimit;
+			pDof6->getLinearLowerLimit(currentLimit);
+
+			if (currentLimit.x() < -1) {
+				currentLimit.setX(currentLimit.x() - value);
+			}
+			else if (currentLimit.x() > 1) {
+				currentLimit.setX(currentLimit.x() + value);
+			}
+			else if (currentLimit.y() < -1) {
+				currentLimit.setY(currentLimit.y() - value);
+			}
+			else if (currentLimit.y() > 1) {
+				currentLimit.setY(currentLimit.y() + value);
+			}
+			else if (currentLimit.z() < -1) {
+				currentLimit.setZ(currentLimit.z() - value);
+			}
+			else if (currentLimit.z() > 1) {
+				currentLimit.setZ(currentLimit.z() + value);
+			}
+
+			pDof6->setLinearLowerLimit(currentLimit);
+		}
+
+		if (axis == -1)
+		{
+			btVector3 currentLimit;
+			pDof6->getLinearUpperLimit(currentLimit);
+
+			if (currentLimit.x() < -1) {
+				currentLimit.setX(currentLimit.x() - value);
+			}
+			else if (currentLimit.x() > 1) {
+				currentLimit.setX(currentLimit.x() + value);
+			}
+			else if (currentLimit.y() < -1) {
+				currentLimit.setY(currentLimit.y() - value);
+			}
+			else if (currentLimit.y() > 1) {
+				currentLimit.setY(currentLimit.y() + value);
+			}
+			else if (currentLimit.z() < -1) {
+				currentLimit.setZ(currentLimit.z() - value);
+			}
+			else if (currentLimit.z() > 1) {
+				currentLimit.setZ(currentLimit.z() + value);
+			}
+
+			pDof6->setLinearUpperLimit(currentLimit);
+		}
+
+		return true;
+	}
+	else if (m_pInternalConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
+	{
+		auto pSlider = (btSliderConstraint*)m_pInternalConstraint;
+
+		if (axis == -1)
+		{
+			auto currentLimit = pSlider->getLowerLinLimit();
+
+			if (currentLimit < -1) {
+				currentLimit = currentLimit - value;
+			}
+			else if (currentLimit > 1) {
+				currentLimit = currentLimit + value;
+			}
+
+			pSlider->setLowerLinLimit(currentLimit);
+		}
+
+		if (axis == -1)
+		{
+			auto currentLimit = pSlider->getUpperLinLimit();
+
+			if (currentLimit < -1) {
+				currentLimit = currentLimit - value;
+			}
+			else if (currentLimit > 1) {
+				currentLimit = currentLimit + value;
+			}
+
+			pSlider->setUpperLinLimit(currentLimit);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 float CBulletConstraint::GetMaxTolerantLinearError() const

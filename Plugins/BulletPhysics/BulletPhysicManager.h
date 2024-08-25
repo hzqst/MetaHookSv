@@ -236,7 +236,7 @@ public:
 
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
 
-	void ExtendLinearLimit(int axis, float value) override;
+	bool ExtendLinearLimit(int axis, float value) override;
 	float GetMaxTolerantLinearError() const override;
 
 	void* GetInternalConstraint() override;

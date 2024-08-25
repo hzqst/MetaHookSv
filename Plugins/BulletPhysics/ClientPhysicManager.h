@@ -217,7 +217,7 @@ public:
 		return true;
 	}
 
-	virtual void ExtendLinearLimit(int axis, float value) = 0;
+	virtual bool ExtendLinearLimit(int axis, float value) = 0;
 	virtual float GetMaxTolerantLinearError() const = 0;
 	virtual void* GetInternalConstraint() = 0;
 };

@@ -112,6 +112,11 @@ class CBulletStaticObject : public CBaseStaticObject
 public:
 	CBulletStaticObject(const CStaticObjectCreationParameter& CreationParam) : CBaseStaticObject(CreationParam)
 	{
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+		}
+
 		CreateRigidBodies(CreationParam);
 	}
 

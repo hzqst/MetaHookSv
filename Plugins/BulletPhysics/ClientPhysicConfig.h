@@ -159,6 +159,7 @@ public:
 	int gaitsequence{};
 	float frame{};
 	int activity{};
+	bool idle{};
 };
 
 class CClientPhysicObjectConfig : public CClientBasePhysicConfig
@@ -213,7 +214,6 @@ public:
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
 	std::vector<CClientAnimControlConfig> AnimControlConfigs;
-	CClientAnimControlConfig IdleAnimConfig;
 	CClientBarnacleControlConfig BarnacleControlConfig;
 	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
 	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;

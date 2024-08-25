@@ -11,10 +11,12 @@ class CPhysicObjectCreationParameter
 {
 public:
 	cl_entity_t* m_entity{};
+	entity_state_t* m_entstate{};
 	int m_entindex{};
 	model_t* m_model{};
 	studiohdr_t* m_studiohdr{};
 	float m_model_scaling{ 1 };
+	int m_playerindex{};
 };
 
 class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
@@ -33,7 +35,6 @@ public:
 class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
-	int m_playerindex{};
 	bool m_allowNonNativeRigidBody{};
 	CClientRagdollObjectConfig* m_pRagdollObjectConfig{};
 };

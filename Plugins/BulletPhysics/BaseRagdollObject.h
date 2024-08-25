@@ -150,6 +150,7 @@ public:
 		CRagdollObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entstate = GetClientEntityState();
 		CreationParam.m_entindex = GetEntityIndex();
 		CreationParam.m_model = GetModel();
 
@@ -159,10 +160,14 @@ public:
 			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
 		}
 
+		CreationParam.m_playerindex = GetPlayerIndex();
+
 		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
 
-		if (GetModel()->type == mod_studio)
-			ClientPhysicManager()->SetupBonesForRagdollEx(GetClientEntity(), GetClientEntityState(), GetModel(), GetEntityIndex(), GetPlayerIndex(), pRagdollObjectConfig->IdleAnimConfig);
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+		}
 
 		CPhysicComponentFilters filters;
 
@@ -379,6 +384,7 @@ public:
 		CRagdollObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entstate = GetClientEntityState();
 		CreationParam.m_entindex = GetEntityIndex();
 		CreationParam.m_model = GetModel();
 

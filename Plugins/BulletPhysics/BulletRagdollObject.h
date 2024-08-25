@@ -441,11 +441,14 @@ public:
 class CBulletBarnacleConstraintLimitAdjustmentAction : public CPhysicComponentAction
 {
 public:
-	CBulletBarnacleConstraintLimitAdjustmentAction(IPhysicObject* pPhysicObject, int entindex, int flags, int physicComponentId, int iBarnacleIndex, float flInterval, float flExtraHeight) :
+	CBulletBarnacleConstraintLimitAdjustmentAction(IPhysicObject* pPhysicObject,
+		int entindex, int flags, int physicComponentId, int iBarnacleIndex,		
+		float flInterval, float flExtraHeight, int iLimitAxis) :
 		CPhysicComponentAction(pPhysicObject, entindex, flags, physicComponentId),
 		m_iBarnacleIndex(iBarnacleIndex),
 		m_flInterval(flInterval),
-		m_flExtraHeight(flExtraHeight)
+		m_flExtraHeight(flExtraHeight),
+		m_iLimitAxis(iLimitAxis)
 	{
 
 	}
@@ -469,99 +472,8 @@ public:
 		{
 			if (gEngfuncs.GetClientTime() > m_flNextAdjustmentTime)
 			{
-				pConstraint->ExtendLinearLimit(-1, m_flExtraHeight);
-#if 0
-				if (pConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
-				{
-					auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
+				pConstraint->ExtendLinearLimit(m_iLimitAxis, m_flExtraHeight);
 
-					if (1)
-					{
-						btVector3 currentLimit;
-						pDof6->getLinearLowerLimit(currentLimit);
-
-						if (currentLimit.x() < -1) {
-							currentLimit.setX(currentLimit.x() - m_flExtraHeight);
-						}
-						else if (currentLimit.x() > 1) {
-							currentLimit.setX(currentLimit.x() + m_flExtraHeight);
-						}
-						else if (currentLimit.y() < -1) {
-							currentLimit.setY(currentLimit.y() - m_flExtraHeight);
-						}
-						else if (currentLimit.y() > 1) {
-							currentLimit.setY(currentLimit.y() + m_flExtraHeight);
-						}
-						else if (currentLimit.z() < -1) {
-							currentLimit.setZ(currentLimit.z() - m_flExtraHeight);
-						}
-						else if (currentLimit.z() > 1) {
-							currentLimit.setZ(currentLimit.z() + m_flExtraHeight);
-						}
-
-						pDof6->setLinearLowerLimit(currentLimit);
-					}
-
-					if (1)
-					{
-						btVector3 currentLimit;
-						pDof6->getLinearUpperLimit(currentLimit);
-
-						if (currentLimit.x() < -1) {
-							currentLimit.setX(currentLimit.x() - m_flExtraHeight);
-						}
-						else if (currentLimit.x() > 1) {
-							currentLimit.setX(currentLimit.x() + m_flExtraHeight);
-						}
-						else if (currentLimit.y() < -1) {
-							currentLimit.setY(currentLimit.y() - m_flExtraHeight);
-						}
-						else if (currentLimit.y() > 1) {
-							currentLimit.setY(currentLimit.y() + m_flExtraHeight);
-						}
-						else if (currentLimit.z() < -1) {
-							currentLimit.setZ(currentLimit.z() - m_flExtraHeight);
-						}
-						else if (currentLimit.z() > 1) {
-							currentLimit.setZ(currentLimit.z() + m_flExtraHeight);
-						}
-
-						pDof6->setLinearUpperLimit(currentLimit);
-					}
-				}
-				else if (pConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
-				{
-					auto pSlider = (btSliderConstraint*)pConstraint;
-
-					if (1)
-					{
-						auto currentLimit = pSlider->getLowerLinLimit();
-
-						if (currentLimit < -1) {
-							currentLimit = currentLimit - m_flExtraHeight;
-						}
-						else if (currentLimit > 1) {
-							currentLimit = currentLimit + m_flExtraHeight;
-						}
-
-						pSlider->setLowerLinLimit(currentLimit);
-					}
-
-					if (1)
-					{
-						auto currentLimit = pSlider->getUpperLinLimit();
-
-						if (currentLimit < -1) {
-							currentLimit = currentLimit - m_flExtraHeight;
-						}
-						else if (currentLimit > 1) {
-							currentLimit = currentLimit + m_flExtraHeight;
-						}
-
-						pSlider->setUpperLinLimit(currentLimit);
-					}
-				}
-#endif
 				m_flNextAdjustmentTime = gEngfuncs.GetClientTime() + m_flInterval;
 			}
 		}
@@ -572,6 +484,7 @@ public:
 	int m_iBarnacleIndex{ 0 };
 	float m_flInterval{ 1 };
 	float m_flExtraHeight{ 0 };
+	int m_iLimitAxis{ -1 };
 	float m_flNextAdjustmentTime{ 0 };
 };
 
@@ -580,9 +493,23 @@ class CBulletRagdollObject : public CBaseRagdollObject
 public:
 	CBulletRagdollObject(const CRagdollObjectCreationParameter& CreationParam) : CBaseRagdollObject(CreationParam)
 	{
-		m_IdleAnimConfig = CreationParam.m_pRagdollObjectConfig->IdleAnimConfig;
 		m_AnimControlConfigs = CreationParam.m_pRagdollObjectConfig->AnimControlConfigs;
+
+		for (const auto& AnimConfig : m_AnimControlConfigs)
+		{
+			if (AnimConfig.idle)
+			{
+				m_IdleAnimConfig = AnimConfig;
+				break;
+			}
+		}
+
 		m_BarnacleControlConfig = CreationParam.m_pRagdollObjectConfig->BarnacleControlConfig;
+
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+		}
 
 		SaveBoneRelativeTransform(CreationParam);
 		CreateRigidBodies(CreationParam);
@@ -817,7 +744,8 @@ protected:
 				pConstraint->GetPhysicComponentId(),
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
-				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval]);
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
+				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis]);
 		}
 		}
 

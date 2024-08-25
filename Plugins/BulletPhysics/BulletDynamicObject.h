@@ -171,6 +171,11 @@ class CBulletDynamicObject : public CBaseDynamicObject
 public:
 	CBulletDynamicObject(const CDynamicObjectCreationParameter& CreationParam) : CBaseDynamicObject(CreationParam)
 	{
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+		}
+
 		CreateRigidBodies(CreationParam);
 		CreateConstraints(CreationParam);
 	}

@@ -14,6 +14,7 @@ public:
 		m_entity = CreationParam.m_entity;
 		m_model = CreationParam.m_model;
 		m_model_scaling = CreationParam.m_model_scaling;
+		m_playerindex = CreationParam.m_playerindex;
 		m_configId = CreationParam.m_pStaticObjectConfig->configId;
 		m_flags = CreationParam.m_pStaticObjectConfig->flags;
 		m_debugDrawLevel = CreationParam.m_pStaticObjectConfig->debugDrawLevel;
@@ -71,7 +72,7 @@ public:
 
 	int GetPlayerIndex() const override
 	{
-		return 0;
+		return m_playerindex;
 	}
 
 	int GetObjectFlags() const override
@@ -134,6 +135,7 @@ public:
 		CStaticObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = GetClientEntity();
+		CreationParam.m_entstate = GetClientEntityState();
 		CreationParam.m_entindex = GetEntityIndex();
 		CreationParam.m_model = GetModel();
 
@@ -143,14 +145,18 @@ public:
 			CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
 		}
 
-		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
+		CreationParam.m_playerindex = GetPlayerIndex();
 
-		if (GetModel()->type == mod_studio)
-			ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), GetClientEntityState(), GetModel(), m_entindex, 0);
+		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
 
 		CPhysicComponentFilters filters;
 
 		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+		if (CreationParam.m_model->type == mod_studio)
+		{
+			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+		}
 
 		RebuildRigidBodies(CreationParam);
 
@@ -361,6 +367,7 @@ protected:
 public:
 
 	int m_entindex{};
+	int m_playerindex{};
 	cl_entity_t* m_entity{};
 	model_t* m_model{};
 	float m_model_scaling{ 1 };
