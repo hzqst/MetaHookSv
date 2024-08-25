@@ -247,7 +247,7 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 		//call     exx
 		if (ctx->bMov10h &&
 			instCount > ctx->instCount_Mov10h &&
-			instCount < ctx->instCount_Mov10h + 5 &&
+			instCount < ctx->instCount_Mov10h + 10 &&
 			pinst->id == X86_INS_CALL &&
 			pinst->detail->x86.op_count == 1 &&
 			pinst->detail->x86.operands[0].type == X86_OP_REG &&

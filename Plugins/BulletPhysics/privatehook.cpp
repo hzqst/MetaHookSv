@@ -136,24 +136,7 @@ void Engine_FillAddreess(void)
 	}
 	Sig_FuncNotFound(R_RecursiveWorldNode);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
-		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
-		Sig_AddrNotFound(cl_max_edicts);
-		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
-		cl_entities = *(decltype(cl_entities)*)(addr + 19);
-
-#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
-		if (1)
-		{
-			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_SVENGINE);
-			Sig_AddrNotFound(gTempEnts);
-			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
-		}
-
-	}
-	else
+	if (1)
 	{
 		//Seach "CL_Reallocate cl_entities"
 		const char sigs1[] = "CL_Reallocate cl_entities\n";
@@ -161,7 +144,7 @@ void Engine_FillAddreess(void)
 		if (!CL_Reallocate_String)
 			CL_Reallocate_String = Search_Pattern_Rdata(sigs1);
 		Sig_VarNotFound(CL_Reallocate_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1";
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 1) = (DWORD)CL_Reallocate_String;
 		auto CL_Reallocate_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(CL_Reallocate_Call);
@@ -177,6 +160,12 @@ void Engine_FillAddreess(void)
 
 			if (Candidate[0] == 0x8B &&
 				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				return TRUE;
+			}
+
+			if (Candidate[0] == 0xFF &&
 				Candidate[2] == 0x24)
 			{
 				return TRUE;
@@ -217,6 +206,17 @@ void Engine_FillAddreess(void)
 					}
 				}
 
+				if (!cl_max_edicts && pinst->id == X86_INS_IMUL &&
+					pinst->detail->x86.op_count == 3 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[2].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					cl_max_edicts = (decltype(cl_max_edicts))pinst->detail->x86.operands[1].mem.disp;
+				}
+
 				if (!cl_entities && address > ctx->CL_Reallocate_Call && pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
@@ -244,7 +244,29 @@ void Engine_FillAddreess(void)
 
 		Sig_VarNotFound(cl_max_edicts);
 		Sig_VarNotFound(cl_entities);
+	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#if 0
+#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
+		cl_entities = *(decltype(cl_entities)*)(addr + 19);
+#endif
+#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
+		if (1)
+		{
+			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_SVENGINE);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
+
+	}
+	else
+	{
+	
 #if 0
 #define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
 		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
@@ -686,7 +708,7 @@ void Engine_FillAddreess(void)
 
 	if (1)
 	{
-		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x02\x00\x00";
+		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x2A\x00\x00";
 		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern);
 		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
 
@@ -832,10 +854,37 @@ void Client_FillAddress(void)
 		{
 			if (1)
 			{
-				const char pattern[] = "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01";
-				DWORD addr = (DWORD)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				const char pattern[] = "\x6A\x00\x6A\x00\x6A\x00\x8B\x2A\xFF\x50\x2A";
+				auto addr = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 				Sig_AddrNotFound(g_bRenderingPortals);
-				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
+
+				g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+						pinst->detail->x86.operands[1].imm == 1)
+					{
+						g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))pinst->detail->x86.operands[0].mem.disp;
+						return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, NULL);
+
+				Sig_VarNotFound(g_bRenderingPortals_SCClient);
 			}
 
 			g_bIsSvenCoop = true;

@@ -1229,7 +1229,7 @@ void Engine_FillAddress(void)
 
 	if (1)
 	{
-		const char pattern[] = "\x94\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\x6A\x30";
+		const char pattern[] = "\x68\xF0\x00\x00\x00\x68\x40\x01\x00\x00\x6A\x00\x6A\x00";
 
 		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
 		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
@@ -1248,12 +1248,12 @@ void Engine_FillAddress(void)
 
 				VGuiWrap_Startup_SearchContext ctx = { 0 };
 
-				g_pMetaHookAPI->DisasmRanges(pStartDisasm, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				g_pMetaHookAPI->DisasmRanges(pStartDisasm, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
 						auto ctx = (VGuiWrap_Startup_SearchContext*)context;
 						auto pinst = (cs_insn*)inst;
 
-						if (!ctx->instCountPush0 && pinst->id == X86_INS_PUSH &&
+						if (pinst->id == X86_INS_PUSH &&
 							pinst->detail->x86.op_count == 1 &&
 							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
 							pinst->detail->x86.operands[0].imm == 0)
@@ -1286,6 +1286,16 @@ void Engine_FillAddress(void)
 								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
 								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 								pinst->detail->x86.operands[1].type == X86_OP_REG)
+							{
+								staticEngineSurface = (decltype(staticEngineSurface))pinst->detail->x86.operands[0].mem.disp;
+								return TRUE;
+							}
+
+							if (pinst->id == X86_INS_PUSH &&
+								pinst->detail->x86.op_count == 1 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 							{
 								staticEngineSurface = (decltype(staticEngineSurface))pinst->detail->x86.operands[0].mem.disp;
 								return TRUE;

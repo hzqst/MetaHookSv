@@ -148,6 +148,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
+CreateInterfaceFn MH_GetEngineFactory(void);
 
 typedef struct plugin_s
 {
@@ -1238,27 +1239,24 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	//Judge actual engine type
 	if (g_iEngineType == ENGINE_UNKNOWN)
 	{
-		if (buildnumber_call)
-		{
-			char* pEngineName = *(char**)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
+		auto factory = MH_GetEngineFactory();
 
-			if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
+		if (factory("SCEngineClient002", NULL))
+		{
+			g_iEngineType = ENGINE_SVENGINE;
+		}
+		else
+		{
+			if (g_pfnbuild_number() > 9000)
 			{
-				if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
-				{
-					g_iEngineType = ENGINE_SVENGINE;
-				}
-				else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
+				g_iEngineType = ENGINE_GOLDSRC_HL25;
+			}
+			else
+			{
+#define HALF_LIFE_STRING_SIG "Half-Life %i/%s (hw build %d)"
+				if (MH_SearchPattern(dataBase, dataSize, HALF_LIFE_STRING_SIG, sizeof(HALF_LIFE_STRING_SIG) - 1))
 				{
 					g_iEngineType = ENGINE_GOLDSRC;
-				}
-				else if (!strncmp(pEngineName, "version :  ", sizeof("version :  ") - 1))
-				{
-					g_iEngineType = ENGINE_GOLDSRC_HL25;
-				}
-				else
-				{
-					g_iEngineType = ENGINE_UNKNOWN;
 				}
 			}
 		}

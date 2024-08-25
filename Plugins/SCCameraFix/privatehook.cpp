@@ -17,7 +17,7 @@ int* g_iWaterLevel = NULL;
 int* g_iIsSpectator = NULL;
 bool* g_bRenderingPortals_SCClient = NULL;
 
-pitchdrift_t* g_pitchdrift = NULL;
+//pitchdrift_t* g_pitchdrift = NULL;
 
 struct event_api_s** g_pClientDLLEventAPI = NULL;
 
@@ -92,14 +92,15 @@ void Client_FillAddress(void)
 		g_iIsSpectator = (decltype(g_iIsSpectator)) * (ULONG_PTR*)(addr + 2);
 	}
 
-	if (1)
+#if 0//not used
+	if (0)
 	{
 		const char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x89\x2A\x2A\x2A\xFF\x15";
 		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(g_pitchdrift);
 		g_pitchdrift = (decltype(g_pitchdrift)) * (ULONG_PTR*)(addr + 2);
 	}
-
+#endif
 	if (1)
 	{
 		const char pattern[] = "\x2A\x2A\x48\x00\x75\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
