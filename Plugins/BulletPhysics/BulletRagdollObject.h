@@ -181,7 +181,7 @@ public:
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() > 0)
+			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Idle)
 			{
 				bKinematic = false;
 				break;
@@ -273,25 +273,25 @@ public:
 
 		do
 		{
-			if (pRagdollObject->GetActivityType() == 0 && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Idle && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 1 && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Death && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
 			{
 				bDeactivate = true;
 				break;
@@ -497,9 +497,18 @@ public:
 
 		for (const auto& AnimConfig : m_AnimControlConfigs)
 		{
-			if (AnimConfig.idle)
+			if (AnimConfig.activity == StudioAnimActivityType_Idle)
 			{
 				m_IdleAnimConfig = AnimConfig;
+				break;
+			}
+		}
+
+		for (const auto& AnimConfig : m_AnimControlConfigs)
+		{
+			if (AnimConfig.activity == StudioAnimActivityType_Debug)
+			{
+				m_DebugAnimConfig = AnimConfig;
 				break;
 			}
 		}
@@ -745,7 +754,7 @@ protected:
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
-				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis]);
+				(int)pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
 		}
 		}
 
@@ -762,7 +771,7 @@ protected:
 			if (pConstraint->GetFlags() & PhysicConstraintFlag_NonNative)
 				continue;
 
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_NoResetPoseOnErrorCorrection)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DontResetPoseOnErrorCorrection)
 				continue;
 
 			auto pInternalConstraint = (btTypedConstraint *)pConstraint->GetInternalConstraint();

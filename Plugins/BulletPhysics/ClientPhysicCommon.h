@@ -111,6 +111,7 @@ const int PhysicRotOrder_YXZ = 2;
 const int PhysicRotOrder_YZX = 3;
 const int PhysicRotOrder_ZXY = 4;
 const int PhysicRotOrder_ZYX = 5;
+const int PhysicRotOrder_Maximum = 6;
 
 const int PhysicConstraintFlag_Barnacle = 0x1;
 const int PhysicConstraintFlag_Gargantua = 0x2;
@@ -118,7 +119,7 @@ const int PhysicConstraintFlag_DeactiveOnNormalActivity = 0x4;
 const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
 const int PhysicConstraintFlag_DeactiveOnBarnacleActivity = 0x10;
 const int PhysicConstraintFlag_DeactiveOnGargantuaActivity = 0x20;
-const int PhysicConstraintFlag_NoResetPoseOnErrorCorrection = 0x40;
+const int PhysicConstraintFlag_DontResetPoseOnErrorCorrection = 0x40;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;
@@ -234,7 +235,7 @@ const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 //const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
-const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis = 3;
+const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis = 3;
 
 //const int PhysicAction_Maximum = 4;
 
@@ -256,6 +257,14 @@ enum PhysicShapeDirection
 //const int PhysicShapeDirection_X = 0;
 //const int PhysicShapeDirection_Y = 1;
 //const int PhysicShapeDirection_Z = 2;
+
+enum StudioAnimActivityType
+{
+	StudioAnimActivityType_Idle,
+	StudioAnimActivityType_Death,
+	StudioAnimActivityType_Barnacle,
+	StudioAnimActivityType_Debug,
+};
 
 #define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
 #define BULLET_WORLD_DEBUG_DRAW_LEVEL 10

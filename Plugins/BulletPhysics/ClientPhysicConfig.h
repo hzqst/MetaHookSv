@@ -158,8 +158,7 @@ public:
 	int sequence{};
 	int gaitsequence{};
 	float frame{};
-	int activity{};
-	bool idle{};
+	StudioAnimActivityType activity{};
 };
 
 class CClientPhysicObjectConfig : public CClientBasePhysicConfig
@@ -176,8 +175,9 @@ public:
 	int crc32StudioModel{};
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
+	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 
-	//Never Change
+	//Never save to file or load from file
 	std::string fileName;
 	std::string shortName;
 };
@@ -186,8 +186,6 @@ class CClientDynamicObjectConfig : public CClientPhysicObjectConfig
 {
 public:
 	CClientDynamicObjectConfig();
-
-	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 };
 
 class CClientStaticObjectConfig : public CClientPhysicObjectConfig
@@ -216,7 +214,6 @@ class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 public:
 	CClientRagdollObjectConfig();
 
-	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
 	std::vector<CClientAnimControlConfig> AnimControlConfigs;
 	CClientBarnacleControlConfig BarnacleControlConfig;

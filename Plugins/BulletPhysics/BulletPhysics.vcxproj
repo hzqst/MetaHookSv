@@ -275,10 +275,14 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="BaseObjectConfigPage.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="BulletPhysicManager.cpp" />
     <ClCompile Include="BasePhysicManager.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="CollisionShapeEditor.cpp" />
+    <ClCompile Include="ConstraintEditor.cpp" />
+    <ClCompile Include="ConstraintPage.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="ClientEntityManager.cpp" />
     <ClCompile Include="GameUI.cpp" />
@@ -291,6 +295,8 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="RigidBodyEditor.cpp" />
+    <ClCompile Include="RigidBodyPage.cpp" />
     <ClCompile Include="util.cpp" />
     <ClCompile Include="VGUI2ExtensionImport.cpp" />
     <ClCompile Include="Viewport.cpp" />

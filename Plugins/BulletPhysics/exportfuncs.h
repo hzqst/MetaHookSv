@@ -1,4 +1,5 @@
 #include <metahook.h>
+#include <const.h>
 #include <studio.h>
 #include <r_studioint.h>
 #include <com_model.h>
@@ -72,7 +73,6 @@ int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel();
 int EngineGetModelIndex(model_t* mod);
 model_t* EngineGetModelByIndex(int index);
-int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);
 
 int EngineGetMaxClientEdicts(void);
 cl_entity_t* EngineGetClientEntitiesBase(void);

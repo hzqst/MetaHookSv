@@ -5,9 +5,13 @@
 #include <string>
 
 const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type);
+const char* UTIL_GetConstraintTypeLocalizationToken(int type);
+const char* UTIL_GetRotOrderTypeLocalizationToken(int type);
 const char* UTIL_GetCollisionShapeTypeLocalizationToken(int type);
 std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type);
 std::wstring UTIL_GetFormattedRigidBodyFlags(int flags);
+std::wstring UTIL_GetFormattedConstraintFlags(int flags);
+std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraintConfig* pConstraintConfig);
 const char* UTIL_GetBoneRawName(studiohdr_t* studiohdr, int boneindex);
 std::string UTIL_GetFormattedBoneNameEx(studiohdr_t* studiohdr, int boneindex);
 std::string UTIL_GetFormattedBoneName(int modelindex, int boneindex);
@@ -25,8 +29,10 @@ std::shared_ptr<CClientConstraintConfig> UTIL_GetConstraintConfigFromConfigId(in
 std::shared_ptr<CClientPhysicObjectConfig> UTIL_GetPhysicObjectConfigFromConfigId(int configId);
 
 bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicConfig, int rigidBodyConfigId);
+bool UTIL_RemoveConstraintFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicObjectConfig, int constraintConfigId);
 std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape);
 std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientRigidBodyConfig* pOldConfig);
+std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClientConstraintConfig* pOldConfig);
 std::string UTIL_FormatAbsoluteModelName(model_t* mod);
 
 bool UTIL_IsCollisionShapeConfigModified(const CClientCollisionShapeConfig* pCollisionShapeConfig);
@@ -43,3 +49,10 @@ bool UTIL_ShiftUpRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, 
 bool UTIL_ShiftUpRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientRigidBodyConfig* pRigidBodyConfig);
 bool UTIL_ShiftDownRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId);
 bool UTIL_ShiftDownRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientRigidBodyConfig* pRigidBodyConfig);
+
+int UTIL_GetConstraintIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId);
+int UTIL_GetConstraintIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientConstraintConfig* pConstraintConfig);
+bool UTIL_ShiftUpConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId);
+bool UTIL_ShiftUpConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientConstraintConfig* pConstraintConfig);
+bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId);
+bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientConstraintConfig* pConstraintConfig);

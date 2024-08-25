@@ -768,40 +768,13 @@ bool CPhysicDebugGUI::UpdateInspectedRigidBody(bool bSelected)
 
 			vgui::localize()->ConvertANSIToUnicode(pRigidBody->GetName(), wszComponentName, sizeof(wszComponentName));
 
-			auto str = std::format(L"{0} (#{1}): {2} / {3}: {4}", 
+			auto str = std::format(L"{0} (#{1}): {2} / {3}: {4} ", 
 				vgui::localize()->Find("#BulletPhysics_RigidBody"), 
 				pRigidBody->GetPhysicComponentId(),
 				wszComponentName,
 				vgui::localize()->Find("#BulletPhysics_Mass"), pRigidBody->GetMass());
 
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_AlwaysDynamic)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysDynamic"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_AlwaysKinematic)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysKinematic"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_AlwaysStatic)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_AlwaysStatic"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_NoCollisionToWorld)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToWorld"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_NoCollisionToStaticObject)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToStaticObject"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToDynamicObject"));
-			}
-			if (pRigidBody->GetFlags() & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_NoCollisionToRagdollObject"));
-			}
+			str += UTIL_GetFormattedRigidBodyFlags(pRigidBody->GetFlags());
 
 			ShowInspectContentLabel(str.c_str());
 
@@ -887,30 +860,7 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 
 			auto str = std::format(L"{0} (#{1}): {2}", vgui::localize()->Find(pConstraint->GetTypeLocalizationTokenString()), pConstraint->GetPhysicComponentId(), wszName);
 
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_Barnacle)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Barnacle"));
-			}
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_Gargantua)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_Gargantua"));
-			}
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnNormalActivity)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnNormalActivity"));
-			}
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnDeathActivity)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnDeathActivity"));
-			}
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnBarnacleActivity)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnBarnacleActivity"));
-			}
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
-			{
-				str += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DeactiveOnGargantuaActivity"));
-			}
+			str += UTIL_GetFormattedConstraintFlags(pConstraint->GetFlags());
 
 			ShowInspectContentLabel(str.c_str());
 
@@ -918,36 +868,9 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 
 			if (pConstraintConfig)
 			{
-				auto str2 = std::format(L"[{0}]: ", vgui::localize()->Find("#BulletPhysics_Config"));
+				auto str2 = std::format(L"[{0}] ", vgui::localize()->Find("#BulletPhysics_Config"));
 				
-				if (pConstraintConfig->useGlobalJointFromA)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromA"));
-				}
-				else
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromB"));
-				}
-				if (pConstraintConfig->disableCollision)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_DisableCollision"));
-				}
-				if (pConstraintConfig->useLookAtOther)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
-				}
-				if (pConstraintConfig->useGlobalJointOriginFromOther)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
-				}
-				if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
-				}
-				if (pConstraintConfig->useLinearReferenceFrameA)
-				{
-					str2 += std::format(L" ({0})", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameA"));
-				}
+				str2 += UTIL_GetFormattedConstraintConfigAttributes(pConstraintConfig.get());
 
 				ShowInspectContentLabel2(str2.c_str());
 
@@ -1467,7 +1390,7 @@ void CPhysicDebugGUI::OnCreateRigidBody(uint64 physicObjectId)
 
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
-	pRigidBodyConfig->name = std::format("Unnamed ({0})", pRigidBodyConfig->configId);
+	pRigidBodyConfig->name = std::format("UnnamedRigidBody ({0})", pRigidBodyConfig->configId);
 
 	pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
 	pRigidBodyConfig->collisionShape->type = PhysicShape_Sphere;

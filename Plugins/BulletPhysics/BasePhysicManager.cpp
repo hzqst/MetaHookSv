@@ -26,6 +26,55 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
+StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
+{
+	//if (g_bIsSvenCoop)
+	//{
+	//	if (entstate->scale != 0 && entstate->scale != 1.0f)
+	//		return StudioAnimActivityType_Idle;
+	//}
+
+	if (mod->type != mod_studio)
+		return StudioAnimActivityType_Idle;
+
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (!studiohdr)
+		return StudioAnimActivityType_Idle;
+
+	int sequence = entstate->sequence;
+	if (sequence >= studiohdr->numseq)
+		return StudioAnimActivityType_Idle;
+
+	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
+
+	if (
+		pseqdesc->activity == ACT_DIESIMPLE ||
+		pseqdesc->activity == ACT_DIEBACKWARD ||
+		pseqdesc->activity == ACT_DIEFORWARD ||
+		pseqdesc->activity == ACT_DIEVIOLENT ||
+		pseqdesc->activity == ACT_DIE_HEADSHOT ||
+		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
+		pseqdesc->activity == ACT_DIE_GUTSHOT ||
+		pseqdesc->activity == ACT_DIE_BACKSHOT
+		)
+	{
+		return StudioAnimActivityType_Death;
+	}
+
+	if (
+		pseqdesc->activity == ACT_BARNACLE_HIT ||
+		pseqdesc->activity == ACT_BARNACLE_PULL ||
+		pseqdesc->activity == ACT_BARNACLE_CHOMP ||
+		pseqdesc->activity == ACT_BARNACLE_CHEW
+		)
+	{
+		return StudioAnimActivityType_Barnacle;
+	}
+
+	return StudioAnimActivityType_Idle;
+}
+
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
 {
 	if (pPhysicComponent->IsRigidBody())
@@ -725,6 +774,9 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 			if (pConstraintSubKey->GetBool("deactiveOnGargantuaActivity"))
 				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnGargantuaActivity;
 
+			if (pConstraintSubKey->GetBool("dontResetPoseOnErrorCorrection"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DontResetPoseOnErrorCorrection;
+
 			pConstraintConfig->debugDrawLevel = pConstraintSubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
 			pConstraintConfig->disableCollision = pConstraintSubKey->GetBool("disableCollision", true);
 			pConstraintConfig->useGlobalJointFromA = pConstraintSubKey->GetBool("useGlobalJointFromA", true);
@@ -904,8 +956,7 @@ static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CCl
 			AnimControlConfig.sequence = pAnimControlSubKey->GetInt("sequence");
 			AnimControlConfig.gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
 			AnimControlConfig.frame = pAnimControlSubKey->GetFloat("frame");
-			AnimControlConfig.activity = pAnimControlSubKey->GetInt("activity");
-			AnimControlConfig.idle = pAnimControlSubKey->GetBool("idle");
+			AnimControlConfig.activity = (decltype(AnimControlConfig.activity))pAnimControlSubKey->GetInt("activity");
 
 			AnimControlConfigs.emplace_back(AnimControlConfig);
 		}
@@ -1301,6 +1352,9 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
 						pConstraintSubKey->SetBool("deactiveOnGargantuaActivity", true);
 
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DontResetPoseOnErrorCorrection)
+						pConstraintSubKey->SetBool("dontResetPoseOnErrorCorrection", true);
+
 					pConstraintSubKey->SetString("type", UTIL_GetConstraintTypeName(pConstraintConfig->type));
 
 					pConstraintSubKey->SetString("rigidbodyA", pConstraintConfig->rigidbodyA.c_str());
@@ -1597,7 +1651,6 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<C
 					pAnimControlSubKey->SetInt("gaitsequence", AnimControl.gaitsequence);
 					pAnimControlSubKey->SetFloat("frame", AnimControl.frame);
 					pAnimControlSubKey->SetInt("activity", AnimControl.activity);
-					pAnimControlSubKey->SetBool("idle", AnimControl.idle);
 				}
 			}
 		}
@@ -1730,7 +1783,7 @@ static bool ParseLegacyDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig,
 		CClientAnimControlConfig animConfig;
 		animConfig.sequence = sequence;
 		animConfig.frame = frame;
-		animConfig.activity = 1;
+		animConfig.activity = StudioAnimActivityType_Death;
 
 		pRagdollConfig->AnimControlConfigs.push_back(animConfig);
 		return true;
@@ -2006,6 +2059,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.Body|{0}", rigidbody);
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis] = -1;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig); 
 			

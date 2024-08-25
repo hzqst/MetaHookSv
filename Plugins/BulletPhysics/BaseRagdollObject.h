@@ -96,7 +96,7 @@ public:
 
 	bool IsClientEntityNonSolid() const override
 	{
-		if (GetActivityType() > 0)
+		if (GetActivityType() > StudioAnimActivityType_Idle)
 			return false;
 
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
@@ -184,9 +184,17 @@ public:
 	{
 		auto playerState = R_GetPlayerState(m_playerindex);
 
-		int iOldActivityType = GetActivityType();
+		if (m_bDebugAnimEnabled)
+		{
+			playerState->sequence = m_DebugAnimConfig.sequence;
+			playerState->gaitsequence = m_DebugAnimConfig.gaitsequence;
+			playerState->frame = m_DebugAnimConfig.frame;
+			playerState->framerate = 0;
+		}
 
-		int iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
+		auto iOldActivityType = GetActivityType();
+
+		auto iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
 
 		if (iNewActivityType == 0)
 		{
@@ -296,7 +304,7 @@ public:
 
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{
-		if (GetActivityType() != 0)
+		if (GetActivityType() != StudioAnimActivityType_Idle)
 		{
 			if (bIsThirdPerson)
 			{
@@ -325,7 +333,7 @@ public:
 
 	bool SetupBones(studiohdr_t* studiohdr) override
 	{
-		if (GetActivityType() == 0)
+		if (GetActivityType() == StudioAnimActivityType_Idle)
 			return false;
 
 		for (auto pRigidBody : m_RigidBodies)
@@ -455,7 +463,7 @@ public:
 		//TODO
 	}
 
-	int GetOverrideActivityType(entity_state_t* entstate) override
+	StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) override
 	{
 		for (const auto& AnimControlConfig : m_AnimControlConfigs)
 		{
@@ -464,10 +472,11 @@ public:
 				return AnimControlConfig.activity;
 			}
 		}
-		return 0;
+
+		return StudioAnimActivityType_Idle;
 	}
 
-	int GetActivityType() const override
+	StudioAnimActivityType GetActivityType() const override
 	{
 		return m_iActivityType;
 	}
@@ -480,6 +489,16 @@ public:
 	int GetGargantuaIndex() const override
 	{
 		return m_iGargantuaIndex;
+	}
+
+	bool IsDebugAnimEnabled() const override
+	{
+		return m_bDebugAnimEnabled;
+	}
+
+	void SetDebugAnimEnabled(bool bEnabled) override
+	{
+		m_bDebugAnimEnabled = bEnabled;
 	}
 
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
@@ -814,7 +833,7 @@ private:
 		}
 	}
 
-	bool UpdateActivity(int iOldActivityType, int iNewActivityType, entity_state_t* curstate)
+	bool UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate)
 	{
 		if (iOldActivityType == iNewActivityType)
 			return false;
@@ -853,7 +872,7 @@ public:
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
 
-	int m_iActivityType{ 0 };
+	StudioAnimActivityType m_iActivityType{ StudioAnimActivityType_Idle };
 	int m_iBarnacleIndex{ 0 };
 	int m_iGargantuaIndex{ 0 };
 
@@ -861,6 +880,8 @@ public:
 	std::vector<int> m_nonKeyBones;
 
 	CClientAnimControlConfig m_IdleAnimConfig;
+	CClientAnimControlConfig m_DebugAnimConfig;
+	bool m_bDebugAnimEnabled{};
 	std::vector<CClientAnimControlConfig> m_AnimControlConfigs;
 
 	CClientBarnacleControlConfig m_BarnacleControlConfig;

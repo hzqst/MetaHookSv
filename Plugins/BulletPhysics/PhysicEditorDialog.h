@@ -8,9 +8,9 @@
 #include <vgui_controls/PropertySheet.h>
 #include <vgui_controls/PropertyPage.h>
 #include <vgui_controls/Frame.h>
+#include <vgui_controls/Menu.h>
 
 #include "ClientPhysicConfig.h"
-
 
 class CRigidBodyListPanel : public vgui::ListPanel
 {
@@ -18,6 +18,18 @@ public:
 	DECLARE_CLASS_SIMPLE(CRigidBodyListPanel, vgui::ListPanel);
 
 	CRigidBodyListPanel(vgui::Panel *parent, const char* pName);
+
+private:
+
+	typedef vgui::ListPanel BaseClass;
+};
+
+class CConstraintListPanel : public vgui::ListPanel
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintListPanel, vgui::ListPanel);
+
+	CConstraintListPanel(vgui::Panel* parent, const char* pName);
 
 private:
 
@@ -34,12 +46,10 @@ public:
 private:
 
 	MESSAGE_FUNC(OnApplyChanges, "ApplyChanges");
-
 	MESSAGE_FUNC(OnResetData, "ResetData");
 
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
 	void OnCommand(const char* command) override;
-	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 
 	void LoadConfigIntoControls();
 	void SaveConfigFromControls();
@@ -99,6 +109,49 @@ private:
 	vgui::Button* m_pShiftUpRigidBody{};
 	vgui::Button* m_pShiftDownRigidBody{};
 	vgui::Button* m_pCreateRigidBody{};
+
+	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
+};
+
+class CConstraintPage : public vgui::PropertyPage
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintPage, vgui::PropertyPage);
+
+	CConstraintPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
+
+private:
+
+	MESSAGE_FUNC(OnResetData, "ResetData");
+	MESSAGE_FUNC_INT(OnOpenContextMenu, "OpenContextMenu", itemID);
+	MESSAGE_FUNC_INT(OnRefreshConstraint, "RefreshConstraint", configId);
+	MESSAGE_FUNC_INT(OnEditConstraint, "EditConstraint", configId);
+	MESSAGE_FUNC_INT(OnCloneConstraint, "CloneConstraint", configId);
+	MESSAGE_FUNC_INT(OnDeleteConstraint, "DeleteConstraint", configId);
+	MESSAGE_FUNC_INT(OnShiftUpConstraint, "ShiftUpConstraint", configId);
+	MESSAGE_FUNC_INT(OnShiftDownConstraint, "ShiftDownConstraint", configId);
+	MESSAGE_FUNC(OnRefreshConstraints, "RefreshConstraints");
+
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
+	void OnCommand(const char* command) override;
+	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
+
+	void LoadConstraintAsListPanelItem(const CClientConstraintConfig* pConstraintConfig);
+	void ReloadAllConstraintsIntoListPanelItem();
+	void OnOpenConstraintEditor(int configId);
+	void OnCreateConstraint();
+	void SelectConstraintItem(int configId);
+	void DeleteConstraintItem(int configId);
+
+	typedef vgui::PropertyPage BaseClass;
+private:
+	vgui::HFont m_hFont{};
+
+	CConstraintListPanel* m_pConstraintListPanel{};
+	vgui::Button* m_pShiftUpConstraint{};
+	vgui::Button* m_pShiftDownConstraint{};
+	vgui::Button* m_pCreateConstraint{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
@@ -227,6 +280,86 @@ private:
 	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
 };
 
+class CConstraintEditDialog : public vgui::Frame
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintEditDialog, vgui::Frame);
+
+	CConstraintEditDialog(vgui::Panel* parent, const char* name,
+		uint64 physicObjectId,
+		const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
+		const std::shared_ptr<CClientConstraintConfig>& pConstraintConfig);
+	~CConstraintEditDialog();
+
+	void Activate(void) override;
+
+private:
+	MESSAGE_FUNC(OnResetData, "ResetData");
+	void OnCommand(const char* command) override;
+
+	void LoadAvailableTypesIntoControls();
+	void LoadAvailableRotOrdersIntoControls();
+	void LoadAvailableRigidBodiesIntoControls(vgui::ComboBox* pComboBox);
+	void LoadTypeIntoControl(int type);
+	void LoadRotOrderIntoControl(int rotOrder);
+	void LoadRigidBodyIntoControl(const std::string& rigidBodyName, vgui::ComboBox* pComboBox);
+	void LoadConfigIntoControls();
+	void SaveTypeFromControl();
+	void SaveRotOrderFromControl();
+	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
+	void SaveConfigFromControls();
+
+	typedef vgui::Frame BaseClass;
+
+	vgui::TextEntry* m_pName{};
+	vgui::TextEntry* m_pDebugDrawLevel{};
+
+	vgui::ComboBox* m_pType{};
+
+	vgui::ComboBox* m_pRigidBodyA{};
+	vgui::ComboBox* m_pRigidBodyB{};
+
+	vgui::TextEntry* m_pOriginAX{};
+	vgui::TextEntry* m_pOriginAY{};
+	vgui::TextEntry* m_pOriginAZ{};
+	vgui::TextEntry* m_pAnglesAX{};
+	vgui::TextEntry* m_pAnglesAY{};
+	vgui::TextEntry* m_pAnglesAZ{};
+
+	vgui::TextEntry* m_pOriginBX{};
+	vgui::TextEntry* m_pOriginBY{};
+	vgui::TextEntry* m_pOriginBZ{};
+	vgui::TextEntry* m_pAnglesBX{};
+	vgui::TextEntry* m_pAnglesBY{};
+	vgui::TextEntry* m_pAnglesBZ{};
+
+	vgui::TextEntry* m_pForwardX{};
+	vgui::TextEntry* m_pForwardY{};
+	vgui::TextEntry* m_pForwardZ{};
+
+	vgui::CheckButton* m_pDisableCollision{};
+	vgui::CheckButton* m_pUseGlobalJointFromA{};
+	vgui::CheckButton* m_pUseLookAtOther{};
+	vgui::CheckButton* m_pUseGlobalJointOriginFromOther{};
+	vgui::CheckButton* m_pUseRigidBodyDistanceAsLinearLimit{};
+	vgui::CheckButton* m_pUseLinearReferenceFrameA{};
+
+	vgui::ComboBox* m_pRotOrder{};
+	vgui::TextEntry* m_pMaxTolerantLinearError{};
+
+	vgui::CheckButton* m_pBarnacle{};
+	vgui::CheckButton* m_pGargantua{};
+	vgui::CheckButton* m_pDeactiveOnNormalActivity{};
+	vgui::CheckButton* m_pDeactiveOnDeathActivity{};
+	vgui::CheckButton* m_pDeactiveOnBarnacleActivity{};
+	vgui::CheckButton* m_pDeactiveOnGargantuaActivity{};
+	vgui::CheckButton* m_pDontResetPoseOnErrorCorrection{};
+
+	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
+	std::shared_ptr<CClientConstraintConfig> m_pConstraintConfig;
+};
+
 class CPhysicEditorDialog : public vgui::Frame
 {
 public:
@@ -244,6 +377,7 @@ private:
 	vgui::PropertySheet* m_pTabPanel{};
 	CBaseObjectConfigPage* m_pBaseObjectConfigPage{};
 	CRigidBodyPage* m_pRigidBodyPage{};
+	CConstraintPage* m_pConstraintPage{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
