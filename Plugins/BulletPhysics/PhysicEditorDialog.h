@@ -49,12 +49,15 @@ public:
 	void StartCaptureMode();
 	void EndCaptureMode();
 	bool IsCapturing(void) const;
-	void OnMouseCaptureLost() override;
+	int GetCapturingItemId(void) const;
+	int GetCapturingItemIndex(void) const;
+	void OnMousePressed(vgui::MouseCode code) override;
 private:
 
 	typedef vgui::ListPanel BaseClass;
 	bool m_bCaptureMode{};
-	int m_iCaptureFactorIdx{};
+	int m_iCaptureItemId{};
+	int m_iCaptureItemIndex{};
 	CInlineTextEntryPanel* m_pInlineTextEntryPanel{};
 };
 
@@ -316,6 +319,7 @@ public:
 	void Activate(void) override;
 
 private:
+	MESSAGE_FUNC(OnItemSelected, "ItemSelected");
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
 	MESSAGE_FUNC_PARAMS(OnModifyFactor, "ModifyFactor", kv);
