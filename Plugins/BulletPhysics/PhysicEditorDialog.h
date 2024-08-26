@@ -36,6 +36,28 @@ private:
 	typedef vgui::ListPanel BaseClass;
 };
 
+class CInlineTextEntryPanel;
+
+class CFactorListPanel : public vgui::ListPanel
+{
+public:
+	DECLARE_CLASS_SIMPLE(CFactorListPanel, vgui::ListPanel);
+
+	CFactorListPanel(vgui::Panel* parent, const char* pName);
+	~CFactorListPanel();
+
+	void StartCaptureMode();
+	void EndCaptureMode();
+	bool IsCapturing(void) const;
+	void OnMouseCaptureLost() override;
+private:
+
+	typedef vgui::ListPanel BaseClass;
+	bool m_bCaptureMode{};
+	int m_iCaptureFactorIdx{};
+	CInlineTextEntryPanel* m_pInlineTextEntryPanel{};
+};
+
 class CBaseObjectConfigPage : public vgui::PropertyPage
 {
 public:
@@ -296,17 +318,25 @@ public:
 private:
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
+	MESSAGE_FUNC_PARAMS(OnModifyFactor, "ModifyFactor", kv);
+
 	void OnCommand(const char* command) override;
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
 
 	void LoadAvailableTypesIntoControls();
 	void LoadAvailableRotOrdersIntoControls();
 	void LoadAvailableRigidBodiesIntoControls(vgui::ComboBox* pComboBox);
+	void LoadAvailableFactorsIntoControls(int type);
+	void DeleteFactorListPanelItem(int factorIdx);
+	void LoadFactorAsListPanelItem(int factorIdx, const char* token, float value, float defaultValue);
+	void LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char* value, float defaultValue);
 	void LoadTypeIntoControl(int type);
 	void LoadRotOrderIntoControl(int rotOrder);
 	void LoadRigidBodyIntoControl(const std::string& rigidBodyName, vgui::ComboBox* pComboBox);
 	void LoadConfigIntoControls();
 	void SaveTypeFromControl();
 	void SaveRotOrderFromControl();
+	void SaveFactorFromControls();
 	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
 	void SaveConfigFromControls();
 	int GetCurrentSelectedConstraintType();
@@ -357,6 +387,8 @@ private:
 	vgui::CheckButton* m_pDeactiveOnBarnacleActivity{};
 	vgui::CheckButton* m_pDeactiveOnGargantuaActivity{};
 	vgui::CheckButton* m_pDontResetPoseOnErrorCorrection{};
+
+	CFactorListPanel *m_pFactorListPanel{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;

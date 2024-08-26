@@ -622,7 +622,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 					return;
 			}
 		}
-		else if (m_InspectMode == PhysicInspectMode::RigidBody)
+		else if (m_InspectMode == PhysicInspectMode::RigidBody || m_InspectMode == PhysicInspectMode::Constraint || m_InspectMode == PhysicInspectMode::Floater)
 		{
 			if (OpenInspectPhysicComponentMenu(true))
 			{
@@ -1075,86 +1075,165 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 
 	if (physicComponentId > 0)
 	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(physicComponentId);
+		auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
 
-		if (pRigidBody)
+		if (pPhysicComponent)
 		{
-			auto pPhysicObject = pRigidBody->GetOwnerPhysicObject();
-
-			if (pPhysicObject && (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_FromConfig))
+			if (pPhysicComponent->IsRigidBody())
 			{
-				auto menu = new vgui::Menu(this, "contextmenu");
+				auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-				menu->SetAutoDelete(true);
+				auto pPhysicObject = pRigidBody->GetOwnerPhysicObject();
 
-				char szFileName[64] = { 0 };
-				wchar_t wszFileName[64] = { 0 };
-				wchar_t wszComponentName[64] = { 0 };
-				wchar_t szBuf[256] = { 0 };
+				if (pPhysicObject && (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_FromConfig))
+				{
+					auto menu = new vgui::Menu(this, "contextmenu");
 
-				V_FileBase(pPhysicObject->GetModel()->name, szFileName, sizeof(szFileName));
-				vgui::localize()->ConvertANSIToUnicode(szFileName, wszFileName, sizeof(wszFileName));
+					menu->SetAutoDelete(true);
 
-				auto kv = new KeyValues("EditPhysicObject");
+					char szFileName[64] = { 0 };
+					wchar_t wszFileName[64] = { 0 };
+					wchar_t wszComponentName[64] = { 0 };
+					wchar_t szBuf[256] = { 0 };
 
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditPhysicObject"), 1, wszFileName);
+					V_FileBase(pPhysicObject->GetModel()->name, szFileName, sizeof(szFileName));
+					vgui::localize()->ConvertANSIToUnicode(szFileName, wszFileName, sizeof(wszFileName));
 
-				menu->AddMenuItem("EditPhysicObject", szBuf, kv, this);
+					auto kv = new KeyValues("EditPhysicObject");
 
-				vgui::localize()->ConvertANSIToUnicode(pRigidBody->GetName(), wszComponentName, sizeof(wszComponentName));
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditPhysicObject"), 1, wszFileName);
 
-				kv = new KeyValues("EditRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("EditRigidBodyEx", szBuf, kv, this);
+					menu->AddMenuItem("EditPhysicObject", szBuf, kv, this);
 
-				kv = new KeyValues("MoveRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("MoveRigidBodyEx", szBuf, kv, this);
+					vgui::localize()->ConvertANSIToUnicode(pRigidBody->GetName(), wszComponentName, sizeof(wszComponentName));
 
-				kv = new KeyValues("RotateRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("RotateRigidBodyEx", szBuf, kv, this);
+					kv = new KeyValues("EditRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("EditRigidBodyEx", szBuf, kv, this);
 
-				kv = new KeyValues("ResizeRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ResizeRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("ResizeRigidBodyEx", szBuf, kv, this);
+					kv = new KeyValues("MoveRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("MoveRigidBodyEx", szBuf, kv, this);
 
-				kv = new KeyValues("CloneRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("CloneRigidBodyEx", szBuf, kv, this);
+					kv = new KeyValues("RotateRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("RotateRigidBodyEx", szBuf, kv, this);
 
-				kv = new KeyValues("DeleteRigidBodyEx");
-				kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
-				kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
-				kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
-				kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
-				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, wszComponentName);
-				menu->AddMenuItem("DeleteRigidBodyEx", szBuf, kv, this);
+					kv = new KeyValues("ResizeRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ResizeRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("ResizeRigidBodyEx", szBuf, kv, this);
 
-				vgui::Menu::PlaceContextMenu(this, menu);
-				return true;
+					kv = new KeyValues("CloneRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("CloneRigidBodyEx", szBuf, kv, this);
+
+					kv = new KeyValues("DeleteRigidBodyEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pRigidBody->GetPhysicComponentId());
+					kv->SetInt("rigidBodyConfigId", pRigidBody->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteRigidBody"), 1, wszComponentName);
+					menu->AddMenuItem("DeleteRigidBodyEx", szBuf, kv, this);
+
+					vgui::Menu::PlaceContextMenu(this, menu);
+					return true;
+				}
+			}
+			else if (pPhysicComponent->IsConstraint())
+			{
+				auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
+
+				auto pPhysicObject = pConstraint->GetOwnerPhysicObject();
+
+				if (pPhysicObject && (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_FromConfig))
+				{
+					auto menu = new vgui::Menu(this, "contextmenu");
+
+					menu->SetAutoDelete(true);
+
+					char szFileName[64] = { 0 };
+					wchar_t wszFileName[64] = { 0 };
+					wchar_t wszComponentName[64] = { 0 };
+					wchar_t szBuf[256] = { 0 };
+
+					V_FileBase(pPhysicObject->GetModel()->name, szFileName, sizeof(szFileName));
+					vgui::localize()->ConvertANSIToUnicode(szFileName, wszFileName, sizeof(wszFileName));
+
+					auto kv = new KeyValues("EditPhysicObject");
+
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditPhysicObject"), 1, wszFileName);
+
+					menu->AddMenuItem("EditPhysicObject", szBuf, kv, this);
+
+					vgui::localize()->ConvertANSIToUnicode(pConstraint->GetName(), wszComponentName, sizeof(wszComponentName));
+
+					kv = new KeyValues("EditConstraintEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pConstraint->GetPhysicComponentId());
+					kv->SetInt("constraintConfigId", pConstraint->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditConstraint"), 1, wszComponentName);
+					menu->AddMenuItem("EditConstraintEx", szBuf, kv, this);
+
+					kv = new KeyValues("MoveConstraintEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pConstraint->GetPhysicComponentId());
+					kv->SetInt("constraintConfigId", pConstraint->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MoveConstraint"), 1, wszComponentName);
+					menu->AddMenuItem("MoveConstraintEx", szBuf, kv, this);
+
+					kv = new KeyValues("RotateConstraintEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pConstraint->GetPhysicComponentId());
+					kv->SetInt("constraintConfigId", pConstraint->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotateConstraint"), 1, wszComponentName);
+					menu->AddMenuItem("RotateConstraintEx", szBuf, kv, this);
+
+					kv = new KeyValues("CloneConstraintEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pConstraint->GetPhysicComponentId());
+					kv->SetInt("constraintConfigId", pConstraint->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_CloneConstraint"), 1, wszComponentName);
+					menu->AddMenuItem("CloneConstraintEx", szBuf, kv, this);
+
+					kv = new KeyValues("DeleteConstraintEx");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					kv->SetInt("physicComponentId", pConstraint->GetPhysicComponentId());
+					kv->SetInt("constraintConfigId", pConstraint->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeleteConstraint"), 1, wszComponentName);
+					menu->AddMenuItem("DeleteConstraintEx", szBuf, kv, this);
+
+					vgui::Menu::PlaceContextMenu(this, menu);
+					return true;
+				}
 			}
 		}
 	}

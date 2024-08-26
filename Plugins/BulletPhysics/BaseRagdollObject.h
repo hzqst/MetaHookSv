@@ -173,9 +173,16 @@ public:
 
 		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
+		m_keyBones.clear();
+		m_nonKeyBones.clear();
+
+		SaveBoneRelativeTransform(CreationParam);
+
 		RebuildRigidBodies(CreationParam);
 		
 		RebuildConstraints(CreationParam);
+
+		SetupNonKeyBones(CreationParam);
 
 		return true;
 	}
@@ -421,6 +428,12 @@ public:
 			{
 				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
 
+				CPhysicObjectUpdateContext ObjectUpdateContext;
+
+				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+				pConstraint->Update(&ComponentUpdateContext);
+
 				m_Constraints.emplace_back(pConstraint);
 			}
 		}
@@ -653,7 +666,7 @@ public:
 		return nullptr;
 	}
 
-	void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
 		{
@@ -661,15 +674,7 @@ public:
 
 			if (pRigidBody)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-
-				CPhysicObjectUpdateContext ObjectUpdateContext;
-
-				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-				pRigidBody->Update(&ComponentUpdateContext);
-
-				m_RigidBodies.emplace_back(pRigidBody);
+				AddRigidBody(pRigidBody);
 
 				if (CreationParam.m_studiohdr &&
 					pRigidBodyConfig->boneindex >= 0 &&
@@ -681,7 +686,7 @@ public:
 		}
 	}
 
-	void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
 		{
@@ -689,14 +694,12 @@ public:
 
 			if (pConstraint)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-				m_Constraints.emplace_back(pConstraint);
+				AddConstraint(pConstraint);
 			}
 		}
 	}
 
-	void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
 		{
@@ -704,7 +707,7 @@ public:
 		}
 	}
 
-	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
+	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
 	{
 		if (allowNonNativeRigidBody)
 		{
@@ -739,12 +742,66 @@ public:
 		return GetRigidBodyByName(name);
 	}
 
+	virtual void SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam)
+	{
+		if (CreationParam.m_studiohdr)
+		{
+			for (int i = 0; i < CreationParam.m_studiohdr->numbones; ++i)
+			{
+				if (std::find(m_keyBones.begin(), m_keyBones.end(), i) == m_keyBones.end())
+					m_nonKeyBones.emplace_back(i);
+			}
+		}
+	}
+
+	virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl)
+	{
+		CameraControl = (*pCameraControlConfig);
+
+		auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
+
+		if (pRigidBody)
+		{
+			CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
+		}
+	}
+
+	virtual void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam) {
+
+	}
+
 	virtual IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
 	virtual IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
 	virtual void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig) = 0;
 	virtual IPhysicAction* CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig) = 0;
 
-private:
+protected:
+
+	void AddRigidBody(IPhysicRigidBody* pRigidBody)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pRigidBody->Update(&ComponentUpdateContext);
+
+		m_RigidBodies.emplace_back(pRigidBody);
+	}
+
+	void AddConstraint(IPhysicConstraint* pConstraint)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pConstraint->Update(&ComponentUpdateContext);
+
+		m_Constraints.emplace_back(pConstraint);
+	}
 
 	void RebuildRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
@@ -771,9 +828,14 @@ private:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					if (CreationParam.m_studiohdr &&
+						pRigidBodyConfig->boneindex >= 0 &&
+						pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
+					{
+						m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
+					}
 				}
 			}
 			else
@@ -782,9 +844,14 @@ private:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					if (CreationParam.m_studiohdr &&
+						pRigidBodyConfig->boneindex >= 0 &&
+						pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
+					{
+						m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
+					}
 				}
 			}
 		}
@@ -800,6 +867,7 @@ private:
 
 			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
 		}
+
 		m_Constraints.clear();
 
 		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
@@ -814,9 +882,7 @@ private:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 			else
@@ -825,9 +891,7 @@ private:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 		}

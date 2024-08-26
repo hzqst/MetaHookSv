@@ -330,12 +330,12 @@ public:
 
 public:
 
-	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
+	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
 	{
 		return GetRigidBodyByName(name);
 	}
 
-	void CreateRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
+	virtual void CreateRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pRigidBodyConfig : CreationParam.m_pDynamicObjectConfig->RigidBodyConfigs)
 		{
@@ -343,20 +343,12 @@ public:
 
 			if (pRigidBody)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-
-				CPhysicObjectUpdateContext ObjectUpdateContext;
-
-				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-				pRigidBody->Update(&ComponentUpdateContext);
-
-				m_RigidBodies.emplace_back(pRigidBody);
+				AddRigidBody(pRigidBody);
 			}
 		}
 	}
 
-	void CreateConstraints(const CDynamicObjectCreationParameter& CreationParam)
+	virtual void CreateConstraints(const CDynamicObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
 		{
@@ -364,9 +356,7 @@ public:
 
 			if (pConstraint)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-				m_Constraints.emplace_back(pConstraint);
+				AddConstraint(pConstraint);
 			}
 		}
 	}
@@ -375,6 +365,32 @@ public:
 	virtual IPhysicConstraint* CreateConstraint(const CDynamicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
 
 protected:
+
+	void AddRigidBody(IPhysicRigidBody* pRigidBody)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pRigidBody->Update(&ComponentUpdateContext);
+
+		m_RigidBodies.emplace_back(pRigidBody);
+	}
+
+	void AddConstraint(IPhysicConstraint* pConstraint)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pConstraint->Update(&ComponentUpdateContext);
+
+		m_Constraints.emplace_back(pConstraint);
+	}
 
 	void RebuildRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
 	{
@@ -401,9 +417,7 @@ protected:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
-
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 				}
 			}
 			else
@@ -412,9 +426,7 @@ protected:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
-
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 				}
 			}
 		}
@@ -430,6 +442,7 @@ protected:
 
 			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
 		}
+
 		m_Constraints.clear();
 
 		for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
@@ -444,9 +457,7 @@ protected:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 			else
@@ -455,9 +466,7 @@ protected:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 		}

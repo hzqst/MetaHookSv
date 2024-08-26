@@ -1093,12 +1093,12 @@ protected:
 		return nullptr;
 	}
 
-	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig)
-	{
+	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig) override
+	{ 
 		//TODO
 	}
 
-	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam)
+	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam) override
 	{
 		if (!CreationParam.m_studiohdr)
 			return;
@@ -1128,27 +1128,6 @@ protected:
 
 				m_BoneRelativeTransform[i] = parentmatrix.inverse() * bonematrix;
 			}
-		}
-	}
-
-	void SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam)
-	{
-		for (int i = 0; i < CreationParam.m_studiohdr->numbones; ++i)
-		{
-			if (std::find(m_keyBones.begin(), m_keyBones.end(), i) == m_keyBones.end())
-				m_nonKeyBones.emplace_back(i);
-		}
-	}
-
-	void InitCameraControl(const CClientCameraControlConfig *pCameraControlConfig, CPhysicCameraControl &CameraControl)
-	{
-		CameraControl = (*pCameraControlConfig);
-		
-		auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
-		
-		if (pRigidBody)
-		{
-			CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
 		}
 	}
 

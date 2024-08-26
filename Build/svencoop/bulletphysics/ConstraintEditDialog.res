@@ -6,7 +6,7 @@
         "fieldName"         "ConstraintEditDialog"
         "xpos"              "20"
         "ypos"              "20"
-        "wide"              "560"
+        "wide"              "760"
         "tall"              "560"
         "autoResize"        "0"
         "pinCorner"         "0"
@@ -565,6 +565,22 @@
         "labelText"         "#BulletPhysics_DontResetPoseOnErrorCorrection"
         "textAlignment"     "west"
     }
+
+	"FactorListPanel"
+	{
+		"ControlName"		"ListPanel"
+		"fieldName"		"FactorListPanel"
+		"xpos"		"520"
+		"ypos"		"40"
+		"wide"		"200"
+		"tall"		"500"
+		"AutoResize"	"3"
+		"PinCorner"		"3"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"0"
+		"paintbackground"		"1"
+	}
 
     // OK, Cancel, and Apply Buttons (these entries are unchanged as per your request)
     "OK"

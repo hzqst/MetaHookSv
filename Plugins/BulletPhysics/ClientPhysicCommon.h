@@ -3,6 +3,34 @@
 #include <vector>
 #include <memory>
 
+#define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
+#define BULLET_WORLD_DEBUG_DRAW_LEVEL 10
+#define BULLET_DEFAULT_SOFTNESS 1.0f
+#define BULLET_DEFAULT_BIAS_FACTOR 0.3f
+#define BULLET_DEFAULT_RELAXTION_FACTOR 1.0f
+#define BULLET_DEFAULT_LINEAR_ERP 0.3f
+#define BULLET_DEFAULT_ANGULAR_ERP 0.3f
+#define BULLET_DEFAULT_LINEAR_CFM 0.01f
+#define BULLET_DEFAULT_ANGULAR_CFM 0.01f
+#define BULLET_DEFAULT_LINEAR_STOP_ERP 0.3f
+#define BULLET_DEFAULT_ANGULAR_STOP_ERP 0.3f
+#define BULLET_DEFAULT_LINEAR_STOP_CFM 0.01f
+#define BULLET_DEFAULT_ANGULAR_STOP_CFM 0.01f
+#define BULLET_DEFAULT_CCD_THRESHOLD 0.001f
+#define BULLET_DEFAULT_LINEAR_FIRCTION 1.0f
+#define BULLET_DEFAULT_ANGULAR_FIRCTION 0.2f
+#define BULLET_DEFAULT_RESTITUTION 0.0f
+#define BULLET_DEFAULT_MASS 1.0f
+#define BULLET_DEFAULT_DENSENTY 1.0f
+#define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
+#define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
+#define BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
+
+#define INCHES_PER_METER 39.3700787402f
+
+const float B2GScale = INCHES_PER_METER;
+const float G2BScale = (1.0f / B2GScale);
+
 enum PhysicConfigType
 {
 	PhysicConfigType_None,
@@ -190,6 +218,32 @@ const int PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset = 40;
 
 const int PhysicConstraintFactorIdx_Maximum = 64;
 
+const float PhysicConstraintFactorDefaultValue_ConeTwistSoftness = BULLET_DEFAULT_SOFTNESS;
+const float PhysicConstraintFactorDefaultValue_ConeTwistBiasFactor = BULLET_DEFAULT_BIAS_FACTOR;
+const float PhysicConstraintFactorDefaultValue_ConeTwistRelaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
+
+const float PhysicConstraintFactorDefaultValue_HingeSoftness = BULLET_DEFAULT_SOFTNESS;
+const float PhysicConstraintFactorDefaultValue_HingeBiasFactor = BULLET_DEFAULT_BIAS_FACTOR;
+const float PhysicConstraintFactorDefaultValue_HingeRelaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
+
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringX = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringY = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringZ = 0;
+
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringX = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringY = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringZ = 0;
+
+const float PhysicConstraintFactorDefaultValue_LinearERP = BULLET_DEFAULT_LINEAR_ERP;
+const float PhysicConstraintFactorDefaultValue_LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
+const float PhysicConstraintFactorDefaultValue_LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
+const float PhysicConstraintFactorDefaultValue_LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
+const float PhysicConstraintFactorDefaultValue_AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
+const float PhysicConstraintFactorDefaultValue_AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
+const float PhysicConstraintFactorDefaultValue_AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
+const float PhysicConstraintFactorDefaultValue_AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
+const float PhysicConstraintFactorDefaultValue_RigidBodyLinearDistanceOffset = 0;
+
 enum PhysicShape
 {
 	PhysicShape_None,
@@ -265,34 +319,6 @@ enum StudioAnimActivityType
 	StudioAnimActivityType_Barnacle,
 	StudioAnimActivityType_Debug,
 };
-
-#define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
-#define BULLET_WORLD_DEBUG_DRAW_LEVEL 10
-#define BULLET_DEFAULT_SOFTNESS 1.0f
-#define BULLET_DEFAULT_BIAS_FACTOR 0.3f
-#define BULLET_DEFAULT_RELAXTION_FACTOR 1.0f
-#define BULLET_DEFAULT_LINEAR_ERP 0.3f
-#define BULLET_DEFAULT_ANGULAR_ERP 0.3f
-#define BULLET_DEFAULT_LINEAR_CFM 0.01f
-#define BULLET_DEFAULT_ANGULAR_CFM 0.01f
-#define BULLET_DEFAULT_LINEAR_STOP_ERP 0.3f
-#define BULLET_DEFAULT_ANGULAR_STOP_ERP 0.3f
-#define BULLET_DEFAULT_LINEAR_STOP_CFM 0.01f
-#define BULLET_DEFAULT_ANGULAR_STOP_CFM 0.01f
-#define BULLET_DEFAULT_CCD_THRESHOLD 0.001f
-#define BULLET_DEFAULT_LINEAR_FIRCTION 1.0f
-#define BULLET_DEFAULT_ANGULAR_FIRCTION 0.2f
-#define BULLET_DEFAULT_RESTITUTION 0.0f
-#define BULLET_DEFAULT_MASS 1.0f
-#define BULLET_DEFAULT_DENSENTY 1.0f
-#define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
-#define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
-#define BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
-
-#define INCHES_PER_METER 39.3700787402f
-
-const float B2GScale = INCHES_PER_METER;
-const float G2BScale = (1.0f / B2GScale);
 
 const int PhysicIndexArrayFlag_FromBSP = 0x1;
 const int PhysicIndexArrayFlag_LoadFailed = 0x2;
