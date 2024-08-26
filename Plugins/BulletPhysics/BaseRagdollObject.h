@@ -166,7 +166,7 @@ public:
 
 		if (CreationParam.m_model->type == mod_studio)
 		{
-			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
 		}
 
 		CPhysicComponentFilters filters;
@@ -191,12 +191,23 @@ public:
 	{
 		auto playerState = GetClientEntityState();
 
-		if (m_bDebugAnimEnabled)
+		if (m_bDebugAnimEnabled && m_DebugAnimConfig)
 		{
-			playerState->sequence = m_DebugAnimConfig.sequence;
-			playerState->gaitsequence = m_DebugAnimConfig.gaitsequence;
-			playerState->frame = m_DebugAnimConfig.frame;
+			playerState->sequence = m_DebugAnimConfig->sequence;
+			playerState->gaitsequence = m_DebugAnimConfig->gaitsequence;
+			playerState->frame = m_DebugAnimConfig->frame;
 			playerState->framerate = 0;
+
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (m_DebugAnimConfig->attr[i] >= 0 && m_DebugAnimConfig->attr[i] <= 255) to->attr[i] = m_DebugAnimConfig->attr[i];
+			COPY_BYTE_ENTSTATE(controller, playerState, 0);
+			COPY_BYTE_ENTSTATE(controller, playerState, 1);
+			COPY_BYTE_ENTSTATE(controller, playerState, 2);
+			COPY_BYTE_ENTSTATE(controller, playerState, 3);
+			COPY_BYTE_ENTSTATE(blending, playerState, 0);
+			COPY_BYTE_ENTSTATE(blending, playerState, 1);
+			COPY_BYTE_ENTSTATE(blending, playerState, 2);
+			COPY_BYTE_ENTSTATE(blending, playerState, 3);
+#undef COPY_BYTE_ENTSTATE
 		}
 
 		auto iOldActivityType = GetActivityType();
@@ -480,9 +491,20 @@ public:
 	{
 		for (const auto& AnimControlConfig : m_AnimControlConfigs)
 		{
-			if (entstate->sequence == AnimControlConfig.sequence)
+			if (AnimControlConfig->gaitsequence == 0)
 			{
-				return AnimControlConfig.activity;
+				if (entstate->sequence == AnimControlConfig->sequence)
+				{
+					return AnimControlConfig->activity;
+				}
+			}
+			else
+			{
+				if (entstate->sequence == AnimControlConfig->sequence &&
+					entstate->gaitsequence == AnimControlConfig->gaitsequence)
+				{
+					return AnimControlConfig->activity;
+				}
 			}
 		}
 
@@ -905,9 +927,9 @@ protected:
 		//Start death animation
 		if (iOldActivityType == 0 && iNewActivityType > 0)
 		{
-			auto found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const CClientAnimControlConfig& Config) {
+			const auto &found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const std::shared_ptr<CClientAnimControlConfig>& pConfig) {
 
-				if (Config.sequence == curstate->sequence)
+				if (pConfig->sequence == curstate->sequence)
 					return true;
 
 				return false;
@@ -915,7 +937,7 @@ protected:
 
 			if (found != m_AnimControlConfigs.end())
 			{
-				if (curstate->frame < found->frame)
+				if (curstate->frame < (*found)->frame)
 				{
 					return false;
 				}
@@ -943,10 +965,10 @@ public:
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 
-	CClientAnimControlConfig m_IdleAnimConfig;
-	CClientAnimControlConfig m_DebugAnimConfig;
+	std::shared_ptr<CClientAnimControlConfig> m_IdleAnimConfig;
+	std::shared_ptr<CClientAnimControlConfig> m_DebugAnimConfig;
 	bool m_bDebugAnimEnabled{};
-	std::vector<CClientAnimControlConfig> m_AnimControlConfigs;
+	std::vector<std::shared_ptr<CClientAnimControlConfig>> m_AnimControlConfigs;
 
 	CClientBarnacleControlConfig m_BarnacleControlConfig;
 

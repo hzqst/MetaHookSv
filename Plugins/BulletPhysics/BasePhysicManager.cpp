@@ -943,7 +943,7 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 	}
 }
 
-static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CClientAnimControlConfig>& AnimControlConfigs)
+static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<std::shared_ptr<CClientAnimControlConfig>>& AnimControlConfigs)
 {
 	auto pAnimControlsKey = pKeyValues->FindKey("animControls");
 
@@ -951,14 +951,16 @@ static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CCl
 	{
 		for (auto pAnimControlSubKey = pAnimControlsKey->GetFirstSubKey(); pAnimControlSubKey; pAnimControlSubKey = pAnimControlSubKey->GetNextKey())
 		{
-			CClientAnimControlConfig AnimControlConfig;
+			auto pAnimControlConfig = std::make_shared<CClientAnimControlConfig>();
 
-			AnimControlConfig.sequence = pAnimControlSubKey->GetInt("sequence");
-			AnimControlConfig.gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
-			AnimControlConfig.frame = pAnimControlSubKey->GetFloat("frame");
-			AnimControlConfig.activity = (decltype(AnimControlConfig.activity))pAnimControlSubKey->GetInt("activity");
+			pAnimControlConfig->sequence = pAnimControlSubKey->GetInt("sequence");
+			pAnimControlConfig->gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
+			pAnimControlConfig->frame = pAnimControlSubKey->GetFloat("frame");
+			pAnimControlConfig->activity = (decltype(pAnimControlConfig->activity))pAnimControlSubKey->GetInt("activity");
+			
+			ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
 
-			AnimControlConfigs.emplace_back(AnimControlConfig);
+			AnimControlConfigs.emplace_back(pAnimControlConfig);
 		}
 	}
 }
@@ -1633,7 +1635,7 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 	}
 }
 
-static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<CClientAnimControlConfig>& AnimControlConfigs)
+static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<std::shared_ptr<CClientAnimControlConfig>>& AnimControlConfigs)
 {
 	if (AnimControlConfigs.size() > 0)
 	{
@@ -1647,10 +1649,10 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<C
 
 				if (pAnimControlSubKey)
 				{
-					pAnimControlSubKey->SetInt("sequence", AnimControl.sequence);
-					pAnimControlSubKey->SetInt("gaitsequence", AnimControl.gaitsequence);
-					pAnimControlSubKey->SetFloat("frame", AnimControl.frame);
-					pAnimControlSubKey->SetInt("activity", AnimControl.activity);
+					pAnimControlSubKey->SetInt("sequence", AnimControl->sequence);
+					pAnimControlSubKey->SetInt("gaitsequence", AnimControl->gaitsequence);
+					pAnimControlSubKey->SetFloat("frame", AnimControl->frame);
+					pAnimControlSubKey->SetInt("activity", AnimControl->activity);
 				}
 			}
 		}
@@ -1780,12 +1782,15 @@ static bool ParseLegacyDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig,
 	int sequence;
 	float frame;
 	if (iss >> sequence >> frame) {
-		CClientAnimControlConfig animConfig;
-		animConfig.sequence = sequence;
-		animConfig.frame = frame;
-		animConfig.activity = StudioAnimActivityType_Death;
+		auto pAnimControlConfig = std::make_shared<CClientAnimControlConfig>();
 
-		pRagdollConfig->AnimControlConfigs.push_back(animConfig);
+		pAnimControlConfig->sequence = sequence;
+		pAnimControlConfig->frame = frame;
+		pAnimControlConfig->activity = StudioAnimActivityType_Death;
+
+		ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
+
+		pRagdollConfig->AnimControlConfigs.emplace_back(pAnimControlConfig);
 		return true;
 	}
 	gEngfuncs.Con_DPrintf("ParseLegacyDeathAnimLine: failed to parse line \"%s\"", line.c_str());
@@ -2688,7 +2693,7 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig &OverrideAnim)
+void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig *pOverrideAnimControl)
 {
 	auto saved_currententity = (*currententity);
 	(*currententity) = ent;
@@ -2699,9 +2704,20 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
-		fakePlayerState.sequence = OverrideAnim.sequence;
-		fakePlayerState.gaitsequence = OverrideAnim.gaitsequence;
-		fakePlayerState.frame = OverrideAnim.frame;
+		fakePlayerState.sequence = pOverrideAnimControl->sequence;
+		fakePlayerState.gaitsequence = pOverrideAnimControl->gaitsequence;
+		fakePlayerState.frame = pOverrideAnimControl->frame;
+
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 0);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 1);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 2);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 3);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 0);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 1);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 2);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 3);
+#undef COPY_BYTE_ENTSTATE
 
 		vec3_t vecSavedOrigin, vecSavedAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -2726,12 +2742,27 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		int iSavedSequence = ent->curstate.sequence;
 		int iSavedGaitSequence = ent->curstate.gaitsequence;
 		float flSavedFrame = ent->curstate.frame;
+		byte ubController[4];
+		byte ubBlending[4];
+
+		memcpy(ubController, ent->curstate.controller, sizeof(ubController));
+		memcpy(ubBlending, ent->curstate.blending, sizeof(ubBlending));
 
 		ent->curstate.weaponmodel = 0;
-		ent->curstate.sequence = OverrideAnim.sequence;
-		ent->curstate.gaitsequence = OverrideAnim.gaitsequence;
-		ent->curstate.frame = OverrideAnim.frame;
+		ent->curstate.sequence = pOverrideAnimControl->sequence;
+		ent->curstate.gaitsequence = pOverrideAnimControl->gaitsequence;
+		ent->curstate.frame = pOverrideAnimControl->frame;
 
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 1); 
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 3);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 1);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 3);
+#undef COPY_BYTE_ENTSTATE
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
 
 		ent->curstate.weaponmodel = 0;

@@ -495,20 +495,20 @@ public:
 	{
 		m_AnimControlConfigs = CreationParam.m_pRagdollObjectConfig->AnimControlConfigs;
 
-		for (const auto& AnimConfig : m_AnimControlConfigs)
+		for (const auto& pAnimConfig : m_AnimControlConfigs)
 		{
-			if (AnimConfig.activity == StudioAnimActivityType_Idle)
+			if (pAnimConfig->activity == StudioAnimActivityType_Idle)
 			{
-				m_IdleAnimConfig = AnimConfig;
+				m_IdleAnimConfig = pAnimConfig;
 				break;
 			}
 		}
 
-		for (const auto& AnimConfig : m_AnimControlConfigs)
+		for (const auto& pAnimConfig : m_AnimControlConfigs)
 		{
-			if (AnimConfig.activity == StudioAnimActivityType_Debug)
+			if (pAnimConfig->activity == StudioAnimActivityType_Debug)
 			{
-				m_DebugAnimConfig = AnimConfig;
+				m_DebugAnimConfig = pAnimConfig;
 				break;
 			}
 		}
@@ -517,7 +517,7 @@ public:
 
 		if (CreationParam.m_model->type == mod_studio)
 		{
-			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
 		}
 
 		SaveBoneRelativeTransform(CreationParam);

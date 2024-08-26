@@ -152,13 +152,15 @@ public:
 	float angularDamping{};
 };
 
-class CClientAnimControlConfig
+class CClientAnimControlConfig : public CClientBasePhysicConfig
 {
 public:
 	int sequence{};
 	int gaitsequence{};
 	float frame{};
-	StudioAnimActivityType activity{};
+	StudioAnimActivityType activity{ StudioAnimActivityType_Idle };
+	int controller[4]{ 0 };
+	int blending[4]{ 0 };
 };
 
 class CClientPhysicObjectConfig : public CClientBasePhysicConfig
@@ -215,7 +217,7 @@ public:
 	CClientRagdollObjectConfig();
 
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
-	std::vector<CClientAnimControlConfig> AnimControlConfigs;
+	std::vector<std::shared_ptr<CClientAnimControlConfig>> AnimControlConfigs;
 	CClientBarnacleControlConfig BarnacleControlConfig;
 	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
 	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
