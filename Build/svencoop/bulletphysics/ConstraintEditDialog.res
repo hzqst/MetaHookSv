@@ -44,9 +44,9 @@
     {
         "ControlName"       "Label"
         "fieldName"         "DebugDrawLevelLabel"
-        "xpos"              "300"
+        "xpos"              "280"
         "ypos"              "40"
-        "wide"              "120"
+        "wide"              "100"
         "tall"              "24"
         "labelText"         "#BulletPhysics_DebugDrawLevel"
         "textAlignment"     "west"
@@ -55,7 +55,7 @@
     {
         "ControlName"       "TextEntry"
         "fieldName"         "DebugDrawLevel"
-        "xpos"              "420"
+        "xpos"              "380"
         "ypos"              "40"
         "wide"              "60"
         "tall"              "24"
@@ -83,6 +83,34 @@
         "wide"              "180"
         "tall"              "24"
         "tabPosition"       "3"
+		"textHidden"	"0"
+		"editable"		"0"
+		"maxchars"		"-1"
+    }
+
+    "RotOrderLabel"
+    {
+        "ControlName"       "Label"
+        "fieldName"         "RotOrderLabel"
+        "xpos"              "280"
+        "ypos"              "80"
+        "wide"              "100"
+        "tall"              "24"
+        "labelText"         "#BulletPhysics_RotOrder"
+        "textAlignment"     "west"
+    }
+    "RotOrder"
+    {
+        "ControlName"       "ComboBox"
+        "fieldName"         "RotOrder"
+        "xpos"              "380"
+        "ypos"              "80"
+        "wide"              "60"
+        "tall"              "24"
+        "tabPosition"       "4"
+		"textHidden"	"0"
+		"editable"		"0"
+		"maxchars"		"-1"
     }
 
     // RigidBody A and B ComboBoxes
@@ -105,13 +133,13 @@
         "ypos"              "120"
         "wide"              "180"
         "tall"              "24"
-        "tabPosition"       "4"
+        "tabPosition"       "5"
     }
     "RigidBodyBLabel"
     {
         "ControlName"       "Label"
         "fieldName"         "RigidBodyBLabel"
-        "xpos"              "310"
+        "xpos"              "280"
         "ypos"              "120"
         "wide"              "60"
         "tall"              "24"
@@ -122,11 +150,11 @@
     {
         "ControlName"       "ComboBox"
         "fieldName"         "RigidBodyB"
-        "xpos"              "370"
+        "xpos"              "340"
         "ypos"              "120"
         "wide"              "140"
         "tall"              "24"
-        "tabPosition"       "5"
+        "tabPosition"       "6"
     }
 
     // Origin A X, Y, Z TextEntries
@@ -149,7 +177,7 @@
         "ypos"              "160"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "6"
+        "tabPosition"       "7"
     }
     "OriginAY"
     {
@@ -159,7 +187,7 @@
         "ypos"              "160"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "7"
+        "tabPosition"       "8"
     }
     "OriginAZ"
     {
@@ -169,7 +197,7 @@
         "ypos"              "160"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "8"
+        "tabPosition"       "9"
     }
 
     // Angles A X, Y, Z TextEntries
@@ -192,7 +220,7 @@
         "ypos"              "200"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "9"
+        "tabPosition"       "10"
     }
     "AnglesAY"
     {
@@ -202,7 +230,7 @@
         "ypos"              "200"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "10"
+        "tabPosition"       "11"
     }
     "AnglesAZ"
     {
@@ -212,7 +240,7 @@
         "ypos"              "200"
         "wide"              "50"
         "tall"              "24"
-        "tabPosition"       "11"
+        "tabPosition"       "12"
     }
 
 // Origin B X, Y, Z TextEntries
@@ -220,7 +248,7 @@
     {
         "ControlName"       "Label"
         "fieldName"         "OriginBLabel"
-        "xpos"              "310"
+        "xpos"              "280"
         "ypos"              "160"
         "wide"              "60"
         "tall"              "24"
@@ -231,31 +259,31 @@
     {
         "ControlName"       "TextEntry"
         "fieldName"         "OriginBX"
-        "xpos"              "370"
-        "ypos"              "160"
-        "wide"              "50"
-        "tall"              "24"
-        "tabPosition"       "12"
-    }
-    "OriginBY"
-    {
-        "ControlName"       "TextEntry"
-        "fieldName"         "OriginBY"
-        "xpos"              "430"
+        "xpos"              "340"
         "ypos"              "160"
         "wide"              "50"
         "tall"              "24"
         "tabPosition"       "13"
     }
-    "OriginBZ"
+    "OriginBY"
     {
         "ControlName"       "TextEntry"
-        "fieldName"         "OriginBZ"
-        "xpos"              "490"
+        "fieldName"         "OriginBY"
+        "xpos"              "400"
         "ypos"              "160"
         "wide"              "50"
         "tall"              "24"
         "tabPosition"       "14"
+    }
+    "OriginBZ"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "OriginBZ"
+        "xpos"              "460"
+        "ypos"              "160"
+        "wide"              "50"
+        "tall"              "24"
+        "tabPosition"       "15"
     }
 
     // Angles B X, Y, Z TextEntries
@@ -263,7 +291,7 @@
     {
         "ControlName"       "Label"
         "fieldName"         "AnglesBLabel"
-        "xpos"              "310"
+        "xpos"              "280"
         "ypos"              "200"
         "wide"              "60"
         "tall"              "24"
@@ -274,201 +302,269 @@
     {
         "ControlName"       "TextEntry"
         "fieldName"         "AnglesBX"
-        "xpos"              "370"
-        "ypos"              "200"
-        "wide"              "50"
-        "tall"              "24"
-        "tabPosition"       "15"
-    }
-    "AnglesBY"
-    {
-        "ControlName"       "TextEntry"
-        "fieldName"         "AnglesBY"
-        "xpos"              "430"
+        "xpos"              "340"
         "ypos"              "200"
         "wide"              "50"
         "tall"              "24"
         "tabPosition"       "16"
     }
-    "AnglesBZ"
+    "AnglesBY"
     {
         "ControlName"       "TextEntry"
-        "fieldName"         "AnglesBZ"
-        "xpos"              "490"
+        "fieldName"         "AnglesBY"
+        "xpos"              "400"
         "ypos"              "200"
         "wide"              "50"
         "tall"              "24"
         "tabPosition"       "17"
     }
+    "AnglesBZ"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "AnglesBZ"
+        "xpos"              "460"
+        "ypos"              "200"
+        "wide"              "50"
+        "tall"              "24"
+        "tabPosition"       "18"
+    }
 
-	"DisableCollision"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DisableCollision"
-		"xpos"              "20"
-		"ypos"              "240"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "18"
-		"labelText"         "#BulletPhysics_DisableCollision"
-		"textAlignment"     "west"
-	}
+// MaxTolerantLinearError TextEntries
+    "MaxTolerantLinearErrorLabel"
+    {
+        "ControlName"       "Label"
+        "fieldName"         "MaxTolerantLinearErrorLabel"
+        "xpos"              "20"
+        "ypos"              "240"
+        "wide"              "160"
+        "tall"              "24"
+        "labelText"         "#BulletPhysics_MaxTolerantLinearError"
+        "textAlignment"     "west"
+    }
+    "MaxTolerantLinearError"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "MaxTolerantLinearError"
+        "xpos"              "180"
+        "ypos"              "240"
+        "wide"              "60"
+        "tall"              "24"
+        "tabPosition"       "31"
+    }
 
-	"UseGlobalJointFromA"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "UseGlobalJointFromA"
-		"xpos"              "290"
-		"ypos"              "240"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "19"
-		"labelText"         "#BulletPhysics_UseGlobalJointFromA"
-		"textAlignment"     "west"
-	}
+    // Forward X, Y, Z TextEntries
+    "ForwardLabel"
+    {
+        "ControlName"       "Label"
+        "fieldName"         "ForwardLabel"
+        "xpos"              "280"
+        "ypos"              "240"
+        "wide"              "60"
+        "tall"              "24"
+        "labelText"         "#BulletPhysics_Forward"
+        "textAlignment"     "west"
+    }
+    "ForwardX"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "ForwardX"
+        "xpos"              "340"
+        "ypos"              "240"
+        "wide"              "50"
+        "tall"              "24"
+        "tabPosition"       "32"
+    }
+    "ForwardY"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "ForwardY"
+        "xpos"              "400"
+        "ypos"              "240"
+        "wide"              "50"
+        "tall"              "24"
+        "tabPosition"       "33"
+    }
+    "ForwardZ"
+    {
+        "ControlName"       "TextEntry"
+        "fieldName"         "ForwardZ"
+        "xpos"              "460"
+        "ypos"              "240"
+        "wide"              "50"
+        "tall"              "24"
+        "tabPosition"       "34"
+    }
 
-	"UseLookAtOther"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "UseLookAtOther"
-		"xpos"              "20"
-		"ypos"              "270"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "20"
-		"labelText"         "#BulletPhysics_UseLookAtOther"
-		"textAlignment"     "west"
-	}
+//CheckButton
+    
+    "DisableCollision"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DisableCollision"
+        "xpos"              "20"
+        "ypos"              "300"  // Adjusted from 240
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "19"
+        "labelText"         "#BulletPhysics_DisableCollision"
+        "textAlignment"     "west"
+    }
 
-	"UseGlobalJointOriginFromOther"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "UseGlobalJointOriginFromOther"
-		"xpos"              "290"
-		"ypos"              "270"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "21"
-		"labelText"         "#BulletPhysics_UseGlobalJointOriginFromOther"
-		"textAlignment"     "west"
-	}
+    "UseGlobalJointFromA"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseGlobalJointFromA"
+        "xpos"              "290"
+        "ypos"              "300"  // Adjusted from 240
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "20"
+        "labelText"         "#BulletPhysics_UseGlobalJointFromA"
+        "textAlignment"     "west"
+    }
 
-	"UseRigidBodyDistanceAsLinearLimit"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "UseRigidBodyDistanceAsLinearLimit"
-		"xpos"              "20"
-		"ypos"              "300"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "22"
-		"labelText"         "#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"
-		"textAlignment"     "west"
-	}
+    "UseLookAtOther"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseLookAtOther"
+        "xpos"              "20"
+        "ypos"              "330"  // Adjusted from 270
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "21"
+        "labelText"         "#BulletPhysics_UseLookAtOther"
+        "textAlignment"     "west"
+    }
 
-	"UseLinearReferenceFrameA"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "UseLinearReferenceFrameA"
-		"xpos"              "290"
-		"ypos"              "300"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "23"
-		"labelText"         "#BulletPhysics_UseLinearReferenceFrameA"
-		"textAlignment"     "west"
-	}
+    "UseGlobalJointOriginFromOther"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseGlobalJointOriginFromOther"
+        "xpos"              "290"
+        "ypos"              "330"  // Adjusted from 270
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "22"
+        "labelText"         "#BulletPhysics_UseGlobalJointOriginFromOther"
+        "textAlignment"     "west"
+    }
 
-	"Barnacle"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "Barnacle"
-		"xpos"              "20"
-		"ypos"              "330"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "24"
-		"labelText"         "#BulletPhysics_Barnacle"
-		"textAlignment"     "west"
-	}
+    "UseRigidBodyDistanceAsLinearLimit"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseRigidBodyDistanceAsLinearLimit"
+        "xpos"              "20"
+        "ypos"              "360"  // Adjusted from 300
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "23"
+        "labelText"         "#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"
+        "textAlignment"     "west"
+    }
 
-	"Gargantua"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "Gargantua"
-		"xpos"              "290"
-		"ypos"              "330"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "25"
-		"labelText"         "#BulletPhysics_Gargantua"
-		"textAlignment"     "west"
-	}
+    "UseLinearReferenceFrameA"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseLinearReferenceFrameA"
+        "xpos"              "290"
+        "ypos"              "360"  // Adjusted from 300
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "24"
+        "labelText"         "#BulletPhysics_UseLinearReferenceFrameA"
+        "textAlignment"     "west"
+    }
 
-	"DeactiveOnNormalActivity"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DeactiveOnNormalActivity"
-		"xpos"              "20"
-		"ypos"              "360"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "26"
-		"labelText"         "#BulletPhysics_DeactiveOnNormalActivity"
-		"textAlignment"     "west"
-	}
+    "Barnacle"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "Barnacle"
+        "xpos"              "20"
+        "ypos"              "390"  // Adjusted from 330
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "25"
+        "labelText"         "#BulletPhysics_Barnacle"
+        "textAlignment"     "west"
+    }
 
-	"DeactiveOnDeathActivity"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DeactiveOnDeathActivity"
-		"xpos"              "290"
-		"ypos"              "360"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "27"
-		"labelText"         "#BulletPhysics_DeactiveOnDeathActivity"
-		"textAlignment"     "west"
-	}
+    "Gargantua"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "Gargantua"
+        "xpos"              "290"
+        "ypos"              "390"  // Adjusted from 330
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "26"
+        "labelText"         "#BulletPhysics_Gargantua"
+        "textAlignment"     "west"
+    }
 
-	"DeactiveOnBarnacleActivity"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DeactiveOnBarnacleActivity"
-		"xpos"              "20"
-		"ypos"              "390"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "28"
-		"labelText"         "#BulletPhysics_DeactiveOnBarnacleActivity"
-		"textAlignment"     "west"
-	}
+    "DeactiveOnNormalActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnNormalActivity"
+        "xpos"              "20"
+        "ypos"              "420"  // Adjusted from 360
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "27"
+        "labelText"         "#BulletPhysics_DeactiveOnNormalActivity"
+        "textAlignment"     "west"
+    }
 
-	"DeactiveOnGargantuaActivity"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DeactiveOnGargantuaActivity"
-		"xpos"              "290"
-		"ypos"              "390"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "29"
-		"labelText"         "#BulletPhysics_DeactiveOnGargantuaActivity"
-		"textAlignment"     "west"
-	}
+    "DeactiveOnDeathActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnDeathActivity"
+        "xpos"              "290"
+        "ypos"              "420"  // Adjusted from 360
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "28"
+        "labelText"         "#BulletPhysics_DeactiveOnDeathActivity"
+        "textAlignment"     "west"
+    }
 
-	"DontResetPoseOnErrorCorrection"
-	{
-		"ControlName"       "CheckButton"
-		"fieldName"         "DontResetPoseOnErrorCorrection"
-		"xpos"              "20"
-		"ypos"              "420"
-		"wide"              "250"
-		"tall"              "24"
-		"tabPosition"       "30"
-		"labelText"         "#BulletPhysics_DontResetPoseOnErrorCorrection"
-		"textAlignment"     "west"
-	}
+    "DeactiveOnBarnacleActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnBarnacleActivity"
+        "xpos"              "20"
+        "ypos"              "450"  // Adjusted from 390
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "29"
+        "labelText"         "#BulletPhysics_DeactiveOnBarnacleActivity"
+        "textAlignment"     "west"
+    }
+
+    "DeactiveOnGargantuaActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnGargantuaActivity"
+        "xpos"              "290"
+        "ypos"              "450"  // Adjusted from 390
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "30"
+        "labelText"         "#BulletPhysics_DeactiveOnGargantuaActivity"
+        "textAlignment"     "west"
+    }
+
+    "DontResetPoseOnErrorCorrection"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DontResetPoseOnErrorCorrection"
+        "xpos"              "20"
+        "ypos"              "480"  // Adjusted from 420
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "31"
+        "labelText"         "#BulletPhysics_DontResetPoseOnErrorCorrection"
+        "textAlignment"     "west"
+    }
 
     // OK, Cancel, and Apply Buttons (these entries are unchanged as per your request)
     "OK"

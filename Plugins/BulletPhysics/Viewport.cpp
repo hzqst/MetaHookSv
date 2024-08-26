@@ -121,10 +121,19 @@ bool CViewport::PhysicDebugGUIHasFocus()
 void CViewport::ActivateClientUI(void)
 {
 	SetVisible(true);
+
+	if (m_hOldFocus)
+	{
+		vgui::input()->SetAppModalSurface(m_hOldFocus);
+		vgui::input()->SetMouseFocus(m_hOldFocus);
+		m_hOldFocus = NULL;
+	}
 }
 
 void CViewport::HideClientUI(void)
 {
+	m_hOldFocus = vgui::input()->GetAppModalSurface();
+
 	SetVisible(false);
 }
 

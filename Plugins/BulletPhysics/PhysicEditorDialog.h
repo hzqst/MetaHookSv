@@ -233,7 +233,7 @@ public:
 	void Activate(void) override;
 
 private:
-	MESSAGE_FUNC(OnRefreshCollisionShape, "RefreshCollisionShape");
+	MESSAGE_FUNC_INT(OnRefreshCollisionShape, "RefreshCollisionShape", configId);
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	void OnCommand(const char* command) override;
 
@@ -295,6 +295,7 @@ public:
 
 private:
 	MESSAGE_FUNC(OnResetData, "ResetData");
+	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
 	void OnCommand(const char* command) override;
 
 	void LoadAvailableTypesIntoControls();
@@ -308,6 +309,8 @@ private:
 	void SaveRotOrderFromControl();
 	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
 	void SaveConfigFromControls();
+	int GetCurrentSelectedConstraintType();
+	void UpdateControlStates();
 
 	typedef vgui::Frame BaseClass;
 
