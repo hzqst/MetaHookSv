@@ -223,8 +223,14 @@ CBulletRigidBody::CBulletRigidBody(
 	m_pInternalRigidBody->setUserIndex(id);
 	m_pInternalRigidBody->setUserPointer(this);
 
-	m_pInternalRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
-	m_pInternalRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
+	float ccdRadius = pRigidConfig->ccdRadius;
+	float ccdThreshold = pRigidConfig->ccdThreshold;
+
+	FloatGoldSrcToBullet(&ccdRadius);
+	FloatGoldSrcToBullet(&ccdThreshold);
+
+	m_pInternalRigidBody->setCcdSweptSphereRadius(ccdRadius);
+	m_pInternalRigidBody->setCcdMotionThreshold(ccdThreshold);
 }
 
 CBulletRigidBody::~CBulletRigidBody()
@@ -1515,6 +1521,8 @@ btTypedConstraint* BulletCreateConstraint_Dof6Spring(const CClientConstraintConf
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
 	}
+
+	pDof6Spring->setEquilibriumPoint();
 
 	return pDof6Spring;
 }

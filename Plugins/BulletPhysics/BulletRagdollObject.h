@@ -38,7 +38,7 @@ public:
 		{
 			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
 			{
-				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				Sys_Error("CBulletRagdollRigidBody::ResetPose invalid m_boneindex!");
 				return false;
 			}
 
@@ -71,7 +71,7 @@ public:
 		{
 			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
 			{
-				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				Sys_Error("CBulletRagdollRigidBody::SetupBones invalid m_boneindex!");
 				return false;
 			}
 
@@ -574,9 +574,9 @@ public:
 
 				Matrix3x4ToTransform(parentMatrix3x4, parentMatrix);
 
-				btTransform mergedMatrix;
+				TransformGoldSrcToBullet(parentMatrix);
 
-				mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
+				btTransform mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
 
 				TransformBulletToGoldSrc(mergedMatrix);
 
@@ -801,8 +801,12 @@ protected:
 			if (bShouldPerformCheck)
 			{
 				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pInternalConstraint);
+				
+				float maxTol = pConstraint->GetMaxTolerantLinearError();
 
-				if (errorMagnitude > pConstraint->GetMaxTolerantLinearError())
+				FloatGoldSrcToBullet(&maxTol);
+
+				if (errorMagnitude > maxTol)
 				{
 					ResetPose(GetClientEntityState());
 
@@ -1114,19 +1118,20 @@ protected:
 			if (parent == -1)
 			{
 				Matrix3x4ToTransform((*pbonetransform)[i], m_BoneRelativeTransform[i]);
+
 				TransformGoldSrcToBullet(m_BoneRelativeTransform[i]);
 			}
 			else
 			{
 				btTransform bonematrix;
 				Matrix3x4ToTransform((*pbonetransform)[i], bonematrix);
-				TransformGoldSrcToBullet(bonematrix);
 
 				btTransform parentmatrix;
 				Matrix3x4ToTransform((*pbonetransform)[pbones[i].parent], parentmatrix);
-				TransformGoldSrcToBullet(parentmatrix);
 
 				m_BoneRelativeTransform[i] = parentmatrix.inverse() * bonematrix;
+
+				TransformGoldSrcToBullet(m_BoneRelativeTransform[i]);
 			}
 		}
 	}

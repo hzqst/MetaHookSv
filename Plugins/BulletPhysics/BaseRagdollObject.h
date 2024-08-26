@@ -189,7 +189,7 @@ public:
 
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
 	{
-		auto playerState = R_GetPlayerState(m_playerindex);
+		auto playerState = GetClientEntityState();
 
 		if (m_bDebugAnimEnabled)
 		{

@@ -24,6 +24,8 @@ enum class PhysicEditMode
 	Resize
 };
 
+class IPhysicComponent;
+
 class CPhysicDebugGUI : public vgui::Frame
 {
 	DECLARE_CLASS_SIMPLE(CPhysicDebugGUI, vgui::Frame);
@@ -46,14 +48,24 @@ protected:
 	MESSAGE_FUNC_UINT64(OnCreateStaticObject, "CreateStaticObject", physicObjectId);
 	MESSAGE_FUNC_UINT64(OnCreateDynamicObject, "CreateDynamicObject", physicObjectId);
 	MESSAGE_FUNC_UINT64(OnCreateRagdollObject, "CreateRagdollObject", physicObjectId);
-	MESSAGE_FUNC_UINT64(OnCreateRigidBody, "CreateRigidBody", physicObjectId);
+
 	MESSAGE_FUNC_PARAMS(OnEditPhysicObject, "EditPhysicObject", kv);
+
+	MESSAGE_FUNC_UINT64(OnCreateRigidBody, "CreateRigidBody", physicObjectId);
 	MESSAGE_FUNC_PARAMS(OnEditRigidBodyEx, "EditRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnRotateRigidBodyEx, "RotateRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnResizeRigidBodyEx, "ResizeRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnCloneRigidBodyEx, "CloneRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnDeleteRigidBodyEx, "DeleteRigidBodyEx", kv);
+
+	MESSAGE_FUNC_UINT64(OnCreateConstraint, "CreateConstraint", physicObjectId);
+	MESSAGE_FUNC_PARAMS(OnEditConstraintEx, "EditConstraintEx", kv);
+	MESSAGE_FUNC_PARAMS(OnMoveConstraintEx, "MoveConstraintEx", kv);
+	MESSAGE_FUNC_PARAMS(OnRotateConstraintEx, "RotateConstraintEx", kv);
+	MESSAGE_FUNC_PARAMS(OnResizeConstraintEx, "ResizeConstraintEx", kv);
+	MESSAGE_FUNC_PARAMS(OnCloneConstraintEx, "CloneConstraintEx", kv);
+	MESSAGE_FUNC_PARAMS(OnDeleteConstraintEx, "DeleteConstraintEx", kv);
 
 	void OnThink() override;
 	void PerformLayout(void) override;
@@ -68,10 +80,14 @@ protected:
 	void SaveOpenPrompt();
 	void SaveConfirm();
 
+	bool DeleteRigidBodyByComponent(IPhysicComponent* pPhysicComponent);
 	bool DeleteRigidBodyByComponentId(int physicComponentId);
+	bool DeleteConstraintByComponent(IPhysicComponent* pPhysicComponent);
+	bool DeleteConstraintByComponentId(int physicComponentId);
 	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
 	bool OpenEditPhysicObjectDialogEx(uint64 physicObjectId, int physicObjectConfigId);
 	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);
+	bool OpenEditConstraintDialog(uint64 physicObjectId, int physicObjectConfigId, int constraintConfigId);
 
 	bool UpdateInspectedClientEntity(bool bSelected);
 	bool UpdateInspectedPhysicObject(bool bSelected);
@@ -93,9 +109,9 @@ protected:
 	void ShowInspectContentLabel3(const wchar_t* wszText);
 	void HideInspectContentLabel3();
 
-	bool UpdateRigidBodyConfigOrigin(int physicComponentId, int axis, float value);
-	bool UpdateRigidBodyConfigAngles(int physicComponentId, int axis, float value);
-	bool UpdateRigidBodyConfigSize(int physicComponentId, int axis, float value);
+	bool UpdateConfigOrigin(int physicComponentId, int axis, float value);
+	bool UpdateConfigAngles(int physicComponentId, int axis, float value);
+	bool UpdateConfigSize(int physicComponentId, int axis, float value);
 
 	void LoadAvailableInspectModeIntoControls();
 	void LoadAvailableEditModeIntoControls();

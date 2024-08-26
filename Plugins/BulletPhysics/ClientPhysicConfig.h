@@ -75,8 +75,8 @@ public:
 
 	float mass{ 1 };
 	float density{ 1 };
-	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
-	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
+	float linearFriction{ BULLET_DEFAULT_LINEAR_FRICTION };
+	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FRICTION  };
 	float restitution{ BULLET_DEFAULT_RESTITUTION };
 	float ccdRadius{ 0 };
 	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
