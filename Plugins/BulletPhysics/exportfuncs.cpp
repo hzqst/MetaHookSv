@@ -117,55 +117,6 @@ bool AllowCheats()
 	return (sv_cheats->value != 0) ? true : false;
 }
 
-int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
-{
-	if (g_bIsSvenCoop)
-	{
-		if (entstate->scale != 0 && entstate->scale != 1.0f)
-			return 0;
-	}
-
-	if (mod->type != mod_studio)
-		return 0;
-
-	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
-
-	if (!studiohdr)
-		return 0;
-
-	int sequence = entstate->sequence;
-	if (sequence >= studiohdr->numseq)
-		return 0;
-
-	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
-
-	if (
-		pseqdesc->activity == ACT_DIESIMPLE ||
-		pseqdesc->activity == ACT_DIEBACKWARD ||
-		pseqdesc->activity == ACT_DIEFORWARD ||
-		pseqdesc->activity == ACT_DIEVIOLENT ||
-		pseqdesc->activity == ACT_DIE_HEADSHOT ||
-		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
-		pseqdesc->activity == ACT_DIE_GUTSHOT ||
-		pseqdesc->activity == ACT_DIE_BACKSHOT
-		)
-	{
-		return 1;
-	}
-
-	if (
-		pseqdesc->activity == ACT_BARNACLE_HIT ||
-		pseqdesc->activity == ACT_BARNACLE_PULL ||
-		pseqdesc->activity == ACT_BARNACLE_CHOMP ||
-		pseqdesc->activity == ACT_BARNACLE_CHEW
-		)
-	{
-		return 2;
-	}
-
-	return 0;
-}
-
 entity_state_t *R_GetPlayerState(int index)
 {
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
@@ -347,7 +298,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() > 0)
+			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Barnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
 
@@ -442,7 +393,7 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() > 0)
+			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Barnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
 
@@ -1245,25 +1196,37 @@ void BV_OpenDebugUI_f(void)
 
 void BV_ReloadObjects_f(void)
 {
-	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
+	if (AllowCheats())
+	{
+		ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, PhysicObjectFlag_FromBSP);
+	}
 }
 
 void BV_ReloadConfigs_f(void)
 {
-	ClientPhysicManager()->FreeAllIndexArrays(PhysicIndexArrayFlag_FromExternal, PhysicIndexArrayFlag_FromBSP);
-	ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
-	ClientPhysicManager()->LoadPhysicObjectConfigs();
+	if (AllowCheats())
+	{
+		ClientPhysicManager()->FreeAllIndexArrays(PhysicIndexArrayFlag_FromExternal, PhysicIndexArrayFlag_FromBSP);
+		ClientPhysicManager()->RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0);
+		ClientPhysicManager()->LoadPhysicObjectConfigs();
+	}
 }
 
 void BV_ReloadAll_f(void)
 {
-	BV_ReloadConfigs_f();
-	BV_ReloadObjects_f();
+	if (AllowCheats())
+	{
+		BV_ReloadConfigs_f();
+		BV_ReloadObjects_f();
+	}
 }
 
 void BV_SaveConfigs_f(void)
 {
-	ClientPhysicManager()->SavePhysicObjectConfigs();
+	if (AllowCheats())
+	{
+		ClientPhysicManager()->SavePhysicObjectConfigs();
+	}
 }
 
 void HUD_Init(void)
@@ -1272,7 +1235,6 @@ void HUD_Init(void)
 
 	ClientPhysicManager()->Init();
 
-	//bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
 	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_static", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);

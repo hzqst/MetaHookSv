@@ -6,16 +6,40 @@
 #include <format>
 #include <algorithm>
 
-const char* VGUI2Token_PhysicObject[] = { "#BulletPhysics_None", "#BulletPhysics_StaticObject", "#BulletPhysics_DynamicObject", "#BulletPhysics_RagdollObject" };
+const char* VGUI2Token_PhysicObjectType[] = { "#BulletPhysics_None", "#BulletPhysics_StaticObject", "#BulletPhysics_DynamicObject", "#BulletPhysics_RagdollObject" };
 
 const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type)
 {
-	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicObject))
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicObjectType))
 	{
-		return VGUI2Token_PhysicObject[type];
+		return VGUI2Token_PhysicObjectType[type];
 	}
 
 	return "#BulletPhysics_None";
+}
+
+const char* VGUI2Token_ConstraintType[] = { "#BulletPhysics_None", "#BulletPhysics_ConeTwistConstraint", "#BulletPhysics_HingeConstraint", "#BulletPhysics_PointConstraint", "#BulletPhysics_SliderConstraint", "#BulletPhysics_Dof6Constraint", "#BulletPhysics_Dof6SpringConstraint", "#BulletPhysics_FixedConstraint" };
+
+const char* UTIL_GetConstraintTypeLocalizationToken(int type)
+{
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_ConstraintType))
+	{
+		return VGUI2Token_ConstraintType[type];
+	}
+
+	return "#BulletPhysics_None";
+}
+
+const char* VGUI2Token_RotOrderType[] = { "#BulletPhysics_PhysicRotOrder_XYZ", "#BulletPhysics_PhysicRotOrder_XZY", "#BulletPhysics_PhysicRotOrder_YXZ", "#BulletPhysics_PhysicRotOrder_YZX", "#BulletPhysics_PhysicRotOrder_ZXY", "#BulletPhysics_PhysicRotOrder_ZYX" };
+
+const char* UTIL_GetRotOrderTypeLocalizationToken(int type)
+{
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_RotOrderType))
+	{
+		return VGUI2Token_RotOrderType[type];
+	}
+
+	return "#BulletPhysics_PhysicRotOrder_XYZ";
 }
 
 const char* VGUI2Token_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
@@ -39,30 +63,86 @@ std::wstring UTIL_GetFormattedRigidBodyFlags(int flags)
 {
 	std::wstringstream ss;
 
-	if (flags & PhysicRigidBodyFlag_AlwaysDynamic) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_AlwaysDynamic") << L") ";
-	}
+	// Macro to format flag string
+#define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicRigidBodyFlag_##name) {\
+        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+    }
 
-	if (flags & PhysicRigidBodyFlag_AlwaysKinematic) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_AlwaysKinematic") << L") ";
-	}
+	FORMAT_FLAGS_TO_STRING(AlwaysDynamic);
+	FORMAT_FLAGS_TO_STRING(AlwaysKinematic);
+	FORMAT_FLAGS_TO_STRING(AlwaysStatic);
+	FORMAT_FLAGS_TO_STRING(NoCollisionToWorld);
+	FORMAT_FLAGS_TO_STRING(NoCollisionToStaticObject);
+	FORMAT_FLAGS_TO_STRING(NoCollisionToDynamicObject);
+	FORMAT_FLAGS_TO_STRING(NoCollisionToRagdollObject);
 
-	if (flags & PhysicRigidBodyFlag_NoCollisionToWorld) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToWorld") << L") ";
-	}
+#undef FORMAT_FLAGS_TO_STRING
 
-	if (flags & PhysicRigidBodyFlag_NoCollisionToStaticObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToStaticObject") << L") ";
-	}
+	return ss.str();
+}
 
-	if (flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToDynamicObject") << L") ";
-	}
+std::wstring UTIL_GetFormattedConstraintFlags(int flags)
+{
+	std::wstringstream ss;
 
-	if (flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject) {
-		ss << L"(" << vgui::localize()->Find("#BulletPhysics_NoCollisionToRagdollObject") << L") ";
-	}
+	// Macro to format flag string
+#define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicConstraintFlag_##name) {\
+        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+    }
 
+	FORMAT_FLAGS_TO_STRING(Barnacle);
+	FORMAT_FLAGS_TO_STRING(Gargantua);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnNormalActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnDeathActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnacleActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnGargantuaActivity);
+	FORMAT_FLAGS_TO_STRING(DontResetPoseOnErrorCorrection);
+
+#undef FORMAT_FLAGS_TO_STRING
+
+	return ss.str();
+}
+
+std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraintConfig *pConstraintConfig)
+{
+	std::wstringstream ss;
+
+	if (pConstraintConfig->useGlobalJointFromA)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromA"));
+	}
+	else
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromB"));
+	}
+	if (pConstraintConfig->disableCollision)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_DisableCollision"));
+	}
+	else
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_DontDisableCollision"));
+	}
+	if (pConstraintConfig->useLookAtOther)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
+	}
+	if (pConstraintConfig->useGlobalJointOriginFromOther)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
+	}
+	if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
+	}
+	if (pConstraintConfig->useLinearReferenceFrameA)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameA"));
+	}
+	else 
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameB"));
+	}
 	return ss.str();
 }
 
@@ -323,6 +403,27 @@ bool UTIL_RemoveRigidBodyFromPhysicObjectConfig(CClientPhysicObjectConfig * pPhy
 	return false;
 }
 
+bool UTIL_RemoveConstraintFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicObjectConfig, int constraintConfigId)
+{
+	for (auto itor = pPhysicObjectConfig->ConstraintConfigs.begin(); itor != pPhysicObjectConfig->ConstraintConfigs.end(); )
+	{
+		const auto& p = (*itor);
+
+		if (p->configId == constraintConfigId)
+		{
+			itor = pPhysicObjectConfig->ConstraintConfigs.erase(itor);
+
+			pPhysicObjectConfig->configModified = true;
+
+			return true;
+		}
+
+		itor++;
+	}
+
+	return false;
+}
+
 std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(const CClientCollisionShapeConfig* pOldShape)
 {
 	auto pCloneShape = std::make_shared<CClientCollisionShapeConfig>();
@@ -375,6 +476,44 @@ std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientR
 	}
 
 	return pCloneConfig;
+}
+
+std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClientConstraintConfig* pOldConfig)
+{
+	auto pNewConfig = std::make_shared<CClientConstraintConfig>();
+
+	// Copy basic types and strings
+	pNewConfig->name = pOldConfig->name;
+	pNewConfig->type = pOldConfig->type;
+	pNewConfig->rigidbodyA = pOldConfig->rigidbodyA;
+	pNewConfig->rigidbodyB = pOldConfig->rigidbodyB;
+	pNewConfig->disableCollision = pOldConfig->disableCollision;
+	pNewConfig->useGlobalJointFromA = pOldConfig->useGlobalJointFromA;
+	pNewConfig->useLookAtOther = pOldConfig->useLookAtOther;
+	pNewConfig->useGlobalJointOriginFromOther = pOldConfig->useGlobalJointOriginFromOther;
+	pNewConfig->useRigidBodyDistanceAsLinearLimit = pOldConfig->useRigidBodyDistanceAsLinearLimit;
+	pNewConfig->useLinearReferenceFrameA = pOldConfig->useLinearReferenceFrameA;
+	pNewConfig->rotOrder = pOldConfig->rotOrder;
+	pNewConfig->flags = pOldConfig->flags;
+	pNewConfig->debugDrawLevel = pOldConfig->debugDrawLevel;
+	pNewConfig->maxTolerantLinearError = pOldConfig->maxTolerantLinearError;
+	pNewConfig->isLegacyConfig = pOldConfig->isLegacyConfig;
+	pNewConfig->boneindexA = pOldConfig->boneindexA;
+	pNewConfig->boneindexB = pOldConfig->boneindexB;
+
+	// Copy vec3_t using the provided VectorCopy macro
+	VectorCopy(pOldConfig->originA, pNewConfig->originA);
+	VectorCopy(pOldConfig->anglesA, pNewConfig->anglesA);
+	VectorCopy(pOldConfig->originB, pNewConfig->originB);
+	VectorCopy(pOldConfig->anglesB, pNewConfig->anglesB);
+	VectorCopy(pOldConfig->forward, pNewConfig->forward);
+	VectorCopy(pOldConfig->offsetA, pNewConfig->offsetA);
+	VectorCopy(pOldConfig->offsetB, pNewConfig->offsetB);
+
+	// Copy array of floats
+	std::copy(std::begin(pOldConfig->factors), std::end(pOldConfig->factors), std::begin(pNewConfig->factors));
+
+	return pNewConfig;
 }
 
 std::string UTIL_FormatAbsoluteModelName(model_t* mod)
@@ -556,6 +695,8 @@ IPhysicConstraint* UTIL_GetPhysicComponentAsConstraint(int physicComponentId)
 	return nullptr;
 }
 
+//RigidBody config order related
+
 int UTIL_GetRigidBodyIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
 {
 	auto& configs = pPhysicObjectConfig->RigidBodyConfigs;
@@ -678,6 +819,112 @@ bool UTIL_ShiftDownRigidBodyIndex(CClientPhysicObjectConfig* pPhysicObjectConfig
 		// Swap the current element with the next one
 		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
 
+		return true;
+	}
+
+	return false;
+}
+
+//Constraint config order related
+
+int UTIL_GetConstraintIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId) {
+	const auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.end()) {
+		return std::distance(configs.begin(), it);
+	}
+
+	return -1; // Return -1 if not found
+}
+
+int UTIL_GetConstraintIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientConstraintConfig* pConstraintConfig)
+{
+	auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pConstraintConfig](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr.get() == pConstraintConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		return currentIndex;
+	}
+
+	return -1;
+}
+
+bool UTIL_ShiftUpConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId) {
+	auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto prevIndex = currentIndex - 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId) {
+	auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto nextIndex = currentIndex + 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftUpConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientConstraintConfig* pConstraintConfig) {
+	auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pConstraintConfig](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr.get() == pConstraintConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto prevIndex = currentIndex - 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientConstraintConfig* pConstraintConfig) {
+	auto& configs = pPhysicObjectConfig->ConstraintConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pConstraintConfig](const std::shared_ptr<CClientConstraintConfig>& ptr) {
+		return ptr.get() == pConstraintConfig;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto nextIndex = currentIndex + 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
 		return true;
 	}
 

@@ -1003,7 +1003,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 				gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
 			}
-
+#if 0
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG "\x8B\x2A\x24\x04\x83\xEC\x08\x2A\x2A\x2A\x2A\xC5\x9D\x1C\x81\x2A\x2A\x2A\x2A\x70\x2A\x2A\x6C"
@@ -1013,7 +1013,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 				gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))addr;
 			}
-
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG "\x83\xEC\x2A\x2A\x8B\x74\x24\x2A\x2A\x8B\x7C\x24\x2A\x89\x4C\x24\x2A\x83\x2A\x28\x01"
@@ -1023,6 +1022,80 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 				gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))addr;
 			}
+
+#else
+			if (1)
+			{
+				/*
+.text:1004EED7 6A 01                                               push    1               ; alpha
+.text:1004EED9 6A 01                                               push    1               ; blue
+.text:1004EEDB 6A 01                                               push    1               ; green
+.text:1004EEDD 6A 01                                               push    1               ; red
+.text:1004EEDF FF 15 14 92 11 10                                   call    ds:glColorMask
+.text:1004EEE5 68 E1 0D 00 00                                      push    0DE1h           ; cap
+.text:1004EEEA FF 15 08 92 11 10                                   call    ds:glEnable
+.text:1004EEF0
+.text:1004EEF0                                     loc_1004EEF0:                           ; CODE XREF: sub_1004EA40+173¡üj
+.text:1004EEF0 8B 4C 24 20                                         mov     ecx, [esp+30h+var_10]
+.text:1004EEF4 56                                                  push    esi
+.text:1004EEF5 E8 66 EB FF FF                                      call    ClientPortalManager__GetOriginalSurfaceTexture
+				*/
+				const char pattern[] = "\x6A\x01\x6A\x01\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00";
+				PUCHAR SearchBegin = (PUCHAR)g_dwClientTextBase;
+				PUCHAR SearchLimit = (PUCHAR)g_dwClientTextBase + g_dwClientTextSize;
+				while (SearchBegin < SearchLimit)
+				{
+					PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+					if (pFound)
+					{
+						g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+							auto pinst = (cs_insn*)inst;
+
+							if (address[0] == 0xE8)
+							{
+								gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))pinst->detail->x86.operands[0].imm;
+								return TRUE;
+							}
+
+							if (address[0] == 0xCC)
+								return TRUE;
+
+							if (pinst->id == X86_INS_RET)
+								return TRUE;
+
+							return FALSE;
+
+						}, 0, NULL);
+
+						if (gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture)
+						{
+							gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x600, [](PUCHAR Candidate) {
+
+								if (Candidate[0] == 0x83 &&
+									Candidate[1] == 0xEC)
+									return TRUE;
+
+								return FALSE;
+							});
+
+							break;
+						}
+
+						SearchBegin = pFound + Sig_Length(pattern);
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+
+			Sig_FuncNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
+			Sig_FuncNotFound(ClientPortalManager_DrawPortalSurface);
+#endif
+
+
 
 			if (1)
 			{

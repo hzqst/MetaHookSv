@@ -16,6 +16,7 @@ typedef struct
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
+	void (*R_RenderFinalFog)(void);
 	void (*ClientDLL_DrawNormalTriangles)(void);
 	void (*R_NewMap)(void);
 	void (*R_ClearParticles)(void);
@@ -59,6 +60,7 @@ typedef struct
 	int(*GL_Upload16)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
+	void *(*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t *e);

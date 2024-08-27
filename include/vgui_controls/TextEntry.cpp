@@ -1558,10 +1558,13 @@ void TextEntry::OnMousePressed(MouseCode code)
 //-----------------------------------------------------------------------------
 void TextEntry::OnMouseReleased(MouseCode code)
 {
-	_mouseSelection = false;
-	
-	input()->SetMouseCapture(NULL);
-	
+	if (_mouseSelection)
+	{
+		_mouseSelection = false;
+
+		input()->SetMouseCapture(NULL);
+	}
+
 	// make sure something has been selected
 	int cx0, cx1;
 	if (GetSelectedRange(cx0, cx1))

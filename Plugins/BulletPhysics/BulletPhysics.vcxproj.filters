@@ -410,6 +410,24 @@
     <ClCompile Include="PhysicUTIL.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="BaseObjectConfigPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBodyPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstraintPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionShapeEditor.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBodyEditor.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstraintEditor.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">

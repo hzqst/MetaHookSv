@@ -295,7 +295,7 @@ public:
 
 public:
 
-	void CreateRigidBodies(const CStaticObjectCreationParameter& CreationParam)
+	virtual void CreateRigidBodies(const CStaticObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
 		{
@@ -303,15 +303,7 @@ public:
 
 			if (pRigidBody)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-
-				CPhysicObjectUpdateContext ObjectUpdateContext;
-
-				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-				pRigidBody->Update(&ComponentUpdateContext);
-
-				m_RigidBodies.emplace_back(pRigidBody);
+				AddRigidBody(pRigidBody);
 			}
 		}
 	}
@@ -319,6 +311,19 @@ public:
 	virtual IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
 
 protected:
+
+	void AddRigidBody(IPhysicRigidBody* pRigidBody)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pRigidBody->Update(&ComponentUpdateContext);
+
+		m_RigidBodies.emplace_back(pRigidBody);
+	}
 
 	void RebuildRigidBodies(const CStaticObjectCreationParameter& CreationParam)
 	{
@@ -345,9 +350,7 @@ protected:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
-
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 				}
 			}
 			else
@@ -356,9 +359,7 @@ protected:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
-
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 				}
 			}
 		}

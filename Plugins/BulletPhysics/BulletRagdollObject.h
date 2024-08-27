@@ -38,7 +38,7 @@ public:
 		{
 			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
 			{
-				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				Sys_Error("CBulletRagdollRigidBody::ResetPose invalid m_boneindex!");
 				return false;
 			}
 
@@ -71,7 +71,7 @@ public:
 		{
 			if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
 			{
-				Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+				Sys_Error("CBulletRagdollRigidBody::SetupBones invalid m_boneindex!");
 				return false;
 			}
 
@@ -181,7 +181,7 @@ public:
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() > 0)
+			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Idle)
 			{
 				bKinematic = false;
 				break;
@@ -273,25 +273,25 @@ public:
 
 		do
 		{
-			if (pRagdollObject->GetActivityType() == 0 && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Idle && (m_flags & PhysicConstraintFlag_DeactiveOnNormalActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 1 && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Death && (m_flags & PhysicConstraintFlag_DeactiveOnDeathActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
 			{
 				bDeactivate = true;
 				break;
 			}
 
-			if (pRagdollObject->GetActivityType() == 2 && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
 			{
 				bDeactivate = true;
 				break;
@@ -495,11 +495,20 @@ public:
 	{
 		m_AnimControlConfigs = CreationParam.m_pRagdollObjectConfig->AnimControlConfigs;
 
-		for (const auto& AnimConfig : m_AnimControlConfigs)
+		for (const auto& pAnimConfig : m_AnimControlConfigs)
 		{
-			if (AnimConfig.idle)
+			if (pAnimConfig->activity == StudioAnimActivityType_Idle)
 			{
-				m_IdleAnimConfig = AnimConfig;
+				m_IdleAnimConfig = pAnimConfig;
+				break;
+			}
+		}
+
+		for (const auto& pAnimConfig : m_AnimControlConfigs)
+		{
+			if (pAnimConfig->activity == StudioAnimActivityType_Debug)
+			{
+				m_DebugAnimConfig = pAnimConfig;
 				break;
 			}
 		}
@@ -508,7 +517,14 @@ public:
 
 		if (CreationParam.m_model->type == mod_studio)
 		{
-			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+			if (m_IdleAnimConfig)
+			{
+				ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
+			}
+			else
+			{
+				ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+			}
 		}
 
 		SaveBoneRelativeTransform(CreationParam);
@@ -565,9 +581,9 @@ public:
 
 				Matrix3x4ToTransform(parentMatrix3x4, parentMatrix);
 
-				btTransform mergedMatrix;
+				TransformGoldSrcToBullet(parentMatrix);
 
-				mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
+				btTransform mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
 
 				TransformBulletToGoldSrc(mergedMatrix);
 
@@ -745,7 +761,7 @@ protected:
 				m_iBarnacleIndex,
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
 				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
-				pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis]);
+				(int)pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
 		}
 		}
 
@@ -762,7 +778,7 @@ protected:
 			if (pConstraint->GetFlags() & PhysicConstraintFlag_NonNative)
 				continue;
 
-			if (pConstraint->GetFlags() & PhysicConstraintFlag_NoResetPoseOnErrorCorrection)
+			if (pConstraint->GetFlags() & PhysicConstraintFlag_DontResetPoseOnErrorCorrection)
 				continue;
 
 			auto pInternalConstraint = (btTypedConstraint *)pConstraint->GetInternalConstraint();
@@ -792,8 +808,12 @@ protected:
 			if (bShouldPerformCheck)
 			{
 				auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pInternalConstraint);
+				
+				float maxTol = pConstraint->GetMaxTolerantLinearError();
 
-				if (errorMagnitude > pConstraint->GetMaxTolerantLinearError())
+				FloatGoldSrcToBullet(&maxTol);
+
+				if (errorMagnitude > maxTol)
 				{
 					ResetPose(GetClientEntityState());
 
@@ -1084,12 +1104,12 @@ protected:
 		return nullptr;
 	}
 
-	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig)
-	{
+	void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig) override
+	{ 
 		//TODO
 	}
 
-	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam)
+	void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam) override
 	{
 		if (!CreationParam.m_studiohdr)
 			return;
@@ -1105,41 +1125,21 @@ protected:
 			if (parent == -1)
 			{
 				Matrix3x4ToTransform((*pbonetransform)[i], m_BoneRelativeTransform[i]);
+
 				TransformGoldSrcToBullet(m_BoneRelativeTransform[i]);
 			}
 			else
 			{
 				btTransform bonematrix;
 				Matrix3x4ToTransform((*pbonetransform)[i], bonematrix);
-				TransformGoldSrcToBullet(bonematrix);
 
 				btTransform parentmatrix;
 				Matrix3x4ToTransform((*pbonetransform)[pbones[i].parent], parentmatrix);
-				TransformGoldSrcToBullet(parentmatrix);
 
 				m_BoneRelativeTransform[i] = parentmatrix.inverse() * bonematrix;
+
+				TransformGoldSrcToBullet(m_BoneRelativeTransform[i]);
 			}
-		}
-	}
-
-	void SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam)
-	{
-		for (int i = 0; i < CreationParam.m_studiohdr->numbones; ++i)
-		{
-			if (std::find(m_keyBones.begin(), m_keyBones.end(), i) == m_keyBones.end())
-				m_nonKeyBones.emplace_back(i);
-		}
-	}
-
-	void InitCameraControl(const CClientCameraControlConfig *pCameraControlConfig, CPhysicCameraControl &CameraControl)
-	{
-		CameraControl = (*pCameraControlConfig);
-		
-		auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
-		
-		if (pRigidBody)
-		{
-			CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
 		}
 	}
 

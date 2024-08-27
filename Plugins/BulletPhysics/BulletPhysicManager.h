@@ -320,3 +320,5 @@ void TransformGoldSrcToBullet(btTransform& trans);
 void Vector3GoldSrcToBullet(btVector3& vec);
 void TransformBulletToGoldSrc(btTransform& trans);
 void Vector3BulletToGoldSrc(btVector3& vec);
+
+StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);

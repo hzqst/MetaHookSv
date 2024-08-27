@@ -356,8 +356,8 @@ public:
 		return "#BulletPhysics_RagdollObject";
 	}
 
-	virtual int GetActivityType() const = 0;
-	virtual int GetOverrideActivityType(entity_state_t* entstate) = 0;
+	virtual StudioAnimActivityType GetActivityType() const = 0;
+	virtual StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdatePose(entity_state_t* curstate) = 0;
@@ -367,6 +367,8 @@ public:
 	virtual void ReleaseFromGargantua() = 0;
 	virtual int GetBarnacleIndex() const = 0;
 	virtual int GetGargantuaIndex() const = 0;
+	virtual bool IsDebugAnimEnabled() const = 0;
+	virtual void SetDebugAnimEnabled(bool bEnabled) = 0;
 	virtual bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
 	virtual bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
 };
@@ -422,7 +424,7 @@ public:
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 
 	virtual void SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
-	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig& OverrideAnim) = 0;
+	virtual void SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig* pOverrideAnimControl) = 0;
 	virtual void UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex) = 0;
 
 	//PhysicWorld

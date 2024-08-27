@@ -8,9 +8,9 @@
 #include <vgui_controls/PropertySheet.h>
 #include <vgui_controls/PropertyPage.h>
 #include <vgui_controls/Frame.h>
+#include <vgui_controls/Menu.h>
 
 #include "ClientPhysicConfig.h"
-
 
 class CRigidBodyListPanel : public vgui::ListPanel
 {
@@ -24,6 +24,43 @@ private:
 	typedef vgui::ListPanel BaseClass;
 };
 
+class CConstraintListPanel : public vgui::ListPanel
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintListPanel, vgui::ListPanel);
+
+	CConstraintListPanel(vgui::Panel* parent, const char* pName);
+
+private:
+
+	typedef vgui::ListPanel BaseClass;
+};
+
+class CInlineTextEntryPanel;
+
+class CFactorListPanel : public vgui::ListPanel
+{
+public:
+	DECLARE_CLASS_SIMPLE(CFactorListPanel, vgui::ListPanel);
+
+	CFactorListPanel(vgui::Panel* parent, const char* pName);
+	~CFactorListPanel();
+
+	void StartCaptureMode();
+	void EndCaptureMode();
+	bool IsCapturing(void) const;
+	int GetCapturingItemId(void) const;
+	int GetCapturingItemIndex(void) const;
+	void OnMousePressed(vgui::MouseCode code) override;
+private:
+
+	typedef vgui::ListPanel BaseClass;
+	bool m_bCaptureMode{};
+	int m_iCaptureItemId{};
+	int m_iCaptureItemIndex{};
+	CInlineTextEntryPanel* m_pInlineTextEntryPanel{};
+};
+
 class CBaseObjectConfigPage : public vgui::PropertyPage
 {
 public:
@@ -34,12 +71,10 @@ public:
 private:
 
 	MESSAGE_FUNC(OnApplyChanges, "ApplyChanges");
-
 	MESSAGE_FUNC(OnResetData, "ResetData");
 
 	void OnKeyCodeTyped(vgui::KeyCode code) override;
 	void OnCommand(const char* command) override;
-	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 
 	void LoadConfigIntoControls();
 	void SaveConfigFromControls();
@@ -99,6 +134,49 @@ private:
 	vgui::Button* m_pShiftUpRigidBody{};
 	vgui::Button* m_pShiftDownRigidBody{};
 	vgui::Button* m_pCreateRigidBody{};
+
+	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
+};
+
+class CConstraintPage : public vgui::PropertyPage
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintPage, vgui::PropertyPage);
+
+	CConstraintPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
+
+private:
+
+	MESSAGE_FUNC(OnResetData, "ResetData");
+	MESSAGE_FUNC_INT(OnOpenContextMenu, "OpenContextMenu", itemID);
+	MESSAGE_FUNC_INT(OnRefreshConstraint, "RefreshConstraint", configId);
+	MESSAGE_FUNC_INT(OnEditConstraint, "EditConstraint", configId);
+	MESSAGE_FUNC_INT(OnCloneConstraint, "CloneConstraint", configId);
+	MESSAGE_FUNC_INT(OnDeleteConstraint, "DeleteConstraint", configId);
+	MESSAGE_FUNC_INT(OnShiftUpConstraint, "ShiftUpConstraint", configId);
+	MESSAGE_FUNC_INT(OnShiftDownConstraint, "ShiftDownConstraint", configId);
+	MESSAGE_FUNC(OnRefreshConstraints, "RefreshConstraints");
+
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
+	void OnCommand(const char* command) override;
+	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
+
+	void LoadConstraintAsListPanelItem(const CClientConstraintConfig* pConstraintConfig);
+	void ReloadAllConstraintsIntoListPanelItem();
+	void OnOpenConstraintEditor(int configId);
+	void OnCreateConstraint();
+	void SelectConstraintItem(int configId);
+	void DeleteConstraintItem(int configId);
+
+	typedef vgui::PropertyPage BaseClass;
+private:
+	vgui::HFont m_hFont{};
+
+	CConstraintListPanel* m_pConstraintListPanel{};
+	vgui::Button* m_pShiftUpConstraint{};
+	vgui::Button* m_pShiftDownConstraint{};
+	vgui::Button* m_pCreateConstraint{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
@@ -180,7 +258,7 @@ public:
 	void Activate(void) override;
 
 private:
-	MESSAGE_FUNC(OnRefreshCollisionShape, "RefreshCollisionShape");
+	MESSAGE_FUNC_INT(OnRefreshCollisionShape, "RefreshCollisionShape", configId);
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	void OnCommand(const char* command) override;
 
@@ -227,6 +305,100 @@ private:
 	std::shared_ptr<CClientRigidBodyConfig> m_pRigidBodyConfig;
 };
 
+class CConstraintEditDialog : public vgui::Frame
+{
+public:
+	DECLARE_CLASS_SIMPLE(CConstraintEditDialog, vgui::Frame);
+
+	CConstraintEditDialog(vgui::Panel* parent, const char* name,
+		uint64 physicObjectId,
+		const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
+		const std::shared_ptr<CClientConstraintConfig>& pConstraintConfig);
+	~CConstraintEditDialog();
+
+	void Activate(void) override;
+
+private:
+	MESSAGE_FUNC(OnItemSelected, "ItemSelected");
+	MESSAGE_FUNC(OnResetData, "ResetData");
+	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel);
+	MESSAGE_FUNC_PARAMS(OnModifyFactor, "ModifyFactor", kv);
+
+	void OnCommand(const char* command) override;
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
+
+	void LoadAvailableTypesIntoControls();
+	void LoadAvailableRotOrdersIntoControls();
+	void LoadAvailableRigidBodiesIntoControls(vgui::ComboBox* pComboBox);
+	void LoadAvailableFactorsIntoControls(int type);
+	void DeleteFactorListPanelItem(int factorIdx);
+	void LoadFactorAsListPanelItem(int factorIdx, const char* token, float value, float defaultValue);
+	void LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char* value, float defaultValue);
+	void LoadTypeIntoControl(int type);
+	void LoadRotOrderIntoControl(int rotOrder);
+	void LoadRigidBodyIntoControl(const std::string& rigidBodyName, vgui::ComboBox* pComboBox);
+	void LoadConfigIntoControls();
+	void SaveTypeFromControl();
+	void SaveRotOrderFromControl();
+	void SaveFactorFromControls();
+	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
+	void SaveConfigFromControls();
+	int GetCurrentSelectedConstraintType();
+	void UpdateControlStates();
+
+	typedef vgui::Frame BaseClass;
+
+	vgui::TextEntry* m_pName{};
+	vgui::TextEntry* m_pDebugDrawLevel{};
+
+	vgui::ComboBox* m_pType{};
+
+	vgui::ComboBox* m_pRigidBodyA{};
+	vgui::ComboBox* m_pRigidBodyB{};
+
+	vgui::TextEntry* m_pOriginAX{};
+	vgui::TextEntry* m_pOriginAY{};
+	vgui::TextEntry* m_pOriginAZ{};
+	vgui::TextEntry* m_pAnglesAX{};
+	vgui::TextEntry* m_pAnglesAY{};
+	vgui::TextEntry* m_pAnglesAZ{};
+
+	vgui::TextEntry* m_pOriginBX{};
+	vgui::TextEntry* m_pOriginBY{};
+	vgui::TextEntry* m_pOriginBZ{};
+	vgui::TextEntry* m_pAnglesBX{};
+	vgui::TextEntry* m_pAnglesBY{};
+	vgui::TextEntry* m_pAnglesBZ{};
+
+	vgui::TextEntry* m_pForwardX{};
+	vgui::TextEntry* m_pForwardY{};
+	vgui::TextEntry* m_pForwardZ{};
+
+	vgui::CheckButton* m_pDisableCollision{};
+	vgui::CheckButton* m_pUseGlobalJointFromA{};
+	vgui::CheckButton* m_pUseLookAtOther{};
+	vgui::CheckButton* m_pUseGlobalJointOriginFromOther{};
+	vgui::CheckButton* m_pUseRigidBodyDistanceAsLinearLimit{};
+	vgui::CheckButton* m_pUseLinearReferenceFrameA{};
+
+	vgui::ComboBox* m_pRotOrder{};
+	vgui::TextEntry* m_pMaxTolerantLinearError{};
+
+	vgui::CheckButton* m_pBarnacle{};
+	vgui::CheckButton* m_pGargantua{};
+	vgui::CheckButton* m_pDeactiveOnNormalActivity{};
+	vgui::CheckButton* m_pDeactiveOnDeathActivity{};
+	vgui::CheckButton* m_pDeactiveOnBarnacleActivity{};
+	vgui::CheckButton* m_pDeactiveOnGargantuaActivity{};
+	vgui::CheckButton* m_pDontResetPoseOnErrorCorrection{};
+
+	CFactorListPanel *m_pFactorListPanel{};
+
+	uint64 m_physicObjectId{};
+	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
+	std::shared_ptr<CClientConstraintConfig> m_pConstraintConfig;
+};
+
 class CPhysicEditorDialog : public vgui::Frame
 {
 public:
@@ -244,6 +416,7 @@ private:
 	vgui::PropertySheet* m_pTabPanel{};
 	CBaseObjectConfigPage* m_pBaseObjectConfigPage{};
 	CRigidBodyPage* m_pRigidBodyPage{};
+	CConstraintPage* m_pConstraintPage{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;

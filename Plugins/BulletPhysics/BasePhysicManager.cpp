@@ -26,6 +26,55 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
+StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
+{
+	//if (g_bIsSvenCoop)
+	//{
+	//	if (entstate->scale != 0 && entstate->scale != 1.0f)
+	//		return StudioAnimActivityType_Idle;
+	//}
+
+	if (mod->type != mod_studio)
+		return StudioAnimActivityType_Idle;
+
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (!studiohdr)
+		return StudioAnimActivityType_Idle;
+
+	int sequence = entstate->sequence;
+	if (sequence < 0 || sequence >= studiohdr->numseq)
+		return StudioAnimActivityType_Idle;
+
+	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
+
+	if (
+		pseqdesc->activity == ACT_DIESIMPLE ||
+		pseqdesc->activity == ACT_DIEBACKWARD ||
+		pseqdesc->activity == ACT_DIEFORWARD ||
+		pseqdesc->activity == ACT_DIEVIOLENT ||
+		pseqdesc->activity == ACT_DIE_HEADSHOT ||
+		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
+		pseqdesc->activity == ACT_DIE_GUTSHOT ||
+		pseqdesc->activity == ACT_DIE_BACKSHOT
+		)
+	{
+		return StudioAnimActivityType_Death;
+	}
+
+	if (
+		pseqdesc->activity == ACT_BARNACLE_HIT ||
+		pseqdesc->activity == ACT_BARNACLE_PULL ||
+		pseqdesc->activity == ACT_BARNACLE_CHOMP ||
+		pseqdesc->activity == ACT_BARNACLE_CHEW
+		)
+	{
+		return StudioAnimActivityType_Barnacle;
+	}
+
+	return StudioAnimActivityType_Idle;
+}
+
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
 {
 	if (pPhysicComponent->IsRigidBody())
@@ -624,8 +673,8 @@ static void LoadRigidBodiesFromKeyValues(KeyValues* pKeyValues, int allowedRigid
 
 			pRigidBodyConfig->mass = pRigidBodySubKey->GetFloat("mass", BULLET_DEFAULT_MASS);
 			pRigidBodyConfig->density = pRigidBodySubKey->GetFloat("density", BULLET_DEFAULT_DENSENTY);
-			pRigidBodyConfig->linearFriction = pRigidBodySubKey->GetFloat("linearFriction", BULLET_DEFAULT_LINEAR_FIRCTION);
-			pRigidBodyConfig->rollingFriction = pRigidBodySubKey->GetFloat("rollingFriction", BULLET_DEFAULT_ANGULAR_FIRCTION);
+			pRigidBodyConfig->linearFriction = pRigidBodySubKey->GetFloat("linearFriction", BULLET_DEFAULT_LINEAR_FRICTION);
+			pRigidBodyConfig->rollingFriction = pRigidBodySubKey->GetFloat("rollingFriction", BULLET_DEFAULT_ANGULAR_FRICTION);
 			pRigidBodyConfig->restitution = pRigidBodySubKey->GetFloat("restitution", BULLET_DEFAULT_RESTITUTION);
 			pRigidBodyConfig->ccdRadius = pRigidBodySubKey->GetFloat("ccdRadius", 0);
 			pRigidBodyConfig->ccdThreshold = pRigidBodySubKey->GetFloat("ccdThreshold", BULLET_DEFAULT_CCD_THRESHOLD);
@@ -724,6 +773,9 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 
 			if (pConstraintSubKey->GetBool("deactiveOnGargantuaActivity"))
 				pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnGargantuaActivity;
+
+			if (pConstraintSubKey->GetBool("dontResetPoseOnErrorCorrection"))
+				pConstraintConfig->flags |= PhysicConstraintFlag_DontResetPoseOnErrorCorrection;
 
 			pConstraintConfig->debugDrawLevel = pConstraintSubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
 			pConstraintConfig->disableCollision = pConstraintSubKey->GetBool("disableCollision", true);
@@ -891,7 +943,7 @@ static void LoadConstraintsFromKeyValues(KeyValues* pKeyValues, std::vector<std:
 	}
 }
 
-static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CClientAnimControlConfig>& AnimControlConfigs)
+static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<std::shared_ptr<CClientAnimControlConfig>>& AnimControlConfigs)
 {
 	auto pAnimControlsKey = pKeyValues->FindKey("animControls");
 
@@ -899,15 +951,16 @@ static void LoadAnimControlsFromKeyValues(KeyValues* pKeyValues, std::vector<CCl
 	{
 		for (auto pAnimControlSubKey = pAnimControlsKey->GetFirstSubKey(); pAnimControlSubKey; pAnimControlSubKey = pAnimControlSubKey->GetNextKey())
 		{
-			CClientAnimControlConfig AnimControlConfig;
+			auto pAnimControlConfig = std::make_shared<CClientAnimControlConfig>();
 
-			AnimControlConfig.sequence = pAnimControlSubKey->GetInt("sequence");
-			AnimControlConfig.gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
-			AnimControlConfig.frame = pAnimControlSubKey->GetFloat("frame");
-			AnimControlConfig.activity = pAnimControlSubKey->GetInt("activity");
-			AnimControlConfig.idle = pAnimControlSubKey->GetBool("idle");
+			pAnimControlConfig->sequence = pAnimControlSubKey->GetInt("sequence");
+			pAnimControlConfig->gaitsequence = pAnimControlSubKey->GetInt("gaitsequence");
+			pAnimControlConfig->frame = pAnimControlSubKey->GetFloat("frame");
+			pAnimControlConfig->activity = (decltype(pAnimControlConfig->activity))pAnimControlSubKey->GetInt("activity");
+			
+			ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
 
-			AnimControlConfigs.emplace_back(AnimControlConfig);
+			AnimControlConfigs.emplace_back(pAnimControlConfig);
 		}
 	}
 }
@@ -1301,6 +1354,9 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity)
 						pConstraintSubKey->SetBool("deactiveOnGargantuaActivity", true);
 
+					if (pConstraintConfig->flags & PhysicConstraintFlag_DontResetPoseOnErrorCorrection)
+						pConstraintSubKey->SetBool("dontResetPoseOnErrorCorrection", true);
+
 					pConstraintSubKey->SetString("type", UTIL_GetConstraintTypeName(pConstraintConfig->type));
 
 					pConstraintSubKey->SetString("rigidbodyA", pConstraintConfig->rigidbodyA.c_str());
@@ -1579,7 +1635,7 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 	}
 }
 
-static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<CClientAnimControlConfig>& AnimControlConfigs)
+static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<std::shared_ptr<CClientAnimControlConfig>>& AnimControlConfigs)
 {
 	if (AnimControlConfigs.size() > 0)
 	{
@@ -1593,11 +1649,10 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<C
 
 				if (pAnimControlSubKey)
 				{
-					pAnimControlSubKey->SetInt("sequence", AnimControl.sequence);
-					pAnimControlSubKey->SetInt("gaitsequence", AnimControl.gaitsequence);
-					pAnimControlSubKey->SetFloat("frame", AnimControl.frame);
-					pAnimControlSubKey->SetInt("activity", AnimControl.activity);
-					pAnimControlSubKey->SetBool("idle", AnimControl.idle);
+					pAnimControlSubKey->SetInt("sequence", AnimControl->sequence);
+					pAnimControlSubKey->SetInt("gaitsequence", AnimControl->gaitsequence);
+					pAnimControlSubKey->SetFloat("frame", AnimControl->frame);
+					pAnimControlSubKey->SetInt("activity", AnimControl->activity);
 				}
 			}
 		}
@@ -1727,12 +1782,15 @@ static bool ParseLegacyDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig,
 	int sequence;
 	float frame;
 	if (iss >> sequence >> frame) {
-		CClientAnimControlConfig animConfig;
-		animConfig.sequence = sequence;
-		animConfig.frame = frame;
-		animConfig.activity = 1;
+		auto pAnimControlConfig = std::make_shared<CClientAnimControlConfig>();
 
-		pRagdollConfig->AnimControlConfigs.push_back(animConfig);
+		pAnimControlConfig->sequence = sequence;
+		pAnimControlConfig->frame = frame;
+		pAnimControlConfig->activity = StudioAnimActivityType_Death;
+
+		ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
+
+		pRagdollConfig->AnimControlConfigs.emplace_back(pAnimControlConfig);
 		return true;
 	}
 	gEngfuncs.Con_DPrintf("ParseLegacyDeathAnimLine: failed to parse line \"%s\"", line.c_str());
@@ -2006,6 +2064,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.Body|{0}", rigidbody);
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
+			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis] = -1;
 
 			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig); 
 			
@@ -2634,7 +2693,7 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 	(*currententity) = saved_currententity;
 }
 
-void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig &OverrideAnim)
+void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t *state, model_t* mod, int entindex, int playerindex, const CClientAnimControlConfig *pOverrideAnimControl)
 {
 	auto saved_currententity = (*currententity);
 	(*currententity) = ent;
@@ -2645,9 +2704,20 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
-		fakePlayerState.sequence = OverrideAnim.sequence;
-		fakePlayerState.gaitsequence = OverrideAnim.gaitsequence;
-		fakePlayerState.frame = OverrideAnim.frame;
+		fakePlayerState.sequence = pOverrideAnimControl->sequence;
+		fakePlayerState.gaitsequence = pOverrideAnimControl->gaitsequence;
+		fakePlayerState.frame = pOverrideAnimControl->frame;
+
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 0);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 1);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 2);
+		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 3);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 0);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 1);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 2);
+		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 3);
+#undef COPY_BYTE_ENTSTATE
 
 		vec3_t vecSavedOrigin, vecSavedAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -2672,12 +2742,27 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		int iSavedSequence = ent->curstate.sequence;
 		int iSavedGaitSequence = ent->curstate.gaitsequence;
 		float flSavedFrame = ent->curstate.frame;
+		byte ubController[4];
+		byte ubBlending[4];
+
+		memcpy(ubController, ent->curstate.controller, sizeof(ubController));
+		memcpy(ubBlending, ent->curstate.blending, sizeof(ubBlending));
 
 		ent->curstate.weaponmodel = 0;
-		ent->curstate.sequence = OverrideAnim.sequence;
-		ent->curstate.gaitsequence = OverrideAnim.gaitsequence;
-		ent->curstate.frame = OverrideAnim.frame;
+		ent->curstate.sequence = pOverrideAnimControl->sequence;
+		ent->curstate.gaitsequence = pOverrideAnimControl->gaitsequence;
+		ent->curstate.frame = pOverrideAnimControl->frame;
 
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 1); 
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(controller, ent->curstate, 3);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 1);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(blending, ent->curstate, 3);
+#undef COPY_BYTE_ENTSTATE
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
 
 		ent->curstate.weaponmodel = 0;

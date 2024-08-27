@@ -3,6 +3,34 @@
 #include <vector>
 #include <memory>
 
+#define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
+#define BULLET_WORLD_DEBUG_DRAW_LEVEL 10
+#define BULLET_DEFAULT_SOFTNESS 1.0f
+#define BULLET_DEFAULT_BIAS_FACTOR 0.3f
+#define BULLET_DEFAULT_RELAXTION_FACTOR 1.0f
+#define BULLET_DEFAULT_LINEAR_ERP 0.3f
+#define BULLET_DEFAULT_ANGULAR_ERP 0.3f
+#define BULLET_DEFAULT_LINEAR_CFM 0.01f
+#define BULLET_DEFAULT_ANGULAR_CFM 0.01f
+#define BULLET_DEFAULT_LINEAR_STOP_ERP 0.3f
+#define BULLET_DEFAULT_ANGULAR_STOP_ERP 0.3f
+#define BULLET_DEFAULT_LINEAR_STOP_CFM 0.01f
+#define BULLET_DEFAULT_ANGULAR_STOP_CFM 0.01f
+#define BULLET_DEFAULT_CCD_THRESHOLD 0.001f
+#define BULLET_DEFAULT_LINEAR_FRICTION 1.0f
+#define BULLET_DEFAULT_ANGULAR_FRICTION 0.2f
+#define BULLET_DEFAULT_RESTITUTION 0.0f
+#define BULLET_DEFAULT_MASS 1.0f
+#define BULLET_DEFAULT_DENSENTY 1.0f
+#define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
+#define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
+#define BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR 30.0f
+
+#define INCHES_PER_METER 1//39.3700787402f
+
+const float B2GScale = INCHES_PER_METER;
+const float G2BScale = 1.0f / B2GScale;
+
 enum PhysicConfigType
 {
 	PhysicConfigType_None,
@@ -111,6 +139,7 @@ const int PhysicRotOrder_YXZ = 2;
 const int PhysicRotOrder_YZX = 3;
 const int PhysicRotOrder_ZXY = 4;
 const int PhysicRotOrder_ZYX = 5;
+const int PhysicRotOrder_Maximum = 6;
 
 const int PhysicConstraintFlag_Barnacle = 0x1;
 const int PhysicConstraintFlag_Gargantua = 0x2;
@@ -118,7 +147,7 @@ const int PhysicConstraintFlag_DeactiveOnNormalActivity = 0x4;
 const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
 const int PhysicConstraintFlag_DeactiveOnBarnacleActivity = 0x10;
 const int PhysicConstraintFlag_DeactiveOnGargantuaActivity = 0x20;
-const int PhysicConstraintFlag_NoResetPoseOnErrorCorrection = 0x40;
+const int PhysicConstraintFlag_DontResetPoseOnErrorCorrection = 0x40;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;
@@ -189,6 +218,32 @@ const int PhysicConstraintFactorIdx_RigidBodyLinearDistanceOffset = 40;
 
 const int PhysicConstraintFactorIdx_Maximum = 64;
 
+const float PhysicConstraintFactorDefaultValue_ConeTwistSoftness = BULLET_DEFAULT_SOFTNESS;
+const float PhysicConstraintFactorDefaultValue_ConeTwistBiasFactor = BULLET_DEFAULT_BIAS_FACTOR;
+const float PhysicConstraintFactorDefaultValue_ConeTwistRelaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
+
+const float PhysicConstraintFactorDefaultValue_HingeSoftness = BULLET_DEFAULT_SOFTNESS;
+const float PhysicConstraintFactorDefaultValue_HingeBiasFactor = BULLET_DEFAULT_BIAS_FACTOR;
+const float PhysicConstraintFactorDefaultValue_HingeRelaxationFactor = BULLET_DEFAULT_RELAXTION_FACTOR;
+
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringX = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringY = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableLinearSpringZ = 0;
+
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringX = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringY = 0;
+const float PhysicConstraintFactorDefaultValue_Dof6SpringEnableAngularSpringZ = 0;
+
+const float PhysicConstraintFactorDefaultValue_LinearERP = BULLET_DEFAULT_LINEAR_ERP;
+const float PhysicConstraintFactorDefaultValue_LinearCFM = BULLET_DEFAULT_LINEAR_CFM;
+const float PhysicConstraintFactorDefaultValue_LinearStopERP = BULLET_DEFAULT_LINEAR_STOP_ERP;
+const float PhysicConstraintFactorDefaultValue_LinearStopCFM = BULLET_DEFAULT_LINEAR_STOP_CFM;
+const float PhysicConstraintFactorDefaultValue_AngularERP = BULLET_DEFAULT_ANGULAR_ERP;
+const float PhysicConstraintFactorDefaultValue_AngularCFM = BULLET_DEFAULT_ANGULAR_CFM;
+const float PhysicConstraintFactorDefaultValue_AngularStopERP = BULLET_DEFAULT_ANGULAR_STOP_ERP;
+const float PhysicConstraintFactorDefaultValue_AngularStopCFM = BULLET_DEFAULT_ANGULAR_STOP_CFM;
+const float PhysicConstraintFactorDefaultValue_RigidBodyLinearDistanceOffset = 0;
+
 enum PhysicShape
 {
 	PhysicShape_None,
@@ -234,7 +289,7 @@ const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 //const int PhysicAction_BarnacleConstraintLimitAdjustment = 3;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
-const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentLimitAxis = 3;
+const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis = 3;
 
 //const int PhysicAction_Maximum = 4;
 
@@ -257,33 +312,13 @@ enum PhysicShapeDirection
 //const int PhysicShapeDirection_Y = 1;
 //const int PhysicShapeDirection_Z = 2;
 
-#define BULLET_DEFAULT_DEBUG_DRAW_LEVEL 1
-#define BULLET_WORLD_DEBUG_DRAW_LEVEL 10
-#define BULLET_DEFAULT_SOFTNESS 1.0f
-#define BULLET_DEFAULT_BIAS_FACTOR 0.3f
-#define BULLET_DEFAULT_RELAXTION_FACTOR 1.0f
-#define BULLET_DEFAULT_LINEAR_ERP 0.3f
-#define BULLET_DEFAULT_ANGULAR_ERP 0.3f
-#define BULLET_DEFAULT_LINEAR_CFM 0.01f
-#define BULLET_DEFAULT_ANGULAR_CFM 0.01f
-#define BULLET_DEFAULT_LINEAR_STOP_ERP 0.3f
-#define BULLET_DEFAULT_ANGULAR_STOP_ERP 0.3f
-#define BULLET_DEFAULT_LINEAR_STOP_CFM 0.01f
-#define BULLET_DEFAULT_ANGULAR_STOP_CFM 0.01f
-#define BULLET_DEFAULT_CCD_THRESHOLD 0.001f
-#define BULLET_DEFAULT_LINEAR_FIRCTION 1.0f
-#define BULLET_DEFAULT_ANGULAR_FIRCTION 0.2f
-#define BULLET_DEFAULT_RESTITUTION 0.0f
-#define BULLET_DEFAULT_MASS 1.0f
-#define BULLET_DEFAULT_DENSENTY 1.0f
-#define BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD 5.0f
-#define BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD 3.0f
-#define BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR 30.0f//TODO: use config?
-
-#define INCHES_PER_METER 39.3700787402f
-
-const float B2GScale = INCHES_PER_METER;
-const float G2BScale = (1.0f / B2GScale);
+enum StudioAnimActivityType
+{
+	StudioAnimActivityType_Idle,
+	StudioAnimActivityType_Death,
+	StudioAnimActivityType_Barnacle,
+	StudioAnimActivityType_Debug,
+};
 
 const int PhysicIndexArrayFlag_FromBSP = 0x1;
 const int PhysicIndexArrayFlag_LoadFailed = 0x2;

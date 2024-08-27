@@ -96,7 +96,7 @@ public:
 
 	bool IsClientEntityNonSolid() const override
 	{
-		if (GetActivityType() > 0)
+		if (GetActivityType() > StudioAnimActivityType_Idle)
 			return false;
 
 		return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;
@@ -166,27 +166,60 @@ public:
 
 		if (CreationParam.m_model->type == mod_studio)
 		{
-			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig);
+			if (m_IdleAnimConfig)
+			{
+				ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
+			}
+			else
+			{
+				ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+			}
 		}
 
 		CPhysicComponentFilters filters;
 
 		ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
+		m_keyBones.clear();
+		m_nonKeyBones.clear();
+
+		SaveBoneRelativeTransform(CreationParam);
+
 		RebuildRigidBodies(CreationParam);
 		
 		RebuildConstraints(CreationParam);
+
+		SetupNonKeyBones(CreationParam);
 
 		return true;
 	}
 
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override
 	{
-		auto playerState = R_GetPlayerState(m_playerindex);
+		auto playerState = GetClientEntityState();
 
-		int iOldActivityType = GetActivityType();
+		if (m_bDebugAnimEnabled && m_DebugAnimConfig)
+		{
+			playerState->sequence = m_DebugAnimConfig->sequence;
+			playerState->gaitsequence = m_DebugAnimConfig->gaitsequence;
+			playerState->frame = m_DebugAnimConfig->frame;
+			playerState->framerate = 0;
 
-		int iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (m_DebugAnimConfig->attr[i] >= 0 && m_DebugAnimConfig->attr[i] <= 255) to->attr[i] = m_DebugAnimConfig->attr[i];
+			COPY_BYTE_ENTSTATE(controller, playerState, 0);
+			COPY_BYTE_ENTSTATE(controller, playerState, 1);
+			COPY_BYTE_ENTSTATE(controller, playerState, 2);
+			COPY_BYTE_ENTSTATE(controller, playerState, 3);
+			COPY_BYTE_ENTSTATE(blending, playerState, 0);
+			COPY_BYTE_ENTSTATE(blending, playerState, 1);
+			COPY_BYTE_ENTSTATE(blending, playerState, 2);
+			COPY_BYTE_ENTSTATE(blending, playerState, 3);
+#undef COPY_BYTE_ENTSTATE
+		}
+
+		auto iOldActivityType = GetActivityType();
+
+		auto iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
 
 		if (iNewActivityType == 0)
 		{
@@ -296,7 +329,7 @@ public:
 
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override
 	{
-		if (GetActivityType() != 0)
+		if (GetActivityType() != StudioAnimActivityType_Idle)
 		{
 			if (bIsThirdPerson)
 			{
@@ -325,7 +358,7 @@ public:
 
 	bool SetupBones(studiohdr_t* studiohdr) override
 	{
-		if (GetActivityType() == 0)
+		if (GetActivityType() == StudioAnimActivityType_Idle)
 			return false;
 
 		for (auto pRigidBody : m_RigidBodies)
@@ -413,6 +446,12 @@ public:
 			{
 				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
 
+				CPhysicObjectUpdateContext ObjectUpdateContext;
+
+				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+				pConstraint->Update(&ComponentUpdateContext);
+
 				m_Constraints.emplace_back(pConstraint);
 			}
 		}
@@ -455,19 +494,31 @@ public:
 		//TODO
 	}
 
-	int GetOverrideActivityType(entity_state_t* entstate) override
+	StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) override
 	{
 		for (const auto& AnimControlConfig : m_AnimControlConfigs)
 		{
-			if (entstate->sequence == AnimControlConfig.sequence)
+			if (AnimControlConfig->gaitsequence == 0)
 			{
-				return AnimControlConfig.activity;
+				if (entstate->sequence == AnimControlConfig->sequence)
+				{
+					return AnimControlConfig->activity;
+				}
+			}
+			else
+			{
+				if (entstate->sequence == AnimControlConfig->sequence &&
+					entstate->gaitsequence == AnimControlConfig->gaitsequence)
+				{
+					return AnimControlConfig->activity;
+				}
 			}
 		}
-		return 0;
+
+		return StudioAnimActivityType_Idle;
 	}
 
-	int GetActivityType() const override
+	StudioAnimActivityType GetActivityType() const override
 	{
 		return m_iActivityType;
 	}
@@ -480,6 +531,16 @@ public:
 	int GetGargantuaIndex() const override
 	{
 		return m_iGargantuaIndex;
+	}
+
+	bool IsDebugAnimEnabled() const override
+	{
+		return m_bDebugAnimEnabled;
+	}
+
+	void SetDebugAnimEnabled(bool bEnabled) override
+	{
+		m_bDebugAnimEnabled = bEnabled;
 	}
 
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override
@@ -634,7 +695,7 @@ public:
 		return nullptr;
 	}
 
-	void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pRigidBodyConfig : CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs)
 		{
@@ -642,15 +703,7 @@ public:
 
 			if (pRigidBody)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
-
-				CPhysicObjectUpdateContext ObjectUpdateContext;
-
-				CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-				pRigidBody->Update(&ComponentUpdateContext);
-
-				m_RigidBodies.emplace_back(pRigidBody);
+				AddRigidBody(pRigidBody);
 
 				if (CreationParam.m_studiohdr &&
 					pRigidBodyConfig->boneindex >= 0 &&
@@ -662,7 +715,7 @@ public:
 		}
 	}
 
-	void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
 		{
@@ -670,14 +723,12 @@ public:
 
 			if (pConstraint)
 			{
-				ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-				m_Constraints.emplace_back(pConstraint);
+				AddConstraint(pConstraint);
 			}
 		}
 	}
 
-	void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
+	virtual void CreateFloaters(const CRagdollObjectCreationParameter& CreationParam)
 	{
 		for (const auto& pFloaterConfig : CreationParam.m_pRagdollObjectConfig->FloaterConfigs)
 		{
@@ -685,7 +736,7 @@ public:
 		}
 	}
 
-	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
+	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
 	{
 		if (allowNonNativeRigidBody)
 		{
@@ -720,12 +771,66 @@ public:
 		return GetRigidBodyByName(name);
 	}
 
+	virtual void SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam)
+	{
+		if (CreationParam.m_studiohdr)
+		{
+			for (int i = 0; i < CreationParam.m_studiohdr->numbones; ++i)
+			{
+				if (std::find(m_keyBones.begin(), m_keyBones.end(), i) == m_keyBones.end())
+					m_nonKeyBones.emplace_back(i);
+			}
+		}
+	}
+
+	virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl)
+	{
+		CameraControl = (*pCameraControlConfig);
+
+		auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
+
+		if (pRigidBody)
+		{
+			CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
+		}
+	}
+
+	virtual void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam) {
+
+	}
+
 	virtual IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
 	virtual IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
 	virtual void CreateFloater(const CRagdollObjectCreationParameter& CreationParam, const CClientFloaterConfig* pConfig) = 0;
 	virtual IPhysicAction* CreateActionFromConfig(CClientPhysicActionConfig* pActionConfig) = 0;
 
-private:
+protected:
+
+	void AddRigidBody(IPhysicRigidBody* pRigidBody)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pRigidBody->Update(&ComponentUpdateContext);
+
+		m_RigidBodies.emplace_back(pRigidBody);
+	}
+
+	void AddConstraint(IPhysicConstraint* pConstraint)
+	{
+		ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
+
+		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
+
+		pConstraint->Update(&ComponentUpdateContext);
+
+		m_Constraints.emplace_back(pConstraint);
+	}
 
 	void RebuildRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
 	{
@@ -752,9 +857,14 @@ private:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					if (CreationParam.m_studiohdr &&
+						pRigidBodyConfig->boneindex >= 0 &&
+						pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
+					{
+						m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
+					}
 				}
 			}
 			else
@@ -763,9 +873,14 @@ private:
 
 				if (pNewRigidBody)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewRigidBody->GetPhysicComponentId(), pNewRigidBody);
+					AddRigidBody(pNewRigidBody);
 
-					m_RigidBodies.emplace_back(pNewRigidBody);
+					if (CreationParam.m_studiohdr &&
+						pRigidBodyConfig->boneindex >= 0 &&
+						pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
+					{
+						m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
+					}
 				}
 			}
 		}
@@ -781,6 +896,7 @@ private:
 
 			ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
 		}
+
 		m_Constraints.clear();
 
 		for (const auto& pConstraintConfig : CreationParam.m_pRagdollObjectConfig->ConstraintConfigs)
@@ -795,9 +911,7 @@ private:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 			else
@@ -806,15 +920,13 @@ private:
 
 				if (pNewConstraint)
 				{
-					ClientPhysicManager()->AddPhysicComponent(pNewConstraint->GetPhysicComponentId(), pNewConstraint);
-
-					m_Constraints.emplace_back(pNewConstraint);
+					AddConstraint(pNewConstraint);
 				}
 			}
 		}
 	}
 
-	bool UpdateActivity(int iOldActivityType, int iNewActivityType, entity_state_t* curstate)
+	bool UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate)
 	{
 		if (iOldActivityType == iNewActivityType)
 			return false;
@@ -822,9 +934,9 @@ private:
 		//Start death animation
 		if (iOldActivityType == 0 && iNewActivityType > 0)
 		{
-			auto found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const CClientAnimControlConfig& Config) {
+			const auto &found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const std::shared_ptr<CClientAnimControlConfig>& pConfig) {
 
-				if (Config.sequence == curstate->sequence)
+				if (pConfig->sequence == curstate->sequence)
 					return true;
 
 				return false;
@@ -832,7 +944,7 @@ private:
 
 			if (found != m_AnimControlConfigs.end())
 			{
-				if (curstate->frame < found->frame)
+				if (curstate->frame < (*found)->frame)
 				{
 					return false;
 				}
@@ -853,15 +965,17 @@ public:
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
 
-	int m_iActivityType{ 0 };
+	StudioAnimActivityType m_iActivityType{ StudioAnimActivityType_Idle };
 	int m_iBarnacleIndex{ 0 };
 	int m_iGargantuaIndex{ 0 };
 
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 
-	CClientAnimControlConfig m_IdleAnimConfig;
-	std::vector<CClientAnimControlConfig> m_AnimControlConfigs;
+	std::shared_ptr<CClientAnimControlConfig> m_IdleAnimConfig;
+	std::shared_ptr<CClientAnimControlConfig> m_DebugAnimConfig;
+	bool m_bDebugAnimEnabled{};
+	std::vector<std::shared_ptr<CClientAnimControlConfig>> m_AnimControlConfigs;
 
 	CClientBarnacleControlConfig m_BarnacleControlConfig;
 

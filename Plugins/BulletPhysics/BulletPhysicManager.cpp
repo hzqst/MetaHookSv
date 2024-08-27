@@ -223,8 +223,14 @@ CBulletRigidBody::CBulletRigidBody(
 	m_pInternalRigidBody->setUserIndex(id);
 	m_pInternalRigidBody->setUserPointer(this);
 
-	m_pInternalRigidBody->setCcdSweptSphereRadius(pRigidConfig->ccdRadius);
-	m_pInternalRigidBody->setCcdMotionThreshold(pRigidConfig->ccdThreshold);
+	float ccdRadius = pRigidConfig->ccdRadius;
+	float ccdThreshold = pRigidConfig->ccdThreshold;
+
+	FloatGoldSrcToBullet(&ccdRadius);
+	FloatGoldSrcToBullet(&ccdThreshold);
+
+	m_pInternalRigidBody->setCcdSweptSphereRadius(ccdRadius);
+	m_pInternalRigidBody->setCcdMotionThreshold(ccdThreshold);
 }
 
 CBulletRigidBody::~CBulletRigidBody()
@@ -743,55 +749,118 @@ bool CBulletConstraint::ExtendLinearLimit(int axis, float value)
 			btVector3 currentLimit;
 			pDof6->getLinearLowerLimit(currentLimit);
 
-			if (currentLimit.x() < -1) {
-				currentLimit.setX(currentLimit.x() - value);
+			if (value > 0)
+			{
+				if (currentLimit.x() < -1) {
+					currentLimit.setX(currentLimit.x() - value);
+				}
+				else if (currentLimit.x() > 1) {
+					currentLimit.setX(currentLimit.x() + value);
+				}
+				else if (currentLimit.y() < -1) {
+					currentLimit.setY(currentLimit.y() - value);
+				}
+				else if (currentLimit.y() > 1) {
+					currentLimit.setY(currentLimit.y() + value);
+				}
+				else if (currentLimit.z() < -1) {
+					currentLimit.setZ(currentLimit.z() - value);
+				}
+				else if (currentLimit.z() > 1) {
+					currentLimit.setZ(currentLimit.z() + value);
+				}
 			}
-			else if (currentLimit.x() > 1) {
-				currentLimit.setX(currentLimit.x() + value);
-			}
-			else if (currentLimit.y() < -1) {
-				currentLimit.setY(currentLimit.y() - value);
-			}
-			else if (currentLimit.y() > 1) {
-				currentLimit.setY(currentLimit.y() + value);
-			}
-			else if (currentLimit.z() < -1) {
-				currentLimit.setZ(currentLimit.z() - value);
-			}
-			else if (currentLimit.z() > 1) {
-				currentLimit.setZ(currentLimit.z() + value);
+			else if (value < 0)
+			{
+				if (currentLimit.x() < -1) {
+					currentLimit.setX(min(currentLimit.x() - value, 0));
+				}
+				else if (currentLimit.x() > 1) {
+					currentLimit.setX(max(currentLimit.x() + value, 0));
+				}
+				else if (currentLimit.y() < -1) {
+					currentLimit.setY(min(currentLimit.y() - value, 0));
+				}
+				else if (currentLimit.y() > 1) {
+					currentLimit.setY(max(currentLimit.y() + value, 0));
+				}
+				else if (currentLimit.z() < -1) {
+					currentLimit.setZ(min(currentLimit.z() - value, 0));
+				}
+				else if (currentLimit.z() > 1) {
+					currentLimit.setZ(max(currentLimit.z() + value, 0));
+				}
 			}
 
 			pDof6->setLinearLowerLimit(currentLimit);
 		}
-
 		if (axis == -1)
 		{
 			btVector3 currentLimit;
 			pDof6->getLinearUpperLimit(currentLimit);
 
-			if (currentLimit.x() < -1) {
-				currentLimit.setX(currentLimit.x() - value);
+			if (value > 0)
+			{
+				if (currentLimit.x() < -1) {
+					currentLimit.setX(currentLimit.x() - value);
+				}
+				else if (currentLimit.x() > 1) {
+					currentLimit.setX(currentLimit.x() + value);
+				}
+				else if (currentLimit.y() < -1) {
+					currentLimit.setY(currentLimit.y() - value);
+				}
+				else if (currentLimit.y() > 1) {
+					currentLimit.setY(currentLimit.y() + value);
+				}
+				else if (currentLimit.z() < -1) {
+					currentLimit.setZ(currentLimit.z() - value);
+				}
+				else if (currentLimit.z() > 1) {
+					currentLimit.setZ(currentLimit.z() + value);
+				}
 			}
-			else if (currentLimit.x() > 1) {
-				currentLimit.setX(currentLimit.x() + value);
-			}
-			else if (currentLimit.y() < -1) {
-				currentLimit.setY(currentLimit.y() - value);
-			}
-			else if (currentLimit.y() > 1) {
-				currentLimit.setY(currentLimit.y() + value);
-			}
-			else if (currentLimit.z() < -1) {
-				currentLimit.setZ(currentLimit.z() - value);
-			}
-			else if (currentLimit.z() > 1) {
-				currentLimit.setZ(currentLimit.z() + value);
+			else if (value < 0)
+			{
+				if (currentLimit.x() < -1) {
+					currentLimit.setX(min(currentLimit.x() - value, 0));
+				}
+				else if (currentLimit.x() > 1) {
+					currentLimit.setX(max(currentLimit.x() + value, 0));
+				}
+				else if (currentLimit.y() < -1) {
+					currentLimit.setY(min(currentLimit.y() - value, 0));
+				}
+				else if (currentLimit.y() > 1) {
+					currentLimit.setY(max(currentLimit.y() + value, 0));
+				}
+				else if (currentLimit.z() < -1) {
+					currentLimit.setZ(min(currentLimit.z() - value, 0));
+				}
+				else if (currentLimit.z() > 1) {
+					currentLimit.setZ(max(currentLimit.z() + value, 0));
+				}
 			}
 
 			pDof6->setLinearUpperLimit(currentLimit);
 		}
 
+		if (axis >= 0 && axis <= 2)
+		{
+			btVector3 currentLimit;
+			pDof6->getLinearLowerLimit(currentLimit);
+			currentLimit[axis] += value;
+			pDof6->setLinearLowerLimit(currentLimit);
+		}
+
+		if (axis >= 3 && axis <= 5)
+		{
+			btVector3 currentLimit;
+			pDof6->getLinearUpperLimit(currentLimit);
+			currentLimit[axis - 3] += value;
+			pDof6->setLinearUpperLimit(currentLimit);
+		}
+	
 		return true;
 	}
 	else if (m_pInternalConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
@@ -802,11 +871,23 @@ bool CBulletConstraint::ExtendLinearLimit(int axis, float value)
 		{
 			auto currentLimit = pSlider->getLowerLinLimit();
 
-			if (currentLimit < -1) {
-				currentLimit = currentLimit - value;
+			if (value > 0)
+			{
+				if (currentLimit < -1) {
+					currentLimit = currentLimit - value;
+				}
+				else if (currentLimit > 1) {
+					currentLimit = currentLimit + value;
+				}
 			}
-			else if (currentLimit > 1) {
-				currentLimit = currentLimit + value;
+			else if (value < 0)
+			{
+				if (currentLimit < -1) {
+					currentLimit = min(currentLimit - value, 0);
+				}
+				else if (currentLimit > 1) {
+					currentLimit = max(currentLimit + value, 0);
+				}
 			}
 
 			pSlider->setLowerLinLimit(currentLimit);
@@ -816,13 +897,39 @@ bool CBulletConstraint::ExtendLinearLimit(int axis, float value)
 		{
 			auto currentLimit = pSlider->getUpperLinLimit();
 
-			if (currentLimit < -1) {
-				currentLimit = currentLimit - value;
+			if (value > 0)
+			{
+				if (currentLimit < -1) {
+					currentLimit = currentLimit - value;
+				}
+				else if (currentLimit > 1) {
+					currentLimit = currentLimit + value;
+				}
 			}
-			else if (currentLimit > 1) {
-				currentLimit = currentLimit + value;
+			else if (value < 0)
+			{
+				if (currentLimit < -1) {
+					currentLimit = min(currentLimit - value, 0);
+				}
+				else if (currentLimit > 1) {
+					currentLimit = max(currentLimit + value, 0);
+				}
 			}
 
+			pSlider->setUpperLinLimit(currentLimit);
+		}
+
+		if (axis == 0)
+		{
+			btScalar currentLimit = pSlider->getLowerLinLimit();
+			currentLimit += value;
+			pSlider->setLowerLinLimit(currentLimit);
+		}
+
+		if (axis == 3)
+		{
+			btScalar currentLimit = pSlider->getUpperLinLimit();
+			currentLimit += value;
 			pSlider->setUpperLinLimit(currentLimit);
 		}
 
@@ -1414,6 +1521,8 @@ btTypedConstraint* BulletCreateConstraint_Dof6Spring(const CClientConstraintConf
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
 	}
+
+	pDof6Spring->setEquilibriumPoint();
 
 	return pDof6Spring;
 }

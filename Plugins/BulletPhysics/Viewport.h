@@ -45,6 +45,7 @@ public:
 
 private:
 	CPhysicDebugGUI* m_pPhysicDebugViewGUI{};
+	vgui::VPANEL m_hOldFocus{};
 };
 
 extern CViewport *g_pViewPort;

@@ -75,8 +75,8 @@ public:
 
 	float mass{ 1 };
 	float density{ 1 };
-	float linearFriction{ BULLET_DEFAULT_LINEAR_FIRCTION };
-	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FIRCTION  };
+	float linearFriction{ BULLET_DEFAULT_LINEAR_FRICTION };
+	float rollingFriction{ BULLET_DEFAULT_ANGULAR_FRICTION  };
 	float restitution{ BULLET_DEFAULT_RESTITUTION };
 	float ccdRadius{ 0 };
 	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
@@ -152,14 +152,15 @@ public:
 	float angularDamping{};
 };
 
-class CClientAnimControlConfig
+class CClientAnimControlConfig : public CClientBasePhysicConfig
 {
 public:
 	int sequence{};
 	int gaitsequence{};
 	float frame{};
-	int activity{};
-	bool idle{};
+	StudioAnimActivityType activity{ StudioAnimActivityType_Idle };
+	int controller[4]{ 0 };
+	int blending[4]{ 0 };
 };
 
 class CClientPhysicObjectConfig : public CClientBasePhysicConfig
@@ -176,8 +177,9 @@ public:
 	int crc32StudioModel{};
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
+	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 
-	//Never Change
+	//Never save to file or load from file
 	std::string fileName;
 	std::string shortName;
 };
@@ -186,8 +188,6 @@ class CClientDynamicObjectConfig : public CClientPhysicObjectConfig
 {
 public:
 	CClientDynamicObjectConfig();
-
-	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 };
 
 class CClientStaticObjectConfig : public CClientPhysicObjectConfig
@@ -216,9 +216,8 @@ class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 public:
 	CClientRagdollObjectConfig();
 
-	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
-	std::vector<CClientAnimControlConfig> AnimControlConfigs;
+	std::vector<std::shared_ptr<CClientAnimControlConfig>> AnimControlConfigs;
 	CClientBarnacleControlConfig BarnacleControlConfig;
 	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
 	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
