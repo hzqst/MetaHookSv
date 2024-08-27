@@ -2395,7 +2395,7 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectC
 		return nullptr;
 	}
 
-	if (modelindex >= m_physicObjectConfigs.size())
+	if (modelindex >= (int)m_physicObjectConfigs.size())
 	{
 		g_pMetaHookAPI->SysError("LoadPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;
@@ -2428,7 +2428,7 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::CreateEmptyPhysic
 		return nullptr;
 	}
 
-	if (modelindex >= m_physicObjectConfigs.size())
+	if (modelindex >= (int)m_physicObjectConfigs.size())
 	{
 		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
 		return nullptr;
@@ -2457,7 +2457,7 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::CreateEmptyPhysic
 		return nullptr;
 	}
 
-	if (modelindex >= m_physicObjectConfigs.size())
+	if (modelindex >= (int)m_physicObjectConfigs.size())
 	{
 		g_pMetaHookAPI->SysError("CreateEmptyPhysicObjectConfigForModelIndex: Invalid model index %d!\n", modelindex);
 		return nullptr;
@@ -2483,7 +2483,7 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectCo
 
 std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::GetPhysicObjectConfigForModelIndex(int modelindex)
 {
-	if (modelindex >= m_physicObjectConfigs.size() || modelindex < 0)
+	if (modelindex >= (int)m_physicObjectConfigs.size() || modelindex < 0)
 	{
 		g_pMetaHookAPI->SysError("GetPhysicObjectConfigForModel: Invalid model index %d!\n", modelindex);
 		return nullptr;

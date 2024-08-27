@@ -2565,7 +2565,7 @@ void CBulletPhysicManager::DebugDraw(void)
 
 	const auto &objectArray = m_dynamicsWorld->getCollisionObjectArray();
 
-	for (size_t i = 0;i < objectArray.size(); ++i)
+	for (int i = 0;i < objectArray.size(); ++i)
 	{
 		auto pCollisionObject = objectArray[i];
 

@@ -459,7 +459,7 @@ void CPhysicDebugGUI::OnThink()
 	}
 	case PhysicInspectMode::PhysicObject:
 	{
-		if (false == UpdateInspectedPhysicObject(true));
+		if (false == UpdateInspectedPhysicObject(true))
 			UpdateInspectedPhysicObject(false);
 		break;
 	}
