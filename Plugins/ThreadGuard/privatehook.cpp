@@ -118,7 +118,7 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 						pinst->detail->x86.operands[1].mem.base == 0)
 					{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
-						ULONG_PTR imm = pinst->detail->x86.operands[1].mem.disp;
+						ULONG_PTR imm = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 
 						if (imm >= (ULONG_PTR)g_dwEngineDataBase && imm < (ULONG_PTR)g_dwEngineDataBase + g_dwEngineDataSize)
 						{
