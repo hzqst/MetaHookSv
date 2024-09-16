@@ -1124,7 +1124,6 @@ void R_ShutdownStudio(void)
 {
 	g_StudioProgramTable.clear();
 
-	R_StudioClearAllBoneCaches();
 	R_StudioFlushAllSkins();
 	R_StudioClearVBOCache();
 }

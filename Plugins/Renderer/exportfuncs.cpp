@@ -1800,3 +1800,9 @@ void HUD_Shutdown(void)
 	R_UninstallHooksForEngineStudioInterface();
 	R_UninstallHooksForClientDLL();
 }
+
+void HUD_OnClientDisconnect(void)
+{
+	R_StudioClearVBOCache();
+	R_StudioClearVBOCache();
+}

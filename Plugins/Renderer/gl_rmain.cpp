@@ -2648,19 +2648,18 @@ void R_NewMap(void)
 	R_NewMapWSurf();
 	R_NewMapLight();
 
-	R_StudioFlushAllSkins();
 	R_StudioClearVBOCache();
 	R_StudioReloadVBOCache();
 
 	//This is for GoldSrc
 	//Cuz SvEngine always unloads all GLT_STUDIO and GLT_SPRITE textures
-	if (g_iEngineType != ENGINE_SVENGINE)
+	/*if (g_iEngineType != ENGINE_SVENGINE)
 	{
 		std::set<int> textures;
 		R_AddReferencedTextures(textures);
 		R_UnloadNoreferenceTextures(textures);
 		R_UnloadNoreferenceModels();
-	}
+	}*/
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;

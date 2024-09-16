@@ -418,6 +418,21 @@ void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 		glt->texnum = GL_GenTexture();
 	}
 #endif
+	/*
+		SvEngine remove the entire glt struct from CUtlVector, instead of simply zeroing the struct
+	*/
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		int gltindex = glt - gltextures_get();
+		if ((*numgltextures) - gltindex - 1 > 0)
+		{
+			memmove(
+				glt - 1,
+				glt,
+				sizeof(gltexture_t) * ((*numgltextures) - gltindex - 1));
+		}
+		(*numgltextures) --;
+	}
 }
 
 void GL_GenFrameBuffer(FBO_Container_t *s)

@@ -518,11 +518,32 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 
 void GL_UnloadTextures(void)
 {
-	int i;
-	gltexture_t* glt;
+	/*
+		This is how SvEngine does in GL_UnloadTextures, they traverse the gltextures from back to beginning
 
-	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+		SvEngine:
+			glDeleteTextures(1, (const GLuint *)textures);
+			v5 = numgltextures;
+			if ( numgltextures - gltindex_1 - 1 > 0 )
+			{
+			  memmove(
+				(void *)(gltextures + gltoffset_previous),
+				(const void *)(gltextures + gltoffset),
+				84 * (numgltextures - gltindex_1 - 1));
+			  v5 = numgltextures;
+			}
+			numgltextures = v5 - 1;
+
+		GoldSrc:
+			qglDeleteTextures(1, dest);
+			Q_memset(dest, 0, 84);
+			v0 = numgltextures;
+			*((_WORD *)dest + 2) = -1;
+	*/
+	for (int i = (*numgltextures) - 1; i >= 0; --i)
 	{
+		auto glt = gltextures_get() + i;
+
 		if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
 		{
 			GL_FreeTextureEntry(glt, true);

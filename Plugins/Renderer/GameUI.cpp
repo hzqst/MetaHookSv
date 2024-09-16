@@ -18,6 +18,7 @@
 #include <IVGUI2Extension.h>
 
 #include "plugins.h"
+#include "exportfuncs.h"
 
 class COptionsSubVideoAdvancedDlg : public vgui::PropertyPage
 {
@@ -273,7 +274,7 @@ public:
 
 	void DisconnectFromServer(VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-
+		HUD_OnClientDisconnect();
 	}
 
 	void HideGameUI(VGUI2Extension_CallbackContext* CallbackContext) override

@@ -400,6 +400,7 @@ void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
 studio_vbo_t *R_GetStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
+void R_StudioClearAllBoneCaches();
 void R_StudioClearVBOCache(void);
 void R_StudioReloadVBOCache(void);
 void R_StudioFlushAllSkins();
