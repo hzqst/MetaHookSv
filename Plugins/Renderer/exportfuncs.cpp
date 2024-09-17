@@ -1510,20 +1510,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		Sig_FuncNotFound(GameStudioRenderer_StudioCalcAttachments_vftable_index);
 
-		//if (gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index == 0)
-		//{
-			//gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = 8;			
-		//}
-
-		gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
-		gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 1;
-		gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 2;
-
-		gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
-		gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
-		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
-		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
-
 		if (g_bIsCounterStrike)
 		{
 			g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
@@ -1554,9 +1540,16 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index == 0)
 				gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index = 100 / 4;
 
-			gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index];
-
 		}
+
+		if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)
+			gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
+
+		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
+			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
+
+		if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index)
+			gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index];
 
 		typedef struct
 		{
@@ -1646,7 +1639,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					{
 						ctx->branches.emplace(imm);
 						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							ctx->walks.emplace_back(imm, 0x1000, depth + 1);
 					}
 
 					if (pinst->id == X86_INS_JMP)
@@ -1665,36 +1658,43 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		gPrivateFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderModel))vftable[gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index];
 
-		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GameStudioRenderer_StudioRenderModel, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn*)inst;
-
-			if (pinst->id == X86_INS_CALL &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base != 0 &&
-				pinst->detail->x86.operands[0].mem.disp > gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index &&
-				pinst->detail->x86.operands[0].mem.disp <= gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 0x20)
+		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GameStudioRenderer_StudioRenderModel, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
-			}
+				auto pinst = (cs_insn*)inst;
 
-			if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
-				return TRUE;
+				if (pinst->id == X86_INS_CALL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					pinst->detail->x86.operands[0].mem.disp > gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index * 4 &&
+					pinst->detail->x86.operands[0].mem.disp <= gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index * 4 + 0x20)
+				{
+					gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+				}
 
-			if (address[0] == 0xCC)
-				return TRUE;
+				if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+					return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			return FALSE;
-		}, 0, NULL);
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
 
 		if (!gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
 			gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 1;
 
 		gPrivateFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal))vftable[gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index];
+
+		gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
+		gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 1;
+		gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 2;
+
+		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
+		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);

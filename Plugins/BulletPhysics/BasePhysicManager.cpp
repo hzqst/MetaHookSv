@@ -2674,7 +2674,20 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
 		}
 
+		int iSavedViewEntityIndex = 0;
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			iSavedViewEntityIndex = (*g_ViewEntityIndex_SCClient);
+			(*g_ViewEntityIndex_SCClient) = 0;
+		}
+
 		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_SETUP_BONES, &fakePlayerState);
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			*g_ViewEntityIndex_SCClient = iSavedViewEntityIndex;
+		}
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);
@@ -2731,7 +2744,20 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
 		}
 
+		int iSavedViewEntityIndex = 0;
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			iSavedViewEntityIndex = (*g_ViewEntityIndex_SCClient);
+			(*g_ViewEntityIndex_SCClient) = 0;
+		}
+
 		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_SETUP_BONES, &fakePlayerState);
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			*g_ViewEntityIndex_SCClient = iSavedViewEntityIndex;
+		}
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);
@@ -2797,7 +2823,20 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
 		}
 
+		int iSavedViewEntityIndex = 0;
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			iSavedViewEntityIndex = (*g_ViewEntityIndex_SCClient);
+			(*g_ViewEntityIndex_SCClient) = 0;
+		}
+
 		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RAGDOLL_UPDATE_BONES, &fakePlayerState);
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			*g_ViewEntityIndex_SCClient = iSavedViewEntityIndex;
+		}
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);

@@ -50,6 +50,7 @@ int* allow_cheats = NULL;
 
 int* g_iWaterLevel = NULL;
 bool* g_bRenderingPortals_SCClient = NULL;
+int* g_ViewEntityIndex_SCClient = NULL;
 
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
@@ -885,6 +886,40 @@ void Client_FillAddress(void)
 				}, 0, NULL);
 
 				Sig_VarNotFound(g_bRenderingPortals_SCClient);
+			}
+
+			if (g_dwEngineBuildnum >= 10182)
+			{
+				const char pattern[] = "\xFF\x15\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x00\x2A\x05";
+				auto addr = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				Sig_AddrNotFound(g_ViewEntityIndex_SCClient);
+
+				g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
+					{
+						g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))pinst->detail->x86.operands[1].mem.disp;
+						return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, NULL);
+
+				Sig_VarNotFound(g_ViewEntityIndex_SCClient);
 			}
 
 			g_bIsSvenCoop = true;

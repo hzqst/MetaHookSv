@@ -323,6 +323,7 @@ public:
 		if (ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseUpdated)
 		{
 			UpdatePose(playerState);
+
 			ObjectUpdateContext->m_bRigidbodyPoseUpdated = true;
 		}
 	}

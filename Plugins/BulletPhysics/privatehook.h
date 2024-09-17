@@ -83,6 +83,7 @@ extern int* allow_cheats;
 
 extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
+extern int* g_ViewEntityIndex_SCClient;
 
 extern int *g_iUser1;
 extern int *g_iUser2;

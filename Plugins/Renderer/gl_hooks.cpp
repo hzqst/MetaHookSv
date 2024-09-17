@@ -899,6 +899,11 @@ void R_FillAddress(void)
 						Candidate[2] == 0xEC)
 						return TRUE;
 
+					//SvEngine 10182
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC)
+						return TRUE;
+
 					return FALSE;
 				});
 
@@ -3462,8 +3467,6 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		PVOID R_RenderFinalFog = NULL;
-
 		PVOID SearchBase = gPrivateFuncs.R_RenderScene;
 
 		if (!SearchBase)
@@ -3476,13 +3479,85 @@ void R_FillAddress(void)
 
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)Search_Pattern_From_Size(SearchBase, 0x600, sigs);
-			Sig_AddrNotFound(R_RenderFinalFog);
+			//const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
+			//addr = (DWORD)Search_Pattern_From_Size(SearchBase, 0x600, sigs);
+			//Sig_AddrNotFound(R_RenderFinalFog);
 
-			gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))addr;
+			//gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))addr;
 
-			g_bUserFogOn = *(int**)(addr + 2);
+			//g_bUserFogOn = *(int**)(addr + 2);
+
+			typedef struct
+			{
+				PVOID candicate;
+				PVOID g_bUserFogOn_candicate;
+				bool bFoundPushB60h;
+				bool bFoundPush801h;
+				bool bFoundPushB65h;
+			}R_RenderFinalFogSearchContext;
+
+			R_RenderFinalFogSearchContext ctx = { 0 };
+
+			g_pMetaHookAPI->DisasmRanges(SearchBase, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (R_RenderFinalFogSearchContext*)context;
+
+					if (pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0)
+					{
+						DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+						ctx->g_bUserFogOn_candicate = (decltype(ctx->g_bUserFogOn_candicate))imm;
+					}
+
+					else if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM&&
+						pinst->detail->x86.operands[0].imm == 0xB60)
+					{
+						ctx->bFoundPushB60h = true;
+						ctx->candicate = address;
+					}
+					else if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x801)
+					{
+						ctx->bFoundPush801h = true;
+					}
+					else if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0xB65)
+					{
+						ctx->bFoundPushB65h = true;
+					}
+
+					if (ctx->g_bUserFogOn_candicate && ctx->bFoundPushB60h && ctx->bFoundPush801h && ctx->bFoundPushB65h)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &ctx);
+
+			if (ctx.bFoundPushB60h && ctx.bFoundPush801h && ctx.bFoundPushB65h && ctx.candicate)
+			{
+				gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))ctx.candicate;
+				g_bUserFogOn = (decltype(g_bUserFogOn))ctx.g_bUserFogOn_candicate;
+			}
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
@@ -6611,22 +6686,19 @@ void sub_1D1A030()
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-		addr = (ULONG_PTR)Search_Pattern_From_Size(gPrivateFuncs.R_RenderView_SvEngine, 0x500, sigs);
+		addr = (ULONG_PTR)Search_Pattern(sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 11);
 		cl_stats = *(int **)(addr + 24);
 
-		int NextSearchLength = 0x300;
-		if (R_RenderScene_inlined)
-			NextSearchLength = 0x800;
-
-		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (ULONG_PTR)Search_Pattern_From_Size(addr, NextSearchLength, sigs3);
+		//SvEngine 10182, R_PreDrawViewModel not inlined
+		const char sigs3[] = "\xD9\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
+		addr = (ULONG_PTR)Search_Pattern(sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
-		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A";
 		addr = (ULONG_PTR)Search_Pattern_From_Size(addr, 0x300, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);

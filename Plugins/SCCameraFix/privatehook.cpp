@@ -54,9 +54,9 @@ void Client_FillAddress(void)
 	{
 		if (1)
 		{
-			char pattern[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x40\x3C\xFF\xD0\xA1\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01";
+			char pattern[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x40\x0C\xFF\xE0";
 			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-			Sig_VarNotFound("CAM_Think_Pattern");
+			Sig_AddrNotFound(ClientDLLEventAPI);
 
 			g_pClientDLLEventAPI = *(decltype(g_pClientDLLEventAPI)*)(addr + 1);
 		}
