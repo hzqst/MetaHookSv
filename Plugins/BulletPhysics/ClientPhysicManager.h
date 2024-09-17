@@ -85,6 +85,7 @@ public:
 	bool m_bForceDynamic{};
 	bool m_bForceKinematic{};
 	bool m_bForceStatic{};
+	bool m_bShouldFree{};
 };
 
 const int PhysicTraceLineFlag_World = 0x1;
@@ -147,6 +148,10 @@ public:
 		return false;
 	}
 	virtual bool IsConstraint() const
+	{
+		return false;
+	}
+	virtual bool IsPhysicAction() const
 	{
 		return false;
 	}
@@ -222,6 +227,37 @@ public:
 	virtual void* GetInternalConstraint() = 0;
 };
 
+class IPhysicAction : public IPhysicComponent
+{
+public:
+	const char* GetTypeString() const override
+	{
+		return "PhysicAction";
+	}
+	const char* GetTypeLocalizationTokenString() const override
+	{
+		return "#BulletPhysics_Action";
+	}
+	bool IsPhysicAction() const override
+	{
+		return true;
+	}
+	virtual IPhysicComponent* GetAttachedPhysicComponent() const
+	{
+		return nullptr;
+	}
+
+	virtual IPhysicRigidBody* GetAttachedRigidBody() const
+	{
+		return nullptr;
+	}
+
+	virtual IPhysicConstraint* GetAttachedConstraint() const
+	{
+		return nullptr;
+	}
+};
+
 using fnEnumPhysicComponentCallback = std::function<bool(IPhysicComponent*)>;
 
 class IPhysicObject : public IBaseInterface
@@ -285,18 +321,6 @@ public:
 	virtual IPhysicConstraint* GetConstraintByComponentId(int id) = 0;
 };
 
-class IPhysicAction : public IBaseInterface
-{
-public:
-	//return false to remove this action
-	virtual bool Update(CPhysicObjectUpdateContext* ctx) = 0;
-	virtual void TransferOwnership(int entindex) = 0;
-
-	virtual IPhysicObject* GetOwnerPhysicObject() const = 0;
-	virtual int GetOwnerEntityIndex() const = 0;
-	virtual int GetActionFlags() const = 0;
-};
-
 class ICollisionPhysicObject : public IPhysicObject
 {
 public:
@@ -357,7 +381,7 @@ public:
 	}
 
 	virtual StudioAnimActivityType GetActivityType() const = 0;
-	virtual StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) = 0;
+	virtual StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) const = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdatePose(entity_state_t* curstate) = 0;

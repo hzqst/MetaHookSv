@@ -428,6 +428,60 @@
     <ClCompile Include="ConstraintEditor.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="PhysicActionPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePhysicComponentAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletPhysicComponentAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletPhysicConstraint.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePhysicRigidBody.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletPhysicRigidBody.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePhysicConstraint.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletRagdollConstraint.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseDynamicObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletDynamicRigidBody.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePhysicAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletRagdollRigidBody.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletRagdollObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletStaticRigidBody.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletStaticObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletDynamicObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletDynamicConstraint.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseRagdollObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -506,6 +560,51 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BulletDynamicObject.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletPhysicComponentAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePhysicComponentAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePhysicAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletBarnacleDragForceAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletBarnacleChewForceAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletBarnacleConstraintLimitAdjustmentAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletRagdollConstraint.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletPhysicConstraint.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePhysicConstraint.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePhysicRigidBody.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletPhysicRigidBody.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletDynamicRigidBody.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletRagdollRigidBody.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletStaticRigidBody.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletDynamicConstraint.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

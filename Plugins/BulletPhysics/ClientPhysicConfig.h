@@ -133,23 +133,13 @@ public:
 
 	int type{ PhysicAction_None };
 	std::string name;
-	std::string rigidbodyA;
-	std::string rigidbodyB;
-	std::string constraint;
-	int flags{ 0 };
-	float factors[PhysicActionFactorIdx_Maximum]{  };
-};
-
-class CClientFloaterConfig : public CClientBasePhysicConfig
-{
-public:
-	CClientFloaterConfig();
-
 	std::string rigidbody;
-	vec3_t origin{};
-	float buoyancy{};
-	float linearDamping{};
-	float angularDamping{};
+	std::string constraint;
+	vec3_t origin{ 0 };
+	vec3_t angles{ 0 };
+	int flags{ 0 };
+	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+	float factors[PhysicActionFactorIdx_Maximum]{  };
 };
 
 class CClientAnimControlConfig : public CClientBasePhysicConfig
@@ -178,6 +168,7 @@ public:
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
+	std::vector<std::shared_ptr<CClientPhysicActionConfig>> ActionConfigs;
 
 	//Never save to file or load from file
 	std::string fileName;
@@ -196,13 +187,6 @@ public:
 	CClientStaticObjectConfig();
 };
 
-class CClientBarnacleControlConfig
-{
-public:
-	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
-	std::vector<std::shared_ptr<CClientPhysicActionConfig>> ActionConfigs;
-};
-
 class CClientCameraControlConfig
 {
 public:
@@ -216,9 +200,7 @@ class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 public:
 	CClientRagdollObjectConfig();
 
-	std::vector<std::shared_ptr<CClientFloaterConfig>> FloaterConfigs;
 	std::vector<std::shared_ptr<CClientAnimControlConfig>> AnimControlConfigs;
-	CClientBarnacleControlConfig BarnacleControlConfig;
 	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
 	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
 };

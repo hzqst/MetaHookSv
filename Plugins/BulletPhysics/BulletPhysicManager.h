@@ -130,7 +130,7 @@ public:
 	btTransform m_offsetmatrix;
 
 	mutable btTransform m_worldTransform;
-	mutable bool m_worldTransformInitialized;
+	mutable bool m_worldTransformInitialized{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -169,97 +169,6 @@ public:
 	btTransform globalJointA{};
 	btTransform globalJointB{};
 	btScalar rigidBodyDistance{};
-};
-
-class CBulletRigidBody : public CBasePhysicRigidBody
-{
-public:
-	CBulletRigidBody(
-		int id,
-		int entindex,
-		IPhysicObject* pPhysicObject,
-		const CClientRigidBodyConfig* pRigidConfig,
-		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
-		int group, int mask);
-
-	~CBulletRigidBody();
-
-	bool AddToPhysicWorld(void* world) override;
-	bool RemoveFromPhysicWorld(void* world) override;
-	bool IsAddedToPhysicWorld(void* world) const override;
-
-	void ApplyCentralForce(const vec3_t vecForce) override;
-	void SetLinearVelocity(const vec3_t vecVelocity) override;
-	void SetAngularVelocity(const vec3_t vecVelocity) override;
-	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;
-	bool SetupBones(studiohdr_t* studiohdr) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
-	//bool MergeBones(studiohdr_t* studiohdr) override;
-
-	void* GetInternalRigidBody() override;
-
-	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
-	bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float* angles) override;
-
-	float GetMass() const override;
-
-public:
-	float m_mass{};
-	btVector3 m_inertia{};
-	float m_density{ BULLET_DEFAULT_DENSENTY };
-	int m_group{ btBroadphaseProxy::DefaultFilter };
-	int m_mask{ btBroadphaseProxy::AllFilter  };
-
-	bool m_addedToPhysicWorld{};
-
-	btRigidBody* m_pInternalRigidBody{};
-};
-
-class CBulletConstraint : public CBasePhysicConstraint
-{
-public:
-	CBulletConstraint(
-		int id,
-		int entindex,
-		IPhysicObject* pPhysicObject,
-		CClientConstraintConfig* pConstraintConfig,
-		btTypedConstraint* pInternalConstraint);
-
-	~CBulletConstraint();
-	
-	const char* GetTypeString() const;
-	const char* GetTypeLocalizationTokenString() const;
-
-	bool AddToPhysicWorld(void* world) override;
-	bool RemoveFromPhysicWorld(void* world) override;
-	bool IsAddedToPhysicWorld(void* world) const override;
-
-	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
-
-	bool ExtendLinearLimit(int axis, float value) override;
-	float GetMaxTolerantLinearError() const override;
-
-	void* GetInternalConstraint() override;
-
-private:
-
-	btRigidBody* CreateInternalRigidBody(bool attachToJointB);
-	void FreeInternalRigidBody(btRigidBody* pRigidBody);
-public:
-
-	float m_maxTolerantLinearError{ BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR };
-	bool m_disableCollision{};
-
-	bool m_addedToPhysicWorld{};
-
-	int m_rigidBodyAPhysicComponentId{};
-	int m_rigidBodyBPhysicComponentId{};
-
-	btTypedConstraint* m_pInternalConstraint{};
-
-	//For rayTest only
-	btRigidBody* m_pInternalRigidBodyA{};
-	btRigidBody* m_pInternalRigidBodyB{};
 };
 
 class CBulletPhysicManager : public CBasePhysicManager
@@ -320,5 +229,3 @@ void TransformGoldSrcToBullet(btTransform& trans);
 void Vector3GoldSrcToBullet(btVector3& vec);
 void TransformBulletToGoldSrc(btTransform& trans);
 void Vector3BulletToGoldSrc(btVector3& vec);
-
-StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);

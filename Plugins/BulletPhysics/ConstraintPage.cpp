@@ -325,7 +325,6 @@ void CConstraintPage::DeleteConstraintItem(int configId)
 	}
 }
 
-
 void CConstraintPage::OnDeleteConstraint(int configId)
 {
 	DeleteConstraintItem(configId);

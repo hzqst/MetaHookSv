@@ -18,6 +18,8 @@ public:
 		m_configId = CreationParam.m_pStaticObjectConfig->configId;
 		m_flags = CreationParam.m_pStaticObjectConfig->flags;
 		m_debugDrawLevel = CreationParam.m_pStaticObjectConfig->debugDrawLevel;
+
+		m_RigidBodyConfigs = CreationParam.m_pStaticObjectConfig->RigidBodyConfigs;
 	}
 
 	~CBaseStaticObject()
@@ -157,6 +159,8 @@ public:
 		{
 			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
 		}
+
+		m_RigidBodyConfigs = pStaticObjectConfig->RigidBodyConfigs;
 
 		RebuildRigidBodies(CreationParam);
 
@@ -338,7 +342,7 @@ protected:
 
 		m_RigidBodies.clear();
 
-		for (const auto& pRigidBodyConfig : CreationParam.m_pStaticObjectConfig->RigidBodyConfigs)
+		for (const auto& pRigidBodyConfig : m_RigidBodyConfigs)
 		{
 			auto found = configIdToComponentIdMap.find(pRigidBodyConfig->configId);
 
@@ -375,5 +379,8 @@ public:
 	int m_flags{ PhysicObjectFlag_StaticObject };
 	int m_debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
 	int m_configId{};
+
+	std::vector<std::shared_ptr<CClientRigidBodyConfig>> m_RigidBodyConfigs;
+
 	std::vector<IPhysicRigidBody*> m_RigidBodies{};
 };

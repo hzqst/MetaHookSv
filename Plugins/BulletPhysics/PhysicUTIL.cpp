@@ -30,6 +30,18 @@ const char* UTIL_GetConstraintTypeLocalizationToken(int type)
 	return "#BulletPhysics_None";
 }
 
+const char* VGUI2Token_PhysicActionType[] = { "#BulletPhysics_None", "#BulletPhysics_BarnacleDragForce", "#BulletPhysics_BarnacleChewForce", "#BulletPhysics_BarnacleConstraintLimitAdjustment", "#BulletPhysics_SimpleBuoyancy" };
+
+const char* UTIL_GetPhysicActionTypeLocalizationToken(int type)
+{
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicActionType))
+	{
+		return VGUI2Token_PhysicActionType[type];
+	}
+
+	return "#BulletPhysics_None";
+}
+
 const char* VGUI2Token_RotOrderType[] = { "#BulletPhysics_PhysicRotOrder_XYZ", "#BulletPhysics_PhysicRotOrder_XZY", "#BulletPhysics_PhysicRotOrder_YXZ", "#BulletPhysics_PhysicRotOrder_YZX", "#BulletPhysics_PhysicRotOrder_ZXY", "#BulletPhysics_PhysicRotOrder_ZYX" };
 
 const char* UTIL_GetRotOrderTypeLocalizationToken(int type)
@@ -143,6 +155,25 @@ std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraint
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameB"));
 	}
+	return ss.str();
+}
+
+std::wstring UTIL_GetFormattedPhysicActionFlags(int flags)
+{
+	std::wstringstream ss;
+
+	// Macro to format flag string
+#define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicActionFlag_##name) {\
+        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+    }
+
+	FORMAT_FLAGS_TO_STRING(Barnacle);
+	FORMAT_FLAGS_TO_STRING(Gargantua);
+	FORMAT_FLAGS_TO_STRING(AffectsRigidBody);
+	FORMAT_FLAGS_TO_STRING(AffectsConstraint);
+
+#undef FORMAT_FLAGS_TO_STRING
+
 	return ss.str();
 }
 
@@ -365,6 +396,23 @@ std::shared_ptr<CClientConstraintConfig> UTIL_GetConstraintConfigFromConfigId(in
 	return pConstraintConfig;
 }
 
+std::shared_ptr<CClientPhysicActionConfig> UTIL_GetPhysicActionConfigFromConfigId(int configId)
+{
+	auto pPhysicConfig = ClientPhysicManager()->GetPhysicConfig(configId);
+
+	auto pLockedPhysicConfig = pPhysicConfig.lock();
+
+	if (!pLockedPhysicConfig)
+		return nullptr;
+
+	if (pLockedPhysicConfig->configType != PhysicConfigType_Action)
+		return nullptr;
+
+	std::shared_ptr<CClientPhysicActionConfig> pPhysicActionConfig = std::static_pointer_cast<CClientPhysicActionConfig>(pLockedPhysicConfig);
+
+	return pPhysicActionConfig;
+}
+
 std::shared_ptr<CClientPhysicObjectConfig> UTIL_GetPhysicObjectConfigFromConfigId(int configId)
 {
 	auto pPhysicConfig = ClientPhysicManager()->GetPhysicConfig(configId);
@@ -412,6 +460,27 @@ bool UTIL_RemoveConstraintFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhy
 		if (p->configId == constraintConfigId)
 		{
 			itor = pPhysicObjectConfig->ConstraintConfigs.erase(itor);
+
+			pPhysicObjectConfig->configModified = true;
+
+			return true;
+		}
+
+		itor++;
+	}
+
+	return false;
+}
+
+bool UTIL_RemovePhysicActionFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicObjectConfig, int constraintConfigId)
+{
+	for (auto itor = pPhysicObjectConfig->ActionConfigs.begin(); itor != pPhysicObjectConfig->ActionConfigs.end(); )
+	{
+		const auto& p = (*itor);
+
+		if (p->configId == constraintConfigId)
+		{
+			itor = pPhysicObjectConfig->ActionConfigs.erase(itor);
 
 			pPhysicObjectConfig->configModified = true;
 
@@ -516,6 +585,28 @@ std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClien
 	return pNewConfig;
 }
 
+std::shared_ptr<CClientPhysicActionConfig> UTIL_ClonePhysicActionConfig(const CClientPhysicActionConfig* pOldConfig)
+{
+	auto pNewConfig = std::make_shared<CClientPhysicActionConfig>();
+
+	// Copy basic types and strings
+	pNewConfig->name = pOldConfig->name;
+	pNewConfig->type = pOldConfig->type;
+	pNewConfig->rigidbody = pOldConfig->rigidbody;
+	pNewConfig->constraint = pOldConfig->constraint;
+	pNewConfig->flags = pOldConfig->flags;
+	pNewConfig->debugDrawLevel = pOldConfig->debugDrawLevel;
+
+	// Copy vec3_t using the provided VectorCopy macro
+	VectorCopy(pOldConfig->origin, pNewConfig->origin);
+	VectorCopy(pOldConfig->angles, pNewConfig->angles);
+
+	// Copy array of floats
+	std::copy(std::begin(pOldConfig->factors), std::end(pOldConfig->factors), std::begin(pNewConfig->factors));
+
+	return pNewConfig;
+}
+
 std::string UTIL_FormatAbsoluteModelName(model_t* mod)
 {
 	if (mod->type == mod_brush)
@@ -568,41 +659,25 @@ bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicO
 		}
 	}
 
-	if (pPhysicObjectConfig->type == PhysicObjectType_DynamicObject)
+	for (const auto& pConstraintConfig : pPhysicObjectConfig->ConstraintConfigs)
 	{
-		const auto pDynamicObjectConfig = (const CClientDynamicObjectConfig*)pPhysicObjectConfig;
-
-		for (const auto& pConstraintConfig : pDynamicObjectConfig->ConstraintConfigs)
-		{
-			if (pConstraintConfig->configModified)
-				return true;
-		}
+		if (pConstraintConfig->configModified)
+			return true;
 	}
-	else if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
+
+	for (const auto& pActionConfig : pPhysicObjectConfig->ActionConfigs)
+	{
+		if (pActionConfig->configModified)
+			return true;
+	}
+
+	if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
 	{
 		const auto pRagdollObjectConfig = (const CClientRagdollObjectConfig*)pPhysicObjectConfig;
 
-		for (const auto& pConstraintConfig : pRagdollObjectConfig->ConstraintConfigs)
+		for (const auto& pAnimControl : pRagdollObjectConfig->AnimControlConfigs)
 		{
-			if (pConstraintConfig->configModified)
-				return true;
-		}
-
-		for (const auto& pFloaterConfig : pRagdollObjectConfig->FloaterConfigs)
-		{
-			if (pFloaterConfig->configModified)
-				return true;
-		}
-
-		for (const auto& pActionConfig : pRagdollObjectConfig->BarnacleControlConfig.ActionConfigs)
-		{
-			if (pActionConfig->configModified)
-				return true;
-		}
-
-		for (const auto& pConstraintConfig : pRagdollObjectConfig->BarnacleControlConfig.ConstraintConfigs)
-		{
-			if (pConstraintConfig->configModified)
+			if (pAnimControl->configModified)
 				return true;
 		}
 	}
@@ -636,37 +711,23 @@ void UTIL_SetPhysicObjectConfigUnmodified(CClientPhysicObjectConfig* pPhysicObje
 		}
 	}
 
-	if (pPhysicObjectConfig->type == PhysicObjectType_DynamicObject)
+	for (const auto& pConstraintConfig : pPhysicObjectConfig->ConstraintConfigs)
 	{
-		const auto pDynamicObjectConfig = (const CClientDynamicObjectConfig*)pPhysicObjectConfig;
-
-		for (const auto& pConstraintConfig : pDynamicObjectConfig->ConstraintConfigs)
-		{
-			pConstraintConfig->configModified = false;
-		}
+		pConstraintConfig->configModified = false;
 	}
-	else if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
+
+	for (const auto& pActionConfig : pPhysicObjectConfig->ActionConfigs)
+	{
+		pActionConfig->configModified = false;
+	}
+
+	if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
 	{
 		const auto pRagdollObjectConfig = (const CClientRagdollObjectConfig*)pPhysicObjectConfig;
 
-		for (const auto& pConstraintConfig : pRagdollObjectConfig->ConstraintConfigs)
+		for (const auto& pAnimControl : pRagdollObjectConfig->AnimControlConfigs)
 		{
-			pConstraintConfig->configModified = false;
-		}
-
-		for (const auto& pFloaterConfig : pRagdollObjectConfig->FloaterConfigs)
-		{
-			pFloaterConfig->configModified = false;
-		}
-
-		for (const auto& pActionConfig : pRagdollObjectConfig->BarnacleControlConfig.ActionConfigs)
-		{
-			pActionConfig->configModified = false;
-		}
-
-		for (const auto& pConstraintConfig : pRagdollObjectConfig->BarnacleControlConfig.ConstraintConfigs)
-		{
-			pConstraintConfig->configModified = false;
+			pAnimControl->configModified = false;
 		}
 	}
 }
@@ -918,6 +979,113 @@ bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfi
 
 	auto it = std::find_if(configs.begin(), configs.end(), [pConstraintConfig](const std::shared_ptr<CClientConstraintConfig>& ptr) {
 		return ptr.get() == pConstraintConfig;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto nextIndex = currentIndex + 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
+		return true;
+	}
+
+	return false;
+}
+
+//PhysicAction stuffs
+
+int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+{
+	const auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.end()) {
+		return std::distance(configs.begin(), it);
+	}
+
+	return -1; // Return -1 if not found
+}
+
+int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientPhysicActionConfig* pPhysicActionConfig)
+{
+	auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr.get() == pPhysicActionConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		// Find the index of the current element
+		std::size_t currentIndex = std::distance(configs.begin(), it);
+		// Calculate the index of the previous element
+		return currentIndex;
+	}
+
+	return -1;
+}
+
+bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId) {
+	auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto prevIndex = currentIndex - 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId) {
+	auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr->configId == configId;
+		});
+
+	if (it != configs.end() - 1 && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto nextIndex = currentIndex + 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + nextIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig) {
+	auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr.get() == pPhysicActionConfig;
+		});
+
+	if (it != configs.begin() && it != configs.end()) {
+		auto currentIndex = std::distance(configs.begin(), it);
+		auto prevIndex = currentIndex - 1;
+
+		std::iter_swap(configs.begin() + currentIndex, configs.begin() + prevIndex);
+		return true;
+	}
+
+	return false;
+}
+
+bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig) {
+	auto& configs = pPhysicObjectConfig->ActionConfigs;
+
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+		return ptr.get() == pPhysicActionConfig;
 		});
 
 	if (it != configs.end() - 1 && it != configs.end()) {

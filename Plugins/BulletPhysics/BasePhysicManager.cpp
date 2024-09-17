@@ -196,11 +196,6 @@ CClientPhysicActionConfig::CClientPhysicActionConfig() : CClientBasePhysicConfig
 	}
 }
 
-CClientFloaterConfig::CClientFloaterConfig() : CClientBasePhysicConfig()
-{
-	configType = PhysicConfigType_Floater;
-}
-
 CClientPhysicObjectConfig::CClientPhysicObjectConfig() : CClientBasePhysicConfig()
 {
 	configType = PhysicConfigType_PhysicObject;
@@ -224,39 +219,6 @@ CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectCo
 	flags = PhysicObjectFlag_RagdollObject;
 	FirstPersonViewCameraControlConfig.rigidbody = "Head";
 	ThirdPersonViewCameraControlConfig.rigidbody = "Pelvis";
-}
-
-CBasePhysicRigidBody::CBasePhysicRigidBody(
-	int id, 
-	int entindex,
-	IPhysicObject* pPhysicObject, 
-	const CClientRigidBodyConfig* pRigidConfig) :
-	m_id(id),
-	m_entindex(entindex),
-	m_pPhysicObject(pPhysicObject),
-	m_name(pRigidConfig->name),
-	m_flags(pRigidConfig->flags),
-	m_boneindex(pRigidConfig->boneindex),
-	m_debugDrawLevel(pRigidConfig->debugDrawLevel),
-	m_configId(pRigidConfig->configId)
-{
-
-}
-
-CBasePhysicConstraint::CBasePhysicConstraint(
-	int id,
-	int entindex,
-	IPhysicObject* pPhysicObject,
-	const CClientConstraintConfig* pConstraintConfig) :
-	m_id(id),
-	m_entindex(entindex),
-	m_pPhysicObject(pPhysicObject),
-	m_name(pConstraintConfig->name),
-	m_flags(pConstraintConfig->flags),
-	m_debugDrawLevel(pConstraintConfig->debugDrawLevel),
-	m_configId(pConstraintConfig->configId)
-{
-
 }
 
 void CBasePhysicManager::Destroy(void)
@@ -984,8 +946,7 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 				pPhysicActionConfig->type = UTIL_GetPhysicActionTypeFromTypeName(type);
 			}
 
-			pPhysicActionConfig->rigidbodyA = pPhysicActionSubKey->GetString("rigidbodyA");
-			pPhysicActionConfig->rigidbodyB = pPhysicActionSubKey->GetString("rigidbodyB");
+			pPhysicActionConfig->rigidbody = pPhysicActionSubKey->GetString("rigidbody");
 			pPhysicActionConfig->constraint = pPhysicActionSubKey->GetString("constraint");
 
 			if(pPhysicActionSubKey->GetBool("barnacle"))
@@ -1039,17 +1000,6 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 	}
 }
 
-static void LoadBarnacleControlFromKeyValues(KeyValues* pKeyValues, CClientBarnacleControlConfig &BarnacleControlConfig)
-{
-	auto pBarnacleControlKey = pKeyValues->FindKey("barnacleControl");
-
-	if (pBarnacleControlKey)
-	{
-		LoadConstraintsFromKeyValues(pBarnacleControlKey, BarnacleControlConfig.ConstraintConfigs);
-		LoadPhysicActionFromKeyValues(pBarnacleControlKey, BarnacleControlConfig.ActionConfigs);
-	}
-}
-
 static void LoadCameraControlFromKeyValues(KeyValues* pKeyValues, const char *name, CClientCameraControlConfig& CameraControlConfig)
 {
 	auto pCameraControlKey = pKeyValues->FindKey(name);
@@ -1082,8 +1032,8 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pRagdollObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnRagdollObject, pRagdollObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
+	LoadPhysicActionFromKeyValues(pKeyValues, pRagdollObjectConfig->ActionConfigs);
 	LoadAnimControlsFromKeyValues(pKeyValues, pRagdollObjectConfig->AnimControlConfigs);
-	LoadBarnacleControlFromKeyValues(pKeyValues, pRagdollObjectConfig->BarnacleControlConfig);
 	LoadCameraControlFromKeyValues(pKeyValues, "firstPersonViewCameraControl", pRagdollObjectConfig->FirstPersonViewCameraControlConfig);
 	LoadCameraControlFromKeyValues(pKeyValues, "thirdPersonViewCameraControl", pRagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
@@ -1582,11 +1532,10 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 				if (pPhysicActionSubKey)
 				{
 					pPhysicActionSubKey->SetString("type", UTIL_GetPhysicActionTypeName(pPhysicActionConfig->type));
-					pPhysicActionSubKey->SetString("rigidbodyA", pPhysicActionConfig->rigidbodyA.c_str());
-					pPhysicActionSubKey->SetString("rigidbodyB", pPhysicActionConfig->rigidbodyB.c_str());
+					pPhysicActionSubKey->SetString("rigidbody", pPhysicActionConfig->rigidbody.c_str());
 					pPhysicActionSubKey->SetString("constraint", pPhysicActionConfig->constraint.c_str());
 
-					if(pPhysicActionConfig->flags & PhysicActionFlag_Barnacle )
+					if (pPhysicActionConfig->flags & PhysicActionFlag_Barnacle)
 						pPhysicActionSubKey->SetBool("barnacle", true);
 
 					if (pPhysicActionConfig->flags & PhysicActionFlag_Gargantua)
@@ -1659,17 +1608,6 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<s
 	}
 }
 
-static void AddBarnacleControlToKeyValues(KeyValues* pKeyValues, const CClientBarnacleControlConfig& BarnacleControl)
-{
-	auto pBarnacleControlKey = pKeyValues->FindKey("barnacleControl", true);
-
-	if (pBarnacleControlKey)
-	{
-		AddConstraintsToKeyValues(pBarnacleControlKey, BarnacleControl.ConstraintConfigs);
-		AddPhysicActionsToKeyValues(pBarnacleControlKey, BarnacleControl.ActionConfigs);
-	}
-}
-
 static void AddCameraControlToKeyValues(KeyValues* pKeyValues, const char *name, const CClientCameraControlConfig& CameraControl)
 {
 	auto pCameraControlKey = pKeyValues->FindKey(name, true);
@@ -1721,8 +1659,8 @@ static KeyValues* ConvertRagdollObjectConfigToKeyValues(const CClientRagdollObje
 	AddBaseConfigToKeyValues(pKeyValues, RagdollObjectConfig);
 	AddRigidBodiesToKeyValues(pKeyValues, RagdollObjectConfig->RigidBodyConfigs);
 	AddConstraintsToKeyValues(pKeyValues, RagdollObjectConfig->ConstraintConfigs);
+	AddPhysicActionsToKeyValues(pKeyValues, RagdollObjectConfig->ActionConfigs);
 	AddAnimControlToKeyValues(pKeyValues, RagdollObjectConfig->AnimControlConfigs);
-	AddBarnacleControlToKeyValues(pKeyValues, RagdollObjectConfig->BarnacleControlConfig);
 	AddCameraControlToKeyValues(pKeyValues, "firstPersonViewCameraControl", RagdollObjectConfig->FirstPersonViewCameraControlConfig);
 	AddCameraControlToKeyValues(pKeyValues, "thirdPersonViewCameraControl", RagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
@@ -1973,7 +1911,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ] = 0;
 			pConstraintConfig->debugDrawLevel = 2;
 
-			pRagdollConfig->BarnacleControlConfig.ConstraintConfigs.emplace_back(pConstraintConfig);
+			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
 
 			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
 
@@ -1981,11 +1919,11 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
-			pActionConfig->rigidbodyA = rigidbody;
+			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
-			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+			pRagdollConfig->ActionConfigs.emplace_back(pActionConfig);
 
 			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
 
@@ -2019,7 +1957,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pConstraintConfig->factors[PhysicConstraintFactorIdx_SliderUpperLinearLimit] = 0;
 			pConstraintConfig->debugDrawLevel = 2;
 
-			pRagdollConfig->BarnacleControlConfig.ConstraintConfigs.emplace_back(pConstraintConfig);
+			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
 
 			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
 
@@ -2027,11 +1965,11 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
 			pActionConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
-			pActionConfig->rigidbodyA = rigidbody;
+			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
 
-			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+			pRagdollConfig->ActionConfigs.emplace_back(pActionConfig);
 
 			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
 
@@ -2044,11 +1982,11 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->type = PhysicAction_BarnacleChewForce;
 			pActionConfig->name = std::format("BarnacleChewForce|{}", rigidbody);
 			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
-			pActionConfig->rigidbodyA = rigidbody;
+			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval] = factor1;
 
-			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig);
+			pRagdollConfig->ActionConfigs.emplace_back(pActionConfig);
 
 			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
 
@@ -2066,7 +2004,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis] = -1;
 
-			pRagdollConfig->BarnacleControlConfig.ActionConfigs.emplace_back(pActionConfig); 
+			pRagdollConfig->ActionConfigs.emplace_back(pActionConfig); 
 			
 			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
 			return true;
