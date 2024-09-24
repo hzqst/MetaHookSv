@@ -1227,24 +1227,30 @@ void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
 	if (GetPhysicObject()->IsStaticObject())
 		return;
 
-	if (!GetPhysicObject()->GetRigidBodyCount())
-		return;
-
 	auto ent = GetPhysicObject()->GetClientEntity();
 
-	auto pRigidBody = GetPhysicObject()->GetRigidBodyByIndex(0);
+	GetPhysicObject()->EnumPhysicComponents([ent](IPhysicComponent* pPhysicComponent) {
 
-	vec3_t origin;
-	vec3_t angles;
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-	if (pRigidBody->GetGoldSrcOriginAngles(origin, angles))
-	{
-		VectorCopy(origin, ent->origin);
-		VectorCopy(origin, ent->curstate.origin);
+			vec3_t origin;
+			vec3_t angles;
 
-		VectorCopy(angles, ent->angles);
-		VectorCopy(angles, ent->curstate.angles);
-	}
+			if (pRigidBody->GetGoldSrcOriginAngles(origin, angles))
+			{
+				VectorCopy(origin, ent->origin);
+				VectorCopy(origin, ent->curstate.origin);
+
+				VectorCopy(angles, ent->angles);
+				VectorCopy(angles, ent->curstate.angles);
+
+				return true;
+			}
+		}
+		return false;
+	});
 }
 
 void CFollowConstraintMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -1265,6 +1271,44 @@ void CFollowConstraintMotionState::getWorldTransform(btTransform& worldTrans) co
 }
 
 void CFollowConstraintMotionState::setWorldTransform(const btTransform& worldTrans)
+{
+
+}
+
+void CFollowPhysicComponentMotionState::getWorldTransform(btTransform& worldTrans) const
+{
+	auto pAttachedPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_attachedPhysicComponentId);
+
+	if (!pAttachedPhysicComponent)
+		return;
+
+	if (pAttachedPhysicComponent->IsRigidBody())
+	{
+		auto pRigidBody = (IPhysicRigidBody *)pAttachedPhysicComponent;
+
+		auto pInternalRigidBody = (btRigidBody *)pRigidBody->GetInternalRigidBody();
+
+		worldTrans.mult(pInternalRigidBody->getWorldTransform(), m_offsetmatrix);
+	}
+	else if (pAttachedPhysicComponent->IsConstraint())
+	{
+		auto pConstraint = (IPhysicConstraint*)pAttachedPhysicComponent;
+
+		auto pInternalConstraint = (btTypedConstraint*)pConstraint->GetInternalConstraint();
+
+		btTransform worldPivotA;
+		btTransform worldPivotB;
+
+		if (BulletGetConstraintGlobalPivotTransform(pInternalConstraint, worldPivotA, worldPivotB))
+		{
+			//attachToJointB?
+
+			worldTrans.mult(worldPivotA, m_offsetmatrix);
+		}
+	}
+}
+
+void CFollowPhysicComponentMotionState::setWorldTransform(const btTransform& worldTrans)
 {
 
 }
@@ -1752,7 +1796,7 @@ void CBulletPhysicManager::DebugDraw(void)
 	m_debugDrawContext.m_ragdollObjectLevel = (int)bv_debug_draw_level_ragdoll->value;
 	m_debugDrawContext.m_rigidbodyLevel = (int)bv_debug_draw_level_rigidbody->value;
 	m_debugDrawContext.m_constraintLevel = (int)bv_debug_draw_level_constraint->value;
-	m_debugDrawContext.m_floaterLevel = (int)bv_debug_draw_level_floater->value;
+	m_debugDrawContext.m_actionLevel = (int)bv_debug_draw_level_action->value;
 
 	if (!UTIL_ParseStringAsColor3(bv_debug_draw_constraint_color->string, m_debugDrawContext.m_constraintColor))
 	{
@@ -1960,9 +2004,9 @@ public:
 			{
 				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::ConstraintFilter;
 			}
-			if (traceParam.withflags & PhysicTraceLineFlag_Floater)
+			if (traceParam.withflags & PhysicTraceLineFlag_Action)
 			{
-				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::FloaterFilter;
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::ActionFilter;
 			}
 			if (traceParam.withflags & PhysicTraceLineFlag_World)
 			{
@@ -1991,9 +2035,9 @@ public:
 			{
 				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::ConstraintFilter;
 			}
-			if (traceParam.withoutflags & PhysicTraceLineFlag_Floater)
+			if (traceParam.withoutflags & PhysicTraceLineFlag_Action)
 			{
-				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::FloaterFilter;
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::ActionFilter;
 			}
 			if (traceParam.withoutflags & PhysicTraceLineFlag_World)
 			{
@@ -2090,33 +2134,33 @@ void CBulletPhysicManager::TraceLine(const CPhysicTraceLineParameters& tracePara
 	}
 }
 
-IStaticObject* CBulletPhysicManager::CreateStaticObject(const CStaticObjectCreationParameter& CreationParam)
+IStaticObject* CBulletPhysicManager::CreateStaticObject(const CPhysicObjectCreationParameter& CreationParam)
 {
-	if (!CreationParam.m_pStaticObjectConfig)
+	if (!CreationParam.m_pPhysicObjectConfig)
 	{
-		gEngfuncs.Con_Printf("CreateStaticObject: invalid m_pStaticObjectConfig!\n");
+		gEngfuncs.Con_Printf("CreateStaticObject: invalid m_pPhysicObjectConfig!\n");
 		return nullptr;
 	}
 
 	return new CBulletStaticObject(CreationParam);
 }
 
-IDynamicObject* CBulletPhysicManager::CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam)
+IDynamicObject* CBulletPhysicManager::CreateDynamicObject(const CPhysicObjectCreationParameter& CreationParam)
 {
-	if (!CreationParam.m_pDynamicObjectConfig)
+	if (!CreationParam.m_pPhysicObjectConfig)
 	{
-		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pRagdollObjectConfig!\n");
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pPhysicObjectConfig!\n");
 		return nullptr;
 	}
 
 	return new CBulletDynamicObject(CreationParam);
 }
 
-IRagdollObject* CBulletPhysicManager::CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam)
+IRagdollObject* CBulletPhysicManager::CreateRagdollObject(const CPhysicObjectCreationParameter& CreationParam)
 {
-	if (!CreationParam.m_pRagdollObjectConfig)
+	if (!CreationParam.m_pPhysicObjectConfig)
 	{
-		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pRagdollObjectConfig!\n");
+		gEngfuncs.Con_Printf("CreateRagdollObject: invalid m_pPhysicObjectConfig!\n");
 		return nullptr;
 	}
 

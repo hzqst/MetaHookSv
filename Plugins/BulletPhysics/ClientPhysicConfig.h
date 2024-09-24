@@ -159,19 +159,22 @@ public:
 	CClientPhysicObjectConfig();
 
 	int type{ PhysicObjectType_None };
-	int flags{};
+	
+	int flags{}; //runtime flags that used by physic engine
+
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
+
 	bool verifyBoneChunk{};
-	bool verifyStudioModel{};
-	int crc32BoneChunk{};
-	int crc32StudioModel{};
+	bool verifyModelFile{};
+	std::string crc32BoneChunk{};
+	std::string crc32ModelFile{};
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientPhysicActionConfig>> ActionConfigs;
 
 	//Never save to file or load from file
-	std::string fileName;
+	std::string modelName;
 	std::string shortName;
 };
 
@@ -209,7 +212,7 @@ class CClientPhysicObjectConfigStorage
 {
 public:
 	int state{ PhysicConfigState_NotLoaded };
-	std::string filename;
+	std::string modelname;
 	std::shared_ptr<CClientPhysicObjectConfig> pConfig{};
 };
 

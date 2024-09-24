@@ -13,7 +13,7 @@ enum class PhysicInspectMode
 	PhysicObject,
 	RigidBody,
 	Constraint,
-	Floater,
+	Action,
 };
 
 enum class PhysicEditMode

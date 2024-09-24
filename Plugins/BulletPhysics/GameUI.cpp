@@ -33,7 +33,7 @@ public:
 		m_pDebugDrawLevelRagdollObject = new CCvarTextEntry(this, "DebugDrawLevelRagdollObject", "bv_debug_draw_level_ragdoll");
 		m_pDebugDrawLevelRigidBody = new CCvarTextEntry(this, "DebugDrawLevelRigidBody", "bv_debug_draw_level_rigidbody");
 		m_pDebugDrawLevelConstraint = new CCvarTextEntry(this, "DebugDrawLevelConstraint", "bv_debug_draw_level_constraint");
-		m_pDebugDrawLevelFloater = new CCvarTextEntry(this, "DebugDrawLevelFloater", "bv_debug_draw_level_floater");
+		m_pDebugDrawLevelAction = new CCvarTextEntry(this, "DebugDrawLevelAction", "bv_debug_draw_level_action");
 
 		LoadControlSettings("bulletphysics/OptionsSubBulletPhysicsDlg.res");
 	}
@@ -54,7 +54,7 @@ public:
 		m_pDebugDrawLevelRagdollObject->ApplyChanges();
 		m_pDebugDrawLevelRigidBody->ApplyChanges();
 		m_pDebugDrawLevelConstraint->ApplyChanges();
-		m_pDebugDrawLevelFloater->ApplyChanges();
+		m_pDebugDrawLevelAction->ApplyChanges();
 	}
 
 	void OnApplyChanges() override
@@ -71,7 +71,7 @@ public:
 		m_pDebugDrawLevelRagdollObject->Reset();
 		m_pDebugDrawLevelRigidBody->Reset();
 		m_pDebugDrawLevelConstraint->Reset();
-		m_pDebugDrawLevelFloater->Reset();
+		m_pDebugDrawLevelAction->Reset();
 	}
 
 	void OnCommand(const char* command) override
@@ -101,7 +101,7 @@ private:
 	CCvarTextEntry* m_pDebugDrawLevelRagdollObject;
 	CCvarTextEntry* m_pDebugDrawLevelRigidBody;
 	CCvarTextEntry* m_pDebugDrawLevelConstraint;
-	CCvarTextEntry* m_pDebugDrawLevelFloater;
+	CCvarTextEntry* m_pDebugDrawLevelAction;
 };
 
 void COptionsSubBulletPhysicsDlg::OnDataChanged()

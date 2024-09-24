@@ -7,7 +7,7 @@
 class CBaseRagdollObject : public IRagdollObject
 {
 public:
-	CBaseRagdollObject(const CRagdollObjectCreationParameter& CreationParam);
+	CBaseRagdollObject(const CPhysicObjectCreationParameter& CreationParam);
 	~CBaseRagdollObject();
 
 	int GetEntityIndex() const override;
@@ -21,12 +21,13 @@ public:
 	int GetPhysicConfigId() const override;
 	bool IsClientEntityNonSolid() const override;
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override;
-	int GetRigidBodyCount() const override;
-	IPhysicRigidBody* GetRigidBodyByIndex(int index) const override;
 	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override;
 	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
+	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
+	bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
+	bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
 	void UpdatePose(entity_state_t* curstate) override;
 	bool SetupBones(studiohdr_t* studiohdr) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
@@ -43,6 +44,7 @@ public:
 	void SetDebugAnimEnabled(bool bEnabled) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
+	void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
 	void TransferOwnership(int entindex) override;
 	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override;
 	IPhysicComponent* GetPhysicComponentByComponentId(int id) override;
@@ -50,24 +52,24 @@ public:
 	IPhysicRigidBody* GetRigidBodyByComponentId(int id) override;
 	IPhysicConstraint* GetConstraintByName(const std::string& name) override;
 	IPhysicConstraint* GetConstraintByComponentId(int id) override;
+	IPhysicAction* GetPhysicActionByName(const std::string& name) override;
+	IPhysicAction* GetPhysicActionByComponentId(int id) override;
 
-	virtual void CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam);
-	virtual void CreateConstraints(const CRagdollObjectCreationParameter& CreationParam);
-	virtual void CreateActions(const CRagdollObjectCreationParameter& CreationParam);
 	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody);
-	virtual void SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam);
+	virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
 	virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl);
-	virtual void SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam);
-	virtual IPhysicRigidBody* CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
-	virtual IPhysicConstraint* CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
-	virtual IPhysicAction* CreateAction(const CRagdollObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId) = 0;
+	virtual void SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam);
+	
+	virtual IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
+	virtual IPhysicConstraint* CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
+	virtual IPhysicAction* CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId) = 0;
+
+	virtual void AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody);
+	virtual void AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint);
+	virtual void AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction);
 
 protected:
 
-	void AddRigidBody(IPhysicRigidBody* pRigidBody);
-	void AddConstraint(IPhysicConstraint* pConstraint);
-	void RebuildRigidBodies(const CRagdollObjectCreationParameter& CreationParam);
-	void RebuildConstraints(const CRagdollObjectCreationParameter& CreationParam);
 	bool UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate);
 
 public:
@@ -99,7 +101,5 @@ public:
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 
-	std::vector<IPhysicRigidBody *> m_RigidBodies;
-	std::vector<IPhysicConstraint *> m_Constraints;
-	std::vector<IPhysicAction*> m_Actions;
+	std::vector<IPhysicComponent*> m_PhysicComponents;
 };

@@ -1,4 +1,6 @@
-#include "PhysicEditorDialog.h"
+#include "PhysicRigidBodyPage.h"
+#include "PhysicRigidBodyListPanel.h"
+#include "PhysicRigidBodyEditDialog.h"
 
 #include "exportfuncs.h"
 
@@ -7,49 +9,30 @@
 
 #include <format>
 
-//RigidBody List
-
-CRigidBodyListPanel::CRigidBodyListPanel(vgui::Panel* parent, const char* pName) : BaseClass(parent, pName)
-{
-
-}
-
-//RigidBody Page
-
-CRigidBodyPage::CRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
+CPhysicRigidBodyPage::CPhysicRigidBodyPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
 	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
 {
 	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
 
-	m_pRigidBodyListPanel = new CRigidBodyListPanel(this, "RigidBodyListPanel");
-
-	m_pRigidBodyListPanel->AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-	m_pRigidBodyListPanel->AddColumnHeader(1, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-	m_pRigidBodyListPanel->AddColumnHeader(2, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(3, "shape", "#BulletPhysics_Shape", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(4, "bone", "#BulletPhysics_Bone", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(5, "mass", "#BulletPhysics_Mass", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pRigidBodyListPanel->AddColumnHeader(6, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
-	m_pRigidBodyListPanel->SetSortColumn(0);
-	m_pRigidBodyListPanel->SetMultiselectEnabled(false);
+	m_pPhysicRigidBodyListPanel = new CPhysicRigidBodyListPanel(this, "PhysicRigidBodyListPanel");
 
 	m_pShiftUpRigidBody = new vgui::Button(this, "ShiftUpRigidBody", L"#BulletPhysics_ShiftUp", this, "ShiftUpRigidBody");
 	m_pShiftDownRigidBody = new vgui::Button(this, "ShiftDownRigidBody", L"#BulletPhysics_ShiftDown", this, "ShiftDownRigidBody");
 	m_pCreateRigidBody = new vgui::Button(this, "CreateRigidBody", L"#BulletPhysics_CreateRigidBody", this, "CreateRigidBody");
 
-	LoadControlSettings("bulletphysics/RigidBodyPage.res", "GAME");
+	LoadControlSettings("bulletphysics/PhysicRigidBodyPage.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CRigidBodyPage::OnResetData()
+void CPhysicRigidBodyPage::OnResetData()
 {
 	ReloadAllRigidBodiesIntoListPanelItem();
 }
 
-void CRigidBodyPage::ApplySchemeSettings(vgui::IScheme* pScheme)
+void CPhysicRigidBodyPage::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
@@ -58,18 +41,18 @@ void CRigidBodyPage::ApplySchemeSettings(vgui::IScheme* pScheme)
 	if (!m_hFont)
 		m_hFont = pScheme->GetFont("DefaultSmall", IsProportional());
 
-	m_pRigidBodyListPanel->SetFont(m_hFont);
+	m_pPhysicRigidBodyListPanel->SetFont(m_hFont);
 }
 
-void CRigidBodyPage::OnKeyCodeTyped(vgui::KeyCode code)
+void CPhysicRigidBodyPage::OnKeyCodeTyped(vgui::KeyCode code)
 {
 	if (code == vgui::KEY_ENTER)
 	{
-		if (m_pRigidBodyListPanel->GetSelectedItemsCount() > 0)
+		if (m_pPhysicRigidBodyListPanel->GetSelectedItemsCount() > 0)
 		{
-			auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
+			auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
 
-			auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+			auto configId = m_pPhysicRigidBodyListPanel->GetItemUserData(selectItemId);
 
 			OnOpenRigidBodyEditor(configId);
 
@@ -80,7 +63,7 @@ void CRigidBodyPage::OnKeyCodeTyped(vgui::KeyCode code)
 	BaseClass::OnKeyCodeTyped(code);
 }
 
-void CRigidBodyPage::OnCommand(const char* command)
+void CPhysicRigidBodyPage::OnCommand(const char* command)
 {
 	if (!stricmp(command, "OK"))
 	{
@@ -92,14 +75,14 @@ void CRigidBodyPage::OnCommand(const char* command)
 	}
 	else if (!stricmp(command, "ShiftUpRigidBody"))
 	{
-		auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
-		auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+		auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicRigidBodyListPanel->GetItemUserData(selectItemId);
 		OnShiftUpRigidBody(configId);
 	}
 	else if (!stricmp(command, "ShiftDownRigidBody"))
 	{
-		auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
-		auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+		auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicRigidBodyListPanel->GetItemUserData(selectItemId);
 		OnShiftDownRigidBody(configId);
 	}
 	else
@@ -108,14 +91,14 @@ void CRigidBodyPage::OnCommand(const char* command)
 	}
 }
 
-void CRigidBodyPage::OnOpenContextMenu(int itemId)
+void CPhysicRigidBodyPage::OnOpenContextMenu(int itemId)
 {
-	if (!m_pRigidBodyListPanel->GetSelectedItemsCount())
+	if (!m_pPhysicRigidBodyListPanel->GetSelectedItemsCount())
 		return;
 
-	auto selectItemId = m_pRigidBodyListPanel->GetSelectedItem(0);
+	auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
 
-	auto configId = m_pRigidBodyListPanel->GetItemUserData(selectItemId);
+	auto configId = m_pPhysicRigidBodyListPanel->GetItemUserData(selectItemId);
 
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
 
@@ -148,24 +131,24 @@ void CRigidBodyPage::OnOpenContextMenu(int itemId)
 	vgui::Menu::PlaceContextMenu(this, menu);
 }
 
-void CRigidBodyPage::OnOpenRigidBodyEditor(int configId)
+void CPhysicRigidBodyPage::OnOpenRigidBodyEditor(int configId)
 {
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
 
 	if (!pRigidBodyConfig)
 		return;
 
-	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", m_physicObjectId, m_pPhysicObjectConfig, pRigidBodyConfig);
+	auto dialog = new CPhysicRigidBodyEditDialog(this, "PhysicRigidBodyEditDialog", m_physicObjectId, m_pPhysicObjectConfig, pRigidBodyConfig);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 }
 
-void CRigidBodyPage::OnEditRigidBody(int configId)
+void CPhysicRigidBodyPage::OnEditRigidBody(int configId)
 {
 	OnOpenRigidBodyEditor(configId);
 }
 
-void CRigidBodyPage::OnRefreshRigidBody(int configId)
+void CPhysicRigidBodyPage::OnRefreshRigidBody(int configId)
 {
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
 
@@ -177,12 +160,12 @@ void CRigidBodyPage::OnRefreshRigidBody(int configId)
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 }
 
-void CRigidBodyPage::OnRefreshRigidBodies()
+void CPhysicRigidBodyPage::OnRefreshRigidBodies()
 {
 	ReloadAllRigidBodiesIntoListPanelItem();
 }
 
-void CRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig* pRigidBodyConfig)
+void CPhysicRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig* pRigidBodyConfig)
 {
 	auto kv = new KeyValues("RigidBody");
 
@@ -206,14 +189,14 @@ void CRigidBodyPage::LoadRigidBodyAsListPanelItem(const CClientRigidBodyConfig* 
 
 	kv->SetWString("flags", flags.c_str());
 
-	m_pRigidBodyListPanel->AddItem(kv, pRigidBodyConfig->configId, false, true);
+	m_pPhysicRigidBodyListPanel->AddItem(kv, pRigidBodyConfig->configId, false, true);
 
 	kv->deleteThis();
 }
 
-void CRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
+void CPhysicRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
 {
-	m_pRigidBodyListPanel->RemoveAll();
+	m_pPhysicRigidBodyListPanel->RemoveAll();
 
 	for (const auto& pConfig : m_pPhysicObjectConfig->RigidBodyConfigs)
 	{
@@ -221,35 +204,35 @@ void CRigidBodyPage::ReloadAllRigidBodiesIntoListPanelItem()
 	}
 }
 
-void CRigidBodyPage::SelectRigidBodyItem(int configId)
+void CPhysicRigidBodyPage::SelectRigidBodyItem(int configId)
 {
-	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
+	for (int i = 0; i < m_pPhysicRigidBodyListPanel->GetItemCount(); ++i)
 	{
-		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+		auto userData = m_pPhysicRigidBodyListPanel->GetItemUserData(i);
 
 		if (userData == configId)
 		{
-			m_pRigidBodyListPanel->SetSingleSelectedItem(i);
+			m_pPhysicRigidBodyListPanel->SetSingleSelectedItem(i);
 			break;
 		}
 	}
 }
 
-void CRigidBodyPage::DeleteRigidBodyItem(int configId)
+void CPhysicRigidBodyPage::DeleteRigidBodyItem(int configId)
 {
-	for (int i = 0; i < m_pRigidBodyListPanel->GetItemCount(); ++i)
+	for (int i = 0; i < m_pPhysicRigidBodyListPanel->GetItemCount(); ++i)
 	{
-		auto userData = m_pRigidBodyListPanel->GetItemUserData(i);
+		auto userData = m_pPhysicRigidBodyListPanel->GetItemUserData(i);
 
 		if (userData == configId)
 		{
-			m_pRigidBodyListPanel->RemoveItem(i);
+			m_pPhysicRigidBodyListPanel->RemoveItem(i);
 			break;
 		}
 	}
 }
 
-void CRigidBodyPage::OnShiftUpRigidBody(int configId)
+void CPhysicRigidBodyPage::OnShiftUpRigidBody(int configId)
 {
 	if (UTIL_ShiftUpRigidBodyIndex(m_pPhysicObjectConfig.get(), configId))
 	{
@@ -258,7 +241,7 @@ void CRigidBodyPage::OnShiftUpRigidBody(int configId)
 	}
 }
 
-void CRigidBodyPage::OnShiftDownRigidBody(int configId)
+void CPhysicRigidBodyPage::OnShiftDownRigidBody(int configId)
 {
 	if (UTIL_ShiftDownRigidBodyIndex(m_pPhysicObjectConfig.get(), configId))
 	{
@@ -267,7 +250,7 @@ void CRigidBodyPage::OnShiftDownRigidBody(int configId)
 	}
 }
 
-void CRigidBodyPage::OnCreateRigidBody()
+void CPhysicRigidBodyPage::OnCreateRigidBody()
 {
 	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
 
@@ -289,7 +272,7 @@ void CRigidBodyPage::OnCreateRigidBody()
 	ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 }
 
-void CRigidBodyPage::OnCloneRigidBody(int configId)
+void CPhysicRigidBodyPage::OnCloneRigidBody(int configId)
 {
 	auto pRigidBodyConfig = UTIL_GetRigidConfigFromConfigId(configId);
 
@@ -335,7 +318,7 @@ void CRigidBodyPage::OnCloneRigidBody(int configId)
 	}
 }
 
-void CRigidBodyPage::OnDeleteRigidBody(int configId)
+void CPhysicRigidBodyPage::OnDeleteRigidBody(int configId)
 {
 	DeleteRigidBodyItem(configId);
 

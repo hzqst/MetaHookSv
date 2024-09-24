@@ -18,6 +18,11 @@ const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type)
 	return "#BulletPhysics_None";
 }
 
+std::wstring UTIL_GetPhysicObjectTypeLocalizedName(int type)
+{
+	return vgui::localize()->Find(UTIL_GetPhysicObjectTypeLocalizationToken(type));
+}
+
 const char* VGUI2Token_ConstraintType[] = { "#BulletPhysics_None", "#BulletPhysics_ConeTwistConstraint", "#BulletPhysics_HingeConstraint", "#BulletPhysics_PointConstraint", "#BulletPhysics_SliderConstraint", "#BulletPhysics_Dof6Constraint", "#BulletPhysics_Dof6SpringConstraint", "#BulletPhysics_FixedConstraint" };
 
 const char* UTIL_GetConstraintTypeLocalizationToken(int type)
@@ -30,16 +35,9 @@ const char* UTIL_GetConstraintTypeLocalizationToken(int type)
 	return "#BulletPhysics_None";
 }
 
-const char* VGUI2Token_PhysicActionType[] = { "#BulletPhysics_None", "#BulletPhysics_BarnacleDragForce", "#BulletPhysics_BarnacleChewForce", "#BulletPhysics_BarnacleConstraintLimitAdjustment", "#BulletPhysics_SimpleBuoyancy" };
-
-const char* UTIL_GetPhysicActionTypeLocalizationToken(int type)
+std::wstring UTIL_GetConstraintTypeLocalizedName(int type)
 {
-	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicActionType))
-	{
-		return VGUI2Token_PhysicActionType[type];
-	}
-
-	return "#BulletPhysics_None";
+	return vgui::localize()->Find(UTIL_GetConstraintTypeLocalizationToken(type));
 }
 
 const char* VGUI2Token_RotOrderType[] = { "#BulletPhysics_PhysicRotOrder_XYZ", "#BulletPhysics_PhysicRotOrder_XZY", "#BulletPhysics_PhysicRotOrder_YXZ", "#BulletPhysics_PhysicRotOrder_YZX", "#BulletPhysics_PhysicRotOrder_ZXY", "#BulletPhysics_PhysicRotOrder_ZYX" };
@@ -52,6 +50,11 @@ const char* UTIL_GetRotOrderTypeLocalizationToken(int type)
 	}
 
 	return "#BulletPhysics_PhysicRotOrder_XYZ";
+}
+
+std::wstring UTIL_GetRotOrderTypeLocalizedName(int type)
+{
+	return vgui::localize()->Find(UTIL_GetRotOrderTypeLocalizationToken(type));
 }
 
 const char* VGUI2Token_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
@@ -71,13 +74,37 @@ std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetCollisionShapeTypeLocalizationToken(type));
 }
 
+const char* VGUI2Token_PhysicActionType[] = { "#BulletPhysics_None", "#BulletPhysics_BarnacleDragForce", "#BulletPhysics_BarnacleChewForce", "#BulletPhysics_BarnacleConstraintLimitAdjustment", "#BulletPhysics_SimpleBuoyancy" };
+
+const char* UTIL_GetPhysicActionTypeLocalizationToken(int type)
+{
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicActionType))
+	{
+		return VGUI2Token_PhysicActionType[type];
+	}
+
+	return "#BulletPhysics_None";
+}
+
+std::wstring UTIL_GetPhysicActionTypeLocalizedName(int type)
+{
+	return vgui::localize()->Find(UTIL_GetPhysicActionTypeLocalizationToken(type));
+}
+
 std::wstring UTIL_GetFormattedRigidBodyFlags(int flags)
 {
 	std::wstringstream ss;
 
 	// Macro to format flag string
 #define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicRigidBodyFlag_##name) {\
-        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+	auto wszLocalizedString = vgui::localize()->Find("#BulletPhysics_" #name);\
+		if (wszLocalizedString) {\
+			ss << L"(" << wszLocalizedString << L") "; \
+		}\
+		else\
+		{\
+			ss << L"(" << (#name) << L") "; \
+		}\
     }
 
 	FORMAT_FLAGS_TO_STRING(AlwaysDynamic);
@@ -99,7 +126,14 @@ std::wstring UTIL_GetFormattedConstraintFlags(int flags)
 
 	// Macro to format flag string
 #define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicConstraintFlag_##name) {\
-        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+	auto wszLocalizedString = vgui::localize()->Find("#BulletPhysics_" #name);\
+		if (wszLocalizedString) {\
+			ss << L"(" << wszLocalizedString << L") "; \
+		}\
+		else\
+		{\
+			ss << L"(" << (#name) << L") "; \
+		}\
     }
 
 	FORMAT_FLAGS_TO_STRING(Barnacle);
@@ -164,13 +198,20 @@ std::wstring UTIL_GetFormattedPhysicActionFlags(int flags)
 
 	// Macro to format flag string
 #define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicActionFlag_##name) {\
-        ss << L"(" << vgui::localize()->Find("#BulletPhysics_" #name) << L") ";\
+	auto wszLocalizedString = vgui::localize()->Find("#BulletPhysics_" #name);\
+		if (wszLocalizedString) {\
+			ss << L"(" << wszLocalizedString << L") "; \
+		}\
+		else\
+		{\
+			ss << L"(" << (#name) << L") "; \
+		}\
     }
 
 	FORMAT_FLAGS_TO_STRING(Barnacle);
 	FORMAT_FLAGS_TO_STRING(Gargantua);
-	FORMAT_FLAGS_TO_STRING(AffectsRigidBody);
-	FORMAT_FLAGS_TO_STRING(AffectsConstraint);
+	//FORMAT_FLAGS_TO_STRING(AffectsRigidBody);
+	//FORMAT_FLAGS_TO_STRING(AffectsConstraint);
 
 #undef FORMAT_FLAGS_TO_STRING
 
@@ -222,6 +263,23 @@ std::string UTIL_GetFormattedBoneName(int modelindex, int boneindex)
 	return UTIL_GetFormattedBoneNameEx(studiohdr, boneindex);
 }
 
+std::string UTIL_GetAbsoluteModelName(model_t* mod)
+{
+	if (mod->type == mod_brush)
+	{
+		if (mod != r_worldmodel)
+		{
+			return std::format("{0}/{1}", r_worldmodel->name, mod->name);
+		}
+		else
+		{
+			return r_worldmodel->name;
+		}
+	}
+
+	return mod->name;
+}
+
 const char* UTIL_GetPhysicObjectConfigTypeName(int type)
 {
 	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
@@ -248,7 +306,7 @@ const char* UTIL_GetConstraintTypeName(int type)
 
 const char* UTIL_GetPhysicActionTypeName(int type)
 {
-	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment" };
+	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment", "SimpleBuoyancy" };
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -357,6 +415,10 @@ int UTIL_GetPhysicActionTypeFromTypeName(const char* name)
 	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
 	{
 		type = PhysicAction_BarnacleConstraintLimitAdjustment;
+	}
+	else if (!strcmp(name, "SimpleBuoyancy"))
+	{
+		type = PhysicAction_SimpleBuoyancy;
 	}
 
 	return type;
@@ -605,23 +667,6 @@ std::shared_ptr<CClientPhysicActionConfig> UTIL_ClonePhysicActionConfig(const CC
 	std::copy(std::begin(pOldConfig->factors), std::end(pOldConfig->factors), std::begin(pNewConfig->factors));
 
 	return pNewConfig;
-}
-
-std::string UTIL_FormatAbsoluteModelName(model_t* mod)
-{
-	if (mod->type == mod_brush)
-	{
-		if (mod != r_worldmodel)
-		{
-			return std::format("{0}/{1}", r_worldmodel->name, mod->name);
-		}
-		else
-		{
-			return r_worldmodel->name;
-		}
-	}
-
-	return mod->name;
 }
 
 bool UTIL_IsCollisionShapeConfigModified(const CClientCollisionShapeConfig* pCollisionShapeConfig)
@@ -1096,5 +1141,76 @@ bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectCon
 		return true;
 	}
 
+	return false;
+}
+
+#undef min
+#include <crc_32.h>
+
+bool UTIL_GetCrc32ForBoneChunk(model_t *mod, std::string*output)
+{
+	if (mod->type != mod_studio)
+		return false;
+
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (!studiohdr)
+		return false;
+
+	if (!studiohdr->boneindex)
+		return false;
+
+	if (!studiohdr->numbones)
+		return false;
+
+	auto chunkBase = ((byte*)studiohdr + studiohdr->boneindex);
+	size_t chunkSize = studiohdr->numbones * sizeof(mstudiobone_t);
+
+	Chocobo1::CRC_32 hasher;
+
+	hasher.addData(chunkBase, chunkSize);
+	hasher.finalize();
+
+	*output = hasher.toString();
+
+	return true;
+}
+
+bool UTIL_GetCrc32ForModelFile(model_t* mod, std::string* output)
+{
+	if (mod->type == mod_studio)
+	{
+		auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+		if (!studiohdr)
+			return false;
+
+		size_t system_memory_length = 0;
+
+		if (studiohdr->textureindex)
+		{
+			system_memory_length = (size_t)studiohdr->texturedataindex;
+		}
+		else
+		{
+			system_memory_length = (size_t)studiohdr->length;
+		}
+
+		auto chunkBase = ((byte*)studiohdr);
+		size_t chunkSize = system_memory_length;
+
+		Chocobo1::CRC_32 hasher;
+
+		hasher.addData(chunkBase, chunkSize);
+		hasher.finalize();
+
+		*output = hasher.toString();
+
+		return true;
+	}
+	else
+	{
+		//TODO: not impl...
+	}
 	return false;
 }

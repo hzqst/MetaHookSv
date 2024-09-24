@@ -1,45 +1,29 @@
 #include "BaseRagdollObject.h"
 #include "BasePhysicManager.h"
+
+#include "PhysicUTIL.h"
+
 #include "privatehook.h"
 
-CBaseRagdollObject::CBaseRagdollObject(const CRagdollObjectCreationParameter& CreationParam)
+CBaseRagdollObject::CBaseRagdollObject(const CPhysicObjectCreationParameter& CreationParam)
 {
 	m_entindex = CreationParam.m_entindex;
 	m_entity = CreationParam.m_entity;
 	m_model = CreationParam.m_model;
 	m_model_scaling = CreationParam.m_model_scaling;
 	m_playerindex = CreationParam.m_playerindex;
-	m_configId = CreationParam.m_pRagdollObjectConfig->configId;
-	m_flags = CreationParam.m_pRagdollObjectConfig->flags;
-	m_debugDrawLevel = CreationParam.m_pRagdollObjectConfig->debugDrawLevel;
+	m_configId = CreationParam.m_pPhysicObjectConfig->configId;
+	m_flags = CreationParam.m_pPhysicObjectConfig->flags;
+	m_debugDrawLevel = CreationParam.m_pPhysicObjectConfig->debugDrawLevel;
 
-	m_RigidBodyConfigs = CreationParam.m_pRagdollObjectConfig->RigidBodyConfigs;
-	m_ConstraintConfigs = CreationParam.m_pRagdollObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = CreationParam.m_pRagdollObjectConfig->ActionConfigs;
+	m_RigidBodyConfigs = CreationParam.m_pPhysicObjectConfig->RigidBodyConfigs;
+	m_ConstraintConfigs = CreationParam.m_pPhysicObjectConfig->ConstraintConfigs;
+	m_ActionConfigs = CreationParam.m_pPhysicObjectConfig->ActionConfigs;
 }
 
 CBaseRagdollObject::~CBaseRagdollObject()
 {
-	for (auto pAction : m_Actions)
-	{
-		delete pAction;
-	}
-
-	m_Actions.clear();
-
-	for (auto pConstraint : m_Constraints)
-	{
-		ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-	}
-
-	m_Constraints.clear();
-
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-	}
-
-	m_RigidBodies.clear();
+	DispatchFreePhysicComponents(m_PhysicComponents);
 }
 
 int CBaseRagdollObject::GetEntityIndex() const
@@ -109,27 +93,11 @@ bool CBaseRagdollObject::ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ct
 	return false;
 }
 
-int CBaseRagdollObject::GetRigidBodyCount() const
-{
-	return (int)m_RigidBodies.size();
-}
-
-IPhysicRigidBody* CBaseRagdollObject::GetRigidBodyByIndex(int index) const
-{
-	return m_RigidBodies.at(index);
-}
-
 bool CBaseRagdollObject::EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (callback(pRigidBody))
-			return true;
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		if (callback(pConstraint))
+		if (callback(pPhysicComponent))
 			return true;
 	}
 
@@ -146,7 +114,7 @@ bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 
 	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicObjectConfig;
 
-	CRagdollObjectCreationParameter CreationParam;
+	CPhysicObjectCreationParameter CreationParam;
 
 	CreationParam.m_entity = GetClientEntity();
 	CreationParam.m_entstate = GetClientEntityState();
@@ -161,7 +129,33 @@ bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 
 	CreationParam.m_playerindex = GetPlayerIndex();
 
-	CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
+	CreationParam.m_pPhysicObjectConfig = pRagdollObjectConfig;
+
+	CPhysicComponentFilters filters;
+
+	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+	//Rebuild everything
+
+	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
+
+	for (const auto& pAnimConfig : m_AnimControlConfigs)
+	{
+		if (pAnimConfig->activity == StudioAnimActivityType_Idle)
+		{
+			m_IdleAnimConfig = pAnimConfig;
+			break;
+		}
+	}
+
+	for (const auto& pAnimConfig : m_AnimControlConfigs)
+	{
+		if (pAnimConfig->activity == StudioAnimActivityType_Debug)
+		{
+			m_DebugAnimConfig = pAnimConfig;
+			break;
+		}
+	}
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -179,20 +173,29 @@ bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 	m_ConstraintConfigs = pRagdollObjectConfig->ConstraintConfigs;
 	m_ActionConfigs = pRagdollObjectConfig->ActionConfigs;
 
-	CPhysicComponentFilters filters;
-
-	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
-
 	m_keyBones.clear();
 	m_nonKeyBones.clear();
 
 	SaveBoneRelativeTransform(CreationParam);
 
-	RebuildRigidBodies(CreationParam);
-
-	RebuildConstraints(CreationParam);
+	DispatchRebuildPhysicComponents(
+		m_PhysicComponents,
+		CreationParam, 
+		m_RigidBodyConfigs, 
+		m_ConstraintConfigs, 
+		m_ActionConfigs, 
+		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
 
 	SetupNonKeyBones(CreationParam);
+
+	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
 
 	return true;
 }
@@ -287,39 +290,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired = true;
 	}
 
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
-
-		pRigidBody->Update(&ComponentUpdateContext);
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
-
-		pConstraint->Update(&ComponentUpdateContext);
-	}
-
-	for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
-	{
-		auto pAction = (*itor);
-
-		CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
-
-		pAction->Update(&ComponentUpdateContext);
-
-		if (ComponentUpdateContext.m_bShouldFree)
-		{
-			ClientPhysicManager()->FreePhysicComponent(pAction);
-
-			itor = m_Actions.erase(itor);
-		}
-		else
-		{
-			itor++;
-		}
-	}
+	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
 
 	if (ObjectUpdateContext->m_bRigidbodyResetPoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseChanged)
 	{
@@ -334,6 +305,32 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 		ObjectUpdateContext->m_bRigidbodyPoseUpdated = true;
 	}
+}
+
+bool CBaseRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
+{
+	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
+	{
+		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
+
+		if (pRigidBody)
+		{
+			return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
+		}
+	}
+
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			return pRigidBody->GetGoldSrcOriginAngles(origin, angles);
+		}
+	}
+
+
+	return false;
 }
 
 bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))
@@ -359,6 +356,71 @@ bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdP
 	return false;
 }
 
+bool CBaseRagdollObject::SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
+{
+	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
+	{
+		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
+
+		if (pRigidBody)
+		{
+			vec3_t vecGoldSrcNewOrigin;
+
+			pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, nullptr);
+
+			vec3_t vecSavedSimOrgigin;
+
+			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+
+			VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
+
+			callback(pparams);
+
+			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CBaseRagdollObject::SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
+{
+	if (m_FirstPersonViewCameraControl.m_physicComponentId)
+	{
+		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_FirstPersonViewCameraControl.m_physicComponentId);
+
+		if (pRigidBody)
+		{
+			vec3_t vecGoldSrcNewOrigin, vecGoldSrcNewAngles;
+
+			if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_FirstPersonViewCameraControl.m_origin, m_FirstPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles))
+			{
+				vec3_t vecSavedSimOrgigin;
+				vec3_t vecSavedClientViewAngles;
+				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
+				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
+				int iSavedHealth = pparams->health;
+
+				pparams->viewheight[2] = 0;
+				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
+				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
+				pparams->health = 1;
+
+				callback(pparams);
+
+				pparams->health = iSavedHealth;
+				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
+				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
+
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void CBaseRagdollObject::UpdatePose(entity_state_t* curstate)
 {
 	//Force bones update
@@ -370,9 +432,14 @@ bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr)
 	if (GetActivityType() == StudioAnimActivityType_Idle)
 		return false;
 
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->SetupBones(studiohdr);
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			pRigidBody->SetupBones(studiohdr);
+		}
 	}
 
 	return true;
@@ -380,9 +447,14 @@ bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr)
 
 bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->SetupJiggleBones(studiohdr);
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			pRigidBody->SetupJiggleBones(studiohdr);
+		}
 	}
 
 	return true;
@@ -403,9 +475,14 @@ bool CBaseRagdollObject::ResetPose(entity_state_t* curstate)
 	if (GetModel()->type == mod_studio)
 		ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->ResetPose(studiohdr, curstate);
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			pRigidBody->ResetPose(studiohdr, curstate);
+		}
 	}
 
 	return true;
@@ -418,7 +495,7 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 
 	m_iBarnacleIndex = pBarnacleObject->GetEntityIndex();
 
-	CRagdollObjectCreationParameter CreationParam;
+	CPhysicObjectCreationParameter CreationParam;
 
 	CreationParam.m_entity = GetClientEntity();
 	CreationParam.m_entstate = GetClientEntityState();
@@ -434,12 +511,17 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 	CreationParam.m_playerindex = GetPlayerIndex();
 	CreationParam.m_allowNonNativeRigidBody = true;
 
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		vec3_t vecZero = { 0, 0, 0 };
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-		pRigidBody->SetLinearVelocity(vecZero);
-		pRigidBody->SetAngularVelocity(vecZero);
+			vec3_t vecZero = { 0, 0, 0 };
+
+			pRigidBody->SetLinearVelocity(vecZero);
+			pRigidBody->SetAngularVelocity(vecZero);
+		}
 	}
 
 	for (const auto& pConstraintConfig : m_ConstraintConfigs)
@@ -453,15 +535,7 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 
 		if (pConstraint)
 		{
-			ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-			CPhysicObjectUpdateContext ObjectUpdateContext;
-
-			CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-			pConstraint->Update(&ComponentUpdateContext);
-
-			m_Constraints.emplace_back(pConstraint);
+			AddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
 		}
 	}
 
@@ -472,11 +546,11 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 		if (!(pActionConfigPtr->flags & PhysicActionFlag_Barnacle))
 			continue;
 
-		auto pAction = CreateAction(CreationParam, pActionConfigPtr, 0);
+		auto pPhysicAction = CreateAction(CreationParam, pActionConfigPtr, 0);
 
-		if (pAction)
+		if (pPhysicAction)
 		{
-			m_Actions.emplace_back(pAction);
+			AddAction(CreationParam, pActionConfigPtr, pPhysicAction);
 		}
 	}
 }
@@ -488,14 +562,17 @@ void CBaseRagdollObject::ReleaseFromBarnacle()
 
 	m_iBarnacleIndex = 0;
 
-	FreePhysicActionsWithFilters(PhysicActionFlag_Barnacle, 0);
-
 	CPhysicComponentFilters filters;
 
-	filters.m_HasWithConstraintFlags = true;
-	filters.m_WithConstraintFlags = PhysicConstraintFlag_Barnacle;
+	filters.m_ConstraintFilter.m_HasWithFlags = true;
+	filters.m_ConstraintFilter.m_WithFlags = PhysicConstraintFlag_Barnacle;
+
+	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+	filters.m_PhysicActionFilter.m_WithFlags = PhysicActionFlag_Barnacle;
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+	FreePhysicComponentsWithFilters(filters);
 }
 
 void CBaseRagdollObject::ApplyGargantua(IPhysicObject* pGargantuaObject)
@@ -559,40 +636,31 @@ void CBaseRagdollObject::SetDebugAnimEnabled(bool bEnabled)
 
 void CBaseRagdollObject::AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (!pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+		if (!pPhysicComponent->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pPhysicComponent, filters))
 		{
-			pRigidBody->AddToPhysicWorld(world);
-		}
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		if (!pConstraint->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pConstraint, filters))
-		{
-			pConstraint->AddToPhysicWorld(world);
+			pPhysicComponent->AddToPhysicWorld(world);
 		}
 	}
 }
 
 void CBaseRagdollObject::RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters)
 {
-	for (auto pConstraint : m_Constraints)
+	for (auto itor = m_PhysicComponents.rbegin(); itor != m_PhysicComponents.rend(); itor++)
 	{
-		if (pConstraint->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pConstraint, filters))
-		{
-			pConstraint->RemoveFromPhysicWorld(world);
-		}
-	}
+		auto pPhysicComponent = (*itor);
 
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+		if (pPhysicComponent->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pPhysicComponent, filters))
 		{
-			pRigidBody->RemoveFromPhysicWorld(world);
+			pPhysicComponent->RemoveFromPhysicWorld(world);
 		}
 	}
+}
+
+void CBaseRagdollObject::FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
+{
+	DispatchFreePhysicCompoentsWithFilters(m_PhysicComponents, filters);
 }
 
 void CBaseRagdollObject::TransferOwnership(int entindex)
@@ -600,164 +668,50 @@ void CBaseRagdollObject::TransferOwnership(int entindex)
 	m_entindex = entindex;
 	m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
 
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->TransferOwnership(entindex);
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		pConstraint->TransferOwnership(entindex);
-	}
-
-	for (auto pAction : m_Actions)
-	{
-		pAction->TransferOwnership(entindex);
+		pPhysicComponent->TransferOwnership(entindex);
 	}
 }
 
 IPhysicComponent* CBaseRagdollObject::GetPhysicComponentByName(const std::string& name)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetName() == name)
-		{
-			return pRigidBody;
-		}
-	}
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetName() == name)
-		{
-			return pConstraint;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetPhysicComponentByName(m_PhysicComponents, name);
 }
 
 IPhysicComponent* CBaseRagdollObject::GetPhysicComponentByComponentId(int id)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetPhysicComponentId() == id)
-		{
-			return pRigidBody;
-		}
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetPhysicComponentId() == id)
-		{
-			return pConstraint;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetPhysicComponentByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseRagdollObject::GetRigidBodyByName(const std::string& name)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetName() == name)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetRigidBodyByName(m_PhysicComponents, name);
 }
 
 IPhysicRigidBody* CBaseRagdollObject::GetRigidBodyByComponentId(int id)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetPhysicComponentId() == id)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetRigidBodyByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicConstraint* CBaseRagdollObject::GetConstraintByName(const std::string& name)
 {
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetName() == name)
-		{
-			return pConstraint;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetConstraintByName(m_PhysicComponents, name);
 }
 
 IPhysicConstraint* CBaseRagdollObject::GetConstraintByComponentId(int id)
 {
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetPhysicComponentId() == id)
-		{
-			return pConstraint;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetConstraintByComponentId(m_PhysicComponents, id);
 }
 
-void CBaseRagdollObject::CreateRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
+IPhysicAction* CBaseRagdollObject::GetPhysicActionByName(const std::string& name)
 {
-	for (const auto& pRigidBodyConfig : m_RigidBodyConfigs)
-	{
-		auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
-
-		if (pRigidBody)
-		{
-			AddRigidBody(pRigidBody);
-
-			if (CreationParam.m_studiohdr &&
-				pRigidBodyConfig->boneindex >= 0 &&
-				pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
-			{
-				m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
-			}
-		}
-	}
+	return DispatchGetPhysicActionByName(m_PhysicComponents, name);
 }
 
-void CBaseRagdollObject::CreateConstraints(const CRagdollObjectCreationParameter& CreationParam)
+IPhysicAction* CBaseRagdollObject::GetPhysicActionByComponentId(int id)
 {
-	for (const auto& pConstraintConfig : m_ConstraintConfigs)
-	{
-		const auto pConstraintConfigPtr = pConstraintConfig.get();
-
-		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
-			continue;
-
-		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
-
-		if (pConstraint)
-		{
-			AddConstraint(pConstraint);
-		}
-	}
-}
-
-void CBaseRagdollObject::CreateActions(const CRagdollObjectCreationParameter& CreationParam)
-{
-	for (const auto& pActionConfig : m_ActionConfigs)
-	{
-		const auto pActionConfigPtr = pActionConfig.get();
-
-		if (pActionConfigPtr->flags & PhysicActionFlag_NonNative)
-			continue;
-
-		CreateAction(CreationParam, pActionConfigPtr, 0);
-	}
+	return DispatchGetPhysicActionByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseRagdollObject::FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
@@ -795,7 +749,7 @@ IPhysicRigidBody* CBaseRagdollObject::FindRigidBodyByName(const std::string& nam
 	return GetRigidBodyByName(name);
 }
 
-void CBaseRagdollObject::SetupNonKeyBones(const CRagdollObjectCreationParameter& CreationParam)
+void CBaseRagdollObject::SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam)
 {
 	if (CreationParam.m_studiohdr)
 	{
@@ -819,135 +773,40 @@ void CBaseRagdollObject::InitCameraControl(const CClientCameraControlConfig* pCa
 	}
 }
 
-void CBaseRagdollObject::SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam) {
+void CBaseRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)
+{
 
 }
 
-void CBaseRagdollObject::AddRigidBody(IPhysicRigidBody* pRigidBody)
+void CBaseRagdollObject::AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody)
 {
-	ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+	if (!pRigidBody)
+		return;
 
-	CPhysicObjectUpdateContext ObjectUpdateContext;
+	DispatchAddPhysicComponent(m_PhysicComponents, pRigidBody);
 
-	CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-	pRigidBody->Update(&ComponentUpdateContext);
-
-	m_RigidBodies.emplace_back(pRigidBody);
-}
-
-void CBaseRagdollObject::AddConstraint(IPhysicConstraint* pConstraint)
-{
-	ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-	CPhysicObjectUpdateContext ObjectUpdateContext;
-
-	CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-	pConstraint->Update(&ComponentUpdateContext);
-
-	m_Constraints.emplace_back(pConstraint);
-}
-
-void CBaseRagdollObject::RebuildRigidBodies(const CRagdollObjectCreationParameter& CreationParam)
-{
-	std::map<int, int> configIdToComponentIdMap;
-
-	for (auto pRigidBody : m_RigidBodies)
+	if (CreationParam.m_studiohdr &&
+		pRigidBodyConfig->boneindex >= 0 &&
+		pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
 	{
-		configIdToComponentIdMap[pRigidBody->GetPhysicConfigId()] = pRigidBody->GetPhysicComponentId();
-
-		ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-	}
-
-	m_RigidBodies.clear();
-
-	for (const auto& pRigidBodyConfig : m_RigidBodyConfigs)
-	{
-		const auto pRigidBodyConfigPtr = pRigidBodyConfig.get();
-
-		auto found = configIdToComponentIdMap.find(pRigidBodyConfigPtr->configId);
-
-		if (found != configIdToComponentIdMap.end())
-		{
-			auto oldPhysicComponentId = found->second;
-
-			auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfigPtr, oldPhysicComponentId);
-
-			if (pNewRigidBody)
-			{
-				AddRigidBody(pNewRigidBody);
-
-				if (CreationParam.m_studiohdr &&
-					pRigidBodyConfigPtr->boneindex >= 0 &&
-					pRigidBodyConfigPtr->boneindex < CreationParam.m_studiohdr->numbones)
-				{
-					m_keyBones.emplace_back(pRigidBodyConfigPtr->boneindex);
-				}
-			}
-		}
-		else
-		{
-			auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfigPtr, 0);
-
-			if (pNewRigidBody)
-			{
-				AddRigidBody(pNewRigidBody);
-
-				if (CreationParam.m_studiohdr &&
-					pRigidBodyConfigPtr->boneindex >= 0 &&
-					pRigidBodyConfigPtr->boneindex < CreationParam.m_studiohdr->numbones)
-				{
-					m_keyBones.emplace_back(pRigidBodyConfigPtr->boneindex);
-				}
-			}
-		}
+		m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
 	}
 }
 
-void CBaseRagdollObject::RebuildConstraints(const CRagdollObjectCreationParameter& CreationParam)
+void CBaseRagdollObject::AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint)
 {
-	std::map<int, int> configIdToComponentIdMap;
+	if (!pConstraint)
+		return;
 
-	for (auto pConstraint : m_Constraints)
-	{
-		configIdToComponentIdMap[pConstraint->GetPhysicConfigId()] = pConstraint->GetPhysicComponentId();
+	DispatchAddPhysicComponent(m_PhysicComponents, pConstraint);
+}
 
-		ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-	}
+void CBaseRagdollObject::AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction)
+{
+	if (!pPhysicAction)
+		return;
 
-	m_Constraints.clear();
-
-	for (const auto& pConstraintConfig : m_ConstraintConfigs)
-	{
-		const auto pConstraintConfigPtr = pConstraintConfig.get();
-
-		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
-			continue;
-
-		auto found = configIdToComponentIdMap.find(pConstraintConfigPtr->configId);
-
-		if (found != configIdToComponentIdMap.end())
-		{
-			auto oldPhysicComponentId = found->second;
-
-			auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, oldPhysicComponentId);
-
-			if (pNewConstraint)
-			{
-				AddConstraint(pNewConstraint);
-			}
-		}
-		else
-		{
-			auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
-
-			if (pNewConstraint)
-			{
-				AddConstraint(pNewConstraint);
-			}
-		}
-	}
+	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicAction);
 }
 
 bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate)

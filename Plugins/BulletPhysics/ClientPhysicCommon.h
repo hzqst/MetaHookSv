@@ -39,16 +39,7 @@ enum PhysicConfigType
 	PhysicConfigType_Constraint,
 	PhysicConfigType_CollisionShape,
 	PhysicConfigType_Action,
-	PhysicConfigType_Floater
 };
-
-//const int PhysicConfigType_None = 0;
-//const int PhysicConfigType_PhysicObject = 1;
-//const int PhysicConfigType_RigidBody = 2;
-//const int PhysicConfigType_Constraint = 3;
-//const int PhysicConfigType_CollisionShape = 4;
-//const int PhysicConfigType_Action = 5;
-//const int PhysicConfigType_Floater = 6;
 
 enum PhysicConfigState
 {
@@ -56,10 +47,6 @@ enum PhysicConfigState
 	PhysicConfigState_Loaded,
 	PhysicConfigState_LoadedWithError
 };
-
-//const int PhysicConfigState_NotLoaded = 0;
-//const int PhysicConfigState_Loaded = 1;
-//const int PhysicConfigState_LoadedWithError = 2;
 
 enum PhysicObjectType
 {
@@ -69,12 +56,6 @@ enum PhysicObjectType
 	PhysicObjectType_RagdollObject,
 	PhysicObjectType_Maximum
 };
-
-//const int PhysicObjectType_None = 0;
-//const int PhysicObjectType_StaticObject = 1;
-//const int PhysicObjectType_DynamicObject = 2;
-//const int PhysicObjectType_RagdollObject = 3;
-//const int PhysicObjectType_Maximum = 4;
 
 //Flags are always runtime
 
@@ -122,16 +103,6 @@ enum PhysicConstraint
 	PhysicConstraint_Fixed,
 	PhysicConstraint_Maximum
 };
-
-//const int PhysicConstraint_None = 0;
-//const int PhysicConstraint_ConeTwist = 1;
-//const int PhysicConstraint_Hinge = 2;
-//const int PhysicConstraint_Point = 3;
-//const int PhysicConstraint_Slider = 4;
-//const int PhysicConstraint_Dof6 = 5;
-//const int PhysicConstraint_Dof6Spring = 6;
-//const int PhysicConstraint_Fixed = 7;
-//const int PhysicConstraint_Maximum = 8;
 
 const int PhysicRotOrder_XYZ = 0;
 const int PhysicRotOrder_XZY = 1;
@@ -291,14 +262,12 @@ const int PhysicActionFactorIdx_SimpleBuoyancyMagnitude = 0;
 const int PhysicActionFactorIdx_SimpleBuoyancyLinearDrag = 1;
 const int PhysicActionFactorIdx_SimpleBuoyancyAngularDrag = 2;
 
-//const int PhysicAction_Maximum = 4;
-
 const int PhysicActionFactorIdx_Maximum = 16;
 
 const int PhysicActionFlag_Barnacle = 0x1;
 const int PhysicActionFlag_Gargantua = 0x2;
-const int PhysicActionFlag_AffectsRigidBody = 0x4;
-const int PhysicActionFlag_AffectsConstraint = 0x8;
+//const int PhysicActionFlag_AffectsRigidBody = 0x4;
+//const int PhysicActionFlag_AffectsConstraint = 0x8;
 const int PhysicActionFlag_NonNative = (PhysicActionFlag_Barnacle | PhysicActionFlag_Gargantua);
 
 enum PhysicShapeDirection

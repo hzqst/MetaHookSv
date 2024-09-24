@@ -8,7 +8,7 @@
 class CBaseDynamicObject : public IDynamicObject
 {
 public:
-	CBaseDynamicObject(const CDynamicObjectCreationParameter& CreationParam);
+	CBaseDynamicObject(const CPhysicObjectCreationParameter& CreationParam);
 	~CBaseDynamicObject();
 
 	int GetEntityIndex() const override;
@@ -23,8 +23,6 @@ public:
 	int GetPhysicConfigId() const override;
 	bool IsClientEntityNonSolid() const override;
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override;
-	int GetRigidBodyCount() const override;
-	IPhysicRigidBody* GetRigidBodyByIndex(int index) const override;
 	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override;
 	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
@@ -33,7 +31,7 @@ public:
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
-	void FreePhysicActionsWithFilters(int with_flags, int without_flags) override;
+	void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
 	void TransferOwnership(int entindex) override;
 	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override;
 	IPhysicComponent* GetPhysicComponentByComponentId(int id) override;
@@ -41,22 +39,19 @@ public:
 	IPhysicRigidBody* GetRigidBodyByComponentId(int id) override;
 	IPhysicConstraint* GetConstraintByName(const std::string& name) override;
 	IPhysicConstraint* GetConstraintByComponentId(int id) override;
-
-public:
+	IPhysicAction* GetPhysicActionByName(const std::string& name) override;
+	IPhysicAction* GetPhysicActionByComponentId(int id) override;
 
 	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody);
-	virtual void CreateRigidBodies(const CDynamicObjectCreationParameter& CreationParam);
-	virtual void CreateConstraints(const CDynamicObjectCreationParameter& CreationParam);
 
-	virtual IPhysicRigidBody* CreateRigidBody(const CDynamicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
-	virtual IPhysicConstraint* CreateConstraint(const CDynamicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
+	virtual IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
+	virtual IPhysicConstraint* CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
+	virtual IPhysicAction* CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId) = 0;
 
+	virtual void AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody);
+	virtual void AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint);
+	virtual void AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction);
 protected:
-
-	void AddRigidBody(IPhysicRigidBody* pRigidBody);
-	void AddConstraint(IPhysicConstraint* pConstraint);
-	void RebuildRigidBodies(const CDynamicObjectCreationParameter& CreationParam);
-	void RebuildConstraints(const CDynamicObjectCreationParameter& CreationParam);
 
 public:
 	int m_entindex{};
@@ -72,7 +67,5 @@ public:
 	std::vector<std::shared_ptr<CClientConstraintConfig>> m_ConstraintConfigs;
 	std::vector<std::shared_ptr<CClientPhysicActionConfig>> m_ActionConfigs;
 
-	std::vector<IPhysicRigidBody *> m_RigidBodies;
-	std::vector<IPhysicConstraint *> m_Constraints;
-	std::vector<IPhysicAction *> m_Actions;
+	std::vector<IPhysicComponent*> m_PhysicComponents;
 };

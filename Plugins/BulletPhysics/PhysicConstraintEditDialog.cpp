@@ -1,156 +1,11 @@
-#include "PhysicEditorDialog.h"
+#include "PhysicConstraintEditDialog.h"
+#include "PhysicFactorListPanel.h"
 
-#include "exportfuncs.h"
-
-#include "ClientPhysicManager.h"
 #include "PhysicUTIL.h"
 
 #include <format>
 
-//-----------------------------------------------------------------------------
-// Purpose: panel used for inline editing of key bindings
-//-----------------------------------------------------------------------------
-class CInlineTextEntryPanel : public vgui::TextEntry
-{
-public:
-    CInlineTextEntryPanel() : vgui::TextEntry(NULL, "InlineTextEntryPanel")
-    {
-        SetEditable(true);
-        SetEnabled(true);
-    }
-
-    void OnKeyCodeTyped(vgui::KeyCode code) override
-    {
-        if (code == vgui::KEY_ENTER)
-        {
-            if (GetParent())
-            {
-                GetParent()->OnKeyCodeTyped(code);
-            }
-            return;
-        }
-
-        BaseClass::OnKeyCodeTyped(code);
-    }
-
-    void ApplySchemeSettings(vgui::IScheme* pScheme) override
-    {
-        BaseClass::ApplySchemeSettings(pScheme);
-        SetBorder(pScheme->GetBorder("DepressedButtonBorder"));
-
-        SetPaintBackgroundEnabled(true);
-        auto bgColor = GetBgColor();
-        bgColor[3] = 255;
-        SetBgColor(bgColor);
-        m_hFont = pScheme->GetFont("Default", IsProportional());
-
-        SetFont(m_hFont);
-    }
-
-private:
-    typedef vgui::TextEntry BaseClass;
-    vgui::HFont		m_hFont{};
-};
-
-CFactorListPanel::CFactorListPanel(vgui::Panel* parent, const char* pName) : BaseClass(parent, pName)
-{
-    m_pInlineTextEntryPanel = new CInlineTextEntryPanel();
-}
-
-CFactorListPanel::~CFactorListPanel()
-{
-    m_pInlineTextEntryPanel->MarkForDeletion();
-}
-
-void CFactorListPanel::StartCaptureMode()
-{
-    if (GetSelectedItemsCount() == 0)
-        return;
-
-	auto selectItemId = GetSelectedItem(0);
-
-	m_bCaptureMode = true;
-    m_iCaptureItemId = selectItemId;
-
-	EnterEditMode(selectItemId, 2, m_pInlineTextEntryPanel);
-	vgui::input()->SetMouseFocus(m_pInlineTextEntryPanel->GetVPanel());
-
-    auto kv = GetItemData(selectItemId)->kv;
-
-    if (kv)
-    {
-        m_pInlineTextEntryPanel->SetText(kv->GetString("value"));
-        m_iCaptureItemIndex = kv->GetInt("index");
-    }
-}
-
-void CFactorListPanel::EndCaptureMode()
-{
-    m_bCaptureMode = false;
-    m_iCaptureItemId = -1;
-    LeaveEditMode();
-    RequestFocus();
-    vgui::input()->SetMouseFocus(GetVPanel());
-
-    auto kv = new KeyValues("ModifyFactor");
-
-    kv->SetInt("index", m_iCaptureItemIndex);
-
-    char szText[256];
-    m_pInlineTextEntryPanel->GetText(szText, sizeof(szText));
-
-    kv->SetString("newValue", szText);
-
-    PostActionSignal(kv);
-}
-
-bool CFactorListPanel::IsCapturing(void) const
-{
-    return m_bCaptureMode;
-}
-
-int CFactorListPanel::GetCapturingItemId(void) const
-{
-    return m_iCaptureItemId;
-}
-
-int CFactorListPanel::GetCapturingItemIndex(void) const
-{
-    return m_iCaptureItemIndex;
-}
-
-void CFactorListPanel::OnMousePressed(vgui::MouseCode code)
-{
-    BaseClass::OnMousePressed(code);
-
-    if (IsCapturing())
-    {
-        if (m_VisibleItems.Count() > 0)
-        {
-            // determine where we were pressed
-            int x, y, row, column;
-            vgui::input()->GetCursorPos(x, y);
-            GetCellAtPos(x, y, row, column);
-
-            if (row < 0 || row >= m_VisibleItems.Count())
-            {
-                EndCaptureMode();
-                return;
-            }
-
-            int itemID = m_VisibleItems[row];
-
-            if (itemID != GetCapturingItemId())
-            {
-                EndCaptureMode();
-                return;
-            }
-        }
-    }
-}
-
-// Constructor
-CConstraintEditDialog::CConstraintEditDialog(vgui::Panel* parent, const char* name,
+CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, const char* name,
     uint64 physicObjectId,
     const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
     const std::shared_ptr<CClientConstraintConfig>& pConstraintConfig) :
@@ -163,8 +18,8 @@ CConstraintEditDialog::CConstraintEditDialog(vgui::Panel* parent, const char* na
 
     SetTitle("#BulletPhysics_ConstraintEditor", false);
 
-    SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
-    SetSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
+    SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(800), vgui::scheme()->GetProportionalScaledValue(560));
+    SetSize(vgui::scheme()->GetProportionalScaledValue(800), vgui::scheme()->GetProportionalScaledValue(560));
 
     // Initialize UI components
     m_pName = new vgui::TextEntry(this, "Name");
@@ -205,13 +60,13 @@ CConstraintEditDialog::CConstraintEditDialog(vgui::Panel* parent, const char* na
     m_pDeactiveOnGargantuaActivity = new vgui::CheckButton(this, "DeactiveOnGargantuaActivity", "#BulletPhysics_DeactiveOnGargantuaActivity");
     m_pDontResetPoseOnErrorCorrection = new vgui::CheckButton(this, "DontResetPoseOnErrorCorrection", "#BulletPhysics_DontResetPoseOnErrorCorrection");
 
-    m_pFactorListPanel = new CFactorListPanel(this, "FactorListPanel");
+    m_pPhysicFactorListPanel = new CPhysicFactorListPanel(this, "PhysicFactorListPanel");
 
-    m_pFactorListPanel->AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-    m_pFactorListPanel->AddColumnHeader(1, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(120), vgui::ListPanel::COLUMN_FIXEDSIZE);
-    m_pFactorListPanel->AddColumnHeader(2, "value", "#BulletPhysics_Value", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
-    m_pFactorListPanel->SetSortColumn(0);
-    m_pFactorListPanel->SetMultiselectEnabled(false);
+    m_pPhysicFactorListPanel->AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
+    m_pPhysicFactorListPanel->AddColumnHeader(1, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(160), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
+    m_pPhysicFactorListPanel->AddColumnHeader(2, "value", "#BulletPhysics_Value", vgui::scheme()->GetProportionalScaledValue(60), vgui::ListPanel::COLUMN_FIXEDSIZE);
+    m_pPhysicFactorListPanel->SetSortColumn(0);
+    m_pPhysicFactorListPanel->SetMultiselectEnabled(false);
 
     vgui::HFont hFallbackFont = vgui::scheme()->GetIScheme(GetScheme())->GetFont("DefaultVerySmallFallBack", false);
 
@@ -223,81 +78,82 @@ CConstraintEditDialog::CConstraintEditDialog(vgui::Panel* parent, const char* na
         m_pRotOrder->SetUseFallbackFont(true, hFallbackFont);
     }
 
-    LoadAvailableTypesIntoControls();
-
-    LoadAvailableRotOrdersIntoControls();
+    LoadAvailableTypesIntoControl(m_pType);
+    LoadAvailableRotOrdersIntoControl(m_pRotOrder);
 
     // Load control settings
-    LoadControlSettings("bulletphysics/ConstraintEditDialog.res", "GAME");
+    LoadControlSettings("bulletphysics/PhysicConstraintEditDialog.res", "GAME");
 
     // Add tick signal
     vgui::ivgui()->AddTickSignal(GetVPanel());
 }
 
-void CConstraintEditDialog::Activate(void)
+CPhysicConstraintEditDialog::~CPhysicConstraintEditDialog()
+{
+}
+
+void CPhysicConstraintEditDialog::Activate(void)
 {
     BaseClass::Activate();
     vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CConstraintEditDialog::OnItemSelected()
-{
-
-}
-
-void CConstraintEditDialog::OnResetData()
+void CPhysicConstraintEditDialog::OnResetData()
 {
     LoadConfigIntoControls();
     UpdateControlStates();
 }
 
-void CConstraintEditDialog::OnModifyFactor(KeyValues *kv)
+void CPhysicConstraintEditDialog::OnModifyFactor(KeyValues* kv)
 {
     auto index = kv->GetInt("index");
     auto newValue = kv->GetString("newValue");
 
-    for (int i = 0; i < m_pFactorListPanel->GetItemCount(); ++i)
+    for (int i = 0; i < m_pPhysicFactorListPanel->GetItemCount(); ++i)
     {
-        auto userData = m_pFactorListPanel->GetItemUserData(i);
+        auto userData = m_pPhysicFactorListPanel->GetItemUserData(i);
 
         if (userData == index)
         {
-            auto oldkv = m_pFactorListPanel->GetItemData(i);
+            auto oldkv = m_pPhysicFactorListPanel->GetItemData(i);
 
-            std::string name = oldkv->kv->GetString("name");
+            if (oldkv)
+            {
+                std::string name = oldkv->kv->GetString("name");
 
-            float defaultValue = oldkv->kv->GetFloat("defaultValue");
+                float defaultValue = oldkv->kv->GetFloat("defaultValue");
 
-            m_pFactorListPanel->RemoveItem(i);
+                m_pPhysicFactorListPanel->RemoveItem(i);
 
-            LoadFactorAsListPanelItemEx(index, name.c_str(), newValue, defaultValue);
-            break;
+                LoadFactorAsListPanelItemEx(index, name.c_str(), newValue, defaultValue);
+                break;
+            }
         }
     }
 }
 
-void CConstraintEditDialog::OnTextChanged(vgui::Panel* panel)
+void CPhysicConstraintEditDialog::OnTextChanged(vgui::Panel* panel)
 {
     if (panel == m_pType) {
         UpdateControlStates();
     }
 }
 
-void CConstraintEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
+void CPhysicConstraintEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
 {
     if (code == vgui::KEY_ENTER)
     {
-        if (m_pFactorListPanel->IsCapturing())
+        if (m_pPhysicFactorListPanel->IsCapturing())
         {
-            m_pFactorListPanel->EndCaptureMode();
+            m_pPhysicFactorListPanel->EndCaptureMode();
             return;
         }
 
-        if (m_pFactorListPanel->HasFocus())
+        if (m_pPhysicFactorListPanel->HasFocus())
         {
-            if (!m_pFactorListPanel->IsCapturing())
+            if (!m_pPhysicFactorListPanel->IsCapturing())
             {
-                m_pFactorListPanel->StartCaptureMode();
+                m_pPhysicFactorListPanel->StartCaptureMode();
             }
             return;
         }
@@ -306,10 +162,17 @@ void CConstraintEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
     BaseClass::OnKeyCodeTyped(code);
 }
 
-void CConstraintEditDialog::OnCommand(const char* command)
+void CPhysicConstraintEditDialog::OnCommand(const char* command)
 {
     if (!stricmp(command, "OK"))
     {
+        if (m_pPhysicFactorListPanel->IsCapturing())
+        {
+            m_pPhysicFactorListPanel->EndCaptureMode();
+            PostMessage1(this, new KeyValues("Command", "command", command));
+            return;
+        }
+
         SaveConfigFromControls();
         ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
         PostActionSignal(new KeyValues("RefreshConstraint", "configId", m_pConstraintConfig->configId));
@@ -318,6 +181,13 @@ void CConstraintEditDialog::OnCommand(const char* command)
     }
     else if (!stricmp(command, "Apply"))
     {
+        if (m_pPhysicFactorListPanel->IsCapturing())
+        {
+            m_pPhysicFactorListPanel->EndCaptureMode();
+            PostMessage1(this, new KeyValues("Command", "command", command));
+            return;
+        }
+
         SaveConfigFromControls();
         ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
         PostActionSignal(new KeyValues("RefreshConstraint", "configId", m_pConstraintConfig->configId));
@@ -329,14 +199,9 @@ void CConstraintEditDialog::OnCommand(const char* command)
     }
 }
 
-// Destructor
-CConstraintEditDialog::~CConstraintEditDialog()
+void CPhysicConstraintEditDialog::LoadAvailableTypesIntoControl(vgui::ComboBox* pComboBox)
 {
-}
-
-void CConstraintEditDialog::LoadAvailableTypesIntoControls()
-{
-    m_pType->RemoveAll();
+    pComboBox->RemoveAll();
 
     for (int i = 0; i < PhysicConstraint_Maximum; ++i)
     {
@@ -344,15 +209,15 @@ void CConstraintEditDialog::LoadAvailableTypesIntoControls()
 
         kv->SetInt("type", i);
 
-        m_pType->AddItem(UTIL_GetConstraintTypeLocalizationToken(i), kv);
+        pComboBox->AddItem(UTIL_GetConstraintTypeLocalizationToken(i), kv);
 
         kv->deleteThis();
     }
 }
 
-void CConstraintEditDialog::LoadAvailableRotOrdersIntoControls()
+void CPhysicConstraintEditDialog::LoadAvailableRotOrdersIntoControl(vgui::ComboBox* pComboBox)
 {
-    m_pRotOrder->RemoveAll();
+    pComboBox->RemoveAll();
 
     for (int i = 0; i < PhysicRotOrder_Maximum; ++i)
     {
@@ -360,13 +225,13 @@ void CConstraintEditDialog::LoadAvailableRotOrdersIntoControls()
 
         kv->SetInt("rotOrder", i);
 
-        m_pRotOrder->AddItem(UTIL_GetRotOrderTypeLocalizationToken(i), kv);
+        pComboBox->AddItem(UTIL_GetRotOrderTypeLocalizationToken(i), kv);
 
         kv->deleteThis();
     }
 }
 
-void CConstraintEditDialog::LoadAvailableRigidBodiesIntoControls(vgui::ComboBox* pComboBox)
+void CPhysicConstraintEditDialog::LoadAvailableRigidBodiesIntoControl(vgui::ComboBox* pComboBox)
 {
     pComboBox->RemoveAll();
 
@@ -393,21 +258,21 @@ void CConstraintEditDialog::LoadAvailableRigidBodiesIntoControls(vgui::ComboBox*
     }
 }
 
-void CConstraintEditDialog::DeleteFactorListPanelItem(int factorIdx)
+void CPhysicConstraintEditDialog::DeleteFactorListPanelItem(int factorIdx)
 {
-    for (int i = 0; i < m_pFactorListPanel->GetItemCount(); ++i)
+    for (int i = 0; i < m_pPhysicFactorListPanel->GetItemCount(); ++i)
     {
-        auto userData = m_pFactorListPanel->GetItemUserData(i);
+        auto userData = m_pPhysicFactorListPanel->GetItemUserData(i);
 
         if (userData == factorIdx)
         {
-            m_pFactorListPanel->RemoveItem(i);
+            m_pPhysicFactorListPanel->RemoveItem(i);
             break;
         }
     }
 }
 
-void CConstraintEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char *value, float defaultValue)
+void CPhysicConstraintEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char* value, float defaultValue)
 {
     auto kv = new KeyValues("Factor");
 
@@ -419,24 +284,23 @@ void CConstraintEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const cha
 
     kv->SetFloat("defaultValue", defaultValue);
 
-    m_pFactorListPanel->AddItem(kv, factorIdx, false, true);
+    m_pPhysicFactorListPanel->AddItem(kv, factorIdx, false, true);
 
     kv->deleteThis();
 }
 
-void CConstraintEditDialog::LoadFactorAsListPanelItem(int factorIdx, const char * name, float value, float defaultValue)
+void CPhysicConstraintEditDialog::LoadFactorAsListPanelItem(int factorIdx, const char* name, float value, float defaultValue)
 {
     auto val = std::format("{0:.4f}", value);
- 
+
     LoadFactorAsListPanelItemEx(factorIdx, name, val.c_str(), defaultValue);
 }
 
-void CConstraintEditDialog::LoadAvailableFactorsIntoControls(int type)
+void CPhysicConstraintEditDialog::LoadAvailableFactorsIntoControl(int type)
 {
-    m_pFactorListPanel->RemoveAll();
+    m_pPhysicFactorListPanel->RemoveAll();
 
 #define LOAD_FACTOR_INTO_LISTPANEL(name) LoadFactorAsListPanelItem(PhysicConstraintFactorIdx_##name, "#BulletPhysics_" #name, m_pConstraintConfig->factors[PhysicConstraintFactorIdx_##name], NAN);
-
 #define LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(name) LoadFactorAsListPanelItem(PhysicConstraintFactorIdx_##name, "#BulletPhysics_" #name, m_pConstraintConfig->factors[PhysicConstraintFactorIdx_##name], PhysicConstraintFactorDefaultValue_##name);
 
     switch (type)
@@ -565,9 +429,10 @@ void CConstraintEditDialog::LoadAvailableFactorsIntoControls(int type)
     }
     }
 #undef LOAD_FACTOR_INTO_LISTPANEL
+#undef LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE
 }
 
-void CConstraintEditDialog::LoadTypeIntoControl(int type)
+void CPhysicConstraintEditDialog::LoadTypeIntoControl(int type)
 {
     for (int i = 0; i < m_pType->GetItemCount(); ++i)
     {
@@ -583,7 +448,7 @@ void CConstraintEditDialog::LoadTypeIntoControl(int type)
     m_pType->ActivateItem(0);
 }
 
-void CConstraintEditDialog::LoadRotOrderIntoControl(int rotOrder)
+void CPhysicConstraintEditDialog::LoadRotOrderIntoControl(int rotOrder)
 {
     for (int i = 0; i < m_pRotOrder->GetItemCount(); ++i)
     {
@@ -599,7 +464,7 @@ void CConstraintEditDialog::LoadRotOrderIntoControl(int rotOrder)
     m_pRotOrder->ActivateItem(0);
 }
 
-void CConstraintEditDialog::LoadRigidBodyIntoControl(const std::string &rigidBodyName, vgui::ComboBox *pComboBox)
+void CPhysicConstraintEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComboBox, const std::string& rigidBodyName)
 {
     for (int i = 0; i < pComboBox->GetItemCount(); ++i)
     {
@@ -615,14 +480,14 @@ void CConstraintEditDialog::LoadRigidBodyIntoControl(const std::string &rigidBod
     pComboBox->ActivateItem(0);
 }
 
-void CConstraintEditDialog::LoadConfigIntoControls()
+void CPhysicConstraintEditDialog::LoadConfigIntoControls()
 {
-    LoadAvailableRigidBodiesIntoControls(m_pRigidBodyA);
-    LoadAvailableRigidBodiesIntoControls(m_pRigidBodyB);
+    LoadAvailableRigidBodiesIntoControl(m_pRigidBodyA);
+    LoadAvailableRigidBodiesIntoControl(m_pRigidBodyB);
 
     LoadTypeIntoControl(m_pConstraintConfig->type);
-    LoadRigidBodyIntoControl(m_pConstraintConfig->rigidbodyA, m_pRigidBodyA);
-    LoadRigidBodyIntoControl(m_pConstraintConfig->rigidbodyB, m_pRigidBodyB);
+    LoadRigidBodyIntoControl(m_pRigidBodyA, m_pConstraintConfig->rigidbodyA);
+    LoadRigidBodyIntoControl(m_pRigidBodyB, m_pConstraintConfig->rigidbodyB);
     LoadRotOrderIntoControl(m_pConstraintConfig->rotOrder);
 
 #define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pConstraintConfig->from); m_p##to->SetText(str##to.c_str());}
@@ -678,85 +543,12 @@ void CConstraintEditDialog::LoadConfigIntoControls()
 #undef LOAD_INTO_CHECK_BUTTON
 }
 
-void CConstraintEditDialog::SaveTypeFromControl()
-{
-    auto kv = m_pType->GetActiveItemUserData();
-
-    if (kv)
-    {
-        m_pConstraintConfig->type = kv->GetInt("type");
-    }
-}
-
-void CConstraintEditDialog::SaveRotOrderFromControl()
-{
-    auto kv = m_pRotOrder->GetActiveItemUserData();
-
-    if (kv)
-    {
-        m_pConstraintConfig->rotOrder = kv->GetInt("rotOrder");
-    }
-}
-
-void CConstraintEditDialog::SaveFactorFromControls()
-{
-    for (int i = 0; i < m_pFactorListPanel->GetItemCount(); ++i)
-    {
-        auto item = m_pFactorListPanel->GetItemData(i);
-
-        if (item && item->kv)
-        {
-            auto index = item->kv->GetInt("index");
-            auto value = item->kv->GetString("value");
-            auto defaultValue = item->kv->GetFloat("defaultValue");
-
-            if (index >= 0 && index < _ARRAYSIZE(m_pConstraintConfig->factors))
-            {
-                if (!value[0])
-                {
-                    m_pConstraintConfig->factors[index] = defaultValue;
-                }
-                else if (!stricmp(value, "nan"))
-                {
-                    m_pConstraintConfig->factors[index] = NAN;
-                }
-                else
-                {
-                    m_pConstraintConfig->factors[index] = atof(value);
-                }
-
-                m_pConstraintConfig->configModified = true;
-            }
-        }
-    }
-}
-
-void CConstraintEditDialog::SaveRigidBodyFromControl(vgui::ComboBox *pComboBox, std::string& rigidBodyName)
+void CPhysicConstraintEditDialog::SaveConfigFromControls()
 {
     char szText[256];
 
-    auto iActiveItem = pComboBox->GetActiveItem();
-    if (pComboBox->IsItemIDValid(iActiveItem))
-    {
-        auto kv = pComboBox->GetItemUserData(iActiveItem);
-        if (kv)
-        {
-            rigidBodyName = kv->GetString("name");
-        }
-        else
-        {
-            pComboBox->GetItemText(iActiveItem, szText, sizeof(szText));
-            rigidBodyName = szText;
-        }
-    }
-}
-
-void CConstraintEditDialog::SaveConfigFromControls()
-{
-    char szText[256];
-
-    SaveTypeFromControl();
-    SaveRotOrderFromControl();
+    SaveTypeFromControl(m_pType);
+    SaveRotOrderFromControl(m_pRotOrder);
 
     SaveRigidBodyFromControl(m_pRigidBodyA, m_pConstraintConfig->rigidbodyA);
     SaveRigidBodyFromControl(m_pRigidBodyB, m_pConstraintConfig->rigidbodyB);
@@ -828,17 +620,96 @@ void CConstraintEditDialog::SaveConfigFromControls()
     // Cleanup macro definition
 #undef SAVE_FLAG_FROM_CHECK_BUTTON
 
-    if (m_pFactorListPanel->IsCapturing())
-    {
-        m_pFactorListPanel->EndCaptureMode();
-    }
-    SaveFactorFromControls();
+    SaveFactorsFromControl(m_pPhysicFactorListPanel);
 
-// Mark the configuration as modified
+    // Mark the configuration as modified
     m_pConstraintConfig->configModified = true;
 }
 
-int CConstraintEditDialog::GetCurrentSelectedConstraintType()
+void CPhysicConstraintEditDialog::SaveTypeFromControl(vgui::ComboBox *pComboBox)
+{
+    auto kv = pComboBox->GetActiveItemUserData();
+
+    if (kv)
+    {
+        m_pConstraintConfig->type = kv->GetInt("type");
+    }
+}
+
+void CPhysicConstraintEditDialog::SaveRotOrderFromControl(vgui::ComboBox* pComboBox)
+{
+    auto kv = pComboBox->GetActiveItemUserData();
+
+    if (kv)
+    {
+        m_pConstraintConfig->rotOrder = kv->GetInt("rotOrder");
+    }
+}
+
+void CPhysicConstraintEditDialog::SaveFactorsFromControl(vgui::ListPanel *pListPanel)
+{
+    for (int i = 0; i < pListPanel->GetItemCount(); ++i)
+    {
+        auto item = pListPanel->GetItemData(i);
+
+        if (item && item->kv)
+        {
+            auto index = item->kv->GetInt("index");
+            auto value = item->kv->GetString("value");
+            auto defaultValue = item->kv->GetFloat("defaultValue");
+
+            if (index >= 0 && index < _ARRAYSIZE(m_pConstraintConfig->factors))
+            {
+                float changedValue;
+
+                if (!value[0])
+                {
+                    changedValue = defaultValue;
+                }
+                else if (!stricmp(value, "nan"))
+                {
+                    changedValue = NAN;
+                }
+                else
+                {
+                    //changedValue = atof(value);
+                    if (1 != sscanf(value, "%f", &changedValue))
+                    {
+                        changedValue = NAN;
+                    }
+                }
+
+                if (m_pConstraintConfig->factors[index] != changedValue)
+                {
+                    m_pConstraintConfig->factors[index] = changedValue;
+                    m_pConstraintConfig->configModified = true;
+                }
+            }
+        }
+    }
+}
+
+void CPhysicConstraintEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName)
+{
+    char szText[256];
+
+    auto iActiveItem = pComboBox->GetActiveItem();
+    if (pComboBox->IsItemIDValid(iActiveItem))
+    {
+        auto kv = pComboBox->GetItemUserData(iActiveItem);
+        if (kv)
+        {
+            rigidBodyName = kv->GetString("name");
+        }
+        else
+        {
+            pComboBox->GetItemText(iActiveItem, szText, sizeof(szText));
+            rigidBodyName = szText;
+        }
+    }
+}
+
+int CPhysicConstraintEditDialog::GetCurrentSelectedConstraintType()
 {
     int type = PhysicConstraint_None;
 
@@ -852,11 +723,11 @@ int CConstraintEditDialog::GetCurrentSelectedConstraintType()
     return type;
 }
 
-void CConstraintEditDialog::UpdateControlStates()
+void CPhysicConstraintEditDialog::UpdateControlStates()
 {
     int type = GetCurrentSelectedConstraintType();
 
-    LoadAvailableFactorsIntoControls(type);
+    LoadAvailableFactorsIntoControl(type);
 
     switch (type)
     {

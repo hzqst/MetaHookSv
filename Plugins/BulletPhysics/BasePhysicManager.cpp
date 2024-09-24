@@ -15,6 +15,7 @@
 
 #include <sstream>
 #include <format>
+#include <algorithm>
 #include <ScopeExit/ScopeExit.h>
 
 #include <KeyValues.h>
@@ -75,88 +76,467 @@ StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_
 	return StudioAnimActivityType_Idle;
 }
 
-bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
+bool CheckPhysicComponentSubFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentSubFilters& subfilter)
 {
-	if (pPhysicComponent->IsRigidBody())
+	if (subfilter.m_HasWithoutFlags)
 	{
-		if (filters.m_HasWithoutRigidbodyFlags)
+		if (pPhysicComponent->GetFlags() & subfilter.m_WithoutFlags)
 		{
-			if (pPhysicComponent->GetFlags() & filters.m_WithoutRigidbodyFlags)
-			{
-				return false;
-			}
-		}
-
-		if (filters.m_HasExactMatchRigidbodyFlags)
-		{
-			if (pPhysicComponent->GetFlags() == filters.m_ExactMatchRigidbodyFlags)
-			{
-				return true;
-			}
-		}
-
-		if (filters.m_HasExactMatchRigidBodyComponentId)
-		{
-			if (pPhysicComponent->GetPhysicComponentId() == filters.m_ExactMatchRigidBodyComponentId)
-			{
-				return true;
-			}
-		}
-
-		if (filters.m_HasWithRigidbodyFlags)
-		{
-			if (pPhysicComponent->GetFlags() & filters.m_WithRigidbodyFlags)
-			{
-				return true;
-			}
-
 			return false;
 		}
-
-		return true;
 	}
 
-	if (pPhysicComponent->IsConstraint())
+	if (subfilter.m_HasExactMatchFlags)
 	{
-		if (filters.m_HasWithoutConstraintFlags)
+		if (pPhysicComponent->GetFlags() == subfilter.m_ExactMatchFlags)
 		{
-			if (pPhysicComponent->GetFlags() & filters.m_WithoutConstraintFlags)
-			{
-				return false;
-			}
+			return true;
+		}
+	}
+
+	if (subfilter.m_HasExactMatchComponentId)
+	{
+		if (pPhysicComponent->GetPhysicComponentId() == subfilter.m_ExactMatchComponentId)
+		{
+			return true;
+		}
+	}
+
+	if (subfilter.m_HasWithFlags)
+	{
+		if (pPhysicComponent->GetFlags() & subfilter.m_WithFlags)
+		{
+			return true;
 		}
 
-		if (filters.m_HasExactMatchConstraintFlags)
-		{
-			if (pPhysicComponent->GetFlags() == filters.m_ExactMatchConstraintFlags)
-			{
-				return true;
-			}
-		}
-
-		if (filters.m_HasExactMatchConstraintComponentId)
-		{
-			if (pPhysicComponent->GetPhysicComponentId() == filters.m_ExactMatchConstraintComponentId)
-			{
-				return true;
-			}
-		}
-
-		if (filters.m_HasWithConstraintFlags)
-		{
-			if (pPhysicComponent->GetFlags() & filters.m_WithConstraintFlags)
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-		return true;
+		return false;
 	}
 
 	return true;
 }
+
+bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters)
+{
+	if (pPhysicComponent->IsRigidBody())
+	{
+		return CheckPhysicComponentSubFilters(pPhysicComponent, filters.m_RigidBodyFilter);
+	}
+
+	if (pPhysicComponent->IsConstraint())
+	{
+		return CheckPhysicComponentSubFilters(pPhysicComponent, filters.m_ConstraintFilter);
+	}
+
+	if (pPhysicComponent->IsPhysicAction())
+	{
+		return CheckPhysicComponentSubFilters(pPhysicComponent, filters.m_PhysicActionFilter);
+	}
+
+	return true;
+}
+
+bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext)
+{
+	CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
+
+	PhysicComponent->Update(&ComponentUpdateContext);
+
+	return !ComponentUpdateContext.m_bShouldFree;
+}
+
+void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext)
+{
+	for (auto itor = PhysicComponents.begin(); itor != PhysicComponents.end();)
+	{
+		auto pAction = (*itor);
+
+		if (DispatchPhysicComponentUpdate(pAction, ObjectUpdateContext))
+		{
+			itor++; 
+		}
+		else
+		{
+			ClientPhysicManager()->FreePhysicComponent(pAction);
+
+			itor = PhysicComponents.erase(itor);
+		}
+	}
+}
+
+IPhysicComponent* DispatchGetPhysicComponentByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->GetName() == name)
+		{
+			return pPhysicComponent;
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicComponent* DispatchGetPhysicComponentByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->GetPhysicComponentId() == id)
+		{
+			return pPhysicComponent;
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicRigidBody* DispatchGetRigidBodyByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			if (pRigidBody->GetName() == name)
+			{
+				return pRigidBody;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicRigidBody* DispatchGetRigidBodyByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			if (pRigidBody->GetPhysicComponentId() == id)
+			{
+				return pRigidBody;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicConstraint* DispatchGetConstraintByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
+
+			if (pConstraint->GetName() == name)
+			{
+				return (IPhysicConstraint*)pConstraint;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicConstraint* DispatchGetConstraintByComponentId(const std::vector<IPhysicComponent*> &m_PhysicComponents, int id)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
+
+			if (pConstraint->GetPhysicComponentId() == id)
+			{
+				return (IPhysicConstraint*)pConstraint;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicAction* DispatchGetPhysicActionByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsPhysicAction())
+		{
+			auto pPhysicAction = (IPhysicAction*)pPhysicComponent;
+
+			if (pPhysicAction->GetName() == name)
+			{
+				return (IPhysicAction*)pPhysicAction;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+IPhysicAction* DispatchGetPhysicActionByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id)
+{
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsPhysicAction())
+		{
+			auto pPhysicAction = (IPhysicAction*)pPhysicComponent;
+
+			if (pPhysicAction->GetPhysicComponentId() == id)
+			{
+				return (IPhysicAction*)pPhysicAction;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+void DispatchSortPhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents)
+{
+	// Comparator for sorting according to the rules
+	auto comparator = [](IPhysicComponent* a, IPhysicComponent* b) -> bool
+		{
+			// Determine the primary priority based on type
+			int priorityA = (a->IsRigidBody() ? 0 :
+				(a->IsConstraint() ? 1 :
+					(a->IsPhysicAction() ? 2 : 3)));
+
+			int priorityB = (b->IsRigidBody() ? 0 :
+				(b->IsConstraint() ? 1 :
+					(b->IsPhysicAction() ? 2 : 3)));
+
+			// If they have the same type, prioritize by GetPhysicConfigId
+			if (priorityA == priorityB)
+			{
+				return a->GetPhysicConfigId() < b->GetPhysicConfigId();
+			}
+
+			// Otherwise, compare based on type priority
+			return priorityA < priorityB;
+		};
+
+	// Sort the vector using the comparator
+	std::sort(PhysicComponents.begin(), PhysicComponents.end(), comparator);
+}
+
+void DispatchAddPhysicComponent(std::vector<IPhysicComponent*> &PhysicComponents, IPhysicComponent* pPhysicComponent)
+{
+	PhysicComponents.emplace_back(pPhysicComponent);
+
+	DispatchSortPhysicComponents(PhysicComponents);
+
+	ClientPhysicManager()->AddPhysicComponent(pPhysicComponent->GetPhysicComponentId(), pPhysicComponent);
+
+	CPhysicObjectUpdateContext ObjectUpdateContext;
+
+	DispatchPhysicComponentUpdate(pPhysicComponent, &ObjectUpdateContext);
+}
+
+void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents)
+{
+	for (auto itor = PhysicComponents.rbegin(); itor != PhysicComponents.rend(); itor ++)
+	{
+		auto pPhysicComponent = (*itor);
+
+		ClientPhysicManager()->RemovePhysicComponent(pPhysicComponent->GetPhysicComponentId());
+	}
+
+	PhysicComponents.clear();
+}
+
+void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters)
+{
+	for (auto itor = PhysicComponents.begin(); itor != PhysicComponents.end();)
+	{
+		auto pPhysicComponent = (*itor);
+
+		if (CheckPhysicComponentFilters(pPhysicComponent, filters))
+		{
+			ClientPhysicManager()->FreePhysicComponent(pPhysicComponent);
+			itor = PhysicComponents.erase(itor);
+			continue;
+		}
+
+		itor++;
+	}
+}
+
+void DispatchBuildPhysicComponents(
+	const CPhysicObjectCreationParameter& CreationParam,
+	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
+	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::function<IPhysicRigidBody *(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
+	const std::function<IPhysicConstraint *(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
+	const std::function<IPhysicAction *(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction)
+{
+	for (const auto& pRigidBodyConfig : RigidBodyConfigs)
+	{
+		const auto pRigidBodyConfigPtr = pRigidBodyConfig.get();
+
+		auto pRigidBody = pfnCreateRigidBody(CreationParam, pRigidBodyConfigPtr, 0);
+
+		if (pRigidBody)
+		{
+			pfnAddRigidBody(CreationParam, pRigidBodyConfigPtr, pRigidBody);
+		}
+	}
+
+	for (const auto& pConstraintConfig : ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
+			continue;
+
+		auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+		if (pConstraint)
+		{
+			pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+		}
+	}
+
+	for (const auto& pPhysicActionConfig : PhysicActionConfigs)
+	{
+		const auto pPhysicActionConfigPtr = pPhysicActionConfig.get();
+
+		if (pPhysicActionConfigPtr->flags & PhysicActionFlag_NonNative)
+			continue;
+
+		auto pPhysicAction = pfnCreatePhysicAction(CreationParam, pPhysicActionConfigPtr, 0);
+
+		if (pPhysicAction)
+		{
+			pfnAddPhysicAction(CreationParam, pPhysicActionConfigPtr, pPhysicAction);
+		}
+	}
+}
+
+void DispatchRebuildPhysicComponents(
+	std::vector<IPhysicComponent*>& PhysicComponents,
+	const CPhysicObjectCreationParameter& CreationParam,
+	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
+	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::function<IPhysicRigidBody* (const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
+	const std::function<IPhysicConstraint* (const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
+	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction)
+{
+	std::map<int, int> configIdToComponentIdMap;
+
+	for (auto pPhysicComponent : PhysicComponents)
+	{
+		configIdToComponentIdMap[pPhysicComponent->GetPhysicConfigId()] = pPhysicComponent->GetPhysicComponentId();
+
+		ClientPhysicManager()->RemovePhysicComponent(pPhysicComponent->GetPhysicComponentId());
+	}
+
+	PhysicComponents.clear();
+
+	for (const auto& pRigidBodyConfig : RigidBodyConfigs)
+	{
+		const auto pRigidBodyConfigPtr = pRigidBodyConfig.get();
+
+		auto found = configIdToComponentIdMap.find(pRigidBodyConfigPtr->configId);
+
+		if (found != configIdToComponentIdMap.end())
+		{
+			auto oldPhysicComponentId = found->second;
+
+			auto pRigidBody = pfnCreateRigidBody(CreationParam, pRigidBodyConfigPtr, oldPhysicComponentId);
+
+			if (pRigidBody)
+			{
+				pfnAddRigidBody(CreationParam, pRigidBodyConfigPtr, pRigidBody);
+			}
+		}
+		else
+		{
+			auto pRigidBody = pfnCreateRigidBody(CreationParam, pRigidBodyConfigPtr, 0);
+
+			if (pRigidBody)
+			{
+				pfnAddRigidBody(CreationParam, pRigidBodyConfigPtr, pRigidBody);
+			}
+		}
+	}
+
+	for (const auto& pConstraintConfig : ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
+			continue;
+
+		auto found = configIdToComponentIdMap.find(pConstraintConfigPtr->configId);
+
+		if (found != configIdToComponentIdMap.end())
+		{
+			auto oldPhysicComponentId = found->second;
+
+			auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, oldPhysicComponentId);
+
+			if (pConstraint)
+			{
+				pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+			}
+		}
+		else
+		{
+			auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+			if (pConstraint)
+			{
+				pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+			}
+		}
+	}
+
+	for (const auto& pPhysicActionConfig : PhysicActionConfigs)
+	{
+		const auto pPhysicActionConfigPtr = pPhysicActionConfig.get();
+
+		if (pPhysicActionConfigPtr->flags & PhysicActionFlag_NonNative)
+			continue;
+
+		auto found = configIdToComponentIdMap.find(pPhysicActionConfigPtr->configId);
+
+		if (found != configIdToComponentIdMap.end())
+		{
+			auto oldPhysicComponentId = found->second;
+
+			auto pPhysicAction = pfnCreatePhysicAction(CreationParam, pPhysicActionConfigPtr, oldPhysicComponentId);
+
+			if (pPhysicAction)
+			{
+				pfnAddPhysicAction(CreationParam, pPhysicActionConfigPtr, pPhysicAction);
+			}
+		}
+		else
+		{
+			auto pPhysicAction = pfnCreatePhysicAction(CreationParam, pPhysicActionConfigPtr, 0);
+
+			if (pPhysicAction)
+			{
+				pfnAddPhysicAction(CreationParam, pPhysicActionConfigPtr, pPhysicAction);
+			}
+		}
+	}
+}
+
 
 CClientBasePhysicConfig::CClientBasePhysicConfig()
 {
@@ -469,14 +849,16 @@ static void LoadVerifyStuffsFromKeyValues(KeyValues* pKeyValues, CClientPhysicOb
 	if (pKeyValues->GetBool("verifyBoneChunk"))
 	{
 		pConfig->verifyBoneChunk = true;
-		pConfig->crc32BoneChunk = pKeyValues->GetInt("crc32BoneChunk");
 	}
 
-	if (pKeyValues->GetBool("verifyStudioModel"))
+	pConfig->crc32BoneChunk = pKeyValues->GetString("crc32BoneChunk");
+
+	if (pKeyValues->GetBool("verifyModelFile"))
 	{
-		pConfig->verifyStudioModel = true;
-		pConfig->crc32StudioModel = pKeyValues->GetInt("crc32StudioModel");
+		pConfig->verifyModelFile = true;
 	}
+
+	pConfig->crc32ModelFile = pKeyValues->GetString("crc32ModelFile");
 }
 
 static void LoadPhysicObjectFlagsFromKeyValues(KeyValues* pKeyValues, int &flags)
@@ -955,11 +1337,11 @@ static void LoadPhysicActionFromKeyValues(KeyValues* pKeyValues, std::vector<std
 			if (pPhysicActionSubKey->GetBool("gargantua"))
 				pPhysicActionConfig->flags |= PhysicActionFlag_Gargantua;
 
-			if (pPhysicActionSubKey->GetBool("affectsRigidBody"))
-				pPhysicActionConfig->flags |= PhysicActionFlag_AffectsRigidBody;
+			//if (pPhysicActionSubKey->GetBool("affectsRigidBody"))
+			//	pPhysicActionConfig->flags |= PhysicActionFlag_AffectsRigidBody;
 
-			if (pPhysicActionSubKey->GetBool("affectsConstraint"))
-				pPhysicActionConfig->flags |= PhysicActionFlag_AffectsConstraint;
+			//if (pPhysicActionSubKey->GetBool("affectsConstraint"))
+			//	pPhysicActionConfig->flags |= PhysicActionFlag_AffectsConstraint;
 
 #define LOAD_FACTOR_FLOAT(name) pPhysicActionConfig->factors[PhysicActionFactorIdx_##name] = pFactorsKey->GetFloat(#name, NAN);
 
@@ -1024,11 +1406,38 @@ static void LoadCameraControlFromKeyValues(KeyValues* pKeyValues, const char *na
 	}
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static bool VerifyIntegrityForPhysicObjectConfig(model_t* mod, const CClientPhysicObjectConfig *pPhysicObjectConfig)
+{
+	if (pPhysicObjectConfig->verifyBoneChunk)
+	{
+		std::string Crc32Value;
+		if (UTIL_GetCrc32ForBoneChunk(mod, &Crc32Value) && Crc32Value != pPhysicObjectConfig->crc32BoneChunk)
+		{
+			gEngfuncs.Con_Printf("VerifyIntegrityForPhysicObjectConfig: \"%s\" failed the crc32-bonechunk integrity check ! expect \"%s\" but got \"%s\" !\n", mod->name, pPhysicObjectConfig->crc32BoneChunk.c_str(), Crc32Value.c_str());
+			return false;
+		}
+	}
+	if (pPhysicObjectConfig->verifyModelFile)
+	{
+		std::string Crc32Value;
+		if (UTIL_GetCrc32ForModelFile(mod, &Crc32Value) && Crc32Value != pPhysicObjectConfig->crc32ModelFile)
+		{
+			gEngfuncs.Con_Printf("VerifyIntegrityForPhysicObjectConfig: \"%s\" failed the crc32-modelfile integrity check ! expect \"%s\" but got \"%s\" !\n", mod->name, pPhysicObjectConfig->crc32ModelFile.c_str(), Crc32Value.c_str());
+			return false;
+		}
+	}
+	return true;
+}
+
+static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKeyValues(model_t* mod, KeyValues* pKeyValues)
 {
 	auto pRagdollObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
 
 	LoadVerifyStuffsFromKeyValues(pKeyValues, pRagdollObjectConfig.get());
+
+	if (!VerifyIntegrityForPhysicObjectConfig(mod, pRagdollObjectConfig.get()))
+		return nullptr;
+
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pRagdollObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnRagdollObject, pRagdollObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
@@ -1040,22 +1449,30 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 	return pRagdollObjectConfig;
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadStaticObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadStaticObjectConfigFromKeyValues(model_t* mod, KeyValues* pKeyValues)
 {
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
 	LoadVerifyStuffsFromKeyValues(pKeyValues, pStaticObjectConfig.get());
+
+	if (!VerifyIntegrityForPhysicObjectConfig(mod, pStaticObjectConfig.get()))
+		return nullptr;
+
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pStaticObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnStaticObject, pStaticObjectConfig->RigidBodyConfigs);
 
 	return pStaticObjectConfig;
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKeyValues(KeyValues* pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKeyValues(model_t* mod, KeyValues* pKeyValues)
 {
 	auto pDynamicObjectConfig = std::make_shared<CClientDynamicObjectConfig>();
 
 	LoadVerifyStuffsFromKeyValues(pKeyValues, pDynamicObjectConfig.get());
+
+	if (!VerifyIntegrityForPhysicObjectConfig(mod, pDynamicObjectConfig.get()))
+		return nullptr;
+
 	LoadPhysicObjectFlagsFromKeyValues(pKeyValues, pDynamicObjectConfig->flags);
 	LoadRigidBodiesFromKeyValues(pKeyValues, PhysicRigidBodyFlag_AllowedOnDynamicObject, pDynamicObjectConfig->RigidBodyConfigs);
 	LoadConstraintsFromKeyValues(pKeyValues, pDynamicObjectConfig->ConstraintConfigs);
@@ -1065,7 +1482,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadDynamicObjectConfigFromKey
 	return pDynamicObjectConfig;
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromKeyValues(KeyValues *pKeyValues)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromKeyValues(model_t* mod, KeyValues *pKeyValues)
 {
 	auto type = pKeyValues->GetString("type");
 
@@ -1073,28 +1490,28 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromKeyV
 	{
 		if (!strcmp(type, "RagdollObject"))
 		{
-			return LoadRagdollObjectConfigFromKeyValues(pKeyValues);
+			return LoadRagdollObjectConfigFromKeyValues(mod, pKeyValues);
 		}
 		else if (!strcmp(type, "StaticObject"))
 		{
-			return LoadStaticObjectConfigFromKeyValues(pKeyValues);
+			return LoadStaticObjectConfigFromKeyValues(mod, pKeyValues);
 		}
 		else if (!strcmp(type, "DynamicObject"))
 		{
-			return LoadDynamicObjectConfigFromKeyValues(pKeyValues);
+			return LoadDynamicObjectConfigFromKeyValues(mod, pKeyValues);
 		}
 
-		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromKeyValues: invalid type\"%s\" from KeyValues!\n", type);
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromKeyValues: Invalid type \"%s\" from KeyValues!\n", type);
 	}
 	else
 	{
-		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromKeyValues: type not found in KeyValues!\n");
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromKeyValues: \"type\" not found in KeyValues!\n");
 	}
 
 	return nullptr;
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewFile(const std::string& filename)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewFile(model_t* mod, const std::string& filename)
 {
 	auto pKeyValues = new KeyValues("PhysicObjectConfig");
 
@@ -1114,7 +1531,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewF
 	if (!bLoaded)
 		return nullptr;
 
-	return LoadPhysicObjectConfigFromKeyValues(pKeyValues);
+	return LoadPhysicObjectConfigFromKeyValues(mod, pKeyValues);
 }
 
 static void AddVerifyStuffsFromKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pConfig)
@@ -1122,14 +1539,16 @@ static void AddVerifyStuffsFromKeyValues(KeyValues* pKeyValues, const CClientPhy
 	if (pConfig->verifyBoneChunk)
 	{
 		pKeyValues->SetBool("verifyBoneChunk", true);
-		pKeyValues->SetInt("crc32BoneChunk", pConfig->crc32BoneChunk);
 	}
 
-	if (pConfig->verifyStudioModel)
+	pKeyValues->SetString("crc32BoneChunk", pConfig->crc32BoneChunk.c_str());
+
+	if (pConfig->verifyModelFile)
 	{
-		pKeyValues->SetBool("verifyStudioModel", true);
-		pKeyValues->SetInt("crc32StudioModel", pConfig->crc32StudioModel);
+		pKeyValues->SetBool("verifyModelFile", true);
 	}
+
+	pKeyValues->SetString("crc32ModelFile", pConfig->crc32ModelFile.c_str());
 }
 
 static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicObjectConfig* pPhysicObjectConfig)
@@ -1541,11 +1960,11 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 					if (pPhysicActionConfig->flags & PhysicActionFlag_Gargantua)
 						pPhysicActionSubKey->SetBool("gargantua", true);
 
-					if (pPhysicActionConfig->flags & PhysicActionFlag_AffectsRigidBody)
-						pPhysicActionSubKey->SetBool("affectsRigidBody", true);
+					//if (pPhysicActionConfig->flags & PhysicActionFlag_AffectsRigidBody)
+					//	pPhysicActionSubKey->SetBool("affectsRigidBody", true);
 
-					if (pPhysicActionConfig->flags & PhysicActionFlag_AffectsConstraint)
-						pPhysicActionSubKey->SetBool("affectsConstraint", true);
+					//if (pPhysicActionConfig->flags & PhysicActionFlag_AffectsConstraint)
+					//	pPhysicActionSubKey->SetBool("affectsConstraint", true);
 
 #define SET_FACTOR_FLOAT(name) if(!isnan(pPhysicActionConfig->factors[PhysicActionFactorIdx_##name])) pFactorsKey->SetFloat(#name, pPhysicActionConfig->factors[PhysicActionFactorIdx_##name]);
 
@@ -1918,7 +2337,8 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
 
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
-			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
+			pActionConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
+			pActionConfig->flags = PhysicActionFlag_Barnacle;// | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
@@ -1964,7 +2384,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
 			pActionConfig->type = PhysicAction_BarnacleDragForce;
 			pActionConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
-			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
+			pActionConfig->flags = PhysicActionFlag_Barnacle;// | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight] = 24;
@@ -1981,7 +2401,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			pActionConfig->type = PhysicAction_BarnacleChewForce;
 			pActionConfig->name = std::format("BarnacleChewForce|{}", rigidbody);
-			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsRigidBody;
+			pActionConfig->flags = PhysicActionFlag_Barnacle;// | PhysicActionFlag_AffectsRigidBody;
 			pActionConfig->rigidbody = rigidbody;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude] = factor0;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval] = factor1;
@@ -1998,7 +2418,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			pActionConfig->name = std::format("BarnacleConstraintLimitAdjustment|{0}", rigidbody);
 			pActionConfig->type = PhysicAction_BarnacleConstraintLimitAdjustment;
-			pActionConfig->flags = PhysicActionFlag_Barnacle | PhysicActionFlag_AffectsConstraint;
+			pActionConfig->flags = PhysicActionFlag_Barnacle;// | PhysicActionFlag_AffectsConstraint;
 			pActionConfig->constraint = std::format("BarnacleConstraint|@barnacle.Body|{0}", rigidbody);
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
@@ -2119,7 +2539,7 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 	return pRagdollConfig;
 }
 
-static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFile(const std::string& filename)
+static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFile(model_t* mod, const std::string& filename)
 {
 	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
 
@@ -2131,7 +2551,7 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLega
 	return LoadPhysicObjectConfigFromLegacyFileBuffer(pFileContent);
 }
 
-bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig)
+bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& modelname, CClientPhysicObjectConfig* pPhysicObjectConfig)
 {
 	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
 	{
@@ -2143,7 +2563,7 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 		return false;
 	}
 
-	std::string fullname = filename;
+	std::string fullname = modelname;
 
 	UTIL_RemoveFileExtension(fullname);
 
@@ -2164,7 +2584,7 @@ bool CBasePhysicManager::SavePhysicObjectConfigToFile(const std::string& filenam
 
 bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhysicObjectConfigStorage& Storage)
 {
-	auto resourcePath = UTIL_FormatAbsoluteModelName(mod);
+	auto resourcePath = UTIL_GetAbsoluteModelName(mod);
 
 	auto pIndexArray = LoadIndexArrayFromResource(resourcePath);
 
@@ -2202,23 +2622,23 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	return true;
 }
 
-void CBasePhysicManager::OverwritePhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicObjectConfig)
+void CBasePhysicManager::OverwritePhysicObjectConfig(const std::string& modelname, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig> &pPhysicObjectConfig)
 {
 	Storage.pConfig = pPhysicObjectConfig;
-	Storage.filename = filename;
+	Storage.modelname = modelname;
 	Storage.state = PhysicConfigState_Loaded;
 
-	pPhysicObjectConfig->fileName = filename;
+	pPhysicObjectConfig->modelName = modelname;
 
 	char szShortName[64] = {0};
-	V_FileBase(filename.c_str(), szShortName, sizeof(szShortName));
+	V_FileBase(modelname.c_str(), szShortName, sizeof(szShortName) - 1);
 
 	pPhysicObjectConfig->shortName = szShortName;
 
 	ClientPhysicManager()->AddPhysicConfig(pPhysicObjectConfig->configId, pPhysicObjectConfig);
 }
 
-bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType)
+bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& modelname, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType)
 {
 	switch (PhysicObjectType)
 	{
@@ -2226,21 +2646,24 @@ bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filena
 	{
 		auto pPhysicObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 		pPhysicObjectConfig->configModified = true;
-		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
+
+		OverwritePhysicObjectConfig(modelname, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	case PhysicObjectType_DynamicObject:
 	{
 		auto pPhysicObjectConfig = std::make_shared<CClientDynamicObjectConfig>();
 		pPhysicObjectConfig->configModified = true;
-		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
+
+		OverwritePhysicObjectConfig(modelname, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	case PhysicObjectType_RagdollObject:
 	{
 		auto pPhysicObjectConfig = std::make_shared<CClientRagdollObjectConfig>();
 		pPhysicObjectConfig->configModified = true;
-		OverwritePhysicObjectConfig(filename, Storage, pPhysicObjectConfig);
+
+		OverwritePhysicObjectConfig(modelname, Storage, pPhysicObjectConfig);
 		return true;
 	}
 	}
@@ -2248,42 +2671,42 @@ bool CBasePhysicManager::CreateEmptyPhysicObjectConfig(const std::string& filena
 	return false;
 }
 
-bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage &Storage)
+bool CBasePhysicManager::LoadPhysicObjectConfigFromFiles(model_t *mod, CClientPhysicObjectConfigStorage &Storage)
 {
-	std::string fullname = filename;
+	std::string modelname = mod->name;
 
-	if (fullname.length() < 4)
+	if (modelname.length() < 4)
 	{
-		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: Invalid name \"%s\"\n", filename.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: Invalid name \"%s\"\n", modelname.c_str());
 		Storage.state = PhysicConfigState_LoadedWithError;
 		return false;
 	}
 
-	UTIL_RemoveFileExtension(fullname);
+	UTIL_RemoveFileExtension(modelname);
 
-	auto fullname_physic = fullname;
+	auto fullname_physic = modelname;
 	fullname_physic += "_physics.txt";
 
-	auto pConfig = LoadPhysicObjectConfigFromNewFile(fullname_physic);
+	auto pConfig = LoadPhysicObjectConfigFromNewFile(mod, fullname_physic);
 
 	if(pConfig)
 	{
-		OverwritePhysicObjectConfig(filename, Storage, pConfig);
+		OverwritePhysicObjectConfig(modelname, Storage, pConfig);
 
-		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: \"%s\" has been loaded successfully.\n", fullname_physic.c_str());
 		return true;
 	}
 
-	auto fullname_ragdoll = fullname;
+	auto fullname_ragdoll = modelname;
 	fullname_ragdoll  += "_ragdoll.txt";
 
-	pConfig = LoadPhysicObjectConfigFromLegacyFile(fullname_ragdoll);
+	pConfig = LoadPhysicObjectConfigFromLegacyFile(mod, fullname_ragdoll);
 
 	if (pConfig)
 	{
-		OverwritePhysicObjectConfig(filename, Storage, pConfig);
+		OverwritePhysicObjectConfig(modelname, Storage, pConfig);
 
-		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles:\"%s\" has been loaded successfully.\n", fullname.c_str());
+		gEngfuncs.Con_DPrintf("LoadPhysicObjectConfigFromFiles: \"%s\" has been loaded successfully.\n", fullname_ragdoll.c_str());
 		return true;
 	}
 
@@ -2317,7 +2740,7 @@ bool CBasePhysicManager::SavePhysicObjectConfigForModelIndex(int modelindex)
 
 	if (Storage.state == PhysicConfigState_Loaded)
 	{
-		return SavePhysicObjectConfigToFile(Storage.filename, Storage.pConfig.get());
+		return SavePhysicObjectConfigToFile(Storage.modelname, Storage.pConfig.get());
 	}
 
 	return false;
@@ -2345,7 +2768,7 @@ std::shared_ptr<CClientPhysicObjectConfig> CBasePhysicManager::LoadPhysicObjectC
 	{
 		if (mod->type == mod_studio)
 		{
-			LoadPhysicObjectConfigFromFiles(mod->name, Storage);
+			LoadPhysicObjectConfigFromFiles(mod, Storage);
 		}
 		else if (mod->type == mod_brush)
 		{
@@ -2982,7 +3405,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicConfig.get();
 		
-		CRagdollObjectCreationParameter CreationParam;
+		CPhysicObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
 		CreationParam.m_entstate = state;
@@ -2997,7 +3420,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 		CreationParam.m_playerindex = playerindex;
 
-		CreationParam.m_pRagdollObjectConfig = pRagdollObjectConfig;
+		CreationParam.m_pPhysicObjectConfig = pRagdollObjectConfig;
 
 		LoadAdditionalResourcesForConfig(pRagdollObjectConfig);
 
@@ -3012,7 +3435,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicConfig.get();
 
-		CDynamicObjectCreationParameter CreationParam;
+		CPhysicObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
 		CreationParam.m_entstate = state;
@@ -3027,7 +3450,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 		CreationParam.m_playerindex = playerindex;
 
-		CreationParam.m_pDynamicObjectConfig = pDynamicObjectConfig;
+		CreationParam.m_pPhysicObjectConfig = pDynamicObjectConfig;
 
 		LoadAdditionalResourcesForConfig(pDynamicObjectConfig);
 
@@ -3042,7 +3465,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 	{
 		auto pStaticObjectConfig = (CClientStaticObjectConfig*)pPhysicConfig.get();
 
-		CStaticObjectCreationParameter CreationParam;
+		CPhysicObjectCreationParameter CreationParam;
 
 		CreationParam.m_entity = ent;
 		CreationParam.m_entstate = state;
@@ -3057,7 +3480,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 		CreationParam.m_playerindex = playerindex;
 
-		CreationParam.m_pStaticObjectConfig = pStaticObjectConfig;
+		CreationParam.m_pPhysicObjectConfig = pStaticObjectConfig;
 
 		LoadAdditionalResourcesForConfig(pStaticObjectConfig);
 
@@ -3093,12 +3516,12 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	if (pPhysicConfig->type != PhysicObjectType_StaticObject)
 		return;
 
-	CStaticObjectCreationParameter CreationParam;
+	CPhysicObjectCreationParameter CreationParam;
 	CreationParam.m_entity = ent;
 	CreationParam.m_entstate = state;
 	CreationParam.m_entindex = entindex;
 	CreationParam.m_model = mod;
-	CreationParam.m_pStaticObjectConfig = (CClientStaticObjectConfig *)pPhysicConfig.get();
+	CreationParam.m_pPhysicObjectConfig = pPhysicConfig.get();
 
 	auto pStaticObject = CreateStaticObject(CreationParam);
 
@@ -3321,7 +3744,7 @@ void CBasePhysicManager::GenerateBrushIndexArray()
 
 				GenerateIndexArrayForBrushModel(mod, m_worldVertexArray.get(), pIndexArray.get());
 
-				auto name = UTIL_FormatAbsoluteModelName(mod);
+				auto name = UTIL_GetAbsoluteModelName(mod);
 
 				m_indexArrayResources[name] = pIndexArray;
 			}

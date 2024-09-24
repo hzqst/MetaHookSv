@@ -6,8 +6,10 @@
 class CBulletStaticObject : public CBaseStaticObject
 {
 public:
-	CBulletStaticObject(const CStaticObjectCreationParameter& CreationParam);
+	CBulletStaticObject(const CPhysicObjectCreationParameter& CreationParam);
 	~CBulletStaticObject();
 
-	IPhysicRigidBody* CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) override;
+	IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) override;
+	IPhysicConstraint* CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) override;
+	IPhysicAction* CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId) override;
 };

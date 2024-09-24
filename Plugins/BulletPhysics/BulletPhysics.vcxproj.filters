@@ -410,22 +410,16 @@
     <ClCompile Include="PhysicUTIL.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="BaseObjectConfigPage.cpp">
+    <ClCompile Include="PhysicObjectConfigPage.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="RigidBodyPage.cpp">
+    <ClCompile Include="PhysicRigidBodyPage.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="ConstraintPage.cpp">
+    <ClCompile Include="PhysicConstraintPage.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="CollisionShapeEditor.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="RigidBodyEditor.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="ConstraintEditor.cpp">
+    <ClCompile Include="PhysicRigidBodyEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="PhysicActionPage.cpp">
@@ -480,6 +474,30 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BaseRagdollObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicConstraintListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicConstraintEditDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicFactorListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicRigidBodyListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicActionListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicCollisionShapeEditDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicActionEditDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseStaticObject.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -606,6 +624,42 @@
     </ClInclude>
     <ClInclude Include="BulletDynamicConstraint.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicConstraintPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicConstraintListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicConstraintEditDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicFactorListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicRigidBodyListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicRigidBodyEditDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicRigidBodyPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicActionPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicActionListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicObjectConfigPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicCollisionShapeEditDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicActionEditDialog.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,21 +1,32 @@
 #include "BulletStaticObject.h"
 #include "BulletStaticRigidBody.h"
 
-CBulletStaticObject::CBulletStaticObject(const CStaticObjectCreationParameter& CreationParam) : CBaseStaticObject(CreationParam)
+CBulletStaticObject::CBulletStaticObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseStaticObject(CreationParam)
 {
 	if (CreationParam.m_model->type == mod_studio)
 	{
 		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
 	}
 
-	CreateRigidBodies(CreationParam);
+	DispatchBuildPhysicComponents(
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseStaticObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
 }
 CBulletStaticObject::~CBulletStaticObject()
 {
 
 }
 
-IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CStaticObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
+IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
 {
 	if (GetRigidBodyByName(pRigidConfig->name))
 	{
@@ -58,7 +69,7 @@ IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CStaticObjectCreati
 
 	mask &= ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
 
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::FloaterFilter);
+	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::ActionFilter);
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
 		mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
@@ -74,4 +85,14 @@ IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CStaticObjectCreati
 		cInfo,
 		group,
 		mask);
+}
+
+IPhysicConstraint* CBulletStaticObject::CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)
+{
+	return nullptr;
+}
+
+IPhysicAction* CBulletStaticObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+{
+	return nullptr;
 }

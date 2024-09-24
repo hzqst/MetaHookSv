@@ -467,11 +467,11 @@ btRigidBody* CBulletPhysicConstraint::CreateInternalRigidBody(bool attachToJoint
 {
 	auto pMotionState = new CFollowConstraintMotionState(m_pPhysicObject, m_pInternalConstraint, attachToJointB);
 
-	auto size = btVector3(2, 2, 2);
+	auto size = btScalar(2);
 
-	Vector3GoldSrcToBullet(size);
+	FloatGoldSrcToBullet(&size);
 
-	auto pCollisionShape = new btBoxShape(size);
+	auto pCollisionShape = new btSphereShape(size);
 
 	btRigidBody::btRigidBodyConstructionInfo cInfo(0, pMotionState, pCollisionShape);
 

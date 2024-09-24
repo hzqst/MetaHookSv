@@ -3,15 +3,26 @@
 #include "BulletDynamicConstraint.h"
 #include "privatehook.h"
 
-CBulletDynamicObject::CBulletDynamicObject(const CDynamicObjectCreationParameter& CreationParam) : CBaseDynamicObject(CreationParam)
+CBulletDynamicObject::CBulletDynamicObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseDynamicObject(CreationParam)
 {
 	if (CreationParam.m_model->type == mod_studio)
 	{
 		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
 	}
 
-	CreateRigidBodies(CreationParam);
-	CreateConstraints(CreationParam);
+	DispatchBuildPhysicComponents(
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
+
 }
 
 CBulletDynamicObject::~CBulletDynamicObject()
@@ -19,7 +30,7 @@ CBulletDynamicObject::~CBulletDynamicObject()
 
 }
 
-IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CDynamicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
+IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
 {
 	if (GetRigidBodyByName(pRigidConfig->name))
 	{
@@ -60,7 +71,7 @@ IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CDynamicObjectCrea
 
 	int mask = btBroadphaseProxy::AllFilter;
 
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::FloaterFilter);
+	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::ActionFilter);
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 		mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
@@ -84,7 +95,7 @@ IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CDynamicObjectCrea
 		mask);
 }
 
-IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CDynamicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)
+IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)
 {
 	btTypedConstraint* pInternalConstraint{};
 
@@ -284,6 +295,20 @@ IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CDynamicObjectCr
 			this,
 			pConstraintConfig,
 			pInternalConstraint);
+	}
+
+	return nullptr;
+}
+
+IPhysicAction* CBulletDynamicObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+{
+	switch (pActionConfig->type)
+	{
+	case PhysicAction_SimpleBuoyancy:
+	{
+		//TODO
+		return nullptr;
+	}
 	}
 
 	return nullptr;

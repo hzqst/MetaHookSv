@@ -24,6 +24,16 @@ public:
 
 	}
 
+
+	const char* GetTypeString() const override
+	{
+		return "BarnacleDragForceAction";
+	}
+	const char* GetTypeLocalizationTokenString() const override
+	{
+		return "#BulletPhysics_BarnacleDragForceAction";
+	}
+
 	void Update(CPhysicComponentUpdateContext* ComponentContext) override
 	{
 		auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);

@@ -1,55 +1,38 @@
-#include "PhysicEditorDialog.h"
+#include "PhysicConstraintPage.h"
+#include "PhysicConstraintListPanel.h"
+#include "PhysicConstraintEditDialog.h"
 
 #include "exportfuncs.h"
-
 #include "ClientPhysicManager.h"
 #include "PhysicUTIL.h"
 
 #include <format>
 
-//Constraint List
-
-CConstraintListPanel::CConstraintListPanel(vgui::Panel* parent, const char* pName) : BaseClass(parent, pName)
-{
-
-}
-
 // Constraint Page
 
-CConstraintPage::CConstraintPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
+CPhysicConstraintPage::CPhysicConstraintPage(vgui::Panel* parent, const char* name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
 	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
 {
 	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
 
-	m_pConstraintListPanel = new CConstraintListPanel(this, "ConstraintListPanel");
-
-	// Define the columns for the list panel
-	m_pConstraintListPanel->AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-	m_pConstraintListPanel->AddColumnHeader(1, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
-	m_pConstraintListPanel->AddColumnHeader(2, "name", "#BulletPhysics_Name", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pConstraintListPanel->AddColumnHeader(3, "type", "#BulletPhysics_Type", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pConstraintListPanel->AddColumnHeader(4, "rigidbodyA", "#BulletPhysics_RigidBodyA", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pConstraintListPanel->AddColumnHeader(5, "rigidbodyB", "#BulletPhysics_RigidBodyB", vgui::scheme()->GetProportionalScaledValue(80), vgui::ListPanel::COLUMN_FIXEDSIZE);
-	m_pConstraintListPanel->AddColumnHeader(6, "flags", "#BulletPhysics_Flags", vgui::scheme()->GetProportionalScaledValue(180), vgui::ListPanel::COLUMN_RESIZEWITHWINDOW);
-	m_pConstraintListPanel->SetSortColumn(0);
-	m_pConstraintListPanel->SetMultiselectEnabled(false);
+	m_pPhysicConstraintListPanel = new CPhysicConstraintListPanel(this, "PhysicConstraintListPanel");
 
 	m_pShiftUpConstraint = new vgui::Button(this, "ShiftUpConstraint", L"#BulletPhysics_ShiftUp", this, "ShiftUpConstraint");
 	m_pShiftDownConstraint = new vgui::Button(this, "ShiftDownConstraint", L"#BulletPhysics_ShiftDown", this, "ShiftDownConstraint");
 	m_pCreateConstraint = new vgui::Button(this, "CreateConstraint", L"#BulletPhysics_CreateConstraint", this, "CreateConstraint");
 
-	LoadControlSettings("bulletphysics/ConstraintPage.res", "GAME");
+	LoadControlSettings("bulletphysics/PhysicConstraintPage.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CConstraintPage::OnResetData()
+void CPhysicConstraintPage::OnResetData()
 {
 	ReloadAllConstraintsIntoListPanelItem();
 }
 
-void CConstraintPage::ApplySchemeSettings(vgui::IScheme* pScheme)
+void CPhysicConstraintPage::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
@@ -58,17 +41,17 @@ void CConstraintPage::ApplySchemeSettings(vgui::IScheme* pScheme)
 	if (!m_hFont)
 		m_hFont = pScheme->GetFont("DefaultSmall", IsProportional());
 
-	m_pConstraintListPanel->SetFont(m_hFont);
+	m_pPhysicConstraintListPanel->SetFont(m_hFont);
 }
 
-void CConstraintPage::OnKeyCodeTyped(vgui::KeyCode code)
+void CPhysicConstraintPage::OnKeyCodeTyped(vgui::KeyCode code)
 {
 	if (code == vgui::KEY_ENTER)
 	{
-		if (m_pConstraintListPanel->HasFocus() && m_pConstraintListPanel->GetSelectedItemsCount() > 0)
+		if (m_pPhysicConstraintListPanel->HasFocus() && m_pPhysicConstraintListPanel->GetSelectedItemsCount() > 0)
 		{
-			auto selectItemId = m_pConstraintListPanel->GetSelectedItem(0);
-			auto configId = m_pConstraintListPanel->GetItemUserData(selectItemId);
+			auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
+			auto configId = m_pPhysicConstraintListPanel->GetItemUserData(selectItemId);
 			OnOpenConstraintEditor(configId);
 			return;
 		}
@@ -77,7 +60,7 @@ void CConstraintPage::OnKeyCodeTyped(vgui::KeyCode code)
 	BaseClass::OnKeyCodeTyped(code);
 }
 
-void CConstraintPage::OnCommand(const char* command)
+void CPhysicConstraintPage::OnCommand(const char* command)
 {
 	if (!stricmp(command, "CreateConstraint"))
 	{
@@ -85,14 +68,14 @@ void CConstraintPage::OnCommand(const char* command)
 	}
 	else if (!stricmp(command, "ShiftUpConstraint"))
 	{
-		auto selectItemId = m_pConstraintListPanel->GetSelectedItem(0);
-		auto configId = m_pConstraintListPanel->GetItemUserData(selectItemId);
+		auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicConstraintListPanel->GetItemUserData(selectItemId);
 		OnShiftUpConstraint(configId);
 	}
 	else if (!stricmp(command, "ShiftDownConstraint"))
 	{
-		auto selectItemId = m_pConstraintListPanel->GetSelectedItem(0);
-		auto configId = m_pConstraintListPanel->GetItemUserData(selectItemId);
+		auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicConstraintListPanel->GetItemUserData(selectItemId);
 		OnShiftDownConstraint(configId);
 	}
 	else
@@ -101,13 +84,13 @@ void CConstraintPage::OnCommand(const char* command)
 	}
 }
 
-void CConstraintPage::OnOpenContextMenu(int itemId)
+void CPhysicConstraintPage::OnOpenContextMenu(int itemId)
 {
-	if (!m_pConstraintListPanel->GetSelectedItemsCount())
+	if (!m_pPhysicConstraintListPanel->GetSelectedItemsCount())
 		return;
 
-	auto selectItemId = m_pConstraintListPanel->GetSelectedItem(0);
-	auto configId = m_pConstraintListPanel->GetItemUserData(selectItemId);
+	auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
+	auto configId = m_pPhysicConstraintListPanel->GetItemUserData(selectItemId);
 
 	auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(configId);
 
@@ -139,7 +122,7 @@ void CConstraintPage::OnOpenContextMenu(int itemId)
 	vgui::Menu::PlaceContextMenu(this, menu);
 }
 
-void CConstraintPage::OnRefreshConstraint(int configId)
+void CPhysicConstraintPage::OnRefreshConstraint(int configId)
 {
 	auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(configId);
 
@@ -152,12 +135,12 @@ void CConstraintPage::OnRefreshConstraint(int configId)
 	LoadConstraintAsListPanelItem(pConstraintConfig.get());
 }
 
-void CConstraintPage::OnEditConstraint(int configId)
+void CPhysicConstraintPage::OnEditConstraint(int configId)
 {
 	OnOpenConstraintEditor(configId);
 }
 
-void CConstraintPage::OnCloneConstraint(int configId)
+void CPhysicConstraintPage::OnCloneConstraint(int configId)
 {
 	// Retrieve the original constraint configuration using the configId.
 	auto originalConstraintConfig = UTIL_GetConstraintConfigFromConfigId(configId);
@@ -215,7 +198,7 @@ void CConstraintPage::OnCloneConstraint(int configId)
 	}
 }
 
-void CConstraintPage::LoadConstraintAsListPanelItem(const CClientConstraintConfig* pConstraintConfig)
+void CPhysicConstraintPage::LoadConstraintAsListPanelItem(const CClientConstraintConfig* pConstraintConfig)
 {
 	auto kv = new KeyValues("Constraint");
 
@@ -233,20 +216,21 @@ void CConstraintPage::LoadConstraintAsListPanelItem(const CClientConstraintConfi
 
 	kv->SetWString("flags", flags.c_str());
 
-	m_pConstraintListPanel->AddItem(kv, pConstraintConfig->configId, false, true);
+	m_pPhysicConstraintListPanel->AddItem(kv, pConstraintConfig->configId, false, true);
 	kv->deleteThis();
 }
 
-void CConstraintPage::ReloadAllConstraintsIntoListPanelItem()
+void CPhysicConstraintPage::ReloadAllConstraintsIntoListPanelItem()
 {
-	m_pConstraintListPanel->RemoveAll();
+	m_pPhysicConstraintListPanel->RemoveAll();
+
 	for (const auto& pConfig : m_pPhysicObjectConfig->ConstraintConfigs)
 	{
 		LoadConstraintAsListPanelItem(pConfig.get());
 	}
 }
 
-void CConstraintPage::OnOpenConstraintEditor(int configId)
+void CPhysicConstraintPage::OnOpenConstraintEditor(int configId)
 {
 	// Retrieve the constraint configuration using the configId.
 	auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(configId);
@@ -254,12 +238,12 @@ void CConstraintPage::OnOpenConstraintEditor(int configId)
 	if (!pConstraintConfig)
 		return;
 
-	auto pEditorDialog = new CConstraintEditDialog(this, "ConstraintEditDialog", m_physicObjectId, m_pPhysicObjectConfig, pConstraintConfig);
+	auto pEditorDialog = new CPhysicConstraintEditDialog(this, "PhysicConstraintEditDialog", m_physicObjectId, m_pPhysicObjectConfig, pConstraintConfig);
 	pEditorDialog->AddActionSignalTarget(this);
 	pEditorDialog->DoModal();
 }
 
-void CConstraintPage::OnCreateConstraint()
+void CPhysicConstraintPage::OnCreateConstraint()
 {
 	auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 	pConstraintConfig->name = std::format("UnnamedConstraint_{0}", pConstraintConfig->configId);
@@ -271,7 +255,7 @@ void CConstraintPage::OnCreateConstraint()
 	LoadConstraintAsListPanelItem(pConstraintConfig.get());
 }
 
-void CConstraintPage::OnShiftUpConstraint(int configId)
+void CPhysicConstraintPage::OnShiftUpConstraint(int configId)
 {
 	if (UTIL_ShiftUpConstraintIndex(m_pPhysicObjectConfig.get(), configId))
 	{
@@ -280,7 +264,7 @@ void CConstraintPage::OnShiftUpConstraint(int configId)
 	}
 }
 
-void CConstraintPage::OnShiftDownConstraint(int configId)
+void CPhysicConstraintPage::OnShiftDownConstraint(int configId)
 {
 	if (UTIL_ShiftDownConstraintIndex(m_pPhysicObjectConfig.get(), configId))
 	{
@@ -289,43 +273,43 @@ void CConstraintPage::OnShiftDownConstraint(int configId)
 	}
 }
 
-void CConstraintPage::SelectConstraintItem(int configId)
+void CPhysicConstraintPage::SelectConstraintItem(int configId)
 {
 	// Iterate through all items in the constraint list panel
-	for (int i = 0; i < m_pConstraintListPanel->GetItemCount(); ++i)
+	for (int i = 0; i < m_pPhysicConstraintListPanel->GetItemCount(); ++i)
 	{
 		// Retrieve the configId stored as user data for the current item
-		int itemConfigId = static_cast<int>(m_pConstraintListPanel->GetItemUserData(i));
+		int itemConfigId = static_cast<int>(m_pPhysicConstraintListPanel->GetItemUserData(i));
 
 		// Check if the current item's configId matches the provided configId
 		if (itemConfigId == configId)
 		{
 			// Select the item in the list panel
-			m_pConstraintListPanel->SetSingleSelectedItem(i);
+			m_pPhysicConstraintListPanel->SetSingleSelectedItem(i);
 			break; // Exit the loop after selecting the item
 		}
 	}
 }
 
-void CConstraintPage::DeleteConstraintItem(int configId)
+void CPhysicConstraintPage::DeleteConstraintItem(int configId)
 {
 	// Iterate through all items in the constraint list panel
-	for (int i = 0; i < m_pConstraintListPanel->GetItemCount(); ++i)
+	for (int i = 0; i < m_pPhysicConstraintListPanel->GetItemCount(); ++i)
 	{
 		// Retrieve the configId stored as user data for the current item
-		int itemConfigId = static_cast<int>(m_pConstraintListPanel->GetItemUserData(i));
+		int itemConfigId = static_cast<int>(m_pPhysicConstraintListPanel->GetItemUserData(i));
 
 		// Check if the current item's configId matches the provided configId
 		if (itemConfigId == configId)
 		{
 			// Select the item in the list panel
-			m_pConstraintListPanel->RemoveItem(i);
+			m_pPhysicConstraintListPanel->RemoveItem(i);
 			break; // Exit the loop after selecting the item
 		}
 	}
 }
 
-void CConstraintPage::OnDeleteConstraint(int configId)
+void CPhysicConstraintPage::OnDeleteConstraint(int configId)
 {
 	DeleteConstraintItem(configId);
 
@@ -335,7 +319,7 @@ void CConstraintPage::OnDeleteConstraint(int configId)
 	}
 }
 
-void CConstraintPage::OnRefreshConstraints()
+void CPhysicConstraintPage::OnRefreshConstraints()
 {
 	ReloadAllConstraintsIntoListPanelItem();
 }

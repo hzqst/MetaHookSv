@@ -1,4 +1,4 @@
-#include "PhysicEditorDialog.h"
+#include "PhysicCollisionShapeEditDialog.h"
 
 #include "exportfuncs.h"
 
@@ -7,9 +7,7 @@
 
 #include <format>
 
-//CollisionShape Editor
-
-CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const char* name,
+CPhysicCollisionShapeEditDialog::CPhysicCollisionShapeEditDialog(vgui::Panel* parent, const char* name,
 	uint64 physicObjectId,
 	const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
 	const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig,
@@ -51,42 +49,42 @@ CCollisionShapeEditDialog::CCollisionShapeEditDialog(vgui::Panel* parent, const 
 	m_pResourcePathLabel = new vgui::Label(this, "ResourcePathLabel", "#BulletPhysics_ResourcePath");
 	m_pResourcePath = new vgui::TextEntry(this, "ResourcePath");
 
-	LoadAvailableShapesIntoControls();
-	LoadAvailableShapeDirectionsIntoControls();
+	LoadAvailableShapesIntoControl(m_pShape);
+	LoadAvailableShapeDirectionsIntoControl(m_pDirection);
 
-	LoadControlSettings("bulletphysics/CollisionShapeEditDialog.res", "GAME");
+	LoadControlSettings("bulletphysics/PhysicCollisionShapeEditDialog.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 
 }
 
-CCollisionShapeEditDialog::~CCollisionShapeEditDialog()
+CPhysicCollisionShapeEditDialog::~CPhysicCollisionShapeEditDialog()
 {
 
 }
 
-void CCollisionShapeEditDialog::Activate(void)
+void CPhysicCollisionShapeEditDialog::Activate(void)
 {
 	BaseClass::Activate();
 
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CCollisionShapeEditDialog::OnResetData()
+void CPhysicCollisionShapeEditDialog::OnResetData()
 {
 	LoadConfigIntoControls();
 
 	UpdateControlStates();
 }
 
-void CCollisionShapeEditDialog::OnTextChanged(vgui::Panel* panel)
+void CPhysicCollisionShapeEditDialog::OnTextChanged(vgui::Panel* panel)
 {
 	if (panel == m_pShape) {
 		UpdateControlStates();
 	}
 }
 
-void CCollisionShapeEditDialog::OnCommand(const char* command)
+void CPhysicCollisionShapeEditDialog::OnCommand(const char* command)
 {
 	if (!stricmp(command, "OK"))
 	{
@@ -107,7 +105,7 @@ void CCollisionShapeEditDialog::OnCommand(const char* command)
 	BaseClass::OnCommand(command);
 }
 
-void CCollisionShapeEditDialog::LoadAvailableShapesIntoControls()
+void CPhysicCollisionShapeEditDialog::LoadAvailableShapesIntoControl(vgui::ComboBox* pComboBox)
 {
 	for (int i = 0; i < PhysicShape_Maximum; ++i)
 	{
@@ -115,29 +113,29 @@ void CCollisionShapeEditDialog::LoadAvailableShapesIntoControls()
 
 		kv->SetInt("type", i);
 
-		m_pShape->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
+		pComboBox->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
 
 		kv->deleteThis();
 	}
 }
 
-void CCollisionShapeEditDialog::LoadShapeIntoControls()
+void CPhysicCollisionShapeEditDialog::LoadShapeIntoControl(vgui::ComboBox* pComboBox)
 {
-	for (int i = 0; i < m_pShape->GetItemCount(); ++i)
+	for (int i = 0; i < pComboBox->GetItemCount(); ++i)
 	{
-		KeyValues* kv = m_pShape->GetItemUserData(i);
+		KeyValues* kv = pComboBox->GetItemUserData(i);
 
 		if (kv && m_pCollisionShapeConfig->type == kv->GetInt("type", PhysicShape_None))
 		{
-			m_pShape->ActivateItemByRow(i);
+			pComboBox->ActivateItemByRow(i);
 			return;
 		}
 	}
 
-	m_pShape->ActivateItemByRow(0);
+	pComboBox->ActivateItemByRow(0);
 }
 
-void CCollisionShapeEditDialog::LoadAvailableShapeDirectionsIntoControls()
+void CPhysicCollisionShapeEditDialog::LoadAvailableShapeDirectionsIntoControl(vgui::ComboBox* pComboBox)
 {
 	for (int i = 0; i < PhysicShapeDirection_Maximum; ++i)
 	{
@@ -147,33 +145,33 @@ void CCollisionShapeEditDialog::LoadAvailableShapeDirectionsIntoControls()
 
 		const char* XYZ[] = { "X", "Y", "Z" };
 
-		m_pDirection->AddItem(XYZ[i], kv);
+		pComboBox->AddItem(XYZ[i], kv);
 
 		kv->deleteThis();
 	}
 }
 
-void CCollisionShapeEditDialog::LoadShapeDirectionIntoControls()
+void CPhysicCollisionShapeEditDialog::LoadShapeDirectionIntoControl(vgui::ComboBox* pComboBox)
 {
-	for (int i = 0; i < m_pDirection->GetItemCount(); ++i)
+	for (int i = 0; i < pComboBox->GetItemCount(); ++i)
 	{
-		KeyValues* kv = m_pDirection->GetItemUserData(i);
+		KeyValues* kv = pComboBox->GetItemUserData(i);
 
 		if (kv && m_pCollisionShapeConfig->direction == kv->GetInt("direction", PhysicShapeDirection_X))
 		{
-			m_pDirection->ActivateItemByRow(i);
+			pComboBox->ActivateItemByRow(i);
 			return;
 		}
 	}
 
-	m_pDirection->ActivateItemByRow(0);
+	pComboBox->ActivateItemByRow(0);
 }
 
-void CCollisionShapeEditDialog::LoadConfigIntoControls()
+void CPhysicCollisionShapeEditDialog::LoadConfigIntoControls()
 {
-	LoadShapeIntoControls();
+	LoadShapeIntoControl(m_pShape);
 
-	LoadShapeDirectionIntoControls();
+	LoadShapeDirectionIntoControl(m_pDirection);
 
 	auto sizeX = std::format("{0}", m_pCollisionShapeConfig->size[0]);
 	m_pSizeX->SetText(sizeX.c_str());
@@ -205,7 +203,7 @@ void CCollisionShapeEditDialog::LoadConfigIntoControls()
 	m_pResourcePath->SetText(m_pCollisionShapeConfig->resourcePath.c_str());
 }
 
-void CCollisionShapeEditDialog::SaveConfigFromControls()
+void CPhysicCollisionShapeEditDialog::SaveConfigFromControls()
 {
 	m_pCollisionShapeConfig->type = GetCurrentSelectedShapeType();
 	m_pCollisionShapeConfig->direction = GetCurrentSelectedShapeDirection();
@@ -236,7 +234,7 @@ void CCollisionShapeEditDialog::SaveConfigFromControls()
 	m_pCollisionShapeConfig->configModified = true;
 }
 
-int CCollisionShapeEditDialog::GetCurrentSelectedShapeType()
+int CPhysicCollisionShapeEditDialog::GetCurrentSelectedShapeType()
 {
 	int type = PhysicShape_None;
 
@@ -250,7 +248,7 @@ int CCollisionShapeEditDialog::GetCurrentSelectedShapeType()
 	return type;
 }
 
-int CCollisionShapeEditDialog::GetCurrentSelectedShapeDirection()
+int CPhysicCollisionShapeEditDialog::GetCurrentSelectedShapeDirection()
 {
 	int direction = PhysicShapeDirection_X;
 
@@ -264,7 +262,7 @@ int CCollisionShapeEditDialog::GetCurrentSelectedShapeDirection()
 	return direction;
 }
 
-void CCollisionShapeEditDialog::UpdateControlStates()
+void CPhysicCollisionShapeEditDialog::UpdateControlStates()
 {
 	switch (GetCurrentSelectedShapeType())
 	{

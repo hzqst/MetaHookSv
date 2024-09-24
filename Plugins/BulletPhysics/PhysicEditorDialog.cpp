@@ -1,4 +1,8 @@
 #include "PhysicEditorDialog.h"
+#include "PhysicObjectConfigPage.h"
+#include "PhysicRigidBodyPage.h"
+#include "PhysicConstraintPage.h"
+#include "PhysicActionPage.h"
 
 #include "exportfuncs.h"
 
@@ -6,8 +10,6 @@
 #include "PhysicUTIL.h"
 
 #include <format>
-
-//Physic Editor
 
 CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, uint64 physicObjectId, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig) :
 	BaseClass(parent, name), m_physicObjectId(physicObjectId), m_pPhysicObjectConfig(pPhysicObjectConfig)
@@ -21,28 +23,32 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 
 	SetTitle(title.c_str(), false);
 
-	m_pBaseObjectConfigPage = new CBaseObjectConfigPage(this, "BaseObjectConfigPage", m_physicObjectId, pPhysicObjectConfig);
-	m_pBaseObjectConfigPage->MakeReadyForUse();
+	m_pPhysicObjectConfigPage = new CPhysicObjectConfigPage(this, "PhysicObjectConfigPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pPhysicObjectConfigPage->MakeReadyForUse();
 
-	m_pRigidBodyPage = new CRigidBodyPage(this, "RigidBodyPage", m_physicObjectId, pPhysicObjectConfig);
-	m_pRigidBodyPage->MakeReadyForUse();
+	m_pPhysicRigidBodyPage = new CPhysicRigidBodyPage(this, "PhysicRigidBodyPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pPhysicRigidBodyPage->MakeReadyForUse();
 
-	m_pConstraintPage = new CConstraintPage(this, "ConstraintPage", m_physicObjectId, pPhysicObjectConfig);
-	m_pConstraintPage->MakeReadyForUse();
+	m_pPhysicConstraintPage = new CPhysicConstraintPage(this, "PhysicConstraintPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pPhysicConstraintPage->MakeReadyForUse();
+
+	m_pPhysicActionPage = new CPhysicActionPage(this, "PhysicActionPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pPhysicActionPage->MakeReadyForUse();
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
 	SetSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
 
 	m_pTabPanel = new vgui::PropertySheet(this, "PhysicTabs");
 	m_pTabPanel->SetTabWidth(vgui::scheme()->GetProportionalScaledValue(72));
-	m_pTabPanel->AddPage(m_pBaseObjectConfigPage, "#BulletPhysics_Base");
-	m_pTabPanel->AddPage(m_pRigidBodyPage, "#BulletPhysics_RigidBody");
-	m_pTabPanel->AddPage(m_pConstraintPage, "#BulletPhysics_Constraint");
+	m_pTabPanel->AddPage(m_pPhysicObjectConfigPage, "#BulletPhysics_Base");
+	m_pTabPanel->AddPage(m_pPhysicRigidBodyPage, "#BulletPhysics_RigidBody");
+	m_pTabPanel->AddPage(m_pPhysicConstraintPage, "#BulletPhysics_Constraint");
+	m_pTabPanel->AddPage(m_pPhysicActionPage, "#BulletPhysics_Action");
 	m_pTabPanel->AddActionSignalTarget(this);
 
 	LoadControlSettings("bulletphysics/PhysicEditorDialog.res", "GAME");
 
-	m_pTabPanel->SetActivePage(m_pBaseObjectConfigPage);
+	m_pTabPanel->SetActivePage(m_pPhysicObjectConfigPage);
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 }

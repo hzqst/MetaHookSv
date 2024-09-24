@@ -1,36 +1,24 @@
 #include "BaseDynamicObject.h"
 
-CBaseDynamicObject::CBaseDynamicObject(const CDynamicObjectCreationParameter& CreationParam)
+CBaseDynamicObject::CBaseDynamicObject(const CPhysicObjectCreationParameter& CreationParam)
 {
 	m_entindex = CreationParam.m_entindex;
 	m_entity = CreationParam.m_entity;
 	m_model = CreationParam.m_model;
 	m_model_scaling = CreationParam.m_model_scaling;
 	m_playerindex = CreationParam.m_playerindex;
-	m_configId = CreationParam.m_pDynamicObjectConfig->configId;
-	m_flags = CreationParam.m_pDynamicObjectConfig->flags;
-	m_debugDrawLevel = CreationParam.m_pDynamicObjectConfig->debugDrawLevel;
+	m_configId = CreationParam.m_pPhysicObjectConfig->configId;
+	m_flags = CreationParam.m_pPhysicObjectConfig->flags;
+	m_debugDrawLevel = CreationParam.m_pPhysicObjectConfig->debugDrawLevel;
 
-	m_RigidBodyConfigs = CreationParam.m_pDynamicObjectConfig->RigidBodyConfigs;
-	m_ConstraintConfigs = CreationParam.m_pDynamicObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = CreationParam.m_pDynamicObjectConfig->ActionConfigs;
+	m_RigidBodyConfigs = CreationParam.m_pPhysicObjectConfig->RigidBodyConfigs;
+	m_ConstraintConfigs = CreationParam.m_pPhysicObjectConfig->ConstraintConfigs;
+	m_ActionConfigs = CreationParam.m_pPhysicObjectConfig->ActionConfigs;
 }
 
 CBaseDynamicObject::~CBaseDynamicObject()
 {
-	for (auto pConstraint : m_Constraints)
-	{
-		ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-	}
-
-	m_Constraints.clear();
-
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-	}
-
-	m_RigidBodies.clear();
+	DispatchFreePhysicComponents(m_PhysicComponents);
 }
 
 int CBaseDynamicObject::GetEntityIndex() const
@@ -50,9 +38,14 @@ entity_state_t* CBaseDynamicObject::GetClientEntityState() const
 
 bool CBaseDynamicObject::GetGoldSrcOriginAngles(float* origin, float* angles)
 {
-	if (GetRigidBodyCount() > 0)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		return GetRigidBodyByIndex(0)->GetGoldSrcOriginAngles(origin, angles);
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			return pRigidBody->GetGoldSrcOriginAngles(origin, angles);
+		}
 	}
 
 	return false;
@@ -98,27 +91,17 @@ bool CBaseDynamicObject::IsClientEntityNonSolid() const
 
 bool CBaseDynamicObject::ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const
 {
-	if (m_debugDrawLevel > 0 && ctx->m_staticObjectLevel > 0 && ctx->m_staticObjectLevel >= m_debugDrawLevel)
+	if (m_debugDrawLevel > 0 && ctx->m_dynamicObjectLevel > 0 && ctx->m_dynamicObjectLevel >= m_debugDrawLevel)
 		return true;
 
 	return false;
 }
 
-int CBaseDynamicObject::GetRigidBodyCount() const
-{
-	return (int)m_RigidBodies.size();
-}
-
-IPhysicRigidBody* CBaseDynamicObject::GetRigidBodyByIndex(int index) const
-{
-	return m_RigidBodies.at(index);
-}
-
 bool CBaseDynamicObject::EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (callback(pRigidBody))
+		if (callback(pPhysicComponent))
 			return true;
 	}
 
@@ -135,7 +118,7 @@ bool CBaseDynamicObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 
 	auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicObjectConfig;
 
-	CDynamicObjectCreationParameter CreationParam;
+	CPhysicObjectCreationParameter CreationParam;
 
 	CreationParam.m_entity = GetClientEntity();
 	CreationParam.m_entstate = GetClientEntityState();
@@ -150,7 +133,7 @@ bool CBaseDynamicObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 
 	CreationParam.m_playerindex = GetPlayerIndex();
 
-	CreationParam.m_pDynamicObjectConfig = pDynamicObjectConfig;
+	CreationParam.m_pPhysicObjectConfig = pDynamicObjectConfig;
 
 	CPhysicComponentFilters filters;
 
@@ -165,21 +148,26 @@ bool CBaseDynamicObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 	m_ConstraintConfigs = pDynamicObjectConfig->ConstraintConfigs;
 	m_ActionConfigs = pDynamicObjectConfig->ActionConfigs;
 
-	RebuildRigidBodies(CreationParam);
-
-	RebuildConstraints(CreationParam);
+	DispatchRebuildPhysicComponents(
+		m_PhysicComponents,
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
 
 	return true;
 }
 
 void CBaseDynamicObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
-
-		pRigidBody->Update(&ComponentUpdateContext);
-	}
+	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
 }
 
 bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr)
@@ -189,9 +177,14 @@ bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr)
 
 bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->SetupJiggleBones(studiohdr);
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			pRigidBody->SetupJiggleBones(studiohdr);
+		}
 	}
 
 	return true;
@@ -204,29 +197,31 @@ bool CBaseDynamicObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdP
 
 void CBaseDynamicObject::AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (!pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+		if (!pPhysicComponent->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pPhysicComponent, filters))
 		{
-			pRigidBody->AddToPhysicWorld(world);
+			pPhysicComponent->AddToPhysicWorld(world);
 		}
 	}
 }
 
 void CBaseDynamicObject::RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters)
 {
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto itor = m_PhysicComponents.rbegin(); itor != m_PhysicComponents.rend(); itor++)
 	{
-		if (pRigidBody->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pRigidBody, filters))
+		auto pPhysicComponent = (*itor);
+
+		if (pPhysicComponent->IsAddedToPhysicWorld(world) && CheckPhysicComponentFilters(pPhysicComponent, filters))
 		{
-			pRigidBody->RemoveFromPhysicWorld(world);
+			pPhysicComponent->RemoveFromPhysicWorld(world);
 		}
 	}
 }
 
-void CBaseDynamicObject::FreePhysicActionsWithFilters(int with_flags, int without_flags)
+void CBaseDynamicObject::FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
 {
-
+	DispatchFreePhysicCompoentsWithFilters(m_PhysicComponents, filters);
 }
 
 void CBaseDynamicObject::TransferOwnership(int entindex)
@@ -234,93 +229,50 @@ void CBaseDynamicObject::TransferOwnership(int entindex)
 	m_entindex = entindex;
 	m_entity = ClientEntityManager()->GetEntityByIndex(entindex);
 
-	for (auto pRigidBody : m_RigidBodies)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		pRigidBody->TransferOwnership(entindex);
-	}
-
-	for (auto pConstraint : m_Constraints)
-	{
-		pConstraint->TransferOwnership(entindex);
+		pPhysicComponent->TransferOwnership(entindex);
 	}
 }
 
 IPhysicComponent* CBaseDynamicObject::GetPhysicComponentByName(const std::string& name)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetName() == name)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetPhysicComponentByName(m_PhysicComponents, name);
 }
 
 IPhysicComponent* CBaseDynamicObject::GetPhysicComponentByComponentId(int id)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetPhysicComponentId() == id)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetPhysicComponentByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseDynamicObject::GetRigidBodyByName(const std::string& name)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetName() == name)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetRigidBodyByName(m_PhysicComponents, name);
 }
 
 IPhysicRigidBody* CBaseDynamicObject::GetRigidBodyByComponentId(int id)
 {
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		if (pRigidBody->GetPhysicComponentId() == id)
-		{
-			return pRigidBody;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetRigidBodyByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicConstraint* CBaseDynamicObject::GetConstraintByName(const std::string& name)
 {
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetName() == name)
-		{
-			return pConstraint;
-		}
-	}
-
-	return nullptr;
+	return DispatchGetConstraintByName(m_PhysicComponents, name);
 }
 
 IPhysicConstraint* CBaseDynamicObject::GetConstraintByComponentId(int id)
 {
-	for (auto pConstraint : m_Constraints)
-	{
-		if (pConstraint->GetPhysicComponentId() == id)
-		{
-			return pConstraint;
-		}
-	}
+	return DispatchGetConstraintByComponentId(m_PhysicComponents, id);
+}
 
-	return nullptr;
+IPhysicAction* CBaseDynamicObject::GetPhysicActionByName(const std::string& name)
+{
+	return DispatchGetPhysicActionByName(m_PhysicComponents, name);
+}
+
+IPhysicAction* CBaseDynamicObject::GetPhysicActionByComponentId(int id)
+{
+	return DispatchGetPhysicActionByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseDynamicObject::FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
@@ -328,146 +280,26 @@ IPhysicRigidBody* CBaseDynamicObject::FindRigidBodyByName(const std::string& nam
 	return GetRigidBodyByName(name);
 }
 
-void CBaseDynamicObject::CreateRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
+void CBaseDynamicObject::AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody)
 {
-	for (const auto& pRigidBodyConfig : CreationParam.m_pDynamicObjectConfig->RigidBodyConfigs)
-	{
-		auto pRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfig.get(), 0);
+	if (!pRigidBody)
+		return;
 
-		if (pRigidBody)
-		{
-			AddRigidBody(pRigidBody);
-		}
-	}
+	DispatchAddPhysicComponent(m_PhysicComponents, pRigidBody);
 }
 
-void CBaseDynamicObject::CreateConstraints(const CDynamicObjectCreationParameter& CreationParam)
+void CBaseDynamicObject::AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint)
 {
-	for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
-	{
-		const auto pConstraintConfigPtr = pConstraintConfig.get();
+	if (!pConstraint)
+		return;
 
-		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
-			continue;
-
-		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
-
-		if (pConstraint)
-		{
-			AddConstraint(pConstraint);
-		}
-	}
+	DispatchAddPhysicComponent(m_PhysicComponents, pConstraint);
 }
 
-void CBaseDynamicObject::AddRigidBody(IPhysicRigidBody* pRigidBody)
+void CBaseDynamicObject::AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction)
 {
-	ClientPhysicManager()->AddPhysicComponent(pRigidBody->GetPhysicComponentId(), pRigidBody);
+	if (!pPhysicAction)
+		return;
 
-	CPhysicObjectUpdateContext ObjectUpdateContext;
-
-	CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-	pRigidBody->Update(&ComponentUpdateContext);
-
-	m_RigidBodies.emplace_back(pRigidBody);
-}
-
-void CBaseDynamicObject::AddConstraint(IPhysicConstraint* pConstraint)
-{
-	ClientPhysicManager()->AddPhysicComponent(pConstraint->GetPhysicComponentId(), pConstraint);
-
-	CPhysicObjectUpdateContext ObjectUpdateContext;
-
-	CPhysicComponentUpdateContext ComponentUpdateContext(&ObjectUpdateContext);
-
-	pConstraint->Update(&ComponentUpdateContext);
-
-	m_Constraints.emplace_back(pConstraint);
-}
-
-void CBaseDynamicObject::RebuildRigidBodies(const CDynamicObjectCreationParameter& CreationParam)
-{
-	std::map<int, int> configIdToComponentIdMap;
-
-	for (auto pRigidBody : m_RigidBodies)
-	{
-		configIdToComponentIdMap[pRigidBody->GetPhysicConfigId()] = pRigidBody->GetPhysicComponentId();
-
-		ClientPhysicManager()->RemovePhysicComponent(pRigidBody->GetPhysicComponentId());
-	}
-
-	m_RigidBodies.clear();
-
-	for (const auto& pRigidBodyConfig : m_RigidBodyConfigs)
-	{
-		const auto pRigidBodyConfigPtr = pRigidBodyConfig.get();
-
-		auto found = configIdToComponentIdMap.find(pRigidBodyConfigPtr->configId);
-
-		if (found != configIdToComponentIdMap.end())
-		{
-			auto oldPhysicComponentId = found->second;
-
-			auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfigPtr, oldPhysicComponentId);
-
-			if (pNewRigidBody)
-			{
-				AddRigidBody(pNewRigidBody);
-			}
-		}
-		else
-		{
-			auto pNewRigidBody = CreateRigidBody(CreationParam, pRigidBodyConfigPtr, 0);
-
-			if (pNewRigidBody)
-			{
-				AddRigidBody(pNewRigidBody);
-			}
-		}
-	}
-}
-
-void CBaseDynamicObject::RebuildConstraints(const CDynamicObjectCreationParameter& CreationParam)
-{
-	std::map<int, int> configIdToComponentIdMap;
-
-	for (auto pConstraint : m_Constraints)
-	{
-		configIdToComponentIdMap[pConstraint->GetPhysicConfigId()] = pConstraint->GetPhysicComponentId();
-
-		ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
-	}
-
-	m_Constraints.clear();
-
-	for (const auto& pConstraintConfig : CreationParam.m_pDynamicObjectConfig->ConstraintConfigs)
-	{
-		const auto pConstraintConfigPtr = pConstraintConfig.get();
-
-		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
-			continue;
-
-		auto found = configIdToComponentIdMap.find(pConstraintConfigPtr->configId);
-
-		if (found != configIdToComponentIdMap.end())
-		{
-			auto oldPhysicComponentId = found->second;
-
-			auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, oldPhysicComponentId);
-
-			if (pNewConstraint)
-			{
-				AddConstraint(pNewConstraint);
-			}
-		}
-		else
-		{
-			auto pNewConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
-
-			if (pNewConstraint)
-			{
-				AddConstraint(pNewConstraint);
-			}
-		}
-	}
+	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicAction);
 }

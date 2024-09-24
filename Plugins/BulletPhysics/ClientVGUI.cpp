@@ -33,8 +33,6 @@ public:
 			return;
 		}
 
-		//vgui::scheme()->LoadSchemeFromFile("captionmod/CaptionScheme.res", "CaptionScheme");
-
 		if (!vgui::localize()->AddFile(g_pFullFileSystem, "bulletphysics/bulletphysics_%language%.txt"))
 		{
 			if (!vgui::localize()->AddFile(g_pFullFileSystem, "bulletphysics/bulletphysics_english.txt"))

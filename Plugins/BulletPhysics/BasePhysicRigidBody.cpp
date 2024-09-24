@@ -55,7 +55,7 @@ int CBasePhysicRigidBody::GetDebugDrawLevel() const
 
 bool CBasePhysicRigidBody::ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const
 {
-	if (m_debugDrawLevel > 0 && ctx->m_ragdollObjectLevel > 0 && ctx->m_ragdollObjectLevel >= m_debugDrawLevel)
+	if (m_debugDrawLevel > 0 && ctx->m_rigidbodyLevel > 0 && ctx->m_rigidbodyLevel >= m_debugDrawLevel)
 		return true;
 
 	return false;

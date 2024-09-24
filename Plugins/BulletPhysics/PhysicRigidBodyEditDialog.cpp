@@ -1,4 +1,5 @@
-#include "PhysicEditorDialog.h"
+#include "PhysicRigidBodyEditDialog.h"
+#include "PhysicCollisionShapeEditDialog.h"
 
 #include "exportfuncs.h"
 
@@ -9,7 +10,7 @@
 
 //RigidBody Editor
 
-CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name,
+CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, const char* name,
 	uint64 physicObjectId,
 	const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
 	const std::shared_ptr<CClientRigidBodyConfig>& pRigidBodyConfig) :
@@ -64,24 +65,24 @@ CRigidBodyEditDialog::CRigidBodyEditDialog(vgui::Panel* parent, const char* name
 
 	LoadAvailableShapesIntoControls();
 
-	LoadControlSettings("bulletphysics/RigidBodyEditDialog.res", "GAME");
+	LoadControlSettings("bulletphysics/PhysicRigidBodyEditDialog.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 }
 
-void CRigidBodyEditDialog::Activate(void)
+void CPhysicRigidBodyEditDialog::Activate(void)
 {
 	BaseClass::Activate();
 
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CRigidBodyEditDialog::OnResetData()
+void CPhysicRigidBodyEditDialog::OnResetData()
 {
 	LoadConfigIntoControls();
 }
 
-void CRigidBodyEditDialog::OnRefreshCollisionShape(int configId)
+void CPhysicRigidBodyEditDialog::OnRefreshCollisionShape(int configId)
 {
 	if (!m_pRigidBodyConfig->collisionShape)
 		return;
@@ -93,7 +94,7 @@ void CRigidBodyEditDialog::OnRefreshCollisionShape(int configId)
 	PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
 }
 
-void CRigidBodyEditDialog::OnCommand(const char* command)
+void CPhysicRigidBodyEditDialog::OnCommand(const char* command)
 {
 	if (!stricmp(command, "OK"))
 	{
@@ -121,12 +122,12 @@ void CRigidBodyEditDialog::OnCommand(const char* command)
 	BaseClass::OnCommand(command);
 }
 
-CRigidBodyEditDialog::~CRigidBodyEditDialog()
+CPhysicRigidBodyEditDialog::~CPhysicRigidBodyEditDialog()
 {
 
 }
 
-void CRigidBodyEditDialog::OnEditCollisionShape()
+void CPhysicRigidBodyEditDialog::OnEditCollisionShape()
 {
 	if (!m_pRigidBodyConfig->collisionShape)
 	{
@@ -139,12 +140,12 @@ void CRigidBodyEditDialog::OnEditCollisionShape()
 		ClientPhysicManager()->AddPhysicConfig(m_pRigidBodyConfig->collisionShape->configId, m_pRigidBodyConfig->collisionShape);
 	}
 
-	auto dialog = new CCollisionShapeEditDialog(this, "CollisionShapeEditDialog", m_physicObjectId, m_pPhysicObjectConfig, m_pRigidBodyConfig, m_pRigidBodyConfig->collisionShape);
+	auto dialog = new CPhysicCollisionShapeEditDialog(this, "PhysicCollisionShapeEditDialog", m_physicObjectId, m_pPhysicObjectConfig, m_pRigidBodyConfig, m_pRigidBodyConfig->collisionShape);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 }
 
-void CRigidBodyEditDialog::LoadAvailableBonesIntoControls()
+void CPhysicRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 {
 	//-1 means invalid bone
 	if (1)
@@ -186,7 +187,7 @@ void CRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 	}
 }
 
-void CRigidBodyEditDialog::LoadBoneIntoControls(int boneindex)
+void CPhysicRigidBodyEditDialog::LoadBoneIntoControls(int boneindex)
 {
 	for (int i = 0; i < m_pBone->GetItemCount(); ++i)
 	{
@@ -202,7 +203,7 @@ void CRigidBodyEditDialog::LoadBoneIntoControls(int boneindex)
 	m_pBone->ActivateItemByRow(0);
 }
 
-void CRigidBodyEditDialog::LoadAvailableShapesIntoControls()
+void CPhysicRigidBodyEditDialog::LoadAvailableShapesIntoControls()
 {
 	for (int i = 0; i < PhysicShape_Maximum; ++i)
 	{
@@ -216,7 +217,7 @@ void CRigidBodyEditDialog::LoadAvailableShapesIntoControls()
 	}
 }
 
-void CRigidBodyEditDialog::LoadShapeIntoControls(const CClientCollisionShapeConfigSharedPtr& collisionShape)
+void CPhysicRigidBodyEditDialog::LoadShapeIntoControls(const CClientCollisionShapeConfigSharedPtr& collisionShape)
 {
 	if (collisionShape)
 	{
@@ -235,7 +236,7 @@ void CRigidBodyEditDialog::LoadShapeIntoControls(const CClientCollisionShapeConf
 	m_pShape->ActivateItemByRow(0);
 }
 
-void CRigidBodyEditDialog::LoadConfigIntoControls()
+void CPhysicRigidBodyEditDialog::LoadConfigIntoControls()
 {
 	LoadBoneIntoControls(m_pRigidBodyConfig->boneindex);
 
@@ -273,7 +274,7 @@ void CRigidBodyEditDialog::LoadConfigIntoControls()
 #undef LOAD_INTO_CHECK_BUTTON
 }
 
-void CRigidBodyEditDialog::SaveConfigFromControls()
+void CPhysicRigidBodyEditDialog::SaveConfigFromControls()
 {
 	m_pRigidBodyConfig->boneindex = GetCurrentSelectedBoneIndex();
 
@@ -315,7 +316,7 @@ void CRigidBodyEditDialog::SaveConfigFromControls()
 	m_pRigidBodyConfig->configModified = true;
 }
 
-int CRigidBodyEditDialog::GetCurrentSelectedBoneIndex()
+int CPhysicRigidBodyEditDialog::GetCurrentSelectedBoneIndex()
 {
 	int boneindex = -1;
 

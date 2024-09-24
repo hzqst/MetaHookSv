@@ -5,11 +5,20 @@
 #include <string>
 
 const char* UTIL_GetPhysicObjectTypeLocalizationToken(int type);
+std::wstring UTIL_GetPhysicObjectTypeLocalizedName(int type);
+
 const char* UTIL_GetConstraintTypeLocalizationToken(int type);
-const char* UTIL_GetPhysicActionTypeLocalizationToken(int type);
+std::wstring UTIL_GetConstraintTypeLocalizedName(int type);
+
 const char* UTIL_GetRotOrderTypeLocalizationToken(int type);
+std::wstring UTIL_GetRotOrderTypeLocalizedName(int type);
+
 const char* UTIL_GetCollisionShapeTypeLocalizationToken(int type);
 std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type);
+
+const char* UTIL_GetPhysicActionTypeLocalizationToken(int type);
+std::wstring UTIL_GetPhysicActionTypeLocalizedName(int type);
+
 std::wstring UTIL_GetFormattedRigidBodyFlags(int flags);
 std::wstring UTIL_GetFormattedConstraintFlags(int flags);
 std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraintConfig* pConstraintConfig);
@@ -17,6 +26,7 @@ std::wstring UTIL_GetFormattedPhysicActionFlags(int flags);
 const char* UTIL_GetBoneRawName(studiohdr_t* studiohdr, int boneindex);
 std::string UTIL_GetFormattedBoneNameEx(studiohdr_t* studiohdr, int boneindex);
 std::string UTIL_GetFormattedBoneName(int modelindex, int boneindex);
+std::string UTIL_GetAbsoluteModelName(model_t* mod);
 
 const char* UTIL_GetPhysicObjectConfigTypeName(int type);
 const char* UTIL_GetConstraintTypeName(int type);
@@ -39,8 +49,6 @@ std::shared_ptr<CClientCollisionShapeConfig> UTIL_CloneCollisionShapeConfig(cons
 std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientRigidBodyConfig* pOldConfig);
 std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClientConstraintConfig* pOldConfig);
 std::shared_ptr<CClientPhysicActionConfig> UTIL_ClonePhysicActionConfig(const CClientPhysicActionConfig* pOldConfig);
-
-std::string UTIL_FormatAbsoluteModelName(model_t* mod);
 
 bool UTIL_IsCollisionShapeConfigModified(const CClientCollisionShapeConfig* pCollisionShapeConfig);
 bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicObjectConfig);
@@ -70,3 +78,6 @@ bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfi
 bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig);
 bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId);
 bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig);
+
+bool UTIL_GetCrc32ForBoneChunk(model_t* mod, std::string* output);
+bool UTIL_GetCrc32ForModelFile(model_t* mod, std::string* output);

@@ -15,7 +15,7 @@ enum BulletPhysicCollisionFilterGroups
 	RagdollObjectFilter = 0x200,
 	InspectorFilter = 0x400,
 	ConstraintFilter = 0x800,
-	FloaterFilter = 0x1000,
+	ActionFilter = 0x1000,
 };
 
 enum BulletPhysicCollisionFlags
@@ -108,7 +108,7 @@ public:
 
 	CBulletEntityMotionState(IPhysicObject* pPhysicObject) : CBulletBaseMotionState(pPhysicObject)
 	{
-		m_offsetmatrix.setIdentity();
+		//m_offsetmatrix.setIdentity();
 		m_worldTransform.setIdentity();
 		m_worldTransformInitialized = false;
 	}
@@ -155,6 +155,29 @@ public:
 	bool m_attachToJointB{};
 };
 
+ATTRIBUTE_ALIGNED16(class)
+CFollowPhysicComponentMotionState : public CBulletBaseMotionState
+{
+public:
+	CFollowPhysicComponentMotionState(IPhysicObject * pPhysicObject, int attachedPhysicComponentId, const btTransform& offsetmatrix) :
+		CBulletBaseMotionState(pPhysicObject), m_attachedPhysicComponentId(attachedPhysicComponentId), m_offsetmatrix(offsetmatrix)
+	{
+		
+	}
+
+	void getWorldTransform(btTransform & worldTrans) const override;
+
+	void setWorldTransform(const btTransform& worldTrans) override;
+
+	bool IsBoneBased() const override
+	{
+		return false;
+	}
+
+	int m_attachedPhysicComponentId{};
+	btTransform m_offsetmatrix;
+};
+
 class CBulletConstraintCreationContext
 {
 public:
@@ -190,9 +213,9 @@ public:
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
 
-	IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) override;
-	IDynamicObject* CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam) override;
-	IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) override;
+	IStaticObject* CreateStaticObject(const CPhysicObjectCreationParameter& CreationParam) override;
+	IDynamicObject* CreateDynamicObject(const CPhysicObjectCreationParameter& CreationParam) override;
+	IRagdollObject* CreateRagdollObject(const CPhysicObjectCreationParameter& CreationParam) override;
 
 	void AddPhysicComponentsToWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;

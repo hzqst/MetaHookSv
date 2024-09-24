@@ -25,6 +25,15 @@ public:
 
 	}
 
+	const char* GetTypeString() const override
+	{
+		return "BarnacleConstraintLimitAdjustmentAction";
+	}
+	const char* GetTypeLocalizationTokenString() const override
+	{
+		return "#BulletPhysics_BarnacleConstraintLimitAdjustmentAction";
+	}
+
 	void Update(CPhysicComponentUpdateContext* ComponentContext) override
 	{
 		auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);

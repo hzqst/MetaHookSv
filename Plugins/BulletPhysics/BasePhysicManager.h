@@ -7,6 +7,8 @@
 #include "ClientPhysicManager.h"
 #include "ClientPhysicConfig.h"
 
+class CClientPhysicObjectConfig;
+
 class CPhysicObjectCreationParameter
 {
 public:
@@ -17,29 +19,9 @@ public:
 	studiohdr_t* m_studiohdr{};
 	float m_model_scaling{ 1 };
 	int m_playerindex{};
-};
-
-class CStaticObjectCreationParameter : public CPhysicObjectCreationParameter
-{
-public:
-	CClientStaticObjectConfig* m_pStaticObjectConfig{};
-};
-
-class CDynamicObjectCreationParameter : public CPhysicObjectCreationParameter
-{
-public:
 	bool m_allowNonNativeRigidBody{};
-	CClientDynamicObjectConfig* m_pDynamicObjectConfig{};
+	CClientPhysicObjectConfig* m_pPhysicObjectConfig{};
 };
-
-class CRagdollObjectCreationParameter : public CPhysicObjectCreationParameter
-{
-public:
-	bool m_allowNonNativeRigidBody{};
-	CClientRagdollObjectConfig* m_pRagdollObjectConfig{};
-};
-
-
 
 class CBasePhysicManager : public IClientPhysicManager
 {
@@ -83,7 +65,6 @@ public:
 
 	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
-	//bool MergeBones(studiohdr_t* studiohdr, int entindex) override;
 
 	//PhysicObjectConfig Management
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;
@@ -95,7 +76,7 @@ public:
 	std::shared_ptr<CClientPhysicObjectConfig> GetPhysicObjectConfigForModelIndex(int modelindex);
 	void LoadPhysicObjectConfigs(void) override; 
 	void SavePhysicObjectConfigs(void) override;
-	bool SavePhysicObjectConfigToFile(const std::string& filename, CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+	bool SavePhysicObjectConfigToFile(const std::string& modelname, CClientPhysicObjectConfig* pPhysicObjectConfig) override;
 	void RemoveAllPhysicObjectConfigs(int withflags, int withoutflags) override;
 
 	//PhysicObject Management
@@ -156,9 +137,9 @@ public:
 	
 public:
 
-	virtual IStaticObject* CreateStaticObject(const CStaticObjectCreationParameter& CreationParam) = 0;
-	virtual IDynamicObject* CreateDynamicObject(const CDynamicObjectCreationParameter& CreationParam) = 0;
-	virtual IRagdollObject* CreateRagdollObject(const CRagdollObjectCreationParameter& CreationParam) = 0;
+	virtual IStaticObject* CreateStaticObject(const CPhysicObjectCreationParameter& CreationParam) = 0;
+	virtual IDynamicObject* CreateDynamicObject(const CPhysicObjectCreationParameter& CreationParam) = 0;
+	virtual IRagdollObject* CreateRagdollObject(const CPhysicObjectCreationParameter& CreationParam) = 0;
 
 private:
 	//WorldVertexArray and WorldIndexArray
@@ -186,15 +167,55 @@ private:
 	void LoadAdditionalResourcesForCollisionShapeConfig(CClientCollisionShapeConfig* pCollisionShapeConfig);
 
 	bool CreateEmptyPhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, int PhysicObjectType);
-	bool LoadPhysicObjectConfigFromFiles(const std::string& filename, CClientPhysicObjectConfigStorage& Storage);
-	bool LoadPhysicObjectConfigFromBSP(model_t* mod, CClientPhysicObjectConfigStorage& Storage);
 	void OverwritePhysicObjectConfig(const std::string& filename, CClientPhysicObjectConfigStorage& Storage, const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig);
+
+	bool LoadPhysicObjectConfigFromFiles(model_t* mod, CClientPhysicObjectConfigStorage& Storage);
+	bool LoadPhysicObjectConfigFromBSP(model_t* mod, CClientPhysicObjectConfigStorage& Storage);
 
 	bool LoadObjToPhysicArrays(const std::string& resourcePath, std::shared_ptr<CPhysicIndexArray>& pIndexArray);
 
 };
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters);
+
+bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext);
+void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext);
+IPhysicComponent* DispatchGetPhysicComponentByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
+IPhysicComponent* DispatchGetPhysicComponentByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
+IPhysicRigidBody* DispatchGetRigidBodyByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
+IPhysicRigidBody* DispatchGetRigidBodyByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
+IPhysicConstraint* DispatchGetConstraintByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
+IPhysicConstraint* DispatchGetConstraintByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id); 
+IPhysicAction* DispatchGetPhysicActionByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
+IPhysicAction* DispatchGetPhysicActionByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
+void DispatchAddPhysicComponent(std::vector<IPhysicComponent*>& PhysicComponents, IPhysicComponent* pPhysicComponent);
+void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents);
+void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters);
+
+void DispatchBuildPhysicComponents(
+	const CPhysicObjectCreationParameter& CreationParam,
+	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
+	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::function<IPhysicRigidBody* (const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
+	const std::function<IPhysicConstraint* (const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
+	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction);
+
+void DispatchRebuildPhysicComponents(
+	std::vector<IPhysicComponent*>& PhysicComponents,
+	const CPhysicObjectCreationParameter& CreationParam,
+	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
+	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::function<IPhysicRigidBody* (const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
+	const std::function<IPhysicConstraint* (const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
+	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction);
 
 void FloatGoldSrcToBullet(float* v);
 void FloatBulletToGoldSrc(float* v);

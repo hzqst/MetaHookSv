@@ -7,9 +7,11 @@
 #include "PhysicUTIL.h"
 #include "privatehook.h"
 
-CBulletRagdollObject::CBulletRagdollObject(const CRagdollObjectCreationParameter& CreationParam) : CBaseRagdollObject(CreationParam)
+CBulletRagdollObject::CBulletRagdollObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseRagdollObject(CreationParam)
 {
-	m_AnimControlConfigs = CreationParam.m_pRagdollObjectConfig->AnimControlConfigs;
+	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)CreationParam.m_pPhysicObjectConfig;
+
+	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
 
 	for (const auto& pAnimConfig : m_AnimControlConfigs)
 	{
@@ -42,38 +44,29 @@ CBulletRagdollObject::CBulletRagdollObject(const CRagdollObjectCreationParameter
 	}
 
 	SaveBoneRelativeTransform(CreationParam);
-	CreateRigidBodies(CreationParam);
-	CreateConstraints(CreationParam);
-	CreateActions(CreationParam);
+
+	DispatchBuildPhysicComponents(
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
+
 	SetupNonKeyBones(CreationParam);
 
-	InitCameraControl(&CreationParam.m_pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	InitCameraControl(&CreationParam.m_pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
 }
 
 CBulletRagdollObject::~CBulletRagdollObject()
 {
 
-}
-
-bool CBulletRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
-{
-	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
-		}
-	}
-
-	if (GetRigidBodyCount() > 0)
-	{
-		return GetRigidBodyByIndex(0)->GetGoldSrcOriginAngles(origin, angles);
-	}
-
-	return false;
 }
 
 bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr)
@@ -110,106 +103,10 @@ bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr)
 	return false;
 }
 
-bool CBulletRagdollObject::SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
-{
-	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			vec3_t vecGoldSrcNewOrigin;
-
-			pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, nullptr);
-
-			vec3_t vecSavedSimOrgigin;
-
-			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-
-			VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-
-			callback(pparams);
-
-			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool CBulletRagdollObject::SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
-{
-	if (m_FirstPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_FirstPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			vec3_t vecGoldSrcNewOrigin, vecGoldSrcNewAngles;
-
-			if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_FirstPersonViewCameraControl.m_origin, m_FirstPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles))
-			{
-				vec3_t vecSavedSimOrgigin;
-				vec3_t vecSavedClientViewAngles;
-				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-				int iSavedHealth = pparams->health;
-
-				pparams->viewheight[2] = 0;
-				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
-				pparams->health = 1;
-
-				callback(pparams);
-
-				pparams->health = iSavedHealth;
-				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-void CBulletRagdollObject::FreePhysicActionsWithFilters(int with_flags, int without_flags)
-{
-	for (auto itor = m_Actions.begin(); itor != m_Actions.end();)
-	{
-		auto pAction = (*itor);
-
-		if (!(pAction->GetFlags() & without_flags))
-		{
-			itor++;
-			continue;
-		}
-
-		if (with_flags == 0)
-		{
-			delete pAction;
-			itor = m_Actions.erase(itor);
-			continue;
-		}
-		else
-		{
-			if ((pAction->GetFlags() & with_flags))
-			{
-				delete pAction;
-				itor = m_Actions.erase(itor);
-				continue;
-			}
-		}
-
-		itor++;
-	}
-}
-
 void CBulletRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
 	CBaseRagdollObject::Update(ObjectUpdateContext);
+
 	CheckConstraintLinearErrors(ObjectUpdateContext);
 }
 
@@ -218,8 +115,13 @@ void CBulletRagdollObject::CheckConstraintLinearErrors(CPhysicObjectUpdateContex
 	if (ctx->m_bRigidbodyPoseChanged)
 		return;
 
-	for (auto pConstraint : m_Constraints)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
+		if(!pPhysicComponent->IsConstraint())
+			continue;
+
+		auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
+
 		if (pConstraint->GetFlags() & PhysicConstraintFlag_NonNative)
 			continue;
 
@@ -270,7 +172,7 @@ void CBulletRagdollObject::CheckConstraintLinearErrors(CPhysicObjectUpdateContex
 	}
 }
 
-IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CRagdollObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
+IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)
 {
 	if (GetRigidBodyByName(pRigidConfig->name))
 	{
@@ -320,7 +222,7 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CRagdollObjectCrea
 
 	int mask = btBroadphaseProxy::AllFilter;
 
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::FloaterFilter);
+	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::ActionFilter);
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 		mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
@@ -344,7 +246,7 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CRagdollObjectCrea
 		mask);
 }
 
-IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CRagdollObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)
+IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)
 {
 	btTypedConstraint* pInternalConstraint{};
 
@@ -549,7 +451,7 @@ IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CRagdollObjectCr
 	return nullptr;
 }
 
-IPhysicAction* CBulletRagdollObject::CreateAction(const CRagdollObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
 {
 	switch (pActionConfig->type)
 	{
@@ -559,7 +461,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CRagdollObjectCreationPa
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateActionFromConfig: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
@@ -579,7 +481,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CRagdollObjectCreationPa
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateActionFromConfig: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
@@ -599,7 +501,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CRagdollObjectCreationPa
 
 		if (!pConstraint)
 		{
-			gEngfuncs.Con_DPrintf("CreateActionFromConfig: constraint \"%s\" not found!\n", pActionConfig->constraint.c_str());
+			gEngfuncs.Con_DPrintf("CreateAction: constraint \"%s\" not found!\n", pActionConfig->constraint.c_str());
 			return nullptr;
 		}
 
@@ -614,12 +516,17 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CRagdollObjectCreationPa
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
 			(int)pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
 	}
+	case PhysicAction_SimpleBuoyancy:
+	{
+		//TODO
+		return nullptr;
+	}
 	}
 
 	return nullptr;
 }
 
-void CBulletRagdollObject::SaveBoneRelativeTransform(const CRagdollObjectCreationParameter& CreationParam)
+void CBulletRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)
 {
 	if (!CreationParam.m_studiohdr)
 		return;

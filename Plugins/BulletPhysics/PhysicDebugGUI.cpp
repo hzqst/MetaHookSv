@@ -1,6 +1,8 @@
 #include "PhysicDebugGUI.h"
 
 #include "PhysicEditorDialog.h"
+#include "PhysicRigidBodyEditDialog.h"
+#include "PhysicConstraintEditDialog.h"
 
 #include "CounterStrike.h"
 
@@ -55,7 +57,7 @@ void CPhysicDebugGUI::LoadAvailableInspectModeIntoControls()
 		"#BulletPhysics_InspectItem_PhysicObject", 
 		"#BulletPhysics_InspectItem_RigidBody",
 		"#BulletPhysics_InspectItem_Constraint",
-		"#BulletPhysics_InspectItem_Floater" };
+		"#BulletPhysics_InspectItem_Action" };
 
 	for (int i = 0; i < _ARRAYSIZE(VGUI2Tokens_InspectMode); ++i)
 	{
@@ -377,18 +379,18 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 				case PhysicInspectMode::RigidBody:
 				{
 					traceParam.withflags = PhysicTraceLineFlag_RigidBody;
-					traceParam.withoutflags |= (PhysicTraceLineFlag_Constraint | PhysicTraceLineFlag_Floater);
+					traceParam.withoutflags |= (PhysicTraceLineFlag_Constraint | PhysicTraceLineFlag_Action);
 					break;
 				}
 				case PhysicInspectMode::Constraint:
 				{
 					traceParam.withflags = PhysicTraceLineFlag_Constraint;
-					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_Floater);
+					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_Action);
 					break;
 				}
-				case PhysicInspectMode::Floater:
+				case PhysicInspectMode::Action:
 				{
-					traceParam.withflags = PhysicTraceLineFlag_Floater;
+					traceParam.withflags = PhysicTraceLineFlag_Action;
 					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_Constraint);
 					break;
 				}
@@ -475,7 +477,7 @@ void CPhysicDebugGUI::OnThink()
 			UpdateInspectedConstraint(false);
 		break;
 	}
-	case PhysicInspectMode::Floater:
+	case PhysicInspectMode::Action:
 	{
 		//TODO
 		break;
@@ -503,9 +505,9 @@ void CPhysicDebugGUI::UpdateInspectMode(PhysicInspectMode mode)
 	{
 		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Constraint");
 	}
-	else if (m_InspectMode == PhysicInspectMode::Floater)
+	else if (m_InspectMode == PhysicInspectMode::Action)
 	{
-		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Floater");
+		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Action");
 	}
 
 	ClientPhysicManager()->SetSelectedPhysicObjectId(0);
@@ -610,7 +612,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 			UpdateEditMode(PhysicEditMode::None);
 			return;
 		}
-		else if (m_InspectMode == PhysicInspectMode::Floater)
+		else if (m_InspectMode == PhysicInspectMode::Action)
 		{
 			//TODO
 			ClientPhysicManager()->SetSelectedPhysicComponentId(0);
@@ -639,7 +641,10 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 					return;
 			}
 		}
-		else if (m_InspectMode == PhysicInspectMode::RigidBody || m_InspectMode == PhysicInspectMode::Constraint || m_InspectMode == PhysicInspectMode::Floater)
+		else if (
+			m_InspectMode == PhysicInspectMode::RigidBody || 
+			m_InspectMode == PhysicInspectMode::Constraint || 
+			m_InspectMode == PhysicInspectMode::Action)
 		{
 			if (OpenInspectPhysicComponentMenu(true))
 			{
@@ -721,7 +726,7 @@ bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 
 		wchar_t wszModelName[64] = { 0 };
 
-		auto modelname = UTIL_FormatAbsoluteModelName(model);
+		auto modelname = UTIL_GetAbsoluteModelName(model);
 
 		vgui::localize()->ConvertANSIToUnicode(modelname.c_str(), wszModelName, sizeof(wszModelName));
 
@@ -756,7 +761,7 @@ bool CPhysicDebugGUI::UpdateInspectedPhysicObject(bool bSelected)
 
 			auto entindex = UNPACK_PHYSIC_OBJECT_ID_TO_ENTINDEX(physicObjectId);
 
-			auto modelname = UTIL_FormatAbsoluteModelName(pPhysicObject->GetModel());
+			auto modelname = UTIL_GetAbsoluteModelName(pPhysicObject->GetModel());
 
 			vgui::localize()->ConvertANSIToUnicode(modelname.c_str(), wszModelName, sizeof(wszModelName));
 
@@ -1560,7 +1565,7 @@ bool CPhysicDebugGUI::OpenEditRigidBodyDialog(uint64 physicObjectId, int physicO
 	if (!pRigidBodyConfig)
 		return false;
 
-	auto dialog = new CRigidBodyEditDialog(this, "RigidBodyEditDialog", physicObjectId, pPhysicObjectConfig, pRigidBodyConfig);
+	auto dialog = new CPhysicRigidBodyEditDialog(this, "RigidBodyEditDialog", physicObjectId, pPhysicObjectConfig, pRigidBodyConfig);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 
@@ -1862,7 +1867,7 @@ bool CPhysicDebugGUI::OpenEditConstraintDialog(uint64 physicObjectId, int physic
 	if (!pConstraintConfig)
 		return false;
 
-	auto dialog = new CConstraintEditDialog(this, "ConstraintEditDialog", physicObjectId, pPhysicObjectConfig, pConstraintConfig);
+	auto dialog = new CPhysicConstraintEditDialog(this, "PhysicConstraintEditDialog", physicObjectId, pPhysicObjectConfig, pConstraintConfig);
 	dialog->AddActionSignalTarget(this);
 	dialog->DoModal();
 

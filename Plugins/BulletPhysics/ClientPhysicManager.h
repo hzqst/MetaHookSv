@@ -27,7 +27,7 @@ public:
 	int m_ragdollObjectLevel{};
 	int m_rigidbodyLevel{};
 	int m_constraintLevel{};
-	int m_floaterLevel{};
+	int m_actionLevel{};
 	vec3_t m_constraintColor{};
 	vec3_t m_inspectedColor{};
 	vec3_t m_selectedColor{};
@@ -49,26 +49,25 @@ public:
 	bool m_bRigidbodyPoseUpdated{ };
 };
 
+class CPhysicComponentSubFilters
+{
+public:
+	bool m_HasWithFlags{};
+	bool m_HasWithoutFlags{};
+	bool m_HasExactMatchFlags{};
+	bool m_HasExactMatchComponentId{};
+	int m_WithFlags{ -1 };
+	int m_WithoutFlags{ 0 };
+	int m_ExactMatchFlags{ -1 };
+	int m_ExactMatchComponentId{ -1 };
+};
+
 class CPhysicComponentFilters
 {
 public:
-	bool m_HasWithRigidbodyFlags{ false };
-	bool m_HasWithoutRigidbodyFlags{ false };
-	bool m_HasExactMatchRigidbodyFlags{ false };
-	bool m_HasExactMatchRigidBodyComponentId{};
-	int m_WithRigidbodyFlags{ -1 };
-	int m_WithoutRigidbodyFlags{ 0 };
-	int m_ExactMatchRigidbodyFlags{ -1 };
-	int m_ExactMatchRigidBodyComponentId{ -1 };
-
-	bool m_HasWithConstraintFlags{};
-	bool m_HasWithoutConstraintFlags{};
-	bool m_HasExactMatchConstraintFlags{};
-	bool m_HasExactMatchConstraintComponentId{};
-	int m_WithConstraintFlags{ -1 };
-	int m_WithoutConstraintFlags{ 0 };
-	int m_ExactMatchConstraintFlags{ -1 };
-	int m_ExactMatchConstraintComponentId{ -1 };
+	CPhysicComponentSubFilters m_RigidBodyFilter;
+	CPhysicComponentSubFilters m_ConstraintFilter;
+	CPhysicComponentSubFilters m_PhysicActionFilter;
 };
 
 class CPhysicComponentUpdateContext
@@ -94,7 +93,7 @@ const int PhysicTraceLineFlag_DynamicObject = 0x4;
 const int PhysicTraceLineFlag_RagdollObject = 0x8;
 const int PhysicTraceLineFlag_RigidBody = 0x10;
 const int PhysicTraceLineFlag_Constraint = 0x20;
-const int PhysicTraceLineFlag_Floater = 0x40;
+const int PhysicTraceLineFlag_Action = 0x40;
 
 class CPhysicTraceLineParameters
 {
@@ -298,8 +297,6 @@ public:
 	virtual int GetPhysicConfigId() const = 0;
 	virtual bool IsClientEntityNonSolid() const = 0;
 	virtual bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext *ctx) const = 0;
-	virtual int GetRigidBodyCount() const = 0;
-	virtual IPhysicRigidBody *GetRigidBodyByIndex(int index) const = 0;
 
 	virtual bool EnumPhysicComponents(const fnEnumPhysicComponentCallback &callback) = 0;
 	virtual bool Rebuild(const CClientPhysicObjectConfig *pPhysicObjectConfig) = 0;
@@ -312,13 +309,15 @@ public:
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
 	virtual void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;
-	virtual void FreePhysicActionsWithFilters(int with_flags, int without_flags) = 0;
+	virtual void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) = 0;
 	virtual IPhysicComponent* GetPhysicComponentByName(const std::string& name) = 0;
 	virtual IPhysicComponent* GetPhysicComponentByComponentId(int id) = 0;
 	virtual IPhysicRigidBody* GetRigidBodyByName(const std::string& name) = 0;
 	virtual IPhysicRigidBody* GetRigidBodyByComponentId(int id) = 0;
 	virtual IPhysicConstraint* GetConstraintByName(const std::string& name) = 0;
 	virtual IPhysicConstraint* GetConstraintByComponentId(int id) = 0;
+	virtual IPhysicAction* GetPhysicActionByName(const std::string& name) = 0;
+	virtual IPhysicAction* GetPhysicActionByComponentId(int id) = 0;
 };
 
 class ICollisionPhysicObject : public IPhysicObject
