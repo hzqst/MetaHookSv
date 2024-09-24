@@ -1,9 +1,9 @@
-"bulletphysics/ConstraintPage.res"
+"bulletphysics/PhysicConstraintPage.res"
 {
-	"ConstraintPage"
+	"PhysicConstraintPage"
 	{
 		"ControlName"		"PropertyPage"
-		"fieldName"		"ConstraintPage"
+		"fieldName"		"PhysicConstraintPage"
 		"xpos"		"0"
 		"ypos"		"28"
 		"wide"		"624"
@@ -15,10 +15,10 @@
 		"tabPosition"		"0"
 		"paintbackground"		"1"
 	}
-	"ConstraintListPanel"
+	"PhysicConstraintListPanel"
 	{
 		"ControlName"		"ListPanel"
-		"fieldName"		"ConstraintListPanel"
+		"fieldName"		"PhysicConstraintListPanel"
 		"xpos"		"0"
 		"ypos"		"8"
 		"wide"		"624"

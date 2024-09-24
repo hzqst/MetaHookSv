@@ -1,9 +1,9 @@
-"bulletphysics/CollisionShapeEditDialog.res"
+"bulletphysics/PhysicCollisionShapeEditDialog.res"
 {
-	"CollisionShapeEditDialog"
+	"PhysicCollisionShapeEditDialog"
 	{
 		"ControlName"		"Frame"
-		"fieldName"		"CollisionShapeEditDialog"
+		"fieldName"		"PhysicCollisionShapeEditDialog"
 		"xpos"		"20"
 		"ypos"		"20"
 		"wide"		"350"

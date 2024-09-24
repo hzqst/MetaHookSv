@@ -1,12 +1,12 @@
-"bulletphysics/ConstraintEditDialog.res"
+"bulletphysics/PhysicConstraintEditDialog.res"
 {
-    "ConstraintEditDialog"
+    "PhysicConstraintEditDialog"
     {
         "ControlName"       "Frame"
-        "fieldName"         "ConstraintEditDialog"
+        "fieldName"         "PhysicConstraintEditDialog"
         "xpos"              "20"
         "ypos"              "20"
-        "wide"              "760"
+        "wide"              "800"
         "tall"              "560"
         "autoResize"        "0"
         "pinCorner"         "0"
@@ -566,13 +566,13 @@
         "textAlignment"     "west"
     }
 
-	"FactorListPanel"
+	"PhysicFactorListPanel"
 	{
 		"ControlName"		"ListPanel"
-		"fieldName"		"FactorListPanel"
+		"fieldName"		"PhysicFactorListPanel"
 		"xpos"		"520"
 		"ypos"		"40"
-		"wide"		"200"
+		"wide"		"260"
 		"tall"		"500"
 		"AutoResize"	"3"
 		"PinCorner"		"3"

@@ -1,9 +1,9 @@
-"bulletphysics/RigidBodyEditDialog.res"
+"bulletphysics/PhysicRigidBodyEditDialog.res"
 {
-	"RigidBodyEditDialog"
+	"PhysicRigidBodyEditDialog"
 	{
 		"ControlName"		"Frame"
-		"fieldName"		"RigidBodyEditDialog"
+		"fieldName"		"PhysicRigidBodyEditDialog"
 		"xpos"		"20"
 		"ypos"		"20"
 		"wide"		"560"

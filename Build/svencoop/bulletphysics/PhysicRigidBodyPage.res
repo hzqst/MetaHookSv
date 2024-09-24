@@ -1,9 +1,9 @@
-"bulletphysics/RigidBodyPage.res"
+"bulletphysics/PhysicRigidBodyPage.res"
 {
-	"RigidBodyPage"
+	"PhysicRigidBodyPage"
 	{
 		"ControlName"		"PropertyPage"
-		"fieldName"		"RigidBodyPage"
+		"fieldName"		"PhysicRigidBodyPage"
 		"xpos"		"0"
 		"ypos"		"28"
 		"wide"		"624"
@@ -15,10 +15,10 @@
 		"tabPosition"		"0"
 		"paintbackground"		"1"
 	}
-	"RigidBodyListPanel"
+	"PhysicRigidBodyListPanel"
 	{
 		"ControlName"		"ListPanel"
-		"fieldName"		"RigidBodyListPanel"
+		"fieldName"		"PhysicRigidBodyListPanel"
 		"xpos"		"0"
 		"ypos"		"8"
 		"wide"		"624"
