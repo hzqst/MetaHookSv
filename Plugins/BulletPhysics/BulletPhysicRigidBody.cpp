@@ -19,6 +19,13 @@ CBulletPhysicRigidBody::CBulletPhysicRigidBody(
 {
 	m_pInternalRigidBody = new btRigidBody(constructionInfo);
 
+	auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
+
+	if (pMotionState)
+	{
+		pMotionState->SetInternalRigidBody(m_pInternalRigidBody);
+	}
+
 	m_pInternalRigidBody->setUserIndex(id);
 	m_pInternalRigidBody->setUserPointer(this);
 
@@ -42,6 +49,20 @@ CBulletPhysicRigidBody::~CBulletPhysicRigidBody()
 
 	if (m_pInternalRigidBody)
 	{
+		int numRefs = m_pInternalRigidBody->getNumConstraintRefs();
+
+		for (int i = 0; i < numRefs; ++i)
+		{
+			auto pInternalContraint = m_pInternalRigidBody->getConstraintRef(i);
+
+			auto pConstraint = (IPhysicConstraint *)pInternalContraint->getUserConstraintPtr();
+
+			if (pConstraint)
+			{
+				ClientPhysicManager()->FreePhysicComponent(pConstraint);
+			}
+		}
+
 		auto pCollisionShape = m_pInternalRigidBody->getCollisionShape();
 
 		if (pCollisionShape)
@@ -74,7 +95,7 @@ bool CBulletPhysicRigidBody::AddToPhysicWorld(void* world)
 
 	if (!m_pInternalRigidBody)
 	{
-		gEngfuncs.Con_DPrintf("CBulletPhysicRigidBody::AddToPhysicWorld: empty m_pInternalRigidBody!\n");
+		gEngfuncs.Con_Printf("CBulletPhysicRigidBody::AddToPhysicWorld: empty m_pInternalRigidBody!\n");
 		return false;
 	}
 
@@ -84,14 +105,10 @@ bool CBulletPhysicRigidBody::AddToPhysicWorld(void* world)
 
 		m_addedToPhysicWorld = true;
 
-		//Notify all constraints connect to me to leave the world.
-
-		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
-
 		return true;
 	}
 
-	gEngfuncs.Con_DPrintf("CBulletPhysicRigidBody::AddToPhysicWorld: already added to world!\n");
+	gEngfuncs.Con_Printf("CBulletPhysicRigidBody::AddToPhysicWorld: already added to world!\n");
 	return false;
 }
 
@@ -101,24 +118,34 @@ bool CBulletPhysicRigidBody::RemoveFromPhysicWorld(void* world)
 
 	if (!m_pInternalRigidBody)
 	{
-		gEngfuncs.Con_DPrintf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: empty m_pInternalRigidBody!\n");
+		gEngfuncs.Con_Printf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: empty m_pInternalRigidBody!\n");
 		return false;
 	}
 
 	if (m_addedToPhysicWorld)
 	{
+		int numRefs = m_pInternalRigidBody->getNumConstraintRefs();
+
+		for (int i = 0; i < numRefs; ++i)
+		{
+			auto pInternalContraint = m_pInternalRigidBody->getConstraintRef(i);
+
+			auto pConstraint = (IPhysicConstraint*)pInternalContraint->getUserConstraintPtr();
+
+			if (pConstraint)
+			{
+				ClientPhysicManager()->RemovePhysicComponentFromWorld(pConstraint);
+			}
+		}
+
 		dynamicWorld->removeRigidBody(m_pInternalRigidBody);
 
 		m_addedToPhysicWorld = false;
 
-		//Notify all constraints connect to me to leave the world.
-
-		ClientPhysicManager()->OnPhysicComponentRemovedFromPhysicWorld(this);
-
 		return true;
 	}
 
-	gEngfuncs.Con_DPrintf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: already removed from world!\n");
+	gEngfuncs.Con_Printf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: already removed from world!\n");
 	return false;
 }
 
@@ -174,11 +201,6 @@ bool CBulletPhysicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 	//no impl
 	return false;
 }
-
-/*bool CBulletPhysicRigidBody::MergeBones(studiohdr_t* studiohdr)
-{
-	return false;
-}*/
 
 void* CBulletPhysicRigidBody::GetInternalRigidBody()
 {

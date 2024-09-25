@@ -56,8 +56,8 @@ CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, co
     m_pGargantua = new vgui::CheckButton(this, "Gargantua", "#BulletPhysics_Gargantua");
     m_pDeactiveOnNormalActivity = new vgui::CheckButton(this, "DeactiveOnNormalActivity", "#BulletPhysics_DeactiveOnNormalActivity");
     m_pDeactiveOnDeathActivity = new vgui::CheckButton(this, "DeactiveOnDeathActivity", "#BulletPhysics_DeactiveOnDeathActivity");
-    m_pDeactiveOnBarnacleActivity = new vgui::CheckButton(this, "DeactiveOnBarnacleActivity", "#BulletPhysics_DeactiveOnBarnacleActivity");
-    m_pDeactiveOnGargantuaActivity = new vgui::CheckButton(this, "DeactiveOnGargantuaActivity", "#BulletPhysics_DeactiveOnGargantuaActivity");
+    m_pDeactiveOnCaughtByBarnacleActivity = new vgui::CheckButton(this, "DeactiveOnCaughtByBarnacleActivity", "#BulletPhysics_DeactiveOnCaughtByBarnacleActivity");
+    m_pDeactiveOnBarnacleCatchingActivity = new vgui::CheckButton(this, "DeactiveOnBarnacleCatchingActivity", "#BulletPhysics_DeactiveOnBarnacleCatchingActivity");
     m_pDontResetPoseOnErrorCorrection = new vgui::CheckButton(this, "DontResetPoseOnErrorCorrection", "#BulletPhysics_DontResetPoseOnErrorCorrection");
 
     m_pPhysicFactorListPanel = new CPhysicFactorListPanel(this, "PhysicFactorListPanel");
@@ -477,7 +477,11 @@ void CPhysicConstraintEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComb
         }
     }
 
-    pComboBox->ActivateItem(0);
+    if (!rigidBodyName.empty()) {
+        pComboBox->SetText(rigidBodyName.c_str());
+    } else {
+        pComboBox->ActivateItem(0);
+    }
 }
 
 void CPhysicConstraintEditDialog::LoadConfigIntoControls()
@@ -536,8 +540,8 @@ void CPhysicConstraintEditDialog::LoadConfigIntoControls()
     LOAD_INTO_CHECK_BUTTON(flags, Gargantua);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnNormalActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnDeathActivity);
-    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnacleActivity);
-    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnGargantuaActivity);
+    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
+    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnacleCatchingActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
 
 #undef LOAD_INTO_CHECK_BUTTON
@@ -613,8 +617,8 @@ void CPhysicConstraintEditDialog::SaveConfigFromControls()
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, Gargantua);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnNormalActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnDeathActivity);
-    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnacleActivity);
-    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnGargantuaActivity);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnacleCatchingActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
 
     // Cleanup macro definition
@@ -691,22 +695,11 @@ void CPhysicConstraintEditDialog::SaveFactorsFromControl(vgui::ListPanel *pListP
 
 void CPhysicConstraintEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName)
 {
-    char szText[256];
+    char szText[256] = {0};
 
-    auto iActiveItem = pComboBox->GetActiveItem();
-    if (pComboBox->IsItemIDValid(iActiveItem))
-    {
-        auto kv = pComboBox->GetItemUserData(iActiveItem);
-        if (kv)
-        {
-            rigidBodyName = kv->GetString("name");
-        }
-        else
-        {
-            pComboBox->GetItemText(iActiveItem, szText, sizeof(szText));
-            rigidBodyName = szText;
-        }
-    }
+    pComboBox->GetText(szText, sizeof(szText));
+
+    rigidBodyName = szText;
 }
 
 int CPhysicConstraintEditDialog::GetCurrentSelectedConstraintType()

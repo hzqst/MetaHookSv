@@ -134,6 +134,7 @@
         "wide"              "180"
         "tall"              "24"
         "tabPosition"       "5"
+        "editable"       "1"
     }
     "RigidBodyBLabel"
     {
@@ -155,6 +156,7 @@
         "wide"              "140"
         "tall"              "24"
         "tabPosition"       "6"
+        "editable"       "1"
     }
 
     // Origin A X, Y, Z TextEntries
@@ -527,29 +529,29 @@
         "textAlignment"     "west"
     }
 
-    "DeactiveOnBarnacleActivity"
+    "DeactiveOnCaughtByBarnacleActivity"
     {
         "ControlName"       "CheckButton"
-        "fieldName"         "DeactiveOnBarnacleActivity"
+        "fieldName"         "DeactiveOnCaughtByBarnacleActivity"
         "xpos"              "20"
         "ypos"              "450"  // Adjusted from 390
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "29"
-        "labelText"         "#BulletPhysics_DeactiveOnBarnacleActivity"
+        "labelText"         "#BulletPhysics_DeactiveOnCaughtByBarnacleActivity"
         "textAlignment"     "west"
     }
 
-    "DeactiveOnGargantuaActivity"
+    "DeactiveOnBarnacleCatchingActivity"
     {
         "ControlName"       "CheckButton"
-        "fieldName"         "DeactiveOnGargantuaActivity"
+        "fieldName"         "DeactiveOnBarnacleCatchingActivity"
         "xpos"              "290"
         "ypos"              "450"  // Adjusted from 390
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "30"
-        "labelText"         "#BulletPhysics_DeactiveOnGargantuaActivity"
+        "labelText"         "#BulletPhysics_DeactiveOnBarnacleCatchingActivity"
         "textAlignment"     "west"
     }
 

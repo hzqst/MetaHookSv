@@ -968,7 +968,7 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 	{
 		if (pConfig->resourcePath.empty())
 		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: resourcePath cannot be empty!\n");
+			gEngfuncs.Con_Printf("BulletCreateCollisionShapeInternal: resourcePath cannot be empty!\n");
 			break;
 		}
 
@@ -976,7 +976,7 @@ btCollisionShape* BulletCreateCollisionShapeInternal(const CClientCollisionShape
 
 		if (!pIndexArray)
 		{
-			gEngfuncs.Con_DPrintf("BulletCreateCollisionShapeInternal: could not find IndexArray for \"%s\"!\n", pConfig->resourcePath.c_str());
+			gEngfuncs.Con_Printf("BulletCreateCollisionShapeInternal: Could not find IndexArray for \"%s\"!\n", pConfig->resourcePath.c_str());
 			break;
 		}
 
@@ -1163,7 +1163,7 @@ void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 {
 	auto ent = GetPhysicObject()->GetClientEntity();
 
-	if (GetPhysicObject()->IsStaticObject())
+	if (!GetInternalRigidBody() || GetInternalRigidBody()->isStaticOrKinematicObject())
 	{
 		btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
 
@@ -1224,7 +1224,7 @@ void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 */
 void CBulletEntityMotionState::setWorldTransform(const btTransform& worldTrans)
 {
-	if (GetPhysicObject()->IsStaticObject())
+	if (!GetInternalRigidBody() || GetInternalRigidBody()->isStaticOrKinematicObject())
 		return;
 
 	auto ent = GetPhysicObject()->GetClientEntity();
@@ -1940,37 +1940,6 @@ void CBulletPhysicManager::AddPhysicComponentToWorld(IPhysicComponent* pPhysicCo
 void CBulletPhysicManager::RemovePhysicComponentFromWorld(IPhysicComponent* pPhysicComponent)
 {
 	pPhysicComponent->RemoveFromPhysicWorld(m_dynamicsWorld);
-}
-
-void CBulletPhysicManager::OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent)
-{
-	
-}
-
-void CBulletPhysicManager::OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent)
-{
-	//TODO optimize?
-	if (pPhysicComponent->IsRigidBody())
-	{
-		auto pRigidBody = (IPhysicRigidBody *)pPhysicComponent;
-		auto numConstraint = m_dynamicsWorld->getNumConstraints();
-
-		for (int i = 0; i < numConstraint; ++i)
-		{
-			auto pInternalConstraint = m_dynamicsWorld->getConstraint(i);
-
-			if (&pInternalConstraint->getRigidBodyA() == pRigidBody->GetInternalRigidBody() ||
-				&pInternalConstraint->getRigidBodyB() == pRigidBody->GetInternalRigidBody())
-			{
-				auto pConstraint = GetPhysicComponent(pInternalConstraint->getUserConstraintId());
-
-				if (pConstraint)
-				{
-					RemovePhysicComponentFromWorld(pConstraint);
-				}
-			}
-		}
-	}
 }
 
 class CTraceLineRayTestCallback : public btCollisionWorld::ClosestRayResultCallback

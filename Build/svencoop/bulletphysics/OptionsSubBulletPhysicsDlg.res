@@ -177,10 +177,10 @@
 		"maxchars"		"16"
 		"NumericInputOnly"		"1"
 	}
-	"DebugDrawLevelFloaterLabel"
+	"DebugDrawLevelPhysicActionLabel"
 	{
 		"ControlName"		"Label"
-		"fieldName"		"DebugDrawLevelFloaterLabel"
+		"fieldName"		"DebugDrawLevelPhysicActionLabel"
 		"xpos"		"28"
 		"ypos"		"178"
 		"wide"		"180"
@@ -189,15 +189,15 @@
 		"pinCorner"		"0"
 		"visible"		"1"
 		"enabled"		"1"
-		"labelText"		"#GameUI_BulletPhysics_DebugDrawLevelFloater"
+		"labelText"		"#GameUI_BulletPhysics_DebugDrawLevelPhysicAction"
 		"textAlignment"		"west"
 		"dulltext"		"0"
 		"brighttext"	"0"
 	}
-	"DebugDrawLevelFloater"
+	"DebugDrawLevelPhysicAction"
 	{
 		"ControlName"		"CCvarTextEntry"
-		"fieldName"		"DebugDrawLevelFloater"
+		"fieldName"		"DebugDrawLevelPhysicAction"
 		"xpos"		"220"
 		"ypos"		"178"
 		"wide"		"48"
@@ -212,7 +212,6 @@
 		"maxchars"		"16"
 		"NumericInputOnly"		"1"
 	}
-
 	"DebugDraw"
 	{
 		"ControlName"		"CCvarToggleCheckButton"

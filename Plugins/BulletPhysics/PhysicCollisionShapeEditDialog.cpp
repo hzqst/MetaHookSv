@@ -55,7 +55,6 @@ CPhysicCollisionShapeEditDialog::CPhysicCollisionShapeEditDialog(vgui::Panel* pa
 	LoadControlSettings("bulletphysics/PhysicCollisionShapeEditDialog.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
-
 }
 
 CPhysicCollisionShapeEditDialog::~CPhysicCollisionShapeEditDialog()
@@ -173,34 +172,23 @@ void CPhysicCollisionShapeEditDialog::LoadConfigIntoControls()
 
 	LoadShapeDirectionIntoControl(m_pDirection);
 
-	auto sizeX = std::format("{0}", m_pCollisionShapeConfig->size[0]);
-	m_pSizeX->SetText(sizeX.c_str());
+#define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pCollisionShapeConfig->from); m_p##to->SetText(str##to.c_str());}
 
-	auto sizeY = std::format("{0}", m_pCollisionShapeConfig->size[1]);
-	m_pSizeY->SetText(sizeY.c_str());
+	LOAD_INTO_TEXT_ENTRY(size[0], SizeX);
+	LOAD_INTO_TEXT_ENTRY(size[1], SizeY);
+	LOAD_INTO_TEXT_ENTRY(size[2], SizeZ);
 
-	auto sizeZ = std::format("{0}", m_pCollisionShapeConfig->size[2]);
-	m_pSizeZ->SetText(sizeZ.c_str());
+	LOAD_INTO_TEXT_ENTRY(origin[0], OriginX);
+	LOAD_INTO_TEXT_ENTRY(origin[1], OriginY);
+	LOAD_INTO_TEXT_ENTRY(origin[2], OriginZ);
 
-	auto originX = std::format("{0}", m_pCollisionShapeConfig->origin[0]);
-	m_pOriginX->SetText(originX.c_str());
+	LOAD_INTO_TEXT_ENTRY(angles[0], AnglesX);
+	LOAD_INTO_TEXT_ENTRY(angles[1], AnglesY);
+	LOAD_INTO_TEXT_ENTRY(angles[2], AnglesZ);
 
-	auto originY = std::format("{0}", m_pCollisionShapeConfig->origin[1]);
-	m_pOriginY->SetText(originY.c_str());
+	LOAD_INTO_TEXT_ENTRY(resourcePath, ResourcePath);
 
-	auto originZ = std::format("{0}", m_pCollisionShapeConfig->origin[2]);
-	m_pOriginZ->SetText(originZ.c_str());
-
-	auto anglesX = std::format("{0}", m_pCollisionShapeConfig->angles[0]);
-	m_pAnglesX->SetText(anglesX.c_str());
-
-	auto anglesY = std::format("{0}", m_pCollisionShapeConfig->angles[1]);
-	m_pAnglesY->SetText(anglesY.c_str());
-
-	auto anglesZ = std::format("{0}", m_pCollisionShapeConfig->angles[2]);
-	m_pAnglesZ->SetText(anglesZ.c_str());
-
-	m_pResourcePath->SetText(m_pCollisionShapeConfig->resourcePath.c_str());
+#undef LOAD_INTO_TEXT_ENTRY
 }
 
 void CPhysicCollisionShapeEditDialog::SaveConfigFromControls()
@@ -229,6 +217,7 @@ void CPhysicCollisionShapeEditDialog::SaveConfigFromControls()
 	SAVE_FLOAT_FROM_TEXT_ENTRY(AnglesZ, angles[2], atof);
 
 	SAVE_FLOAT_FROM_TEXT_ENTRY(ResourcePath, resourcePath, std::string);
+
 #undef SAVE_FLOAT_FROM_TEXT_ENTRY
 
 	m_pCollisionShapeConfig->configModified = true;
@@ -238,11 +227,11 @@ int CPhysicCollisionShapeEditDialog::GetCurrentSelectedShapeType()
 {
 	int type = PhysicShape_None;
 
-	auto pShapeKV = m_pShape->GetActiveItemUserData();
+	auto kv = m_pShape->GetActiveItemUserData();
 
-	if (pShapeKV)
+	if (kv)
 	{
-		type = pShapeKV->GetInt("type", PhysicShape_None);
+		type = kv->GetInt("type", PhysicShape_None);
 	}
 
 	return type;
@@ -252,11 +241,11 @@ int CPhysicCollisionShapeEditDialog::GetCurrentSelectedShapeDirection()
 {
 	int direction = PhysicShapeDirection_X;
 
-	auto pDirectionKV = m_pDirection->GetActiveItemUserData();
+	auto kv = m_pDirection->GetActiveItemUserData();
 
-	if (pDirectionKV)
+	if (kv)
 	{
-		direction = pDirectionKV->GetInt("direction", PhysicShapeDirection_X);
+		direction = kv->GetInt("direction", PhysicShapeDirection_X);
 	}
 
 	return direction;
@@ -264,7 +253,9 @@ int CPhysicCollisionShapeEditDialog::GetCurrentSelectedShapeDirection()
 
 void CPhysicCollisionShapeEditDialog::UpdateControlStates()
 {
-	switch (GetCurrentSelectedShapeType())
+	int type = GetCurrentSelectedShapeType();
+
+	switch (type)
 	{
 	case PhysicShape_Box: {
 		m_pDirectionLabel->SetVisible(false);
@@ -362,5 +353,4 @@ void CPhysicCollisionShapeEditDialog::UpdateControlStates()
 		m_pAnglesY->SetVisible(false);
 		m_pAnglesZ->SetVisible(false);
 	}
-
 }

@@ -145,9 +145,11 @@ public:
 class CClientAnimControlConfig : public CClientBasePhysicConfig
 {
 public:
-	int sequence{};
-	int gaitsequence{};
-	float frame{};
+	CClientAnimControlConfig();
+
+	int sequence{-1};
+	int gaitsequence{-1};
+	float animframe{0};
 	StudioAnimActivityType activity{ StudioAnimActivityType_Idle };
 	int controller[4]{ 0 };
 	int blending[4]{ 0 };

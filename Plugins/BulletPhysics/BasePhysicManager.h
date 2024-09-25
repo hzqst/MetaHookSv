@@ -7,22 +7,6 @@
 #include "ClientPhysicManager.h"
 #include "ClientPhysicConfig.h"
 
-class CClientPhysicObjectConfig;
-
-class CPhysicObjectCreationParameter
-{
-public:
-	cl_entity_t* m_entity{};
-	entity_state_t* m_entstate{};
-	int m_entindex{};
-	model_t* m_model{};
-	studiohdr_t* m_studiohdr{};
-	float m_model_scaling{ 1 };
-	int m_playerindex{};
-	bool m_allowNonNativeRigidBody{};
-	CClientPhysicObjectConfig* m_pPhysicObjectConfig{};
-};
-
 class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
@@ -89,7 +73,9 @@ public:
 	void RemoveAllPhysicObjects(int withflags, int withoutflags) override;
 	bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) override;
 	bool RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
-	bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig);
+	bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+	bool RebuildPhysicObjectEx2(IPhysicObject* pPhysicObject, const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+
 	void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
 	void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t *mod) override;

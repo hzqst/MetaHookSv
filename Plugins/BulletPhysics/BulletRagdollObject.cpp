@@ -9,59 +9,7 @@
 
 CBulletRagdollObject::CBulletRagdollObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseRagdollObject(CreationParam)
 {
-	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)CreationParam.m_pPhysicObjectConfig;
-
-	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
-
-	for (const auto& pAnimConfig : m_AnimControlConfigs)
-	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Idle)
-		{
-			m_IdleAnimConfig = pAnimConfig;
-			break;
-		}
-	}
-
-	for (const auto& pAnimConfig : m_AnimControlConfigs)
-	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Debug)
-		{
-			m_DebugAnimConfig = pAnimConfig;
-			break;
-		}
-	}
-
-	if (CreationParam.m_model->type == mod_studio)
-	{
-		if (m_IdleAnimConfig)
-		{
-			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
-		}
-		else
-		{
-			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
-		}
-	}
-
-	SaveBoneRelativeTransform(CreationParam);
-
-	DispatchBuildPhysicComponents(
-		CreationParam,
-		m_RigidBodyConfigs,
-		m_ConstraintConfigs,
-		m_ActionConfigs,
-		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
-	);
-
-	SetupNonKeyBones(CreationParam);
-
-	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+	
 }
 
 CBulletRagdollObject::~CBulletRagdollObject()
@@ -182,7 +130,7 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 
 	if (pRigidConfig->mass < 0)
 	{
-		gEngfuncs.Con_Printf("CreateRigidBody: cannot create \"%s\" because mass < 0.\n", pRigidConfig->name.c_str());
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass < 0.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
@@ -190,7 +138,7 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 
 	if (!pMotionState)
 	{
-		gEngfuncs.Con_Printf("CreateRigidBody: cannot create \"%s\" because there is no MotionState available.\n", pRigidConfig->name.c_str());
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no MotionState available.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
@@ -200,12 +148,24 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 	{
 		delete pMotionState;
 
-		gEngfuncs.Con_Printf("CreateRigidBody: cannot create \"%s\" because there is no CollisionShape available.\n", pRigidConfig->name.c_str());
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no CollisionShape available.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
-	btVector3 shapeInertia;
-	pCollisionShape->calculateLocalInertia(pRigidConfig->mass, shapeInertia);
+	if (pRigidConfig->mass > 0 && pCollisionShape->isNonMoving())
+	{
+		delete pMotionState;
+		delete pCollisionShape;
+
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass > 0 is not allowed when using non-moving CollisionShape.\n", pRigidConfig->name.c_str());
+		return nullptr;
+	}
+
+	btVector3 shapeInertia = { 0, 0, 0 };
+
+	if (pRigidConfig->mass > 0) {
+		pCollisionShape->calculateLocalInertia(pRigidConfig->mass, shapeInertia);
+	}
 
 	btRigidBody::btRigidBodyConstructionInfo cInfo(pRigidConfig->mass, pMotionState, pCollisionShape, shapeInertia);
 	cInfo.m_friction = pRigidConfig->linearFriction;
@@ -466,7 +426,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationPar
 		}
 
 		return new CBulletBarnacleDragForceAction(
-			physicComponentId,
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
 			pActionConfig,
@@ -486,7 +446,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationPar
 		}
 
 		return new CBulletBarnacleChewForceAction(
-			physicComponentId,
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
 			pActionConfig,
@@ -506,7 +466,7 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationPar
 		}
 
 		return new CBulletBarnacleConstraintLimitAdjustmentAction(
-			physicComponentId,
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
 			pActionConfig,

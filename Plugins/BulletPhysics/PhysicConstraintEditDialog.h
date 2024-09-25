@@ -91,8 +91,8 @@ private:
 	vgui::CheckButton* m_pGargantua{};
 	vgui::CheckButton* m_pDeactiveOnNormalActivity{};
 	vgui::CheckButton* m_pDeactiveOnDeathActivity{};
-	vgui::CheckButton* m_pDeactiveOnBarnacleActivity{};
-	vgui::CheckButton* m_pDeactiveOnGargantuaActivity{};
+	vgui::CheckButton* m_pDeactiveOnCaughtByBarnacleActivity{};
+	vgui::CheckButton* m_pDeactiveOnBarnacleCatchingActivity{};
 	vgui::CheckButton* m_pDontResetPoseOnErrorCorrection{};
 
 	CPhysicFactorListPanel* m_pPhysicFactorListPanel{};

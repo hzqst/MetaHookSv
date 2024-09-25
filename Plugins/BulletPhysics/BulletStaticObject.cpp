@@ -3,24 +3,9 @@
 
 CBulletStaticObject::CBulletStaticObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseStaticObject(CreationParam)
 {
-	if (CreationParam.m_model->type == mod_studio)
-	{
-		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
-	}
 
-	DispatchBuildPhysicComponents(
-		CreationParam,
-		m_RigidBodyConfigs,
-		m_ConstraintConfigs,
-		m_ActionConfigs,
-		std::bind(&CBaseStaticObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
-	);
 }
+
 CBulletStaticObject::~CBulletStaticObject()
 {
 
@@ -34,11 +19,17 @@ IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CPhysicObjectCreati
 		return nullptr;
 	}
 
+	if (pRigidConfig->mass < 0)
+	{
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass < 0.\n", pRigidConfig->name.c_str());
+		return nullptr;
+	}
+
 	auto pMotionState = BulletCreateMotionState(CreationParam, pRigidConfig, this);
 
 	if (!pMotionState)
 	{
-		gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for StaticObject because there is no MotionState available.\n");
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no MotionState available.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
@@ -48,7 +39,16 @@ IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CPhysicObjectCreati
 	{
 		delete pMotionState;
 
-		gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for StaticObject because there is no CollisionShape available.\n");
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no CollisionShape available.\n", pRigidConfig->name.c_str());
+		return nullptr;
+	}
+
+	if (pRigidConfig->mass > 0 && pCollisionShape->isNonMoving())
+	{
+		delete pMotionState;
+		delete pCollisionShape;
+
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass > 0 is not allowed when using non-moving CollisionShape.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 

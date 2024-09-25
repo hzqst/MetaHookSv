@@ -33,10 +33,11 @@ private:
 	void LoadShapeDirectionIntoControl(vgui::ComboBox* pComboBox);
 
 	void SaveConfigFromControls();
-	void UpdateControlStates();
 
 	int GetCurrentSelectedShapeType();
 	int GetCurrentSelectedShapeDirection();
+
+	void UpdateControlStates();
 
 private:
 	vgui::ComboBox* m_pShape{};

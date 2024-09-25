@@ -39,6 +39,7 @@ enum PhysicConfigType
 	PhysicConfigType_Constraint,
 	PhysicConfigType_CollisionShape,
 	PhysicConfigType_Action,
+	PhysicConfigType_AnimControl,
 };
 
 enum PhysicConfigState
@@ -116,8 +117,8 @@ const int PhysicConstraintFlag_Barnacle = 0x1;
 const int PhysicConstraintFlag_Gargantua = 0x2;
 const int PhysicConstraintFlag_DeactiveOnNormalActivity = 0x4;
 const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
-const int PhysicConstraintFlag_DeactiveOnBarnacleActivity = 0x10;
-const int PhysicConstraintFlag_DeactiveOnGargantuaActivity = 0x20;
+const int PhysicConstraintFlag_DeactiveOnCaughtByBarnacleActivity = 0x10;
+const int PhysicConstraintFlag_DeactiveOnBarnacleCatchingActivity = 0x20;
 const int PhysicConstraintFlag_DontResetPoseOnErrorCorrection = 0x40;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
@@ -228,16 +229,6 @@ enum PhysicShape
 	PhysicShape_Maximum
 };
 
-//const int PhysicShape_None = 0;
-//const int PhysicShape_Box = 1;
-//const int PhysicShape_Sphere = 2;
-//const int PhysicShape_Capsule = 3;
-//const int PhysicShape_Cylinder = 4;
-//const int PhysicShape_MultiSphere = 5;
-//const int PhysicShape_TriangleMesh = 6;
-//const int PhysicShape_Compound = 7;
-//const int PhysicShape_Maximum = 8;
-
 enum PhysicAction
 {
 	PhysicAction_None = 0,
@@ -278,16 +269,14 @@ enum PhysicShapeDirection
 	PhysicShapeDirection_Maximum
 };
 
-//const int PhysicShapeDirection_X = 0;
-//const int PhysicShapeDirection_Y = 1;
-//const int PhysicShapeDirection_Z = 2;
-
 enum StudioAnimActivityType
 {
 	StudioAnimActivityType_Idle,
 	StudioAnimActivityType_Death,
-	StudioAnimActivityType_Barnacle,
+	StudioAnimActivityType_CaughtByBarnacle,
+	StudioAnimActivityType_BarnacleCatching,
 	StudioAnimActivityType_Debug,
+	StudioAnimActivityType_Maximum,
 };
 
 const int PhysicIndexArrayFlag_FromBSP = 0x1;

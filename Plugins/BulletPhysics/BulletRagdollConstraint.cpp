@@ -50,13 +50,13 @@ void CBulletRagdollConstraint::Update(CPhysicComponentUpdateContext* ComponentUp
 			break;
 		}
 
-		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetBarnacleIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleActivity))
+		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle && (m_flags & PhysicConstraintFlag_DeactiveOnCaughtByBarnacleActivity))
 		{
 			bDeactivate = true;
 			break;
 		}
 
-		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Barnacle && pRagdollObject->GetGargantuaIndex() && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaActivity))
+		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleCatching && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleCatchingActivity))
 		{
 			bDeactivate = true;
 			break;

@@ -25,8 +25,8 @@ private:
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	void OnCommand(const char* command) override;
 
-	void LoadAvailableShapesIntoControls();
-	void LoadAvailableBonesIntoControls();
+	void LoadAvailableShapesIntoControl(vgui::ComboBox* pComboBox);
+	void LoadAvailableBonesIntoControl(vgui::ComboBox* pComboBox);
 	void LoadShapeIntoControls(const CClientCollisionShapeConfigSharedPtr& collisionShape);
 	void LoadBoneIntoControls(int boneindex);
 	void LoadConfigIntoControls();

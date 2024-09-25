@@ -33,6 +33,20 @@ public:
 	vec3_t m_selectedColor{};
 };
 
+class CPhysicObjectCreationParameter
+{
+public:
+	cl_entity_t* m_entity{};
+	entity_state_t* m_entstate{};
+	int m_entindex{};
+	model_t* m_model{};
+	studiohdr_t* m_studiohdr{};
+	float m_model_scaling{ 1 };
+	int m_playerindex{};
+	bool m_allowNonNativeRigidBody{};
+	const CClientPhysicObjectConfig* m_pPhysicObjectConfig{};
+};
+
 class CPhysicObjectUpdateContext
 {
 public:
@@ -299,7 +313,8 @@ public:
 	virtual bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext *ctx) const = 0;
 
 	virtual bool EnumPhysicComponents(const fnEnumPhysicComponentCallback &callback) = 0;
-	virtual bool Rebuild(const CClientPhysicObjectConfig *pPhysicObjectConfig) = 0;
+	virtual bool Build(const CPhysicObjectCreationParameter& CreationParam) = 0;
+	virtual bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) = 0;
 	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransferOwnership(int entindex) = 0;
 	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
@@ -380,7 +395,7 @@ public:
 	}
 
 	virtual StudioAnimActivityType GetActivityType() const = 0;
-	virtual StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) const = 0;
+	virtual void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType& ActivityType) const = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdatePose(entity_state_t* curstate) = 0;
@@ -442,6 +457,7 @@ public:
 	virtual bool TransferOwnershipForPhysicObject(int old_entindex, int new_entindex) = 0;
 	virtual bool RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
+	virtual bool RebuildPhysicObjectEx2(IPhysicObject* pPhysicObject, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
@@ -456,8 +472,6 @@ public:
 	virtual void RemovePhysicComponentsFromWorld(IPhysicObject* pPhysicObject, const CPhysicComponentFilters& filters) = 0;
 	virtual void AddPhysicComponentToWorld(IPhysicComponent* pPhysicComponent) = 0;
 	virtual void RemovePhysicComponentFromWorld(IPhysicComponent* pPhysicComponent) = 0;
-	virtual void OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent) = 0;
-	virtual void OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent) = 0;
 
 	//PhysicComponent Management
 

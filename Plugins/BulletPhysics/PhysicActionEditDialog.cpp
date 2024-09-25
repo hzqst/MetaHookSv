@@ -16,17 +16,22 @@ CPhysicActionEditDialog::CPhysicActionEditDialog(vgui::Panel* parent, const char
 {
 	SetDeleteSelfOnClose(true);
 
-	SetTitle("#BulletPhysics_ConstraintEditor", false);
+	SetTitle("#BulletPhysics_ActionEditor", false);
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(520), vgui::scheme()->GetProportionalScaledValue(560));
 	SetSize(vgui::scheme()->GetProportionalScaledValue(520), vgui::scheme()->GetProportionalScaledValue(560));
 
 	// Initialize UI components
 	m_pName = new vgui::TextEntry(this, "Name");
-	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
 	m_pType = new vgui::ComboBox(this, "Type", 0, false);
+	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
+
+	m_pRigidBodyLabel = new vgui::Label(this, "RigidBodyLabel", "#BulletPhysics_RigidBody");
 	m_pRigidBody = new vgui::ComboBox(this, "RigidBody", 0, true);
+
+	m_pConstraintLabel = new vgui::Label(this, "ConstraintLabel", "#BulletPhysics_Constraint");
 	m_pConstraint = new vgui::ComboBox(this, "Constraint", 0, true);
+
 	m_pOriginX = new vgui::TextEntry(this, "OriginX");
 	m_pOriginY = new vgui::TextEntry(this, "OriginY");
 	m_pOriginZ = new vgui::TextEntry(this, "OriginZ");
@@ -429,27 +434,47 @@ void CPhysicActionEditDialog::UpdateControlStates()
 	switch (type)
 	{
 	case PhysicAction_BarnacleDragForce: {
+
+		m_pRigidBodyLabel->SetVisible(true);
 		m_pRigidBody->SetVisible(true);
+
+		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
+
 		break;
 	}
 	case PhysicAction_BarnacleChewForce: {
+		m_pRigidBodyLabel->SetVisible(true);
 		m_pRigidBody->SetVisible(true);
+
+		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
 		break;
 	}
 	case PhysicAction_BarnacleConstraintLimitAdjustment: {
+
+		m_pRigidBodyLabel->SetVisible(false);
 		m_pRigidBody->SetVisible(false);
+
+		m_pConstraintLabel->SetVisible(true);
 		m_pConstraint->SetVisible(true);
+
 		break;
 	}
 	case PhysicAction_SimpleBuoyancy: {
+
+		m_pRigidBodyLabel->SetVisible(true);
 		m_pRigidBody->SetVisible(true);
+
+		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
 		break;
 	}
 	default: {
+		m_pRigidBodyLabel->SetVisible(false);
 		m_pRigidBody->SetVisible(false);
+
+		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
 		break;
 	}
@@ -465,8 +490,6 @@ void CPhysicActionEditDialog::SaveConfigFromControls()
 	SaveRigidBodyFromControl(m_pRigidBody, m_pPhysicActionConfig->rigidbody);
 	SaveConstraintFromControl(m_pConstraint, m_pPhysicActionConfig->constraint);
 
-
-	// Macro to save values from text entries to the constraint configuration
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) { \
         m_p##from->GetText(szText, sizeof(szText)); \
         m_pPhysicActionConfig->to = processor(szText); \
@@ -474,7 +497,6 @@ void CPhysicActionEditDialog::SaveConfigFromControls()
 
 	SAVE_FROM_TEXT_ENTRY(name, Name, std::string);
 
-	// Save vector components and other numerical values
 	SAVE_FROM_TEXT_ENTRY(origin[0], OriginX, atof);
 	SAVE_FROM_TEXT_ENTRY(origin[1], OriginY, atof);
 	SAVE_FROM_TEXT_ENTRY(origin[2], OriginZ, atof);
@@ -485,7 +507,6 @@ void CPhysicActionEditDialog::SaveConfigFromControls()
 
 	SAVE_FROM_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel, atoi);
 
-	// Cleanup macro definition
 #undef SAVE_FROM_TEXT_ENTRY
 
 	// Save flags from check buttons using bitwise operations

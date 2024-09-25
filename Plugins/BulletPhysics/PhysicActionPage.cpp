@@ -157,14 +157,10 @@ void CPhysicActionPage::OnClonePhysicAction(int configId)
 	// Modify the name or any other parameters to indicate that this is a cloned version.
 	clonedPhysicActionConfig->name += " (Clone)";
 
-	clonedPhysicActionConfig->configModified = true;
-
 	// Add the cloned configuration to the list of PhysicActions in the physic object config.
 	m_pPhysicObjectConfig->ActionConfigs.push_back(clonedPhysicActionConfig);
 
 	m_pPhysicObjectConfig->configModified = true;
-
-	ClientPhysicManager()->AddPhysicConfig(clonedPhysicActionConfig->configId, clonedPhysicActionConfig);
 
 	// Refresh the UI to include the new PhysicAction configuration.
 	LoadPhysicActionAsListPanelItem(clonedPhysicActionConfig.get());
@@ -173,28 +169,7 @@ void CPhysicActionPage::OnClonePhysicAction(int configId)
 	SelectPhysicActionItem(clonedPhysicActionConfig->configId);
 
 	//Update PhysicObject
-
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(m_physicObjectId);
-
-	if (pPhysicObject->Rebuild(m_pPhysicObjectConfig.get()))
-	{
-		int clonedPhysicComponentId = 0;
-
-		pPhysicObject->EnumPhysicComponents([clonedPhysicActionConfig, &clonedPhysicComponentId](IPhysicComponent* pPhysicCompoent) {
-
-			if (pPhysicCompoent->GetPhysicConfigId() == clonedPhysicActionConfig->configId)
-			{
-				clonedPhysicComponentId = pPhysicCompoent->GetPhysicComponentId();
-				return true;
-			}
-
-			return false;
-		});
-
-		if (clonedPhysicComponentId) {
-			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedPhysicComponentId);
-		}
-	}
+	UTIL_RebuildPhysicObjectWithClonedConfig(m_physicObjectId, m_pPhysicObjectConfig.get(), clonedPhysicActionConfig->configId);
 }
 
 void CPhysicActionPage::LoadPhysicActionAsListPanelItem(const CClientPhysicActionConfig* pPhysicActionConfig)
@@ -242,11 +217,10 @@ void CPhysicActionPage::OnOpenPhysicActionEditor(int configId)
 
 void CPhysicActionPage::OnCreatePhysicAction()
 {
-	auto pPhysicActionConfig = std::make_shared<CClientPhysicActionConfig>();
-	pPhysicActionConfig->name = std::format("UnnamedAction_{0}", pPhysicActionConfig->configId);
-	pPhysicActionConfig->configModified = true;
+	auto pPhysicActionConfig = UTIL_CreateEmptyPhysicActionConfig();
 
 	m_pPhysicObjectConfig->ActionConfigs.push_back(pPhysicActionConfig);
+
 	m_pPhysicObjectConfig->configModified = true;
 
 	LoadPhysicActionAsListPanelItem(pPhysicActionConfig.get());

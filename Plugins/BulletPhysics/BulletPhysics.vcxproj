@@ -100,7 +100,8 @@
       <Command>$(PluginPostBuildCommand)
 
 if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics"
-if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\bulletphysics\" "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics\" /y /e</Command>
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\bulletphysics\" "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics\" /y /e
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)_addon\" xcopy "$(SolutionDir)Build\svencoop_addon\" "$(MetaHookGameDirectory)$(MetaHookModName)_addon\" /y /e</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
@@ -275,6 +276,9 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="AnimControlEditDialog.cpp" />
+    <ClCompile Include="AnimControlListPanel.cpp" />
+    <ClCompile Include="AnimControlPage.cpp" />
     <ClCompile Include="BaseDynamicObject.cpp" />
     <ClCompile Include="BasePhysicAction.cpp" />
     <ClCompile Include="BasePhysicComponentAction.cpp" />
@@ -327,6 +331,9 @@ $(Bullet3CheckRequirements)</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(SolutionDir)thirdparty\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="AnimControlEditDialog.h" />
+    <ClInclude Include="AnimControlListPanel.h" />
+    <ClInclude Include="AnimControlPage.h" />
     <ClInclude Include="BaseDynamicObject.h" />
     <ClInclude Include="BasePhysicAction.h" />
     <ClInclude Include="BasePhysicComponentAction.h" />

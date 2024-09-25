@@ -12,13 +12,6 @@ CBaseRagdollObject::CBaseRagdollObject(const CPhysicObjectCreationParameter& Cre
 	m_model = CreationParam.m_model;
 	m_model_scaling = CreationParam.m_model_scaling;
 	m_playerindex = CreationParam.m_playerindex;
-	m_configId = CreationParam.m_pPhysicObjectConfig->configId;
-	m_flags = CreationParam.m_pPhysicObjectConfig->flags;
-	m_debugDrawLevel = CreationParam.m_pPhysicObjectConfig->debugDrawLevel;
-
-	m_RigidBodyConfigs = CreationParam.m_pPhysicObjectConfig->RigidBodyConfigs;
-	m_ConstraintConfigs = CreationParam.m_pPhysicObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = CreationParam.m_pPhysicObjectConfig->ActionConfigs;
 }
 
 CBaseRagdollObject::~CBaseRagdollObject()
@@ -104,38 +97,15 @@ bool CBaseRagdollObject::EnumPhysicComponents(const fnEnumPhysicComponentCallbac
 	return false;
 }
 
-bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig)
+bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationParam)
 {
-	if (pPhysicObjectConfig->type != PhysicObjectType_RagdollObject)
+	if (CreationParam.m_pPhysicObjectConfig->type != PhysicObjectType_RagdollObject)
 	{
-		gEngfuncs.Con_DPrintf("Rebuild: pPhysicObjectConfig->type mismatch!\n");
+		gEngfuncs.Con_DPrintf("CBaseRagdollObject::Build: pPhysicObjectConfig->type mismatch!\n");
 		return false;
 	}
 
-	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)pPhysicObjectConfig;
-
-	CPhysicObjectCreationParameter CreationParam;
-
-	CreationParam.m_entity = GetClientEntity();
-	CreationParam.m_entstate = GetClientEntityState();
-	CreationParam.m_entindex = GetEntityIndex();
-	CreationParam.m_model = GetModel();
-
-	if (CreationParam.m_model->type == mod_studio)
-	{
-		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(CreationParam.m_model);
-		CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
-	}
-
-	CreationParam.m_playerindex = GetPlayerIndex();
-
-	CreationParam.m_pPhysicObjectConfig = pRagdollObjectConfig;
-
-	CPhysicComponentFilters filters;
-
-	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
-
-	//Rebuild everything
+	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)CreationParam.m_pPhysicObjectConfig;
 
 	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
 
@@ -157,6 +127,14 @@ bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 		}
 	}
 
+	m_configId = pRagdollObjectConfig->configId;
+	m_flags = pRagdollObjectConfig->flags;
+	m_debugDrawLevel = pRagdollObjectConfig->debugDrawLevel;
+
+	m_RigidBodyConfigs = pRagdollObjectConfig->RigidBodyConfigs;
+	m_ConstraintConfigs = pRagdollObjectConfig->ConstraintConfigs;
+	m_ActionConfigs = pRagdollObjectConfig->ActionConfigs;
+
 	if (CreationParam.m_model->type == mod_studio)
 	{
 		if (m_IdleAnimConfig)
@@ -169,12 +147,89 @@ bool CBaseRagdollObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectC
 		}
 	}
 
+	SaveBoneRelativeTransform(CreationParam);
+
+	DispatchBuildPhysicComponents(
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
+
+	SetupNonKeyBones(CreationParam);
+
+	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+
+	return true;
+}
+
+bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationParam)
+{
+	if (CreationParam.m_pPhysicObjectConfig->type != PhysicObjectType_RagdollObject)
+	{
+		gEngfuncs.Con_DPrintf("CBaseRagdollObject::Rebuild: pPhysicObjectConfig->type mismatch!\n");
+		return false;
+	}
+
+	auto pRagdollObjectConfig = (CClientRagdollObjectConfig*)CreationParam.m_pPhysicObjectConfig;
+
+	CPhysicComponentFilters filters;
+
+	filters.m_RigidBodyFilter.m_HasWithFlags = true;
+	filters.m_ConstraintFilter.m_HasWithFlags = true;
+	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+
+	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+	m_configId = pRagdollObjectConfig->configId;
+	m_flags = pRagdollObjectConfig->flags;
+	m_debugDrawLevel = pRagdollObjectConfig->debugDrawLevel;
+
 	m_RigidBodyConfigs = pRagdollObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pRagdollObjectConfig->ConstraintConfigs;
 	m_ActionConfigs = pRagdollObjectConfig->ActionConfigs;
 
+	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
+
+	for (const auto& pAnimConfig : m_AnimControlConfigs)
+	{
+		if (pAnimConfig->activity == StudioAnimActivityType_Idle)
+		{
+			m_IdleAnimConfig = pAnimConfig;
+			break;
+		}
+	}
+
+	for (const auto& pAnimConfig : m_AnimControlConfigs)
+	{
+		if (pAnimConfig->activity == StudioAnimActivityType_Debug)
+		{
+			m_DebugAnimConfig = pAnimConfig;
+			break;
+		}
+	}
+
 	m_keyBones.clear();
 	m_nonKeyBones.clear();
+
+	if (CreationParam.m_model->type == mod_studio)
+	{
+		if (m_IdleAnimConfig)
+		{
+			ClientPhysicManager()->SetupBonesForRagdollEx(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex, m_IdleAnimConfig.get());
+		}
+		else
+		{
+			ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+		}
+	}
 
 	SaveBoneRelativeTransform(CreationParam);
 
@@ -206,10 +261,17 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 	if (m_bDebugAnimEnabled && m_DebugAnimConfig)
 	{
-		playerState->sequence = m_DebugAnimConfig->sequence;
-		playerState->gaitsequence = m_DebugAnimConfig->gaitsequence;
-		playerState->frame = m_DebugAnimConfig->frame;
-		playerState->framerate = 0;
+		if (m_DebugAnimConfig->sequence >= 0)
+		{
+			playerState->sequence = m_DebugAnimConfig->sequence;
+			playerState->frame = m_DebugAnimConfig->animframe;
+			playerState->framerate = 0;
+		}
+
+		if (m_DebugAnimConfig->gaitsequence >= 0)
+		{
+			playerState->gaitsequence = m_DebugAnimConfig->gaitsequence;
+		}
 
 #define COPY_BYTE_ENTSTATE(attr, to, i) if (m_DebugAnimConfig->attr[i] >= 0 && m_DebugAnimConfig->attr[i] <= 255) to->attr[i] = m_DebugAnimConfig->attr[i];
 		COPY_BYTE_ENTSTATE(controller, playerState, 0);
@@ -227,14 +289,11 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 	auto iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
 
-	if (iNewActivityType == 0)
-	{
-		iNewActivityType = GetOverrideActivityType(playerState);
-	}
+	CalculateOverrideActivityType(playerState, iNewActivityType);
 
 	if (m_playerindex == m_entindex)
 	{
-		if (iNewActivityType == 1)
+		if (iNewActivityType == StudioAnimActivityType_Death)
 		{
 			ClientEntityManager()->SetPlayerDeathState(m_playerindex, playerState, m_model);
 		}
@@ -244,13 +303,9 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		}
 	}
 
-	if (m_iBarnacleIndex && iNewActivityType != 2)
+	if (iNewActivityType != StudioAnimActivityType_CaughtByBarnacle)
 	{
 		ReleaseFromBarnacle();
-	}
-
-	if (m_iGargantuaIndex && iNewActivityType != 2)
-	{
 		ReleaseFromGargantua();
 	}
 
@@ -259,7 +314,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ObjectUpdateContext->m_bActivityChanged = true;
 
 		//Transformed from whatever to barnacle
-		if (iNewActivityType == 2 && iOldActivityType != 2)
+		if (iNewActivityType == StudioAnimActivityType_CaughtByBarnacle && iOldActivityType != StudioAnimActivityType_CaughtByBarnacle)
 		{
 			auto pBarnacleObject = ClientPhysicManager()->FindBarnacleObjectForPlayer(playerState);
 
@@ -590,7 +645,7 @@ StudioAnimActivityType CBaseRagdollObject::GetActivityType() const
 	return m_iActivityType;
 }
 
-StudioAnimActivityType CBaseRagdollObject::GetOverrideActivityType(entity_state_t* entstate) const
+void CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType &ActivityType) const
 {
 	for (const auto& AnimControlConfig : m_AnimControlConfigs)
 	{
@@ -598,7 +653,8 @@ StudioAnimActivityType CBaseRagdollObject::GetOverrideActivityType(entity_state_
 		{
 			if (entstate->sequence == AnimControlConfig->sequence)
 			{
-				return AnimControlConfig->activity;
+				ActivityType = AnimControlConfig->activity;
+				return;
 			}
 		}
 		else
@@ -606,12 +662,11 @@ StudioAnimActivityType CBaseRagdollObject::GetOverrideActivityType(entity_state_
 			if (entstate->sequence == AnimControlConfig->sequence &&
 				entstate->gaitsequence == AnimControlConfig->gaitsequence)
 			{
-				return AnimControlConfig->activity;
+				ActivityType = AnimControlConfig->activity;
+				return;
 			}
 		}
 	}
-
-	return StudioAnimActivityType_Idle;
 }
 
 int CBaseRagdollObject::GetBarnacleIndex() const
@@ -814,7 +869,8 @@ bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType,
 	if (iOldActivityType == iNewActivityType)
 		return false;
 
-	//Start death animation
+	//Start animation ?
+
 	if (iOldActivityType == 0 && iNewActivityType > 0)
 	{
 		const auto& found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const std::shared_ptr<CClientAnimControlConfig>& pConfig) {
@@ -823,11 +879,11 @@ bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType,
 				return true;
 
 			return false;
-			});
+		});
 
 		if (found != m_AnimControlConfigs.end())
 		{
-			if (curstate->frame < (*found)->frame)
+			if (curstate->frame < (*found)->animframe)
 			{
 				return false;
 			}

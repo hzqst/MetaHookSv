@@ -61,9 +61,9 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 		m_pShape->SetUseFallbackFont(true, hFallbackFont);
 	}
 
-	LoadAvailableBonesIntoControls();
+	LoadAvailableBonesIntoControl(m_pBone);
 
-	LoadAvailableShapesIntoControls();
+	LoadAvailableShapesIntoControl(m_pShape);
 
 	LoadControlSettings("bulletphysics/PhysicRigidBodyEditDialog.res", "GAME");
 
@@ -99,7 +99,6 @@ void CPhysicRigidBodyEditDialog::OnCommand(const char* command)
 	if (!stricmp(command, "OK"))
 	{
 		SaveConfigFromControls();
-		//Tell RigidBodyList to refresh
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		Close();
@@ -108,7 +107,6 @@ void CPhysicRigidBodyEditDialog::OnCommand(const char* command)
 	else if (!stricmp(command, "Apply"))
 	{
 		SaveConfigFromControls();
-		//Tell RigidBodyList to refresh
 		PostActionSignal(new KeyValues("RefreshRigidBody", "configId", m_pRigidBodyConfig->configId));
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		return;
@@ -131,13 +129,13 @@ void CPhysicRigidBodyEditDialog::OnEditCollisionShape()
 {
 	if (!m_pRigidBodyConfig->collisionShape)
 	{
-		m_pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
+		auto pEmptyShape = UTIL_CreateEmptyCollisionShapeConfig();
 
-		m_pRigidBodyConfig->collisionShape->configModified = true;
+		pEmptyShape->configModified = true;
+
+		m_pRigidBodyConfig->collisionShape = pEmptyShape;
 
 		m_pRigidBodyConfig->configModified = true;
-
-		ClientPhysicManager()->AddPhysicConfig(m_pRigidBodyConfig->collisionShape->configId, m_pRigidBodyConfig->collisionShape);
 	}
 
 	auto dialog = new CPhysicCollisionShapeEditDialog(this, "PhysicCollisionShapeEditDialog", m_physicObjectId, m_pPhysicObjectConfig, m_pRigidBodyConfig, m_pRigidBodyConfig->collisionShape);
@@ -145,7 +143,7 @@ void CPhysicRigidBodyEditDialog::OnEditCollisionShape()
 	dialog->DoModal();
 }
 
-void CPhysicRigidBodyEditDialog::LoadAvailableBonesIntoControls()
+void CPhysicRigidBodyEditDialog::LoadAvailableBonesIntoControl(vgui::ComboBox* pComboBox)
 {
 	//-1 means invalid bone
 	if (1)
@@ -154,7 +152,7 @@ void CPhysicRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 
 		kv->SetInt("boneindex", -1);
 
-		m_pBone->AddItem("--", kv);
+		pComboBox->AddItem("--", kv);
 
 		kv->deleteThis();
 	}
@@ -179,11 +177,25 @@ void CPhysicRigidBodyEditDialog::LoadAvailableBonesIntoControls()
 
 				auto formattedName = UTIL_GetFormattedBoneNameEx(studiohdr, i);
 
-				m_pBone->AddItem(formattedName.c_str(), kv);
+				pComboBox->AddItem(formattedName.c_str(), kv);
 
 				kv->deleteThis();
 			}
 		}
+	}
+}
+
+void CPhysicRigidBodyEditDialog::LoadAvailableShapesIntoControl(vgui::ComboBox *pComboBox)
+{
+	for (int i = 0; i < PhysicShape_Maximum; ++i)
+	{
+		auto kv = new KeyValues("UserData");
+
+		kv->SetInt("type", i);
+
+		pComboBox->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
+
+		kv->deleteThis();
 	}
 }
 
@@ -201,20 +213,6 @@ void CPhysicRigidBodyEditDialog::LoadBoneIntoControls(int boneindex)
 	}
 
 	m_pBone->ActivateItemByRow(0);
-}
-
-void CPhysicRigidBodyEditDialog::LoadAvailableShapesIntoControls()
-{
-	for (int i = 0; i < PhysicShape_Maximum; ++i)
-	{
-		auto kv = new KeyValues("UserData");
-
-		kv->SetInt("type", i);
-
-		m_pShape->AddItem(UTIL_GetCollisionShapeTypeLocalizationToken(i), kv);
-
-		kv->deleteThis();
-	}
 }
 
 void CPhysicRigidBodyEditDialog::LoadShapeIntoControls(const CClientCollisionShapeConfigSharedPtr& collisionShape)

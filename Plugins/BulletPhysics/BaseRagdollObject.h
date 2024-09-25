@@ -22,7 +22,8 @@ public:
 	bool IsClientEntityNonSolid() const override;
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override;
 	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override;
-	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+	bool Build(const CPhysicObjectCreationParameter& CreationParam) override;
+	bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
@@ -37,7 +38,7 @@ public:
 	void ApplyGargantua(IPhysicObject* pGargantuaObject) override;
 	void ReleaseFromGargantua() override;
 	StudioAnimActivityType GetActivityType() const override;
-	StudioAnimActivityType GetOverrideActivityType(entity_state_t* entstate) const override;
+	void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType& ActivityType) const override;
 	int GetBarnacleIndex() const override;
 	int GetGargantuaIndex() const override;
 	bool IsDebugAnimEnabled() const override;

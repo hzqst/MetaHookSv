@@ -56,7 +56,11 @@ private:
 	vgui::TextEntry* m_pName{};
 	vgui::TextEntry* m_pDebugDrawLevel{};
 	vgui::ComboBox* m_pType{};
+
+	vgui::Label* m_pRigidBodyLabel{};
 	vgui::ComboBox* m_pRigidBody{};
+
+	vgui::Label* m_pConstraintLabel{};
 	vgui::ComboBox* m_pConstraint{};
 
 	vgui::TextEntry* m_pOriginX{};

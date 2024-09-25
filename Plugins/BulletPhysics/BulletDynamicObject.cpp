@@ -5,24 +5,7 @@
 
 CBulletDynamicObject::CBulletDynamicObject(const CPhysicObjectCreationParameter& CreationParam) : CBaseDynamicObject(CreationParam)
 {
-	if (CreationParam.m_model->type == mod_studio)
-	{
-		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
-	}
-
-	DispatchBuildPhysicComponents(
-		CreationParam,
-		m_RigidBodyConfigs,
-		m_ConstraintConfigs,
-		m_ActionConfigs,
-		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
-	);
-
+	
 }
 
 CBulletDynamicObject::~CBulletDynamicObject()
@@ -38,11 +21,17 @@ IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CPhysicObjectCreat
 		return nullptr;
 	}
 
+	if (pRigidConfig->mass < 0)
+	{
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass < 0.\n", pRigidConfig->name.c_str());
+		return nullptr;
+	}
+
 	auto pMotionState = BulletCreateMotionState(CreationParam, pRigidConfig, this);
 
 	if (!pMotionState)
 	{
-		gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for StaticObject because there is no MotionState available.\n");
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no MotionState available.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
@@ -52,15 +41,36 @@ IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CPhysicObjectCreat
 	{
 		delete pMotionState;
 
-		gEngfuncs.Con_DPrintf("CreateRigidBody: cannot create rigid body for DynamicObject because there is no CollisionShape available.\n");
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because there is no CollisionShape available.\n", pRigidConfig->name.c_str());
 		return nullptr;
 	}
 
-	btRigidBody::btRigidBodyConstructionInfo cInfo(pRigidConfig->mass, pMotionState, pCollisionShape);
+	if (pRigidConfig->mass > 0 && pCollisionShape->isNonMoving())
+	{
+		delete pMotionState;
+		delete pCollisionShape;
 
-	cInfo.m_friction = 1;
-	cInfo.m_rollingFriction = 1;
-	cInfo.m_restitution = 1;
+		gEngfuncs.Con_Printf("CreateRigidBody: cannot create rigidbody \"%s\" because mass > 0 is not allowed when using non-moving CollisionShape.\n", pRigidConfig->name.c_str());
+		return nullptr;
+	}
+
+	btVector3 shapeInertia = { 0, 0, 0 };
+
+	if (pRigidConfig->mass > 0) {
+		pCollisionShape->calculateLocalInertia(pRigidConfig->mass, shapeInertia);
+	}
+
+	btRigidBody::btRigidBodyConstructionInfo cInfo(pRigidConfig->mass, pMotionState, pCollisionShape, shapeInertia);
+
+	cInfo.m_friction = pRigidConfig->linearFriction;
+	cInfo.m_rollingFriction = pRigidConfig->rollingFriction;
+	cInfo.m_restitution = pRigidConfig->restitution;
+	cInfo.m_linearSleepingThreshold = pRigidConfig->linearSleepingThreshold;
+	cInfo.m_angularSleepingThreshold = pRigidConfig->angularSleepingThreshold;
+	cInfo.m_additionalDamping = true;
+	cInfo.m_additionalDampingFactor = 0.5f;
+	cInfo.m_additionalLinearDampingThresholdSqr = 1.0f * 1.0f;
+	cInfo.m_additionalAngularDampingThresholdSqr = 0.3f * 0.3f;
 
 	int group = btBroadphaseProxy::DefaultFilter;
 

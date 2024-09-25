@@ -3,6 +3,7 @@
 #include "PhysicRigidBodyPage.h"
 #include "PhysicConstraintPage.h"
 #include "PhysicActionPage.h"
+#include "AnimControlPage.h"
 
 #include "exportfuncs.h"
 
@@ -44,6 +45,17 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 	m_pTabPanel->AddPage(m_pPhysicRigidBodyPage, "#BulletPhysics_RigidBody");
 	m_pTabPanel->AddPage(m_pPhysicConstraintPage, "#BulletPhysics_Constraint");
 	m_pTabPanel->AddPage(m_pPhysicActionPage, "#BulletPhysics_Action");
+
+	if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
+	{
+		auto pRagdollObjectConfig = UTIL_ConvertPhysicObjectConfigToRagdollObjectConfig(pPhysicObjectConfig);
+
+		m_pAnimControlPage = new CAnimControlPage(this, "AnimControlPage", m_physicObjectId, pRagdollObjectConfig);
+		m_pAnimControlPage->MakeReadyForUse();
+
+		m_pTabPanel->AddPage(m_pAnimControlPage, "#BulletPhysics_AnimControl");
+	}
+
 	m_pTabPanel->AddActionSignalTarget(this);
 
 	LoadControlSettings("bulletphysics/PhysicEditorDialog.res", "GAME");
@@ -64,7 +76,6 @@ void CPhysicEditorDialog::OnCommand(const char* command)
 	{
 		m_pTabPanel->ApplyChanges();
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
-
 		Close();
 		return;
 	}
@@ -72,7 +83,6 @@ void CPhysicEditorDialog::OnCommand(const char* command)
 	{
 		m_pTabPanel->ApplyChanges();
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
-
 		return;
 	}
 

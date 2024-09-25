@@ -500,6 +500,15 @@
     <ClCompile Include="BaseStaticObject.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="AnimControlPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="AnimControlListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="AnimControlEditDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -659,6 +668,15 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="PhysicActionEditDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimControlPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimControlListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimControlEditDialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>

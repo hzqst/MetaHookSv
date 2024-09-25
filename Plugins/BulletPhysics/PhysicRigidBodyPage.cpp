@@ -252,20 +252,11 @@ void CPhysicRigidBodyPage::OnShiftDownRigidBody(int configId)
 
 void CPhysicRigidBodyPage::OnCreateRigidBody()
 {
-	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
-
-	pRigidBodyConfig->name = std::format("UnnamedRigidBody ({0})", pRigidBodyConfig->configId);
-	pRigidBodyConfig->configModified = true;
-
-	pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
-	pRigidBodyConfig->collisionShape->type = PhysicShape_Sphere;
-	pRigidBodyConfig->collisionShape->size[0] = 3;
-	pRigidBodyConfig->collisionShape->configModified = true;
+	auto pRigidBodyConfig = UTIL_CreateEmptyRigidBodyConfig();
 
 	m_pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
-	m_pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
+	m_pPhysicObjectConfig->configModified = true;
 
 	LoadRigidBodyAsListPanelItem(pRigidBodyConfig.get());
 
@@ -289,33 +280,9 @@ void CPhysicRigidBodyPage::OnCloneRigidBody(int configId)
 
 	m_pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
-
 	LoadRigidBodyAsListPanelItem(pClonedRigidBodyConfig.get());
 
-	//Update PhysicObject
-
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(m_physicObjectId);
-
-	if (pPhysicObject->Rebuild(m_pPhysicObjectConfig.get()))
-	{
-		int clonedPhysicComponentId = 0;
-
-		pPhysicObject->EnumPhysicComponents([pClonedRigidBodyConfig, &clonedPhysicComponentId](IPhysicComponent* pPhysicCompoent) {
-
-			if (pPhysicCompoent->GetPhysicConfigId() == pClonedRigidBodyConfig->configId)
-			{
-				clonedPhysicComponentId = pPhysicCompoent->GetPhysicComponentId();
-				return true;
-			}
-
-			return false;
-		});
-
-		if (clonedPhysicComponentId) {
-			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedPhysicComponentId);
-		}
-	}
+	UTIL_RebuildPhysicObjectWithClonedConfig(m_physicObjectId, m_pPhysicObjectConfig.get(), pClonedRigidBodyConfig->configId);
 }
 
 void CPhysicRigidBodyPage::OnDeleteRigidBody(int configId)

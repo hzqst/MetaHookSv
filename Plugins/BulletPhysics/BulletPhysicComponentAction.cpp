@@ -53,8 +53,6 @@ bool CBulletPhysicComponentAction::AddToPhysicWorld(void* world)
 
 		m_addedToPhysicWorld = true;
 
-		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
-
 		return true;
 	}
 
@@ -74,8 +72,6 @@ bool CBulletPhysicComponentAction::RemoveFromPhysicWorld(void* world)
 		}
 
 		m_addedToPhysicWorld = false;
-
-		ClientPhysicManager()->OnPhysicComponentRemovedFromPhysicWorld(this);
 
 		return true;
 	}

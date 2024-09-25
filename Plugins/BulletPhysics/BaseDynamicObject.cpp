@@ -7,13 +7,6 @@ CBaseDynamicObject::CBaseDynamicObject(const CPhysicObjectCreationParameter& Cre
 	m_model = CreationParam.m_model;
 	m_model_scaling = CreationParam.m_model_scaling;
 	m_playerindex = CreationParam.m_playerindex;
-	m_configId = CreationParam.m_pPhysicObjectConfig->configId;
-	m_flags = CreationParam.m_pPhysicObjectConfig->flags;
-	m_debugDrawLevel = CreationParam.m_pPhysicObjectConfig->debugDrawLevel;
-
-	m_RigidBodyConfigs = CreationParam.m_pPhysicObjectConfig->RigidBodyConfigs;
-	m_ConstraintConfigs = CreationParam.m_pPhysicObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = CreationParam.m_pPhysicObjectConfig->ActionConfigs;
 }
 
 CBaseDynamicObject::~CBaseDynamicObject()
@@ -108,45 +101,75 @@ bool CBaseDynamicObject::EnumPhysicComponents(const fnEnumPhysicComponentCallbac
 	return false;
 }
 
-bool CBaseDynamicObject::Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig)
+bool CBaseDynamicObject::Build(const CPhysicObjectCreationParameter& CreationParam)
 {
-	if (pPhysicObjectConfig->type != PhysicObjectType_DynamicObject)
+	if (CreationParam.m_pPhysicObjectConfig->type != PhysicObjectType_DynamicObject)
 	{
-		gEngfuncs.Con_DPrintf("Rebuild: pPhysicObjectConfig->type mismatch!\n");
+		gEngfuncs.Con_DPrintf("CBaseDynamicObject::Build: pPhysicObjectConfig->type mismatch!\n");
 		return false;
 	}
 
-	auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)pPhysicObjectConfig;
+	auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)CreationParam.m_pPhysicObjectConfig;
 
-	CPhysicObjectCreationParameter CreationParam;
+	m_configId = pDynamicObjectConfig->configId;
+	m_flags = pDynamicObjectConfig->flags;
+	m_debugDrawLevel = pDynamicObjectConfig->debugDrawLevel;
 
-	CreationParam.m_entity = GetClientEntity();
-	CreationParam.m_entstate = GetClientEntityState();
-	CreationParam.m_entindex = GetEntityIndex();
-	CreationParam.m_model = GetModel();
-
-	if (CreationParam.m_model->type == mod_studio)
-	{
-		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(CreationParam.m_model);
-		CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(CreationParam.m_entity, CreationParam.m_model);
-	}
-
-	CreationParam.m_playerindex = GetPlayerIndex();
-
-	CreationParam.m_pPhysicObjectConfig = pDynamicObjectConfig;
-
-	CPhysicComponentFilters filters;
-
-	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+	m_RigidBodyConfigs = pDynamicObjectConfig->RigidBodyConfigs;
+	m_ConstraintConfigs = pDynamicObjectConfig->ConstraintConfigs;
+	m_ActionConfigs = pDynamicObjectConfig->ActionConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
 		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
 	}
 
+	DispatchBuildPhysicComponents(
+		CreationParam,
+		m_RigidBodyConfigs,
+		m_ConstraintConfigs,
+		m_ActionConfigs,
+		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+	);
+
+	return true;
+}
+
+bool CBaseDynamicObject::Rebuild(const CPhysicObjectCreationParameter& CreationParam)
+{
+	if (CreationParam.m_pPhysicObjectConfig->type != PhysicObjectType_DynamicObject)
+	{
+		gEngfuncs.Con_DPrintf("CBaseDynamicObject::Rebuild: pPhysicObjectConfig->type mismatch!\n");
+		return false;
+	}
+
+	CPhysicComponentFilters filters;
+
+	filters.m_RigidBodyFilter.m_HasWithFlags = true;
+	filters.m_ConstraintFilter.m_HasWithFlags = true;
+	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+
+	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+	auto pDynamicObjectConfig = (CClientDynamicObjectConfig*)CreationParam.m_pPhysicObjectConfig;
+
+	m_configId = pDynamicObjectConfig->configId;
+	m_flags = pDynamicObjectConfig->flags;
+	m_debugDrawLevel = pDynamicObjectConfig->debugDrawLevel;
+
 	m_RigidBodyConfigs = pDynamicObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pDynamicObjectConfig->ConstraintConfigs;
 	m_ActionConfigs = pDynamicObjectConfig->ActionConfigs;
+
+	if (CreationParam.m_model->type == mod_studio)
+	{
+		ClientPhysicManager()->SetupBonesForRagdoll(CreationParam.m_entity, CreationParam.m_entstate, CreationParam.m_model, CreationParam.m_entindex, CreationParam.m_playerindex);
+	}
 
 	DispatchRebuildPhysicComponents(
 		m_PhysicComponents,

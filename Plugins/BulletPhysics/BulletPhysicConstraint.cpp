@@ -143,7 +143,7 @@ bool CBulletPhysicConstraint::AddToPhysicWorld(void* world)
 
 	if (!m_pInternalConstraint)
 	{
-		gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: empty m_pInternalConstraint!\n");
+		gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: empty m_pInternalConstraint!\n");
 		return false;
 	}
 
@@ -155,13 +155,13 @@ bool CBulletPhysicConstraint::AddToPhysicWorld(void* world)
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyA not present !\n");
+			gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyA not present !\n");
 			return false;
 		}
 
 		if (!pRigidBodyA->IsAddedToPhysicWorld(world))
 		{
-			gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyA not added to world !\n");
+			gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyA not added to world !\n");
 			return false;
 		}
 
@@ -169,13 +169,13 @@ bool CBulletPhysicConstraint::AddToPhysicWorld(void* world)
 
 		if (!pRigidBodyB)
 		{
-			gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyB not present !\n");
+			gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyB not present !\n");
 			return false;
 		}
 
 		if (!pRigidBodyB->IsAddedToPhysicWorld(world))
 		{
-			gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyB not added to world !\n");
+			gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: pRigidBodyB not added to world !\n");
 			return false;
 		}
 
@@ -193,12 +193,10 @@ bool CBulletPhysicConstraint::AddToPhysicWorld(void* world)
 
 		m_addedToPhysicWorld = true;
 
-		ClientPhysicManager()->OnPhysicComponentAddedIntoPhysicWorld(this);
-
 		return true;
 	}
 
-	gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::AddToPhysicWorld: already added to world!\n");
+	gEngfuncs.Con_Printf("CBulletPhysicConstraint::AddToPhysicWorld: already added to world!\n");
 	return false;
 }
 
@@ -208,7 +206,7 @@ bool CBulletPhysicConstraint::RemoveFromPhysicWorld(void* world)
 
 	if (!m_pInternalConstraint)
 	{
-		gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::RemoveFromPhysicWorld: empty m_pInternalConstraint!\n");
+		gEngfuncs.Con_Printf("CBulletPhysicConstraint::RemoveFromPhysicWorld: empty m_pInternalConstraint!\n");
 		return false;
 	}
 
@@ -228,12 +226,10 @@ bool CBulletPhysicConstraint::RemoveFromPhysicWorld(void* world)
 
 		m_addedToPhysicWorld = false;
 
-		ClientPhysicManager()->OnPhysicComponentRemovedFromPhysicWorld(this);
-
 		return true;
 	}
 
-	gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::RemoveFromPhysicWorld: already removed from world!\n");
+	gEngfuncs.Con_Printf("CBulletPhysicConstraint::RemoveFromPhysicWorld: already removed from world!\n");
 	return false;
 }
 

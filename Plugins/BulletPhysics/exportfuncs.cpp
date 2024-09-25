@@ -124,7 +124,16 @@ entity_state_t *R_GetPlayerState(int index)
 
 bool CL_IsFirstPersonMode(cl_entity_t *player)
 {
-	return (!gExportfuncs.CL_IsThirdPerson() && (*cl_viewentity) == player->index && !(chase_active && chase_active->value)) ? true : false;
+	if (gExportfuncs.CL_IsThirdPerson())
+		return false;
+
+	if ((*cl_viewentity) != player->index)
+		return false;
+
+	if (!(chase_active && chase_active->value))
+		return false;
+
+	return true;
 }
 
 msurface_t* GetWorldSurfaceByIndex(int index)
@@ -297,7 +306,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Barnacle)
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
 
@@ -392,7 +401,7 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() > StudioAnimActivityType_Barnacle)
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
 

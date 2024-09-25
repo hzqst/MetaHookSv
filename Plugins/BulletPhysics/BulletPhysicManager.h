@@ -65,10 +65,23 @@ public:
 		return m_pPhysicObject;
 	}
 
+	btRigidBody* GetInternalRigidBody() const
+	{
+		return m_pInternalRigidBody;
+	}
+
+	void SetInternalRigidBody(btRigidBody* pInternalRigidBody)
+	{
+		m_pInternalRigidBody = pInternalRigidBody;
+	}
+
 	virtual bool IsBoneBased() const = 0;
 
 public:
 	IPhysicObject* m_pPhysicObject{};
+
+	//The Bullet Engine RigidBody that this motionState is attached to
+	btRigidBody* m_pInternalRigidBody{};
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -221,8 +234,6 @@ public:
 	void RemovePhysicComponentsFromWorld(IPhysicObject* PhysicObject, const CPhysicComponentFilters& filters) override;
 	void AddPhysicComponentToWorld(IPhysicComponent* pPhysicComponent) override;
 	void RemovePhysicComponentFromWorld(IPhysicComponent* pPhysicComponent) override;
-	void OnPhysicComponentAddedIntoPhysicWorld(IPhysicComponent* pPhysicComponent) override;
-	void OnPhysicComponentRemovedFromPhysicWorld(IPhysicComponent* pPhysicComponent) override;
 
 	void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult &hitResult) override;
 };

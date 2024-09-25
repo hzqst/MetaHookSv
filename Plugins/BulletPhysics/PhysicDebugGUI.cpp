@@ -737,7 +737,7 @@ bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 		auto str2 = std::format(L"{0}: {1}, {2}: {3}, {4}: {5}", 
 			vgui::localize()->Find("#BulletPhysics_Sequence"), curstate->sequence, 
 			vgui::localize()->Find("#BulletPhysics_GaitSequence"), curstate->gaitsequence,
-			vgui::localize()->Find("#BulletPhysics_Frame"), curstate->frame);
+			vgui::localize()->Find("#BulletPhysics_AnimFrame"), curstate->frame);
 
 		ShowInspectContentLabel2(str2.c_str());
 
@@ -1488,22 +1488,13 @@ void CPhysicDebugGUI::OnCreateRigidBody(uint64 physicObjectId)
 	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
 		return;
 
-	auto pRigidBodyConfig = std::make_shared<CClientRigidBodyConfig>();
-
-	pRigidBodyConfig->name = std::format("UnnamedRigidBody ({0})", pRigidBodyConfig->configId);
-	pRigidBodyConfig->configModified = true;
-
-	pRigidBodyConfig->collisionShape = std::make_shared<CClientCollisionShapeConfig>();
-	pRigidBodyConfig->collisionShape->type = PhysicShape_Sphere;
-	pRigidBodyConfig->collisionShape->size[0] = 3;
-	pRigidBodyConfig->collisionShape->configModified = true;
+	auto pRigidBodyConfig = UTIL_CreateEmptyRigidBodyConfig();
 
 	pPhysicObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
+
 	pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
-
-	ClientPhysicManager()->RebuildPhysicObjectEx(physicObjectId, pPhysicObjectConfig.get());
+	ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 }
 
 void CPhysicDebugGUI::OnEditPhysicObject(KeyValues *kv)
@@ -1648,31 +1639,7 @@ void CPhysicDebugGUI::OnCloneRigidBodyEx(KeyValues* kv)
 
 	pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(pClonedRigidBodyConfig->configId, pClonedRigidBodyConfig);
-
-	//Update PhysicObject
-
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
-
-	if (pPhysicObject->Rebuild(pPhysicObjectConfig.get()))
-	{
-		int clonedRigidBodyId = 0;
-
-		pPhysicObject->EnumPhysicComponents([pClonedRigidBodyConfig, &clonedRigidBodyId](IPhysicComponent* pPhysicCompoent) {
-
-			if (pPhysicCompoent->GetPhysicConfigId() == pClonedRigidBodyConfig->configId)
-			{
-				clonedRigidBodyId = pPhysicCompoent->GetPhysicComponentId();
-				return true;
-			}
-
-			return false;
-		});
-
-		if (clonedRigidBodyId) {
-			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedRigidBodyId);
-		}
-	}
+	UTIL_RebuildPhysicObjectWithClonedConfig(physicObjectId, pPhysicObjectConfig.get(), pClonedRigidBodyConfig->configId);
 }
 
 bool CPhysicDebugGUI::DeleteRigidBodyByComponent(IPhysicComponent* pPhysicComponent)
@@ -1692,7 +1659,7 @@ bool CPhysicDebugGUI::DeleteRigidBodyByComponent(IPhysicComponent* pPhysicCompon
 
 				if (UTIL_RemoveRigidBodyFromPhysicObjectConfig(pPhysicObjectConfig.get(), pPhysicComponent->GetPhysicConfigId()))
 				{
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 		}
@@ -1752,7 +1719,7 @@ bool CPhysicDebugGUI::UpdateConfigOrigin(int physicComponentId, int axis, float 
 					pRigidBodyConfig->origin[axis] += value;
 					pRigidBodyConfig->configModified = true;
 
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 			else if (pPhysicComponent->IsConstraint())
@@ -1767,7 +1734,7 @@ bool CPhysicDebugGUI::UpdateConfigOrigin(int physicComponentId, int axis, float 
 						pConstraintConfig->originB[axis] += value;
 					pConstraintConfig->configModified = true;
 
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 		}
@@ -1797,7 +1764,7 @@ bool CPhysicDebugGUI::UpdateConfigAngles(int physicComponentId, int axis, float 
 					pRigidBodyConfig->angles[axis] += value;
 					pRigidBodyConfig->configModified = true;
 
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 			else if (pPhysicComponent->IsConstraint())
@@ -1813,7 +1780,7 @@ bool CPhysicDebugGUI::UpdateConfigAngles(int physicComponentId, int axis, float 
 
 					pConstraintConfig->configModified = true;
 
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 		}
@@ -1846,7 +1813,7 @@ bool CPhysicDebugGUI::UpdateConfigSize(int physicComponentId, int axis, float va
 						pRigidBodyConfig->collisionShape->configModified = true;
 					}
 
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 		}
@@ -1950,31 +1917,9 @@ void CPhysicDebugGUI::OnCloneConstraintEx(KeyValues* kv)
 
 	pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(pClonedConstraintConfig->configId, pClonedConstraintConfig);
-
 	//Update PhysicObject
 
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
-
-	if (pPhysicObject->Rebuild(pPhysicObjectConfig.get()))
-	{
-		int clonedConstraintId = 0;
-
-		pPhysicObject->EnumPhysicComponents([pClonedConstraintConfig, &clonedConstraintId](IPhysicComponent* pPhysicCompoent) {
-
-			if (pPhysicCompoent->GetPhysicConfigId() == pClonedConstraintConfig->configId)
-			{
-				clonedConstraintId = pPhysicCompoent->GetPhysicComponentId();
-				return true;
-			}
-
-			return false;
-		});
-
-		if (clonedConstraintId) {
-			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedConstraintId);
-		}
-	}
+	UTIL_RebuildPhysicObjectWithClonedConfig(physicObjectId, pPhysicObjectConfig.get(), pClonedConstraintConfig->configId);
 }
 
 bool CPhysicDebugGUI::DeleteConstraintByComponent(IPhysicComponent *pPhysicComponent)
@@ -1994,7 +1939,7 @@ bool CPhysicDebugGUI::DeleteConstraintByComponent(IPhysicComponent *pPhysicCompo
 
 				if (UTIL_RemoveConstraintFromPhysicObjectConfig(pPhysicObjectConfig.get(), pPhysicComponent->GetPhysicConfigId()))
 				{
-					return pPhysicObject->Rebuild(pPhysicObjectConfig.get());
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
 		}
@@ -2048,14 +1993,11 @@ void CPhysicDebugGUI::OnCreateConstraint(uint64 physicObjectId)
 	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
 		return;
 
-	auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
-	pConstraintConfig->name = std::format("UnnamedConstraint_{0}", pConstraintConfig->configId);
-	pConstraintConfig->configModified = true;
+	auto pConstraintConfig = UTIL_CreateEmptyConstraintConfig();
 
 	pPhysicObjectConfig->ConstraintConfigs.push_back(pConstraintConfig);
+
 	pPhysicObjectConfig->configModified = true;
 	 
-	ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
-
-	ClientPhysicManager()->RebuildPhysicObjectEx(physicObjectId, pPhysicObjectConfig.get());
+	ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 }

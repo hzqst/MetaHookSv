@@ -13,7 +13,7 @@
 			"isLegacyConfig"		"0"
 			"pboneindex"		"-1"
 			"pboneoffset"		"0.000000"
-			"mass"		"1.000000"
+			"mass"		"0.000000"
 			"density"		"1.000000"
 			"linearFriction"		"1.000000"
 			"rollingFriction"		"0.200000"
@@ -25,7 +25,7 @@
 			"collisionshape"
 			{
 				"type"		"TriangleMesh"
-				"objpath"		"models/barnacle.obj"
+				"resourcePath"		"models/barnacle.obj"
 			}
 		}
 		"Tongue6"

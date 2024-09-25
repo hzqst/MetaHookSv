@@ -22,7 +22,8 @@ public:
 	bool IsClientEntityNonSolid() const override;
 	bool ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const override;
 	bool EnumPhysicComponents(const fnEnumPhysicComponentCallback& callback) override;
-	bool Rebuild(const CClientPhysicObjectConfig* pPhysicObjectConfig) override;
+	bool Build(const CPhysicObjectCreationParameter& CreationParam) override;
+	bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
 	bool SetupBones(studiohdr_t* studiohdr) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr) override;

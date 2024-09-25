@@ -165,8 +165,6 @@ void CPhysicConstraintPage::OnCloneConstraint(int configId)
 
 	m_pPhysicObjectConfig->configModified = true;
 
-	ClientPhysicManager()->AddPhysicConfig(clonedConstraintConfig->configId, clonedConstraintConfig);
-
 	// Refresh the UI to include the new constraint configuration.
 	LoadConstraintAsListPanelItem(clonedConstraintConfig.get());
 
@@ -175,27 +173,7 @@ void CPhysicConstraintPage::OnCloneConstraint(int configId)
 
 	//Update PhysicObject
 
-	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(m_physicObjectId);
-
-	if (pPhysicObject->Rebuild(m_pPhysicObjectConfig.get()))
-	{
-		int clonedPhysicComponentId = 0;
-
-		pPhysicObject->EnumPhysicComponents([clonedConstraintConfig, &clonedPhysicComponentId](IPhysicComponent* pPhysicCompoent) {
-
-			if (pPhysicCompoent->GetPhysicConfigId() == clonedConstraintConfig->configId)
-			{
-				clonedPhysicComponentId = pPhysicCompoent->GetPhysicComponentId();
-				return true;
-			}
-
-			return false;
-		});
-
-		if (clonedPhysicComponentId) {
-			ClientPhysicManager()->SetSelectedPhysicComponentId(clonedPhysicComponentId);
-		}
-	}
+	UTIL_RebuildPhysicObjectWithClonedConfig(m_physicObjectId, m_pPhysicObjectConfig.get(), clonedConstraintConfig->configId);
 }
 
 void CPhysicConstraintPage::LoadConstraintAsListPanelItem(const CClientConstraintConfig* pConstraintConfig)
@@ -245,11 +223,10 @@ void CPhysicConstraintPage::OnOpenConstraintEditor(int configId)
 
 void CPhysicConstraintPage::OnCreateConstraint()
 {
-	auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
-	pConstraintConfig->name = std::format("UnnamedConstraint_{0}", pConstraintConfig->configId);
-	pConstraintConfig->configModified = true;
+	auto pConstraintConfig = UTIL_CreateEmptyConstraintConfig();
 
 	m_pPhysicObjectConfig->ConstraintConfigs.push_back(pConstraintConfig);
+
 	m_pPhysicObjectConfig->configModified = true;
 
 	LoadConstraintAsListPanelItem(pConstraintConfig.get());
