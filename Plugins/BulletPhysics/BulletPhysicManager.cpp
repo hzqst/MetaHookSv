@@ -21,6 +21,13 @@ btVector3 GetVector3FromVec3(const vec3_t src)
 	return btVector3(src[0], src[1], src[2]);
 }
 
+void GetVec3FromVector3(const btVector3 &src, vec3_t dst)
+{
+	dst[0] = src.x();
+	dst[1] = src.y();
+	dst[2] = src.z();
+}
+
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
 	fromDirection = fromDirection.normalize();

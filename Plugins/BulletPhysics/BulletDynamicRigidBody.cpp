@@ -22,7 +22,7 @@ CBulletDynamicRigidBody::CBulletDynamicRigidBody(
 
 }
 
-bool CBulletDynamicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBulletDynamicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
 	if (!m_pInternalRigidBody)
 		return false;
@@ -39,7 +39,15 @@ bool CBulletDynamicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 
 		auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
 
-		if (!m_pInternalRigidBody->isKinematicObject())
+		if (m_pInternalRigidBody->isKinematicObject())
+		{
+			auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+
+			TransformGoldSrcToBullet(bonematrix); 
+		}
+		else
 		{
 			btTransform bonematrix = pBoneMotionState->m_bonematrix;
 
@@ -50,14 +58,6 @@ bool CBulletDynamicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 
 			memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 			memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
-		}
-		else
-		{
-			auto& bonematrix = pBoneMotionState->m_bonematrix;
-
-			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
-
-			TransformGoldSrcToBullet(bonematrix);
 		}
 
 		return true;

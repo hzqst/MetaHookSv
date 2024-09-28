@@ -14,7 +14,7 @@ typedef struct
 	void (*R_AnimateLight)(void);
 	void (*V_RenderView)(void);
 	void (*R_RenderView)(void);
-	void (*R_RenderView_SvEngine)(int a1);
+	void (*R_RenderView_SvEngine)(int viewIdx);
 	void (*R_RenderScene)(void);
 	void (*R_RenderFinalFog)(void);
 	void (*ClientDLL_DrawNormalTriangles)(void);

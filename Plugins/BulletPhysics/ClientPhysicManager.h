@@ -59,8 +59,8 @@ public:
 	bool m_bRigidbodyResetPoseRequired{ };
 	bool m_bRigidbodyPoseChanged{ };
 
-	bool m_bRigidbodyUpdatePoseRequired{ };
-	bool m_bRigidbodyPoseUpdated{ };
+	bool m_bRigidbodyUpdateBonesRequired{ };
+	bool m_bRigidbodyBonesUpdated{ };
 };
 
 class CPhysicComponentSubFilters
@@ -209,14 +209,13 @@ public:
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;
-	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
-	//virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
+	virtual bool SetupBones(studiohdr_t* studiohdr, int flags) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) = 0;
 	virtual void* GetInternalRigidBody() = 0;
 	virtual bool GetGoldSrcOriginAngles(float* origin, float * angles) = 0;
 	virtual bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float * angles) = 0;
 	virtual float GetMass() const = 0;
-
+	virtual bool GetAABB(vec3_t mins, vec3_t maxs) const = 0;
 };
 
 class IPhysicConstraint : public IPhysicComponent
@@ -317,9 +316,9 @@ public:
 	virtual bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) = 0;
 	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransferOwnership(int entindex) = 0;
-	virtual bool SetupBones(studiohdr_t* studiohdr) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr) = 0;
-	//virtual bool MergeBones(studiohdr_t* studiohdr) = 0;
+	virtual bool SetupBones(studiohdr_t* studiohdr, int flags) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) = 0;
+	virtual bool StudioCheckBBox(studiohdr_t* studiohdr, int *nVisible) = 0;
 	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
@@ -398,7 +397,7 @@ public:
 	virtual void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType& ActivityType) const = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
-	virtual void UpdatePose(entity_state_t* curstate) = 0;
+	virtual void UpdateBones(entity_state_t* curstate) = 0;
 	virtual void ApplyBarnacle(IPhysicObject* pBarnacleObject) = 0;
 	virtual void ApplyGargantua(IPhysicObject* pGargantuaObject) = 0;
 	virtual void ReleaseFromBarnacle() = 0;
@@ -422,9 +421,9 @@ public:
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
 
-	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) = 0;
-	//virtual bool MergeBones(studiohdr_t* studiohdr, int entindex) = 0;
+	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex, int flags) = 0;
+	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags) = 0;
+	virtual bool StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int *nVisible) = 0;
 
 	virtual void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult) = 0;
 

@@ -193,12 +193,12 @@ void CBaseDynamicObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
 }
 
-bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr)
+bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr, int flags)
 {
 	return false;
 }
 
-bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
@@ -206,11 +206,16 @@ bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupJiggleBones(studiohdr);
+			pRigidBody->SetupJiggleBones(studiohdr, flags);
 		}
 	}
 
 	return true;
+}
+
+bool CBaseDynamicObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
+{
+	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
 bool CBaseDynamicObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))

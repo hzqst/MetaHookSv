@@ -25,8 +25,9 @@ public:
 	bool Build(const CPhysicObjectCreationParameter& CreationParam) override;
 	bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
-	bool SetupBones(studiohdr_t* studiohdr) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
+	bool StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible) override;
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;

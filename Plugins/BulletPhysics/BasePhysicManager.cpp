@@ -536,6 +536,40 @@ void DispatchRebuildPhysicComponents(
 	}
 }
 
+bool DispatchStudioCheckBBox(const std::vector<IPhysicComponent*>& PhysicComponents, studiohdr_t* studiohdr, int* nVisible)
+{
+	bool bSuccess = false;
+
+	vec3_t aabbmins = { 99999, 99999, 99999 }, aabbmaxs = { -99999, -99999, -99999 };
+	for (auto pPhysicComponent : PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			vec3_t mins, maxs;
+			if (pRigidBody->GetAABB(mins, maxs))
+			{
+				if (mins[0] < aabbmins[0]) aabbmins[0] = mins[0];
+				if (mins[1] < aabbmins[1]) aabbmins[1] = mins[1];
+				if (mins[2] < aabbmins[2]) aabbmins[2] = mins[2];
+
+				if (maxs[0] > aabbmaxs[0]) aabbmaxs[0] = maxs[0];
+				if (maxs[1] > aabbmaxs[1]) aabbmaxs[1] = maxs[1];
+				if (maxs[2] > aabbmaxs[2]) aabbmaxs[2] = maxs[2];
+
+				bSuccess = true;
+			}
+		}
+	}
+
+	if (bSuccess)
+	{
+		(*nVisible) = R_CullBox(aabbmins, aabbmaxs) ? 0 : 1;
+	}
+
+	return bSuccess;
+}
 
 CClientBasePhysicConfig::CClientBasePhysicConfig()
 {
@@ -742,35 +776,35 @@ void CBasePhysicManager::SavePhysicObjectConfigs(void)
 	gEngfuncs.Con_Printf("SavePhysicObjectConfigs: %d config(s) saved !\n", iSavedCount);
 }
 
-bool CBasePhysicManager::SetupBones(studiohdr_t* studiohdr, int entindex)
+bool CBasePhysicManager::SetupBones(studiohdr_t* studiohdr, int entindex, int flags)
 {
 	auto pPhysicObject = GetPhysicObject(entindex);
 
 	if (!pPhysicObject)
 		return false;
 
-	return pPhysicObject->SetupBones(studiohdr);
+	return pPhysicObject->SetupBones(studiohdr, flags);
 }
 
-bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex)
+bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags)
 {
 	auto pPhysicObject = GetPhysicObject(entindex);
 
 	if (!pPhysicObject)
 		return false;
 
-	return pPhysicObject->SetupJiggleBones(studiohdr);
+	return pPhysicObject->SetupJiggleBones(studiohdr, flags);
 }
 
-/*bool CBasePhysicManager::MergeBones(studiohdr_t* studiohdr, int entindex)
+bool CBasePhysicManager::StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int* nVisible)
 {
 	auto pPhysicObject = GetPhysicObject(entindex);
 
 	if (!pPhysicObject)
 		return false;
 
-	return pPhysicObject->MergeBones(studiohdr);
-}*/
+	return pPhysicObject->StudioCheckBBox(studiohdr, nVisible);
+}
 
 bool CBasePhysicManager::TransferOwnershipForPhysicObject(int old_entindex, int new_entindex)
 {
@@ -3101,16 +3135,18 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
 
-		vec3_t vecSavedOrigin, vecSavedAngles;
+		vec3_t vecSavedOrigin, vecSavedAngles, vecSavedCurStateOrigin, vecSavedCurStateAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
 		VectorCopy((*currententity)->angles, vecSavedAngles);
+		VectorCopy((*currententity)->curstate.origin, vecSavedCurStateOrigin);
+		VectorCopy((*currententity)->curstate.angles, vecSavedCurStateAngles);
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 		if (pLocalPlayer && pLocalPlayer->index == playerindex)
 		{
-			VectorCopy(r_params.simorg, (*currententity)->origin);
-			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+			//VectorCopy(r_params.simorg, (*currententity)->origin);
+			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
 		}
 
 		int iSavedViewEntityIndex = 0;
@@ -3130,6 +3166,8 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);
+		VectorCopy(vecSavedCurStateOrigin, (*currententity)->curstate.origin);
+		VectorCopy(vecSavedCurStateAngles, (*currententity)->curstate.angles);
 	}
 	else
 	{
@@ -3157,18 +3195,18 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		fakePlayerState.number = playerindex;
 		fakePlayerState.weaponmodel = 0;
 
-		if (pOverrideAnimControl->sequence >= 0)
+		if (pOverrideAnimControl && pOverrideAnimControl->sequence >= 0)
 		{
 			fakePlayerState.sequence = pOverrideAnimControl->sequence;
 			fakePlayerState.frame = pOverrideAnimControl->animframe;
 		}
 
-		if (pOverrideAnimControl->gaitsequence >= 0)
+		if (pOverrideAnimControl && pOverrideAnimControl->gaitsequence >= 0)
 		{
 			fakePlayerState.gaitsequence = pOverrideAnimControl->gaitsequence;
 		}
 
-#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
 		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 0);
 		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 1);
 		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 2);
@@ -3179,16 +3217,19 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 3);
 #undef COPY_BYTE_ENTSTATE
 
-		vec3_t vecSavedOrigin, vecSavedAngles;
+		vec3_t vecSavedOrigin, vecSavedAngles, vecSavedCurStateOrigin, vecSavedCurStateAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
 		VectorCopy((*currententity)->angles, vecSavedAngles);
+		VectorCopy((*currententity)->curstate.origin, vecSavedCurStateOrigin);
+		VectorCopy((*currententity)->curstate.angles, vecSavedCurStateAngles);
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 		if (pLocalPlayer && pLocalPlayer->index == playerindex)
 		{
-			VectorCopy(r_params.simorg, (*currententity)->origin);
-			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+			//VectorCopy(r_params.simorg, (*currententity)->origin);
+			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+			//This fix pitch angles
 		}
 
 		int iSavedViewEntityIndex = 0;
@@ -3208,10 +3249,12 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);
+		VectorCopy(vecSavedCurStateOrigin, (*currententity)->curstate.origin);
+		VectorCopy(vecSavedCurStateAngles, (*currententity)->curstate.angles);
 	}
 	else
 	{
-		int iWeaponModel = ent->curstate.weaponmodel;
+		int iSavedWeaponModel = ent->curstate.weaponmodel;
 		int iSavedSequence = ent->curstate.sequence;
 		int iSavedGaitSequence = ent->curstate.gaitsequence;
 		float flSavedFrame = ent->curstate.frame;
@@ -3223,18 +3266,18 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 		ent->curstate.weaponmodel = 0;
 
-		if (pOverrideAnimControl->sequence >= 0)
+		if (pOverrideAnimControl && pOverrideAnimControl->sequence >= 0)
 		{
 			ent->curstate.sequence = pOverrideAnimControl->sequence;
 			ent->curstate.frame = pOverrideAnimControl->animframe;
 		}
 
-		if (pOverrideAnimControl->gaitsequence >= 0)
+		if (pOverrideAnimControl && pOverrideAnimControl->gaitsequence >= 0)
 		{
 			ent->curstate.gaitsequence = pOverrideAnimControl->gaitsequence;
 		}
 
-#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
 		COPY_BYTE_ENTSTATE(controller, ent->curstate, 0);
 		COPY_BYTE_ENTSTATE(controller, ent->curstate, 1); 
 		COPY_BYTE_ENTSTATE(controller, ent->curstate, 2);
@@ -3246,7 +3289,7 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 #undef COPY_BYTE_ENTSTATE
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
 
-		ent->curstate.weaponmodel = 0;
+		ent->curstate.weaponmodel = iSavedWeaponModel;
 		ent->curstate.sequence = iSavedSequence;
 		ent->curstate.gaitsequence = iSavedGaitSequence;
 		ent->curstate.frame = flSavedFrame;
@@ -3266,16 +3309,19 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 
 		fakePlayerState.number = playerindex;
 
-		vec3_t vecSavedOrigin, vecSavedAngles;
+		vec3_t vecSavedOrigin, vecSavedAngles, vecSavedCurStateOrigin, vecSavedCurStateAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
 		VectorCopy((*currententity)->angles, vecSavedAngles);
+		VectorCopy((*currententity)->curstate.origin, vecSavedCurStateOrigin);
+		VectorCopy((*currententity)->curstate.angles, vecSavedCurStateAngles);
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 		if (pLocalPlayer && pLocalPlayer->index == playerindex)
 		{
-			VectorCopy(r_params.simorg, (*currententity)->origin);
-			VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+			//VectorCopy(r_params.simorg, (*currententity)->origin);
+			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
+			// 
 		}
 
 		int iSavedViewEntityIndex = 0;
@@ -3295,6 +3341,8 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 
 		VectorCopy(vecSavedOrigin, (*currententity)->origin);
 		VectorCopy(vecSavedAngles, (*currententity)->angles);
+		VectorCopy(vecSavedCurStateOrigin, (*currententity)->curstate.origin);
+		VectorCopy(vecSavedCurStateAngles, (*currententity)->curstate.angles);
 	}
 	else
 	{

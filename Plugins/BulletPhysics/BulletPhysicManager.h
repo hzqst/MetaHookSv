@@ -258,6 +258,7 @@ void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix);
 btTransform MatrixLookAt(const btTransform& transform, const btVector3& at, const btVector3& forward);
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection);
 btVector3 GetVector3FromVec3(const vec3_t src);
+void GetVec3FromVector3(const btVector3& src, vec3_t dst);
 
 void TransformGoldSrcToBullet(btTransform& trans);
 void Vector3GoldSrcToBullet(btVector3& vec);

@@ -106,7 +106,7 @@ void IPluginsV4::ExitGame(int iResult)
 	BaseUI_UninstallHooks();
 
 	VGUI2Extension_Shutdown();
-
+	EngineStudio_UninstallHooks();
 	Engine_UninstallHook();
 }
 

@@ -29,9 +29,10 @@ public:
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
 	bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
 	bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
-	void UpdatePose(entity_state_t* curstate) override;
-	bool SetupBones(studiohdr_t* studiohdr) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+	void UpdateBones(entity_state_t* curstate) override;
+	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
+	bool StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible) override;
 	bool ResetPose(entity_state_t* curstate) override;
 	void ApplyBarnacle(IPhysicObject* pBarnacleObject) override;
 	void ReleaseFromBarnacle() override;

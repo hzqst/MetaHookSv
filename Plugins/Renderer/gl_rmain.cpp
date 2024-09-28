@@ -2282,7 +2282,7 @@ void R_RenderView(void)
 
 void V_RenderView(void)
 {
-
+	gPrivateFuncs.V_RenderView();
 }
 
 float GetXMouseAspectRatioAdjustment(void)

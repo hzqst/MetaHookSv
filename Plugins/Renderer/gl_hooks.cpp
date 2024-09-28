@@ -211,7 +211,6 @@
 #define DRAW_MIPTEXTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x5D\x0C\x2A\x8B\x75\x08\x2A\x89\x75\xCC"
 #define DRAW_MIPTEXTEXTURE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x2A\x2A\x08\x2A\x83\x2A\x2A\x20"
 
-//TODO: use string "R_RenderView: NULL worldmodel"
 #define R_RENDERVIEW_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
 #define R_RENDERVIEW_SIG_NEW2 R_RENDERVIEW_SIG_BLOB
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
@@ -795,7 +794,7 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_SetupFrame = (decltype(gPrivateFuncs.R_SetupFrame))Search_Pattern(R_SETUPFRAME_SIG_NEW);
-		Sig_FuncNotFound(R_CullBox);
+		Sig_FuncNotFound(R_SetupFrame);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -919,7 +918,7 @@ void R_FillAddress(void)
 		}
 	}
 
-	if (gPrivateFuncs.R_RenderView && !gPrivateFuncs.V_RenderView)
+	if ((gPrivateFuncs.R_RenderView || gPrivateFuncs.R_RenderView_SvEngine) && !gPrivateFuncs.V_RenderView)
 	{
 		if (1)
 		{
@@ -951,7 +950,7 @@ void R_FillAddress(void)
 						{
 							PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
 
-							if (target == gPrivateFuncs.R_RenderView)
+							if (target == gPrivateFuncs.R_RenderView || target == gPrivateFuncs.R_RenderView_SvEngine)
 							{
 								ctx->bFoundCallRenderView = true;
 								return TRUE;
@@ -4701,7 +4700,6 @@ void sub_1D1A030()
 					}
 
 				}
-
 
 				if (gPrivateFuncs.CL_IsDevOverviewMode && !gPrivateFuncs.CL_SetDevOverView && address[0] == 0xE8 && address[-5] == 0x68 && address[5] == 0x83)
 				{

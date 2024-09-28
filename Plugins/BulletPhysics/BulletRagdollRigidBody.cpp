@@ -1,6 +1,7 @@
 #include "BulletRagdollRigidBody.h"
 #include "privatehook.h"
 #include "plugins.h"
+#include "enginedef.h"
 
 CBulletRagdollRigidBody::CBulletRagdollRigidBody(
 	int id,
@@ -51,12 +52,14 @@ bool CBulletRagdollRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* 
 		m_pInternalRigidBody->setWorldTransform(newWorldTrans);
 		m_pInternalRigidBody->setInterpolationWorldTransform(newWorldTrans);
 		m_pInternalRigidBody->getMotionState()->setWorldTransform(newWorldTrans);
+
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
-bool CBulletRagdollRigidBody::SetupBones(studiohdr_t* studiohdr)
+bool CBulletRagdollRigidBody::SetupBones(studiohdr_t* studiohdr, int flags)
 {
 	if (!m_pInternalRigidBody)
 		return false;
@@ -89,7 +92,7 @@ bool CBulletRagdollRigidBody::SetupBones(studiohdr_t* studiohdr)
 	return false;
 }
 
-bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
 	if (!m_pInternalRigidBody)
 		return false;
@@ -106,8 +109,22 @@ bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 
 		auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
 
-		if (!m_pInternalRigidBody->isKinematicObject())
+		if (m_pInternalRigidBody->isKinematicObject())
 		{
+			//Sync GoldSrc bones to kinematic rigidbodies, only when STUDIO_RAGDOLL_UPDATE_BONES ?
+			//if ((flags & STUDIO_RAGDOLL_UPDATE_BONES))
+			{
+				auto& bonematrix = pBoneMotionState->m_bonematrix;
+
+				Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+
+				TransformGoldSrcToBullet(bonematrix);
+			}
+		}
+		else
+		{
+			//Sync dynamic rigidbody to GoldSrc bones, whenever possible
+
 			btTransform bonematrix = pBoneMotionState->m_bonematrix;
 
 			TransformBulletToGoldSrc(bonematrix);
@@ -117,14 +134,6 @@ bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
 
 			memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 			memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
-		}
-		else
-		{
-			auto& bonematrix = pBoneMotionState->m_bonematrix;
-
-			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
-
-			TransformGoldSrcToBullet(bonematrix);
 		}
 
 		return true;

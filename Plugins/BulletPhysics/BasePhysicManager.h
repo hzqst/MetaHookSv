@@ -47,8 +47,9 @@ public:
 	void SetGravity(float value) override;
 	void StepSimulation(double frametime) override;
 
-	bool SetupBones(studiohdr_t* studiohdr, int entindex) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex) override;
+	bool SetupBones(studiohdr_t* studiohdr, int entindex, int flags) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags) override;
+	bool StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int* nVisible) override;
 
 	//PhysicObjectConfig Management
 	bool SavePhysicObjectConfigForModel(model_t* mod) override;
@@ -202,6 +203,8 @@ void DispatchRebuildPhysicComponents(
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
 	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction);
+
+bool DispatchStudioCheckBBox(const std::vector<IPhysicComponent*>& PhysicComponents, studiohdr_t* studiohdr, int* nVisible);
 
 void FloatGoldSrcToBullet(float* v);
 void FloatBulletToGoldSrc(float* v);

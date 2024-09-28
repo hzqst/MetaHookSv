@@ -342,11 +342,17 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 	if (!ClientEntityManager()->IsEntityInVisibleList(GetClientEntity()))
 	{
-		ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired = true;
+		ObjectUpdateContext->m_bRigidbodyUpdateBonesRequired = true;
+	}
+
+	if (!ObjectUpdateContext->m_bRigidbodyUpdateBonesRequired && ShouldForceUpdateBones())
+	{
+		ObjectUpdateContext->m_bRigidbodyUpdateBonesRequired = true;
 	}
 
 	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
 
+	//Reset all rigidbodies with pose-reset bonematrix, this consumes a large amount of CPU resources so take it carefully
 	if (ObjectUpdateContext->m_bRigidbodyResetPoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseChanged)
 	{
 		ResetPose(playerState);
@@ -354,11 +360,12 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ObjectUpdateContext->m_bRigidbodyPoseChanged = true;
 	}
 
-	if (ObjectUpdateContext->m_bRigidbodyUpdatePoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseUpdated)
+	//Sync kinematic rigidbodies with latest bonematrix, this consumes a large amount of CPU resources so take it carefully
+	if (ObjectUpdateContext->m_bRigidbodyUpdateBonesRequired && !ObjectUpdateContext->m_bRigidbodyBonesUpdated)
 	{
-		UpdatePose(playerState);
+		UpdateBones(playerState);
 
-		ObjectUpdateContext->m_bRigidbodyPoseUpdated = true;
+		ObjectUpdateContext->m_bRigidbodyBonesUpdated = true;
 	}
 }
 
@@ -476,13 +483,12 @@ bool CBaseRagdollObject::SyncFirstPersonView(struct ref_params_s* pparams, void(
 	return false;
 }
 
-void CBaseRagdollObject::UpdatePose(entity_state_t* curstate)
+void CBaseRagdollObject::UpdateBones(entity_state_t* curstate)
 {
-	//Force bones update
 	ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 }
 
-bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr)
+bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
 {
 	if (GetActivityType() == StudioAnimActivityType_Idle)
 		return false;
@@ -493,14 +499,14 @@ bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupBones(studiohdr);
+			pRigidBody->SetupBones(studiohdr, flags);
 		}
 	}
 
 	return true;
 }
 
-bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
@@ -508,11 +514,16 @@ bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupJiggleBones(studiohdr);
+			pRigidBody->SetupJiggleBones(studiohdr, flags);
 		}
 	}
 
 	return true;
+}
+
+bool CBaseRagdollObject::StudioCheckBBox(studiohdr_t* studiohdr, int *nVisible)
+{
+	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
 bool CBaseRagdollObject::ResetPose(entity_state_t* curstate)
@@ -528,7 +539,9 @@ bool CBaseRagdollObject::ResetPose(entity_state_t* curstate)
 		return false;
 
 	if (GetModel()->type == mod_studio)
+	{
 		ClientPhysicManager()->SetupBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
+	}
 
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{

@@ -186,19 +186,16 @@ void CBulletPhysicRigidBody::SetAngularVelocity(const vec3_t vecVelocity)
 
 bool CBulletPhysicRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate)
 {
-	//no impl
 	return false;
 }
 
-bool CBulletPhysicRigidBody::SetupBones(studiohdr_t* studiohdr)
+bool CBulletPhysicRigidBody::SetupBones(studiohdr_t* studiohdr, int flags)
 {
-	//no impl
 	return false;
 }
 
-bool CBulletPhysicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBulletPhysicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
-	//no impl
 	return false;
 }
 
@@ -308,3 +305,21 @@ float CBulletPhysicRigidBody::GetMass() const
 	return m_mass;
 }
 
+bool CBulletPhysicRigidBody::GetAABB(vec3_t mins, vec3_t maxs) const
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 bmins, bmaxs;
+		m_pInternalRigidBody->getAabb(bmins, bmaxs);
+
+		Vector3BulletToGoldSrc(bmins);
+		Vector3BulletToGoldSrc(bmaxs);
+
+		GetVec3FromVector3(bmins, mins);
+		GetVec3FromVector3(bmaxs, maxs);
+
+		return true;
+	}
+
+	return false;
+}

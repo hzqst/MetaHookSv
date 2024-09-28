@@ -17,9 +17,9 @@ CBulletRagdollObject::~CBulletRagdollObject()
 
 }
 
-bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr)
+bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
 {
-	if (CBaseRagdollObject::SetupBones(studiohdr))
+	if (CBaseRagdollObject::SetupBones(studiohdr, flags))
 	{
 		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
 

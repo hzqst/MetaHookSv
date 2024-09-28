@@ -13,6 +13,6 @@ public:
 		const btRigidBody::btRigidBodyConstructionInfo& constructionInfo,
 		int group, int mask);
 
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
 };

@@ -333,7 +333,7 @@ void BuildGammaTable(float g);
 void V_RenderView(void);
 void R_RenderView(void);
 void R_RenderScene(void);
-void R_RenderView_SvEngine(int a1);
+void R_RenderView_SvEngine(int viewIdx);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 qboolean Host_IsSinglePlayerGame();
 bool AllowCheats();

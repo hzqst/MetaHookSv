@@ -29,6 +29,24 @@
 #define R_DRAWTENTITIESONLIST_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
+#define R_RENDERVIEW_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
+#define R_RENDERVIEW_SIG_NEW2 R_RENDERVIEW_SIG_BLOB
+#define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
+#define R_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x83\xEC\x2A\x0F\x57\xC9\x0F\x2E\xC1\x9F\xF6"
+#define R_RENDERVIEW_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x53\x56\x57\x8B\x7D\x08\x85\xFF"
+
+#define V_RENDERVIEW_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x00\x00\x00\x2A\x2A\x33\x2A\x33\x2A\x2A\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
+#define V_RENDERVIEW_SIG_NEW2 V_RENDERVIEW_SIG_BLOB
+#define V_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x33\x2A\x33"
+#define V_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x33\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
+#define V_RENDERVIEW_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xD9\xEE\xD9\x15"
+
+#define R_CULLBOX_SIG_BLOB "\x53\x8B\x5C\x24\x08\x56\x57\x8B\x7C\x24\x14\xBE\x2A\x2A\x2A\x2A\x56\x57\x53\xE8"
+#define R_CULLBOX_SIG_NEW2 R_CULLBOX_SIG_BLOB
+#define R_CULLBOX_SIG_NEW "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x8B\x7D\x0C\xBE\x2A\x2A\x2A\x2A\x56\x57\x53"
+#define R_CULLBOX_SIG_HL25 "\x55\x8B\xEC\x2A\x8B\x2A\x08\x2A\x2A\x8B\x2A\x0C\xBE\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
+#define R_CULLBOX_SIG_SVENGINE "\x2A\x8B\x2A\x24\x08\x2A\x2A\x8B\x2A\x24\x14\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
+
 private_funcs_t gPrivateFuncs = {0};
 
 studiohdr_t** pstudiohdr = NULL;
@@ -52,6 +70,8 @@ int* g_iWaterLevel = NULL;
 bool* g_bRenderingPortals_SCClient = NULL;
 int* g_ViewEntityIndex_SCClient = NULL;
 
+struct pitchdrift_t* g_pitchdrift = NULL;
+
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
 
@@ -60,6 +80,9 @@ float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
 static hook_t* g_phook_R_NewMap = NULL;
 static hook_t* g_phook_Mod_LoadStudioModel = NULL;
+
+static hook_t* g_phook_R_RenderView_SvEngine = NULL;
+static hook_t* g_phook_R_RenderView = NULL;
 
 void Engine_FillAddreess(void)
 {
@@ -137,6 +160,166 @@ void Engine_FillAddreess(void)
 	}
 	Sig_FuncNotFound(R_RecursiveWorldNode);
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern( R_CULLBOX_SIG_SVENGINE);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern(R_CULLBOX_SIG_HL25);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern(R_CULLBOX_SIG_NEW);
+		if (!gPrivateFuncs.R_CullBox)
+			gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern(R_CULLBOX_SIG_NEW2);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern(R_CULLBOX_SIG_BLOB);
+	}
+	Sig_FuncNotFound(R_CullBox);
+
+	if (1)
+	{
+		const char R_RenderView_StringPattern[] = "R_RenderView: NULL worldmodel";
+		auto R_RenderView_String = Search_Pattern_Data(R_RenderView_StringPattern);
+		if (!R_RenderView_String)
+			R_RenderView_String = Search_Pattern_Rdata(R_RenderView_StringPattern);
+		if (R_RenderView_String)
+		{
+			char pattern[] = "\x75\x2A\x68\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 3) = (DWORD)R_RenderView_String;
+			auto R_RenderView_PushString = Search_Pattern(pattern);
+			if (R_RenderView_PushString)
+			{
+				PVOID Candidate = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_RenderView_PushString, 0x100, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0xD9 &&
+						Candidate[1] == 0x05)
+						return TRUE;
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+						return TRUE;
+
+					//SvEngine 10182
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC)
+						return TRUE;
+
+					return FALSE;
+					});
+
+				if (g_iEngineType == ENGINE_SVENGINE)
+				{
+					gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))Candidate;
+				}
+				else
+				{
+					gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))Candidate;
+				}
+			}
+		}
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Sig_FuncNotFound(R_RenderView_SvEngine);
+	}
+	else
+	{
+		Sig_FuncNotFound(R_RenderView);
+	}
+
+	if ((gPrivateFuncs.R_RenderView || gPrivateFuncs.R_RenderView_SvEngine) && !gPrivateFuncs.V_RenderView)
+	{
+		if (1)
+		{
+			const char pattern[] = "\x68\x00\x40\x00\x00\xFF";
+			/*
+.text:01DCDF5C 68 00 40 00 00                                      push    4000h           ; mask
+.text:01DCDF61 FF D3                                               call    ebx ; glClear
+			*/
+			PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+			PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+			while (SearchBegin < SearchLimit)
+			{
+				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+				if (pFound)
+				{
+					typedef struct
+					{
+						bool bFoundCallRenderView;
+					}V_RenderView_SearchContext;
+
+					V_RenderView_SearchContext ctx = { 0 };
+
+					g_pMetaHookAPI->DisasmRanges(pFound + 5, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (V_RenderView_SearchContext*)context;
+
+						if (address[0] == 0xE8)
+						{
+							PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+
+							if (target == gPrivateFuncs.R_RenderView || target == gPrivateFuncs.R_RenderView_SvEngine)
+							{
+								ctx->bFoundCallRenderView = true;
+								return TRUE;
+							}
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx);
+
+					if (ctx.bFoundCallRenderView)
+					{
+						gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x300, [](PUCHAR Candidate) {
+
+							if (Candidate[0] == 0x81 &&
+								Candidate[1] == 0xEC &&
+								Candidate[4] == 0 &&
+								Candidate[5] == 0)
+								return TRUE;
+
+							if (Candidate[0] == 0x55 &&
+								Candidate[1] == 0x8B &&
+								Candidate[2] == 0xEC)
+								return TRUE;
+
+							if (Candidate[0] == 0xA1 &&
+								Candidate[5] == 0x81 &&
+								Candidate[6] == 0xEC)
+								return TRUE;
+
+							return FALSE;
+						});
+
+						break;
+					}
+
+					SearchBegin = pFound + Sig_Length(pattern);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	Sig_FuncNotFound(V_RenderView);
+
 	if (1)
 	{
 		//Seach "CL_Reallocate cl_entities"
@@ -173,7 +356,7 @@ void Engine_FillAddreess(void)
 			}
 
 			return FALSE;
-			});
+		});
 
 		Sig_VarNotFound(CL_ReallocateDynamicData);
 
@@ -246,6 +429,28 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(cl_max_edicts);
 		Sig_VarNotFound(cl_entities);
 	}
+#if 0
+	if (1)
+	{
+		char pattern[] = "\x68\xF8\x00\x00\x00\x6A\x00";
+		auto V_SetRefParams_Pattern = Search_Pattern(pattern);
+		Sig_VarNotFound(V_SetRefParams_Pattern);
+
+		gPrivateFuncs.V_SetRefParams = (decltype(gPrivateFuncs.V_SetRefParams))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(V_SetRefParams_Pattern, 0x50, [](PUCHAR Candidate) {
+
+			if ((Candidate[0] == 0x55 || Candidate[0] == 0x56 || Candidate[0] == 0x57) &&
+				Candidate[1] == 0x8B &&
+				Candidate[3] == 0x24)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(V_SetRefParams);
+	}
+#endif
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -922,6 +1127,25 @@ void Client_FillAddress(void)
 				Sig_VarNotFound(g_ViewEntityIndex_SCClient);
 			}
 
+#if 0
+			if (1)
+			{
+				const char pattern[] = "\x2A\x2A\x48\x00\x75\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				Sig_AddrNotFound(V_CalcNormalRefdef);
+				gPrivateFuncs.V_CalcNormalRefdef = (decltype(gPrivateFuncs.V_CalcNormalRefdef))GetCallAddress(addr + 7);
+			}
+#endif
+
+			if (1)
+			{
+				const char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x89";
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				Sig_AddrNotFound(g_pitchdrift);
+				g_pitchdrift = (decltype(g_pitchdrift)) * (ULONG_PTR*)(addr + 2);
+			}
+
+
 			g_bIsSvenCoop = true;
 		}
 	}
@@ -961,17 +1185,6 @@ void Client_FillAddress(void)
 	}
 }
 
-void R_NewMap(void)
-{
-	r_worldentity = gEngfuncs.GetEntityByIndex(0);
-	r_worldmodel = r_worldentity->model;
-	
-	gPrivateFuncs.R_NewMap();
-	ClientPhysicManager()->NewMap();
-	ClientEntityManager()->NewMap();
-	g_pViewPort->NewMap();
-}
-
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype)
 {
 	auto r = gPrivateFuncs.efxapi_R_TempModel(pos, dir, angles, life, modelIndex, soundtype);
@@ -996,10 +1209,29 @@ void Engine_InstallHook(void)
 {
 	Install_InlineHook(R_NewMap);
 	Install_InlineHook(Mod_LoadStudioModel);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Install_InlineHook(R_RenderView_SvEngine);
+	}
+	else
+	{
+		Install_InlineHook(R_RenderView);
+	}
+
 }
 
 void Engine_UninstallHook(void)
 {
 	Uninstall_Hook(R_NewMap);
 	Uninstall_Hook(Mod_LoadStudioModel);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Uninstall_Hook(R_RenderView_SvEngine);
+	}
+	else
+	{
+		Uninstall_Hook(R_RenderView);
+	}
 }

@@ -194,14 +194,19 @@ void CBaseStaticObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
 }
 
-bool CBaseStaticObject::SetupBones(studiohdr_t* studiohdr)
+bool CBaseStaticObject::SetupBones(studiohdr_t* studiohdr, int flags)
 {
 	return false;
 }
 
-bool CBaseStaticObject::SetupJiggleBones(studiohdr_t* studiohdr)
+bool CBaseStaticObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 {
 	return false;
+}
+
+bool CBaseStaticObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
+{
+	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
 bool CBaseStaticObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))

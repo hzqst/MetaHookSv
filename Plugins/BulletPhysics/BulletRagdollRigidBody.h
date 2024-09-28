@@ -15,8 +15,8 @@ public:
 		int mask);
 
 	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;
-	bool SetupBones(studiohdr_t* studiohdr) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr) override;
+	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
 	void Update(CPhysicComponentUpdateContext* ComponentUpdateContext) override;
 };
 

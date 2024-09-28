@@ -16,9 +16,18 @@ typedef struct walk_context_s
 
 typedef struct
 {
+	//engine stuffs
 	void(*R_NewMap)(void);
 	void(*R_RecursiveWorldNode)(void *node);
 	void(*R_DrawTEntitiesOnList)(int onlyClientDraw);
+	//void(*V_SetRefParams)(ref_params_t *);
+	void (*V_RenderView)(void);
+	void (*R_RenderView)(void);
+	void (*R_RenderView_SvEngine)(int viewIdx);
+	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
+
+	//client stuffs
+	//void (*V_CalcNormalRefdef)(ref_params_t*);
 
 	//Client GameStudioRenderer
 	void(__fastcall* GameStudioRenderer_StudioSetupBones)(void* pthis, int);
@@ -44,6 +53,9 @@ typedef struct
 	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
 	void (*R_StudioSetupBones)(void);
 
+	//IEngineStudio
+	int (*studioapi_StudioCheckBBox)(void);
+
 	void (*FirstPerson_f)(void);
 	void (*ThreadPerson_f)(void);
 
@@ -55,12 +67,19 @@ typedef struct
 }private_funcs_t;
 
 void R_NewMap(void);
-TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
+void R_RenderView_SvEngine(int viewIdx);
+void R_RenderView();
+
+TEMPENTITY* efxapi_R_TempModel(float* pos, float* dir, float* angles, float life, int modelIndex, int soundtype);
 
 void Engine_FillAddreess(void);
 void Client_FillAddress(void);
 void Engine_InstallHook(void);
 void Engine_UninstallHook(void);
+void ClientStudio_InstallHooks();
+void EngineStudio_InstallHooks();
+void ClientStudio_UninstallHooks();
+void EngineStudio_UninstallHooks();
 
 extern studiohdr_t** pstudiohdr;
 extern model_t** r_model;
@@ -84,6 +103,16 @@ extern int* allow_cheats;
 extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 extern int* g_ViewEntityIndex_SCClient;
+
+struct pitchdrift_t
+{
+	float pitchvel;
+	bool nodrift;
+	float driftmove;
+	double laststop;
+};
+
+extern struct pitchdrift_t* g_pitchdrift;
 
 extern int *g_iUser1;
 extern int *g_iUser2;

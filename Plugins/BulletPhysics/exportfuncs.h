@@ -28,6 +28,8 @@ extern float* r_origin;
 
 extern bool g_bIsCounterStrike;
 
+extern bool g_bIsUpdatingRefdef;
+
 extern cvar_t* bv_debug_draw_level_ragdoll;
 extern cvar_t* bv_debug_draw_level_static;
 extern cvar_t* bv_debug_draw_level_dynamic;
@@ -60,14 +62,21 @@ int GetWorldSurfaceIndex(msurface_t* surf);
 
 entity_state_t* R_GetPlayerState(int index);
 
+void V_RenderView(void);
+
+qboolean R_CullBox(vec3_t mins, vec3_t maxs);
+
 bool AllowCheats();
 
 bool IsDebugDrawEnabled();
 bool IsDebugDrawWallHackEnabled();
 bool ShouldSyncronizeView();
+bool ShouldForceUpdateBones();
+
 float GetSimulationTickRate();
 
 bool R_IsRenderingPortals();
+
 float* EngineGetRendererViewOrigin();
 int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel();

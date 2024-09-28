@@ -30,6 +30,7 @@ static hook_t *g_phook_GameStudioRenderer_StudioDrawModel = NULL;
 static hook_t *g_phook_R_StudioSetupBones = NULL;
 static hook_t *g_phook_R_StudioDrawPlayer = NULL;
 static hook_t *g_phook_R_StudioDrawModel = NULL;
+static hook_t *g_phook_studioapi_StudioCheckBBox = NULL;
 static hook_t *g_phook_efxapi_R_TempModel = NULL;
 
 cl_enginefunc_t gEngfuncs;
@@ -50,6 +51,7 @@ cvar_t* bv_debug_draw_selected_color = NULL;
 
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
+cvar_t* bv_force_updatebones = NULL;
 //cvar_t *bv_ragdoll_sleepaftertime = NULL;
 //cvar_t *bv_ragdoll_sleeplinearvel = NULL;
 //cvar_t *bv_ragdoll_sleepangularvel = NULL;
@@ -60,6 +62,8 @@ cvar_t* sv_cheats = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 int g_iRagdollRenderEntIndex = 0;
+int g_iRagdollRenderFlags = 0;
+bool g_bIsUpdatingRefdef = false;
 
 ref_params_t r_params = { 0 };
 
@@ -92,6 +96,11 @@ bool ShouldSyncronizeView()
 	return bv_syncview->value >= 1;
 }
 
+bool ShouldForceUpdateBones()
+{
+	return bv_force_updatebones->value >= 1;
+}
+
 float GetSimulationTickRate()
 {
 	return bv_simrate->value;
@@ -117,9 +126,9 @@ bool AllowCheats()
 	return (sv_cheats->value != 0) ? true : false;
 }
 
-entity_state_t *R_GetPlayerState(int index)
+entity_state_t *R_GetPlayerState(int entindex)
 {
-	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
+	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * entindex));
 }
 
 bool CL_IsFirstPersonMode(cl_entity_t *player)
@@ -228,14 +237,12 @@ model_t *EngineGetModelByIndex(int index)
 template<typename CallType>
 __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis = nullptr, int dummy = 0)
 {
-	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
+	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex, g_iRagdollRenderFlags))
 		return;
 
 	pfnSetupBones(pthis, dummy);
 
-	//ClientPhysicManager()->MergeBones((*pstudiohdr), g_iRagdollRenderEntIndex);
-
-	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
+	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex, g_iRagdollRenderFlags))
 		return;
 }
 
@@ -288,10 +295,12 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
 
 		g_iRagdollRenderEntIndex = entindex;
+		g_iRagdollRenderFlags = flags;
 
 		int result = pfnDrawModel(pthis, 0, 0);
 
 		g_iRagdollRenderEntIndex = 0;
+		g_iRagdollRenderFlags = 0;
 
 		return result;
 	}
@@ -306,9 +315,10 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Death || pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
+				g_iRagdollRenderFlags = flags;
 
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -320,16 +330,19 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 				VectorCopy(vecSavedOrigin, (*currententity)->origin);
 
 				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderFlags = 0;
 
 				return result;
 			}
 			else
 			{
 				g_iRagdollRenderEntIndex = entindex;
+				g_iRagdollRenderFlags = flags;
 
 				int result = pfnDrawModel(pthis, 0, flags);
 
 				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderFlags = 0;
 
 				return result;
 			}
@@ -373,13 +386,13 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 	if (flags & STUDIO_RAGDOLL_UPDATE_BONES)
 	{
-		int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
-
 		g_iRagdollRenderEntIndex = entindex;
+		g_iRagdollRenderFlags = flags;
 
 		int result = pfnDrawPlayer(pthis, 0, 0, pplayer);
 
 		g_iRagdollRenderEntIndex = 0;
+		g_iRagdollRenderFlags = 0;
 
 		return result;
 	}
@@ -401,9 +414,10 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		{
 			auto pRagdollObject = (IRagdollObject*)pPhysicObject;
 
-			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
+			if (pRagdollObject->GetActivityType() == StudioAnimActivityType_Death || pRagdollObject->GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
 			{
 				g_iRagdollRenderEntIndex = entindex;
+				g_iRagdollRenderFlags = flags;
 
 				vec3_t vecSavedOrigin;
 				VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -421,16 +435,19 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 				VectorCopy(vecSavedOrigin, (*currententity)->origin);
 
 				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderFlags = 0;
 
 				return result;
 			}
 			else
 			{
 				g_iRagdollRenderEntIndex = entindex;
+				g_iRagdollRenderFlags = flags;
 
 				int result = pfnDrawPlayer(pthis, 0, flags, pplayer);
 
 				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderFlags = 0;
 
 				return result;
 			}
@@ -453,6 +470,24 @@ int R_StudioDrawPlayer(int flags, struct entity_state_s*pplayer)
 int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int flags, struct entity_state_s*pplayer)
 {
 	return StudioDrawPlayer_Template(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, flags, pplayer, pthis, dummy);
+}
+
+int studioapi_StudioCheckBBox()
+{
+	int nVisible = 0;
+	int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
+
+	if (ClientPhysicManager()->StudioCheckBBox((*pstudiohdr), entindex, &nVisible))
+	{
+		return nVisible;
+	}
+
+	return gPrivateFuncs.studioapi_StudioCheckBBox();
+}
+
+qboolean R_CullBox(vec3_t mins, vec3_t maxs)
+{
+	return gPrivateFuncs.R_CullBox(mins, maxs);
 }
 
 void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinterface, struct engine_studio_api_s* pstudio)
@@ -1130,9 +1165,6 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 		gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))(*ppinterface)->StudioDrawModel;
 		gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))(*ppinterface)->StudioDrawPlayer;
 
-		Install_InlineHook(R_StudioSetupBones);
-		Install_InlineHook(R_StudioDrawPlayer);
-		Install_InlineHook(R_StudioDrawModel);
 	}
 	else
 	{
@@ -1140,7 +1172,7 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 	}
 }
 
-void EngineStudio_InstallHooks()
+void ClientStudio_InstallHooks()
 {
 	/*
 		Client studio implementation
@@ -1150,7 +1182,7 @@ void EngineStudio_InstallHooks()
 	{
 		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
 	}
-	
+
 	if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer)
 	{
 		Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
@@ -1160,7 +1192,10 @@ void EngineStudio_InstallHooks()
 	{
 		Install_InlineHook(GameStudioRenderer_StudioDrawModel);
 	}
+}
 
+void EngineStudio_InstallHooks()
+{
 	/*
 		Engine studio implementation
 	*/
@@ -1179,6 +1214,68 @@ void EngineStudio_InstallHooks()
 	{
 		Install_InlineHook(R_StudioDrawModel);
 	}
+
+	/*
+		Engine studio interface
+	*/
+
+	if (gPrivateFuncs.studioapi_StudioCheckBBox)
+	{
+		Install_InlineHook(studioapi_StudioCheckBBox);
+	}
+}
+
+void ClientStudio_UninstallHooks()
+{
+	/*
+		Client studio implementation
+	*/
+
+	if (gPrivateFuncs.GameStudioRenderer_StudioSetupBones)
+	{
+		Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
+	}
+
+	if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer)
+	{
+		Uninstall_Hook(GameStudioRenderer_StudioDrawPlayer);
+	}
+
+	if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel)
+	{
+		Uninstall_Hook(GameStudioRenderer_StudioDrawModel);
+	}
+}
+
+void EngineStudio_UninstallHooks()
+{
+	/*
+		Engine studio implementation
+	*/
+
+	if (gPrivateFuncs.R_StudioSetupBones)
+	{
+		Uninstall_Hook(R_StudioSetupBones);
+	}
+
+	if (gPrivateFuncs.R_StudioDrawPlayer)
+	{
+		Uninstall_Hook(R_StudioDrawPlayer);
+	}
+
+	if (gPrivateFuncs.R_StudioDrawModel)
+	{
+		Uninstall_Hook(R_StudioDrawModel);
+	}
+
+	/*
+		Engine studio interface
+	*/
+
+	if (gPrivateFuncs.studioapi_StudioCheckBBox)
+	{
+		Uninstall_Hook(studioapi_StudioCheckBBox);
+	}
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
@@ -1186,9 +1283,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
 	gpStudioInterface = ppinterface;
 
+	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
+
 	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
 
 	EngineStudio_FillAddress(version, ppinterface, pstudio);
+	ClientStudio_InstallHooks();
 	EngineStudio_InstallHooks();
 
 	return result;
@@ -1257,6 +1357,7 @@ void HUD_Init(void)
 
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_force_updatebones = gEngfuncs.pfnRegisterVariable("bv_force_updatebones", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	//bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	//bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	//bv_ragdoll_sleepangularvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepangularvel", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1287,41 +1388,15 @@ void HUD_Init(void)
 	g_pViewPort->Init();
 }
 
-int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
+void R_NewMap(void)
 {
-	return gExportfuncs.HUD_AddEntity(type, ent, model);
-}
+	r_worldentity = gEngfuncs.GetEntityByIndex(0);
+	r_worldmodel = r_worldentity->model;
 
-void HUD_TempEntUpdate(
-	double frametime,   // Simulation time
-	double client_time, // Absolute time on client
-	double cl_gravity,  // True gravity on client
-	TEMPENTITY **ppTempEntFree,   // List of freed temporary ents
-	TEMPENTITY **ppTempEntActive, // List 
-	int(*Callback_AddVisibleEntity)(cl_entity_t *pEntity),
-	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp))
-{
-	gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
-
-	auto pTemp = (*ppTempEntActive);
-
-	while (pTemp)
-	{
-		auto ent = &pTemp->entity;
-
-		if (ent->model)
-		{
-			ClientEntityManager()->SetEntityEmitted(ent);
-
-			ClientPhysicManager()->CreatePhysicObjectForEntity(ent, &ent->curstate, ent->model);
-		}
-		pTemp = pTemp->next;
-	}
-
-	
-	ClientPhysicManager()->SetGravity(cl_gravity);
-	ClientPhysicManager()->UpdateAllPhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
-	ClientPhysicManager()->StepSimulation(frametime);
+	gPrivateFuncs.R_NewMap();
+	ClientPhysicManager()->NewMap();
+	ClientEntityManager()->NewMap();
+	g_pViewPort->NewMap();
 }
 
 void HUD_Frame(double frametime)
@@ -1331,72 +1406,9 @@ void HUD_Frame(double frametime)
 	ClientEntityManager()->ClearEntityEmitStates();
 }
 
-void HUD_Shutdown(void)
+int HUD_AddEntity(int type, cl_entity_t* ent, const char* model)
 {
-	gExportfuncs.HUD_Shutdown();
-
-	ClientPhysicManager()->Shutdown();
-
-	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
-	Uninstall_Hook(GameStudioRenderer_StudioDrawPlayer);
-	Uninstall_Hook(GameStudioRenderer_StudioDrawModel);
-	Uninstall_Hook(R_StudioSetupBones);
-	Uninstall_Hook(R_StudioDrawPlayer);
-	Uninstall_Hook(R_StudioDrawModel);
-	Uninstall_Hook(efxapi_R_TempModel);
-}
-
-void V_CalcRefdef(struct ref_params_s *pparams)
-{
-	memcpy(&r_params, pparams, sizeof(r_params));
-	auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-	if (pparams->intermission)
-		goto skip;
-
-	if (pparams->paused)
-		goto skip;
-
-	if (pparams->nextView)
-		goto skip;
-
-	if (R_IsRenderingPortals())
-		goto skip;
-
-	if (pLocalPlayer && pLocalPlayer->player)
-	{
-		if (ShouldSyncronizeView())
-		{
-			auto pSpectatingPlayer = pLocalPlayer;
-
-			if (g_iUser1 && g_iUser2 && (*g_iUser1))
-			{
-				pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
-			}
-
-			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
-
-			if (pPhysicObject)
-			{
-				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
-				{
-					return;
-				}
-			}
-		}
-	}
-skip:
-	gExportfuncs.V_CalcRefdef(pparams);
-}
-
-void HUD_DrawTransparentTriangles(void)
-{
-	gExportfuncs.HUD_DrawTransparentTriangles();
-
-	if (AllowCheats() && IsDebugDrawEnabled())
-	{
-		ClientPhysicManager()->DebugDraw();
-	}
+	return gExportfuncs.HUD_AddEntity(type, ent, model);
 }
 
 void HUD_CreateEntities(void)
@@ -1452,4 +1464,150 @@ void HUD_CreateEntities(void)
 
 		ClientPhysicManager()->CreatePhysicObjectForEntity(ent, &ent->curstate, ent->model);
 	}
+}
+
+//double g_frametime{};
+//double g_client_time{};
+
+void HUD_TempEntUpdate(
+	double frametime,   // Simulation time
+	double client_time, // Absolute time on client
+	double cl_gravity,  // True gravity on client
+	TEMPENTITY** ppTempEntFree,   // List of freed temporary ents
+	TEMPENTITY** ppTempEntActive, // List 
+	int(*Callback_AddVisibleEntity)(cl_entity_t* pEntity),
+	void(*Callback_TempEntPlaySound)(TEMPENTITY* pTemp, float damp))
+{
+	gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
+
+	auto pTemp = (*ppTempEntActive);
+
+	while (pTemp)
+	{
+		auto ent = &pTemp->entity;
+
+		if (ent->model)
+		{
+			ClientEntityManager()->SetEntityEmitted(ent);
+
+			ClientPhysicManager()->CreatePhysicObjectForEntity(ent, &ent->curstate, ent->model);
+		}
+		pTemp = pTemp->next;
+	}
+
+	ClientPhysicManager()->SetGravity(cl_gravity);
+	//g_frametime = frametime;
+	//g_client_time = client_time;
+
+	//Force Sven Client to update LocalPlayer's pitch for us
+	if (g_bIsSvenCoop && gExportfuncs.CL_IsThirdPerson())
+	{
+		struct pitchdrift_t saved_pitchdrift = (*g_pitchdrift);
+
+		//TODO use ClientDLL_CAM_Think instead?
+		g_bIsUpdatingRefdef = true;
+		gExportfuncs.CAM_Think();
+		V_RenderView();
+		g_bIsUpdatingRefdef = false;
+
+		(*g_pitchdrift) = saved_pitchdrift;
+	}
+
+	ClientPhysicManager()->UpdateAllPhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
+	ClientPhysicManager()->StepSimulation(frametime);
+}
+
+void V_CalcRefdef(struct ref_params_s* pparams)
+{
+	memcpy(&r_params, pparams, sizeof(r_params));
+	auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+	if (pparams->intermission)
+		goto skip;
+
+	if (pparams->paused)
+		goto skip;
+
+	if (pparams->nextView)
+		goto skip;
+
+	if (R_IsRenderingPortals())
+		goto skip;
+
+	if (g_bIsUpdatingRefdef)
+		goto skip;
+
+	if (pLocalPlayer && pLocalPlayer->player)
+	{
+		if (ShouldSyncronizeView())
+		{
+			auto pSpectatingPlayer = pLocalPlayer;
+
+			if (g_iUser1 && g_iUser2 && (*g_iUser1))
+			{
+				pSpectatingPlayer = gEngfuncs.GetEntityByIndex((*g_iUser2));
+			}
+
+			auto pPhysicObject = ClientPhysicManager()->GetPhysicObject(pSpectatingPlayer->index);
+
+			if (pPhysicObject)
+			{
+				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
+				{
+					return;
+				}
+			}
+		}
+	}
+skip:
+	gExportfuncs.V_CalcRefdef(pparams);
+}
+
+void V_RenderView(void)
+{
+	gPrivateFuncs.V_RenderView();
+}
+
+void R_RenderView()
+{
+	if (g_bIsUpdatingRefdef)
+		return;
+
+	gPrivateFuncs.R_RenderView();
+}
+
+void R_RenderView_SvEngine(int viewIdx)
+{
+	if (g_bIsUpdatingRefdef)
+		return;
+#if 0
+	if (g_bIsSvenCoop && gExportfuncs.CL_IsThirdPerson())
+	{
+		ClientPhysicManager()->UpdateAllPhysicObjects(0, 0, g_frametime, g_client_time);
+		ClientPhysicManager()->StepSimulation(g_frametime);
+	}
+#endif
+	gPrivateFuncs.R_RenderView_SvEngine(viewIdx);
+}
+
+void HUD_DrawTransparentTriangles(void)
+{
+	gExportfuncs.HUD_DrawTransparentTriangles();
+
+	if (AllowCheats() && IsDebugDrawEnabled())
+	{
+		ClientPhysicManager()->DebugDraw();
+	}
+}
+
+void HUD_Shutdown(void)
+{
+	gExportfuncs.HUD_Shutdown();
+
+	ClientPhysicManager()->Shutdown();
+
+	ClientStudio_UninstallHooks();
+	EngineStudio_UninstallHooks();
+
+	Uninstall_Hook(efxapi_R_TempModel);
 }
