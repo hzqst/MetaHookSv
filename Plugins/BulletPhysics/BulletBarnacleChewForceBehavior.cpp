@@ -59,7 +59,7 @@ void CBulletBarnacleChewForceBehavior::Update(CPhysicComponentUpdateContext* Com
 		{
 			vec3_t vecForce = { 0, 0, m_flForceMagnitude };
 
-			pRigidBody->ApplyCentralForce(vecForce);
+			pRigidBody->ApplyCentralImpulse(vecForce);
 
 			m_flNextChewTime = gEngfuncs.GetClientTime() + m_flInterval;
 		}

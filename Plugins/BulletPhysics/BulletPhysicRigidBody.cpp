@@ -145,7 +145,7 @@ bool CBulletPhysicRigidBody::RemoveFromPhysicWorld(void* world)
 		return true;
 	}
 
-	gEngfuncs.Con_Printf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: already removed from world!\n");
+	gEngfuncs.Con_DPrintf("CBulletPhysicRigidBody::RemoveFromPhysicWorld: already removed from world!\n");
 	return false;
 }
 
@@ -161,6 +161,16 @@ void CBulletPhysicRigidBody::ApplyCentralForce(const vec3_t vecForce)
 		btVector3 vec3BtForce(vecForce[0], vecForce[1], vecForce[2]);
 
 		m_pInternalRigidBody->applyCentralForce(vec3BtForce);
+	}
+}
+
+void CBulletPhysicRigidBody::ApplyCentralImpulse(const vec3_t vecImpulse)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtImpulse(vecImpulse[0], vecImpulse[1], vecImpulse[2]);
+
+		m_pInternalRigidBody->applyCentralImpulse(vec3BtImpulse);
 	}
 }
 

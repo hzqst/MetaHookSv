@@ -228,7 +228,7 @@ IPhysicConstraint* DispatchGetConstraintByName(const std::vector<IPhysicComponen
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (pPhysicComponent->IsRigidBody())
+		if (pPhysicComponent->IsConstraint())
 		{
 			auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
 
@@ -246,7 +246,7 @@ IPhysicConstraint* DispatchGetConstraintByComponentId(const std::vector<IPhysicC
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		if (pPhysicComponent->IsRigidBody())
+		if (pPhysicComponent->IsConstraint())
 		{
 			auto pConstraint = (IPhysicConstraint*)pPhysicComponent;
 
@@ -2473,7 +2473,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 		{
 			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
 			pConstraintConfig->type = PhysicConstraint_Slider;
-			pConstraintConfig->name = std::format("BarnacleConstraint|{}", rigidbody);
+			pConstraintConfig->name = std::format("BarnacleConstraint|{0}", rigidbody);
 			pConstraintConfig->rigidbodyA = "@barnacle.Body";
 			pConstraintConfig->rigidbodyB = rigidbody;
 			pConstraintConfig->flags = PhysicConstraintFlag_Barnacle;

@@ -409,6 +409,8 @@ bool CBaseRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
 		{
 			VectorScale(vecAddedAngles, invMass, angles);
 		}
+
+		return true;
 	}
 
 	return false;

@@ -206,7 +206,7 @@ bool CBulletPhysicConstraint::RemoveFromPhysicWorld(void* world)
 
 	if (!m_pInternalConstraint)
 	{
-		gEngfuncs.Con_Printf("CBulletPhysicConstraint::RemoveFromPhysicWorld: empty m_pInternalConstraint!\n");
+		gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::RemoveFromPhysicWorld: empty m_pInternalConstraint!\n");
 		return false;
 	}
 
@@ -229,7 +229,7 @@ bool CBulletPhysicConstraint::RemoveFromPhysicWorld(void* world)
 		return true;
 	}
 
-	gEngfuncs.Con_Printf("CBulletPhysicConstraint::RemoveFromPhysicWorld: already removed from world!\n");
+	gEngfuncs.Con_DPrintf("CBulletPhysicConstraint::RemoveFromPhysicWorld: already removed from world!\n");
 	return false;
 }
 

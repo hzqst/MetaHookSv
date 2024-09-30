@@ -218,6 +218,7 @@ public:
 	}
 
 	virtual void ApplyCentralForce(const vec3_t vecForce) = 0;
+	virtual void ApplyCentralImpulse(const vec3_t vecForce) = 0;
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;

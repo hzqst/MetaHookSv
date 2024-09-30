@@ -20,6 +20,7 @@ public:
 	bool RemoveFromPhysicWorld(void* world) override;
 	bool IsAddedToPhysicWorld(void* world) const override;
 	void ApplyCentralForce(const vec3_t vecForce) override;
+	void ApplyCentralImpulse(const vec3_t vecImpulse) override;
 	void SetLinearVelocity(const vec3_t vecVelocity) override;
 	void SetAngularVelocity(const vec3_t vecVelocity) override;
 	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;

@@ -507,7 +507,8 @@ float R_GlowBlend(cl_entity_t *entity)
 		return gPrivateFuncs.R_GlowBlend(entity);
 	}
 
-	if (pmove)
+	//pmove->PM_PlayerTrace might be NULL in the first frame because it's not initalized yet.
+	if (pmove && pmove->PM_PlayerTrace)
 	{
 		vec3_t tmp;
 		float dist, brightness;

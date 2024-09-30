@@ -181,6 +181,7 @@ void CPhysicBehaviorPage::LoadPhysicBehaviorAsListPanelItem(const CClientPhysicB
 	kv->SetString("name", pPhysicBehaviorConfig->name.c_str());
 	kv->SetString("type", UTIL_GetPhysicBehaviorTypeLocalizationToken(pPhysicBehaviorConfig->type));
 	kv->SetString("rigidbody", pPhysicBehaviorConfig->rigidbody.c_str());
+	kv->SetString("constraint", pPhysicBehaviorConfig->constraint.c_str());
 
 	std::wstring flags;
 
