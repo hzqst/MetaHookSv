@@ -69,7 +69,7 @@ IPhysicRigidBody* CBulletStaticObject::CreateRigidBody(const CPhysicObjectCreati
 
 	mask &= ~(BulletPhysicCollisionFilterGroups::WorldFilter | BulletPhysicCollisionFilterGroups::StaticObjectFilter);
 
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::ActionFilter);
+	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter);
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
 		mask &= ~BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
@@ -92,7 +92,7 @@ IPhysicConstraint* CBulletStaticObject::CreateConstraint(const CPhysicObjectCrea
 	return nullptr;
 }
 
-IPhysicAction* CBulletStaticObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+IPhysicBehavior* CBulletStaticObject::CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
 	return nullptr;
 }

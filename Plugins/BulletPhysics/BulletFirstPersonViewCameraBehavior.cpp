@@ -1,24 +1,30 @@
-#include "BulletFirstPersonViewCameraAction.h"
+#include "BulletFirstPersonViewCameraBehavior.h"
 
-CBulletFirstPersonViewCameraAction::CBulletFirstPersonViewCameraAction(
-	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig,
-	int attachedPhysicComponentId) : CBulletCameraViewAction(id, entindex, pPhysicObject, pActionConfig, attachedPhysicComponentId)
+CBulletFirstPersonViewCameraBehavior::CBulletFirstPersonViewCameraBehavior(
+	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
+	int attachedPhysicComponentId,
+	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle) : 
+	CBulletCameraViewBehavior(id, entindex, pPhysicObject, pPhysicBehaviorConfig, attachedPhysicComponentId,
+		activateOnIdle, activateOnDeath, activateOnCaughtByBarnacle)
 {
 
 }
 
-const char* CBulletFirstPersonViewCameraAction::GetTypeString() const
+const char* CBulletFirstPersonViewCameraBehavior::GetTypeString() const
 {
 	return "FirstPersonViewCamera";
 }
 
-const char* CBulletFirstPersonViewCameraAction::GetTypeLocalizationTokenString() const
+const char* CBulletFirstPersonViewCameraBehavior::GetTypeLocalizationTokenString() const
 {
 	return "#BulletPhysics_FirstPersonViewCamera";
 }
 
-bool CBulletFirstPersonViewCameraAction::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
 {
+	if (!ShouldSyncCameraView())
+		return false;
+
 	if (!bIsThirdPersonView)
 	{
 		auto pRigidBody = GetAttachedRigidBody();

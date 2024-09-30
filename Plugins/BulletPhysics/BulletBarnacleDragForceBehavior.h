@@ -1,12 +1,12 @@
 #pragma once
 
-#include "BulletPhysicComponentAction.h"
+#include "BulletPhysicComponentBehavior.h"
 
-class CBulletBarnacleDragForceAction : public CBulletPhysicComponentAction
+class CBulletBarnacleDragForceBehavior : public CBulletPhysicComponentBehavior
 {
 public:
-	CBulletBarnacleDragForceAction(
-		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig,
+	CBulletBarnacleDragForceBehavior(
+		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 		int attachedPhysicComponentId,
 		int iBarnacleIndex, float flForceMagnitude, float flExtraHeight);
 

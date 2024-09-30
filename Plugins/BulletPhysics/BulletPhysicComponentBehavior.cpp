@@ -1,17 +1,17 @@
-#include "BulletPhysicComponentAction.h"
+#include "BulletPhysicComponentBehavior.h"
 
-CBulletPhysicComponentAction::CBulletPhysicComponentAction(
+CBulletPhysicComponentBehavior::CBulletPhysicComponentBehavior(
 	int id,
 	int entindex, 
 	IPhysicObject* pPhysicObject, 
-	const CClientPhysicActionConfig* pActionConfig, 
+	const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId) :
 
-	CBasePhysicComponentAction(
+	CBasePhysicComponentBehavior(
 		id, 
 		entindex,
 		pPhysicObject, 
-		pActionConfig, 
+		pPhysicBehaviorConfig,
 		attachedPhysicComponentId)
 {
 	btVector3 vecOrigin(m_origin[0], m_origin[1], m_origin[2]);
@@ -24,10 +24,10 @@ CBulletPhysicComponentAction::CBulletPhysicComponentAction(
 
 	EulerMatrix(vecAngles, m_offsetmatrix.getBasis());
 
-	m_pInternalRigidBody = CreateInternalRigidBody(pPhysicObject, pActionConfig, attachedPhysicComponentId);
+	m_pInternalRigidBody = CreateInternalRigidBody(pPhysicObject, pPhysicBehaviorConfig, attachedPhysicComponentId);
 }
 
-CBulletPhysicComponentAction::~CBulletPhysicComponentAction()
+CBulletPhysicComponentBehavior::~CBulletPhysicComponentBehavior()
 {
 	if (m_pInternalRigidBody)
 	{
@@ -36,7 +36,7 @@ CBulletPhysicComponentAction::~CBulletPhysicComponentAction()
 	}
 }
 
-bool CBulletPhysicComponentAction::AddToPhysicWorld(void* world)
+bool CBulletPhysicComponentBehavior::AddToPhysicWorld(void* world)
 {
 	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -58,7 +58,7 @@ bool CBulletPhysicComponentAction::AddToPhysicWorld(void* world)
 
 		if (m_pInternalRigidBody)
 		{
-			dynamicWorld->addRigidBody(m_pInternalRigidBody, BulletPhysicCollisionFilterGroups::ActionFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
+			dynamicWorld->addRigidBody(m_pInternalRigidBody, BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
 		}
 
 		m_addedToPhysicWorld = true;
@@ -70,7 +70,7 @@ bool CBulletPhysicComponentAction::AddToPhysicWorld(void* world)
 	return false;
 }
 
-bool CBulletPhysicComponentAction::RemoveFromPhysicWorld(void* world)
+bool CBulletPhysicComponentBehavior::RemoveFromPhysicWorld(void* world)
 {
 	auto dynamicWorld = (btDiscreteDynamicsWorld*)world;
 
@@ -86,16 +86,16 @@ bool CBulletPhysicComponentAction::RemoveFromPhysicWorld(void* world)
 		return true;
 	}
 
-	gEngfuncs.Con_DPrintf("CBulletPhysicComponentAction::RemoveFromPhysicWorld: already removed from world!\n");
+	gEngfuncs.Con_DPrintf("CBulletPhysicComponentBehavior::RemoveFromPhysicWorld: already removed from world!\n");
 	return false;
 }
 
-bool CBulletPhysicComponentAction::IsAddedToPhysicWorld(void* world) const
+bool CBulletPhysicComponentBehavior::IsAddedToPhysicWorld(void* world) const
 {
 	return m_addedToPhysicWorld;
 }
 
-btRigidBody* CBulletPhysicComponentAction::CreateInternalRigidBody(IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig, int attachedPhysicComponentId)
+btRigidBody* CBulletPhysicComponentBehavior::CreateInternalRigidBody(IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pActionConfig, int attachedPhysicComponentId)
 {
 	auto pMotionState = new CFollowPhysicComponentMotionState(pPhysicObject, attachedPhysicComponentId, m_offsetmatrix);
 
@@ -121,7 +121,7 @@ btRigidBody* CBulletPhysicComponentAction::CreateInternalRigidBody(IPhysicObject
 	return pRigidBody;
 }
 
-void CBulletPhysicComponentAction::FreeInternalRigidBody(btRigidBody* pRigidBody)
+void CBulletPhysicComponentBehavior::FreeInternalRigidBody(btRigidBody* pRigidBody)
 {
 	auto pCollisionShape = pRigidBody->getCollisionShape();
 

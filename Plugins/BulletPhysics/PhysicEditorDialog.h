@@ -15,7 +15,7 @@
 class CPhysicObjectConfigPage;
 class CPhysicRigidBodyPage;
 class CPhysicConstraintPage;
-class CPhysicActionPage;
+class CPhysicBehaviorPage;
 class CAnimControlPage;
 
 class CPhysicEditorDialog : public vgui::Frame
@@ -36,7 +36,7 @@ private:
 	CPhysicObjectConfigPage* m_pPhysicObjectConfigPage{};
 	CPhysicRigidBodyPage* m_pPhysicRigidBodyPage{};
 	CPhysicConstraintPage* m_pPhysicConstraintPage{};
-	CPhysicActionPage* m_pPhysicActionPage{};
+	CPhysicBehaviorPage* m_pPhysicBehaviorPage{};
 	CAnimControlPage* m_pAnimControlPage{};
 
 	uint64 m_physicObjectId{};

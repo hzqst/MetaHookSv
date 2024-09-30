@@ -53,8 +53,8 @@ public:
 	IPhysicRigidBody* GetRigidBodyByComponentId(int id) override;
 	IPhysicConstraint* GetConstraintByName(const std::string& name) override;
 	IPhysicConstraint* GetConstraintByComponentId(int id) override;
-	IPhysicAction* GetPhysicActionByName(const std::string& name) override;
-	IPhysicAction* GetPhysicActionByComponentId(int id) override;
+	IPhysicBehavior* GetPhysicBehaviorByName(const std::string& name) override;
+	IPhysicBehavior* GetPhysicBehaviorByComponentId(int id) override;
 
 	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody);
 	virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
@@ -63,11 +63,11 @@ public:
 	
 	virtual IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
 	virtual IPhysicConstraint* CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
-	virtual IPhysicAction* CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId) = 0;
+	virtual IPhysicBehavior* CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId) = 0;
 
 	virtual void AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody);
 	virtual void AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint);
-	virtual void AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction);
+	virtual void AddPhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior* pPhysicBehavior);
 
 protected:
 
@@ -85,7 +85,7 @@ public:
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> m_RigidBodyConfigs;
 	std::vector<std::shared_ptr<CClientConstraintConfig>> m_ConstraintConfigs;
-	std::vector<std::shared_ptr<CClientPhysicActionConfig>> m_ActionConfigs;
+	std::vector<std::shared_ptr<CClientPhysicBehaviorConfig>> m_PhysicBehaviorConfigs;
 	std::vector<std::shared_ptr<CClientAnimControlConfig>> m_AnimControlConfigs;
 
 	std::shared_ptr<CClientAnimControlConfig> m_IdleAnimConfig;

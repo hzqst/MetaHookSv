@@ -133,7 +133,7 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 
 	m_RigidBodyConfigs = pRagdollObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pRagdollObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pRagdollObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pRagdollObjectConfig->PhysicBehaviorConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -153,13 +153,13 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 		CreationParam,
 		m_RigidBodyConfigs,
 		m_ConstraintConfigs,
-		m_ActionConfigs,
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseRagdollObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
 	SetupNonKeyBones(CreationParam);
@@ -184,7 +184,7 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	filters.m_RigidBodyFilter.m_HasWithFlags = true;
 	filters.m_ConstraintFilter.m_HasWithFlags = true;
-	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+	filters.m_PhysicBehaviorFilter.m_HasWithFlags = true;
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
@@ -194,7 +194,7 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	m_RigidBodyConfigs = pRagdollObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pRagdollObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pRagdollObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pRagdollObjectConfig->PhysicBehaviorConfigs;
 
 	m_AnimControlConfigs = pRagdollObjectConfig->AnimControlConfigs;
 
@@ -238,13 +238,13 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 		CreationParam, 
 		m_RigidBodyConfigs, 
 		m_ConstraintConfigs, 
-		m_ActionConfigs, 
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseRagdollObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseRagdollObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseRagdollObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseRagdollObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseRagdollObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
 	SetupNonKeyBones(CreationParam);
@@ -570,18 +570,18 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 		}
 	}
 
-	for (const auto& pActionConfig : m_ActionConfigs)
+	for (const auto& pPhysicBehaviorConfig : m_PhysicBehaviorConfigs)
 	{
-		const auto pActionConfigPtr = pActionConfig.get();
+		const auto pPhysicBehaviorConfigPtr = pPhysicBehaviorConfig.get();
 
-		if (!(pActionConfigPtr->flags & PhysicActionFlag_Barnacle))
+		if (!(pPhysicBehaviorConfigPtr->flags & PhysicBehaviorFlag_Barnacle))
 			continue;
 
-		auto pPhysicAction = CreateAction(CreationParam, pActionConfigPtr, 0);
+		auto pPhysicBehavior = CreatePhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, 0);
 
-		if (pPhysicAction)
+		if (pPhysicBehavior)
 		{
-			AddAction(CreationParam, pActionConfigPtr, pPhysicAction);
+			AddPhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, pPhysicBehavior);
 		}
 	}
 }
@@ -598,8 +598,8 @@ void CBaseRagdollObject::ReleaseFromBarnacle()
 	filters.m_ConstraintFilter.m_HasWithFlags = true;
 	filters.m_ConstraintFilter.m_WithFlags = PhysicConstraintFlag_Barnacle;
 
-	filters.m_PhysicActionFilter.m_HasWithFlags = true;
-	filters.m_PhysicActionFilter.m_WithFlags = PhysicActionFlag_Barnacle;
+	filters.m_PhysicBehaviorFilter.m_HasWithFlags = true;
+	filters.m_PhysicBehaviorFilter.m_WithFlags = PhysicBehaviorFlag_Barnacle;
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
@@ -735,14 +735,14 @@ IPhysicConstraint* CBaseRagdollObject::GetConstraintByComponentId(int id)
 	return DispatchGetConstraintByComponentId(m_PhysicComponents, id);
 }
 
-IPhysicAction* CBaseRagdollObject::GetPhysicActionByName(const std::string& name)
+IPhysicBehavior* CBaseRagdollObject::GetPhysicBehaviorByName(const std::string& name)
 {
-	return DispatchGetPhysicActionByName(m_PhysicComponents, name);
+	return DispatchGetPhysicBehaviorByName(m_PhysicComponents, name);
 }
 
-IPhysicAction* CBaseRagdollObject::GetPhysicActionByComponentId(int id)
+IPhysicBehavior* CBaseRagdollObject::GetPhysicBehaviorByComponentId(int id)
 {
-	return DispatchGetPhysicActionByComponentId(m_PhysicComponents, id);
+	return DispatchGetPhysicBehaviorByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseRagdollObject::FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
@@ -832,12 +832,12 @@ void CBaseRagdollObject::AddConstraint(const CPhysicObjectCreationParameter& Cre
 	DispatchAddPhysicComponent(m_PhysicComponents, pConstraint);
 }
 
-void CBaseRagdollObject::AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction)
+void CBaseRagdollObject::AddPhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior* pPhysicBehavior)
 {
-	if (!pPhysicAction)
+	if (!pPhysicBehavior)
 		return;
 
-	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicAction);
+	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicBehavior);
 }
 
 bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate)

@@ -119,7 +119,7 @@ bool CBaseStaticObject::Build(const CPhysicObjectCreationParameter& CreationPara
 
 	m_RigidBodyConfigs = pStaticObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pStaticObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pStaticObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pStaticObjectConfig->PhysicBehaviorConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -130,13 +130,13 @@ bool CBaseStaticObject::Build(const CPhysicObjectCreationParameter& CreationPara
 		CreationParam,
 		m_RigidBodyConfigs,
 		m_ConstraintConfigs,
-		m_ActionConfigs,
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseStaticObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseStaticObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
 	return true;
@@ -156,7 +156,7 @@ bool CBaseStaticObject::Rebuild(const CPhysicObjectCreationParameter& CreationPa
 
 	filters.m_RigidBodyFilter.m_HasWithFlags = true;
 	filters.m_ConstraintFilter.m_HasWithFlags = true;
-	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+	filters.m_PhysicBehaviorFilter.m_HasWithFlags = true;
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
@@ -166,7 +166,7 @@ bool CBaseStaticObject::Rebuild(const CPhysicObjectCreationParameter& CreationPa
 
 	m_RigidBodyConfigs = pStaticObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pStaticObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pStaticObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pStaticObjectConfig->PhysicBehaviorConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -178,13 +178,13 @@ bool CBaseStaticObject::Rebuild(const CPhysicObjectCreationParameter& CreationPa
 		CreationParam,
 		m_RigidBodyConfigs,
 		m_ConstraintConfigs,
-		m_ActionConfigs,
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseStaticObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseStaticObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseStaticObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseStaticObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseStaticObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 	return true;
 }
@@ -284,14 +284,14 @@ IPhysicConstraint* CBaseStaticObject::GetConstraintByComponentId(int id)
 	return DispatchGetConstraintByComponentId(m_PhysicComponents, id);
 }
 
-IPhysicAction* CBaseStaticObject::GetPhysicActionByName(const std::string& name)
+IPhysicBehavior* CBaseStaticObject::GetPhysicBehaviorByName(const std::string& name)
 {
-	return DispatchGetPhysicActionByName(m_PhysicComponents, name);
+	return DispatchGetPhysicBehaviorByName(m_PhysicComponents, name);
 }
 
-IPhysicAction* CBaseStaticObject::GetPhysicActionByComponentId(int id)
+IPhysicBehavior* CBaseStaticObject::GetPhysicBehaviorByComponentId(int id)
 {
-	return DispatchGetPhysicActionByComponentId(m_PhysicComponents, id);
+	return DispatchGetPhysicBehaviorByComponentId(m_PhysicComponents, id);
 }
 
 void CBaseStaticObject::AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody)
@@ -310,10 +310,10 @@ void CBaseStaticObject::AddConstraint(const CPhysicObjectCreationParameter& Crea
 	DispatchAddPhysicComponent(m_PhysicComponents, pConstraint);
 }
 
-void CBaseStaticObject::AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction)
+void CBaseStaticObject::AddPhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior* pPhysicBehavior)
 {
-	if (!pPhysicAction)
+	if (!pPhysicBehavior)
 		return;
 
-	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicAction);
+	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicBehavior);
 }

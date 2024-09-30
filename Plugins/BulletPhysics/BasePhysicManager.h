@@ -173,8 +173,8 @@ IPhysicRigidBody* DispatchGetRigidBodyByName(const std::vector<IPhysicComponent*
 IPhysicRigidBody* DispatchGetRigidBodyByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
 IPhysicConstraint* DispatchGetConstraintByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
 IPhysicConstraint* DispatchGetConstraintByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id); 
-IPhysicAction* DispatchGetPhysicActionByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
-IPhysicAction* DispatchGetPhysicActionByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
+IPhysicBehavior* DispatchGetPhysicBehaviorByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
+IPhysicBehavior* DispatchGetPhysicBehaviorByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
 void DispatchAddPhysicComponent(std::vector<IPhysicComponent*>& PhysicComponents, IPhysicComponent* pPhysicComponent);
 void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents);
 void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters);
@@ -183,26 +183,26 @@ void DispatchBuildPhysicComponents(
 	const CPhysicObjectCreationParameter& CreationParam,
 	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
 	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
-	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicBehaviorConfig>>& PhysicBehaviorConfigs,
 	const std::function<IPhysicRigidBody* (const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
 	const std::function<IPhysicConstraint* (const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
-	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
-	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction);
+	const std::function<IPhysicBehavior* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)>& pfnCreatePhysicBehavior,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior*)>& pfnAddPhysicBehavior);
 
 void DispatchRebuildPhysicComponents(
 	std::vector<IPhysicComponent*>& PhysicComponents,
 	const CPhysicObjectCreationParameter& CreationParam,
 	const std::vector<std::shared_ptr<CClientRigidBodyConfig>>& RigidBodyConfigs,
 	const std::vector<std::shared_ptr<CClientConstraintConfig>>& ConstraintConfigs,
-	const std::vector<std::shared_ptr<CClientPhysicActionConfig>>& PhysicActionConfigs,
+	const std::vector<std::shared_ptr<CClientPhysicBehaviorConfig>>& PhysicBehaviorConfigs,
 	const std::function<IPhysicRigidBody* (const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId)>& pfnCreateRigidBody,
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicRigidBody*)>& pfnAddRigidBody,
 	const std::function<IPhysicConstraint* (const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId)>& pfnCreateConstraint,
 	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint*)>& pfnAddConstraint,
-	const std::function<IPhysicAction* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, int physicComponentId)>& pfnCreatePhysicAction,
-	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction*)>& pfnAddPhysicAction);
+	const std::function<IPhysicBehavior* (const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)>& pfnCreatePhysicBehavior,
+	const std::function<void(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior*)>& pfnAddPhysicBehavior);
 
 bool DispatchStudioCheckBBox(const std::vector<IPhysicComponent*>& PhysicComponents, studiohdr_t* studiohdr, int* nVisible);
 

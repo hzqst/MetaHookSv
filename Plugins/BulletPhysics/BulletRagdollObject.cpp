@@ -1,11 +1,11 @@
 #include "BulletRagdollObject.h"
 #include "BulletRagdollRigidBody.h"
 #include "BulletRagdollConstraint.h"
-#include "BulletBarnacleDragForceAction.h"
-#include "BulletBarnacleChewForceAction.h"
-#include "BulletBarnacleConstraintLimitAdjustmentAction.h"
-#include "BulletFirstPersonViewCameraAction.h"
-#include "BulletThirdPersonViewCameraAction.h"
+#include "BulletBarnacleDragForceBehavior.h"
+#include "BulletBarnacleChewForceBehavior.h"
+#include "BulletBarnacleConstraintLimitAdjustmentBehavior.h"
+#include "BulletFirstPersonViewCameraBehavior.h"
+#include "BulletThirdPersonViewCameraBehavior.h"
 #include "PhysicUTIL.h"
 #include "privatehook.h"
 
@@ -184,7 +184,7 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 
 	int mask = btBroadphaseProxy::AllFilter;
 
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::ActionFilter);
+	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter);
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 		mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
@@ -413,108 +413,114 @@ IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CPhysicObjectCre
 	return nullptr;
 }
 
-IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
-	switch (pActionConfig->type)
+	switch (pPhysicBehaviorConfig->type)
 	{
-	case PhysicAction_BarnacleDragForce:
+	case PhysicBehavior_BarnacleDragForce:
 	{
-		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbody);
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
-		return new CBulletBarnacleDragForceAction(
+		return new CBulletBarnacleDragForceBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
-			pActionConfig,
+			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceMagnitude],
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleDragForceExtraHeight]);
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceMagnitude],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceExtraHeight]);
 	}
-	case PhysicAction_BarnacleChewForce:
+	case PhysicBehavior_BarnacleChewForce:
 	{
-		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbody);
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
-		return new CBulletBarnacleChewForceAction(
+		return new CBulletBarnacleChewForceBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
-			pActionConfig,
+			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceMagnitude],
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleChewForceInterval]);
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewForceMagnitude],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewForceInterval]);
 	}
-	case PhysicAction_BarnacleConstraintLimitAdjustment:
+	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
 	{
-		auto pConstraint = GetConstraintByName(pActionConfig->constraint);
+		auto pConstraint = GetConstraintByName(pPhysicBehaviorConfig->constraint);
 
 		if (!pConstraint)
 		{
-			gEngfuncs.Con_DPrintf("CreateAction: constraint \"%s\" not found!\n", pActionConfig->constraint.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: constraint \"%s\" not found!\n", pPhysicBehaviorConfig->constraint.c_str());
 			return nullptr;
 		}
 
-		return new CBulletBarnacleConstraintLimitAdjustmentAction(
+		return new CBulletBarnacleConstraintLimitAdjustmentBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
-			pActionConfig,
+			pPhysicBehaviorConfig,
 			pConstraint->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
-			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
-			(int)pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
+					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
+					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
+				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
 	}
-	case PhysicAction_FirstPersonViewCamera:
+	case PhysicBehavior_FirstPersonViewCamera:
 	{
-		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbody);
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
-		return new CBulletFirstPersonViewCameraAction(
+		return new CBulletFirstPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
-			pActionConfig,
-			pRigidBodyA->GetPhysicComponentId());
+			pPhysicBehaviorConfig,
+			pRigidBodyA->GetPhysicComponentId(),
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] >= 1 ? true : false,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] >= 1 ? true : false,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] >= 1 ? true : false);
 	}
-	case PhysicAction_ThirdPersonViewCamera:
+	case PhysicBehavior_ThirdPersonViewCamera:
 	{
-		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbody);
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbody.c_str());
 			return nullptr;
 		}
 
-		return new CBulletThirdPersonViewCameraAction(
+		return new CBulletThirdPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
-			pActionConfig,
-			pRigidBodyA->GetPhysicComponentId());
+			pPhysicBehaviorConfig,
+			pRigidBodyA->GetPhysicComponentId(),
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] >= 1 ? true : false,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] >= 1 ? true : false,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] >= 1 ? true : false);
 	}
 	}
 
-	return DispatchBulletCreatePhysicAction(CreationParam, pActionConfig, physicComponentId);
+	return DispatchBulletCreatePhysicBehavior(CreationParam, pPhysicBehaviorConfig, physicComponentId);
 }
 
 void CBulletRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)

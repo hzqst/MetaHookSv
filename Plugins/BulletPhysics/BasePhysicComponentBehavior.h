@@ -1,15 +1,15 @@
 #pragma once
 
-#include "BasePhysicAction.h"
+#include "BasePhysicBehavior.h"
 
-class CBasePhysicComponentAction : public CBasePhysicAction
+class CBasePhysicComponentBehavior : public CBasePhysicBehavior
 {
 public:
-	CBasePhysicComponentAction(
+	CBasePhysicComponentBehavior(
 		int id,
 		int entindex, 
 		IPhysicObject* pPhysicObject, 
-		const CClientPhysicActionConfig* pActionConfig, 
+		const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, 
 		int attachedPhysicComponentId);
 
 	IPhysicComponent* GetAttachedPhysicComponent() const override;

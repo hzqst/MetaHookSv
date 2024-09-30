@@ -2,10 +2,10 @@
 
 #include "ClientPhysicManager.h"
 
-class CBasePhysicAction : public IPhysicAction
+class CBasePhysicBehavior : public IPhysicBehavior
 {
 public:
-	CBasePhysicAction(int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig);
+	CBasePhysicBehavior(int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig);
 
 	int GetPhysicConfigId() const override;
 	int GetPhysicComponentId() const override;

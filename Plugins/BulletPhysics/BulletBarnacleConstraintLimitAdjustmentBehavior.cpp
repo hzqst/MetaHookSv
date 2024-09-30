@@ -1,15 +1,15 @@
-#include "BulletBarnacleConstraintLimitAdjustmentAction.h"
+#include "BulletBarnacleConstraintLimitAdjustmentBehavior.h"
 
-CBulletBarnacleConstraintLimitAdjustmentAction::CBulletBarnacleConstraintLimitAdjustmentAction(
-	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig,
+CBulletBarnacleConstraintLimitAdjustmentBehavior::CBulletBarnacleConstraintLimitAdjustmentBehavior(
+	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
 	int iBarnacleIndex, float flInterval, float flExtraHeight, int iLimitAxis) :
 
-	CBulletPhysicComponentAction(
+	CBulletPhysicComponentBehavior(
 		id,
 		entindex,
 		pPhysicObject,
-		pActionConfig,
+		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
 	m_iBarnacleIndex(iBarnacleIndex),
@@ -20,17 +20,17 @@ CBulletBarnacleConstraintLimitAdjustmentAction::CBulletBarnacleConstraintLimitAd
 
 }
 
-const char* CBulletBarnacleConstraintLimitAdjustmentAction::GetTypeString() const
+const char* CBulletBarnacleConstraintLimitAdjustmentBehavior::GetTypeString() const
 {
 	return "BarnacleConstraintLimitAdjustment";
 }
 
-const char* CBulletBarnacleConstraintLimitAdjustmentAction::GetTypeLocalizationTokenString() const
+const char* CBulletBarnacleConstraintLimitAdjustmentBehavior::GetTypeLocalizationTokenString() const
 {
 	return "#BulletPhysics_BarnacleConstraintLimitAdjustment";
 }
 
-void CBulletBarnacleConstraintLimitAdjustmentAction::Update(CPhysicComponentUpdateContext* ComponentContext)
+void CBulletBarnacleConstraintLimitAdjustmentBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
 	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 

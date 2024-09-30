@@ -117,7 +117,7 @@ bool CBaseDynamicObject::Build(const CPhysicObjectCreationParameter& CreationPar
 
 	m_RigidBodyConfigs = pDynamicObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pDynamicObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pDynamicObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pDynamicObjectConfig->PhysicBehaviorConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -128,13 +128,13 @@ bool CBaseDynamicObject::Build(const CPhysicObjectCreationParameter& CreationPar
 		CreationParam,
 		m_RigidBodyConfigs,
 		m_ConstraintConfigs,
-		m_ActionConfigs,
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseDynamicObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
 	return true;
@@ -152,7 +152,7 @@ bool CBaseDynamicObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	filters.m_RigidBodyFilter.m_HasWithFlags = true;
 	filters.m_ConstraintFilter.m_HasWithFlags = true;
-	filters.m_PhysicActionFilter.m_HasWithFlags = true;
+	filters.m_PhysicBehaviorFilter.m_HasWithFlags = true;
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
@@ -164,7 +164,7 @@ bool CBaseDynamicObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	m_RigidBodyConfigs = pDynamicObjectConfig->RigidBodyConfigs;
 	m_ConstraintConfigs = pDynamicObjectConfig->ConstraintConfigs;
-	m_ActionConfigs = pDynamicObjectConfig->ActionConfigs;
+	m_PhysicBehaviorConfigs = pDynamicObjectConfig->PhysicBehaviorConfigs;
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -176,13 +176,13 @@ bool CBaseDynamicObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 		CreationParam,
 		m_RigidBodyConfigs,
 		m_ConstraintConfigs,
-		m_ActionConfigs,
+		m_PhysicBehaviorConfigs,
 		std::bind(&CBaseDynamicObject::CreateRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::AddRigidBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::CreateConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
 		std::bind(&CBaseDynamicObject::AddConstraint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::CreateAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-		std::bind(&CBaseDynamicObject::AddAction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
+		std::bind(&CBaseDynamicObject::CreatePhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+		std::bind(&CBaseDynamicObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
 	return true;
@@ -293,14 +293,14 @@ IPhysicConstraint* CBaseDynamicObject::GetConstraintByComponentId(int id)
 	return DispatchGetConstraintByComponentId(m_PhysicComponents, id);
 }
 
-IPhysicAction* CBaseDynamicObject::GetPhysicActionByName(const std::string& name)
+IPhysicBehavior* CBaseDynamicObject::GetPhysicBehaviorByName(const std::string& name)
 {
-	return DispatchGetPhysicActionByName(m_PhysicComponents, name);
+	return DispatchGetPhysicBehaviorByName(m_PhysicComponents, name);
 }
 
-IPhysicAction* CBaseDynamicObject::GetPhysicActionByComponentId(int id)
+IPhysicBehavior* CBaseDynamicObject::GetPhysicBehaviorByComponentId(int id)
 {
-	return DispatchGetPhysicActionByComponentId(m_PhysicComponents, id);
+	return DispatchGetPhysicBehaviorByComponentId(m_PhysicComponents, id);
 }
 
 IPhysicRigidBody* CBaseDynamicObject::FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
@@ -324,10 +324,10 @@ void CBaseDynamicObject::AddConstraint(const CPhysicObjectCreationParameter& Cre
 	DispatchAddPhysicComponent(m_PhysicComponents, pConstraint);
 }
 
-void CBaseDynamicObject::AddAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pPhysicActionConfig, IPhysicAction* pPhysicAction)
+void CBaseDynamicObject::AddPhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, IPhysicBehavior* pPhysicBehavior)
 {
-	if (!pPhysicAction)
+	if (!pPhysicBehavior)
 		return;
 
-	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicAction);
+	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicBehavior);
 }

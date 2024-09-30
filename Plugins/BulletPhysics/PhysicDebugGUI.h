@@ -13,7 +13,7 @@ enum class PhysicInspectMode
 	PhysicObject,
 	RigidBody,
 	Constraint,
-	Action,
+	PhysicBehavior,
 };
 
 enum class PhysicEditMode
@@ -93,6 +93,7 @@ protected:
 	bool UpdateInspectedPhysicObject(bool bSelected);
 	bool UpdateInspectedRigidBody(bool bSelected);
 	bool UpdateInspectedConstraint(bool bSelected);
+	bool UpdateInspectedPhysicBehavior(bool bSelected);
 	void UpdateInspectMode(PhysicInspectMode mode);
 	void UpdateEditMode(PhysicEditMode mode);
 
@@ -101,7 +102,7 @@ protected:
 	bool OpenInspectPhysicComponentMenu(bool bSelected);
 	bool OpenRigidBodyMenu(IPhysicComponent* pPhysicComponent);
 	bool OpenConstraintMenu(IPhysicComponent* pPhysicComponent);
-	bool OpenPhysicActionMenu(IPhysicComponent* pPhysicComponent);
+	bool OpenPhysicBehaviorMenu(IPhysicComponent* pPhysicComponent);
 
 	void ShowInspectContentLabel(const wchar_t* wszText);
 	void HideInspectContentLabel();

@@ -57,7 +57,7 @@ void CPhysicDebugGUI::LoadAvailableInspectModeIntoControls()
 		"#BulletPhysics_InspectItem_PhysicObject", 
 		"#BulletPhysics_InspectItem_RigidBody",
 		"#BulletPhysics_InspectItem_Constraint",
-		"#BulletPhysics_InspectItem_Action" };
+		"#BulletPhysics_InspectItem_PhysicBehavior" };
 
 	for (int i = 0; i < _ARRAYSIZE(VGUI2Tokens_InspectMode); ++i)
 	{
@@ -379,18 +379,18 @@ void CPhysicDebugGUI::UpdateInspectStuffs()
 				case PhysicInspectMode::RigidBody:
 				{
 					traceParam.withflags = PhysicTraceLineFlag_RigidBody;
-					traceParam.withoutflags |= (PhysicTraceLineFlag_Constraint | PhysicTraceLineFlag_Action);
+					traceParam.withoutflags |= (PhysicTraceLineFlag_Constraint | PhysicTraceLineFlag_PhysicBehavior);
 					break;
 				}
 				case PhysicInspectMode::Constraint:
 				{
 					traceParam.withflags = PhysicTraceLineFlag_Constraint;
-					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_Action);
+					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_PhysicBehavior);
 					break;
 				}
-				case PhysicInspectMode::Action:
+				case PhysicInspectMode::PhysicBehavior:
 				{
-					traceParam.withflags = PhysicTraceLineFlag_Action;
+					traceParam.withflags = PhysicTraceLineFlag_PhysicBehavior;
 					traceParam.withoutflags |= (PhysicTraceLineFlag_RigidBody | PhysicTraceLineFlag_Constraint);
 					break;
 				}
@@ -477,9 +477,10 @@ void CPhysicDebugGUI::OnThink()
 			UpdateInspectedConstraint(false);
 		break;
 	}
-	case PhysicInspectMode::Action:
+	case PhysicInspectMode::PhysicBehavior:
 	{
-		//TODO
+		if (false == UpdateInspectedPhysicBehavior(true))
+			UpdateInspectedPhysicBehavior(false);
 		break;
 	}
 	}
@@ -505,9 +506,9 @@ void CPhysicDebugGUI::UpdateInspectMode(PhysicInspectMode mode)
 	{
 		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Constraint");
 	}
-	else if (m_InspectMode == PhysicInspectMode::Action)
+	else if (m_InspectMode == PhysicInspectMode::PhysicBehavior)
 	{
-		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_Action");
+		m_pInspectModeLabel->SetText("#BulletPhysics_InspectMode_PhysicBehavior");
 	}
 
 	ClientPhysicManager()->SetSelectedPhysicObjectId(0);
@@ -612,9 +613,25 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 			UpdateEditMode(PhysicEditMode::None);
 			return;
 		}
-		else if (m_InspectMode == PhysicInspectMode::Action)
-		{
-			//TODO
+		else if (m_InspectMode == PhysicInspectMode::PhysicBehavior)
+		{	
+			int physicComponentId = ClientPhysicManager()->GetInspectedPhysicComponentId();
+
+			if (physicComponentId > 0)
+			{
+				auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+				if (pPhysicComponent && pPhysicComponent->IsPhysicBehavior())
+				{
+					if (ClientPhysicManager()->GetSelectedPhysicComponentId() != physicComponentId)
+					{
+						ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+						UpdateEditMode(PhysicEditMode::None);
+					}
+					return;
+				}
+			}
+
 			ClientPhysicManager()->SetSelectedPhysicComponentId(0);
 			UpdateEditMode(PhysicEditMode::None);
 			return;
@@ -644,7 +661,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 		else if (
 			m_InspectMode == PhysicInspectMode::RigidBody || 
 			m_InspectMode == PhysicInspectMode::Constraint || 
-			m_InspectMode == PhysicInspectMode::Action)
+			m_InspectMode == PhysicInspectMode::PhysicBehavior)
 		{
 			if (OpenInspectPhysicComponentMenu(true))
 			{
@@ -955,6 +972,78 @@ bool CPhysicDebugGUI::UpdateInspectedConstraint(bool bSelected)
 	return false;
 }
 
+bool CPhysicDebugGUI::UpdateInspectedPhysicBehavior(bool bSelected)
+{
+	int physicComponentId = bSelected ? ClientPhysicManager()->GetSelectedPhysicComponentId() : ClientPhysicManager()->GetInspectedPhysicComponentId();
+
+	if (physicComponentId)
+	{
+		auto pPhysicBehavior = UTIL_GetPhysicComponentAsPhysicBehavior(physicComponentId);
+
+		if (pPhysicBehavior)
+		{
+			wchar_t wszName[64] = { 0 };
+
+			vgui::localize()->ConvertANSIToUnicode(pPhysicBehavior->GetName(), wszName, sizeof(wszName));
+
+			auto str = std::format(L"{0}: {1}", vgui::localize()->Find(pPhysicBehavior->GetTypeLocalizationTokenString()), wszName);
+
+			str += UTIL_GetFormattedPhysicBehaviorFlags(pPhysicBehavior->GetFlags());
+
+			ShowInspectContentLabel(str.c_str());
+
+			auto pPhysicBehaviorConfig = UTIL_GetPhysicBehaviorConfigFromConfigId(pPhysicBehavior->GetPhysicConfigId());
+
+			if (pPhysicBehaviorConfig)
+			{
+				auto str2 = std::format(L"[{0}] ", vgui::localize()->Find("#BulletPhysics_Config"));
+
+				if (pPhysicBehaviorConfig->rigidbody.size() > 0)
+				{
+					wchar_t wszRigidBodyName[64] = { 0 };
+					vgui::localize()->ConvertANSIToUnicode(pPhysicBehaviorConfig->rigidbody.c_str(), wszRigidBodyName, sizeof(wszRigidBodyName));
+
+					str2 += std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f}) ",
+						vgui::localize()->Find("#BulletPhysics_RigidBody"),
+						wszRigidBodyName,
+						vgui::localize()->Find("#BulletPhysics_Origin"),
+						pPhysicBehaviorConfig->origin[0],
+						pPhysicBehaviorConfig->origin[1],
+						pPhysicBehaviorConfig->origin[2],
+						vgui::localize()->Find("#BulletPhysics_Angles"),
+						pPhysicBehaviorConfig->angles[0],
+						pPhysicBehaviorConfig->angles[1],
+						pPhysicBehaviorConfig->angles[2]);
+				}
+				else if (pPhysicBehaviorConfig->constraint.size() > 0)
+				{
+					wchar_t wszConstraintName[64] = { 0 };
+					vgui::localize()->ConvertANSIToUnicode(pPhysicBehaviorConfig->constraint.c_str(), wszConstraintName, sizeof(wszConstraintName));
+
+					str2 += std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f}) ",
+						vgui::localize()->Find("#BulletPhysics_Constraint"),
+						wszConstraintName,
+						vgui::localize()->Find("#BulletPhysics_Origin"),
+						pPhysicBehaviorConfig->origin[0],
+						pPhysicBehaviorConfig->origin[1],
+						pPhysicBehaviorConfig->origin[2],
+						vgui::localize()->Find("#BulletPhysics_Angles"),
+						pPhysicBehaviorConfig->angles[0],
+						pPhysicBehaviorConfig->angles[1],
+						pPhysicBehaviorConfig->angles[2]);
+				}
+
+				if (str2.size() > 0)
+					ShowInspectContentLabel2(str2.c_str());
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool CPhysicDebugGUI::OpenInspectClientEntityMenu(bool bSelected)
 {
 	int entindex = ClientEntityManager()->GetInspectEntityIndex();
@@ -1257,7 +1346,7 @@ bool CPhysicDebugGUI::OpenConstraintMenu(IPhysicComponent* pPhysicComponent)
 	return true;
 }
 
-bool CPhysicDebugGUI::OpenPhysicActionMenu(IPhysicComponent* pPhysicComponent)
+bool CPhysicDebugGUI::OpenPhysicBehaviorMenu(IPhysicComponent* pPhysicComponent)
 {
 	auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
 
@@ -1292,45 +1381,45 @@ bool CPhysicDebugGUI::OpenPhysicActionMenu(IPhysicComponent* pPhysicComponent)
 
 	vgui::localize()->ConvertANSIToUnicode(pPhysicComponent->GetName(), wszComponentName, sizeof(wszComponentName));
 
-	kv = new KeyValues("EditPhysicActionEx");
+	kv = new KeyValues("EditPhysicBehaviorEx");
 	kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 	kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 	kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
-	kv->SetInt("physicActionConfigId", pPhysicComponent->GetPhysicConfigId());
-	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditPhysicAction"), 1, wszComponentName);
-	menu->AddMenuItem("EditPhysicActionEx", szBuf, kv, this);
+	kv->SetInt("physicBehaviorConfigId", pPhysicComponent->GetPhysicConfigId());
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EditPhysicBehavior"), 1, wszComponentName);
+	menu->AddMenuItem("EditPhysicBehaviorEx", szBuf, kv, this);
 
-	kv = new KeyValues("MovePhysicActionEx");
+	kv = new KeyValues("MovePhysicBehaviorEx");
 	kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 	kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 	kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
-	kv->SetInt("physicActionConfigId", pPhysicComponent->GetPhysicConfigId());
-	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MovePhysicAction"), 1, wszComponentName);
-	menu->AddMenuItem("MovePhysicActionEx", szBuf, kv, this);
+	kv->SetInt("physicBehaviorConfigId", pPhysicComponent->GetPhysicConfigId());
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_MovePhysicBehavior"), 1, wszComponentName);
+	menu->AddMenuItem("MovePhysicBehaviorEx", szBuf, kv, this);
 
-	kv = new KeyValues("RotatePhysicActionEx");
+	kv = new KeyValues("RotatePhysicBehaviorEx");
 	kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 	kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 	kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
-	kv->SetInt("physicActionConfigId", pPhysicComponent->GetPhysicConfigId());
-	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotatePhysicAction"), 1, wszComponentName);
-	menu->AddMenuItem("RotatePhysicActionEx", szBuf, kv, this);
+	kv->SetInt("physicBehaviorConfigId", pPhysicComponent->GetPhysicConfigId());
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_RotatePhysicBehavior"), 1, wszComponentName);
+	menu->AddMenuItem("RotatePhysicBehaviorEx", szBuf, kv, this);
 
-	kv = new KeyValues("ClonePhysicActionEx");
+	kv = new KeyValues("ClonePhysicBehaviorEx");
 	kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 	kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 	kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
-	kv->SetInt("physicActionConfigId", pPhysicComponent->GetPhysicConfigId());
-	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ClonePhysicAction"), 1, wszComponentName);
-	menu->AddMenuItem("ClonePhysicActionEx", szBuf, kv, this);
+	kv->SetInt("physicBehaviorConfigId", pPhysicComponent->GetPhysicConfigId());
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_ClonePhysicBehavior"), 1, wszComponentName);
+	menu->AddMenuItem("ClonePhysicBehaviorEx", szBuf, kv, this);
 
-	kv = new KeyValues("DeletePhysicActionEx");
+	kv = new KeyValues("DeletePhysicBehaviorEx");
 	kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
 	kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
 	kv->SetInt("physicComponentId", pPhysicComponent->GetPhysicComponentId());
-	kv->SetInt("physicActionConfigId", pPhysicComponent->GetPhysicConfigId());
-	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeletePhysicAction"), 1, wszComponentName);
-	menu->AddMenuItem("DeletePhysicActionEx", szBuf, kv, this);
+	kv->SetInt("physicBehaviorConfigId", pPhysicComponent->GetPhysicConfigId());
+	vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DeletePhysicBehavior"), 1, wszComponentName);
+	menu->AddMenuItem("DeletePhysicBehaviorEx", szBuf, kv, this);
 
 	vgui::Menu::PlaceContextMenu(this, menu);
 
@@ -1355,9 +1444,9 @@ bool CPhysicDebugGUI::OpenInspectPhysicComponentMenu(bool bSelected)
 			{
 				return OpenConstraintMenu(pPhysicComponent);
 			}
-			else if (pPhysicComponent->IsPhysicAction())
+			else if (pPhysicComponent->IsPhysicBehavior())
 			{
-				return OpenPhysicActionMenu(pPhysicComponent);
+				return OpenPhysicBehaviorMenu(pPhysicComponent);
 			}
 		}
 	}

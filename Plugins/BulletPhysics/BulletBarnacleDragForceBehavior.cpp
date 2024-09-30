@@ -1,17 +1,17 @@
 #pragma once
 
-#include "BulletBarnacleDragForceAction.h"
+#include "BulletBarnacleDragForceBehavior.h"
 
-CBulletBarnacleDragForceAction::CBulletBarnacleDragForceAction(
-	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig,
+CBulletBarnacleDragForceBehavior::CBulletBarnacleDragForceBehavior(
+	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
 	int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
 
-	CBulletPhysicComponentAction(
+	CBulletPhysicComponentBehavior(
 		id,
 		entindex,
 		pPhysicObject,
-		pActionConfig,
+		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
 	m_iBarnacleIndex(iBarnacleIndex),
@@ -21,16 +21,16 @@ CBulletBarnacleDragForceAction::CBulletBarnacleDragForceAction(
 
 }
 
-const char* CBulletBarnacleDragForceAction::GetTypeString() const
+const char* CBulletBarnacleDragForceBehavior::GetTypeString() const
 {
 	return "BarnacleDragForce";
 }
-const char* CBulletBarnacleDragForceAction::GetTypeLocalizationTokenString() const
+const char* CBulletBarnacleDragForceBehavior::GetTypeLocalizationTokenString() const
 {
 	return "#BulletPhysics_BarnacleDragForce";
 }
 
-void CBulletBarnacleDragForceAction::Update(CPhysicComponentUpdateContext* ComponentContext)
+void CBulletBarnacleDragForceBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
 	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 

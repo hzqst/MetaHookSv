@@ -38,7 +38,7 @@ enum PhysicConfigType
 	PhysicConfigType_RigidBody,
 	PhysicConfigType_Constraint,
 	PhysicConfigType_CollisionShape,
-	PhysicConfigType_Action,
+	PhysicConfigType_PhysicBehavior,
 	PhysicConfigType_AnimControl,
 };
 
@@ -229,44 +229,47 @@ enum PhysicShape
 	PhysicShape_Maximum
 };
 
-enum PhysicAction
+enum PhysicBehavior
 {
-	PhysicAction_None = 0,
-	PhysicAction_BarnacleDragForce,
-	PhysicAction_BarnacleChewForce,
-	PhysicAction_BarnacleConstraintLimitAdjustment,
-	PhysicAction_FirstPersonViewCamera,
-	PhysicAction_ThirdPersonViewCamera,
-	PhysicAction_SimpleBuoyancy,
-	PhysicAction_Maximum
+	PhysicBehavior_None = 0,
+	PhysicBehavior_BarnacleDragForce,
+	PhysicBehavior_BarnacleChewForce,
+	PhysicBehavior_BarnacleConstraintLimitAdjustment,
+	PhysicBehavior_FirstPersonViewCamera,
+	PhysicBehavior_ThirdPersonViewCamera,
+	PhysicBehavior_SimpleBuoyancy,
+	PhysicBehavior_Maximum
 };
 
-const int PhysicActionFactorIdx_BarnacleDragForceMagnitude = 0;
-const int PhysicActionFactorIdx_BarnacleDragForceExtraHeight = 1;
+const int PhysicBehaviorFactorIdx_BarnacleDragForceMagnitude = 0;
+const int PhysicBehaviorFactorIdx_BarnacleDragForceExtraHeight = 1;
 
-const int PhysicActionFactorIdx_BarnacleChewForceMagnitude = 0;
-const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
+const int PhysicBehaviorFactorIdx_BarnacleChewForceMagnitude = 0;
+const int PhysicBehaviorFactorIdx_BarnacleChewForceInterval = 1;
 
-const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
-const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
-const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis = 3;
+const int PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
+const int PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
+const int PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis = 3;
 
-//TODO:really need this?
-//const int PhysicActionFactorIdx_CameraActivateOnIdle = 0;
-//const int PhysicActionFactorIdx_CameraActivateOnDeath = 1;
-//const int PhysicActionFactorIdx_CameraActivateOnCaughtByBarnacle = 2;
+const int PhysicBehaviorFactorIdx_CameraActivateOnIdle = 0;
+const int PhysicBehaviorFactorIdx_CameraActivateOnDeath = 1;
+const int PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle = 2;
 
-const int PhysicActionFactorIdx_SimpleBuoyancyMagnitude = 0;
-const int PhysicActionFactorIdx_SimpleBuoyancyLinearDrag = 1;
-const int PhysicActionFactorIdx_SimpleBuoyancyAngularDrag = 2;
+const int PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude = 0;
+const int PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDrag = 1;
+const int PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDrag = 2;
 
-const int PhysicActionFactorIdx_Maximum = 16;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle = 0;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath = 1;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle = 2;
 
-const int PhysicActionFlag_Barnacle = 0x1;
-const int PhysicActionFlag_Gargantua = 0x2;
-//const int PhysicActionFlag_AffectsRigidBody = 0x4;
-//const int PhysicActionFlag_AffectsConstraint = 0x8;
-const int PhysicActionFlag_NonNative = (PhysicActionFlag_Barnacle | PhysicActionFlag_Gargantua);
+const int PhysicBehaviorFactorIdx_Maximum = 16;
+
+const int PhysicBehaviorFlag_Barnacle = 0x1;
+const int PhysicBehaviorFlag_Gargantua = 0x2;
+//const int PhysicBehaviorFlag_AffectsRigidBody = 0x4;
+//const int PhysicBehaviorFlag_AffectsConstraint = 0x8;
+const int PhysicBehaviorFlag_NonNative = (PhysicBehaviorFlag_Barnacle | PhysicBehaviorFlag_Gargantua);
 
 enum PhysicShapeDirection
 {

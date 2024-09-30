@@ -9,16 +9,16 @@
 
 class CPhysicFactorListPanel;
 
-class CPhysicActionEditDialog : public vgui::Frame
+class CPhysicBehaviorEditDialog : public vgui::Frame
 {
 public:
-	DECLARE_CLASS_SIMPLE(CPhysicActionEditDialog, vgui::Frame);
+	DECLARE_CLASS_SIMPLE(CPhysicBehaviorEditDialog, vgui::Frame);
 
-	CPhysicActionEditDialog(vgui::Panel* parent, const char* name,
+	CPhysicBehaviorEditDialog(vgui::Panel* parent, const char* name,
 		uint64 physicObjectId,
 		const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
-		const std::shared_ptr<CClientPhysicActionConfig>& pPhysicActionConfig);
-	~CPhysicActionEditDialog();
+		const std::shared_ptr<CClientPhysicBehaviorConfig>& pPhysicBehaviorConfig);
+	~CPhysicBehaviorEditDialog();
 
 	void Activate(void) override;
 
@@ -47,7 +47,7 @@ private:
 	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
 	void SaveConstraintFromControl(vgui::ComboBox* pComboBox, std::string& constraintName);
 	void SaveFactorsFromControl(vgui::ListPanel* pListPanel);;
-	int GetCurrentSelectedActionTypeIndex();
+	int GetCurrentSelectedTypeIndex();
 
 	void UpdateControlStates();
 
@@ -77,5 +77,5 @@ private:
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;
-	std::shared_ptr<CClientPhysicActionConfig> m_pPhysicActionConfig;
+	std::shared_ptr<CClientPhysicBehaviorConfig> m_pPhysicBehaviorConfig;
 };

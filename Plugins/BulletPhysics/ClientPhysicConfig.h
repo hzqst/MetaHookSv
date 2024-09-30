@@ -126,12 +126,12 @@ public:
 	vec3_t offsetB{ 0 };
 };
 
-class CClientPhysicActionConfig : public CClientBasePhysicConfig
+class CClientPhysicBehaviorConfig : public CClientBasePhysicConfig
 {
 public:
-	CClientPhysicActionConfig();
+	CClientPhysicBehaviorConfig();
 
-	int type{ PhysicAction_None };
+	int type{ PhysicBehavior_None };
 	std::string name;
 	std::string rigidbody;
 	std::string constraint;
@@ -139,7 +139,7 @@ public:
 	vec3_t angles{ 0 };
 	int flags{ 0 };
 	int debugDrawLevel{ BULLET_DEFAULT_DEBUG_DRAW_LEVEL };
-	float factors[PhysicActionFactorIdx_Maximum]{  };
+	float factors[PhysicBehaviorFactorIdx_Maximum]{  };
 };
 
 class CClientAnimControlConfig : public CClientBasePhysicConfig
@@ -173,7 +173,7 @@ public:
 
 	std::vector<std::shared_ptr<CClientRigidBodyConfig>> RigidBodyConfigs;
 	std::vector<std::shared_ptr<CClientConstraintConfig>> ConstraintConfigs;
-	std::vector<std::shared_ptr<CClientPhysicActionConfig>> ActionConfigs;
+	std::vector<std::shared_ptr<CClientPhysicBehaviorConfig>> PhysicBehaviorConfigs;
 
 	//Never save to file or load from file
 	std::string modelName;

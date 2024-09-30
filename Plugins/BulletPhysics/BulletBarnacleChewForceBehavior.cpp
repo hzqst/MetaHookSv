@@ -1,15 +1,15 @@
-#include "BulletBarnacleChewForceAction.h"
+#include "BulletBarnacleChewForceBehavior.h"
 
-CBulletBarnacleChewForceAction::CBulletBarnacleChewForceAction(
-	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig,
+CBulletBarnacleChewForceBehavior::CBulletBarnacleChewForceBehavior(
+	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
 	int iBarnacleIndex, float flForceMagnitude, float flInterval) :
 
-	CBulletPhysicComponentAction(
+	CBulletPhysicComponentBehavior(
 		id,
 		entindex,
 		pPhysicObject,
-		pActionConfig,
+		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
 	m_iBarnacleIndex(iBarnacleIndex),
@@ -19,17 +19,17 @@ CBulletBarnacleChewForceAction::CBulletBarnacleChewForceAction(
 
 }
 
-const char* CBulletBarnacleChewForceAction::GetTypeString() const
+const char* CBulletBarnacleChewForceBehavior::GetTypeString() const
 {
 	return "BarnacleChewForce";
 }
 
-const char* CBulletBarnacleChewForceAction::GetTypeLocalizationTokenString() const
+const char* CBulletBarnacleChewForceBehavior::GetTypeLocalizationTokenString() const
 {
 	return "#BulletPhysics_BarnacleChewForce";
 }
 
-void CBulletBarnacleChewForceAction::Update(CPhysicComponentUpdateContext* ComponentContext)
+void CBulletBarnacleChewForceBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
 	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 

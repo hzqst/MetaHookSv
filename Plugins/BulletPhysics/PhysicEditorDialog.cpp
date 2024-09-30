@@ -2,7 +2,7 @@
 #include "PhysicObjectConfigPage.h"
 #include "PhysicRigidBodyPage.h"
 #include "PhysicConstraintPage.h"
-#include "PhysicActionPage.h"
+#include "PhysicBehaviorPage.h"
 #include "AnimControlPage.h"
 
 #include "exportfuncs.h"
@@ -33,8 +33,8 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 	m_pPhysicConstraintPage = new CPhysicConstraintPage(this, "PhysicConstraintPage", m_physicObjectId, pPhysicObjectConfig);
 	m_pPhysicConstraintPage->MakeReadyForUse();
 
-	m_pPhysicActionPage = new CPhysicActionPage(this, "PhysicActionPage", m_physicObjectId, pPhysicObjectConfig);
-	m_pPhysicActionPage->MakeReadyForUse();
+	m_pPhysicBehaviorPage = new CPhysicBehaviorPage(this, "PhysicBehaviorPage", m_physicObjectId, pPhysicObjectConfig);
+	m_pPhysicBehaviorPage->MakeReadyForUse();
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
 	SetSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
@@ -44,7 +44,7 @@ CPhysicEditorDialog::CPhysicEditorDialog(vgui::Panel* parent, const char *name, 
 	m_pTabPanel->AddPage(m_pPhysicObjectConfigPage, "#BulletPhysics_Base");
 	m_pTabPanel->AddPage(m_pPhysicRigidBodyPage, "#BulletPhysics_RigidBody");
 	m_pTabPanel->AddPage(m_pPhysicConstraintPage, "#BulletPhysics_Constraint");
-	m_pTabPanel->AddPage(m_pPhysicActionPage, "#BulletPhysics_Action");
+	m_pTabPanel->AddPage(m_pPhysicBehaviorPage, "#BulletPhysics_PhysicBehavior");
 
 	if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
 	{

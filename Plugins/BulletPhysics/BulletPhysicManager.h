@@ -15,7 +15,7 @@ enum BulletPhysicCollisionFilterGroups
 	RagdollObjectFilter = 0x200,
 	InspectorFilter = 0x400,
 	ConstraintFilter = 0x800,
-	ActionFilter = 0x1000,
+	PhysicBehaviorFilter = 0x1000,
 };
 
 enum BulletPhysicCollisionFlags
@@ -251,7 +251,7 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientCo
 btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig);
 btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
 
-IPhysicAction* DispatchBulletCreatePhysicAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId);
+IPhysicBehavior* DispatchBulletCreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId);
 
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
 void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);

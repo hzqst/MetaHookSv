@@ -422,13 +422,13 @@
     <ClCompile Include="PhysicRigidBodyEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicActionPage.cpp">
+    <ClCompile Include="PhysicBehaviorPage.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="BasePhysicComponentAction.cpp">
+    <ClCompile Include="BasePhysicComponentBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletPhysicComponentAction.cpp">
+    <ClCompile Include="BulletPhysicComponentBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BulletPhysicConstraint.cpp">
@@ -452,7 +452,7 @@
     <ClCompile Include="BulletDynamicRigidBody.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BasePhysicAction.cpp">
+    <ClCompile Include="BasePhysicBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BulletRagdollRigidBody.cpp">
@@ -488,13 +488,13 @@
     <ClCompile Include="PhysicRigidBodyListPanel.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicActionListPanel.cpp">
+    <ClCompile Include="PhysicBehaviorListPanel.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="PhysicCollisionShapeEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicActionEditDialog.cpp">
+    <ClCompile Include="PhysicBehaviorEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="BaseStaticObject.cpp">
@@ -509,22 +509,22 @@
     <ClCompile Include="AnimControlEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="BulletCameraViewAction.cpp">
+    <ClCompile Include="BulletCameraViewBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletBarnacleChewForceAction.cpp">
+    <ClCompile Include="BulletBarnacleChewForceBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletBarnacleConstraintLimitAdjustmentAction.cpp">
+    <ClCompile Include="BulletBarnacleConstraintLimitAdjustmentBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletBarnacleDragForceAction.cpp">
+    <ClCompile Include="BulletBarnacleDragForceBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletFirstPersonViewCameraAction.cpp">
+    <ClCompile Include="BulletFirstPersonViewCameraBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletThirdPersonViewCameraAction.cpp">
+    <ClCompile Include="BulletThirdPersonViewCameraBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -607,22 +607,22 @@
     <ClInclude Include="BulletDynamicObject.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletPhysicComponentAction.h">
+    <ClInclude Include="BulletPhysicComponentBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BasePhysicComponentAction.h">
+    <ClInclude Include="BasePhysicComponentBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BasePhysicAction.h">
+    <ClInclude Include="BasePhysicBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletBarnacleDragForceAction.h">
+    <ClInclude Include="BulletBarnacleDragForceBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletBarnacleChewForceAction.h">
+    <ClInclude Include="BulletBarnacleChewForceBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletBarnacleConstraintLimitAdjustmentAction.h">
+    <ClInclude Include="BulletBarnacleConstraintLimitAdjustmentBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BulletRagdollConstraint.h">
@@ -673,10 +673,10 @@
     <ClInclude Include="PhysicRigidBodyPage.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicActionPage.h">
+    <ClInclude Include="PhysicBehaviorPage.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicActionListPanel.h">
+    <ClInclude Include="PhysicBehaviorListPanel.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="PhysicObjectConfigPage.h">
@@ -685,7 +685,7 @@
     <ClInclude Include="PhysicCollisionShapeEditDialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicActionEditDialog.h">
+    <ClInclude Include="PhysicBehaviorEditDialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="AnimControlPage.h">
@@ -697,13 +697,13 @@
     <ClInclude Include="AnimControlEditDialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="BulletCameraViewAction.h">
+    <ClInclude Include="BulletCameraViewBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletFirstPersonViewCameraAction.h">
+    <ClInclude Include="BulletFirstPersonViewCameraBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletThirdPersonViewCameraAction.h">
+    <ClInclude Include="BulletThirdPersonViewCameraBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

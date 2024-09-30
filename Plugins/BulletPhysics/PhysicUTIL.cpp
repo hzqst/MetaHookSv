@@ -96,7 +96,7 @@ std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetCollisionShapeTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_PhysicActionType[] = { 
+const char* VGUI2Token_PhysicBehaviorType[] = { 
 	"#BulletPhysics_None",
 	"#BulletPhysics_BarnacleDragForce", 
 	"#BulletPhysics_BarnacleChewForce", 
@@ -105,19 +105,19 @@ const char* VGUI2Token_PhysicActionType[] = {
 	"#BulletPhysics_ThirdPersonViewCamera", 
 	"#BulletPhysics_SimpleBuoyancy" };
 
-const char* UTIL_GetPhysicActionTypeLocalizationToken(int type)
+const char* UTIL_GetPhysicBehaviorTypeLocalizationToken(int type)
 {
-	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicActionType))
+	if (type >= 0 && type < _ARRAYSIZE(VGUI2Token_PhysicBehaviorType))
 	{
-		return VGUI2Token_PhysicActionType[type];
+		return VGUI2Token_PhysicBehaviorType[type];
 	}
 
 	return "#BulletPhysics_None";
 }
 
-std::wstring UTIL_GetPhysicActionTypeLocalizedName(int type)
+std::wstring UTIL_GetPhysicBehaviorTypeLocalizedName(int type)
 {
-	return vgui::localize()->Find(UTIL_GetPhysicActionTypeLocalizationToken(type));
+	return vgui::localize()->Find(UTIL_GetPhysicBehaviorTypeLocalizationToken(type));
 }
 
 const char* VGUI2Token_ActivityType[] = { 
@@ -244,12 +244,12 @@ std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraint
 	return ss.str();
 }
 
-std::wstring UTIL_GetFormattedPhysicActionFlags(int flags)
+std::wstring UTIL_GetFormattedPhysicBehaviorFlags(int flags)
 {
 	std::wstringstream ss;
 
 	// Macro to format flag string
-#define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicActionFlag_##name) {\
+#define FORMAT_FLAGS_TO_STRING(name) if (flags & PhysicBehaviorFlag_##name) {\
 	auto wszLocalizedString = vgui::localize()->Find("#BulletPhysics_" #name);\
 		if (wszLocalizedString) {\
 			ss << L"(" << wszLocalizedString << L") "; \
@@ -398,7 +398,7 @@ const char* UTIL_GetConstraintTypeName(int type)
 	return "Unknown";
 }
 
-const char* UTIL_GetPhysicActionTypeName(int type)
+const char* UTIL_GetPhysicBehaviorTypeName(int type)
 {
 	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment", "FirstPersonViewCamera", "ThirdPersonViewCamera", "SimpleBuoyancy" };
 
@@ -494,33 +494,33 @@ int UTIL_GetConstraintTypeFromTypeName(const char* name)
 	return type;
 }
 
-int UTIL_GetPhysicActionTypeFromTypeName(const char* name)
+int UTIL_GetPhysicBehaviorTypeFromTypeName(const char* name)
 {
-	int type = PhysicAction_None;
+	int type = PhysicBehavior_None;
 
 	if (!strcmp(name, "BarnacleDragForce"))
 	{
-		type = PhysicAction_BarnacleDragForce;
+		type = PhysicBehavior_BarnacleDragForce;
 	}
 	else if (!strcmp(name, "BarnacleChewForce"))
 	{
-		type = PhysicAction_BarnacleChewForce;
+		type = PhysicBehavior_BarnacleChewForce;
 	}
 	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
 	{
-		type = PhysicAction_BarnacleConstraintLimitAdjustment;
+		type = PhysicBehavior_BarnacleConstraintLimitAdjustment;
 	}
 	else if (!strcmp(name, "FirstPersonViewCamera"))
 	{
-		type = PhysicAction_FirstPersonViewCamera;
+		type = PhysicBehavior_FirstPersonViewCamera;
 	}
 	else if (!strcmp(name, "ThirdPersonViewCamera"))
 	{
-		type = PhysicAction_ThirdPersonViewCamera;
+		type = PhysicBehavior_ThirdPersonViewCamera;
 	}
 	else if (!strcmp(name, "SimpleBuoyancy"))
 	{
-		type = PhysicAction_SimpleBuoyancy;
+		type = PhysicBehavior_SimpleBuoyancy;
 	}
 
 	return type;
@@ -560,7 +560,7 @@ std::shared_ptr<CClientConstraintConfig> UTIL_GetConstraintConfigFromConfigId(in
 	return pConstraintConfig;
 }
 
-std::shared_ptr<CClientPhysicActionConfig> UTIL_GetPhysicActionConfigFromConfigId(int configId)
+std::shared_ptr<CClientPhysicBehaviorConfig> UTIL_GetPhysicBehaviorConfigFromConfigId(int configId)
 {
 	auto pPhysicConfig = ClientPhysicManager()->GetPhysicConfig(configId);
 
@@ -569,12 +569,12 @@ std::shared_ptr<CClientPhysicActionConfig> UTIL_GetPhysicActionConfigFromConfigI
 	if (!pLockedPhysicConfig)
 		return nullptr;
 
-	if (pLockedPhysicConfig->configType != PhysicConfigType_Action)
+	if (pLockedPhysicConfig->configType != PhysicConfigType_PhysicBehavior)
 		return nullptr;
 
-	std::shared_ptr<CClientPhysicActionConfig> pPhysicActionConfig = std::static_pointer_cast<CClientPhysicActionConfig>(pLockedPhysicConfig);
+	std::shared_ptr<CClientPhysicBehaviorConfig> pPhysicBehaviorConfig = std::static_pointer_cast<CClientPhysicBehaviorConfig>(pLockedPhysicConfig);
 
-	return pPhysicActionConfig;
+	return pPhysicBehaviorConfig;
 }
 
 std::shared_ptr<CClientAnimControlConfig> UTIL_GetAnimControlConfigFromConfigId(int configId)
@@ -683,15 +683,15 @@ bool UTIL_RemoveConstraintFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhy
 	return false;
 }
 
-bool UTIL_RemovePhysicActionFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+bool UTIL_RemovePhysicBehaviorFromPhysicObjectConfig(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
 {
-	for (auto itor = pPhysicObjectConfig->ActionConfigs.begin(); itor != pPhysicObjectConfig->ActionConfigs.end(); )
+	for (auto itor = pPhysicObjectConfig->PhysicBehaviorConfigs.begin(); itor != pPhysicObjectConfig->PhysicBehaviorConfigs.end(); )
 	{
 		const auto& p = (*itor);
 
 		if (p->configId == configId)
 		{
-			itor = pPhysicObjectConfig->ActionConfigs.erase(itor);
+			itor = pPhysicObjectConfig->PhysicBehaviorConfigs.erase(itor);
 
 			pPhysicObjectConfig->configModified = true;
 
@@ -764,11 +764,11 @@ std::shared_ptr<CClientConstraintConfig> UTIL_CreateEmptyConstraintConfig()
 	return pNewConfig;
 }
 
-std::shared_ptr<CClientPhysicActionConfig> UTIL_CreateEmptyPhysicActionConfig()
+std::shared_ptr<CClientPhysicBehaviorConfig> UTIL_CreateEmptyPhysicBehaviorConfig()
 {
-	auto pNewConfig = std::make_shared<CClientPhysicActionConfig>();
+	auto pNewConfig = std::make_shared<CClientPhysicBehaviorConfig>();
 
-	pNewConfig->name = std::format("UnnamedPhysicAction_{0}", pNewConfig->configId);
+	pNewConfig->name = std::format("UnnamedPhysicBehavior_{0}", pNewConfig->configId);
 	pNewConfig->configModified = true;
 
 	ClientPhysicManager()->AddPhysicConfig(pNewConfig->configId, pNewConfig);
@@ -895,9 +895,9 @@ std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClien
 	return pNewConfig;
 }
 
-std::shared_ptr<CClientPhysicActionConfig> UTIL_ClonePhysicActionConfig(const CClientPhysicActionConfig* pOldConfig)
+std::shared_ptr<CClientPhysicBehaviorConfig> UTIL_ClonePhysicBehaviorConfig(const CClientPhysicBehaviorConfig* pOldConfig)
 {
-	auto pNewConfig = std::make_shared<CClientPhysicActionConfig>();
+	auto pNewConfig = std::make_shared<CClientPhysicBehaviorConfig>();
 
 	pNewConfig->configModified = true;
 
@@ -981,9 +981,9 @@ bool UTIL_IsPhysicObjectConfigModified(const CClientPhysicObjectConfig* pPhysicO
 			return true;
 	}
 
-	for (const auto& pActionConfig : pPhysicObjectConfig->ActionConfigs)
+	for (const auto& pPhysicBehaviorConfig : pPhysicObjectConfig->PhysicBehaviorConfigs)
 	{
-		if (pActionConfig->configModified)
+		if (pPhysicBehaviorConfig->configModified)
 			return true;
 	}
 
@@ -1032,9 +1032,9 @@ void UTIL_SetPhysicObjectConfigUnmodified(CClientPhysicObjectConfig* pPhysicObje
 		pConstraintConfig->configModified = false;
 	}
 
-	for (const auto& pActionConfig : pPhysicObjectConfig->ActionConfigs)
+	for (const auto& pPhysicBehaviorConfig : pPhysicObjectConfig->PhysicBehaviorConfigs)
 	{
-		pActionConfig->configModified = false;
+		pPhysicBehaviorConfig->configModified = false;
 	}
 
 	if (pPhysicObjectConfig->type == PhysicObjectType_RagdollObject)
@@ -1067,6 +1067,18 @@ IPhysicConstraint* UTIL_GetPhysicComponentAsConstraint(int physicComponentId)
 	if (pPhysicComponent && pPhysicComponent->IsConstraint())
 	{
 		return (IPhysicConstraint*)pPhysicComponent;
+	}
+
+	return nullptr;
+}
+
+IPhysicBehavior* UTIL_GetPhysicComponentAsPhysicBehavior(int physicComponentId)
+{
+	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+	if (pPhysicComponent && pPhysicComponent->IsPhysicBehavior())
+	{
+		return (IPhysicBehavior*)pPhysicComponent;
 	}
 
 	return nullptr;
@@ -1313,13 +1325,13 @@ bool UTIL_ShiftDownConstraintIndex(CClientPhysicObjectConfig* pPhysicObjectConfi
 	return false;
 }
 
-//PhysicAction stuffs
+//PhysicBehavior stuffs
 
-int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+int UTIL_GetPhysicBehaviorIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
 {
-	const auto& configs = pPhysicObjectConfig->ActionConfigs;
+	const auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
 		return ptr->configId == configId;
 		});
 
@@ -1330,12 +1342,12 @@ int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConf
 	return -1; // Return -1 if not found
 }
 
-int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientPhysicActionConfig* pPhysicActionConfig)
+int UTIL_GetPhysicBehaviorIndex(const CClientPhysicObjectConfig* pPhysicObjectConfig, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig)
 {
-	auto& configs = pPhysicObjectConfig->ActionConfigs;
+	auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
-		return ptr.get() == pPhysicActionConfig;
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicBehaviorConfig](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
+		return ptr.get() == pPhysicBehaviorConfig;
 		});
 
 	if (it != configs.begin() && it != configs.end()) {
@@ -1348,11 +1360,11 @@ int UTIL_GetPhysicActionIndex(const CClientPhysicObjectConfig* pPhysicObjectConf
 	return -1;
 }
 
-bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+bool UTIL_ShiftUpPhysicBehaviorIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
 {
-	auto& configs = pPhysicObjectConfig->ActionConfigs;
+	auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
 		return ptr->configId == configId;
 		});
 
@@ -1367,11 +1379,11 @@ bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfi
 	return false;
 }
 
-bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
+bool UTIL_ShiftDownPhysicBehaviorIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, int configId)
 {
-	auto& configs = pPhysicObjectConfig->ActionConfigs;
+	auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
+	auto it = std::find_if(configs.begin(), configs.end(), [configId](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
 		return ptr->configId == configId;
 		});
 
@@ -1386,12 +1398,12 @@ bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectCon
 	return false;
 }
 
-bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig)
+bool UTIL_ShiftUpPhysicBehaviorIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig)
 {
-	auto& configs = pPhysicObjectConfig->ActionConfigs;
+	auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
-		return ptr.get() == pPhysicActionConfig;
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicBehaviorConfig](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
+		return ptr.get() == pPhysicBehaviorConfig;
 		});
 
 	if (it != configs.begin() && it != configs.end()) {
@@ -1405,12 +1417,12 @@ bool UTIL_ShiftUpPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfi
 	return false;
 }
 
-bool UTIL_ShiftDownPhysicActionIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicActionConfig* pPhysicActionConfig)
+bool UTIL_ShiftDownPhysicBehaviorIndex(CClientPhysicObjectConfig* pPhysicObjectConfig, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig)
 {
-	auto& configs = pPhysicObjectConfig->ActionConfigs;
+	auto& configs = pPhysicObjectConfig->PhysicBehaviorConfigs;
 
-	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicActionConfig](const std::shared_ptr<CClientPhysicActionConfig>& ptr) {
-		return ptr.get() == pPhysicActionConfig;
+	auto it = std::find_if(configs.begin(), configs.end(), [pPhysicBehaviorConfig](const std::shared_ptr<CClientPhysicBehaviorConfig>& ptr) {
+		return ptr.get() == pPhysicBehaviorConfig;
 		});
 
 	if (it != configs.end() - 1 && it != configs.end()) {

@@ -82,7 +82,7 @@ class CPhysicComponentFilters
 public:
 	CPhysicComponentSubFilters m_RigidBodyFilter;
 	CPhysicComponentSubFilters m_ConstraintFilter;
-	CPhysicComponentSubFilters m_PhysicActionFilter;
+	CPhysicComponentSubFilters m_PhysicBehaviorFilter;
 };
 
 class CPhysicComponentUpdateContext
@@ -108,7 +108,7 @@ const int PhysicTraceLineFlag_DynamicObject = 0x4;
 const int PhysicTraceLineFlag_RagdollObject = 0x8;
 const int PhysicTraceLineFlag_RigidBody = 0x10;
 const int PhysicTraceLineFlag_Constraint = 0x20;
-const int PhysicTraceLineFlag_Action = 0x40;
+const int PhysicTraceLineFlag_PhysicBehavior = 0x40;
 
 class CPhysicTraceLineParameters
 {
@@ -167,7 +167,7 @@ public:
 	{
 		return false;
 	}
-	virtual bool IsPhysicAction() const
+	virtual bool IsPhysicBehavior() const
 	{
 		return false;
 	}
@@ -251,19 +251,19 @@ public:
 	virtual void* GetInternalConstraint() = 0;
 };
 
-class IPhysicAction : public IPhysicComponent
+class IPhysicBehavior : public IPhysicComponent
 {
 public:
 	const char* GetTypeString() const override
 	{
-		return "PhysicAction";
+		return "PhysicBehavior";
 	}
 	const char* GetTypeLocalizationTokenString() const override
 	{
-		return "#BulletPhysics_Action";
+		return "#BulletPhysics_PhysicBehavior";
 	}
 
-	bool IsPhysicAction() const override
+	bool IsPhysicBehavior() const override
 	{
 		return true;
 	}
@@ -344,8 +344,8 @@ public:
 	virtual IPhysicRigidBody* GetRigidBodyByComponentId(int id) = 0;
 	virtual IPhysicConstraint* GetConstraintByName(const std::string& name) = 0;
 	virtual IPhysicConstraint* GetConstraintByComponentId(int id) = 0;
-	virtual IPhysicAction* GetPhysicActionByName(const std::string& name) = 0;
-	virtual IPhysicAction* GetPhysicActionByComponentId(int id) = 0;
+	virtual IPhysicBehavior* GetPhysicBehaviorByName(const std::string& name) = 0;
+	virtual IPhysicBehavior* GetPhysicBehaviorByComponentId(int id) = 0;
 };
 
 class ICollisionPhysicObject : public IPhysicObject

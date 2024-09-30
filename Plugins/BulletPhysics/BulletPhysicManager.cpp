@@ -1161,11 +1161,11 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	return nullptr;
 }
 
-IPhysicAction* DispatchBulletCreatePhysicAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+IPhysicBehavior* DispatchBulletCreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
-	switch (pActionConfig->type)
+	switch (pPhysicBehaviorConfig->type)
 	{
-	case PhysicAction_SimpleBuoyancy:
+	case PhysicBehavior_SimpleBuoyancy:
 	{
 		//TODO
 		return nullptr;
@@ -1880,7 +1880,7 @@ void CBulletPhysicManager::DebugDraw(void)
 					}
 					else
 					{
-						if (pPhysicComponent->IsPhysicAction())
+						if (pPhysicComponent->IsPhysicBehavior())
 						{
 							auto customColor = GetVector3FromVec3(m_debugDrawContext.m_actionColor);
 
@@ -2004,9 +2004,9 @@ public:
 			{
 				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::ConstraintFilter;
 			}
-			if (traceParam.withflags & PhysicTraceLineFlag_Action)
+			if (traceParam.withflags & PhysicTraceLineFlag_PhysicBehavior)
 			{
-				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::ActionFilter;
+				m_collisionFilterMask |= BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter;
 			}
 			if (traceParam.withflags & PhysicTraceLineFlag_World)
 			{
@@ -2035,9 +2035,9 @@ public:
 			{
 				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::ConstraintFilter;
 			}
-			if (traceParam.withoutflags & PhysicTraceLineFlag_Action)
+			if (traceParam.withoutflags & PhysicTraceLineFlag_PhysicBehavior)
 			{
-				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::ActionFilter;
+				m_collisionFilterMask &= ~BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter;
 			}
 			if (traceParam.withoutflags & PhysicTraceLineFlag_World)
 			{

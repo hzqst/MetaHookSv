@@ -1,6 +1,6 @@
-#include "PhysicActionListPanel.h"
+#include "PhysicBehaviorListPanel.h"
 
-CPhysicActionListPanel::CPhysicActionListPanel(vgui::Panel* parent, const char* pName) : BaseClass(parent, pName)
+CPhysicBehaviorListPanel::CPhysicBehaviorListPanel(vgui::Panel* parent, const char* pName) : BaseClass(parent, pName)
 {
 	AddColumnHeader(0, "index", "#BulletPhysics_Index", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);
 	AddColumnHeader(1, "configId", "#BulletPhysics_ConfigId", vgui::scheme()->GetProportionalScaledValue(40), vgui::ListPanel::COLUMN_HIDDEN);

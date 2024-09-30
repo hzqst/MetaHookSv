@@ -1,22 +1,22 @@
-#include "PhysicActionEditDialog.h"
+#include "PhysicBehaviorEditDialog.h"
 #include "PhysicFactorListPanel.h"
 
 #include "PhysicUTIL.h"
 
 #include <format>
 
-CPhysicActionEditDialog::CPhysicActionEditDialog(vgui::Panel* parent, const char* name,
+CPhysicBehaviorEditDialog::CPhysicBehaviorEditDialog(vgui::Panel* parent, const char* name,
 	uint64 physicObjectId,
 	const std::shared_ptr<CClientPhysicObjectConfig>& pPhysicObjectConfig,
-	const std::shared_ptr<CClientPhysicActionConfig>& pPhysicActionConfig) :
+	const std::shared_ptr<CClientPhysicBehaviorConfig>& pPhysicBehaviorConfig) :
 	BaseClass(parent, name),
 	m_physicObjectId(physicObjectId),
 	m_pPhysicObjectConfig(pPhysicObjectConfig),
-	m_pPhysicActionConfig(pPhysicActionConfig)
+	m_pPhysicBehaviorConfig(pPhysicBehaviorConfig)
 {
 	SetDeleteSelfOnClose(true);
 
-	SetTitle("#BulletPhysics_ActionEditor", false);
+	SetTitle("#BulletPhysics_PhysicBehaviorEditor", false);
 
 	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(520), vgui::scheme()->GetProportionalScaledValue(560));
 	SetSize(vgui::scheme()->GetProportionalScaledValue(520), vgui::scheme()->GetProportionalScaledValue(560));
@@ -62,31 +62,31 @@ CPhysicActionEditDialog::CPhysicActionEditDialog(vgui::Panel* parent, const char
 	LoadAvailableTypesIntoControl(m_pType);
 
 	// Load control settings
-	LoadControlSettings("bulletphysics/PhysicActionEditDialog.res", "GAME");
+	LoadControlSettings("bulletphysics/PhysicBehaviorEditDialog.res", "GAME");
 
 	// Add tick signal
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 }
 
-CPhysicActionEditDialog::~CPhysicActionEditDialog()
+CPhysicBehaviorEditDialog::~CPhysicBehaviorEditDialog()
 {
 
 }
 
-void CPhysicActionEditDialog::Activate(void)
+void CPhysicBehaviorEditDialog::Activate(void)
 {
 	BaseClass::Activate();
 
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
 }
 
-void CPhysicActionEditDialog::OnResetData()
+void CPhysicBehaviorEditDialog::OnResetData()
 {
 	LoadConfigIntoControls();
 	UpdateControlStates();
 }
 
-void CPhysicActionEditDialog::OnModifyFactor(KeyValues* kv)
+void CPhysicBehaviorEditDialog::OnModifyFactor(KeyValues* kv)
 {
 	auto index = kv->GetInt("index");
 	auto newValue = kv->GetString("newValue");
@@ -114,14 +114,14 @@ void CPhysicActionEditDialog::OnModifyFactor(KeyValues* kv)
 	}
 }
 
-void CPhysicActionEditDialog::OnTextChanged(vgui::Panel* panel)
+void CPhysicBehaviorEditDialog::OnTextChanged(vgui::Panel* panel)
 {
 	if (panel == m_pType) {
 		UpdateControlStates();
 	}
 }
 
-void CPhysicActionEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
+void CPhysicBehaviorEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
 {
 	if (code == vgui::KEY_ENTER)
 	{
@@ -144,7 +144,7 @@ void CPhysicActionEditDialog::OnKeyCodeTyped(vgui::KeyCode code)
 	BaseClass::OnKeyCodeTyped(code);
 }
 
-void CPhysicActionEditDialog::OnCommand(const char* command)
+void CPhysicBehaviorEditDialog::OnCommand(const char* command)
 {
 	if (!stricmp(command, "OK"))
 	{
@@ -157,7 +157,7 @@ void CPhysicActionEditDialog::OnCommand(const char* command)
 
 		SaveConfigFromControls();
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
-		PostActionSignal(new KeyValues("RefreshPhysicAction", "configId", m_pPhysicActionConfig->configId));
+		PostActionSignal(new KeyValues("RefreshPhysicBehavior", "configId", m_pPhysicBehaviorConfig->configId));
 		PostMessage1(this, new KeyValues("ResetData"));
 		Close();
 	}
@@ -172,7 +172,7 @@ void CPhysicActionEditDialog::OnCommand(const char* command)
 
 		SaveConfigFromControls();
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
-		PostActionSignal(new KeyValues("RefreshPhysicAction", "configId", m_pPhysicActionConfig->configId));
+		PostActionSignal(new KeyValues("RefreshPhysicBehavior", "configId", m_pPhysicBehaviorConfig->configId));
 		PostMessage1(this, new KeyValues("ResetData"));
 	}
 	else
@@ -181,7 +181,7 @@ void CPhysicActionEditDialog::OnCommand(const char* command)
 	}
 }
 
-void CPhysicActionEditDialog::LoadConfigIntoControls()
+void CPhysicBehaviorEditDialog::LoadConfigIntoControls()
 {
 	LoadAvailableRigidBodiesIntoControl(m_pRigidBody);
 
@@ -189,11 +189,11 @@ void CPhysicActionEditDialog::LoadConfigIntoControls()
 
 	LoadTypeIntoControl(m_pType);
 
-	LoadRigidBodyIntoControl(m_pRigidBody, m_pPhysicActionConfig->rigidbody);
+	LoadRigidBodyIntoControl(m_pRigidBody, m_pPhysicBehaviorConfig->rigidbody);
 
-	LoadConstraintIntoControl(m_pConstraint, m_pPhysicActionConfig->constraint);
+	LoadConstraintIntoControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
 
-#define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pPhysicActionConfig->from); m_p##to->SetText(str##to.c_str());}
+#define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pPhysicBehaviorConfig->from); m_p##to->SetText(str##to.c_str());}
 
 	LOAD_INTO_TEXT_ENTRY(name, Name);
 	LOAD_INTO_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel);
@@ -208,7 +208,7 @@ void CPhysicActionEditDialog::LoadConfigIntoControls()
 
 #undef LOAD_INTO_TEXT_ENTRY
 
-#define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pPhysicActionConfig->from & PhysicActionFlag_##to) ? true : false);
+#define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pPhysicBehaviorConfig->from & PhysicBehaviorFlag_##to) ? true : false);
 
 	LOAD_INTO_CHECK_BUTTON(flags, Barnacle);
 	LOAD_INTO_CHECK_BUTTON(flags, Gargantua);
@@ -216,21 +216,21 @@ void CPhysicActionEditDialog::LoadConfigIntoControls()
 #undef LOAD_INTO_CHECK_BUTTON
 }
 
-void CPhysicActionEditDialog::LoadAvailableTypesIntoControl(vgui::ComboBox* pComboBox)
+void CPhysicBehaviorEditDialog::LoadAvailableTypesIntoControl(vgui::ComboBox* pComboBox)
 {
-	for (int i = 0; i < PhysicAction_Maximum; ++i)
+	for (int i = 0; i < PhysicBehavior_Maximum; ++i)
 	{
 		auto kv = new KeyValues("UserData");
 
 		kv->SetInt("type", i);
 
-		pComboBox->AddItem(UTIL_GetPhysicActionTypeLocalizationToken(i), kv);
+		pComboBox->AddItem(UTIL_GetPhysicBehaviorTypeLocalizationToken(i), kv);
 
 		kv->deleteThis();
 	}
 }
 
-void CPhysicActionEditDialog::LoadAvailableRigidBodiesIntoControl(vgui::ComboBox* pComboBox)
+void CPhysicBehaviorEditDialog::LoadAvailableRigidBodiesIntoControl(vgui::ComboBox* pComboBox)
 {
 	pComboBox->RemoveAll();
 
@@ -257,7 +257,7 @@ void CPhysicActionEditDialog::LoadAvailableRigidBodiesIntoControl(vgui::ComboBox
 	}
 }
 
-void CPhysicActionEditDialog::LoadAvailableConstraintsIntoControl(vgui::ComboBox* pComboBox)
+void CPhysicBehaviorEditDialog::LoadAvailableConstraintsIntoControl(vgui::ComboBox* pComboBox)
 {
 	pComboBox->RemoveAll();
 
@@ -286,13 +286,13 @@ void CPhysicActionEditDialog::LoadAvailableConstraintsIntoControl(vgui::ComboBox
 	}
 }
 
-void CPhysicActionEditDialog::LoadTypeIntoControl(vgui::ComboBox* pComboBox)
+void CPhysicBehaviorEditDialog::LoadTypeIntoControl(vgui::ComboBox* pComboBox)
 {
 	for (int i = 0; i < pComboBox->GetItemCount(); ++i)
 	{
 		KeyValues* kv = pComboBox->GetItemUserData(i);
 
-		if (kv && m_pPhysicActionConfig->type == kv->GetInt("type", PhysicAction_None))
+		if (kv && m_pPhysicBehaviorConfig->type == kv->GetInt("type", PhysicBehavior_None))
 		{
 			pComboBox->ActivateItemByRow(i);
 			return;
@@ -302,7 +302,7 @@ void CPhysicActionEditDialog::LoadTypeIntoControl(vgui::ComboBox* pComboBox)
 	pComboBox->ActivateItemByRow(0);
 }
 
-void CPhysicActionEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComboBox, const std::string& rigidBodyName)
+void CPhysicBehaviorEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComboBox, const std::string& rigidBodyName)
 {
 	for (int i = 0; i < pComboBox->GetItemCount(); ++i)
 	{
@@ -318,7 +318,7 @@ void CPhysicActionEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComboBox
 	pComboBox->ActivateItem(0);
 }
 
-void CPhysicActionEditDialog::LoadConstraintIntoControl(vgui::ComboBox* pComboBox, const std::string& constraintName)
+void CPhysicBehaviorEditDialog::LoadConstraintIntoControl(vgui::ComboBox* pComboBox, const std::string& constraintName)
 {
 	for (int i = 0; i < pComboBox->GetItemCount(); ++i)
 	{
@@ -334,7 +334,7 @@ void CPhysicActionEditDialog::LoadConstraintIntoControl(vgui::ComboBox* pComboBo
 	pComboBox->ActivateItem(0);
 }
 
-void CPhysicActionEditDialog::DeleteFactorListPanelItem(int factorIdx)
+void CPhysicBehaviorEditDialog::DeleteFactorListPanelItem(int factorIdx)
 {
 	for (int i = 0; i < m_pPhysicFactorListPanel->GetItemCount(); ++i)
 	{
@@ -348,7 +348,7 @@ void CPhysicActionEditDialog::DeleteFactorListPanelItem(int factorIdx)
 	}
 }
 
-void CPhysicActionEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char* value, float defaultValue)
+void CPhysicBehaviorEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const char* name, const char* value, float defaultValue)
 {
 	auto kv = new KeyValues("Factor");
 
@@ -365,46 +365,46 @@ void CPhysicActionEditDialog::LoadFactorAsListPanelItemEx(int factorIdx, const c
 	kv->deleteThis();
 }
 
-void CPhysicActionEditDialog::LoadFactorAsListPanelItem(int factorIdx, const char* name, float value, float defaultValue)
+void CPhysicBehaviorEditDialog::LoadFactorAsListPanelItem(int factorIdx, const char* name, float value, float defaultValue)
 {
 	auto val = std::format("{0:.4f}", value);
 
 	LoadFactorAsListPanelItemEx(factorIdx, name, val.c_str(), defaultValue);
 }
 
-void CPhysicActionEditDialog::LoadAvailableFactorsIntoControls(int type)
+void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 {
 	m_pPhysicFactorListPanel->RemoveAll();
 
-#define LOAD_FACTOR_INTO_LISTPANEL(name) LoadFactorAsListPanelItem(PhysicActionFactorIdx_##name, "#BulletPhysics_" #name, m_pPhysicActionConfig->factors[PhysicActionFactorIdx_##name], NAN);
-#define LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(name) LoadFactorAsListPanelItem(PhysicActionFactorIdx_##name, "#BulletPhysics_" #name, m_pConstraintConfig->factors[PhysicActionFactorIdx_##name], PhysicActionFactorDefaultValue_##name);
+#define LOAD_FACTOR_INTO_LISTPANEL(name) LoadFactorAsListPanelItem(PhysicBehaviorFactorIdx_##name, "#BulletPhysics_" #name, m_pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name], NAN);
+#define LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(name) LoadFactorAsListPanelItem(PhysicBehaviorFactorIdx_##name, "#BulletPhysics_" #name, m_pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name], PhysicBehaviorFactorDefaultValue_##name);
 
 	switch (type)
 	{
-	case PhysicAction_BarnacleDragForce: {
+	case PhysicBehavior_BarnacleDragForce: {
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleDragForceMagnitude);
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleDragForceExtraHeight);
 		break;
 	}
-	case PhysicAction_BarnacleChewForce: {
+	case PhysicBehavior_BarnacleChewForce: {
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleChewForceMagnitude);
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleChewForceInterval);
 		break;
 	}
-	case PhysicAction_BarnacleConstraintLimitAdjustment: {
+	case PhysicBehavior_BarnacleConstraintLimitAdjustment: {
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentExtraHeight);
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentInterval);
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentAxis);
 		break;
 	}
-	case PhysicAction_FirstPersonViewCamera:
-	case PhysicAction_ThirdPersonViewCamera: {
-		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnIdle);
-		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnDeath);
-		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnCaughtByBarnacle);
+	case PhysicBehavior_FirstPersonViewCamera:
+	case PhysicBehavior_ThirdPersonViewCamera: {
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnIdle);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnDeath);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
 		break;
 	}
-	case PhysicAction_SimpleBuoyancy: {
+	case PhysicBehavior_SimpleBuoyancy: {
 		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyMagnitude);
 		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyLinearDrag);
 		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyAngularDrag);
@@ -418,33 +418,33 @@ void CPhysicActionEditDialog::LoadAvailableFactorsIntoControls(int type)
 #undef LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE
 }
 
-int CPhysicActionEditDialog::GetCurrentSelectedActionTypeIndex()
+int CPhysicBehaviorEditDialog::GetCurrentSelectedTypeIndex()
 {
-	int type = PhysicAction_None;
+	int type = PhysicBehavior_None;
 
 	auto kv = m_pType->GetActiveItemUserData();
 
 	if (kv)
 	{
-		type = kv->GetInt("type", PhysicAction_None);
+		type = kv->GetInt("type", PhysicBehavior_None);
 	}
 
 	return type;
 }
 
-void CPhysicActionEditDialog::UpdateControlStates()
+void CPhysicBehaviorEditDialog::UpdateControlStates()
 {
-	int type = GetCurrentSelectedActionTypeIndex();
+	int type = GetCurrentSelectedTypeIndex();
 
 	LoadAvailableFactorsIntoControls(type);
 
 	switch (type)
 	{
-	case PhysicAction_BarnacleDragForce:
-	case PhysicAction_BarnacleChewForce:
-	case PhysicAction_FirstPersonViewCamera: 
-	case PhysicAction_ThirdPersonViewCamera:
-	case PhysicAction_SimpleBuoyancy:
+	case PhysicBehavior_BarnacleDragForce:
+	case PhysicBehavior_BarnacleChewForce:
+	case PhysicBehavior_FirstPersonViewCamera: 
+	case PhysicBehavior_ThirdPersonViewCamera:
+	case PhysicBehavior_SimpleBuoyancy:
 	{
 		m_pRigidBodyLabel->SetVisible(true);
 		m_pRigidBody->SetVisible(true);
@@ -453,7 +453,7 @@ void CPhysicActionEditDialog::UpdateControlStates()
 		m_pConstraint->SetVisible(false);
 		break;
 	}
-	case PhysicAction_BarnacleConstraintLimitAdjustment:
+	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
 	{
 		m_pRigidBodyLabel->SetVisible(false);
 		m_pRigidBody->SetVisible(false);
@@ -474,18 +474,18 @@ void CPhysicActionEditDialog::UpdateControlStates()
 	}
 }
 
-void CPhysicActionEditDialog::SaveConfigFromControls()
+void CPhysicBehaviorEditDialog::SaveConfigFromControls()
 {
 	char szText[256];
 
 	SaveTypeFromControl(m_pType);
 
-	SaveRigidBodyFromControl(m_pRigidBody, m_pPhysicActionConfig->rigidbody);
-	SaveConstraintFromControl(m_pConstraint, m_pPhysicActionConfig->constraint);
+	SaveRigidBodyFromControl(m_pRigidBody, m_pPhysicBehaviorConfig->rigidbody);
+	SaveConstraintFromControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
 
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) { \
         m_p##from->GetText(szText, sizeof(szText)); \
-        m_pPhysicActionConfig->to = processor(szText); \
+        m_pPhysicBehaviorConfig->to = processor(szText); \
     }
 
 	SAVE_FROM_TEXT_ENTRY(name, Name, std::string);
@@ -505,15 +505,13 @@ void CPhysicActionEditDialog::SaveConfigFromControls()
 	// Save flags from check buttons using bitwise operations
 #define SAVE_FLAG_FROM_CHECK_BUTTON(to, from) { \
         if (m_p##from->IsSelected()) \
-            m_pPhysicActionConfig->to |= PhysicActionFlag_##from; \
+            m_pPhysicBehaviorConfig->to |= PhysicBehaviorFlag_##from; \
         else \
-            m_pPhysicActionConfig->to &= ~PhysicActionFlag_##from; \
+            m_pPhysicBehaviorConfig->to &= ~PhysicBehaviorFlag_##from; \
     }
 
 	SAVE_FLAG_FROM_CHECK_BUTTON(flags, Barnacle);
 	SAVE_FLAG_FROM_CHECK_BUTTON(flags, Gargantua);
-	//SAVE_FLAG_FROM_CHECK_BUTTON(flags, AffectsRigidBody);
-	//SAVE_FLAG_FROM_CHECK_BUTTON(flags, AffectsConstraint);
 
 	// Cleanup macro definition
 #undef SAVE_FLAG_FROM_CHECK_BUTTON
@@ -521,10 +519,10 @@ void CPhysicActionEditDialog::SaveConfigFromControls()
 	SaveFactorsFromControl(m_pPhysicFactorListPanel);
 
 	// Mark the configuration as modified
-	m_pPhysicActionConfig->configModified = true;
+	m_pPhysicBehaviorConfig->configModified = true;
 }
 
-void CPhysicActionEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName)
+void CPhysicBehaviorEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName)
 {
 	char szText[256];
 
@@ -544,7 +542,7 @@ void CPhysicActionEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboBox
 	}
 }
 
-void CPhysicActionEditDialog::SaveConstraintFromControl(vgui::ComboBox* pComboBox, std::string& constraintName)
+void CPhysicBehaviorEditDialog::SaveConstraintFromControl(vgui::ComboBox* pComboBox, std::string& constraintName)
 {
 	char szText[256];
 
@@ -564,17 +562,17 @@ void CPhysicActionEditDialog::SaveConstraintFromControl(vgui::ComboBox* pComboBo
 	}
 }
 
-void CPhysicActionEditDialog::SaveTypeFromControl(vgui::ComboBox* pComboBox)
+void CPhysicBehaviorEditDialog::SaveTypeFromControl(vgui::ComboBox* pComboBox)
 {
 	auto kv = pComboBox->GetActiveItemUserData();
 
 	if (kv)
 	{
-		m_pPhysicActionConfig->type = kv->GetInt("type");
+		m_pPhysicBehaviorConfig->type = kv->GetInt("type");
 	}
 }
 
-void CPhysicActionEditDialog::SaveFactorsFromControl(vgui::ListPanel* pListPanel)
+void CPhysicBehaviorEditDialog::SaveFactorsFromControl(vgui::ListPanel* pListPanel)
 {
 	for (int i = 0; i < pListPanel->GetItemCount(); ++i)
 	{
@@ -586,7 +584,7 @@ void CPhysicActionEditDialog::SaveFactorsFromControl(vgui::ListPanel* pListPanel
 			auto value = item->kv->GetString("value");
 			auto defaultValue = item->kv->GetFloat("defaultValue");
 
-			if (index >= 0 && index < _ARRAYSIZE(m_pPhysicActionConfig->factors))
+			if (index >= 0 && index < _ARRAYSIZE(m_pPhysicBehaviorConfig->factors))
 			{
 				float changedValue;
 
@@ -607,10 +605,10 @@ void CPhysicActionEditDialog::SaveFactorsFromControl(vgui::ListPanel* pListPanel
 					}
 				}
 
-				if (m_pPhysicActionConfig->factors[index] != changedValue)
+				if (m_pPhysicBehaviorConfig->factors[index] != changedValue)
 				{
-					m_pPhysicActionConfig->factors[index] = changedValue;
-					m_pPhysicActionConfig->configModified = true;
+					m_pPhysicBehaviorConfig->factors[index] = changedValue;
+					m_pPhysicBehaviorConfig->configModified = true;
 				}
 			}
 		}
