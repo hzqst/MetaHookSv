@@ -27,9 +27,9 @@ public:
 	int m_ragdollObjectLevel{};
 	int m_rigidbodyLevel{};
 	int m_constraintLevel{};
-	int m_actionLevel{};
+	int m_behaviorLevel{};
 	vec3_t m_constraintColor{};
-	vec3_t m_actionColor{};
+	vec3_t m_behaviorColor{};
 	vec3_t m_inspectedColor{};
 	vec3_t m_selectedColor{};
 };

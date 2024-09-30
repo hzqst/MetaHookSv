@@ -33,7 +33,7 @@ public:
 		m_pDebugDrawLevelRagdollObject = new CCvarTextEntry(this, "DebugDrawLevelRagdollObject", "bv_debug_draw_level_ragdoll");
 		m_pDebugDrawLevelRigidBody = new CCvarTextEntry(this, "DebugDrawLevelRigidBody", "bv_debug_draw_level_rigidbody");
 		m_pDebugDrawLevelConstraint = new CCvarTextEntry(this, "DebugDrawLevelConstraint", "bv_debug_draw_level_constraint");
-		m_pDebugDrawLevelPhysicBehavior = new CCvarTextEntry(this, "DebugDrawLevelPhysicBehavior", "bv_debug_draw_level_action");
+		m_pDebugDrawLevelPhysicBehavior = new CCvarTextEntry(this, "DebugDrawLevelPhysicBehavior", "bv_debug_draw_level_behavior");
 
 		LoadControlSettings("bulletphysics/OptionsSubBulletPhysicsDlg.res");
 	}

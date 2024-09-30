@@ -44,9 +44,9 @@ cvar_t* bv_debug_draw_level_static = NULL;
 cvar_t* bv_debug_draw_level_dynamic = NULL;
 cvar_t* bv_debug_draw_level_rigidbody = NULL;
 cvar_t* bv_debug_draw_level_constraint = NULL;
-cvar_t* bv_debug_draw_level_action = NULL;
+cvar_t* bv_debug_draw_level_behavior = NULL;
 cvar_t* bv_debug_draw_constraint_color = NULL;
-cvar_t* bv_debug_draw_action_color = NULL;
+cvar_t* bv_debug_draw_behavior_color = NULL;
 cvar_t* bv_debug_draw_inspected_color = NULL;
 cvar_t* bv_debug_draw_selected_color = NULL;
 
@@ -1345,9 +1345,9 @@ void HUD_Init(void)
 	bv_debug_draw_level_ragdoll = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_ragdoll", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_rigidbody = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_rigidbody", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_constraint", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_debug_draw_level_action = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_action", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_level_behavior = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_behavior", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_constraint_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_constraint_color", "54 136 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_debug_draw_action_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_action_color", "95 255 117", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_behavior_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_behavior_color", "95 255 117", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_inspected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_inspected_color", "0 255 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_selected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_selected_color", "255 255 0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 

@@ -1814,15 +1814,15 @@ void CBulletPhysicManager::DebugDraw(void)
 	m_debugDrawContext.m_ragdollObjectLevel = (int)bv_debug_draw_level_ragdoll->value;
 	m_debugDrawContext.m_rigidbodyLevel = (int)bv_debug_draw_level_rigidbody->value;
 	m_debugDrawContext.m_constraintLevel = (int)bv_debug_draw_level_constraint->value;
-	m_debugDrawContext.m_actionLevel = (int)bv_debug_draw_level_action->value;
+	m_debugDrawContext.m_behaviorLevel = (int)bv_debug_draw_level_behavior->value;
 
 	if (!UTIL_ParseStringAsColor3(bv_debug_draw_constraint_color->string, m_debugDrawContext.m_constraintColor))
 	{
 		VectorClear(m_debugDrawContext.m_constraintColor);
 	}
-	if (!UTIL_ParseStringAsColor3(bv_debug_draw_action_color->string, m_debugDrawContext.m_actionColor))
+	if (!UTIL_ParseStringAsColor3(bv_debug_draw_behavior_color->string, m_debugDrawContext.m_behaviorColor))
 	{
-		VectorClear(m_debugDrawContext.m_constraintColor);
+		VectorClear(m_debugDrawContext.m_behaviorColor);
 	}
 	if (!UTIL_ParseStringAsColor3(bv_debug_draw_inspected_color->string, m_debugDrawContext.m_inspectedColor))
 	{
