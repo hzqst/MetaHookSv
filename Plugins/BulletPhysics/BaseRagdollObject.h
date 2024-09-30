@@ -26,9 +26,8 @@ public:
 	bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
-	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
-	bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
-	bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) override;
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) override;
+	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView,void(*callback)(struct ref_params_s* pparams)) override;
 	void UpdateBones(entity_state_t* curstate) override;
 	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
 	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
@@ -59,7 +58,7 @@ public:
 
 	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody);
 	virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
-	virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl);
+	//virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl);
 	virtual void SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam);
 	
 	virtual IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
@@ -93,8 +92,8 @@ public:
 	std::shared_ptr<CClientAnimControlConfig> m_DebugAnimConfig;
 	bool m_bDebugAnimEnabled{};
 
-	CPhysicCameraControl m_FirstPersonViewCameraControl;
-	CPhysicCameraControl m_ThirdPersonViewCameraControl;
+	//CPhysicCameraControl m_FirstPersonViewCameraControl;
+	//CPhysicCameraControl m_ThirdPersonViewCameraControl;
 
 	StudioAnimActivityType m_iActivityType{ StudioAnimActivityType_Idle };
 	int m_iBarnacleIndex{ 0 };

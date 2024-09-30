@@ -14,6 +14,16 @@ CBulletPhysicComponentAction::CBulletPhysicComponentAction(
 		pActionConfig, 
 		attachedPhysicComponentId)
 {
+	btVector3 vecOrigin(m_origin[0], m_origin[1], m_origin[2]);
+
+	btVector3 vecAngles(m_angles[0], m_angles[1], m_angles[2]);
+
+	Vector3GoldSrcToBullet(vecOrigin);
+
+	m_offsetmatrix = btTransform(btQuaternion(0, 0, 0, 1), vecOrigin);
+
+	EulerMatrix(vecAngles, m_offsetmatrix.getBasis());
+
 	m_pInternalRigidBody = CreateInternalRigidBody(pPhysicObject, pActionConfig, attachedPhysicComponentId);
 }
 
@@ -48,7 +58,7 @@ bool CBulletPhysicComponentAction::AddToPhysicWorld(void* world)
 
 		if (m_pInternalRigidBody)
 		{
-			dynamicWorld->addRigidBody(m_pInternalRigidBody, BulletPhysicCollisionFilterGroups::ConstraintFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
+			dynamicWorld->addRigidBody(m_pInternalRigidBody, BulletPhysicCollisionFilterGroups::ActionFilter, BulletPhysicCollisionFilterGroups::InspectorFilter);
 		}
 
 		m_addedToPhysicWorld = true;
@@ -87,17 +97,7 @@ bool CBulletPhysicComponentAction::IsAddedToPhysicWorld(void* world) const
 
 btRigidBody* CBulletPhysicComponentAction::CreateInternalRigidBody(IPhysicObject* pPhysicObject, const CClientPhysicActionConfig* pActionConfig, int attachedPhysicComponentId)
 {
-	btVector3 vecOrigin(pActionConfig->origin[0], pActionConfig->origin[1], pActionConfig->origin[2]);
-
-	btVector3 vecAngles(pActionConfig->angles[0], pActionConfig->angles[1], pActionConfig->angles[2]);
-
-	Vector3GoldSrcToBullet(vecOrigin);
-
-	btTransform localTrans(btQuaternion(0, 0, 0, 1), vecOrigin);
-
-	EulerMatrix(vecAngles, localTrans.getBasis());
-
-	auto pMotionState = new CFollowPhysicComponentMotionState(pPhysicObject, attachedPhysicComponentId, localTrans);
+	auto pMotionState = new CFollowPhysicComponentMotionState(pPhysicObject, attachedPhysicComponentId, m_offsetmatrix);
 
 	auto size = btVector3(2, 2, 2);
 

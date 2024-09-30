@@ -312,14 +312,5 @@ IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CPhysicObjectCre
 
 IPhysicAction* CBulletDynamicObject::CreateAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
 {
-	switch (pActionConfig->type)
-	{
-	case PhysicAction_SimpleBuoyancy:
-	{
-		//TODO
-		return nullptr;
-	}
-	}
-
-	return nullptr;
+	return DispatchBulletCreatePhysicAction(CreationParam, pActionConfig, physicComponentId);
 }

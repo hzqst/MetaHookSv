@@ -192,6 +192,7 @@ public:
 	CClientStaticObjectConfig();
 };
 
+/*
 class CClientCameraControlConfig
 {
 public:
@@ -199,6 +200,7 @@ public:
 	vec3_t origin{0};
 	vec3_t angles{0};
 };
+*/
 
 class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 {
@@ -206,8 +208,8 @@ public:
 	CClientRagdollObjectConfig();
 
 	std::vector<std::shared_ptr<CClientAnimControlConfig>> AnimControlConfigs;
-	CClientCameraControlConfig FirstPersonViewCameraControlConfig;
-	CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
+	//CClientCameraControlConfig FirstPersonViewCameraControlConfig;
+	//CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
 };
 
 class CClientPhysicObjectConfigStorage

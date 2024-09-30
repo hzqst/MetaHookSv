@@ -29,6 +29,7 @@ public:
 	int m_constraintLevel{};
 	int m_actionLevel{};
 	vec3_t m_constraintColor{};
+	vec3_t m_actionColor{};
 	vec3_t m_inspectedColor{};
 	vec3_t m_selectedColor{};
 };
@@ -130,6 +131,7 @@ public:
 	int m_iHitPhysicComponentIndex{};
 };
 
+#if 0
 class CPhysicCameraControl
 {
 public:
@@ -148,6 +150,7 @@ public:
 	vec3_t m_origin{ 0 };
 	vec3_t m_angles{ 0 };
 };
+#endif
 
 class IPhysicComponent : public IBaseInterface
 {
@@ -168,6 +171,15 @@ public:
 	{
 		return false;
 	}
+	virtual bool IsCameraView() const
+	{
+		return false;
+	}
+	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+	{
+		return false;
+	}
+
 	virtual const char* GetTypeString() const = 0;
 	virtual const char* GetTypeLocalizationTokenString() const = 0;
 
@@ -250,10 +262,12 @@ public:
 	{
 		return "#BulletPhysics_Action";
 	}
+
 	bool IsPhysicAction() const override
 	{
 		return true;
 	}
+
 	virtual IPhysicComponent* GetAttachedPhysicComponent() const
 	{
 		return nullptr;
@@ -406,8 +420,7 @@ public:
 	virtual int GetGargantuaIndex() const = 0;
 	virtual bool IsDebugAnimEnabled() const = 0;
 	virtual void SetDebugAnimEnabled(bool bEnabled) = 0;
-	virtual bool SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
-	virtual bool SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams)) = 0;
+	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) = 0;
 };
 
 class IClientPhysicManager : public IBaseInterface

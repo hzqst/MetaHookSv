@@ -37,6 +37,7 @@ extern cvar_t* bv_debug_draw_level_rigidbody;
 extern cvar_t* bv_debug_draw_level_constraint;
 extern cvar_t* bv_debug_draw_level_action;
 extern cvar_t* bv_debug_draw_constraint_color;
+extern cvar_t* bv_debug_draw_action_color;
 extern cvar_t* bv_debug_draw_inspected_color;
 extern cvar_t* bv_debug_draw_selected_color;
 

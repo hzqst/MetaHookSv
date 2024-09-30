@@ -164,8 +164,8 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 
 	SetupNonKeyBones(CreationParam);
 
-	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+	//InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+	//InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
 
 	return true;
 }
@@ -249,8 +249,8 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	SetupNonKeyBones(CreationParam);
 
-	InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+	//InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
+	//InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
 
 	return true;
 }
@@ -371,15 +371,9 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 bool CBaseRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
 {
-	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			return pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, origin, angles);
-		}
-	}
+	float flTotalMass = 0;
+	vec3_t vecAddedOrigin{};
+	vec3_t vecAddedAngles{};
 
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
@@ -387,99 +381,68 @@ bool CBaseRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			return pRigidBody->GetGoldSrcOriginAngles(origin, angles);
-		}
-	}
+			vec3_t vecTempOrigin{};
+			vec3_t vecTempAngles{};
 
-
-	return false;
-}
-
-bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))
-{
-	if (GetActivityType() != StudioAnimActivityType_Idle)
-	{
-		if (bIsThirdPerson)
-		{
-			return SyncThirdPersonView(pparams, callback);
-		}
-		else
-		{
-			if (g_bIsCounterStrike && GetEntityIndex() == gEngfuncs.GetLocalPlayer()->index)
+			if (pRigidBody->GetGoldSrcOriginAngles(vecTempOrigin, vecTempAngles))
 			{
-				if (g_iUser1 && !(*g_iUser1))
-					return false;
-			}
+				float mass = pRigidBody->GetMass();
 
-			return SyncFirstPersonView(pparams, callback);
-		}
-	}
+				VectorMA(vecAddedOrigin, mass, vecTempOrigin, vecAddedOrigin);
+				VectorMA(vecAddedAngles, mass, vecTempAngles, vecAddedAngles);
 
-	return false;
-}
-
-bool CBaseRagdollObject::SyncThirdPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
-{
-	if (m_ThirdPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_ThirdPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			vec3_t vecGoldSrcNewOrigin;
-
-			pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_ThirdPersonViewCameraControl.m_origin, m_ThirdPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, nullptr);
-
-			vec3_t vecSavedSimOrgigin;
-
-			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-
-			VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-
-			callback(pparams);
-
-			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool CBaseRagdollObject::SyncFirstPersonView(struct ref_params_s* pparams, void(*callback)(struct ref_params_s* pparams))
-{
-	if (m_FirstPersonViewCameraControl.m_physicComponentId)
-	{
-		auto pRigidBody = UTIL_GetPhysicComponentAsRigidBody(m_FirstPersonViewCameraControl.m_physicComponentId);
-
-		if (pRigidBody)
-		{
-			vec3_t vecGoldSrcNewOrigin, vecGoldSrcNewAngles;
-
-			if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_FirstPersonViewCameraControl.m_origin, m_FirstPersonViewCameraControl.m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles))
-			{
-				vec3_t vecSavedSimOrgigin;
-				vec3_t vecSavedClientViewAngles;
-				VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-				int iSavedHealth = pparams->health;
-
-				pparams->viewheight[2] = 0;
-				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
-				pparams->health = 1;
-
-				callback(pparams);
-
-				pparams->health = iSavedHealth;
-				VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-				VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
-
-				return true;
+				flTotalMass += mass;
 			}
 		}
 	}
+
+	if (flTotalMass > 0)
+	{
+		float invMass = 1 / flTotalMass;
+
+		if (origin)
+		{
+			VectorScale(vecAddedOrigin, invMass, origin);
+		}
+
+		if (angles)
+		{
+			VectorScale(vecAddedAngles, invMass, angles);
+		}
+	}
+
+	return false;
+}
+
+bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+{
+	return SyncCameraView(pparams, bIsThirdPersonView, callback);
+}
+
+bool CBaseRagdollObject::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+{
+	//Inspecting self ?
+	if (!bIsThirdPersonView && g_bIsCounterStrike && GetEntityIndex() == gEngfuncs.GetLocalPlayer()->index)
+	{
+		if (g_iUser1 && !(*g_iUser1))
+			return false;
+	}
+	
+	if (GetActivityType() == StudioAnimActivityType_Death ||
+		GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
+	{
+		for (auto pPhysicComponent : m_PhysicComponents)
+		{
+			if (pPhysicComponent->IsCameraView())
+			{
+				if (pPhysicComponent->SyncCameraView(pparams, bIsThirdPersonView, callback))
+				{
+					return true;
+				}
+			}
+		}
+	}
+
 	return false;
 }
 
@@ -828,7 +791,7 @@ void CBaseRagdollObject::SetupNonKeyBones(const CPhysicObjectCreationParameter& 
 		}
 	}
 }
-
+/*
 void CBaseRagdollObject::InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl)
 {
 	CameraControl = (*pCameraControlConfig);
@@ -840,7 +803,7 @@ void CBaseRagdollObject::InitCameraControl(const CClientCameraControlConfig* pCa
 		CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
 	}
 }
-
+*/
 void CBaseRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)
 {
 

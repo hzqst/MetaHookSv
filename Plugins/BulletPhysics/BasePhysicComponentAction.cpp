@@ -16,7 +16,8 @@ CBasePhysicComponentAction::CBasePhysicComponentAction(
 
 	m_attachedPhysicComponentId(attachedPhysicComponentId)
 {
-
+	VectorCopy(pActionConfig->origin, m_origin);
+	VectorCopy(pActionConfig->angles, m_angles);
 }
 
 IPhysicComponent* CBasePhysicComponentAction::GetAttachedPhysicComponent() const

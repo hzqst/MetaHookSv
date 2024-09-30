@@ -209,8 +209,6 @@ void Vector3BulletToGoldSrc(btVector3& vec)
 	vec.m_floats[2] *= B2GScale;
 }
 
-
-
 CBulletCollisionShapeSharedUserData* GetSharedUserDataFromCollisionShape(btCollisionShape *pCollisionShape)
 {
 	return (CBulletCollisionShapeSharedUserData*)pCollisionShape->getUserPointer();
@@ -1163,6 +1161,20 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	return nullptr;
 }
 
+IPhysicAction* DispatchBulletCreatePhysicAction(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicActionConfig* pActionConfig, int physicComponentId)
+{
+	switch (pActionConfig->type)
+	{
+	case PhysicAction_SimpleBuoyancy:
+	{
+		//TODO
+		return nullptr;
+	}
+	}
+
+	return nullptr;
+}
+
 /*
 	Upload GoldSrc origin and angles to bullet engine
 */
@@ -1729,7 +1741,6 @@ public:
 
 };
 
-
 void CBulletPhysicManager::Init(void)
 {
 	CBasePhysicManager::Init();
@@ -1809,6 +1820,10 @@ void CBulletPhysicManager::DebugDraw(void)
 	{
 		VectorClear(m_debugDrawContext.m_constraintColor);
 	}
+	if (!UTIL_ParseStringAsColor3(bv_debug_draw_action_color->string, m_debugDrawContext.m_actionColor))
+	{
+		VectorClear(m_debugDrawContext.m_constraintColor);
+	}
 	if (!UTIL_ParseStringAsColor3(bv_debug_draw_inspected_color->string, m_debugDrawContext.m_inspectedColor))
 	{
 		VectorClear(m_debugDrawContext.m_inspectedColor);
@@ -1865,7 +1880,16 @@ void CBulletPhysicManager::DebugDraw(void)
 					}
 					else
 					{
-						pInternalRigidBody->removeCustomDebugColor();
+						if (pPhysicComponent->IsPhysicAction())
+						{
+							auto customColor = GetVector3FromVec3(m_debugDrawContext.m_actionColor);
+
+							pInternalRigidBody->setCustomDebugColor(customColor);
+						}
+						else
+						{
+							pInternalRigidBody->removeCustomDebugColor();
+						}
 					}
 				}
 			}

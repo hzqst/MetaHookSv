@@ -235,6 +235,8 @@ enum PhysicAction
 	PhysicAction_BarnacleDragForce,
 	PhysicAction_BarnacleChewForce,
 	PhysicAction_BarnacleConstraintLimitAdjustment,
+	PhysicAction_FirstPersonViewCamera,
+	PhysicAction_ThirdPersonViewCamera,
 	PhysicAction_SimpleBuoyancy,
 	PhysicAction_Maximum
 };
@@ -248,6 +250,11 @@ const int PhysicActionFactorIdx_BarnacleChewForceInterval = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight = 1;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval = 2;
 const int PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis = 3;
+
+//TODO:really need this?
+//const int PhysicActionFactorIdx_CameraActivateOnIdle = 0;
+//const int PhysicActionFactorIdx_CameraActivateOnDeath = 1;
+//const int PhysicActionFactorIdx_CameraActivateOnCaughtByBarnacle = 2;
 
 const int PhysicActionFactorIdx_SimpleBuoyancyMagnitude = 0;
 const int PhysicActionFactorIdx_SimpleBuoyancyLinearDrag = 1;

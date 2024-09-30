@@ -99,6 +99,9 @@ protected:
 	bool OpenInspectClientEntityMenu(bool bSelected);
 	bool OpenInspectPhysicObjectMenu(bool bSelected);
 	bool OpenInspectPhysicComponentMenu(bool bSelected);
+	bool OpenRigidBodyMenu(IPhysicComponent* pPhysicComponent);
+	bool OpenConstraintMenu(IPhysicComponent* pPhysicComponent);
+	bool OpenPhysicActionMenu(IPhysicComponent* pPhysicComponent);
 
 	void ShowInspectContentLabel(const wchar_t* wszText);
 	void HideInspectContentLabel();

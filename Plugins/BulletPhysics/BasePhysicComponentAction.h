@@ -17,4 +17,6 @@ public:
 	IPhysicConstraint* GetAttachedConstraint() const override;
 
 	int m_attachedPhysicComponentId{};
+	vec3_t m_origin{};
+	vec3_t m_angles{};
 };

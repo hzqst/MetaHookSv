@@ -25,6 +25,3 @@ public:
 	//For rayTest only
 	btRigidBody* m_pInternalRigidBody{};
 };
-
-
-

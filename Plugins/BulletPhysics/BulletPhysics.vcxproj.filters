@@ -509,6 +509,24 @@
     <ClCompile Include="AnimControlEditDialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="BulletCameraViewAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletBarnacleChewForceAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletBarnacleConstraintLimitAdjustmentAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletBarnacleDragForceAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletFirstPersonViewCameraAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletThirdPersonViewCameraAction.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -678,6 +696,15 @@
     </ClInclude>
     <ClInclude Include="AnimControlEditDialog.h">
       <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletCameraViewAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletFirstPersonViewCameraAction.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletThirdPersonViewCameraAction.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

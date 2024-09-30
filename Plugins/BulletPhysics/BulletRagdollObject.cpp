@@ -4,6 +4,8 @@
 #include "BulletBarnacleDragForceAction.h"
 #include "BulletBarnacleChewForceAction.h"
 #include "BulletBarnacleConstraintLimitAdjustmentAction.h"
+#include "BulletFirstPersonViewCameraAction.h"
+#include "BulletThirdPersonViewCameraAction.h"
 #include "PhysicUTIL.h"
 #include "privatehook.h"
 
@@ -476,14 +478,43 @@ IPhysicAction* CBulletRagdollObject::CreateAction(const CPhysicObjectCreationPar
 			pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
 			(int)pActionConfig->factors[PhysicActionFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
 	}
-	case PhysicAction_SimpleBuoyancy:
+	case PhysicAction_FirstPersonViewCamera:
 	{
-		//TODO
-		return nullptr;
+		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+
+		if (!pRigidBodyA)
+		{
+			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			return nullptr;
+		}
+
+		return new CBulletFirstPersonViewCameraAction(
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
+			GetEntityIndex(),
+			this,
+			pActionConfig,
+			pRigidBodyA->GetPhysicComponentId());
+	}
+	case PhysicAction_ThirdPersonViewCamera:
+	{
+		auto pRigidBodyA = GetRigidBodyByName(pActionConfig->rigidbody);
+
+		if (!pRigidBodyA)
+		{
+			gEngfuncs.Con_DPrintf("CreateAction: rigidbody \"%s\" not found!\n", pActionConfig->rigidbody.c_str());
+			return nullptr;
+		}
+
+		return new CBulletThirdPersonViewCameraAction(
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
+			GetEntityIndex(),
+			this,
+			pActionConfig,
+			pRigidBodyA->GetPhysicComponentId());
 	}
 	}
 
-	return nullptr;
+	return DispatchBulletCreatePhysicAction(CreationParam, pActionConfig, physicComponentId);
 }
 
 void CBulletRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)

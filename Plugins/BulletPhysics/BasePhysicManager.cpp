@@ -635,8 +635,8 @@ CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectCo
 {
 	type = PhysicObjectType_RagdollObject;
 	flags = PhysicObjectFlag_RagdollObject;
-	FirstPersonViewCameraControlConfig.rigidbody = "Head";
-	ThirdPersonViewCameraControlConfig.rigidbody = "Pelvis";
+	//FirstPersonViewCameraControlConfig.rigidbody = "Head";
+	//ThirdPersonViewCameraControlConfig.rigidbody = "Pelvis";
 }
 
 void CBasePhysicManager::Destroy(void)
@@ -1433,7 +1433,6 @@ static std::shared_ptr<CClientPhysicActionConfig> LoadPhysicActionFromKeyValues(
 		{
 			LOAD_FACTOR_FLOAT(BarnacleDragForceMagnitude);
 			LOAD_FACTOR_FLOAT(BarnacleDragForceExtraHeight);
-
 			break;
 		}
 		case PhysicAction_BarnacleChewForce:
@@ -1446,6 +1445,13 @@ static std::shared_ptr<CClientPhysicActionConfig> LoadPhysicActionFromKeyValues(
 		{
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
+			break;
+		}
+		case PhysicAction_SimpleBuoyancy:
+		{
+			LOAD_FACTOR_FLOAT(SimpleBuoyancyMagnitude);
+			LOAD_FACTOR_FLOAT(SimpleBuoyancyLinearDrag);
+			LOAD_FACTOR_FLOAT(SimpleBuoyancyAngularDrag);
 			break;
 		}
 		}
@@ -1472,7 +1478,7 @@ static void LoadPhysicActionsFromKeyValues(KeyValues* pKeyValues, std::vector<st
 		}
 	}
 }
-
+#if 0
 static void LoadCameraControlFromKeyValues(KeyValues* pKeyValues, const char *name, CClientCameraControlConfig& CameraControlConfig)
 {
 	auto pCameraControlKey = pKeyValues->FindKey(name);
@@ -1496,7 +1502,7 @@ static void LoadCameraControlFromKeyValues(KeyValues* pKeyValues, const char *na
 		}
 	}
 }
-
+#endif
 static bool VerifyIntegrityForPhysicObjectConfig(model_t* mod, const CClientPhysicObjectConfig *pPhysicObjectConfig)
 {
 	if (pPhysicObjectConfig->verifyBoneChunk)
@@ -1534,8 +1540,8 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadRagdollObjectConfigFromKey
 	LoadConstraintsFromKeyValues(pKeyValues, pRagdollObjectConfig->ConstraintConfigs);
 	LoadPhysicActionsFromKeyValues(pKeyValues, pRagdollObjectConfig->ActionConfigs);
 	LoadAnimControlsFromKeyValues(pKeyValues, pRagdollObjectConfig->AnimControlConfigs);
-	LoadCameraControlFromKeyValues(pKeyValues, "firstPersonViewCameraControl", pRagdollObjectConfig->FirstPersonViewCameraControlConfig);
-	LoadCameraControlFromKeyValues(pKeyValues, "thirdPersonViewCameraControl", pRagdollObjectConfig->ThirdPersonViewCameraControlConfig);
+	//LoadCameraControlFromKeyValues(pKeyValues, "firstPersonViewCameraControl", pRagdollObjectConfig->FirstPersonViewCameraControlConfig);
+	//LoadCameraControlFromKeyValues(pKeyValues, "thirdPersonViewCameraControl", pRagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
 	ClientPhysicManager()->AddPhysicConfig(pRagdollObjectConfig->configId, pRagdollObjectConfig);
 
@@ -2088,6 +2094,13 @@ static void AddPhysicActionsToKeyValues(KeyValues* pKeyValues, const std::vector
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
 							break;
 						}
+						case PhysicAction_SimpleBuoyancy:
+						{
+							SET_FACTOR_FLOAT(SimpleBuoyancyMagnitude);
+							SET_FACTOR_FLOAT(SimpleBuoyancyLinearDrag);
+							SET_FACTOR_FLOAT(SimpleBuoyancyAngularDrag);
+							break;
+						}
 						}
 					}
 
@@ -2130,6 +2143,7 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<s
 	}
 }
 
+#if 0
 static void AddCameraControlToKeyValues(KeyValues* pKeyValues, const char *name, const CClientCameraControlConfig& CameraControl)
 {
 	auto pCameraControlKey = pKeyValues->FindKey(name, true);
@@ -2149,6 +2163,7 @@ static void AddCameraControlToKeyValues(KeyValues* pKeyValues, const char *name,
 		}
 	}
 }
+#endif
 
 static KeyValues* ConvertStaticObjectConfigToKeyValues(const CClientStaticObjectConfig* StaticObjectConfig)
 {
@@ -2183,8 +2198,8 @@ static KeyValues* ConvertRagdollObjectConfigToKeyValues(const CClientRagdollObje
 	AddConstraintsToKeyValues(pKeyValues, RagdollObjectConfig->ConstraintConfigs);
 	AddPhysicActionsToKeyValues(pKeyValues, RagdollObjectConfig->ActionConfigs);
 	AddAnimControlToKeyValues(pKeyValues, RagdollObjectConfig->AnimControlConfigs);
-	AddCameraControlToKeyValues(pKeyValues, "firstPersonViewCameraControl", RagdollObjectConfig->FirstPersonViewCameraControlConfig);
-	AddCameraControlToKeyValues(pKeyValues, "thirdPersonViewCameraControl", RagdollObjectConfig->ThirdPersonViewCameraControlConfig);
+	//AddCameraControlToKeyValues(pKeyValues, "firstPersonViewCameraControl", RagdollObjectConfig->FirstPersonViewCameraControlConfig);
+	//AddCameraControlToKeyValues(pKeyValues, "thirdPersonViewCameraControl", RagdollObjectConfig->ThirdPersonViewCameraControlConfig);
 
 	return pKeyValues;
 }
@@ -2549,30 +2564,42 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 
 		if (type == "FirstPerson_AngleOffset")
 		{
-			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[0] = offsetX;
-			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[1] = offsetY;
-			pRagdollConfig->FirstPersonViewCameraControlConfig.angles[2] = offsetZ;
-			return true;
-		}
-		else if (type == "FirstPerson_OriginOffset")
-		{
-			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[0] = offsetX;
-			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[1] = offsetY;
-			pRagdollConfig->FirstPersonViewCameraControlConfig.origin[2] = offsetZ;
+			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
+
+			pActionConfig->name = "FirstPersonViewCamera";
+			pActionConfig->type = PhysicAction_FirstPersonViewCamera;
+			pActionConfig->rigidbody = "Head";
+			pActionConfig->angles[0] = offsetX;
+			pActionConfig->angles[1] = offsetY;
+			pActionConfig->angles[2] = offsetZ;
+
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
+
+			pRagdollConfig->ActionConfigs.push_back(pActionConfig);
+
+			//pRagdollConfig->FirstPersonViewCameraControlConfig.angles[0] = offsetX;
+			//pRagdollConfig->FirstPersonViewCameraControlConfig.angles[1] = offsetY;
+			//pRagdollConfig->FirstPersonViewCameraControlConfig.angles[2] = offsetZ;
 			return true;
 		}
 		else if (type == "ThirdPerson_AngleOffset")
 		{
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[0] = offsetX;
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[1] = offsetY;
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[2] = offsetZ;
-			return true;
-		}
-		else if (type == "ThirdPerson_OriginOffset")
-		{
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[0] = offsetX;
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[1] = offsetY;
-			pRagdollConfig->ThirdPersonViewCameraControlConfig.origin[2] = offsetZ;
+			auto pActionConfig = std::make_shared<CClientPhysicActionConfig>();
+
+			pActionConfig->name = "ThirdPersonViewCamera";
+			pActionConfig->type = PhysicAction_ThirdPersonViewCamera;
+			pActionConfig->rigidbody = "Pelvis";
+			pActionConfig->angles[0] = offsetX;
+			pActionConfig->angles[1] = offsetY;
+			pActionConfig->angles[2] = offsetZ;
+
+			ClientPhysicManager()->AddPhysicConfig(pActionConfig->configId, pActionConfig);
+
+			pRagdollConfig->ActionConfigs.push_back(pActionConfig);
+
+			//pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[0] = offsetX;
+			//pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[1] = offsetY;
+			//pRagdollConfig->ThirdPersonViewCameraControlConfig.angles[2] = offsetZ;
 			return true;
 		}
 	}

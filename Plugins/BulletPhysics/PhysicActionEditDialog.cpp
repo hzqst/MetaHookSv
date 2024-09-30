@@ -397,6 +397,13 @@ void CPhysicActionEditDialog::LoadAvailableFactorsIntoControls(int type)
 		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentAxis);
 		break;
 	}
+	case PhysicAction_FirstPersonViewCamera:
+	case PhysicAction_ThirdPersonViewCamera: {
+		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnIdle);
+		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnDeath);
+		//LOAD_FACTOR_INTO_LISTPANEL(CameraActivateOnCaughtByBarnacle);
+		break;
+	}
 	case PhysicAction_SimpleBuoyancy: {
 		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyMagnitude);
 		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyLinearDrag);
@@ -433,17 +440,12 @@ void CPhysicActionEditDialog::UpdateControlStates()
 
 	switch (type)
 	{
-	case PhysicAction_BarnacleDragForce: {
-
-		m_pRigidBodyLabel->SetVisible(true);
-		m_pRigidBody->SetVisible(true);
-
-		m_pConstraintLabel->SetVisible(false);
-		m_pConstraint->SetVisible(false);
-
-		break;
-	}
-	case PhysicAction_BarnacleChewForce: {
+	case PhysicAction_BarnacleDragForce:
+	case PhysicAction_BarnacleChewForce:
+	case PhysicAction_FirstPersonViewCamera: 
+	case PhysicAction_ThirdPersonViewCamera:
+	case PhysicAction_SimpleBuoyancy:
+	{
 		m_pRigidBodyLabel->SetVisible(true);
 		m_pRigidBody->SetVisible(true);
 
@@ -451,23 +453,14 @@ void CPhysicActionEditDialog::UpdateControlStates()
 		m_pConstraint->SetVisible(false);
 		break;
 	}
-	case PhysicAction_BarnacleConstraintLimitAdjustment: {
-
+	case PhysicAction_BarnacleConstraintLimitAdjustment:
+	{
 		m_pRigidBodyLabel->SetVisible(false);
 		m_pRigidBody->SetVisible(false);
 
 		m_pConstraintLabel->SetVisible(true);
 		m_pConstraint->SetVisible(true);
 
-		break;
-	}
-	case PhysicAction_SimpleBuoyancy: {
-
-		m_pRigidBodyLabel->SetVisible(true);
-		m_pRigidBody->SetVisible(true);
-
-		m_pConstraintLabel->SetVisible(false);
-		m_pConstraint->SetVisible(false);
 		break;
 	}
 	default: {

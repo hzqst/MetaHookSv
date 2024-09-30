@@ -23,7 +23,15 @@ std::wstring UTIL_GetPhysicObjectTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetPhysicObjectTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_ConstraintType[] = { "#BulletPhysics_None", "#BulletPhysics_ConeTwistConstraint", "#BulletPhysics_HingeConstraint", "#BulletPhysics_PointConstraint", "#BulletPhysics_SliderConstraint", "#BulletPhysics_Dof6Constraint", "#BulletPhysics_Dof6SpringConstraint", "#BulletPhysics_FixedConstraint" };
+const char* VGUI2Token_ConstraintType[] = { 
+	"#BulletPhysics_None", 
+	"#BulletPhysics_ConeTwistConstraint", 
+	"#BulletPhysics_HingeConstraint",
+	"#BulletPhysics_PointConstraint", 
+	"#BulletPhysics_SliderConstraint",
+	"#BulletPhysics_Dof6Constraint", 
+	"#BulletPhysics_Dof6SpringConstraint",
+	"#BulletPhysics_FixedConstraint" };
 
 const char* UTIL_GetConstraintTypeLocalizationToken(int type)
 {
@@ -40,7 +48,13 @@ std::wstring UTIL_GetConstraintTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetConstraintTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_RotOrderType[] = { "#BulletPhysics_PhysicRotOrder_XYZ", "#BulletPhysics_PhysicRotOrder_XZY", "#BulletPhysics_PhysicRotOrder_YXZ", "#BulletPhysics_PhysicRotOrder_YZX", "#BulletPhysics_PhysicRotOrder_ZXY", "#BulletPhysics_PhysicRotOrder_ZYX" };
+const char* VGUI2Token_RotOrderType[] = { 
+	"#BulletPhysics_PhysicRotOrder_XYZ",
+	"#BulletPhysics_PhysicRotOrder_XZY",
+	"#BulletPhysics_PhysicRotOrder_YXZ", 
+	"#BulletPhysics_PhysicRotOrder_YZX",
+	"#BulletPhysics_PhysicRotOrder_ZXY",
+	"#BulletPhysics_PhysicRotOrder_ZYX" };
 
 const char* UTIL_GetRotOrderTypeLocalizationToken(int type)
 {
@@ -57,7 +71,15 @@ std::wstring UTIL_GetRotOrderTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetRotOrderTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_CollisionShape[] = { "#BulletPhysics_None", "#BulletPhysics_Box", "#BulletPhysics_Sphere", "#BulletPhysics_Capsule", "#BulletPhysics_Cylinder", "#BulletPhysics_MultiSphere", "#BulletPhysics_TriangleMesh", "#BulletPhysics_Compound" };
+const char* VGUI2Token_CollisionShape[] = {
+	"#BulletPhysics_None",
+	"#BulletPhysics_Box", 
+	"#BulletPhysics_Sphere",
+	"#BulletPhysics_Capsule",
+	"#BulletPhysics_Cylinder", 
+	"#BulletPhysics_MultiSphere",
+	"#BulletPhysics_TriangleMesh",
+	"#BulletPhysics_Compound" };
 
 const char* UTIL_GetCollisionShapeTypeLocalizationToken(int type)
 {
@@ -74,7 +96,14 @@ std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetCollisionShapeTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_PhysicActionType[] = { "#BulletPhysics_None", "#BulletPhysics_BarnacleDragForce", "#BulletPhysics_BarnacleChewForce", "#BulletPhysics_BarnacleConstraintLimitAdjustment", "#BulletPhysics_SimpleBuoyancy" };
+const char* VGUI2Token_PhysicActionType[] = { 
+	"#BulletPhysics_None",
+	"#BulletPhysics_BarnacleDragForce", 
+	"#BulletPhysics_BarnacleChewForce", 
+	"#BulletPhysics_BarnacleConstraintLimitAdjustment",
+	"#BulletPhysics_FirstPersonViewCamera", 
+	"#BulletPhysics_ThirdPersonViewCamera", 
+	"#BulletPhysics_SimpleBuoyancy" };
 
 const char* UTIL_GetPhysicActionTypeLocalizationToken(int type)
 {
@@ -91,7 +120,12 @@ std::wstring UTIL_GetPhysicActionTypeLocalizedName(int type)
 	return vgui::localize()->Find(UTIL_GetPhysicActionTypeLocalizationToken(type));
 }
 
-const char* VGUI2Token_ActivityType[] = { "#BulletPhysics_Idle", "#BulletPhysics_Death", "#BulletPhysics_CaughtByBarnacle", "#BulletPhysics_BarnacleCatching", "#BulletPhysics_Debug" };
+const char* VGUI2Token_ActivityType[] = { 
+	"#BulletPhysics_Idle",
+	"#BulletPhysics_Death",
+	"#BulletPhysics_CaughtByBarnacle", 
+	"#BulletPhysics_BarnacleCatching",
+	"#BulletPhysics_Debug" };
 
 const char* UTIL_GetActivityTypeLocalizationToken(StudioAnimActivityType type)
 {
@@ -366,7 +400,7 @@ const char* UTIL_GetConstraintTypeName(int type)
 
 const char* UTIL_GetPhysicActionTypeName(int type)
 {
-	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment", "SimpleBuoyancy" };
+	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment", "FirstPersonViewCamera", "ThirdPersonViewCamera", "SimpleBuoyancy" };
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -475,6 +509,14 @@ int UTIL_GetPhysicActionTypeFromTypeName(const char* name)
 	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
 	{
 		type = PhysicAction_BarnacleConstraintLimitAdjustment;
+	}
+	else if (!strcmp(name, "FirstPersonViewCamera"))
+	{
+		type = PhysicAction_FirstPersonViewCamera;
+	}
+	else if (!strcmp(name, "ThirdPersonViewCamera"))
+	{
+		type = PhysicAction_ThirdPersonViewCamera;
 	}
 	else if (!strcmp(name, "SimpleBuoyancy"))
 	{

@@ -46,6 +46,7 @@ cvar_t* bv_debug_draw_level_rigidbody = NULL;
 cvar_t* bv_debug_draw_level_constraint = NULL;
 cvar_t* bv_debug_draw_level_action = NULL;
 cvar_t* bv_debug_draw_constraint_color = NULL;
+cvar_t* bv_debug_draw_action_color = NULL;
 cvar_t* bv_debug_draw_inspected_color = NULL;
 cvar_t* bv_debug_draw_selected_color = NULL;
 
@@ -133,16 +134,10 @@ entity_state_t *R_GetPlayerState(int entindex)
 
 bool CL_IsFirstPersonMode(cl_entity_t *player)
 {
-	if (gExportfuncs.CL_IsThirdPerson())
-		return false;
+	if (!gExportfuncs.CL_IsThirdPerson() && (*cl_viewentity) == player->index && !chase_active->value)
+		return true;
 
-	if ((*cl_viewentity) != player->index)
-		return false;
-
-	if (!(chase_active && chase_active->value))
-		return false;
-
-	return true;
+	return false;
 }
 
 msurface_t* GetWorldSurfaceByIndex(int index)
@@ -1352,6 +1347,7 @@ void HUD_Init(void)
 	bv_debug_draw_level_constraint = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_constraint", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_action = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_action", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_constraint_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_constraint_color", "54 136 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_debug_draw_action_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_action_color", "95 255 117", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_inspected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_inspected_color", "0 255 255", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_selected_color = gEngfuncs.pfnRegisterVariable("bv_debug_draw_selected_color", "255 255 0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
