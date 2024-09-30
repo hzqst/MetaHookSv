@@ -51,7 +51,7 @@ int CBasePhysicBehavior::GetDebugDrawLevel() const
 
 bool CBasePhysicBehavior::ShouldDrawOnDebugDraw(const CPhysicDebugDrawContext* ctx) const
 {
-	if (m_debugDrawLevel > 0 && ctx->m_actionLevel > 0 && ctx->m_actionLevel >= m_debugDrawLevel)
+	if (m_debugDrawLevel > 0 && ctx->m_behaviorLevel > 0 && ctx->m_behaviorLevel >= m_debugDrawLevel)
 		return true;
 
 	return false;
