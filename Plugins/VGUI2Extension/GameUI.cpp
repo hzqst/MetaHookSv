@@ -346,7 +346,7 @@ bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
 
 		if (ctx->bMov18h &&
 			instCount > ctx->instCount_Mov18h &&
-			instCount < ctx->instCount_Mov18h + 5 &&
+			instCount < ctx->instCount_Mov18h + 12 &&
 			pinst->id == X86_INS_CALL &&
 			pinst->detail->x86.op_count == 1 &&
 			pinst->detail->x86.operands[0].type == X86_OP_REG &&
