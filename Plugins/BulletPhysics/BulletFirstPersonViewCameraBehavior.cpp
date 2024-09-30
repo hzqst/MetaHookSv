@@ -43,6 +43,9 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 
 				pparams->viewheight[2] = 0;
 				VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
+
+				vecGoldSrcNewAngles[0] *= -1;
+
 				VectorCopy(vecGoldSrcNewAngles, pparams->cl_viewangles);
 				pparams->health = 1;
 

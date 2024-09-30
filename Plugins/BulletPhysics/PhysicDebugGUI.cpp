@@ -3,6 +3,7 @@
 #include "PhysicEditorDialog.h"
 #include "PhysicRigidBodyEditDialog.h"
 #include "PhysicConstraintEditDialog.h"
+#include "PhysicBehaviorEditDialog.h"
 
 #include "CounterStrike.h"
 
@@ -2014,14 +2015,16 @@ bool CPhysicDebugGUI::UpdateConfigSize(int physicComponentId, int axis, float va
 	return false;
 }
 
-bool CPhysicDebugGUI::OpenEditConstraintDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId)
+//Constraint Event
+
+bool CPhysicDebugGUI::OpenEditConstraintDialog(uint64 physicObjectId, int physicObjectConfigId, int constraintConfigId)
 {
 	auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(physicObjectConfigId);
 
 	if (!pPhysicObjectConfig)
 		return false;
 
-	auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(rigidBodyConfigId);
+	auto pConstraintConfig = UTIL_GetConstraintConfigFromConfigId(constraintConfigId);
 
 	if (!pConstraintConfig)
 		return false;
@@ -2031,6 +2034,30 @@ bool CPhysicDebugGUI::OpenEditConstraintDialog(uint64 physicObjectId, int physic
 	dialog->DoModal();
 
 	return true;
+}
+
+void CPhysicDebugGUI::OnCreateConstraint(uint64 physicObjectId)
+{
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
+
+	if (!pPhysicObject)
+		return;
+
+	auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
+
+	if (!pPhysicObjectConfig)
+		return;
+
+	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+		return;
+
+	auto pConstraintConfig = UTIL_CreateEmptyConstraintConfig();
+
+	pPhysicObjectConfig->ConstraintConfigs.push_back(pConstraintConfig);
+
+	pPhysicObjectConfig->configModified = true;
+
+	ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 }
 
 void CPhysicDebugGUI::OnEditConstraintEx(KeyValues* kv)
@@ -2170,7 +2197,29 @@ void CPhysicDebugGUI::OnDeleteConstraintEx(KeyValues* kv)
 	}
 }
 
-void CPhysicDebugGUI::OnCreateConstraint(uint64 physicObjectId)
+//PhysicBehavior Event
+
+bool CPhysicDebugGUI::OpenEditPhysicBehaviorDialog(uint64 physicObjectId, int physicObjectConfigId, int physicBehaviorConfigId)
+{
+	auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(physicObjectConfigId);
+
+	if (!pPhysicObjectConfig)
+		return false;
+
+	auto pPhysicBehaviorConfig = UTIL_GetPhysicBehaviorConfigFromConfigId(physicBehaviorConfigId);
+
+	if (!pPhysicBehaviorConfig)
+		return false;
+
+	auto dialog = new CPhysicBehaviorEditDialog(this, "PhysicPhysicBehaviorEditDialog", physicObjectId, pPhysicObjectConfig, pPhysicBehaviorConfig);
+	dialog->AddActionSignalTarget(this);
+	dialog->DoModal();
+
+	return true;
+}
+
+
+void CPhysicDebugGUI::OnCreatePhysicBehavior(uint64 physicObjectId)
 {
 	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
 
@@ -2185,11 +2234,148 @@ void CPhysicDebugGUI::OnCreateConstraint(uint64 physicObjectId)
 	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
 		return;
 
-	auto pConstraintConfig = UTIL_CreateEmptyConstraintConfig();
+	auto pPhysicBehaviorConfig = UTIL_CreateEmptyPhysicBehaviorConfig();
 
-	pPhysicObjectConfig->ConstraintConfigs.push_back(pConstraintConfig);
+	pPhysicObjectConfig->PhysicBehaviorConfigs.push_back(pPhysicBehaviorConfig);
 
 	pPhysicObjectConfig->configModified = true;
-	 
+
 	ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
+}
+
+void CPhysicDebugGUI::OnEditPhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto physicBehaviorConfigId = kv->GetInt("physicBehaviorConfigId");
+
+	if (OpenEditPhysicBehaviorDialog(physicObjectId, physicObjectConfigId, physicBehaviorConfigId))
+	{
+		ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+	}
+}
+
+void CPhysicDebugGUI::OnMovePhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto physicBehaviorConfigId = kv->GetInt("physicBehaviorConfigId");
+
+	ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+	UpdateEditMode(PhysicEditMode::Move);
+}
+
+void CPhysicDebugGUI::OnRotatePhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto physicBehaviorConfigId = kv->GetInt("physicBehaviorConfigId");
+
+	ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+	UpdateEditMode(PhysicEditMode::Rotate);
+}
+
+void CPhysicDebugGUI::OnResizePhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto physicBehaviorConfigId = kv->GetInt("physicBehaviorConfigId");
+
+	ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
+	UpdateEditMode(PhysicEditMode::Resize);
+}
+
+void CPhysicDebugGUI::OnClonePhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto physicBehaviorConfigId = kv->GetInt("physicBehaviorConfigId");
+
+	auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(physicObjectConfigId);
+
+	if (!pPhysicObjectConfig)
+		return;
+
+	if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+		return;
+
+	auto pPhysicBehaviorConfig = UTIL_GetPhysicBehaviorConfigFromConfigId(physicBehaviorConfigId);
+
+	if (!pPhysicBehaviorConfig)
+		return;
+
+	auto pClonedPhysicBehaviorConfig = UTIL_ClonePhysicBehaviorConfig(pPhysicBehaviorConfig.get());
+
+	pClonedPhysicBehaviorConfig->name = std::format("{0}_Clone ({1})", pPhysicBehaviorConfig->name, pClonedPhysicBehaviorConfig->configId);
+
+	pClonedPhysicBehaviorConfig->configModified = true;
+
+	pPhysicObjectConfig->PhysicBehaviorConfigs.emplace_back(pClonedPhysicBehaviorConfig);
+
+	pPhysicObjectConfig->configModified = true;
+
+	//Update PhysicObject
+
+	UTIL_RebuildPhysicObjectWithClonedConfig(physicObjectId, pPhysicObjectConfig.get(), pClonedPhysicBehaviorConfig->configId);
+}
+
+bool CPhysicDebugGUI::DeletePhysicBehaviorByComponent(IPhysicComponent* pPhysicComponent)
+{
+	if (pPhysicComponent && pPhysicComponent->IsPhysicBehavior())
+	{
+		auto pPhysicObject = pPhysicComponent->GetOwnerPhysicObject();
+
+		if (pPhysicObject)
+		{
+			auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(pPhysicObject->GetPhysicConfigId());
+
+			if (pPhysicObjectConfig)
+			{
+				if (!(pPhysicObjectConfig->flags & PhysicObjectFlag_FromConfig))
+					return false;
+
+				if (UTIL_RemovePhysicBehaviorFromPhysicObjectConfig(pPhysicObjectConfig.get(), pPhysicComponent->GetPhysicConfigId()))
+				{
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool CPhysicDebugGUI::DeletePhysicBehaviorByComponentId(int physicComponentId)
+{
+	auto pPhysicComponent = ClientPhysicManager()->GetPhysicComponent(physicComponentId);
+
+	if (pPhysicComponent)
+	{
+		return DeletePhysicBehaviorByComponent(pPhysicComponent);
+	}
+
+	return false;
+}
+
+void CPhysicDebugGUI::OnDeletePhysicBehaviorEx(KeyValues* kv)
+{
+	auto physicObjectId = kv->GetUint64("physicObjectId");
+	auto physicObjectConfigId = kv->GetInt("physicObjectConfigId");
+	auto physicComponentId = kv->GetInt("physicComponentId");
+	auto PhysicBehaviorConfigId = kv->GetInt("PhysicBehaviorConfigId");
+
+	auto pPhysicObjectConfig = UTIL_GetPhysicObjectConfigFromConfigId(physicObjectConfigId);
+
+	if (pPhysicObjectConfig)
+	{
+		if (UTIL_RemovePhysicBehaviorFromPhysicObjectConfig(pPhysicObjectConfig.get(), PhysicBehaviorConfigId))
+		{
+			ClientPhysicManager()->RebuildPhysicObjectEx(physicObjectId, pPhysicObjectConfig.get());
+		}
+	}
 }

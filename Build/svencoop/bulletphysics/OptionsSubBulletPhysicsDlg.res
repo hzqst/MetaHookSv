@@ -177,10 +177,10 @@
 		"maxchars"		"16"
 		"NumericInputOnly"		"1"
 	}
-	"DebugDrawLevelPhysicActionLabel"
+	"DebugDrawLevelPhysicBehaviorLabel"
 	{
 		"ControlName"		"Label"
-		"fieldName"		"DebugDrawLevelPhysicActionLabel"
+		"fieldName"		"DebugDrawLevelPhysicBehaviorLabel"
 		"xpos"		"28"
 		"ypos"		"178"
 		"wide"		"180"
@@ -189,15 +189,15 @@
 		"pinCorner"		"0"
 		"visible"		"1"
 		"enabled"		"1"
-		"labelText"		"#GameUI_BulletPhysics_DebugDrawLevelPhysicAction"
+		"labelText"		"#GameUI_BulletPhysics_DebugDrawLevelPhysicBehavior"
 		"textAlignment"		"west"
 		"dulltext"		"0"
 		"brighttext"	"0"
 	}
-	"DebugDrawLevelPhysicAction"
+	"DebugDrawLevelPhysicBehavior"
 	{
 		"ControlName"		"CCvarTextEntry"
-		"fieldName"		"DebugDrawLevelPhysicAction"
+		"fieldName"		"DebugDrawLevelPhysicBehavior"
 		"xpos"		"220"
 		"ypos"		"178"
 		"wide"		"48"

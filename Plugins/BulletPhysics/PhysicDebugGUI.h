@@ -67,6 +67,14 @@ protected:
 	MESSAGE_FUNC_PARAMS(OnCloneConstraintEx, "CloneConstraintEx", kv);
 	MESSAGE_FUNC_PARAMS(OnDeleteConstraintEx, "DeleteConstraintEx", kv);
 
+	MESSAGE_FUNC_UINT64(OnCreatePhysicBehavior, "CreatePhysicBehavior", physicObjectId);
+	MESSAGE_FUNC_PARAMS(OnEditPhysicBehaviorEx, "EditPhysicBehaviorEx", kv);
+	MESSAGE_FUNC_PARAMS(OnMovePhysicBehaviorEx, "MovePhysicBehaviorEx", kv);
+	MESSAGE_FUNC_PARAMS(OnRotatePhysicBehaviorEx, "RotatePhysicBehaviorEx", kv);
+	MESSAGE_FUNC_PARAMS(OnResizePhysicBehaviorEx, "ResizePhysicBehaviorEx", kv);
+	MESSAGE_FUNC_PARAMS(OnClonePhysicBehaviorEx, "ClonePhysicBehaviorEx", kv);
+	MESSAGE_FUNC_PARAMS(OnDeletePhysicBehaviorEx, "DeletePhysicBehaviorEx", kv);
+
 	void OnThink() override;
 	void PerformLayout(void) override;
 	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
@@ -82,12 +90,18 @@ protected:
 
 	bool DeleteRigidBodyByComponent(IPhysicComponent* pPhysicComponent);
 	bool DeleteRigidBodyByComponentId(int physicComponentId);
+
 	bool DeleteConstraintByComponent(IPhysicComponent* pPhysicComponent);
 	bool DeleteConstraintByComponentId(int physicComponentId);
+
+	bool DeletePhysicBehaviorByComponent(IPhysicComponent* pPhysicComponent);
+	bool DeletePhysicBehaviorByComponentId(int physicComponentId);
+
 	bool OpenEditPhysicObjectDialog(uint64 physicObjectId);
 	bool OpenEditPhysicObjectDialogEx(uint64 physicObjectId, int physicObjectConfigId);
 	bool OpenEditRigidBodyDialog(uint64 physicObjectId, int physicObjectConfigId, int rigidBodyConfigId);
 	bool OpenEditConstraintDialog(uint64 physicObjectId, int physicObjectConfigId, int constraintConfigId);
+	bool OpenEditPhysicBehaviorDialog(uint64 physicObjectId, int physicObjectConfigId, int physicBehaviorConfigId);
 
 	bool UpdateInspectedClientEntity(bool bSelected);
 	bool UpdateInspectedPhysicObject(bool bSelected);

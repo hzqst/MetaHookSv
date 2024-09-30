@@ -428,17 +428,13 @@ bool CBaseRagdollObject::SyncCameraView(struct ref_params_s* pparams, bool bIsTh
 			return false;
 	}
 	
-	if (GetActivityType() == StudioAnimActivityType_Death ||
-		GetActivityType() == StudioAnimActivityType_CaughtByBarnacle)
+	for (auto pPhysicComponent : m_PhysicComponents)
 	{
-		for (auto pPhysicComponent : m_PhysicComponents)
+		if (pPhysicComponent->IsCameraView())
 		{
-			if (pPhysicComponent->IsCameraView())
+			if (pPhysicComponent->SyncCameraView(pparams, bIsThirdPersonView, callback))
 			{
-				if (pPhysicComponent->SyncCameraView(pparams, bIsThirdPersonView, callback))
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 	}
