@@ -1882,7 +1882,7 @@ void CBulletPhysicManager::DebugDraw(void)
 					{
 						if (pPhysicComponent->IsPhysicBehavior())
 						{
-							auto customColor = GetVector3FromVec3(m_debugDrawContext.m_actionColor);
+							auto customColor = GetVector3FromVec3(m_debugDrawContext.m_behaviorColor);
 
 							pInternalRigidBody->setCustomDebugColor(customColor);
 						}
