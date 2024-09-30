@@ -1,9 +1,9 @@
-"bulletphysics/PhysicActionPage.res"
+"bulletphysics/PhysicBehaviorPage.res"
 {
-	"PhysicActionPage"
+	"PhysicBehaviorPage"
 	{
 		"ControlName"		"PropertyPage"
-		"fieldName"		"PhysicActionPage"
+		"fieldName"		"PhysicBehaviorPage"
 		"xpos"		"0"
 		"ypos"		"28"
 		"wide"		"624"
@@ -15,10 +15,10 @@
 		"tabPosition"		"0"
 		"paintbackground"		"1"
 	}
-	"PhysicActionListPanel"
+	"PhysicBehaviorListPanel"
 	{
 		"ControlName"		"ListPanel"
-		"fieldName"		"PhysicActionListPanel"
+		"fieldName"		"PhysicBehaviorListPanel"
 		"xpos"		"0"
 		"ypos"		"8"
 		"wide"		"624"
@@ -30,10 +30,10 @@
 		"tabPosition"		"0"
 		"paintbackground"		"1"
 	}
-	"ShiftUpPhysicAction"
+	"ShiftUpPhysicBehavior"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"ShiftUpPhysicAction"
+		"fieldName"		"ShiftUpPhysicBehavior"
 		"xpos"		"240"
 		"ypos"		"244"
 		"wide"		"120"
@@ -47,12 +47,12 @@
 		"labelText"		"#BulletPhysics_ShiftUp"
 		"textAlignment"		"west"
 		"wrap"		"0"
-		"command"		"ShiftUpPhysicAction"
+		"command"		"ShiftUpPhysicBehavior"
 	}
-	"ShiftDownPhysicAction"
+	"ShiftDownPhysicBehavior"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"ShiftDownPhysicAction"
+		"fieldName"		"ShiftDownPhysicBehavior"
 		"xpos"		"360"
 		"ypos"		"244"
 		"wide"		"120"
@@ -66,12 +66,12 @@
 		"labelText"		"#BulletPhysics_ShiftDown"
 		"textAlignment"		"west"
 		"wrap"		"0"
-		"command"		"ShiftDownPhysicAction"
+		"command"		"ShiftDownPhysicBehavior"
 	}
-	"CreatePhysicAction"
+	"CreatePhysicBehavior"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"CreatePhysicAction"
+		"fieldName"		"CreatePhysicBehavior"
 		"xpos"		"480"
 		"ypos"		"244"
 		"wide"		"120"
@@ -82,9 +82,9 @@
 		"enabled"		"1"
 		"tabPosition"		"1"
 		"paintbackground"		"1"
-		"labelText"		"#BulletPhysics_CreatePhysicAction"
+		"labelText"		"#BulletPhysics_CreatePhysicBehavior"
 		"textAlignment"		"west"
 		"wrap"		"0"
-		"command"		"CreatePhysicAction"
+		"command"		"CreatePhysicBehavior"
 	}
 }

@@ -1,9 +1,9 @@
-"bulletphysics/PhysicActionEditDialog.res"
+"bulletphysics/PhysicBehaviorEditDialog.res"
 {
-    "PhysicActionEditDialog"
+    "PhysicBehaviorEditDialog"
     {
         "ControlName"   "Frame"
-        "fieldName"     "PhysicActionEditDialog"
+        "fieldName"     "PhysicBehaviorEditDialog"
         "xpos"          "20"
         "ypos"          "20"
         "wide"          "520"
@@ -13,7 +13,7 @@
         "visible"       "1"
         "enabled"       "1"
         "tabPosition"   "0"
-        "title"         "#BulletPhysics_ActionEditor"
+        "title"         "#BulletPhysics_PhysicBehaviorEditor"
     }
 
     // Name and DebugDrawLevel on the same row
