@@ -155,7 +155,7 @@ void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicCompon
 		}
 		else
 		{
-			ClientPhysicManager()->FreePhysicComponent(pPhysicComponent);
+			ClientPhysicManager()->RemovePhysicComponent(pPhysicComponent->GetPhysicComponentId());
 
 			itor = PhysicComponents.erase(itor);
 		}
@@ -337,7 +337,7 @@ void DispatchAddPhysicComponent(std::vector<IPhysicComponent*> &PhysicComponents
 	DispatchPhysicComponentUpdate(pPhysicComponent, &ObjectUpdateContext);
 }
 
-void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents)
+void DispatchRemovePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents)
 {
 	for (auto itor = PhysicComponents.rbegin(); itor != PhysicComponents.rend(); itor ++)
 	{
@@ -349,7 +349,7 @@ void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponen
 	PhysicComponents.clear();
 }
 
-void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters)
+void DispatchRemovePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters)
 {
 	for (auto itor = PhysicComponents.begin(); itor != PhysicComponents.end();)
 	{
@@ -357,7 +357,8 @@ void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& Phys
 
 		if (CheckPhysicComponentFilters(pPhysicComponent, filters))
 		{
-			ClientPhysicManager()->FreePhysicComponent(pPhysicComponent);
+			ClientPhysicManager()->RemovePhysicComponent(pPhysicComponent->GetPhysicComponentId());
+
 			itor = PhysicComponents.erase(itor);
 			continue;
 		}
@@ -1003,40 +1004,21 @@ static std::shared_ptr<CClientRigidBodyConfig> LoadRigidBodyFromKeyValues(KeyVal
 
 	pRigidBodyConfig->name = pRigidBodySubKey->GetName();
 
-	if (pRigidBodySubKey->GetBool("alwaysDynamic"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysDynamic;
-	}
+#define LOAD_CONFIG_FLAGS(str, name) if (pRigidBodySubKey->GetBool(#str)){	pRigidBodyConfig->flags |= PhysicRigidBodyFlag_##name;	}
 
-	if (pRigidBodySubKey->GetBool("alwaysKinematic"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysKinematic;
-	}
+	LOAD_CONFIG_FLAGS(alwaysDynamic, AlwaysDynamic);
+	LOAD_CONFIG_FLAGS(alwaysKinematic, AlwaysKinematic);
+	LOAD_CONFIG_FLAGS(alwaysStatic, AlwaysStatic);
+	LOAD_CONFIG_FLAGS(invertStateOnIdle, InvertStateOnIdle);
+	LOAD_CONFIG_FLAGS(invertStateOnDeath, InvertStateOnDeath);
+	LOAD_CONFIG_FLAGS(invertStateOnCaughtByBarnacle, InvertStateOnCaughtByBarnacle);
+	LOAD_CONFIG_FLAGS(invertStateOnBarnacleCatching, InvertStateOnBarnacleCatching);
+	LOAD_CONFIG_FLAGS(noCollisionToWorld, NoCollisionToWorld);
+	LOAD_CONFIG_FLAGS(noCollisionToStaticObject, NoCollisionToStaticObject);
+	LOAD_CONFIG_FLAGS(noCollisionToDynamicObject, NoCollisionToDynamicObject);
+	LOAD_CONFIG_FLAGS(noCollisionToRagdollObject, NoCollisionToRagdollObject);
 
-	if (pRigidBodySubKey->GetBool("alwaysStatic"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_AlwaysStatic;
-	}
-
-	if (pRigidBodySubKey->GetBool("noCollisionToWorld"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToWorld;
-	}
-
-	if (pRigidBodySubKey->GetBool("noCollisionToStaticObject"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToStaticObject;
-	}
-
-	if (pRigidBodySubKey->GetBool("noCollisionToDynamicObject"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToDynamicObject;
-	}
-
-	if (pRigidBodySubKey->GetBool("noCollisionToRagdollObject"))
-	{
-		pRigidBodyConfig->flags |= PhysicRigidBodyFlag_NoCollisionToRagdollObject;
-	}
+#undef LOAD_CONFIG_FLAGS
 
 	pRigidBodyConfig->flags &= allowedRigidBodyFlags;
 
@@ -1445,6 +1427,15 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 		{
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
+			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
+			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentBarnacleSequence);
+			break;
+		}
+		case PhysicBehavior_FirstPersonViewCamera:
+		case PhysicBehavior_ThirdPersonViewCamera: {
+			LOAD_FACTOR_FLOAT(CameraActivateOnIdle);
+			LOAD_FACTOR_FLOAT(CameraActivateOnDeath);
+			LOAD_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
 			break;
 		}
 		case PhysicBehavior_SimpleBuoyancy:
@@ -1723,26 +1714,19 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 
 				if (pRigidBodySubKey)
 				{
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysDynamic)
-						pRigidBodySubKey->SetBool("alwaysDynamic", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysKinematic)
-						pRigidBodySubKey->SetBool("alwaysKinematic", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_AlwaysStatic)
-						pRigidBodySubKey->SetBool("alwaysStatic", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
-						pRigidBodySubKey->SetBool("noCollisionToWorld", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToStaticObject)
-						pRigidBodySubKey->SetBool("noCollisionToStaticObject", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToDynamicObject)
-						pRigidBodySubKey->SetBool("noCollisionToDynamicObject", true);
-
-					if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_NoCollisionToRagdollObject)
-						pRigidBodySubKey->SetBool("noCollisionToRagdollObject", true);
+#define SAVE_CONFIG_FLAGS(str, name) {if (pRigidBodyConfig->flags & PhysicRigidBodyFlag_##name) pRigidBodySubKey->SetBool(#str, true);}
+					SAVE_CONFIG_FLAGS(alwaysDynamic,				AlwaysDynamic);
+					SAVE_CONFIG_FLAGS(alwaysKinematic,				AlwaysKinematic);
+					SAVE_CONFIG_FLAGS(alwaysStatic,					AlwaysStatic);
+					SAVE_CONFIG_FLAGS(invertStateOnIdle,					InvertStateOnIdle);
+					SAVE_CONFIG_FLAGS(invertStateOnDeath,					InvertStateOnDeath);
+					SAVE_CONFIG_FLAGS(invertStateOnCaughtByBarnacle,		InvertStateOnCaughtByBarnacle);
+					SAVE_CONFIG_FLAGS(invertStateOnBarnacleCatching,		InvertStateOnBarnacleCatching);
+					SAVE_CONFIG_FLAGS(noCollisionToWorld,			NoCollisionToWorld);
+					SAVE_CONFIG_FLAGS(noCollisionToStaticObject,	NoCollisionToStaticObject);
+					SAVE_CONFIG_FLAGS(noCollisionToDynamicObject,	NoCollisionToDynamicObject);
+					SAVE_CONFIG_FLAGS(noCollisionToRagdollObject,	NoCollisionToRagdollObject);
+#undef SAVE_CONFIG_FLAGS
 
 					pRigidBodySubKey->SetInt("debugDrawLevel", pRigidBodyConfig->debugDrawLevel);
 
@@ -2092,6 +2076,15 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 						{
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
+							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
+							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentBarnacleSequence);
+							break;
+						}
+						case PhysicBehavior_FirstPersonViewCamera:
+						case PhysicBehavior_ThirdPersonViewCamera: {
+							SET_FACTOR_FLOAT(CameraActivateOnIdle);
+							SET_FACTOR_FLOAT(CameraActivateOnDeath);
+							SET_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
 							break;
 						}
 						case PhysicBehavior_SimpleBuoyancy:
@@ -2543,6 +2536,7 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis] = -1;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentBarnacleSequence] = 5;
 
 			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
 
@@ -2686,7 +2680,7 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 			}
 		}
 		else if (section == "RigidBody") {
-			if (!ParseLegacyRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_None)) {
+			if (!ParseLegacyRigidBodyLine(pRagdollConfig.get(), line, PhysicRigidBodyFlag_InvertStateOnDeath | PhysicRigidBodyFlag_InvertStateOnCaughtByBarnacle)) {
 				return nullptr; // Parsing failed
 			}
 		}

@@ -55,13 +55,20 @@ private:
 	vgui::TextEntry* m_pCCDThreshold{};
 	vgui::TextEntry* m_pLinearSleepingThreshold{};
 	vgui::TextEntry* m_pAngularSleepingThreshold{};
-	vgui::CheckButton* m_pAlwaysDynamic{};
-	vgui::CheckButton* m_pAlwaysKinematic{};
-	vgui::CheckButton* m_pAlwaysStatic{};
-	vgui::CheckButton* m_pNoCollisionToWorld{};
-	vgui::CheckButton* m_pNoCollisionToStaticObject{};
-	vgui::CheckButton* m_pNoCollisionToDynamicObject{};
-	vgui::CheckButton* m_pNoCollisionToRagdollObject{};
+
+#define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{};
+	DEFINE_CHECK_BUTTON(AlwaysDynamic);
+	DEFINE_CHECK_BUTTON(AlwaysKinematic);
+	DEFINE_CHECK_BUTTON(AlwaysStatic);
+	DEFINE_CHECK_BUTTON(InvertStateOnIdle);
+	DEFINE_CHECK_BUTTON(InvertStateOnDeath);
+	DEFINE_CHECK_BUTTON(InvertStateOnCaughtByBarnacle);
+	DEFINE_CHECK_BUTTON(InvertStateOnBarnacleCatching);
+	DEFINE_CHECK_BUTTON(NoCollisionToWorld);
+	DEFINE_CHECK_BUTTON(NoCollisionToStaticObject);
+	DEFINE_CHECK_BUTTON(NoCollisionToDynamicObject);
+	DEFINE_CHECK_BUTTON(NoCollisionToRagdollObject);
+#undef DEFINE_CHECK_BUTTON
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientPhysicObjectConfig> m_pPhysicObjectConfig;

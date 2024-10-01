@@ -161,6 +161,10 @@ std::wstring UTIL_GetFormattedRigidBodyFlags(int flags)
 	FORMAT_FLAGS_TO_STRING(AlwaysDynamic);
 	FORMAT_FLAGS_TO_STRING(AlwaysKinematic);
 	FORMAT_FLAGS_TO_STRING(AlwaysStatic);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnIdle);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnDeath);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnCaughtByBarnacle);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnacleCatching);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToWorld);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToStaticObject);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToDynamicObject);
@@ -742,7 +746,7 @@ std::shared_ptr<CClientRigidBodyConfig> UTIL_CreateEmptyRigidBodyConfig()
 {
 	auto pNewConfig = std::make_shared<CClientRigidBodyConfig>();
 
-	pNewConfig->name = std::format("UnnamedRigidBody ({0})", pNewConfig->configId);
+	pNewConfig->name = std::format("UnnamedRigidBody_{0}", pNewConfig->configId);
 	pNewConfig->configModified = true;
 
 	pNewConfig->collisionShape = UTIL_CreateEmptyCollisionShapeConfig();

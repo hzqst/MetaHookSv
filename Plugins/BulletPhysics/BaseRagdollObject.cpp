@@ -16,7 +16,7 @@ CBaseRagdollObject::CBaseRagdollObject(const CPhysicObjectCreationParameter& Cre
 
 CBaseRagdollObject::~CBaseRagdollObject()
 {
-	DispatchFreePhysicComponents(m_PhysicComponents);
+	DispatchRemovePhysicComponents(m_PhysicComponents);
 }
 
 int CBaseRagdollObject::GetEntityIndex() const
@@ -601,7 +601,7 @@ void CBaseRagdollObject::ReleaseFromBarnacle()
 
 	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
 
-	FreePhysicComponentsWithFilters(filters);
+	RemovePhysicComponentsWithFilters(filters);
 }
 
 void CBaseRagdollObject::ApplyGargantua(IPhysicObject* pGargantuaObject)
@@ -623,7 +623,7 @@ void CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* ent
 {
 	for (const auto& AnimControlConfig : m_AnimControlConfigs)
 	{
-		if (AnimControlConfig->gaitsequence == 0)
+		if (AnimControlConfig->gaitsequence == -1)
 		{
 			if (entstate->sequence == AnimControlConfig->sequence)
 			{
@@ -687,9 +687,9 @@ void CBaseRagdollObject::RemovePhysicComponentsFromPhysicWorld(void* world, cons
 	}
 }
 
-void CBaseRagdollObject::FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
+void CBaseRagdollObject::RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
 {
-	DispatchFreePhysicCompoentsWithFilters(m_PhysicComponents, filters);
+	DispatchRemovePhysicCompoentsWithFilters(m_PhysicComponents, filters);
 }
 
 void CBaseRagdollObject::TransferOwnership(int entindex)

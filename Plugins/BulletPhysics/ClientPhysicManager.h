@@ -338,7 +338,7 @@ public:
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
 	virtual void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;
-	virtual void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) = 0;
+	virtual void RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) = 0;
 	virtual IPhysicComponent* GetPhysicComponentByName(const std::string& name) = 0;
 	virtual IPhysicComponent* GetPhysicComponentByComponentId(int id) = 0;
 	virtual IPhysicRigidBody* GetRigidBodyByName(const std::string& name) = 0;
@@ -491,7 +491,7 @@ public:
 	virtual int AllocatePhysicComponentId() = 0;
 	virtual IPhysicComponent *GetPhysicComponent(int physicComponentId) = 0;
 	virtual void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) = 0;
-	virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
+	//virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
 	//Inspection / Selection System

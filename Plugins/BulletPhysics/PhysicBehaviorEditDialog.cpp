@@ -382,19 +382,20 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 	switch (type)
 	{
 	case PhysicBehavior_BarnacleDragForce: {
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleDragForceMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleDragForceExtraHeight);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragForceMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragForceExtraHeight);
 		break;
 	}
 	case PhysicBehavior_BarnacleChewForce: {
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleChewForceMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleChewForceInterval);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewForceMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewForceInterval);
 		break;
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment: {
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentExtraHeight);
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentInterval);
-		LOAD_FACTOR_INTO_LISTPANEL(BarnacleConstraintLimitAdjustmentAxis);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentExtraHeight);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentInterval);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentAxis);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentBarnacleSequence);
 		break;
 	}
 	case PhysicBehavior_FirstPersonViewCamera:
@@ -405,9 +406,9 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 		break;
 	}
 	case PhysicBehavior_SimpleBuoyancy: {
-		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyLinearDrag);
-		LOAD_FACTOR_INTO_LISTPANEL(SimpleBuoyancyAngularDrag);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyLinearDrag);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyAngularDrag);
 		break;
 	}
 	default: {

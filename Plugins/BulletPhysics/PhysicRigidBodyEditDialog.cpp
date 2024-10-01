@@ -45,13 +45,20 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 	m_pCCDThreshold = new vgui::TextEntry(this, "CCDThreshold");
 	m_pLinearSleepingThreshold = new vgui::TextEntry(this, "LinearSleepingThreshold");
 	m_pAngularSleepingThreshold = new vgui::TextEntry(this, "AngularSleepingThreshold");
-	m_pAlwaysDynamic = new vgui::CheckButton(this, "AlwaysDynamic", "#BulletPhysics_AlwaysDynamic");
-	m_pAlwaysKinematic = new vgui::CheckButton(this, "AlwaysKinematic", "#BulletPhysics_AlwaysKinematic");
-	m_pAlwaysStatic = new vgui::CheckButton(this, "AlwaysStatic", "#BulletPhysics_AlwaysStatic");
-	m_pNoCollisionToWorld = new vgui::CheckButton(this, "NoCollisionToWorld", "#BulletPhysics_NoCollisionToWorld");
-	m_pNoCollisionToStaticObject = new vgui::CheckButton(this, "NoCollisionToStaticObject", "#BulletPhysics_NoCollisionToStaticObject");
-	m_pNoCollisionToDynamicObject = new vgui::CheckButton(this, "NoCollisionToDynamicObject", "#BulletPhysics_NoCollisionToDynamicObject");
-	m_pNoCollisionToRagdollObject = new vgui::CheckButton(this, "NoCollisionToRagdollObject", "#BulletPhysics_NoCollisionToRagdollObject");
+
+#define CREATE_CHECK_BUTTON(name) m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name);
+	CREATE_CHECK_BUTTON(AlwaysDynamic);
+	CREATE_CHECK_BUTTON(AlwaysKinematic);
+	CREATE_CHECK_BUTTON(AlwaysStatic);
+	CREATE_CHECK_BUTTON(InvertStateOnIdle);
+	CREATE_CHECK_BUTTON(InvertStateOnDeath);
+	CREATE_CHECK_BUTTON(InvertStateOnCaughtByBarnacle);
+	CREATE_CHECK_BUTTON(InvertStateOnBarnacleCatching);
+	CREATE_CHECK_BUTTON(NoCollisionToWorld);
+	CREATE_CHECK_BUTTON(NoCollisionToStaticObject);
+	CREATE_CHECK_BUTTON(NoCollisionToDynamicObject);
+	CREATE_CHECK_BUTTON(NoCollisionToRagdollObject);
+#undef CREATE_CHECK_BUTTON
 
 	vgui::HFont hFallbackFont = vgui::scheme()->GetIScheme(GetScheme())->GetFont("DefaultVerySmallFallBack", false);
 
@@ -265,6 +272,10 @@ void CPhysicRigidBodyEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_CHECK_BUTTON(flags, AlwaysDynamic);
 	LOAD_INTO_CHECK_BUTTON(flags, AlwaysKinematic);
 	LOAD_INTO_CHECK_BUTTON(flags, AlwaysStatic);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnIdle);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnDeath);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnacleCatching);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToWorld);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
@@ -304,6 +315,10 @@ void CPhysicRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_CHECK_BUTTON(flags, AlwaysDynamic);
 	SAVE_FROM_CHECK_BUTTON(flags, AlwaysKinematic);
 	SAVE_FROM_CHECK_BUTTON(flags, AlwaysStatic);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnIdle);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnDeath);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnacleCatching);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToWorld);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToDynamicObject);

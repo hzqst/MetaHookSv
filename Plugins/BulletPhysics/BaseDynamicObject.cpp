@@ -11,7 +11,7 @@ CBaseDynamicObject::CBaseDynamicObject(const CPhysicObjectCreationParameter& Cre
 
 CBaseDynamicObject::~CBaseDynamicObject()
 {
-	DispatchFreePhysicComponents(m_PhysicComponents);
+	DispatchRemovePhysicComponents(m_PhysicComponents);
 }
 
 int CBaseDynamicObject::GetEntityIndex() const
@@ -247,9 +247,9 @@ void CBaseDynamicObject::RemovePhysicComponentsFromPhysicWorld(void* world, cons
 	}
 }
 
-void CBaseDynamicObject::FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
+void CBaseDynamicObject::RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
 {
-	DispatchFreePhysicCompoentsWithFilters(m_PhysicComponents, filters);
+	DispatchRemovePhysicCompoentsWithFilters(m_PhysicComponents, filters);
 }
 
 void CBaseDynamicObject::TransferOwnership(int entindex)

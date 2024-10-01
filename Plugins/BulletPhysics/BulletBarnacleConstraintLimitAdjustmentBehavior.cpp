@@ -3,7 +3,7 @@
 CBulletBarnacleConstraintLimitAdjustmentBehavior::CBulletBarnacleConstraintLimitAdjustmentBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	int iBarnacleIndex, float flInterval, float flExtraHeight, int iLimitAxis) :
+	int iBarnacleIndex, float flInterval, float flExtraHeight, int iLimitAxis, int iBarnacleSequence) :
 
 	CBulletPhysicComponentBehavior(
 		id,
@@ -15,7 +15,8 @@ CBulletBarnacleConstraintLimitAdjustmentBehavior::CBulletBarnacleConstraintLimit
 	m_iBarnacleIndex(iBarnacleIndex),
 	m_flInterval(flInterval),
 	m_flExtraHeight(flExtraHeight),
-	m_iLimitAxis(iLimitAxis)
+	m_iLimitAxis(iLimitAxis),
+	m_iBarnacleSequence(iBarnacleSequence)
 {
 
 }
@@ -54,7 +55,7 @@ void CBulletBarnacleConstraintLimitAdjustmentBehavior::Update(CPhysicComponentUp
 		return;
 	}
 
-	if (pBarnacleObject->GetClientEntityState()->sequence == 5)
+	if (pBarnacleObject->GetClientEntityState()->sequence == m_iBarnacleSequence)
 	{
 		if (gEngfuncs.GetClientTime() > m_flNextAdjustmentTime)
 		{

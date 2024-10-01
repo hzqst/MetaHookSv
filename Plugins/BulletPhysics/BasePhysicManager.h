@@ -92,8 +92,8 @@ public:
 	int AllocatePhysicComponentId() override; 
 	IPhysicComponent* GetPhysicComponent(int physicComponentId) override;
 	void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) override;
-	void FreePhysicComponent(IPhysicComponent* pPhysicComponent) override;
 	bool RemovePhysicComponent(int physicComponentId) override;
+	void FreePhysicComponent(IPhysicComponent* pPhysicComponent);
 
 	//Inspect / Select System
 
@@ -176,8 +176,8 @@ IPhysicConstraint* DispatchGetConstraintByComponentId(const std::vector<IPhysicC
 IPhysicBehavior* DispatchGetPhysicBehaviorByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
 IPhysicBehavior* DispatchGetPhysicBehaviorByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
 void DispatchAddPhysicComponent(std::vector<IPhysicComponent*>& PhysicComponents, IPhysicComponent* pPhysicComponent);
-void DispatchFreePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents);
-void DispatchFreePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters);
+void DispatchRemovePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents);
+void DispatchRemovePhysicCompoentsWithFilters(std::vector<IPhysicComponent*>& PhysicComponents, const CPhysicComponentFilters& filters);
 
 void DispatchBuildPhysicComponents(
 	const CPhysicObjectCreationParameter& CreationParam,

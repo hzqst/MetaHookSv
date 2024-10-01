@@ -33,7 +33,7 @@ public:
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
-	void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
+	void RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
 	void TransferOwnership(int entindex) override;
 	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override;
 	IPhysicComponent* GetPhysicComponentByComponentId(int id) override;

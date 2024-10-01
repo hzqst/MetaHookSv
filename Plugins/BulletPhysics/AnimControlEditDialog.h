@@ -36,6 +36,8 @@ private:
 
 	int GetCurrentSelectedSequence(vgui::ComboBox* pComboBox);
 
+	StudioAnimActivityType GetCurrentSelectedActivityType(vgui::ComboBox* pComboBox);
+
 private:
 	vgui::ComboBox* m_pSequence{};
 	vgui::ComboBox* m_pGaitSequence{};

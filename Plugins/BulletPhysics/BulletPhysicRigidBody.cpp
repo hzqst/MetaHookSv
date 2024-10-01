@@ -59,7 +59,7 @@ CBulletPhysicRigidBody::~CBulletPhysicRigidBody()
 
 			if (pConstraint)
 			{
-				ClientPhysicManager()->FreePhysicComponent(pConstraint);
+				ClientPhysicManager()->RemovePhysicComponent(pConstraint->GetPhysicComponentId());
 			}
 		}
 

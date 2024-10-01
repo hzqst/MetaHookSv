@@ -12,7 +12,7 @@ CBaseStaticObject::CBaseStaticObject(const CPhysicObjectCreationParameter& Creat
 
 CBaseStaticObject::~CBaseStaticObject()
 {
-	DispatchFreePhysicComponents(m_PhysicComponents);
+	DispatchRemovePhysicComponents(m_PhysicComponents);
 }
 
 int CBaseStaticObject::GetEntityIndex() const
@@ -238,9 +238,9 @@ void CBaseStaticObject::RemovePhysicComponentsFromPhysicWorld(void* world, const
 	}
 }
 
-void CBaseStaticObject::FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
+void CBaseStaticObject::RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters)
 {
-	DispatchFreePhysicCompoentsWithFilters(m_PhysicComponents, filters);
+	DispatchRemovePhysicCompoentsWithFilters(m_PhysicComponents, filters);
 }
 
 void CBaseStaticObject::TransferOwnership(int entindex)

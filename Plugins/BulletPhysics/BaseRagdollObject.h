@@ -45,7 +45,7 @@ public:
 	void SetDebugAnimEnabled(bool bEnabled) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
-	void FreePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
+	void RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;
 	void TransferOwnership(int entindex) override;
 	IPhysicComponent* GetPhysicComponentByName(const std::string& name) override;
 	IPhysicComponent* GetPhysicComponentByComponentId(int id) override;

@@ -227,6 +227,8 @@ void CAnimControlEditDialog::SaveConfigFromControls()
 	m_pAnimControlConfig->sequence = GetCurrentSelectedSequence(m_pSequence);
 	m_pAnimControlConfig->gaitsequence = GetCurrentSelectedSequence(m_pGaitSequence);
 
+	m_pAnimControlConfig->activity = GetCurrentSelectedActivityType(m_pActivityType);
+
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) { \
         m_p##from->GetText(szText, sizeof(szText)); \
         m_pAnimControlConfig->to = processor(szText); \
@@ -261,4 +263,18 @@ int CAnimControlEditDialog::GetCurrentSelectedSequence(vgui::ComboBox* pComboBox
 	}
 
 	return sequence;
+}
+
+StudioAnimActivityType CAnimControlEditDialog::GetCurrentSelectedActivityType(vgui::ComboBox* pComboBox)
+{
+	StudioAnimActivityType activityType = StudioAnimActivityType_Idle;
+
+	auto kv = pComboBox->GetActiveItemUserData();
+
+	if (kv)
+	{
+		activityType = (StudioAnimActivityType)kv->GetInt("activityType", StudioAnimActivityType_Idle);
+	}
+
+	return activityType;
 }

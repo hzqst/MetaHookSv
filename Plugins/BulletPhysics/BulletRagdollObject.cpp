@@ -476,7 +476,8 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			m_iBarnacleIndex,
 					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
 					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
-				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
+				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis],
+				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentBarnacleSequence]);
 	}
 	case PhysicBehavior_FirstPersonViewCamera:
 	{
