@@ -249,9 +249,6 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	SetupNonKeyBones(CreationParam);
 
-	//InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	//InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
-
 	return true;
 }
 
@@ -350,7 +347,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ObjectUpdateContext->m_bRigidbodyUpdateBonesRequired = true;
 	}
 
-	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
+	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext, false);
 
 	//Reset all rigidbodies with pose-reset bonematrix, this consumes a large amount of CPU resources so take it carefully
 	if (ObjectUpdateContext->m_bRigidbodyResetPoseRequired && !ObjectUpdateContext->m_bRigidbodyPoseChanged)
@@ -560,6 +557,9 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_Barnacle))
 			continue;
 
+		if ((pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
 		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
 
 		if (pConstraint)
@@ -582,6 +582,25 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 			AddPhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, pPhysicBehavior);
 		}
 	}
+
+	for (const auto& pConstraintConfig : m_ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_Barnacle))
+			continue;
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
+		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+		if (pConstraint)
+		{
+			AddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+		}
+	}
+
 }
 
 void CBaseRagdollObject::ReleaseFromBarnacle()
@@ -749,26 +768,26 @@ IPhysicRigidBody* CBaseRagdollObject::FindRigidBodyByName(const std::string& nam
 	{
 		if (name.starts_with("@barnacle.") && m_iBarnacleIndex)
 		{
-			auto findName = name.substr(sizeof("@barnacle.") - 1);
+			auto rigidBodyName = name.substr(sizeof("@barnacle.") - 1);
 
 			auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 
 			if (pBarnacleObject)
 			{
-				return pBarnacleObject->GetRigidBodyByName(findName);
+				return pBarnacleObject->GetRigidBodyByName(rigidBodyName);
 			}
 
 			return nullptr;
 		}
 		else if (name.starts_with("@gargantua.") && m_iGargantuaIndex)
 		{
-			auto findName = name.substr(sizeof("@gargantua.") - 1);
+			auto rigidBodyName = name.substr(sizeof("@gargantua.") - 1);
 
 			auto pGargantuaObject = ClientPhysicManager()->GetPhysicObject(m_iGargantuaIndex);
 
 			if (pGargantuaObject)
 			{
-				return pGargantuaObject->GetRigidBodyByName(findName);
+				return pGargantuaObject->GetRigidBodyByName(rigidBodyName);
 			}
 
 			return nullptr;

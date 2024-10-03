@@ -100,8 +100,20 @@ void CPhysicCollisionShapeEditDialog::OnCommand(const char* command)
 		PostActionSignal(new KeyValues("RefreshCollisionShape", "configId", m_pCollisionShapeConfig->configId));
 		return;
 	}
-
-	BaseClass::OnCommand(command);
+	else if (!stricmp(command, "CloseModalDialogs"))
+	{
+		for (int i = 0; i < GetChildCount(); i++)
+		{
+			auto pChild = GetChild(i);
+			PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+		}
+		Close();
+		return;
+	}
+	else
+	{
+		BaseClass::OnCommand(command);
+	}
 }
 
 void CPhysicCollisionShapeEditDialog::LoadAvailableShapesIntoControl(vgui::ComboBox* pComboBox)

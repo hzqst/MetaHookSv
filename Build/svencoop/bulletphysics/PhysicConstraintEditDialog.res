@@ -542,16 +542,29 @@
         "textAlignment"     "west"
     }
 
-    "DeactiveOnBarnacleCatchingActivity"
+    "DeactiveOnBarnaclePullingActivity"
     {
         "ControlName"       "CheckButton"
-        "fieldName"         "DeactiveOnBarnacleCatchingActivity"
+        "fieldName"         "DeactiveOnBarnaclePullingActivity"
         "xpos"              "290"
         "ypos"              "450"  // Adjusted from 390
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "30"
-        "labelText"         "#BulletPhysics_DeactiveOnBarnacleCatchingActivity"
+        "labelText"         "#BulletPhysics_DeactiveOnBarnaclePullingActivity"
+        "textAlignment"     "west"
+    }
+
+    "DeactiveOnBarnacleChewingActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnBarnacleChewingActivity"
+        "xpos"              "20"
+        "ypos"              "480"  // Adjusted from 420
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "31"
+        "labelText"         "#BulletPhysics_DeactiveOnBarnacleChewingActivity"
         "textAlignment"     "west"
     }
 
@@ -559,12 +572,25 @@
     {
         "ControlName"       "CheckButton"
         "fieldName"         "DontResetPoseOnErrorCorrection"
-        "xpos"              "20"
+        "xpos"              "290"
         "ypos"              "480"  // Adjusted from 420
         "wide"              "250"
         "tall"              "24"
-        "tabPosition"       "31"
+        "tabPosition"       "32"
         "labelText"         "#BulletPhysics_DontResetPoseOnErrorCorrection"
+        "textAlignment"     "west"
+    }
+
+    "DeferredCreate"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeferredCreate"
+        "xpos"              "20"
+        "ypos"              "510"  // Adjusted from 420
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "32"
+        "labelText"         "#BulletPhysics_DeferredCreate"
         "textAlignment"     "west"
     }
 
@@ -589,7 +615,7 @@
     {
         "ControlName"       "Button"
         "fieldName"         "OK"
-        "xpos"              "180"
+        "xpos"              "220"
         "ypos"              "520"
         "wide"              "72"
         "tall"              "24"
@@ -597,7 +623,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "24"
+        "tabPosition"       "33"
         "labelText"         "#GameUI_OK"
         "textAlignment"     "west"
         "dulltext"          "0"
@@ -608,7 +634,7 @@
     {
         "ControlName"       "Button"
         "fieldName"         "Cancel"
-        "xpos"              "260"
+        "xpos"              "300"
         "ypos"              "520"
         "wide"              "72"
         "tall"              "24"
@@ -616,7 +642,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "25"
+        "tabPosition"       "34"
         "labelText"         "#GameUI_Cancel"
         "textAlignment"     "west"
         "dulltext"          "0"
@@ -627,7 +653,7 @@
     {
         "ControlName"       "Button"
         "fieldName"         "Apply"
-        "xpos"              "340"
+        "xpos"              "380"
         "ypos"              "520"
         "wide"              "72"
         "tall"              "24"
@@ -635,7 +661,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "26"
+        "tabPosition"       "35"
         "labelText"         "#GameUI_Apply"
         "textAlignment"     "west"
         "dulltext"          "0"

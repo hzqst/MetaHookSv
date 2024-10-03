@@ -56,7 +56,13 @@ void CBulletRagdollConstraint::Update(CPhysicComponentUpdateContext* ComponentUp
 			break;
 		}
 
-		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleCatching && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleCatchingActivity))
+		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling && (m_flags & PhysicConstraintFlag_DeactiveOnBarnaclePullingActivity))
+		{
+			bDeactivate = true;
+			break;
+		}
+
+		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing && (m_flags & PhysicConstraintFlag_DeactiveOnBarnacleChewingActivity))
 		{
 			bDeactivate = true;
 			break;

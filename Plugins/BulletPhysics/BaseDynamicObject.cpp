@@ -190,7 +190,7 @@ bool CBaseDynamicObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 void CBaseDynamicObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
-	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
+	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext, false);
 }
 
 bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr, int flags)

@@ -43,6 +43,8 @@ public:
 	IPhysicBehavior* GetPhysicBehaviorByName(const std::string& name) override;
 	IPhysicBehavior* GetPhysicBehaviorByComponentId(int id) override;
 
+	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody) override;
+
 	virtual IPhysicRigidBody* CreateRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, int physicComponentId) = 0;
 	virtual IPhysicConstraint* CreateConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, int physicComponentId) = 0;
 	virtual IPhysicBehavior* CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId) = 0;

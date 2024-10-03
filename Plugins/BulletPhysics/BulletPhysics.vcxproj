@@ -286,9 +286,11 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="BasePhysicRigidBody.cpp" />
     <ClCompile Include="BaseRagdollObject.cpp" />
     <ClCompile Include="BaseStaticObject.cpp" />
-    <ClCompile Include="BulletBarnacleChewForceBehavior.cpp" />
+    <ClCompile Include="BulletBarnacleChewBehavior.cpp" />
     <ClCompile Include="BulletBarnacleConstraintLimitAdjustmentBehavior.cpp" />
-    <ClCompile Include="BulletBarnacleDragForceBehavior.cpp" />
+    <ClCompile Include="BulletBarnacleDragOnRigidBodyBehavior.cpp" />
+    <ClCompile Include="BulletBarnacleDragOnConstraintBehavior.cpp" />
+    <ClCompile Include="BulletRigidBodyRelocationBehavior.cpp" />
     <ClCompile Include="BulletThirdPersonViewCameraBehavior.cpp" />
     <ClCompile Include="BulletCameraViewBehavior.cpp" />
     <ClCompile Include="BulletDynamicConstraint.cpp" />
@@ -348,9 +350,11 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="BasePhysicRigidBody.h" />
     <ClInclude Include="BaseRagdollObject.h" />
     <ClInclude Include="BaseStaticObject.h" />
-    <ClInclude Include="BulletBarnacleChewForceBehavior.h" />
+    <ClInclude Include="BulletBarnacleChewBehavior.h" />
     <ClInclude Include="BulletBarnacleConstraintLimitAdjustmentBehavior.h" />
-    <ClInclude Include="BulletBarnacleDragForceBehavior.h" />
+    <ClInclude Include="BulletBarnacleDragOnRigidBodyBehavior.h" />
+    <ClInclude Include="BulletBarnacleDragOnConstraintBehavior.h" />
+    <ClInclude Include="BulletRigidBodyRelocationBehavior.h" />
     <ClInclude Include="BulletThirdPersonViewCameraBehavior.h" />
     <ClInclude Include="BulletCameraViewBehavior.h" />
     <ClInclude Include="BulletDynamicConstraint.h" />

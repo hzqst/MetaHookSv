@@ -87,27 +87,6 @@
     }
 
     // RigidBody and Constraint on the same row
-    "RigidBodyLabel"
-    {
-        "ControlName"   "Label"
-        "fieldName"     "RigidBodyLabel"
-        "xpos"          "20"
-        "ypos"          "120"
-        "wide"          "60"
-        "tall"          "24"
-        "labelText"     "#BulletPhysics_RigidBody"
-        "textAlignment" "west"
-    }
-    "RigidBody"
-    {
-        "ControlName"   "ComboBox"
-        "fieldName"     "RigidBody"
-        "xpos"          "80"
-        "ypos"          "120"
-        "wide"          "180"
-        "tall"          "24"
-        "tabPosition"   "4"
-    }
     "ConstraintLabel"
     {
         "ControlName"   "Label"
@@ -127,7 +106,50 @@
         "ypos"          "120"
         "wide"          "360"
         "tall"          "24"
+        "tabPosition"   "4"
+    }
+    "RigidBodyALabel"
+    {
+        "ControlName"   "Label"
+        "fieldName"     "RigidBodyALabel"
+        "xpos"          "20"
+        "ypos"          "120"
+        "wide"          "60"
+        "tall"          "24"
+        "labelText"     "#BulletPhysics_RigidBodyA"
+        "textAlignment" "west"
+    }
+    "RigidBodyA"
+    {
+        "ControlName"   "ComboBox"
+        "fieldName"     "RigidBodyA"
+        "xpos"          "80"
+        "ypos"          "120"
+        "wide"          "180"
+        "tall"          "24"
         "tabPosition"   "5"
+    }
+    // RigidBody and Constraint on the same row
+    "RigidBodyBLabel"
+    {
+        "ControlName"   "Label"
+        "fieldName"     "RigidBodyBLabel"
+        "xpos"          "20"
+        "ypos"          "160"
+        "wide"          "60"
+        "tall"          "24"
+        "labelText"     "#BulletPhysics_RigidBodyB"
+        "textAlignment" "west"
+    }
+    "RigidBodyB"
+    {
+        "ControlName"   "ComboBox"
+        "fieldName"     "RigidBodyB"
+        "xpos"          "80"
+        "ypos"          "160"
+        "wide"          "180"
+        "tall"          "24"
+        "tabPosition"   "6"
     }
 
     // OriginX, OriginY, OriginZ on the same row
@@ -136,7 +158,7 @@
         "ControlName"   "Label"
         "fieldName"     "OriginLabel"
         "xpos"          "20"
-        "ypos"          "160"
+        "ypos"          "200"
         "wide"          "60"
         "tall"          "24"
         "labelText"     "#BulletPhysics_Origin"
@@ -147,30 +169,30 @@
         "ControlName"   "TextEntry"
         "fieldName"     "OriginX"
         "xpos"          "80"
-        "ypos"          "160"
+        "ypos"          "200"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "6"
+        "tabPosition"   "7"
     }
     "OriginY"
     {
         "ControlName"   "TextEntry"
         "fieldName"     "OriginY"
         "xpos"          "140"
-        "ypos"          "160"
+        "ypos"          "200"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "7"
+        "tabPosition"   "8"
     }
     "OriginZ"
     {
         "ControlName"   "TextEntry"
         "fieldName"     "OriginZ"
         "xpos"          "200"
-        "ypos"          "160"
+        "ypos"          "200"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "8"
+        "tabPosition"   "9"
     }
 
     // AnglesX, AnglesY, AnglesZ on the same row
@@ -179,7 +201,7 @@
         "ControlName"   "Label"
         "fieldName"     "AnglesLabel"
         "xpos"          "20"
-        "ypos"          "200"
+        "ypos"          "240"
         "wide"          "60"
         "tall"          "24"
         "labelText"     "#BulletPhysics_Angles"
@@ -190,30 +212,30 @@
         "ControlName"   "TextEntry"
         "fieldName"     "AnglesX"
         "xpos"          "80"
-        "ypos"          "200"
+        "ypos"          "240"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "9"
+        "tabPosition"   "10"
     }
     "AnglesY"
     {
         "ControlName"   "TextEntry"
         "fieldName"     "AnglesY"
         "xpos"          "140"
-        "ypos"          "200"
+        "ypos"          "240"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "10"
+        "tabPosition"   "1110"
     }
     "AnglesZ"
     {
         "ControlName"   "TextEntry"
         "fieldName"     "AnglesZ"
         "xpos"          "200"
-        "ypos"          "200"
+        "ypos"          "240"
         "wide"          "50"
         "tall"          "24"
-        "tabPosition"   "11"
+        "tabPosition"   "12"
     }
 
     // Barnacle and Gargantua CheckButtons on the same row
@@ -222,10 +244,10 @@
         "ControlName"   "CheckButton"
         "fieldName"     "Barnacle"
         "xpos"          "20"
-        "ypos"          "240"
+        "ypos"          "280"
         "wide"          "250"
         "tall"          "24"
-        "tabPosition"   "12"
+        "tabPosition"   "13"
         "labelText"     "#BulletPhysics_Barnacle"
         "textAlignment" "west"
     }
@@ -234,10 +256,10 @@
         "ControlName"   "CheckButton"
         "fieldName"     "Gargantua"
         "xpos"          "290"
-        "ypos"          "240"
+        "ypos"          "280"
         "wide"          "250"
         "tall"          "24"
-        "tabPosition"   "13"
+        "tabPosition"   "14"
         "labelText"     "#BulletPhysics_Gargantua"
         "textAlignment" "west"
     }
@@ -248,14 +270,14 @@
         "ControlName"   "ListPanel"
         "fieldName"     "PhysicFactorListPanel"
         "xpos"          "20"
-        "ypos"          "280"
+        "ypos"          "320"
         "wide"          "480"
-        "tall"          "220"  // Height adjusted to avoid overlapping with buttons
+        "tall"          "180"  // Height adjusted to avoid overlapping with buttons
         "autoResize"    "3"
         "pinCorner"     "3"
         "visible"       "1"
         "enabled"       "1"
-        "tabPosition"   "0"
+        "tabPosition"   "15"
         "paintbackground" "1"
     }
 
@@ -268,7 +290,7 @@
         "ypos"          "520"
         "wide"          "72"
         "tall"          "24"
-        "tabPosition"   "14"
+        "tabPosition"   "16"
 		"pinCorner"		"3"
         "labelText"     "#GameUI_OK"
         "command"       "OK"
@@ -282,7 +304,7 @@
         "ypos"          "520"
         "wide"          "72"
         "tall"          "24"
-        "tabPosition"   "15"
+        "tabPosition"   "17"
 		"pinCorner"		"3"
         "labelText"     "#GameUI_Cancel"
         "command"       "Close"
@@ -295,7 +317,7 @@
         "ypos"          "520"
         "wide"          "72"
         "tall"          "24"
-        "tabPosition"   "16"
+        "tabPosition"   "18"
 		"pinCorner"		"3"
         "labelText"     "#GameUI_Apply"
         "command"       "Apply"

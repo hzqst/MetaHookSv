@@ -311,6 +311,15 @@ void CPhysicDebugGUI::NewMap()
 	SetVisible(false);
 }
 
+void CPhysicDebugGUI::ConnectToServer(const char* game, int IP, int port)
+{
+	for (int i = 0; i < GetChildCount(); i++)
+	{
+		auto pChild = GetChild(i);
+		PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+	}
+}
+
 void CPhysicDebugGUI::UpdateInspectStuffs()
 {
 	ClientEntityManager()->SetInspectedEntityIndex(0);
@@ -999,10 +1008,10 @@ bool CPhysicDebugGUI::UpdateInspectedPhysicBehavior(bool bSelected)
 			{
 				auto str2 = std::format(L"[{0}] ", vgui::localize()->Find("#BulletPhysics_Config"));
 
-				if (pPhysicBehaviorConfig->rigidbody.size() > 0)
+				if (pPhysicBehaviorConfig->rigidbodyA.size() > 0)
 				{
 					wchar_t wszRigidBodyName[64] = { 0 };
-					vgui::localize()->ConvertANSIToUnicode(pPhysicBehaviorConfig->rigidbody.c_str(), wszRigidBodyName, sizeof(wszRigidBodyName));
+					vgui::localize()->ConvertANSIToUnicode(pPhysicBehaviorConfig->rigidbodyA.c_str(), wszRigidBodyName, sizeof(wszRigidBodyName));
 
 					str2 += std::format(L"{0}: {1} / {2}: ({3:.2f}, {4:.2f}, {5:.2f}) / {6}: ({7:.2f}, {8:.2f}, {9:.2f}) ",
 						vgui::localize()->Find("#BulletPhysics_RigidBody"),
@@ -1714,7 +1723,7 @@ bool CPhysicDebugGUI::OpenEditPhysicObjectDialog(uint64 physicObjectId)
 		return false;
 
 	auto dialog = new CPhysicEditorDialog(this, "PhysicEditorDialog", physicObjectId, pPhysicConfig);
-	dialog->AddActionSignalTarget(this);
+	AddActionSignalTarget(dialog);
 	dialog->DoModal(); 
 	
 	return true;
@@ -1731,7 +1740,7 @@ bool CPhysicDebugGUI::OpenEditPhysicObjectDialogEx(uint64 physicObjectId, int ph
 		return false;
 
 	auto dialog = new CPhysicEditorDialog(this, "PhysicEditorDialog", physicObjectId, pPhysicConfig);
-	dialog->AddActionSignalTarget(this);
+	AddActionSignalTarget(dialog);
 	dialog->DoModal();
 
 	return true;

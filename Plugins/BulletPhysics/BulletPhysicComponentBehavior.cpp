@@ -14,9 +14,9 @@ CBulletPhysicComponentBehavior::CBulletPhysicComponentBehavior(
 		pPhysicBehaviorConfig,
 		attachedPhysicComponentId)
 {
-	btVector3 vecOrigin(m_origin[0], m_origin[1], m_origin[2]);
+	btVector3 vecOrigin = GetVector3FromVec3(m_origin);
 
-	btVector3 vecAngles(m_angles[0], m_angles[1], m_angles[2]);
+	btVector3 vecAngles = GetVector3FromVec3(m_angles);
 
 	Vector3GoldSrcToBullet(vecOrigin);
 

@@ -8,7 +8,7 @@ public:
 	CBulletBarnacleConstraintLimitAdjustmentBehavior(
 		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysixBehaviorConfig,
 		int attachedPhysicComponentId,
-		int iBarnacleIndex, float flInterval, float flExtraHeight, int iLimitAxis, int iBarnacleSequence);
+		int iBarnacleIndex, float flExtraHeight, float flInterval, int iLimitAxis);
 
 	const char* GetTypeString() const override;
 	const char* GetTypeLocalizationTokenString() const override;
@@ -16,9 +16,8 @@ public:
 
 private:
 	int m_iBarnacleIndex{ 0 };
-	float m_flInterval{ 1 };
 	float m_flExtraHeight{ 0 };
+	float m_flInterval{ 1 };
 	int m_iLimitAxis{ -1 };
-	int m_iBarnacleSequence{ 5 };
 	float m_flNextAdjustmentTime{ 0 };
 };

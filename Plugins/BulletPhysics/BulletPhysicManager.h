@@ -251,7 +251,7 @@ btTypedConstraint* BulletCreateConstraintFromLocalJointTransform(const CClientCo
 btCollisionShape* BulletCreateCollisionShape(const CClientRigidBodyConfig* pRigidConfig);
 btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidConfig, IPhysicObject* pPhysicObject);
 
-IPhysicBehavior* DispatchBulletCreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId);
+IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject *pPhysicObject, const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId);
 
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform& trans);
 void TransformToMatrix3x4(const btTransform& trans, float matrix3x4[3][4]);

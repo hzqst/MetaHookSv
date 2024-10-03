@@ -310,6 +310,29 @@ bool CBulletPhysicRigidBody::GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t 
 	return true;
 }
 
+bool CBulletPhysicRigidBody::SetGoldSrcOriginAngles(const float* origin, const float* angles)
+{
+	btVector3 vecOrigin = GetVector3FromVec3(origin);
+
+	Vector3GoldSrcToBullet(vecOrigin);
+
+	btTransform worldTrans;
+
+	worldTrans.setIdentity();
+
+	worldTrans.setOrigin(vecOrigin);
+
+	btVector3 vecAngles = GetVector3FromVec3(angles);
+
+	EulerMatrix(vecAngles, worldTrans.getBasis());
+
+	m_pInternalRigidBody->setWorldTransform(worldTrans);
+	m_pInternalRigidBody->setInterpolationWorldTransform(worldTrans);
+	m_pInternalRigidBody->getMotionState()->setWorldTransform(worldTrans);
+
+	return true;
+}
+
 float CBulletPhysicRigidBody::GetMass() const
 {
 	return m_mass;

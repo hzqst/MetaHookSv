@@ -3,7 +3,7 @@
 CBulletBarnacleConstraintLimitAdjustmentBehavior::CBulletBarnacleConstraintLimitAdjustmentBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	int iBarnacleIndex, float flInterval, float flExtraHeight, int iLimitAxis, int iBarnacleSequence) :
+	int iBarnacleIndex, float flExtraHeight, float flInterval, int iLimitAxis) :
 
 	CBulletPhysicComponentBehavior(
 		id,
@@ -13,10 +13,9 @@ CBulletBarnacleConstraintLimitAdjustmentBehavior::CBulletBarnacleConstraintLimit
 		attachedPhysicComponentId),
 
 	m_iBarnacleIndex(iBarnacleIndex),
-	m_flInterval(flInterval),
 	m_flExtraHeight(flExtraHeight),
-	m_iLimitAxis(iLimitAxis),
-	m_iBarnacleSequence(iBarnacleSequence)
+	m_flInterval(flInterval),
+	m_iLimitAxis(iLimitAxis)
 {
 
 }
@@ -37,12 +36,21 @@ void CBulletBarnacleConstraintLimitAdjustmentBehavior::Update(CPhysicComponentUp
 
 	if (!pBarnacleObject)
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleConstraintLimitAdjustmentBehavior::Update: Invalid barnacle object!\n");
+		ComponentContext->m_bShouldFree = true;
+		return;
+	}
+
+	if (!pBarnacleObject->IsRagdollObject())
+	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleConstraintLimitAdjustmentBehavior::Update: Barnacle must be RagdollObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
 	if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleConstraintLimitAdjustmentBehavior::Update: Barnacle must have PhysicObjectFlag_Barnacle!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
@@ -51,11 +59,14 @@ void CBulletBarnacleConstraintLimitAdjustmentBehavior::Update(CPhysicComponentUp
 
 	if (!pConstraint)
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: The attached PhysicComponent must be a constraint!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (pBarnacleObject->GetClientEntityState()->sequence == m_iBarnacleSequence)
+	auto pBarnacleRagdollObject = (IRagdollObject*)pBarnacleObject;
+
+	if (pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
 	{
 		if (gEngfuncs.GetClientTime() > m_flNextAdjustmentTime)
 		{

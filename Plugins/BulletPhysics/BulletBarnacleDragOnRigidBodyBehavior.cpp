@@ -1,8 +1,8 @@
 #pragma once
 
-#include "BulletBarnacleDragForceBehavior.h"
+#include "BulletBarnacleDragOnRigidBodyBehavior.h"
 
-CBulletBarnacleDragForceBehavior::CBulletBarnacleDragForceBehavior(
+CBulletBarnacleDragOnRigidBodyBehavior::CBulletBarnacleDragOnRigidBodyBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
 	int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
@@ -21,46 +21,53 @@ CBulletBarnacleDragForceBehavior::CBulletBarnacleDragForceBehavior(
 
 }
 
-const char* CBulletBarnacleDragForceBehavior::GetTypeString() const
+const char* CBulletBarnacleDragOnRigidBodyBehavior::GetTypeString() const
 {
-	return "BarnacleDragForce";
-}
-const char* CBulletBarnacleDragForceBehavior::GetTypeLocalizationTokenString() const
-{
-	return "#BulletPhysics_BarnacleDragForce";
+	return "BarnacleDragOnRigidBody";
 }
 
-void CBulletBarnacleDragForceBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
+const char* CBulletBarnacleDragOnRigidBodyBehavior::GetTypeLocalizationTokenString() const
+{
+	return "#BulletPhysics_BarnacleDragOnRigidBody";
+}
+
+void CBulletBarnacleDragOnRigidBodyBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
 	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
 
 	if (!pBarnacleObject)
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Invalid barnacle object!\n");
+		ComponentContext->m_bShouldFree = true;
+		return;
+	}
+
+	if (!pBarnacleObject->IsRagdollObject())
+	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Barnacle must be RagdollObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
 	if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Barnacle must have PhysicObjectFlag_Barnacle!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
+
+	auto pBarnacleObjectR = (IRagdollObject*)pBarnacleObject;
 
 	auto pRigidBody = GetAttachedRigidBody();
 
 	if (!pRigidBody)
 	{
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: The attached PhysicComponent must be a rigidbody!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (pBarnacleObject->GetClientEntityState()->sequence == 5)
-	{
-		vec3_t vecForce = { 0, 0, m_flForceMagnitude };
-
-		pRigidBody->ApplyCentralForce(vecForce);
-	}
-	else
+	if (pBarnacleObjectR->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
 	{
 		vec3_t vecPhysicObjectOrigin{ 0 };
 
@@ -82,5 +89,11 @@ void CBulletBarnacleDragForceBehavior::Update(CPhysicComponentUpdateContext* Com
 				pRigidBody->ApplyCentralForce(vecForce);
 			}
 		}
+	}
+	else if (pBarnacleObjectR->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
+	{
+		vec3_t vecForce = { 0, 0, m_flForceMagnitude };
+
+		pRigidBody->ApplyCentralForce(vecForce);
 	}
 }

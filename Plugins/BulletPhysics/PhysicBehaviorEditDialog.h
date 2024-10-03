@@ -47,9 +47,9 @@ private:
 	void SaveRigidBodyFromControl(vgui::ComboBox* pComboBox, std::string& rigidBodyName);
 	void SaveConstraintFromControl(vgui::ComboBox* pComboBox, std::string& constraintName);
 	void SaveFactorsFromControl(vgui::ListPanel* pListPanel);;
-	int GetCurrentSelectedTypeIndex();
+	int GetCurrentSelectedTypeIndex(vgui::ComboBox* pComboBox);
 
-	void UpdateControlStates();
+	void UpdateControlStates(int type);
 
 	typedef vgui::Frame BaseClass;
 
@@ -57,8 +57,11 @@ private:
 	vgui::TextEntry* m_pDebugDrawLevel{};
 	vgui::ComboBox* m_pType{};
 
-	vgui::Label* m_pRigidBodyLabel{};
-	vgui::ComboBox* m_pRigidBody{};
+	vgui::Label* m_pRigidBodyALabel{};
+	vgui::ComboBox* m_pRigidBodyA{};
+
+	vgui::Label* m_pRigidBodyBLabel{};
+	vgui::ComboBox* m_pRigidBodyB{};
 
 	vgui::Label* m_pConstraintLabel{};
 	vgui::ComboBox* m_pConstraint{};

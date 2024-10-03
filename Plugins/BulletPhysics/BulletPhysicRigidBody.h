@@ -29,6 +29,7 @@ public:
 	void* GetInternalRigidBody() override;
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
 	bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float* angles) override;
+	bool SetGoldSrcOriginAngles(const float* origin, const float* angles) override;
 	float GetMass() const override;
 	bool GetAABB(vec3_t mins, vec3_t maxs) const override;
 

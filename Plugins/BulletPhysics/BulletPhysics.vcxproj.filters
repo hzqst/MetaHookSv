@@ -512,19 +512,25 @@
     <ClCompile Include="BulletCameraViewBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletBarnacleChewForceBehavior.cpp">
+    <ClCompile Include="BulletBarnacleChewBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BulletBarnacleConstraintLimitAdjustmentBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletBarnacleDragForceBehavior.cpp">
+    <ClCompile Include="BulletBarnacleDragOnRigidBodyBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BulletFirstPersonViewCameraBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="BulletThirdPersonViewCameraBehavior.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletBarnacleDragOnConstraintBehavior.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletRigidBodyRelocationBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -616,10 +622,10 @@
     <ClInclude Include="BasePhysicBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletBarnacleDragForceBehavior.h">
+    <ClInclude Include="BulletBarnacleDragOnRigidBodyBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="BulletBarnacleChewForceBehavior.h">
+    <ClInclude Include="BulletBarnacleChewBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BulletBarnacleConstraintLimitAdjustmentBehavior.h">
@@ -704,6 +710,12 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BulletThirdPersonViewCameraBehavior.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletBarnacleDragOnConstraintBehavior.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletRigidBodyRelocationBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

@@ -52,6 +52,7 @@ class CPhysicObjectUpdateContext
 {
 public:
 	bool m_bShouldFree{};
+
 	bool m_bRigidbodyKinematicChanged{ };
 	bool m_bConstraintStateChanged{ };
 
@@ -100,6 +101,7 @@ public:
 	bool m_bForceKinematic{};
 	bool m_bForceStatic{};
 	bool m_bShouldFree{};
+	bool bIsAddingPhysicComponent{};
 };
 
 const int PhysicTraceLineFlag_World = 0x1;
@@ -227,6 +229,7 @@ public:
 	virtual void* GetInternalRigidBody() = 0;
 	virtual bool GetGoldSrcOriginAngles(float* origin, float * angles) = 0;
 	virtual bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float * angles) = 0;
+	virtual bool SetGoldSrcOriginAngles(const float* origin, const float* angles) = 0;
 	virtual float GetMass() const = 0;
 	virtual bool GetAABB(vec3_t mins, vec3_t maxs) const = 0;
 };
@@ -347,6 +350,9 @@ public:
 	virtual IPhysicConstraint* GetConstraintByComponentId(int id) = 0;
 	virtual IPhysicBehavior* GetPhysicBehaviorByName(const std::string& name) = 0;
 	virtual IPhysicBehavior* GetPhysicBehaviorByComponentId(int id) = 0;
+
+	//For finding barnacle & garg's rigidbodies
+	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody) = 0;
 };
 
 class ICollisionPhysicObject : public IPhysicObject

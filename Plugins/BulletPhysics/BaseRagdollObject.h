@@ -56,7 +56,8 @@ public:
 	IPhysicBehavior* GetPhysicBehaviorByName(const std::string& name) override;
 	IPhysicBehavior* GetPhysicBehaviorByComponentId(int id) override;
 
-	virtual IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody);
+	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody) override;
+
 	virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
 	//virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl);
 	virtual void SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam);

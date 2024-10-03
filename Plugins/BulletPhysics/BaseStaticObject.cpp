@@ -191,7 +191,7 @@ bool CBaseStaticObject::Rebuild(const CPhysicObjectCreationParameter& CreationPa
 
 void CBaseStaticObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
-	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext);
+	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext, false);
 }
 
 bool CBaseStaticObject::SetupBones(studiohdr_t* studiohdr, int flags)
@@ -292,6 +292,11 @@ IPhysicBehavior* CBaseStaticObject::GetPhysicBehaviorByName(const std::string& n
 IPhysicBehavior* CBaseStaticObject::GetPhysicBehaviorByComponentId(int id)
 {
 	return DispatchGetPhysicBehaviorByComponentId(m_PhysicComponents, id);
+}
+
+IPhysicRigidBody* CBaseStaticObject::FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody)
+{
+	return GetRigidBodyByName(name);
 }
 
 void CBaseStaticObject::AddRigidBody(const CPhysicObjectCreationParameter& CreationParam, CClientRigidBodyConfig* pRigidBodyConfig, IPhysicRigidBody* pRigidBody)

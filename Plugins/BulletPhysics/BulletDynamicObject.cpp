@@ -312,5 +312,5 @@ IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CPhysicObjectCre
 
 IPhysicBehavior* CBulletDynamicObject::CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
-	return DispatchBulletCreatePhysicBehavior(CreationParam, pPhysicBehaviorConfig, physicComponentId);
+	return DispatchBulletCreatePhysicBehavior(this, CreationParam, pPhysicBehaviorConfig, physicComponentId);
 }

@@ -19,6 +19,8 @@
 
 #include "plugins.h"
 
+#include "Viewport.h"
+
 class COptionsSubBulletPhysicsDlg : public vgui::PropertyPage
 {
 	DECLARE_CLASS_SIMPLE(COptionsSubBulletPhysicsDlg, vgui::PropertyPage);
@@ -188,7 +190,7 @@ public:
 
 	void ConnectToServer(const char*& game, int& IP, int& port, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-		
+		g_pViewPort->ConnectToServer(game, IP, port);
 	}
 
 	void DisconnectFromServer(VGUI2Extension_CallbackContext* CallbackContext) override

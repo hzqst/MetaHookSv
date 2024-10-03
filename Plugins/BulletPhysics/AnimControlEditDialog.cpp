@@ -90,6 +90,16 @@ void CAnimControlEditDialog::OnCommand(const char* command)
 		PostActionSignal(new KeyValues("RefreshAnimControl", "configId", m_pAnimControlConfig->configId));
 		return;
 	}
+	else if (!stricmp(command, "CloseModalDialogs"))
+	{
+		for (int i = 0; i < GetChildCount(); i++)
+		{
+			auto pChild = GetChild(i);
+			PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+		}
+		Close();
+		return;
+	}
 
 	BaseClass::OnCommand(command);
 }

@@ -38,6 +38,7 @@ public:
 	void NewMap(void);
 	void Init();
 	void UpdateInspectStuffs();
+	void ConnectToServer(const char* game, int IP, int port);
 
 	bool HasFocus() override;
 	void Activate() override;
@@ -133,6 +134,7 @@ protected:
 
 	void LoadAvailableInspectModeIntoControls();
 	void LoadAvailableEditModeIntoControls();
+
 protected:
 
 	vgui::Panel* m_pTopBar{};

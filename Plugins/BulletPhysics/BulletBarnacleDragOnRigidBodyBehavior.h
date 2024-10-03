@@ -2,10 +2,10 @@
 
 #include "BulletPhysicComponentBehavior.h"
 
-class CBulletBarnacleDragForceBehavior : public CBulletPhysicComponentBehavior
+class CBulletBarnacleDragOnRigidBodyBehavior : public CBulletPhysicComponentBehavior
 {
 public:
-	CBulletBarnacleDragForceBehavior(
+	CBulletBarnacleDragOnRigidBodyBehavior(
 		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 		int attachedPhysicComponentId,
 		int iBarnacleIndex, float flForceMagnitude, float flExtraHeight);

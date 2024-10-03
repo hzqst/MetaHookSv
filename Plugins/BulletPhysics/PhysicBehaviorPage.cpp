@@ -180,16 +180,16 @@ void CPhysicBehaviorPage::LoadPhysicBehaviorAsListPanelItem(const CClientPhysicB
 	kv->SetInt("configId", pPhysicBehaviorConfig->configId);
 	kv->SetString("name", pPhysicBehaviorConfig->name.c_str());
 	kv->SetString("type", UTIL_GetPhysicBehaviorTypeLocalizationToken(pPhysicBehaviorConfig->type));
-	kv->SetString("rigidbody", pPhysicBehaviorConfig->rigidbody.c_str());
+	kv->SetString("rigidbodyA", pPhysicBehaviorConfig->rigidbodyA.c_str());
+	kv->SetString("rigidbodyB", pPhysicBehaviorConfig->rigidbodyB.c_str());
 	kv->SetString("constraint", pPhysicBehaviorConfig->constraint.c_str());
 
-	std::wstring flags;
-
-	flags += UTIL_GetFormattedPhysicBehaviorFlags(pPhysicBehaviorConfig->flags);
+	std::wstring flags = UTIL_GetFormattedPhysicBehaviorFlags(pPhysicBehaviorConfig->flags);
 
 	kv->SetWString("flags", flags.c_str());
 
 	m_pPhysicBehaviorListPanel->AddItem(kv, pPhysicBehaviorConfig->configId, false, true);
+
 	kv->deleteThis();
 }
 
@@ -283,11 +283,13 @@ void CPhysicBehaviorPage::DeletePhysicBehaviorItem(int configId)
 
 void CPhysicBehaviorPage::OnDeletePhysicBehavior(int configId)
 {
-	DeletePhysicBehaviorItem(configId);
+	//DeletePhysicBehaviorItem(configId);
 
 	if (UTIL_RemovePhysicBehaviorFromPhysicObjectConfig(m_pPhysicObjectConfig.get(), configId))
 	{
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
+		ReloadAllPhysicBehaviorsIntoListPanelItem();
 	}
 }
 

@@ -133,7 +133,8 @@ public:
 
 	int type{ PhysicBehavior_None };
 	std::string name;
-	std::string rigidbody;
+	std::string rigidbodyA;
+	std::string rigidbodyB;
 	std::string constraint;
 	vec3_t origin{ 0 };
 	vec3_t angles{ 0 };
@@ -192,24 +193,12 @@ public:
 	CClientStaticObjectConfig();
 };
 
-/*
-class CClientCameraControlConfig
-{
-public:
-	std::string rigidbody;
-	vec3_t origin{0};
-	vec3_t angles{0};
-};
-*/
-
 class CClientRagdollObjectConfig : public CClientPhysicObjectConfig
 {
 public:
 	CClientRagdollObjectConfig();
 
 	std::vector<std::shared_ptr<CClientAnimControlConfig>> AnimControlConfigs;
-	//CClientCameraControlConfig FirstPersonViewCameraControlConfig;
-	//CClientCameraControlConfig ThirdPersonViewCameraControlConfig;
 };
 
 class CClientPhysicObjectConfigStorage

@@ -98,12 +98,15 @@ std::wstring UTIL_GetCollisionShapeTypeLocalizedName(int type)
 
 const char* VGUI2Token_PhysicBehaviorType[] = { 
 	"#BulletPhysics_None",
-	"#BulletPhysics_BarnacleDragForce", 
-	"#BulletPhysics_BarnacleChewForce", 
+	"#BulletPhysics_BarnacleDragOnRigidBody",
+	"#BulletPhysics_BarnacleDragOnConstraint",
+	"#BulletPhysics_BarnacleChew", 
 	"#BulletPhysics_BarnacleConstraintLimitAdjustment",
 	"#BulletPhysics_FirstPersonViewCamera", 
 	"#BulletPhysics_ThirdPersonViewCamera", 
-	"#BulletPhysics_SimpleBuoyancy" };
+	"#BulletPhysics_SimpleBuoyancy",
+	"#BulletPhysics_RigidBodyRelocation",
+};
 
 const char* UTIL_GetPhysicBehaviorTypeLocalizationToken(int type)
 {
@@ -164,7 +167,8 @@ std::wstring UTIL_GetFormattedRigidBodyFlags(int flags)
 	FORMAT_FLAGS_TO_STRING(InvertStateOnIdle);
 	FORMAT_FLAGS_TO_STRING(InvertStateOnDeath);
 	FORMAT_FLAGS_TO_STRING(InvertStateOnCaughtByBarnacle);
-	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnacleCatching);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnaclePulling);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnacleChewing);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToWorld);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToStaticObject);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToDynamicObject);
@@ -196,8 +200,10 @@ std::wstring UTIL_GetFormattedConstraintFlags(int flags)
 	FORMAT_FLAGS_TO_STRING(DeactiveOnNormalActivity);
 	FORMAT_FLAGS_TO_STRING(DeactiveOnDeathActivity);
 	FORMAT_FLAGS_TO_STRING(DeactiveOnCaughtByBarnacleActivity);
-	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnacleCatchingActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnaclePullingActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnacleChewingActivity);
 	FORMAT_FLAGS_TO_STRING(DontResetPoseOnErrorCorrection);
+	FORMAT_FLAGS_TO_STRING(DeferredCreate);
 
 #undef FORMAT_FLAGS_TO_STRING
 
@@ -380,7 +386,12 @@ std::string UTIL_GetAbsoluteModelName(model_t* mod)
 
 const char* UTIL_GetPhysicObjectConfigTypeName(int type)
 {
-	const char* c_names[] = { "None", "StaticObject", "DynamicObject", "RagdollObject" };
+	const char* c_names[] = {
+		"None", 
+		"StaticObject", 
+		"DynamicObject",
+		"RagdollObject" 
+	};
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -392,7 +403,15 @@ const char* UTIL_GetPhysicObjectConfigTypeName(int type)
 
 const char* UTIL_GetConstraintTypeName(int type)
 {
-	const char* c_names[] = { "None", "ConeTwist", "Hinge", "Point", "Slider", "Dof6", "Dof6Spring", "Fixed" };
+	const char* c_names[] = { 
+		"None",
+		"ConeTwist",
+		"Hinge",
+		"Point", 
+		"Slider", 
+		"Dof6", 
+		"Dof6Spring",
+		"Fixed" };
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -404,7 +423,17 @@ const char* UTIL_GetConstraintTypeName(int type)
 
 const char* UTIL_GetPhysicBehaviorTypeName(int type)
 {
-	const char* c_names[] = { "None", "BarnacleDragForce", "BarnacleChewForce", "BarnacleConstraintLimitAdjustment", "FirstPersonViewCamera", "ThirdPersonViewCamera", "SimpleBuoyancy" };
+	const char* c_names[] = { 
+		"None", 
+		"BarnacleDragOnRigidBody",
+		"BarnacleDragOnConstraint",
+		"BarnacleChew",
+		"BarnacleConstraintLimitAdjustment", 
+		"FirstPersonViewCamera", 
+		"ThirdPersonViewCamera", 
+		"SimpleBuoyancy",
+		"RigidBodyRelocation",
+	};
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -416,7 +445,15 @@ const char* UTIL_GetPhysicBehaviorTypeName(int type)
 
 const char* UTIL_GetCollisionShapeTypeName(int type)
 {
-	const char* c_names[] = { "None", "Box", "Sphere", "Capsule", "Cylinder", "MultiSphere", "TriangleMesh", "Compound" };
+	const char* c_names[] = { 
+		"None",
+		"Box", 
+		"Sphere",
+		"Capsule",
+		"Cylinder", 
+		"MultiSphere", 
+		"TriangleMesh",
+		"Compound" };
 
 	if (type >= 0 && type < _ARRAYSIZE(c_names))
 	{
@@ -428,106 +465,57 @@ const char* UTIL_GetCollisionShapeTypeName(int type)
 
 int UTIL_GetCollisionTypeFromTypeName(const char* name)
 {
-	int type = PhysicShape_None;
+#define CHECK_COLLISION_SHAPE_TYPE_NAME(ty) if (!strcmp(name, #ty ))\
+	{\
+		return PhysicShape_##ty;\
+	}
+	CHECK_COLLISION_SHAPE_TYPE_NAME(Box);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(Sphere);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(Capsule);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(Cylinder);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(MultiSphere);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(TriangleMesh);
+	CHECK_COLLISION_SHAPE_TYPE_NAME(Compound);
 
-	if (!strcmp(name, "Box"))
-	{
-		type = PhysicShape_Box;
-	}
-	else if (!strcmp(name, "Sphere"))
-	{
-		type = PhysicShape_Sphere;
-	}
-	else if (!strcmp(name, "Capsule"))
-	{
-		type = PhysicShape_Capsule;
-	}
-	else if (!strcmp(name, "Cylinder"))
-	{
-		type = PhysicShape_Cylinder;
-	}
-	else if (!strcmp(name, "MultiSphere"))
-	{
-		type = PhysicShape_MultiSphere;
-	}
-	else if (!strcmp(name, "TriangleMesh"))
-	{
-		type = PhysicShape_TriangleMesh;
-	}
-	else if (!strcmp(name, "Compound"))
-	{
-		type = PhysicShape_Compound;
-	}
-
-	return type;
+	return PhysicShape_None;
 }
 
 int UTIL_GetConstraintTypeFromTypeName(const char* name)
 {
-	int type = PhysicConstraint_None;
+#define CHECK_CONSTRAINT_TYPE_NAME(ty) if (!strcmp(name, #ty ))\
+	{\
+		return PhysicConstraint_##ty;\
+	}
+	CHECK_CONSTRAINT_TYPE_NAME(ConeTwist);
+	CHECK_CONSTRAINT_TYPE_NAME(Hinge);
+	CHECK_CONSTRAINT_TYPE_NAME(Point);
+	CHECK_CONSTRAINT_TYPE_NAME(Slider);
+	CHECK_CONSTRAINT_TYPE_NAME(Dof6);
+	CHECK_CONSTRAINT_TYPE_NAME(Dof6Spring);
+	CHECK_CONSTRAINT_TYPE_NAME(Fixed);
 
-	if (!strcmp(name, "ConeTwist"))
-	{
-		type = PhysicConstraint_ConeTwist;
-	}
-	else if (!strcmp(name, "Hinge"))
-	{
-		type = PhysicConstraint_Hinge;
-	}
-	else if (!strcmp(name, "Point"))
-	{
-		type = PhysicConstraint_Point;
-	}
-	else if (!strcmp(name, "Slider"))
-	{
-		type = PhysicConstraint_Slider;
-	}
-	else if (!strcmp(name, "Dof6"))
-	{
-		type = PhysicConstraint_Dof6;
-	}
-	else if (!strcmp(name, "Dof6Spring"))
-	{
-		type = PhysicConstraint_Dof6Spring;
-	}
-	else if (!strcmp(name, "Fixed"))
-	{
-		type = PhysicConstraint_Fixed;
-	}
-
-	return type;
+	return PhysicConstraint_None;
 }
 
 int UTIL_GetPhysicBehaviorTypeFromTypeName(const char* name)
 {
-	int type = PhysicBehavior_None;
+#define CHECK_BEHAVIOR_TYPE_NAME(ty) if (!strcmp(name, #ty ))\
+	{\
+		return PhysicBehavior_##ty;\
+	}
+	
+	CHECK_BEHAVIOR_TYPE_NAME(BarnacleDragOnRigidBody);
+	CHECK_BEHAVIOR_TYPE_NAME(BarnacleDragOnConstraint);
+	CHECK_BEHAVIOR_TYPE_NAME(BarnacleChew);
+	CHECK_BEHAVIOR_TYPE_NAME(BarnacleConstraintLimitAdjustment);
+	CHECK_BEHAVIOR_TYPE_NAME(FirstPersonViewCamera);
+	CHECK_BEHAVIOR_TYPE_NAME(ThirdPersonViewCamera);
+	CHECK_BEHAVIOR_TYPE_NAME(SimpleBuoyancy);
+	CHECK_BEHAVIOR_TYPE_NAME(RigidBodyRelocation);
 
-	if (!strcmp(name, "BarnacleDragForce"))
-	{
-		type = PhysicBehavior_BarnacleDragForce;
-	}
-	else if (!strcmp(name, "BarnacleChewForce"))
-	{
-		type = PhysicBehavior_BarnacleChewForce;
-	}
-	else if (!strcmp(name, "BarnacleConstraintLimitAdjustment"))
-	{
-		type = PhysicBehavior_BarnacleConstraintLimitAdjustment;
-	}
-	else if (!strcmp(name, "FirstPersonViewCamera"))
-	{
-		type = PhysicBehavior_FirstPersonViewCamera;
-	}
-	else if (!strcmp(name, "ThirdPersonViewCamera"))
-	{
-		type = PhysicBehavior_ThirdPersonViewCamera;
-	}
-	else if (!strcmp(name, "SimpleBuoyancy"))
-	{
-		type = PhysicBehavior_SimpleBuoyancy;
-	}
+#undef CHECK_BEHAVIOR_TYPE_NAME
 
-	return type;
+	return PhysicBehavior_None;
 }
 
 std::shared_ptr<CClientRigidBodyConfig> UTIL_GetRigidConfigFromConfigId(int configId)
@@ -908,7 +896,8 @@ std::shared_ptr<CClientPhysicBehaviorConfig> UTIL_ClonePhysicBehaviorConfig(cons
 	// Copy basic types and strings
 	pNewConfig->name = pOldConfig->name;
 	pNewConfig->type = pOldConfig->type;
-	pNewConfig->rigidbody = pOldConfig->rigidbody;
+	pNewConfig->rigidbodyA = pOldConfig->rigidbodyA;
+	pNewConfig->rigidbodyB = pOldConfig->rigidbodyB;
 	pNewConfig->constraint = pOldConfig->constraint;
 	pNewConfig->flags = pOldConfig->flags;
 	pNewConfig->debugDrawLevel = pOldConfig->debugDrawLevel;

@@ -52,13 +52,19 @@ CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, co
     m_pMaxTolerantLinearError = new vgui::TextEntry(this, "MaxTolerantLinearError");
 
     // Initialize new CheckButton controls
-    m_pBarnacle = new vgui::CheckButton(this, "Barnacle", "#BulletPhysics_Barnacle");
-    m_pGargantua = new vgui::CheckButton(this, "Gargantua", "#BulletPhysics_Gargantua");
-    m_pDeactiveOnNormalActivity = new vgui::CheckButton(this, "DeactiveOnNormalActivity", "#BulletPhysics_DeactiveOnNormalActivity");
-    m_pDeactiveOnDeathActivity = new vgui::CheckButton(this, "DeactiveOnDeathActivity", "#BulletPhysics_DeactiveOnDeathActivity");
-    m_pDeactiveOnCaughtByBarnacleActivity = new vgui::CheckButton(this, "DeactiveOnCaughtByBarnacleActivity", "#BulletPhysics_DeactiveOnCaughtByBarnacleActivity");
-    m_pDeactiveOnBarnacleCatchingActivity = new vgui::CheckButton(this, "DeactiveOnBarnacleCatchingActivity", "#BulletPhysics_DeactiveOnBarnacleCatchingActivity");
-    m_pDontResetPoseOnErrorCorrection = new vgui::CheckButton(this, "DontResetPoseOnErrorCorrection", "#BulletPhysics_DontResetPoseOnErrorCorrection");
+#define CREATE_CHECK_BUTTON(name)  m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
+
+    CREATE_CHECK_BUTTON(Barnacle);
+    CREATE_CHECK_BUTTON(Gargantua);
+    CREATE_CHECK_BUTTON(DeactiveOnNormalActivity);
+    CREATE_CHECK_BUTTON(DeactiveOnDeathActivity);
+    CREATE_CHECK_BUTTON(DeactiveOnCaughtByBarnacleActivity);
+    CREATE_CHECK_BUTTON(DeactiveOnBarnaclePullingActivity);
+    CREATE_CHECK_BUTTON(DeactiveOnBarnacleChewingActivity);
+    CREATE_CHECK_BUTTON(DontResetPoseOnErrorCorrection);
+    CREATE_CHECK_BUTTON(DeferredCreate);
+
+#undef CREATE_CHECK_BUTTON
 
     m_pPhysicFactorListPanel = new CPhysicFactorListPanel(this, "PhysicFactorListPanel");
 
@@ -192,6 +198,16 @@ void CPhysicConstraintEditDialog::OnCommand(const char* command)
         ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
         PostActionSignal(new KeyValues("RefreshConstraint", "configId", m_pConstraintConfig->configId));
         PostMessage1(this, new KeyValues("ResetData"));
+    }
+    else if (!stricmp(command, "CloseModalDialogs"))
+    {
+        for (int i = 0; i < GetChildCount(); i++)
+        {
+            auto pChild = GetChild(i);
+            PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+        }
+        Close();
+        return;
     }
     else
     {
@@ -477,9 +493,12 @@ void CPhysicConstraintEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComb
         }
     }
 
-    if (!rigidBodyName.empty()) {
+    if (!rigidBodyName.empty())
+    {
         pComboBox->SetText(rigidBodyName.c_str());
-    } else {
+    }
+    else
+    {
         pComboBox->ActivateItem(0);
     }
 }
@@ -541,8 +560,10 @@ void CPhysicConstraintEditDialog::LoadConfigIntoControls()
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnNormalActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnDeathActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
-    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnacleCatchingActivity);
+    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnaclePullingActivity);
+    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnacleChewingActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
+    LOAD_INTO_CHECK_BUTTON(flags, DeferredCreate);
 
 #undef LOAD_INTO_CHECK_BUTTON
 }
@@ -618,8 +639,10 @@ void CPhysicConstraintEditDialog::SaveConfigFromControls()
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnNormalActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnDeathActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
-    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnacleCatchingActivity);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnaclePullingActivity);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnacleChewingActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeferredCreate);
 
     // Cleanup macro definition
 #undef SAVE_FLAG_FROM_CHECK_BUTTON

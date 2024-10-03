@@ -85,6 +85,16 @@ void CPhysicEditorDialog::OnCommand(const char* command)
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		return;
 	}
+	else if (!stricmp(command, "CloseModalDialogs"))
+	{
+		for (int i = 0; i < GetChildCount(); i++)
+		{
+			auto pChild = GetChild(i);
+			PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+		}
+		Close();
+		return;
+	}
 
 	BaseClass::OnCommand(command);
 }

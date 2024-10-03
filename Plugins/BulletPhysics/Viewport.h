@@ -35,6 +35,7 @@ public:
 	void VidInit(void);
 	void ActivateClientUI(void);
 	void HideClientUI(void);
+	void ConnectToServer(const char* game, int IP, int port);
 
 	void OpenPhysicDebugGUI();
 	void ClosePhysicDebugGUI();

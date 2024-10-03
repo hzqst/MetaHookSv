@@ -26,8 +26,11 @@ CPhysicBehaviorEditDialog::CPhysicBehaviorEditDialog(vgui::Panel* parent, const 
 	m_pType = new vgui::ComboBox(this, "Type", 0, false);
 	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
 
-	m_pRigidBodyLabel = new vgui::Label(this, "RigidBodyLabel", "#BulletPhysics_RigidBody");
-	m_pRigidBody = new vgui::ComboBox(this, "RigidBody", 0, true);
+	m_pRigidBodyALabel = new vgui::Label(this, "RigidBodyALabel", "#BulletPhysics_RigidBodyA");
+	m_pRigidBodyA = new vgui::ComboBox(this, "RigidBodyA", 0, true);
+
+	m_pRigidBodyBLabel = new vgui::Label(this, "RigidBodyBLabel", "#BulletPhysics_RigidBodyB");
+	m_pRigidBodyB = new vgui::ComboBox(this, "RigidBodyB", 0, true);
 
 	m_pConstraintLabel = new vgui::Label(this, "ConstraintLabel", "#BulletPhysics_Constraint");
 	m_pConstraint = new vgui::ComboBox(this, "Constraint", 0, true);
@@ -55,7 +58,8 @@ CPhysicBehaviorEditDialog::CPhysicBehaviorEditDialog(vgui::Panel* parent, const 
 	if (vgui::INVALID_FONT != hFallbackFont)
 	{
 		m_pType->SetUseFallbackFont(true, hFallbackFont);
-		m_pRigidBody->SetUseFallbackFont(true, hFallbackFont);
+		m_pRigidBodyA->SetUseFallbackFont(true, hFallbackFont);
+		m_pRigidBodyB->SetUseFallbackFont(true, hFallbackFont);
 		m_pConstraint->SetUseFallbackFont(true, hFallbackFont);
 	}
 
@@ -83,7 +87,6 @@ void CPhysicBehaviorEditDialog::Activate(void)
 void CPhysicBehaviorEditDialog::OnResetData()
 {
 	LoadConfigIntoControls();
-	UpdateControlStates();
 }
 
 void CPhysicBehaviorEditDialog::OnModifyFactor(KeyValues* kv)
@@ -117,7 +120,8 @@ void CPhysicBehaviorEditDialog::OnModifyFactor(KeyValues* kv)
 void CPhysicBehaviorEditDialog::OnTextChanged(vgui::Panel* panel)
 {
 	if (panel == m_pType) {
-		UpdateControlStates();
+		int type = GetCurrentSelectedTypeIndex(m_pType);
+		UpdateControlStates(type);
 	}
 }
 
@@ -175,6 +179,16 @@ void CPhysicBehaviorEditDialog::OnCommand(const char* command)
 		PostActionSignal(new KeyValues("RefreshPhysicBehavior", "configId", m_pPhysicBehaviorConfig->configId));
 		PostMessage1(this, new KeyValues("ResetData"));
 	}
+	else if (!stricmp(command, "CloseModalDialogs"))
+	{
+		for (int i = 0; i < GetChildCount(); i++)
+		{
+			auto pChild = GetChild(i);
+			PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+		}
+		Close();
+		return;
+	}
 	else
 	{
 		BaseClass::OnCommand(command);
@@ -183,15 +197,43 @@ void CPhysicBehaviorEditDialog::OnCommand(const char* command)
 
 void CPhysicBehaviorEditDialog::LoadConfigIntoControls()
 {
-	LoadAvailableRigidBodiesIntoControl(m_pRigidBody);
+	LoadAvailableRigidBodiesIntoControl(m_pRigidBodyA);
+	LoadAvailableRigidBodiesIntoControl(m_pRigidBodyB);
 
 	LoadAvailableConstraintsIntoControl(m_pConstraint);
 
 	LoadTypeIntoControl(m_pType);
 
-	LoadRigidBodyIntoControl(m_pRigidBody, m_pPhysicBehaviorConfig->rigidbody);
+	int type = GetCurrentSelectedTypeIndex(m_pType);
 
-	LoadConstraintIntoControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
+	UpdateControlStates(type);
+
+	if (m_pRigidBodyA->IsVisible())
+	{
+		LoadRigidBodyIntoControl(m_pRigidBodyA, m_pPhysicBehaviorConfig->rigidbodyA);
+	}
+	else
+	{
+		m_pRigidBodyA->SetText("");
+	}
+
+	if (m_pRigidBodyB->IsVisible())
+	{
+		LoadRigidBodyIntoControl(m_pRigidBodyB, m_pPhysicBehaviorConfig->rigidbodyB);
+	}
+	else
+	{
+		m_pRigidBodyB->SetText("");
+	}
+
+	if (m_pConstraint->IsVisible())
+	{
+		LoadConstraintIntoControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
+	}
+	else
+	{
+		m_pConstraint->SetText("");
+	}
 
 #define LOAD_INTO_TEXT_ENTRY(from, to) { auto str##to = std::format("{0}", m_pPhysicBehaviorConfig->from); m_p##to->SetText(str##to.c_str());}
 
@@ -266,6 +308,7 @@ void CPhysicBehaviorEditDialog::LoadAvailableConstraintsIntoControl(vgui::ComboB
 		auto kv = new KeyValues("UserData");
 
 		kv->SetString("name", "");
+
 		kv->SetInt("type", PhysicConstraint_None);
 
 		pComboBox->AddItem("#BulletPhysics_None", kv);
@@ -278,6 +321,7 @@ void CPhysicBehaviorEditDialog::LoadAvailableConstraintsIntoControl(vgui::ComboB
 		auto kv = new KeyValues("UserData");
 
 		kv->SetString("name", pConstraint->name.c_str());
+
 		kv->SetInt("type", pConstraint->type);
 
 		pComboBox->AddItem(pConstraint->name.c_str(), kv);
@@ -315,7 +359,14 @@ void CPhysicBehaviorEditDialog::LoadRigidBodyIntoControl(vgui::ComboBox* pComboB
 		}
 	}
 
-	pComboBox->ActivateItem(0);
+	if (!rigidBodyName.empty())
+	{
+		pComboBox->SetText(rigidBodyName.c_str());
+	}
+	else
+	{
+		pComboBox->ActivateItem(0);
+	}
 }
 
 void CPhysicBehaviorEditDialog::LoadConstraintIntoControl(vgui::ComboBox* pComboBox, const std::string& constraintName)
@@ -332,6 +383,15 @@ void CPhysicBehaviorEditDialog::LoadConstraintIntoControl(vgui::ComboBox* pCombo
 	}
 
 	pComboBox->ActivateItem(0);
+
+	if (!constraintName.empty())
+	{
+		pComboBox->SetText(constraintName.c_str());
+	}
+	else
+	{
+		pComboBox->ActivateItem(0);
+	}
 }
 
 void CPhysicBehaviorEditDialog::DeleteFactorListPanelItem(int factorIdx)
@@ -381,21 +441,30 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 
 	switch (type)
 	{
-	case PhysicBehavior_BarnacleDragForce: {
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragForceMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragForceExtraHeight);
+	case PhysicBehavior_BarnacleDragOnRigidBody: {
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragExtraHeight);
 		break;
 	}
-	case PhysicBehavior_BarnacleChewForce: {
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewForceMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewForceInterval);
+	case PhysicBehavior_BarnacleDragOnConstraint: {
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragVelocity);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragExtraHeight);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragLimitAxis);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragActivatedOnBarnaclePulling);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragActivatedOnBarnacleChewing);
+		break;
+	}
+	case PhysicBehavior_BarnacleChew: {
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleChewInterval);
 		break;
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment: {
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentExtraHeight);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentInterval);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentAxis);
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentBarnacleSequence);
 		break;
 	}
 	case PhysicBehavior_FirstPersonViewCamera:
@@ -419,11 +488,11 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 #undef LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE
 }
 
-int CPhysicBehaviorEditDialog::GetCurrentSelectedTypeIndex()
+int CPhysicBehaviorEditDialog::GetCurrentSelectedTypeIndex(vgui::ComboBox *pComboBox)
 {
 	int type = PhysicBehavior_None;
 
-	auto kv = m_pType->GetActiveItemUserData();
+	auto kv = pComboBox->GetActiveItemUserData();
 
 	if (kv)
 	{
@@ -433,31 +502,46 @@ int CPhysicBehaviorEditDialog::GetCurrentSelectedTypeIndex()
 	return type;
 }
 
-void CPhysicBehaviorEditDialog::UpdateControlStates()
+void CPhysicBehaviorEditDialog::UpdateControlStates(int type)
 {
-	int type = GetCurrentSelectedTypeIndex();
-
-	LoadAvailableFactorsIntoControls(type);
-
 	switch (type)
 	{
-	case PhysicBehavior_BarnacleDragForce:
-	case PhysicBehavior_BarnacleChewForce:
+	case PhysicBehavior_BarnacleDragOnRigidBody:
+	case PhysicBehavior_BarnacleChew:
 	case PhysicBehavior_FirstPersonViewCamera: 
 	case PhysicBehavior_ThirdPersonViewCamera:
 	case PhysicBehavior_SimpleBuoyancy:
 	{
-		m_pRigidBodyLabel->SetVisible(true);
-		m_pRigidBody->SetVisible(true);
+		m_pRigidBodyALabel->SetVisible(true);
+		m_pRigidBodyA->SetVisible(true);
+
+		m_pRigidBodyBLabel->SetVisible(false);
+		m_pRigidBodyB->SetVisible(false);
+
+		m_pConstraintLabel->SetVisible(false);
+		m_pConstraint->SetVisible(false);
+		break;
+	}
+	case PhysicBehavior_RigidBodyRelocation:
+	{
+		m_pRigidBodyALabel->SetVisible(true);
+		m_pRigidBodyA->SetVisible(true);
+
+		m_pRigidBodyBLabel->SetVisible(true);
+		m_pRigidBodyB->SetVisible(true);
 
 		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
 		break;
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
+	case PhysicBehavior_BarnacleDragOnConstraint:
 	{
-		m_pRigidBodyLabel->SetVisible(false);
-		m_pRigidBody->SetVisible(false);
+		m_pRigidBodyALabel->SetVisible(false);
+		m_pRigidBodyA->SetVisible(false);
+
+		m_pRigidBodyBLabel->SetVisible(false);
+		m_pRigidBodyB->SetVisible(false);
 
 		m_pConstraintLabel->SetVisible(true);
 		m_pConstraint->SetVisible(true);
@@ -465,14 +549,21 @@ void CPhysicBehaviorEditDialog::UpdateControlStates()
 		break;
 	}
 	default: {
-		m_pRigidBodyLabel->SetVisible(false);
-		m_pRigidBody->SetVisible(false);
+		m_pRigidBodyALabel->SetVisible(false);
+		m_pRigidBodyA->SetVisible(false);
+		m_pRigidBodyA->SetText("");
+
+		m_pRigidBodyBLabel->SetVisible(false);
+		m_pRigidBodyB->SetVisible(false);
 
 		m_pConstraintLabel->SetVisible(false);
 		m_pConstraint->SetVisible(false);
 		break;
 	}
 	}
+
+	LoadAvailableFactorsIntoControls(type);
+
 }
 
 void CPhysicBehaviorEditDialog::SaveConfigFromControls()
@@ -481,8 +572,32 @@ void CPhysicBehaviorEditDialog::SaveConfigFromControls()
 
 	SaveTypeFromControl(m_pType);
 
-	SaveRigidBodyFromControl(m_pRigidBody, m_pPhysicBehaviorConfig->rigidbody);
-	SaveConstraintFromControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
+	if (m_pRigidBodyA->IsVisible())
+	{
+		SaveRigidBodyFromControl(m_pRigidBodyA, m_pPhysicBehaviorConfig->rigidbodyA);
+	}
+	else
+	{
+		m_pPhysicBehaviorConfig->rigidbodyA = "";
+	}
+
+	if (m_pRigidBodyB->IsVisible())
+	{
+		SaveRigidBodyFromControl(m_pRigidBodyB, m_pPhysicBehaviorConfig->rigidbodyB);
+	}
+	else
+	{
+		m_pPhysicBehaviorConfig->rigidbodyB = "";
+	}
+
+	if (m_pConstraint->IsVisible())
+	{
+		SaveConstraintFromControl(m_pConstraint, m_pPhysicBehaviorConfig->constraint);
+	}
+	else
+	{
+		m_pPhysicBehaviorConfig->constraint = "";
+	}
 
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) { \
         m_p##from->GetText(szText, sizeof(szText)); \
@@ -527,40 +642,16 @@ void CPhysicBehaviorEditDialog::SaveRigidBodyFromControl(vgui::ComboBox* pComboB
 {
 	char szText[256];
 
-	auto iActiveItem = pComboBox->GetActiveItem();
-	if (pComboBox->IsItemIDValid(iActiveItem))
-	{
-		auto kv = pComboBox->GetItemUserData(iActiveItem);
-		if (kv)
-		{
-			rigidBodyName = kv->GetString("name");
-		}
-		else
-		{
-			pComboBox->GetItemText(iActiveItem, szText, sizeof(szText));
-			rigidBodyName = szText;
-		}
-	}
+	pComboBox->GetText(szText, sizeof(szText));
+	rigidBodyName = szText;
 }
 
 void CPhysicBehaviorEditDialog::SaveConstraintFromControl(vgui::ComboBox* pComboBox, std::string& constraintName)
 {
 	char szText[256];
 
-	auto iActiveItem = pComboBox->GetActiveItem();
-	if (pComboBox->IsItemIDValid(iActiveItem))
-	{
-		auto kv = pComboBox->GetItemUserData(iActiveItem);
-		if (kv)
-		{
-			constraintName = kv->GetString("name");
-		}
-		else
-		{
-			pComboBox->GetItemText(iActiveItem, szText, sizeof(szText));
-			constraintName = szText;
-		}
-	}
+	pComboBox->GetText(szText, sizeof(szText));
+	constraintName = szText;
 }
 
 void CPhysicBehaviorEditDialog::SaveTypeFromControl(vgui::ComboBox* pComboBox)

@@ -23,8 +23,8 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 
 	SetTitle("#BulletPhysics_RigidBodyEditor", false);
 
-	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
-	SetSize(vgui::scheme()->GetProportionalScaledValue(560), vgui::scheme()->GetProportionalScaledValue(560));
+	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(600), vgui::scheme()->GetProportionalScaledValue(600));
+	SetSize(vgui::scheme()->GetProportionalScaledValue(600), vgui::scheme()->GetProportionalScaledValue(600));
 
 	m_pName = new vgui::TextEntry(this, "Name");
 	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
@@ -53,7 +53,8 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 	CREATE_CHECK_BUTTON(InvertStateOnIdle);
 	CREATE_CHECK_BUTTON(InvertStateOnDeath);
 	CREATE_CHECK_BUTTON(InvertStateOnCaughtByBarnacle);
-	CREATE_CHECK_BUTTON(InvertStateOnBarnacleCatching);
+	CREATE_CHECK_BUTTON(InvertStateOnBarnaclePulling);
+	CREATE_CHECK_BUTTON(InvertStateOnBarnacleChewing);
 	CREATE_CHECK_BUTTON(NoCollisionToWorld);
 	CREATE_CHECK_BUTTON(NoCollisionToStaticObject);
 	CREATE_CHECK_BUTTON(NoCollisionToDynamicObject);
@@ -118,13 +119,25 @@ void CPhysicRigidBodyEditDialog::OnCommand(const char* command)
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
 		return;
 	}
+	else if (!stricmp(command, "CloseModalDialogs"))
+	{
+		for (int i = 0; i < GetChildCount(); i++)
+		{
+			auto pChild = GetChild(i);
+			PostMessage1(pChild, new KeyValues("Command", "command", "CloseModalDialogs"), NULL);
+		}
+		Close();
+		return;
+	}
 	else if (!strcmp(command, "EditCollisionShape"))
 	{
 		OnEditCollisionShape();
 		return;
 	}
-
-	BaseClass::OnCommand(command);
+	else
+	{
+		BaseClass::OnCommand(command);
+	}
 }
 
 CPhysicRigidBodyEditDialog::~CPhysicRigidBodyEditDialog()
@@ -275,7 +288,8 @@ void CPhysicRigidBodyEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnIdle);
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnDeath);
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
-	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnacleCatching);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnaclePulling);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnacleChewing);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToWorld);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
@@ -318,7 +332,8 @@ void CPhysicRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnIdle);
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnDeath);
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
-	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnacleCatching);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnaclePulling);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnacleChewing);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToWorld);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToDynamicObject);

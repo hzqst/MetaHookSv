@@ -74,6 +74,13 @@ StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_
 		return StudioAnimActivityType_CaughtByBarnacle;
 	}
 
+	if (
+		pseqdesc->activity == ACT_EAT
+		)
+	{
+		return StudioAnimActivityType_BarnacleChewing;
+	}
+
 	return StudioAnimActivityType_Idle;
 }
 
@@ -134,22 +141,24 @@ bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhys
 	return false;
 }
 
-bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext)
+bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext, bool bIsAddingPhysicComponent)
 {
 	CPhysicComponentUpdateContext ComponentUpdateContext(ObjectUpdateContext);
+
+	ComponentUpdateContext.bIsAddingPhysicComponent = true;
 
 	PhysicComponent->Update(&ComponentUpdateContext);
 
 	return !ComponentUpdateContext.m_bShouldFree;
 }
 
-void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext)
+void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext, bool bIsAddingPhysicComponent)
 {
 	for (auto itor = PhysicComponents.begin(); itor != PhysicComponents.end();)
 	{
 		auto pPhysicComponent = (*itor);
 
-		if (DispatchPhysicComponentUpdate(pPhysicComponent, ObjectUpdateContext))
+		if (DispatchPhysicComponentUpdate(pPhysicComponent, ObjectUpdateContext, bIsAddingPhysicComponent))
 		{
 			itor++; 
 		}
@@ -326,15 +335,23 @@ void DispatchSortPhysicComponents(std::vector<IPhysicComponent*>& PhysicComponen
 
 void DispatchAddPhysicComponent(std::vector<IPhysicComponent*> &PhysicComponents, IPhysicComponent* pPhysicComponent)
 {
-	PhysicComponents.emplace_back(pPhysicComponent);
-
-	DispatchSortPhysicComponents(PhysicComponents);
-
 	ClientPhysicManager()->AddPhysicComponent(pPhysicComponent->GetPhysicComponentId(), pPhysicComponent);
 
 	CPhysicObjectUpdateContext ObjectUpdateContext;
 
-	DispatchPhysicComponentUpdate(pPhysicComponent, &ObjectUpdateContext);
+	bool bShouldAdd = DispatchPhysicComponentUpdate(pPhysicComponent, &ObjectUpdateContext, true);
+
+	if (bShouldAdd)
+	{
+		PhysicComponents.emplace_back(pPhysicComponent);
+
+		DispatchSortPhysicComponents(PhysicComponents);
+	}
+	else
+	{
+		ClientPhysicManager()->RemovePhysicComponent(pPhysicComponent->GetPhysicComponentId());
+
+	}
 }
 
 void DispatchRemovePhysicComponents(std::vector<IPhysicComponent*>& PhysicComponents)
@@ -398,6 +415,9 @@ void DispatchBuildPhysicComponents(
 		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
 			continue;
 
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate)
+			continue;
+
 		auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, 0);
 
 		if (pConstraint)
@@ -418,6 +438,24 @@ void DispatchBuildPhysicComponents(
 		if (pPhysicBehavior)
 		{
 			pfnAddPhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, pPhysicBehavior);
+		}
+	}
+
+	for (const auto& pConstraintConfig : ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
+			continue;
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
+		auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+		if (pConstraint)
+		{
+			pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
 		}
 	}
 }
@@ -481,6 +519,9 @@ void DispatchRebuildPhysicComponents(
 		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
 			continue;
 
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate)
+			continue;
+
 		auto found = configIdToComponentIdMap.find(pConstraintConfigPtr->configId);
 
 		if (found != configIdToComponentIdMap.end())
@@ -532,6 +573,40 @@ void DispatchRebuildPhysicComponents(
 			if (pPhysicBehavior)
 			{
 				pfnAddPhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, pPhysicBehavior);
+			}
+		}
+	}
+
+	for (const auto& pConstraintConfig : ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (pConstraintConfigPtr->flags & PhysicConstraintFlag_NonNative)
+			continue;
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
+		auto found = configIdToComponentIdMap.find(pConstraintConfigPtr->configId);
+
+		if (found != configIdToComponentIdMap.end())
+		{
+			auto oldPhysicComponentId = found->second;
+
+			auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, oldPhysicComponentId);
+
+			if (pConstraint)
+			{
+				pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+			}
+		}
+		else
+		{
+			auto pConstraint = pfnCreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+			if (pConstraint)
+			{
+				pfnAddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
 			}
 		}
 	}
@@ -1012,7 +1087,8 @@ static std::shared_ptr<CClientRigidBodyConfig> LoadRigidBodyFromKeyValues(KeyVal
 	LOAD_CONFIG_FLAGS(invertStateOnIdle, InvertStateOnIdle);
 	LOAD_CONFIG_FLAGS(invertStateOnDeath, InvertStateOnDeath);
 	LOAD_CONFIG_FLAGS(invertStateOnCaughtByBarnacle, InvertStateOnCaughtByBarnacle);
-	LOAD_CONFIG_FLAGS(invertStateOnBarnacleCatching, InvertStateOnBarnacleCatching);
+	LOAD_CONFIG_FLAGS(invertStateOnBarnaclePulling, InvertStateOnBarnaclePulling);
+	LOAD_CONFIG_FLAGS(invertStateOnBarnacleChewing, InvertStateOnBarnacleChewing);
 	LOAD_CONFIG_FLAGS(noCollisionToWorld, NoCollisionToWorld);
 	LOAD_CONFIG_FLAGS(noCollisionToStaticObject, NoCollisionToStaticObject);
 	LOAD_CONFIG_FLAGS(noCollisionToDynamicObject, NoCollisionToDynamicObject);
@@ -1139,26 +1215,18 @@ static std::shared_ptr<CClientConstraintConfig> LoadConstraintFromKeyValues(KeyV
 		UTIL_ParseStringAsVector3(forward, pConstraintConfig->forward);
 	}
 
-	if (pConstraintSubKey->GetBool("barnacle"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_Barnacle;
+#define LOAD_CONSTRAINT_FLAG(str, name) { if (pConstraintSubKey->GetBool(#str)) pConstraintConfig->flags |= PhysicConstraintFlag_##name; }
 
-	if (pConstraintSubKey->GetBool("gargantua"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_Gargantua;
-
-	if (pConstraintSubKey->GetBool("deactiveOnNormalActivity"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnNormalActivity;
-
-	if (pConstraintSubKey->GetBool("deactiveOnDeathActivity"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnDeathActivity;
-
-	if (pConstraintSubKey->GetBool("deactiveOnCaughtByBarnacleActivity"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnCaughtByBarnacleActivity;
-
-	if (pConstraintSubKey->GetBool("deactiveOnBarnacleCatchingActivity"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_DeactiveOnBarnacleCatchingActivity;
-
-	if (pConstraintSubKey->GetBool("dontResetPoseOnErrorCorrection"))
-		pConstraintConfig->flags |= PhysicConstraintFlag_DontResetPoseOnErrorCorrection;
+	LOAD_CONSTRAINT_FLAG(barnacle, Barnacle);
+	LOAD_CONSTRAINT_FLAG(gargantua, Gargantua);
+	LOAD_CONSTRAINT_FLAG(deactiveOnNormalActivity, DeactiveOnNormalActivity);
+	LOAD_CONSTRAINT_FLAG(deactiveOnDeathActivity, DeactiveOnDeathActivity);
+	LOAD_CONSTRAINT_FLAG(deactiveOnCaughtByBarnacleActivity, DeactiveOnCaughtByBarnacleActivity);
+	LOAD_CONSTRAINT_FLAG(deactiveOnBarnaclePullingActivity, DeactiveOnBarnaclePullingActivity);
+	LOAD_CONSTRAINT_FLAG(deactiveOnBarnacleChewingActivity, DeactiveOnBarnacleChewingActivity);
+	LOAD_CONSTRAINT_FLAG(dontResetPoseOnErrorCorrection, DontResetPoseOnErrorCorrection);
+	LOAD_CONSTRAINT_FLAG(DeferredCreate, DeferredCreate);
+#undef LOAD_CONSTRAINT_FLAG
 
 	pConstraintConfig->debugDrawLevel = pConstraintSubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
 	pConstraintConfig->disableCollision = pConstraintSubKey->GetBool("disableCollision", true);
@@ -1388,7 +1456,8 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 		pPhysicBehaviorConfig->type = UTIL_GetPhysicBehaviorTypeFromTypeName(type);
 	}
 
-	pPhysicBehaviorConfig->rigidbody = pPhysicBehaviorSubKey->GetString("rigidbody");
+	pPhysicBehaviorConfig->rigidbodyA = pPhysicBehaviorSubKey->GetString("rigidbodyA");
+	pPhysicBehaviorConfig->rigidbodyB = pPhysicBehaviorSubKey->GetString("rigidbodyB");
 	pPhysicBehaviorConfig->constraint = pPhysicBehaviorSubKey->GetString("constraint");
 
 	if (pPhysicBehaviorSubKey->GetBool("barnacle"))
@@ -1397,11 +1466,21 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 	if (pPhysicBehaviorSubKey->GetBool("gargantua"))
 		pPhysicBehaviorConfig->flags |= PhysicBehaviorFlag_Gargantua;
 
-	//if (pPhysicBehaviorSubKey->GetBool("affectsRigidBody"))
-	//	pPhysicBehaviorConfig->flags |= PhysicBehaviorFlag_AffectsRigidBody;
 
-	//if (pPhysicBehaviorSubKey->GetBool("affectsConstraint"))
-	//	pPhysicBehaviorConfig->flags |= PhysicBehaviorFlag_AffectsConstraint;
+	auto origin = pPhysicBehaviorSubKey->GetString("origin");
+
+	if (origin)
+	{
+		UTIL_ParseStringAsVector3(origin, pPhysicBehaviorConfig->origin);
+	}
+
+	auto angles = pPhysicBehaviorSubKey->GetString("angles");
+
+	if (angles)
+	{
+		UTIL_ParseStringAsVector3(angles, pPhysicBehaviorConfig->angles);
+	}
+
 
 #define LOAD_FACTOR_FLOAT(name) pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name] = pFactorsKey->GetFloat(#name, NAN);
 
@@ -1411,16 +1490,27 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 	{
 		switch (pPhysicBehaviorConfig->type)
 		{
-		case PhysicBehavior_BarnacleDragForce:
+		case PhysicBehavior_BarnacleDragOnRigidBody:
 		{
-			LOAD_FACTOR_FLOAT(BarnacleDragForceMagnitude);
-			LOAD_FACTOR_FLOAT(BarnacleDragForceExtraHeight);
+			LOAD_FACTOR_FLOAT(BarnacleDragMagnitude);
+			LOAD_FACTOR_FLOAT(BarnacleDragExtraHeight);
 			break;
 		}
-		case PhysicBehavior_BarnacleChewForce:
+		case PhysicBehavior_BarnacleDragOnConstraint:
 		{
-			LOAD_FACTOR_FLOAT(BarnacleChewForceMagnitude);
-			LOAD_FACTOR_FLOAT(BarnacleChewForceInterval);
+			LOAD_FACTOR_FLOAT(BarnacleDragMagnitude);
+			LOAD_FACTOR_FLOAT(BarnacleDragVelocity);
+			LOAD_FACTOR_FLOAT(BarnacleDragExtraHeight);
+			LOAD_FACTOR_FLOAT(BarnacleDragLimitAxis);
+			LOAD_FACTOR_FLOAT(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+			LOAD_FACTOR_FLOAT(BarnacleDragActivatedOnBarnaclePulling);
+			LOAD_FACTOR_FLOAT(BarnacleDragActivatedOnBarnacleChewing);
+			break;
+		}
+		case PhysicBehavior_BarnacleChew:
+		{
+			LOAD_FACTOR_FLOAT(BarnacleChewMagnitude);
+			LOAD_FACTOR_FLOAT(BarnacleChewInterval);
 			break;
 		}
 		case PhysicBehavior_BarnacleConstraintLimitAdjustment:
@@ -1428,11 +1518,11 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
-			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentBarnacleSequence);
 			break;
 		}
 		case PhysicBehavior_FirstPersonViewCamera:
-		case PhysicBehavior_ThirdPersonViewCamera: {
+		case PhysicBehavior_ThirdPersonViewCamera: 
+		{
 			LOAD_FACTOR_FLOAT(CameraActivateOnIdle);
 			LOAD_FACTOR_FLOAT(CameraActivateOnDeath);
 			LOAD_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
@@ -1721,7 +1811,8 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					SAVE_CONFIG_FLAGS(invertStateOnIdle,					InvertStateOnIdle);
 					SAVE_CONFIG_FLAGS(invertStateOnDeath,					InvertStateOnDeath);
 					SAVE_CONFIG_FLAGS(invertStateOnCaughtByBarnacle,		InvertStateOnCaughtByBarnacle);
-					SAVE_CONFIG_FLAGS(invertStateOnBarnacleCatching,		InvertStateOnBarnacleCatching);
+					SAVE_CONFIG_FLAGS(invertStateOnBarnaclePulling,			InvertStateOnBarnaclePulling);
+					SAVE_CONFIG_FLAGS(invertStateOnBarnacleChewing,			InvertStateOnBarnacleChewing);
 					SAVE_CONFIG_FLAGS(noCollisionToWorld,			NoCollisionToWorld);
 					SAVE_CONFIG_FLAGS(noCollisionToStaticObject,	NoCollisionToStaticObject);
 					SAVE_CONFIG_FLAGS(noCollisionToDynamicObject,	NoCollisionToDynamicObject);
@@ -1790,26 +1881,19 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 
 				if (pConstraintSubKey)
 				{
-					if (pConstraintConfig->flags & PhysicConstraintFlag_Barnacle)
-						pConstraintSubKey->SetBool("barnacle", true);
+#define SAVE_CONSTRAINT_FLAG(str, name) { if (pConstraintConfig->flags & PhysicConstraintFlag_##name) pConstraintSubKey->SetBool(#str, true); }
 
-					if (pConstraintConfig->flags & PhysicConstraintFlag_Gargantua)
-						pConstraintSubKey->SetBool("gargantua", true);
+					SAVE_CONSTRAINT_FLAG(barnacle, Barnacle);
+					SAVE_CONSTRAINT_FLAG(gargantua, Gargantua);
+					SAVE_CONSTRAINT_FLAG(deactiveOnNormalActivity, DeactiveOnNormalActivity);
+					SAVE_CONSTRAINT_FLAG(deactiveOnDeathActivity, DeactiveOnDeathActivity);
+					SAVE_CONSTRAINT_FLAG(deactiveOnCaughtByBarnacleActivity, DeactiveOnCaughtByBarnacleActivity);
+					SAVE_CONSTRAINT_FLAG(deactiveOnBarnaclePullingActivity, DeactiveOnBarnaclePullingActivity);
+					SAVE_CONSTRAINT_FLAG(deactiveOnBarnacleChewingActivity, DeactiveOnBarnacleChewingActivity);
+					SAVE_CONSTRAINT_FLAG(dontResetPoseOnErrorCorrection, DontResetPoseOnErrorCorrection);
+					SAVE_CONSTRAINT_FLAG(DeferredCreate, DeferredCreate);
 
-					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnNormalActivity)
-						pConstraintSubKey->SetBool("deactiveOnNormalActivity", true);
-
-					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnDeathActivity)
-						pConstraintSubKey->SetBool("deactiveOnDeathActivity", true);
-
-					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnCaughtByBarnacleActivity)
-						pConstraintSubKey->SetBool("deactiveOnCaughtByBarnacleActivity", true);
-
-					if (pConstraintConfig->flags & PhysicConstraintFlag_DeactiveOnBarnacleCatchingActivity)
-						pConstraintSubKey->SetBool("deactiveOnBarnacleCatchingActivity", true);
-
-					if (pConstraintConfig->flags & PhysicConstraintFlag_DontResetPoseOnErrorCorrection)
-						pConstraintSubKey->SetBool("dontResetPoseOnErrorCorrection", true);
+#undef SAVE_CONSTRAINT_FLAG
 
 					pConstraintSubKey->SetString("type", UTIL_GetConstraintTypeName(pConstraintConfig->type));
 
@@ -2036,7 +2120,8 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 				if (pPhysicBehaviorSubKey)
 				{
 					pPhysicBehaviorSubKey->SetString("type", UTIL_GetPhysicBehaviorTypeName(pPhysicBehaviorConfig->type));
-					pPhysicBehaviorSubKey->SetString("rigidbody", pPhysicBehaviorConfig->rigidbody.c_str());
+					pPhysicBehaviorSubKey->SetString("rigidbodyA", pPhysicBehaviorConfig->rigidbodyA.c_str());
+					pPhysicBehaviorSubKey->SetString("rigidbodyB", pPhysicBehaviorConfig->rigidbodyB.c_str());
 					pPhysicBehaviorSubKey->SetString("constraint", pPhysicBehaviorConfig->constraint.c_str());
 
 					if (pPhysicBehaviorConfig->flags & PhysicBehaviorFlag_Barnacle)
@@ -2045,11 +2130,15 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 					if (pPhysicBehaviorConfig->flags & PhysicBehaviorFlag_Gargantua)
 						pPhysicBehaviorSubKey->SetBool("gargantua", true);
 
-					//if (pPhysicBehaviorConfig->flags & PhysicBehaviorFlag_AffectsRigidBody)
-					//	pPhysicBehaviorSubKey->SetBool("affectsRigidBody", true);
+					if (VectorLength(pPhysicBehaviorConfig->origin) > 0)
+					{
+						pPhysicBehaviorSubKey->SetString("origin", std::format("{0} {1} {2}", pPhysicBehaviorConfig->origin[0], pPhysicBehaviorConfig->origin[1], pPhysicBehaviorConfig->origin[2]).c_str());
+					}
 
-					//if (pPhysicBehaviorConfig->flags & PhysicBehaviorFlag_AffectsConstraint)
-					//	pPhysicBehaviorSubKey->SetBool("affectsConstraint", true);
+					if (VectorLength(pPhysicBehaviorConfig->angles) > 0)
+					{
+						pPhysicBehaviorSubKey->SetString("angles", std::format("{0} {1} {2}", pPhysicBehaviorConfig->angles[0], pPhysicBehaviorConfig->angles[1], pPhysicBehaviorConfig->angles[2]).c_str());
+					}
 
 #define SET_FACTOR_FLOAT(name) if(!isnan(pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name])) pFactorsKey->SetFloat(#name, pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name]);
 
@@ -2059,17 +2148,27 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 					{
 						switch (pPhysicBehaviorConfig->type)
 						{
-						case PhysicBehavior_BarnacleDragForce:
+						case PhysicBehavior_BarnacleDragOnRigidBody:
 						{
-							SET_FACTOR_FLOAT(BarnacleDragForceMagnitude);
-							SET_FACTOR_FLOAT(BarnacleDragForceExtraHeight);
-
+							SET_FACTOR_FLOAT(BarnacleDragMagnitude);
+							SET_FACTOR_FLOAT(BarnacleDragExtraHeight);
 							break;
 						}
-						case PhysicBehavior_BarnacleChewForce:
+						case PhysicBehavior_BarnacleDragOnConstraint:
 						{
-							SET_FACTOR_FLOAT(BarnacleChewForceMagnitude);
-							SET_FACTOR_FLOAT(BarnacleChewForceInterval);
+							SET_FACTOR_FLOAT(BarnacleDragMagnitude);
+							SET_FACTOR_FLOAT(BarnacleDragVelocity);
+							SET_FACTOR_FLOAT(BarnacleDragExtraHeight);
+							SET_FACTOR_FLOAT(BarnacleDragLimitAxis);
+							SET_FACTOR_FLOAT(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+							SET_FACTOR_FLOAT(BarnacleDragActivatedOnBarnaclePulling);
+							SET_FACTOR_FLOAT(BarnacleDragActivatedOnBarnacleChewing);
+							break;
+						}
+						case PhysicBehavior_BarnacleChew:
+						{
+							SET_FACTOR_FLOAT(BarnacleChewMagnitude);
+							SET_FACTOR_FLOAT(BarnacleChewInterval);
 							break;
 						}
 						case PhysicBehavior_BarnacleConstraintLimitAdjustment:
@@ -2077,7 +2176,6 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
-							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentBarnacleSequence);
 							break;
 						}
 						case PhysicBehavior_FirstPersonViewCamera:
@@ -2449,12 +2547,12 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 
 			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
 
-			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleDragForce;
-			pPhysicBehaviorConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
-			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Barnacle;// | PhysicBehaviorFlag_AffectsRigidBody;
-			pPhysicBehaviorConfig->rigidbody = rigidbody;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceMagnitude] = factor0;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceExtraHeight] = 24;
+			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleDragOnRigidBody;
+			pPhysicBehaviorConfig->name = std::format("BarnacleDrag|{}", rigidbody);
+			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Barnacle;
+			pPhysicBehaviorConfig->rigidbodyA = rigidbody;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude] = factor0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight] = 24;
 
 			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
 
@@ -2495,12 +2593,12 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
 
 			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
-			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleDragForce;
-			pPhysicBehaviorConfig->name = std::format("BarnacleDragForce|{}", rigidbody);
+			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleDragOnRigidBody;
+			pPhysicBehaviorConfig->name = std::format("BarnacleDrag|{}", rigidbody);
 			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Barnacle;
-			pPhysicBehaviorConfig->rigidbody = rigidbody;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceMagnitude] = factor0;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragForceExtraHeight] = 24;
+			pPhysicBehaviorConfig->rigidbodyA = rigidbody;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude] = factor0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight] = 24;
 
 			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
 
@@ -2512,12 +2610,12 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 		{
 			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
 
-			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleChewForce;
-			pPhysicBehaviorConfig->name = std::format("BarnacleChewForce|{}", rigidbody);
+			pPhysicBehaviorConfig->type = PhysicBehavior_BarnacleChew;
+			pPhysicBehaviorConfig->name = std::format("BarnacleChew|{}", rigidbody);
 			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Barnacle;
-			pPhysicBehaviorConfig->rigidbody = rigidbody;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewForceMagnitude] = factor0;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewForceInterval] = factor1;
+			pPhysicBehaviorConfig->rigidbodyA = rigidbody;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewMagnitude] = factor0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewInterval] = factor1;
 
 			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
 
@@ -2536,7 +2634,6 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight] = factor1;
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval] = factor2;
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis] = -1;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentBarnacleSequence] = 5;
 
 			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
 
@@ -2564,7 +2661,7 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 
 		pPhysicBehaviorConfigFirstPersonView->name = "HeadCamera";
 		pPhysicBehaviorConfigFirstPersonView->type = PhysicBehavior_FirstPersonViewCamera;
-		pPhysicBehaviorConfigFirstPersonView->rigidbody = "Head";
+		pPhysicBehaviorConfigFirstPersonView->rigidbodyA = "Head";
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = 0;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = 1;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = 1;
@@ -2584,7 +2681,7 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 
 		pPhysicBehaviorConfigThirdPersonView->name = "PelvisCamera";
 		pPhysicBehaviorConfigThirdPersonView->type = PhysicBehavior_ThirdPersonViewCamera;
-		pPhysicBehaviorConfigThirdPersonView->rigidbody = "Pelvis";
+		pPhysicBehaviorConfigThirdPersonView->rigidbodyA = "Pelvis";
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = 0;
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = 1;
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = 1;
@@ -3841,23 +3938,23 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 		auto entindex = itor->first;
 		auto pPhysicObject = itor->second;
 
-		CPhysicObjectUpdateContext ctx;
+		CPhysicObjectUpdateContext ObjectUpdateContext;
 
-		if (!ctx.m_bShouldFree)
+		if (!ObjectUpdateContext.m_bShouldFree)
 		{
 			//world entity is always present
 			if (entindex > 0 && !ClientEntityManager()->IsEntityEmitted(entindex))
 			{
-				ctx.m_bShouldFree = true;
+				ObjectUpdateContext.m_bShouldFree = true;
 			}
 		}
 
-		if (!ctx.m_bShouldFree)
+		if (!ObjectUpdateContext.m_bShouldFree)
 		{
-			pPhysicObject->Update(&ctx);
+			pPhysicObject->Update(&ObjectUpdateContext);
 		}
 
-		if (ctx.m_bShouldFree)
+		if (ObjectUpdateContext.m_bShouldFree)
 		{
 			FreePhysicObject(pPhysicObject);
 			itor = m_physicObjects.erase(itor);

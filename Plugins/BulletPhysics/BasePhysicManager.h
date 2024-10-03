@@ -165,8 +165,8 @@ private:
 
 bool CheckPhysicComponentFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentFilters& filters);
 
-bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext);
-void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext);
+bool DispatchPhysicComponentUpdate(IPhysicComponent* PhysicComponent, CPhysicObjectUpdateContext* ObjectUpdateContext, bool bIsAddingPhysicComponent);
+void DispatchPhysicComponentsUpdate(std::vector<IPhysicComponent*>& PhysicComponents, CPhysicObjectUpdateContext* ObjectUpdateContext, bool bIsAddingPhysicComponent);
 IPhysicComponent* DispatchGetPhysicComponentByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);
 IPhysicComponent* DispatchGetPhysicComponentByComponentId(const std::vector<IPhysicComponent*>& m_PhysicComponents, int id);
 IPhysicRigidBody* DispatchGetRigidBodyByName(const std::vector<IPhysicComponent*>& m_PhysicComponents, const std::string& name);

@@ -87,13 +87,17 @@ private:
 	vgui::ComboBox* m_pRotOrder{};
 	vgui::TextEntry* m_pMaxTolerantLinearError{};
 
-	vgui::CheckButton* m_pBarnacle{};
-	vgui::CheckButton* m_pGargantua{};
-	vgui::CheckButton* m_pDeactiveOnNormalActivity{};
-	vgui::CheckButton* m_pDeactiveOnDeathActivity{};
-	vgui::CheckButton* m_pDeactiveOnCaughtByBarnacleActivity{};
-	vgui::CheckButton* m_pDeactiveOnBarnacleCatchingActivity{};
-	vgui::CheckButton* m_pDontResetPoseOnErrorCorrection{};
+#define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{}
+	DEFINE_CHECK_BUTTON(Barnacle);
+	DEFINE_CHECK_BUTTON(Gargantua);
+	DEFINE_CHECK_BUTTON(DeactiveOnNormalActivity);
+	DEFINE_CHECK_BUTTON(DeactiveOnDeathActivity);
+	DEFINE_CHECK_BUTTON(DeactiveOnCaughtByBarnacleActivity);
+	DEFINE_CHECK_BUTTON(DeactiveOnBarnaclePullingActivity);
+	DEFINE_CHECK_BUTTON(DeactiveOnBarnacleChewingActivity);
+	DEFINE_CHECK_BUTTON(DontResetPoseOnErrorCorrection);
+	DEFINE_CHECK_BUTTON(DeferredCreate);
+#undef DEFINE_CHECK_BUTTON
 
 	CPhysicFactorListPanel* m_pPhysicFactorListPanel{};
 

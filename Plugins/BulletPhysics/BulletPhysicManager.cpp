@@ -13,6 +13,8 @@
 #include "BulletDynamicObject.h"
 #include "BulletRagdollObject.h"
 
+#include "BulletRigidBodyRelocationBehavior.h"
+
 #include <vgui_controls/Controls.h>
 #include <glew.h>
 
@@ -285,8 +287,8 @@ bool BulletGetConstraintGlobalPivotTransform(btTypedConstraint* pConstraint, btT
 	{
 		auto pDof6 = (btGeneric6DofSpring2Constraint*)pConstraint;
 
-		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pDof6->getCalculatedTransformA();// pDof6->getRigidBodyA().getWorldTransform()* pDof6->getFrameOffsetA();
+		worldPivotB = pDof6->getCalculatedTransformB();// pDof6->getRigidBodyB().getWorldTransform()* pDof6->getFrameOffsetB();
 
 		return true;
 	}
@@ -639,42 +641,44 @@ btTypedConstraint* BulletCreateConstraint_Dof6Spring(const CClientConstraintConf
 	LOAD_FROM_FACTOR_WITH_DEFAULT_VALUE(Dof6SpringAngularDampingY, 0);
 	LOAD_FROM_FACTOR_WITH_DEFAULT_VALUE(Dof6SpringAngularDampingZ, 0);
 
-	if (Dof6SpringEnableLinearSpringX >= 1)
+	pDof6Spring->setEquilibriumPoint();
+
+	if ((int)Dof6SpringEnableLinearSpringX >= 1)
 	{
 		pDof6Spring->enableSpring(0, true);
 		pDof6Spring->setStiffness(0, Dof6SpringLinearStiffnessX);
 		pDof6Spring->setDamping(0, Dof6SpringLinearDampingX);
 	}
 
-	if (Dof6SpringEnableLinearSpringY >= 1)
+	if ((int)Dof6SpringEnableLinearSpringY >= 1)
 	{
 		pDof6Spring->enableSpring(1, true);
 		pDof6Spring->setStiffness(1, Dof6SpringLinearStiffnessY);
 		pDof6Spring->setDamping(1, Dof6SpringLinearDampingY);
 	}
 
-	if (Dof6SpringEnableLinearSpringZ >= 1)
+	if ((int)Dof6SpringEnableLinearSpringZ >= 1)
 	{
 		pDof6Spring->enableSpring(2, true);
 		pDof6Spring->setStiffness(2, Dof6SpringLinearStiffnessZ);
 		pDof6Spring->setDamping(2, Dof6SpringLinearDampingZ);
 	}
 
-	if (Dof6SpringEnableAngularSpringX >= 1)
+	if ((int)Dof6SpringEnableAngularSpringX >= 1)
 	{
 		pDof6Spring->enableSpring(3, true);
 		pDof6Spring->setStiffness(3, Dof6SpringAngularStiffnessX);
 		pDof6Spring->setDamping(3, Dof6SpringAngularDampingX);
 	}
 
-	if (Dof6SpringEnableAngularSpringY >= 1)
+	if ((int)Dof6SpringEnableAngularSpringY >= 1)
 	{
 		pDof6Spring->enableSpring(4, true);
 		pDof6Spring->setStiffness(3, Dof6SpringAngularStiffnessY);
 		pDof6Spring->setDamping(3, Dof6SpringAngularDampingY);
 	}
 
-	if (Dof6SpringEnableAngularSpringZ >= 1)
+	if ((int)Dof6SpringEnableAngularSpringZ >= 1)
 	{
 		pDof6Spring->enableSpring(5, true);
 		pDof6Spring->setStiffness(5, Dof6SpringAngularStiffnessZ);
@@ -730,8 +734,6 @@ btTypedConstraint* BulletCreateConstraint_Dof6Spring(const CClientConstraintConf
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 4);
 		pDof6Spring->setParam(BT_CONSTRAINT_STOP_CFM, AngularStopCFM, 5);
 	}
-
-	pDof6Spring->setEquilibriumPoint();
 
 	return pDof6Spring;
 }
@@ -1161,7 +1163,7 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 	return nullptr;
 }
 
-IPhysicBehavior* DispatchBulletCreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
+IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject* pPhysicObject, const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
 	switch (pPhysicBehaviorConfig->type)
 	{
@@ -1169,6 +1171,32 @@ IPhysicBehavior* DispatchBulletCreatePhysicBehavior(const CPhysicObjectCreationP
 	{
 		//TODO
 		return nullptr;
+	}
+	case PhysicBehavior_RigidBodyRelocation:
+	{
+		auto pRigidBodyA = pPhysicObject->FindRigidBodyByName(pPhysicBehaviorConfig->rigidbodyA, true);
+
+		if (!pRigidBodyA)
+		{
+			gEngfuncs.Con_DPrintf("DispatchBulletCreatePhysicBehavior: rigidbodyA \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbodyA.c_str());
+			return nullptr;
+		}
+
+		auto pRigidBodyB = pPhysicObject->FindRigidBodyByName(pPhysicBehaviorConfig->rigidbodyB, true);
+
+		if (!pRigidBodyB)
+		{
+			gEngfuncs.Con_DPrintf("DispatchBulletCreatePhysicBehavior: rigidbodyB \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbodyB.c_str());
+			return nullptr;
+		}
+
+		return new CBulletRigidBodyRelocationBehavior(
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
+			pPhysicObject->GetEntityIndex(),
+			pPhysicObject,
+			pPhysicBehaviorConfig,
+			pRigidBodyA->GetPhysicComponentId(),
+			pRigidBodyB->GetPhysicComponentId());
 	}
 	}
 
@@ -1184,7 +1212,7 @@ void CBulletEntityMotionState::getWorldTransform(btTransform& worldTrans) const
 
 	if (!GetInternalRigidBody() || GetInternalRigidBody()->isStaticOrKinematicObject())
 	{
-		btVector3 vecOrigin(ent->curstate.origin[0], ent->curstate.origin[1], ent->curstate.origin[2]);
+		btVector3 vecOrigin = GetVector3FromVec3(ent->curstate.origin);
 
 		Vector3GoldSrcToBullet(vecOrigin);
 

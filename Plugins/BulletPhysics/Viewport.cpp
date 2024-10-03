@@ -137,6 +137,11 @@ void CViewport::HideClientUI(void)
 	SetVisible(false);
 }
 
+void CViewport::ConnectToServer(const char* game, int IP, int port)
+{
+	m_pPhysicDebugViewGUI->ConnectToServer(game, IP, port);
+}
+
 void CViewport::UpdateInspectStuffs()
 {
 	m_pPhysicDebugViewGUI->UpdateInspectStuffs();

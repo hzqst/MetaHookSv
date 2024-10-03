@@ -201,7 +201,12 @@ void CBulletRagdollRigidBody::Update(CPhysicComponentUpdateContext* ComponentUpd
 			bKinematic = !bKinematic;
 			break;
 		}
-		else if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleCatching && (m_flags & PhysicRigidBodyFlag_InvertStateOnBarnacleCatching))
+		else if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling && (m_flags & PhysicRigidBodyFlag_InvertStateOnBarnaclePulling))
+		{
+			bKinematic = !bKinematic;
+			break;
+		}
+		else if (pRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing && (m_flags & PhysicRigidBodyFlag_InvertStateOnBarnacleChewing))
 		{
 			bKinematic = !bKinematic;
 			break;
