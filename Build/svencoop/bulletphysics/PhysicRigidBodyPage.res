@@ -34,7 +34,7 @@
 	{
 		"ControlName"		"Button"
 		"fieldName"		"ShiftUpRigidBody"
-		"xpos"		"240"
+		"xpos"		"120"  // 原 xpos=240，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -53,7 +53,7 @@
 	{
 		"ControlName"		"Button"
 		"fieldName"		"ShiftDownRigidBody"
-		"xpos"		"360"
+		"xpos"		"240"  // 原 xpos=360，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -61,7 +61,7 @@
 		"PinCorner"		"3"
 		"visible"		"1"
 		"enabled"		"1"
-		"tabPosition"		"1"
+		"tabPosition"		"2"
 		"paintbackground"		"1"
 		"labelText"		"#BulletPhysics_ShiftDown"
 		"textAlignment"		"west"
@@ -72,7 +72,7 @@
 	{
 		"ControlName"		"Button"
 		"fieldName"		"CreateRigidBody"
-		"xpos"		"480"
+		"xpos"		"360"  // 原 xpos=480，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -80,11 +80,32 @@
 		"PinCorner"		"3"
 		"visible"		"1"
 		"enabled"		"1"
-		"tabPosition"		"1"
+		"tabPosition"		"3"
 		"paintbackground"		"1"
 		"labelText"		"#BulletPhysics_CreateRigidBody"
 		"textAlignment"		"west"
 		"wrap"		"0"
 		"command"		"CreateRigidBody"
+	}
+
+	// 新增 DeleteSelectedRigidBody 按钮，位置为 CreateRigidBody 原先的地方 (xpos=480)
+	"DeleteSelectedRigidBody"
+	{
+		"ControlName"		"Button"
+		"fieldName"		"DeleteSelectedRigidBody"
+		"xpos"		"480"  // 这是 CreateRigidBody 原先的位置
+		"ypos"		"244"
+		"wide"		"120"
+		"tall"		"24"
+		"AutoResize"		"0"
+		"PinCorner"		"3"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"4"
+		"paintbackground"		"1"
+		"labelText"		"#BulletPhysics_DeleteSelectedRigidBody"
+		"textAlignment"		"west"
+		"wrap"		"0"
+		"command"		"DeleteSelectedRigidBody"
 	}
 }

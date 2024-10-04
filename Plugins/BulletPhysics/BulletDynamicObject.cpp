@@ -79,9 +79,11 @@ IPhysicRigidBody* CBulletDynamicObject::CreateRigidBody(const CPhysicObjectCreat
 	else
 		group |= BulletPhysicCollisionFilterGroups::DynamicObjectFilter;
 
-	int mask = btBroadphaseProxy::AllFilter;
-
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter);
+	int mask = BulletPhysicCollisionFilterGroups::WorldFilter |
+		BulletPhysicCollisionFilterGroups::StaticObjectFilter |
+		BulletPhysicCollisionFilterGroups::DynamicObjectFilter |
+		BulletPhysicCollisionFilterGroups::RagdollObjectFilter |
+		BulletPhysicCollisionFilterGroups::InspectorFilter;
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 		mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;

@@ -73,6 +73,12 @@ void CPhysicRigidBodyPage::OnCommand(const char* command)
 	{
 		OnCreateRigidBody();
 	}
+	else if (!stricmp(command, "DeleteSelectedRigidBody"))
+	{
+		auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicRigidBodyListPanel->GetItemUserData(selectItemId);
+		OnDeleteRigidBody(configId);
+	}
 	else if (!stricmp(command, "ShiftUpRigidBody"))
 	{
 		auto selectItemId = m_pPhysicRigidBodyListPanel->GetSelectedItem(0);
@@ -287,10 +293,12 @@ void CPhysicRigidBodyPage::OnCloneRigidBody(int configId)
 
 void CPhysicRigidBodyPage::OnDeleteRigidBody(int configId)
 {
-	DeleteRigidBodyItem(configId);
+	//DeleteRigidBodyItem(configId);
 
 	if (UTIL_RemoveRigidBodyFromPhysicObjectConfig(m_pPhysicObjectConfig.get(), configId))
 	{
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+
+		ReloadAllRigidBodiesIntoListPanelItem();
 	}
 }

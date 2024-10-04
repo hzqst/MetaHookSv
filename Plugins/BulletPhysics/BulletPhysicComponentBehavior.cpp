@@ -103,7 +103,7 @@ btRigidBody* CBulletPhysicComponentBehavior::CreateInternalRigidBody(IPhysicObje
 
 	Vector3GoldSrcToBullet(size);
 
-	auto pCollisionShape = new btBoxShape(size);
+	auto pCollisionShape = new btBoxShape(size);// new btSphereShape(size.getX());//
 
 	btRigidBody::btRigidBodyConstructionInfo cInfo(0, pMotionState, pCollisionShape);
 

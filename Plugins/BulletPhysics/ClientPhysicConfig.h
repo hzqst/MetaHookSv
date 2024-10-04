@@ -152,8 +152,8 @@ public:
 	int gaitsequence{-1};
 	float animframe{0};
 	StudioAnimActivityType activity{ StudioAnimActivityType_Idle };
-	int controller[4]{ 0 };
-	int blending[4]{ 0 };
+	int controller[4]{ -1, -1, -1, -1 };
+	int blending[4]{ -1, -1, -1, -1 };
 };
 
 class CClientPhysicObjectConfig : public CClientBasePhysicConfig

@@ -396,15 +396,13 @@
         "tall"              "24"
         "tabPosition"       "34"
     }
-
-//CheckButton
-    
+ // 上移后的 CheckButtons
     "DisableCollision"
     {
         "ControlName"       "CheckButton"
         "fieldName"         "DisableCollision"
         "xpos"              "20"
-        "ypos"              "300"  // Adjusted from 240
+        "ypos"              "280"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "19"
@@ -417,7 +415,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseGlobalJointFromA"
         "xpos"              "290"
-        "ypos"              "300"  // Adjusted from 240
+        "ypos"              "280"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "20"
@@ -430,7 +428,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseLookAtOther"
         "xpos"              "20"
-        "ypos"              "330"  // Adjusted from 270
+        "ypos"              "310"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "21"
@@ -443,7 +441,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseGlobalJointOriginFromOther"
         "xpos"              "290"
-        "ypos"              "330"  // Adjusted from 270
+        "ypos"              "310"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "22"
@@ -456,7 +454,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseRigidBodyDistanceAsLinearLimit"
         "xpos"              "20"
-        "ypos"              "360"  // Adjusted from 300
+        "ypos"              "340"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "23"
@@ -469,7 +467,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseLinearReferenceFrameA"
         "xpos"              "290"
-        "ypos"              "360"  // Adjusted from 300
+        "ypos"              "340"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "24"
@@ -482,7 +480,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "Barnacle"
         "xpos"              "20"
-        "ypos"              "390"  // Adjusted from 330
+        "ypos"              "370"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "25"
@@ -495,7 +493,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "Gargantua"
         "xpos"              "290"
-        "ypos"              "390"  // Adjusted from 330
+        "ypos"              "370"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "26"
@@ -508,7 +506,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnNormalActivity"
         "xpos"              "20"
-        "ypos"              "420"  // Adjusted from 360
+        "ypos"              "400"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "27"
@@ -521,7 +519,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnDeathActivity"
         "xpos"              "290"
-        "ypos"              "420"  // Adjusted from 360
+        "ypos"              "400"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "28"
@@ -534,7 +532,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnCaughtByBarnacleActivity"
         "xpos"              "20"
-        "ypos"              "450"  // Adjusted from 390
+        "ypos"              "430"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "29"
@@ -547,7 +545,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnBarnaclePullingActivity"
         "xpos"              "290"
-        "ypos"              "450"  // Adjusted from 390
+        "ypos"              "430"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "30"
@@ -560,7 +558,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnBarnacleChewingActivity"
         "xpos"              "20"
-        "ypos"              "480"  // Adjusted from 420
+        "ypos"              "460"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "31"
@@ -573,7 +571,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DontResetPoseOnErrorCorrection"
         "xpos"              "290"
-        "ypos"              "480"  // Adjusted from 420
+        "ypos"              "460"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "32"
@@ -586,13 +584,14 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeferredCreate"
         "xpos"              "20"
-        "ypos"              "510"  // Adjusted from 420
+        "ypos"              "490"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
-        "tabPosition"       "32"
+        "tabPosition"       "33"
         "labelText"         "#BulletPhysics_DeferredCreate"
         "textAlignment"     "west"
     }
+
 
 	"PhysicFactorListPanel"
 	{
@@ -610,7 +609,8 @@
 		"paintbackground"		"1"
 	}
 
-    // OK, Cancel, and Apply Buttons (these entries are unchanged as per your request)
+
+    // OK, Cancel, and Apply Buttons (保持不变)
     "OK"
     {
         "ControlName"       "Button"
@@ -623,7 +623,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "33"
+        "tabPosition"       "34"  // 此前的 33 后续
         "labelText"         "#GameUI_OK"
         "textAlignment"     "west"
         "dulltext"          "0"
@@ -642,7 +642,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "34"
+        "tabPosition"       "35"
         "labelText"         "#GameUI_Cancel"
         "textAlignment"     "west"
         "dulltext"          "0"
@@ -661,7 +661,7 @@
         "pinCorner"         "0"
         "visible"           "1"
         "enabled"           "1"
-        "tabPosition"       "35"
+        "tabPosition"       "36"
         "labelText"         "#GameUI_Apply"
         "textAlignment"     "west"
         "dulltext"          "0"

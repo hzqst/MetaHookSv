@@ -127,8 +127,10 @@ const char* VGUI2Token_ActivityType[] = {
 	"#BulletPhysics_Idle",
 	"#BulletPhysics_Death",
 	"#BulletPhysics_CaughtByBarnacle", 
-	"#BulletPhysics_BarnacleCatching",
-	"#BulletPhysics_Debug" };
+	"#BulletPhysics_BarnaclePulling",
+	"#BulletPhysics_BarnacleChewing",
+	"#BulletPhysics_Debug"
+};
 
 const char* UTIL_GetActivityTypeLocalizationToken(StudioAnimActivityType type)
 {

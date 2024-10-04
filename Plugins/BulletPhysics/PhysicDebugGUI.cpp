@@ -196,6 +196,11 @@ void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 						OpenEditConstraintDialog(pPhysicComponent->GetOwnerPhysicObject()->GetPhysicObjectId(), pPhysicComponent->GetOwnerPhysicObject()->GetPhysicConfigId(), pPhysicComponent->GetPhysicConfigId());
 						return;
 					}
+					else if (pPhysicComponent->IsPhysicBehavior())
+					{
+						OpenEditPhysicBehaviorDialog(pPhysicComponent->GetOwnerPhysicObject()->GetPhysicObjectId(), pPhysicComponent->GetOwnerPhysicObject()->GetPhysicConfigId(), pPhysicComponent->GetPhysicConfigId());
+						return;
+					}
 				}
 			}
 			else if (code == vgui::KEY_DELETE)
@@ -213,6 +218,14 @@ void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 						}
 					}
 					else if (pPhysicComponent->IsConstraint())
+					{
+						if (DeleteConstraintByComponent(pPhysicComponent))
+						{
+							ClientPhysicManager()->SetSelectedPhysicComponentId(0);
+							return;
+						}
+					}
+					else if (pPhysicComponent->IsPhysicBehavior())
 					{
 						if (DeleteConstraintByComponent(pPhysicComponent))
 						{
@@ -590,7 +603,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 					if (ClientPhysicManager()->GetSelectedPhysicComponentId() != physicComponentId)
 					{
 						ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
-						UpdateEditMode(PhysicEditMode::None);
+						//UpdateEditMode(PhysicEditMode::None);
 					}
 					return;
 				}
@@ -613,7 +626,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 					if (ClientPhysicManager()->GetSelectedPhysicComponentId() != physicComponentId)
 					{
 						ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
-						UpdateEditMode(PhysicEditMode::None);
+						//UpdateEditMode(PhysicEditMode::None);
 					}
 					return;
 				}
@@ -636,7 +649,7 @@ void CPhysicDebugGUI::OnMousePressed(vgui::MouseCode code)
 					if (ClientPhysicManager()->GetSelectedPhysicComponentId() != physicComponentId)
 					{
 						ClientPhysicManager()->SetSelectedPhysicComponentId(physicComponentId);
-						UpdateEditMode(PhysicEditMode::None);
+						//UpdateEditMode(PhysicEditMode::None);
 					}
 					return;
 				}
@@ -1180,6 +1193,30 @@ bool CPhysicDebugGUI::OpenInspectPhysicObjectMenu(bool bSelected)
 
 			menu->AddMenuItem("CreateRigidBody", szBuf, kv, this);
 
+			if (pPhysicObject->IsRagdollObject())
+			{
+				auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+				if (!pRagdollObject->IsDebugAnimEnabled())
+				{
+					kv = new KeyValues("EnableDebugAnim");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					//kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_EnableDebugAnim"), 1, wszFileName);
+
+					menu->AddMenuItem("EnableDebugAnim", szBuf, kv, this);
+				}
+				else
+				{
+					kv = new KeyValues("DisableDebugAnim");
+					kv->SetUint64("physicObjectId", pPhysicObject->GetPhysicObjectId());
+					//kv->SetInt("physicObjectConfigId", pPhysicObject->GetPhysicConfigId());
+					vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#BulletPhysics_DisableDebugAnim"), 1, wszFileName);
+
+					menu->AddMenuItem("DisableDebugAnim", szBuf, kv, this);
+				}
+			}
+
 			vgui::Menu::PlaceContextMenu(this, menu);
 			return true;
 		}
@@ -1675,6 +1712,36 @@ void CPhysicDebugGUI::OnCreateRagdollObject(uint64 physicObjectId)
 	pConfig->flags |= PhysicObjectFlag_FromConfig;
 }
 
+void CPhysicDebugGUI::OnEnableDebugAnim(uint64 physicObjectId)
+{
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
+
+	if (!pPhysicObject)
+		return;
+
+	if (!pPhysicObject->IsRagdollObject())
+		return;
+
+	auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+	pRagdollObject->SetDebugAnimEnabled(true);
+}
+
+void CPhysicDebugGUI::OnDisableDebugAnim(uint64 physicObjectId)
+{
+	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
+
+	if (!pPhysicObject)
+		return;
+
+	if (!pPhysicObject->IsRagdollObject())
+		return;
+
+	auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+	pRagdollObject->SetDebugAnimEnabled(false);
+}
+
 void CPhysicDebugGUI::OnCreateRigidBody(uint64 physicObjectId)
 {
 	auto pPhysicObject = ClientPhysicManager()->GetPhysicObjectEx(physicObjectId);
@@ -1939,6 +2006,18 @@ bool CPhysicDebugGUI::UpdateConfigOrigin(int physicComponentId, int axis, float 
 					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}
 			}
+			else if (pPhysicComponent->IsPhysicBehavior())
+			{
+				auto pPhysicBehaviorConfig = UTIL_GetPhysicBehaviorConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+
+				if (pPhysicBehaviorConfig && pPhysicObjectConfig)
+				{
+					pPhysicBehaviorConfig->origin[axis] += value;
+					pPhysicBehaviorConfig->configModified = true;
+
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
+				}
+			}
 		}
 	}
 
@@ -1981,6 +2060,18 @@ bool CPhysicDebugGUI::UpdateConfigAngles(int physicComponentId, int axis, float 
 						pConstraintConfig->anglesB[axis] += value;
 
 					pConstraintConfig->configModified = true;
+
+					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
+				}
+			}
+			else if (pPhysicComponent->IsPhysicBehavior())
+			{
+				auto pPhysicBehaviorConfig = UTIL_GetPhysicBehaviorConfigFromConfigId(pPhysicComponent->GetPhysicConfigId());
+
+				if (pPhysicBehaviorConfig && pPhysicObjectConfig)
+				{
+					pPhysicBehaviorConfig->angles[axis] += value;
+					pPhysicBehaviorConfig->configModified = true;
 
 					return ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig.get());
 				}

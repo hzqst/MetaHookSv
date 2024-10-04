@@ -1412,16 +1412,16 @@ static std::shared_ptr<CClientAnimControlConfig> LoadAnimControlFromKeyValues(Ke
 
 	pAnimControlConfig->sequence = pAnimControlSubKey->GetInt("sequence", -1);
 	pAnimControlConfig->gaitsequence = pAnimControlSubKey->GetInt("gaitsequence", -1);
-	pAnimControlConfig->animframe = pAnimControlSubKey->GetFloat("animframe");
-	pAnimControlConfig->activity = (decltype(pAnimControlConfig->activity))pAnimControlSubKey->GetInt("activity");
-	pAnimControlConfig->controller[0] = pAnimControlSubKey->GetInt("controller_0");
-	pAnimControlConfig->controller[1] = pAnimControlSubKey->GetInt("controller_1");
-	pAnimControlConfig->controller[2] = pAnimControlSubKey->GetInt("controller_2");
-	pAnimControlConfig->controller[3] = pAnimControlSubKey->GetInt("controller_3");
-	pAnimControlConfig->blending[0] = pAnimControlSubKey->GetInt("blending_0");
-	pAnimControlConfig->blending[1] = pAnimControlSubKey->GetInt("blending_1");
-	pAnimControlConfig->blending[2] = pAnimControlSubKey->GetInt("blending_2");
-	pAnimControlConfig->blending[3] = pAnimControlSubKey->GetInt("blending_3");
+	pAnimControlConfig->animframe = pAnimControlSubKey->GetFloat("animframe", 0);
+	pAnimControlConfig->activity = (decltype(pAnimControlConfig->activity))pAnimControlSubKey->GetInt("activity", 0);
+	pAnimControlConfig->controller[0] = pAnimControlSubKey->GetInt("controller_0", -1);
+	pAnimControlConfig->controller[1] = pAnimControlSubKey->GetInt("controller_1", -1);
+	pAnimControlConfig->controller[2] = pAnimControlSubKey->GetInt("controller_2", -1);
+	pAnimControlConfig->controller[3] = pAnimControlSubKey->GetInt("controller_3", -1);
+	pAnimControlConfig->blending[0] = pAnimControlSubKey->GetInt("blending_0", -1);
+	pAnimControlConfig->blending[1] = pAnimControlSubKey->GetInt("blending_1", -1);
+	pAnimControlConfig->blending[2] = pAnimControlSubKey->GetInt("blending_2", -1);
+	pAnimControlConfig->blending[3] = pAnimControlSubKey->GetInt("blending_3", -1);
 
 	ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
 
@@ -1503,6 +1503,7 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 			LOAD_FACTOR_FLOAT(BarnacleDragExtraHeight);
 			LOAD_FACTOR_FLOAT(BarnacleDragLimitAxis);
 			LOAD_FACTOR_FLOAT(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+			LOAD_FACTOR_FLOAT(BarnacleDragUseServoMotor);
 			LOAD_FACTOR_FLOAT(BarnacleDragActivatedOnBarnaclePulling);
 			LOAD_FACTOR_FLOAT(BarnacleDragActivatedOnBarnacleChewing);
 			break;
@@ -2161,6 +2162,7 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 							SET_FACTOR_FLOAT(BarnacleDragExtraHeight);
 							SET_FACTOR_FLOAT(BarnacleDragLimitAxis);
 							SET_FACTOR_FLOAT(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+							SET_FACTOR_FLOAT(BarnacleDragUseServoMotor);
 							SET_FACTOR_FLOAT(BarnacleDragActivatedOnBarnaclePulling);
 							SET_FACTOR_FLOAT(BarnacleDragActivatedOnBarnacleChewing);
 							break;
@@ -3305,12 +3307,6 @@ void CBasePhysicManager::SetupBonesForRagdoll(cl_entity_t* ent, entity_state_t* 
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
-		if (pLocalPlayer && pLocalPlayer->index == playerindex)
-		{
-			//VectorCopy(r_params.simorg, (*currententity)->origin);
-			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
-		}
-
 		int iSavedViewEntityIndex = 0;
 
 		if (g_ViewEntityIndex_SCClient)
@@ -3387,13 +3383,6 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
-		if (pLocalPlayer && pLocalPlayer->index == playerindex)
-		{
-			//VectorCopy(r_params.simorg, (*currententity)->origin);
-			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
-			//This fix pitch angles
-		}
-
 		int iSavedViewEntityIndex = 0;
 
 		if (g_ViewEntityIndex_SCClient)
@@ -3420,11 +3409,11 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		int iSavedSequence = ent->curstate.sequence;
 		int iSavedGaitSequence = ent->curstate.gaitsequence;
 		float flSavedFrame = ent->curstate.frame;
-		byte ubController[4];
-		byte ubBlending[4];
+		byte ubSavedController[4];
+		byte ubSavedBlending[4];
 
-		memcpy(ubController, ent->curstate.controller, sizeof(ubController));
-		memcpy(ubBlending, ent->curstate.blending, sizeof(ubBlending));
+		memcpy(ubSavedController, ent->curstate.controller, sizeof(ubSavedController));
+		memcpy(ubSavedBlending, ent->curstate.blending, sizeof(ubSavedBlending));
 
 		ent->curstate.weaponmodel = 0;
 
@@ -3449,7 +3438,11 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		COPY_BYTE_ENTSTATE(blending, ent->curstate, 2);
 		COPY_BYTE_ENTSTATE(blending, ent->curstate, 3);
 #undef COPY_BYTE_ENTSTATE
+
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);
+
+		memcpy(ent->curstate.controller, ubSavedController, sizeof(ubSavedController));
+		memcpy(ent->curstate.blending, ubSavedBlending, sizeof(ubSavedBlending));
 
 		ent->curstate.weaponmodel = iSavedWeaponModel;
 		ent->curstate.sequence = iSavedSequence;
@@ -3470,6 +3463,7 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 		auto fakePlayerState = *state;
 
 		fakePlayerState.number = playerindex;
+		fakePlayerState.weaponmodel = 0;
 
 		vec3_t vecSavedOrigin, vecSavedAngles, vecSavedCurStateOrigin, vecSavedCurStateAngles;
 		VectorCopy((*currententity)->origin, vecSavedOrigin);
@@ -3478,13 +3472,6 @@ void CBasePhysicManager::UpdateBonesForRagdoll(cl_entity_t* ent, entity_state_t*
 		VectorCopy((*currententity)->curstate.angles, vecSavedCurStateAngles);
 
 		auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-		if (pLocalPlayer && pLocalPlayer->index == playerindex)
-		{
-			//VectorCopy(r_params.simorg, (*currententity)->origin);
-			//VectorCopy((*currententity)->curstate.angles, (*currententity)->angles);
-			// 
-		}
 
 		int iSavedViewEntityIndex = 0;
 

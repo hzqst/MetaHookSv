@@ -256,7 +256,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
 	auto playerState = GetClientEntityState();
 
-	if (m_bDebugAnimEnabled && m_DebugAnimConfig)
+	if (IsDebugAnimEnabled() && m_DebugAnimConfig)
 	{
 		if (m_DebugAnimConfig->sequence >= 0)
 		{

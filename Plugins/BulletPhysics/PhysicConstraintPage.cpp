@@ -66,6 +66,12 @@ void CPhysicConstraintPage::OnCommand(const char* command)
 	{
 		OnCreateConstraint();
 	}
+	else if (!stricmp(command, "DeleteSelectedConstraint"))
+	{
+		auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicConstraintListPanel->GetItemUserData(selectItemId);
+		OnDeleteConstraint(configId);
+	}
 	else if (!stricmp(command, "ShiftUpConstraint"))
 	{
 		auto selectItemId = m_pPhysicConstraintListPanel->GetSelectedItem(0);
@@ -288,11 +294,13 @@ void CPhysicConstraintPage::DeleteConstraintItem(int configId)
 
 void CPhysicConstraintPage::OnDeleteConstraint(int configId)
 {
-	DeleteConstraintItem(configId);
+	//DeleteConstraintItem(configId);
 
 	if (UTIL_RemoveConstraintFromPhysicObjectConfig(m_pPhysicObjectConfig.get(), configId))
 	{
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pPhysicObjectConfig.get());
+	
+		ReloadAllConstraintsIntoListPanelItem();
 	}
 }
 

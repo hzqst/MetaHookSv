@@ -11,6 +11,7 @@ CBulletBarnacleDragOnConstraintBehavior::CBulletBarnacleDragOnConstraintBehavior
 	float flExtraHeight,
 	int iLimitAxis,
 	bool bCalculateLimitFromActualPlayerOrigin,
+	bool bUseServoMotor,
 	bool bActivatedOnBarnaclePulling,
 	bool bActivatedOnBarnacleChewing) :
 
@@ -27,6 +28,7 @@ CBulletBarnacleDragOnConstraintBehavior::CBulletBarnacleDragOnConstraintBehavior
 	m_flExtraHeight(flExtraHeight),
 	m_iLimitAxis(iLimitAxis),
 	m_bCalculateLimitFromActualPlayerOrigin(bCalculateLimitFromActualPlayerOrigin),
+	m_bUseServoMotor(bUseServoMotor),
 	m_bActivatedOnBarnaclePulling( bActivatedOnBarnaclePulling),
 	m_bActivatedOnBarnacleChewing(bActivatedOnBarnacleChewing)
 {
@@ -132,8 +134,12 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 					pDof6Spring->enableMotor(m_iLimitAxis, true);
 					pDof6Spring->setMaxMotorForce(m_iLimitAxis, m_flForceMagnitude);
 					pDof6Spring->setTargetVelocity(m_iLimitAxis, m_flTargetVelocity);
-					pDof6Spring->setServo(m_iLimitAxis, true);
-					pDof6Spring->setServoTarget(m_iLimitAxis, flLimitValue * flLimitSign);
+
+					if (m_bUseServoMotor)
+					{
+						pDof6Spring->setServo(m_iLimitAxis, true);
+						pDof6Spring->setServoTarget(m_iLimitAxis, flLimitValue * flLimitSign);
+					}
 				}
 				else if (bbMax[m_iLimitAxis] < -0.01f || bbMax[m_iLimitAxis] > 0.01f)
 				{
@@ -149,8 +155,12 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 					pDof6Spring->enableMotor(m_iLimitAxis, true);
 					pDof6Spring->setMaxMotorForce(m_iLimitAxis, m_flForceMagnitude);
 					pDof6Spring->setTargetVelocity(m_iLimitAxis, m_flTargetVelocity);
-					pDof6Spring->setServo(m_iLimitAxis, true);
-					pDof6Spring->setServoTarget(m_iLimitAxis, flLimitValue * flLimitSign);
+
+					if (m_bUseServoMotor)
+					{
+						pDof6Spring->setServo(m_iLimitAxis, true);
+						pDof6Spring->setServoTarget(m_iLimitAxis, flLimitValue * flLimitSign);
+					}
 				}
 			}
 		}

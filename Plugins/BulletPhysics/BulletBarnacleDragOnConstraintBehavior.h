@@ -14,6 +14,7 @@ public:
 		float flExtraHeight,
 		int iLimitAxis,
 		bool bCalculateLimitFromActualPlayerOrigin,
+		bool bUseServoMotor,
 		bool bActivatedOnBarnaclePulling,
 		bool bActivatedOnBarnacleChewing);
 
@@ -30,6 +31,7 @@ private:
 	float m_flExtraHeight{ 24 };
 	int m_iLimitAxis{ -1 };
 	bool m_bCalculateLimitFromActualPlayerOrigin{};
+	bool m_bUseServoMotor{};
 	bool m_bActivatedOnBarnaclePulling{};
 	bool m_bActivatedOnBarnacleChewing{};
 };

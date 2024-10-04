@@ -264,16 +264,18 @@ const int PhysicBehaviorFactorIdx_BarnacleDragVelocity = 1;
 const int PhysicBehaviorFactorIdx_BarnacleDragExtraHeight = 2;
 const int PhysicBehaviorFactorIdx_BarnacleDragLimitAxis = 3;
 const int PhysicBehaviorFactorIdx_BarnacleDragCalculateLimitFromActualPlayerOrigin = 4;
-const int PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnaclePulling = 5;
-const int PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnacleChewing = 6;
+const int PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor = 5;
+const int PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnaclePulling = 6;
+const int PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnacleChewing = 7;
 
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragMagnitude = 0.0f;
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragVelocity = 80.0f;//8 units / 0.1s
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragExtraHeight = 0.0f;
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragLimitAxis = -1.0f;
-const float PhysicBehaviorFactorDefaultValue_BarnacleDragCalculateLimitFromActualPlayerOrigin = 0;
-const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnaclePulling = 0;
-const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnacleChewing = 0;
+const float PhysicBehaviorFactorDefaultValue_BarnacleDragCalculateLimitFromActualPlayerOrigin = 0.0f;
+const float PhysicBehaviorFactorDefaultValue_BarnacleDragUseServoMotor = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnaclePulling = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnacleChewing = 1.0f;
 
 const int PhysicBehaviorFactorIdx_BarnacleChewMagnitude = 0;
 const int PhysicBehaviorFactorIdx_BarnacleChewInterval = 1;

@@ -52,6 +52,9 @@ protected:
 
 	MESSAGE_FUNC_PARAMS(OnEditPhysicObject, "EditPhysicObject", kv);
 
+	MESSAGE_FUNC_UINT64(OnEnableDebugAnim, "EnableDebugAnim", physicObjectId);
+	MESSAGE_FUNC_UINT64(OnDisableDebugAnim, "DisableDebugAnim", physicObjectId);
+
 	MESSAGE_FUNC_UINT64(OnCreateRigidBody, "CreateRigidBody", physicObjectId);
 	MESSAGE_FUNC_PARAMS(OnEditRigidBodyEx, "EditRigidBodyEx", kv);
 	MESSAGE_FUNC_PARAMS(OnMoveRigidBodyEx, "MoveRigidBodyEx", kv);

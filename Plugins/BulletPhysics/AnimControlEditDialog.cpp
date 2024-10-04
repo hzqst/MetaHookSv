@@ -194,6 +194,21 @@ void CAnimControlEditDialog::LoadActivityTypeIntoControl(vgui::ComboBox* pComboB
 	pComboBox->ActivateItemByRow(0);
 }
 
+static int clamp_0_255_atoi(const char* str)
+{
+	if (!str[0])
+		return -1;
+
+	auto val = atoi(str);
+	return max(min(val, 255), -1);
+}
+
+static float clamp_0_255_atof(const char* str)
+{
+	auto val = atof(str);
+	return max(min(val, 255), 0);
+}
+
 void CAnimControlEditDialog::LoadConfigIntoControls()
 {
 	LoadSequenceIntoControl(m_pSequence, m_pAnimControlConfig->sequence);
@@ -216,18 +231,6 @@ void CAnimControlEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_TEXT_ENTRY(blending[3], Blending_3);
 
 #undef LOAD_INTO_TEXT_ENTRY
-}
-
-static int clamp_0_255_atoi(const char* str)
-{
-	auto val = atoi(str);
-	return max(min(val, 255), 0);
-}
-
-static float clamp_0_255_atof(const char* str)
-{
-	auto val = atof(str);
-	return max(min(val, 255), 0);
 }
 
 void CAnimControlEditDialog::SaveConfigFromControls()

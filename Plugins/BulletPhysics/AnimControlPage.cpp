@@ -65,6 +65,12 @@ void CAnimControlPage::OnCommand(const char* command)
 	{
 		OnCreateAnimControl();
 	}
+	else if (!stricmp(command, "DeleteSelectedAnimControl"))
+	{
+		auto selectItemId = m_pAnimControlListPanel->GetSelectedItem(0);
+		auto configId = m_pAnimControlListPanel->GetItemUserData(selectItemId);
+		OnDeleteAnimControl(configId);
+	}
 	else if (!stricmp(command, "ShiftUpAnimControl"))
 	{
 		auto selectItemId = m_pAnimControlListPanel->GetSelectedItem(0);
@@ -284,11 +290,13 @@ void CAnimControlPage::DeleteAnimControlItem(int configId)
 
 void CAnimControlPage::OnDeleteAnimControl(int configId)
 {
-	DeleteAnimControlItem(configId);
+	//DeleteAnimControlItem(configId);
 
 	if (UTIL_RemoveAnimControlFromRagdollObjectConfig(m_pRagdollObjectConfig.get(), configId))
 	{
 		ClientPhysicManager()->RebuildPhysicObjectEx(m_physicObjectId, m_pRagdollObjectConfig.get());
+
+		ReloadAllAnimControlsIntoListPanelItem();
 	}
 }
 

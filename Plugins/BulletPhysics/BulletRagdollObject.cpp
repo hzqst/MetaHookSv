@@ -185,9 +185,11 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 
 	int group = btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 
-	int mask = btBroadphaseProxy::AllFilter;
-
-	mask &= ~(BulletPhysicCollisionFilterGroups::ConstraintFilter | BulletPhysicCollisionFilterGroups::PhysicBehaviorFilter);
+	int mask = BulletPhysicCollisionFilterGroups::WorldFilter |
+		BulletPhysicCollisionFilterGroups::StaticObjectFilter |
+		BulletPhysicCollisionFilterGroups::DynamicObjectFilter |
+		BulletPhysicCollisionFilterGroups::RagdollObjectFilter |
+		BulletPhysicCollisionFilterGroups::InspectorFilter;
 
 	if (pRigidConfig->flags & PhysicRigidBodyFlag_NoCollisionToWorld)
 		mask &= ~BulletPhysicCollisionFilterGroups::WorldFilter;
@@ -462,6 +464,7 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight],
 			(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragLimitAxis],
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragCalculateLimitFromActualPlayerOrigin] >= 1 ? true : false,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor] >= 1 ? true : false,
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnaclePulling] >= 1 ? true : false,
 			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnacleChewing] >= 1 ? true : false);
 	}

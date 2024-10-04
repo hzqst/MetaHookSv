@@ -8,12 +8,12 @@
 		"ypos"		"28"
 		"wide"		"624"
 		"tall"		"278"
-		"AutoResize"	"0"
+		"AutoResize"		"0"
 		"PinCorner"		"0"
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"0"
-		"paintbackground"		"1"
+		"paintbackground"	"1"
 	}
 	"AnimControlListPanel"
 	{
@@ -28,13 +28,13 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"0"
-		"paintbackground"		"1"
+		"paintbackground"	"1"
 	}
 	"ShiftUpAnimControl"
 	{
 		"ControlName"		"Button"
 		"fieldName"		"ShiftUpAnimControl"
-		"xpos"		"240"
+		"xpos"		"120"  // 原 xpos=240，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -43,7 +43,7 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"1"
-		"paintbackground"		"1"
+		"paintbackground"	"1"
 		"labelText"		"#BulletPhysics_ShiftUp"
 		"textAlignment"		"west"
 		"wrap"		"0"
@@ -53,7 +53,7 @@
 	{
 		"ControlName"		"Button"
 		"fieldName"		"ShiftDownAnimControl"
-		"xpos"		"360"
+		"xpos"		"240"  // 原 xpos=360，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -61,8 +61,8 @@
 		"PinCorner"		"3"
 		"visible"		"1"
 		"enabled"		"1"
-		"tabPosition"		"1"
-		"paintbackground"		"1"
+		"tabPosition"		"2"
+		"paintbackground"	"1"
 		"labelText"		"#BulletPhysics_ShiftDown"
 		"textAlignment"		"west"
 		"wrap"		"0"
@@ -72,7 +72,7 @@
 	{
 		"ControlName"		"Button"
 		"fieldName"		"CreateAnimControl"
-		"xpos"		"480"
+		"xpos"		"360"  // 原 xpos=480，向左移动120单位
 		"ypos"		"244"
 		"wide"		"120"
 		"tall"		"24"
@@ -80,11 +80,32 @@
 		"PinCorner"		"3"
 		"visible"		"1"
 		"enabled"		"1"
-		"tabPosition"		"1"
-		"paintbackground"		"1"
+		"tabPosition"		"3"
+		"paintbackground"	"1"
 		"labelText"		"#BulletPhysics_CreateAnimControl"
 		"textAlignment"		"west"
 		"wrap"		"0"
 		"command"		"CreateAnimControl"
+	}
+
+	// 新增 DeleteSelectedAnimControl 按钮，位置为 CreateAnimControl 原先的地方 (xpos=480)
+	"DeleteSelectedAnimControl"
+	{
+		"ControlName"		"Button"
+		"fieldName"		"DeleteSelectedAnimControl"
+		"xpos"		"480"  // 这是 CreateAnimControl 原先的位置
+		"ypos"		"244"
+		"wide"		"120"
+		"tall"		"24"
+		"AutoResize"		"0"
+		"PinCorner"		"3"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"4"
+		"paintbackground"	"1"
+		"labelText"		"#BulletPhysics_DeleteSelectedAnimControl"
+		"textAlignment"		"west"
+		"wrap"		"0"
+		"command"		"DeleteSelectedAnimControl"
 	}
 }

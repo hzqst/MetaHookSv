@@ -452,6 +452,7 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragExtraHeight);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragLimitAxis);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragUseServoMotor);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragActivatedOnBarnaclePulling);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragActivatedOnBarnacleChewing);
 		break;

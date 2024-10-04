@@ -65,6 +65,12 @@ void CPhysicBehaviorPage::OnCommand(const char* command)
 	{
 		OnCreatePhysicBehavior();
 	}
+	else if (!stricmp(command, "DeleteSelectedPhysicBehavior"))
+	{
+		auto selectItemId = m_pPhysicBehaviorListPanel->GetSelectedItem(0);
+		auto configId = m_pPhysicBehaviorListPanel->GetItemUserData(selectItemId);
+		OnDeletePhysicBehavior(configId);
+	}
 	else if (!stricmp(command, "ShiftUpPhysicBehavior"))
 	{
 		auto selectItemId = m_pPhysicBehaviorListPanel->GetSelectedItem(0);
