@@ -106,10 +106,12 @@ public:
 
 	bool disableCollision{ true };
 	bool useGlobalJointFromA{ true };
+	bool useLinearReferenceFrameA{ true };
 	bool useLookAtOther{ false };
 	bool useGlobalJointOriginFromOther{ false };
 	bool useRigidBodyDistanceAsLinearLimit{ false };
-	bool useLinearReferenceFrameA{ true };
+	bool useSeperateLocalFrame{ false };
+
 	int rotOrder{ PhysicRotOrder_XYZ };
 
 	int flags{ 0 };

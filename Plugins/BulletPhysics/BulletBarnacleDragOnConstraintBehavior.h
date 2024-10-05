@@ -8,7 +8,7 @@ public:
 	CBulletBarnacleDragOnConstraintBehavior(
 		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 		int attachedPhysicComponentId,
-		int iBarnacleIndex,
+		int iSourceIndex,
 		float flForceMagnitude, 
 		float flTargetVelocity,
 		float flExtraHeight,
@@ -25,7 +25,7 @@ public:
 private:
 	float CalculateLimitValueFromActualPlayerOrigin(const btVector3& vStartOrigin);
 private:
-	int m_iBarnacleIndex{ 0 };
+	int m_iSourceIndex{ 0 };
 	float m_flForceMagnitude{ 0 };
 	float m_flTargetVelocity{ 0 };
 	float m_flExtraHeight{ 24 };

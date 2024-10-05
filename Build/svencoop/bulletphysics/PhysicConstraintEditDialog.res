@@ -7,7 +7,7 @@
         "xpos"              "20"
         "ypos"              "20"
         "wide"              "800"
-        "tall"              "560"
+        "tall"              "600"
         "autoResize"        "0"
         "pinCorner"         "0"
         "visible"           "1"
@@ -396,7 +396,7 @@
         "tall"              "24"
         "tabPosition"       "34"
     }
- // 上移后的 CheckButtons
+
     "DisableCollision"
     {
         "ControlName"       "CheckButton"
@@ -423,16 +423,16 @@
         "textAlignment"     "west"
     }
 
-    "UseLookAtOther"
+    "UseLinearReferenceFrameA"
     {
         "ControlName"       "CheckButton"
-        "fieldName"         "UseLookAtOther"
+        "fieldName"         "UseLinearReferenceFrameA"
         "xpos"              "20"
         "ypos"              "310"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "21"
-        "labelText"         "#BulletPhysics_UseLookAtOther"
+        "labelText"         "#BulletPhysics_UseLinearReferenceFrameA"
         "textAlignment"     "west"
     }
 
@@ -441,7 +441,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseGlobalJointOriginFromOther"
         "xpos"              "290"
-        "ypos"              "310"  // 上移 20 单位
+        "ypos"              "310"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "22"
@@ -454,7 +454,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "UseRigidBodyDistanceAsLinearLimit"
         "xpos"              "20"
-        "ypos"              "340"  // 上移 20 单位
+        "ypos"              "340"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "23"
@@ -462,16 +462,29 @@
         "textAlignment"     "west"
     }
 
-    "UseLinearReferenceFrameA"
+    "UseLookAtOther"
     {
         "ControlName"       "CheckButton"
-        "fieldName"         "UseLinearReferenceFrameA"
+        "fieldName"         "UseLookAtOther"
         "xpos"              "290"
-        "ypos"              "340"  // 上移 20 单位
+        "ypos"              "340"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "24"
-        "labelText"         "#BulletPhysics_UseLinearReferenceFrameA"
+        "labelText"         "#BulletPhysics_UseLookAtOther"
+        "textAlignment"     "west"
+    }
+
+    "UseSeperateLocalFrame"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "UseSeperateLocalFrame"
+        "xpos"              "20"
+        "ypos"              "370"
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "24"
+        "labelText"         "#BulletPhysics_UseSeperateLocalFrame"
         "textAlignment"     "west"
     }
 
@@ -480,7 +493,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "Barnacle"
         "xpos"              "20"
-        "ypos"              "370"  // 上移 20 单位
+        "ypos"              "400"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "25"
@@ -493,7 +506,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "Gargantua"
         "xpos"              "290"
-        "ypos"              "370"  // 上移 20 单位
+        "ypos"              "400"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "26"
@@ -506,7 +519,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnNormalActivity"
         "xpos"              "20"
-        "ypos"              "400"  // 上移 20 单位
+        "ypos"              "430"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "27"
@@ -519,7 +532,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnDeathActivity"
         "xpos"              "290"
-        "ypos"              "400"  // 上移 20 单位
+        "ypos"              "430"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "28"
@@ -532,7 +545,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnCaughtByBarnacleActivity"
         "xpos"              "20"
-        "ypos"              "430"  // 上移 20 单位
+        "ypos"              "460"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "29"
@@ -545,7 +558,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnBarnaclePullingActivity"
         "xpos"              "290"
-        "ypos"              "430"  // 上移 20 单位
+        "ypos"              "460"  // 上移 20 单位
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "30"
@@ -558,7 +571,7 @@
         "ControlName"       "CheckButton"
         "fieldName"         "DeactiveOnBarnacleChewingActivity"
         "xpos"              "20"
-        "ypos"              "460"  // 上移 20 单位
+        "ypos"              "490"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "31"
@@ -566,12 +579,25 @@
         "textAlignment"     "west"
     }
 
+    "DeactiveOnGargantuaBiteActivity"
+    {
+        "ControlName"       "CheckButton"
+        "fieldName"         "DeactiveOnGargantuaBiteActivity"
+        "xpos"              "290"
+        "ypos"              "490"
+        "wide"              "250"
+        "tall"              "24"
+        "tabPosition"       "29"
+        "labelText"         "#BulletPhysics_DeactiveOnGargantuaBiteActivity"
+        "textAlignment"     "west"
+    }
+
     "DontResetPoseOnErrorCorrection"
     {
         "ControlName"       "CheckButton"
         "fieldName"         "DontResetPoseOnErrorCorrection"
-        "xpos"              "290"
-        "ypos"              "460"  // 上移 20 单位
+        "xpos"              "20"
+        "ypos"              "520"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "32"
@@ -583,15 +609,14 @@
     {
         "ControlName"       "CheckButton"
         "fieldName"         "DeferredCreate"
-        "xpos"              "20"
-        "ypos"              "490"  // 上移 20 单位
+        "xpos"              "290"
+        "ypos"              "520"
         "wide"              "250"
         "tall"              "24"
         "tabPosition"       "33"
         "labelText"         "#BulletPhysics_DeferredCreate"
         "textAlignment"     "west"
     }
-
 
 	"PhysicFactorListPanel"
 	{
@@ -600,7 +625,7 @@
 		"xpos"		"520"
 		"ypos"		"40"
 		"wide"		"260"
-		"tall"		"500"
+		"tall"		"540"
 		"AutoResize"	"3"
 		"PinCorner"		"3"
 		"visible"		"1"
@@ -615,8 +640,8 @@
     {
         "ControlName"       "Button"
         "fieldName"         "OK"
-        "xpos"              "220"
-        "ypos"              "520"
+        "xpos"              "260"
+        "ypos"              "560"
         "wide"              "72"
         "tall"              "24"
         "autoResize"        "0"
@@ -634,8 +659,8 @@
     {
         "ControlName"       "Button"
         "fieldName"         "Cancel"
-        "xpos"              "300"
-        "ypos"              "520"
+        "xpos"              "340"
+        "ypos"              "560"
         "wide"              "72"
         "tall"              "24"
         "autoResize"        "0"
@@ -653,8 +678,8 @@
     {
         "ControlName"       "Button"
         "fieldName"         "Apply"
-        "xpos"              "380"
-        "ypos"              "520"
+        "xpos"              "420"
+        "ypos"              "560"
         "wide"              "72"
         "tall"              "24"
         "autoResize"        "0"

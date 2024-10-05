@@ -533,6 +533,9 @@
     <ClCompile Include="BulletRigidBodyRelocationBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="BulletGargantuaDragOnConstraintBehavior.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -716,6 +719,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BulletRigidBodyRelocationBehavior.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletGargantuaDragOnConstraintBehavior.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

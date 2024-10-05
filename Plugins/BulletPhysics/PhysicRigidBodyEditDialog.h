@@ -65,6 +65,7 @@ private:
 	DEFINE_CHECK_BUTTON(InvertStateOnCaughtByBarnacle);
 	DEFINE_CHECK_BUTTON(InvertStateOnBarnaclePulling);
 	DEFINE_CHECK_BUTTON(InvertStateOnBarnacleChewing);
+	DEFINE_CHECK_BUTTON(InvertStateOnGargantuaBite);
 	DEFINE_CHECK_BUTTON(NoCollisionToWorld);
 	DEFINE_CHECK_BUTTON(NoCollisionToStaticObject);
 	DEFINE_CHECK_BUTTON(NoCollisionToDynamicObject);

@@ -472,6 +472,14 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentAxis);
 		break;
 	}
+	case PhysicBehavior_GargantuaDragOnConstraint: {
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragVelocity);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragExtraHeight);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragLimitAxis);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(BarnacleDragUseServoMotor);
+		break;
+	}
 	case PhysicBehavior_FirstPersonViewCamera:
 	case PhysicBehavior_ThirdPersonViewCamera: {
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnIdle);
@@ -541,6 +549,7 @@ void CPhysicBehaviorEditDialog::UpdateControlStates(int type)
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
 	case PhysicBehavior_BarnacleDragOnConstraint:
+	case PhysicBehavior_GargantuaDragOnConstraint:
 	{
 		m_pRigidBodyALabel->SetVisible(false);
 		m_pRigidBodyA->SetVisible(false);

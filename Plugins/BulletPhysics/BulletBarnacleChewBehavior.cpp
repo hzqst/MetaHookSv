@@ -3,7 +3,7 @@
 CBulletBarnacleChewBehavior::CBulletBarnacleChewBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	int iBarnacleIndex, float flForceMagnitude, float flInterval)
+	int iSourceIndex, float flForceMagnitude, float flInterval)
 	:
 	CBulletPhysicComponentBehavior(
 		id,
@@ -12,7 +12,7 @@ CBulletBarnacleChewBehavior::CBulletBarnacleChewBehavior(
 		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
-	m_iBarnacleIndex(iBarnacleIndex),
+	m_iSourceIndex(iSourceIndex),
 	m_flForceMagnitude(flForceMagnitude),
 	m_flInterval(flInterval)
 {
@@ -31,25 +31,25 @@ const char* CBulletBarnacleChewBehavior::GetTypeLocalizationTokenString() const
 
 void CBulletBarnacleChewBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
-	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
+	auto pSourceObject = ClientPhysicManager()->GetPhysicObject(m_iSourceIndex);
 
-	if (!pBarnacleObject)
+	if (!pSourceObject)
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: Invalid barnacle object!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: Invalid SourceObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!pBarnacleObject->IsRagdollObject())
+	if (!pSourceObject->IsRagdollObject())
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: Barnacle must be RagdollObject!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: SourceObject must be RagdollObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
+	if (!(pSourceObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: Barnacle must have PhysicObjectFlag_Barnacle!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleChewBehavior::Update: SourceObject must have PhysicObjectFlag_Barnacle!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
@@ -63,9 +63,9 @@ void CBulletBarnacleChewBehavior::Update(CPhysicComponentUpdateContext* Componen
 		return;
 	}
 
-	auto pBarnacleRagdollObject = (IRagdollObject*)pBarnacleObject;
+	auto pSourceRagdollObject = (IRagdollObject*)pSourceObject;
 
-	if (pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
+	if (pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
 	{
 		if (gEngfuncs.GetClientTime() > m_flNextChewTime)
 		{

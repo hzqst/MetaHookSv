@@ -604,7 +604,6 @@ void CBaseRagdollObject::ApplyBarnacle(IPhysicObject* pBarnacleObject)
 			AddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
 		}
 	}
-
 }
 
 void CBaseRagdollObject::ReleaseFromBarnacle()
@@ -629,12 +628,110 @@ void CBaseRagdollObject::ReleaseFromBarnacle()
 
 void CBaseRagdollObject::ApplyGargantua(IPhysicObject* pGargantuaObject)
 {
-	//TODO
+	if (m_iGargantuaIndex)
+		return;
+
+	m_iGargantuaIndex = pGargantuaObject->GetEntityIndex();
+
+	CPhysicObjectCreationParameter CreationParam;
+
+	CreationParam.m_entity = GetClientEntity();
+	CreationParam.m_entstate = GetClientEntityState();
+	CreationParam.m_entindex = GetEntityIndex();
+	CreationParam.m_model = GetModel();
+
+	if (GetModel()->type == mod_studio)
+	{
+		CreationParam.m_studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(GetModel());
+		CreationParam.m_model_scaling = ClientEntityManager()->GetEntityModelScaling(GetClientEntity(), GetModel());
+	}
+
+	CreationParam.m_playerindex = GetPlayerIndex();
+	CreationParam.m_allowNonNativeRigidBody = true;
+
+	for (auto pPhysicComponent : m_PhysicComponents)
+	{
+		if (pPhysicComponent->IsRigidBody())
+		{
+			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
+
+			vec3_t vecZero = { 0, 0, 0 };
+
+			pRigidBody->SetLinearVelocity(vecZero);
+			pRigidBody->SetAngularVelocity(vecZero);
+		}
+	}
+
+	for (const auto& pConstraintConfig : m_ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_Gargantua))
+			continue;
+
+		if ((pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
+		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+		if (pConstraint)
+		{
+			AddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+		}
+	}
+
+	for (const auto& pPhysicBehaviorConfig : m_PhysicBehaviorConfigs)
+	{
+		const auto pPhysicBehaviorConfigPtr = pPhysicBehaviorConfig.get();
+
+		if (!(pPhysicBehaviorConfigPtr->flags & PhysicBehaviorFlag_Gargantua))
+			continue;
+
+		auto pPhysicBehavior = CreatePhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, 0);
+
+		if (pPhysicBehavior)
+		{
+			AddPhysicBehavior(CreationParam, pPhysicBehaviorConfigPtr, pPhysicBehavior);
+		}
+	}
+
+	for (const auto& pConstraintConfig : m_ConstraintConfigs)
+	{
+		const auto pConstraintConfigPtr = pConstraintConfig.get();
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_Gargantua))
+			continue;
+
+		if (!(pConstraintConfigPtr->flags & PhysicConstraintFlag_DeferredCreate))
+			continue;
+
+		auto pConstraint = CreateConstraint(CreationParam, pConstraintConfigPtr, 0);
+
+		if (pConstraint)
+		{
+			AddConstraint(CreationParam, pConstraintConfigPtr, pConstraint);
+		}
+	}
 }
 
 void CBaseRagdollObject::ReleaseFromGargantua()
 {
-	//TODO
+	if (!m_iGargantuaIndex)
+		return;
+
+	m_iGargantuaIndex = 0;
+
+	CPhysicComponentFilters filters;
+
+	filters.m_ConstraintFilter.m_HasWithFlags = true;
+	filters.m_ConstraintFilter.m_WithFlags = PhysicConstraintFlag_Gargantua;
+
+	filters.m_PhysicBehaviorFilter.m_HasWithFlags = true;
+	filters.m_PhysicBehaviorFilter.m_WithFlags = PhysicBehaviorFlag_Gargantua;
+
+	ClientPhysicManager()->RemovePhysicComponentsFromWorld(this, filters);
+
+	RemovePhysicComponentsWithFilters(filters);
 }
 
 int CBaseRagdollObject::GetAnimControlFlags() const

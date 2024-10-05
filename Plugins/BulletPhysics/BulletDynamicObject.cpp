@@ -226,7 +226,12 @@ IPhysicConstraint* CBulletDynamicObject::CreateConstraint(const CPhysicObjectCre
 		ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
 		ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
 
-		if (pConstraintConfig->useGlobalJointFromA)
+		if (pConstraintConfig->useSeperateLocalFrame)
+		{
+			pInternalConstraint = BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, ctx, ctx.localTransA, ctx.localTransB);
+			break;
+		}
+		else if (pConstraintConfig->useGlobalJointFromA)
 		{
 			if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
 			{

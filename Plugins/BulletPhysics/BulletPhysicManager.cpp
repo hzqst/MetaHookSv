@@ -1769,7 +1769,7 @@ public:
 
 };
 
-void CBulletPhysicManager::Init(void)
+void CBulletPhysicManager::Init()
 {
 	CBasePhysicManager::Init();
 
@@ -1830,12 +1830,12 @@ void CBulletPhysicManager::Shutdown()
 	}
 }
 
-void CBulletPhysicManager::NewMap(void)
+void CBulletPhysicManager::NewMap()
 {
 	CBasePhysicManager::NewMap();
 }
 
-void CBulletPhysicManager::DebugDraw(void)
+void CBulletPhysicManager::DebugDraw()
 {
 	m_debugDrawContext.m_staticObjectLevel = (int)bv_debug_draw_level_static->value;
 	m_debugDrawContext.m_dynamicObjectLevel = (int)bv_debug_draw_level_dynamic->value;

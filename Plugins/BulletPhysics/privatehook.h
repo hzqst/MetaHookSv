@@ -160,3 +160,4 @@ int EngineGetMaxKnownModel();
 int EngineGetNumKnownModel();
 int EngineGetModelIndex(model_t* mod);
 model_t* EngineGetModelByIndex(int index);
+model_t* EngineFindWorldModelBySubModel(model_t* psubmodel);

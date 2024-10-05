@@ -55,6 +55,7 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 	CREATE_CHECK_BUTTON(InvertStateOnCaughtByBarnacle);
 	CREATE_CHECK_BUTTON(InvertStateOnBarnaclePulling);
 	CREATE_CHECK_BUTTON(InvertStateOnBarnacleChewing);
+	CREATE_CHECK_BUTTON(InvertStateOnGargantuaBite);
 	CREATE_CHECK_BUTTON(NoCollisionToWorld);
 	CREATE_CHECK_BUTTON(NoCollisionToStaticObject);
 	CREATE_CHECK_BUTTON(NoCollisionToDynamicObject);
@@ -290,6 +291,7 @@ void CPhysicRigidBodyEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnaclePulling);
 	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnBarnacleChewing);
+	LOAD_INTO_CHECK_BUTTON(flags, InvertStateOnGargantuaBite);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToWorld);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	LOAD_INTO_CHECK_BUTTON(flags, NoCollisionToDynamicObject);
@@ -334,6 +336,7 @@ void CPhysicRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnCaughtByBarnacle);
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnaclePulling);
 	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnBarnacleChewing);
+	SAVE_FROM_CHECK_BUTTON(flags, InvertStateOnGargantuaBite);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToWorld);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToStaticObject);
 	SAVE_FROM_CHECK_BUTTON(flags, NoCollisionToDynamicObject);

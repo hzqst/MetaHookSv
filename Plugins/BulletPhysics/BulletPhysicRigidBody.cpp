@@ -181,6 +181,7 @@ void CBulletPhysicRigidBody::SetLinearVelocity(const vec3_t vecVelocity)
 		btVector3 vec3BtVelocity(vecVelocity[0], vecVelocity[1], vecVelocity[2]);
 
 		m_pInternalRigidBody->setLinearVelocity(vec3BtVelocity);
+		//m_pInternalRigidBody->setInterpolationLinearVelocity(vec3BtVelocity);
 	}
 }
 
@@ -191,6 +192,7 @@ void CBulletPhysicRigidBody::SetAngularVelocity(const vec3_t vecVelocity)
 		btVector3 vec3BtVelocity(vecVelocity[0], vecVelocity[1], vecVelocity[2]);
 
 		m_pInternalRigidBody->setAngularVelocity(vec3BtVelocity);
+		//m_pInternalRigidBody->setInterpolationAngularVelocity(vec3BtVelocity);
 	}
 }
 

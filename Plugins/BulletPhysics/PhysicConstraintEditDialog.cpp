@@ -42,16 +42,15 @@ CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, co
     m_pForwardX = new vgui::TextEntry(this, "ForwardX");
     m_pForwardY = new vgui::TextEntry(this, "ForwardY");
     m_pForwardZ = new vgui::TextEntry(this, "ForwardZ");
-    m_pDisableCollision = new vgui::CheckButton(this, "DisableCollision", "#BulletPhysics_DisableCollision");
-    m_pUseGlobalJointFromA = new vgui::CheckButton(this, "UseGlobalJointFromA", "#BulletPhysics_UseGlobalJointFromA");
-    m_pUseLookAtOther = new vgui::CheckButton(this, "UseLookAtOther", "#BulletPhysics_UseLookAtOther");
-    m_pUseGlobalJointOriginFromOther = new vgui::CheckButton(this, "UseGlobalJointOriginFromOther", "#BulletPhysics_UseGlobalJointOriginFromOther");
-    m_pUseRigidBodyDistanceAsLinearLimit = new vgui::CheckButton(this, "UseRigidBodyDistanceAsLinearLimit", "#BulletPhysics_UseRigidBodyDistanceAsLinearLimit");
-    m_pUseLinearReferenceFrameA = new vgui::CheckButton(this, "UseLinearReferenceFrameA", "#BulletPhysics_UseLinearReferenceFrameA");
-    m_pRotOrder = new vgui::ComboBox(this, "RotOrder", 0, false);
-    m_pMaxTolerantLinearError = new vgui::TextEntry(this, "MaxTolerantLinearError");
 
 #define CREATE_CHECK_BUTTON(name)  m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
+    CREATE_CHECK_BUTTON(DisableCollision);
+    CREATE_CHECK_BUTTON(UseGlobalJointFromA);
+    CREATE_CHECK_BUTTON(UseLinearReferenceFrameA);
+    CREATE_CHECK_BUTTON(UseLookAtOther);
+    CREATE_CHECK_BUTTON(UseGlobalJointOriginFromOther);
+    CREATE_CHECK_BUTTON(UseRigidBodyDistanceAsLinearLimit);
+    CREATE_CHECK_BUTTON(UseSeperateLocalFrame);
 
     CREATE_CHECK_BUTTON(Barnacle);
     CREATE_CHECK_BUTTON(Gargantua);
@@ -60,10 +59,14 @@ CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, co
     CREATE_CHECK_BUTTON(DeactiveOnCaughtByBarnacleActivity);
     CREATE_CHECK_BUTTON(DeactiveOnBarnaclePullingActivity);
     CREATE_CHECK_BUTTON(DeactiveOnBarnacleChewingActivity);
+    CREATE_CHECK_BUTTON(DeactiveOnGargantuaBiteActivity);
     CREATE_CHECK_BUTTON(DontResetPoseOnErrorCorrection);
     CREATE_CHECK_BUTTON(DeferredCreate);
 
 #undef CREATE_CHECK_BUTTON
+
+    m_pRotOrder = new vgui::ComboBox(this, "RotOrder", 0, false);
+    m_pMaxTolerantLinearError = new vgui::TextEntry(this, "MaxTolerantLinearError");
 
     m_pPhysicFactorListPanel = new CPhysicFactorListPanel(this, "PhysicFactorListPanel");
 
@@ -545,10 +548,11 @@ void CPhysicConstraintEditDialog::LoadConfigIntoControls()
 
     LOAD_INTO_CHECK_BUTTON(disableCollision, DisableCollision);
     LOAD_INTO_CHECK_BUTTON(useGlobalJointFromA, UseGlobalJointFromA);
+    LOAD_INTO_CHECK_BUTTON(useLinearReferenceFrameA, UseLinearReferenceFrameA);
     LOAD_INTO_CHECK_BUTTON(useLookAtOther, UseLookAtOther);
     LOAD_INTO_CHECK_BUTTON(useGlobalJointOriginFromOther, UseGlobalJointOriginFromOther);
     LOAD_INTO_CHECK_BUTTON(useRigidBodyDistanceAsLinearLimit, UseRigidBodyDistanceAsLinearLimit);
-    LOAD_INTO_CHECK_BUTTON(useLinearReferenceFrameA, UseLinearReferenceFrameA);
+    LOAD_INTO_CHECK_BUTTON(useSeperateLocalFrame, UseSeperateLocalFrame);
 
 #undef LOAD_INTO_CHECK_BUTTON
 
@@ -561,6 +565,7 @@ void CPhysicConstraintEditDialog::LoadConfigIntoControls()
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnaclePullingActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnBarnacleChewingActivity);
+    LOAD_INTO_CHECK_BUTTON(flags, DeactiveOnGargantuaBiteActivity);
     LOAD_INTO_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
     LOAD_INTO_CHECK_BUTTON(flags, DeferredCreate);
 
@@ -617,10 +622,11 @@ void CPhysicConstraintEditDialog::SaveConfigFromControls()
 
     SAVE_FROM_CHECK_BUTTON(disableCollision, DisableCollision);
     SAVE_FROM_CHECK_BUTTON(useGlobalJointFromA, UseGlobalJointFromA);
+    SAVE_FROM_CHECK_BUTTON(useLinearReferenceFrameA, UseLinearReferenceFrameA);
     SAVE_FROM_CHECK_BUTTON(useLookAtOther, UseLookAtOther);
     SAVE_FROM_CHECK_BUTTON(useGlobalJointOriginFromOther, UseGlobalJointOriginFromOther);
     SAVE_FROM_CHECK_BUTTON(useRigidBodyDistanceAsLinearLimit, UseRigidBodyDistanceAsLinearLimit);
-    SAVE_FROM_CHECK_BUTTON(useLinearReferenceFrameA, UseLinearReferenceFrameA);
+    SAVE_FROM_CHECK_BUTTON(useSeperateLocalFrame, UseSeperateLocalFrame);
 
     // Cleanup macro definition
 #undef SAVE_FROM_CHECK_BUTTON
@@ -640,6 +646,7 @@ void CPhysicConstraintEditDialog::SaveConfigFromControls()
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnCaughtByBarnacleActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnaclePullingActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnBarnacleChewingActivity);
+    SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeactiveOnGargantuaBiteActivity);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DontResetPoseOnErrorCorrection);
     SAVE_FLAG_FROM_CHECK_BUTTON(flags, DeferredCreate);
 

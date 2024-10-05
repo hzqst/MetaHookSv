@@ -77,17 +77,18 @@ private:
 	vgui::TextEntry* m_pForwardY{};
 	vgui::TextEntry* m_pForwardZ{};
 
-	vgui::CheckButton* m_pDisableCollision{};
-	vgui::CheckButton* m_pUseGlobalJointFromA{};
-	vgui::CheckButton* m_pUseLookAtOther{};
-	vgui::CheckButton* m_pUseGlobalJointOriginFromOther{};
-	vgui::CheckButton* m_pUseRigidBodyDistanceAsLinearLimit{};
-	vgui::CheckButton* m_pUseLinearReferenceFrameA{};
-
 	vgui::ComboBox* m_pRotOrder{};
 	vgui::TextEntry* m_pMaxTolerantLinearError{};
 
 #define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{}
+	DEFINE_CHECK_BUTTON(DisableCollision);
+	DEFINE_CHECK_BUTTON(UseGlobalJointFromA);
+	DEFINE_CHECK_BUTTON(UseLinearReferenceFrameA);
+	DEFINE_CHECK_BUTTON(UseLookAtOther);
+	DEFINE_CHECK_BUTTON(UseGlobalJointOriginFromOther);
+	DEFINE_CHECK_BUTTON(UseRigidBodyDistanceAsLinearLimit);
+	DEFINE_CHECK_BUTTON(UseSeperateLocalFrame);
+
 	DEFINE_CHECK_BUTTON(Barnacle);
 	DEFINE_CHECK_BUTTON(Gargantua);
 	DEFINE_CHECK_BUTTON(DeactiveOnNormalActivity);
@@ -95,6 +96,7 @@ private:
 	DEFINE_CHECK_BUTTON(DeactiveOnCaughtByBarnacleActivity);
 	DEFINE_CHECK_BUTTON(DeactiveOnBarnaclePullingActivity);
 	DEFINE_CHECK_BUTTON(DeactiveOnBarnacleChewingActivity);
+	DEFINE_CHECK_BUTTON(DeactiveOnGargantuaBiteActivity);
 	DEFINE_CHECK_BUTTON(DontResetPoseOnErrorCorrection);
 	DEFINE_CHECK_BUTTON(DeferredCreate);
 #undef DEFINE_CHECK_BUTTON

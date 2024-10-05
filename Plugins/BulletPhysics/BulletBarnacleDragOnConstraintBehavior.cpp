@@ -5,7 +5,7 @@
 CBulletBarnacleDragOnConstraintBehavior::CBulletBarnacleDragOnConstraintBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	int iBarnacleIndex, 
+	int iSourceIndex,
 	float flForceMagnitude,
 	float flTargetVelocity, 
 	float flExtraHeight,
@@ -22,7 +22,7 @@ CBulletBarnacleDragOnConstraintBehavior::CBulletBarnacleDragOnConstraintBehavior
 		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
-	m_iBarnacleIndex(iBarnacleIndex),
+	m_iSourceIndex(iSourceIndex),
 	m_flForceMagnitude(flForceMagnitude),
 	m_flTargetVelocity(flTargetVelocity),
 	m_flExtraHeight(flExtraHeight),
@@ -60,25 +60,25 @@ float CBulletBarnacleDragOnConstraintBehavior::CalculateLimitValueFromActualPlay
 
 void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
-	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
+	auto pSourceObject = ClientPhysicManager()->GetPhysicObject(m_iSourceIndex);
 
-	if (!pBarnacleObject)
+	if (!pSourceObject)
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: Invalid barnacle object!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: Invalid SourceObject object!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!pBarnacleObject->IsRagdollObject())
+	if (!pSourceObject->IsRagdollObject())
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: Barnacle must be RagdollObject!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: SourceObject must be RagdollObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
+	if (!(pSourceObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: Barnacle must have PhysicObjectFlag_Barnacle!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnConstraintBehavior::Update: SourceObject must have PhysicObjectFlag_Barnacle!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
@@ -92,7 +92,7 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 		return;
 	}
 
-	auto pBarnacleRagdollObject = (IRagdollObject*)pBarnacleObject;
+	auto pSourceRagdollObject = (IRagdollObject*)pSourceObject;
 
 	if (!(m_iLimitAxis >= 0 && m_iLimitAxis < 3))
 	{
@@ -101,8 +101,8 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 		return;
 	}
 
-	if ((pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling && m_bActivatedOnBarnaclePulling) ||
-		(pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing && m_bActivatedOnBarnacleChewing))
+	if ((pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling && m_bActivatedOnBarnaclePulling) ||
+		(pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing && m_bActivatedOnBarnacleChewing))
 	{
 		auto pInternalConstraint = (btTypedConstraint*)pConstraint->GetInternalConstraint();
 
@@ -126,7 +126,7 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 					flLimitSign = bbMin[m_iLimitAxis] < 0 ? -1 : 1;
 					vStartOrigin = tr * bbMin;
 
-					if (m_bCalculateLimitFromActualPlayerOrigin && pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
+					if (m_bCalculateLimitFromActualPlayerOrigin && pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
 					{
 						flLimitValue = CalculateLimitValueFromActualPlayerOrigin(vStartOrigin);
 					}
@@ -147,7 +147,7 @@ void CBulletBarnacleDragOnConstraintBehavior::Update(CPhysicComponentUpdateConte
 					flLimitSign = bbMax[m_iLimitAxis] < 0 ? -1 : 1;
 					vStartOrigin = tr * bbMax;
 
-					if (m_bCalculateLimitFromActualPlayerOrigin && pBarnacleRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
+					if (m_bCalculateLimitFromActualPlayerOrigin && pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
 					{
 						flLimitValue = CalculateLimitValueFromActualPlayerOrigin(vStartOrigin);
 					}

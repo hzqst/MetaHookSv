@@ -83,6 +83,7 @@ int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel();
 int EngineGetModelIndex(model_t* mod);
 model_t* EngineGetModelByIndex(int index);
+model_t* EngineFindWorldModelBySubModel(model_t* psubmodel);
 
 int EngineGetMaxClientEdicts(void);
 cl_entity_t* EngineGetClientEntitiesBase(void);

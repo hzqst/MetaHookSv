@@ -6,6 +6,7 @@
 #include "BulletBarnacleDragOnConstraintBehavior.h"
 #include "BulletBarnacleChewBehavior.h"
 #include "BulletBarnacleConstraintLimitAdjustmentBehavior.h"
+#include "BulletGargantuaDragOnConstraintBehavior.h"
 #include "BulletFirstPersonViewCameraBehavior.h"
 #include "BulletThirdPersonViewCameraBehavior.h"
 
@@ -356,7 +357,12 @@ IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CPhysicObjectCre
 		ctx.globalJointA.mult(ctx.worldTransA, ctx.localTransA);
 		ctx.globalJointB.mult(ctx.worldTransB, ctx.localTransB);
 
-		if (pConstraintConfig->useGlobalJointFromA)
+		if (pConstraintConfig->useSeperateLocalFrame)
+		{
+			pInternalConstraint = BulletCreateConstraintFromLocalJointTransform(pConstraintConfig, ctx, ctx.localTransA, ctx.localTransB);
+			break;
+		}
+		else if (pConstraintConfig->useGlobalJointFromA)
 		{
 			if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
 			{
@@ -448,11 +454,17 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 	{
 	case PhysicBehavior_BarnacleDragOnRigidBody:
 	{
+		if (!m_iBarnacleIndex)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\" because there is no barnacle!\n", pPhysicBehaviorConfig->name.c_str());
+			return nullptr;
+		}
+
 		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbodyA);
 
 		if (!pRigidBodyA)
 		{
-			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbodyA.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\", rigidbody \"%s\" not found!\n", pPhysicBehaviorConfig->name.c_str(), pPhysicBehaviorConfig->rigidbodyA.c_str());
 			return nullptr;
 		}
 
@@ -468,11 +480,17 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 	}
 	case PhysicBehavior_BarnacleDragOnConstraint:
 	{
+		if (!m_iBarnacleIndex)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\" because there is no barnacle!\n", pPhysicBehaviorConfig->name.c_str());
+			return nullptr;
+		}
+
 		auto pConstraint = GetConstraintByName(pPhysicBehaviorConfig->constraint);
 
 		if (!pConstraint)
 		{
-			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: constraint \"%s\" not found!\n", pPhysicBehaviorConfig->constraint.c_str());
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\", constraint \"%s\" not found!\n", pPhysicBehaviorConfig->name.c_str(), pPhysicBehaviorConfig->constraint.c_str());
 			return nullptr;
 		}
 
@@ -494,6 +512,12 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 	}
 	case PhysicBehavior_BarnacleChew:
 	{
+		if (!m_iBarnacleIndex)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\" because there is no barnacle!\n", pPhysicBehaviorConfig->name.c_str());
+			return nullptr;
+		}
+
 		auto pRigidBodyA = GetRigidBodyByName(pPhysicBehaviorConfig->rigidbodyA);
 
 		if (!pRigidBodyA)
@@ -514,6 +538,12 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
 	{
+		if (!m_iBarnacleIndex)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\" because there is no barnacle!\n", pPhysicBehaviorConfig->name.c_str());
+			return nullptr;
+		}
+
 		auto pConstraint = GetConstraintByName(pPhysicBehaviorConfig->constraint);
 
 		if (!pConstraint)
@@ -532,6 +562,35 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
 					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
 				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
+	}
+	case PhysicBehavior_GargantuaDragOnConstraint:
+	{
+		if (!m_iGargantuaIndex)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\" because there is no gargantua!\n", pPhysicBehaviorConfig->name.c_str());
+			return nullptr;
+		}
+
+		auto pConstraint = GetConstraintByName(pPhysicBehaviorConfig->constraint);
+
+		if (!pConstraint)
+		{
+			gEngfuncs.Con_DPrintf("CreatePhysicBehavior: cannot create \"%s\", constraint \"%s\" not found!\n", pPhysicBehaviorConfig->name.c_str(), pPhysicBehaviorConfig->constraint.c_str());
+			return nullptr;
+		}
+
+		return new CBulletGargantuaDragOnConstraintBehavior(
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
+			GetEntityIndex(),
+			this,
+			pPhysicBehaviorConfig,
+			pConstraint->GetPhysicComponentId(),
+			m_iGargantuaIndex,
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragVelocity],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight],
+			(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragLimitAxis],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor] >= 1 ? true : false);
 	}
 	case PhysicBehavior_FirstPersonViewCamera:
 	{

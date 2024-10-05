@@ -80,9 +80,20 @@ bool StudioGetActivityType(model_t* mod, entity_state_t* entstate, StudioAnimAct
 
 	if (
 		pseqdesc->activity == ACT_EAT
+		&& 0 == stricmp(mod->name, "models/barnacle.mdl")
 		)
 	{
 		(*pStudioAnimActivityType) = StudioAnimActivityType_BarnacleChewing;
+		(*pAnimControlFlags) = 0;
+		return true;
+	}
+
+	if (
+		pseqdesc->activity == ACT_RANGE_ATTACK2
+		&& 0 == stricmp(mod->name, "models/garg.mdl")
+		)
+	{
+		(*pStudioAnimActivityType) = StudioAnimActivityType_GargantuaBite;
 		(*pAnimControlFlags) = 0;
 		return true;
 	}
@@ -723,12 +734,12 @@ CClientRagdollObjectConfig::CClientRagdollObjectConfig() : CClientPhysicObjectCo
 	//ThirdPersonViewCameraControlConfig.rigidbody = "Pelvis";
 }
 
-void CBasePhysicManager::Destroy(void)
+void CBasePhysicManager::Destroy()
 {
 	delete this;
 }
 
-void CBasePhysicManager::Init(void)
+void CBasePhysicManager::Init()
 {
 
 }
@@ -738,7 +749,7 @@ void CBasePhysicManager::Shutdown()
 
 }
 
-void CBasePhysicManager::NewMap(void)
+void CBasePhysicManager::NewMap()
 {
 	RemoveAllPhysicObjects(PhysicObjectFlag_AnyObject, 0);
 	RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0);
@@ -751,9 +762,28 @@ void CBasePhysicManager::NewMap(void)
 	m_selectedPhysicComponentId = 0;
 	m_selectedPhysicObjectId = 0;
 
-	GenerateWorldVertexArray();
-	GenerateBrushIndexArray();
+	m_worldVertexResources.clear();
 
+	FreeAllIndexArrays(PhysicIndexArrayFlag_FromBSP, 0);
+
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod->type == mod_brush && mod->name[0])
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				std::shared_ptr<CPhysicVertexArray> worldVertexArray = GenerateWorldVertexArray(mod);
+
+				if (worldVertexArray)
+				{
+					GenerateBrushIndexArray(mod, worldVertexArray);
+				}
+			}
+		}
+	}
+	
 	//Deprecated, use .obj instead.
 	//GenerateBarnacleIndexVertexArray();
 	//GenerateGargantuaIndexVertexArray();
@@ -1097,6 +1127,7 @@ static std::shared_ptr<CClientRigidBodyConfig> LoadRigidBodyFromKeyValues(KeyVal
 	LOAD_CONFIG_FLAGS(invertStateOnCaughtByBarnacle, InvertStateOnCaughtByBarnacle);
 	LOAD_CONFIG_FLAGS(invertStateOnBarnaclePulling, InvertStateOnBarnaclePulling);
 	LOAD_CONFIG_FLAGS(invertStateOnBarnacleChewing, InvertStateOnBarnacleChewing);
+	LOAD_CONFIG_FLAGS(invertStateOnGargantuaBite, InvertStateOnGargantuaBite);
 	LOAD_CONFIG_FLAGS(noCollisionToWorld, NoCollisionToWorld);
 	LOAD_CONFIG_FLAGS(noCollisionToStaticObject, NoCollisionToStaticObject);
 	LOAD_CONFIG_FLAGS(noCollisionToDynamicObject, NoCollisionToDynamicObject);
@@ -1232,17 +1263,23 @@ static std::shared_ptr<CClientConstraintConfig> LoadConstraintFromKeyValues(KeyV
 	LOAD_CONSTRAINT_FLAG(deactiveOnCaughtByBarnacleActivity, DeactiveOnCaughtByBarnacleActivity);
 	LOAD_CONSTRAINT_FLAG(deactiveOnBarnaclePullingActivity, DeactiveOnBarnaclePullingActivity);
 	LOAD_CONSTRAINT_FLAG(deactiveOnBarnacleChewingActivity, DeactiveOnBarnacleChewingActivity);
+	LOAD_CONSTRAINT_FLAG(deactiveOnGargantuaBiteActivity, DeactiveOnGargantuaBiteActivity);
 	LOAD_CONSTRAINT_FLAG(dontResetPoseOnErrorCorrection, DontResetPoseOnErrorCorrection);
 	LOAD_CONSTRAINT_FLAG(DeferredCreate, DeferredCreate);
 #undef LOAD_CONSTRAINT_FLAG
 
+#define LOAD_BOOL_FROM_KEYVALUES(name, defaultValue) pConstraintConfig->name = pConstraintSubKey->GetBool(#name, defaultValue);
+	LOAD_BOOL_FROM_KEYVALUES(disableCollision, true);
+	LOAD_BOOL_FROM_KEYVALUES(useGlobalJointFromA, true);
+	LOAD_BOOL_FROM_KEYVALUES(useLinearReferenceFrameA, true);
+	LOAD_BOOL_FROM_KEYVALUES(useLookAtOther, false);
+	LOAD_BOOL_FROM_KEYVALUES(useGlobalJointOriginFromOther, false);
+	LOAD_BOOL_FROM_KEYVALUES(useRigidBodyDistanceAsLinearLimit, false);
+	LOAD_BOOL_FROM_KEYVALUES(useSeperateLocalFrame, false);
+#undef LOAD_BOOL_FROM_KEYVALUES
+
 	pConstraintConfig->debugDrawLevel = pConstraintSubKey->GetInt("debugDrawLevel", BULLET_DEFAULT_DEBUG_DRAW_LEVEL);
-	pConstraintConfig->disableCollision = pConstraintSubKey->GetBool("disableCollision", true);
-	pConstraintConfig->useGlobalJointFromA = pConstraintSubKey->GetBool("useGlobalJointFromA", true);
-	pConstraintConfig->useLookAtOther = pConstraintSubKey->GetBool("useLookAtOther", false);
-	pConstraintConfig->useGlobalJointOriginFromOther = pConstraintSubKey->GetBool("useGlobalJointOriginFromOther", false);
-	pConstraintConfig->useRigidBodyDistanceAsLinearLimit = pConstraintSubKey->GetBool("useRigidBodyDistanceAsLinearLimit", false);
-	pConstraintConfig->useLinearReferenceFrameA = pConstraintSubKey->GetBool("useLinearReferenceFrameA", true);
+
 	pConstraintConfig->maxTolerantLinearError = pConstraintSubKey->GetFloat("maxTolerantLinearError", BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR);
 
 	pConstraintConfig->isLegacyConfig = pConstraintSubKey->GetBool("isLegacyConfig", false);
@@ -1422,6 +1459,7 @@ static std::shared_ptr<CClientAnimControlConfig> LoadAnimControlFromKeyValues(Ke
 	pAnimControlConfig->gaitsequence = pAnimControlSubKey->GetInt("gaitsequence", -1);
 	pAnimControlConfig->animframe = pAnimControlSubKey->GetFloat("animframe", 0);
 	pAnimControlConfig->activityType = (decltype(pAnimControlConfig->activityType))pAnimControlSubKey->GetInt("activityType", 0);
+	pAnimControlConfig->flags = pAnimControlSubKey->GetInt("flags", 0);
 	pAnimControlConfig->controller[0] = pAnimControlSubKey->GetInt("controller_0", -1);
 	pAnimControlConfig->controller[1] = pAnimControlSubKey->GetInt("controller_1", -1);
 	pAnimControlConfig->controller[2] = pAnimControlSubKey->GetInt("controller_2", -1);
@@ -1527,6 +1565,15 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentExtraHeight);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentInterval);
 			LOAD_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
+			break;
+		}
+		case PhysicBehavior_GargantuaDragOnConstraint:
+		{
+			LOAD_FACTOR_FLOAT(BarnacleDragMagnitude);
+			LOAD_FACTOR_FLOAT(BarnacleDragVelocity);
+			LOAD_FACTOR_FLOAT(BarnacleDragExtraHeight);
+			LOAD_FACTOR_FLOAT(BarnacleDragLimitAxis);
+			LOAD_FACTOR_FLOAT(BarnacleDragUseServoMotor);
 			break;
 		}
 		case PhysicBehavior_FirstPersonViewCamera:
@@ -1822,6 +1869,7 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					SAVE_CONFIG_FLAGS(invertStateOnCaughtByBarnacle,		InvertStateOnCaughtByBarnacle);
 					SAVE_CONFIG_FLAGS(invertStateOnBarnaclePulling,			InvertStateOnBarnaclePulling);
 					SAVE_CONFIG_FLAGS(invertStateOnBarnacleChewing,			InvertStateOnBarnacleChewing);
+					SAVE_CONFIG_FLAGS(invertStateOnGargantuaBite,			InvertStateOnGargantuaBite);
 					SAVE_CONFIG_FLAGS(noCollisionToWorld,			NoCollisionToWorld);
 					SAVE_CONFIG_FLAGS(noCollisionToStaticObject,	NoCollisionToStaticObject);
 					SAVE_CONFIG_FLAGS(noCollisionToDynamicObject,	NoCollisionToDynamicObject);
@@ -1899,6 +1947,7 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					SAVE_CONSTRAINT_FLAG(deactiveOnCaughtByBarnacleActivity, DeactiveOnCaughtByBarnacleActivity);
 					SAVE_CONSTRAINT_FLAG(deactiveOnBarnaclePullingActivity, DeactiveOnBarnaclePullingActivity);
 					SAVE_CONSTRAINT_FLAG(deactiveOnBarnacleChewingActivity, DeactiveOnBarnacleChewingActivity);
+					SAVE_CONSTRAINT_FLAG(deactiveOnGargantuaBiteActivity, DeactiveOnGargantuaBiteActivity);
 					SAVE_CONSTRAINT_FLAG(dontResetPoseOnErrorCorrection, DontResetPoseOnErrorCorrection);
 					SAVE_CONSTRAINT_FLAG(DeferredCreate, DeferredCreate);
 
@@ -1934,23 +1983,15 @@ static void AddConstraintsToKeyValues(KeyValues* pKeyValues, const std::vector<s
 						pConstraintSubKey->SetString("forward", std::format("{0} {1} {2}", pConstraintConfig->forward[0], pConstraintConfig->forward[1], pConstraintConfig->forward[2]).c_str());
 					}
 
-					if(pConstraintConfig->disableCollision != true)
-						pConstraintSubKey->SetBool("disableCollision", pConstraintConfig->disableCollision);
-
-					if (pConstraintConfig->useGlobalJointFromA != true)
-						pConstraintSubKey->SetBool("useGlobalJointFromA", pConstraintConfig->useGlobalJointFromA);
-
-					if (pConstraintConfig->useLookAtOther != false)
-						pConstraintSubKey->SetBool("useLookAtOther", pConstraintConfig->useLookAtOther);
-
-					if (pConstraintConfig->useGlobalJointOriginFromOther != false)
-						pConstraintSubKey->SetBool("useGlobalJointOriginFromOther", pConstraintConfig->useGlobalJointOriginFromOther);
-
-					if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit != false)
-						pConstraintSubKey->SetBool("useRigidBodyDistanceAsLinearLimit", pConstraintConfig->useRigidBodyDistanceAsLinearLimit);
-				
-					if (pConstraintConfig->useLinearReferenceFrameA != true)
-						pConstraintSubKey->SetBool("useLinearReferenceFrameA", pConstraintConfig->useLinearReferenceFrameA);
+#define SAVE_BOOL_TO_KEYVALUES(name, defaultValue) {if(pConstraintConfig->name != defaultValue) pConstraintSubKey->SetBool(#name, pConstraintConfig->name); }
+					SAVE_BOOL_TO_KEYVALUES(disableCollision, true);
+					SAVE_BOOL_TO_KEYVALUES(useGlobalJointFromA, true);
+					SAVE_BOOL_TO_KEYVALUES(useLinearReferenceFrameA, true);
+					SAVE_BOOL_TO_KEYVALUES(useLookAtOther, false);
+					SAVE_BOOL_TO_KEYVALUES(useGlobalJointOriginFromOther, false);
+					SAVE_BOOL_TO_KEYVALUES(useRigidBodyDistanceAsLinearLimit, false);
+					SAVE_BOOL_TO_KEYVALUES(useSeperateLocalFrame, false);
+#undef SAVE_BOOL_TO_KEYVALUES
 
 					if (pConstraintConfig->debugDrawLevel != BULLET_DEFAULT_DEBUG_DRAW_LEVEL)
 						pConstraintSubKey->SetInt("debugDrawLevel", pConstraintConfig->debugDrawLevel); 
@@ -2188,6 +2229,15 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 							SET_FACTOR_FLOAT(BarnacleConstraintLimitAdjustmentAxis);
 							break;
 						}
+						case PhysicBehavior_GargantuaDragOnConstraint:
+						{
+							SET_FACTOR_FLOAT(BarnacleDragMagnitude);
+							SET_FACTOR_FLOAT(BarnacleDragVelocity);
+							SET_FACTOR_FLOAT(BarnacleDragExtraHeight);
+							SET_FACTOR_FLOAT(BarnacleDragLimitAxis);
+							SET_FACTOR_FLOAT(BarnacleDragUseServoMotor);
+							break;
+						}
 						case PhysicBehavior_FirstPersonViewCamera:
 						case PhysicBehavior_ThirdPersonViewCamera: {
 							SET_FACTOR_FLOAT(CameraActivateOnIdle);
@@ -2230,6 +2280,7 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					pAnimControlSubKey->SetInt("gaitsequence", AnimControl->gaitsequence);
 					pAnimControlSubKey->SetFloat("animframe", AnimControl->animframe);
 					pAnimControlSubKey->SetInt("activityType", (int)AnimControl->activityType);
+					pAnimControlSubKey->SetInt("flags", AnimControl->flags);
 					pAnimControlSubKey->SetInt("controller_0", AnimControl->controller[0]);
 					pAnimControlSubKey->SetInt("controller_1", AnimControl->controller[1]);
 					pAnimControlSubKey->SetInt("controller_2", AnimControl->controller[2]);
@@ -2512,6 +2563,67 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 	return false;
 }
 
+static bool ParseLegacyGargantuaLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
+	std::istringstream iss(line);
+
+	std::string rigidbodyA, rigidbodyB, type;
+	float offsetX, offsetY, offsetZ;
+	float factor0, factor1, factor2;
+	if (iss >> rigidbodyA >> rigidbodyB >> type >> offsetX >> offsetY >> offsetZ >> factor0 >> factor1 >> factor2) {
+
+		if (type == "dof6z")
+		{
+			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
+			pConstraintConfig->type = PhysicConstraint_Dof6;
+			pConstraintConfig->name = std::format("GargConstraint|{0}", rigidbodyB);
+			pConstraintConfig->rigidbodyA = std::format("@gargantua.{0}", rigidbodyA);
+			pConstraintConfig->rigidbodyB = rigidbodyB;
+			pConstraintConfig->flags = PhysicConstraintFlag_Gargantua;
+			pConstraintConfig->originA[0] = 0;
+			pConstraintConfig->originA[1] = 0;
+			pConstraintConfig->originA[2] = factor1;
+			pConstraintConfig->originB[0] = offsetX;
+			pConstraintConfig->originB[1] = offsetY;
+			pConstraintConfig->originB[2] = offsetZ;
+			pConstraintConfig->forward[0] = 1;
+			pConstraintConfig->forward[1] = 0;
+			pConstraintConfig->forward[2] = 0;
+			pConstraintConfig->disableCollision = false;
+			pConstraintConfig->useGlobalJointFromA = true;
+			pConstraintConfig->useLinearReferenceFrameA = true;
+			pConstraintConfig->useSeperateLocalFrame = true;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX] = -60;//-30-factor2?
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitY] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitZ] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitX] = 30;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitY] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ] = 0;
+			pConstraintConfig->debugDrawLevel = 2;
+
+			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
+
+			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
+
+			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
+
+			pPhysicBehaviorConfig->type = PhysicBehavior_GargantuaDragOnConstraint;
+			pPhysicBehaviorConfig->name = std::format("GargantuaDragForce|{}", rigidbodyB);
+			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Gargantua;
+			pPhysicBehaviorConfig->constraint = std::format("GargConstraint|{0}", rigidbodyB);
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude] = factor0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight] = 0;
+
+			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
+
+			pRagdollConfig->PhysicBehaviorConfigs.emplace_back(pPhysicBehaviorConfig);
+
+			return true;
+		}
+	}
+	gEngfuncs.Con_DPrintf("ParseLegacyBarnacleLine: failed to parse line \"%s\" !\n", line.c_str());
+	return false;
+}
+
 static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
 	std::istringstream iss(line);
 
@@ -2589,8 +2701,6 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 			pConstraintConfig->forward[1] = 0;
 			pConstraintConfig->forward[2] = 0;
 			pConstraintConfig->disableCollision = false;
-			pConstraintConfig->useGlobalJointFromA = true;
-			pConstraintConfig->useLinearReferenceFrameA = true;
 			pConstraintConfig->useLookAtOther = true;
 			pConstraintConfig->useGlobalJointOriginFromOther = true;
 			pConstraintConfig->useRigidBodyDistanceAsLinearLimit = true;
@@ -3519,14 +3629,30 @@ IPhysicObject* CBasePhysicManager::FindBarnacleObjectForPlayer(entity_state_t* p
 
 		if (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_Barnacle)
 		{
-			vec3_t vecClientEntityOrigin;
-			VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
-
-			if (fabs(playerState->origin[0] - vecClientEntityOrigin[0]) < 1 &&
-				fabs(playerState->origin[1] - vecClientEntityOrigin[1]) < 1 &&
-				playerState->origin[2] < vecClientEntityOrigin[2] + 16)
+			if (pPhysicObject->IsRagdollObject())
 			{
-				return pPhysicObject;
+				auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+				StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
+				int iNewAnimControlFlags{};
+
+				StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+
+				pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+
+				if (iNewActivityType == StudioAnimActivityType_BarnaclePulling || 
+					iNewActivityType == StudioAnimActivityType_BarnacleChewing)
+				{
+					vec3_t vecClientEntityOrigin;
+					VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+
+					if (fabs(playerState->origin[0] - vecClientEntityOrigin[0]) < 1 &&
+						fabs(playerState->origin[1] - vecClientEntityOrigin[1]) < 1 &&
+						playerState->origin[2] < vecClientEntityOrigin[2] + 16)
+					{
+						return pPhysicObject;
+					}
+				}
 			}
 		}
 	}
@@ -3542,12 +3668,27 @@ IPhysicObject* CBasePhysicManager::FindGargantuaObjectForPlayer(entity_state_t* 
 
 		if (pPhysicObject->GetObjectFlags() & PhysicObjectFlag_Gargantua)
 		{
-			vec3_t vecClientEntityOrigin;
-			VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
-
-			if (VectorDistance(playerState->origin, vecClientEntityOrigin) < 128 && pPhysicObject->GetClientEntityState()->sequence == 15)
+			if (pPhysicObject->IsRagdollObject())
 			{
-				return pPhysicObject;
+				auto pRagdollObject = (IRagdollObject*)pPhysicObject;
+
+				StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
+				int iNewAnimControlFlags{};
+
+				StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+
+				pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+
+				if (iNewActivityType == StudioAnimActivityType_GargantuaBite)
+				{
+					vec3_t vecClientEntityOrigin;
+					VectorCopy(pPhysicObject->GetClientEntity()->origin, vecClientEntityOrigin);
+
+					if (VectorDistance(playerState->origin, vecClientEntityOrigin) < 128 && pPhysicObject->GetClientEntityState()->sequence == 15)
+					{
+						return pPhysicObject;
+					}
+				}
 			}
 		}
 	}
@@ -3963,18 +4104,42 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 
 }
 
-void CBasePhysicManager::GenerateWorldVertexArray()
+std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray(model_t *mod)
 {
-	//FreeWorldVertexArray();
+	std::string worldModelName;
 
-	m_worldVertexArray = std::make_shared<CPhysicVertexArray>();
+	if (mod->name[0] == '*')
+	{
+		auto worldmodel = EngineFindWorldModelBySubModel(mod);
+
+		if (!worldmodel)
+		{
+			gEngfuncs.Con_Printf("CBasePhysicManager::GenerateWorldVertexArray: Failed to find worldmodel for submodel \"%s\"!\n", mod->name);
+			return nullptr;
+		}
+
+		worldModelName = worldmodel->name;
+	}
+	else
+	{
+		worldModelName = mod->name;
+	}
+
+	auto found = m_worldVertexResources.find(worldModelName);
+
+	if (found != m_worldVertexResources.end())
+	{
+		return found->second;
+	}
+
+	auto worldVertexArray = std::make_shared<CPhysicVertexArray>();
 
 	CPhysicBrushVertex Vertexes[3];
 
 	int iNumFaces = 0;
 	int iNumVerts = 0;
 
-	m_worldVertexArray->vFaceBuffer.resize(r_worldmodel->numsurfaces);
+	worldVertexArray->vFaceBuffer.resize(r_worldmodel->numsurfaces);
 
 	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
@@ -3985,7 +4150,7 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 
 		auto poly = surf->polys;
 
-		auto brushface = &m_worldVertexArray->vFaceBuffer[i];
+		auto brushface = &worldVertexArray->vFaceBuffer[i];
 
 		int iStartVert = iNumVerts;
 
@@ -4004,9 +4169,9 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 				Vec3GoldSrcToBullet(Vertexes[j].pos);
 			}
 
-			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
-			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
-			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
+			worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
+			worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
+			worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
 
 			iNumVerts += 3;
 
@@ -4020,9 +4185,9 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 
 				Vec3GoldSrcToBullet(Vertexes[2].pos);
 
-				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
-				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
-				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
+				worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
+				worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
+				worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
 
 				iNumVerts += 3;
 			}
@@ -4032,7 +4197,11 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 	}
 
 	//Always shrink to save system memory
-	m_worldVertexArray->vVertexBuffer.shrink_to_fit();
+	worldVertexArray->vVertexBuffer.shrink_to_fit();
+
+	m_worldVertexResources[worldModelName] = worldVertexArray;
+
+	return worldVertexArray;
 }
 
 /*void CBasePhysicManager::FreeWorldVertexArray()
@@ -4047,38 +4216,19 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 	Purpose : Generate IndexArray for world and all brush models
 */
 
-void CBasePhysicManager::GenerateBrushIndexArray()
+std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::GenerateBrushIndexArray(model_t* mod, const std::shared_ptr<CPhysicVertexArray>& pWorldVertexArray)
 {
-	FreeAllIndexArrays(PhysicIndexArrayFlag_FromBSP, 0);
+	auto pIndexArray = std::make_shared<CPhysicIndexArray>();
+	pIndexArray->flags |= PhysicIndexArrayFlag_FromBSP;
+	pIndexArray->pVertexArray = pWorldVertexArray;
 
-	int maxNum = EngineGetMaxKnownModel();
+	GenerateIndexArrayForBrushModel(mod, pIndexArray.get());
 
-	//if ((int)m_brushIndexArray.size() < maxNum)
-	//	m_brushIndexArray.resize(maxNum);
+	auto name = UTIL_GetAbsoluteModelName(mod);
 
-	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
+	m_indexArrayResources[name] = pIndexArray;
 
-		if (mod->type == mod_brush && mod->name[0])
-		{
-			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
-			{
-				//m_brushIndexArray[i] = std::make_shared<CPhysicIndexArray>();
-				//m_brushIndexArray[i]->flags |= PhysicIndexArrayFlag_FromBSP;
-
-				auto pIndexArray = std::make_shared<CPhysicIndexArray>();
-				pIndexArray->flags |= PhysicIndexArrayFlag_FromBSP;
-				pIndexArray->pVertexArray = m_worldVertexArray;
-
-				GenerateIndexArrayForBrushModel(mod, m_worldVertexArray.get(), pIndexArray.get());
-
-				auto name = UTIL_GetAbsoluteModelName(mod);
-
-				m_indexArrayResources[name] = pIndexArray;
-			}
-		}
-	}
+	return pIndexArray;
 }
 
 void CBasePhysicManager::FreeAllIndexArrays(int withflags, int withoutflags)
@@ -4098,11 +4248,11 @@ void CBasePhysicManager::FreeAllIndexArrays(int withflags, int withoutflags)
 	}
 }
 
-void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray)
+void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray)
 {
 	if (mod == r_worldmodel)
 	{
-		GenerateIndexArrayRecursiveWorldNode(mod->nodes, vertexArray, indexArray);
+		GenerateIndexArrayRecursiveWorldNode(mod->nodes, pIndexArray);
 	}
 	else
 	{
@@ -4110,15 +4260,15 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVe
 		{
 			auto surf = GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
 
-			GenerateIndexArrayForSurface(surf, vertexArray, indexArray);
+			GenerateIndexArrayForSurface(surf, pIndexArray);
 		}
 	}
 
 	//Always shrink to save system memory
-	indexArray->vIndexBuffer.shrink_to_fit();
+	pIndexArray->vIndexBuffer.shrink_to_fit();
 }
 
-void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicVertexArray* vertexarray, CPhysicIndexArray* indexarray)
+void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicIndexArray* pIndexArray)
 {
 	if (surf->flags & SURF_DRAWTURB)
 	{
@@ -4137,10 +4287,10 @@ void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicV
 
 	auto surfIndex = GetWorldSurfaceIndex(surf);
 
-	GenerateIndexArrayForBrushface(&vertexarray->vFaceBuffer[surfIndex], indexarray);
+	GenerateIndexArrayForBrushface(&pIndexArray->pVertexArray->vFaceBuffer[surfIndex], pIndexArray);
 }
 
-void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray)
+void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicIndexArray* pIndexArray)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -4148,19 +4298,19 @@ void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPh
 	if (node->contents < 0)
 		return;
 
-	GenerateIndexArrayRecursiveWorldNode(node->children[0], vertexArray, indexArray);
+	GenerateIndexArrayRecursiveWorldNode(node->children[0], pIndexArray);
 
 	for (int i = 0; i < node->numsurfaces; ++i)
 	{
 		auto surf = GetWorldSurfaceByIndex(node->firstsurface + i);
 
-		GenerateIndexArrayForSurface(surf, vertexArray, indexArray);
+		GenerateIndexArrayForSurface(surf, pIndexArray);
 	}
 
-	GenerateIndexArrayRecursiveWorldNode(node->children[1], vertexArray, indexArray);
+	GenerateIndexArrayRecursiveWorldNode(node->children[1], pIndexArray);
 }
 
-void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* indexArray)
+void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray)
 {
 	int first = -1;
 	int prv0 = -1;
@@ -4171,11 +4321,11 @@ void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushf
 	{
 		if (prv0 != -1 && prv1 != -1 && prv2 != -1)
 		{
-			indexArray->vIndexBuffer.emplace_back(brushface->start_vertex + first);
-			indexArray->vIndexBuffer.emplace_back(brushface->start_vertex + prv2);
+			pIndexArray->vIndexBuffer.emplace_back(brushface->start_vertex + first);
+			pIndexArray->vIndexBuffer.emplace_back(brushface->start_vertex + prv2);
 		}
 
-		indexArray->vIndexBuffer.emplace_back(brushface->start_vertex + i);
+		pIndexArray->vIndexBuffer.emplace_back(brushface->start_vertex + i);
 
 		if (first == -1)
 			first = i;
@@ -4438,7 +4588,7 @@ void CBasePhysicManager::GenerateGargantuaIndexVertexArray()
 
 	auto objData = FormatToObj(m_gargantuaVertexArray, m_gargantuaIndexArray);
 
-	SaveToObjFile("models/garg_mouth.obj", objData);
+	SaveToObjFile("models/gargmouth.obj", objData);
 }
 
 void CBasePhysicManager::FreeGargantuaIndexVertexArray()
@@ -4456,18 +4606,20 @@ void CBasePhysicManager::FreeGargantuaIndexVertexArray()
 	}
 }
 
-std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod)
+#endif
+
+#if 0
+std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::GetIndexArrayFromBrushModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex < 0 || modelindex > (int)m_brushIndexArray.size())
+	if (modelindex < 0 || modelindex >(int)m_brushIndexArray.size())
 	{
 		return NULL;
 	}
 
 	return m_brushIndexArray[modelindex];
 }
-
 #endif
 
 #include "tiny_obj_loader.h"

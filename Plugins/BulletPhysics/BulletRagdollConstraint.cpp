@@ -68,6 +68,12 @@ void CBulletRagdollConstraint::Update(CPhysicComponentUpdateContext* ComponentUp
 			break;
 		}
 
+		if (pRagdollObject->GetActivityType() == StudioAnimActivityType_GargantuaBite && (m_flags & PhysicConstraintFlag_DeactiveOnGargantuaBiteActivity))
+		{
+			bDeactivate = true;
+			break;
+		}
+
 	} while (0);
 
 	if (bDeactivate)

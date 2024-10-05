@@ -225,6 +225,24 @@ model_t *EngineGetModelByIndex(int index)
 
 	return NULL;
 }
+
+model_t* EngineFindWorldModelBySubModel(model_t* psubmodel)
+{
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_brush && mod->name[0] && mod->name[0] != '*')
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				if (mod->vertexes == psubmodel->vertexes)
+					return mod;
+			}
+		}
+	}
+	return nullptr;
+}
+
 /*
 	Purpose : StudioSetupBones hook handler
 */
@@ -1344,7 +1362,7 @@ void HUD_Init(void)
 
 	ClientPhysicManager()->Init();
 
-	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL);
+	bv_debug_draw = gEngfuncs.pfnRegisterVariable("bv_debug_draw", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_wallhack = gEngfuncs.pfnRegisterVariable("bv_debug_draw_wallhack", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_static = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_static", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_debug_draw_level_dynamic = gEngfuncs.pfnRegisterVariable("bv_debug_draw_level_dynamic", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);

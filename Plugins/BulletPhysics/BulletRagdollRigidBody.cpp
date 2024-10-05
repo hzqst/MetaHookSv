@@ -225,6 +225,11 @@ void CBulletRagdollRigidBody::Update(CPhysicComponentUpdateContext* ComponentUpd
 			bKinematic = !bKinematic;
 			break;
 		}
+		else if (pRagdollObject->GetActivityType() == StudioAnimActivityType_GargantuaBite && (m_flags & PhysicRigidBodyFlag_InvertStateOnGargantuaBite))
+		{
+			bKinematic = !bKinematic;
+			break;
+		}
 
 	} while (0);
 

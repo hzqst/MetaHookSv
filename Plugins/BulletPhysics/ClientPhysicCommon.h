@@ -79,10 +79,11 @@ const int PhysicRigidBodyFlag_InvertStateOnDeath = 0x20;
 const int PhysicRigidBodyFlag_InvertStateOnCaughtByBarnacle = 0x40;
 const int PhysicRigidBodyFlag_InvertStateOnBarnaclePulling = 0x80;
 const int PhysicRigidBodyFlag_InvertStateOnBarnacleChewing = 0x100;
-const int PhysicRigidBodyFlag_NoCollisionToWorld = 0x200;
-const int PhysicRigidBodyFlag_NoCollisionToStaticObject = 0x400;
-const int PhysicRigidBodyFlag_NoCollisionToDynamicObject = 0x800;
-const int PhysicRigidBodyFlag_NoCollisionToRagdollObject = 0x1000;
+const int PhysicRigidBodyFlag_InvertStateOnGargantuaBite = 0x200;
+const int PhysicRigidBodyFlag_NoCollisionToWorld = 0x400;
+const int PhysicRigidBodyFlag_NoCollisionToStaticObject = 0x800;
+const int PhysicRigidBodyFlag_NoCollisionToDynamicObject = 0x1000;
+const int PhysicRigidBodyFlag_NoCollisionToRagdollObject = 0x2000;
 
 const int PhysicRigidBodyFlag_AllowedOnStaticObject = (
 	PhysicRigidBodyFlag_AlwaysStatic | PhysicRigidBodyFlag_AlwaysKinematic | 
@@ -103,7 +104,8 @@ const int PhysicRigidBodyFlag_AllowedOnRagdollObject = (
 	PhysicRigidBodyFlag_InvertStateOnDeath |
 	PhysicRigidBodyFlag_InvertStateOnCaughtByBarnacle | 
 	PhysicRigidBodyFlag_InvertStateOnBarnaclePulling |
-	PhysicRigidBodyFlag_InvertStateOnBarnacleChewing);
+	PhysicRigidBodyFlag_InvertStateOnBarnacleChewing |
+	PhysicRigidBodyFlag_InvertStateOnGargantuaBite);
 
 const int PhysicRigidBodyFactorIdx_Maximum = 32;
 
@@ -135,8 +137,9 @@ const int PhysicConstraintFlag_DeactiveOnDeathActivity = 0x8;
 const int PhysicConstraintFlag_DeactiveOnCaughtByBarnacleActivity = 0x10;
 const int PhysicConstraintFlag_DeactiveOnBarnaclePullingActivity = 0x20;
 const int PhysicConstraintFlag_DeactiveOnBarnacleChewingActivity = 0x40;
-const int PhysicConstraintFlag_DontResetPoseOnErrorCorrection = 0x80;
-const int PhysicConstraintFlag_DeferredCreate = 0x100;
+const int PhysicConstraintFlag_DeactiveOnGargantuaBiteActivity = 0x80;
+const int PhysicConstraintFlag_DontResetPoseOnErrorCorrection = 0x100;
+const int PhysicConstraintFlag_DeferredCreate = 0x200;
 const int PhysicConstraintFlag_NonNative = (PhysicConstraintFlag_Barnacle | PhysicConstraintFlag_Gargantua);
 
 const int PhysicConstraintFactorIdx_ConeTwistSwingSpanLimit1 = 0;
@@ -253,6 +256,7 @@ enum PhysicBehavior
 	PhysicBehavior_BarnacleDragOnConstraint,
 	PhysicBehavior_BarnacleChew,
 	PhysicBehavior_BarnacleConstraintLimitAdjustment,
+	PhysicBehavior_GargantuaDragOnConstraint,
 	PhysicBehavior_FirstPersonViewCamera,
 	PhysicBehavior_ThirdPersonViewCamera,
 	PhysicBehavior_SimpleBuoyancy,
@@ -277,6 +281,7 @@ const float PhysicBehaviorFactorDefaultValue_BarnacleDragCalculateLimitFromActua
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragUseServoMotor = 1.0f;
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnaclePulling = 1.0f;
 const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnBarnacleChewing = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnGargantuaBite = 1.0f;
 
 const int PhysicBehaviorFactorIdx_BarnacleChewMagnitude = 0;
 const int PhysicBehaviorFactorIdx_BarnacleChewInterval = 1;
@@ -331,6 +336,7 @@ enum StudioAnimActivityType
 	StudioAnimActivityType_CaughtByBarnacle,
 	StudioAnimActivityType_BarnaclePulling,
 	StudioAnimActivityType_BarnacleChewing,
+	StudioAnimActivityType_GargantuaBite,
 	StudioAnimActivityType_Debug,
 	StudioAnimActivityType_Maximum,
 };

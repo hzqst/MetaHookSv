@@ -10,11 +10,12 @@
 class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
-	//CPhysicIndexArray* m_barnacleIndexArray{};
-	//CPhysicVertexArray* m_barnacleVertexArray{};
-	//CPhysicIndexArray* m_gargantuaIndexArray{};
-	//CPhysicVertexArray* m_gargantuaVertexArray{};
-
+#if 1
+	CPhysicIndexArray* m_barnacleIndexArray{};
+	CPhysicVertexArray* m_barnacleVertexArray{};
+	CPhysicIndexArray* m_gargantuaIndexArray{};
+	CPhysicVertexArray* m_gargantuaVertexArray{};
+#endif
 	float m_gravity{};
 
 	uint64 m_inspectedPhysicObjectId{};
@@ -30,20 +31,24 @@ protected:
 	std::unordered_map<int, IPhysicComponent*> m_physicComponents;
 	std::unordered_map<int, std::weak_ptr<CClientBasePhysicConfig>> m_physicConfigs;
 
-	std::shared_ptr<CPhysicVertexArray> m_worldVertexArray;
+
+#if 0
+	//std::shared_ptr<CPhysicVertexArray> m_worldVertexArray;
 	//std::vector<std::shared_ptr<CPhysicIndexArray>> m_brushIndexArray;
+#endif
 
 	CClientPhysicObjectConfigs m_physicObjectConfigs;
 
 	std::unordered_map<std::string, std::shared_ptr<CPhysicIndexArray>> m_indexArrayResources;
+	std::unordered_map<std::string, std::shared_ptr<CPhysicVertexArray>> m_worldVertexResources;
 
 	CPhysicDebugDrawContext m_debugDrawContext;
 public:
 
-	void Destroy(void) override;
-	void Init(void) override;
+	void Destroy() override;
+	void Init() override;
 	void Shutdown() override;
-	void NewMap(void) override;
+	void NewMap() override;
 	void SetGravity(float value) override;
 	void StepSimulation(double frametime) override;
 
@@ -129,23 +134,28 @@ public:
 	virtual IRagdollObject* CreateRagdollObject(const CPhysicObjectCreationParameter& CreationParam) = 0;
 
 private:
-	//WorldVertexArray and WorldIndexArray
-	void GenerateWorldVertexArray();
-	void GenerateBrushIndexArray();
-	void GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
-	void GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray);
-	void GenerateIndexArrayForSurface(msurface_t* psurf, CPhysicVertexArray* vertexarray, CPhysicIndexArray* indexarray);
-	void GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* indexArray);
+	//WorldVertexArray and WorldIndexArray Management
+	std::shared_ptr<CPhysicVertexArray> GenerateWorldVertexArray(model_t* mod);
+	std::shared_ptr<CPhysicIndexArray> GenerateBrushIndexArray(model_t* mod, const std::shared_ptr<CPhysicVertexArray> & pWorldVertexArray);
+
+	void GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray);
+	void GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicIndexArray* pIndexArray);
+	void GenerateIndexArrayForSurface(msurface_t* psurf, CPhysicIndexArray* pIndexArray);
+	void GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray);
 
 	//Deprecated: use Resource Management now
 #if 0
-	//std::shared_ptr<CPhysicIndexArray> GetIndexArrayFromBrushModel(model_t* mod);
-
-	//void GenerateBarnacleIndexVertexArray();
-	//void FreeBarnacleIndexVertexArray();
-	//void GenerateGargantuaIndexVertexArray();
-	//void FreeGargantuaIndexVertexArray();
+	std::shared_ptr<CPhysicIndexArray> GetIndexArrayFromBrushModel(model_t* mod);
 #endif
+
+	//Deprecated: use .obj now
+#if 0
+	void GenerateBarnacleIndexVertexArray();
+	void FreeBarnacleIndexVertexArray();
+	void GenerateGargantuaIndexVertexArray();
+	void FreeGargantuaIndexVertexArray();
+#endif
+
 	void CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_state_t* state, model_t* mod, int entindex, int playerindex);
 	void CreatePhysicObjectForStudioModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);
 	void CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod);

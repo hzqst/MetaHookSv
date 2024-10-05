@@ -1,6 +1,6 @@
 #include "PhysicUTIL.h"
-#include "exportfuncs.h"
 #include "Controls.h"
+#include "exportfuncs.h"
 
 #include <sstream>
 #include <format>
@@ -102,6 +102,7 @@ const char* VGUI2Token_PhysicBehaviorType[] = {
 	"#BulletPhysics_BarnacleDragOnConstraint",
 	"#BulletPhysics_BarnacleChew", 
 	"#BulletPhysics_BarnacleConstraintLimitAdjustment",
+	"#BulletPhysics_GargantuaDragOnConstraint",
 	"#BulletPhysics_FirstPersonViewCamera", 
 	"#BulletPhysics_ThirdPersonViewCamera", 
 	"#BulletPhysics_SimpleBuoyancy",
@@ -129,6 +130,7 @@ const char* VGUI2Token_ActivityType[] = {
 	"#BulletPhysics_CaughtByBarnacle", 
 	"#BulletPhysics_BarnaclePulling",
 	"#BulletPhysics_BarnacleChewing",
+	"#BulletPhysics_GargantuaBite",
 	"#BulletPhysics_Debug"
 };
 
@@ -171,6 +173,7 @@ std::wstring UTIL_GetFormattedRigidBodyFlags(int flags)
 	FORMAT_FLAGS_TO_STRING(InvertStateOnCaughtByBarnacle);
 	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnaclePulling);
 	FORMAT_FLAGS_TO_STRING(InvertStateOnBarnacleChewing);
+	FORMAT_FLAGS_TO_STRING(InvertStateOnGargantuaBite);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToWorld);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToStaticObject);
 	FORMAT_FLAGS_TO_STRING(NoCollisionToDynamicObject);
@@ -204,6 +207,7 @@ std::wstring UTIL_GetFormattedConstraintFlags(int flags)
 	FORMAT_FLAGS_TO_STRING(DeactiveOnCaughtByBarnacleActivity);
 	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnaclePullingActivity);
 	FORMAT_FLAGS_TO_STRING(DeactiveOnBarnacleChewingActivity);
+	FORMAT_FLAGS_TO_STRING(DeactiveOnGargantuaBiteActivity);
 	FORMAT_FLAGS_TO_STRING(DontResetPoseOnErrorCorrection);
 	FORMAT_FLAGS_TO_STRING(DeferredCreate);
 
@@ -224,6 +228,7 @@ std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraint
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointFromB"));
 	}
+
 	if (pConstraintConfig->disableCollision)
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_DisableCollision"));
@@ -232,25 +237,34 @@ std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraint
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_DontDisableCollision"));
 	}
-	if (pConstraintConfig->useLookAtOther)
-	{
-		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
-	}
-	if (pConstraintConfig->useGlobalJointOriginFromOther)
-	{
-		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
-	}
-	if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
-	{
-		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
-	}
+
 	if (pConstraintConfig->useLinearReferenceFrameA)
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameA"));
 	}
-	else 
+	else
 	{
 		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLinearReferenceFrameB"));
+	}
+
+	if (pConstraintConfig->useLookAtOther)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseLookAtOther"));
+	}
+
+	if (pConstraintConfig->useGlobalJointOriginFromOther)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseGlobalJointOriginFromOther"));
+	}
+
+	if (pConstraintConfig->useRigidBodyDistanceAsLinearLimit)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseRigidBodyDistanceAsLinearLimit"));
+	}
+
+	if (pConstraintConfig->useSeperateLocalFrame)
+	{
+		ss << std::format(L"({0}) ", vgui::localize()->Find("#BulletPhysics_UseSeperateLocalFrame"));
 	}
 
 	return ss.str();
@@ -398,13 +412,14 @@ std::string UTIL_GetAbsoluteModelName(model_t* mod)
 {
 	if (mod->type == mod_brush)
 	{
-		if (mod != r_worldmodel)
+		if (mod->name[0] == '*')
 		{
-			return std::format("{0}/{1}", r_worldmodel->name, mod->name);
-		}
-		else
-		{
-			return r_worldmodel->name;
+			auto worldmodel = EngineFindWorldModelBySubModel(mod);
+
+			if (worldmodel)
+			{
+				return std::format("{0}/{1}", worldmodel->name, mod->name);
+			}
 		}
 	}
 
@@ -455,7 +470,8 @@ const char* UTIL_GetPhysicBehaviorTypeName(int type)
 		"BarnacleDragOnRigidBody",
 		"BarnacleDragOnConstraint",
 		"BarnacleChew",
-		"BarnacleConstraintLimitAdjustment", 
+		"BarnacleConstraintLimitAdjustment",
+		"GargantuaDragOnConstraint",
 		"FirstPersonViewCamera", 
 		"ThirdPersonViewCamera", 
 		"SimpleBuoyancy",
@@ -535,6 +551,7 @@ int UTIL_GetPhysicBehaviorTypeFromTypeName(const char* name)
 	CHECK_BEHAVIOR_TYPE_NAME(BarnacleDragOnConstraint);
 	CHECK_BEHAVIOR_TYPE_NAME(BarnacleChew);
 	CHECK_BEHAVIOR_TYPE_NAME(BarnacleConstraintLimitAdjustment);
+	CHECK_BEHAVIOR_TYPE_NAME(GargantuaDragOnConstraint);
 	CHECK_BEHAVIOR_TYPE_NAME(FirstPersonViewCamera);
 	CHECK_BEHAVIOR_TYPE_NAME(ThirdPersonViewCamera);
 	CHECK_BEHAVIOR_TYPE_NAME(SimpleBuoyancy);
@@ -885,10 +902,11 @@ std::shared_ptr<CClientConstraintConfig> UTIL_CloneConstraintConfig(const CClien
 	pNewConfig->rigidbodyB = pOldConfig->rigidbodyB;
 	pNewConfig->disableCollision = pOldConfig->disableCollision;
 	pNewConfig->useGlobalJointFromA = pOldConfig->useGlobalJointFromA;
+	pNewConfig->useLinearReferenceFrameA = pOldConfig->useLinearReferenceFrameA;
 	pNewConfig->useLookAtOther = pOldConfig->useLookAtOther;
 	pNewConfig->useGlobalJointOriginFromOther = pOldConfig->useGlobalJointOriginFromOther;
 	pNewConfig->useRigidBodyDistanceAsLinearLimit = pOldConfig->useRigidBodyDistanceAsLinearLimit;
-	pNewConfig->useLinearReferenceFrameA = pOldConfig->useLinearReferenceFrameA;
+	pNewConfig->useSeperateLocalFrame = pOldConfig->useSeperateLocalFrame;
 	pNewConfig->rotOrder = pOldConfig->rotOrder;
 	pNewConfig->flags = pOldConfig->flags;
 	pNewConfig->debugDrawLevel = pOldConfig->debugDrawLevel;

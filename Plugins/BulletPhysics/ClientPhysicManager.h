@@ -448,11 +448,11 @@ public:
 class IClientPhysicManager : public IBaseInterface
 {
 public:
-	virtual void Destroy(void) = 0;
-	virtual void Init(void) = 0;
+	virtual void Destroy() = 0;
+	virtual void Init() = 0;
 	virtual void Shutdown() = 0;
-	virtual void NewMap(void) = 0;
-	virtual void DebugDraw(void) = 0;
+	virtual void NewMap() = 0;
+	virtual void DebugDraw() = 0;
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
 
@@ -512,7 +512,6 @@ public:
 	virtual int AllocatePhysicComponentId() = 0;
 	virtual IPhysicComponent *GetPhysicComponent(int physicComponentId) = 0;
 	virtual void AddPhysicComponent(int physicComponentId, IPhysicComponent* pPhysicComponent) = 0;
-	//virtual void FreePhysicComponent(IPhysicComponent* pPhysicComponent) = 0;
 	virtual bool RemovePhysicComponent(int physicComponentId) = 0;
 
 	//Inspection / Selection System
