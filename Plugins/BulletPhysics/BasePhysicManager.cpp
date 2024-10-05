@@ -2919,6 +2919,11 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 				return nullptr; // Parsing failed
 			}
 		}
+		else if (section == "Gargantua") {
+			if (!ParseLegacyGargantuaLine(pRagdollConfig.get(), line)) {
+				return nullptr; // Parsing failed
+			}
+		}
 		else if (section == "CameraControl") {
 			if (!ParseLegacyCameraControl(pRagdollConfig.get(), line)) {
 				return nullptr; // Parsing failed

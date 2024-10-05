@@ -101,7 +101,7 @@
 
 if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics"
 if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\bulletphysics\" "$(MetaHookGameDirectory)$(MetaHookModName)\bulletphysics\" /y /e
-if exist "$(MetaHookGameDirectory)$(MetaHookModName)_addon\" xcopy "$(SolutionDir)Build\svencoop_addon\" "$(MetaHookGameDirectory)$(MetaHookModName)_addon\" /y /e</Command>
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)_addon\" xcopy "$(SolutionDir)Build\svencoop_downloads\" "$(MetaHookGameDirectory)$(MetaHookModName)_downloads\" /y /e</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
