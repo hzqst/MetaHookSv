@@ -1,0 +1,16 @@
+{
+"origin" "-2114 -2065 -359"
+"_distance" "300.0"
+"_light" "192 192 192 100"
+"classname" "light_dynamic"
+"_specular" "1.0"
+"_specularpow" "10"
+}
+{
+"origin" "-2114 -1868 -359"
+"_distance" "300.0"
+"_light" "192 192 192 100"
+"classname" "light_dynamic"
+"_specular" "1.0"
+"_specularpow" "10"
+}

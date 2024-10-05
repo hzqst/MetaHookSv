@@ -1,0 +1,7 @@
+{
+    "classname" "studio_texture"
+    "basetexture" "LO_toothEye_toSub_AM.bmp"    
+    "replacetexture"  "models/fallguys/door6_AM.dds"
+    "normaltexture"  "models/fallguys/door6_NM.dds"
+    "speculartexture"  "models/fallguys/door6_specular.png"
+}

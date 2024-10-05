@@ -1,0 +1,54 @@
+[DeathAnim]
+12 80
+13 120
+14 120
+15 80
+16 120
+17 150
+18 30
+182 255
+183 0
+
+[RigidBody]
+Head   35  6  sphere  -4.0   5.0  0.0   6
+Spine  5   6  capsule  3.0   6.0  1.0   10
+Pelvis 1   2  sphere   3.0   6.0  0.0   10
+
+LArm   8   9  capsule  5.0   1.8  8.0   2
+LArm2  9   10 capsule  3.5   1.8  5.0   2
+LHand  10  9  capsule -2.0   1.8  1.5   1
+
+RArm   16  17 capsule  6.0   1.8  7.0   2
+RArm2  17  18 capsule  3.5   1.8  5.0   2
+RHand  18  17 capsule -2.0   1.8  1.5   1
+
+LLeg   26  27 capsule  6.0   2.5  12.0  2
+LLeg2  27  28 capsule  9.0   2.0  14.0  2
+
+RLeg   21  22 capsule  6.0   2.5  12.0  2
+RLeg2  22  23 capsule  9.0   2.0  14.0  2
+
+[Constraint]
+Spine  Head   conetwist 6 35   0 6 0     0  0 -5.5      0.0  0.0  0.2
+Pelvis Spine  conetwist 1 5    0 0 4     0 -4  0        0.0  0.0  0.15
+
+Spine  LArm   conetwist 7 8    0 0 0     0 -4  0        0.33 0.33 1.0
+LArm   LArm2  conetwist 8 9    0 0 0     0 -4  0        0.2  0.2  0.2
+LArm2  LHand  conetwist 9 10   0 0 0     0  3  0        0.2  0.2  0.3
+
+Spine  RArm   conetwist 15 16  0 0 0     0 -4  0        0.33 0.33 1.0
+RArm   RArm2  conetwist 16 17  0 0 0     0 -4  0        0.2  0.2  0.2
+RArm2  RHand  conetwist 18 17  0 0 0     0  3  0        0.2  0.2  0.3
+
+Pelvis LLeg   conetwist 26 26  0 0 0     0 -7  0        0.2  0.2  0.25
+LLeg2  LLeg   hinge     26 26  0 0 0     0 8 0          -0.5  0.0    0
+
+Pelvis RLeg   conetwist 21 21  0 0 0     0 -7  0        0.2  0.2  0.25
+RLeg2  RLeg   hinge     21 21  0 0 0     0 8 0          -0.5  0.0    0
+
+[Barnacle]
+LLeg2   dof6           0  8  0    40000   4    16
+LLeg2   chewlimit     0  0  0     0       1.0  3
+RLeg    dof6           0  0  0    30000   -20  16
+RLeg    chewlimit     0  0  0     0       1.0  3
+Pelvis  chewforce     0  0  0     8000    1.0  0

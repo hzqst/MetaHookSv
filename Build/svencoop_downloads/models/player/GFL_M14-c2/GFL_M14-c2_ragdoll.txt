@@ -1,0 +1,105 @@
+[DeathAnim]
+12 0
+13 0
+14 0
+15 0
+16 0
+17 0
+18 0
+
+[RigidBody]
+Head   15  6  capsule  -4.0  4.25  0.1   30
+Spine  5   6  capsule  3.0   4.25  1.0   40
+Pelvis 1   2  sphere   3.0   4.5  0.0   60
+
+LArm   8   9  capsule  6.0   1.8  4.0   30
+LArm2  9   10 capsule  4.5   1.5  4.0   30
+
+RArm   11  13 capsule  6.0   1.8  4.0   30
+RArm2  13  14 capsule  4.5   1.5  4.0   30
+
+LLeg   41  42 capsule  6.0   1.8  8.0  30
+LLeg2  42  43 capsule  8.0   1.5  8.0  30
+LFoot  43  42 capsule  -2.0   2.2  1.0  10
+
+RLeg   46  47 capsule  6.0   1.8  8.0  30
+RLeg2  47  48 capsule  8.0   1.5  8.0  30
+RFoot  48  47 capsule  -2.0   2.2  1.0  10
+
+[JiggleBone]
+FakehairL1 56 57 capsule  2.0  1.5  5.0   10
+FakehairL2 57 58 capsule  3.0  1.7  6.0   10
+FakehairL3 58 57 capsule  -4.0 1.9  7.0   10
+
+FakehairR1 59 60 capsule  2.0  1.5  5.0   10
+FakehairR2 60 61 capsule  3.0  1.7  6.0   10
+FakehairR3 61 60 capsule  -4.0 1.9  7.0   10
+
+[Constraint]
+Spine  Head   conetwist_collision   6 15   0 0 0     0  6  0        0.01  0.01  0.2
+Pelvis Spine  conetwist_collision   1 5    0 0 4     0 -4  0        0.01  0.01  0.2
+
+Spine  LArm   conetwist_collision             7 8    0 0 0     0 -3.5  0        0.5 0.5 0.5
+LArm   LArm2  conetwist_collision   8 9    0 0 0     0 -4.5  0        0.3 0.3 0.5
+
+Spine  RArm   conetwist_collision             11 12  0 0 0     0 -3.5  0        0.5 0.5 0.5
+RArm   RArm2  conetwist_collision   12 13  0 0 0     0 -4.5  0         0.3 0.3 0.5
+
+Pelvis LLeg   conetwist_collision   41 41  0 0 0     0 -7  0        0.1  0.1  0.25
+LLeg2  LLeg   hinge_collision       41 41  0 0 0     0 8 0         -0.6  0.0  0
+LLeg2  LFoot  conetwist_collision   43 43  0 0 0     0 4 0          0.1  0.1  0.1
+
+Pelvis RLeg   conetwist_collision   46 46  0 0 0     0 -7  0        0.1  0.1  0.25
+RLeg2  RLeg   hinge_collision       46 46  0 0 0     0 8 0         -0.6  0.0  0
+RLeg2  RFoot  conetwist_collision   48 48  0 0 0     0 4 0          0.1  0.1  0.1
+
+Head          FakehairL1   conetwist  56 56  0 0 0   0 -4 0       0.5  0.5   0.05
+FakehairL1    FakehairL2   conetwist  57 57  0 0 0   0 -4 0       0.1  0.1   0.1
+FakehairL2    FakehairL3   conetwist  58 58  0 0 0   0  4 0       0.1  0.1   0.1
+
+Head          FakehairR1   conetwist  59 59  0 0 0   0 -4 0       0.5  0.5   0.05
+FakehairR1    FakehairR2   conetwist  60 60  0 0 0   0 -4 0       0.1  0.1   0.1
+FakehairR2    FakehairR3   conetwist  61 61  0 0 0   0  4 0       0.1  0.1   0.1
+
+[Barnacle]
+LLeg2   dof6          0  8  0     400000   4   16
+LLeg2   chewlimit     0  0  0     0       1.0  4
+RLeg    dof6          0  0  0     300000  -16  16
+RLeg    chewlimit     0  0  0     0       1.0  4
+Pelvis  chewforce     0  0  0     80000    1.0  0
+
+[Gargantua]
+Head    GargMouth   dof6z    0  0  0     200000  -8  16
+Spine   GargMouth   dof6z    0  0  0     200000  -16  32
+Pelvis  GargMouth   dof6z    0  0  0     200000  -24  64
+
+[WaterControl]
+Head    0  0  0    1.05  0.5  0
+Spine   0  0  0    1.05  0.5  0
+Pelvis  0  0  0    1.05  0.5  0
+
+LArm    0  0  0    0.95  0.5  0
+LArm2   0  0  0    0.95  0.5  0
+
+RArm    0  0  0    0.95  0.5  0
+RArm2   0  0  0    0.95  0.5  0
+
+LLeg    0  0  0    0.475 0.5  0
+LLeg    8  0  0    0.475 0.5  0
+LLeg2   0  0  0    0.475 0.5  0
+LLeg2   10 0  0    0.475 0.5  0
+
+RLeg    0  0  0    0.475 0.5  0
+RLeg    8  0  0    0.475 0.5  0
+RLeg2   0  0  0    0.475 0.5  0
+RLeg2   10 0  0    0.475 0.5  0
+
+FakehairL1    0 0 0    1.05  0.5  0
+FakehairL2    0 0 0    1.05  0.5  0
+FakehairL3    0 0 0    1.05  0.5  0
+FakehairR1    0 0 0    1.05  0.5  0
+FakehairR2    0 0 0    1.05  0.5  0
+FakehairR3    0 0 0    1.05  0.5  0
+
+[CameraControl]
+FirstPerson_AngleOffset    0 0 90

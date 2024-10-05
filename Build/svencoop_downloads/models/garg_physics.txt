@@ -1,0 +1,62 @@
+"PhysicObjectConfig"
+{
+	"type"		"RagdollObject"
+	"gargantua"		"1"
+	"rigidBodies"
+	{
+		"GargMouth"
+		{
+			"alwaysKinematic"		"1"
+			"DebugDrawLevel"		"1"
+			"boneindex"		"20"
+			"origin"		"-10 21 2.3"
+			"angles"		"90 0 180"
+			"forward"		"0 1 0"
+			"isLegacyConfig"		"0"
+			"pboneindex"		"-1"
+			"pboneoffset"		"0.000000"
+			"Mass"		"0.000000"
+			"Density"		"1.000000"
+			"LinearFriction"		"1.000000"
+			"RollingFriction"		"0.200000"
+			"Restitution"		"0.000000"
+			"CCDRadius"		"0.000000"
+			"CCDThreshold"		"0.001000"
+			"LinearSleepingThreshold"		"5.000000"
+			"AngularSleepingThreshold"		"3.000000"
+			"collisionShape"
+			{
+				"type"		"TriangleMesh"
+				"resourcePath"		"models/gargmouth2.obj"
+			}
+		}
+	}
+	"physicBehaviors"
+	{
+		"UnnamedPhysicBehavior_331"
+		{
+			"type"		"ThirdPersonViewCamera"
+			"rigidbodyA"		"GargMouth"
+			"origin"		"0 0 -16"
+		}
+	}
+	"animControls"
+	{
+		"1"
+		{
+			"sequence"		"15"
+			"gaitsequence"		"-1"
+			"animframe"		"0.000000"
+			"activityType"		"5"
+			"flags"		"0"
+			"controller_0"		"0"
+			"controller_1"		"0"
+			"controller_2"		"0"
+			"controller_3"		"0"
+			"blending_0"		"0"
+			"blending_1"		"0"
+			"blending_2"		"0"
+			"blending_3"		"0"
+		}
+	}
+}
