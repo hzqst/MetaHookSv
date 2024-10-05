@@ -27,7 +27,7 @@
 			"collisionShape"
 			{
 				"type"		"TriangleMesh"
-				"resourcePath"		"models/gargmouth2.obj"
+				"resourcePath"		"models/gargmouth.obj"
 			}
 		}
 	}
