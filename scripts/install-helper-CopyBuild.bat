@@ -11,8 +11,8 @@ xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 
 if "%LauncherMod%"=="svencoop" (
 
-    mkdir "%GameDir%\%LauncherMod%_addon\"
-    xcopy "%SolutionDir%Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon\" /y /e
+    mkdir "%GameDir%\%LauncherMod%_downloads\"
+    xcopy "%SolutionDir%Build\svencoop_downloads" "%GameDir%\%LauncherMod%_downloads\" /y /e
 
     mkdir "%GameDir%\%LauncherMod%_schinese\"
     xcopy "%SolutionDir%Build\svencoop_schinese" "%GameDir%\%LauncherMod%_schinese\" /y /e
