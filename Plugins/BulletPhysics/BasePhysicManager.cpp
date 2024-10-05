@@ -27,7 +27,7 @@ IClientPhysicManager* ClientPhysicManager()
 	return g_pClientPhysicManager;
 }
 
-StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
+bool StudioGetActivityType(model_t* mod, entity_state_t* entstate, StudioAnimActivityType *pStudioAnimActivityType, int *pAnimControlFlags)
 {
 	//if (g_bIsSvenCoop)
 	//{
@@ -36,17 +36,17 @@ StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_
 	//}
 
 	if (mod->type != mod_studio)
-		return StudioAnimActivityType_Idle;
+		return false;
 
 	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 
 	if (!studiohdr)
-		return StudioAnimActivityType_Idle;
+		return false;
 
 	int sequence = entstate->sequence;
 
 	if (sequence < 0 || sequence >= studiohdr->numseq)
-		return StudioAnimActivityType_Idle;
+		return false;
 
 	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
 
@@ -61,7 +61,9 @@ StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_
 		pseqdesc->activity == ACT_DIE_BACKSHOT
 		)
 	{
-		return StudioAnimActivityType_Death;
+		(*pStudioAnimActivityType) = StudioAnimActivityType_Death;
+		(*pAnimControlFlags) = AnimControlFlag_OverrideAllBones;
+		return true;
 	}
 
 	if (
@@ -71,17 +73,23 @@ StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_
 		pseqdesc->activity == ACT_BARNACLE_CHEW
 		)
 	{
-		return StudioAnimActivityType_CaughtByBarnacle;
+		(*pStudioAnimActivityType) = StudioAnimActivityType_CaughtByBarnacle;
+		(*pAnimControlFlags) = AnimControlFlag_OverrideAllBones;
+		return true;
 	}
 
 	if (
 		pseqdesc->activity == ACT_EAT
 		)
 	{
-		return StudioAnimActivityType_BarnacleChewing;
+		(*pStudioAnimActivityType) = StudioAnimActivityType_BarnacleChewing;
+		(*pAnimControlFlags) = 0;
+		return true;
 	}
 
-	return StudioAnimActivityType_Idle;
+	(*pStudioAnimActivityType) = StudioAnimActivityType_Idle;
+	(*pAnimControlFlags) = 0;
+	return true;
 }
 
 bool CheckPhysicComponentSubFilters(IPhysicComponent* pPhysicComponent, const CPhysicComponentSubFilters& subfilter)
@@ -852,24 +860,24 @@ void CBasePhysicManager::SavePhysicObjectConfigs(void)
 	gEngfuncs.Con_Printf("SavePhysicObjectConfigs: %d config(s) saved !\n", iSavedCount);
 }
 
-bool CBasePhysicManager::SetupBones(studiohdr_t* studiohdr, int entindex, int flags)
+bool CBasePhysicManager::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
-	auto pPhysicObject = GetPhysicObject(entindex);
+	auto pPhysicObject = GetPhysicObject(Context->m_entindex);
 
 	if (!pPhysicObject)
 		return false;
 
-	return pPhysicObject->SetupBones(studiohdr, flags);
+	return pPhysicObject->SetupBones(Context);
 }
 
-bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags)
+bool CBasePhysicManager::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
-	auto pPhysicObject = GetPhysicObject(entindex);
+	auto pPhysicObject = GetPhysicObject(Context->m_entindex);
 
 	if (!pPhysicObject)
 		return false;
 
-	return pPhysicObject->SetupJiggleBones(studiohdr, flags);
+	return pPhysicObject->SetupJiggleBones(Context);
 }
 
 bool CBasePhysicManager::StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int* nVisible)
@@ -1413,7 +1421,7 @@ static std::shared_ptr<CClientAnimControlConfig> LoadAnimControlFromKeyValues(Ke
 	pAnimControlConfig->sequence = pAnimControlSubKey->GetInt("sequence", -1);
 	pAnimControlConfig->gaitsequence = pAnimControlSubKey->GetInt("gaitsequence", -1);
 	pAnimControlConfig->animframe = pAnimControlSubKey->GetFloat("animframe", 0);
-	pAnimControlConfig->activity = (decltype(pAnimControlConfig->activity))pAnimControlSubKey->GetInt("activity", 0);
+	pAnimControlConfig->activityType = (decltype(pAnimControlConfig->activityType))pAnimControlSubKey->GetInt("activityType", 0);
 	pAnimControlConfig->controller[0] = pAnimControlSubKey->GetInt("controller_0", -1);
 	pAnimControlConfig->controller[1] = pAnimControlSubKey->GetInt("controller_1", -1);
 	pAnimControlConfig->controller[2] = pAnimControlSubKey->GetInt("controller_2", -1);
@@ -2221,7 +2229,7 @@ static void AddAnimControlToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					pAnimControlSubKey->SetInt("sequence", AnimControl->sequence);
 					pAnimControlSubKey->SetInt("gaitsequence", AnimControl->gaitsequence);
 					pAnimControlSubKey->SetFloat("animframe", AnimControl->animframe);
-					pAnimControlSubKey->SetInt("activity", AnimControl->activity);
+					pAnimControlSubKey->SetInt("activityType", (int)AnimControl->activityType);
 					pAnimControlSubKey->SetInt("controller_0", AnimControl->controller[0]);
 					pAnimControlSubKey->SetInt("controller_1", AnimControl->controller[1]);
 					pAnimControlSubKey->SetInt("controller_2", AnimControl->controller[2]);
@@ -2355,7 +2363,8 @@ static bool ParseLegacyDeathAnimLine(CClientRagdollObjectConfig* pRagdollConfig,
 
 		pAnimControlConfig->sequence = sequence;
 		pAnimControlConfig->animframe = animframe;
-		pAnimControlConfig->activity = StudioAnimActivityType_Death;
+		pAnimControlConfig->activityType = StudioAnimActivityType_Death;
+		pAnimControlConfig->flags = AnimControlFlag_OverrideAllBones;
 
 		ClientPhysicManager()->AddPhysicConfig(pAnimControlConfig->configId, pAnimControlConfig);
 
@@ -2749,6 +2758,7 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 	auto pRagdollConfig = std::make_shared<CClientRagdollObjectConfig>();
 
 	pRagdollConfig->flags |= PhysicObjectFlag_FromConfig;
+	pRagdollConfig->flags |= PhysicObjectFlag_OverrideStudioCheckBBox;
 
 	std::istringstream stream(buf);
 	std::string line;
@@ -3364,15 +3374,15 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 			fakePlayerState.gaitsequence = pOverrideAnimControl->gaitsequence;
 		}
 
-#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
-		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 0);
-		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 1);
-		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 2);
-		COPY_BYTE_ENTSTATE(controller, fakePlayerState, 3);
-		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 0);
-		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 1);
-		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 2);
-		COPY_BYTE_ENTSTATE(blending, fakePlayerState, 3);
+#define COPY_BYTE_ENTSTATE(Attr, attr, to, i) if (pOverrideAnimControl && (pOverrideAnimControl->flags & AnimControlFlag_Override##Attr) && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 1);
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 3);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 1);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 3);
 #undef COPY_BYTE_ENTSTATE
 
 		vec3_t vecSavedOrigin, vecSavedAngles, vecSavedCurStateOrigin, vecSavedCurStateAngles;
@@ -3428,15 +3438,15 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 			ent->curstate.gaitsequence = pOverrideAnimControl->gaitsequence;
 		}
 
-#define COPY_BYTE_ENTSTATE(attr, to, i) if (pOverrideAnimControl && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
-		COPY_BYTE_ENTSTATE(controller, ent->curstate, 0);
-		COPY_BYTE_ENTSTATE(controller, ent->curstate, 1); 
-		COPY_BYTE_ENTSTATE(controller, ent->curstate, 2);
-		COPY_BYTE_ENTSTATE(controller, ent->curstate, 3);
-		COPY_BYTE_ENTSTATE(blending, ent->curstate, 0);
-		COPY_BYTE_ENTSTATE(blending, ent->curstate, 1);
-		COPY_BYTE_ENTSTATE(blending, ent->curstate, 2);
-		COPY_BYTE_ENTSTATE(blending, ent->curstate, 3);
+#define COPY_BYTE_ENTSTATE(Attr, attr, to, i) if (pOverrideAnimControl && (pOverrideAnimControl->flags & AnimControlFlag_Override##Attr) && pOverrideAnimControl->attr[i] >= 0 && pOverrideAnimControl->attr[i] <= 255) to.attr[i] = pOverrideAnimControl->attr[i];
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 1); 
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(Controller, controller, ent->curstate, 3);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 0);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 1);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 2);
+		COPY_BYTE_ENTSTATE(Blending, blending, ent->curstate, 3);
 #undef COPY_BYTE_ENTSTATE
 
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RAGDOLL_SETUP_BONES);

@@ -16,10 +16,6 @@ CAnimControlPage::CAnimControlPage(vgui::Panel* parent, const char* name, uint64
 
 	m_pAnimControlListPanel = new CAnimControlListPanel(this, "AnimControlListPanel");
 
-	m_pShiftUpAnimControl = new vgui::Button(this, "ShiftUpAnimControl", L"#BulletPhysics_ShiftUp", this, "ShiftUpAnimControl");
-	m_pShiftDownAnimControl = new vgui::Button(this, "ShiftDownAnimControl", L"#BulletPhysics_ShiftDown", this, "ShiftDownAnimControl");
-	m_pCreateAnimControl = new vgui::Button(this, "CreateAnimControl", L"#BulletPhysics_CreateAnimControl", this, "CreateAnimControl");
-
 	LoadControlSettings("bulletphysics/AnimControlPage.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
@@ -180,14 +176,17 @@ void CAnimControlPage::LoadAnimControlAsListPanelItem(const CClientAnimControlCo
 	auto animframeString = std::format("{0}", pAnimControlConfig->animframe);
 	kv->SetString("animframe", animframeString.c_str());
 
-	auto activityString = UTIL_GetActivityTypeLocalizationToken(pAnimControlConfig->activity);
-	kv->SetString("activity", activityString);
+	auto activityTypeString = UTIL_GetActivityTypeLocalizationToken(pAnimControlConfig->activityType);
+	kv->SetString("activityType", activityTypeString);
 
 	auto sequenceString = UTIL_GetFormattedSequenceName(modelindex, pAnimControlConfig->sequence);
 	kv->SetString("sequence", sequenceString.c_str());
 
 	auto gaitsequenceString = UTIL_GetFormattedSequenceName(modelindex, pAnimControlConfig->gaitsequence);
 	kv->SetString("gaitsequence", gaitsequenceString.c_str());
+
+	auto flagsString = UTIL_GetFormattedAnimControlFlags(pAnimControlConfig->flags);
+	kv->SetWString("flags", flagsString.c_str());
 
 	auto controllerString = std::format("{0} {1} {2} {3}", pAnimControlConfig->controller[0], pAnimControlConfig->controller[1], pAnimControlConfig->controller[2], pAnimControlConfig->controller[3]);
 	kv->SetString("controller", controllerString.c_str());

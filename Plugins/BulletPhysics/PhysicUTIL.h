@@ -26,6 +26,7 @@ std::wstring UTIL_GetFormattedRigidBodyFlags(int flags);
 std::wstring UTIL_GetFormattedConstraintFlags(int flags);
 std::wstring UTIL_GetFormattedConstraintConfigAttributes(const CClientConstraintConfig* pConstraintConfig);
 std::wstring UTIL_GetFormattedPhysicBehaviorFlags(int flags);
+std::wstring UTIL_GetFormattedAnimControlFlags(int flags);
 
 const char* UTIL_GetSequenceRawName(studiohdr_t* studiohdr, int sequence);
 std::string UTIL_GetFormattedSequenceNameEx(studiohdr_t* studiohdr, int sequence);

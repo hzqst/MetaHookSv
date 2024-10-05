@@ -47,8 +47,8 @@ public:
 	void SetGravity(float value) override;
 	void StepSimulation(double frametime) override;
 
-	bool SetupBones(studiohdr_t* studiohdr, int entindex, int flags) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags) override;
+	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
+	bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) override;
 	bool StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int* nVisible) override;
 
 	//PhysicObjectConfig Management
@@ -211,4 +211,4 @@ void FloatBulletToGoldSrc(float* v);
 void Vec3GoldSrcToBullet(vec3_t vec);
 void Vec3BulletToGoldSrc(vec3_t vec);
 
-StudioAnimActivityType StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);
+bool StudioGetActivityType(model_t* mod, entity_state_t* entstate, StudioAnimActivityType * pStudioAnimActivityType, int* pAnimControlFlags);

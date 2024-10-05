@@ -42,8 +42,12 @@ CPhysicBehaviorEditDialog::CPhysicBehaviorEditDialog(vgui::Panel* parent, const 
 	m_pAnglesY = new vgui::TextEntry(this, "AnglesY");
 	m_pAnglesZ = new vgui::TextEntry(this, "AnglesZ");
 
-	m_pBarnacle = new vgui::CheckButton(this, "Barnacle", "#BulletPhysics_Barnacle");
-	m_pGargantua = new vgui::CheckButton(this, "Gargantua", "#BulletPhysics_Gargantua");
+#define CREATE_CHECK_BUTTON(name)  m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
+
+	CREATE_CHECK_BUTTON(Barnacle);
+	CREATE_CHECK_BUTTON(Gargantua);
+
+#undef CREATE_CHECK_BUTTON
 
 	m_pPhysicFactorListPanel = new CPhysicFactorListPanel(this, "PhysicFactorListPanel");
 

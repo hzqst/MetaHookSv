@@ -280,6 +280,31 @@ std::wstring UTIL_GetFormattedPhysicBehaviorFlags(int flags)
 	return ss.str();
 }
 
+std::wstring UTIL_GetFormattedAnimControlFlags(int flags)
+{
+	std::wstringstream ss;
+
+	// Macro to format flag string
+#define FORMAT_FLAGS_TO_STRING(name) if (flags & AnimControlFlag_##name) {\
+	auto wszLocalizedString = vgui::localize()->Find("#BulletPhysics_" #name);\
+		if (wszLocalizedString) {\
+			ss << L"(" << wszLocalizedString << L") "; \
+		}\
+		else\
+		{\
+			ss << L"(" << (#name) << L") "; \
+		}\
+    }
+
+	FORMAT_FLAGS_TO_STRING(OverrideAllBones);
+	FORMAT_FLAGS_TO_STRING(OverrideController);
+	FORMAT_FLAGS_TO_STRING(OverrideBlending);
+
+#undef FORMAT_FLAGS_TO_STRING
+
+	return ss.str();
+}
+
 const char* UTIL_GetSequenceRawName(studiohdr_t* studiohdr, int sequence)
 {
 	if (!(sequence >= 0 && sequence < studiohdr->numseq))
@@ -925,7 +950,8 @@ std::shared_ptr<CClientAnimControlConfig> UTIL_CloneAnimControlConfig(const CCli
 	pNewConfig->sequence = pOldConfig->sequence;
 	pNewConfig->gaitsequence = pOldConfig->gaitsequence;
 	pNewConfig->animframe = pOldConfig->animframe;
-	pNewConfig->activity = pOldConfig->activity;
+	pNewConfig->activityType = pOldConfig->activityType;
+	pNewConfig->flags = pOldConfig->flags;
 
 	std::copy(std::begin(pOldConfig->controller), std::end(pOldConfig->controller), std::begin(pNewConfig->controller));
 	std::copy(std::begin(pOldConfig->blending), std::end(pOldConfig->blending), std::begin(pNewConfig->blending));

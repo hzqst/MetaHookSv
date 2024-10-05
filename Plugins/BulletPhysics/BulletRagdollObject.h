@@ -10,7 +10,7 @@ public:
 
 	~CBulletRagdollObject();
 
-	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
 
 protected:

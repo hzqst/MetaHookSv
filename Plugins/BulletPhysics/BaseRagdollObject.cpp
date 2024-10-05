@@ -111,7 +111,7 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 
 	for (const auto& pAnimConfig : m_AnimControlConfigs)
 	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Idle)
+		if (pAnimConfig->activityType == StudioAnimActivityType_Idle)
 		{
 			m_IdleAnimConfig = pAnimConfig;
 			break;
@@ -120,7 +120,7 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 
 	for (const auto& pAnimConfig : m_AnimControlConfigs)
 	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Debug)
+		if (pAnimConfig->activityType == StudioAnimActivityType_Debug)
 		{
 			m_DebugAnimConfig = pAnimConfig;
 			break;
@@ -162,10 +162,8 @@ bool CBaseRagdollObject::Build(const CPhysicObjectCreationParameter& CreationPar
 		std::bind(&CBaseRagdollObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
-	SetupNonKeyBones(CreationParam);
 
-	//InitCameraControl(&pRagdollObjectConfig->ThirdPersonViewCameraControlConfig, m_ThirdPersonViewCameraControl);
-	//InitCameraControl(&pRagdollObjectConfig->FirstPersonViewCameraControlConfig, m_FirstPersonViewCameraControl);
+	//SetupNonKeyBones(CreationParam);
 
 	return true;
 }
@@ -200,7 +198,7 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	for (const auto& pAnimConfig : m_AnimControlConfigs)
 	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Idle)
+		if (pAnimConfig->activityType == StudioAnimActivityType_Idle)
 		{
 			m_IdleAnimConfig = pAnimConfig;
 			break;
@@ -209,15 +207,15 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 
 	for (const auto& pAnimConfig : m_AnimControlConfigs)
 	{
-		if (pAnimConfig->activity == StudioAnimActivityType_Debug)
+		if (pAnimConfig->activityType == StudioAnimActivityType_Debug)
 		{
 			m_DebugAnimConfig = pAnimConfig;
 			break;
 		}
 	}
 
-	m_keyBones.clear();
-	m_nonKeyBones.clear();
+	//m_keyBones.clear();
+	//m_nonKeyBones.clear();
 
 	if (CreationParam.m_model->type == mod_studio)
 	{
@@ -247,7 +245,7 @@ bool CBaseRagdollObject::Rebuild(const CPhysicObjectCreationParameter& CreationP
 		std::bind(&CBaseRagdollObject::AddPhysicBehavior, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	);
 
-	SetupNonKeyBones(CreationParam);
+	//SetupNonKeyBones(CreationParam);
 
 	return true;
 }
@@ -270,23 +268,26 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 			playerState->gaitsequence = m_DebugAnimConfig->gaitsequence;
 		}
 
-#define COPY_BYTE_ENTSTATE(attr, to, i) if (m_DebugAnimConfig->attr[i] >= 0 && m_DebugAnimConfig->attr[i] <= 255) to->attr[i] = m_DebugAnimConfig->attr[i];
-		COPY_BYTE_ENTSTATE(controller, playerState, 0);
-		COPY_BYTE_ENTSTATE(controller, playerState, 1);
-		COPY_BYTE_ENTSTATE(controller, playerState, 2);
-		COPY_BYTE_ENTSTATE(controller, playerState, 3);
-		COPY_BYTE_ENTSTATE(blending, playerState, 0);
-		COPY_BYTE_ENTSTATE(blending, playerState, 1);
-		COPY_BYTE_ENTSTATE(blending, playerState, 2);
-		COPY_BYTE_ENTSTATE(blending, playerState, 3);
+#define COPY_BYTE_ENTSTATE(Attr, attr, to, i) if ((m_DebugAnimConfig->flags & AnimControlFlag_Override##Attr) && m_DebugAnimConfig->attr[i] >= 0 && m_DebugAnimConfig->attr[i] <= 255) to->attr[i] = m_DebugAnimConfig->attr[i];
+		COPY_BYTE_ENTSTATE(Controller, controller, playerState, 0);
+		COPY_BYTE_ENTSTATE(Controller, controller, playerState, 1);
+		COPY_BYTE_ENTSTATE(Controller, controller, playerState, 2);
+		COPY_BYTE_ENTSTATE(Controller, controller, playerState, 3);
+		COPY_BYTE_ENTSTATE(Blending, blending, playerState, 0);
+		COPY_BYTE_ENTSTATE(Blending, blending, playerState, 1);
+		COPY_BYTE_ENTSTATE(Blending, blending, playerState, 2);
+		COPY_BYTE_ENTSTATE(Blending, blending, playerState, 3);
 #undef COPY_BYTE_ENTSTATE
 	}
 
 	auto iOldActivityType = GetActivityType();
 
-	auto iNewActivityType = StudioGetSequenceActivityType(m_model, playerState);
+	StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
+	int iNewAnimControlFlags{};
 
-	CalculateOverrideActivityType(playerState, iNewActivityType);
+	StudioGetActivityType(m_model, playerState, &iNewActivityType, &iNewAnimControlFlags);
+
+	CalculateOverrideActivityType(playerState, &iNewActivityType, &iNewAnimControlFlags);
 
 	if (m_playerindex == m_entindex)
 	{
@@ -306,11 +307,11 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ReleaseFromGargantua();
 	}
 
-	if (UpdateActivity(iOldActivityType, iNewActivityType, playerState))
+	if (UpdateActivity(iOldActivityType, iNewActivityType, iNewAnimControlFlags))
 	{
 		ObjectUpdateContext->m_bActivityChanged = true;
 
-		//Transformed from whatever to barnacle
+		//Transformed from whatever to barnacle state
 		if (iNewActivityType == StudioAnimActivityType_CaughtByBarnacle && iOldActivityType != StudioAnimActivityType_CaughtByBarnacle)
 		{
 			auto pBarnacleObject = ClientPhysicManager()->FindBarnacleObjectForPlayer(playerState);
@@ -330,7 +331,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 			}
 		}
 
-		//Transformed from death or barnacle to idle state.
+		//Transformed from to idle state.
 		else if (iOldActivityType > 0 && iNewActivityType == 0)
 		{
 			ObjectUpdateContext->m_bRigidbodyResetPoseRequired = true;
@@ -446,9 +447,9 @@ void CBaseRagdollObject::UpdateBones(entity_state_t* curstate)
 	ClientPhysicManager()->UpdateBonesForRagdoll(GetClientEntity(), curstate, GetModel(), GetEntityIndex(), GetPlayerIndex());
 }
 
-bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBaseRagdollObject::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
-	if (GetActivityType() == StudioAnimActivityType_Idle)
+	if (!(GetAnimControlFlags() & AnimControlFlag_OverrideAllBones))
 		return false;
 
 	for (auto pPhysicComponent : m_PhysicComponents)
@@ -457,14 +458,14 @@ bool CBaseRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupBones(studiohdr, flags);
+			pRigidBody->SetupBones(Context);
 		}
 	}
 
 	return true;
 }
 
-bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
+bool CBaseRagdollObject::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
@@ -472,7 +473,7 @@ bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupJiggleBones(studiohdr, flags);
+			pRigidBody->SetupJiggleBones(Context);
 		}
 	}
 
@@ -481,6 +482,9 @@ bool CBaseRagdollObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 
 bool CBaseRagdollObject::StudioCheckBBox(studiohdr_t* studiohdr, int *nVisible)
 {
+	if (!(GetObjectFlags() & PhysicObjectFlag_OverrideStudioCheckBBox))
+		return false;
+
 	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
@@ -633,29 +637,37 @@ void CBaseRagdollObject::ReleaseFromGargantua()
 	//TODO
 }
 
+int CBaseRagdollObject::GetAnimControlFlags() const
+{
+	return m_iAnimControlFlags;
+}
+
 StudioAnimActivityType CBaseRagdollObject::GetActivityType() const
 {
 	return m_iActivityType;
 }
 
-void CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType &ActivityType) const
+void CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType *pActivityType, int *pAnimControlFlags) const
 {
 	for (const auto& AnimControlConfig : m_AnimControlConfigs)
 	{
 		if (AnimControlConfig->gaitsequence == -1)
 		{
-			if (entstate->sequence == AnimControlConfig->sequence)
+			if (entstate->sequence == AnimControlConfig->sequence && entstate->frame >= AnimControlConfig->animframe)
 			{
-				ActivityType = AnimControlConfig->activity;
+				(*pActivityType) = AnimControlConfig->activityType;
+				(*pAnimControlFlags) = AnimControlConfig->flags;
 				return;
 			}
 		}
 		else
 		{
 			if (entstate->sequence == AnimControlConfig->sequence &&
-				entstate->gaitsequence == AnimControlConfig->gaitsequence)
+				entstate->gaitsequence == AnimControlConfig->gaitsequence &&
+				entstate->frame >= AnimControlConfig->animframe)
 			{
-				ActivityType = AnimControlConfig->activity;
+				(*pActivityType) = AnimControlConfig->activityType;
+				(*pAnimControlFlags) = AnimControlConfig->flags;
 				return;
 			}
 		}
@@ -797,7 +809,7 @@ IPhysicRigidBody* CBaseRagdollObject::FindRigidBodyByName(const std::string& nam
 	return GetRigidBodyByName(name);
 }
 
-void CBaseRagdollObject::SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam)
+/*void CBaseRagdollObject::SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam)
 {
 	if (CreationParam.m_studiohdr)
 	{
@@ -807,20 +819,8 @@ void CBaseRagdollObject::SetupNonKeyBones(const CPhysicObjectCreationParameter& 
 				m_nonKeyBones.emplace_back(i);
 		}
 	}
-}
-/*
-void CBaseRagdollObject::InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl)
-{
-	CameraControl = (*pCameraControlConfig);
+}*/
 
-	auto pRigidBody = GetRigidBodyByName(pCameraControlConfig->rigidbody);
-
-	if (pRigidBody)
-	{
-		CameraControl.m_physicComponentId = pRigidBody->GetPhysicComponentId();
-	}
-}
-*/
 void CBaseRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)
 {
 
@@ -833,12 +833,12 @@ void CBaseRagdollObject::AddRigidBody(const CPhysicObjectCreationParameter& Crea
 
 	DispatchAddPhysicComponent(m_PhysicComponents, pRigidBody);
 
-	if (CreationParam.m_studiohdr &&
+	/*if (CreationParam.m_studiohdr &&
 		pRigidBodyConfig->boneindex >= 0 &&
 		pRigidBodyConfig->boneindex < CreationParam.m_studiohdr->numbones)
 	{
 		m_keyBones.emplace_back(pRigidBodyConfig->boneindex);
-	}
+	}*/
 }
 
 void CBaseRagdollObject::AddConstraint(const CPhysicObjectCreationParameter& CreationParam, CClientConstraintConfig* pConstraintConfig, IPhysicConstraint* pConstraint)
@@ -857,13 +857,13 @@ void CBaseRagdollObject::AddPhysicBehavior(const CPhysicObjectCreationParameter&
 	DispatchAddPhysicComponent(m_PhysicComponents, pPhysicBehavior);
 }
 
-bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate)
+bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, int iNewAnimControlFlags)
 {
 	if (iOldActivityType == iNewActivityType)
 		return false;
 
 	//Start animation ?
-
+#if 0
 	if (iOldActivityType == 0 && iNewActivityType > 0)
 	{
 		const auto& found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const std::shared_ptr<CClientAnimControlConfig>& pConfig) {
@@ -882,7 +882,9 @@ bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType,
 			}
 		}
 	}
+#endif
 
+	m_iAnimControlFlags = iNewAnimControlFlags;
 	m_iActivityType = iNewActivityType;
 	return true;
 }

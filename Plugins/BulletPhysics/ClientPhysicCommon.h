@@ -62,6 +62,7 @@ enum PhysicObjectType
 
 const int PhysicObjectFlag_Barnacle = 0x1;
 const int PhysicObjectFlag_Gargantua = 0x2;
+const int PhysicObjectFlag_OverrideStudioCheckBBox = 0x4;
 const int PhysicObjectFlag_StaticObject = 0x1000;
 const int PhysicObjectFlag_DynamicObject = 0x2000;
 const int PhysicObjectFlag_RagdollObject = 0x4000;
@@ -333,6 +334,10 @@ enum StudioAnimActivityType
 	StudioAnimActivityType_Debug,
 	StudioAnimActivityType_Maximum,
 };
+
+const int AnimControlFlag_OverrideAllBones = 0x1;
+const int AnimControlFlag_OverrideController = 0x2;
+const int AnimControlFlag_OverrideBlending = 0x4;
 
 const int PhysicIndexArrayFlag_FromBSP = 0x1;
 const int PhysicIndexArrayFlag_LoadFailed = 0x2;

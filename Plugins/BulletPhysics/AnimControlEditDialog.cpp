@@ -19,8 +19,8 @@ CAnimControlEditDialog::CAnimControlEditDialog(vgui::Panel* parent, const char* 
 
 	SetTitle("#BulletPhysics_AnimControlEditor", false);
 
-	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(350), vgui::scheme()->GetProportionalScaledValue(350));
-	SetSize(vgui::scheme()->GetProportionalScaledValue(350), vgui::scheme()->GetProportionalScaledValue(350));
+	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(350), vgui::scheme()->GetProportionalScaledValue(400));
+	SetSize(vgui::scheme()->GetProportionalScaledValue(350), vgui::scheme()->GetProportionalScaledValue(400));
 
 	m_pSequence = new vgui::ComboBox(this, "Sequence", 0, false);
 	m_pGaitSequence = new vgui::ComboBox(this, "GaitSequence", 0, false);
@@ -37,6 +37,14 @@ CAnimControlEditDialog::CAnimControlEditDialog(vgui::Panel* parent, const char* 
 	m_pBlending_1 = new vgui::TextEntry(this, "Blending_1");
 	m_pBlending_2 = new vgui::TextEntry(this, "Blending_2");
 	m_pBlending_3 = new vgui::TextEntry(this, "Blending_3");
+
+#define CREATE_CHECK_BUTTON(name)  m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
+
+	CREATE_CHECK_BUTTON(OverrideAllBones);
+	CREATE_CHECK_BUTTON(OverrideController);
+	CREATE_CHECK_BUTTON(OverrideBlending);
+
+#undef CREATE_CHECK_BUTTON
 
 	vgui::HFont hFallbackFont = vgui::scheme()->GetIScheme(GetScheme())->GetFont("DefaultVerySmallFallBack", false);
 
@@ -184,7 +192,7 @@ void CAnimControlEditDialog::LoadActivityTypeIntoControl(vgui::ComboBox* pComboB
 	{
 		KeyValues* kv = pComboBox->GetItemUserData(i);
 
-		if (kv && m_pAnimControlConfig->activity == kv->GetInt("activityType", -1))
+		if (kv && m_pAnimControlConfig->activityType == kv->GetInt("activityType", -1))
 		{
 			pComboBox->ActivateItemByRow(i);
 			return;
@@ -231,6 +239,14 @@ void CAnimControlEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_TEXT_ENTRY(blending[3], Blending_3);
 
 #undef LOAD_INTO_TEXT_ENTRY
+
+#define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pAnimControlConfig->from & AnimControlFlag_##to) ? true : false);
+
+	LOAD_INTO_CHECK_BUTTON(flags, OverrideAllBones);
+	LOAD_INTO_CHECK_BUTTON(flags, OverrideController);
+	LOAD_INTO_CHECK_BUTTON(flags, OverrideBlending);
+
+#undef LOAD_INTO_CHECK_BUTTON
 }
 
 void CAnimControlEditDialog::SaveConfigFromControls()
@@ -240,7 +256,7 @@ void CAnimControlEditDialog::SaveConfigFromControls()
 	m_pAnimControlConfig->sequence = GetCurrentSelectedSequence(m_pSequence);
 	m_pAnimControlConfig->gaitsequence = GetCurrentSelectedSequence(m_pGaitSequence);
 
-	m_pAnimControlConfig->activity = GetCurrentSelectedActivityType(m_pActivityType);
+	m_pAnimControlConfig->activityType = GetCurrentSelectedActivityType(m_pActivityType);
 
 #define SAVE_FROM_TEXT_ENTRY(to, from, processor) { \
         m_p##from->GetText(szText, sizeof(szText)); \
@@ -260,6 +276,19 @@ void CAnimControlEditDialog::SaveConfigFromControls()
 	SAVE_FROM_TEXT_ENTRY(blending[3], Blending_3, clamp_0_255_atoi);
 
 #undef SAVE_FROM_TEXT_ENTRY
+
+#define SAVE_FLAG_FROM_CHECK_BUTTON(to, from) { \
+        if (m_p##from->IsSelected()) \
+            m_pAnimControlConfig->to |= AnimControlFlag_##from; \
+        else \
+            m_pAnimControlConfig->to &= ~AnimControlFlag_##from; \
+    }
+
+	SAVE_FLAG_FROM_CHECK_BUTTON(flags, OverrideAllBones);
+	SAVE_FLAG_FROM_CHECK_BUTTON(flags, OverrideController);
+	SAVE_FLAG_FROM_CHECK_BUTTON(flags, OverrideBlending);
+
+#undef SAVE_FLAG_FROM_CHECK_BUTTON
 
 	m_pAnimControlConfig->configModified = true;
 }

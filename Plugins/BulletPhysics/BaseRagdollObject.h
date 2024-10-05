@@ -29,16 +29,17 @@ public:
 	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) override;
 	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView,void(*callback)(struct ref_params_s* pparams)) override;
 	void UpdateBones(entity_state_t* curstate) override;
-	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
+	bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) override;
 	bool StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible) override;
 	bool ResetPose(entity_state_t* curstate) override;
 	void ApplyBarnacle(IPhysicObject* pBarnacleObject) override;
 	void ReleaseFromBarnacle() override;
 	void ApplyGargantua(IPhysicObject* pGargantuaObject) override;
 	void ReleaseFromGargantua() override;
+	int GetAnimControlFlags() const override;
 	StudioAnimActivityType GetActivityType() const override;
-	void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType& ActivityType) const override;
+	void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int *pAnimControlFlags) const override;
 	int GetBarnacleIndex() const override;
 	int GetGargantuaIndex() const override;
 	bool IsDebugAnimEnabled() const override;
@@ -58,7 +59,7 @@ public:
 
 	IPhysicRigidBody* FindRigidBodyByName(const std::string& name, bool allowNonNativeRigidBody) override;
 
-	virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
+	//virtual void SetupNonKeyBones(const CPhysicObjectCreationParameter& CreationParam);
 	//virtual void InitCameraControl(const CClientCameraControlConfig* pCameraControlConfig, CPhysicCameraControl& CameraControl);
 	virtual void SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam);
 	
@@ -72,7 +73,7 @@ public:
 
 protected:
 
-	bool UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, entity_state_t* curstate);
+	bool UpdateActivity(StudioAnimActivityType iOldActivityType, StudioAnimActivityType iNewActivityType, int iNewAnimControlFlags);
 
 public:
 	int m_entindex{};
@@ -97,11 +98,12 @@ public:
 	//CPhysicCameraControl m_ThirdPersonViewCameraControl;
 
 	StudioAnimActivityType m_iActivityType{ StudioAnimActivityType_Idle };
+	int m_iAnimControlFlags{ 0 };
 	int m_iBarnacleIndex{ 0 };
 	int m_iGargantuaIndex{ 0 };
 
-	std::vector<int> m_keyBones;
-	std::vector<int> m_nonKeyBones;
+	//std::vector<int> m_keyBones;
+	//std::vector<int> m_nonKeyBones;
 
 	std::vector<IPhysicComponent*> m_PhysicComponents;
 };

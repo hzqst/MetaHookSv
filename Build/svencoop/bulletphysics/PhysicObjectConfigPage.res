@@ -55,6 +55,26 @@
 		"brighttext"		"0"
 		"Default"		"0"
 	}
+	"OverrideStudioCheckBBox"
+	{
+		"ControlName"		"CheckButton"
+		"fieldName"		"OverrideStudioCheckBBox"
+		"xpos"		"260"
+		"ypos"		"24"
+		"wide"		"240"
+		"tall"		"44"
+		"autoResize"	"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"wrap"			"0"
+		"tabPosition"	"2"
+		"labelText"		"#BulletPhysics_OverrideStudioCheckBBox"
+		"textAlignment"		"west"
+		"dulltext"		"0"
+		"brighttext"		"0"
+		"Default"		"0"
+	}
 	"VerifyBoneChunk"
 	{
 		"ControlName"		"CheckButton"

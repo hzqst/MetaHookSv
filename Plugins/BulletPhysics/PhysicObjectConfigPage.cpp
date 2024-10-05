@@ -10,10 +10,14 @@ CPhysicObjectConfigPage::CPhysicObjectConfigPage(vgui::Panel* parent, const char
 {
 	SetSize(vgui::scheme()->GetProportionalScaledValue(624), vgui::scheme()->GetProportionalScaledValue(300));
 
-	m_pBarnacle = new vgui::CheckButton(this, "Barnacle", "#BulletPhysics_Barnacle");
-	m_pGargantua = new vgui::CheckButton(this, "Gargantua", "#BulletPhysics_Gargantua");
-	m_pVerifyBoneChunk = new vgui::CheckButton(this, "VerifyBoneChunk", "#BulletPhysics_VerifyBoneChunk");
-	m_pVerifyModelFile = new vgui::CheckButton(this, "VerifyModelFile", "#BulletPhysics_VerifyModelFile");
+#define CREATE_CHECK_BUTTON(name) m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
+	CREATE_CHECK_BUTTON(Barnacle);
+	CREATE_CHECK_BUTTON(Gargantua);
+	CREATE_CHECK_BUTTON(OverrideStudioCheckBBox);
+	CREATE_CHECK_BUTTON(VerifyBoneChunk);
+	CREATE_CHECK_BUTTON(VerifyModelFile);
+#undef CREATE_CHECK_BUTTON
+
 	m_pCrc32BoneChunk = new vgui::TextEntry(this, "Crc32BoneChunk");
 	m_pCrc32ModelFile = new vgui::TextEntry(this, "Crc32ModelFile");
 	m_pDebugDrawLevel = new vgui::TextEntry(this, "DebugDrawLevel");
@@ -117,6 +121,7 @@ void CPhysicObjectConfigPage::LoadConfigIntoControls()
 #define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pPhysicObjectConfig->from & PhysicObjectFlag_##to) ? true : false);
 	LOAD_INTO_CHECK_BUTTON(flags, Barnacle);
 	LOAD_INTO_CHECK_BUTTON(flags, Gargantua);
+	LOAD_INTO_CHECK_BUTTON(flags, OverrideStudioCheckBBox);
 #undef LOAD_INTO_CHECK_BUTTON
 
 #define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pPhysicObjectConfig->from) ? true : false);
@@ -128,17 +133,17 @@ void CPhysicObjectConfigPage::LoadConfigIntoControls()
 void CPhysicObjectConfigPage::SaveConfigFromControls()
 {
 	char szText[256];
-#define SAVE_FROM_TEXT_ENTRY(to, from, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pPhysicObjectConfig->to = processor(szText);}
 
+#define SAVE_FROM_TEXT_ENTRY(to, from, processor) {m_p##from->GetText(szText, sizeof(szText)); m_pPhysicObjectConfig->to = processor(szText);}
 	SAVE_FROM_TEXT_ENTRY(debugDrawLevel, DebugDrawLevel, atoi);
 	SAVE_FROM_TEXT_ENTRY(crc32BoneChunk, Crc32BoneChunk, std::string);
 	SAVE_FROM_TEXT_ENTRY(crc32ModelFile, Crc32ModelFile, std::string);
-
 #undef SAVE_FROM_TEXT_ENTRY
 
 #define SAVE_FROM_CHECK_BUTTON(to, from) if (m_p##from->IsSelected()) { m_pPhysicObjectConfig->to |= PhysicObjectFlag_##from; } else { m_pPhysicObjectConfig->to &= ~PhysicObjectFlag_##from; }
 	SAVE_FROM_CHECK_BUTTON(flags, Barnacle);
 	SAVE_FROM_CHECK_BUTTON(flags, Gargantua);
+	SAVE_FROM_CHECK_BUTTON(flags, OverrideStudioCheckBBox);
 #undef SAVE_FROM_CHECK_BUTTON
 
 #define SAVE_FROM_CHECK_BUTTON(to, from) if (m_p##from->IsSelected()) { m_pPhysicObjectConfig->to = true; } else { m_pPhysicObjectConfig->to = false; }

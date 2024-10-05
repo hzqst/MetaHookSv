@@ -24,8 +24,8 @@ public:
 	void SetLinearVelocity(const vec3_t vecVelocity) override;
 	void SetAngularVelocity(const vec3_t vecVelocity) override;
 	bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) override;
-	bool SetupBones(studiohdr_t* studiohdr, int flags) override;
-	bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) override;
+	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
+	bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) override;
 	void* GetInternalRigidBody() override;
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
 	bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float* angles) override;

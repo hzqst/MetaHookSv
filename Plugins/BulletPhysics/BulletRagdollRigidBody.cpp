@@ -35,7 +35,7 @@ bool CBulletRagdollRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* 
 	{
 		if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
 		{
-			Sys_Error("CBulletRagdollRigidBody::ResetPose invalid m_boneindex!");
+			gEngfuncs.Con_DPrintf("CBulletRagdollRigidBody::ResetPose invalid m_boneindex!");
 			return false;
 		}
 
@@ -59,19 +59,30 @@ bool CBulletRagdollRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* 
 	return false;
 }
 
-bool CBulletRagdollRigidBody::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBulletRagdollRigidBody::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
 	if (!m_pInternalRigidBody)
 		return false;
 
 	auto pMotionState = (CBulletBaseMotionState*)m_pInternalRigidBody->getMotionState();
 
+	//Sync dynamic rigidbody to GoldSrc bones
 	if (pMotionState->IsBoneBased())
 	{
-		if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+		if (!(m_boneindex >= 0 && m_boneindex < Context->m_studiohdr->numbones))
 		{
-			Sys_Error("CBulletRagdollRigidBody::SetupBones invalid m_boneindex!");
+			gEngfuncs.Con_DPrintf("CBulletRagdollRigidBody::SetupBones invalid m_boneindex!");
 			return false;
+		}
+
+		if (m_pInternalRigidBody->isStaticOrKinematicObject())
+		{
+			Context->m_boneStates[m_boneindex] |= BoneState_Kinematic;
+			return false;
+		}
+		else
+		{
+			Context->m_boneStates[m_boneindex] |= BoneState_Dynamic;
 		}
 
 		auto pBoneMotionState = (CBulletBoneMotionState*)pMotionState;
@@ -86,13 +97,15 @@ bool CBulletRagdollRigidBody::SetupBones(studiohdr_t* studiohdr, int flags)
 		memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 		memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 
+		Context->m_boneStates[m_boneindex] |= BoneState_BoneMatrixUpdated;
+
 		return true;
 	}
 
 	return false;
 }
 
-bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
+bool CBulletRagdollRigidBody::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
 	if (!m_pInternalRigidBody)
 		return false;
@@ -101,9 +114,9 @@ bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags
 
 	if (pMotionState->IsBoneBased())
 	{
-		if (!(m_boneindex >= 0 && m_boneindex < studiohdr->numbones))
+		if (!(m_boneindex >= 0 && m_boneindex < Context->m_studiohdr->numbones))
 		{
-			Sys_Error("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
+			gEngfuncs.Con_DPrintf("CBulletRagdollRigidBody::SetupJiggleBones invalid m_boneindex!");
 			return false;
 		}
 
@@ -112,14 +125,13 @@ bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags
 		if (m_pInternalRigidBody->isKinematicObject())
 		{
 			//Sync GoldSrc bones to kinematic rigidbodies, only when STUDIO_RAGDOLL_UPDATE_BONES ?
-			//if ((flags & STUDIO_RAGDOLL_UPDATE_BONES))
-			{
-				auto& bonematrix = pBoneMotionState->m_bonematrix;
+			auto& bonematrix = pBoneMotionState->m_bonematrix;
 
-				Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
+			Matrix3x4ToTransform((*pbonetransform)[m_boneindex], bonematrix);
 
-				TransformGoldSrcToBullet(bonematrix);
-			}
+			TransformGoldSrcToBullet(bonematrix);
+
+			Context->m_boneStates[m_boneindex] |= BoneState_TransformUpdated;
 		}
 		else
 		{
@@ -134,6 +146,8 @@ bool CBulletRagdollRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags
 
 			memcpy((*pbonetransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 			memcpy((*plighttransform)[m_boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+
+			Context->m_boneStates[m_boneindex] |= BoneState_BoneMatrixUpdated;
 		}
 
 		return true;

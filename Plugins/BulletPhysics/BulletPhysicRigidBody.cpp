@@ -199,12 +199,12 @@ bool CBulletPhysicRigidBody::ResetPose(studiohdr_t* studiohdr, entity_state_t* c
 	return false;
 }
 
-bool CBulletPhysicRigidBody::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBulletPhysicRigidBody::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
 	return false;
 }
 
-bool CBulletPhysicRigidBody::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
+bool CBulletPhysicRigidBody::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
 	return false;
 }

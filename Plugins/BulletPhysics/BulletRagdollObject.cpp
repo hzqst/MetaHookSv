@@ -22,12 +22,36 @@ CBulletRagdollObject::~CBulletRagdollObject()
 
 }
 
-bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBulletRagdollObject::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
-	if (CBaseRagdollObject::SetupBones(studiohdr, flags))
+	if (CBaseRagdollObject::SetupBones(Context))
 	{
-		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
+		mstudiobone_t* pbones = (mstudiobone_t*)((byte*)Context->m_studiohdr + Context->m_studiohdr->boneindex);
 
+		//Calculate non-key ones using initial relative bone transform
+
+		for (int i = 0; i < Context->m_studiohdr->numbones; ++i)
+		{
+			if (Context->m_boneStates[i] & BoneState_BoneMatrixUpdated)
+				continue;
+
+			auto parentMatrix3x4 = (*pbonetransform)[pbones[i].parent];
+
+			btTransform parentMatrix;
+
+			Matrix3x4ToTransform(parentMatrix3x4, parentMatrix);
+
+			TransformGoldSrcToBullet(parentMatrix);
+
+			btTransform mergedMatrix = parentMatrix * m_BoneRelativeTransform[i];
+
+			TransformBulletToGoldSrc(mergedMatrix);
+
+			TransformToMatrix3x4(mergedMatrix, (*pbonetransform)[i]);
+
+			Context->m_boneStates[i] |= BoneState_BoneMatrixUpdated;
+		}
+#if 0
 		for (size_t index = 0; index < m_nonKeyBones.size(); index++)
 		{
 			auto i = m_nonKeyBones[index];
@@ -49,7 +73,7 @@ bool CBulletRagdollObject::SetupBones(studiohdr_t* studiohdr, int flags)
 
 			TransformToMatrix3x4(mergedMatrix, (*pbonetransform)[i]);
 		}
-
+#endif
 		return true;
 	}
 
@@ -561,7 +585,7 @@ void CBulletRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreation
 
 	const auto pbones = (mstudiobone_t*)((byte*)CreationParam.m_studiohdr + CreationParam.m_studiohdr->boneindex);
 
-	//Save bone relative transform
+	//Save bone's initial relative transform
 
 	for (int i = 0; i < CreationParam.m_studiohdr->numbones; ++i)
 	{

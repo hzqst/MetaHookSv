@@ -194,18 +194,21 @@ void CBaseStaticObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext, false);
 }
 
-bool CBaseStaticObject::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBaseStaticObject::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
 	return false;
 }
 
-bool CBaseStaticObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
+bool CBaseStaticObject::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
 	return false;
 }
 
 bool CBaseStaticObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
 {
+	if (!(GetObjectFlags() & PhysicObjectFlag_OverrideStudioCheckBBox))
+		return false;
+
 	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 

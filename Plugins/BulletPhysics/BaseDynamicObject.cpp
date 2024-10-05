@@ -193,12 +193,12 @@ void CBaseDynamicObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 	DispatchPhysicComponentsUpdate(m_PhysicComponents, ObjectUpdateContext, false);
 }
 
-bool CBaseDynamicObject::SetupBones(studiohdr_t* studiohdr, int flags)
+bool CBaseDynamicObject::SetupBones(CRagdollObjectSetupBoneContext* Context)
 {
 	return false;
 }
 
-bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
+bool CBaseDynamicObject::SetupJiggleBones(CRagdollObjectSetupBoneContext* Context)
 {
 	for (auto pPhysicComponent : m_PhysicComponents)
 	{
@@ -206,7 +206,7 @@ bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 		{
 			auto pRigidBody = (IPhysicRigidBody*)pPhysicComponent;
 
-			pRigidBody->SetupJiggleBones(studiohdr, flags);
+			pRigidBody->SetupJiggleBones(Context);
 		}
 	}
 
@@ -215,6 +215,9 @@ bool CBaseDynamicObject::SetupJiggleBones(studiohdr_t* studiohdr, int flags)
 
 bool CBaseDynamicObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
 {
+	if (!(GetObjectFlags() & PhysicObjectFlag_OverrideStudioCheckBBox))
+		return false;
+
 	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 

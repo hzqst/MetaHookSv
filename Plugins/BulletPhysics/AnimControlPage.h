@@ -43,9 +43,6 @@ private:
 	vgui::HFont m_hFont{};
 
 	CAnimControlListPanel* m_pAnimControlListPanel{};
-	vgui::Button* m_pShiftUpAnimControl{};
-	vgui::Button* m_pShiftDownAnimControl{};
-	vgui::Button* m_pCreateAnimControl{};
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientRagdollObjectConfig> m_pRagdollObjectConfig;

@@ -73,8 +73,10 @@ private:
 	vgui::TextEntry* m_pAnglesY{};
 	vgui::TextEntry* m_pAnglesZ{};
 
-	vgui::CheckButton* m_pBarnacle{};
-	vgui::CheckButton* m_pGargantua{};
+#define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{}
+	DEFINE_CHECK_BUTTON(Barnacle);
+	DEFINE_CHECK_BUTTON(Gargantua);
+#undef DEFINE_CHECK_BUTTON
 
 	CPhysicFactorListPanel* m_pPhysicFactorListPanel;
 

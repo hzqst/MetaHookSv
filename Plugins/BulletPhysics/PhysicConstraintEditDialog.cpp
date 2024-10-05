@@ -51,7 +51,6 @@ CPhysicConstraintEditDialog::CPhysicConstraintEditDialog(vgui::Panel* parent, co
     m_pRotOrder = new vgui::ComboBox(this, "RotOrder", 0, false);
     m_pMaxTolerantLinearError = new vgui::TextEntry(this, "MaxTolerantLinearError");
 
-    // Initialize new CheckButton controls
 #define CREATE_CHECK_BUTTON(name)  m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name)
 
     CREATE_CHECK_BUTTON(Barnacle);

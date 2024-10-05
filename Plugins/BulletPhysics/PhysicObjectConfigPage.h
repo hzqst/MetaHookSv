@@ -31,10 +31,14 @@ private:
 private:
 	vgui::HFont m_hFont{};
 
-	vgui::CheckButton* m_pBarnacle{};
-	vgui::CheckButton* m_pGargantua{};
-	vgui::CheckButton* m_pVerifyBoneChunk{};
-	vgui::CheckButton* m_pVerifyModelFile{};
+#define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{}
+	DEFINE_CHECK_BUTTON(Barnacle);
+	DEFINE_CHECK_BUTTON(Gargantua);
+	DEFINE_CHECK_BUTTON(OverrideStudioCheckBBox);
+	DEFINE_CHECK_BUTTON(VerifyBoneChunk);
+	DEFINE_CHECK_BUTTON(VerifyModelFile);
+#undef DEFINE_CHECK_BUTTON
+
 	vgui::TextEntry* m_pCrc32BoneChunk{};
 	vgui::TextEntry* m_pCrc32ModelFile{};
 	vgui::TextEntry* m_pDebugDrawLevel{};

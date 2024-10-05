@@ -48,6 +48,20 @@ public:
 	const CClientPhysicObjectConfig* m_pPhysicObjectConfig{};
 };
 
+const int BoneState_Dynamic = 0x1;
+const int BoneState_Kinematic = 0x2;
+const int BoneState_BoneMatrixUpdated = 0x1000;
+const int BoneState_TransformUpdated = 0x2000;
+
+class CRagdollObjectSetupBoneContext
+{
+public:
+	int m_entindex{};
+	studiohdr_t* m_studiohdr{};
+	int m_flags{};
+	int m_boneStates[MAXSTUDIOBONES]{ };
+};
+
 class CPhysicObjectUpdateContext
 {
 public:
@@ -224,8 +238,8 @@ public:
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;
-	virtual bool SetupBones(studiohdr_t* studiohdr, int flags) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) = 0;
+	virtual bool SetupBones(CRagdollObjectSetupBoneContext* Context) = 0;
+	virtual bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual void* GetInternalRigidBody() = 0;
 	virtual bool GetGoldSrcOriginAngles(float* origin, float * angles) = 0;
 	virtual bool GetGoldSrcOriginAnglesWithLocalOffset(const vec3_t localoffset_origin, const vec3_t localoffset_angles, float* origin, float * angles) = 0;
@@ -334,8 +348,8 @@ public:
 	virtual bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) = 0;
 	virtual void Update(CPhysicObjectUpdateContext* ctx) = 0;
 	virtual void TransferOwnership(int entindex) = 0;
-	virtual bool SetupBones(studiohdr_t* studiohdr, int flags) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int flags) = 0;
+	virtual bool SetupBones(CRagdollObjectSetupBoneContext* Context) = 0;
+	virtual bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual bool StudioCheckBBox(studiohdr_t* studiohdr, int *nVisible) = 0;
 	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
 
@@ -414,8 +428,9 @@ public:
 		return "#BulletPhysics_RagdollObject";
 	}
 
+	virtual int GetAnimControlFlags() const = 0;
 	virtual StudioAnimActivityType GetActivityType() const = 0;
-	virtual void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType& ActivityType) const = 0;
+	virtual void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int* pAnimControlFlags) const = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdateBones(entity_state_t* curstate) = 0;
@@ -441,8 +456,8 @@ public:
 	virtual void SetGravity(float velocity) = 0;
 	virtual void StepSimulation(double framerate) = 0;
 
-	virtual bool SetupBones(studiohdr_t* studiohdr, int entindex, int flags) = 0;
-	virtual bool SetupJiggleBones(studiohdr_t* studiohdr, int entindex, int flags) = 0;
+	virtual bool SetupBones(CRagdollObjectSetupBoneContext *Context) = 0;
+	virtual bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual bool StudioCheckBBox(studiohdr_t* studiohdr, int entindex, int *nVisible) = 0;
 
 	virtual void TraceLine(const CPhysicTraceLineParameters& traceParam, CPhysicTraceLineHitResult& hitResult) = 0;

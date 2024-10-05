@@ -232,12 +232,18 @@ model_t *EngineGetModelByIndex(int index)
 template<typename CallType>
 __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis = nullptr, int dummy = 0)
 {
-	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex, g_iRagdollRenderFlags))
+	CRagdollObjectSetupBoneContext Context;
+
+	Context.m_studiohdr = (*pstudiohdr);
+	Context.m_entindex = g_iRagdollRenderEntIndex;
+	Context.m_flags = g_iRagdollRenderFlags;
+
+	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupBones(&Context))
 		return;
 
 	pfnSetupBones(pthis, dummy);
 
-	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex, g_iRagdollRenderFlags))
+	if (g_iRagdollRenderEntIndex > 0 && ClientPhysicManager()->SetupJiggleBones(&Context))
 		return;
 }
 

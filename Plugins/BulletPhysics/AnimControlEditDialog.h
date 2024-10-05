@@ -4,6 +4,7 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/TextEntry.h>
 #include <vgui_controls/ComboBox.h>
+#include <vgui_controls/CheckButton.h>
 
 #include "ClientPhysicConfig.h"
 
@@ -54,6 +55,12 @@ private:
 	vgui::TextEntry* m_pBlending_1{};
 	vgui::TextEntry* m_pBlending_2{};
 	vgui::TextEntry* m_pBlending_3{};
+
+#define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{}
+	DEFINE_CHECK_BUTTON(OverrideAllBones);
+	DEFINE_CHECK_BUTTON(OverrideController);
+	DEFINE_CHECK_BUTTON(OverrideBlending);
+#undef DEFINE_CHECK_BUTTON
 
 	uint64 m_physicObjectId{};
 	std::shared_ptr<CClientRagdollObjectConfig> m_pRagdollObjectConfig;
