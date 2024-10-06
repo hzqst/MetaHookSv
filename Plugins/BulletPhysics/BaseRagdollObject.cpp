@@ -260,7 +260,9 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		{
 			playerState->sequence = m_DebugAnimConfig->sequence;
 			playerState->frame = m_DebugAnimConfig->animframe;
+			playerState->animtime = gEngfuncs.GetClientTime();
 			playerState->framerate = 0;
+			//playerState->movetype = MOVETYPE_NONE;
 		}
 
 		if (m_DebugAnimConfig->gaitsequence >= 0)

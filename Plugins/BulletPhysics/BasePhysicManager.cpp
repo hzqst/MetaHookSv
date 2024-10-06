@@ -3524,6 +3524,9 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		{
 			fakePlayerState.sequence = pOverrideAnimControl->sequence;
 			fakePlayerState.frame = pOverrideAnimControl->animframe;
+			fakePlayerState.animtime = gEngfuncs.GetClientTime();
+			fakePlayerState.framerate = 0;
+			//fakePlayerState.movetype = MOVETYPE_NONE;
 		}
 
 		if (pOverrideAnimControl && pOverrideAnimControl->gaitsequence >= 0)
@@ -3588,6 +3591,9 @@ void CBasePhysicManager::SetupBonesForRagdollEx(cl_entity_t* ent, entity_state_t
 		{
 			ent->curstate.sequence = pOverrideAnimControl->sequence;
 			ent->curstate.frame = pOverrideAnimControl->animframe;
+			ent->curstate.animtime = gEngfuncs.GetClientTime();
+			ent->curstate.framerate = 0;
+			//ent->curstate.movetype = MOVETYPE_NONE;
 		}
 
 		if (pOverrideAnimControl && pOverrideAnimControl->gaitsequence >= 0)
