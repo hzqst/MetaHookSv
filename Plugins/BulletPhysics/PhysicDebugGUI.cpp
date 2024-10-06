@@ -172,6 +172,12 @@ void CPhysicDebugGUI::OnKeyCodeTyped(vgui::KeyCode code)
 		return;
 	}
 
+	if (code == vgui::KEY_Q && vgui::input()->IsKeyDown(vgui::KEY_LCONTROL))
+	{
+		Close();
+		return;
+	}
+
 	if (!vgui::input()->IsKeyDown(vgui::KEY_LCONTROL) &&
 		!vgui::input()->IsKeyDown(vgui::KEY_LSHIFT) &&
 		!vgui::input()->IsKeyDown(vgui::KEY_LALT))
