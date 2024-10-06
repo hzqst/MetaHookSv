@@ -13,6 +13,7 @@
 #include "BulletDynamicObject.h"
 #include "BulletRagdollObject.h"
 
+#include "BulletSimpleBuoyancyBehavior.h"
 #include "BulletRigidBodyRelocationBehavior.h"
 
 #include <vgui_controls/Controls.h>
@@ -1169,8 +1170,23 @@ IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject* pPhysicObject
 	{
 	case PhysicBehavior_SimpleBuoyancy:
 	{
-		//TODO
-		return nullptr;
+		auto pRigidBodyA = pPhysicObject->FindRigidBodyByName(pPhysicBehaviorConfig->rigidbodyA, true);
+
+		if (!pRigidBodyA)
+		{
+			gEngfuncs.Con_DPrintf("DispatchBulletCreatePhysicBehavior: rigidbodyA \"%s\" not found!\n", pPhysicBehaviorConfig->rigidbodyA.c_str());
+			return nullptr;
+		}
+
+		return new CBulletSimpleBuoyancyBehavior(
+			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
+			pPhysicObject->GetEntityIndex(),
+			pPhysicObject,
+			pPhysicBehaviorConfig,
+			pRigidBodyA->GetPhysicComponentId(),
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping],
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDamping]);
 	}
 	case PhysicBehavior_RigidBodyRelocation:
 	{

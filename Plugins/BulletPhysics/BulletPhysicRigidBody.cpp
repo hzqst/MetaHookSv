@@ -174,6 +174,36 @@ void CBulletPhysicRigidBody::ApplyCentralImpulse(const vec3_t vecImpulse)
 	}
 }
 
+void CBulletPhysicRigidBody::ApplyForceAtOrigin(const vec3_t vecForce, const vec3_t vecGoldSrcOrigin)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtForce = GetVector3FromVec3(vecForce);
+		btVector3 vec3BtWorldOrigin = GetVector3FromVec3(vecGoldSrcOrigin);
+
+		Vector3GoldSrcToBullet(vec3BtWorldOrigin);
+
+		auto vecRelPos = vec3BtWorldOrigin - m_pInternalRigidBody->getCenterOfMassPosition();
+
+		m_pInternalRigidBody->applyForce(vec3BtForce, vecRelPos);
+	}
+}
+
+void CBulletPhysicRigidBody::ApplyImpulseAtOrigin(const vec3_t vecImpulse, const vec3_t vecGoldSrcOrigin)
+{
+	if (m_pInternalRigidBody)
+	{
+		btVector3 vec3BtImpulse = GetVector3FromVec3(vecImpulse);
+		btVector3 vec3BtWorldOrigin = GetVector3FromVec3(vecGoldSrcOrigin);
+
+		Vector3GoldSrcToBullet(vec3BtWorldOrigin);
+
+		auto vecRelPos = vec3BtWorldOrigin - m_pInternalRigidBody->getCenterOfMassPosition();
+
+		m_pInternalRigidBody->applyImpulse(vec3BtImpulse, vecRelPos);
+	}
+}
+
 void CBulletPhysicRigidBody::SetLinearVelocity(const vec3_t vecVelocity)
 {
 	if (m_pInternalRigidBody)
@@ -193,6 +223,22 @@ void CBulletPhysicRigidBody::SetAngularVelocity(const vec3_t vecVelocity)
 
 		m_pInternalRigidBody->setAngularVelocity(vec3BtVelocity);
 		//m_pInternalRigidBody->setInterpolationAngularVelocity(vec3BtVelocity);
+	}
+}
+
+void CBulletPhysicRigidBody::SetDamping(float flLinearDamping, float flAngularDamping)
+{
+	if (m_pInternalRigidBody)
+	{
+		m_pInternalRigidBody->setDamping(flLinearDamping, flAngularDamping);
+	}
+}
+
+void CBulletPhysicRigidBody::KeepWakeUp()
+{
+	if (m_pInternalRigidBody)
+	{
+		m_pInternalRigidBody->setDeactivationTime(0);
 	}
 }
 

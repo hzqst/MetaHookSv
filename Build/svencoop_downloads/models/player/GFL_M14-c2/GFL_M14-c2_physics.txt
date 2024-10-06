@@ -1329,6 +1329,263 @@
 				"BarnacleDragUseServoMotor"		"0.000000"
 			}
 		}
+		"SimpleBuoyancy|Head"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Head"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|Spine"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Spine"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|Pelvis"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Pelvis"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LArm"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LArm"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LArm2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LArm2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RArm"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RArm"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RArm2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RArm2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LLeg"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LLeg (Clone)"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg"
+			"origin"		"0 8 0"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LLeg2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LLeg2 (Clone)"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg2"
+			"origin"		"0 8 0"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|LFoot"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LFoot"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RLeg"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RLeg (Clone)"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg"
+			"origin"		"0 8 0"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RLeg2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RLeg2 (Clone)"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg2"
+			"origin"		"0 8 0"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.550000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|RFoot"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RFoot"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.100000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL1"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL1"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL3"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL3"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR1"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairR1"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR3"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairR3"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.000000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.500000"
+			}
+		}
 	}
 	"animControls"
 	{

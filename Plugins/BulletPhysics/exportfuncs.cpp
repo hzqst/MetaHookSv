@@ -1533,7 +1533,7 @@ void HUD_TempEntUpdate(
 		(*g_pitchdrift) = saved_pitchdrift;
 	}
 
-	ClientPhysicManager()->UpdateAllPhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time);
+	ClientPhysicManager()->UpdateAllPhysicObjects(ppTempEntFree, ppTempEntActive, frametime, client_time, cl_gravity);
 	ClientPhysicManager()->StepSimulation(frametime);
 }
 

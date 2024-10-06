@@ -282,12 +282,13 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 
 	auto iOldActivityType = GetActivityType();
 
-	StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
-	int iNewAnimControlFlags{};
+	StudioAnimActivityType iNewActivityType = iOldActivityType;
+	int iNewAnimControlFlags = m_iAnimControlFlags;
 
-	StudioGetActivityType(m_model, playerState, &iNewActivityType, &iNewAnimControlFlags);
-
-	CalculateOverrideActivityType(playerState, &iNewActivityType, &iNewAnimControlFlags);
+	if (!CalculateOverrideActivityType(playerState, &iNewActivityType, &iNewAnimControlFlags))
+	{
+		StudioGetActivityType(m_model, playerState, &iNewActivityType, &iNewAnimControlFlags);
+	}	
 
 	if (m_playerindex == m_entindex)
 	{
@@ -312,7 +313,8 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		ObjectUpdateContext->m_bActivityChanged = true;
 
 		//Transformed from whatever to barnacle state
-		if (iNewActivityType == StudioAnimActivityType_CaughtByBarnacle && iOldActivityType != StudioAnimActivityType_CaughtByBarnacle)
+		if (iNewActivityType == StudioAnimActivityType_CaughtByBarnacle &&
+			iOldActivityType != StudioAnimActivityType_CaughtByBarnacle)
 		{
 			auto pBarnacleObject = ClientPhysicManager()->FindBarnacleObjectForPlayer(playerState);
 
@@ -332,7 +334,8 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 		}
 
 		//Transformed from to idle state.
-		else if (iOldActivityType > 0 && iNewActivityType == 0)
+		else if (iOldActivityType != StudioAnimActivityType_Idle &&
+			iNewActivityType == StudioAnimActivityType_Idle)
 		{
 			ObjectUpdateContext->m_bRigidbodyResetPoseRequired = true;
 		}
@@ -744,31 +747,37 @@ StudioAnimActivityType CBaseRagdollObject::GetActivityType() const
 	return m_iActivityType;
 }
 
-void CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType *pActivityType, int *pAnimControlFlags) const
+bool CBaseRagdollObject::CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType *pActivityType, int *pAnimControlFlags) const
 {
 	for (const auto& AnimControlConfig : m_AnimControlConfigs)
 	{
 		if (AnimControlConfig->gaitsequence == -1)
 		{
-			if (entstate->sequence == AnimControlConfig->sequence && entstate->frame >= AnimControlConfig->animframe)
+			if (entstate->sequence == AnimControlConfig->sequence)
 			{
-				(*pActivityType) = AnimControlConfig->activityType;
-				(*pAnimControlFlags) = AnimControlConfig->flags;
-				return;
+				if (entstate->frame >= AnimControlConfig->animframe)
+				{
+					(*pActivityType) = AnimControlConfig->activityType;
+					(*pAnimControlFlags) = AnimControlConfig->flags;
+				}
+				return true;
 			}
 		}
 		else
 		{
 			if (entstate->sequence == AnimControlConfig->sequence &&
-				entstate->gaitsequence == AnimControlConfig->gaitsequence &&
-				entstate->frame >= AnimControlConfig->animframe)
+				entstate->gaitsequence == AnimControlConfig->gaitsequence)
 			{
-				(*pActivityType) = AnimControlConfig->activityType;
-				(*pAnimControlFlags) = AnimControlConfig->flags;
-				return;
+				if (entstate->frame >= AnimControlConfig->animframe)
+				{
+					(*pActivityType) = AnimControlConfig->activityType;
+					(*pAnimControlFlags) = AnimControlConfig->flags;
+				}
+				return true;
 			}
 		}
 	}
+	return false;
 }
 
 int CBaseRagdollObject::GetBarnacleIndex() const

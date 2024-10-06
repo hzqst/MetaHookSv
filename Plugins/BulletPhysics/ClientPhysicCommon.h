@@ -308,12 +308,12 @@ const float PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath = 1;
 const float PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle = 2;
 
 const int PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude = 0;
-const int PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDrag = 1;
-const int PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDrag = 2;
+const int PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping = 1;
+const int PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDamping = 2;
 
-const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyMagnitude = 0;
-const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyLinearDrag = 0;
-const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyAngularDrag = 0;
+const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyMagnitude = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyLinearDamping = 0.5f;
+const float PhysicBehaviorFactorDefaultValue_SimpleBuoyancyAngularDamping = 0.5f;
 
 const int PhysicBehaviorFactorIdx_Maximum = 16;
 

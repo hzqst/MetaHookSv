@@ -5,7 +5,7 @@
 CBulletBarnacleDragOnRigidBodyBehavior::CBulletBarnacleDragOnRigidBodyBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	int iBarnacleIndex, float flForceMagnitude, float flExtraHeight) :
+	int iSourceIndex, float flForceMagnitude, float flExtraHeight) :
 
 	CBulletPhysicComponentBehavior(
 		id,
@@ -14,7 +14,7 @@ CBulletBarnacleDragOnRigidBodyBehavior::CBulletBarnacleDragOnRigidBodyBehavior(
 		pPhysicBehaviorConfig,
 		attachedPhysicComponentId),
 
-	m_iBarnacleIndex(iBarnacleIndex),
+	m_iSourceIndex(iSourceIndex),
 	m_flForceMagnitude(flForceMagnitude),
 	m_flExtraHeight(flExtraHeight)
 {
@@ -33,30 +33,28 @@ const char* CBulletBarnacleDragOnRigidBodyBehavior::GetTypeLocalizationTokenStri
 
 void CBulletBarnacleDragOnRigidBodyBehavior::Update(CPhysicComponentUpdateContext* ComponentContext)
 {
-	auto pBarnacleObject = ClientPhysicManager()->GetPhysicObject(m_iBarnacleIndex);
+	auto pSourceObject = ClientPhysicManager()->GetPhysicObject(m_iSourceIndex);
 
-	if (!pBarnacleObject)
+	if (!pSourceObject)
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Invalid barnacle object!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Invalid SourceObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!pBarnacleObject->IsRagdollObject())
+	if (!pSourceObject->IsRagdollObject())
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Barnacle must be RagdollObject!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: SourceObject must be RagdollObject!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
 
-	if (!(pBarnacleObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
+	if (!(pSourceObject->GetObjectFlags() & PhysicObjectFlag_Barnacle))
 	{
-		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: Barnacle must have PhysicObjectFlag_Barnacle!\n");
+		gEngfuncs.Con_DPrintf("CBulletBarnacleDragOnRigidBodyBehavior::Update: SourceObject must have PhysicObjectFlag_Barnacle!\n");
 		ComponentContext->m_bShouldFree = true;
 		return;
 	}
-
-	auto pBarnacleObjectR = (IRagdollObject*)pBarnacleObject;
 
 	auto pRigidBody = GetAttachedRigidBody();
 
@@ -67,7 +65,9 @@ void CBulletBarnacleDragOnRigidBodyBehavior::Update(CPhysicComponentUpdateContex
 		return;
 	}
 
-	if (pBarnacleObjectR->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
+	auto pSourceRagdollObject = (IRagdollObject*)pSourceObject;
+
+	if (pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnaclePulling)
 	{
 		vec3_t vecPhysicObjectOrigin{ 0 };
 
@@ -90,7 +90,7 @@ void CBulletBarnacleDragOnRigidBodyBehavior::Update(CPhysicComponentUpdateContex
 			}
 		}
 	}
-	else if (pBarnacleObjectR->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
+	else if (pSourceRagdollObject->GetActivityType() == StudioAnimActivityType_BarnacleChewing)
 	{
 		vec3_t vecForce = { 0, 0, m_flForceMagnitude };
 

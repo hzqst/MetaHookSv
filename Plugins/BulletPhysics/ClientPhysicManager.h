@@ -65,6 +65,8 @@ public:
 class CPhysicObjectUpdateContext
 {
 public:
+	float m_flGravity{};
+
 	bool m_bShouldFree{};
 
 	bool m_bRigidbodyKinematicChanged{ };
@@ -234,9 +236,13 @@ public:
 	}
 
 	virtual void ApplyCentralForce(const vec3_t vecForce) = 0;
-	virtual void ApplyCentralImpulse(const vec3_t vecForce) = 0;
+	virtual void ApplyCentralImpulse(const vec3_t vecImpulse) = 0;
+	virtual void ApplyForceAtOrigin(const vec3_t vecForce, const vec3_t vecGoldSrcOrigin) = 0;
+	virtual void ApplyImpulseAtOrigin(const vec3_t vecForce, const vec3_t vecGoldSrcOrigin) = 0;
 	virtual void SetLinearVelocity(const vec3_t vecVelocity) = 0;
 	virtual void SetAngularVelocity(const vec3_t vecVelocity) = 0;
+	virtual void SetDamping(float flLinearDamping, float flAngularDamping) = 0;
+	virtual void KeepWakeUp() = 0;
 	virtual bool ResetPose(studiohdr_t* studiohdr, entity_state_t* curstate) = 0;
 	virtual bool SetupBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) = 0;
@@ -430,7 +436,7 @@ public:
 
 	virtual int GetAnimControlFlags() const = 0;
 	virtual StudioAnimActivityType GetActivityType() const = 0;
-	virtual void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int* pAnimControlFlags) const = 0;
+	virtual bool CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int* pAnimControlFlags) const = 0;
 
 	virtual bool ResetPose(entity_state_t* curstate) = 0;
 	virtual void UpdateBones(entity_state_t* curstate) = 0;
@@ -492,7 +498,7 @@ public:
 	virtual bool RebuildPhysicObject(int entindex, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual bool RebuildPhysicObjectEx(uint64 physicObjectId, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
 	virtual bool RebuildPhysicObjectEx2(IPhysicObject* pPhysicObject, const CClientPhysicObjectConfig* pPhysicObjectConfig) = 0;
-	virtual void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
+	virtual void UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time, double cl_gravity) = 0;
 
 	virtual void CreatePhysicObjectForEntity(cl_entity_t* ent, entity_state_t* state, model_t* mod) = 0;
 

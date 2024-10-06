@@ -39,7 +39,7 @@ public:
 	void ReleaseFromGargantua() override;
 	int GetAnimControlFlags() const override;
 	StudioAnimActivityType GetActivityType() const override;
-	void CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int *pAnimControlFlags) const override;
+	bool CalculateOverrideActivityType(const entity_state_t* entstate, StudioAnimActivityType* pActivityType, int *pAnimControlFlags) const override;
 	int GetBarnacleIndex() const override;
 	int GetGargantuaIndex() const override;
 	bool IsDebugAnimEnabled() const override;

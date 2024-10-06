@@ -1587,8 +1587,8 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 		case PhysicBehavior_SimpleBuoyancy:
 		{
 			LOAD_FACTOR_FLOAT(SimpleBuoyancyMagnitude);
-			LOAD_FACTOR_FLOAT(SimpleBuoyancyLinearDrag);
-			LOAD_FACTOR_FLOAT(SimpleBuoyancyAngularDrag);
+			LOAD_FACTOR_FLOAT(SimpleBuoyancyLinearDamping);
+			LOAD_FACTOR_FLOAT(SimpleBuoyancyAngularDamping);
 			break;
 		}
 		}
@@ -2248,8 +2248,8 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 						case PhysicBehavior_SimpleBuoyancy:
 						{
 							SET_FACTOR_FLOAT(SimpleBuoyancyMagnitude);
-							SET_FACTOR_FLOAT(SimpleBuoyancyLinearDrag);
-							SET_FACTOR_FLOAT(SimpleBuoyancyAngularDrag);
+							SET_FACTOR_FLOAT(SimpleBuoyancyLinearDamping);
+							SET_FACTOR_FLOAT(SimpleBuoyancyAngularDamping);
 							break;
 						}
 						}
@@ -3641,9 +3641,10 @@ IPhysicObject* CBasePhysicManager::FindBarnacleObjectForPlayer(entity_state_t* p
 				StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
 				int iNewAnimControlFlags{};
 
-				StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
-
-				pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+				if (!pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags))
+				{
+					StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+				}
 
 				if (iNewActivityType == StudioAnimActivityType_BarnaclePulling || 
 					iNewActivityType == StudioAnimActivityType_BarnacleChewing)
@@ -3680,9 +3681,10 @@ IPhysicObject* CBasePhysicManager::FindGargantuaObjectForPlayer(entity_state_t* 
 				StudioAnimActivityType iNewActivityType{ StudioAnimActivityType_Idle };
 				int iNewAnimControlFlags{};
 
-				StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
-
-				pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+				if (!pRagdollObject->CalculateOverrideActivityType(pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags))
+				{
+					StudioGetActivityType(pRagdollObject->GetModel(), pRagdollObject->GetClientEntityState(), &iNewActivityType, &iNewAnimControlFlags);
+				}
 
 				if (iNewActivityType == StudioAnimActivityType_GargantuaBite)
 				{
@@ -4071,7 +4073,7 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 	}
 }
 
-void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
+void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time, double cl_gravity)
 {
 	if (frame_time <= 0)
 		return;
@@ -4082,6 +4084,8 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 		auto pPhysicObject = itor->second;
 
 		CPhysicObjectUpdateContext ObjectUpdateContext;
+
+		ObjectUpdateContext.m_flGravity = cl_gravity;
 
 		if (!ObjectUpdateContext.m_bShouldFree)
 		{

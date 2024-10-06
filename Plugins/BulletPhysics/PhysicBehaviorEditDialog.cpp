@@ -489,8 +489,8 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 	}
 	case PhysicBehavior_SimpleBuoyancy: {
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyMagnitude);
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyLinearDrag);
-		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyAngularDrag);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyLinearDamping);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(SimpleBuoyancyAngularDamping);
 		break;
 	}
 	default: {
