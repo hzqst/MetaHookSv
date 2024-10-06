@@ -126,6 +126,10 @@ bool CBulletPhysicRigidBody::RemoveFromPhysicWorld(void* world)
 	{
 		int numRefs = m_pInternalRigidBody->getNumConstraintRefs();
 
+		std::vector<IPhysicConstraint*> pendingRemoveConstraints;
+
+		pendingRemoveConstraints.reserve(numRefs);
+
 		for (int i = 0; i < numRefs; ++i)
 		{
 			auto pInternalContraint = m_pInternalRigidBody->getConstraintRef(i);
@@ -134,8 +138,13 @@ bool CBulletPhysicRigidBody::RemoveFromPhysicWorld(void* world)
 
 			if (pConstraint)
 			{
-				ClientPhysicManager()->RemovePhysicComponentFromWorld(pConstraint);
+				pendingRemoveConstraints.emplace_back(pConstraint);
 			}
+		}
+
+		for (auto p : pendingRemoveConstraints)
+		{
+			ClientPhysicManager()->RemovePhysicComponentFromWorld(p);
 		}
 
 		dynamicWorld->removeRigidBody(m_pInternalRigidBody);

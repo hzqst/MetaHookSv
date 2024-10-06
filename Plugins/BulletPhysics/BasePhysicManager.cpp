@@ -2563,67 +2563,6 @@ static bool ParseLegacyConstraintLine(CClientRagdollObjectConfig* pRagdollConfig
 	return false;
 }
 
-static bool ParseLegacyGargantuaLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
-	std::istringstream iss(line);
-
-	std::string rigidbodyA, rigidbodyB, type;
-	float offsetX, offsetY, offsetZ;
-	float factor0, factor1, factor2;
-	if (iss >> rigidbodyA >> rigidbodyB >> type >> offsetX >> offsetY >> offsetZ >> factor0 >> factor1 >> factor2) {
-
-		if (type == "dof6z")
-		{
-			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
-			pConstraintConfig->type = PhysicConstraint_Dof6;
-			pConstraintConfig->name = std::format("GargConstraint|{0}", rigidbodyB);
-			pConstraintConfig->rigidbodyA = std::format("@gargantua.{0}", rigidbodyA);
-			pConstraintConfig->rigidbodyB = rigidbodyB;
-			pConstraintConfig->flags = PhysicConstraintFlag_Gargantua;
-			pConstraintConfig->originA[0] = 0;
-			pConstraintConfig->originA[1] = 0;
-			pConstraintConfig->originA[2] = factor1;
-			pConstraintConfig->originB[0] = offsetX;
-			pConstraintConfig->originB[1] = offsetY;
-			pConstraintConfig->originB[2] = offsetZ;
-			pConstraintConfig->forward[0] = 1;
-			pConstraintConfig->forward[1] = 0;
-			pConstraintConfig->forward[2] = 0;
-			pConstraintConfig->disableCollision = false;
-			pConstraintConfig->useGlobalJointFromA = true;
-			pConstraintConfig->useLinearReferenceFrameA = true;
-			pConstraintConfig->useSeperateLocalFrame = true;
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX] = -60;//-30-factor2?
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitY] = 0;
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitZ] = 0;
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitX] = 30;
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitY] = 0;
-			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ] = 0;
-			pConstraintConfig->debugDrawLevel = 2;
-
-			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
-
-			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
-
-			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
-
-			pPhysicBehaviorConfig->type = PhysicBehavior_GargantuaDragOnConstraint;
-			pPhysicBehaviorConfig->name = std::format("GargantuaDragForce|{}", rigidbodyB);
-			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Gargantua;
-			pPhysicBehaviorConfig->constraint = std::format("GargConstraint|{0}", rigidbodyB);
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude] = factor0;
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight] = 0;
-
-			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
-
-			pRagdollConfig->PhysicBehaviorConfigs.emplace_back(pPhysicBehaviorConfig);
-
-			return true;
-		}
-	}
-	gEngfuncs.Con_DPrintf("ParseLegacyBarnacleLine: failed to parse line \"%s\" !\n", line.c_str());
-	return false;
-}
-
 static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
 	std::istringstream iss(line);
 
@@ -2767,6 +2706,78 @@ static bool ParseLegacyBarnacleLine(CClientRagdollObjectConfig* pRagdollConfig, 
 	return false;
 }
 
+static bool ParseLegacyGargantuaLine(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
+	std::istringstream iss(line);
+
+	std::string rigidbodyA, rigidbodyB, type;
+	float offsetX, offsetY, offsetZ;
+	float factor0, factor1, factor2;
+	if (iss >> rigidbodyA >> rigidbodyB >> type >> offsetX >> offsetY >> offsetZ >> factor0 >> factor1 >> factor2) {
+
+		if (type == "dof6z")
+		{
+			auto pConstraintConfig = std::make_shared<CClientConstraintConfig>();
+			pConstraintConfig->type = PhysicConstraint_Dof6Spring;
+			pConstraintConfig->name = std::format("GargConstraint|{0}", rigidbodyA);
+			pConstraintConfig->rigidbodyA = std::format("@gargantua.{0}", rigidbodyB);
+			pConstraintConfig->rigidbodyB = rigidbodyA;
+			pConstraintConfig->flags = PhysicConstraintFlag_Gargantua;
+			pConstraintConfig->originA[0] = 0;
+			pConstraintConfig->originA[1] = 0;
+			pConstraintConfig->originA[2] = factor1;
+			pConstraintConfig->originB[0] = offsetX;
+			pConstraintConfig->originB[1] = offsetY;
+			pConstraintConfig->originB[2] = offsetZ;
+			pConstraintConfig->anglesA[0] = -90;
+			pConstraintConfig->anglesA[1] = 0;
+			pConstraintConfig->anglesA[2] = 0;
+			pConstraintConfig->forward[0] = 1;
+			pConstraintConfig->forward[1] = 0;
+			pConstraintConfig->forward[2] = 0;
+			pConstraintConfig->disableCollision = false;
+			pConstraintConfig->useGlobalJointFromA = true;
+			pConstraintConfig->useLinearReferenceFrameA = true;
+			pConstraintConfig->useSeperateLocalFrame = true;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitX] = -60;//-30-factor2?
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitY] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6LowerLinearLimitZ] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitX] = 30;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitY] = 0;
+			pConstraintConfig->factors[PhysicConstraintFactorIdx_Dof6UpperLinearLimitZ] = 0;
+			pConstraintConfig->debugDrawLevel = 2;
+
+			ClientPhysicManager()->AddPhysicConfig(pConstraintConfig->configId, pConstraintConfig);
+
+			pRagdollConfig->ConstraintConfigs.emplace_back(pConstraintConfig);
+
+			auto pPhysicBehaviorConfig = std::make_shared<CClientPhysicBehaviorConfig>();
+
+			pPhysicBehaviorConfig->type = PhysicBehavior_GargantuaDragOnConstraint;
+			pPhysicBehaviorConfig->name = std::format("GargantuaDragForce|{}", rigidbodyA);
+			pPhysicBehaviorConfig->flags = PhysicBehaviorFlag_Gargantua;
+			pPhysicBehaviorConfig->constraint = std::format("GargConstraint|{0}", rigidbodyA);
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude] = factor0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragVelocity] = -60;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight] = 0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragLimitAxis] = 0;
+			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor] = 0;
+
+			ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfig->configId, pPhysicBehaviorConfig);
+
+			pRagdollConfig->PhysicBehaviorConfigs.emplace_back(pPhysicBehaviorConfig);
+
+			return true;
+		}
+		if (type == "dof6")
+		{
+			//not implemented
+			return true;
+		}
+	}
+	gEngfuncs.Con_DPrintf("ParseLegacyGargantuaLine: failed to parse line \"%s\" !\n", line.c_str());
+	return false;
+}
+
 static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
 
 	std::shared_ptr<CClientPhysicBehaviorConfig> pPhysicBehaviorConfigFirstPersonView;
@@ -2863,6 +2874,32 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 	return false;
 }
 
+static bool ParseLegacyWaterControl(CClientRagdollObjectConfig* pRagdollConfig, const std::string& line) {
+	std::istringstream iss(line);
+
+	std::string rigidbody;
+	float offsetX, offsetY, offsetZ;
+	float factor0, factor1, factor2;
+
+	if (iss >> rigidbody >> offsetX >> offsetY >> offsetZ >> factor0 >> factor1 >> factor2) {
+
+		auto pSimpleBuoyancyBehavior = std::make_shared<CClientPhysicBehaviorConfig>();
+
+		pSimpleBuoyancyBehavior->name = std::format("SimpleBuoyancy|{}", rigidbody);
+		pSimpleBuoyancyBehavior->type = PhysicBehavior_SimpleBuoyancy;
+		pSimpleBuoyancyBehavior->rigidbodyA = rigidbody;
+		pSimpleBuoyancyBehavior->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude] = factor0;
+		pSimpleBuoyancyBehavior->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping] = factor1;
+		pSimpleBuoyancyBehavior->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDamping] = factor2;
+
+		ClientPhysicManager()->AddPhysicConfig(pSimpleBuoyancyBehavior->configId, pSimpleBuoyancyBehavior);
+
+		pRagdollConfig->PhysicBehaviorConfigs.push_back(pSimpleBuoyancyBehavior);
+		return true;
+	}
+	return false;
+}
+
 std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileBuffer(const char *buf)
 {
 	auto pRagdollConfig = std::make_shared<CClientRagdollObjectConfig>();
@@ -2926,6 +2963,11 @@ std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromLegacyFileB
 		}
 		else if (section == "CameraControl") {
 			if (!ParseLegacyCameraControl(pRagdollConfig.get(), line)) {
+				return nullptr; // Parsing failed
+			}
+		}
+		else if (section == "WaterControl") {
+			if (!ParseLegacyWaterControl(pRagdollConfig.get(), line)) {
 				return nullptr; // Parsing failed
 			}
 		}

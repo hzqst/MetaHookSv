@@ -285,8 +285,6 @@ const float PhysicBehaviorFactorDefaultValue_BarnacleDragActivatedOnGargantuaBit
 
 const int PhysicBehaviorFactorIdx_BarnacleChewMagnitude = 0;
 const int PhysicBehaviorFactorIdx_BarnacleChewInterval = 1;
-const int PhysicBehaviorFactorIdx_BarnacleChewBarnacleSequencePulling = 2;
-const int PhysicBehaviorFactorIdx_BarnacleChewBarnacleSequenceChewing = 3;
 
 const float PhysicBehaviorFactorDefaultValue_BarnacleChewMagnitude = 0.0f;
 const float PhysicBehaviorFactorDefaultValue_BarnacleChewInterval = 1.0f;
