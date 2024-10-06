@@ -292,7 +292,7 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="BulletBarnacleDragOnConstraintBehavior.cpp" />
     <ClCompile Include="BulletGargantuaDragOnConstraintBehavior.cpp" />
     <ClCompile Include="BulletRigidBodyRelocationBehavior.cpp" />
-    <ClCompile Include="BulletSimpleBuoyancy.cpp" />
+    <ClCompile Include="BulletSimpleBuoyancyBehavior.cpp" />
     <ClCompile Include="BulletThirdPersonViewCameraBehavior.cpp" />
     <ClCompile Include="BulletCameraViewBehavior.cpp" />
     <ClCompile Include="BulletDynamicConstraint.cpp" />

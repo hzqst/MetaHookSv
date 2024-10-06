@@ -536,7 +536,7 @@
     <ClCompile Include="BulletGargantuaDragOnConstraintBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletSimpleBuoyancy.cpp">
+    <ClCompile Include="BulletSimpleBuoyancyBehavior.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
