@@ -1166,6 +1166,10 @@ btMotionState* BulletCreateMotionState(const CPhysicObjectCreationParameter& Cre
 
 IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject* pPhysicObject, const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
+#define LOAD_FACTOR_WITH_DEFAULT_VALUE(name) float name = (!isnan(pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name])) ? \
+		pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name] : \
+		PhysicBehaviorFactorDefaultValue_##name;
+
 	switch (pPhysicBehaviorConfig->type)
 	{
 	case PhysicBehavior_SimpleBuoyancy:
@@ -1178,15 +1182,20 @@ IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject* pPhysicObject
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(SimpleBuoyancyMagnitude);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(SimpleBuoyancyLinearDamping);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(SimpleBuoyancyAngularDamping);
+
 		return new CBulletSimpleBuoyancyBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			pPhysicObject->GetEntityIndex(),
 			pPhysicObject,
 			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_SimpleBuoyancyAngularDamping]);
+			SimpleBuoyancyMagnitude,
+			SimpleBuoyancyLinearDamping,
+			SimpleBuoyancyAngularDamping
+		);
 	}
 	case PhysicBehavior_RigidBodyRelocation:
 	{
@@ -1215,7 +1224,7 @@ IPhysicBehavior* DispatchBulletCreatePhysicBehavior(IPhysicObject* pPhysicObject
 			pRigidBodyB->GetPhysicComponentId());
 	}
 	}
-
+#undef LOAD_FACTOR_WITH_DEFAULT_VALUE
 	return nullptr;
 }
 

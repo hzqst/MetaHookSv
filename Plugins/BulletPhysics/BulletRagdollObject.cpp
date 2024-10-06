@@ -450,6 +450,10 @@ IPhysicConstraint* CBulletRagdollObject::CreateConstraint(const CPhysicObjectCre
 
 IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectCreationParameter& CreationParam, CClientPhysicBehaviorConfig* pPhysicBehaviorConfig, int physicComponentId)
 {
+#define LOAD_FACTOR_WITH_DEFAULT_VALUE(name) float name = (!isnan(pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name])) ? \
+		pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_##name] : \
+		PhysicBehaviorFactorDefaultValue_##name;
+
 	switch (pPhysicBehaviorConfig->type)
 	{
 	case PhysicBehavior_BarnacleDragOnRigidBody:
@@ -468,6 +472,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragExtraHeight);
+
 		return new CBulletBarnacleDragOnRigidBodyBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
@@ -475,8 +482,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight]);
+			BarnacleDragMagnitude,
+			BarnacleDragExtraHeight
+		);
 	}
 	case PhysicBehavior_BarnacleDragOnConstraint:
 	{
@@ -494,6 +502,15 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragVelocity);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragExtraHeight);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragLimitAxis);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragCalculateLimitFromActualPlayerOrigin);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragUseServoMotor);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragActivatedOnBarnaclePulling);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragActivatedOnBarnacleChewing);
+
 		return new CBulletBarnacleDragOnConstraintBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
@@ -501,14 +518,14 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig,
 			pConstraint->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragVelocity],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight],
-			(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragLimitAxis],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragCalculateLimitFromActualPlayerOrigin] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnaclePulling] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragActivatedOnBarnacleChewing] >= 1 ? true : false);
+			BarnacleDragMagnitude,
+			BarnacleDragVelocity,
+			BarnacleDragExtraHeight,
+			(int)BarnacleDragLimitAxis,
+			BarnacleDragCalculateLimitFromActualPlayerOrigin >= 1 ? true : false,
+			BarnacleDragUseServoMotor >= 1 ? true : false,
+			BarnacleDragActivatedOnBarnaclePulling >= 1 ? true : false,
+			BarnacleDragActivatedOnBarnacleChewing >= 1 ? true : false);
 	}
 	case PhysicBehavior_BarnacleChew:
 	{
@@ -526,6 +543,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleChewMagnitude);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleChewInterval);
+
 		return new CBulletBarnacleChewBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
@@ -533,8 +553,8 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewMagnitude],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleChewInterval]);
+			BarnacleChewMagnitude,
+			BarnacleChewInterval);
 	}
 	case PhysicBehavior_BarnacleConstraintLimitAdjustment:
 	{
@@ -552,6 +572,11 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentExtraHeight);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentInterval);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleConstraintLimitAdjustmentAxis);
+
 		return new CBulletBarnacleConstraintLimitAdjustmentBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
@@ -559,9 +584,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig,
 			pConstraint->GetPhysicComponentId(),
 			m_iBarnacleIndex,
-					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentExtraHeight],
-					pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentInterval],
-				(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleConstraintLimitAdjustmentAxis]);
+				BarnacleConstraintLimitAdjustmentExtraHeight,
+				BarnacleConstraintLimitAdjustmentInterval,
+				(int)BarnacleConstraintLimitAdjustmentAxis);
 	}
 	case PhysicBehavior_GargantuaDragOnConstraint:
 	{
@@ -579,6 +604,12 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragMagnitude);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragVelocity);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragExtraHeight);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragLimitAxis);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(BarnacleDragUseServoMotor);
+
 		return new CBulletGargantuaDragOnConstraintBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
@@ -586,11 +617,11 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pPhysicBehaviorConfig,
 			pConstraint->GetPhysicComponentId(),
 			m_iGargantuaIndex,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragMagnitude],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragVelocity],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragExtraHeight],
-			(int)pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragLimitAxis],
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_BarnacleDragUseServoMotor] >= 1 ? true : false);
+			BarnacleDragMagnitude,
+			BarnacleDragVelocity,
+			BarnacleDragExtraHeight,
+			(int)BarnacleDragLimitAxis,
+			BarnacleDragUseServoMotor >= 1 ? true : false);
 	}
 	case PhysicBehavior_FirstPersonViewCamera:
 	{
@@ -602,15 +633,19 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnIdle);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnDeath);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
+
 		return new CBulletFirstPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
 			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] >= 1 ? true : false);
+			CameraActivateOnIdle >= 1 ? true : false,
+			CameraActivateOnDeath >= 1 ? true : false,
+			CameraActivateOnCaughtByBarnacle >= 1 ? true : false);
 	}
 	case PhysicBehavior_ThirdPersonViewCamera:
 	{
@@ -622,19 +657,25 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			return nullptr;
 		}
 
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnIdle);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnDeath);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
+
 		return new CBulletThirdPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
 			GetEntityIndex(),
 			this,
 			pPhysicBehaviorConfig,
 			pRigidBodyA->GetPhysicComponentId(),
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] >= 1 ? true : false,
-			pPhysicBehaviorConfig->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] >= 1 ? true : false);
+			CameraActivateOnIdle >= 1 ? true : false,
+			CameraActivateOnDeath >= 1 ? true : false,
+			CameraActivateOnCaughtByBarnacle >= 1 ? true : false);
 	}
 	}
 
 	return DispatchBulletCreatePhysicBehavior(this, CreationParam, pPhysicBehaviorConfig, physicComponentId);
+
+#undef LOAD_FACTOR_WITH_DEFAULT_VALUE
 }
 
 void CBulletRagdollObject::SaveBoneRelativeTransform(const CPhysicObjectCreationParameter& CreationParam)
