@@ -1241,7 +1241,8 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	{
 		auto factory = MH_GetEngineFactory();
 
-		if (factory("SCEngineClient002", NULL))
+		if (factory("SCEngineClient002", NULL) ||
+			factory("SCEngineClient001", NULL))
 		{
 			g_iEngineType = ENGINE_SVENGINE;
 		}
