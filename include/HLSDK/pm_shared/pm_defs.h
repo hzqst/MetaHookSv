@@ -21,7 +21,8 @@
 #endif /* not __MINGW32__ */
 #endif
 
-#define	MAX_PHYSENTS 600 		  // Must have room for all entities in the world.
+#define	MAX_PHYSENTS		600 		  // Must have room for all entities in the world.
+#define	MAX_PHYSENTS_10152	1024 		  // Sven Co-op 5.16
 #define MAX_MOVEENTS 64
 #define	MAX_CLIP_PLANES	5
 

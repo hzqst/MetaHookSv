@@ -61,6 +61,14 @@ static struct event_api_s s_ProxyEventAPI = { 0 };
 static bool g_bIsCallingCAM_Think = false;
 static bool g_bIsCallingCAM_Think_Post = false;
 
+int EngineGetMaxPhysEnts()
+{
+	if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+		return MAX_PHYSENTS_10152;
+
+	return MAX_PHYSENTS;
+}
+
 void EV_PlayerTrace_Proxy(float* start, float* end, int traceFlags, int ignore_pe, struct pmtrace_s* tr)
 {
 	if (g_bIsCallingCAM_Think && traceFlags == (PM_STUDIO_BOX | PM_STUDIO_IGNORE))
@@ -86,9 +94,10 @@ void EV_PlayerTrace_Proxy(float* start, float* end, int traceFlags, int ignore_p
 
 		ignore_pe = -1;
 
-		for (int i = 0; i < MAX_PHYSENTS; ++i)
+		for (int i = 0; i < EngineGetMaxPhysEnts(); ++i)
 		{
 			auto PhysEnt = gEngfuncs.pEventAPI->EV_GetPhysent(i);
+
 			if (!PhysEnt)
 				break;
 

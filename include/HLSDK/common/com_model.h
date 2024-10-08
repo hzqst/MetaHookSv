@@ -209,6 +209,38 @@ typedef struct glpoly_s
 	float verts[4][VERTEXSIZE];
 }glpoly_t;
 
+//no need when we are in hw.dll / hw.so
+typedef struct msurface_sw_s
+{
+	int			visframe;		// should be drawn when node is crossed
+
+	int			dlightframe;	// last frame the surface was checked by an animated light
+	int			dlightbits;		// dynamically generated. Indicates if the surface illumination 
+	// is modified by an animated light.
+
+	mplane_t* plane;			// pointer to shared plane			
+	int			flags;			// see SURF_ #defines
+
+	int			firstedge;	// look up in model->surfedges[], negative numbers
+	int			numedges;	// are backwards edges
+
+	// surface generation data
+	struct surfcache_s* cachespots[MIPLEVELS];
+
+	short		texturemins[2]; // smallest s/t position on the surface.
+	short		extents[2];		// ?? s/t texture size, 1..256 for all non-sky surfaces
+
+	mtexinfo_t* texinfo;
+
+	// lighting info
+	byte		styles[MAXLIGHTMAPS]; // index into d_lightstylevalue[] for animated lights 
+	// no one surface can be effected by more than 4 
+	// animated lights.
+	color24* samples;
+
+	decal_t* pdecals;
+}msurface_sw_t;
+
 typedef struct msurface_s
 {
 	int visframe;
