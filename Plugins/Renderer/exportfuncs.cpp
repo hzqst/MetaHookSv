@@ -1775,7 +1775,14 @@ void HUD_PlayerMoveInit(struct playermove_s* ppmove)
 {
 	gExportfuncs.HUD_PlayerMoveInit(ppmove);
 
-	pmove = ppmove;
+	if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+	{
+		pmove_10152 = (decltype(pmove_10152))ppmove;
+	}
+	else
+	{
+		pmove = ppmove;
+	}
 }
 
 void HUD_Frame(double time)

@@ -123,6 +123,7 @@ qboolean *scr_drawloading = NULL;
 
 movevars_t* pmovevars = NULL;
 struct playermove_s* pmove = NULL;
+struct playermove_10152_s* pmove_10152 = NULL;
 
 int *filterMode = NULL;
 float *filterColorRed = NULL;
@@ -508,7 +509,40 @@ float R_GlowBlend(cl_entity_t *entity)
 	}
 
 	//pmove->PM_PlayerTrace might be NULL in the first frame because it's not initalized yet.
-	if (pmove && pmove->PM_PlayerTrace)
+	if (pmove_10152 && pmove_10152->PM_PlayerTrace)
+	{
+		vec3_t tmp;
+		float dist, brightness;
+		pmtrace_t trace;
+
+		VectorSubtract(r_entorigin, r_origin, tmp);
+		dist = VectorLength(tmp);
+
+		pmove_10152->usehull = 2;
+		trace = pmove_10152->PM_PlayerTrace(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), -1);
+		if ((1.0 - trace.fraction) * dist > 8)
+			return 0;
+
+		if (entity->curstate.renderfx == kRenderFxNoDissipation)
+		{
+			return (float)entity->curstate.renderamt * (1.0f / 255.0f);
+		}
+
+		// UNDONE: Tweak these magic numbers (19000 - falloff & 200 - sprite size)
+		brightness = 19000 / (dist * dist);
+		if (brightness < 0.05)
+		{
+			brightness = 0.05;
+		}
+		else if (brightness > 1.0)
+		{
+			brightness = 1.0;
+		}
+
+		entity->curstate.scale = dist * (1.0 / 200.0);
+		return brightness;
+	}
+	else if (pmove && pmove->PM_PlayerTrace)
 	{
 		vec3_t tmp;
 		float dist, brightness;

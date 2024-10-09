@@ -122,6 +122,7 @@ extern cl_entity_t **cl_entities;
 extern TEMPENTITY *gTempEnts;
 
 extern struct playermove_s* pmove;
+extern struct playermove_10152_s* pmove_10152;
 
 extern int *cl_viewentity;
 extern void *cl_frames;
