@@ -372,6 +372,7 @@ class CPhysicIndexArray
 {
 public:
 	std::shared_ptr<CPhysicVertexArray> pVertexArray;
+	std::vector<CPhysicBrushFace> vFaceBuffer;
 	std::vector<int> vIndexBuffer;
 	int flags{};
 };

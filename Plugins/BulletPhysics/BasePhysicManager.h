@@ -10,7 +10,7 @@
 class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
-#if 1
+#if 0
 	CPhysicIndexArray* m_barnacleIndexArray{};
 	CPhysicVertexArray* m_barnacleVertexArray{};
 	CPhysicIndexArray* m_gargantuaIndexArray{};
@@ -139,8 +139,8 @@ private:
 	std::shared_ptr<CPhysicIndexArray> GenerateBrushIndexArray(model_t* mod, const std::shared_ptr<CPhysicVertexArray> & pWorldVertexArray);
 
 	void GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray);
-	void GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicIndexArray* pIndexArray);
-	void GenerateIndexArrayForSurface(msurface_t* psurf, CPhysicIndexArray* pIndexArray);
+	void GenerateIndexArrayRecursiveWorldNode(model_t* mod, mnode_t* node, CPhysicIndexArray* pIndexArray);
+	void GenerateIndexArrayForSurface(model_t* mod, msurface_t* psurf, CPhysicIndexArray* pIndexArray);
 	void GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray);
 
 	//Deprecated: use Resource Management now

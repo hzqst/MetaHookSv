@@ -4196,9 +4196,9 @@ std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray
 	int iNumFaces = 0;
 	int iNumVerts = 0;
 
-	worldVertexArray->vFaceBuffer.resize(r_worldmodel->numsurfaces);
+	worldVertexArray->vFaceBuffer.resize(mod->numsurfaces);
 
-	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
+	for (int i = 0; i < mod->numsurfaces; i++)
 	{
 		auto surf = GetWorldSurfaceByIndex(i);
 
@@ -4317,7 +4317,7 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIn
 		{
 			auto surf = GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
 
-			GenerateIndexArrayForSurface(surf, pIndexArray);
+			GenerateIndexArrayForSurface(mod, surf, pIndexArray);
 		}
 	}
 
@@ -4325,7 +4325,7 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIn
 	pIndexArray->vIndexBuffer.shrink_to_fit();
 }
 
-void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicIndexArray* pIndexArray)
+void CBasePhysicManager::GenerateIndexArrayForSurface(model_t* mod, msurface_t* surf, CPhysicIndexArray* pIndexArray)
 {
 	if (surf->flags & SURF_DRAWTURB)
 	{
@@ -4347,7 +4347,7 @@ void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicI
 	GenerateIndexArrayForBrushface(&pIndexArray->pVertexArray->vFaceBuffer[surfIndex], pIndexArray);
 }
 
-void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicIndexArray* pIndexArray)
+void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(model_t* mod, mnode_t* node, CPhysicIndexArray* pIndexArray)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -4355,16 +4355,16 @@ void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPh
 	if (node->contents < 0)
 		return;
 
-	GenerateIndexArrayRecursiveWorldNode(node->children[0], pIndexArray);
+	GenerateIndexArrayRecursiveWorldNode(mod, node->children[0], pIndexArray);
 
 	for (int i = 0; i < node->numsurfaces; ++i)
 	{
 		auto surf = GetWorldSurfaceByIndex(node->firstsurface + i);
 
-		GenerateIndexArrayForSurface(surf, pIndexArray);
+		GenerateIndexArrayForSurface(mod, surf, pIndexArray);
 	}
 
-	GenerateIndexArrayRecursiveWorldNode(node->children[1], pIndexArray);
+	GenerateIndexArrayRecursiveWorldNode(mod, node->children[1], pIndexArray);
 }
 
 void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray)
@@ -4391,6 +4391,8 @@ void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushf
 		prv1 = prv2;
 		prv2 = i;
 	}
+
+	pIndexArray->vFaceBuffer.emplace_back(*brushface);
 }
 
 #if 0
