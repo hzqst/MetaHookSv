@@ -19,7 +19,7 @@ void R_DrawSkyBox(void)
 	if (R_IsRenderingShadowView())
 		return;
 
-	if (!r_wsurf.vSkyboxTextureId[0])
+	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
 		return;
 
 	GL_BeginStencilWrite(STENCIL_MASK_SKY, STENCIL_MASK_ALL);
@@ -29,12 +29,7 @@ void R_DrawSkyBox(void)
 
 	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
-	if (bUseBindless && gl_bindless->value)
-	{
-		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
-	}
-
-	if (*filterMode != 0)
+	if ((*filterMode) != 0)
 	{
 		WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 	}
@@ -75,36 +70,20 @@ void R_DrawSkyBox(void)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
+	if (r_detailskytextures->value && g_WorldSurfaceRenderer.vSkyboxTextureId[6])
 	{
-		if (r_detailskytextures->value && r_wsurf.vSkyboxTextureId[6])
+		for (int i = 0; i < 6; ++i)
 		{
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hDetailSkyboxSSBO);
+			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[6 + i]);
+			glDrawArrays(GL_QUADS, 4 * i, 4);
 		}
-		else
-		{
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
-		}
-
-		glDrawArrays(GL_QUADS, 0, 4 * 6);
 	}
 	else
 	{
-		if (r_detailskytextures->value && r_wsurf.vSkyboxTextureId[6])
+		for (int i = 0; i < 6; ++i)
 		{
-			for (int i = 0; i < 6; ++i)
-			{
-				GL_Bind(r_wsurf.vSkyboxTextureId[6 + i]);
-				glDrawArrays(GL_QUADS, 4 * i, 4);
-			}
-		}
-		else
-		{
-			for (int i = 0; i < 6; ++i)
-			{
-				GL_Bind(r_wsurf.vSkyboxTextureId[i]);
-				glDrawArrays(GL_QUADS, 4 * i, 4);
-			}
+			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[i]);
+			glDrawArrays(GL_QUADS, 4 * i, 4);
 		}
 	}
 

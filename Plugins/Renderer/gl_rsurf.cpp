@@ -66,7 +66,9 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 	auto lightmap = ((color24 *)psurf->samples);
 
 	if (size > maxSize)
-		g_pMetaHookAPI->SysError("Error: lightmap for texture %s too large (%d x %d = %d luxels); cannot exceed %d\n", psurf->texinfo->texture, smax, tmax, size, maxSize);
+	{
+		Sys_Error("R_BuildLightMap: lightmap for texture %s too large (%d x %d = %d luxels); cannot exceed %d\n", psurf->texinfo->texture, smax, tmax, size, maxSize);
+	}
 
 	if (lightmap)
 	{
@@ -80,7 +82,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 				blocklights[i].g = lightmap[i].g;
 				blocklights[i].b = lightmap[i].b;
 			}
-			r_wsurf.iLightmapUsedBits |= (1 << lightmap_idx);
+			g_WorldSurfaceRenderer.iLightmapUsedBits |= (1 << lightmap_idx);
 		}
 		else
 		{
@@ -166,7 +168,7 @@ int AllocBlock(int w, int h, int *x, int *y)
 		return texnum;
 	}
 
-	g_pMetaHookAPI->SysError("AllocBlock: full");
+	Sys_Error("AllocBlock: full");
 	return 0;
 }
 
@@ -183,8 +185,8 @@ void R_AllocateSurfaceLightmap(model_t *mod, msurface_t *surf)
 
 	surf->lightmaptexturenum = AllocBlock(smax, tmax, &surf->light_s, &surf->light_t);
 
-	if (surf->lightmaptexturenum + 1 > r_wsurf.iNumLightmapTextures)
-		r_wsurf.iNumLightmapTextures = surf->lightmaptexturenum + 1;
+	if (surf->lightmaptexturenum + 1 > g_WorldSurfaceRenderer.iNumLightmapTextures)
+		g_WorldSurfaceRenderer.iNumLightmapTextures = surf->lightmaptexturenum + 1;
 }
 
 void R_BuildSurfaceLightmap(model_t *mod, msurface_t *surf, int lightmap_idx)
@@ -302,17 +304,15 @@ void R_BuildSurfaceDisplayList(model_t *mod, mvertex_t *vertbase, msurface_t *fa
 
 void GL_BuildLightmaps(void)
 {
-	R_FreeLightmapTextures();
-
 	//Should always be zero when loading a new map
-	r_wsurf.iNumLightmapTextures = 0;
+	g_WorldSurfaceRenderer.iNumLightmapTextures = 0;
+	g_WorldSurfaceRenderer.vWorldModels.clear();
 
 	memset(allocated, 0, sizeof(allocated));
 
 	//This moved to end of R_NewMap
 	//(*r_framecount) = 1;
 
-	//Collect lightmaps from all non-submodel brush models
 	for (int j = 1; j < EngineGetMaxClientModels(); j++)
 	{
 		auto mod = gEngfuncs.hudGetModelByIndex(j);
@@ -322,60 +322,61 @@ void GL_BuildLightmaps(void)
 
 		if (mod->type == mod_brush && mod->name[0] != '*')
 		{
-			for (int i = 0; i < mod->numsurfaces; i++)
+			//Generate vertex buffer and iNumLightmapTextures first
+
+			R_GetWorldSurfaceWorldModel(mod);
+
+			g_WorldSurfaceRenderer.vWorldModels.emplace_back(mod);
+		}
+	}
+
+	for (auto mod : g_WorldSurfaceRenderer.vWorldModels)
+	{
+		for (int i = 0; i < mod->numsurfaces; i++)
+		{
+			//Allocate lightmap texture from empty slot
+			auto surf = R_GetWorldSurfaceByIndex(mod, i);
+
+			//Allocate blocks for lightmap
+			R_AllocateSurfaceLightmap(mod, surf);
+
+			//Build glpolys from blocks
+			if (!(surf->flags & SURF_DRAWTURB))
 			{
-				//Allocate lightmap texture from empty slot
-				auto surf = R_GetWorldSurfaceByIndex(i);
-
-				//Allocate blocks
-				R_AllocateSurfaceLightmap(mod, surf);
-
-				//Build glpolys from blocks
-				if (!(surf->flags & SURF_DRAWTURB))
-				{
-					R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
-				}
+				R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
 			}
 		}
 	}
 
-	r_wsurf.iLightmapUsedBits = 0;
-	r_wsurf.iLightmapTextureArray = GL_GenTexture();
+	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
+	g_WorldSurfaceRenderer.iLightmapTextureArray = GL_GenTexture();
 
-	glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	//Can this be GL_RGB8 to save VRAM? idk
 
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, r_wsurf.iNumLightmapTextures * MAXLIGHTMAPS, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures * MAXLIGHTMAPS, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 	{
-		memset(lightmaps, 0, sizeof(BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES) * r_wsurf.iNumLightmapTextures);
+		memset(lightmaps, 0, sizeof(BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES) * g_WorldSurfaceRenderer.iNumLightmapTextures);
 
-		for (int j = 1; j < EngineGetMaxClientModels(); j++)
+		for (auto mod : g_WorldSurfaceRenderer.vWorldModels)
 		{
-			auto mod = gEngfuncs.hudGetModelByIndex(j);
-
-			if (!mod)
-				break;
-
-			if (mod->type == mod_brush && mod->name[0] != '*')
+			for (int i = 0; i < mod->numsurfaces; i++)
 			{
-				for (int i = 0; i < mod->numsurfaces; i++)
-				{
-					//Fill lightmap color bytes into lightmaps[]
+				//Fill lightmap color bytes into lightmaps[]
 
-					auto surf = R_GetWorldSurfaceByIndex(i);
+				auto surf = R_GetWorldSurfaceByIndex(mod, i);
 
-					R_BuildSurfaceLightmap(mod, surf, lightmap_idx);
-				}
+				R_BuildSurfaceLightmap(mod, surf, lightmap_idx);
 			}
 		}
 
 		//Upload bytes to GPU
-		for (int i = 0; i < r_wsurf.iNumLightmapTextures; ++i)
+		for (int i = 0; i < g_WorldSurfaceRenderer.iNumLightmapTextures; ++i)
 		{
 			int real_idx = (i * MAXLIGHTMAPS + lightmap_idx);
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, real_idx, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
@@ -410,6 +411,7 @@ colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
 	}
 
 	auto node = (mnode_t*)basenode;
+	auto mod = R_FindWorldModelByNode(node);
 
 	plane = node->plane;
 	front = DotProduct(start, plane->normal) - plane->dist;
@@ -443,7 +445,7 @@ colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
 
 	for (i = 0; i < node->numsurfaces; i++)
 	{
-		auto surf = R_GetWorldSurfaceByIndex(node->firstsurface + i);
+		auto surf = R_GetWorldSurfaceByIndex(mod, node->firstsurface + i);
 
 		if (surf->flags & SURF_DRAWTILED)
 			continue;
@@ -825,85 +827,48 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 
 void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_cache_t *pcache)
 {
-	if (r_wsurf.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
+	if (g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
 	{
-		r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
+		g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
 
-		if (bUseBindless)
+		if (pcache)
 		{
-			GLuint64 vDecalGLTextureHandles[WSURF_MAX_TEXTURE] = { 0 };
-
-			auto handle = glGetTextureHandleARB(ptexture->gl_texturenum);
-			if (!glIsTextureHandleResidentARB(handle))
-			{
-				glMakeTextureHandleResidentARB(handle);
-			}
-
-			vDecalGLTextureHandles[WSURF_DIFFUSE_TEXTURE] = handle;
-
-			if (pcache)
-			{
-				r_wsurf.vDecalDetailTextures[decalIndex] = pcache;
-
-				for (int k = WSURF_REPLACE_TEXTURE; k < WSURF_MAX_TEXTURE; ++k)
-				{
-					if (pcache->tex[k].gltexturenum)
-					{
-						handle = glGetTextureHandleARB(pcache->tex[k].gltexturenum);
-
-						if (!glIsTextureHandleResidentARB(handle))
-						{
-							glMakeTextureHandleResidentARB(handle);
-						}
-
-						vDecalGLTextureHandles[k] = handle;
-					}
-					else
-					{
-						vDecalGLTextureHandles[k] = 0;
-					}
-				}
-			}
-			else
-			{
-				r_wsurf.vDecalDetailTextures[decalIndex] = NULL;
-
-				for (int k = WSURF_REPLACE_TEXTURE; k < WSURF_MAX_TEXTURE; ++k)
-				{
-					vDecalGLTextureHandles[k] = 0;
-				}
-			}
-
-			if (glNamedBufferSubData)
-			{
-				glNamedBufferSubData(r_wsurf.hDecalSSBO, sizeof(vDecalGLTextureHandles) * decalIndex, sizeof(vDecalGLTextureHandles), vDecalGLTextureHandles);
-			}
-			else
-			{
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
-				glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(vDecalGLTextureHandles) * decalIndex, sizeof(vDecalGLTextureHandles), vDecalGLTextureHandles);
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-			}
+			g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = pcache;
 		}
 		else
 		{
-			if (pcache)
-			{
-				r_wsurf.vDecalDetailTextures[decalIndex] = pcache;
-			}
-			else
-			{
-				r_wsurf.vDecalDetailTextures[decalIndex] = NULL;
-			}
+			g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = NULL;
 		}
 	}
 }
 
-void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t * surf, detail_texture_cache_t *pcache)
+void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *surf, detail_texture_cache_t *pcache)
 {
-	auto poly = surf->polys;
-	auto surfIndex = R_GetWorldSurfaceIndex(surf);
-	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
+	auto worldmodel = R_FindWorldModelBySurface(surf);
+
+	if (!worldmodel)
+	{
+		Sys_Error("R_UploadDecalVertexBuffer: Failed to get worldmodel by surface");
+		return;
+	}
+
+	auto pWorldModel = R_GetWorldSurfaceWorldModel(worldmodel);
+
+	if (!pWorldModel)
+	{
+		Sys_Error("R_UploadDecalVertexBuffer: Failed to R_GetWorldSurfaceWorldModel");
+		return;
+	}
+
+	auto surfIndex = R_GetWorldSurfaceIndex(worldmodel, surf);
+
+	if (surfIndex == -1)
+	{
+		Sys_Error("R_UploadDecalVertexBuffer: invalid surfIndex!");
+		return;
+	}
+
+	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
 
 	decalvertex_t vertexArray[MAX_DECALVERTS] = { 0 };
 
@@ -984,10 +949,10 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	GL_UploadSubDataToVBODynamicDraw(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
+	GL_UploadSubDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
 
-	r_wsurf.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
-	r_wsurf.vDecalVertexCount[decalIndex] = vertCount;
+	g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
+	g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] = vertCount;
 }
 
 void R_DrawDecals(cl_entity_t *ent)
@@ -1037,13 +1002,14 @@ void R_DrawDecals(cl_entity_t *ent)
 
 				if (plist->flags & FDECAL_NOCLIP)
 				{
-					v = R_DecalVertsNoclip(plist, psurf, ptexture, r_wsurf.bLightmapTexture);
+					v = R_DecalVertsNoclip(plist, psurf, ptexture, g_WorldSurfaceRenderer.bLightmapTexture);
 					vertCount = 4;
 				}
 				else
 				{
 					v = R_DecalVertsClip(NULL, plist, psurf, ptexture, &vertCount);
-					if (vertCount > 0 && r_wsurf.bLightmapTexture)
+
+					if (vertCount > 0 && g_WorldSurfaceRenderer.bLightmapTexture)
 					{
 						R_DecalVertsLight(v, psurf, vertCount);
 					}
@@ -1056,32 +1022,32 @@ void R_DrawDecals(cl_entity_t *ent)
 				}
 				else
 				{
-					r_wsurf.vDecalGLTextures[decalIndex] = 0;
-					r_wsurf.vDecalDetailTextures[decalIndex] = NULL;
-					r_wsurf.vDecalStartIndex[decalIndex] = 0;
-					r_wsurf.vDecalVertexCount[decalIndex] = 0;
+					g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] = 0;
+					g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = NULL;
+					g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex] = 0;
+					g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] = 0;
 				}
 
 				//Mark this decal as ready
 				plist->flags |= FDECAL_VBO;
 			}
 
-			if (r_wsurf.vDecalVertexCount[decalIndex] > 0)
+			if (g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] > 0)
 			{
-				if (!r_wsurf.vDecalDetailTextures[decalIndex] && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
+				if (!g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = r_wsurf.vDecalGLTextures[decalIndex];
-					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = r_wsurf.vDecalDetailTextures[decalIndex];
-					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = r_wsurf.vDecalStartIndex[decalIndex];
-					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = r_wsurf.vDecalVertexCount[decalIndex];
+					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex];
+					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex];
+					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex];
+					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex];
 					++g_DecalBaseDrawBatch.BatchCount;
 				}
-				else if (r_wsurf.vDecalDetailTextures[decalIndex] && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
+				else if (g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = r_wsurf.vDecalGLTextures[decalIndex];
-					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = r_wsurf.vDecalDetailTextures[decalIndex];
-					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = r_wsurf.vDecalStartIndex[decalIndex];
-					g_DecalDetailDrawBatch.VertexCount[g_DecalDetailDrawBatch.BatchCount] = r_wsurf.vDecalVertexCount[decalIndex];
+					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex];
+					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex];
+					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex];
+					g_DecalDetailDrawBatch.VertexCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex];
 					++g_DecalDetailDrawBatch.BatchCount;
 				}
 			}
@@ -1113,7 +1079,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	program_state_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
-	if (r_wsurf.bLightmapTexture && !R_IsRenderingGBuffer())
+	if (g_WorldSurfaceRenderer.bLightmapTexture && !R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
@@ -1127,31 +1093,31 @@ void R_DrawDecals(cl_entity_t *ent)
 			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 		}
 
-		if (!r_light_dynamic->value && r_wsurf.iLightmapLegacyDLights)
+		if (!r_light_dynamic->value && g_WorldSurfaceRenderer.iLightmapLegacyDLights)
 		{
 			WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 		}
 
-		if (r_wsurf.iLightmapUsedBits & (1 << 0))
+		if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 0))
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
 		}
-		if (r_wsurf.iLightmapUsedBits & (1 << 1))
+		if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 1))
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
 		}
-		if (r_wsurf.iLightmapUsedBits & (1 << 2))
+		if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 2))
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
 		}
-		if (r_wsurf.iLightmapUsedBits & (1 << 3))
+		if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
 		}
 	}
 
 	//Mix shadow if not deferred
-	if (r_wsurf.bShadowmapTexture && !R_IsRenderingGBuffer())
+	if (g_WorldSurfaceRenderer.bShadowmapTexture && !R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
@@ -1217,41 +1183,22 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
-	GL_BindVAO(r_wsurf.hDecalVAO);
-
-	if (bUseBindless)
-	{
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
-	}
+	GL_BindVAO(g_WorldSurfaceRenderer.hDecalVAO);
 
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
 		program_state_t WSurfProgramStateBase = WSurfProgramState;
 
-		if (bUseBindless && gl_bindless->value)
-		{
-			WSurfProgramStateBase |= WSURF_BINDLESS_ENABLED;
-		}
-
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramStateBase, &prog);
 
-		if (WSurfProgramStateBase & WSURF_BINDLESS_ENABLED)
+		for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
 		{
-			glMultiDrawArrays(GL_POLYGON, g_DecalBaseDrawBatch.StartIndex, g_DecalBaseDrawBatch.VertexCount, g_DecalBaseDrawBatch.BatchCount);
-			r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
-			r_wsurf_drawcall++;
+			GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
+			glDrawArrays(GL_POLYGON, g_DecalBaseDrawBatch.StartIndex[i], g_DecalBaseDrawBatch.VertexCount[i]);
 		}
-		else
-		{
-			for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
-			{
-				GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
-				glDrawArrays(GL_POLYGON, g_DecalBaseDrawBatch.StartIndex[i], g_DecalBaseDrawBatch.VertexCount[i]);
-			}
-			r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
-			r_wsurf_drawcall += g_DecalBaseDrawBatch.BatchCount;
-		}
+		r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
+		r_wsurf_drawcall += g_DecalBaseDrawBatch.BatchCount;
 	}
 
 	if (g_DecalDetailDrawBatch.BatchCount > 0)
@@ -1265,6 +1212,7 @@ void R_DrawDecals(cl_entity_t *ent)
 			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.DetailTextureCaches[i], &WSurfProgramStateDetail);
 
 			wsurf_program_t prog = { 0 };
+
 			R_UseWSurfProgram(WSurfProgramStateDetail, &prog);
 
 			glDrawArrays(GL_POLYGON, g_DecalDetailDrawBatch.StartIndex[i], g_DecalDetailDrawBatch.VertexCount[i]);

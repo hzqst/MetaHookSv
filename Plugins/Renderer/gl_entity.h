@@ -1,13 +1,13 @@
 #pragma once
 
-typedef struct water_vbo_s water_vbo_t;
+class CWaterSurfaceModel;
 
 typedef struct entity_component_s
 {
 	struct entity_component_s *next;
 	std::vector<cl_entity_t *> FollowEnts;
 	std::vector<decal_t *> Decals;
-	std::vector<water_vbo_t *> WaterVBOs;
+	std::vector<CWaterSurfaceModel *> WaterVBOs;
 	std::vector<water_reflect_cache_t *> ReflectCaches;
 	std::vector<int> DeferredStudioPasses;
 }entity_component_t;

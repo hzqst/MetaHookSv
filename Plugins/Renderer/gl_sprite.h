@@ -41,7 +41,7 @@ void R_SaveSpriteProgramStates(void);
 void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures);
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData);
 
-#define SPRITE_BINDLESS_ENABLED				0x1ull
+//#define SPRITE_BINDLESS_ENABLED				0x1ull
 #define SPRITE_GBUFFER_ENABLED				0x2ull
 #define SPRITE_OIT_BLEND_ENABLED			0x4ull
 #define SPRITE_GAMMA_BLEND_ENABLED			0x8ull

@@ -650,12 +650,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_STENCIL_TEXTURE_ENABLED)
 			defs << "#define STENCIL_TEXTURE_ENABLED\n";
 
-		if (glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define NV_BINDLESS_ENABLED\n";
-
-		else if (glewIsSupported("GL_ARB_gpu_shader_int64"))
-			defs << "#define INT64_BINDLESS_ENABLED\n";
-
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vsh", "renderer\\shader\\studio_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -3368,17 +3362,6 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 #undef REGISTER_CELSHADE_KEY_VALUE
 }
 
-static std::vector<bspentity_t> g_StudioBSPEntities;
-
-bspentity_t* R_ParseBSPEntity_StudioAllocator(void)
-{
-	size_t len = g_StudioBSPEntities.size();
-
-	g_StudioBSPEntities.resize(len + 1);
-
-	return &g_StudioBSPEntities[len];
-}
-
 void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
 	if (VBOData->bExternalFileLoaded)
@@ -3394,42 +3377,38 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 
 	auto pFile = (const char*)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
 
-	if (!pFile)
+	if (pFile)
 	{
-		return;
-	}
+		std::vector<bspentity_t*> vEntities;
 
-	R_ParseBSPEntities(pFile, R_ParseBSPEntity_StudioAllocator);
+		R_ParseBSPEntities(pFile, vEntities);
 
-	for (size_t i = 0; i < g_StudioBSPEntities.size(); ++i)
-	{
-		bspentity_t* ent = &g_StudioBSPEntities[i];
-
-		const char* classname = ent->classname;
-
-		if (!classname)
-			continue;
-
-		if (!strcmp(classname, "studio_texture"))
+		for (auto ent : vEntities)
 		{
-			R_StudioLoadExternalFile_Texture(ent, studiohdr, VBOData);
+			auto classname = ent->classname;
+
+			if (!classname)
+				continue;
+
+			if (!strcmp(classname, "studio_texture"))
+			{
+				R_StudioLoadExternalFile_Texture(ent, studiohdr, VBOData);
+			}
+			else if (!strcmp(classname, "studio_efx"))
+			{
+				R_StudioLoadExternalFile_Efx(ent, studiohdr, VBOData);
+			}
+			else if (!strcmp(classname, "studio_celshade_control"))
+			{
+				R_StudioLoadExternalFile_Celshade(ent, studiohdr, VBOData);
+			}
 		}
-		else if (!strcmp(classname, "studio_efx"))
+
+		for (auto ent : vEntities)
 		{
-			R_StudioLoadExternalFile_Efx(ent, studiohdr, VBOData);
+			delete ent;
 		}
-		else if (!strcmp(classname, "studio_celshade_control"))
-		{
-			R_StudioLoadExternalFile_Celshade(ent, studiohdr, VBOData);
-		}
+
+		gEngfuncs.COM_FreeFile((void*)pFile);
 	}
-
-	for (size_t i = 0; i < g_StudioBSPEntities.size(); i++)
-	{
-		FreeBSPEntity(&g_StudioBSPEntities[i]);
-	}
-
-	g_StudioBSPEntities.clear();
-
-	gEngfuncs.COM_FreeFile((void *)pFile);
 }

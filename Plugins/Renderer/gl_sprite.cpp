@@ -23,9 +23,6 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 	{
 		std::stringstream defs;
 
-		if((state & SPRITE_BINDLESS_ENABLED) && bUseBindless)
-			defs << "#define BINDLESS_ENABLED\n";
-
 		if(state & SPRITE_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
@@ -102,7 +99,6 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 }
 
 const program_state_mapping_t s_SpriteProgramStateName[] = {
-{ SPRITE_BINDLESS_ENABLED			  ,"SPRITE_BINDLESS_ENABLED"			},
 { SPRITE_GBUFFER_ENABLED			  ,"SPRITE_GBUFFER_ENABLED"				},
 { SPRITE_OIT_BLEND_ENABLED			  ,"SPRITE_OIT_BLEND_ENABLED"			},
 { SPRITE_GAMMA_BLEND_ENABLED		  ,"SPRITE_GAMMA_BLEND_ENABLED"			},
@@ -771,17 +767,6 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_v
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }
 
-static std::vector<bspentity_t> g_SpriteBSPEntities;
-
-bspentity_t* R_ParseBSPEntity_SpriteAllocator(void)
-{
-	size_t len = g_SpriteBSPEntities.size();
-
-	g_SpriteBSPEntities.resize(len + 1);
-
-	return &g_SpriteBSPEntities[len];
-}
-
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData)
 {
 	std::string fullPath = mod->name;
@@ -792,34 +777,30 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pS
 
 	auto pFile = (const char*)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
 
-	if (!pFile)
+	if (pFile)
 	{
-		return;
-	}
+		std::vector<bspentity_t*> vEntities;
 
-	R_ParseBSPEntities(pFile, R_ParseBSPEntity_SpriteAllocator);
+		R_ParseBSPEntities(pFile, vEntities);
 
-	for (size_t i = 0; i < g_SpriteBSPEntities.size(); ++i)
-	{
-		bspentity_t* ent = &g_SpriteBSPEntities[i];
-
-		const char* classname = ent->classname;
-
-		if (!classname)
-			continue;
-
-		if (!strcmp(classname, "sprite_efx"))
+		for (auto ent : vEntities)
 		{
-			R_SpriteLoadExternalFile_Efx(ent, pSprite, pSpriteVBOData);
+			auto classname = ent->classname;
+
+			if (!classname)
+				continue;
+
+			if (!strcmp(classname, "sprite_efx"))
+			{
+				R_SpriteLoadExternalFile_Efx(ent, pSprite, pSpriteVBOData);
+			}
 		}
+
+		for (auto ent : vEntities)
+		{
+			delete ent;
+		}
+
+		gEngfuncs.COM_FreeFile((void*)pFile);
 	}
-
-	for (size_t i = 0; i < g_SpriteBSPEntities.size(); i++)
-	{
-		FreeBSPEntity(&g_SpriteBSPEntities[i]);
-	}
-
-	g_SpriteBSPEntities.clear();
-
-	gEngfuncs.COM_FreeFile((void*)pFile);
 }

@@ -71,8 +71,6 @@ void GL_Texturemode_internal(const char *value)
 	*gl_filter_min = gl_texture_modes[i].minimize;
 	*gl_filter_max = gl_texture_modes[i].maximize;
 
-	R_FreeBindlessTexturesForWorld();
-
 	auto pgltextures = gltextures_get();
 
 	for (int j = 0; j < (*numgltextures); ++j)
@@ -124,15 +122,11 @@ void GL_Texturemode_internal(const char *value)
 		}
 	}
 
-	R_CreateBindlessTexturesForWorld();
-
-	R_FreeBindlessTexturesForSkybox();
-
 	for (int j = 0; j < 12; ++j)
 	{
-		if (r_wsurf.vSkyboxTextureId[j])
+		if (g_WorldSurfaceRenderer.vSkyboxTextureId[j])
 		{
-			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
+			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[j]);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
@@ -141,8 +135,6 @@ void GL_Texturemode_internal(const char *value)
 			GL_Bind(0);
 		}
 	}
-
-	R_CreateBindlessTexturesForSkybox();
 }
 
 void GL_Texturemode_cb(cvar_t *pcvar)

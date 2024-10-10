@@ -228,7 +228,6 @@ FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
 
 bool bNoStretchAspect = true;
-bool bUseBindless = true;
 bool bUseOITBlend = false;
 bool bUseLegacyTextureLoader = false;
 bool bHasOfficialFBOSupport = false;
@@ -312,8 +311,6 @@ cvar_t* gl_widescreen_yfov = NULL;
 cvar_t* cl_fixmodelinterpolationartifacts = NULL;
 
 cvar_t *gl_profile = NULL;
-
-cvar_t *gl_bindless = NULL;
 
 cvar_t *dev_overview_color = NULL;
 
@@ -1894,15 +1891,6 @@ void GL_Init(void)
 
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
-	if(gEngfuncs.CheckParm("-nobindless", NULL))
-		bUseBindless = false;
-
-	if (bUseBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
-		bUseBindless = false;
-
-	if (bUseBindless && !glewIsSupported("GL_ARB_shader_draw_parameters"))
-		bUseBindless = false;
-
 	if (gEngfuncs.CheckParm("-oitblend", NULL))
 		bUseOITBlend = true;
 
@@ -2517,11 +2505,6 @@ void R_InitCvars(void)
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 
-	if (bUseBindless)
-	{
-		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	}
-
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2675,13 +2658,13 @@ void R_NewMap(void)
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_GenerateSceneUBO();
+	R_NewMapWSurf_Pre();
+	R_NewMapPortal_Pre();
 
 	gPrivateFuncs.R_NewMap();
 
-	R_NewMapWater();
-	R_NewMapPortal();
-	R_NewMapWSurf();
-	R_NewMapLight();
+	R_NewMapWSurf_Post();
+	R_NewMapLight_Post();
 
 	R_StudioClearVBOCache();
 	R_StudioReloadVBOCache();
@@ -2936,8 +2919,8 @@ void R_UploadProjMatrixForViewModel(void)
 	memcpy(SceneUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
 	memcpy(SceneUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
 
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
 }
 
 void R_LoadProjMatrixForWorld(void)
@@ -2946,8 +2929,8 @@ void R_LoadProjMatrixForWorld(void)
 	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
 	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
 }
 
 void R_SetupGLForViewModel(void)
@@ -3443,7 +3426,7 @@ void R_SetupFog(void)
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];
 
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
 
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, r_fog_mode);
@@ -3731,115 +3714,19 @@ int EngineGetMaxClientModels(void)
 const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
 const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
 
-void R_FreeBindlessTexturesForSkybox()
-{
-	if (bUseBindless)
-	{
-		for (int i = 0; i < 12; ++i)
-		{
-			if (r_wsurf.vSkyboxTextureHandles[i])
-			{
-				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-				r_wsurf.vSkyboxTextureHandles[i] = 0;
-			}
-		}
-	}
-}
-
-void R_CreateBindlessTexturesForSkybox()
-{
-	if (bUseBindless)
-	{
-		for (int i = 0; i < 12; ++i)
-		{
-			if (r_wsurf.vSkyboxTextureId[i])
-			{
-				auto handle = glGetTextureHandleARB(r_wsurf.vSkyboxTextureId[i]);
-				glMakeTextureHandleResidentARB(handle);
-				r_wsurf.vSkyboxTextureHandles[i] = handle;
-			}
-		}
-
-		if (r_wsurf.hSkyboxSSBO)
-		{
-			if (glNamedBufferSubData)
-			{
-				glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
-			}
-			else
-			{
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
-				glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-			}
-		}
-
-		if (r_wsurf.hDetailSkyboxSSBO)
-		{
-			if (glNamedBufferSubData)
-			{
-				glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
-			}
-			else
-			{
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDetailSkyboxSSBO);
-				glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
-				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-			}
-		}
-	}
-}
-
 void R_LoadSky_PreCall(const char* name)
 {
-	R_FreeBindlessTexturesForSkybox();
-
-#if 0
-	for (int i = 0; i < 6; ++i)
-	{
-		if (gSkyTexNumber[i])
-		{
-			GL_DeleteTexture(gSkyTexNumber[i]);
-			gSkyTexNumber[i] = 0;
-		}
-	}
-
 	for (int i = 0; i < 12; ++i)
 	{
-		if (r_wsurf.vSkyboxTextureId[i])
+		if (g_WorldSurfaceRenderer.vSkyboxTextureId[i])
 		{
-			r_wsurf.vSkyboxTextureId[i] = 0;
+			g_WorldSurfaceRenderer.vSkyboxTextureId[i] = 0;
 		}
 	}
-#else
-
-	for (int i = 0; i < 12; ++i)
-	{
-		if (r_wsurf.vSkyboxTextureId[i])
-		{
-			//GL_UnloadTextureByTextureId(r_wsurf.vSkyboxTextureId[i], true);
-			r_wsurf.vSkyboxTextureId[i] = 0;
-		}
-	}
-
-#endif
 }
 
 bool R_LoadLegacySkyTextures(const char* name)
 {
-#if 0
-	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
-
-	for (int i = 0; i < 6; ++i)
-	{
-		if (gSkyTexNumber[skytexorder[i]])
-		{
-			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
-		}
-	}
-	return true;
-#else
-
 	const char* suf[6] = { "rt", "lf", "bk", "ft", "up", "dn" };
 
 	for (int i = 0; i < 6; i++)
@@ -3867,10 +3754,9 @@ bool R_LoadLegacySkyTextures(const char* name)
 			return false;
 		}
 
-		r_wsurf.vSkyboxTextureId[0 + i] = loadResult.gltexturenum;
+		g_WorldSurfaceRenderer.vSkyboxTextureId[0 + i] = loadResult.gltexturenum;
 	}
 	return true;
-#endif
 }
 
 bool R_LoadDetailSkyTextures(const char* name)
@@ -3902,7 +3788,7 @@ bool R_LoadDetailSkyTextures(const char* name)
 			return false;
 		}
 
-		r_wsurf.vSkyboxTextureId[6 + i] = loadResult.gltexturenum;
+		g_WorldSurfaceRenderer.vSkyboxTextureId[6 + i] = loadResult.gltexturenum;
 	}
 
 	return true;
@@ -3924,31 +3810,19 @@ void R_LoadSky_PostCall(const char *name)
 			}
 		}
 	}
-
-	R_CreateBindlessTexturesForSkybox();
 }
 
 void R_LoadSkyBox_SvEngine(const char *name)
 {
 	R_LoadSky_PreCall(name);
-#if 0
-	gPrivateFuncs.R_LoadSkyBox_SvEngine(name);
-#else
 
-#endif
 	R_LoadSky_PostCall(name);
 }
 
 void R_LoadSkys(void)
 {
 	R_LoadSky_PreCall(pmovevars->skyName);
-#if 0
-	gPrivateFuncs.R_LoadSkys();
-#else
 
-
-
-#endif
 	R_LoadSky_PostCall(pmovevars->skyName);
 }
 

@@ -208,7 +208,6 @@ extern int glwidth;
 extern int glheight;
 
 extern bool bNoStretchAspect;
-extern bool bUseBindless;
 extern bool bUseOITBlend;
 //extern bool bVerticalFov;//unused
 extern bool bUseLegacyTextureLoader;
@@ -316,8 +315,6 @@ extern cvar_t *r_additive_shift;
 
 extern cvar_t* r_detailskytextures;
 
-extern cvar_t *gl_bindless;
-
 void R_FillAddress(void);
 void R_InstallHooks(void);
 void R_UninstallHooksForEngineStudioInterface(void);
@@ -341,8 +338,7 @@ bool AllowCheats();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
-int R_GetWorldSurfaceIndex(msurface_t* surf);
-msurface_t* R_GetWorldSurfaceByIndex(int index);
+
 void R_Init(void);
 void R_VidInit(void);
 void R_Shutdown(void);
@@ -481,9 +477,6 @@ bool SaveImageGenericRGBA8(const char* filename, const char* pathId, int width, 
 cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);
 void R_BuildCubemaps_f(void);
-
-void R_CreateBindlessTexturesForSkybox();
-void R_FreeBindlessTexturesForSkybox();
 
 void R_SaveProgramStates_f(void);
 void R_LoadProgramStates_f(void);

@@ -87,78 +87,44 @@ typedef struct water_reflect_cache_s
 	bool refractmap_ready;
 }water_reflect_cache_t;
 
-typedef struct water_vbo_s
+class CWaterSurfaceModel
 {
-	water_vbo_s()
-	{
-		hEBO = 0;
-		hVAO = 0;
-		texture = NULL;
+public:
+	~CWaterSurfaceModel();
 
-		normalmap = 0;
-		ripplemap = 0;
+	GLuint hEBO{};
+	GLuint hVAO{};
 
-		ripple_data = NULL;
-		ripple_image = NULL;
-		ripple_spots[0] = NULL;
-		ripple_spots[1] = NULL;
-		ripple_shift = 0;
-		ripple_width = 0;
-		ripple_height = 0;
-		ripple_framecount = 0;
-		ripple_time = 0;
+	texture_t* texture{};
 
-		fresnelfactor[0] = 0;
-		fresnelfactor[1] = 0;
-		fresnelfactor[2] = 0;
-		fresnelfactor[3] = 0;
-		depthfactor[0] = 0;
-		depthfactor[1] = 0;
-		depthfactor[2] = 0;
-		normfactor = 0;
-		minheight = 0;
-		maxtrans = 0;
-		speedrate = 0;
-		level = 0;
-		planedist = 0;
-		plane = 0;
-		iPolyCount = 0;
-		iIndicesCount = 0;
-		vIndicesBuffer = NULL;
-	}
-	GLuint hEBO;
-	GLuint hVAO;
+	GLuint normalmap{};
+	GLuint ripplemap{};
 
-	texture_t *texture;
+	void* ripple_data{};
+	void* ripple_image{};
+	short* ripple_spots[2]{};
+	int ripple_shift{};
+	int ripple_width{};
+	int ripple_height{};
+	int ripple_framecount{};
+	uint64_t ripple_time{};
 
-	GLuint normalmap;
-	GLuint ripplemap;
-
-	void *ripple_data;
-	void *ripple_image;
-	short *ripple_spots[2];
-	int ripple_shift;
-	int ripple_width;
-	int ripple_height;
-	int ripple_framecount;
-	uint64_t ripple_time;
-
-	float fresnelfactor[4];
-	float depthfactor[3];
-	float normfactor;
-	float minheight;
-	float maxtrans;
-	float speedrate;
-	int level;
-	float planedist;
-	vec3_t vert;
-	vec3_t normal;
-	mplane_t *plane;
-	colorVec color;
-	int iPolyCount;
-	int iIndicesCount;
-	std::vector<GLuint> *vIndicesBuffer;
-}water_vbo_t;
+	float fresnelfactor[4]{};
+	float depthfactor[3]{};
+	float normfactor{};
+	float minheight{};
+	float maxtrans{};
+	float speedrate{};
+	int level{};
+	float planedist{};
+	vec3_t vert{};
+	vec3_t normal{};
+	mplane_t *plane{};
+	colorVec color{};
+	int iPolyCount{};
+	int iIndicesCount{};
+	std::vector<GLuint> *vIndicesBuffer{};
+};
 
 //renderer
 extern vec3_t g_CurrentCameraView;
@@ -183,7 +149,7 @@ typedef struct
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
-bool R_IsAboveWater(water_vbo_t *water);
+bool R_IsAboveWater(CWaterSurfaceModel *pWaterModel);
 void R_InitWater(void);
 void R_ShutdownWater(void);
 void R_RenderWaterPass(void);
@@ -191,6 +157,9 @@ void R_NewMapWater(void);
 void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
+
+class CWorldSurfaceLeaf;
+void R_DrawWatersForLeaf(CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
 
 #define WATER_LEGACY_ENABLED				0x1ull
 #define WATER_UNDERWATER_ENABLED			0x2ull

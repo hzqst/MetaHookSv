@@ -14,7 +14,7 @@ water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
 int g_iNumWaterReflectCaches = 0;
 
 std::vector<cl_entity_t *> g_VisibleWaterEntity;
-std::vector<water_vbo_t *> g_VisibleWaterVBO;
+std::vector<CWaterSurfaceModel *> g_VisibleWaterSurfaceModels;
 
 int g_VisWaterIndices[MAX_VISEDICTS] = { 0 };
 
@@ -23,6 +23,48 @@ std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 std::vector<water_control_t> r_water_controls;
 
 //std::vector<cubemap_t> r_cubemaps;
+
+CWaterSurfaceModel::~CWaterSurfaceModel()
+{
+	if (ripplemap)
+	{
+		GL_DeleteTexture(ripplemap);
+		ripplemap = 0;
+	}
+
+	if (hVAO)
+	{
+		GL_DeleteVAO(hVAO);
+		hVAO = 0;
+	}
+
+	if (hEBO)
+	{
+		GL_DeleteBuffer(hEBO);
+		hEBO = 0;
+	}
+
+	if (ripple_data)
+	{
+		free(ripple_data);
+		ripple_data = NULL;
+	}
+	if (ripple_image)
+	{
+		free(ripple_image);
+		ripple_image = NULL;
+	}
+	if (ripple_spots[0])
+	{
+		free(ripple_spots[0]);
+		ripple_spots[0] = NULL;
+	}
+	if (ripple_spots[1])
+	{
+		free(ripple_spots[1]);
+		ripple_spots[1] = NULL;
+	}
+}
 
 void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 {
@@ -71,12 +113,6 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 
 		if ((state & WATER_OIT_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
-
-		if (glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define NV_BINDLESS_ENABLED\n";
-
-		else if (glewIsSupported("GL_ARB_gpu_shader_int64"))
-			defs << "#define INT64_BINDLESS_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -145,46 +181,9 @@ void R_LoadWaterProgramStates(void)
 	});
 }
 
-void R_FreeWaterVBO(water_vbo_t *WaterVBO)
+void R_FreeWaterVBO(CWaterSurfaceModel *WaterVBO)
 {
-	if (WaterVBO->ripplemap)
-	{
-		GL_DeleteTexture(WaterVBO->ripplemap);
-		WaterVBO->ripplemap = 0;
-	}
-
-	if (WaterVBO->hVAO)
-	{
-		GL_DeleteVAO(WaterVBO->hVAO);
-		WaterVBO->hVAO = 0;
-	}
-
-	if (WaterVBO->hEBO)
-	{
-		GL_DeleteBuffer(WaterVBO->hEBO);
-		WaterVBO->hEBO = 0;
-	}
-
-	if (WaterVBO->ripple_data)
-	{
-		free(WaterVBO->ripple_data);
-		WaterVBO->ripple_data = NULL;
-	}
-	if (WaterVBO->ripple_image)
-	{
-		free(WaterVBO->ripple_image);
-		WaterVBO->ripple_image = NULL;
-	}
-	if (WaterVBO->ripple_spots[0])
-	{
-		free(WaterVBO->ripple_spots[0]);
-		WaterVBO->ripple_spots[0] = NULL;
-	}
-	if (WaterVBO->ripple_spots[1])
-	{
-		free(WaterVBO->ripple_spots[1]);
-		WaterVBO->ripple_spots[1] = NULL;
-	}
+	
 }
 
 void R_FreeWaterReflectCache(water_reflect_cache_t *ReflectCache)
@@ -265,17 +264,17 @@ water_reflect_cache_t *R_FindEmptyReflectCache()
 	return NULL;
 }
 
-water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, water_vbo_t *WaterVBO)
+water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, CWaterSurfaceModel *pWaterModel)
 {
 	vec3_t vert;
 
 	R_RotateForEntity(ent);
 
-	VectorTransform(WaterVBO->vert, r_entity_matrix, vert);
+	VectorTransform(pWaterModel->vert, r_entity_matrix, vert);
 
-	float planedist = DotProduct(WaterVBO->normal, vert);
+	float planedist = DotProduct(pWaterModel->normal, vert);
 
-	auto ReflectCache = R_FindReflectCache(WaterVBO->level, WaterVBO->normal, planedist);
+	auto ReflectCache = R_FindReflectCache(pWaterModel->level, pWaterModel->normal, planedist);
 	if (!ReflectCache)
 	{
 		ReflectCache = R_FindEmptyReflectCache();
@@ -317,15 +316,15 @@ water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, water_vbo_t *Wate
 			ReflectCache->texwidth = texwidth;
 			ReflectCache->texheight = texheight;
 
-			VectorCopy(WaterVBO->normal, ReflectCache->normal);
+			VectorCopy(pWaterModel->normal, ReflectCache->normal);
 			ReflectCache->planedist = planedist;
 
-			ReflectCache->color.r = WaterVBO->color.r;
-			ReflectCache->color.g = WaterVBO->color.g;
-			ReflectCache->color.b = WaterVBO->color.b;
-			ReflectCache->color.a = WaterVBO->color.a;
+			ReflectCache->color.r = pWaterModel->color.r;
+			ReflectCache->color.g = pWaterModel->color.g;
+			ReflectCache->color.b = pWaterModel->color.b;
+			ReflectCache->color.a = pWaterModel->color.a;
 
-			ReflectCache->level = WaterVBO->level;
+			ReflectCache->level = pWaterModel->level;
 
 			ReflectCache->used = true;
 			ReflectCache->refractmap_ready = false;
@@ -360,45 +359,11 @@ void R_InitWater(void)
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 }
 
-void R_NewMapWater(void)
-{
-
-}
-
-bool R_IsAboveWater(water_vbo_t *water)
+bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
 {
 	float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
-	float equation[4] = { water->normal[0], water->normal[1], water->normal[2], -water->planedist };
+	float equation[4] = { pWaterModel->normal[0], pWaterModel->normal[1], pWaterModel->normal[2], -pWaterModel->planedist };
 	return DotProduct4(org, equation) > 0;
-}
-
-water_vbo_t *R_FindFlatWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
-{
-	auto poly = surf->polys;
-	auto surfIndex = R_GetWorldSurfaceIndex(surf);
-	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
-
-	vec3_t normal;
-	VectorCopy(brushface->normal, normal);
-
-	if (direction)
-	{
-		VectorInverse(normal);
-	}
-
-	for (size_t i = 0; i < leaf->vWaterVBO.size(); ++i)
-	{
-		auto WaterVBO = leaf->vWaterVBO[i];
-
-		if (surf->texinfo->texture == WaterVBO->texture &&
-			surf->plane == WaterVBO->plane && 
-			VectorDistance(normal, WaterVBO->normal) < 0.1f)//make sure it's same direction
-		{
-			return WaterVBO;
-		}
-	}
-
-	return NULL;
 }
 
 water_control_t *R_FindWaterControl(msurface_t *surf)
@@ -435,7 +400,7 @@ water_control_t *R_FindWaterControl(msurface_t *surf)
 	return pControl;
 }
 
-void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
+void R_UpdateRippleTexture(CWaterSurfaceModel *pWaterModel, int framecount)
 {
 	if (R_IsRenderingWaterView())
 		return;
@@ -460,28 +425,28 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 		init = true;
 	}
 
-	if (framecount == VBOCache->ripple_framecount)
+	if (framecount == pWaterModel->ripple_framecount)
 		return;
 
-	auto curtime = (uint64_t)(gEngfuncs.GetClientTime() * VBOCache->speedrate);
-	auto prevtime = VBOCache->ripple_time;
+	auto curtime = (uint64_t)(gEngfuncs.GetClientTime() * pWaterModel->speedrate);
+	auto prevtime = pWaterModel->ripple_time;
 
 	if (prevtime + (1ull << PROCEDURAL_SPEED_BITS) > curtime)
 		return;
 
-	VBOCache->ripple_framecount = framecount;
-	VBOCache->ripple_time = curtime;
-	VBOCache->ripple_shift ++;
+	pWaterModel->ripple_framecount = framecount;
+	pWaterModel->ripple_time = curtime;
+	pWaterModel->ripple_shift ++;
 
-	const int parity = VBOCache->ripple_shift & 1;
-	short *pBuffer0 = VBOCache->ripple_spots[parity];
-	short *pBuffer1 = VBOCache->ripple_spots[parity ^ 1];
+	const int parity = pWaterModel->ripple_shift & 1;
+	short *pBuffer0 = pWaterModel->ripple_spots[parity];
+	short *pBuffer1 = pWaterModel->ripple_spots[parity ^ 1];
 
-	unsigned int *pSrcBuf = (unsigned int *)VBOCache->ripple_image;
-	unsigned int *pDstBuf = (unsigned int *)VBOCache->ripple_data;
+	unsigned int *pSrcBuf = (unsigned int *)pWaterModel->ripple_image;
+	unsigned int *pDstBuf = (unsigned int *)pWaterModel->ripple_data;
 
-	int bufWide = VBOCache->ripple_width;
-	int bufTall = VBOCache->ripple_height;
+	int bufWide = pWaterModel->ripple_width;
+	int bufTall = pWaterModel->ripple_height;
 
 	for (int j = 0; j < bufTall; ++j) {
 		int p2 = (!j) ? (bufTall - 1) : (j - 1);
@@ -512,9 +477,9 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 	}
 
 	auto procFrame = (curtime >> PROCEDURAL_SPEED_BITS);
-	if (VBOCache->ripple_width > 64) procFrame *= (VBOCache->ripple_width >> 6);
+	if (pWaterModel->ripple_width > 64) procFrame *= (pWaterModel->ripple_width >> 6);
 	int skipDrips = procFrame & 7;
-	if (VBOCache->ripple_shift < 16)
+	if (pWaterModel->ripple_shift < 16)
 		skipDrips = 0;
 
 	if (!skipDrips)
@@ -545,64 +510,106 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 		pBuffer1[yr*bufWide + xl] += dripsize;
 	}
 
-	glBindTexture(GL_TEXTURE_2D, VBOCache->ripplemap);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VBOCache->ripple_width, VBOCache->ripple_height, GL_RGBA, GL_UNSIGNED_BYTE, VBOCache->ripple_data);
+	glBindTexture(GL_TEXTURE_2D, pWaterModel->ripplemap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pWaterModel->ripple_width, pWaterModel->ripple_height, GL_RGBA, GL_UNSIGNED_BYTE, pWaterModel->ripple_data);
 	glBindTexture(GL_TEXTURE_2D, *currenttexture);
 }
 
-water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
+CWaterSurfaceModel* R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
-	auto poly = surf->polys;
-	auto surfIndex = R_GetWorldSurfaceIndex(surf);
-	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
+	auto surfIndex = R_GetWorldSurfaceIndex(mod, surf);
 
-	auto WaterVBO = R_FindFlatWaterVBO(surf, direction, leaf);
-
-	if (!WaterVBO)
+	if (surfIndex == -1)
 	{
-		WaterVBO = new water_vbo_t;
-		WaterVBO->texture = surf->texinfo->texture;
+		Sys_Error("R_FindFlatWaterSurfaceModel: invalid surfIndex!");
+		return nullptr;
+	}
 
-		VectorCopy(brushface->normal, WaterVBO->normal);
-		VectorCopy(surf->polys->verts[0], WaterVBO->vert);
+	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+
+	vec3_t normal;
+	VectorCopy(brushface->normal, normal);
+
+	if (direction)
+	{
+		VectorInverse(normal);
+	}
+
+	for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+	{
+		auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+
+		if (surf->texinfo->texture == pWaterModel->texture &&
+			surf->plane == pWaterModel->plane &&
+			VectorDistance(normal, pWaterModel->normal) < 0.1f)//make sure it's same direction
+		{
+			return pWaterModel;
+		}
+	}
+
+	return NULL;
+}
+
+CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf)
+{
+	auto worldmodel = pWorldModel->mod;
+	auto surfIndex = R_GetWorldSurfaceIndex(worldmodel, surf);
+
+	if (surfIndex == -1)
+	{
+		Sys_Error("R_GetWaterSurfaceModel: invalid surfIndex!");
+		return nullptr;
+	}
+
+	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+
+	auto pWaterModel = R_FindFlatWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
+
+	if (!pWaterModel)
+	{
+		pWaterModel = new CWaterSurfaceModel;
+		pWaterModel->texture = surf->texinfo->texture;
+
+		VectorCopy(brushface->normal, pWaterModel->normal);
+		VectorCopy(surf->polys->verts[0], pWaterModel->vert);
 
 		if (direction)
 		{
-			VectorInverse(WaterVBO->normal);
+			VectorInverse(pWaterModel->normal);
 		}
 
-		WaterVBO->planedist = DotProduct(WaterVBO->normal, WaterVBO->vert);
+		pWaterModel->planedist = DotProduct(pWaterModel->normal, pWaterModel->vert);
 
-		WaterVBO->plane = surf->plane;
+		pWaterModel->plane = surf->plane;
 
 		auto pSourcePalette = surf->texinfo->texture->pPal;
-		WaterVBO->color.r = pSourcePalette[9];
-		WaterVBO->color.g = pSourcePalette[10];
-		WaterVBO->color.b = pSourcePalette[11];
-		WaterVBO->color.a = 255;
+		pWaterModel->color.r = pSourcePalette[9];
+		pWaterModel->color.g = pSourcePalette[10];
+		pWaterModel->color.b = pSourcePalette[11];
+		pWaterModel->color.a = 255;
 
 		//Default
-		WaterVBO->normalmap = 0;
-		WaterVBO->ripplemap = 0;
-		WaterVBO->fresnelfactor[0] = 0;
-		WaterVBO->fresnelfactor[1] = 0;
-		WaterVBO->fresnelfactor[2] = 0;
-		WaterVBO->fresnelfactor[3] = 0;
-		WaterVBO->depthfactor[0] = 0;
-		WaterVBO->depthfactor[1] = 0;
-		WaterVBO->depthfactor[2] = 0;
-		WaterVBO->normfactor = 0;
-		WaterVBO->minheight = 0;
-		WaterVBO->maxtrans = 1;
-		WaterVBO->speedrate = 1;
-		WaterVBO->level = WATER_LEVEL_LEGACY;
+		pWaterModel->normalmap = 0;
+		pWaterModel->ripplemap = 0;
+		pWaterModel->fresnelfactor[0] = 0;
+		pWaterModel->fresnelfactor[1] = 0;
+		pWaterModel->fresnelfactor[2] = 0;
+		pWaterModel->fresnelfactor[3] = 0;
+		pWaterModel->depthfactor[0] = 0;
+		pWaterModel->depthfactor[1] = 0;
+		pWaterModel->depthfactor[2] = 0;
+		pWaterModel->normfactor = 0;
+		pWaterModel->minheight = 0;
+		pWaterModel->maxtrans = 1;
+		pWaterModel->speedrate = 1;
+		pWaterModel->level = WATER_LEVEL_LEGACY;
 
-		WaterVBO->vIndicesBuffer = new std::vector<GLuint>();
+		pWaterModel->vIndicesBuffer = new std::vector<GLuint>();
 
 		auto waterControl = R_FindWaterControl(surf);
 		if (waterControl)
 		{
-			WaterVBO->minheight = waterControl->minheight;
+			pWaterModel->minheight = waterControl->minheight;
 
 			if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
@@ -610,59 +617,59 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 				gl_loadtexture_result_t loadResult;
 				if (R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
 				{
-					WaterVBO->normalmap = loadResult.gltexturenum;
+					pWaterModel->normalmap = loadResult.gltexturenum;
 				}
 				else
 				{
-					gEngfuncs.Con_Printf("R_CreateWaterVBO: Failed to load %s.\n", waterControl->normalmap.c_str());
+					gEngfuncs.Con_Printf("R_GetWaterSurfaceModel: Failed to load %s.\n", waterControl->normalmap.c_str());
 				}
 			}
 
 			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
 			{
 				glBindTexture(GL_TEXTURE_2D, surf->texinfo->texture->gl_texturenum);
-				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &WaterVBO->ripple_width);
-				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &WaterVBO->ripple_height);
+				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &pWaterModel->ripple_width);
+				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &pWaterModel->ripple_height);
 
-				auto imageSize = WaterVBO->ripple_width * WaterVBO->ripple_height;
+				auto imageSize = pWaterModel->ripple_width * pWaterModel->ripple_height;
 
-				WaterVBO->ripple_data = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
-				memset(WaterVBO->ripple_data, 0, imageSize * sizeof(unsigned int));
+				pWaterModel->ripple_data = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+				memset(pWaterModel->ripple_data, 0, imageSize * sizeof(unsigned int));
 
-				WaterVBO->ripple_image = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
-				memset(WaterVBO->ripple_image, 0, imageSize * sizeof(unsigned long));
+				pWaterModel->ripple_image = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+				memset(pWaterModel->ripple_image, 0, imageSize * sizeof(unsigned long));
 
-				glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, WaterVBO->ripple_image);
+				glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pWaterModel->ripple_image);
 
 				char identifier[64] = { 0 };
 				snprintf(identifier, sizeof(identifier), "%s_ripple", surf->texinfo->texture->name);
 
-				WaterVBO->ripplemap = R_LoadRGBA8TextureFromMemory(identifier, WaterVBO->ripple_image, WaterVBO->ripple_width, WaterVBO->ripple_height, GLT_WORLD, true);
+				pWaterModel->ripplemap = R_LoadRGBA8TextureFromMemory(identifier, pWaterModel->ripple_image, pWaterModel->ripple_width, pWaterModel->ripple_height, GLT_WORLD, true);
 
-				WaterVBO->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
-				memset(WaterVBO->ripple_spots[0], 0, imageSize * sizeof(short));
+				pWaterModel->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
+				memset(pWaterModel->ripple_spots[0], 0, imageSize * sizeof(short));
 
-				WaterVBO->ripple_spots[1] = (short *)malloc(imageSize * sizeof(short));
-				memset(WaterVBO->ripple_spots[1], 0, imageSize * sizeof(short));
+				pWaterModel->ripple_spots[1] = (short *)malloc(imageSize * sizeof(short));
+				memset(pWaterModel->ripple_spots[1], 0, imageSize * sizeof(short));
 
-				WaterVBO->ripple_shift = 0;
-				WaterVBO->ripple_framecount = 0;
+				pWaterModel->ripple_shift = 0;
+				pWaterModel->ripple_framecount = 0;
 
-				glBindTexture(GL_TEXTURE_2D, *currenttexture);
+				glBindTexture(GL_TEXTURE_2D, (*currenttexture));
 			}
 
-			WaterVBO->fresnelfactor[0] = waterControl->fresnelfactor[0];
-			WaterVBO->fresnelfactor[1] = waterControl->fresnelfactor[1];
-			WaterVBO->fresnelfactor[2] = waterControl->fresnelfactor[2];
-			WaterVBO->fresnelfactor[3] = waterControl->fresnelfactor[3];
-			WaterVBO->depthfactor[0] = waterControl->depthfactor[0];
-			WaterVBO->depthfactor[1] = waterControl->depthfactor[1];
-			WaterVBO->depthfactor[2] = waterControl->depthfactor[2];
-			WaterVBO->normfactor = waterControl->normfactor;
-			WaterVBO->minheight = waterControl->minheight;
-			WaterVBO->maxtrans = waterControl->maxtrans;
-			WaterVBO->speedrate = waterControl->speedrate;
-			WaterVBO->level = waterControl->level;
+			pWaterModel->fresnelfactor[0] = waterControl->fresnelfactor[0];
+			pWaterModel->fresnelfactor[1] = waterControl->fresnelfactor[1];
+			pWaterModel->fresnelfactor[2] = waterControl->fresnelfactor[2];
+			pWaterModel->fresnelfactor[3] = waterControl->fresnelfactor[3];
+			pWaterModel->depthfactor[0] = waterControl->depthfactor[0];
+			pWaterModel->depthfactor[1] = waterControl->depthfactor[1];
+			pWaterModel->depthfactor[2] = waterControl->depthfactor[2];
+			pWaterModel->normfactor = waterControl->normfactor;
+			pWaterModel->minheight = waterControl->minheight;
+			pWaterModel->maxtrans = waterControl->maxtrans;
+			pWaterModel->speedrate = waterControl->speedrate;
+			pWaterModel->level = waterControl->level;
 		}
 	}
 
@@ -672,22 +679,22 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 		{
 			for (int k = brushface->num_vertexes[j] - 1; k >= 0; --k)
 			{
-				WaterVBO->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
+				pWaterModel->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
 			}
 		}
 		else
 		{
 			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
 			{
-				WaterVBO->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
+				pWaterModel->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
 			}
 		}
-		WaterVBO->vIndicesBuffer->emplace_back((GLuint)0xFFFFFFFF);
+		pWaterModel->vIndicesBuffer->emplace_back((GLuint)0xFFFFFFFF);
 	}
 
-	WaterVBO->iPolyCount += brushface->num_polys;
+	pWaterModel->iPolyCount += brushface->num_polys;
 
-	return WaterVBO;
+	return pWaterModel;
 }
 
 void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
@@ -765,7 +772,7 @@ void R_RenderWaterPass(void)
 
 	GL_BeginProfile(&Profile_RenderWaterPass);
 
-	g_VisibleWaterVBO.clear();
+	g_VisibleWaterSurfaceModels.clear();
 	g_VisibleWaterEntity.clear();
 	R_ClearWaterReflectCaches();
 
@@ -780,21 +787,27 @@ void R_RenderWaterPass(void)
 		viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);
 	}
 
-	int leafindex = (viewleaf - r_worldmodel->leafs);
+	int leafIndex = R_GetWorldLeafIndex(r_worldmodel, viewleaf);
 
-	auto modvbo = R_PrepareWSurfVBO(r_worldmodel);
-
-	if (leafindex >= 0 && leafindex < (int)modvbo->vLeaves.size())
+	if (leafIndex != -1)
 	{
-		auto vboleaf = modvbo->vLeaves[leafindex];
+		auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
 
-		//TODO Frustum Culling for world water?
-		for (size_t i = 0; i < vboleaf->vWaterVBO.size(); ++i)
+		if (pModel)
 		{
-			auto WaterVBO = vboleaf->vWaterVBO[i];
+			if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
+			{
+				auto pLeaf = pModel->vLeaves[leafIndex];
 
-			g_VisibleWaterEntity.emplace_back(r_worldentity);
-			g_VisibleWaterVBO.emplace_back(WaterVBO);
+				//TODO Frustum Culling for world water?
+				for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+				{
+					auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+
+					g_VisibleWaterEntity.emplace_back(r_worldentity);
+					g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+				}
+			}
 		}
 	}
 
@@ -841,82 +854,82 @@ void R_RenderWaterPass(void)
 			modelorg[2] = DotProduct(temp, up);
 		}
 
-		modvbo = R_PrepareWSurfVBO(e->model);
+		auto pModel = R_GetWorldSurfaceModel(e->model);
 
-		auto vboleaf = modvbo->vLeaves[0];
-
-		if (vboleaf->vWaterVBO.empty())
-			continue;
-
-		for (size_t i = 0; i < vboleaf->vWaterVBO.size(); ++i)
+		if (pModel->vLeaves.size() >= 1)
 		{
-			auto WaterVBO = vboleaf->vWaterVBO[i];
+			auto pLeaf = pModel->vLeaves[0];
 
-			auto pplane = WaterVBO->plane;
-
-			if (g_iEngineType == ENGINE_SVENGINE)
+			for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
 			{
-				if (entity_mins[2] >= pplane->dist)
-					continue;
-			}
-			else
-			{
-				if (entity_mins[2] + 1.0f >= pplane->dist)
-					continue;
-			}
+				auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
-			auto dot = DotProduct(modelorg, WaterVBO->normal) - WaterVBO->planedist;
+				auto pplane = pWaterModel->plane;
 
-			if (dot > 0)
-			{
-				g_VisibleWaterEntity.emplace_back(e);
-				g_VisibleWaterVBO.emplace_back(WaterVBO);
-
-				if ((*cl_waterlevel) >= 2)
+				if (g_iEngineType == ENGINE_SVENGINE)
 				{
-					auto pSourcePalette = WaterVBO->texture->pPal;
+					if (entity_mins[2] >= pplane->dist)
+						continue;
+				}
+				else
+				{
+					if (entity_mins[2] + 1.0f >= pplane->dist)
+						continue;
+				}
 
-					gWaterColor->r = pSourcePalette[9];
-					gWaterColor->g = pSourcePalette[10];
-					gWaterColor->b = pSourcePalette[11];
-					cshift_water->destcolor[0] = pSourcePalette[9];
-					cshift_water->destcolor[1] = pSourcePalette[10];
-					cshift_water->destcolor[2] = pSourcePalette[11];
-					cshift_water->percent = pSourcePalette[12];
+				auto dot = DotProduct(modelorg, pWaterModel->normal) - pWaterModel->planedist;
 
-					if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+				if (dot > 0)
+				{
+					g_VisibleWaterEntity.emplace_back(e);
+					g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+
+					if ((*cl_waterlevel) >= 2)
 					{
-						gWaterColor->r = pSourcePalette[0];
-						gWaterColor->g = pSourcePalette[1];
-						gWaterColor->b = pSourcePalette[2];
+						auto pSourcePalette = pWaterModel->texture->pPal;
+
+						gWaterColor->r = pSourcePalette[9];
+						gWaterColor->g = pSourcePalette[10];
+						gWaterColor->b = pSourcePalette[11];
+						cshift_water->destcolor[0] = pSourcePalette[9];
+						cshift_water->destcolor[1] = pSourcePalette[10];
+						cshift_water->destcolor[2] = pSourcePalette[11];
+						cshift_water->percent = pSourcePalette[12];
+
+						if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+						{
+							gWaterColor->r = pSourcePalette[0];
+							gWaterColor->g = pSourcePalette[1];
+							gWaterColor->b = pSourcePalette[2];
+						}
 					}
 				}
 			}
 		}
 	}
 
-	for (size_t i = 0; i < g_VisibleWaterVBO.size(); ++i)
+	for (size_t i = 0;i < g_VisibleWaterSurfaceModels.size(); ++i)
 	{
-		auto WaterVBO = g_VisibleWaterVBO[i];
+		auto pWaterModel = g_VisibleWaterSurfaceModels[i];
+		auto ent = g_VisibleWaterEntity[i];
 
-		auto e = g_VisibleWaterEntity[i];
+		water_reflect_cache_t * pReflectCache = NULL;
 
-		water_reflect_cache_t *ReflectCache = NULL;
-
-		if (WaterVBO->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBO->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value > 0)
+		if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value > 0)
 		{
-			ReflectCache = R_PrepareReflectCache(e, WaterVBO);
+			pReflectCache = R_PrepareReflectCache(ent, pWaterModel);
 		}
-		else if (WaterVBO->level == WATER_LEVEL_LEGACY_RIPPLE)
+		else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE)
 		{
-			R_UpdateRippleTexture(WaterVBO, (*r_framecount));
+			R_UpdateRippleTexture(pWaterModel, (*r_framecount));
 		}
 
-		auto comp = R_GetEntityComponent(e, true);
-		if (comp)
+		auto pEntityComponent = R_GetEntityComponent(ent, true);
+
+		if (pEntityComponent)
 		{
-			comp->WaterVBOs.emplace_back(WaterVBO);
-			comp->ReflectCaches.emplace_back(ReflectCache);
+			pEntityComponent->WaterVBOs.emplace_back(pWaterModel);
+			pEntityComponent->ReflectCaches.emplace_back(pReflectCache);
 		}
 	}
 
@@ -934,23 +947,23 @@ void R_RenderWaterPass(void)
 	GL_EndProfile(&Profile_RenderWaterPass);
 }
 
-void R_DrawWaterVBOBegin(water_vbo_t* WaterVBO)
+void R_DrawWaterSurfaceModelBegin(CWaterSurfaceModel * pWaterModel)
 {
-	GL_BindVAO(WaterVBO->hVAO);
+	GL_BindVAO(pWaterModel->hVAO);
 
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
-void R_DrawWaterVBOEnd()
+void R_DrawWaterSurfaceModelEnd()
 {
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	GL_BindVAO(0);
 }
 
-void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
+void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
 {
-	R_DrawWaterVBOBegin(WaterVBO);
+	R_DrawWaterSurfaceModelBegin(pWaterModel);
 
 	if (r_draw_opaque)
 	{
@@ -960,24 +973,24 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	bool bIsAboveWater = (WaterVBO->normal[2] > 0) && R_IsAboveWater(WaterVBO) ? true : false;
+	bool bIsAboveWater = (pWaterModel->normal[2] > 0) && R_IsAboveWater(pWaterModel) ? true : false;
 
 	float color[4];
-	color[0] = WaterVBO->color.r / 255.0f;
-	color[1] = WaterVBO->color.g / 255.0f;
-	color[2] = WaterVBO->color.b / 255.0f;
+	color[0] = pWaterModel->color.r / 255.0f;
+	color[1] = pWaterModel->color.g / 255.0f;
+	color[2] = pWaterModel->color.b / 255.0f;
 	color[3] = 1;
 
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		color[3] = (*r_blend);
 
-	if (WaterVBO->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBO->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
+	if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
 	{
 		if (!ReflectCache->refractmap_ready)
 		{
 			if (r_draw_gbuffer)
 			{
-				R_DrawWaterVBOEnd();
+				R_DrawWaterSurfaceModelEnd();
 
 				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
@@ -994,11 +1007,11 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				//Restore Legacy OpenGL matrix that manipulated by R_BlitGBufferToFrameBuffer
 				R_LoadLegacyOpenGLMatrixForWorld();
 
-				R_DrawWaterVBOBegin(WaterVBO);
+				R_DrawWaterSurfaceModelBegin(pWaterModel);
 			}
 			else
 			{
-				R_DrawWaterVBOEnd();
+				R_DrawWaterSurfaceModelEnd();
 
 				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
 
@@ -1026,7 +1039,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				//Restore Legacy OpenGL matrix that manipulated by R_GammaUncorrection
 				R_LoadLegacyOpenGLMatrixForWorld();
 
-				R_DrawWaterVBOBegin(WaterVBO);
+				R_DrawWaterSurfaceModelBegin(pWaterModel);
 			}
 
 			ReflectCache->refractmap_ready = true;
@@ -1042,8 +1055,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 			WaterProgramState |= WATER_REFRACT_ENABLED;
 			WaterProgramState |= WATER_ALPHA_BLEND_ENABLED;
 
-			if (color[3] > WaterVBO->maxtrans)
-				color[3] = WaterVBO->maxtrans;
+			if (color[3] > pWaterModel->maxtrans)
+				color[3] = pWaterModel->maxtrans;
 		}
 		else
 		{
@@ -1052,8 +1065,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				WaterProgramState |= WATER_REFRACT_ENABLED;
 				WaterProgramState |= WATER_ALPHA_BLEND_ENABLED;
 
-				if (color[3] > WaterVBO->maxtrans)
-					color[3] = WaterVBO->maxtrans;
+				if (color[3] > pWaterModel->maxtrans)
+					color[3] = pWaterModel->maxtrans;
 			}
 		}
 
@@ -1104,15 +1117,15 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		}
 		if (prog.u_depthfactor != -1)
 		{
-			glUniform3f(prog.u_depthfactor, WaterVBO->depthfactor[0], WaterVBO->depthfactor[1], WaterVBO->depthfactor[2]);
+			glUniform3f(prog.u_depthfactor, pWaterModel->depthfactor[0], pWaterModel->depthfactor[1], pWaterModel->depthfactor[2]);
 		}
 		if (prog.u_fresnelfactor != -1)
 		{
-			glUniform4f(prog.u_fresnelfactor, WaterVBO->fresnelfactor[0], WaterVBO->fresnelfactor[1], WaterVBO->fresnelfactor[2], WaterVBO->fresnelfactor[3]);
+			glUniform4f(prog.u_fresnelfactor, pWaterModel->fresnelfactor[0], pWaterModel->fresnelfactor[1], pWaterModel->fresnelfactor[2], pWaterModel->fresnelfactor[3]);
 		}
 		if (prog.u_normfactor != -1)
 		{
-			glUniform1f(prog.u_normfactor, WaterVBO->normfactor);
+			glUniform1f(prog.u_normfactor, pWaterModel->normfactor);
 		}
 
 		glEnable(GL_BLEND);
@@ -1121,7 +1134,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, WaterVBO->normalmap);
+		glBindTexture(GL_TEXTURE_2D, pWaterModel->normalmap);
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflectmap);
@@ -1132,10 +1145,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->depthrefrmap);
 
-		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += WaterVBO->iPolyCount;
+		r_wsurf_polys += pWaterModel->iPolyCount;
 
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -1153,7 +1166,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 		glDisable(GL_BLEND);
 	}
-	else if (WaterVBO->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value > 0)
+	else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value > 0)
 	{
 		program_state_t WaterProgramState = WATER_LEGACY_ENABLED;
 
@@ -1212,12 +1225,12 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		if (prog.u_speed != -1)
 			glUniform1f(prog.u_speed, 0);
 
-		GL_Bind(WaterVBO->ripplemap);
+		GL_Bind(pWaterModel->ripplemap);
 
-		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += WaterVBO->iPolyCount;
+		r_wsurf_polys += pWaterModel->iPolyCount;
 	}
 	else
 	{
@@ -1283,14 +1296,14 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 			glUniform1f(prog.u_scale, scale);
 
 		if (prog.u_speed != -1)
-			glUniform1f(prog.u_speed, WaterVBO->speedrate);
+			glUniform1f(prog.u_speed, pWaterModel->speedrate);
 
-		GL_Bind(WaterVBO->texture->gl_texturenum);
+		GL_Bind(pWaterModel->texture->gl_texturenum);
 
-		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += WaterVBO->iPolyCount;
+		r_wsurf_polys += pWaterModel->iPolyCount;
 	}
 
 	GL_UseProgram(0);
@@ -1300,10 +1313,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		GL_EndStencil();
 	}
 
-	R_DrawWaterVBOEnd();
+	R_DrawWaterSurfaceModelEnd();
 }
 
-void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
+void R_DrawWatersForLeaf(CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 {
 	if (R_IsRenderingWaterView())
 		return;
@@ -1311,7 +1324,7 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
 	if (R_IsRenderingShadowView())
 		return;
 
-	if (!vboleaf->vWaterVBO.size())
+	if (!pLeaf->vWaterSurfaceModels.size())
 		return;
 
 	auto EntityComponent = R_GetEntityComponent(ent, false);
@@ -1321,6 +1334,6 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
 
 	for (size_t i = 0; i < EntityComponent->WaterVBOs.size(); ++i)
 	{
-		R_DrawWaterVBO(EntityComponent->WaterVBOs[i], EntityComponent->ReflectCaches[i], ent);
+		R_DrawWaterSurfaceModel(EntityComponent->WaterVBOs[i], EntityComponent->ReflectCaches[i], ent);
 	}
 }

@@ -27,23 +27,18 @@ typedef struct portal_vbo_hasher_t
 	}
 }portal_vbo_hasher;
 
-typedef struct portal_vbo_s
+class CWorldPortalModel
 {
-	portal_vbo_s()
-	{
-		hEBO = 0;
-		hVAO = 0;
-		texinfo = NULL;
-		iPolyCount = 0;
-	}
+public:
+	~CWorldPortalModel();
 
-	GLuint hEBO;
-	GLuint hVAO;
-	mtexinfo_t *texinfo;
+	GLuint hEBO{};
+	GLuint hVAO{};
+	mtexinfo_t* texinfo{};
 	std::vector<GLuint> vIndicesBuffer;
 	std::set<int> SurfaceSet;
-	int iPolyCount;
-}portal_vbo_t;
+	int iPolyCount{};
+};
 
 typedef struct
 {
@@ -67,6 +62,7 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 void R_LoadPortalProgramStates(void);
 void R_SavePortalProgramStates(void);
 void R_NewMapPortal(void);
+void R_NewMapPortal_Pre(void);
 void R_ShutdownPortal(void);
 void R_InitPortal(void);
 

@@ -5,7 +5,20 @@
 
 std::unordered_map<program_state_t, portal_program_t> g_PortalProgramTable;
 
-std::unordered_map<portal_vbo_hash_t, portal_vbo_t *, portal_vbo_hasher> g_PortalVBOCache;
+std::unordered_map<portal_vbo_hash_t, CWorldPortalModel*, portal_vbo_hasher> g_PortalSurfaceModels;
+
+CWorldPortalModel::~CWorldPortalModel()
+{
+	if (hVAO)
+	{
+		GL_DeleteVAO(hVAO);
+	}
+
+	if (hEBO)
+	{
+		GL_DeleteBuffer(hEBO);
+	}
+}
 
 void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 {
@@ -86,28 +99,21 @@ void R_LoadPortalProgramStates(void)
 	});
 }
 
-void R_NewMapPortal(void)
+void R_NewMapPortal_Pre(void)
 {
-	for (auto &itor : g_PortalVBOCache)
+	for (auto& p : g_PortalSurfaceModels)
 	{
-		auto VBOCache = itor.second;
+		auto pPortalModel = p.second;
 
-		if (VBOCache->hVAO)
-		{
-			GL_DeleteVAO(VBOCache->hVAO);
-			VBOCache->hVAO = 0;
-		}
-
-		if (VBOCache->hEBO)
-		{
-			GL_DeleteBuffer(VBOCache->hEBO);
-			VBOCache->hEBO = 0;
-		}
-
-		delete VBOCache;
+		delete pPortalModel;
 	}
 
-	g_PortalVBOCache.clear();
+	g_PortalSurfaceModels.clear();
+}
+
+void R_NewMapPortal(void)
+{
+
 }
 
 void R_ShutdownPortal(void)
@@ -147,14 +153,11 @@ mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pth
 	return gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture(pthis, dummy, surf);
 }
 
-portal_vbo_t *R_FindPortalVBO(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
+CWorldPortalModel* R_FindPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	auto poly = surf->polys;
-	auto surfIndex = R_GetWorldSurfaceIndex(surf);
-
 	portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
-	auto itor = g_PortalVBOCache.find(hash);
-	if (itor == g_PortalVBOCache.end())
+	auto itor = g_PortalSurfaceModels.find(hash);
+	if (itor == g_PortalSurfaceModels.end())
 	{
 		return NULL;
 	}
@@ -162,37 +165,60 @@ portal_vbo_t *R_FindPortalVBO(void *ClientPortalManager, void * ClientPortal, ms
 	return itor->second;
 }
 
-portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
+CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	auto poly = surf->polys;
-	auto surfIndex = R_GetWorldSurfaceIndex(surf);
-	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
+	auto worldmodel = R_FindWorldModelBySurface(surf);
 
-	auto VBOCache = R_FindPortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
-
-	if (!VBOCache)
+	if (!worldmodel)
 	{
-		VBOCache = new portal_vbo_t;
-		VBOCache->texinfo = ClientPortalManager_GetOriginalSurfaceTexture(ClientPortalManager, 0, surf);
+		Sys_Error("R_GetPortalSurfaceModel: Failed to find model by surface");
+		return nullptr;
+	}
+
+	auto pWorldModel = R_GetWorldSurfaceWorldModel(worldmodel);
+
+	if (!pWorldModel)
+	{
+		Sys_Error("R_GetPortalSurfaceModel: Failed to R_GetWorldSurfaceWorldModel!");
+		return nullptr;
+	}
+
+	auto surfIndex = R_GetWorldSurfaceIndex(worldmodel, surf);
+
+	if (surfIndex == -1)
+	{
+		Sys_Error("R_GetPortalSurfaceModel: invalid surfIndex!");
+		return nullptr;
+	}
+
+	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+
+	auto pPortalModel = R_FindPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
+
+	if (!pPortalModel)
+	{
+		pPortalModel = new CWorldPortalModel;
+
+		pPortalModel->texinfo = ClientPortalManager_GetOriginalSurfaceTexture(ClientPortalManager, 0, surf);
 		
-		VBOCache->SurfaceSet.emplace(surfIndex);
+		pPortalModel->SurfaceSet.emplace(surfIndex);
 
 		for (int j = 0; j < brushface->num_polys; ++j)
 		{
 			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
 			{
-				VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+				pPortalModel->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
 			}
-			VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
+			pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 		}
 
-		VBOCache->hEBO = GL_GenBuffer();
+		pPortalModel->hEBO = GL_GenBuffer();
 
-		GL_UploadDataToEBODynamicDraw(VBOCache->hEBO, sizeof(GLuint) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
+		GL_UploadDataToEBODynamicDraw(pPortalModel->hEBO, sizeof(GLuint) * pPortalModel->vIndicesBuffer.size(), pPortalModel->vIndicesBuffer.data());
 
-		VBOCache->hVAO = GL_GenVAO();
+		pPortalModel->hVAO = GL_GenVAO();
 
-		GL_BindStatesForVAO(VBOCache->hVAO, r_wsurf.hSceneVBO, VBOCache->hEBO,
+		GL_BindStatesForVAO(pPortalModel->hVAO, pWorldModel->hVBO, pPortalModel->hEBO,
 		[]() {
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
@@ -207,45 +233,45 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
 		});
 
-		VBOCache->iPolyCount += brushface->num_polys;
+		pPortalModel->iPolyCount += brushface->num_polys;
 
 		portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 
-		g_PortalVBOCache[hash] = VBOCache;
+		g_PortalSurfaceModels[hash] = pPortalModel;
 	}
 	else
 	{
-		auto itor = VBOCache->SurfaceSet.find(surfIndex);
+		auto itor = pPortalModel->SurfaceSet.find(surfIndex);
 
-		if (itor == VBOCache->SurfaceSet.end())
+		if (itor == pPortalModel->SurfaceSet.end())
 		{
-			VBOCache->SurfaceSet.emplace(surfIndex);
+			pPortalModel->SurfaceSet.emplace(surfIndex);
 
 			for (int j = 0; j < brushface->num_polys; ++j)
 			{
 				for (int k = 0; k < brushface->num_vertexes[j]; ++k)
 				{
-					VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+					pPortalModel->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
 				}
-				VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
+				pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 			}
 
-			GL_UploadDataToEBODynamicDraw(VBOCache->hEBO, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
+			GL_UploadDataToEBODynamicDraw(pPortalModel->hEBO, sizeof(unsigned int) * pPortalModel->vIndicesBuffer.size(), pPortalModel->vIndicesBuffer.data());
 
-			VBOCache->iPolyCount += brushface->num_polys;
+			pPortalModel->iPolyCount += brushface->num_polys;
 		}
 	}
 
-	return VBOCache;
+	return pPortalModel;
 }
 
-void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, portal_vbo_t *VBOCache)
+void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
 	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
 
 	program_state_t programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
-	if (VBOCache->texinfo->texture->name[0] == '{')
+	if (pPortalModel->texinfo->texture->name[0] == '{')
 	{
 		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
@@ -258,30 +284,32 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 	R_RotateForEntity(ent);
 
 	portal_program_t prog = { 0 };
+
 	R_UsePortalProgram(programState, &prog);
 
 	GL_Bind(textureId);
 
 	GL_EnableMultitexture();
-	GL_Bind(VBOCache->texinfo->texture->gl_texturenum);
 
-	glDrawElements(GL_POLYGON, VBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
+
+	glDrawElements(GL_POLYGON, pPortalModel->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 	GL_DisableMultitexture();
 
 	GL_UseProgram(0);
 
 	r_wsurf_drawcall++;
-	r_wsurf_polys += VBOCache->iPolyCount;
+	r_wsurf_polys += pPortalModel->iPolyCount;
 }
 
-void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, portal_vbo_t *VBOCache)
+void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
 	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
 
 	program_state_t programState = 0;
 
-	if (VBOCache->texinfo->texture->name[0] == '{')
+	if (pPortalModel->texinfo->texture->name[0] == '{')
 	{
 		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
@@ -299,16 +327,17 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 	GL_Bind(textureId);
 
 	GL_EnableMultitexture();
-	GL_Bind(VBOCache->texinfo->texture->gl_texturenum);
 
-	glDrawElements(GL_POLYGON, VBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
+
+	glDrawElements(GL_POLYGON, pPortalModel->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 	GL_DisableMultitexture();
 
 	GL_UseProgram(0);
 
 	r_wsurf_drawcall++;
-	r_wsurf_polys += VBOCache->iPolyCount;
+	r_wsurf_polys += pPortalModel->iPolyCount;
 }
 
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)
@@ -322,22 +351,25 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	auto VBOCache = R_PreparePortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
+	auto pPortalModel = R_GetPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
 
-	GL_BindVAO(VBOCache->hVAO);
-
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-	if (ClientPortal_GetPortalMode(ClientPortal) == 1)
+	if (pPortalModel)
 	{
-		R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, VBOCache);
-	}
-	else
-	{
-		R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, VBOCache);
-	}
+		GL_BindVAO(pPortalModel->hVAO);
 
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	GL_BindVAO(0);
+		if (ClientPortal_GetPortalMode(ClientPortal) == 1)
+		{
+			R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+		}
+		else
+		{
+			R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+		}
+
+		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+		GL_BindVAO(0);
+	}
 }

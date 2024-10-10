@@ -858,7 +858,7 @@ void R_ClearOITBuffer(void)
 	GL_EndFullScreenQuad();
 
 	GLuint val = 0;
-	glClearNamedBufferData(r_wsurf.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
+	glClearNamedBufferData(g_WorldSurfaceRenderer.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
 }
 
 void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst)
