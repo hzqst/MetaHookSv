@@ -141,6 +141,7 @@
 #define R_SETUPGL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x2A\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 #define R_SETUPGL_SIG_HL25_9899 "\x55\x8B\xEC\x83\xEC\x08\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x02\x17\x00\x00\xFF\x15"
 #define R_SETUPGL_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x53\x56\x57\x68\x01\x17\x00\x00"
+#define R_SETUPGL_SIG_SVENGINE_10152 "\x51\x53\x56\x57\x68\x01\x17\x00\x00\xFF\x15"
 
 #define GL_DISABLEMULTITEXTURE_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
 #define GL_DISABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
@@ -819,7 +820,32 @@ void R_FillAddress(void)
 
 		if (SetupGL_Call)
 		{
-			gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))g_pMetaHookAPI->ReverseSearchFunctionBegin(SetupGL_Call, 0x600);
+			gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetupGL_Call, 0x600, [](PUCHAR Candidate) {
+
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC)
+				{
+					if (Search_Pattern_From_Size(Candidate, 15, "\x68\x01\x17\x00\x00") ||
+						Search_Pattern_From_Size(Candidate, 15, "\x68\x02\x17\x00\x00"))
+					{
+						return TRUE;
+					}
+				}
+
+				if (Candidate[-1] == 0xCC &&
+					Candidate[0] >= 0x50 &&
+					Candidate[0] <= 0x57)
+				{
+					if (Search_Pattern_From_Size(Candidate, 15, "\x68\x01\x17\x00\x00") ||
+						Search_Pattern_From_Size(Candidate, 15, "\x68\x02\x17\x00\x00"))
+					{
+						return TRUE;
+					}
+				}
+
+				return FALSE;
+			});
 		}
 		else
 		{
@@ -837,7 +863,32 @@ void R_FillAddress(void)
 
 			if (SetupGL_Call)
 			{
-				gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))g_pMetaHookAPI->ReverseSearchFunctionBegin(SetupGL_Call, 0x600);
+				gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetupGL_Call, 0x600, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+					{
+						if (Search_Pattern_From_Size(Candidate, 15, "\x68\x01\x17\x00\x00") ||
+							Search_Pattern_From_Size(Candidate, 15, "\x68\x02\x17\x00\x00"))
+						{
+							return TRUE;
+						}
+					}
+
+					if (Candidate[-1] == 0xCC &&
+						Candidate[0] >= 0x50 &&
+						Candidate[0] <= 0x57)
+					{
+						if (Search_Pattern_From_Size(Candidate, 15, "\x68\x01\x17\x00\x00") ||
+							Search_Pattern_From_Size(Candidate, 15, "\x68\x02\x17\x00\x00"))
+						{
+							return TRUE;
+						}
+					}
+
+					return FALSE;
+				});
 			}
 		}
 	}
@@ -848,6 +899,8 @@ void R_FillAddress(void)
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
+			if(!gPrivateFuncs.R_SetupGL)
+				gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))Search_Pattern(R_SETUPGL_SIG_SVENGINE_10152);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{

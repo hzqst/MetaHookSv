@@ -765,6 +765,101 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	GL_SetCurrentSceneFBO(NULL);
 }
 
+void R_RenderWaterPass_CollectWater(cl_entity_t *e)
+{
+	vec3_t entity_mins, entity_maxs;
+
+	bool rotated = false;
+
+	if (e->angles[0] || e->angles[1] || e->angles[2])
+	{
+		rotated = true;
+
+		for (int i = 0; i < 3; i++)
+		{
+			entity_mins[i] = e->origin[i] - e->model->radius;
+			entity_maxs[i] = e->origin[i] + e->model->radius;
+		}
+	}
+	else
+	{
+		rotated = false;
+
+		VectorAdd(e->origin, e->model->mins, entity_mins);
+		VectorAdd(e->origin, e->model->maxs, entity_maxs);
+	}
+
+	if (R_CullBox(entity_mins, entity_maxs))
+		return;
+
+	VectorSubtract((*r_refdef.vieworg), e->origin, modelorg);
+
+	if (rotated)
+	{
+		vec3_t temp;
+		vec3_t forward, right, up;
+
+		VectorCopy(modelorg, temp);
+		AngleVectors(e->angles, forward, right, up);
+		modelorg[0] = DotProduct(temp, forward);
+		modelorg[1] = -DotProduct(temp, right);
+		modelorg[2] = DotProduct(temp, up);
+	}
+
+	auto pModel = R_GetWorldSurfaceModel(e->model);
+
+	if (pModel->vLeaves.size() >= 1)
+	{
+		auto pLeaf = pModel->vLeaves[0];
+
+		for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+		{
+			auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+
+			auto pplane = pWaterModel->plane;
+
+			if (g_iEngineType == ENGINE_SVENGINE)
+			{
+				if (entity_mins[2] >= pplane->dist)
+					continue;
+			}
+			else
+			{
+				if (entity_mins[2] + 1.0f >= pplane->dist)
+					continue;
+			}
+
+			auto dot = DotProduct(modelorg, pWaterModel->normal) - pWaterModel->planedist;
+
+			if (dot > 0)
+			{
+				g_VisibleWaterEntity.emplace_back(e);
+				g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+
+				if ((*cl_waterlevel) >= 2)
+				{
+					auto pSourcePalette = pWaterModel->texture->pPal;
+
+					gWaterColor->r = pSourcePalette[9];
+					gWaterColor->g = pSourcePalette[10];
+					gWaterColor->b = pSourcePalette[11];
+					cshift_water->destcolor[0] = pSourcePalette[9];
+					cshift_water->destcolor[1] = pSourcePalette[10];
+					cshift_water->destcolor[2] = pSourcePalette[11];
+					cshift_water->percent = pSourcePalette[12];
+
+					if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+					{
+						gWaterColor->r = pSourcePalette[0];
+						gWaterColor->g = pSourcePalette[1];
+						gWaterColor->b = pSourcePalette[2];
+					}
+				}
+			}
+		}
+	}
+}
+
 void R_RenderWaterPass(void)
 {
 	if (R_IsRenderingWaterView())
@@ -787,124 +882,31 @@ void R_RenderWaterPass(void)
 		viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);
 	}
 
+	auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
+
 	int leafIndex = R_GetWorldLeafIndex(r_worldmodel, viewleaf);
 
-	if (leafIndex != -1)
+	if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
 	{
-		auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
+		auto pLeaf = pModel->vLeaves[leafIndex];
 
-		if (pModel)
+		//TODO Frustum Culling for world water?
+		for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
 		{
-			if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
-			{
-				auto pLeaf = pModel->vLeaves[leafIndex];
+			auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
-				//TODO Frustum Culling for world water?
-				for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
-				{
-					auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
-
-					g_VisibleWaterEntity.emplace_back(r_worldentity);
-					g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
-				}
-			}
+			g_VisibleWaterEntity.emplace_back(r_worldentity);
+			g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
 		}
 	}
 
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
-		vec3_t entity_mins, entity_maxs;
-
 		auto e = cl_visedicts[i];
 
-		bool rotated = false;
-
-		if (e->angles[0] || e->angles[1] || e->angles[2])
+		if (e->model && e->model->type == mod_brush)
 		{
-			rotated = true;
-
-			for (int i = 0; i < 3; i++)
-			{
-				entity_mins[i] = e->origin[i] - e->model->radius;
-				entity_maxs[i] = e->origin[i] + e->model->radius;
-			}
-		}
-		else
-		{
-			rotated = false;
-
-			VectorAdd(e->origin, e->model->mins, entity_mins);
-			VectorAdd(e->origin, e->model->maxs, entity_maxs);
-		}
-
-		if (R_CullBox(entity_mins, entity_maxs))
-			continue;
-
-		VectorSubtract((*r_refdef.vieworg) , e->origin, modelorg);
-
-		if (rotated)
-		{
-			vec3_t temp;
-			vec3_t forward, right, up;
-
-			VectorCopy(modelorg, temp);
-			AngleVectors(e->angles, forward, right, up);
-			modelorg[0] = DotProduct(temp, forward);
-			modelorg[1] = -DotProduct(temp, right);
-			modelorg[2] = DotProduct(temp, up);
-		}
-
-		auto pModel = R_GetWorldSurfaceModel(e->model);
-
-		if (pModel->vLeaves.size() >= 1)
-		{
-			auto pLeaf = pModel->vLeaves[0];
-
-			for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
-			{
-				auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
-
-				auto pplane = pWaterModel->plane;
-
-				if (g_iEngineType == ENGINE_SVENGINE)
-				{
-					if (entity_mins[2] >= pplane->dist)
-						continue;
-				}
-				else
-				{
-					if (entity_mins[2] + 1.0f >= pplane->dist)
-						continue;
-				}
-
-				auto dot = DotProduct(modelorg, pWaterModel->normal) - pWaterModel->planedist;
-
-				if (dot > 0)
-				{
-					g_VisibleWaterEntity.emplace_back(e);
-					g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
-
-					if ((*cl_waterlevel) >= 2)
-					{
-						auto pSourcePalette = pWaterModel->texture->pPal;
-
-						gWaterColor->r = pSourcePalette[9];
-						gWaterColor->g = pSourcePalette[10];
-						gWaterColor->b = pSourcePalette[11];
-						cshift_water->destcolor[0] = pSourcePalette[9];
-						cshift_water->destcolor[1] = pSourcePalette[10];
-						cshift_water->destcolor[2] = pSourcePalette[11];
-						cshift_water->percent = pSourcePalette[12];
-
-						if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
-						{
-							gWaterColor->r = pSourcePalette[0];
-							gWaterColor->g = pSourcePalette[1];
-							gWaterColor->b = pSourcePalette[2];
-						}
-					}
-				}
-			}
+			R_RenderWaterPass_CollectWater(e);
 		}
 	}
 

@@ -969,12 +969,12 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 	pModel->mod = mod;
 
-	auto pWorldModel = R_GetWorldSurfaceWorldModel(mod);
-
-	pModel->pWorldModel = pWorldModel;
-
 	if (mod == r_worldmodel)
 	{
+		auto pWorldModel = R_GetWorldSurfaceWorldModel(mod);
+
+		pModel->pWorldModel = pWorldModel;
+
 		std::set<mleaf_t *> vPossibleLeafs;
 		R_RecursiveFindLeaves(mod->nodes, vPossibleLeafs);
 
@@ -983,7 +983,7 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 		int visframecount = 0;
 		int framecount = 0;
 
-		for (auto &leaf : vPossibleLeafs)
+		for (auto leaf : vPossibleLeafs)
 		{
 			int leafIndex = R_GetWorldLeafIndex(mod, leaf);
 
@@ -1070,6 +1070,12 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
  	}
 	else
 	{
+		auto worldmodel = R_FindWorldModelByModel(mod);
+
+		auto pWorldModel = R_GetWorldSurfaceWorldModel(worldmodel);
+
+		pModel->pWorldModel = pWorldModel;
+
 		auto pLeaf = new CWorldSurfaceLeaf;
 
 		pLeaf->pModel = pModel;
@@ -1138,8 +1144,7 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 		R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
 		R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
 
-		pModel->vLeaves.resize(1);
-		pModel->vLeaves[0] = pLeaf;
+		pModel->vLeaves.emplace_back(pLeaf);
 	}
 	pModel->vLeaves.shrink_to_fit();
 
@@ -1153,6 +1158,12 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 CWorldSurfaceModel* R_GetWorldSurfaceModel(model_t* mod)
 {
+	if (mod->type != mod_brush)
+	{
+		Sys_Error("R_GetWorldSurfaceModel: invalid mod type!");
+		return NULL;
+	}
+	
 	auto modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex == -1)
@@ -1227,13 +1238,17 @@ int R_GetWorldSurfaceIndex(model_t* mod, msurface_t*surf)
 
 int R_GetWorldLeafIndex(model_t* mod, mleaf_t* leaf)
 {
-	auto leafbase = mod->leafs;
-	auto leafend = leafbase + mod->numleafs;
+	return leaf - mod->leafs;
+}
 
-	if (leaf >= leafbase && leaf < leafend)
-		return leaf - leafbase;
-
-	return -1;
+model_t* R_FindWorldModelByModel(model_t* m)
+{
+	for (auto mod : g_WorldSurfaceRenderer.vWorldModels)
+	{
+		if (mod->vertexes == m->vertexes)
+			return mod;
+	}
+	return nullptr;
 }
 
 model_t* R_FindWorldModelBySurface(msurface_t* psurf)
@@ -1740,7 +1755,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
 
-			if (*filterMode != 0)
+			if ((*filterMode) != 0)
 			{
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 			}
@@ -2267,6 +2282,19 @@ void R_NewMapWSurf_Pre(void)
 
 void R_NewMapWSurf_Post(void)
 {
+	for (int j = 1; j < EngineGetMaxClientModels(); j++)
+	{
+		auto mod = gEngfuncs.hudGetModelByIndex(j);
+
+		if (!mod)
+			break;
+
+		if (mod->type == mod_brush)
+		{
+			R_GetWorldSurfaceModel(mod);
+		}
+	}
+
 	R_LoadMapDetailTextures();
 	R_LoadBaseDetailTextures();
 	R_LoadBaseDecalTextures();
@@ -3726,6 +3754,9 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 	auto pModel = R_GetWorldSurfaceModel(clmodel);
 
+	if (!pModel)
+		return;
+
 	R_DrawWorldSurfaceModel(pModel, e);
 
 	glDepthMask(GL_TRUE);
@@ -3962,7 +3993,10 @@ void R_DrawWorld(void)
 
 		auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
 
-		R_DrawWorldSurfaceModel(pModel, (*currententity));
+		if (pModel)
+		{
+			R_DrawWorldSurfaceModel(pModel, (*currententity));
+		}
 	}
 
 	GL_DisableMultitexture();

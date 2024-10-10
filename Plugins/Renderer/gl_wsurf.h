@@ -424,6 +424,7 @@ int R_GetWorldSurfaceIndex(model_t* mod, msurface_t* surf);
 msurface_t* R_GetWorldSurfaceByIndex(model_t* mod, int index);
 model_t* R_FindWorldModelBySurface(msurface_t* psurf);
 model_t* R_FindWorldModelByNode(mnode_t* pnode);
+model_t* R_FindWorldModelByModel(model_t* m);
 
 void R_ClearBSPEntities();
 void R_ParseBSPEntities(const char *data, std::vector<bspentity_t*>& vBSPEntities);

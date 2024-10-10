@@ -324,8 +324,6 @@ void GL_BuildLightmaps(void)
 		{
 			//Generate vertex buffer and iNumLightmapTextures first
 
-			R_GetWorldSurfaceWorldModel(mod);
-
 			g_WorldSurfaceRenderer.vWorldModels.emplace_back(mod);
 		}
 	}

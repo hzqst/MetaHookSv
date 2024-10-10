@@ -191,7 +191,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		return nullptr;
 	}
 
-	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+	auto pBrushFace = &pWorldModel->vFaceBuffer[surfIndex];
 
 	auto pPortalModel = R_FindPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
 
@@ -203,11 +203,11 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		
 		pPortalModel->SurfaceSet.emplace(surfIndex);
 
-		for (int j = 0; j < brushface->num_polys; ++j)
+		for (int j = 0; j < pBrushFace->num_polys; ++j)
 		{
-			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
+			for (int k = 0; k < pBrushFace->num_vertexes[j]; ++k)
 			{
-				pPortalModel->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+				pPortalModel->vIndicesBuffer.emplace_back(pBrushFace->start_vertex[j] + k);
 			}
 			pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 		}
@@ -233,7 +233,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
 		});
 
-		pPortalModel->iPolyCount += brushface->num_polys;
+		pPortalModel->iPolyCount += pBrushFace->num_polys;
 
 		portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 
@@ -247,18 +247,18 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		{
 			pPortalModel->SurfaceSet.emplace(surfIndex);
 
-			for (int j = 0; j < brushface->num_polys; ++j)
+			for (int j = 0; j < pBrushFace->num_polys; ++j)
 			{
-				for (int k = 0; k < brushface->num_vertexes[j]; ++k)
+				for (int k = 0; k < pBrushFace->num_vertexes[j]; ++k)
 				{
-					pPortalModel->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+					pPortalModel->vIndicesBuffer.emplace_back(pBrushFace->start_vertex[j] + k);
 				}
 				pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 			}
 
 			GL_UploadDataToEBODynamicDraw(pPortalModel->hEBO, sizeof(unsigned int) * pPortalModel->vIndicesBuffer.size(), pPortalModel->vIndicesBuffer.data());
 
-			pPortalModel->iPolyCount += brushface->num_polys;
+			pPortalModel->iPolyCount += pBrushFace->num_polys;
 		}
 	}
 
