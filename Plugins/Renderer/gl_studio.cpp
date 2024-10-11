@@ -2738,7 +2738,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		r_draw_deferredtrans = true;
 	}
 
-	//Hair pass
+	//Hair pass, write into s_BackBufferFBO2
 	if (R_StudioHasHairShadow())
 	{
 		GL_BindFrameBuffer(&s_BackBufferFBO2);

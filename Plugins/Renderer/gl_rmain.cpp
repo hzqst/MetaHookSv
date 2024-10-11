@@ -223,6 +223,7 @@ FBO_Container_t s_ToneMapFBO = { 0 };
 FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
+FBO_Container_t s_WaterSurfaceFBO = { 0 };
 
 FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
@@ -1610,6 +1611,7 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
+	GL_FreeFBO(&s_WaterSurfaceFBO);
 }
 
 void GL_GenerateFrameBuffers(void)
@@ -1701,6 +1703,9 @@ void GL_GenerateFrameBuffers(void)
 
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_ShadowFBO);
+
+	//Framebuffers that bind no texture
+	GL_GenFrameBuffer(&s_WaterSurfaceFBO);
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;

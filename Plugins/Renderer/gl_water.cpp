@@ -993,14 +993,16 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 			{
 				R_DrawWaterSurfaceModelEnd();
 
-				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
-				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				//We are going to write into refractmap and depthrefrmap
+				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
+				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
 				//The output is in linear space
-				R_BlitGBufferToFrameBuffer(&s_BackBufferFBO2, true, true, true);
+				R_BlitGBufferToFrameBuffer(&s_WaterSurfaceFBO, true, true, true);
 
 				//Restore BackBufferFBO2 to it's original states.
-				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
+				// -- use s_WaterSurfaceFBO instead now
+				//GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
 
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(&s_GBufferFBO);
@@ -1015,24 +1017,24 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				R_DrawWaterSurfaceModelEnd();
 
 				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
-
-				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
 				if (r_draw_gammablend)
 				{
 					//The SceneFBO is in gamma space
-					GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
-					//Convert back to linear space
-					R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
+					GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
+
+					//Convert back to linear space for color buffer
+					R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
 				}
 				else
 				{
-					//The SceneFBO is in linear space
-					GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
+					//The SceneFBO is already in linear space
+					GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
 				}
 
 				//Restore BackBufferFBO2 to it's original states.
-				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
+				//GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
 
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(GL_GetCurrentSceneFBO());

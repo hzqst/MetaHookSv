@@ -63,37 +63,18 @@ typedef struct
 
 typedef struct water_reflect_cache_s
 {
-	water_reflect_cache_s()
-	{
-		refractmap = 0;
-		depthrefrmap = 0;
-		reflectmap = 0;
-		depthreflmap = 0;
-		texwidth = 0;
-		texheight = 0;
-		normal[0] = 0;
-		normal[1] = 0;
-		normal[2] = 0;
-		planedist = 0;
-		color.r = 0;
-		color.g = 0;
-		color.b = 0;
-		color.a = 0;
-		level = 0;
-		used = false;
-	}
-	GLuint refractmap;
-	GLuint depthrefrmap;
-	GLuint reflectmap;
-	GLuint depthreflmap;
-	GLsizei texwidth;
-	GLsizei texheight;
-	vec3_t normal;
-	float planedist;
-	colorVec color;
-	int level;
-	bool used;
-	bool refractmap_ready;
+	GLuint refractmap{};
+	GLuint depthrefrmap{};
+	GLuint reflectmap{};
+	GLuint depthreflmap{};
+	GLsizei texwidth{};
+	GLsizei texheight{};
+	vec3_t normal{};
+	float planedist{};
+	colorVec color{};
+	int level{};
+	bool used{};
+	bool refractmap_ready{};
 }water_reflect_cache_t;
 
 class CWaterSurfaceModel

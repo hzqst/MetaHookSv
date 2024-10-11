@@ -994,8 +994,9 @@ void R_LightShadingPass(void)
 }
 
 /*
-	Purpose : final shading colors from s_GBufferFBO to dst, simply blits depth and stencil.
+	Purpose : final shading pass that blits colors from s_GBufferFBO to dst, also blits depth and stencil.
 */
+
 void R_FinalShadingPass(FBO_Container_t *dst)
 {
 	//Re-enable depth write
@@ -1003,16 +1004,6 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 	//Write GBuffer depth and stencil buffer into main framebuffer
 	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
-#if 0
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
-		0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-		GL_NEAREST);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
-#endif
 
 	GL_BindFrameBuffer(dst);
 
