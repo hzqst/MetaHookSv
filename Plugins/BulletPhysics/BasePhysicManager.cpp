@@ -4309,7 +4309,7 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIn
 {
 	if (mod == r_worldmodel)
 	{
-		GenerateIndexArrayRecursiveWorldNode(mod->nodes, pIndexArray);
+		GenerateIndexArrayRecursiveWorldNode(mod, mod->nodes, pIndexArray);
 	}
 	else
 	{
