@@ -3932,7 +3932,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		}
 		else
 		{
-			FreePhysicObject(pRagdollObject);
+			pRagdollObject->Destroy();
 		}
 	}
 	else if (pPhysicConfig->type == PhysicObjectType_DynamicObject)
@@ -3969,7 +3969,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		}
 		else
 		{
-			FreePhysicObject(pDynamicObject);
+			pDynamicObject->Destroy();
 		}
 	}
 	else if (pPhysicConfig->type == PhysicObjectType_StaticObject)
@@ -4006,7 +4006,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 		}
 		else
 		{
-			FreePhysicObject(pStaticObject);
+			pStaticObject->Destroy();
 		}
 	}
 	else
@@ -4052,7 +4052,7 @@ void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entit
 	}
 	else
 	{
-		FreePhysicObject(pStaticObject);
+		pStaticObject->Destroy();
 	}
 }
 
@@ -4063,11 +4063,6 @@ void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* pPhysicObj
 	m_physicObjects[entindex] = pPhysicObject;
 }
 
-void CBasePhysicManager::FreePhysicObject(IPhysicObject *pPhysicObject)
-{
-	pPhysicObject->Destroy();
-}
-
 bool CBasePhysicManager::RemovePhysicObject(int entindex)
 {
 	auto itor = m_physicObjects.find(entindex);
@@ -4076,7 +4071,7 @@ bool CBasePhysicManager::RemovePhysicObject(int entindex)
 	{
 		auto pPhysicObject = itor->second;
 
-		FreePhysicObject(pPhysicObject);
+		pPhysicObject->Destroy();
 
 		m_physicObjects.erase(itor);
 
@@ -4112,7 +4107,8 @@ void CBasePhysicManager::RemoveAllPhysicObjects(int withflags, int withoutflags)
 
 		if ((pPhysicObject->GetObjectFlags() & withflags) && !(pPhysicObject->GetObjectFlags() & withoutflags))
 		{
-			FreePhysicObject(pPhysicObject);
+			pPhysicObject->Destroy();
+
 			itor = m_physicObjects.erase(itor);
 			continue;
 		}
@@ -4151,7 +4147,8 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 
 		if (ObjectUpdateContext.m_bShouldFree)
 		{
-			FreePhysicObject(pPhysicObject);
+			pPhysicObject->Destroy();
+
 			itor = m_physicObjects.erase(itor);
 			continue;
 		}

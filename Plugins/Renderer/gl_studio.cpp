@@ -1187,26 +1187,6 @@ bool R_IsFlippedViewModel(void)
 
 studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
 {
-#if 0
-	if ((*pstudiohdr)->textureindex == 0)
-	{
-		auto texmodel = (model_t*)psubm->texinfo;
-		if (texmodel)
-		{
-			auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
-
-			//Fix: could be nullptr ?
-			if (ptexturehdr)
-				return ptexturehdr;
-		}
-		else
-		{
-			return NULL;
-		}
-	}
-
-	return (*pstudiohdr);
-#else
 	if ((*pstudiohdr)->textureindex == 0 && VBOData->TextureModel)
 	{
 		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(VBOData->TextureModel);
@@ -1217,7 +1197,6 @@ studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
 
 		return NULL;
 	}
-#endif
 
 	return (*pstudiohdr);
 }

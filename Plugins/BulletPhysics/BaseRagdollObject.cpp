@@ -970,28 +970,6 @@ bool CBaseRagdollObject::UpdateActivity(StudioAnimActivityType iOldActivityType,
 	if (iOldActivityType == iNewActivityType)
 		return false;
 
-	//Start animation ?
-#if 0
-	if (iOldActivityType == 0 && iNewActivityType > 0)
-	{
-		const auto& found = std::find_if(m_AnimControlConfigs.begin(), m_AnimControlConfigs.end(), [curstate](const std::shared_ptr<CClientAnimControlConfig>& pConfig) {
-
-			if (pConfig->sequence == curstate->sequence)
-				return true;
-
-			return false;
-		});
-
-		if (found != m_AnimControlConfigs.end())
-		{
-			if (curstate->frame < (*found)->animframe)
-			{
-				return false;
-			}
-		}
-	}
-#endif
-
 	m_iAnimControlFlags = iNewAnimControlFlags;
 	m_iActivityType = iNewActivityType;
 	return true;

@@ -83,9 +83,9 @@ bool CBulletRagdollObject::SetupBones(CRagdollObjectSetupBoneContext* Context)
 
 void CBulletRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 {
-	CBaseRagdollObject::Update(ObjectUpdateContext);
-
 	CheckConstraintLinearErrors(ObjectUpdateContext);
+
+	CBaseRagdollObject::Update(ObjectUpdateContext);
 }
 
 void CBulletRagdollObject::CheckConstraintLinearErrors(CPhysicObjectUpdateContext* ctx)
@@ -111,38 +111,40 @@ void CBulletRagdollObject::CheckConstraintLinearErrors(CPhysicObjectUpdateContex
 		if (!pInternalConstraint->isEnabled())
 			continue;
 
-		auto& pRigidBodyA = pInternalConstraint->getRigidBodyA();
+		auto& pInternalRigidBodyA = pInternalConstraint->getRigidBodyA();
 
-		auto& pRigidBodyB = pInternalConstraint->getRigidBodyA();
+		auto& pInternalRigidBodyB = pInternalConstraint->getRigidBodyA();
+
+		//There must be at least one rigidbody to be dynamic
 
 		bool bShouldPerformCheck = false;
 
-		if (pRigidBodyA.isKinematicObject() && !pRigidBodyB.isStaticOrKinematicObject())//A Kinematic, B Dynamic
+		if (pInternalRigidBodyA.isKinematicObject() && !pInternalRigidBodyB.isStaticOrKinematicObject())//A Kinematic, B Dynamic
 		{
 			bShouldPerformCheck = true;
 		}
-		else if (pRigidBodyB.isKinematicObject() && !pRigidBodyA.isStaticOrKinematicObject())//B Kinematic, A Dynamic
+		else if (pInternalRigidBodyB.isKinematicObject() && !pInternalRigidBodyA.isStaticOrKinematicObject())//B Kinematic, A Dynamic
 		{
 			bShouldPerformCheck = true;
 		}
-		else if (!pRigidBodyA.isStaticOrKinematicObject() && !pRigidBodyA.isStaticOrKinematicObject())//A Dynamic, B Dynamic
+		else if (!pInternalRigidBodyA.isStaticOrKinematicObject() && !pInternalRigidBodyB.isStaticOrKinematicObject())//A Dynamic, B Dynamic
 		{
 			bShouldPerformCheck = true;
 		}
 
 		if (bShouldPerformCheck)
 		{
-			auto errorMagnitude = BulletGetConstraintLinearErrorMagnitude(pInternalConstraint);
+			auto flErrorMagnitude = BulletGetConstraintLinearErrorMagnitude(pInternalConstraint);
 
-			float maxTol = pConstraint->GetMaxTolerantLinearError();
+			float flMaxTolerantLinearError = pConstraint->GetMaxTolerantLinearError();
 
-			FloatGoldSrcToBullet(&maxTol);
+			FloatGoldSrcToBullet(&flMaxTolerantLinearError);
 
-			if (errorMagnitude > maxTol)
+			if (flErrorMagnitude > flMaxTolerantLinearError)
 			{
-				ResetPose(GetClientEntityState());
+				//ResetPose(GetClientEntityState());
 
-				ctx->m_bRigidbodyPoseChanged = true;
+				ctx->m_bRigidbodyResetPoseRequired = true;
 
 				return;
 			}

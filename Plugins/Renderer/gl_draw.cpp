@@ -532,11 +532,30 @@ void GL_UnloadTextures(void)
 			v0 = numgltextures;
 			*((_WORD *)dest + 2) = -1;
 	*/
-	for (int i = (*numgltextures) - 1; i >= 0; --i)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		auto glt = gltextures_get() + i;
+		int i = (*numgltextures) - 1;
 
-		if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
+		if (i >= 0)
+		{
+			auto glt = gltextures_get() + i;
+			do
+			{
+				if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
+				{
+					GL_FreeTextureEntry(glt, true);
+				}
+
+				glt--;
+				--i;
+			} while (i >= 0);
+		}
+	}
+	else
+	{
+		int i;
+		gltexture_t* glt;
+		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
 		{
 			GL_FreeTextureEntry(glt, true);
 		}

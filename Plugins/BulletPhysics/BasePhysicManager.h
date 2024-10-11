@@ -73,7 +73,6 @@ public:
 	IPhysicObject* GetPhysicObject(int entindex) override;
 	IPhysicObject* GetPhysicObjectEx(uint64 physicObjectId) override;
 	void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) override; 
-	void FreePhysicObject(IPhysicObject* pPhysicObject) override;
 	bool RemovePhysicObject(int entindex) override;
 	bool RemovePhysicObjectEx(uint64 physicObjectId) override;
 	void RemoveAllPhysicObjects(int withflags, int withoutflags) override;

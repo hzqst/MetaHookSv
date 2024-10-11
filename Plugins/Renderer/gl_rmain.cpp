@@ -2676,6 +2676,7 @@ void R_NewMap(void)
 	R_NewMapWSurf_Post();
 	R_NewMapLight_Post();
 
+	R_StudioFlushAllSkins();
 	R_StudioClearVBOCache();
 	R_StudioReloadVBOCache();
 

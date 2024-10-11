@@ -490,7 +490,6 @@ public:
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
 	virtual IPhysicObject* GetPhysicObjectEx(uint64 physicObjectId) = 0;
 	virtual void AddPhysicObject(int entindex, IPhysicObject* pPhysicObject) = 0;
-	virtual void FreePhysicObject(IPhysicObject* pPhysicObject) = 0;
 	virtual bool RemovePhysicObject(int entindex) = 0;
 	virtual bool RemovePhysicObjectEx(uint64 physicObjectId) = 0;
 	virtual void RemoveAllPhysicObjects(int withflags, int withoutflags) = 0;

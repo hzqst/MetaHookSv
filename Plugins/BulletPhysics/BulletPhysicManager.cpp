@@ -270,35 +270,35 @@ bool BulletGetConstraintGlobalPivotTransform(btTypedConstraint* pConstraint, btT
 	{
 		auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
 
-		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pDof6->getCalculatedTransformA();
+		worldPivotB = pDof6->getCalculatedTransformB();
 
 		return true;
 	}
 	else if (pConstraint->getConstraintType() == D6_SPRING_CONSTRAINT_TYPE)
 	{
-		auto pDof6 = (btGeneric6DofSpringConstraint*)pConstraint;
+		auto pDof6Spring = (btGeneric6DofSpringConstraint*)pConstraint;
 
-		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pDof6Spring->getCalculatedTransformA();
+		worldPivotB = pDof6Spring->getCalculatedTransformB();
 
 		return true;
 	}
 	else if (pConstraint->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE)
 	{
-		auto pDof6 = (btGeneric6DofSpring2Constraint*)pConstraint;
+		auto pDof6Spring = (btGeneric6DofSpring2Constraint*)pConstraint;
 
-		worldPivotA = pDof6->getCalculatedTransformA();// pDof6->getRigidBodyA().getWorldTransform()* pDof6->getFrameOffsetA();
-		worldPivotB = pDof6->getCalculatedTransformB();// pDof6->getRigidBodyB().getWorldTransform()* pDof6->getFrameOffsetB();
+		worldPivotA = pDof6Spring->getCalculatedTransformA();
+		worldPivotB = pDof6Spring->getCalculatedTransformB();
 
 		return true;
 	}
 	else if (pConstraint->getConstraintType() == SLIDER_CONSTRAINT_TYPE)
 	{
-		auto pDof6 = (btSliderConstraint*)pConstraint;
+		auto pSlider = (btSliderConstraint*)pConstraint;
 
-		worldPivotA = pDof6->getRigidBodyA().getWorldTransform() * pDof6->getFrameOffsetA();
-		worldPivotB = pDof6->getRigidBodyB().getWorldTransform() * pDof6->getFrameOffsetB();
+		worldPivotA = pSlider->getCalculatedTransformA();
+		worldPivotB = pSlider->getCalculatedTransformB();
 
 		return true;
 	}
@@ -307,6 +307,25 @@ bool BulletGetConstraintGlobalPivotTransform(btTypedConstraint* pConstraint, btT
 
 btScalar BulletGetConstraintLinearErrorMagnitude(btTypedConstraint *pConstraint)
 {
+	if (pConstraint->getConstraintType() == D6_SPRING_2_CONSTRAINT_TYPE)
+	{
+		auto pDof6Spring2 = (btGeneric6DofSpring2Constraint*)pConstraint;
+
+		return pDof6Spring2->getTranslationalLimitMotor()->m_currentLinearDiff.length();
+	}
+	else if (pConstraint->getConstraintType() == D6_SPRING_CONSTRAINT_TYPE)
+	{
+		auto pDof6Spring = (btGeneric6DofSpringConstraint*)pConstraint;
+
+		return pDof6Spring->getTranslationalLimitMotor()->m_currentLinearDiff.length();
+	}
+	else if (pConstraint->getConstraintType() == D6_CONSTRAINT_TYPE)
+	{
+		auto pDof6 = (btGeneric6DofConstraint*)pConstraint;
+
+		return pDof6->getTranslationalLimitMotor()->m_currentLinearDiff.length();
+	}
+
 	btTransform worldPivotA;
 	btTransform worldPivotB;
 
