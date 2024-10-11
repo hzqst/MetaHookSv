@@ -218,7 +218,6 @@ class CWorldSurfaceModel
 public:
 	~CWorldSurfaceModel();
 
-	GLuint hEntityUBO{};//TODO: move to world surface renderer?
 	model_t* mod{};
 	CWorldSurfaceWorldModel* pWorldModel{};
 	std::vector<CWorldSurfaceLeaf *> vLeaves;
@@ -335,6 +334,7 @@ class CWorldSurfaceRenderer
 {
 public:
 	GLuint				hSceneUBO{};
+	GLuint				hEntityUBO{};
 	GLuint				hDLightUBO{};
 	GLuint				hDecalVBO{};
 	GLuint				hDecalVAO{};

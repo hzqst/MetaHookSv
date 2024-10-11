@@ -66,12 +66,6 @@ CWorldSurfaceWorldModel::~CWorldSurfaceWorldModel()
 
 CWorldSurfaceModel::~CWorldSurfaceModel()
 {
-	if (hEntityUBO)
-	{
-		GL_DeleteBuffer(hEntityUBO);
-		hEntityUBO = 0;
-	}
-
 	for (auto pLeaf : vLeaves)
 	{
 		delete pLeaf;
@@ -310,6 +304,12 @@ void R_FreeSceneUBO(void)
 	{
 		GL_DeleteBuffer(g_WorldSurfaceRenderer.hSceneUBO);
 		g_WorldSurfaceRenderer.hSceneUBO = 0;
+	}
+
+	if (g_WorldSurfaceRenderer.hEntityUBO)
+	{
+		GL_DeleteBuffer(g_WorldSurfaceRenderer.hEntityUBO);
+		g_WorldSurfaceRenderer.hEntityUBO = 0;
 	}
 
 	if (g_WorldSurfaceRenderer.hDLightUBO)
@@ -1148,11 +1148,6 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 	}
 	pModel->vLeaves.shrink_to_fit();
 
-	pModel->hEntityUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, pModel->hEntityUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 	return pModel;
 }
 
@@ -1569,6 +1564,12 @@ void R_GenerateSceneUBO(void)
 	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hSceneUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, g_WorldSurfaceRenderer.hSceneUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	g_WorldSurfaceRenderer.hEntityUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hEntityUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	g_WorldSurfaceRenderer.hDLightUBO = GL_GenBuffer();
@@ -2120,9 +2121,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = R_ScrollSpeed();
 
-	GL_UploadSubDataToUBO(pModel->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, pModel->hEntityUBO);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{

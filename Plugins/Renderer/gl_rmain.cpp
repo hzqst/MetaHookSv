@@ -3711,8 +3711,8 @@ int EngineGetMaxClientModels(void)
 	return MAX_MODELS;
 }
 
-const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
-const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
+//const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
+//const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
 
 void R_LoadSky_PreCall(const char* name)
 {
@@ -3784,7 +3784,6 @@ bool R_LoadDetailSkyTextures(const char* name)
 		if (!bLoaded)
 		{
 			gEngfuncs.Con_DPrintf("R_LoadDetailSkyTexture: Failed to load %s\n", fullPath);
-
 			return false;
 		}
 
