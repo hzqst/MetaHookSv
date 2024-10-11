@@ -2835,10 +2835,21 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 			(*currententity)->curstate.renderfx = saved_renderfx;
 			(*currententity)->curstate.renderamt = saved_renderamt;
 		}
-
 	}
 
 	GL_ClearStencil(STENCIL_MASK_HAS_OUTLINE);
+
+	if (r_draw_hashair)
+	{
+		GL_BindFrameBuffer(&s_BackBufferFBO2);
+
+		GL_ClearStencil(STENCIL_MASK_HAS_SHADOW);
+
+		if (r_draw_gbuffer)
+			GL_BindFrameBuffer(&s_GBufferFBO);
+		else
+			GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
+	}
 
 	r_draw_hashair = false;
 	r_draw_hasface = false;
