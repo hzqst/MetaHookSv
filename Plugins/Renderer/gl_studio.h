@@ -185,6 +185,7 @@ typedef struct studio_vbo_s
 		hEBO = 0;
 		hVAO = 0;
 		hStudioUBO = 0;
+		BodyModel = NULL;
 		TextureModel = NULL;
 		bExternalFileLoaded = false;
 	}
@@ -199,6 +200,7 @@ typedef struct studio_vbo_s
 	//Memory Offset -> vbo_submodel_t Mapping Table
 	std::unordered_map<int, studio_vbo_submodel_t*> mSubmodels;
 
+	model_t* BodyModel;
 	model_t* TextureModel;
 
 	studio_celshade_control_t celshade_control;

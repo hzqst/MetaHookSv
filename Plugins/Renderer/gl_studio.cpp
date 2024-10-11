@@ -280,6 +280,29 @@ void R_PrepareStudioVBOSubmodel(
 	}
 }
 
+studio_vbo_t* R_GetStudioVBOFromStudioHeader(studiohdr_t* studiohdr)
+{
+	for (auto VBOData : g_StudioVBOCache)
+	{
+		if (VBOData)
+		{
+			auto mod = VBOData->BodyModel;
+			if (mod && mod->type == mod_studio)
+			{
+				if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+				{
+					if (mod->cache.data == studiohdr)
+					{
+						return VBOData;
+					}
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 studio_vbo_t* R_GetStudioVBOFromModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
@@ -307,12 +330,14 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	if (!studiohdr->numbodyparts)
 		return NULL;
 
-	studio_vbo_t* VBOData = R_GetStudioVBOFromModel(mod);
+	auto VBOData = R_GetStudioVBOFromModel(mod);
 
 	if (VBOData)
 		return VBOData;
 
 	VBOData = new studio_vbo_t;
+
+	VBOData->BodyModel = mod;
 
 	R_AllocSlotForStudioVBO(mod, VBOData);
 
@@ -413,9 +438,23 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 studio_vbo_t *R_GetStudioVBO(studiohdr_t* studiohdr)
 {
 	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= g_StudioVBOCache.size())
-		return NULL;
+		return nullptr;
+	
+	auto VBOData = g_StudioVBOCache[studiohdr->soundtable];
+	auto mod = VBOData->BodyModel;
 
-	return g_StudioVBOCache[studiohdr->soundtable];
+	if (mod && mod->type == mod_studio)
+	{
+		if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+		{
+			if (mod->cache.data == studiohdr)
+			{
+				return VBOData;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void R_StudioClearVBOCache(void)
@@ -2443,6 +2482,9 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 void R_GLStudioDrawPoints(void)
 {
 	auto VBOData = R_GetStudioVBO((*pstudiohdr));
+
+	if (!VBOData)
+		VBOData = R_GetStudioVBOFromStudioHeader((*pstudiohdr));
 
 	if (!VBOData)
 		return;
