@@ -8304,6 +8304,104 @@ void sub_1D1A030()
 		pmovevars = *(decltype(pmovevars)*)(addr + 7);
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		/*
+.text:01D56BC6 6A 00                                               push    0
+.text:01D56BC8 68 14 66 E6 01                                      push    offset aMissing ; "**missing**"
+.text:01D56BCD E8 AE 80 FF FF                                      call    GL_LoadTexture
+		*/
+		const char missing_Pattern[] = "**missing**";
+		auto Missing_String = Search_Pattern_Data(missing_Pattern);
+		if (!Missing_String)
+			Missing_String = Search_Pattern_Rdata(missing_Pattern);
+		if (Missing_String)
+		{
+			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 1) = (DWORD)Missing_String;
+			auto Missing_Call = Search_Pattern(pattern);
+			if (Missing_Call)
+			{
+				g_pMetaHookAPI->DisasmRanges(Missing_Call, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+					{
+						r_missingtexture = (decltype(r_missingtexture))pinst->detail->x86.operands[1].mem.disp;
+					}
+
+					if (r_missingtexture)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+					}, 0, NULL);
+
+				Sig_VarNotFound(r_missingtexture);
+			}
+		}
+	}
+
+	if (1)
+	{
+		/*
+.text:01D56BC6 6A 00                                               push    0
+.text:01D56BC8 68 14 66 E6 01                                      push    offset aMissing ; "**empty**"
+.text:01D56BCD E8 AE 80 FF FF                                      call    GL_LoadTexture
+		*/
+		const char empty_Pattern[] = "**empty**";
+		auto Empty_String = Search_Pattern_Data(empty_Pattern);
+		if (!Empty_String)
+			Empty_String = Search_Pattern_Rdata(empty_Pattern);
+		if (Empty_String)
+		{
+			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 1) = (DWORD)Empty_String;
+			auto Empty_Call = Search_Pattern(pattern);
+			if (Empty_Call)
+			{
+				g_pMetaHookAPI->DisasmRanges(Empty_Call, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+					{
+						r_notexture_mip = (decltype(r_notexture_mip))pinst->detail->x86.operands[1].mem.disp;
+					}
+
+					if (r_notexture_mip)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+
+				Sig_VarNotFound(r_notexture_mip);
+			}
+		}
+	}
+
 	if (1)
 	{
 #define detTexSupported_Signature "\x68\x73\x85\x00\x00\x68\x00\x23\x00\x00\xFF"

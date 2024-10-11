@@ -715,6 +715,14 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		auto t = mod->textures[i];
 
 		if (!t)
+		{
+			if(g_iEngineType == ENGINE_SVENGINE)
+				t = r_missingtexture;
+			else
+				t = r_notexture_mip;
+		}
+
+		if (!t)
 			continue;
 
 		if (!strcmp(t->name, "sky"))
@@ -1181,11 +1189,11 @@ CWorldSurfaceModel* R_GetWorldSurfaceModel(model_t* mod)
 	return pModel;
 }
 
-int R_FindTextureIdByTexture(texture_t *ptex)
+int R_FindTextureIdByTexture(model_t *mod, texture_t *ptex)
 {
-	for (int i = 0; i < r_worldmodel->numtextures; ++i)
+	for (int i = 0; i < mod->numtextures; ++i)
 	{
-		if (r_worldmodel->textures[i] == ptex)
+		if (mod->textures[i] == ptex)
 			return i;
 	}
 
@@ -1408,7 +1416,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[0].speculartexcoord[0] = specularScale[0];
 					Vertexes[0].speculartexcoord[1] = specularScale[1];
-					Vertexes[0].texindex = R_FindTextureIdByTexture(ptexture);
+					Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
@@ -1460,7 +1468,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[j].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[j].speculartexcoord[0] = specularScale[0];
 					Vertexes[j].speculartexcoord[1] = specularScale[1];
-					Vertexes[j].texindex = R_FindTextureIdByTexture(ptexture);
+					Vertexes[j].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[j].styles, surf->styles, sizeof(surf->styles));
 				}
 				vVertexBuffer.emplace_back(Vertexes[0]);
@@ -1499,7 +1507,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[2].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[2].speculartexcoord[0] = specularScale[0];
 					Vertexes[2].speculartexcoord[1] = specularScale[1];
-					Vertexes[2].texindex = R_FindTextureIdByTexture(ptexture);
+					Vertexes[2].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[2].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
