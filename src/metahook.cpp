@@ -2964,6 +2964,38 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 	return NULL;
 }
 
+void* MH_SearchPatternNoWildCard(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen)
+{
+	if (!pStartSearch)
+		return NULL;
+
+	char* dwStartAddr = (char*)pStartSearch;
+	char* dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
+
+	while (dwStartAddr < dwEndAddr)
+	{
+		bool found = true;
+
+		for (DWORD i = 0; i < dwPatternLen; i++)
+		{
+			char code = *(char*)(dwStartAddr + i);
+
+			if (pPattern[i] != code)
+			{
+				found = false;
+				break;
+			}
+		}
+
+		if (found)
+			return (void*)dwStartAddr;
+
+		dwStartAddr++;
+	}
+
+	return NULL;
+}
+
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
 {
 	char * dwStartAddr = (char *)pStartSearch;
@@ -4023,6 +4055,7 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_FindCLParseFuncByName,
 	MH_HookCLParseFuncByOpcode,
 	MH_HookCLParseFuncByName,
+	MH_SearchPatternNoWildCard,
 	NULL
 };
 
@@ -4100,5 +4133,6 @@ metahook_api_t gMetaHookAPI =
 	MH_FindCLParseFuncByName,
 	MH_HookCLParseFuncByOpcode,
 	MH_HookCLParseFuncByName,
+	MH_SearchPatternNoWildCard,
 	NULL
 };

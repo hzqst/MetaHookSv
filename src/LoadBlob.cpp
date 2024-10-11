@@ -7,6 +7,7 @@
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char* SectionName, ULONG* SectionSize);
 void* MH_SearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
+void* MH_SearchPatternNoWildCard(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
 void MH_SysError(const char* fmt, ...);
 
 extern IFileSystem_HL25* g_pFileSystem_HL25;

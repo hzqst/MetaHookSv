@@ -717,9 +717,9 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		if (!t)
 		{
 			if(g_iEngineType == ENGINE_SVENGINE)
-				t = r_missingtexture;
+				t = (*r_missingtexture);
 			else
-				t = r_notexture_mip;
+				t = (*r_notexture_mip);
 		}
 
 		if (!t)

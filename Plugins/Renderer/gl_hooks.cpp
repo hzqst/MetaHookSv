@@ -8311,18 +8311,18 @@ void sub_1D1A030()
 .text:01D56BC8 68 14 66 E6 01                                      push    offset aMissing ; "**missing**"
 .text:01D56BCD E8 AE 80 FF FF                                      call    GL_LoadTexture
 		*/
-		const char missing_Pattern[] = "**missing**";
-		auto Missing_String = Search_Pattern_Data(missing_Pattern);
+		const char missing_Pattern[] = "**missing**\0";
+		auto Missing_String = Search_Pattern_NoWildCard_Data(missing_Pattern);
 		if (!Missing_String)
-			Missing_String = Search_Pattern_Rdata(missing_Pattern);
+			Missing_String = Search_Pattern_NoWildCard_Rdata(missing_Pattern);
 		if (Missing_String)
 		{
 			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-			*(DWORD*)(pattern + 1) = (DWORD)Missing_String;
+			*(DWORD*)(pattern + 3) = (DWORD)Missing_String;
 			auto Missing_Call = Search_Pattern(pattern);
 			if (Missing_Call)
 			{
-				g_pMetaHookAPI->DisasmRanges(Missing_Call, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				g_pMetaHookAPI->DisasmRanges((PUCHAR)Missing_Call + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 					auto pinst = (cs_insn*)inst;
 
@@ -8346,11 +8346,10 @@ void sub_1D1A030()
 						return TRUE;
 
 					return FALSE;
-					}, 0, NULL);
-
-				Sig_VarNotFound(r_missingtexture);
+				}, 0, NULL);
 			}
 		}
+		Sig_VarNotFound(r_missingtexture);
 	}
 
 	if (1)
@@ -8360,18 +8359,18 @@ void sub_1D1A030()
 .text:01D56BC8 68 14 66 E6 01                                      push    offset aMissing ; "**empty**"
 .text:01D56BCD E8 AE 80 FF FF                                      call    GL_LoadTexture
 		*/
-		const char empty_Pattern[] = "**empty**";
-		auto Empty_String = Search_Pattern_Data(empty_Pattern);
+		const char empty_Pattern[] = "**empty**\0";
+		auto Empty_String = Search_Pattern_NoWildCard_Data(empty_Pattern);
 		if (!Empty_String)
-			Empty_String = Search_Pattern_Rdata(empty_Pattern);
+			Empty_String = Search_Pattern_NoWildCard_Rdata(empty_Pattern);
 		if (Empty_String)
 		{
 			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-			*(DWORD*)(pattern + 1) = (DWORD)Empty_String;
+			*(DWORD*)(pattern + 3) = (DWORD)Empty_String;
 			auto Empty_Call = Search_Pattern(pattern);
 			if (Empty_Call)
 			{
-				g_pMetaHookAPI->DisasmRanges(Empty_Call, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				g_pMetaHookAPI->DisasmRanges((PUCHAR)Empty_Call + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 					auto pinst = (cs_insn*)inst;
 
@@ -8396,10 +8395,9 @@ void sub_1D1A030()
 
 					return FALSE;
 				}, 0, NULL);
-
-				Sig_VarNotFound(r_notexture_mip);
 			}
 		}
+		Sig_VarNotFound(r_notexture_mip);
 	}
 
 	if (1)

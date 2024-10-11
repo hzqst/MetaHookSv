@@ -198,10 +198,10 @@ extern bool* detTexSupported;
 
 extern cache_system_t(*cache_head);
 
-extern texture_t* r_notexture_mip;
+extern texture_t** r_notexture_mip;
 
 //Sven Co-op only
-extern texture_t* r_missingtexture;
+extern texture_t** r_missingtexture;
 
 extern int* allow_cheats;
 

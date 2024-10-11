@@ -198,7 +198,7 @@ typedef struct metahook_api_s
 	DWORD (*GetEngineSize)(void);
 
 	/*
-		Purpose : Search pattern (signature) in given region
+		Purpose : Search pattern (signature) in given region, with wildcard 0x2A
 	*/
 	void *(*SearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 
@@ -523,6 +523,11 @@ typedef struct metahook_api_s
 	*/
 	fn_parsefunc(*HookCLParseFuncByName)(const char* name, fn_parsefunc pfnNewParse);
 
+	/*
+		Purpose : Search pattern (signature) in given region, with no wildcard
+	*/
+	void* (*SearchPatternNoWildCard)(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
+
 	//Always terminate with a NULL
 	PVOID Terminator;
 
@@ -542,7 +547,7 @@ void MH_Shutdown(void);
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 103
+#define METAHOOK_API_VERSION 104
 
 class ICommandLine;
 class IFileSystem;
