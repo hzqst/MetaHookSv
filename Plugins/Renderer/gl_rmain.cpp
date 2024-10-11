@@ -135,6 +135,11 @@ bool* detTexSupported = NULL;
 
 cache_system_t(*cache_head) = NULL;
 
+texture_t* r_notexture_mip = NULL;
+
+//Sven Co-op only
+texture_t* r_missingtexture = NULL;
+
 //Sven Co-op only
 int* allow_cheats = NULL;
 
