@@ -557,7 +557,10 @@ void GL_UnloadTextures(void)
 		gltexture_t* glt;
 		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
 		{
-			GL_FreeTextureEntry(glt, true);
+			if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
+			{
+				GL_FreeTextureEntry(glt, true);
+			}
 		}
 	}
 }
