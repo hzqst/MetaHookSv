@@ -229,6 +229,10 @@ void R_PushRefDef(void)
 	++save_refdef_stack;
 }
 
+/*
+	Purpose: Update r_origin, vpn, vright and vup according to r_refdef stuffs
+*/
+
 void R_UpdateRefDef(void)
 {
 	VectorCopy((*r_refdef.vieworg), r_origin);

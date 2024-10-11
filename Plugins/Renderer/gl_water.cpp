@@ -865,6 +865,9 @@ void R_RenderWaterPass(void)
 	g_VisibleWaterEntity.clear();
 	R_ClearWaterReflectCaches();
 
+	//Mainly for updating frustrum
+	R_UpdateRefDef();
+
 	mleaf_t *viewleaf = NULL;
 
 	if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
@@ -875,6 +878,8 @@ void R_RenderWaterPass(void)
 	{
 		viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);
 	}
+	R_SetupGL();
+	R_SetFrustum();
 
 	auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
 
@@ -893,7 +898,7 @@ void R_RenderWaterPass(void)
 			g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
 		}
 	}
-
+	
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
 		auto e = cl_visedicts[i];

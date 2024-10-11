@@ -3186,9 +3186,10 @@ void R_SetupFrame(void)
 	//R_CheckVariables();
 	//R_AnimateLight();
 
-	VectorCopy((*r_refdef.vieworg), r_origin);
+	R_UpdateRefDef();
+	//VectorCopy((*r_refdef.vieworg), r_origin);
 
-	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vpn, vright, vup);
+	//gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vpn, vright, vup);
 
 	(*r_oldviewleaf) = (*r_viewleaf);
 

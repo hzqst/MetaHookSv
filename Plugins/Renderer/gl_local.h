@@ -350,6 +350,8 @@ void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_CheckVariables(void);
 void R_AnimateLight(void);
+void R_SetupFrame(void);
+void R_SetFrustum(void);
 void R_SetupSceneUBO(void);
 void R_RenderPreFrame();
 void R_RenderStartFrame();

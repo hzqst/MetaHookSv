@@ -3527,7 +3527,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 		else
 		{
-			int lv;
+			int lv = 0;
 			if (sscanf(level_string, "%d", &lv) == 1)
 			{
 				pWaterControl->level = math_clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
