@@ -334,8 +334,8 @@ class CWorldSurfaceRenderer
 {
 public:
 	GLuint				hSceneUBO{};
-	GLuint				hEntityUBO{};
 	GLuint				hDLightUBO{};
+	GLuint				hEntityUBO{};
 	GLuint				hDecalVBO{};
 	GLuint				hDecalVAO{};
 	GLuint				hDecalSSBO{};

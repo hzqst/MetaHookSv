@@ -1566,16 +1566,15 @@ void R_GenerateSceneUBO(void)
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, g_WorldSurfaceRenderer.hSceneUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	g_WorldSurfaceRenderer.hEntityUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hEntityUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 	g_WorldSurfaceRenderer.hDLightUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hDLightUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(dlight_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_DLIGHT_UBO, g_WorldSurfaceRenderer.hDLightUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	g_WorldSurfaceRenderer.hEntityUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hEntityUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	//3.5 MBytes of VRAM
@@ -2120,6 +2119,8 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = R_ScrollSpeed();
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
