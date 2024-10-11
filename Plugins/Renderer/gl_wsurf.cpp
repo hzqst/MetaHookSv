@@ -2282,19 +2282,6 @@ void R_NewMapWSurf_Pre(void)
 
 void R_NewMapWSurf_Post(void)
 {
-	for (int j = 1; j < EngineGetMaxClientModels(); j++)
-	{
-		auto mod = gEngfuncs.hudGetModelByIndex(j);
-
-		if (!mod)
-			break;
-
-		if (mod->type == mod_brush)
-		{
-			R_GetWorldSurfaceModel(mod);
-		}
-	}
-
 	R_LoadMapDetailTextures();
 	R_LoadBaseDetailTextures();
 	R_LoadBaseDecalTextures();
@@ -2308,6 +2295,19 @@ void R_NewMapWSurf_Post(void)
 	for (auto ent : vBSPEntities)
 	{
 		delete ent;
+	}
+
+	for (int j = 1; j < EngineGetMaxClientModels(); j++)
+	{
+		auto mod = gEngfuncs.hudGetModelByIndex(j);
+
+		if (!mod)
+			break;
+
+		if (mod->type == mod_brush)
+		{
+			R_GetWorldSurfaceModel(mod);
+		}
 	}
 }
 
@@ -2972,7 +2972,7 @@ void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const cha
 
 void R_ClearBSPEntities()
 {
-	r_water_controls.clear();
+	g_EnvWaterControls.clear();
 	r_flashlight_cone_texture_name.clear();
 	g_DynamicLights.clear();
 }
@@ -3391,34 +3391,22 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 {
-	water_control_t control;
-	control.fresnelfactor[0] = 0;
-	control.fresnelfactor[1] = 0;
-	control.fresnelfactor[2] = 0;
-	control.fresnelfactor[3] = 0;
-	control.depthfactor[0] = 0;
-	control.depthfactor[1] = 0;
-	control.depthfactor[2] = 0;
-	control.normfactor = 0;
-	control.minheight = 0;
-	control.maxtrans = 0;
-	control.speedrate = 1;
-	control.level = WATER_LEVEL_REFLECT_SKYBOX;
+	auto pWaterControl = new CEnvWaterControl;
 
 	auto basetexture_string = ValueForKey(ent, "basetexture");
 	if (basetexture_string)
 	{
-		control.basetexture = basetexture_string;
-		if (control.basetexture[control.basetexture.length() - 1] == '*')
+		pWaterControl->basetexture = basetexture_string;
+		if (pWaterControl->basetexture[pWaterControl->basetexture.length() - 1] == '*')
 		{
-			control.wildcard = control.basetexture.substr(0, control.basetexture.length() - 1);
+			pWaterControl->wildcard = pWaterControl->basetexture.substr(0, pWaterControl->basetexture.length() - 1);
 		}
 	}
 
 	auto normalmap_string = ValueForKey(ent, "normalmap");
 	if (normalmap_string)
 	{
-		control.normalmap = normalmap_string;
+		pWaterControl->normalmap = normalmap_string;
 	}
 
 	auto fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
@@ -3427,10 +3415,10 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(fresnelfactor_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
 		{
-			control.fresnelfactor[0] = math_clamp(temp[0], 0, 999999);
-			control.fresnelfactor[1] = math_clamp(temp[1], 0, 999999);
-			control.fresnelfactor[2] = math_clamp(temp[2], 0, 999999);
-			control.fresnelfactor[3] = math_clamp(temp[3], 0, 1);
+			pWaterControl->fresnelfactor[0] = math_clamp(temp[0], 0, 999999);
+			pWaterControl->fresnelfactor[1] = math_clamp(temp[1], 0, 999999);
+			pWaterControl->fresnelfactor[2] = math_clamp(temp[2], 0, 999999);
+			pWaterControl->fresnelfactor[3] = math_clamp(temp[3], 0, 1);
 		}
 		else
 		{
@@ -3444,7 +3432,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
 		{
-			control.normfactor = math_clamp(temp[0], 0, 10);
+			pWaterControl->normfactor = math_clamp(temp[0], 0, 10);
 		}
 		else
 		{
@@ -3458,9 +3446,9 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(depthfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
-			control.depthfactor[0] = math_clamp(temp[0], 0, 10);
-			control.depthfactor[1] = math_clamp(temp[1], 0, 10);
-			control.depthfactor[2] = math_clamp(temp[2], 0, 999999);
+			pWaterControl->depthfactor[0] = math_clamp(temp[0], 0, 10);
+			pWaterControl->depthfactor[1] = math_clamp(temp[1], 0, 10);
+			pWaterControl->depthfactor[2] = math_clamp(temp[2], 0, 999999);
 		}
 		else
 		{
@@ -3474,7 +3462,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(minheight_string, "%f", &temp[0]) == 1)
 		{
-			control.minheight = math_clamp(temp[0], 0, 10000);
+			pWaterControl->minheight = math_clamp(temp[0], 0, 10000);
 		}
 		else
 		{
@@ -3488,7 +3476,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
 		{
-			control.maxtrans = math_clamp(temp[0], 0, 255) / 255.0f;
+			pWaterControl->maxtrans = math_clamp(temp[0], 0, 255) / 255.0f;
 		}
 		else
 		{
@@ -3502,7 +3490,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(speedrate_string, "%f", &temp[0]) == 1)
 		{
-			control.speedrate = temp[0];
+			pWaterControl->speedrate = temp[0];
 		}
 		else
 		{
@@ -3515,34 +3503,34 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	{
 		if (!strcmp(level_string, "WATER_LEVEL_LEGACY"))
 		{
-			control.level = WATER_LEVEL_LEGACY;
+			pWaterControl->level = WATER_LEVEL_LEGACY;
 		}
 		else if (!strcmp(level_string, "WATER_LEVEL_REFLECT_SKYBOX"))
 		{
-			control.level = WATER_LEVEL_REFLECT_SKYBOX;
+			pWaterControl->level = WATER_LEVEL_REFLECT_SKYBOX;
 		}
 		else if (!strcmp(level_string, "WATER_LEVEL_REFLECT_WORLD"))
 		{
-			control.level = WATER_LEVEL_REFLECT_WORLD;
+			pWaterControl->level = WATER_LEVEL_REFLECT_WORLD;
 		}
 		else if (!strcmp(level_string, "WATER_LEVEL_REFLECT_ENTITY"))
 		{
-			control.level = WATER_LEVEL_REFLECT_ENTITY;
+			pWaterControl->level = WATER_LEVEL_REFLECT_ENTITY;
 		}
 		else if (!strcmp(level_string, "WATER_LEVEL_REFLECT_SSR"))
 		{
-			control.level = WATER_LEVEL_REFLECT_SSR;
+			pWaterControl->level = WATER_LEVEL_REFLECT_SSR;
 		}
 		else if (!strcmp(level_string, "WATER_LEVEL_LEGACY_RIPPLE"))
 		{
-			control.level = WATER_LEVEL_LEGACY_RIPPLE;
+			pWaterControl->level = WATER_LEVEL_LEGACY_RIPPLE;
 		}
 		else
 		{
 			int lv;
 			if (sscanf(level_string, "%d", &lv) == 1)
 			{
-				control.level = math_clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
+				pWaterControl->level = math_clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
 			}
 			else
 			{
@@ -3551,9 +3539,9 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	if (control.basetexture.length())
+	if (pWaterControl->basetexture.length())
 	{
-		r_water_controls.emplace_back(control);
+		g_EnvWaterControls.emplace_back(pWaterControl);
 	}
 }
 

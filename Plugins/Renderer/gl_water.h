@@ -7,6 +7,14 @@
 
 #define MAX_REFLECT_WATERS 16
 
+#define WATER_LEVEL_LEGACY						0
+#define WATER_LEVEL_REFLECT_SKYBOX				1
+#define WATER_LEVEL_REFLECT_WORLD				2
+#define WATER_LEVEL_REFLECT_ENTITY				3
+#define WATER_LEVEL_REFLECT_SSR					4
+#define WATER_LEVEL_LEGACY_RIPPLE				5
+#define WATER_LEVEL_MAX							6
+
 typedef struct cubemap_s
 {
 	std::string name;
@@ -17,21 +25,22 @@ typedef struct cubemap_s
 	vec3_t origin;
 }cubemap_t;
 
-typedef struct water_control_s
+class CEnvWaterControl
 {
-	int level;
+public:
+	int level{ WATER_LEVEL_REFLECT_SKYBOX  };
 	std::string basetexture;
 	std::string wildcard;
 	std::string normalmap;
-	float fresnelfactor[4];
-	float depthfactor[3];
-	float normfactor;
-	float minheight;
-	float maxtrans;
-	float speedrate;
-}water_control_t;
+	float fresnelfactor[4]{0};
+	float depthfactor[3]{0};
+	float normfactor{};
+	float minheight{};
+	float maxtrans{};
+	float speedrate{ 1 };
+};
 
-extern std::vector<water_control_t> r_water_controls;
+extern std::vector<CEnvWaterControl*> g_EnvWaterControls;
 
 //extern std::vector<cubemap_t> r_cubemaps;
 
@@ -173,11 +182,3 @@ void R_DrawWatersForLeaf(CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
 #define WATER_ADDITIVE_BLEND_ENABLED		0x200ull
 #define WATER_OIT_BLEND_ENABLED				0x400ull
 #define WATER_GAMMA_BLEND_ENABLED			0x800ull
-
-#define WATER_LEVEL_LEGACY						0
-#define WATER_LEVEL_REFLECT_SKYBOX				1
-#define WATER_LEVEL_REFLECT_WORLD				2
-#define WATER_LEVEL_REFLECT_ENTITY				3
-#define WATER_LEVEL_REFLECT_SSR					4
-#define WATER_LEVEL_LEGACY_RIPPLE				5
-#define WATER_LEVEL_MAX							6

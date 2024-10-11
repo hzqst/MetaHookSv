@@ -20,7 +20,7 @@ int g_VisWaterIndices[MAX_VISEDICTS] = { 0 };
 
 std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
-std::vector<water_control_t> r_water_controls;
+std::vector<CEnvWaterControl *> g_EnvWaterControls;
 
 //std::vector<cubemap_t> r_cubemaps;
 
@@ -366,38 +366,31 @@ bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
 	return DotProduct4(org, equation) > 0;
 }
 
-water_control_t *R_FindWaterControl(msurface_t *surf)
+CEnvWaterControl *R_FindWaterControl(msurface_t *surf)
 {
-	water_control_t *pControl = NULL;
-
-	for (size_t i = 0; i < r_water_controls.size(); ++i)
+	for (auto pWaterControl : g_EnvWaterControls)
 	{
-		auto &control = r_water_controls[i];
-
-		if (control.basetexture[0] == '*')
+		if (pWaterControl->basetexture[0] == '*')
 		{
-			pControl = &control;
-			break;
+			return pWaterControl;
 		}
-		else if (control.wildcard.length() > 0)
+		else if (pWaterControl->wildcard.length() > 0)
 		{
-			if (!strncmp(control.wildcard.c_str(), surf->texinfo->texture->name, control.wildcard.length()))
+			if (!strncmp(pWaterControl->wildcard.c_str(), surf->texinfo->texture->name, pWaterControl->wildcard.length()))
 			{
-				pControl = &control;
-				break;
+				return pWaterControl;
 			}
 		}
 		else
 		{
-			if (!strcmp(control.basetexture.c_str(), surf->texinfo->texture->name))
+			if (!strcmp(pWaterControl->basetexture.c_str(), surf->texinfo->texture->name))
 			{
-				pControl = &control;
-				break;
+				return pWaterControl;
 			}
 		}
 	}
 
-	return pControl;
+	return nullptr;
 }
 
 void R_UpdateRippleTexture(CWaterSurfaceModel *pWaterModel, int framecount)
@@ -606,26 +599,27 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 
 		pWaterModel->vIndicesBuffer = new std::vector<GLuint>();
 
-		auto waterControl = R_FindWaterControl(surf);
-		if (waterControl)
-		{
-			pWaterModel->minheight = waterControl->minheight;
+		auto pWaterControl = R_FindWaterControl(surf);
 
-			if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
+		if (pWaterControl)
+		{
+			pWaterModel->minheight = pWaterControl->minheight;
+
+			if (pWaterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
 				//TODO: disable mimap for normal texture ?
 				gl_loadtexture_result_t loadResult;
-				if (R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
+				if (R_LoadTextureFromFile(pWaterControl->normalmap.c_str(), pWaterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
 				{
 					pWaterModel->normalmap = loadResult.gltexturenum;
 				}
 				else
 				{
-					gEngfuncs.Con_Printf("R_GetWaterSurfaceModel: Failed to load %s.\n", waterControl->normalmap.c_str());
+					gEngfuncs.Con_Printf("R_GetWaterSurfaceModel: Failed to load %s.\n", pWaterControl->normalmap.c_str());
 				}
 			}
 
-			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
+			if (pWaterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
 			{
 				glBindTexture(GL_TEXTURE_2D, surf->texinfo->texture->gl_texturenum);
 				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &pWaterModel->ripple_width);
@@ -658,18 +652,18 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 				glBindTexture(GL_TEXTURE_2D, (*currenttexture));
 			}
 
-			pWaterModel->fresnelfactor[0] = waterControl->fresnelfactor[0];
-			pWaterModel->fresnelfactor[1] = waterControl->fresnelfactor[1];
-			pWaterModel->fresnelfactor[2] = waterControl->fresnelfactor[2];
-			pWaterModel->fresnelfactor[3] = waterControl->fresnelfactor[3];
-			pWaterModel->depthfactor[0] = waterControl->depthfactor[0];
-			pWaterModel->depthfactor[1] = waterControl->depthfactor[1];
-			pWaterModel->depthfactor[2] = waterControl->depthfactor[2];
-			pWaterModel->normfactor = waterControl->normfactor;
-			pWaterModel->minheight = waterControl->minheight;
-			pWaterModel->maxtrans = waterControl->maxtrans;
-			pWaterModel->speedrate = waterControl->speedrate;
-			pWaterModel->level = waterControl->level;
+			pWaterModel->fresnelfactor[0] = pWaterControl->fresnelfactor[0];
+			pWaterModel->fresnelfactor[1] = pWaterControl->fresnelfactor[1];
+			pWaterModel->fresnelfactor[2] = pWaterControl->fresnelfactor[2];
+			pWaterModel->fresnelfactor[3] = pWaterControl->fresnelfactor[3];
+			pWaterModel->depthfactor[0] = pWaterControl->depthfactor[0];
+			pWaterModel->depthfactor[1] = pWaterControl->depthfactor[1];
+			pWaterModel->depthfactor[2] = pWaterControl->depthfactor[2];
+			pWaterModel->normfactor = pWaterControl->normfactor;
+			pWaterModel->minheight = pWaterControl->minheight;
+			pWaterModel->maxtrans = pWaterControl->maxtrans;
+			pWaterModel->speedrate = pWaterControl->speedrate;
+			pWaterModel->level = pWaterControl->level;
 		}
 	}
 
