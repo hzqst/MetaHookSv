@@ -51,9 +51,10 @@ typedef struct
 	int r_framerate_numframes;
 }studio_program_t;
 
-typedef struct studio_vbo_vertex_s
+class CStudioModelRenderVertex
 {
-	studio_vbo_vertex_s(float *a, float *b, float s, float t, int d, int e)
+public:
+	CStudioModelRenderVertex(float *a, float *b, float s, float t, int d, int e)
 	{
 		memcpy(pos, a, sizeof(vec3_t));
 		memcpy(normal, b, sizeof(vec3_t));
@@ -62,7 +63,7 @@ typedef struct studio_vbo_vertex_s
 		vertbone = d;
 		normbone = e;
 	}
-	studio_vbo_vertex_s()
+	CStudioModelRenderVertex()
 	{
 		memset(pos, 0, sizeof(vec3_t));
 		memset(normal, 0, sizeof(vec3_t));
@@ -75,78 +76,39 @@ typedef struct studio_vbo_vertex_s
 	vec2_t	texcoord;
 	int		vertbone;
 	int		normbone;
-}studio_vbo_vertex_t;
+};
 
-typedef struct studio_vbo_trilist_s
+class CStudioModelRenderMesh
 {
-	studio_vbo_trilist_s()
-	{
-		start_vertex = 0;
-		num_vertex = 0;
-		draw_type = 0;
-	}
-	studio_vbo_trilist_s(int a, int b, int c) : start_vertex(a), num_vertex(b), draw_type(c)
-	{
+public:
+	int iMeshIndex{-1};
+	int iStartIndex{ -1 };
+	int iIndiceCount{  };
+	int iPolyCount{  };
+};
 
-	}
-	int start_vertex;
-	int num_vertex;
-	int draw_type;
-}studio_vbo_trilist_t;
-
-typedef struct studio_vbo_mesh_s
+class CStudioModelRenderSubModel
 {
-	studio_vbo_mesh_s()
-	{
-		iMeshIndex = -1;
-		iStartIndex = -1;
-		iIndiceCount = 0;
-		iPolyCount = 0;
-	}
-	int iMeshIndex;
-	int iStartIndex;
-	int iIndiceCount;
-	int iPolyCount;
-}studio_vbo_mesh_t;
+public:
+	int iSubmodelIndex{-1};
+	std::vector<CStudioModelRenderMesh> vMesh;
+};
 
-typedef struct studio_vbo_submodel_s
+class CStudioModelRenderTexture
 {
-	struct studio_vbo_submodel_s()
-	{
-		iSubmodelIndex = -1;
-	}
-	int iSubmodelIndex;
-	std::vector<studio_vbo_mesh_t> vMesh;
-}studio_vbo_submodel_t;
+public:
+	int gltexturenum{};
+	int numframes{};
+	float framerate{};
+	int width{}, height{};
+	float scaleX{}, scaleY{};
+};
 
-typedef struct studio_vbo_texture_s
+class CStudioModelRenderMaterial
 {
-	studio_vbo_texture_s()
-	{
-		gltexturenum = 0;
-		numframes = 0;
-		framerate = 0;
-		width = 0;
-		height = 0;
-		scaleX = 0;
-		scaleY = 0;
-	}
-	int gltexturenum;
-	int numframes;
-	float framerate;
-	int width, height;
-	float scaleX, scaleY;
-}studio_vbo_texture_t;
-
-typedef struct studio_vbo_material_s
-{
-	studio_vbo_material_s()
-	{
-
-	}
-
-	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
-}studio_vbo_material_t;
+public:
+	CStudioModelRenderTexture textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
+};
 
 typedef struct studio_celshade_control_s
 {
@@ -177,52 +139,41 @@ typedef struct studio_celshade_control_s
 	StudioConVar hair_shadow_offset;
 }studio_celshade_control_t;
 
-typedef struct studio_vbo_s
+class CStudioModelRenderData
 {
-	studio_vbo_s()
-	{
-		hVBO = 0;
-		hEBO = 0;
-		hVAO = 0;
-		hStudioUBO = 0;
-		BodyModel = NULL;
-		TextureModel = NULL;
-		bExternalFileLoaded = false;
-	}
-	GLuint				hVBO;
-	GLuint				hEBO;
-	GLuint				hVAO;
-	GLuint				hStudioUBO;
+public:
+	~CStudioModelRenderData();
+
+	GLuint				hVBO{};
+	GLuint				hEBO{};
+	GLuint				hVAO{};
+	GLuint				hStudioUBO{};
 
 	//vbo_submodel_t Storage
-	std::vector<studio_vbo_submodel_t *> vSubmodels;
+	std::vector<CStudioModelRenderSubModel *> vSubmodels;
 
 	//Memory Offset -> vbo_submodel_t Mapping Table
-	std::unordered_map<int, studio_vbo_submodel_t*> mSubmodels;
+	std::unordered_map<int, CStudioModelRenderSubModel*> mSubmodels;
 
-	model_t* BodyModel;
-	model_t* TextureModel;
+	model_t* BodyModel{};
+	model_t* TextureModel{};
 
 	studio_celshade_control_t celshade_control;
 
-	bool bExternalFileLoaded;
-}studio_vbo_t;
+	bool bExternalFileLoaded{};
+};
 
+#if 0
 class studio_skin_handle
 {
 public:
-	studio_skin_handle(int keynum)
-	{
-		m_keynum = keynum;
-	}
-
 	bool operator == (const studio_skin_handle& a) const
 	{
-		return m_keynum == a.m_keynum;
+		return m_keynum == a.m_keynum && m_index == a.m_index;
 	}
 
-	int m_keynum;
-	int m_index;
+	int m_keynum{};
+	int m_index{};
 };
 
 class studio_skin_hasher
@@ -237,6 +188,7 @@ public:
 		return base;
 	}
 };
+#endif
 
 typedef struct studio_skin_cache_s
 {
@@ -399,9 +351,8 @@ extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
 void R_StudioBoneCaches_StartFrame();
-studio_vbo_t *R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
-studio_vbo_t *R_GetStudioVBO(studiohdr_t *studiohdr);
-void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
+CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData *VBOData);
 void R_StudioClearAllBoneCaches();
 void R_StudioClearVBOCache(void);
 void R_StudioReloadVBOCache(void);
@@ -411,11 +362,11 @@ void R_InitStudio(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
-studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData);
-void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, studio_vbo_t* VBOData);
+studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* VBOData);
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* VBOData);
 void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
 void R_StudioFreeTextureCallback(gltexture_t* glt);
-studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
+CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void studioapi_RestoreRenderer(void);

@@ -1432,12 +1432,16 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				std::set<PVOID> branches;
 				std::vector<walk_context_t> walks;
 				int index;
+				bool bFoundD4h;
+				bool bFoundD8h;
 			}StudioCalcAttachments_SearchContext;
 
 			StudioCalcAttachments_SearchContext ctx;
 
 			ctx.base = (void*)vftable[i];
 			ctx.index = i;
+			ctx.bFoundD4h = false;
+			ctx.bFoundD8h = false;
 
 			ctx.max_insts = 1000;
 			ctx.max_depth = 16;
@@ -1472,6 +1476,46 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					{
 						const char* pPushedString = (const char*)pinst->detail->x86.operands[0].imm;
 						if (0 == memcmp(pPushedString, "Too many attachments on %s\n", sizeof("Too many attachments on %s\n") - 1))
+						{
+							gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
+						}
+					}
+
+					if (address < (PUCHAR)ctx->base + 0x60)
+					{
+						if (!ctx->bFoundD4h)
+						{
+							if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[0].mem.base != 0 &&
+								pinst->detail->x86.operands[0].mem.disp == 0xD4)
+							{
+								ctx->bFoundD4h = true;
+							} 
+							else if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[1].mem.base != 0 &&
+								pinst->detail->x86.operands[1].mem.disp == 0xD4)
+							{
+								ctx->bFoundD4h = true;
+							}
+						}
+						if (!ctx->bFoundD8h)
+						{
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[1].mem.base != 0 &&
+								pinst->detail->x86.operands[1].mem.disp == 0xD8)
+							{
+								ctx->bFoundD8h = true;
+							}
+						}
+
+						if (ctx->bFoundD4h && ctx->bFoundD8h)
 						{
 							gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
 						}
@@ -1810,6 +1854,5 @@ void HUD_Shutdown(void)
 
 void HUD_OnClientDisconnect(void)
 {
-	R_StudioClearVBOCache();
 	R_StudioClearVBOCache();
 }

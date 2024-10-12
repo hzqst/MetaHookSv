@@ -5,9 +5,9 @@
 #include <sstream>
 #include <algorithm>
 
-static std::vector<studio_vbo_t*> g_StudioVBOCache;
+static std::vector<CStudioModelRenderData*> g_StudioVBOCache;
 
-static std::unordered_map<int, studio_vbo_material_t*> g_StudioVBOMaterialCache;
+static std::unordered_map<int, CStudioModelRenderMaterial*> g_StudioVBOMaterialCache;
 
 static std::unordered_map<int, studio_skin_cache_t *> g_StudioSkinCache;
 
@@ -19,7 +19,7 @@ static studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
 static studio_bone_cache* g_pStudioBoneFreeCaches = NULL;
 
-static studio_vbo_t* g_CurrentVBOCache = NULL;
+static CStudioModelRenderData* g_CurrentVBOCache = NULL;
 
 static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
 
@@ -123,6 +123,30 @@ cvar_t* r_studio_bone_caches = NULL;
 
 cvar_t* r_studio_external_textures = NULL;
 
+CStudioModelRenderData::~CStudioModelRenderData()
+{
+	if (hVAO)
+	{
+		GL_DeleteVAO(hVAO);
+	}
+	if (hVBO)
+	{
+		GL_DeleteBuffer(hVBO);
+	}
+	if (hEBO)
+	{
+		GL_DeleteBuffer(hEBO);
+	}
+	if (hStudioUBO)
+	{
+		GL_DeleteBuffer(hStudioUBO);
+	}
+	for (auto pSubmodel : vSubmodels)
+	{
+		delete pSubmodel;
+	}
+}
+
 bool R_StudioHasOutline()
 {
 	return r_studio_outline->value > 0 && ((*pstudiohdr)->flags & EF_OUTLINE);
@@ -174,9 +198,9 @@ void R_StudioBoneCacheFree(studio_bone_cache* pTemp)
 
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t* studiohdr, mstudiomodel_t* submodel,
-	std::vector<studio_vbo_vertex_t>& vVertex,
+	std::vector<CStudioModelRenderVertex>& vVertex,
 	std::vector<unsigned int>& vIndices,
-	studio_vbo_submodel_t* vboSubmodel)
+	CStudioModelRenderSubModel* vboSubmodel)
 {
 	auto pstudioverts = (vec3_t*)((byte*)studiohdr + submodel->vertindex);
 	auto pstudionorms = (vec3_t*)((byte*)studiohdr + submodel->normindex);
@@ -194,7 +218,7 @@ void R_PrepareStudioVBOSubmodel(
 		int iStartVertex = vVertex.size();
 		int iNumVertex = 0;
 
-		studio_vbo_mesh_t VBOMesh;
+		CStudioModelRenderMesh VBOMesh;
 		VBOMesh.iStartIndex = vIndices.size();
 
 		int t;
@@ -280,19 +304,51 @@ void R_PrepareStudioVBOSubmodel(
 	}
 }
 
-studio_vbo_t* R_GetStudioVBOFromStudioHeader(studiohdr_t* studiohdr)
+CStudioModelRenderData* R_GetStudioVBOFromStudioHeaderFast(studiohdr_t* studiohdr)
 {
-	for (auto VBOData : g_StudioVBOCache)
+	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= g_StudioVBOCache.size())
+		return nullptr;
+
+	auto VBOData = g_StudioVBOCache[studiohdr->soundtable];
+
+	if (VBOData)
 	{
-		if (VBOData)
+		auto mod = VBOData->BodyModel;
+
+		if (mod && mod->type == mod_studio)
 		{
-			auto mod = VBOData->BodyModel;
-			if (mod && mod->type == mod_studio)
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
-				if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+				if (mod->cache.data == studiohdr)
 				{
-					if (mod->cache.data == studiohdr)
+					return VBOData;
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+CStudioModelRenderData* R_GetStudioVBOFromStudioHeaderSlow(studiohdr_t* studiohdr)
+{
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod &&mod->type == mod_studio)
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				if (mod->cache.data == studiohdr)
+				{
+					auto VBOData = R_AllocateStudioVBO(mod, studiohdr);
+
+					if (VBOData)
 					{
+						R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+						R_StudioLoadTextureModel(mod, studiohdr, VBOData);
+
 						return VBOData;
 					}
 				}
@@ -303,7 +359,7 @@ studio_vbo_t* R_GetStudioVBOFromStudioHeader(studiohdr_t* studiohdr)
 	return nullptr;
 }
 
-studio_vbo_t* R_GetStudioVBOFromModel(model_t* mod)
+CStudioModelRenderData* R_GetStudioVBOFromModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -313,7 +369,7 @@ studio_vbo_t* R_GetStudioVBOFromModel(model_t* mod)
 	return g_StudioVBOCache[modelindex];
 }
 
-void R_AllocSlotForStudioVBO(model_t* mod, studio_vbo_t* VBOData)
+void R_AllocSlotForStudioVBO(model_t* mod, CStudioModelRenderData* VBOData)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -325,7 +381,7 @@ void R_AllocSlotForStudioVBO(model_t* mod, studio_vbo_t* VBOData)
 	g_StudioVBOCache[modelindex] = VBOData;
 }
 
-studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
+CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (!studiohdr->numbodyparts)
 		return NULL;
@@ -339,7 +395,9 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 		return VBOData;
 	}
 
-	VBOData = new studio_vbo_t;
+	gEngfuncs.Con_DPrintf("R_AllocateStudioVBO: [%d] [%s]!\n", EngineGetModelIndex(mod), mod->name);
+
+	VBOData = new CStudioModelRenderData;
 
 	VBOData->BodyModel = mod;
 
@@ -347,7 +405,7 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 
 	studiohdr->soundtable = EngineGetModelIndex(mod);
 
-	std::vector<studio_vbo_vertex_t> vVertex;
+	std::vector<CStudioModelRenderVertex> vVertex;
 	std::vector<GLuint> vIndices;
 
 	for (int i = 0; i < studiohdr->numbodyparts; i++)
@@ -360,7 +418,7 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 			{
 				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
 
-				studio_vbo_submodel_t* VBOSubmodel = new studio_vbo_submodel_t;
+				auto VBOSubmodel = new CStudioModelRenderSubModel;
 
 				VBOSubmodel->iSubmodelIndex = j;
 
@@ -376,7 +434,7 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	}
 
 	VBOData->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(VBOData->hVBO, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data());
+	GL_UploadDataToVBOStaticDraw(VBOData->hVBO, vVertex.size() * sizeof(CStudioModelRenderVertex), vVertex.data());
 
 	VBOData->hEBO = GL_GenBuffer();
 	GL_UploadDataToEBOStaticDraw(VBOData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
@@ -388,10 +446,10 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 			glEnableVertexAttribArray(1);
 			glEnableVertexAttribArray(2);
 			glEnableVertexAttribArray(3);
-			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
-			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
-			glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, pos));
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, normal));
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, texcoord));
+			glVertexAttribIPointer(3, 2, GL_INT, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, vertbone));
 		},
 		[]() {
 			glDisableVertexAttribArray(0);
@@ -439,62 +497,54 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	return VBOData;
 }
 
-studio_vbo_t *R_GetStudioVBO(studiohdr_t* studiohdr)
+void R_FreeStudioVBOCache(CStudioModelRenderData *VBOCache)
 {
-	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= g_StudioVBOCache.size())
-		return nullptr;
-	
-	auto VBOData = g_StudioVBOCache[studiohdr->soundtable];
-	auto mod = VBOData->BodyModel;
+	auto mod = VBOCache->BodyModel;
 
-	if (mod && mod->type == mod_studio)
-	{
-		if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
-		{
-			if (mod->cache.data == studiohdr)
-			{
-				return VBOData;
-			}
-		}
-	}
+	auto modelindex = EngineGetModelIndex(mod);
 
-	return nullptr;
+	g_StudioVBOCache[modelindex] = NULL;
+
+	delete VBOCache;
+
+	gEngfuncs.Con_DPrintf("R_FreeStudioVBOCache: [%d] [%s]!\n", EngineGetModelIndex(mod), mod->name);
 }
 
 void R_StudioClearVBOCache(void)
 {
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod->type == mod_studio)
+		{
+			if (mod->needload == NL_UNREFERENCED)
+			{
+				auto VBOCache = R_GetStudioVBOFromModel(mod);
+
+				if (VBOCache)
+				{
+					R_FreeStudioVBOCache(VBOCache);
+				}
+			}
+		}
+	}
+
+#if 0
 	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
 	{
-		if (g_StudioVBOCache[i])
-		{
-			auto VBOData = g_StudioVBOCache[i];
+		auto VBOData = g_StudioVBOCache[i];
 
-			if (VBOData->hVAO)
-			{
-				GL_DeleteVAO(VBOData->hVAO);
-			}
-			if (VBOData->hVBO)
-			{
-				GL_DeleteBuffer(VBOData->hVBO);
-			}
-			if (VBOData->hEBO)
-			{
-				GL_DeleteBuffer(VBOData->hEBO);
-			}
-			if (VBOData->hStudioUBO)
-			{
-				GL_DeleteBuffer(VBOData->hStudioUBO);
-			}
-			for (auto subm : VBOData->vSubmodels)
-			{
-				delete subm;
-			}
+		if (VBOData && VBOData->BodyModel->needload != NL_CLIENT)
+		{
+			
 
 			delete VBOData;
 
 			g_StudioVBOCache[i] = NULL;
 		}
 	}
+#endif
 }
 
 void R_StudioReloadVBOCache(void)
@@ -1228,7 +1278,7 @@ bool R_IsFlippedViewModel(void)
 	return false;
 }
 
-studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
+studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* VBOData)
 {
 	if ((*pstudiohdr)->textureindex == 0 && VBOData->TextureModel)
 	{
@@ -1244,7 +1294,7 @@ studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
 	return (*pstudiohdr);
 }
 
-void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
 	if (studiohdr->textureindex == 0 && !VBOData->TextureModel)
 	{
@@ -1269,7 +1319,7 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 	}
 }
 
-void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_material_t* VBOMaterial, studio_setupskin_context_t* context)
+void R_StudioSetupVBOMaterial(const CStudioModelRenderData* VBOData, const CStudioModelRenderMaterial* VBOMaterial, studio_setupskin_context_t* context)
 {
 	if (r_studio_external_textures->value > 0)
 	{
@@ -1720,7 +1770,7 @@ void PaletteHueReplace(byte* palette, int newHue, int start, int end)
 	}
 }
 
-void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, int index, studio_setupskin_context_t*context)
+void R_StudioSetupSkinEx(const CStudioModelRenderData* VBOData, studiohdr_t* ptexturehdr, int index, studio_setupskin_context_t*context)
 {
 	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		return;
@@ -1806,7 +1856,7 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 	}
 }
 
-void R_StudioDrawVBOBegin(studio_vbo_t* VBOData)
+void R_StudioDrawVBOBegin(CStudioModelRenderData* VBOData)
 {
 	studio_ubo_t StudioUBO;
 
@@ -1909,9 +1959,9 @@ void R_StudioDrawVBOEnd()
 }
 
 void R_StudioDrawVBOMesh_AnalyzePass(
-	studio_vbo_t* VBOData,
-	studio_vbo_submodel_t* VBOSubmodel,
-	studio_vbo_mesh_t* VBOMesh,
+	CStudioModelRenderData* VBOData,
+	CStudioModelRenderSubModel* VBOSubmodel,
+	CStudioModelRenderMesh* VBOMesh,
 	mstudiomesh_t* pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
@@ -1964,9 +2014,9 @@ void R_StudioDrawVBOMesh_AnalyzePass(
 }
 
 void R_StudioDrawVBOMesh_DrawPass(
-	studio_vbo_t* VBOData,
-	studio_vbo_submodel_t* VBOSubmodel,
-	studio_vbo_mesh_t* VBOMesh,
+	CStudioModelRenderData* VBOData,
+	CStudioModelRenderSubModel* VBOSubmodel,
+	CStudioModelRenderMesh* VBOMesh,
 	mstudiomesh_t* pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
@@ -2365,9 +2415,9 @@ void R_StudioDrawVBOMesh_DrawPass(
 }
 
 void R_StudioDrawVBOMesh(
-	studio_vbo_t* VBOData,
-	studio_vbo_submodel_t* VBOSubmodel,
-	studio_vbo_mesh_t* VBOMesh,
+	CStudioModelRenderData* VBOData,
+	CStudioModelRenderSubModel* VBOSubmodel,
+	CStudioModelRenderMesh* VBOMesh,
 	mstudiomesh_t*pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
@@ -2428,8 +2478,8 @@ void R_StudioDrawVBOMesh(
 }
 
 void R_StudioDrawVBOSubmodel(
-	studio_vbo_t* VBOData,
-	studio_vbo_submodel_t* VBOSubmodel,
+	CStudioModelRenderData* VBOData,
+	CStudioModelRenderSubModel* VBOSubmodel,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref)
@@ -2444,7 +2494,7 @@ void R_StudioDrawVBOSubmodel(
 	}
 }
 
-void R_StudioDrawVBO(studio_vbo_t* VBOData)
+void R_StudioDrawVBO(CStudioModelRenderData* VBOData)
 {
 	auto submodel_offset = (byte*)(*psubmodel) - (byte*)(*pstudiohdr);
 	auto found_VBOSubmodel = VBOData->mSubmodels.find(submodel_offset);
@@ -2485,13 +2535,17 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 void R_GLStudioDrawPoints(void)
 {
-	auto VBOData = R_GetStudioVBO((*pstudiohdr));
+	auto VBOData = R_GetStudioVBOFromStudioHeaderFast((*pstudiohdr));
 
 	if (!VBOData)
-		VBOData = R_GetStudioVBOFromStudioHeader((*pstudiohdr));
+	{
+		VBOData = R_GetStudioVBOFromStudioHeaderSlow((*pstudiohdr));
+	}
 
 	if (!VBOData)
+	{
 		return;
+	}
 
 	R_StudioDrawVBOBegin(VBOData);
 
@@ -3007,7 +3061,7 @@ void __fastcall GameStudioRenderer_StudioMergeBones(void* pthis, int dummy, mode
 	StudioMergeBones_Template(gPrivateFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
 }
 
-void R_StudioFreeAllTexturesInVBOMaterial(studio_vbo_material_t* VBOMaterial)
+void R_StudioFreeAllTexturesInVBOMaterial(CStudioModelRenderMaterial* VBOMaterial)
 {
 	for (int i = 0; i < STUDIO_MAX_TEXTURE - 1; ++i)
 	{
@@ -3026,7 +3080,7 @@ void R_StudioFreeAllTexturesInVBOMaterial(studio_vbo_material_t* VBOMaterial)
 	}
 }
 
-bool R_StudioFreeTextureInVBOMaterial(studio_vbo_material_t* VBOMaterial, int gltexturenum)
+bool R_StudioFreeTextureInVBOMaterial(CStudioModelRenderMaterial* VBOMaterial, int gltexturenum)
 {
 	for (int i = 0; i < STUDIO_MAX_TEXTURE - 1; ++i)
 	{
@@ -3102,7 +3156,7 @@ void R_StudioFreeTextureCallback(gltexture_t *glt)
 	}
 }
 
-studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum)
+CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum)
 {
 	if (gltexturenum > 0)
 	{
@@ -3117,21 +3171,21 @@ studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum)
 	return NULL;
 }
 
-studio_vbo_material_t* R_StudioPrepareVBOMaterial(mstudiotexture_t* texture)
+CStudioModelRenderMaterial* R_StudioPrepareVBOMaterial(mstudiotexture_t* texture)
 {
-	studio_vbo_material_t* VBOMaterial = R_StudioGetVBOMaterialFromTextureId(texture->index);
+	auto VBOMaterial = R_StudioGetVBOMaterialFromTextureId(texture->index);
 
 	if (VBOMaterial)
 		return VBOMaterial;
 
-	VBOMaterial = new studio_vbo_material_t();
+	VBOMaterial = new CStudioModelRenderMaterial();
 
 	g_StudioVBOMaterialCache[texture->index] = VBOMaterial;
 
 	return VBOMaterial;
 }
 
-void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int StudioTextureType)
+void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int StudioTextureType)
 {
 	if (textureValue && textureValue[0])
 	{
@@ -3219,7 +3273,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 	}
 }
 
-void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* value)
+void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData, mstudiotexture_t* ptexture, const char* value)
 {
 #define REGISTER_TEXTURE_FLAGS_KEY_VALUE(name) if (value && !strcmp(value, #name))\
 	{\
@@ -3248,7 +3302,7 @@ void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studio
 #undef REGISTER_TEXTURE_FLAGS_KEY_VALUE
 }
 
-void R_StudioLoadExternalFile_TextureFlagsArray(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const std::vector<const char *> flagsArray)
+void R_StudioLoadExternalFile_TextureFlagsArray(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData, mstudiotexture_t* ptexture, const std::vector<const char *> flagsArray)
 {
 	for (auto flags : flagsArray)
 	{
@@ -3256,7 +3310,7 @@ void R_StudioLoadExternalFile_TextureFlagsArray(bspentity_t* ent, studiohdr_t* s
 	}
 }
 
-void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
 
 	auto basetexture = ValueForKey(ent, "basetexture");
@@ -3320,7 +3374,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, 
 	}
 }
 
-void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
 	auto flags_string = ValueForKey(ent, "flags");
 
@@ -3349,7 +3403,7 @@ void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, stud
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }
 
-void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
 #define REGISTER_CELSHADE_KEY_VALUE(name, parser) if (1)\
 	{\
@@ -3398,7 +3452,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 #undef REGISTER_CELSHADE_KEY_VALUE
 }
 
-void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
 	if (VBOData->bExternalFileLoaded)
 		return;

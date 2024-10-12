@@ -111,12 +111,12 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 		char szCompilerLog[1024] = { 0 };
 		glGetProgramInfoLog(program, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
 
-		g_pMetaHookAPI->SysError("Shader linked with error:\n%s", szCompilerLog);
+		Sys_Error("Shader linked with error:\n%s\n", szCompilerLog);
 	}
 
 	g_ShaderTable.emplace_back(program, shader_objects, shader_object_used);
 
-	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] vs:%s, fs:%s...", program, vsfile, fsfile);
+	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] vs:%s, fs:%s...\n", program, vsfile, fsfile);
 
 	return program;
 }
