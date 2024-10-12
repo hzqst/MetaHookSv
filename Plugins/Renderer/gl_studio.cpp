@@ -333,7 +333,11 @@ studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	auto VBOData = R_GetStudioVBOFromModel(mod);
 
 	if (VBOData)
+	{
+		studiohdr->soundtable = EngineGetModelIndex(mod);
+
 		return VBOData;
+	}
 
 	VBOData = new studio_vbo_t;
 
