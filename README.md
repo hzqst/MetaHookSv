@@ -72,11 +72,13 @@ Q: This is because ThreadGuard.dll is waiting for Valve's network threads or sim
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-* Valve has fixed this issue in the HL25th update, you don't have to replace SDL2 if you are running HL25th engine.
+* Valve has fixed this issue in the HL25th update, you don't have to replace `SDL2.dll` if you are on HL25th engine.
+
+* Sven Co-op team has fixed this issue since Sven Co-op 5.26, you don't have to replace `SDL2.dll` if you are running on 5.26 or later version of Sven Co-op.
 
 ## Build Requirements
 
-1. [Visual Studio 2017 / 2019 / 2022, with vc141 / vc142 / vc143 toolset](https://visualstudio.microsoft.com/)
+1. [Visual Studio 2022, with vc143 toolset](https://visualstudio.microsoft.com/)
 
 2. [CMake](https://cmake.org/download/)
 
