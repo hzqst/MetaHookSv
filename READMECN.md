@@ -82,9 +82,11 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 * Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll。
 
+* Sven Co-op开发团队在Sven Co-op 5.26中更新了修复了缓冲区越界问题的SDL2，所以如果你是Sven Co-op 5.26或以上版本就不需要替换SDL2.dll。
+
 ## 构建需求
 
-1. Visual Studio 2017, 2019 或 2022，以及 VC141，VC142 或 VC143工具集。
+1. Visual Studio 2022，以及 VC143工具集。
 
 2. CMake
 
