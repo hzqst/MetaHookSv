@@ -50,7 +50,9 @@ Q: This is because ThreadGuard.dll is waiting for Valve's network threads or sim
 
 2. Run `scripts\install-to-SvenCoop.bat` (or `scripts\install-to-(WhateverGameYouWant).bat`, depends on which you are going to play)
 
-3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk` (* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.)
+3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk`
+
+* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.
 
 * Other games follow the same instruction.
 
