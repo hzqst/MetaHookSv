@@ -40,17 +40,15 @@ All shader files required by `Renderer.dll` plugin.
 
 All texture files required by `Renderer.dll` plugin.
 
-### svencoop_addons/maps/restriction02_detail.txt (optional)
+### svencoop_downloads/maps/restriction02_detail.txt (optional)
 
 An example for `Renderer.dll` plugin to use Parallax-Mapping and Normal-Mapping in restriction02.bsp
 
-### svencoop_addons/maps/*.csv (optional)
+### svencoop_downloads/maps/*.csv (optional)
 
 An example for `CaptionMod.dll` Plugin to display chinese translation of subtitles and HUDMessages.
 
-### svencoop_addons/models/* (optional)
-### svencoop_addons/sound/* (optional)
+### svencoop_downloads/models/* (optional)
+### svencoop_downloads/sound/* (optional)
 
 The following models: [GFL_HK416](https://gamebanana.com/mods/167185), [GFL_M14](https://gamebanana.com/mods/167065), [GFL_M14-c2](https://gamebanana.com/mods/167065), [GI_Keqing](https://gamebanana.com/mods/290942), touhou_mystia, helmet
-
-will become ragdolls when being caught by barnacle, while playing vore sound.
