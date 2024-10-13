@@ -38,15 +38,15 @@ CaptionMod.dll的依赖项，如果要使用CaptionMod.dll则必须安装
 
 贴图，Renderer.dll的依赖项，如果要使用Renderer.dll则必须安装
 
-### svencoop_addons/maps/restriction02_detail.txt (可选)
+### svencoop_downloads/maps/restriction02_detail.txt (可选)
 
 用来演示在restriction02.bsp地图中添加视差贴图、法线贴图和高光贴图，需要启用Renderer.dll插件才能生效
 
-### svencoop_addons/maps/*.csv (可选)
+### svencoop_downloads/maps/*.csv (可选)
 
 用来翻译对应地图中的英文文本，需要启用CaptionMod.dll插件才能生效
 
-### svencoop_addons/models/* (可选)
-### svencoop_addons/sound/* (可选)
+### svencoop_downloads/models/* (可选)
+### svencoop_downloads/sound/* (可选)
 
 启用布娃娃效果时使用的资源，需要启用BulletPhysics.dll插件才能生效
