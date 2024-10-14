@@ -37,6 +37,7 @@ DWORD g_dwClientRdataSize = 0;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 bool g_bIsCZero = false;
+bool g_bIsCZDS = false;
 
 extern IFileSystem* g_pFullFileSystem;
 extern IFileSystem_HL25* g_pFullFileSystem_HL25;

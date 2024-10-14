@@ -1365,6 +1365,11 @@ void Client_FillAddress(void)
 		g_bIsCZero = true;
 	}
 
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCZDS = true;
+	}
+
 	if (!g_iVisibleMouse &&
 		(PUCHAR)gExportfuncs.IN_Accumulate > (PUCHAR)g_dwClientTextBase &&
 		(PUCHAR)gExportfuncs.IN_Accumulate < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)

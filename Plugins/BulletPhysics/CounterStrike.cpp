@@ -8,6 +8,7 @@ cvar_t* cl_min_t = NULL;
 cvar_t* cl_min_ct = NULL;
 
 extra_player_info_t(*g_PlayerExtraInfo)[65] = NULL;
+extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65] = NULL;
 
 bool BIsValidTModelIndex(int i)
 {
@@ -42,6 +43,31 @@ const char* sPlayerModelFiles[] = {
 	"models/player/militia/militia.mdl",
 };
 
+bool CounterStrike_IsVIP(int PlayerID)
+{
+	if (g_PlayerExtraInfo)
+	{
+		return (*g_PlayerExtraInfo)[PlayerID].vip ? true : false;
+	}
+
+	return false;
+}
+
+int CounterStrike_GetTeamNumber(int PlayerID)
+{
+	if (g_PlayerExtraInfo_CZDS)
+	{
+		return (*g_PlayerExtraInfo_CZDS)[PlayerID].teamnumber;
+	}
+
+	if (g_PlayerExtraInfo)
+	{
+		return (*g_PlayerExtraInfo)[PlayerID].teamnumber;
+	}
+
+	return 0;
+}
+
 void CounterStrike_RedirectPlayerModelPath(const char* name, int PlayerID, int TeamID, char* pszModel, size_t cbModel)
 {
 	if (cl_minmodels && cl_minmodels->value && PlayerID > 0 && PlayerID < 65)
@@ -61,7 +87,7 @@ void CounterStrike_RedirectPlayerModelPath(const char* name, int PlayerID, int T
 		}
 		else if (TeamID == 2)
 		{
-			if (!(*g_PlayerExtraInfo)[PlayerID].vip)
+			if (!CounterStrike_IsVIP(PlayerID))
 			{
 				if (!cl_min_ct || !BIsValidCTModelIndex((int)cl_min_ct->value))
 				{
@@ -102,7 +128,7 @@ model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNu
 {
 	if (cl_minmodels && cl_minmodels->value && PlayerNumber > 0 && PlayerNumber < 65)
 	{
-		int TeamID = (*g_PlayerExtraInfo)[PlayerNumber].teamnumber;
+		int TeamID = CounterStrike_GetTeamNumber(PlayerNumber);
 
 		if (TeamID == 1)
 		{
@@ -117,7 +143,7 @@ model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNu
 		}
 		else if (TeamID == 2)
 		{
-			if (!(*g_PlayerExtraInfo)[PlayerNumber].vip)
+			if (!CounterStrike_IsVIP(PlayerNumber))
 			{
 				if (!cl_min_ct || !BIsValidCTModelIndex((int)cl_min_ct->value))
 				{

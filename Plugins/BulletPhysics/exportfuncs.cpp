@@ -1028,7 +1028,6 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 
 			if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index == 0)
 				gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index = 100 / 4;
-
 		}
 
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)

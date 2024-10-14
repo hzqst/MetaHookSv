@@ -1175,7 +1175,6 @@ void R_FillAddress(void)
 		{
 			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_HL25);
 			Sig_FuncNotFound(V_RenderView);
-
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{

@@ -122,17 +122,19 @@ void CViewport::ActivateClientUI(void)
 {
 	SetVisible(true);
 
-	if (m_hOldFocus)
+	auto pPreviousPanel = m_hOldFocus.Get();
+
+	if (pPreviousPanel)
 	{
-		vgui::input()->SetAppModalSurface(m_hOldFocus);
-		vgui::input()->SetMouseFocus(m_hOldFocus);
-		m_hOldFocus = NULL;
+		vgui::input()->SetAppModalSurface(pPreviousPanel->GetVPanel());
+		vgui::input()->SetMouseFocus(pPreviousPanel->GetVPanel());
+		m_hOldFocus.Set(nullptr);
 	}
 }
 
 void CViewport::HideClientUI(void)
 {
-	m_hOldFocus = vgui::input()->GetAppModalSurface();
+	m_hOldFocus.Set(vgui::input()->GetAppModalSurface());
 
 	SetVisible(false);
 }

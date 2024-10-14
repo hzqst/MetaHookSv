@@ -761,13 +761,23 @@ void CClientVGUIProxy::Start(void)
 {
 	m_pfnCClientVGUI_Start(this, 0);
 
-	if (g_bIsCounterStrike)
+	if (g_bIsCounterStrike && !g_bIsCZDS)
 	{
-		const int offset_CSBackGroundPanel = 0x72C;
+		int offset_CSBackGroundPanel = 0x72C;
+
+		//if (g_bIsCZDS)
+		//	offset_CSBackGroundPanel = 0xCC;
 
 		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)this + offset_CSBackGroundPanel);
 
 		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
+	
+		if (
+			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_dwClientBase &&
+				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+		{
+			Sig_NotFound("CCSBackGroundPanel");
+		}
 
 		for (int index = 159; index <= 160; ++index)
 		{

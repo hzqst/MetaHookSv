@@ -19,7 +19,7 @@ void VGUI2Extension_Init()
 
 	if (!hVGUI2Extension)
 	{
-		//Sys_Error("VGUI2Extension.dll is required!");
+		Sys_Error("VGUI2Extension.dll is required!");
 		return;
 	}
 

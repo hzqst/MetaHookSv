@@ -33,6 +33,7 @@ extern DWORD g_dwClientRdataSize;
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 extern bool g_bIsCZero;
+extern bool g_bIsCZDS;
 
 #define MHPluginName "VGUI2Extension"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);

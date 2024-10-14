@@ -134,7 +134,7 @@ typedef struct extra_player_info_s
 	int has_c4;//00000008 has_c4          dd ?
 	int vip;//0000000C vip             dd ?
 	vec3_t origin;//00000010 origin          Vector ?
-	int radarflash;//0000001C radarflash      dd ?
+	float radarflash;//0000001C radarflash      dd ?
 	int radarflashon;//00000020 radarflashon    dd ?
 	int radarflashes;//00000024 radarflashes    dd ?
 	short playerclass;//00000028 playerclass     dw ?
@@ -151,10 +151,42 @@ typedef struct extra_player_info_s
 
 static_assert(sizeof(extra_player_info_t) == 0x74, "Size check");
 
+typedef struct extra_player_info_czds_s 
+{                      
+    short frags;//0
+	short deaths;   //2
+	short playerclass;//4
+	short health;//6
+	char dead;//8
+	char padding;
+	short teamnumber;//0xA
+    char teamname[16];//0xC
+}extra_player_info_czds_t;
+
+static_assert(sizeof(extra_player_info_czds_t) == 0x1C, "Size check");
+
+ typedef struct team_info_s  // sizeof=0x28
+ {                                       // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+8F/o
+                                         // TeamFortressViewport::MsgFunc_TeamNames(char const*,int,void *)+31/o ...
+     char name[16];
+     short frags;
+     short deaths;                     // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+17B/o
+     short ping;                       // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+135/o
+     short packetloss;
+     short ownteam;
+     short players;
+     int already_drawn;                  // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+1EB/w
+     int scores_overriden;               // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+1C/o
+     int teamnumber;
+ } team_info_t;
+
+ static_assert(sizeof(team_info_t) == 0x28, "Size check");
+
 extern cvar_t *cl_minmodels;
 extern cvar_t *cl_min_t;
 extern cvar_t *cl_min_ct;
 extern extra_player_info_t(*g_PlayerExtraInfo)[65];
+extern extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65];
 
 int EngineGetMaxKnownModel();
 int EngineGetNumKnownModel();

@@ -280,7 +280,7 @@ void Engine_FillAddreess(void)
 
 						return FALSE;
 
-					}, 0, &ctx);
+						}, 0, &ctx);
 
 					if (ctx.bFoundCallRenderView)
 					{
@@ -303,7 +303,7 @@ void Engine_FillAddreess(void)
 								return TRUE;
 
 							return FALSE;
-						});
+							});
 
 						break;
 					}
@@ -315,6 +315,32 @@ void Engine_FillAddreess(void)
 					break;
 				}
 			}
+		}
+	}
+
+	if (!gPrivateFuncs.V_RenderView)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_SVENGINE);
+			Sig_FuncNotFound(V_RenderView);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_HL25);
+			Sig_FuncNotFound(V_RenderView);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_NEW);
+			if (!gPrivateFuncs.V_RenderView)
+				gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_NEW2);
+			Sig_FuncNotFound(V_RenderView);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_BLOB);
+			Sig_FuncNotFound(V_RenderView);
 		}
 	}
 
@@ -1155,33 +1181,256 @@ void Client_FillAddress(void)
 		g_bIsCounterStrike = true;
 
 		//g_PlayerExtraInfo
-		//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
-		/*
-		.text:019A4575 66 85 C0                                            test    ax, ax
-		.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
-		.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
-		.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
-		.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
-		*/
-#define CSTRIKE_PLAYEREXTRAINFO_SIG      "\x66\x85\xC0\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89"
-#define CSTRIKE_PLAYEREXTRAINFO_SIG_HL25 "\x66\x89\x90\x2A\x2A\x2A\x2A\x8B\x55\x2A\x66\x89\x98\x2A\x2A\x2A\x2A\x66\x89\x90\x2A\x2A\x2A\x2A\x66\x89\x88"
+			//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
+			/*
+			.text:019A4575 66 85 C0                                            test    ax, ax
+			.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
+			.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
+			.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
+			.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
+			*/
+#define CSTRIKE_PLAYEREXTRAINFO_SIG      "\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A"
 
-		auto addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, CSTRIKE_PLAYEREXTRAINFO_SIG);
-		if (addr)
+#define CSTRIKE_PLAYEREXTRAINFO_SIG_HL25 "\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A"
+
+		if (1)
 		{
-			g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 6);
-		}
-		else
-		{
-			addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, CSTRIKE_PLAYEREXTRAINFO_SIG_HL25);
-			if (addr)
+			char pattern[] = CSTRIKE_PLAYEREXTRAINFO_SIG;
+			PUCHAR SearchBegin = (PUCHAR)g_dwClientTextBase;
+			PUCHAR SearchLimit = (PUCHAR)g_dwClientTextBase + g_dwClientTextSize;
+			while (SearchBegin < SearchLimit)
 			{
-				g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 3);
+				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+				if (pFound)
+				{
+					typedef struct
+					{
+						ULONG_PTR Candidates[4];
+						int iNumCandidates;
+					}MsgFunc_ScoreInfo_ctx;
+
+					MsgFunc_ScoreInfo_ctx ctx = { 0 };
+
+					g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto ctx = (MsgFunc_ScoreInfo_ctx*)context;
+						auto pinst = (cs_insn*)inst;
+
+						if (ctx->iNumCandidates < 4)
+						{
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+								pinst->detail->x86.operands[1].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].size == 2)
+							{
+								if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+									)
+								{
+									ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+									ctx->iNumCandidates++;
+								}
+							}
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+								pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+								pinst->detail->x86.operands[1].size == 2 &&
+								pinst->detail->x86.operands[1].imm == 0)
+							{
+								if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+									)
+								{
+									ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+									ctx->iNumCandidates++;
+								}
+							}
+						}
+
+						if (ctx->iNumCandidates == 4)
+							return TRUE;
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+						}, 0, &ctx);
+
+					if (ctx.iNumCandidates >= 3)
+					{
+						std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
+							return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+							});
+
+
+						if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+						{
+							if (ctx.Candidates[ctx.iNumCandidates - 2] +
+								(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass))
+								==
+								ctx.Candidates[ctx.iNumCandidates - 1])
+							{
+								g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
+								break;
+							}
+						}
+						else
+						{
+							if (ctx.Candidates[ctx.iNumCandidates - 2] +
+
+								(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
+								== ctx.Candidates[ctx.iNumCandidates - 1])
+							{
+								g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
+								break;
+							}
+						}
+					}
+
+					SearchBegin = pFound + Sig_Length(pattern);
+				}
+				else
+				{
+					break;
+				}
 			}
 		}
 
-		Sig_VarNotFound(g_PlayerExtraInfo);
+		if (!g_PlayerExtraInfo)
+		{
+			char pattern[] = CSTRIKE_PLAYEREXTRAINFO_SIG_HL25;
+			PUCHAR SearchBegin = (PUCHAR)g_dwClientTextBase;
+			PUCHAR SearchLimit = (PUCHAR)g_dwClientTextBase + g_dwClientTextSize;
+			while (SearchBegin < SearchLimit)
+			{
+				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+				if (pFound)
+				{
+					typedef struct
+					{
+						ULONG_PTR Candidates[4];
+						int iNumCandidates;
+					}MsgFunc_ScoreInfo_ctx;
 
+					MsgFunc_ScoreInfo_ctx ctx = { 0 };
+
+					g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto ctx = (MsgFunc_ScoreInfo_ctx*)context;
+						auto pinst = (cs_insn*)inst;
+
+						if (ctx->iNumCandidates < 4)
+						{
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+								pinst->detail->x86.operands[1].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].size == 2)
+							{
+								if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+									)
+								{
+									ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+									ctx->iNumCandidates++;
+								}
+							}
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
+								pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+								pinst->detail->x86.operands[1].size == 2 &&
+								pinst->detail->x86.operands[1].imm == 0)
+							{
+								if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+									ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+									)
+								{
+									ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+									ctx->iNumCandidates++;
+								}
+							}
+						}
+
+						if (ctx->iNumCandidates == 4)
+							return TRUE;
+					
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx);
+
+					if (ctx.iNumCandidates >= 3)
+					{
+						std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
+							return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+						});
+
+						if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+						{
+							if (ctx.Candidates[ctx.iNumCandidates - 2] +
+								(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass)) 
+								==
+								ctx.Candidates[ctx.iNumCandidates - 1])
+							{
+								g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
+								break;
+							}
+						}
+						else
+						{
+							if (ctx.Candidates[ctx.iNumCandidates - 2] +
+
+								(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
+								== ctx.Candidates[ctx.iNumCandidates - 1])
+							{
+								g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
+								break;
+							}
+						}
+					}
+
+					SearchBegin = pFound + Sig_Length(pattern);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror")) {
+			Sig_VarNotFound(g_PlayerExtraInfo_CZDS);
+		}
+		else {
+			Sig_VarNotFound(g_PlayerExtraInfo);
+		}
 	}
 }
 
