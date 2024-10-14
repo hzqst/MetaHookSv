@@ -2495,37 +2495,61 @@ bool MH_IsBogusVFTableEntry(PVOID pVirtualFuncAddr, PVOID pOldFuncAddr)
 
 hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall)
 {
-	auto pSourceCode = (PUCHAR)pInstructionAddress;
-
-	ULONG PatchLength = 0;
-	UCHAR NewCodeBytes[8];
-
-	if (pSourceCode[0] == 0xE9 || pSourceCode[0] == 0xE8)
+	typedef struct
 	{
-		PatchLength = 5;
-		NewCodeBytes[0] = pSourceCode[0];
-		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+		PUCHAR pSourceCode;
+		PUCHAR pNewFuncAddr;
+		ULONG PatchLength;
+		UCHAR NewCodeBytes[8];
+	}MH_InlinePatchRedirectBranch_PatchContext;
+
+	MH_InlinePatchRedirectBranch_PatchContext ctx = { 0 };
+
+	ctx.pSourceCode = (PUCHAR)pInstructionAddress;
+	ctx.pNewFuncAddr = (PUCHAR)pNewFuncAddr;
+	memset(ctx.NewCodeBytes, 0x90, sizeof(ctx.NewCodeBytes));
+
+	if (ctx.pSourceCode[0] == 0xE9 || ctx.pSourceCode[0] == 0xE8)
+	{
+		ctx.PatchLength = 5;
+		ctx.NewCodeBytes[0] = ctx.pSourceCode[0];
+		*(int*)(ctx.NewCodeBytes + 1) = ctx.pNewFuncAddr - (ctx.pSourceCode + 5);
 	}
-	else if (pSourceCode[0] == 0xFF && pSourceCode[1] == 0x15)
+	else if (ctx.pSourceCode[0] == 0xFF && ctx.pSourceCode[1] == 0x15)
 	{
 		//indirect call
-		PatchLength = 6;
-		NewCodeBytes[0] = 0xE8;
-		NewCodeBytes[5] = 0x90;
-		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+		ctx.PatchLength = 6;
+		ctx.NewCodeBytes[0] = 0xE8;
+		*(int*)(ctx.NewCodeBytes + 1) = ctx.pNewFuncAddr - (ctx.pSourceCode + 5);
 	}
-	else if (pSourceCode[0] == 0xFF && pSourceCode[1] == 0x25)
+	else if (ctx.pSourceCode[0] == 0xFF && ctx.pSourceCode[1] == 0x25)
 	{
 		//indirect jmp
-		PatchLength = 6;
-		NewCodeBytes[0] = 0xE9;
-		NewCodeBytes[5] = 0x90;
-		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+		ctx.PatchLength = 6;
+		ctx.NewCodeBytes[0] = 0xE9;
+		*(int*)(ctx.NewCodeBytes + 1) = ctx.pNewFuncAddr - (ctx.pSourceCode + 5);
 	}
 	else
 	{
-		return NULL;
+		MH_DisasmSingleInstruction(pInstructionAddress, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (MH_InlinePatchRedirectBranch_PatchContext*)context;
+
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM && instLen >= 5)
+			{
+				ctx->PatchLength = instLen;
+				ctx->NewCodeBytes[0] = 0xE8;
+				*(int*)(ctx->NewCodeBytes + 1) = ctx->pNewFuncAddr - (ctx->pSourceCode + 5);
+			}
+
+		}, &ctx);
 	}
+
+	if (!ctx.PatchLength)
+		return NULL;
 
 	hook_t* h = MH_NewHook(MH_HOOK_INLINEPATCH);
 
@@ -2538,9 +2562,9 @@ hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAd
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pOrginalCall = pOrginalCall;
 	h->hookData.inlinepatch.pInstructionAddress = pInstructionAddress;
-	h->hookData.inlinepatch.PatchLength = PatchLength;
-	memcpy(h->hookData.inlinepatch.NewCodeBytes, NewCodeBytes, PatchLength);
-	memcpy(h->hookData.inlinepatch.OriginalBytes, (PUCHAR)pInstructionAddress, PatchLength);
+	h->hookData.inlinepatch.PatchLength = ctx.PatchLength;
+	memcpy(h->hookData.inlinepatch.NewCodeBytes, ctx.NewCodeBytes, ctx.PatchLength);
+	memcpy(h->hookData.inlinepatch.OriginalBytes, (PUCHAR)pInstructionAddress, ctx.PatchLength);
 
 	if (g_bTransactionHook)
 	{
@@ -2548,7 +2572,7 @@ hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAd
 	}
 	else
 	{
-		MH_WriteMemory(pInstructionAddress, NewCodeBytes, PatchLength);
+		MH_WriteMemory(pInstructionAddress, ctx.NewCodeBytes, ctx.PatchLength);
 
 		if (h->pOrginalCall)
 			(*h->pOrginalCall) = h->pOldFuncAddr;

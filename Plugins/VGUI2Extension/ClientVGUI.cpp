@@ -38,6 +38,8 @@ IClientVGUI* g_pClientVGUI = NULL;
 CounterStrikeViewport* g_pCounterStrikeViewport = NULL;
 
 static vgui::Panel* g_pCSBackGroundPanel = NULL;
+static vgui::Panel* g_pWorldMapPanel = NULL;
+static vgui::Panel* g_pWorldMapMissionSelectPanel = NULL;
 
 static hook_t* g_phook_ClientVGUI_Panel_Init = NULL;
 static hook_t* g_phook_ClientVGUI_KeyValues_LoadFromFile = NULL;
@@ -292,6 +294,65 @@ bool VGUI2_IsCSBackGroundPanelActivate(PVOID Candidate, int *pOffsetBase)
 
 typedef struct
 {
+	bool bFoundCall80h;
+	int iFoundPush255Count;
+	void* SurfaceGetScreenSize;
+}VGUI2_IsCWorldMapPaintBackground_SearchContext;
+
+bool VGUI2_IsCWorldMapPaintBackground(PVOID Candidate, void ** pSurfaceGetScreenSize)
+{
+	VGUI2_IsCWorldMapPaintBackground_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsCWorldMapPaintBackground_SearchContext*)context;
+
+		if (!ctx->bFoundCall80h &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base != 0 &&
+			pinst->detail->x86.operands[0].mem.disp == 0x80)
+		{
+			ctx->bFoundCall80h = true;
+			ctx->SurfaceGetScreenSize = address;
+		}
+
+		if (ctx->iFoundPush255Count < 4 &&
+			pinst->id == X86_INS_PUSH &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[0].imm == 0xFF)
+		{
+			ctx->iFoundPush255Count ++;
+		}
+
+		if (ctx->bFoundCall80h && ctx->iFoundPush255Count >= 4)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	if (ctx.bFoundCall80h && ctx.iFoundPush255Count >= 4)
+	{
+		if (pSurfaceGetScreenSize)
+			(*pSurfaceGetScreenSize) = ctx.SurfaceGetScreenSize;
+
+		return true;
+	}
+
+	return false;
+}
+
+typedef struct
+{
 	PVOID CallCandidates[4];
 	int CallCount;
 	bool bFound280h;
@@ -535,6 +596,26 @@ void ClientVGUI_KeyValues_LoadFromFile_CounterStrike(KeyValues* pthis, const cha
 	}
 }
 
+void ClientVGUI_KeyValues_LoadFromFile_CZDS(KeyValues* pthis, const char* resourceName, const char* pathId)
+{
+	if (!strcmp(resourceName, "resource/UI/WorldMap.res"))
+	{
+		auto pWorldMap = pthis->FindKey("WorldMap");
+
+		if (pWorldMap)
+		{
+			ClientVGUI_KeyValues_FitToFullScreen(pWorldMap);
+		}
+
+		auto pMissionSelect = pthis->FindKey("MissionSelect");
+
+		if (pMissionSelect)
+		{
+			ClientVGUI_KeyValues_FitToFullScreen(pMissionSelect);
+		}
+	}
+}
+
 void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 {
 	gPrivateFuncs.CCSBackGroundPanel_Activate(pthis, dummy);
@@ -544,6 +625,38 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
 		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
 	}
+}
+
+void __fastcall CWorldMap_PaintBackground_SurfaceGetScreenSize(vgui::ISurface *pthis, int dummy, int& screenWide, int& screenTall)
+{
+	//xScale = swide / 640.0;
+	//yScale = stall / 480.0;
+	
+	//Let xScale = yScale
+	vgui::surface()->GetScreenSize(screenWide, screenTall);
+
+	screenWide = (double)screenTall * 640.0 / 480.0;
+}
+
+void __fastcall CWorldMap_PaintBackground(vgui::Panel* pthis, int dummy)
+{
+	gPrivateFuncs.CWorldMap_PaintBackground(pthis, dummy);
+}
+
+void __fastcall CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize(vgui::ISurface *pthis, int dummy, int& screenWide, int& screenTall)
+{
+	//xScale = swide / 640.0;
+	//yScale = stall / 480.0;
+	
+	//Let xScale = yScale
+	vgui::surface()->GetScreenSize(screenWide, screenTall);
+
+	screenWide = (double)screenTall * 640.0 / 480.0;
+}
+
+void __fastcall CWorldMapMissionSelect_PaintBackground(vgui::Panel* pthis, int dummy)
+{
+	gPrivateFuncs.CWorldMapMissionSelect_PaintBackground(pthis, dummy);
 }
 
 #if 0
@@ -704,9 +817,13 @@ bool __fastcall ClientVGUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileS
 	}
 	}
 
-	if (ret && g_bIsCounterStrike)
+	if (ret)
 	{
-		ClientVGUI_KeyValues_LoadFromFile_CounterStrike((KeyValues *)pthis, resourceName, pathId);
+		if (g_bIsCounterStrike)
+			ClientVGUI_KeyValues_LoadFromFile_CounterStrike((KeyValues *)pthis, resourceName, pathId);
+
+		if (g_bIsCZDS)
+			ClientVGUI_KeyValues_LoadFromFile_CZDS((KeyValues*)pthis, resourceName, pathId);
 	}
 
 	return ret;
@@ -788,7 +905,77 @@ void CClientVGUIProxy::Start(void)
 				break;
 			}
 		}
+
 		Sig_FuncNotFound(CCSBackGroundPanel_Activate);
+	}
+
+	if (g_bIsCZDS)
+	{
+		int offset_WorldMapPanel = 0x7A8;
+
+		g_pWorldMapPanel = *(vgui::Panel**)((PUCHAR)this + offset_WorldMapPanel);
+
+		gPrivateFuncs.CWorldMap_vftable = *(PVOID**)g_pWorldMapPanel;
+
+		if (
+			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_dwClientBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+		{
+			Sig_NotFound("CWorldMap");
+		}
+
+		for (int index = 105; index <= 106; ++index)
+		{
+			PVOID SurfaceGetScreenSize = NULL;
+			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMap_vftable[index], &SurfaceGetScreenSize))
+			{
+				if (!SurfaceGetScreenSize)
+				{
+					Sig_NotFound("CWorldMap_PaintBackground_SurfaceGetScreenSize");
+				}
+				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMap_PaintBackground_SurfaceGetScreenSize, NULL);
+
+				gPrivateFuncs.CWorldMap_PaintBackground_vftable_index = index;
+				//g_pMetaHookAPI->VFTHook(g_pWorldMapPanel, 0, index, CWorldMap_PaintBackground, (void**)&gPrivateFuncs.CWorldMap_PaintBackground);
+				break;
+			}
+		}
+	}
+
+	if (g_bIsCZDS)
+	{
+		g_pWorldMapMissionSelectPanel = g_pWorldMapPanel->FindChildByName("MissionSelect");
+
+		if (!g_pWorldMapMissionSelectPanel)
+		{
+			Sig_NotFound("WorldMapMissionSelectPanel");
+		}
+
+		gPrivateFuncs.CWorldMapMissionSelect_vftable = *(PVOID**)g_pWorldMapMissionSelectPanel;
+
+		if (
+			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_dwClientBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+		{
+			Sig_NotFound("CWorldMapMissionSelect_vftable");
+		}
+
+		for (int index = 105; index <= 106; ++index)
+		{
+			PVOID SurfaceGetScreenSize = NULL;
+			if (VGUI2_IsCWorldMapPaintBackground(gPrivateFuncs.CWorldMapMissionSelect_vftable[index], &SurfaceGetScreenSize))
+			{
+				if (!SurfaceGetScreenSize)
+				{
+					Sig_NotFound("CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize");
+				}
+				g_pMetaHookAPI->InlinePatchRedirectBranch(SurfaceGetScreenSize, CWorldMapMissionSelect_PaintBackground_SurfaceGetScreenSize, NULL);
+
+				gPrivateFuncs.CWorldMapMissionSelect_PaintBackground_vftable_index = index;
+				//g_pMetaHookAPI->VFTHook(g_pWorldMapMissionSelectPanel, 0, index, CWorldMapMissionSelect_PaintBackground, (void**)&gPrivateFuncs.CWorldMapMissionSelect_PaintBackground);
+				break;
+			}
+		}
 	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();

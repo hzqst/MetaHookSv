@@ -64,6 +64,14 @@ typedef struct
 	void** CCSBackGroundPanel_vftable;
 	int CCSBackGroundPanel_XOffsetBase;
 
+	int CWorldMap_PaintBackground_vftable_index;
+	void(__fastcall* CWorldMap_PaintBackground)(void* pthis, int dummy);
+	void** CWorldMap_vftable;
+
+	int CWorldMapMissionSelect_PaintBackground_vftable_index;
+	void(__fastcall* CWorldMapMissionSelect_PaintBackground)(void* pthis, int dummy);
+	void** CWorldMapMissionSelect_vftable;
+
 	//void* (__fastcall* CClientMOTD_ctor)(void* pthis, int, void* parent);
 	//void (__fastcall* CClientMOTD_PerformLayout)(void* pthis, int dummy);
 	//void (__fastcall* CClientMOTD_ApplySettings)(void* pthis, int dummy, void* inResourceData);
