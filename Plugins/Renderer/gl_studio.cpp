@@ -2133,7 +2133,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 		}
 	}
 
-	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode == kRenderTransAdd)
+	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode == kRenderTransAdd )
 	{
 		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
 	}
@@ -2143,7 +2143,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 		StudioProgramState |= STUDIO_ADDITIVE_RENDER_MODE_ENABLED;
 	}
 
-	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal)
+	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.renderamt < 255)
 	{
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
 	}
@@ -2311,7 +2311,8 @@ void R_StudioDrawVBOMesh_DrawPass(
 		{
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_BLEND);
-			glDepthMask(GL_FALSE);
+			//idk why but Valve uses GL_TRUE anyway, it should be GL_FALSE in general
+			glDepthMask(GL_TRUE);
 
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
@@ -2408,10 +2409,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 
-	//if (r_draw_opaque)
-	//{
 	GL_EndStencil();
-	//}
 }
 
 void R_StudioDrawVBOMesh(
