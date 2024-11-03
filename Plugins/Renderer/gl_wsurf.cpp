@@ -517,7 +517,7 @@ void R_BrushModelLinkTextureChain(model_t *mod, CWorldSurfaceWorldModel *pWorldM
 	}
 }
 
-void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, brushtexchain_t *texchain, CWorldSurfaceWorldModel* pWorldModel, std::vector<GLuint> &vIndicesBuffer)
+void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceBrushTexChain *texchain, CWorldSurfaceWorldModel* pWorldModel, std::vector<GLuint> &vIndicesBuffer)
 {
 	auto surfIndex = R_GetWorldSurfaceIndex(pWorldModel->mod, surf);
 
@@ -615,7 +615,7 @@ void R_SortTextureChain(CWorldSurfaceLeaf *pLeaf, int iTexchainId)
 		}
 	}
 
-	std::sort(pLeaf->vTextureChain[iTexchainId].begin(), pLeaf->vTextureChain[iTexchainId].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
+	std::sort(pLeaf->vTextureChain[iTexchainId].begin(), pLeaf->vTextureChain[iTexchainId].end(), [](const CWorldSurfaceBrushTexChain &a, const CWorldSurfaceBrushTexChain &b) {
 		return b.iDetailTextureFlags > a.iDetailTextureFlags;
 	});
 }
@@ -731,7 +731,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 			if (s)
 			{
-				brushtexchain_t texchain;
+				CWorldSurfaceBrushTexChain texchain;
 
 				texchain.pTexture = t;
 				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
@@ -772,7 +772,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							continue;
 						}
 
-						brushtexchain_t *texchainArray = new brushtexchain_t[t->anim_total];
+						CWorldSurfaceBrushTexChain *texchainArray = new CWorldSurfaceBrushTexChain[t->anim_total];
 
 						int numtexturechain = 0;
 						for (msurface_t *s2 = s; s2; s2 = s2->texturechain)
@@ -815,7 +815,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							int k = 0;
 							for (; k < t->anim_total && t2; t2 = t2->anim_next, ++k)
 							{
-								brushtexchain_t texchain;
+								CWorldSurfaceBrushTexChain texchain;
 								texchain.pTexture = t2;
 								texchain.pDetailTextureCache = R_FindDetailTextureCache(t2->gl_texturenum);
 								texchain.iIndiceCount = 0;
@@ -861,7 +861,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							continue;
 						}
 
-						brushtexchain_t texchain;
+						CWorldSurfaceBrushTexChain texchain;
 
 						texchain.pTexture = t;
 						texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
@@ -902,7 +902,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 						continue;
 					}
 
-					brushtexchain_t texchain;
+					CWorldSurfaceBrushTexChain texchain;
 
 					texchain.pTexture = t;
 					texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
@@ -938,7 +938,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					continue;
 				}
 
-				brushtexchain_t texchain;
+				CWorldSurfaceBrushTexChain texchain;
 
 				texchain.pTexture = t;
 				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
@@ -1546,12 +1546,12 @@ CWorldSurfaceWorldModel* R_GetWorldSurfaceWorldModel(model_t* mod)
 
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex < g_WorldSurfaceWorldModels.size() && g_WorldSurfaceWorldModels[modelindex])
+	if (modelindex < (int)g_WorldSurfaceWorldModels.size() && g_WorldSurfaceWorldModels[modelindex])
 	{
 		return g_WorldSurfaceWorldModels[modelindex];
 	}
 
-	if (modelindex > g_WorldSurfaceWorldModels.size())
+	if (modelindex > (int)g_WorldSurfaceWorldModels.size())
 	{
 		g_WorldSurfaceWorldModels.resize(modelindex + 1);
 	}
@@ -2754,12 +2754,6 @@ void R_LoadMapDetailTextures(void)
 	R_LoadDetailTextures(pfile);
 
 	gEngfuncs.COM_FreeFile(pfile);
-}
-
-
-void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
-{
-
 }
 
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname)

@@ -73,6 +73,7 @@ typedef struct detail_texture_cache_s
 	detail_texture_t tex[WSURF_MAX_TEXTURE];
 }detail_texture_cache_t;
 
+//GPU Resource
 typedef struct decalvertex_s
 {
 	vec3_t	pos;
@@ -91,6 +92,7 @@ typedef struct decalvertex_s
 	unsigned char styles[4];
 }decalvertex_t;
 
+//GPU Resource
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
@@ -109,8 +111,10 @@ typedef struct brushvertex_s
 	byte	styles[4];
 }brushvertex_t;
 
-typedef struct brushface_s
+//CPU Resource that is for generating EBO
+class CWorldSurfaceBrushFace
 {
+public:
 	int index;
 	int flags;
 	std::vector<int> start_vertex;
@@ -120,62 +124,27 @@ typedef struct brushface_s
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
-}brushface_t;
+};
+
+//CPU Resource
 
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
 #define TEXCHAIN_SKY 4
 
-typedef struct brushtexchain_s
-{
-	struct brushtexchain_s()
-	{
-		iStartIndex = 0;
-		iIndiceCount = 0;
-		iPolyCount = 0;
-		pTexture = 0;
-		pDetailTextureCache = NULL;
-		iDetailTextureFlags = 0;
-		iType = 0;
-	}
-	int iStartIndex;
-	int iIndiceCount;
-	int iPolyCount;
-	texture_t *pTexture;
-	detail_texture_cache_t *pDetailTextureCache;
-	int iDetailTextureFlags;
-	int iType;
-}brushtexchain_t;
-
-typedef struct epair_s
-{
-   struct epair_s *next;
-   char  *key;
-   char  *value;
-} epair_t;
-
-class bspentity_t
+class CWorldSurfaceBrushTexChain
 {
 public:
-	~bspentity_t()
-	{
-		auto pPair = epairs;
-		while (pPair)
-		{
-			auto pFree = pPair;
-			pPair = pFree->next;
-
-			delete[] pFree->key;
-			delete[] pFree->value;
-			delete pFree;
-		}
-	}
-
-	vec3_t  origin{};
-   epair_t* epairs{};
-   char* classname{};
+	int iStartIndex{};
+	int iIndiceCount{};
+	int iPolyCount{};
+	texture_t* pTexture{};
+	detail_texture_cache_t* pDetailTextureCache{};
+	int iDetailTextureFlags{};
+	int iType{};
 };
 
+//CPU Resource
 class CWorldSurfaceDrawBatch
 {
 public:
@@ -196,10 +165,10 @@ public:
 
 	GLuint hVAO{};
 	GLuint hEBO{};
-	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
+	std::vector<CWorldSurfaceBrushTexChain> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<CWorldSurfaceDrawBatch*> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
-	brushtexchain_t TextureChainSky;
+	CWorldSurfaceBrushTexChain TextureChainSky;
 	CWorldSurfaceModel* pModel{};
 };
 
@@ -210,7 +179,7 @@ public:
 
 	GLuint hVBO{};
 	model_t* mod{};
-	std::vector<brushface_t> vFaceBuffer;
+	std::vector<CWorldSurfaceBrushFace> vFaceBuffer;
 };
 
 class CWorldSurfaceModel
@@ -425,6 +394,10 @@ msurface_t* R_GetWorldSurfaceByIndex(model_t* mod, int index);
 model_t* R_FindWorldModelBySurface(msurface_t* psurf);
 model_t* R_FindWorldModelByNode(mnode_t* pnode);
 model_t* R_FindWorldModelByModel(model_t* m);
+
+class bspentity_t;
+
+typedef struct epair_s epair_t;
 
 void R_ClearBSPEntities();
 void R_ParseBSPEntities(const char *data, std::vector<bspentity_t*>& vBSPEntities);

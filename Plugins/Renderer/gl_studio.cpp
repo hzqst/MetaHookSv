@@ -306,7 +306,7 @@ void R_PrepareStudioVBOSubmodel(
 
 CStudioModelRenderData* R_GetStudioVBOFromStudioHeaderFast(studiohdr_t* studiohdr)
 {
-	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= g_StudioVBOCache.size())
+	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= (int)g_StudioVBOCache.size())
 		return nullptr;
 
 	auto VBOData = g_StudioVBOCache[studiohdr->soundtable];
@@ -363,7 +363,7 @@ CStudioModelRenderData* R_GetStudioVBOFromModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex >= g_StudioVBOCache.size())
+	if (modelindex >= (int)g_StudioVBOCache.size())
 		return NULL;
 
 	return g_StudioVBOCache[modelindex];
@@ -373,7 +373,7 @@ void R_AllocSlotForStudioVBO(model_t* mod, CStudioModelRenderData* VBOData)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex >= g_StudioVBOCache.size())
+	if (modelindex >= (int)g_StudioVBOCache.size())
 	{
 		g_StudioVBOCache.resize(modelindex + 1);
 	}

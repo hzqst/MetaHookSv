@@ -2,6 +2,36 @@
 
 class CWaterSurfaceModel;
 
+typedef struct epair_s
+{
+	struct epair_s* next;
+	char* key;
+	char* value;
+} epair_t;
+
+class bspentity_t
+{
+public:
+	~bspentity_t()
+	{
+		auto pPair = epairs;
+		while (pPair)
+		{
+			auto pFree = pPair;
+			pPair = pFree->next;
+
+			delete[] pFree->key;
+			delete[] pFree->value;
+			delete pFree;
+		}
+	}
+
+	vec3_t  origin{};
+	epair_t* epairs{};
+	char* classname{};
+};
+
+
 typedef struct entity_component_s
 {
 	struct entity_component_s *next;
