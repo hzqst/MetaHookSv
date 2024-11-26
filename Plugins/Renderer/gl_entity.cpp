@@ -3,19 +3,19 @@
 
 #define MAX_ENTITY_COMPONENTS 1024
 
-entity_component_t gEntityComponentPool[MAX_ENTITY_COMPONENTS];
+CEntityComponentContainer gEntityComponentPool[MAX_ENTITY_COMPONENTS];
 
-entity_component_t *gpEntityComponentActive = NULL;
-entity_component_t *gpEntityComponentFree = NULL;
+CEntityComponentContainer*gpEntityComponentActive = NULL;
+CEntityComponentContainer*gpEntityComponentFree = NULL;
 
-std::vector<entity_component_t *> g_ClientEntityRenderComponents;
-std::vector<entity_component_t *> g_TempEntityRenderComponents;
+std::vector<CEntityComponentContainer*> g_ClientEntityRenderComponents;
+std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
 
 void R_InitEntityComponents(void)
 {
 	for (int i = 0; i < MAX_ENTITY_COMPONENTS; i++)
 	{
-		gEntityComponentPool[i].next = &gEntityComponentPool[i + 1];
+		gEntityComponentPool[i].pNext = &gEntityComponentPool[i + 1];
 		gEntityComponentPool[i].FollowEnts.clear();
 		gEntityComponentPool[i].Decals.clear();
 		gEntityComponentPool[i].WaterVBOs.clear();
@@ -23,7 +23,7 @@ void R_InitEntityComponents(void)
 		gEntityComponentPool[i].DeferredStudioPasses.clear();
 	}
 
-	gEntityComponentPool[MAX_TEMP_ENTITIES - 1].next = NULL;
+	gEntityComponentPool[MAX_TEMP_ENTITIES - 1].pNext = NULL;
 	gpEntityComponentFree = &gEntityComponentPool[0];
 	gpEntityComponentActive = NULL;
 
@@ -36,18 +36,18 @@ void R_ShutdownEntityComponents(void)
 	R_InitEntityComponents();
 }
 
-entity_component_t *R_AllocateEntityComponent(void)
+CEntityComponentContainer *R_AllocateEntityComponentContainer(void)
 {
 	if (!gpEntityComponentFree)
 	{
-		gEngfuncs.Con_DPrintf("Overflow entity component!\n");
+		gEngfuncs.Con_DPrintf("Overflow entity component container!\n");
 		return NULL;
 	}
 
 	auto pTemp = gpEntityComponentFree;
-	gpEntityComponentFree = pTemp->next;
+	gpEntityComponentFree = pTemp->pNext;
 
-	pTemp->next = gpEntityComponentActive;
+	pTemp->pNext = gpEntityComponentActive;
 	gpEntityComponentActive = pTemp;
 
 	return pTemp;
@@ -64,9 +64,9 @@ void R_EntityComponents_PreFrame(void)
 		p->ReflectCaches.clear();
 		p->DeferredStudioPasses.clear();
 
-		auto temp = p->next;
+		auto temp = p->pNext;
 
-		p->next = gpEntityComponentFree;
+		p->pNext = gpEntityComponentFree;
 		gpEntityComponentFree = p;
 
 		p = temp;
@@ -127,9 +127,9 @@ int R_GetTempEntityComponentIndex(cl_entity_t *ent)
 	return -1;
 }
 
-entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_exists)
+CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool create_if_not_exists)
 {
-	entity_component_t * comp = NULL;
+	CEntityComponentContainer* pContainer = NULL;
 
 	int index = R_GetClientEntityComponentIndex(ent);
 
@@ -139,11 +139,13 @@ entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_ex
 		{
 			g_ClientEntityRenderComponents.resize((size_t)index + 1);
 		}
-		comp = g_ClientEntityRenderComponents[(size_t)index];
-		if (!comp && create_if_not_exists)
+		
+		pContainer = g_ClientEntityRenderComponents[(size_t)index];
+
+		if (!pContainer && create_if_not_exists)
 		{
-			comp = R_AllocateEntityComponent();
-			g_ClientEntityRenderComponents[(size_t)index] = comp;
+			pContainer = R_AllocateEntityComponentContainer();
+			g_ClientEntityRenderComponents[(size_t)index] = pContainer;
 		}
 	}
 	else
@@ -157,19 +159,16 @@ entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_ex
 				g_TempEntityRenderComponents.resize((size_t)index + 1);
 			}
 
-			comp = g_TempEntityRenderComponents[(size_t)index];
-			if (!comp && create_if_not_exists)
+			pContainer = g_TempEntityRenderComponents[(size_t)index];
+
+			if (!pContainer && create_if_not_exists)
 			{
-				comp = R_AllocateEntityComponent();
-				g_TempEntityRenderComponents[(size_t)index] = comp;
+				pContainer = R_AllocateEntityComponentContainer();
+
+				g_TempEntityRenderComponents[(size_t)index] = pContainer;
 			}
-		}
-		else
-		{
-			//g_pMetaHookAPI->SysError("R_AllocateEntityComponent: invalid ent 0x%p !", ent);
-			//return R_GetEntityComponent(r_worldentity, create_if_not_exists);
 		}
 	}
 
-	return comp;
+	return pContainer;
 }

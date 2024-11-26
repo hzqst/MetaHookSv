@@ -590,7 +590,7 @@ int CL_FxBlend(cl_entity_t *entity)
 		return 255;
 	}
 
-	auto EntityComponent = R_GetEntityComponent((*currententity), false);
+	auto EntityComponent = R_GetEntityComponentContainer((*currententity), false);
 
 	if (EntityComponent && EntityComponent->DeferredStudioPasses.size())
 	{
@@ -1324,9 +1324,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 		}
 
-		auto comp = R_GetEntityComponent((*currententity), false);
+		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
 
-		if (comp)
+		if (pEntityComponentContainer)
 		{
 			auto save_currententity = (*currententity);
 
@@ -1338,7 +1338,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 			//Do what CL_MoveAiments does...?
 
-			for (size_t i = 0; i < comp->FollowEnts.size(); ++i)
+			for (size_t i = 0; i < pEntityComponentContainer->FollowEnts.size(); ++i)
 			{
 				//Restore matrix at each run
 				if (i != 0)
@@ -1347,7 +1347,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 					memcpy((*plighttransform), save_lighttransform, sizeof(save_lighttransform));
 				}
 
-				(*currententity) = comp->FollowEnts[i];
+				(*currententity) = pEntityComponentContainer->FollowEnts[i];
 				
 				if ((*currententity)->player)
 				{

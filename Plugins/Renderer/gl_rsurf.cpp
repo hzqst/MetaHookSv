@@ -41,11 +41,11 @@ void R_PrepareDecals(void)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex(gDecalPool[i].entityIndex);
 
-			auto comp = R_GetEntityComponent(ent, true);
+			auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, true);
 
-			if (comp)
+			if (pEntityComponentContainer)
 			{
-				comp->Decals.emplace_back(decal);
+				pEntityComponentContainer->Decals.emplace_back(decal);
 			}
 		}
 	}
@@ -965,20 +965,20 @@ void R_DrawDecals(cl_entity_t *ent)
 			return;
 	}
 
-	auto EntityComponent = R_GetEntityComponent(ent, false);
+	auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, false);
 
-	if (!EntityComponent)
+	if (!pEntityComponentContainer)
 		return;
 
-	if (EntityComponent->Decals.empty())
+	if (pEntityComponentContainer->Decals.empty())
 		return;
 
 	g_DecalBaseDrawBatch.BatchCount = 0;
 	g_DecalDetailDrawBatch.BatchCount = 0;
 
-	for (size_t i = 0; i < EntityComponent->Decals.size(); i++)
+	for (size_t i = 0; i < pEntityComponentContainer->Decals.size(); i++)
 	{
-		auto plist = EntityComponent->Decals[i];
+		auto plist = pEntityComponentContainer->Decals[i];
 
 		if (plist)
 		{

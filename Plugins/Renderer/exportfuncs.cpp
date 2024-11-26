@@ -1805,10 +1805,12 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 		ent->model->type == mod_studio)
 	{
 		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
-		auto comp = R_GetEntityComponent(aiment, true);
-		if (comp)
+
+		auto pEntityComponentContainer = R_GetEntityComponentContainer(aiment, true);
+
+		if (pEntityComponentContainer)
 		{
-			comp->FollowEnts.emplace_back(ent);
+			pEntityComponentContainer->FollowEnts.emplace_back(ent);
 		}
 	}
 

@@ -2751,13 +2751,13 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	//Process all pending deferred passes on transparent pass
 	if (!r_draw_opaque)
 	{
-		auto EntityComponent = R_GetEntityComponent((*currententity), false);
+		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
 
-		if (EntityComponent)
+		if (pEntityComponentContainer)
 		{
-			if (EntityComponent->DeferredStudioPasses.size() > 0)
+			if (pEntityComponentContainer->DeferredStudioPasses.size() > 0)
 			{
-				for (auto fx : EntityComponent->DeferredStudioPasses)
+				for (auto fx : pEntityComponentContainer->DeferredStudioPasses)
 				{
 					int saved_renderfx = (*currententity)->curstate.renderfx;
 					int saved_renderamt = (*currententity)->curstate.renderamt;
@@ -2770,7 +2770,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 					(*currententity)->curstate.renderamt = saved_renderamt;
 				}
 
-				EntityComponent->DeferredStudioPasses.clear();
+				pEntityComponentContainer->DeferredStudioPasses.clear();
 				return;
 			}
 		}
@@ -2799,18 +2799,18 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	//Defer additive meshes to transparent pass
 	if (r_draw_opaque && r_draw_hasalpha)
 	{
-		auto comp = R_GetEntityComponent((*currententity), true);
+		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-		comp->DeferredStudioPasses.emplace_back(kRenderFxDrawAlphaMeshes);
+		pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAlphaMeshes);
 
 		r_draw_deferredtrans = true;
 	}
 
 	if (r_draw_opaque && r_draw_hasadditive)
 	{
-		auto comp = R_GetEntityComponent((*currententity), true);
+		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-		comp->DeferredStudioPasses.emplace_back(kRenderFxDrawAdditiveMeshes);
+		pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAdditiveMeshes);
 
 		r_draw_deferredtrans = true;
 	}
@@ -2876,9 +2876,9 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		{
 			//Defer GlowShell to transparent pass
 
-			auto comp = R_GetEntityComponent((*currententity), true);
+			auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-			comp->DeferredStudioPasses.emplace_back(kRenderFxDrawGlowShell);
+			pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawGlowShell);
 
 			r_draw_deferredtrans = true;
 		}

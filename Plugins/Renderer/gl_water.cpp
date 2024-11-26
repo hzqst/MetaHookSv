@@ -925,7 +925,7 @@ void R_RenderWaterPass(void)
 			R_UpdateRippleTexture(pWaterModel, (*r_framecount));
 		}
 
-		auto pEntityComponent = R_GetEntityComponent(ent, true);
+		auto pEntityComponent = R_GetEntityComponentContainer(ent, true);
 
 		if (pEntityComponent)
 		{
@@ -1330,7 +1330,7 @@ void R_DrawWatersForLeaf(CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 	if (!pLeaf->vWaterSurfaceModels.size())
 		return;
 
-	auto EntityComponent = R_GetEntityComponent(ent, false);
+	auto EntityComponent = R_GetEntityComponentContainer(ent, false);
 
 	if (!EntityComponent)
 		return;
