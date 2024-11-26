@@ -207,13 +207,11 @@ void R_BuildSurfaceDisplayList(model_t *mod, mvertex_t *vertbase, msurface_t *fa
 {
 	int i, lindex, lnumverts;
 	medge_t *pedges, *r_pedge;
-	int vertpage;
 	float *vec;
 	float s, t;
 
 	pedges = mod->edges;
 	lnumverts = fa->numedges;
-	vertpage = 0;
 
 	auto poly = (glpoly_t *)Hunk_AllocName(sizeof(glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof(float), "unknown");
 	poly->next = fa->polys;

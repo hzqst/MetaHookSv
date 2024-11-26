@@ -107,7 +107,7 @@ typedef struct brushvertex_s
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
-	int		texindex;//This is useless since we don't have bindless mode anymore
+	int		texindex;//This is useless since we don't have bindless mode anymo
 	byte	styles[4];
 }brushvertex_t;
 

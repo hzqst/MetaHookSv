@@ -188,7 +188,7 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", "renderer\\shader\\dlight_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_lightdir, "u_lightdir");

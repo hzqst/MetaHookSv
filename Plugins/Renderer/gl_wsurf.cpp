@@ -259,7 +259,7 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vert.glsl", "renderer\\shader\\wsurf_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
 
@@ -772,7 +772,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							continue;
 						}
 
-						CWorldSurfaceBrushTexChain *texchainArray = new CWorldSurfaceBrushTexChain[t->anim_total];
+						//CWorldSurfaceBrushTexChain *texchainArray = new CWorldSurfaceBrushTexChain[t->anim_total];
 
 						int numtexturechain = 0;
 						for (msurface_t *s2 = s; s2; s2 = s2->texturechain)
@@ -836,7 +836,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 						delete[]texchainSurface;
 						delete[]texchainMapper;
-						delete[]texchainArray;
+						//delete[]texchainArray;
 					}
 				}
 			}
@@ -964,7 +964,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 }
 
 /*
-Generate leaf array for brush model
+	Generate leaf array for brush model
 */
 
 CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
@@ -1416,7 +1416,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[0].speculartexcoord[0] = specularScale[0];
 					Vertexes[0].speculartexcoord[1] = specularScale[1];
-					Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
+					//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
@@ -1468,7 +1468,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[j].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[j].speculartexcoord[0] = specularScale[0];
 					Vertexes[j].speculartexcoord[1] = specularScale[1];
-					Vertexes[j].texindex = R_FindTextureIdByTexture(mod, ptexture);
+					//Vertexes[j].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[j].styles, surf->styles, sizeof(surf->styles));
 				}
 				vVertexBuffer.emplace_back(Vertexes[0]);
@@ -1507,7 +1507,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					Vertexes[2].parallaxtexcoord[1] = parallaxScale[1];
 					Vertexes[2].speculartexcoord[0] = specularScale[0];
 					Vertexes[2].speculartexcoord[1] = specularScale[1];
-					Vertexes[2].texindex = R_FindTextureIdByTexture(mod, ptexture);
+					//Vertexes[2].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[2].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);

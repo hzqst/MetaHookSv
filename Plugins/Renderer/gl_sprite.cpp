@@ -72,7 +72,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\sprite_shader.vsh", "renderer\\shader\\sprite_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\sprite_shader.vert.glsl", "renderer\\shader\\sprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			
@@ -172,7 +172,7 @@ void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *pro
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\legacysprite_shader.vsh", "renderer\\shader\\legacysprite_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\legacysprite_shader.vert.glsl", "renderer\\shader\\legacysprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 
 		if (prog.program)
 		{

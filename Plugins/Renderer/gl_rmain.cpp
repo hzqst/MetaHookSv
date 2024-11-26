@@ -2763,7 +2763,6 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 		return;
 	}
 
-
 	if (gl_widescreen_yfov->value == 1)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);

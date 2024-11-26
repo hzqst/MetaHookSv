@@ -116,7 +116,7 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", "renderer\\shader\\water_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vert.glsl", "renderer\\shader\\water_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_watercolor, "u_watercolor");

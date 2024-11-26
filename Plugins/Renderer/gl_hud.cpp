@@ -92,7 +92,7 @@ void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vsh", "renderer\\shader\\hud_debug.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vert.glsl", "renderer\\shader\\hud_debug.frag.glsl", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, basetex, "basetex");
@@ -166,7 +166,7 @@ void R_InitPostProcess(void)
 	}
 
 	//FXAA Pass
-	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vsh", "renderer\\shader\\pp_fxaa.fsh", NULL);
+	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl", NULL);
 	SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
 	SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
 	SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
