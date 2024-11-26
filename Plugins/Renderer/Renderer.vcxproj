@@ -322,6 +322,7 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Build\svencoop\renderer\shader\common.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimatingImagePanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimationController.h" />
@@ -427,6 +428,52 @@ $(FreeImageCheckRequirements)</Command>
     <ClInclude Include="spritegn.h" />
     <ClInclude Include="VGUI2ExtensionImport.h" />
     <ClInclude Include="zone.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\depthclear.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\depthlinearize.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\down_sample.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\fullscreenquad.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\fullscreentriangle.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\gamma_correction.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\gamma_uncorrection.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\gaussian_blur_16x.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hbao.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hbao_blur.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hdr_adaption.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hdr_brightpass.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hdr_lumpass.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hdr_tonemap.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawcolormask.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\pp_common.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\pp_common2x2.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\pp_fxaa.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\pp_fxaa.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\sprite_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\sprite_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\under_water_effect.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\water_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\water_shader.vert.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\wsurf_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\wsurf_shader.vert.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
