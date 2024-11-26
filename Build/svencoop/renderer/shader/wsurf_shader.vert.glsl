@@ -84,10 +84,9 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 	};
 
 	float width = zFar * flScale;
-
 	vec3 b = vec3(s * width, t * width, width);
-
 	vec3 v = SceneUBO.viewpos.xyz;
+
 	for (int j = 0; j < 3; j++)
 	{
 		int k = st_to_vec[axis][j];
@@ -120,8 +119,8 @@ void main(void)
 #ifdef SKYBOX_ENABLED
 
 	int vertidx = gl_VertexID % 4;
-
 	int quadidx = gl_VertexID / 4;
+
 	const vec4 s_array = vec4(-1.0, -1.0, 1.0, 1.0);
 	const vec4 t_array = vec4(-1.0, 1.0, 1.0, -1.0);
 
