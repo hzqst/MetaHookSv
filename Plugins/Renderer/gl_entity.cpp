@@ -22,8 +22,8 @@ void R_InitEntityComponents(void)
 		gEntityComponentPool[i].ReflectCaches.clear();
 		gEntityComponentPool[i].DeferredStudioPasses.clear();
 	}
-
-	gEntityComponentPool[MAX_TEMP_ENTITIES - 1].pNext = NULL;
+	//???
+	gEntityComponentPool[MAX_ENTITY_COMPONENTS - 1].pNext = NULL;
 	gpEntityComponentFree = &gEntityComponentPool[0];
 	gpEntityComponentActive = NULL;
 
@@ -105,7 +105,7 @@ TEMPENTITY *EngineGetTempTentByIndex(int index)
 	return &gTempEnts[index];
 }
 
-int R_GetClientEntityComponentIndex(cl_entity_t *ent)
+int R_GetClientEntityIndex(cl_entity_t *ent)
 {
 	if (ent >= EngineGetClientEntitiesBase() && ent < EngineGetClientEntitiesBase() + EngineGetMaxClientEdicts())
 	{
@@ -115,7 +115,7 @@ int R_GetClientEntityComponentIndex(cl_entity_t *ent)
 	return -1;
 }
 
-int R_GetTempEntityComponentIndex(cl_entity_t *ent)
+int R_GetTempEntityIndex(cl_entity_t *ent)
 {
 	if (ent >= &EngineGetTempTentsBase()->entity && ent < &EngineGetTempTentByIndex(EngineGetMaxTempEnts())->entity)
 	{
@@ -131,7 +131,7 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 {
 	CEntityComponentContainer* pContainer = NULL;
 
-	int index = R_GetClientEntityComponentIndex(ent);
+	int index = R_GetClientEntityIndex(ent);
 
 	if (index >= 0)
 	{
@@ -150,7 +150,7 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 	}
 	else
 	{
-		index = R_GetTempEntityComponentIndex(ent);
+		index = R_GetTempEntityIndex(ent);
 
 		if (index >= 0)
 		{
