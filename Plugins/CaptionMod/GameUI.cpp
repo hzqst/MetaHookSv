@@ -37,6 +37,7 @@ public:
 		m_pHoldTimeEntry = new CCvarTextEntry(this, "HoldTimeEntry", "cap_subtitle_holdtime");
 		m_pHoldTimeScaleEntry = new CCvarTextEntry(this, "HoldTimeScaleEntry", "cap_subtitle_htimescale");
 		m_pStartTimeScaleEntry = new CCvarTextEntry(this, "StartTimeScaleEntry", "cap_subtitle_stimescale");
+		m_pExtraHoldTimeEntry = new CCvarTextEntry(this, "StartTimeScaleEntry", "cap_subtitle_extraholdtime");
 
 		LoadControlSettings("captionmod/OptionsSubAudioAdvancedDlg.res");
 	}
@@ -59,6 +60,7 @@ public:
 		m_pHoldTimeEntry->ApplyChanges();
 		m_pHoldTimeScaleEntry->ApplyChanges();
 		m_pStartTimeScaleEntry->ApplyChanges();
+		m_pExtraHoldTimeEntry->ApplyChanges();
 	}
 
 	void OnApplyChanges() override
@@ -77,6 +79,7 @@ public:
 		m_pHoldTimeEntry->Reset();
 		m_pHoldTimeScaleEntry->Reset();
 		m_pStartTimeScaleEntry->Reset();
+		m_pExtraHoldTimeEntry->Reset();
 	}
 
 	void OnCommand(const char *command) override
@@ -108,6 +111,7 @@ private:
 	CCvarTextEntry *m_pHoldTimeEntry;
 	CCvarTextEntry *m_pHoldTimeScaleEntry;
 	CCvarTextEntry *m_pStartTimeScaleEntry;
+	CCvarTextEntry* m_pExtraHoldTimeEntry;
 };
 
 void COptionsSubAudioAdvancedDlg::OnDataChanged()
@@ -308,74 +312,7 @@ public:
 
 	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char *sourceModule, VGUI2Extension_CallbackContext* CallbackContext)
 	{
-#if 0
-		if (CallbackContext->IsPost && !stricmp(resourceName, "resource/GameMenu.res"))
-		{
-			bool *pRealReturnValue = (bool*)CallbackContext->pRealReturnValue;
 
-			if ((*pRealReturnValue) == true)
-			{
-				KeyValues* pKeyValues = (KeyValues*)pthis;
-
-				auto name = pKeyValues->GetName();
-
-				KeyValues* SectionQuit = NULL;
-				for (auto p = pKeyValues->GetFirstSubKey(); p; p = p->GetNextKey())
-				{
-					auto command = p->GetString("command");
-					if (!strcmp(command, "Quit"))
-					{
-						SectionQuit = p;
-					}
-				}
-				if (SectionQuit)
-				{
-					auto NameSectionQuit = SectionQuit->GetName();
-					int iNameSectionQuit = atoi(NameSectionQuit);
-					if (iNameSectionQuit > 0)
-					{
-						/*
-						
-						 //Update this:
-							"8"
-							{
-								"label" "#GameUI_GameMenu_Quit"
-								"command" "Quit"
-							}
-
-						//To this:
-							"8"
-							{
-								"label" "#GameUI_GameMenu_TestButton"
-								"command" "TestButton"
-							}
-							"9"
-							{
-								"label" "#GameUI_GameMenu_Quit"
-								"command" "Quit"
-							}
-						*/
-
-						char szNewNameSectionQuit[32];
-						snprintf(szNewNameSectionQuit, sizeof(szNewNameSectionQuit), "%d", iNameSectionQuit + 1);
-
-						SectionQuit->SetName(szNewNameSectionQuit);
-
-						char szNewNameTestButton[32];
-						snprintf(szNewNameTestButton, sizeof(szNewNameTestButton), "%d", iNameSectionQuit);
-
-						auto SectionTestButton = new KeyValues(szNewNameTestButton);
-
-						SectionTestButton->SetString("label", "#GameUI_GameMenu_TestButton");
-						SectionTestButton->SetString("command", "TestCommand");
-
-						pKeyValues->AddSubKeyBefore(SectionTestButton, SectionQuit);
-
-					}
-				}
-			}
-		}
-#endif
 	}
 };
 

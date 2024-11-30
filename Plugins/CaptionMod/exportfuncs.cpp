@@ -45,6 +45,7 @@ cvar_t* cap_subtitle_fadeout = NULL;
 cvar_t* cap_subtitle_holdtime = NULL;
 cvar_t* cap_subtitle_stimescale = NULL;
 cvar_t* cap_subtitle_htimescale = NULL;
+cvar_t* cap_subtitle_extraholdtime = NULL;
 
 void Cap_RegisterSubtitleCvars()
 {
@@ -56,6 +57,7 @@ void Cap_RegisterSubtitleCvars()
 	cap_subtitle_holdtime = gEngfuncs.pfnRegisterVariable("cap_subtitle_holdtime", "10.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_subtitle_stimescale = gEngfuncs.pfnRegisterVariable("cap_subtitle_stimescale", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_subtitle_htimescale = gEngfuncs.pfnRegisterVariable("cap_subtitle_htimescale", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_extraholdtime = gEngfuncs.pfnRegisterVariable("cap_subtitle_extraholdtime", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 cl_entity_t* EngineGetViewEntity(void)

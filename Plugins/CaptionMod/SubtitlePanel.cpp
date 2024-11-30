@@ -21,7 +21,7 @@ extern cvar_t* cap_subtitle_fadeout;
 extern cvar_t* cap_subtitle_holdtime;
 extern cvar_t* cap_subtitle_stimescale;
 extern cvar_t* cap_subtitle_htimescale;
-
+extern cvar_t* cap_subtitle_extraholdtime;
 using namespace vgui;
 
 SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
@@ -385,7 +385,7 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 	StartNextSubtitle(Line->m_Dict);
 }
 
-void SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
+CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
 {
 	CSubLine *Line = new CSubLine(this, Dict);
 	m_BackLines[m_BackLines.AddToTail()] = Line;
@@ -408,6 +408,8 @@ void SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength
 	Line->m_YPos = Line->CalcYPos();
 	Line->m_FadeOut = cap_subtitle_fadeout->value;
 	Line->m_TextAlign = Dict->m_iTextAlign ? Dict->m_iTextAlign : m_iTextAlign;
+
+	return Line;
 }
 
 static bool IsNonBreakableCharacter(wchar_t ch)
@@ -506,6 +508,8 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 
 	p = pStart;
 
+	CSubLine* pAddedLine = NULL;
+
 	while(*pStart)
 	{
 		//fetch one line from this sentence
@@ -566,6 +570,9 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 			}
 		}
 
+		if (nCharNum == 0)
+			break;
+
 		//Calculate the duration and start time
 		float flPercentDuration = (float)nCharNum / nTotalCharNum;
 		float flPercentStart = (float)(nAddedCharNum - nCharNum) / nTotalCharNum;
@@ -593,13 +600,19 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		else//real duration = original starttime - real starttime + original duration
 			flRealDuration = max(flStartTime + flCalcStartTime - flRealStartTime, 0) + flCalcDuration;
 
-		AddLine(pDict, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
+		pAddedLine = AddLine(pDict, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
 
 		//Skip CRLF
 		while (*p == L'\r' || *p == L'\n')
 			p++;
 
 		pStart = p;
+	}
+
+	if (pAddedLine && cap_subtitle_extraholdtime->value > 0)
+	{
+		//Add extra holdtime for the last line added
+		pAddedLine->m_Duration += cap_subtitle_extraholdtime->value;
 	}
 }
 
