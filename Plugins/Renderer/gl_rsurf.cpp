@@ -31,15 +31,25 @@ void R_AddDynamicLights(msurface_t *surf)
 	//All moved to shader
 }
 
+decal_t* EngineGetDecalByIndex(int index)
+{
+	return &gDecalPool[index];
+}
+
+int EngineGetMaxDecalCount()
+{
+	return MAX_DECALS;
+}
+
 void R_PrepareDecals(void)
 {
-	for (int i = 0; i < MAX_DECALS; ++i)
+	for (int i = 0; i < EngineGetMaxDecalCount(); ++i)
 	{
-		auto decal = &gDecalPool[i];
+		auto decal = EngineGetDecalByIndex(i);
 
 		if (decal->psurface)
 		{
-			auto ent = gEngfuncs.GetEntityByIndex(gDecalPool[i].entityIndex);
+			auto ent = gEngfuncs.GetEntityByIndex(decal->entityIndex);
 
 			auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, true);
 
