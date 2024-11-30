@@ -2542,6 +2542,7 @@ void R_GLStudioDrawPoints(void)
 
 	if (!VBOData)
 	{
+		Sys_Error("R_GLStudioDrawPoints: no available VBOData for \"%s\"!", (*pstudiohdr)->name);
 		return;
 	}
 
