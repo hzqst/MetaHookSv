@@ -468,9 +468,12 @@ bool R_IsDLightFlashlight(dlight_t *dl)
 	//CL_PlayerFlashlight:
 	//dl = efx.CL_AllocDlight (1);
 
-	if (dl->key == 1)
+	if (gEngfuncs.GetMaxClients() <= 1)
 	{
-		return true;
+		if (dl->key == 1)
+		{
+			return true;
+		}
 	}
 
 	return false;
