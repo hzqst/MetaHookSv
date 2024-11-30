@@ -454,6 +454,7 @@ void R_NewMapLight_Post()
 
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
+
 	if (dl->key >= 1 && dl->key <= 32)
 	{
 		auto ent = gEngfuncs.GetEntityByIndex(dl->key);
@@ -462,6 +463,14 @@ bool R_IsDLightFlashlight(dlight_t *dl)
 		{
 			return true;
 		}
+	}
+
+	//CL_PlayerFlashlight:
+	//dl = efx.CL_AllocDlight (1);
+
+	if (dl->key == 1)
+	{
+		return true;
 	}
 
 	return false;
