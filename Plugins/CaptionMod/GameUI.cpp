@@ -37,7 +37,7 @@ public:
 		m_pHoldTimeEntry = new CCvarTextEntry(this, "HoldTimeEntry", "cap_subtitle_holdtime");
 		m_pHoldTimeScaleEntry = new CCvarTextEntry(this, "HoldTimeScaleEntry", "cap_subtitle_htimescale");
 		m_pStartTimeScaleEntry = new CCvarTextEntry(this, "StartTimeScaleEntry", "cap_subtitle_stimescale");
-		m_pExtraHoldTimeEntry = new CCvarTextEntry(this, "StartTimeScaleEntry", "cap_subtitle_extraholdtime");
+		m_pExtraHoldTimeEntry = new CCvarTextEntry(this, "ExtraHoldTimeEntry", "cap_subtitle_extraholdtime");
 
 		LoadControlSettings("captionmod/OptionsSubAudioAdvancedDlg.res");
 	}
