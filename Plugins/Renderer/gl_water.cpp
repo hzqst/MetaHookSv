@@ -1330,13 +1330,13 @@ void R_DrawWatersForLeaf(CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 	if (!pLeaf->vWaterSurfaceModels.size())
 		return;
 
-	auto EntityComponent = R_GetEntityComponentContainer(ent, false);
+	auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, false);
 
-	if (!EntityComponent)
+	if (!pEntityComponentContainer)
 		return;
 
-	for (size_t i = 0; i < EntityComponent->WaterVBOs.size(); ++i)
+	for (size_t i = 0; i < pEntityComponentContainer->WaterVBOs.size(); ++i)
 	{
-		R_DrawWaterSurfaceModel(EntityComponent->WaterVBOs[i], EntityComponent->ReflectCaches[i], ent);
+		R_DrawWaterSurfaceModel(pEntityComponentContainer->WaterVBOs[i], pEntityComponentContainer->ReflectCaches[i], ent);
 	}
 }

@@ -1043,7 +1043,7 @@ void R_DrawDecals(cl_entity_t *ent)
 				if (!g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
 				{
 					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex];
-					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex];
+					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = nullptr;
 					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex];
 					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex];
 					++g_DecalBaseDrawBatch.BatchCount;

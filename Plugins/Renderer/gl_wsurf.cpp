@@ -1585,7 +1585,7 @@ void R_GenerateSceneUBO(void)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	//3.5 MBytes of VRAM
+	//15 MBytes of VRAM
 	g_WorldSurfaceRenderer.hDecalVBO = GL_GenBuffer();
 	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL);
 
