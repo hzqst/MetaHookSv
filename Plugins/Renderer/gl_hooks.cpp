@@ -6813,6 +6813,13 @@ void sub_1D1A030()
 		Sig_AddrNotFound(r_projection_matrix);
 		r_projection_matrix = *(float**)(addr + 1);
 
+	}
+
+	if (0)
+	{
+		//68 00 03 00 00                                      push    300h
+
+
 #define TMP_PALETTE_SIG "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
 		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG);
 		Sig_AddrNotFound(tmp_palette);
@@ -6832,6 +6839,7 @@ void sub_1D1A030()
 		typedef struct
 		{
 			PVOID candidate_E8;
+			int instCount_push300h;
 		}R_StudioSetupSkin_ctx;
 
 		R_StudioSetupSkin_ctx ctx = { 0 };
@@ -6886,14 +6894,40 @@ void sub_1D1A030()
 
 			if (!gPrivateFuncs.GL_UnloadTexture && ctx->candidate_E8)
 			{
-				if (address[0] == 0x6A && address[1] == 0x00 && address[2] == 0x6A && address[3] == 0x00)
+				//.text:01D8B20C FF B7 20 01 00 00                                   push    dword ptr [edi+120h]
+				if (pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base &&
+					pinst->detail->x86.operands[0].mem.disp == 0x120)
 				{
 					gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ctx->candidate_E8;
-					return TRUE;
+					//return TRUE;
 				}
 			}
 
-			if (gPrivateFuncs.GL_UnloadTexture && gPrivateFuncs.R_StudioGetSkin)
+			if (!ctx->instCount_push300h &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[0].imm == 0x300)
+			{
+				ctx->instCount_push300h = instCount;
+			}
+
+			if (ctx->instCount_push300h &&
+				instCount > ctx->instCount_push300h && 
+				instCount < ctx->instCount_push300h + 8 &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				(ULONG_PTR)pinst->detail->x86.operands[0].imm > (ULONG_PTR)g_dwEngineBase &&
+				(ULONG_PTR)pinst->detail->x86.operands[0].imm < (ULONG_PTR)g_dwEngineBase + (ULONG_PTR)g_dwEngineSize)
+			{
+				tmp_palette = (decltype(tmp_palette) *)pinst->detail->x86.operands[0].imm;
+			}
+
+			if (gPrivateFuncs.GL_UnloadTexture && gPrivateFuncs.R_StudioGetSkin && tmp_palette)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -6907,6 +6941,7 @@ void sub_1D1A030()
 
 		Sig_FuncNotFound(R_StudioGetSkin);
 		Sig_FuncNotFound(GL_UnloadTexture);
+		Sig_VarNotFound(tmp_palette);
 	}
 
 #if 0//unused
