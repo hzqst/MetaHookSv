@@ -300,6 +300,7 @@ public:
 		m_PlayerDeathState[entindex].bIsDying = false;
 		m_PlayerDeathState[entindex].flAnimTime = 0;
 		m_PlayerDeathState[entindex].iSequence = 0;
+		m_PlayerDeathState[entindex].iBody = 0;
 		m_PlayerDeathState[entindex].iModelIndex = 0;
 		memset(m_PlayerDeathState[entindex].szModelName, 0, sizeof(m_PlayerDeathState[entindex].szModelName));
 		VectorClear(m_PlayerDeathState[entindex].vecAngles);

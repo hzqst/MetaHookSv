@@ -1176,6 +1176,11 @@ void Client_FillAddress(void)
 		}
 	}
 
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "dod"))
+	{
+		g_bIsDayOfDefeat = true;
+	}
+
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
 		g_bIsCounterStrike = true;

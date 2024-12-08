@@ -121,6 +121,7 @@ extern private_funcs_t gPrivateFuncs;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
+extern bool g_bIsDayOfDefeat;
 
 extern ref_params_t r_params;
 

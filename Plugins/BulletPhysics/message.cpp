@@ -15,25 +15,47 @@ pfnUserMsgHook m_pfnClCorpse = NULL;
 
 int __MsgFunc_ClCorpse(const char *pszName, int iSize, void *pbuf)
 {
-	vec3_t vOrigin, vAngles;
-
+	
 	BEGIN_READ(pbuf, iSize);
+
 	auto model = READ_STRING();
 
 	char szModel[64] = { 0 };
 	strncpy(szModel, model, sizeof(szModel));
 
-	vOrigin[0] = 0.0078125f * READ_LONG();
-	vOrigin[1] = 0.0078125f * READ_LONG(); 
-	vOrigin[2] = 0.0078125f * READ_LONG();
-	vAngles[0] = READ_COORD();
-	vAngles[1] = READ_COORD();
-	vAngles[2] = READ_COORD();
-	auto Delay = READ_LONG();
-	auto Sequence = READ_BYTE();
-	auto Body = READ_BYTE();
-	auto TeamID = READ_BYTE();
-	auto PlayerID = READ_BYTE();
+	vec3_t vOrigin, vAngles;
+	int Delay = -1;
+	int Sequence = -1;
+	int Body = -1;
+	int TeamID = -1;
+	int PlayerID = -1;
+
+	//DOD sucks
+	if (g_bIsDayOfDefeat)
+	{
+		vOrigin[0] = READ_COORD();
+		vOrigin[1] = READ_COORD();
+		vOrigin[2] = READ_COORD();
+		vAngles[0] = READ_ANGLE();
+		vAngles[1] = READ_ANGLE();
+		vAngles[2] = READ_ANGLE();
+		Sequence = READ_BYTE();
+		Body = READ_SHORT();
+	}
+	else
+	{
+		vOrigin[0] = 0.0078125f * READ_LONG();
+		vOrigin[1] = 0.0078125f * READ_LONG();
+		vOrigin[2] = 0.0078125f * READ_LONG();
+		vAngles[0] = READ_COORD();
+		vAngles[1] = READ_COORD();
+		vAngles[2] = READ_COORD();
+		Delay = READ_LONG();
+		Sequence = READ_BYTE();
+		Body = READ_BYTE();
+		TeamID = READ_BYTE();
+		PlayerID = READ_BYTE();
+	}
 
 	char szNewModel[64] = { 0 };
 	CounterStrike_RedirectPlayerModelPath(szModel, PlayerID, TeamID, szNewModel, sizeof(szNewModel));
@@ -45,7 +67,7 @@ int __MsgFunc_ClCorpse(const char *pszName, int iSize, void *pbuf)
 	//pev->framerate = 0;
 	if (PlayerID <= 0 || PlayerID > gEngfuncs.GetMaxClients())
 	{
-		g_iCreatingClCorpsePlayerIndex = ClientEntityManager()->FindDyingPlayer(szModel, vOrigin, vAngles, Sequence, Body);
+		g_iCreatingClCorpsePlayerIndex = ClientEntityManager()->FindDyingPlayer(szNewModel, vOrigin, vAngles, Sequence, Body);
 	}
 	else
 	{

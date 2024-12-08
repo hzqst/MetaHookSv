@@ -62,6 +62,8 @@ cvar_t* sv_cheats = NULL;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
+bool g_bIsDayOfDefeat = false;
+
 int g_iRagdollRenderEntIndex = 0;
 int g_iRagdollRenderFlags = 0;
 bool g_bIsUpdatingRefdef = false;
