@@ -1440,8 +1440,6 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 
 	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0 && g_iCreatingClCorpsePlayerIndex <= gEngfuncs.GetMaxClients())
 	{
-		int entindex = r - gTempEnts + ENTINDEX_TEMPENTITY;
-
 		r->entity.curstate.iuser4 = PhyCorpseFlag;
 		r->entity.curstate.owner = g_iCreatingClCorpsePlayerIndex;
 	}

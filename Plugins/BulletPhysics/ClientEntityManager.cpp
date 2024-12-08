@@ -69,7 +69,7 @@ public:
 
 		if (IsEntityIndexTempEntity(entindex))
 		{
-			return &gTempEnts[entindex].entity;
+			return &gTempEnts[entindex - ENTINDEX_TEMPENTITY].entity;
 		}
 
 		return nullptr;
