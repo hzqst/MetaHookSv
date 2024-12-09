@@ -203,58 +203,58 @@ DB2,#DB2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 DB3,#DB3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 TR_A,#TR_A,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 TR_B,#TR_B,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
-HEV_AAx,#HEV_AAx,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A0,#HEV_A0,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A1,#HEV_A1,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A2,#HEV_A2,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A3,#HEV_A3,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A4,#HEV_A4,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A8,#HEV_A8,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A7,#HEV_A7,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A5,#HEV_A5,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A6,#HEV_A6,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_A10,#HEV_A10,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH1,#HEV_HLTH1,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH2,#HEV_HLTH2,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH3,#HEV_HLTH3,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH4,#HEV_HLTH4,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH5,#HEV_HLTH5,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HLTH6,#HEV_HLTH6,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG7,#HEV_DMG7,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_SHOCK,#HEV_SHOCK,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_FIRE,#HEV_FIRE,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG3,#HEV_DMG3,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG0,#HEV_DMG0,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG1,#HEV_DMG1,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG4,#HEV_DMG4,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG5,#HEV_DMG5,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG6,#HEV_DMG6,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DMG2,#HEV_DMG2,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_HEAL7,#HEV_HEAL7,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DET2,#HEV_DET2,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DET1,#HEV_DET1,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_DET0,#HEV_DET0,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_0P,#HEV_0P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_1P,#HEV_1P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_2P,#HEV_2P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_3P,#HEV_3P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_4P,#HEV_4P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_5P,#HEV_5P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_6P,#HEV_6P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_7P,#HEV_7P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_8P,#HEV_8P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_9P,#HEV_9P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_10P,#HEV_10P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_11P,#HEV_11P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_12P,#HEV_12P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_13P,#HEV_13P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_14P,#HEV_14P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_15P,#HEV_15P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_16P,#HEV_16P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_17P,#HEV_17P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_18P,#HEV_18P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_19P,#HEV_19P,Orange,,#HalfLife_HEV_Voice,,,C
-HEV_AMO0,#HEV_AMO0,Orange,,#HalfLife_HEV_Voice,,,C
+HEV_AAx,#HEV_AAx,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A0,#HEV_A0,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A1,#HEV_A1,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A2,#HEV_A2,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A3,#HEV_A3,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A4,#HEV_A4,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A8,#HEV_A8,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A7,#HEV_A7,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A5,#HEV_A5,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A6,#HEV_A6,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_A10,#HEV_A10,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH1,#HEV_HLTH1,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH2,#HEV_HLTH2,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH3,#HEV_HLTH3,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH4,#HEV_HLTH4,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH5,#HEV_HLTH5,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HLTH6,#HEV_HLTH6,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG7,#HEV_DMG7,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_SHOCK,#HEV_SHOCK,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_FIRE,#HEV_FIRE,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG3,#HEV_DMG3,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG0,#HEV_DMG0,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG1,#HEV_DMG1,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG4,#HEV_DMG4,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG5,#HEV_DMG5,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG6,#HEV_DMG6,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DMG2,#HEV_DMG2,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_HEAL7,#HEV_HEAL7,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DET2,#HEV_DET2,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DET1,#HEV_DET1,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_DET0,#HEV_DET0,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_0P,#HEV_0P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_1P,#HEV_1P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_2P,#HEV_2P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_3P,#HEV_3P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_4P,#HEV_4P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_5P,#HEV_5P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_6P,#HEV_6P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_7P,#HEV_7P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_8P,#HEV_8P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_9P,#HEV_9P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_10P,#HEV_10P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_11P,#HEV_11P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_12P,#HEV_12P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_13P,#HEV_13P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_14P,#HEV_14P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_15P,#HEV_15P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_16P,#HEV_16P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_17P,#HEV_17P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_18P,#HEV_18P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_19P,#HEV_19P,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
+HEV_AMO0,#HEV_AMO0,Orange,,#HalfLife_HEV_Voice,,,C IGNORE_VOLUME_LIMIT
 holo/tr_sci_goodwork.wav,#tr_sci_goodwork,Gray,,#HalfLife_Scientist,,,C
 holo/tr_sci_hardlynoticed.wav,#tr_sci_hardlynoticed,Gray,,#HalfLife_Scientist,,,C
 holo/tr_sci_nextstation.wav,#tr_sci_nextstation,Gray,,#HalfLife_Scientist,,,C
