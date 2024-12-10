@@ -498,8 +498,8 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_AnisotropicFiltering"
-		"xpos"		"24"
-		"ypos"		"285"
+		"xpos"		"350"
+		"ypos"		"160"
 		"wide"		"160"
 		"tall"		"24"
 		"autoResize"		"0"
@@ -518,8 +518,8 @@
 	{
 		"ControlName"		"ComboBox"
 		"fieldName"		"AnisotropicFiltering"
-		"xpos"		"24"
-		"ypos"		"310"
+		"xpos"		"350"
+		"ypos"		"185"
 		"wide"		"160"
 		"tall"		"24"
 		"autoResize"		"0"
