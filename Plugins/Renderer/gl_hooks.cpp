@@ -6839,6 +6839,7 @@ void sub_1D1A030()
 		typedef struct
 		{
 			PVOID candidate_E8;
+			int candidate_E8_instCount;
 			int instCount_push300h;
 		}R_StudioSetupSkin_ctx;
 
@@ -6852,6 +6853,7 @@ void sub_1D1A030()
 			if (address[0] == 0xE8 && instLen == 5)
 			{
 				ctx->candidate_E8 = (decltype(ctx->candidate_E8))pinst->detail->x86.operands[0].imm;
+				ctx->candidate_E8_instCount = instCount;
 
 				if (!gPrivateFuncs.R_StudioGetSkin)
 				{
@@ -6894,37 +6896,51 @@ void sub_1D1A030()
 
 			if (!gPrivateFuncs.GL_UnloadTexture && ctx->candidate_E8)
 			{
-				//.text:01D8B20C FF B7 20 01 00 00                                   push    dword ptr [edi+120h]
-				if (pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base &&
-					pinst->detail->x86.operands[0].mem.disp == 0x120)
+				if (instCount > ctx->candidate_E8_instCount && instCount < ctx->candidate_E8_instCount + 5)
 				{
-					gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ctx->candidate_E8;
-					//return TRUE;
+					//.text:01D8B20C FF B7 20 01 00 00                                   push    dword ptr [edi+120h]
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base &&
+						pinst->detail->x86.operands[0].mem.disp == 0x120)
+					{
+						gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ctx->candidate_E8;
+					}
+					else if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base &&
+						pinst->detail->x86.operands[1].mem.disp == 0x120)
+					{
+						gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ctx->candidate_E8;
+					}
 				}
 			}
 
-			if (!ctx->instCount_push300h &&
-				pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[0].imm == 0x300)
+			if (!tmp_palette)
 			{
-				ctx->instCount_push300h = instCount;
-			}
+				if (!ctx->instCount_push300h &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[0].imm == 0x300)
+				{
+					ctx->instCount_push300h = instCount;
+				}
 
-			if (ctx->instCount_push300h &&
-				instCount > ctx->instCount_push300h && 
-				instCount < ctx->instCount_push300h + 8 &&
-				pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				(ULONG_PTR)pinst->detail->x86.operands[0].imm > (ULONG_PTR)g_dwEngineBase &&
-				(ULONG_PTR)pinst->detail->x86.operands[0].imm < (ULONG_PTR)g_dwEngineBase + (ULONG_PTR)g_dwEngineSize)
-			{
-				tmp_palette = (decltype(tmp_palette) *)pinst->detail->x86.operands[0].imm;
+				if (ctx->instCount_push300h &&
+					instCount > ctx->instCount_push300h &&
+					instCount < ctx->instCount_push300h + 8 &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					(ULONG_PTR)pinst->detail->x86.operands[0].imm >(ULONG_PTR)g_dwEngineBase &&
+					(ULONG_PTR)pinst->detail->x86.operands[0].imm < (ULONG_PTR)g_dwEngineBase + (ULONG_PTR)g_dwEngineSize)
+				{
+					tmp_palette = (decltype(tmp_palette)*)pinst->detail->x86.operands[0].imm;
+				}
 			}
 
 			if (gPrivateFuncs.GL_UnloadTexture && gPrivateFuncs.R_StudioGetSkin && tmp_palette)
