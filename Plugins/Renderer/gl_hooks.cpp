@@ -6896,7 +6896,7 @@ void sub_1D1A030()
 
 			if (!gPrivateFuncs.GL_UnloadTexture && ctx->candidate_E8)
 			{
-				if (instCount > ctx->candidate_E8_instCount && instCount < ctx->candidate_E8_instCount + 5)
+				if (instCount > ctx->candidate_E8_instCount && instCount < ctx->candidate_E8_instCount + 10)
 				{
 					//.text:01D8B20C FF B7 20 01 00 00                                   push    dword ptr [edi+120h]
 					if (pinst->id == X86_INS_PUSH &&
