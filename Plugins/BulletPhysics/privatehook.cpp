@@ -835,6 +835,11 @@ void Engine_FillAddreess(void)
 
 	if (1)
 	{
+		if (g_dwEngineBuildnum <= 8684)
+		{
+			size_of_frame = 0x42B8;
+		}
+
 		typedef struct
 		{
 			int disableFog_instcount;
@@ -936,6 +941,7 @@ void Engine_FillAddreess(void)
 
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
+		Sig_VarNotFound(size_of_frame);
 	}
 
 	if (1)

@@ -290,7 +290,7 @@ void CBaseRagdollObject::Update(CPhysicObjectUpdateContext* ObjectUpdateContext)
 	if (!CalculateOverrideActivityType(playerState, &iNewActivityType, &iNewAnimControlFlags))
 	{
 		StudioGetActivityType(m_model, playerState, &iNewActivityType, &iNewAnimControlFlags);
-	}	
+	}
 
 	if (m_playerindex == m_entindex)
 	{

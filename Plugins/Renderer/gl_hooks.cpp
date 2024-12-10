@@ -3732,6 +3732,11 @@ void R_FillAddress(void)
 
 	if (1)
 	{
+		if (g_dwEngineBuildnum <= 8684)
+		{
+			size_of_frame = 0x42B8;
+		}
+
 		typedef struct
 		{
 			int disableFog_instcount;
@@ -4055,6 +4060,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(r_blend);
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
+		Sig_VarNotFound(size_of_frame);
 		Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
 
 		if (ctx.r_entorigin_candidate_count >= 2)
