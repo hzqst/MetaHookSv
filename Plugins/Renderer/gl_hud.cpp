@@ -627,8 +627,6 @@ bool R_IsHDREnabled(void)
 
 void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t* dst)
 {
-	GL_BeginProfile(&Profile_DoHDR);
-
 	GL_BeginFullScreenQuad(false);
 
 	GL_DisableMultitexture();
@@ -677,8 +675,6 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 	GL_EndFullScreenQuad();
 
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, dst);
-
-	GL_EndProfile(&Profile_DoHDR);
 }
 
 bool R_IsFXAAEnabled(void)
@@ -800,8 +796,6 @@ bool R_IsGammaBlendEnabled()
 
 void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_BeginProfile(&Profile_GammaCorrection);
-
 	GL_BindFrameBuffer(dst);
 
 	GL_BeginFullScreenQuad(false);
@@ -820,8 +814,6 @@ void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_UseProgram(0);
 
 	GL_EndFullScreenQuad();
-
-	GL_EndProfile(&Profile_GammaCorrection);
 }
 
 void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
@@ -928,8 +920,6 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 		return;
 
 	//Prepare parameters
-	GL_BeginProfile(&Profile_AmbientOcclusion);
-
 	const float *ProjMatrix = r_projection_matrix;
 
 	float projInfoPerspective[] = {
@@ -1060,14 +1050,10 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_EndStencil();
 
 	glDisable(GL_BLEND);
-
-	GL_EndProfile(&Profile_AmbientOcclusion);
 }
 
 void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_BeginProfile(&Profile_BlendFinalBuffer);
-
 	GL_PushDrawState();
 	GL_PushMatrix();
 
@@ -1087,6 +1073,4 @@ void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_PopMatrix();
 	GL_PopDrawState();
-
-	GL_EndProfile(&Profile_BlendFinalBuffer);
 }

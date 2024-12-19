@@ -29,7 +29,6 @@
 #include "zone.h"
 
 #include "gl_common.h"
-#include "gl_profile.h"
 #include "gl_shader.h"
 #include "gl_model.h"
 #include "gl_water.h"

@@ -92,9 +92,6 @@
     <ClCompile Include="gl_sprite.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="gl_profile.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="gl_cvar.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -488,9 +485,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_sprite.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="gl_profile.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_cvar.h">

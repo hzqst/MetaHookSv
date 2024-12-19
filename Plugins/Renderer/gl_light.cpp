@@ -1107,13 +1107,9 @@ void R_EndRenderGBuffer(FBO_Container_t *dst)
 
 	GL_EndFullScreenQuad();
 
-	GL_BeginProfile(&Profile_EndRenderGBuffer);
-
 	R_LightShadingPass();
 
 	R_FinalShadingPass(dst);
-
-	GL_EndProfile(&Profile_EndRenderGBuffer);
 
 	r_draw_gbuffer = false;
 	gbuffer_mask = -1;

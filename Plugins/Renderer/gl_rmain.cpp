@@ -316,8 +316,6 @@ cvar_t* gl_widescreen_yfov = NULL;
 
 cvar_t* cl_fixmodelinterpolationartifacts = NULL;
 
-cvar_t *gl_profile = NULL;
-
 cvar_t *dev_overview_color = NULL;
 
 cvar_t* r_gamma_blend = NULL;
@@ -1085,8 +1083,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 	if (R_IsRenderingShadowView())
 		return;
 
-	GL_BeginProfile(&Profile_DrawTransEntities);
-
 	if (bUseOITBlend)
 	{
 		glColorMask(0, 0, 0, 0);
@@ -1164,8 +1160,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 	}
 
 	GL_UseProgram(0);
-
-	GL_EndProfile(&Profile_DrawTransEntities);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -1920,7 +1914,6 @@ void GL_Init(void)
 void GL_Shutdown(void)
 {
 	GL_FreeShaders();
-	GL_FreeProfiles();
 	GL_FreeFrameBuffers();
 }
 
@@ -1963,7 +1956,6 @@ void R_RenderStartFrame()
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
 
-	GL_Profiles_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
@@ -1977,7 +1969,7 @@ void R_RenderStartFrame()
 
 void R_RenderEndFrame()
 {
-	GL_Profiles_EndFrame();
+
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
@@ -2513,8 +2505,6 @@ void R_InitCvars(void)
 	if (!cl_fixmodelinterpolationartifacts)
 		cl_fixmodelinterpolationartifacts = gEngfuncs.pfnRegisterVariable("cl_fixmodelinterpolationartifacts", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
-
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2531,8 +2521,6 @@ void R_InitCvars(void)
 
 void R_Init(void)
 {
-	GL_InitProfiles();
-
 	Mod_Init();
 
 	R_InitCvars();
@@ -3278,8 +3266,6 @@ void R_DrawEntitiesOnList(void)
 	if (!r_drawentities->value)
 		return;
 
-	GL_BeginProfile(&Profile_DrawEntitiesOnList);
-
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
 		(*currententity) = cl_visedicts[i];
@@ -3312,8 +3298,6 @@ void R_DrawEntitiesOnList(void)
 			r_draw_deferredtrans = false;
 		}
 	}
-
-	GL_EndProfile(&Profile_DrawEntitiesOnList);
 }
 
 #if defined(HAS_VIEWMODEL_PASS)
@@ -3593,15 +3577,6 @@ void ClientDLL_DrawNormalTriangles(void)
 
 void R_RenderScene(void)
 {
-	if (r_draw_reflectview)
-	{
-		GL_BeginProfile(&Profile_RenderScene_WaterPass);
-	}
-	else
-	{
-		GL_BeginProfile(&Profile_RenderScene);
-	}
-
 	if (CL_IsDevOverviewMode())
 		CL_SetDevOverView(R_GetRefDef());
 
@@ -3642,15 +3617,6 @@ void R_RenderScene(void)
 	R_DrawTransEntities((*r_refdef.onlyClientDraws));
 
 	S_ExtraUpdate();
-
-	if (r_draw_reflectview)
-	{
-		GL_EndProfile(&Profile_RenderScene_WaterPass);
-	}
-	else
-	{
-		GL_EndProfile(&Profile_RenderScene);
-	}
 
 	R_DisableRenderingFog();
 }

@@ -302,7 +302,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="gl_light.cpp" />
     <ClCompile Include="gl_model.cpp" />
     <ClCompile Include="gl_portal.cpp" />
-    <ClCompile Include="gl_profile.cpp" />
     <ClCompile Include="gl_rmain.cpp" />
     <ClCompile Include="gl_rmisc.cpp" />
     <ClCompile Include="gl_rsurf.cpp" />
@@ -412,7 +411,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClInclude Include="gl_local.h" />
     <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_portal.h" />
-    <ClInclude Include="gl_profile.h" />
     <ClInclude Include="gl_common.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />

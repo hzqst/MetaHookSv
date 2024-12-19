@@ -859,8 +859,6 @@ void R_RenderWaterPass(void)
 	if (R_IsRenderingWaterView())
 		return;
 
-	GL_BeginProfile(&Profile_RenderWaterPass);
-
 	g_VisibleWaterSurfaceModels.clear();
 	g_VisibleWaterEntity.clear();
 	R_ClearWaterReflectCaches();
@@ -944,8 +942,6 @@ void R_RenderWaterPass(void)
 			}
 		}
 	}
-
-	GL_EndProfile(&Profile_RenderWaterPass);
 }
 
 void R_DrawWaterSurfaceModelBegin(CWaterSurfaceModel * pWaterModel)
