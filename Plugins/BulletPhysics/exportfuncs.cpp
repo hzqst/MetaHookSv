@@ -1201,7 +1201,7 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 		auto Bip01_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(Bip01_PushString);
 
-		gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x600, [](PUCHAR Candidate) {
+		gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
 			//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
 			//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 			//.text : 01D8DD98 33 C4 xor eax, esp
