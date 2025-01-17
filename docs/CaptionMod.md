@@ -118,9 +118,9 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 #### Launch Parameters
 
-`-steamlang` : use Steam language as engine and vgui2 language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and vgui2 language no matter if -steamlang is added or not.
+`-steamlang` : use Steam language as engine and VGUI2-subsystem language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and VGUI2-subsystem language no matter if `-steamlang` is added or not.
 
-`-forcelang [language]` : force engine and vgui2 to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
+`-forcelang [language]` : force engine and VGUI2-subsystem to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
 
 `-high_dpi` : Enable HiDpi Support
 
