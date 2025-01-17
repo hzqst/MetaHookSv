@@ -16,7 +16,7 @@
 
 ### Language Enforcement
 
-You can force the engine and VGUI2 to use language settings from Steam or from launch parameters.
+You can force the engine and VGUI2-subsystem to use language settings from either Steam or launch parameters.
 
 Check **Launch Parameters**
 
