@@ -507,15 +507,7 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
-Brush surfaces, studio models, decals and sprites are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the data reside in video memory rather than system memory and so it can be rendered directly by the video device.
-
-## Bindless-Texture optimization
-
-Brush surfaces and decals are rendered with Bindless-Texture, which dramatically reduces drawcall count. but not well supported by some graphic drivers from AMD and Intel.
-
-Use cvar `gl_bindless 1` to enable Bindless-Texture rendering.
-
-Use launch parameter `-nobindless` to disable Bindless-Texture rendering permanently.
+Brush surfaces, studio models and decals are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the geometry data reside in video memory rather than system memory and so it can be rendered directly by the video device.
 
 ## Order-Independent Transparency Blend (aka OIT blend)
 
