@@ -104,11 +104,11 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 `cap_subtitle_antispam` : Set to 1 to prevent the subtitle from spamming.
 
-`cap_subtitle_fadein` : Fade-in duration for new subtitle lines.
+`cap_subtitle_fadein` : Fade-in duration for new subtitle lines. (unit: sec.)
 
-`cap_subtitle_fadeout` : Fade-out duration for retired subtitle lines.
+`cap_subtitle_fadeout` : Fade-out duration for retired subtitle lines. (unit: sec.)
 
-`cap_subtitle_holdtime` : Default hold duration for subtitle lines.
+`cap_subtitle_holdtime` : Default hold duration for subtitle lines. (unit: sec.)
 
 `cap_subtitle_stimescale` : Scaling factor for "StartTime".
 
