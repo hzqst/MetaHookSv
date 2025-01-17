@@ -1,8 +1,8 @@
 # MetaHookSv
 
-This is a porting of [MetaHook](https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven Co-op Team),
+This is a porting of [MetaHook](https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven Co-op Team), as a client-side modding framework,
 
-Mainly to keep you a good game experience in Sven Co-op.
+Mainly to keep you a good game experience in Sven Co-op or any other GoldSrc based games.
 
 Most of plugins are still compatible with vanilla GoldSrc engine. please check each plugin's doc for plugin compatibility.
 
