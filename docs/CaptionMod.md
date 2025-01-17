@@ -114,6 +114,8 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 `cap_subtitle_htimescale` : Scaling factor for "HoldTime".
 
+`cap_subtitle_extraholdtime` : Extra holdtime added to the last line of subtitles. (unit: sec.)
+
 #### Launch Parameters
 
 `-steamlang` : use Steam language as engine and vgui2 language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and vgui2 language no matter if -steamlang is added or not.
