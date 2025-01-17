@@ -74,9 +74,9 @@ Q: This is because ThreadGuard.dll is waiting for Valve's network threads or sim
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-* Valve has fixed this issue in the HL25th update, you don't have to replace `SDL2.dll` if you are on HL25th engine.
+* Valve has fixed this issue in the HL25th update, you don't have to replace `SDL2.dll` if you are running GoldSrc engine with HL25th update.
 
-* Sven Co-op team has fixed this issue since Sven Co-op 5.26, you don't have to replace `SDL2.dll` if you are running on 5.26 or later version of Sven Co-op.
+* Sven Co-op team has fixed this issue since Sven Co-op 5.26, you don't have to replace `SDL2.dll` if you are running 5.26 or later version of Sven Co-op.
 
 ## Build Requirements
 
@@ -100,7 +100,7 @@ Let's assume that you have all requirements installed correctly.
 
 1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
-2. Run `scripts\debug-SvenCoop.bat` (or `scripts\debug-(WhateverGameYouWant).bat`, depends on which you are going to debug with)
+2. Run `scripts\debug-SvenCoop.bat` (or `scripts\debug-(WhateverGameYouWant).bat`, depends on which game you are going to debug with)
 
 3. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
 
@@ -116,7 +116,7 @@ Let's assume that you have all requirements installed correctly.
 
 ### CaptionMod
 
-A subtitle plugin that adds closing-captioning, HUD text translatation to game, HiDpi support and Source2007-style chat dialog to game.
+A plugin that adds closing-captioning, HUD text translatation, HiDpi support and Source2007-style chat dialog to game.
 
 [DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
 
