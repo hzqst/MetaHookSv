@@ -28,3 +28,6 @@
 [submodule "thirdparty/Chocobo1Hash"]
 	path = thirdparty/Chocobo1Hash
 	url = https://github.com/hzqst/Chocobo1Hash
+[submodule "thirdparty/SDL_2_0_16_0"]
+	path = thirdparty/SDL_2_0_16_0
+	url = https://github.com/libsdl-org/SDL
