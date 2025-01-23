@@ -112,10 +112,13 @@ public:
 		int proW, proH;
 		g_pVGuiSurface2->GetHDProportionalBase(proW, proH);
 
-		if (g_iVideoWidth < proW)
+		int iVideoWidth = 0, iVideoHeight = 0;
+		g_pMetaHookAPI->GetVideoMode(&iVideoWidth, &iVideoHeight, NULL, NULL);
+
+		if (iVideoWidth < proW)
 			m_bIsHighDpiSupported = false;
 
-		if (g_iVideoHeight < proH)
+		if (iVideoHeight < proH)
 			m_bIsHighDpiSupported = false;
 
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)

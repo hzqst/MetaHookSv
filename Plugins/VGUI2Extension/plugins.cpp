@@ -10,9 +10,6 @@ mh_enginesave_t *g_pMetaSave = NULL;
 IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25 *g_pFileSystem_HL25 = NULL;
 
-int g_iVideoWidth = 0;
-int g_iVideoHeight = 0;
-
 int g_iEngineType = 0;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = 0;
@@ -76,8 +73,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		g_pFullFileSystem_HL25 = g_pFullFileSystem_HL25;
 	}
 
-	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
-
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
@@ -108,9 +103,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
-	//Get video settings again since width and height might have been changed during initialization.
-	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
-
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	pExportFunc->HUD_Init = HUD_Init;

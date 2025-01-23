@@ -6,9 +6,6 @@ extern mh_interface_t *g_pInterface;
 extern metahook_api_t *g_pMetaHookAPI;
 extern mh_enginesave_t *g_pMetaSave;
 
-extern int g_iVideoWidth;
-extern int g_iVideoHeight;
-
 extern int g_iEngineType;
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
