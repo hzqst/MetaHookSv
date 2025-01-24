@@ -14,9 +14,8 @@
 
 #include <functional>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_video.h>
-#include <SDL2/SDL_syswm.h>
+//#include <SDL2/SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 #include "VGUI2ExtensionInternal.h"
 
@@ -441,19 +440,19 @@ public:
 
 		switch (pSDLEvent->type)
 		{
-		case 775:
+		case SDL_EVENT_TEXT_EDITING_CANDIDATES:
 		{
 			gEngfuncs.Con_Printf("SDL_EVENT_TEXT_EDITING_CANDIDATES\n");
 			break;
 		}
-		case SDL_TEXTINPUT:
+		case SDL_EVENT_TEXT_INPUT:
 		{
 			/* Add new text onto the end of our text */
 			const auto pTextInputEvent = &pSDLEvent->text;
 			gEngfuncs.Con_Printf("SDL_TEXTINPUT \"%s\"\n", pTextInputEvent->text);
 			break;
 		}
-		case SDL_TEXTEDITING:
+		case SDL_EVENT_TEXT_EDITING:
 		{
 			/*
 			Update the composition text.
