@@ -1085,6 +1085,11 @@ public:
 		}
 	}
 
+	void OnIMECompositionSDL(const char *text, int start, int length) override
+	{
+		gEngfuncs.Con_Printf("OnIMECompositionSDL \"%s\", %d, %d\n", text, start, length);
+	}
+
 	void DestroyCandidateList(void) override
 	{
 		if (_imeCandidates)

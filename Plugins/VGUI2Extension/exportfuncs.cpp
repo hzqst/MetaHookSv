@@ -14,6 +14,13 @@
 
 #include <functional>
 
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_video.h>
+#include <SDL2/SDL_syswm.h>
+
+#include "VGUI2ExtensionInternal.h"
+
+
 cl_enginefunc_t gEngfuncs = { 0 };
 
 int m_iIntermission = 0;
@@ -340,6 +347,8 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		{
 		case IMN_OPENCANDIDATE:
 		{
+			//counterpart: SDL_bool SDL_IsTextInputShown(void)
+
 			vgui::input()->OnIMEShowCandidates();
 			return 1;
 		}
@@ -397,6 +406,101 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
 }
 
+
+class CVGUI2Extension_BaseUICallbacks : public IVGUI2Extension_BaseUICallbacks
+{
+public:
+	int GetAltitude() const override
+	{
+		return 0;
+	}
+
+	void Initialize(CreateInterfaceFn* factories, int count) override
+	{
+		
+	}
+
+	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion) override
+	{
+
+	}
+
+	void Shutdown(void)
+	{
+
+	}
+
+	void Key_Event(int& down, int& keynum, const char*& pszCurrentBinding, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		const auto pSDLEvent = (const SDL_Event *)pevent;
+
+		switch (pSDLEvent->type)
+		{
+		case 775:
+		{
+			gEngfuncs.Con_Printf("SDL_EVENT_TEXT_EDITING_CANDIDATES\n");
+			break;
+		}
+		case SDL_TEXTINPUT:
+		{
+			/* Add new text onto the end of our text */
+			const auto pTextInputEvent = &pSDLEvent->text;
+			gEngfuncs.Con_Printf("SDL_TEXTINPUT \"%s\"\n", pTextInputEvent->text);
+			break;
+		}
+		case SDL_TEXTEDITING:
+		{
+			/*
+			Update the composition text.
+			Update the cursor position.
+			Update the selection length (if any).
+			*/
+			const auto pTextEditingEvent = &pSDLEvent->edit;
+			
+			vgui::input()->OnIMECompositionSDL(pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
+			break;
+		}
+		}
+	}
+
+	void CallEngineSurfaceWndProc(void*& hwnd, unsigned int& msg, unsigned int& wparam, long& lparam, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void Paint(int& x, int& y, int& right, int& bottom, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void HideGameUI(VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void ActivateGameUI(VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void HideConsole(VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void ShowConsole(VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+};
+
+static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks_IMEHandler;
+
 void InitWin32Stuffs(void)
 {
 	EnumWindows([](HWND hwnd, LPARAM lParam){
@@ -409,7 +513,7 @@ void InitWin32Stuffs(void)
 			{
 				g_MainWnd = hwnd;
 
-				DpiManagerInternal()->InitFromMainHwnd();
+				DpiManagerInternal()->InitFromHwnd(g_MainWnd);
 				
 				return FALSE;
 			}
@@ -417,6 +521,8 @@ void InitWin32Stuffs(void)
 		return TRUE;
 	}, NULL);
 
-	g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
-	SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
+	VGUI2ExtensionInternal()->RegisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
+
+	//g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
+	//SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
 }

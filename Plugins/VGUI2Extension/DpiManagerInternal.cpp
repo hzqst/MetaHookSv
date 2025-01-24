@@ -70,7 +70,7 @@ public:
 		}
 	}
 
-	void InitFromMainHwnd() override
+	void InitFromHwnd(HWND hWnd) override
 	{
 		if (DpiScalingSource_Window > m_iDpiScalingSource)
 		{
@@ -80,7 +80,7 @@ public:
 				auto pfnGetDpiForWindow = (decltype(GetDpiForWindow)*)GetProcAddress(user32, "GetDpiForWindow");
 				if (pfnGetDpiForWindow)
 				{
-					m_flDpiScaling = pfnGetDpiForWindow(g_MainWnd) / 96.0f;
+					m_flDpiScaling = pfnGetDpiForWindow(hWnd) / 96.0f;
 					m_iDpiScalingSource = DpiScalingSource_Window;
 				}
 			}
@@ -88,10 +88,10 @@ public:
 
 		if (DpiScalingSource_Window > m_iDpiScalingSource)
 		{
-			HDC hScreen = GetDC(g_MainWnd);
+			HDC hScreen = GetDC(hWnd);
 			int dpiX = GetDeviceCaps(hScreen, LOGPIXELSX);
 			int dpiY = GetDeviceCaps(hScreen, LOGPIXELSY);
-			ReleaseDC(g_MainWnd, hScreen);
+			ReleaseDC(hWnd, hScreen);
 
 			m_flDpiScaling = (float)dpiY / 96.0f;
 			m_iDpiScalingSource = DpiScalingSource_Window;

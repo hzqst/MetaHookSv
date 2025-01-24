@@ -31,3 +31,9 @@
 [submodule "thirdparty/SDL_2_0_16_0"]
 	path = thirdparty/SDL_2_0_16_0
 	url = https://github.com/libsdl-org/SDL
+[submodule "thirdparty/SDL3"]
+	path = thirdparty/SDL3
+	url = https://github.com/libsdl-org/SDL
+[submodule "thirdparty/sdl2-compat"]
+	path = thirdparty/sdl2-compat
+	url = https://github.com/libsdl-org/sdl2-compat
