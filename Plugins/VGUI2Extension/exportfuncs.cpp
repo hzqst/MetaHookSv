@@ -17,6 +17,31 @@
 //#include <SDL2/SDL_events.h>
 #include <SDL3/SDL_events.h>
 
+#define SDL2_TEXTEDITINGEVENT_TEXT_SIZE (32)
+typedef struct SDL2_TextEditingEvent
+{
+	Uint32 type;
+	Uint32 timestamp;
+	Uint32 windowID;
+	char text[SDL2_TEXTEDITINGEVENT_TEXT_SIZE];
+	Sint32 start;
+	Sint32 length;
+} SDL2_TextEditingEvent;
+
+typedef struct SDL2_TextEditingCandidatesEvent
+{
+	SDL_EventType type;         /**< SDL_EVENT_TEXT_EDITING_CANDIDATES */
+	Uint32 timestamp;
+	SDL_WindowID windowID;      /**< The window with keyboard focus, if any */
+	const char* const* candidates;    /**< The list of candidates, or NULL if there are no candidates available */
+	Sint32 num_candidates;      /**< The number of strings in `candidates` */
+	Sint32 selected_candidate;  /**< The index of the selected candidate, or -1 if no candidate is selected */
+	bool horizontal;          /**< true if the list is horizontal, false if it's vertical */
+	Uint8 padding1;
+	Uint8 padding2;
+	Uint8 padding3;
+} SDL2_TextEditingCandidatesEvent;
+
 #include "VGUI2ExtensionInternal.h"
 
 
@@ -278,9 +303,6 @@ double engine_GetAbsoluteTime()
 	return gEngfuncs.GetAbsoluteTime();
 }
 
-extern bool g_bIMEComposing;
-extern double g_flImeComposingTime;
-
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND s_hLastHWnd;
@@ -290,121 +312,25 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		vgui::input()->SetIMEWindow(hWnd);
 	}
 
-	switch (uMsg)
-	{
-	case WM_SYSCHAR:
-	case WM_CHAR:
-	{
-		if (g_bIMEComposing)
-			return 1;
-
-		break;
-	}
-	case WM_KEYDOWN:
-	case WM_KEYUP:
-	{
-		if (wParam == VK_BACK)
-		{
-			if (g_bIMEComposing)
-				return 1;
-		}
-
-		break;
-	}
-	case WM_INPUTLANGCHANGE:
-	{
-		vgui::input()->OnInputLanguageChanged();
-		return 1;
-	}
-
-	case WM_IME_STARTCOMPOSITION:
-	{
-		g_bIMEComposing = true;
-		g_flImeComposingTime = engine_GetAbsoluteTime();
-		vgui::input()->OnIMEStartComposition();
-		return 1;
-	}
-
-	case WM_IME_COMPOSITION:
-	{
-		int flags = (int)lParam;
-		vgui::input()->OnIMEComposition(flags);
-		return 1;
-	}
-
-	case WM_IME_ENDCOMPOSITION:
-	{
-		g_bIMEComposing = false;
-		g_flImeComposingTime = engine_GetAbsoluteTime();
-		vgui::input()->OnIMEEndComposition();
-		return 1;
-	}
-
-	case WM_IME_NOTIFY:
-	{
-		switch (wParam)
-		{
-		case IMN_OPENCANDIDATE:
-		{
-			//counterpart: SDL_bool SDL_IsTextInputShown(void)
-
-			vgui::input()->OnIMEShowCandidates();
-			return 1;
-		}
-
-		case IMN_CHANGECANDIDATE:
-		{
-			vgui::input()->OnIMEChangeCandidates();
-			return 1;
-		}
-
-		case IMN_CLOSECANDIDATE:
-		{
-			vgui::input()->OnIMECloseCandidates();
-			//break;
-			return 1;
-		}
-
-		case IMN_SETCONVERSIONMODE:
-		case IMN_SETSENTENCEMODE:
-		case IMN_SETOPENSTATUS:
-		{
-			vgui::input()->OnIMERecomputeModes();
-			break;
-		}
-
-		case IMN_CLOSESTATUSWINDOW:
-		case IMN_GUIDELINE:
-		case IMN_OPENSTATUSWINDOW:
-		case IMN_SETCANDIDATEPOS:
-		case IMN_SETCOMPOSITIONFONT:
-		case IMN_SETCOMPOSITIONWINDOW:
-		case IMN_SETSTATUSWINDOWPOS:
-		{
-			break;
-		}
-		}
-
-		break;
-	}
-
-	case WM_IME_SETCONTEXT:
-	{
-		lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-		lParam &= ~ISC_SHOWUIGUIDELINE;
-		lParam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
-		break;
-	}
-
-	case WM_IME_CHAR:
-	{
-		return 0;
-	}
-	}
-
 	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
 }
 
+HWND Sys_GetMainWindowWin32HWND()
+{
+#ifdef _WIN32
+	if (Sys_GetMainWindow())
+	{
+		SDL_SysWMinfo wmInfo;
+		SDL_VERSION(&wmInfo.version);
+		SDL_GetWindowWMInfo((SDL_Window*)Sys_GetMainWindow(), &wmInfo);
+
+		return wmInfo.info.win.window;
+	}
+#else
+
+#endif
+	return nullptr;
+}
 
 class CVGUI2Extension_BaseUICallbacks : public IVGUI2Extension_BaseUICallbacks
 {
@@ -436,20 +362,27 @@ public:
 
 	void CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
+#if 0
 		const auto pSDLEvent = (const SDL_Event *)pevent;
 
 		switch (pSDLEvent->type)
 		{
 		case SDL_EVENT_TEXT_EDITING_CANDIDATES:
 		{
-			gEngfuncs.Con_Printf("SDL_EVENT_TEXT_EDITING_CANDIDATES\n");
+			const auto pTextEditingCandidateEvent = (const SDL2_TextEditingCandidatesEvent *)pSDLEvent;
+
+			vgui::input()->OnIMECandidateSDL(
+				pTextEditingCandidateEvent->candidates,
+				pTextEditingCandidateEvent->num_candidates, 
+				pTextEditingCandidateEvent->selected_candidate);
+
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;
 		}
 		case SDL_EVENT_TEXT_INPUT:
 		{
-			/* Add new text onto the end of our text */
-			const auto pTextInputEvent = &pSDLEvent->text;
-			gEngfuncs.Con_Printf("SDL_TEXTINPUT \"%s\"\n", pTextInputEvent->text);
+			//Already captured by BaseUISurface::AppHandler
+			//So we do nothing here.
 			break;
 		}
 		case SDL_EVENT_TEXT_EDITING:
@@ -459,17 +392,145 @@ public:
 			Update the cursor position.
 			Update the selection length (if any).
 			*/
-			const auto pTextEditingEvent = &pSDLEvent->edit;
+			const auto pTextEditingEvent = (const SDL2_TextEditingEvent *)pSDLEvent;
 			
 			vgui::input()->OnIMECompositionSDL(pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
+
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;
 		}
 		}
+#endif
+
 	}
 
 	void CallEngineSurfaceWndProc(void*& hwnd, unsigned int& msg, unsigned int& wparam, long& lparam, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
+		switch (msg)
+		{
+		case WM_SYSCHAR:
+		case WM_CHAR:
+		{
+			if (vgui::input()->IsIMEComposing())
+			{
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
+			}
 
+			break;
+		}
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		{
+			if (wparam == VK_BACK)
+			{
+				if (vgui::input()->IsIMEComposing())
+				{
+					CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+					break;
+				}
+			}
+
+			break;
+		}
+		case WM_INPUTLANGCHANGE:
+		{
+			vgui::input()->SetIMEWindow(hwnd);
+			vgui::input()->OnInputLanguageChanged();
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+			break;
+		}
+
+		case WM_IME_STARTCOMPOSITION:
+		{
+			vgui::input()->SetIMEWindow(hwnd);
+			vgui::input()->OnIMEStartComposition();
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+			break;
+		}
+
+		case WM_IME_COMPOSITION:
+		{
+			vgui::input()->SetIMEWindow(hwnd);
+			vgui::input()->OnIMECompositionWin32(lparam);
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+			break;
+		}
+
+		case WM_IME_ENDCOMPOSITION:
+		{
+			vgui::input()->SetIMEWindow(hwnd);
+			vgui::input()->OnIMEEndComposition();
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+			break;
+		}
+
+		case WM_IME_NOTIFY:
+		{
+			switch (wparam)
+			{
+			case IMN_OPENCANDIDATE:
+			{
+				vgui::input()->SetIMEWindow(hwnd);
+				vgui::input()->OnIMEShowCandidates();
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
+			}
+
+			case IMN_CHANGECANDIDATE:
+			{
+				vgui::input()->SetIMEWindow(hwnd);
+				vgui::input()->OnIMEChangeCandidates();
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
+			}
+
+			case IMN_CLOSECANDIDATE:
+			{
+				vgui::input()->SetIMEWindow(hwnd);
+				vgui::input()->OnIMECloseCandidates();
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
+			}
+
+			case IMN_SETCONVERSIONMODE:
+			case IMN_SETSENTENCEMODE:
+			case IMN_SETOPENSTATUS:
+			{
+				vgui::input()->SetIMEWindow(hwnd);
+				vgui::input()->OnIMERecomputeModes();
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
+			}
+
+			case IMN_CLOSESTATUSWINDOW:
+			case IMN_GUIDELINE:
+			case IMN_OPENSTATUSWINDOW:
+			case IMN_SETCANDIDATEPOS:
+			case IMN_SETCOMPOSITIONFONT:
+			case IMN_SETCOMPOSITIONWINDOW:
+			case IMN_SETSTATUSWINDOWPOS:
+			{
+				break;
+			}
+			}
+
+			break;
+		}
+
+		case WM_IME_SETCONTEXT:
+		{
+			lparam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
+			lparam &= ~ISC_SHOWUIGUIDELINE;
+			lparam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
+			break;
+		}
+
+		case WM_IME_CHAR:
+		{
+			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+		}
+		}
 	}
 
 	void Paint(int& x, int& y, int& right, int& bottom, VGUI2Extension_CallbackContext* CallbackContext) override

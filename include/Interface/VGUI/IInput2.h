@@ -85,7 +85,7 @@ public:
 	virtual void OnChangeIMESentenceModeByHandle( int handleValue ) = 0;
 	virtual void OnInputLanguageChanged() = 0;
 	virtual void OnIMEStartComposition() = 0;
-	virtual void OnIMEComposition( int flags ) = 0;
+	virtual void OnIMECompositionWin32( long flags ) = 0;
 	virtual void OnIMEEndComposition() = 0;
 	virtual void OnIMEShowCandidates() = 0;
 	virtual void OnIMEChangeCandidates() = 0;
@@ -104,7 +104,7 @@ public:
 	virtual void OnIMESelectCandidate(int num) = 0;
 	virtual bool PostKeyMessage(KeyValues *message) = 0;
 	virtual void DestroyCandidateList(void) = 0;
-	virtual void CreateNewCandidateList(void) = 0;
+	virtual void CreateNewCandidateListWin32(void) = 0;
 	virtual void InternalShowCandidateWindow(void) = 0;
 	virtual void InternalHideCandidateWindow(void) = 0;
 	virtual void InternalUpdateCandidateWindow(void) = 0;
@@ -115,6 +115,7 @@ public:
 	virtual bool IsIMEComposing() const = 0;
 	virtual double GetImeComposingTime() const = 0;
 	virtual void OnIMECompositionSDL(const char* text, int start, int length) = 0;
+	virtual void OnIMECandidateSDL(const char* const* candidates, int num_candidates, int selected_candidate) = 0;
 };
 
 #define VGUI_INPUT2_INTERFACE_VERSION "VGUI_Input2_005"

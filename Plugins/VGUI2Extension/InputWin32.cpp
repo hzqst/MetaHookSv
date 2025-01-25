@@ -11,6 +11,9 @@
 
 #include <windows.h>
 #include <imm.h>
+#include <string>
+#include <vector>
+
 #pragma comment(lib, "Imm32.lib")
 
 #include "plugins.h"
@@ -18,8 +21,14 @@
 extern vgui::IVGui *g_pVGui;
 extern vgui::IInput* g_pVGuiInput;
 
-bool g_bIMEComposing = false;
-double g_flImeComposingTime = 0;
+static bool g_bIMEComposing = false;
+static double g_flImeComposingTime = 0;
+
+static void* _imeWnd{};
+static CANDIDATELIST* _imeCandidatesWin32{};
+//static int _imeCandidateSelectedItem{};
+//static std::vector<std::wstring> _imeCandidateList;
+//static std::wstring _imeCompositionStr;
 
 static bool(__fastcall* g_pfnCWin32Input_PostKeyMessage)(void* pthis, int, KeyValues* message);
 
@@ -122,9 +131,6 @@ namespace vgui
 };
 
 using namespace vgui;
-
-static void * _imeWnd;
-static CANDIDATELIST *_imeCandidates;
 
 enum LANGFLAG
 {
@@ -495,6 +501,7 @@ public:
 	{
 		return g_pVGuiInput->WasMousePressed(code);
 	}
+
 	bool WasMouseDoublePressed(MouseCode code) override
 	{
 		return g_pVGuiInput->WasMouseDoublePressed(code);
@@ -573,7 +580,6 @@ public:
 	{
 		return ((vgui::IInputInternal*)g_pVGuiInput)->PanelDeleted(panel);
 	}
-
 
 	bool InternalCursorMoved(int x, int y) override
 	{
@@ -1013,6 +1019,7 @@ public:
 
 	void OnChangeIMESentenceModeByHandle(int handleValue) override
 	{
+
 	}
 
 	void OnInputLanguageChanged() override
@@ -1022,10 +1029,11 @@ public:
 
 	void OnIMEStartComposition() override
 	{
-
+		g_bIMEComposing = true;
+		g_flImeComposingTime = gEngfuncs.GetAbsoluteTime();
 	}
 
-	void OnIMEComposition(int flags) override
+	void OnIMECompositionWin32(long flags) override
 	{
 		HIMC hIMC = ImmGetContext((HWND)GetIMEWindow());
 
@@ -1075,7 +1083,7 @@ public:
 					InternalSetCompositionString(tempstr);
 
 					DestroyCandidateList();
-					CreateNewCandidateList();
+					CreateNewCandidateListWin32();
 
 					InternalShowCandidateWindow();
 				}
@@ -1087,19 +1095,48 @@ public:
 
 	void OnIMECompositionSDL(const char *text, int start, int length) override
 	{
-		gEngfuncs.Con_Printf("OnIMECompositionSDL \"%s\", %d, %d\n", text, start, length);
+		//gEngfuncs.Con_Printf("OnIMECompositionSDL %s, %d, %d\n", text, start, length);
+		//
+		//wchar_t wcomposition[256]{};
+		//int cb = Q_UTF8ToUnicode(text, wcomposition, sizeof(wcomposition));
+		//
+		//_imeCompositionStr = wcomposition;
+		//
+		//InternalSetCompositionString(wcomposition);
+		//
+		//DestroyCandidateList();
+		//CreateNewCandidateListWin32();
+		//
+		//InternalShowCandidateWindow();
+	}
+
+	void OnIMECandidateSDL(const char* const* candidates, int num_candidates, int selected_candidate) override
+	{
+		//gEngfuncs.Con_Printf("OnIMECandidateSDL %d, %d\n", num_candidates, selected_candidate);
+
+		//_imeCandidateList.resize(num_candidates);
+
+		//for (int i = 0; i < num_candidates; ++i)
+		//{
+		//	wchar_t wcandidate[256]{};
+		//	int cb = Q_UTF8ToUnicode(candidates[i], wcandidate, sizeof(wcandidate));
+		//
+		//	_imeCandidateList[i] = wcandidate;
+		//}
 	}
 
 	void DestroyCandidateList(void) override
 	{
-		if (_imeCandidates)
+		if (_imeCandidatesWin32)
 		{
-			delete[](char*)_imeCandidates;
-			_imeCandidates = null;
+			delete[](char*)_imeCandidatesWin32;
+			_imeCandidatesWin32 = nullptr;
 		}
+
+		//_imeCandidateList.clear();
 	}
 
-	void CreateNewCandidateList(void) override
+	void CreateNewCandidateListWin32(void) override
 	{
 		HIMC hImc = ImmGetContext((HWND)GetIMEWindow());
 
@@ -1117,7 +1154,8 @@ public:
 
 				if (copyBytes > 0)
 				{
-					_imeCandidates = list;
+					_imeCandidatesWin32 = list;
+
 				}
 				else
 				{
@@ -1151,6 +1189,9 @@ public:
 
 	void OnIMEEndComposition() override
 	{
+		g_bIMEComposing = false;
+		g_flImeComposingTime = gEngfuncs.GetAbsoluteTime();
+
 		PostKeyMessage(new KeyValues("DoCompositionString", "string", L""));
 	}
 
@@ -1173,7 +1214,7 @@ public:
 	void OnIMEShowCandidates() override
 	{
 		DestroyCandidateList();
-		CreateNewCandidateList();
+		CreateNewCandidateListWin32();
 
 		InternalShowCandidateWindow();
 	}
@@ -1181,7 +1222,7 @@ public:
 	void OnIMEChangeCandidates() override
 	{
 		DestroyCandidateList();
-		CreateNewCandidateList();
+		CreateNewCandidateListWin32();
 
 		InternalUpdateCandidateWindow();
 	}
@@ -1199,23 +1240,36 @@ public:
 
 	int GetCandidateListCount() override
 	{
-		if (!_imeCandidates)
+		//return (int)_imeCandidateList.size();
+
+		if (!_imeCandidatesWin32)
 			return 0;
 
-		return (int)_imeCandidates->dwCount;
+		return (int)_imeCandidatesWin32->dwCount;
 	}
 
 	void GetCandidate(int num, wchar_t* dest, int destSizeBytes) override
 	{
 		dest[0] = 0;
+		
 
-		if (num < 0 || num >= (int)_imeCandidates->dwCount)
+		//if (num < 0 || num >= (int)_imeCandidateList.size())
+		//{
+		//	return;
+		//}
+
+		//wcsncpy(dest, _imeCandidateList[num].c_str(), destSizeBytes / sizeof(wchar_t) - 1);
+		//dest[destSizeBytes / sizeof(wchar_t) - 1] = L'\0';
+
+		//return;
+
+		if (num < 0 || num >= (int)_imeCandidatesWin32->dwCount)
 		{
 			return;
 		}
 
-		DWORD offset = *(DWORD*)((char*)(_imeCandidates->dwOffset + num));
-		wchar_t* s = (wchar_t*)((char*)_imeCandidates + offset);
+		DWORD offset = *(DWORD*)((char*)(_imeCandidatesWin32->dwOffset + num));
+		wchar_t* s = (wchar_t*)((char*)_imeCandidatesWin32 + offset);
 
 		wcsncpy(dest, s, destSizeBytes / sizeof(wchar_t) - 1);
 		dest[destSizeBytes / sizeof(wchar_t) - 1] = L'\0';
@@ -1223,37 +1277,43 @@ public:
 
 	int GetCandidateListSelectedItem() override
 	{
-		if (!_imeCandidates)
+		//return _imeCandidateSelectedItem;
+
+		if (!_imeCandidatesWin32)
 			return 0;
 
-		return (int)_imeCandidates->dwSelection;
+		return (int)_imeCandidatesWin32->dwSelection;
 	}
 
 	int GetCandidateListPageSize() override
 	{
-		if (!_imeCandidates)
+		if (!_imeCandidatesWin32)
 			return 0;
 
-		return (int)_imeCandidates->dwPageSize;
+		return (int)_imeCandidatesWin32->dwPageSize;
 	}
 
 	int GetCandidateListPageStart() override
 	{
-		if (!_imeCandidates)
+		if (!_imeCandidatesWin32)
 			return 0;
 
-		return (int)_imeCandidates->dwPageStart;
+		return (int)_imeCandidatesWin32->dwPageStart;
 	}
 
 	void SetCandidateWindowPos(int x, int y) override
 	{
+		auto hWnd = (HWND)GetIMEWindow();
+		if (!hWnd)
+			return;
+
 		POINT point;
 		CANDIDATEFORM Candidate;
 
 		point.x = x;
 		point.y = y;
 
-		HIMC hIMC = ImmGetContext((HWND)GetIMEWindow());
+		HIMC hIMC = ImmGetContext(hWnd);
 
 		if (hIMC)
 		{
@@ -1302,6 +1362,11 @@ public:
 
 	void GetCompositionString(wchar_t* dest, int destSizeBytes) override
 	{
+		//auto numchars = min(_imeCompositionStr.length(), (destSizeBytes / sizeof(wchar_t)) - 1);
+		//wcsncpy(dest, _imeCompositionStr.c_str(), numchars);
+		//dest[numchars] = 0;
+		//return;
+
 		dest[0] = L'\0';
 		HIMC hImc = ImmGetContext((HWND)GetIMEWindow());
 
