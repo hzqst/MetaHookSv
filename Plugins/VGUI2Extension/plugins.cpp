@@ -106,8 +106,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->HUD_VidInit = HUD_VidInit;
-	pExportFunc->HUD_Frame = HUD_Frame;
+	//pExportFunc->HUD_VidInit = HUD_VidInit;
+	//pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->IN_MouseEvent = IN_MouseEvent;
