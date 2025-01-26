@@ -38,81 +38,6 @@
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
-    <ClCompile Include="ResourceReplacer.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\platform.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\minidump.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\memstd.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\memdbg.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\mem_helpers.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\mem.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\fasttimer.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\dbg.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\cpu.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\assert_dialog.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\KeyValues.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\generichash.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\vstdlib\KeyValuesSystem.cpp">
-      <Filter>SourceSDK\vstdlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\vstdlib\random.cpp">
-      <Filter>SourceSDK\vstdlib</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -122,9 +47,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="privatehook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceReplacer.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="enginedef.h">
