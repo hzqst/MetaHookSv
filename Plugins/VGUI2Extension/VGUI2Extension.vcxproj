@@ -93,7 +93,9 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+$(SDL2PostBuildCommand)
+$(SDL3PostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
@@ -120,7 +122,9 @@ $(SDL2CheckRequirements)</Command>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+$(SDL2PostBuildCommand)
+$(SDL3PostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(CapstoneCheckRequirements)
