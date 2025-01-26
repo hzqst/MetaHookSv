@@ -148,6 +148,8 @@ typedef struct
 	void (*SDL_GetWindowPosition)(void* window, int* x, int* y);
 	void (*SDL_GetWindowSize)(void* window, int* w, int* h);
 	int (*SDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi);
+	void*(*SDL_GetWindowFromID)(int id);
+	int (*SDL_GetWindowWMInfo)(void* window, void* info);
 }private_funcs_t;
 
 extern void *GameViewport;
@@ -168,7 +170,6 @@ extern int *cszrawsentences;
 //extern char(*s_pBaseDir)[512];
 extern char*(*hostparam_basedir);
 
-extern HWND g_MainWnd;
 extern char m_szCurrentGameLanguage[128];
 
 //VGUI1 engineSurfaceWrapper

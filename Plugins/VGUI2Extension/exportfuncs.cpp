@@ -16,6 +16,9 @@
 
 //#include <SDL2/SDL_events.h>
 #include <SDL3/SDL_events.h>
+#define SDL_VIDEO_DRIVER_WINDOWS
+typedef int SDL_bool;
+#include <SDL2/SDL_syswm.h>
 
 #define SDL2_TEXTEDITINGEVENT_TEXT_SIZE (32)
 typedef struct SDL2_TextEditingEvent
@@ -27,6 +30,19 @@ typedef struct SDL2_TextEditingEvent
 	Sint32 start;
 	Sint32 length;
 } SDL2_TextEditingEvent;
+
+#define SDL_TEXTINPUTEVENT_TEXT_SIZE (32)
+/**
+ *  \brief Keyboard text input event structure (event.text.*)
+ */
+typedef struct SDL2_TextInputEvent
+{
+	Uint32 type;                              /**< ::SDL_TEXTINPUT */
+	Uint32 timestamp;                         /**< In milliseconds, populated using SDL_GetTicks() */
+	Uint32 windowID;                          /**< The window with keyboard focus, if any */
+	char text[SDL_TEXTINPUTEVENT_TEXT_SIZE];  /**< The input text */
+} SDL2_TextInputEvent;
+
 
 typedef struct SDL2_TextEditingCandidatesEvent
 {
@@ -43,7 +59,6 @@ typedef struct SDL2_TextEditingCandidatesEvent
 } SDL2_TextEditingCandidatesEvent;
 
 #include "VGUI2ExtensionInternal.h"
-
 
 cl_enginefunc_t gEngfuncs = { 0 };
 
@@ -303,33 +318,30 @@ double engine_GetAbsoluteTime()
 	return gEngfuncs.GetAbsoluteTime();
 }
 
-LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+SDL_Window* SDL_GetWindowFromID(SDL_WindowID id)
 {
-	static HWND s_hLastHWnd;
-	if (hWnd != s_hLastHWnd)
-	{
-		s_hLastHWnd = hWnd;
-		vgui::input()->SetIMEWindow(hWnd);
-	}
+	if (!gPrivateFuncs.SDL_GetWindowFromID)
+		return nullptr;
 
-	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
+	return (SDL_Window*)gPrivateFuncs.SDL_GetWindowFromID(id);
 }
 
-HWND Sys_GetMainWindowWin32HWND()
+SDL_bool SDL_GetWindowWMInfo(SDL_Window* window, SDL_SysWMinfo* info)
 {
-#ifdef _WIN32
-	if (Sys_GetMainWindow())
-	{
-		SDL_SysWMinfo wmInfo;
-		SDL_VERSION(&wmInfo.version);
-		SDL_GetWindowWMInfo((SDL_Window*)Sys_GetMainWindow(), &wmInfo);
+	if (!gPrivateFuncs.SDL_GetWindowWMInfo)
+		return false;
 
+	return gPrivateFuncs.SDL_GetWindowWMInfo(window, info);
+}
+
+HWND SDL_GetWindowWin32HWND(SDL_Window *wnd)
+{
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	if(SDL_GetWindowWMInfo(wnd, &wmInfo))
 		return wmInfo.info.win.window;
-	}
-#else
 
-#endif
-	return nullptr;
+	return NULL;
 }
 
 class CVGUI2Extension_BaseUICallbacks : public IVGUI2Extension_BaseUICallbacks
@@ -362,7 +374,6 @@ public:
 
 	void CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-#if 0
 		const auto pSDLEvent = (const SDL_Event *)pevent;
 
 		switch (pSDLEvent->type)
@@ -371,36 +382,69 @@ public:
 		{
 			const auto pTextEditingCandidateEvent = (const SDL2_TextEditingCandidatesEvent *)pSDLEvent;
 
-			vgui::input()->OnIMECandidateSDL(
-				pTextEditingCandidateEvent->candidates,
-				pTextEditingCandidateEvent->num_candidates, 
-				pTextEditingCandidateEvent->selected_candidate);
+			if (!vgui::input()->GetIMEWindow()) {
+				auto window = SDL_GetWindowFromID(pTextEditingCandidateEvent->windowID);
+				auto hWnd = SDL_GetWindowWin32HWND(window);
+				vgui::input()->SetIMEWindow(hWnd);
+			}
+
+			if (pTextEditingCandidateEvent->candidates == nullptr && pTextEditingCandidateEvent->num_candidates == 0) {
+				vgui::input()->OnIMECloseCandidates();
+			}
+			else {
+				vgui::input()->OnIMEShowCandidates();
+			}
+
+			//vgui::input()->OnIMECandidateSDL(
+			//	pTextEditingCandidateEvent->candidates,
+			//	pTextEditingCandidateEvent->num_candidates, 
+			//	pTextEditingCandidateEvent->selected_candidate);
 
 			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;
 		}
 		case SDL_EVENT_TEXT_INPUT:
 		{
+			const auto pTextInputEvent = (const SDL2_TextInputEvent*)pSDLEvent;
+
+			if (!vgui::input()->GetIMEWindow()) {
+				auto window = SDL_GetWindowFromID(pTextInputEvent->windowID);
+				auto hWnd = SDL_GetWindowWin32HWND(window);
+				vgui::input()->SetIMEWindow(hWnd);
+			}
+
 			//Already captured by BaseUISurface::AppHandler
 			//So we do nothing here.
 			break;
 		}
 		case SDL_EVENT_TEXT_EDITING:
 		{
-			/*
-			Update the composition text.
-			Update the cursor position.
-			Update the selection length (if any).
-			*/
-			const auto pTextEditingEvent = (const SDL2_TextEditingEvent *)pSDLEvent;
-			
-			vgui::input()->OnIMECompositionSDL(pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
+			const auto pTextEditingEvent = (const SDL2_TextEditingEvent*)pSDLEvent;
+
+			if (!vgui::input()->GetIMEWindow()) {
+				auto window = SDL_GetWindowFromID(pTextEditingEvent->windowID);
+				auto hWnd = SDL_GetWindowWin32HWND(window);
+				vgui::input()->SetIMEWindow(hWnd);
+			}
+
+			if (pTextEditingEvent->text[0] == 0 && pTextEditingEvent->start == 0 && pTextEditingEvent->length == 0) {
+
+				vgui::input()->OnIMEEndComposition();
+			}
+			else
+			{
+				if(!vgui::input()->IsIMEComposing())
+					vgui::input()->OnIMEStartComposition();
+
+				vgui::input()->OnIMECompositionWin32(GCS_COMPSTR);
+			}
+
+			//vgui::input()->OnIMECompositionSDL(pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
 
 			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;
 		}
 		}
-#endif
 
 	}
 
@@ -571,9 +615,7 @@ void InitWin32Stuffs(void)
 			RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
 			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
 			{
-				g_MainWnd = hwnd;
-
-				DpiManagerInternal()->InitFromHwnd(g_MainWnd);
+				DpiManagerInternal()->InitFromHwnd(hwnd);
 				
 				return FALSE;
 			}
@@ -582,7 +624,4 @@ void InitWin32Stuffs(void)
 	}, NULL);
 
 	VGUI2ExtensionInternal()->RegisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
-
-	//g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
-	//SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
 }
