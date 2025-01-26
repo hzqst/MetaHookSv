@@ -43,4 +43,4 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 void SDL_GetWindowSize(void* window, int* w, int* h);
 
-void InitWin32Stuffs(void);
+void InitWindowStuffs(void);

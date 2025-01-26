@@ -122,7 +122,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	VGUI1_InstallHooks();
 
-	InitWin32Stuffs();
+	InitWindowStuffs();
 
 	DpiManagerInternal()->InitClient();
 }

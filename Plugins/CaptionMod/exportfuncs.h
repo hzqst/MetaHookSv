@@ -61,8 +61,6 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
-void InitWin32Stuffs(void);
-
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;
 extern cvar_t* cap_max_distance;

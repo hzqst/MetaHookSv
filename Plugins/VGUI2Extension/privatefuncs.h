@@ -150,6 +150,7 @@ typedef struct
 	int (*SDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi);
 	void*(*SDL_GetWindowFromID)(int id);
 	int (*SDL_GetWindowWMInfo)(void* window, void* info);
+	void* (*SDL_GL_GetCurrentWindow)(void);
 }private_funcs_t;
 
 extern void *GameViewport;

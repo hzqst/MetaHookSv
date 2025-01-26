@@ -57,17 +57,6 @@ public:
 				}
 			}
 		}
-
-		if (DpiScalingSource_System > m_iDpiScalingSource)
-		{
-			HDC hScreen = GetDC(g_MainWnd);
-			int dpiX = GetDeviceCaps(hScreen, LOGPIXELSX);
-			int dpiY = GetDeviceCaps(hScreen, LOGPIXELSY);
-			ReleaseDC(g_MainWnd, hScreen);
-
-			m_flDpiScaling = (float)dpiY / 96.0f;
-			m_iDpiScalingSource = DpiScalingSource_System;
-		}
 	}
 
 	void InitFromHwnd(HWND hWnd) override

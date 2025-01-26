@@ -344,6 +344,14 @@ HWND SDL_GetWindowWin32HWND(SDL_Window *wnd)
 	return NULL;
 }
 
+SDL_Window* SDL_GL_GetCurrentWindow(void)
+{
+	if (!gPrivateFuncs.SDL_GL_GetCurrentWindow)
+		return nullptr;
+
+	return (SDL_Window*)gPrivateFuncs.SDL_GL_GetCurrentWindow();
+}
+
 class CVGUI2Extension_BaseUICallbacks : public IVGUI2Extension_BaseUICallbacks
 {
 public:
@@ -605,23 +613,36 @@ public:
 
 static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks_IMEHandler;
 
-void InitWin32Stuffs(void)
+void InitWindowStuffs(void)
 {
-	EnumWindows([](HWND hwnd, LPARAM lParam){
-		DWORD pid = 0;
-		if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
+	auto win = SDL_GL_GetCurrentWindow();
+	if (win)
+	{
+		auto hWnd = SDL_GetWindowWin32HWND(win);
+
+		if (hWnd)
 		{
-			char windowClass[256] = { 0 };
-			RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
-			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
-			{
-				DpiManagerInternal()->InitFromHwnd(hwnd);
-				
-				return FALSE;
-			}
+			DpiManagerInternal()->InitFromHwnd(hWnd);
 		}
-		return TRUE;
-	}, NULL);
+	}
+	else
+	{
+		EnumWindows([](HWND hwnd, LPARAM lParam) {
+			DWORD pid = 0;
+			if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
+			{
+				char windowClass[256] = { 0 };
+				RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
+				if (!strcmp(windowClass, "Valve001"))
+				{
+					DpiManagerInternal()->InitFromHwnd(hwnd);
+
+					return FALSE;
+				}
+			}
+			return TRUE;
+			}, NULL);
+	}
 
 	VGUI2ExtensionInternal()->RegisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
 }
