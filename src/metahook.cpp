@@ -1217,7 +1217,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (!g_pfnbuild_number)
 	{
 #define EXE_BUILD_STRING_SIG "Exe build: "
-		auto ExeBuild_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
+		auto ExeBuild_String = MH_SearchPattern((void*)rdataBase, rdataSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
+		if(!ExeBuild_String)
+			ExeBuild_String = MH_SearchPattern((void*)dataBase, dataSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
 		if (ExeBuild_String)
 		{
 			char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\xE8";
@@ -1266,7 +1268,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define COULD_NOT_LINK_STRING_SIG_SVENGINE "Couldn't link client library function \"Initialize\"\n"
-		auto CouldNotLink_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
+		auto CouldNotLink_String = MH_SearchPattern((void*)rdataBase, rdataSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
+		if(!CouldNotLink_String)
+			CouldNotLink_String = MH_SearchPattern((void*)dataBase, dataSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
 		if (CouldNotLink_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
@@ -1281,7 +1285,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	else
 	{
 #define COULD_NOT_LINK_STRING_SIG_GOLDSRC "could not link client.dll function Initialize\n\0"
-		auto CouldNotLink_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
+		auto CouldNotLink_String = MH_SearchPattern((void*)rdataBase, rdataSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
+		if (!CouldNotLink_String)
+			CouldNotLink_String = MH_SearchPattern((void*)dataBase, dataSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
 		if (CouldNotLink_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
@@ -1297,7 +1303,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (1)
 	{
 #define CLDLL_INIT_STRING_SIG "ScreenShake"
-		auto ClientDll_Init_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
+		auto ClientDll_Init_String = MH_SearchPattern((void*)rdataBase, rdataSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
+		if (!ClientDll_Init_String)
+			ClientDll_Init_String = MH_SearchPattern((void*)dataBase, dataSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
 		if (ClientDll_Init_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
@@ -1394,7 +1402,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (1)
 	{
 #define RIGHTHAND_STRING_SIG "cl_righthand\0"
-		auto RightHand_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
+		auto RightHand_String = MH_SearchPattern((void*)rdataBase, rdataSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
+		if(!RightHand_String)
+			RightHand_String = MH_SearchPattern((void*)dataBase, dataSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
 		if (RightHand_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
@@ -1460,7 +1470,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (1)
 	{
 #define VGUICLIENT001_STRING_SIG "VClientVGUI001\0"
-		auto VGUIClient001_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
+		auto VGUIClient001_String = MH_SearchPattern((void*)rdataBase, rdataSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
+		if(!VGUIClient001_String)
+			VGUIClient001_String = MH_SearchPattern((void*)dataBase, dataSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
 		if (VGUIClient001_String)
 		{
 			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
@@ -1503,7 +1515,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 #define FULLSCREEN_STRING_SIG_SVENGINE "-fullscreen\0"
-			auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
+			auto FullScreen_String = MH_SearchPattern(rdataBase, rdataSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
+			if(!FullScreen_String)
+				FullScreen_String = MH_SearchPattern(dataBase, dataSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
 			if (FullScreen_String)
 			{
 				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
@@ -1515,12 +1529,22 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 					VideoMode_SearchBase = FullScreen_PushString;
 				}
+				else
+				{
+					MH_SysError("MH_LoadEngine: Failed to locate FullScreen_PushString");
+				}
+			}
+			else
+			{
+				MH_SysError("MH_LoadEngine: Failed to locate FullScreen_String");
 			}
 		}
 		else
 		{
 #define FULLSCREEN_STRING_SIG "-gl\0"
-			auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+			auto FullScreen_String = MH_SearchPattern(rdataBase, rdataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+			if(!FullScreen_String)
+				FullScreen_String = MH_SearchPattern(dataBase, dataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
 			if (FullScreen_String)
 			{
 				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
@@ -1532,6 +1556,14 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 					VideoMode_SearchBase = FullScreen_PushString;
 				}
+				else
+				{
+					MH_SysError("MH_LoadEngine: Failed to locate FullScreen_PushString");
+				}
+			}
+			else
+			{
+				MH_SysError("MH_LoadEngine: Failed to locate FullScreen_String");
 			}
 		}
 
@@ -1634,7 +1666,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (1)
 	{
 #define HUDTEXT_STRING_SIG "HudText\0"
-		auto HudText_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
+		auto HudText_String = MH_SearchPattern(rdataBase, rdataSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
+		if(!HudText_String)
+			HudText_String = MH_SearchPattern(dataBase, dataSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
 		if (HudText_String)
 		{
 			char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
