@@ -78,11 +78,9 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 * 你可以在 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst` 中根据自己需求启用/禁用插件。
 
-* `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
+* `Build`目录中的 `SDL3.dll` 用于支持输入法候选词功能，因为原生的 SDL2 不会将输入法候选事件传递给引擎。
 
-* Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll。
-
-* Sven Co-op开发团队在Sven Co-op 5.26中更新了修复了缓冲区越界问题的SDL2，所以如果你是Sven Co-op 5.26或以上版本就不需要替换SDL2.dll。
+* `SDL3.dll` 通过 [SDL3-over-SDL2](https://github.com/libsdl-org/sdl2-compat) 兼容层进行加载，这意味着您需要用 `Build/SDL2.dll` 替换SDL2，以使 SDL3 正常工作。
 
 ## 构建需求
 

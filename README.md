@@ -72,11 +72,9 @@ Q: This is because ThreadGuard.dll is waiting for Valve's network threads or sim
 
 * Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
 
-* The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+* The `Build/SDL3.dll` is for full IME candidates support as SDL2 does not pust IME candidate events to engine at all.
 
-* Valve has fixed this issue in the HL25th update, you don't have to replace `SDL2.dll` if you are running GoldSrc engine with HL25th update.
-
-* Sven Co-op team has fixed this issue since Sven Co-op 5.26, you don't have to replace `SDL2.dll` if you are running 5.26 or later version of Sven Co-op.
+* The `Build/SDL3.dll` is loaded by [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat), which means you will have to overwrite SDL2.dll with `Build/SDL2.dll` to get SDL3 working properly.
 
 ## Build Requirements
 
