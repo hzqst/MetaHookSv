@@ -454,10 +454,9 @@ void R_NewMapLight_Post()
 
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
-
-	if (dl->key >= 1 && dl->key <= 32)
+	if (dl->key >= 0x40000 + 1 && dl->key <= 0x40000 + MAX_CLIENTS)
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(dl->key);
+		auto ent = gEngfuncs.GetEntityByIndex(dl->key - 0x40000);
 
 		if (ent->curstate.effects & EF_DIMLIGHT)
 		{
@@ -465,15 +464,9 @@ bool R_IsDLightFlashlight(dlight_t *dl)
 		}
 	}
 
-	//CL_PlayerFlashlight:
-	//dl = efx.CL_AllocDlight (1);
-
-	if (gEngfuncs.GetMaxClients() <= 1)
+	if (dl->key == 1)
 	{
-		if (dl->key == 1)
-		{
-			return true;
-		}
+		return true;
 	}
 
 	return false;
