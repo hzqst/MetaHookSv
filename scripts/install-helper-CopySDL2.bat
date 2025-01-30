@@ -21,5 +21,6 @@ if "%GameSDL2_fileVersion%"=="2, 30, 50, 0" (
 )
 echo SDL2 version is "%GameSDL2_fileVersion%", need to replace SDL2
 copy "%SolutionDir%Build\SDL2.dll" "%GameDir%\" /y
+copy "%SolutionDir%Build\SDL3.dll" "%GameDir%\" /y
 
 :no_replace_sdl2
