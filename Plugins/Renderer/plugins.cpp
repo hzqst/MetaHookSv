@@ -116,6 +116,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_Frame = HUD_Frame;
+	pExportFunc->HUD_CreateEntities = HUD_CreateEntities;
 	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 

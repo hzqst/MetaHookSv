@@ -1838,6 +1838,13 @@ void HUD_Frame(double time)
 	gExportfuncs.HUD_Frame(time);
 }
 
+void HUD_CreateEntities(void)
+{
+	R_SetupFlashlights();
+
+	gExportfuncs.HUD_CreateEntities();
+}
+
 //Client DLL Shutting down...
 
 void HUD_Shutdown(void)

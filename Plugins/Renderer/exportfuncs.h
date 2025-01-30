@@ -10,5 +10,10 @@ void HUD_Shutdown(void);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_Redraw(float time, int intermission);
 void HUD_Frame(double time);
+void HUD_CreateEntities(void);
 void HUD_PlayerMoveInit(struct playermove_s* ppmove);
 void HUD_OnClientDisconnect(void);
+
+#define DLIGHT_KEY_PLAYER_BRIGHTLIGHT 0x40000
+#define DLIGHT_KEY_PLAYER_FLASHLIGHT 0x80000
+#define DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT 1

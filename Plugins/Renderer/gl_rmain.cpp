@@ -4051,3 +4051,53 @@ int __cdecl SDL_GL_SetAttribute(int attr, int value)
 	}
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
+
+void R_SetupFlashlights()
+{
+	int max_dlight = EngineGetMaxDLights();
+
+	dlight_t* dl = cl_dlights;
+	float curtime = (*cl_time);
+
+	for (int i = 0; i < max_dlight; i++, dl++)
+	{
+		if (dl->die < curtime || !dl->radius)
+			continue;
+
+		if (dl->key == 4) {
+			memset(dl, 0, sizeof(dlight_t));
+		}
+	}
+
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		auto state = R_GetPlayerState(i);
+
+		if (state->messagenum != (*cl_parsecount))
+			continue;
+
+		if (!state->modelindex || (state->effects & EF_NODRAW))
+			continue;
+
+		auto entindex = state->number;
+		auto ent = gEngfuncs.GetEntityByIndex(entindex);
+
+		if (ent->curstate.effects & EF_BRIGHTLIGHT)
+		{
+			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_BRIGHTLIGHT | entindex);
+			VectorCopy(ent->origin, dl->origin);
+			dl->origin[2] += 16;
+			dl->color.r = dl->color.g = dl->color.b = 250;
+			dl->radius = gEngfuncs.pfnRandomFloat(400, 431);
+			dl->die = (*cl_time) + 0.001f;
+		}
+		if (ent->curstate.effects & EF_DIMLIGHT)
+		{
+			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT | entindex);
+			VectorCopy(ent->origin, dl->origin);
+			dl->color.r = dl->color.g = dl->color.b = 100;
+			dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
+			dl->die = (*cl_time) + 0.001f;
+		}
+	}
+}

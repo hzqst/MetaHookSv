@@ -454,17 +454,15 @@ void R_NewMapLight_Post()
 
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
-	if (dl->key >= 0x40000 + 1 && dl->key <= 0x40000 + MAX_CLIENTS)
+	if (dl->key >= DLIGHT_KEY_PLAYER_FLASHLIGHT + 1 && dl->key <= DLIGHT_KEY_PLAYER_FLASHLIGHT + MAX_CLIENTS)
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(dl->key - 0x40000);
+		auto ent = gEngfuncs.GetEntityByIndex(dl->key - DLIGHT_KEY_PLAYER_FLASHLIGHT);
 
-		if (ent->curstate.effects & EF_DIMLIGHT)
-		{
+		if (ent && ent->player)
 			return true;
-		}
 	}
 
-	if (dl->key == 1)
+	if (dl->key == DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT)
 	{
 		return true;
 	}
