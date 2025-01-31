@@ -3054,8 +3054,8 @@ void TextEntry::Backspace()
 	if (input()->IsIMEComposing())
 		return;
 
-	if (surface()->GetAbsoluteTime() < input()->GetImeComposingTime() + 0.1f)
-		return;
+	//if (surface()->GetAbsoluteTime() < input()->GetImeComposingTime() + 0.1f)
+	//	return;
 
 	//if you are at the first position don't do anything
 	if(_cursorPos==0)

@@ -1031,6 +1031,8 @@ public:
 	{
 		g_bIMEComposing = true;
 		g_flImeComposingTime = gEngfuncs.GetAbsoluteTime();
+
+		gEngfuncs.Con_DPrintf("IME Start Composition\n");
 	}
 
 	void OnIMECompositionWin32(long flags) override
@@ -1189,10 +1191,15 @@ public:
 
 	void OnIMEEndComposition() override
 	{
+		if (!g_bIMEComposing)
+			return;
+
 		g_bIMEComposing = false;
 		g_flImeComposingTime = gEngfuncs.GetAbsoluteTime();
 
 		PostKeyMessage(new KeyValues("DoCompositionString", "string", L""));
+
+		gEngfuncs.Con_DPrintf("IME End Composition\n");
 	}
 
 	void OnKeyCodeUnhandled(int keyCode) override

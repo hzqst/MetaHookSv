@@ -24,7 +24,7 @@ void HUD_Init(void)
 	ModelReplacer()->LoadGlobalReplaceList("resreplacer/default_global.gmr");
 	SoundReplacer()->LoadGlobalReplaceList("resreplacer/default_global.gsr");
 
-	return gExportfuncs.HUD_Init();
+	gExportfuncs.HUD_Init();
 }
 
 void HUD_Shutdown(void)

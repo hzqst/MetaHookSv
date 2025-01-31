@@ -20,12 +20,27 @@
 typedef int SDL_bool;
 #include <SDL2/SDL_syswm.h>
 
+typedef struct SDL2_KeyboardEvent
+{
+	SDL_EventType type;     /**< SDL_EVENT_KEY_DOWN or SDL_EVENT_KEY_UP */
+	Uint32 timestamp;
+	SDL_WindowID windowID;  /**< The window with keyboard focus, if any */
+	SDL_KeyboardID which;   /**< The keyboard instance id, or 0 if unknown or virtual */
+	SDL_Scancode scancode;  /**< SDL physical key code */
+	SDL_Keycode key;        /**< SDL virtual key code */
+	SDL_Keymod mod;         /**< current key modifiers */
+	Uint16 raw;             /**< The platform dependent scancode for this event */
+	bool down;              /**< true if the key is pressed */
+	bool repeat;            /**< true if this is a key repeat */
+} SDL2_KeyboardEvent;
+
+
 #define SDL2_TEXTEDITINGEVENT_TEXT_SIZE (32)
 typedef struct SDL2_TextEditingEvent
 {
 	Uint32 type;
 	Uint32 timestamp;
-	Uint32 windowID;
+	SDL_WindowID windowID;
 	char text[SDL2_TEXTEDITINGEVENT_TEXT_SIZE];
 	Sint32 start;
 	Sint32 length;
@@ -39,7 +54,7 @@ typedef struct SDL2_TextInputEvent
 {
 	Uint32 type;                              /**< ::SDL_TEXTINPUT */
 	Uint32 timestamp;                         /**< In milliseconds, populated using SDL_GetTicks() */
-	Uint32 windowID;                          /**< The window with keyboard focus, if any */
+	SDL_WindowID windowID;                          /**< The window with keyboard focus, if any */
 	char text[SDL_TEXTINPUTEVENT_TEXT_SIZE];  /**< The input text */
 } SDL2_TextInputEvent;
 
@@ -386,6 +401,21 @@ public:
 
 		switch (pSDLEvent->type)
 		{
+		case SDL_EVENT_KEY_DOWN:
+		case SDL_EVENT_KEY_UP:
+		{
+			const auto pKeyEvent = (const SDL2_KeyboardEvent*)pSDLEvent;
+
+			if (pKeyEvent->key == SDLK_BACKSPACE)
+			{
+				if (vgui::input()->IsIMEComposing())
+				{
+					CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+					break;
+				}
+			}
+			break;
+		}
 		case SDL_EVENT_TEXT_EDITING_CANDIDATES:
 		{
 			const auto pTextEditingCandidateEvent = (const SDL2_TextEditingCandidatesEvent *)pSDLEvent;
@@ -419,6 +449,12 @@ public:
 				auto window = SDL_GetWindowFromID(pTextInputEvent->windowID);
 				auto hWnd = SDL_GetWindowWin32HWND(window);
 				vgui::input()->SetIMEWindow(hWnd);
+			}
+
+			if (vgui::input()->IsIMEComposing())
+			{
+				CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
+				break;
 			}
 
 			//Already captured by BaseUISurface::AppHandler

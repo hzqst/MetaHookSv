@@ -15,10 +15,10 @@ int HUD_VidInit(void)
 
 void HUD_Init(void)
 {
-	return gExportfuncs.HUD_Init();
+	gExportfuncs.HUD_Init();
 }
 
 void HUD_Shutdown(void)
 {
-	return gExportfuncs.HUD_Shutdown();
+	gExportfuncs.HUD_Shutdown();
 }
