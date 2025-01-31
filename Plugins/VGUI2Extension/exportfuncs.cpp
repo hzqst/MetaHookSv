@@ -433,11 +433,6 @@ public:
 				vgui::input()->OnIMEShowCandidates();
 			}
 
-			//vgui::input()->OnIMECandidateSDL(
-			//	pTextEditingCandidateEvent->candidates,
-			//	pTextEditingCandidateEvent->num_candidates, 
-			//	pTextEditingCandidateEvent->selected_candidate);
-
 			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;
 		}
@@ -482,8 +477,6 @@ public:
 
 				vgui::input()->OnIMECompositionWin32(GCS_COMPSTR);
 			}
-
-			//vgui::input()->OnIMECompositionSDL(pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
 
 			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;
 			break;

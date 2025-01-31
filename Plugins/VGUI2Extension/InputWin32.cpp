@@ -1095,43 +1095,11 @@ public:
 		}
 	}
 
-	void OnIMECompositionSDL(const char *text, int start, int length) override
-	{
-		//gEngfuncs.Con_Printf("OnIMECompositionSDL %s, %d, %d\n", text, start, length);
-		//
-		//wchar_t wcomposition[256]{};
-		//int cb = Q_UTF8ToUnicode(text, wcomposition, sizeof(wcomposition));
-		//
-		//_imeCompositionStr = wcomposition;
-		//
-		//InternalSetCompositionString(wcomposition);
-		//
-		//DestroyCandidateList();
-		//CreateNewCandidateListWin32();
-		//
-		//InternalShowCandidateWindow();
-	}
-
-	void OnIMECandidateSDL(const char* const* candidates, int num_candidates, int selected_candidate) override
-	{
-		//gEngfuncs.Con_Printf("OnIMECandidateSDL %d, %d\n", num_candidates, selected_candidate);
-
-		//_imeCandidateList.resize(num_candidates);
-
-		//for (int i = 0; i < num_candidates; ++i)
-		//{
-		//	wchar_t wcandidate[256]{};
-		//	int cb = Q_UTF8ToUnicode(candidates[i], wcandidate, sizeof(wcandidate));
-		//
-		//	_imeCandidateList[i] = wcandidate;
-		//}
-	}
-
 	void DestroyCandidateList(void) override
 	{
 		if (_imeCandidatesWin32)
 		{
-			delete[](char*)_imeCandidatesWin32;
+			free(_imeCandidatesWin32);
 			_imeCandidatesWin32 = nullptr;
 		}
 
@@ -1148,20 +1116,23 @@ public:
 
 			if (buflen > 0)
 			{
-				char* buf = new char[buflen];
-				Q_memset(buf, 0, buflen);
-
-				CANDIDATELIST* list = (CANDIDATELIST*)buf;
-				DWORD copyBytes = ImmGetCandidateListW(hImc, 0, list, buflen);
-
-				if (copyBytes > 0)
+				char* buf = (char*)malloc(buflen);
+				if (buf)
 				{
-					_imeCandidatesWin32 = list;
+					Q_memset(buf, 0, buflen);
 
-				}
-				else
-				{
-					delete[] buf;
+					CANDIDATELIST* list = (CANDIDATELIST*)buf;
+					DWORD copyBytes = ImmGetCandidateListW(hImc, 0, list, buflen);
+
+					if (copyBytes > 0)
+					{
+						_imeCandidatesWin32 = list;
+
+					}
+					else
+					{
+						free(buf);
+					}
 				}
 			}
 
