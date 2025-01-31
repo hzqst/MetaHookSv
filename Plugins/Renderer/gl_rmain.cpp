@@ -4082,22 +4082,34 @@ void R_SetupFlashlights()
 		auto entindex = state->number;
 		auto ent = gEngfuncs.GetEntityByIndex(entindex);
 
+		if(!ent)
+			continue;
+
+		if (ent == gEngfuncs.GetLocalPlayer())
+			continue;
+
 		if (ent->curstate.effects & EF_BRIGHTLIGHT)
 		{
-			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_BRIGHTLIGHT | entindex);
-			VectorCopy(ent->origin, dl->origin);
-			dl->origin[2] += 16;
-			dl->color.r = dl->color.g = dl->color.b = 250;
-			dl->radius = gEngfuncs.pfnRandomFloat(400, 431);
-			dl->die = (*cl_time) + 0.001f;
+			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_BRIGHTLIGHT + entindex);
+			if (dl)
+			{
+				VectorCopy(ent->origin, dl->origin);
+				dl->origin[2] += 16;
+				dl->color.r = dl->color.g = dl->color.b = 250;
+				dl->radius = gEngfuncs.pfnRandomFloat(400, 431);
+				dl->die = (*cl_time) + 0.001f;
+			}
 		}
 		if (ent->curstate.effects & EF_DIMLIGHT)
 		{
-			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT | entindex);
-			VectorCopy(ent->origin, dl->origin);
-			dl->color.r = dl->color.g = dl->color.b = 100;
-			dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
-			dl->die = (*cl_time) + 0.001f;
+			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT + entindex);
+			if (dl)
+			{
+				VectorCopy(ent->origin, dl->origin);
+				dl->color.r = dl->color.g = dl->color.b = 100;
+				dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
+				dl->die = (*cl_time) + 0.001f;
+			}
 		}
 	}
 }
