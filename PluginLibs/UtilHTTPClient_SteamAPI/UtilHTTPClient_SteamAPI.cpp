@@ -355,9 +355,6 @@ public:
 			m_Callbacks->OnResponseComplete(this, m_pResponse);
 		}
 
-		m_bFinished = true;
-		m_bResponding = false;
-
 		OnRespondFinish();
 	}
 

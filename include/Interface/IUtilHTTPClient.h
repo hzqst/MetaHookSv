@@ -136,13 +136,7 @@ public:
 class CUtilHTTPClientCreationContext
 {
 public:
-    CUtilHTTPClientCreationContext()
-    {
-        m_bUseCookieContainer = false;
-        m_bAllowResponseToModifyCookie = false;
-    }
-
-    bool m_bUseCookieContainer;
+    bool m_bUseCookieContainer{};
     bool m_bAllowResponseToModifyCookie{};
 };
 

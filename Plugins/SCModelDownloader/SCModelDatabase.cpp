@@ -39,6 +39,8 @@ int SCModel_Hash(const std::string& name)
 class ISCModelQuery : public IBaseInterface
 {
 public:
+	virtual const char* GetName() const = 0;
+	virtual const char* GetIdentifier() const = 0;
 	virtual const char *GetUrl() const = 0;
 	virtual bool IsFailed() const = 0;
 	virtual bool IsFinished() const = 0;
@@ -114,6 +116,7 @@ public:
 		if (m_RequestId != UTILHTTP_REQUEST_INVALID_ID)
 		{
 			UtilHTTPClient()->DestroyRequestById(m_RequestId);
+			m_RequestId = UTILHTTP_REQUEST_INVALID_ID;
 		}
 	}
 
@@ -173,6 +176,17 @@ public:
 	void StartQuery() override;
 
 	bool OnResponsePayload(const char* data, size_t size) override;
+
+	const char* GetName() const override
+	{
+		return "SCModelQueryModelFileTask";
+	}
+
+	const char* GetIdentifier() const override
+	{
+		return m_localFileName.c_str();
+	}
+
 };
 
 class CSCModelQueryTaskList : public CSCModelQueryBase
@@ -196,9 +210,9 @@ public:
 
 	}
 
-	bool IsAllQueriesFinished()
+	bool IsFinished() const override
 	{
-		if (!IsFinished())
+		if (!CSCModelQueryBase::IsFinished())
 			return false;
 
 		for (auto &itor : m_SubQueryList)
@@ -341,6 +355,16 @@ public:
 			SCModel_ReloadModel(m_localFileNameBase.c_str());
 		}
 	}
+
+	const char* GetName() const override
+	{
+		return "SCModelQueryTaskList";
+	}
+
+	const char* GetIdentifier() const override
+	{
+		return m_lowerName.c_str();
+	}
 };
 
 void CSCModelQueryModelFileTask::StartQuery()
@@ -396,6 +420,16 @@ bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size
 class CSCModelQueryDatabase : public CSCModelQueryBase
 {
 public:
+	const char* GetName() const override
+	{
+		return "SCModelQueryDatabase";
+	}
+
+	const char* GetIdentifier() const override
+	{
+		return "";
+	}
+
 	void StartQuery() override
 	{
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
@@ -456,20 +490,28 @@ public:
 class CSCModelDatabase : public ISCModelDatabase
 {
 private:
-	std::shared_ptr<CSCModelQueryDatabase> m_DatabaseQuery;
-	std::unordered_map<std::string, std::shared_ptr<CSCModelQueryTaskList>> m_QueryTaskList;
+	std::vector<std::shared_ptr<ISCModelQuery>> m_QueryTaskList;
 
 public:
 	void Init() override
 	{
-		m_DatabaseQuery = std::make_shared<CSCModelQueryDatabase>();
+		if (!g_Database.empty())
+			return;
 
-		QueryDatabase();
+		if (!m_QueryTaskList.empty())
+			return;
+
+		auto pDatabaseQuery = std::make_shared<CSCModelQueryDatabase>();
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying database...\n");
+
+		m_QueryTaskList.emplace_back(pDatabaseQuery);
+
+		pDatabaseQuery->StartQuery();
 	}
 
 	void Shutdown() override
 	{
-		m_DatabaseQuery.reset();
 		m_QueryTaskList.clear();
 		g_Database.clear();
 	}
@@ -478,18 +520,13 @@ public:
 	{
 		auto flCurrentAbsTime = (float)gEngfuncs.GetAbsoluteTime();
 
-		if (m_DatabaseQuery)
-		{
-			m_DatabaseQuery->RunFrame(flCurrentAbsTime);
-		}
-
 		for (auto itor = m_QueryTaskList.begin(); itor != m_QueryTaskList.end();)
 		{
-			auto& p = itor->second;
+			const auto& p = (*itor);
 
 			p->RunFrame(flCurrentAbsTime);
 
-			if (p->IsAllQueriesFinished())
+			if (p->IsFinished())
 			{
 				itor = m_QueryTaskList.erase(itor);
 				continue;
@@ -499,39 +536,28 @@ public:
 		}
 	}
 
-	void QueryDatabase()
-	{
-		if (!g_Database.empty())
-			return;
-
-		if (m_DatabaseQuery && m_DatabaseQuery->IsFinished())
-			return;
-
-		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying database...\n");
-
-		m_DatabaseQuery->StartQuery();
-	}
-
 	/*
 		Purpose: Build network query instance
 	*/
 
 	bool BuildQueryListInternal(const std::string& lowerName, const std::string& localFileNameBase)
 	{
-		auto itor = m_QueryTaskList.find(lowerName);
-
-		if (itor == m_QueryTaskList.end())
+		for (const auto& p : m_QueryTaskList)
 		{
-			auto QueryList = std::make_shared<CSCModelQueryTaskList>(lowerName, localFileNameBase);
-
-			m_QueryTaskList[lowerName] = QueryList;
-
-			QueryList->StartQuery();
-
-			return true;
+			if (!strcmp(p->GetName(), "SCModelQueryTaskList") &&
+				!strcmp(p->GetIdentifier(), lowerName.c_str()) )
+			{
+				return false;
+			}
 		}
 
-		return false;
+		auto QueryList = std::make_shared<CSCModelQueryTaskList>(lowerName, localFileNameBase);
+
+		m_QueryTaskList.emplace_back(QueryList);
+
+		QueryList->StartQuery();
+
+		return true;
 	}
 
 	/*
