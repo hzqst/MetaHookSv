@@ -1396,11 +1396,11 @@ public:
 
 	void OnIMESelectCandidate(int num) override
 	{
-		if (num < 0 || num > 9)
+		if (num < 1 || num > 9)
 			return;
 
 		BYTE nVirtKey = '0' + num;
-
+		
 		keybd_event(nVirtKey, 0, 0, 0);
 		keybd_event(nVirtKey, 0, KEYEVENTF_KEYUP, 0);
 	}

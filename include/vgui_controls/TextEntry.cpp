@@ -135,8 +135,16 @@ TextEntry::TextEntry(Panel *parent, const char *panelName) : BaseClass(parent, p
 
 TextEntry::~TextEntry()
 {
-	delete m_pEditMenu;
-	delete m_pIMECandidates;
+	if (m_pEditMenu)
+	{
+		delete m_pEditMenu;
+		m_pEditMenu = nullptr;
+	}
+	if (m_pIMECandidates)
+	{
+		delete m_pIMECandidates;
+		m_pIMECandidates = nullptr;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -4058,7 +4066,8 @@ void TextEntry::ShowIMECandidates()
 		_snwprintf( label, sizeof( label ) / sizeof( wchar_t ) - 1, L"%i %s", i - pageStart + startAtOne, unicode );
 		label[ sizeof( label ) / sizeof( wchar_t ) - 1 ] = L'\0';
 
-		int id = m_pIMECandidates->AddMenuItem( "Candidate", label, (KeyValues *)NULL, this );
+		auto message = new KeyValues("DoCandidateSelected", "num", i - pageStart + startAtOne);
+		int id = m_pIMECandidates->AddMenuItem( "Candidate", label, message, this );
 		if ( isSelected )
 		{
 			m_pIMECandidates->SetCurrentlyHighlightedItem( id );
