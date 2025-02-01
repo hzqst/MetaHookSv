@@ -247,9 +247,13 @@ public:
 	{
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{1}.json", m_repoId, m_lowerName);
 
-		auto RequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
-		m_RequestId = RequestInstance->GetRequestId();
-		RequestInstance->SendAsyncRequest();
+		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+		
+		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
+
+		m_RequestId = pRequestInstance->GetRequestId();
+
+		pRequestInstance->Send();
 	}
 
 	void BuildQueryInternal(const std::string& localFileName, const std::string& networkFileName)
@@ -371,9 +375,14 @@ void CSCModelQueryModelFileTask::StartQuery()
 {
 	m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_pQueryTaskList->m_repoId, m_pQueryTaskList->m_networkFileNameBase, m_networkFileName);
 
-	auto RequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
-	m_RequestId = RequestInstance->GetRequestId();
-	RequestInstance->SendAsyncRequest();
+	auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+	
+	UtilHTTPClient()->AddToRequestPool(pRequestInstance);
+
+	m_RequestId = pRequestInstance->GetRequestId();
+
+	pRequestInstance->Send();
+
 }
 
 bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size)
@@ -434,9 +443,13 @@ public:
 	{
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
 
-		auto RequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
-		m_RequestId = RequestInstance->GetRequestId();
-		RequestInstance->SendAsyncRequest();
+		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+
+		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
+
+		m_RequestId = pRequestInstance->GetRequestId();
+
+		pRequestInstance->Send();
 	}
 
 	bool OnResponsePayload(const char* data, size_t size) override

@@ -6,6 +6,8 @@
 
 #include <IUtilHTTPClient.h>
 
+#include <ScopeExit/ScopeExit.h>
+
 #include <steam_api.h>
 
 EHTTPMethod UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(const UtilHTTPMethod method)
@@ -27,11 +29,20 @@ EHTTPMethod UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(const UtilHTTPMethod met
 	return EHTTPMethod::k_EHTTPMethodInvalid;
 }
 
-class CUtilHTTPRequest;
-
 class CURLParsedResult : public IURLParsedResult
 {
 public:
+	CURLParsedResult(
+		const std::string &scheme,
+		const std::string& host,
+		unsigned short port_us, 
+		const std::string& target, 
+		bool secure) : m_scheme(scheme), m_host(host), m_port_us(port_us), m_target(target), m_secure(secure)
+	{
+
+		m_port_str = std::format("{0}", port_us);
+	}
+
 	void Destroy() override
 	{
 		delete this;
@@ -39,67 +50,41 @@ public:
 
 	const char* GetScheme() const override
 	{
-		return scheme.c_str();
+		return m_scheme.c_str();
 	}
 
 	const char* GetHost() const  override
 	{
-		return host.c_str();
+		return m_host.c_str();
 	}
 
 	const char* GetTarget() const  override
 	{
-		return target.c_str();
+		return m_target.c_str();
 	}
 
 	const char* GetPortString() const  override
 	{
-		return port_str.c_str();
+		return m_port_str.c_str();
 	}
 
 	unsigned short GetPort() const override
 	{
-		return port_us;
+		return m_port_us;
 	}
 
 	bool IsSecure() const override
 	{
-		return secure;
-	}
-
-	void SetScheme(const char* s) override
-	{
-		scheme = s;
-	}
-
-	void SetHost(const char* s) override
-	{
-		host = s;
-	}
-
-	void SetTarget(const char* s) override
-	{
-		target = s;
-	}
-
-	void SetUsPort(unsigned short p) override
-	{
-		port_us = p;
-		port_str = std::format("{0}", p);
-	}
-
-	void SetSecure(bool b) override
-	{
-		secure = b;
+		return m_secure;
 	}
 
 private:
-	std::string scheme;
-	std::string host;
-	std::string port_str;
-	std::string target;
-	unsigned short port_us{};
-	bool secure{};
+	std::string m_scheme;
+	std::string m_host;
+	std::string m_port_str;
+	std::string m_target;
+	unsigned short m_port_us{};
+	bool m_secure{};
 };
 
 class CUtilHTTPPayload : public IUtilHTTPPayload
@@ -251,12 +236,14 @@ public:
 class CUtilHTTPRequest : public IUtilHTTPRequest
 {
 protected:
+	UtilHTTPRequestId_t m_RequestId{ UTILHTTP_REQUEST_INVALID_ID };
 	HTTPRequestHandle m_RequestHandle{};
 	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CompleteCallResult{};
 	bool m_bRequesting{};
 	bool m_bResponding{};
 	bool m_bRequestSuccessful{};
 	bool m_bFinished{};
+	bool m_bAutoDestroyOnFinish{};
 	IUtilHTTPCallbacks* m_Callbacks{};
 	CUtilHTTPResponse* m_pResponse{};
 
@@ -365,7 +352,7 @@ public:
 		delete this;
 	}
 
-	void SendAsyncRequest() override
+	void Send() override
 	{
 		SteamAPICall_t SteamApiCall;
 		if (SteamHTTP()->SendHTTPRequest(m_RequestHandle, &SteamApiCall))
@@ -401,6 +388,11 @@ public:
 		return m_bFinished;
 	}
 
+	bool IsAutoDestroyOnFinish() const override
+	{
+		return m_bAutoDestroyOnFinish;
+	}
+
 	UtilHTTPRequestState GetRequestState() const override
 	{
 		if (IsFinished())
@@ -415,7 +407,22 @@ public:
 		return UtilHTTPRequestState::Idle;
 	}
 
-	void SetTimeout(int secs)  override
+	void SetRequestId(UtilHTTPRequestId_t id) override
+	{
+		m_RequestId = id;
+	}
+
+	UtilHTTPRequestId_t GetRequestId() const override
+	{
+		return m_RequestId;
+	}
+
+	void SetAutoDestroyOnFinish(bool b) override
+	{
+		m_bAutoDestroyOnFinish = b;
+	}
+
+	void SetTimeout(int secs) override
 	{
 		SteamHTTP()->SetHTTPRequestNetworkActivityTimeout(m_RequestHandle, secs);
 	}
@@ -531,7 +538,6 @@ public:
 			CloseHandle(m_hResponseEvent);
 			m_hResponseEvent = NULL;
 		}
-
 	}
 
 	bool IsAsync() const override
@@ -566,22 +572,11 @@ public:
 			SetEvent(m_hResponseEvent);
 		}
 	}
-
-	void SetRequestId(UtilHTTPRequestId_t id) override
-	{
-		
-	}
-
-	UtilHTTPRequestId_t GetRequestId() const override
-	{
-		return UTILHTTP_REQUEST_INVALID_ID;
-	}
 };
 
 class CUtilHTTPAsyncRequest : public CUtilHTTPRequest
 {
 private:
-	UtilHTTPRequestId_t m_RequestId{ UTILHTTP_REQUEST_INVALID_ID };
 
 public:
 	CUtilHTTPAsyncRequest(
@@ -594,7 +589,7 @@ public:
 		HTTPCookieContainerHandle hCookieHandle) :
 		CUtilHTTPRequest(method, host, port, secure, target, callbacks, hCookieHandle)
 	{
-
+		m_bAutoDestroyOnFinish = true;
 	}
 
 	bool IsAsync() const override
@@ -616,16 +611,6 @@ public:
 	{
 		return nullptr;
 	}
-
-	void SetRequestId(UtilHTTPRequestId_t id) override
-	{
-		m_RequestId = id;
-	}
-
-	UtilHTTPRequestId_t GetRequestId() const override
-	{
-		return m_RequestId;
-	}
 };
 
 class CUtilHTTPAsyncStreamRequest : public CUtilHTTPAsyncRequest
@@ -644,9 +629,9 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPStreamCallbacks* callbacks,
+		IUtilHTTPStreamCallbacks* StreamCallbacks,
 		HTTPCookieContainerHandle hCookieHandle) :
-		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle), m_StreamCallbacks(callbacks)
+		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle), m_StreamCallbacks(StreamCallbacks)
 	{
 
 	}
@@ -664,6 +649,11 @@ public:
 		if (m_RecvDataCallResult.IsActive())
 		{
 			m_RecvDataCallResult.Cancel();
+		}
+		if (m_StreamCallbacks)
+		{
+			m_StreamCallbacks->Destroy();
+			m_StreamCallbacks = nullptr;
 		}
 	}
 
@@ -738,7 +728,7 @@ public:
 		}
 	}
 
-	void SendAsyncRequest() override
+	void Send() override
 	{
 		SteamAPICall_t SteamApiCall;
 		if (SteamHTTP()->SendHTTPRequestAndStreamResponse(m_RequestHandle, &SteamApiCall))
@@ -766,10 +756,6 @@ private:
 	HTTPCookieContainerHandle m_CookieHandle{ INVALID_HTTPCOOKIE_HANDLE  };
 
 public:
-	CUtilHTTPClient()
-	{
-		
-	}
 
 	~CUtilHTTPClient()
 	{
@@ -815,7 +801,7 @@ public:
 		{
 			auto RequestInstance = (*itor).second;
 
-			if (RequestInstance->IsFinished())
+			if (RequestInstance->IsFinished() && RequestInstance->IsAutoDestroyOnFinish())
 			{
 				RequestInstance->Destroy();
 
@@ -828,26 +814,8 @@ public:
 		}
 	}
 
-	void AddToRequestPool(IUtilHTTPRequest *RequestInstance)
+	IURLParsedResult* ParseUrlInternal(const std::string& url)
 	{
-		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
-
-		if (m_RequestUsedId == UTILHTTP_REQUEST_MAX_ID)
-			m_RequestUsedId = UTILHTTP_REQUEST_START_ID;
-
-		auto RequestId = m_RequestUsedId;
-
-		RequestInstance->SetRequestId(RequestId);
-
-		m_RequestPool[RequestId] = RequestInstance;
-
-		m_RequestUsedId++;
-	}
-
-	bool ParseUrlEx(const char* url, IURLParsedResult *result) override
-	{
-		std::string surl = url;
-
 		std::regex url_regex(
 			R"((http|https)://([^/]+)(:?(\d+)?)?(/.*)?)",
 			std::regex_constants::icase
@@ -855,7 +823,7 @@ public:
 
 		std::smatch url_match_result;
 
-		if (std::regex_match(surl, url_match_result, url_regex)) {
+		if (std::regex_match(url, url_match_result, url_regex)) {
 			// If we found a match
 			if (url_match_result.size() >= 4) {
 				// Extract the matched groups
@@ -878,32 +846,16 @@ public:
 					}
 				}
 
-				result->SetScheme(scheme.c_str());
-				result->SetHost(host.c_str());
-				result->SetUsPort(port_us);
-				result->SetTarget(target.c_str());
-				result->SetSecure(false);
-
-				if (scheme == "https") {
-					result->SetSecure(true);
-				}
-
-				return true;
+				return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
 			}
 		}
 
-		return false;
+		return nullptr;
 	}
 
 	IURLParsedResult *ParseUrl(const char *url) override
 	{
-		auto result = new CURLParsedResult;
-
-		if (ParseUrlEx(url, result))
-			return result;
-
-		delete result;
-		return nullptr;
+		return ParseUrlInternal(url);
 	}
 
 	IUtilHTTPRequest* CreateSyncRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
@@ -918,26 +870,60 @@ public:
 
 	IUtilHTTPRequest* CreateSyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		CURLParsedResult result;
+		auto result = ParseUrl(url);
 
-		if (!ParseUrlEx(url, &result))
-			return NULL;
+		if (!result)
+			return nullptr;
 
-		return CreateSyncRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
+		SCOPE_EXIT{ result->Destroy(); };
+
+		return CreateSyncRequestEx(result->GetHost(), result->GetPort(), result->GetTarget(), result->IsSecure(), method, callbacks);
 	}
 
 	IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		CURLParsedResult result;
+		auto result = ParseUrl(url);
 
-		if (!ParseUrlEx(url, &result))
-			return NULL;
+		if (!result)
+			return nullptr;
 
-		auto RequestInstance = CreateAsyncRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
+		SCOPE_EXIT{ result->Destroy(); };
 
-		AddToRequestPool(RequestInstance);
+		return CreateAsyncRequestEx(result->GetHost(), result->GetPort(), result->GetTarget(), result->IsSecure(), method, callbacks);
+	}
 
-		return RequestInstance;
+
+	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callback)
+	{
+		return new CUtilHTTPAsyncStreamRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
+	}
+
+	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) override
+	{
+		auto result = ParseUrl(url);
+
+		if (!result)
+			return nullptr;
+
+		SCOPE_EXIT{ result->Destroy(); };
+
+		return CreateAsyncStreamRequestEx(result->GetHost(), result->GetPort(), result->GetTarget(), result->IsSecure(), method, callbacks);
+	}
+
+	void AddToRequestPool(IUtilHTTPRequest* RequestInstance) override
+	{
+		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
+
+		if (m_RequestUsedId == UTILHTTP_REQUEST_MAX_ID)
+			m_RequestUsedId = UTILHTTP_REQUEST_START_ID;
+
+		auto RequestId = m_RequestUsedId;
+
+		RequestInstance->SetRequestId(RequestId);
+
+		m_RequestPool[RequestId] = RequestInstance;
+
+		m_RequestUsedId++;
 	}
 
 	IUtilHTTPRequest* GetRequestById(UtilHTTPRequestId_t id) override
@@ -945,6 +931,7 @@ public:
 		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
 		auto itor = m_RequestPool.find(id);
+
 		if (itor != m_RequestPool.end())
 		{
 			return itor->second;
@@ -958,11 +945,14 @@ public:
 		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
 		auto itor = m_RequestPool.find(id);
+
 		if (itor != m_RequestPool.end())
 		{
-			delete itor->second;
+			auto pRequest = itor->second;
 
 			m_RequestPool.erase(itor);
+
+			pRequest->Destroy();
 
 			return true;
 		}
@@ -978,25 +968,6 @@ public:
 		}
 
 		return false;
-	}
-
-	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callback)
-	{
-		return new CUtilHTTPAsyncStreamRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
-	}
-
-	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) override
-	{
-		CURLParsedResult result;
-
-		if (!ParseUrlEx(url, &result))
-			return NULL;
-
-		auto RequestInstance = CreateAsyncStreamRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
-
-		AddToRequestPool(RequestInstance);
-
-		return RequestInstance;
 	}
 
 };
