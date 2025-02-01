@@ -40,3 +40,9 @@
 [submodule "thirdparty/sdl2-compat-fork"]
 	path = thirdparty/sdl2-compat-fork
 	url = https://github.com/hzqst/sdl2-compat-fork
+[submodule "thirdparty/curl"]
+	path = thirdparty/curl
+	url = https://github.com/curl/curl
+[submodule "thirdparty/libpsl"]
+	path = thirdparty/libpsl
+	url = https://github.com/rockdaboot/libpsl
