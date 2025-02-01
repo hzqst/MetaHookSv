@@ -37,3 +37,6 @@
 [submodule "thirdparty/sdl2-compat"]
 	path = thirdparty/sdl2-compat
 	url = https://github.com/libsdl-org/sdl2-compat
+[submodule "thirdparty/sdl2-compat-fork"]
+	path = thirdparty/sdl2-compat-fork
+	url = https://github.com/hzqst/sdl2-compat-fork
