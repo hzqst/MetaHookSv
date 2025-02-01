@@ -3,6 +3,7 @@
 #include <intrin.h>
 #include <sstream>
 #include <set>
+#include <SDL2/SDL_video.h>
 
 //#define HAS_VIEWMODEL_PASS
 
@@ -1845,30 +1846,41 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
+const char* SDL_GetError(void)
+{
+	auto SDL2 = GetModuleHandleA("SDL2.dll");
+
+	auto pfnSDL_GetError = (decltype(SDL_GetError)*)GetProcAddress(SDL2, "SDL_GetError");
+
+	return pfnSDL_GetError();
+}
+
 void GL_Init(void)
 {
+	auto err = glewInit();
+
+	if (GLEW_OK != err)
+	{
+		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
+	auto ven = glGetString(GL_VENDOR);
+	auto ext = glGetString(GL_EXTENSIONS);
+
 	gPrivateFuncs.GL_Init();
 
 	//Just like what GL_SetMode does
 	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
 
-	auto err = glewInit();
-
-	if (GLEW_OK != err)
-	{
-		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
-		return;
-	}
-
 	if (!(*gl_mtexable))
 	{
-		g_pMetaHookAPI->SysError("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
+		Sys_Error("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
 		return;
 	}
 
 	if (!GLEW_VERSION_4_3)
 	{
-		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\n");
+		Sys_Error("OpenGL 4.3 is not supported!\n");
 		return;
 	}
 
@@ -3992,62 +4004,32 @@ void GammaToLinear(float *color)
 	color[2] = pow(color[2], v_gamma->value);
 }
 
-typedef enum
-{
-	SDL_GL_RED_SIZE,
-	SDL_GL_GREEN_SIZE,
-	SDL_GL_BLUE_SIZE,
-	SDL_GL_ALPHA_SIZE,
-	SDL_GL_BUFFER_SIZE,
-	SDL_GL_DOUBLEBUFFER,
-	SDL_GL_DEPTH_SIZE,
-	SDL_GL_STENCIL_SIZE,
-	SDL_GL_ACCUM_RED_SIZE,
-	SDL_GL_ACCUM_GREEN_SIZE,
-	SDL_GL_ACCUM_BLUE_SIZE,
-	SDL_GL_ACCUM_ALPHA_SIZE,
-	SDL_GL_STEREO,
-	SDL_GL_MULTISAMPLEBUFFERS,
-	SDL_GL_MULTISAMPLESAMPLES,
-	SDL_GL_ACCELERATED_VISUAL,
-	SDL_GL_RETAINED_BACKING,
-	SDL_GL_CONTEXT_MAJOR_VERSION,
-	SDL_GL_CONTEXT_MINOR_VERSION,
-	SDL_GL_CONTEXT_EGL,
-	SDL_GL_CONTEXT_FLAGS,
-	SDL_GL_CONTEXT_PROFILE_MASK,
-	SDL_GL_SHARE_WITH_CURRENT_CONTEXT,
-	SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
-	SDL_GL_CONTEXT_RELEASE_BEHAVIOR,
-	SDL_GL_CONTEXT_RESET_NOTIFICATION,
-	SDL_GL_CONTEXT_NO_ERROR
-} SDL_GLattr;
-
-typedef enum
-{
-	SDL_GL_CONTEXT_PROFILE_CORE = 0x0001,
-	SDL_GL_CONTEXT_PROFILE_COMPATIBILITY = 0x0002,
-	SDL_GL_CONTEXT_PROFILE_ES = 0x0004 /**< GLX_CONTEXT_ES2_PROFILE_BIT_EXT */
-} SDL_GLprofile;
-
 int __cdecl SDL_GL_SetAttribute(int attr, int value)
 {
-	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
+	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION && value < 4)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
 	}
-	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
+	if (attr == SDL_GL_CONTEXT_MINOR_VERSION && value < 3)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
 	}
-	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
+	if (attr == SDL_GL_CONTEXT_PROFILE_MASK && value != SDL_GL_CONTEXT_PROFILE_COMPATIBILITY)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	}
 	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
-	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
+	if ((attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE) && value < 8)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
+	}
+	if (attr == SDL_GL_MULTISAMPLEBUFFERS)
+	{
+		return 0;
+	}
+	if (attr == SDL_GL_MULTISAMPLESAMPLES)
+	{
+		return 0;
 	}
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
