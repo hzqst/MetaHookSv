@@ -94,18 +94,19 @@ private:
 
 public:
 
-	bool ReadStreamFromRequestHandle(HTTPRequestHandle handle, uint32_t offset, uint32_t size)
+	const char* GetBytes() const
 	{
-		m_payload.resize(size);
-		if (SteamHTTP()->GetHTTPStreamingResponseBodyData(handle, offset, (uint8*)m_payload.data(), size))
-		{
-			return true;
-		}
-
-		return false;
+		return m_payload.data();
 	}
 
-	bool ReadFromRequestHandle(HTTPRequestHandle handle)
+	size_t GetLength() const
+	{
+		return m_payload.size();
+	}
+
+public:
+
+	bool ReadPayloadFromRequestHandle(HTTPRequestHandle handle)
 	{
 		uint32_t responseSize = 0;
 		if (SteamHTTP()->GetHTTPResponseBodySize(handle, &responseSize))
@@ -120,15 +121,6 @@ public:
 		return false;
 	}
 
-	const char* GetBytes() const
-	{
-		return m_payload.data();
-	}
-
-	size_t GetLength() const
-	{
-		return m_payload.size();
-	}
 };
 
 class CUtilHTTPResponse : public IUtilHTTPResponse
@@ -136,44 +128,47 @@ class CUtilHTTPResponse : public IUtilHTTPResponse
 private:
 	bool m_bResponseCompleted{};
 	bool m_bResponseError{};
-	bool m_bIsHeaderReceived{};
-	bool m_bIsStream{};
+	bool m_bIsStreamPayload{};
 	int m_iResponseStatusCode{};
 	CUtilHTTPPayload* m_pResponsePayload{};
 
 	HTTPRequestHandle m_RequestHandle{ INVALID_HTTPREQUEST_HANDLE  };
+
 public:
 
-	void OnSteamHTTPRecvHeader(HTTPRequestHeadersReceived_t* pResult, bool bHasError)
+	void SetStreamPayload(bool bIsStreamPayload)
 	{
-		m_bIsHeaderReceived = true;
-		m_bIsStream = true;
-
-		m_RequestHandle = pResult->m_hRequest;
+		m_bIsStreamPayload = bIsStreamPayload;
 	}
 
-	void OnSteamHTTPRecvData(HTTPRequestDataReceived_t* pResult, bool bHasError)
+	bool OnSteamHTTPDataReceived(HTTPRequestDataReceived_t* pResult, bool bHasError, std::string &buf)
 	{
 		m_RequestHandle = pResult->m_hRequest;
 
-		if (m_bIsStream && !bHasError)
+		if (m_bIsStreamPayload && !bHasError)
 		{
-			m_pResponsePayload->ReadStreamFromRequestHandle(pResult->m_hRequest, pResult->m_cOffset, pResult->m_cBytesReceived);
+			buf.resize(pResult->m_cBytesReceived, '\0');
+
+			if (SteamHTTP()->GetHTTPStreamingResponseBodyData(pResult->m_hRequest, pResult->m_cOffset,  (uint8*)buf.data(), pResult->m_cBytesReceived))
+			{
+				return true;
+			}
 		}
+
+		return false;
 	}
 
 	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
 	{
 		m_RequestHandle = pResult->m_hRequest;
 
-		m_bIsHeaderReceived = true;
 		m_bResponseCompleted = true;
 		m_bResponseError = bHasError;
 		m_iResponseStatusCode = (int)pResult->m_eStatusCode;
 
-		if (pResult->m_bRequestSuccessful && !bHasError && !m_bIsStream)
+		if (pResult->m_bRequestSuccessful && !bHasError && !m_bIsStreamPayload)
 		{
-			m_pResponsePayload->ReadFromRequestHandle(pResult->m_hRequest);
+			m_pResponsePayload->ReadPayloadFromRequestHandle(pResult->m_hRequest);
 		}
 	}
 
@@ -212,16 +207,6 @@ public:
 		return m_bResponseError;
 	}
 
-	bool IsHeaderReceived() const override
-	{
-		return m_bIsHeaderReceived;
-	}
-
-	bool IsStream() const override
-	{
-		return m_bIsStream;
-	}
-
 	int GetStatusCode() const override
 	{
 		return m_iResponseStatusCode;
@@ -238,6 +223,7 @@ class CUtilHTTPRequest : public IUtilHTTPRequest
 protected:
 	UtilHTTPRequestId_t m_RequestId{ UTILHTTP_REQUEST_INVALID_ID };
 	HTTPRequestHandle m_RequestHandle{};
+	CCallResult<CUtilHTTPRequest, HTTPRequestHeadersReceived_t> m_HeaderReceivedCallResult{};
 	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CompleteCallResult{};
 	bool m_bRequesting{};
 	bool m_bResponding{};
@@ -275,14 +261,19 @@ public:
 
 		m_RequestHandle = SteamHTTP()->CreateHTTPRequest(UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(method), url.c_str());
 
-		SteamHTTP()->SetHTTPRequestCookieContainer(m_RequestHandle, hCookieHandle);
+		if(hCookieHandle != INVALID_HTTPCOOKIE_HANDLE)
+			SteamHTTP()->SetHTTPRequestCookieContainer(m_RequestHandle, hCookieHandle);
 
-		SetField(UtilHTTPField::host, field_host.c_str());
-		SetField(UtilHTTPField::user_agent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
+		SetField("Host", field_host.c_str());
+		SetField("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
 	}
 
 	~CUtilHTTPRequest()
 	{
+		if (m_HeaderReceivedCallResult.IsActive())
+		{
+			m_HeaderReceivedCallResult.Cancel();
+		}
 		if (m_CompleteCallResult.IsActive())
 		{
 			m_CompleteCallResult.Cancel();
@@ -329,10 +320,13 @@ public:
 		}
 	}
 
-	virtual void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
+	virtual void OnSteamHTTPHeaderReceived(HTTPRequestHeadersReceived_t* pResult, bool bHasError)
 	{
 		OnRespondStart();
+	}
 
+	virtual void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
+	{
 		m_bRequestSuccessful = pResult->m_bRequestSuccessful;
 
 		m_pResponse->OnSteamHTTPCompleted(pResult, bHasError);
@@ -355,9 +349,11 @@ public:
 	void Send() override
 	{
 		SteamAPICall_t SteamApiCall;
+
 		if (SteamHTTP()->SendHTTPRequest(m_RequestHandle, &SteamApiCall))
 		{
 			m_CompleteCallResult.Set(SteamApiCall, this, &CUtilHTTPRequest::OnSteamHTTPCompleted);
+			m_HeaderReceivedCallResult.Set(SteamApiCall, this, &CUtilHTTPRequest::OnSteamHTTPHeaderReceived);
 		}
 
 		m_bRequesting = true;
@@ -427,88 +423,17 @@ public:
 		SteamHTTP()->SetHTTPRequestNetworkActivityTimeout(m_RequestHandle, secs);
 	}
 
-	void SetBody(const char *payload, size_t payloadSize) override
+	void SetPostBody(const char* contentType, const char* payload, size_t payloadSize) override
 	{
-		//You can change content-type later
-		SteamHTTP()->SetHTTPRequestRawPostBody(m_RequestHandle, "application/octet-stream", (uint8_t *)payload, payloadSize);
+		if (!contentType)
+			contentType = "application/octet-stream";
+
+		SteamHTTP()->SetHTTPRequestRawPostBody(m_RequestHandle, contentType, (uint8_t *)payload, payloadSize);
 	}
 
 	void SetField(const char* field, const char* value) override
 	{
 		SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, field, value);
-	}
-
-	void SetField(UtilHTTPField field, const char* value) override
-	{
-		switch (field)
-		{
-		case UtilHTTPField::user_agent:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "User-Agent", value);
-			break;
-		case UtilHTTPField::uri:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Uri", value);
-			break;
-		case UtilHTTPField::set_cookie:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Set-Cookie", value);
-			break;
-		case UtilHTTPField::referer:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Referer", value);
-			break;
-		case UtilHTTPField::path:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Path", value);
-			break;
-		case UtilHTTPField::origin:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Origin", value);
-			break;
-		case UtilHTTPField::location:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Location", value);
-			break;
-		case UtilHTTPField::keep_alive:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Keep-Alive", value);
-			break;
-		case UtilHTTPField::host:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Host", value);
-			break;
-		case UtilHTTPField::expires:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expires", value);
-			break;
-		case UtilHTTPField::expiry_date:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expiry-Date", value);
-			break;
-		case UtilHTTPField::encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Encoding", value);
-			break;
-		case UtilHTTPField::cookie:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cookie", value);
-			break;
-		case UtilHTTPField::content_type:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Type", value);
-			break;
-		case UtilHTTPField::content_length:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Length", value);
-			break;
-		case UtilHTTPField::content_encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Encoding", value);
-			break;
-		case UtilHTTPField::cache_control:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Control", value);
-			break;
-		case UtilHTTPField::body:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Body", value);
-			break;
-		case UtilHTTPField::authorization:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Authorization", value);
-			break;
-		case UtilHTTPField::accept_encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Encoding", value);
-			break;
-		case UtilHTTPField::accept_charset:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Charset", value);
-			break;
-		default:
-			break;
-		}
-
 	}
 };
 
@@ -617,8 +542,8 @@ class CUtilHTTPAsyncStreamRequest : public CUtilHTTPAsyncRequest
 {
 private:
 	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestCompleted_t> m_StreamCompleteCallResult{};
-	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestHeadersReceived_t> m_RecvHeaderCallResult{};
-	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestDataReceived_t> m_RecvDataCallResult{};
+	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestHeadersReceived_t> m_HeaderReceivedCallResult{};
+	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestDataReceived_t> m_DataReceivedCallResult{};
 
 	IUtilHTTPStreamCallbacks* m_StreamCallbacks{};
 
@@ -633,7 +558,7 @@ public:
 		HTTPCookieContainerHandle hCookieHandle) :
 		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle), m_StreamCallbacks(StreamCallbacks)
 	{
-
+		m_pResponse->SetStreamPayload(true);
 	}
 
 	~CUtilHTTPAsyncStreamRequest()
@@ -642,13 +567,13 @@ public:
 		{
 			m_StreamCompleteCallResult.Cancel();
 		}
-		if (m_RecvHeaderCallResult.IsActive())
+		if (m_HeaderReceivedCallResult.IsActive())
 		{
-			m_RecvHeaderCallResult.Cancel();
+			m_HeaderReceivedCallResult.Cancel();
 		}
-		if (m_RecvDataCallResult.IsActive())
+		if (m_DataReceivedCallResult.IsActive())
 		{
-			m_RecvDataCallResult.Cancel();
+			m_DataReceivedCallResult.Cancel();
 		}
 		if (m_StreamCallbacks)
 		{
@@ -662,32 +587,29 @@ public:
 		return true;
 	}
 
-	virtual void OnSteamHTTPRecvHeader(HTTPRequestHeadersReceived_t* pResult, bool bHasError)
+	void OnSteamHTTPHeaderReceived(HTTPRequestHeadersReceived_t* pResult, bool bHasError) override
 	{
 		OnRespondStart();
-
-		m_pResponse->OnSteamHTTPRecvHeader(pResult, bHasError);
-
-		if (m_StreamCallbacks)
-		{
-			m_StreamCallbacks->OnReceiveHeader(this, m_pResponse);
-		}
 	}
 
-	virtual void OnSteamHTTPRecvData(HTTPRequestDataReceived_t* pResult, bool bHasError)
+	void OnSteamHTTPDataReceived(HTTPRequestDataReceived_t* pResult, bool bHasError)
 	{
-		m_pResponse->OnSteamHTTPRecvData(pResult, bHasError);
+		std::string buf;
+		m_pResponse->OnSteamHTTPDataReceived(pResult, bHasError, buf);
 
 		if (m_StreamCallbacks)
 		{
-			m_StreamCallbacks->OnReceiveData(this, m_pResponse);
+			m_StreamCallbacks->OnReceiveData(
+				this,
+				m_pResponse, 
+				buf.data(),
+				buf.size()
+			);
 		}
 	}
 
 	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError) override
 	{
-		OnRespondStart();
-
 		m_bRequestSuccessful = pResult->m_bRequestSuccessful;
 
 		m_pResponse->OnSteamHTTPCompleted(pResult, bHasError);
@@ -734,8 +656,8 @@ public:
 		if (SteamHTTP()->SendHTTPRequestAndStreamResponse(m_RequestHandle, &SteamApiCall))
 		{
 			m_StreamCompleteCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPCompleted);
-			m_RecvHeaderCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPRecvHeader);
-			m_RecvDataCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPRecvData);
+			m_HeaderReceivedCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPHeaderReceived);
+			m_DataReceivedCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPDataReceived);
 		}
 
 		m_bRequesting = true;

@@ -471,23 +471,23 @@ public:
 		{
 			std::string name = itor->name.GetString();
 
-			auto obj = itor->value.GetObj();
+			const auto &obj = itor->value.GetObj();
 
 			scmodel_t m = { 0 };
 
-			auto m_size = obj.FindMember("size");
+			const auto &m_size = obj.FindMember("size");
 			if (m_size != obj.MemberEnd() && m_size->value.IsInt())
 			{
 				m.size = m_size->value.GetInt();
 			}
 
-			auto m_flags = obj.FindMember("flags");
+			const auto& m_flags = obj.FindMember("flags");
 			if (m_flags != obj.MemberEnd() && m_flags->value.IsInt())
 			{
 				m.flags = m_flags->value.GetInt();
 			}
 
-			auto m_polys = obj.FindMember("polys");
+			const auto& m_polys = obj.FindMember("polys");
 			if (m_polys != obj.MemberEnd() && m_polys->value.IsInt())
 			{
 				m.polys = m_polys->value.GetInt();

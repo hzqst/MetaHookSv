@@ -19,32 +19,6 @@ enum class UtilHTTPMethod
 	Put,
 };
 
-enum class UtilHTTPField
-{
-	unknown = 0,
-	accept_charset,
-	accept_encoding,
-	authorization,
-	body,
-	cache_control,
-	content_encoding,
-	content_length,
-	content_type,
-	cookie,
-	encoding,
-	expires,
-	expiry_date,
-	host,
-	keep_alive,
-	location,
-	origin,
-	path,
-	referer,
-	set_cookie,
-	uri,
-	user_agent,
-};
-
 enum class UtilHTTPRequestState
 {
 	Idle = 0,
@@ -69,8 +43,6 @@ public:
 	virtual bool GetHeader(const char* name, char* buf, size_t buflen) = 0;
 	virtual bool IsResponseCompleted() const = 0;
 	virtual bool IsResponseError() const = 0;
-	virtual bool IsHeaderReceived() const = 0;
-	virtual bool IsStream() const = 0;
 };
 
 class IUtilHTTPRequest : public IBaseInterface
@@ -82,9 +54,8 @@ public:
 	virtual void Send() = 0;
 
 	virtual void SetTimeout(int secs) = 0;
-	virtual void SetBody(const char* payload, size_t payloadSize) = 0;
+	virtual void SetPostBody(const char* contentType, const char* payload, size_t payloadSize) = 0;
 	virtual void SetField(const char* field, const char* value) = 0;
-	virtual void SetField(UtilHTTPField field, const char* value) = 0;
 
 	//Async request is auto-destroy-on-finish by default.
 	virtual void SetAutoDestroyOnFinish(bool) = 0;
@@ -117,8 +88,8 @@ public:
 class IUtilHTTPStreamCallbacks : public IUtilHTTPCallbacks
 {
 public:
-	virtual void OnReceiveHeader(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
-	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
+	//Called when receive chunked payload data
+	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void *pData, size_t cbSize) = 0;
 };
 
 class IURLParsedResult : public IBaseInterface
@@ -146,6 +117,7 @@ public:
 	virtual void Destroy() = 0;
 
 	virtual void Init(const CUtilHTTPClientCreationContext* context) = 0;
+
 	virtual void Shutdown() = 0;
 
 	//You should call this function every frame
@@ -174,3 +146,4 @@ public:
 };
 
 #define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_005"
+#define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_005"
