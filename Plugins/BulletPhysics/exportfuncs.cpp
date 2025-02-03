@@ -759,9 +759,15 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 		Sig_VarNotFound(g_ChromeOrigin);
 	}
 
-	if ((void*)(*ppinterface)->StudioDrawPlayer > g_dwClientTextBase && (void*)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	auto StudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
+	if (StudioDrawPlayerThunk > g_dwClientTextBase && StudioDrawPlayerThunk < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		g_pMetaHookAPI->DisasmRanges((void*)(*ppinterface)->StudioDrawPlayer, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		if (StudioDrawPlayerThunk[0] == 0xE9)
+		{
+			StudioDrawPlayerThunk = (PUCHAR)GetCallAddress(StudioDrawPlayerThunk);
+		}
+
+		g_pMetaHookAPI->DisasmRanges(StudioDrawPlayerThunk, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
 				auto pinst = (cs_insn*)inst;
 
@@ -819,7 +825,17 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index == 0)
 			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = 3;
 
-		g_pMetaHookAPI->DisasmRanges((void*)(*ppinterface)->StudioDrawModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+	}
+
+	auto StudioDrawModelThunk = (PUCHAR)(*ppinterface)->StudioDrawModel;
+	if (StudioDrawModelThunk > g_dwClientTextBase && StudioDrawModelThunk < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	{
+		if (StudioDrawModelThunk[0] == 0xE9)
+		{
+			StudioDrawModelThunk = (PUCHAR)GetCallAddress(StudioDrawModelThunk);
+		}
+
+		g_pMetaHookAPI->DisasmRanges(StudioDrawModelThunk, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
 				auto pinst = (cs_insn*)inst;
 
