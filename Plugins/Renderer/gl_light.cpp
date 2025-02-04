@@ -452,6 +452,24 @@ void R_NewMapLight_Post()
 	}
 }
 
+cl_entity_t *R_GetDLightBindingEntity(dlight_t* dl)
+{
+	if (dl->key >= DLIGHT_KEY_PLAYER_FLASHLIGHT + 1 && dl->key <= DLIGHT_KEY_PLAYER_FLASHLIGHT + MAX_CLIENTS)
+	{
+		auto ent = gEngfuncs.GetEntityByIndex(dl->key - DLIGHT_KEY_PLAYER_FLASHLIGHT);
+
+		if (ent && ent->player)
+			return ent;
+	}
+
+	if (dl->key == DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT)
+	{
+		return gEngfuncs.GetLocalPlayer();
+	}
+
+	return nullptr;
+}
+
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
 	if (dl->key >= DLIGHT_KEY_PLAYER_FLASHLIGHT + 1 && dl->key <= DLIGHT_KEY_PLAYER_FLASHLIGHT + MAX_CLIENTS)
@@ -637,7 +655,10 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			vec3_t dlight_vright;
 			vec3_t dlight_vup;
 
-			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
+			auto ent = R_GetDLightBindingEntity(dl);
+
+			if (!ent)
+				continue;
 
 			bool bIsFromLocalPlayer = (ent == gEngfuncs.GetLocalPlayer()) ? true : false;
 
