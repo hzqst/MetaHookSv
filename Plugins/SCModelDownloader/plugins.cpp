@@ -7,6 +7,8 @@
 #include "UtilAssetsIntegrity.h"
 #include "SCModelDatabase.h"
 
+#include "VGUI2ExtensionImport.h"
+
 cl_exportfuncs_t gExportfuncs = { 0 };
 mh_interface_t* g_pInterface = NULL;
 metahook_api_t* g_pMetaHookAPI = NULL;
@@ -64,6 +66,10 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Sig_FuncNotFound(R_StudioChangePlayerModel);
 
 	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
+
+	VGUI2Extension_Init();
+	BaseUI_InstallHooks();
+	GameUI_InstallHooks();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -81,7 +87,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-
+	BaseUI_UninstallHooks();
+	GameUI_UninstallHooks();
+	VGUI2Extension_Shutdown();
 }
 
 const char completeVersion[] =

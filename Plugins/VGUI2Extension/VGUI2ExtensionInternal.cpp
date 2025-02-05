@@ -314,6 +314,7 @@ public:
 			}
 		}
 	}
+
 	//GameUI
 
 	void GameUI_Initialize(CreateInterfaceFn* factories, int count) override
@@ -321,6 +322,14 @@ public:
 		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
 		{
 			(*it)->Initialize(factories, count);
+		}
+	}
+
+	void GameUI_PreStart(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
+	{
+		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
+		{
+			(*it)->PreStart(engineFuncs, interfaceVersion, system);
 		}
 	}
 
@@ -337,6 +346,14 @@ public:
 		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
 		{
 			(*it)->Shutdown();
+		}
+	}
+
+	void GameUI_PostShutdown() override
+	{
+		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
+		{
+			(*it)->PostShutdown();
 		}
 	}
 

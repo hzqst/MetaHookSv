@@ -218,7 +218,7 @@ public:
 		}
 	}
 
-	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
+	void PreStart(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
 	{
 		if (g_pFileSystem)
 		{
@@ -242,7 +242,17 @@ public:
 		}
 	}
 
+	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
+	{
+		
+	}
+
 	void Shutdown(void) override
+	{
+
+	}
+
+	void PostShutdown(void) override
 	{
 
 	}

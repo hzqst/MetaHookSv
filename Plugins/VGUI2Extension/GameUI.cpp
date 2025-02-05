@@ -1481,6 +1481,8 @@ void CGameUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 
 void CGameUIProxy::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion, void *system)
 {
+	VGUI2ExtensionInternal()->GameUI_PreStart(engineFuncs, interfaceVersion, system);
+
 	g_pfnCGameUI_Start(this, 0, engineFuncs, interfaceVersion, system);
 
 	VGUI2ExtensionInternal()->GameUI_Start(engineFuncs, interfaceVersion, system);
@@ -1490,7 +1492,9 @@ void CGameUIProxy::Shutdown(void)
 {
 	VGUI2ExtensionInternal()->GameUI_Shutdown();
 
-	return g_pfnCGameUI_Shutdown(this, 0);
+	g_pfnCGameUI_Shutdown(this, 0);
+
+	VGUI2ExtensionInternal()->GameUI_PostShutdown();
 }
 
 int CGameUIProxy::ActivateGameUI(void)

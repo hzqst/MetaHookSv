@@ -63,8 +63,10 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_ShowConsole);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_Initialize, CreateInterfaceFn* factories, int count);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_PreStart, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_Start, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_Shutdown);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_PostShutdown);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameUI_ActivateGameUI);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameUI_ActivateDemoUI);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameUI_HasExclusiveInput);

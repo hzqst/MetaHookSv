@@ -47,31 +47,41 @@ public:
 		}
 	}
 
-	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
+	void PreStart(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
 	{
 		if (g_pFileSystem)
 		{
-			if (!vgui::localize()->AddFile(g_pFileSystem, "SCModelDownloader/gameui_%language%.txt"))
+			if (!vgui::localize()->AddFile(g_pFileSystem, "scmodeldownloader/gameui_%language%.txt"))
 			{
-				if (!vgui::localize()->AddFile(g_pFileSystem, "SCModelDownloader/gameui_english.txt"))
+				if (!vgui::localize()->AddFile(g_pFileSystem, "scmodeldownloader/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load \"SCModelDownloader/gameui_english.txt\"");
+					Sys_Error("Failed to load \"scmodeldownloader/gameui_english.txt\"");
 				}
 			}
 		}
 		else if (g_pFileSystem_HL25)
 		{
-			if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "SCModelDownloader/gameui_%language%.txt"))
+			if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "scmodeldownloader/gameui_%language%.txt"))
 			{
-				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "SCModelDownloader/gameui_english.txt"))
+				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "scmodeldownloader/gameui_english.txt"))
 				{
-					Sys_Error("Failed to load \"SCModelDownloader/gameui_english.txt\"");
+					Sys_Error("Failed to load \"scmodeldownloader/gameui_english.txt\"");
 				}
 			}
 		}
 	}
 
+	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override
+	{
+		
+	}
+
 	void Shutdown(void) override
+	{
+
+	}
+
+	void PostShutdown(void) override
 	{
 
 	}
@@ -203,11 +213,59 @@ public:
 
 	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char* sourceModule, VGUI2Extension_CallbackContext* CallbackContext)
 	{
-		
+		if (CallbackContext->IsPost && !strcmp(resourceName, "resource/GameMenu.res")) {
+			bool* pRealReturnValue = (bool*)CallbackContext->pRealReturnValue;
+			if ((*pRealReturnValue) == true) {
+				KeyValues* pKeyValues = (KeyValues*)pthis;
+				auto name = pKeyValues->GetName();
+				KeyValues* SectionQuit = nullptr;
+				for (auto p = pKeyValues->GetFirstSubKey(); p; p = p->GetNextKey()) {
+					auto command = p->GetString("command");
+					if (!stricmp(command, "OpenOptionsDialog"))
+						SectionQuit = p;
+				}
+				if (SectionQuit) {
+					auto NameSectionQuit = SectionQuit->GetName();
+					int iNameSectionQuit = atoi(NameSectionQuit);
+					if (iNameSectionQuit > 0) {
+						char szNewNameSectionQuit[32];
+						snprintf(szNewNameSectionQuit, sizeof(szNewNameSectionQuit), "%d", iNameSectionQuit + 1);
+						SectionQuit->SetName(szNewNameSectionQuit);
+						char szNewNameTestButton[32];
+						snprintf(szNewNameTestButton, sizeof(szNewNameTestButton), "%d", iNameSectionQuit);
+						auto SectionTestButton = new KeyValues(szNewNameTestButton);
+						SectionTestButton->SetString("label", "#GameUI_SCMD_SectionButton");
+						SectionTestButton->SetString("command", "OpenSCModelDownloaderDialog");
+						pKeyValues->AddSubKeyAfter(SectionTestButton, SectionQuit);
+					}
+				}
+			}
+		}
 	}
 };
 
 static CVGUI2Extension_KeyValuesCallbacks s_KeyValuesCallbacks;
+
+class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCallbacks
+{
+	int GetAltitude() const override {
+		return 0;
+	}
+
+	void CTaskBar_ctor(IGameUITaskBarCtorCallbackContext* CallbackContext) override
+	{
+
+	}
+	void CTaskBar_OnCommand(void*& pPanel, const char*& command, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		if (!strcmp(command, "OpenSCModelDownloaderDialog")) {
+		
+
+
+		}
+	}
+};
+static CVGUI2Extension_TaskBarCallbacks s_TaskBarCallbacks;
 
 /*
 =================================================================================================================
@@ -221,8 +279,8 @@ void GameUI_InstallHooks(void)
 		return;
 
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
-	//VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	//VGUI2Extension()->RegisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
+	VGUI2Extension()->RegisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
+	VGUI2Extension()->RegisterGameUITaskBarCallbacks(&s_TaskBarCallbacks);
 }
 
 void GameUI_UninstallHooks(void)
@@ -231,6 +289,6 @@ void GameUI_UninstallHooks(void)
 		return;
 
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
-	//VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	//VGUI2Extension()->UnregisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
+	VGUI2Extension()->UnregisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
+	VGUI2Extension()->UnregisterGameUITaskBarCallbacks(&s_TaskBarCallbacks);
 }

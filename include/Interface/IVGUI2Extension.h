@@ -130,8 +130,17 @@ class IVGUI2Extension_GameUICallbacks : public IVGUI2Extension_BaseCallbacks
 {
 public:
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(Initialize, CreateInterfaceFn* factories, int count);
+
+    //Added in VGUI2_Extension_API_008
+    DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(PreStart, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system);
+
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(Start, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system);
+
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(Shutdown);
+
+    //Added in VGUI2_Extension_API_008
+    DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(PostShutdown);
+
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(ActivateGameUI);
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(ActivateDemoUI);
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(HasExclusiveInput);
@@ -205,4 +214,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_007"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_008"
