@@ -435,12 +435,19 @@ public:
 	{
 		SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, field, value);
 	}
+
+	void SetRequireCertVerification(bool b) override
+	{
+		SteamHTTP()->SetHTTPRequestRequiresVerifiedCertificate(m_RequestHandle, b);
+	}
 };
 
 class CUtilHTTPSyncRequest : public CUtilHTTPRequest
 {
 private:
-	HANDLE m_hResponseEvent{};
+	std::mutex m_mutex;
+	std::condition_variable m_cv;
+	bool m_isComplete{ false };
 
 public:
 	CUtilHTTPSyncRequest(
@@ -453,16 +460,6 @@ public:
 		HTTPCookieContainerHandle hCookieHandle) :
 		CUtilHTTPRequest(method, host, port, secure, target, callbacks, hCookieHandle)
 	{
-		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
-	}
-
-	~CUtilHTTPSyncRequest()
-	{
-		if (m_hResponseEvent)
-		{
-			CloseHandle(m_hResponseEvent);
-			m_hResponseEvent = NULL;
-		}
 	}
 
 	bool IsAsync() const override
@@ -475,12 +472,16 @@ public:
 		return false;
 	}
 
-	void WaitForResponse() override
+	void WaitForComplete() override
 	{
-		if (m_hResponseEvent)
-		{
-			WaitForSingleObject(m_hResponseEvent, INFINITE);
-		}
+		std::unique_lock<std::mutex> lock(m_mutex);
+		m_cv.wait(lock, [this]() { return m_isComplete; });
+	}
+
+	bool WaitForCompleteTimeout(int timeout_ms) override
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		return m_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this]() { return m_isComplete; });
 	}
 
 	IUtilHTTPResponse* GetResponse() override
@@ -492,10 +493,12 @@ public:
 	{
 		CUtilHTTPRequest::OnSteamHTTPCompleted(pResult, bHasError);
 
-		if (m_hResponseEvent)
+
 		{
-			SetEvent(m_hResponseEvent);
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_isComplete = true;
 		}
+		m_cv.notify_one();
 	}
 };
 
@@ -527,9 +530,14 @@ public:
 		return false;
 	}
 
-	void WaitForResponse() override
+	void WaitForComplete() override
 	{
 
+	}
+
+	bool WaitForCompleteTimeout(int timeout_ms) override
+	{
+		return false;
 	}
 
 	IUtilHTTPResponse* GetResponse() override

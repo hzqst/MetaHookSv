@@ -426,6 +426,8 @@ public:
 				vgui::input()->SetIMEWindow(hWnd);
 			}
 
+			//gEngfuncs.Con_DPrintf("SDL_EVENT_TEXT_EDITING_CANDIDATES\n");
+
 			if (pTextEditingCandidateEvent->candidates == nullptr && pTextEditingCandidateEvent->num_candidates == 0) {
 				vgui::input()->OnIMECloseCandidates();
 			}
@@ -445,6 +447,8 @@ public:
 				auto hWnd = SDL_GetWindowWin32HWND(window);
 				vgui::input()->SetIMEWindow(hWnd);
 			}
+
+			//gEngfuncs.Con_DPrintf("SDL_EVENT_TEXT_INPUT\n");
 
 			if (vgui::input()->IsIMEComposing())
 			{
@@ -466,7 +470,9 @@ public:
 				vgui::input()->SetIMEWindow(hWnd);
 			}
 
-			if (pTextEditingEvent->text[0] == 0 && pTextEditingEvent->start == 0 && pTextEditingEvent->length == 0) {
+			//gEngfuncs.Con_DPrintf("SDL_EVENT_TEXT_EDITING \"%s\" %d %d\n", pTextEditingEvent->text, pTextEditingEvent->start, pTextEditingEvent->length);
+
+			if (pTextEditingEvent->text[0] == 0 && pTextEditingEvent->length == 0) {// pTextEditingEvent->start might be 1 for unknown reason on proton when switching focus
 
 				vgui::input()->OnIMEEndComposition();
 			}
@@ -476,6 +482,7 @@ public:
 					vgui::input()->OnIMEStartComposition();
 
 				vgui::input()->OnIMECompositionWin32(GCS_COMPSTR);
+
 			}
 
 			CallbackContext->Result = VGUI2Extension_Result::SUPERCEDE;

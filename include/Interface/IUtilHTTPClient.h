@@ -56,9 +56,10 @@ public:
 	virtual void SetTimeout(int secs) = 0;
 	virtual void SetPostBody(const char* contentType, const char* payload, size_t payloadSize) = 0;
 	virtual void SetField(const char* field, const char* value) = 0;
+	virtual void SetRequireCertVerification(bool b) = 0;
 
 	//Async request is auto-destroy-on-finish by default.
-	virtual void SetAutoDestroyOnFinish(bool) = 0;
+	virtual void SetAutoDestroyOnFinish(bool b) = 0;
 
 	virtual bool IsRequesting() const = 0;
 	virtual bool IsResponding() const = 0;
@@ -73,7 +74,8 @@ public:
 	virtual UtilHTTPRequestId_t GetRequestId() const = 0;
 
 	//Only available for SyncRequest
-	virtual void WaitForResponse() = 0;
+	virtual void WaitForComplete() = 0;
+	virtual bool WaitForCompleteTimeout(int timeout_ms) = 0;
 	virtual IUtilHTTPResponse* GetResponse() = 0;
 };
 
@@ -81,15 +83,21 @@ class IUtilHTTPCallbacks : public IBaseInterface
 {
 public:
 	virtual void Destroy() = 0;
+
+	//Called when response complete
 	virtual void OnResponseComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
+
+	//Called when request state change
 	virtual void OnUpdateState(UtilHTTPRequestState NewState) = 0;
+
+	//Called when receive chunked payload data
+	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* pData, size_t cbSize) = 0;
 };
 
 class IUtilHTTPStreamCallbacks : public IUtilHTTPCallbacks
 {
 public:
-	//Called when receive chunked payload data
-	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void *pData, size_t cbSize) = 0;
+
 };
 
 class IURLParsedResult : public IBaseInterface
@@ -145,5 +153,5 @@ public:
 	
 };
 
-#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_005"
-#define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_005"
+#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_006"
+#define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_006"

@@ -427,6 +427,7 @@ public:
 	{
 		m_pResponse->FinalizeHeaders();
 	}
+
 public:
 
 	void Destroy() override
@@ -510,6 +511,20 @@ public:
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_HTTPHEADER, m_CurlHeaders);
 	}
 
+	void SetRequireCertVerification(bool b) override
+	{
+		if (b)
+		{
+			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 1);
+			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 2);
+		}
+		else
+		{
+			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 0);
+			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 0);
+		}
+	}
+
 	void Send() override
 	{
 		m_bRequesting = true;
@@ -525,7 +540,9 @@ public:
 class CUtilHTTPSyncRequest : public CUtilHTTPRequest
 {
 private:
-	HANDLE m_hResponseEvent{};
+	std::mutex m_mutex;
+	std::condition_variable m_cv;
+	bool m_isComplete{ false };
 
 public:
 	CUtilHTTPSyncRequest(
@@ -540,26 +557,23 @@ public:
 		) :
 		CUtilHTTPRequest(method, host, port, secure, target, callbacks, CurlMultiHandle, CurlCookieHandle)
 	{
-		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+		
 	}
 
 	~CUtilHTTPSyncRequest()
 	{
-		if (m_hResponseEvent)
-		{
-			CloseHandle(m_hResponseEvent);
-			m_hResponseEvent = NULL;
-		}
+
 	}
 
 	void OnRespondFinish() override
 	{
 		CUtilHTTPRequest::OnRespondFinish();
 
-		if (m_hResponseEvent)
 		{
-			SetEvent(m_hResponseEvent);
+			std::lock_guard<std::mutex> lock(m_mutex);
+			m_isComplete = true;
 		}
+		m_cv.notify_one();
 	}
 
 	bool IsAsync() const override
@@ -572,12 +586,16 @@ public:
 		return false;
 	}
 
-	void WaitForResponse() override
+	void WaitForComplete() override
 	{
-		if (m_hResponseEvent)
-		{
-			WaitForSingleObject(m_hResponseEvent, INFINITE);
-		}
+		std::unique_lock<std::mutex> lock(m_mutex);
+		m_cv.wait(lock, [this]() { return m_isComplete; });
+	}
+
+	bool WaitForCompleteTimeout(int timeout_ms) override
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		return m_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this]() { return m_isComplete; });
 	}
 
 	IUtilHTTPResponse* GetResponse() override
@@ -616,9 +634,14 @@ public:
 		return false;
 	}
 
-	void WaitForResponse() override
+	void WaitForComplete() override
 	{
 
+	}
+
+	bool WaitForCompleteTimeout(int timeout_ms) override
+	{
+		return false;
 	}
 
 	IUtilHTTPResponse* GetResponse() override
@@ -629,9 +652,6 @@ public:
 
 class CUtilHTTPAsyncStreamRequest : public CUtilHTTPAsyncRequest
 {
-private:
-	IUtilHTTPStreamCallbacks* m_StreamCallbacks{};
-
 public:
 	CUtilHTTPAsyncStreamRequest(
 		const UtilHTTPMethod method,
@@ -639,11 +659,10 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPStreamCallbacks* StreamCallbacks,
+		IUtilHTTPCallbacks* callbacks,
 		CURLM* CurlMultiHandle,
 		CURLSH* CurlCookieHandle) :
-		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, CurlMultiHandle, CurlCookieHandle),
-		m_StreamCallbacks(StreamCallbacks)
+		CUtilHTTPAsyncRequest(method, host, port, secure, target, callbacks, CurlMultiHandle, CurlCookieHandle)
 	{
 
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_WRITEFUNCTION, WritePayloadStreamCallback);
@@ -651,80 +670,18 @@ public:
 
 	}
 
-	~CUtilHTTPAsyncStreamRequest()
-	{
-		if (m_StreamCallbacks)
-		{
-			m_StreamCallbacks->Destroy();
-			m_StreamCallbacks = nullptr;
-		}
-	}
-
 	bool IsStream() const override
 	{
 		return true;
-	}
-
-	void OnRespondStart() override
-	{
-		if (!m_bResponding)
-		{
-			m_bRequesting = false;
-			m_bResponding = true;
-
-			if (m_StreamCallbacks)
-			{
-				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Responding);
-			}
-		}
-	}
-
-	void OnRespondFinish() override
-	{
-		if (m_bResponding)
-		{
-			m_bFinished = true;
-			m_bResponding = false;
-
-			if (m_StreamCallbacks)
-			{
-				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Finished);
-			}
-		}
-	}
-
-	void OnHTTPComplete() override
-	{
-		m_pResponse->FinalizeHeaders();
-		m_pResponse->FinalizePayload();
-
-		int httpStatusCode = 0;
-		auto code = curl_easy_getinfo(m_CurlEasyHandle, CURLINFO_RESPONSE_CODE, &httpStatusCode);
-
-		if (code != CURLE_OK || httpStatusCode >= 400 || !httpStatusCode)
-		{
-
-		}
-		else
-		{
-			m_bRequestSuccessful = true;
-		}
-
-		if (m_StreamCallbacks)
-		{
-			m_StreamCallbacks->OnResponseComplete(this, m_pResponse);
-		}
-
-		OnRespondFinish();
 	}
 
 public:
 
 	void WritePayloadStream(const void* data, size_t size)
 	{
-		if (m_StreamCallbacks)
+		if (m_Callbacks)
 		{
-			m_StreamCallbacks->OnReceiveData(this, m_pResponse, data, size);
+			m_Callbacks->OnReceiveData(this, m_pResponse, data, size);
 		}
 	}
 };

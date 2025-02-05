@@ -44,11 +44,13 @@ public:
 	virtual const char *GetUrl() const = 0;
 	virtual bool IsFailed() const = 0;
 	virtual bool IsFinished() const = 0;
+
 	virtual void OnFinish() = 0;
 	virtual void OnFailure() = 0;
+	virtual bool OnProcessPayload(const char* data, size_t size) = 0;
+
 	virtual void RunFrame(float flCurrentAbsTime) = 0;
 	virtual void StartQuery() = 0;
-	virtual bool OnResponsePayload(const char* data, size_t size) = 0;
 };
 
 class CUtilHTTPCallbacks : public IUtilHTTPCallbacks
@@ -83,7 +85,7 @@ public:
 
 		auto pPayload = ResponseInstance->GetPayload();
 
-		if (!m_pQueryTask->OnResponsePayload((const char*)pPayload->GetBytes(), pPayload->GetLength()))
+		if (!m_pQueryTask->OnProcessPayload((const char*)pPayload->GetBytes(), pPayload->GetLength()))
 		{
 			m_pQueryTask->OnFailure();
 			return;
@@ -96,6 +98,11 @@ public:
 		{
 			m_pQueryTask->OnFinish();
 		}
+	}
+
+	void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* pData, size_t cbSize) override
+	{
+		//Only stream request has OnReceiveData
 	}
 };
 
@@ -153,6 +160,18 @@ public:
 			StartQuery();
 		}
 	}
+
+	virtual void StartQuery()
+	{
+		if (m_RequestId != UTILHTTP_REQUEST_INVALID_ID)
+		{
+			UtilHTTPClient()->DestroyRequestById(m_RequestId);
+			m_RequestId = UTILHTTP_REQUEST_INVALID_ID;
+		}
+
+		m_bFailed = false;
+		m_bFinished = false;
+	}
 };
 
 class CSCModelQueryTaskList;
@@ -175,7 +194,7 @@ public:
 
 	void StartQuery() override;
 
-	bool OnResponsePayload(const char* data, size_t size) override;
+	bool OnProcessPayload(const char* data, size_t size) override;
 
 	const char* GetName() const override
 	{
@@ -186,7 +205,6 @@ public:
 	{
 		return m_localFileName.c_str();
 	}
-
 };
 
 class CSCModelQueryTaskList : public CSCModelQueryBase
@@ -245,6 +263,8 @@ public:
 
 	void StartQuery() override
 	{
+		CSCModelQueryBase::StartQuery();
+
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{1}.json", m_repoId, m_lowerName);
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
@@ -279,7 +299,7 @@ public:
 		}
 	}
 
-	bool OnResponsePayload(const char* data, size_t size) override
+	bool OnProcessPayload(const char* data, size_t size) override
 	{
 		rapidjson::Document doc;
 
@@ -347,11 +367,6 @@ public:
 		return true;
 	}
 
-	void RunFrame(float flCurrentAbsTime) override
-	{
-		CSCModelQueryBase::RunFrame(flCurrentAbsTime);
-	}
-
 	void OnModelFileWriteFinished()
 	{
 		if (!m_bReloaded && IsAllRequiredFilesPresent())
@@ -373,6 +388,8 @@ public:
 
 void CSCModelQueryModelFileTask::StartQuery()
 {
+	CSCModelQueryBase::StartQuery();
+
 	m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_pQueryTaskList->m_repoId, m_pQueryTaskList->m_networkFileNameBase, m_networkFileName);
 
 	auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
@@ -385,7 +402,7 @@ void CSCModelQueryModelFileTask::StartQuery()
 
 }
 
-bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size)
+bool CSCModelQueryModelFileTask::OnProcessPayload(const char* data, size_t size)
 {
 	gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" acquired!\n", m_localFileName.c_str());
 
@@ -441,6 +458,8 @@ public:
 
 	void StartQuery() override
 	{
+		CSCModelQueryBase::StartQuery();
+
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
@@ -452,7 +471,7 @@ public:
 		pRequestInstance->Send();
 	}
 
-	bool OnResponsePayload(const char* data, size_t size) override
+	bool OnProcessPayload(const char* data, size_t size) override
 	{
 		if (g_Database.size() > 0)
 			return true;
