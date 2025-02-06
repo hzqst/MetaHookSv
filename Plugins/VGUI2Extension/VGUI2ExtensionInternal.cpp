@@ -14,6 +14,7 @@ private:
 	std::vector<IVGUI2Extension_GameUICallbacks*> m_GameUICallbacks;
 	std::vector<IVGUI2Extension_GameUIOptionDialogCallbacks*> m_GameUIOptionDialogCallbacks;
 	std::vector<IVGUI2Extension_GameUITaskBarCallbacks*> m_GameUITaskBarCallbacks;
+	std::vector<IVGUI2Extension_GameUIBasePanelCallbacks*> m_GameUIBasePanelCallbacks;
 	std::vector<IVGUI2Extension_GameConsoleCallbacks*> m_GameConsoleCallbacks;
 	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
 	std::vector<IVGUI2Extension_KeyValuesCallbacks*> m_KeyValuesCallbacks;
@@ -56,6 +57,16 @@ public:
 
 		std::sort(m_GameUITaskBarCallbacks.begin(), m_GameUITaskBarCallbacks.end(),
 			[](const IVGUI2Extension_GameUITaskBarCallbacks* a, const IVGUI2Extension_GameUITaskBarCallbacks* b) -> bool {
+				return a->GetAltitude() > b->GetAltitude();
+			});
+	}
+
+	void RegisterGameUIBasePanelCallbacks(IVGUI2Extension_GameUIBasePanelCallbacks* pCallbacks) override
+	{
+		m_GameUIBasePanelCallbacks.emplace_back(pCallbacks);
+
+		std::sort(m_GameUIBasePanelCallbacks.begin(), m_GameUIBasePanelCallbacks.end(),
+			[](const IVGUI2Extension_GameUIBasePanelCallbacks* a, const IVGUI2Extension_GameUIBasePanelCallbacks* b) -> bool {
 				return a->GetAltitude() > b->GetAltitude();
 			});
 	}
@@ -133,6 +144,18 @@ public:
 			if (*it == pCallbacks)
 			{
 				m_GameUITaskBarCallbacks.erase(it);
+				return;
+			}
+		}
+	}
+
+	void UnregisterGameUIBasePanelCallbacks(IVGUI2Extension_GameUIBasePanelCallbacks* pCallbacks) override
+	{
+		for (auto it = m_GameUIBasePanelCallbacks.begin(); it != m_GameUIBasePanelCallbacks.end(); ++it)
+		{
+			if (*it == pCallbacks)
+			{
+				m_GameUIBasePanelCallbacks.erase(it);
 				return;
 			}
 		}
@@ -608,6 +631,27 @@ public:
 		for (auto it = m_GameUITaskBarCallbacks.begin(); it != m_GameUITaskBarCallbacks.end(); ++it)
 		{
 			(*it)->CTaskBar_OnCommand(pPanel, command, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameUI_CBasePanel_ctor(IGameUIBasePanelCtorCallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUIBasePanelCallbacks.begin(); it != m_GameUIBasePanelCallbacks.end(); ++it)
+		{
+			(*it)->CBasePanel_ctor(CallbackContext);
+		}
+	}
+
+	void GameUI_CBasePanel_ApplySchemeSettings(void*& pPanel, void*& pScheme, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUIBasePanelCallbacks.begin(); it != m_GameUIBasePanelCallbacks.end(); ++it)
+		{
+			(*it)->CBasePanel_ApplySchemeSettings(pPanel, pScheme, CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{

@@ -25,6 +25,8 @@ static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t* g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
+static hook_t* g_phook_CBasePanel_ctor = NULL;
+static hook_t* g_phook_CBasePanel_ApplySchemeSettings = NULL;
 static hook_t* g_phook_CTaskBar_ctor = NULL;
 static hook_t* g_phook_CTaskBar_OnCommand = NULL;
 static hook_t* g_phook_GameUI_RichText_InsertChar = NULL;
@@ -1310,24 +1312,24 @@ public:
 	{
 		if (!gPrivateFuncs.CTaskBar_OnCommand)
 		{
-			PVOID* CTaskBar_vftable = *(PVOID**)m_pTaskBar;
-			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))CTaskBar_vftable[348 / 4];
+			gPrivateFuncs.CTaskBar_vftable = *(PVOID**)m_pTaskBar;
+			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))gPrivateFuncs.CTaskBar_vftable[348 / 4];
 
 			Install_InlineHook(CTaskBar_OnCommand);
 		}
 	}
 
-	void* GetTaskBar() const
+	void* GetTaskBar() const override
 	{
 		return m_pTaskBar;
 	}
 
-	void* GetParentPanel() const
+	void* GetParentPanel() const override
 	{
 		return m_pParentPanel;
 	}
 
-	const char* GetParentName() const
+	const char* GetParentName() const override
 	{
 		return m_pszPanelName;
 	}
@@ -1346,6 +1348,71 @@ void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char*
 	CallbackContext.InstallHooks();
 
 	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
+
+	return result;
+}
+
+void __fastcall CBasePanel_ApplySchemeSettings(void* pthis, int dummy, void* pScheme)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
+	VGUI2ExtensionInternal()->GameUI_CBasePanel_ApplySchemeSettings(_this, pScheme, &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.CBasePanel_ApplySchemeSettings(_this, dummy, pScheme);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+
+		VGUI2ExtensionInternal()->GameUI_CBasePanel_ApplySchemeSettings(_this, pScheme, &CallbackContext);
+	}
+}
+
+class CGameUIBasePanelCtorCallbackContext : public IGameUIBasePanelCtorCallbackContext
+{
+public:
+	CGameUIBasePanelCtorCallbackContext(vgui::Panel* pthis)
+	{
+		m_pBasePanel = pthis;
+	}
+
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.CBasePanel_vftable)
+		{
+			gPrivateFuncs.CBasePanel_vftable = *(PVOID**)m_pBasePanel;
+			gPrivateFuncs.CBasePanel_ApplySchemeSettings = (decltype(gPrivateFuncs.CBasePanel_ApplySchemeSettings))gPrivateFuncs.CBasePanel_vftable[0x13C / 4];
+
+			Install_InlineHook(CBasePanel_ApplySchemeSettings);
+		}
+	}
+
+	void* GetBasePanel() const
+	{
+		return m_pBasePanel;
+	}
+
+	vgui::Panel* m_pBasePanel;
+};
+
+void* __fastcall CBasePanel_ctor(void* pthis, int dummy)
+{
+	auto result = gPrivateFuncs.CBasePanel_ctor(pthis, dummy);
+
+	CGameUIBasePanelCtorCallbackContext CallbackContext((vgui::Panel*)pthis);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_CBasePanel_ctor(&CallbackContext);
 
 	return result;
 }
@@ -3473,16 +3540,106 @@ void GameUI_FillAddress(void)
 
 	if (1)
 	{
+		const char sigs1[] = "Resource/gameui_%language%.txt";
+		const char sigs2[] = "resource/gameui_%language%.txt";
+		auto GameUI_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!GameUI_String)
+		{
+			GameUI_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		}
+		if (!GameUI_String)
+		{
+			GameUI_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs2, sizeof(sigs2) - 1);
+			if (!GameUI_String)
+			{
+				GameUI_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs2, sizeof(sigs2) - 1);
+			}
+		}
+		Sig_VarNotFound(GameUI_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)GameUI_String;
+
+		auto GameUI_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
+		Sig_VarNotFound(GameUI_PushString);
+
+		typedef struct
+		{
+			PVOID GameUIDataBase;
+			ULONG GameUIDataSize;
+
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+			PVOID OperatorNewAddress;
+
+		}CGameUIInitializeSearchContext;
+
+		CGameUIInitializeSearchContext ctx = { 0 };
+
+		ctx.GameUIDataBase = GameUIDataBase;
+		ctx.GameUIDataSize = GameUIDataSize;
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(GameUI_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CGameUIInitializeSearchContext*)context;
+
+			if (pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[0].imm >= 0x90 && pinst->detail->x86.operands[0].imm <= 0x100)
+			{
+				auto nextaddr = address + instLen;
+				if (nextaddr[0] == 0xE8)
+				{
+					ctx->OperatorNewAddress = nextaddr;
+				}
+			}
+			else if (address > ctx->OperatorNewAddress && address[0] == 0xE8)
+			{
+				PVOID call_candidate = (decltype(call_candidate))GetCallAddress(address);
+
+				gPrivateFuncs.CBasePanel_ctor = (decltype(gPrivateFuncs.CBasePanel_ctor))call_candidate;
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, &ctx);
+
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "GameMenuButton\0";
 		auto GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
 		if (!GameMenuButton_String)
 		{
 			GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		}
+
 		Sig_VarNotFound(GameMenuButton_String);
+
 		char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 3) = (DWORD)GameMenuButton_String;
-		auto GameMenuButton_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+
+		auto GameMenuButton_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
 		Sig_VarNotFound(GameMenuButton_PushString);
 
 		gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x350, [](PUCHAR Candidate) {
@@ -3824,6 +3981,15 @@ void GameUI_InstallHooks(void)
 		Install_InlineHook(CTaskBar_OnCommand);
 	}
 
+	if (gPrivateFuncs.CBasePanel_ctor)
+	{
+		Install_InlineHook(CBasePanel_ctor);
+	}
+
+	if (gPrivateFuncs.CBasePanel_ApplySchemeSettings)
+	{
+		Install_InlineHook(CBasePanel_ApplySchemeSettings);
+	}
 	if (gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
 	{
 		Install_InlineHook(GameUI_KeyValues_LoadFromFile);
@@ -3889,6 +4055,10 @@ void GameUI_UninstallHooks(void)
 
 	Uninstall_Hook(CTaskBar_ctor);
 	Uninstall_Hook(CTaskBar_OnCommand);
+
+	Uninstall_Hook(CBasePanel_ctor);
+	Uninstall_Hook(CBasePanel_ApplySchemeSettings);
+
 	Uninstall_Hook(GameUI_KeyValues_LoadFromFile);
 
 	Uninstall_Hook(COptionsDialog_ctor);
