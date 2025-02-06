@@ -264,6 +264,9 @@
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpp20</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp20</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="SCModelDownloaderDialog.cpp" />
+    <ClCompile Include="TaskListPage.cpp" />
+    <ClCompile Include="TaskListPanel.cpp" />
     <ClCompile Include="UtilAssetsIntegrity.cpp" />
     <ClCompile Include="UtilHTTPClient.cpp" />
     <ClCompile Include="plugins.cpp" />
@@ -387,6 +390,9 @@
     <ClInclude Include="..\..\include\vgui_controls\WizardSubPanel.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="SCModelDatabase.h" />
+    <ClInclude Include="SCModelDownloaderDialog.h" />
+    <ClInclude Include="TaskListPage.h" />
+    <ClInclude Include="TaskListPanel.h" />
     <ClInclude Include="UtilAssetsIntegrity.h" />
     <ClInclude Include="UtilHTTPClient.h" />
     <ClInclude Include="plugins.h" />

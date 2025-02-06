@@ -18,7 +18,6 @@ private:
 	MESSAGE_FUNC(OnResetData, "ResetData");
 	MESSAGE_FUNC(OnRefreshTaskList, "RefreshTaskList");
 
-	void OnKeyCodeTyped(vgui::KeyCode code) override;
 	void OnCommand(const char* command) override;
 	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
 

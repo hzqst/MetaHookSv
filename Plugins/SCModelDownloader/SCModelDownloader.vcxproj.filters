@@ -377,6 +377,15 @@
     <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp">
       <Filter>SourceSDK\mathlib</Filter>
     </ClCompile>
+    <ClCompile Include="SCModelDownloaderDialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskListPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskListPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -741,6 +750,15 @@
     </ClInclude>
     <ClInclude Include="..\..\include\SourceSDK\vstdlib\vstdlib.h">
       <Filter>SourceSDK\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="SCModelDownloaderDialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskListPage.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskListPanel.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
