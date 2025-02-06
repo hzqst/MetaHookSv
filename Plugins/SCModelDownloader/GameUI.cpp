@@ -208,7 +208,7 @@ class CVGUI2Extension_KeyValuesCallbacks : public IVGUI2Extension_KeyValuesCallb
 public:
 	int GetAltitude() const override
 	{
-		return 0;
+		return 1;
 	}
 
 	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char* sourceModule, VGUI2Extension_CallbackContext* CallbackContext)
@@ -234,7 +234,7 @@ public:
 						char szNewNameTestButton[32];
 						snprintf(szNewNameTestButton, sizeof(szNewNameTestButton), "%d", iNameSectionQuit);
 						auto SectionTestButton = new KeyValues(szNewNameTestButton);
-						SectionTestButton->SetString("label", "#GameUI_SCMD_SectionButton");
+						SectionTestButton->SetString("label", "#GameUI_SCModelDownloader_SectionButton");
 						SectionTestButton->SetString("command", "OpenSCModelDownloaderDialog");
 						pKeyValues->AddSubKeyAfter(SectionTestButton, SectionQuit);
 					}
