@@ -324,7 +324,6 @@ void GameUI_InstallHooks(void)
 
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	//VGUI2Extension()->RegisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 }
 
 void GameUI_UninstallHooks(void)
@@ -334,5 +333,4 @@ void GameUI_UninstallHooks(void)
 
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	//VGUI2Extension()->UnregisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 }

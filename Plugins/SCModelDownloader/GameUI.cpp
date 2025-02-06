@@ -19,6 +19,10 @@
 
 #include "plugins.h"
 
+#include "SCModelDownloaderDialog.h"
+
+static vgui::DHANDLE<CSCModelDownloaderDialog> s_hSCModelDownloaderDialog;
+
 /*
 =================================================================================================================
 GameUI Callbacks
@@ -248,20 +252,30 @@ static CVGUI2Extension_KeyValuesCallbacks s_KeyValuesCallbacks;
 
 class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCallbacks
 {
-	int GetAltitude() const override {
+	int GetAltitude() const override
+	{
 		return 0;
 	}
 
 	void CTaskBar_ctor(IGameUITaskBarCtorCallbackContext* CallbackContext) override
 	{
-
+		
 	}
+
 	void CTaskBar_OnCommand(void*& pPanel, const char*& command, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		if (!strcmp(command, "OpenSCModelDownloaderDialog")) {
-		
 
+			if (!s_hSCModelDownloaderDialog)
+			{
+				s_hSCModelDownloaderDialog = new CSCModelDownloaderDialog((vgui::Panel*)pPanel, "SCModelDownloaderDialog");
+			}
 
+			if (s_hSCModelDownloaderDialog)
+			{
+				s_hSCModelDownloaderDialog->Activate();
+			}
+			
 		}
 	}
 };

@@ -36,23 +36,6 @@ int SCModel_Hash(const std::string& name)
 	return hash;
 }
 
-class ISCModelQuery : public IBaseInterface
-{
-public:
-	virtual const char* GetName() const = 0;
-	virtual const char* GetIdentifier() const = 0;
-	virtual const char *GetUrl() const = 0;
-	virtual bool IsFailed() const = 0;
-	virtual bool IsFinished() const = 0;
-
-	virtual void OnFinish() = 0;
-	virtual void OnFailure() = 0;
-	virtual bool OnProcessPayload(const char* data, size_t size) = 0;
-
-	virtual void RunFrame(float flCurrentAbsTime) = 0;
-	virtual void StartQuery() = 0;
-};
-
 class CUtilHTTPCallbacks : public IUtilHTTPCallbacks
 {
 private:
@@ -198,7 +181,7 @@ public:
 
 	const char* GetName() const override
 	{
-		return "SCModelQueryModelFileTask";
+		return "QueryModelFileTask";
 	}
 
 	const char* GetIdentifier() const override
@@ -377,7 +360,7 @@ public:
 
 	const char* GetName() const override
 	{
-		return "SCModelQueryTaskList";
+		return "QueryTaskList";
 	}
 
 	const char* GetIdentifier() const override
@@ -448,7 +431,7 @@ class CSCModelQueryDatabase : public CSCModelQueryBase
 public:
 	const char* GetName() const override
 	{
-		return "SCModelQueryDatabase";
+		return "QueryDatabase";
 	}
 
 	const char* GetIdentifier() const override
@@ -576,7 +559,7 @@ public:
 	{
 		for (const auto& p : m_QueryTaskList)
 		{
-			if (!strcmp(p->GetName(), "SCModelQueryTaskList") &&
+			if (!strcmp(p->GetName(), "QueryTaskList") &&
 				!strcmp(p->GetIdentifier(), lowerName.c_str()) )
 			{
 				return false;
@@ -649,6 +632,18 @@ public:
 		gEngfuncs.Con_DPrintf("[SCModelDownloader] Missing model \"%s\"...\n", name);
 
 		BuildQueryList(name);
+	}
+
+	void EnumQueries(IEnumSCModelQueryHandler* handler) override
+	{
+		handler->OnBeforeEnum();
+
+		for (const auto& p : m_QueryTaskList)
+		{
+			handler->OnEnum(p.get());
+		}
+
+		handler->OnEndEnum();
 	}
 };
 
