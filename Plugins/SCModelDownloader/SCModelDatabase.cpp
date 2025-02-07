@@ -15,6 +15,8 @@
 bool SCModel_ShouldDownloadLatest();
 void SCModel_ReloadModel(const char* name);
 
+static unsigned int g_uiAllocatedTaskId = 0;
+
 typedef struct scmodel_s
 {
 	int size;
@@ -95,12 +97,19 @@ private:
 	bool m_bFinished{};
 	bool m_bFailed{};
 	float m_flNextRetryTime{};
+	unsigned int m_uiTaskId{};
 
 protected:
 	std::string m_Url;
 	UtilHTTPRequestId_t m_RequestId{ UTILHTTP_REQUEST_INVALID_ID };
 
 public:
+	CSCModelQueryBase()
+	{
+		m_uiTaskId = g_uiAllocatedTaskId;
+		g_uiAllocatedTaskId++;
+	}
+
 	~CSCModelQueryBase()
 	{
 		if (m_RequestId != UTILHTTP_REQUEST_INVALID_ID)
@@ -125,15 +134,35 @@ public:
 		return m_bFailed;
 	}
 
+	SCModelQueryState GetState() const override
+	{
+		if (m_bFailed)
+			return SCModelQueryState_Failed;
+
+		if (m_bFinished)
+			return SCModelQueryState_Finished;
+
+		return SCModelQueryState_Querying;
+	}
+
+	unsigned int GetTaskId() const override
+	{
+		return m_uiTaskId;
+	}
+
 	void OnFailure() override
 	{
 		m_bFailed = true;
 		m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
+
+		SCModelDatabase()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
 	void OnFinish() override
 	{
 		m_bFinished = true;
+
+		SCModelDatabase()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
 	void RunFrame(float flCurrentAbsTime) override
@@ -154,6 +183,7 @@ public:
 
 		m_bFailed = false;
 		m_bFinished = false;
+		SCModelDatabase()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 };
 
@@ -168,6 +198,7 @@ public:
 
 public:
 	CSCModelQueryModelFileTask(CSCModelQueryTaskList* parent, const std::string& localFileName, const std::string& networkFileName) :
+		CSCModelQueryBase(),
 		m_pQueryTaskList(parent),
 		m_localFileName(localFileName),
 		m_networkFileName(networkFileName)
@@ -204,6 +235,7 @@ public:
 
 public:
 	CSCModelQueryTaskList(const std::string& lowerName, const std::string& localFileNameBase) :
+		CSCModelQueryBase(),
 		m_repoId(SCModel_Hash(lowerName) % 32),
 		m_lowerName(lowerName), 
 		m_localFileNameBase(localFileNameBase)
@@ -237,6 +269,7 @@ public:
 			std::string Tmdl = std::format("models/player/{0}/{0}T.mdl", m_localFileNameBase);
 			std::string tmdl = std::format("models/player/{0}/{0}t.mdl", m_localFileNameBase);
 
+			//Linux is unhappy with t.mdl
 			if (!FILESYSTEM_ANY_FILEEXISTS(Tmdl.c_str()) && !FILESYSTEM_ANY_FILEEXISTS(tmdl.c_str()))
 				return false;
 		}
@@ -429,6 +462,11 @@ bool CSCModelQueryModelFileTask::OnProcessPayload(const char* data, size_t size)
 class CSCModelQueryDatabase : public CSCModelQueryBase
 {
 public:
+	CSCModelQueryDatabase() : CSCModelQueryBase()
+	{
+
+	}
+
 	const char* GetName() const override
 	{
 		return "QueryDatabase";
@@ -457,7 +495,10 @@ public:
 	bool OnProcessPayload(const char* data, size_t size) override
 	{
 		if (g_Database.size() > 0)
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Database already filled!\n");
 			return true;
+		}
 
 		rapidjson::Document doc;
 
@@ -506,8 +547,10 @@ class CSCModelDatabase : public ISCModelDatabase
 {
 private:
 	std::vector<std::shared_ptr<ISCModelQuery>> m_QueryTaskList;
+	std::vector<ISCModelQueryStateChangeHandler*> m_StateChangeCallbacks;
 
 public:
+
 	void Init() override
 	{
 		if (!g_Database.empty())
@@ -528,6 +571,7 @@ public:
 	void Shutdown() override
 	{
 		m_QueryTaskList.clear();
+		m_StateChangeCallbacks.clear();
 		g_Database.clear();
 	}
 
@@ -601,7 +645,7 @@ public:
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("[SCModelDownloader] \"%s\" not found in database.\n", modelName.c_str());
+				gEngfuncs.Con_DPrintf("[SCModelDownloader] \"%s\" not found in database.\n", modelName.c_str());
 				return false;
 			}
 		}
@@ -636,14 +680,42 @@ public:
 
 	void EnumQueries(IEnumSCModelQueryHandler* handler) override
 	{
-		handler->OnBeforeEnum();
-
 		for (const auto& p : m_QueryTaskList)
 		{
-			handler->OnEnum(p.get());
+			handler->OnEnumQuery(p.get());
 		}
+	}
 
-		handler->OnEndEnum();
+	void RegisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) override
+	{
+		auto itor = std::find_if(m_StateChangeCallbacks.begin(), m_StateChangeCallbacks.end(), [handler](ISCModelQueryStateChangeHandler* it) {
+			return it == handler;
+		});
+
+		if (itor == m_StateChangeCallbacks.end())
+		{
+			m_StateChangeCallbacks.emplace_back(handler);
+		}
+	}
+
+	void UnregisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) override
+	{
+		auto itor = std::find_if(m_StateChangeCallbacks.begin(), m_StateChangeCallbacks.end(), [handler](ISCModelQueryStateChangeHandler* it) {
+			return it == handler;
+			});
+
+		if (itor != m_StateChangeCallbacks.end())
+		{
+			m_StateChangeCallbacks.erase(itor);
+		}
+	}
+
+	void DispatchQueryStateChangeCallback(ISCModelQuery* pQuery, SCModelQueryState newState) override
+	{
+		for (auto callback : m_StateChangeCallbacks)
+		{
+			callback->OnQueryStateChanged(pQuery, newState);
+		}
 	}
 };
 

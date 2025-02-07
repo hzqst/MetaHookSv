@@ -14,11 +14,84 @@ CTaskListPage::CTaskListPage(vgui::Panel* parent, const char* name) :
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 	vgui::ipanel()->SendMessage(GetVPanel(), new KeyValues("ResetData"), GetVPanel());
+
+	SCModelDatabase()->RegisterQueryStateChangeCallback(this);
+}
+
+CTaskListPage::~CTaskListPage()
+{
+	SCModelDatabase()->UnregisterQueryStateChangeCallback(this);
+}
+
+void CTaskListPage::OnKeyCodeTyped(vgui::KeyCode code)
+{
+	if (code == vgui::KEY_ENTER)
+	{
+		if (m_pTaskListPanel->HasFocus() && m_pTaskListPanel->GetSelectedItemsCount() > 0)
+		{
+			return;
+		}
+	}
+
+	BaseClass::OnKeyCodeTyped(code);
+}
+
+const char * UTIL_GetQueryStateName(SCModelQueryState state)
+{
+	const char* s_QueryStateName[] = {
+		"Querying",
+		"Failed",
+		"Finished"
+	};
+
+	if (state >= 0 && state < _ARRAYSIZE(s_QueryStateName))
+	{
+		return s_QueryStateName[state];
+	}
+
+	return "Unknown";
+}
+
+void CTaskListPage::AddQueryItem(ISCModelQuery* pQuery)
+{
+	auto kv = new KeyValues("TaskItem");
+
+	kv->SetInt("taskId", pQuery->GetTaskId());
+	kv->SetString("name", pQuery->GetName());
+	kv->SetString("identifier", pQuery->GetIdentifier());
+	kv->SetString("url", pQuery->GetUrl());
+	kv->SetString("state", UTIL_GetQueryStateName(pQuery->GetState()));
+
+	m_pTaskListPanel->AddItem(kv, pQuery->GetTaskId(), false, true);
+
+	kv->deleteThis();
+}
+
+void CTaskListPage::OnEnumQuery(ISCModelQuery* pQuery)
+{
+	AddQueryItem(pQuery);
+}
+
+void CTaskListPage::OnQueryStateChanged(ISCModelQuery* pQuery, SCModelQueryState newState)
+{
+	for (int i = 0; i < m_pTaskListPanel->GetItemCount(); ++i)
+	{
+		auto userData = m_pTaskListPanel->GetItemUserData(i);
+
+		if (userData == pQuery->GetTaskId())
+		{
+			m_pTaskListPanel->RemoveItem(i);
+
+			break;
+		}
+	}
+
+	AddQueryItem(pQuery);
 }
 
 void CTaskListPage::OnResetData()
 {
-	
+	OnRefreshTaskList();
 }
 
 void CTaskListPage::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -33,14 +106,9 @@ void CTaskListPage::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_pTaskListPanel->SetFont(m_hFont);
 }
 
-void CTaskListPage::OnCommand(const char* command)
-{
-	//nothing...
-
-	BaseClass::OnCommand(command);
-}
-
 void CTaskListPage::OnRefreshTaskList()
 {
-	
+	m_pTaskListPanel->RemoveAll();
+
+	SCModelDatabase()->EnumQueries(this);
 }
