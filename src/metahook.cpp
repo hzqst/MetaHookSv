@@ -1541,10 +1541,17 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 		else
 		{
-#define FULLSCREEN_STRING_SIG "-gl\0"
-			auto FullScreen_String = MH_SearchPattern(rdataBase, rdataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+#define GL_STRING_SIG "-gl\0"
+			auto FullScreen_String = MH_SearchPattern(rdataBase, rdataSize, GL_STRING_SIG, sizeof(GL_STRING_SIG) - 1);
 			if(!FullScreen_String)
+				FullScreen_String = MH_SearchPattern(dataBase, dataSize, GL_STRING_SIG, sizeof(GL_STRING_SIG) - 1);
+
+#define FULLSCREEN_STRING_SIG "-fullscreen\0"
+			if (!FullScreen_String)
+				FullScreen_String = MH_SearchPattern(rdataBase, rdataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+			if (!FullScreen_String)
 				FullScreen_String = MH_SearchPattern(dataBase, dataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+
 			if (FullScreen_String)
 			{
 				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
@@ -1573,6 +1580,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 			{
 				ULONG_PTR candidate_disp;
 				PVOID candidate_addr;
+
+				int xor_exx_exx_instCount;
+				int xor_exx_exx_reg;
 			}VideoMode_SearchContext;
 
 			VideoMode_SearchContext ctx = { 0 };
@@ -1582,6 +1592,16 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 					auto pinst = (cs_insn*)inst;
 
 					auto ctx = (VideoMode_SearchContext*)context;
+
+					if (pinst->id == X86_INS_XOR &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
+					{
+						ctx->xor_exx_exx_reg = pinst->detail->x86.operands[0].reg;
+						ctx->xor_exx_exx_instCount = instCount;
+					}
 
 					if ((pinst->id == X86_INS_MOV &&
 						pinst->detail->x86.op_count == 2 &&
@@ -1599,7 +1619,17 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
 							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
 							pinst->detail->x86.operands[1].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].reg == X86_REG_EAX)
+							pinst->detail->x86.operands[1].reg == X86_REG_EAX) 
+						||
+						(pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].reg == ctx->xor_exx_exx_reg &&
+							instCount == ctx->xor_exx_exx_instCount + 1)
 
 						)
 					{
@@ -1610,7 +1640,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 						FindRet_Ctx ctx2 = { 0 };
 
-						MH_DisasmRanges(address, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+						MH_DisasmRanges(address, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 							{
 								auto pinst = (cs_insn*)inst;
 
@@ -1628,7 +1658,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 								if (address[0] == 0x90)
 									return TRUE;
 
-								if (instCount > 10)
+								if (instCount > 15)
 									return TRUE;
 
 								return FALSE;
