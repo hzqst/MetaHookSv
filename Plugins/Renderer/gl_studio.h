@@ -353,6 +353,7 @@ extern MapConVar* r_studio_celshade_specular;
 void R_StudioBoneCaches_StartFrame();
 CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData *VBOData);
+void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
 void R_StudioClearVBOCache(void);
 void R_StudioReloadVBOCache(void);

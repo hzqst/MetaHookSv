@@ -62,6 +62,8 @@ int* numlight = NULL;
 int* r_topcolor = NULL;
 int* r_bottomcolor = NULL;
 
+extern void* g_pGameStudioRenderer;
+
 #if 0//unused
 player_model_t(*DM_PlayerState)[MAX_CLIENTS] = NULL;
 skin_t (*DM_RemapSkin)[64][MAX_SKINS] = NULL;
@@ -155,6 +157,11 @@ bool R_StudioHasOutline()
 bool R_StudioHasHairShadow()
 {
 	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
+}
+
+void R_StudioClearVanillaBonesCaches()
+{
+	//TODO: draw a null model with no bone and no bodypart
 }
 
 void R_StudioClearAllBoneCaches()

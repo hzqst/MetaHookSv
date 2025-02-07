@@ -1738,6 +1738,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 2;
 
 		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
+		gPrivateFuncs.GameStudioRenderer_StudioSaveBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSaveBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index];
 		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
@@ -1806,11 +1807,18 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 	{
 		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
 
-		auto pEntityComponentContainer = R_GetEntityComponentContainer(aiment, true);
+		auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, true);
 
-		if (pEntityComponentContainer)
+		if (pEntityComponentContainerAimEnt)
 		{
-			pEntityComponentContainer->FollowEnts.emplace_back(ent);
+			pEntityComponentContainerAimEnt->FollowEnts.emplace_back(ent);
+		}
+
+		auto pEntityComponentContainerFollowEnt = R_GetEntityComponentContainer(ent, true);
+
+		if (pEntityComponentContainerFollowEnt)
+		{
+			pEntityComponentContainerFollowEnt->AimEntity = aiment;
 		}
 	}
 

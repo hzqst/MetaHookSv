@@ -40,6 +40,7 @@ public:
 	std::vector<CWaterSurfaceModel *> WaterVBOs;
 	std::vector<water_reflect_cache_t *> ReflectCaches;
 	std::vector<int> DeferredStudioPasses;
+	cl_entity_t* AimEntity{};
 };
 
 CEntityComponentContainer*R_GetEntityComponentContainer(cl_entity_t *ent, bool create_if_not_exists);

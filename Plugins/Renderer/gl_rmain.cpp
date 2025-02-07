@@ -1307,6 +1307,34 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 		{
+			auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
+
+			if (pEntityComponentContainer && pEntityComponentContainer->AimEntity)
+			{
+				auto saved_currententity = (*currententity);
+
+				(*currententity) = pEntityComponentContainer->AimEntity;
+
+				if ((*currententity)->player)
+				{
+					(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
+				}
+				else
+				{
+					(*gpStudioInterface)->StudioDrawModel(0);
+				}
+
+				(*currententity) = saved_currententity;
+
+				if ((*currententity)->player)
+				{
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+				}
+				else
+				{
+					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+				}
+			}
 			return;
 		}
 
@@ -1317,44 +1345,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 		else
 		{
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-		}
-
-		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
-
-		if (pEntityComponentContainer)
-		{
-			auto save_currententity = (*currententity);
-
-			static float save_bonetransform[MAXSTUDIOBONES][3][4];
-			static float save_lighttransform[MAXSTUDIOBONES][3][4];
-
-			memcpy(save_bonetransform, (*pbonetransform), sizeof(save_bonetransform));
-			memcpy(save_lighttransform, (*plighttransform), sizeof(save_lighttransform));
-
-			//Do what CL_MoveAiments does...?
-
-			for (size_t i = 0; i < pEntityComponentContainer->FollowEnts.size(); ++i)
-			{
-				//Restore matrix at each run
-				if (i != 0)
-				{
-					memcpy((*pbonetransform), save_bonetransform, sizeof(save_bonetransform));
-					memcpy((*plighttransform), save_lighttransform, sizeof(save_lighttransform));
-				}
-
-				(*currententity) = pEntityComponentContainer->FollowEnts[i];
-				
-				if ((*currententity)->player)
-				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
-				}
-				else
-				{
-					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-				}
-			}
-
-			(*currententity) = save_currententity;
 		}
 
 		break;

@@ -63,6 +63,7 @@ void R_EntityComponents_PreFrame(void)
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
 		p->DeferredStudioPasses.clear();
+		p->AimEntity = nullptr;
 
 		auto temp = p->pNext;
 
