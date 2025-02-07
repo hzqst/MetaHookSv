@@ -3005,11 +3005,32 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 	}
 
 	pfnSetupBones(pthis, dummy);
+}
+
+template<typename CallType>
+__forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis = nullptr, int dummy = 0)
+{
+	//Never cache bones for viewmodel !
+	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
+	{
+		pfnSaveBones(pthis, dummy);
+		return;
+	}
+
+	pfnSaveBones(pthis, dummy);
 
 	auto cache = R_StudioBoneCacheAlloc();
 
 	if (cache)
 	{
+		studio_bone_handle handle(
+			(*pstudiohdr)->soundtable,
+			(*currententity)->curstate.sequence,
+			(*currententity)->curstate.gaitsequence,
+			(*currententity)->curstate.frame,
+			(*currententity)->origin,
+			(*currententity)->angles);
+
 		memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
 		memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
 
@@ -3018,7 +3039,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 }
 
 template<typename CallType>
-void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, int dummy, model_t* pSubModel)
+void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, int dummy, model_t* pSubModel )
 {
 	//Never cache bones for viewmodel !
 	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
@@ -3045,7 +3066,7 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 	}
 
 	pfnMergeBones(pthis, dummy, pSubModel);
-
+#if 0
 	auto cache = R_StudioBoneCacheAlloc();
 
 	if (cache)
@@ -3055,16 +3076,88 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 
 		g_StudioBoneCacheManager[handle] = cache;
 	}
+#endif
 }
 
-void __fastcall GameStudioRenderer_StudioSetupBones(void* pthis, int dummy)
+/*
+	Purpose : wrapper to call engine StudioSaveBones
+*/
+
+__forceinline void R_StudioSaveBones_originalcall_wrapper(void* pthis, int dummy)
 {
-	StudioSetupBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
+	return gPrivateFuncs.R_StudioSaveBones();
 }
+
+/*
+	Purpose : Engine StudioSaveBones hook handler
+*/
+
+void R_StudioSaveBones(void)
+{
+	StudioSaveBones_Template(R_StudioSaveBones_originalcall_wrapper);
+}
+
+/*
+	Purpose : ClientDLL StudioSaveBones hook handler
+*/
+
+void __fastcall GameStudioRenderer_StudioSaveBones(void* pthis, int dummy)
+{
+	StudioSaveBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSaveBones, pthis, dummy);
+}
+
+/*
+	Purpose : wrapper to call engine StudioSetupBones
+*/
+
+__forceinline void R_StudioMergeBones_originalcall_wrapper(void* pthis, int dummy, model_t* pSubModel)
+{
+	return gPrivateFuncs.R_StudioMergeBones(pSubModel);
+}
+
+/*
+	Purpose : Engine StudioSaveBones hook handler
+*/
+
+void R_StudioMergeBones(model_t* pSubModel)
+{
+	StudioMergeBones_Template(R_StudioMergeBones_originalcall_wrapper, 0, 0, pSubModel);
+}
+
+/*
+	Purpose : ClientDLL StudioMergeBones hook handler
+*/
 
 void __fastcall GameStudioRenderer_StudioMergeBones(void* pthis, int dummy, model_t* pSubModel)
 {
 	StudioMergeBones_Template(gPrivateFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
+}
+
+/*
+	Purpose : wrapper to call engine StudioSetupBones
+*/
+
+__forceinline void R_StudioSetupBones_originalcall_wrapper(void* pthis, int dummy)
+{
+	return gPrivateFuncs.R_StudioSetupBones();
+}
+
+/*
+	Purpose : Engine StudioSetupBones hook handler
+*/
+
+void R_StudioSetupBones(void)
+{
+	return StudioSetupBones_Template(R_StudioSetupBones_originalcall_wrapper);
+}
+
+/*
+	Purpose : ClientDLL StudioSetupBones hook handler
+*/
+
+void __fastcall GameStudioRenderer_StudioSetupBones(void* pthis, int dummy)
+{
+	StudioSetupBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
 }
 
 void R_StudioFreeAllTexturesInVBOMaterial(CStudioModelRenderMaterial* VBOMaterial)

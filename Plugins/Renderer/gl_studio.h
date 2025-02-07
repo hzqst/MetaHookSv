@@ -371,12 +371,18 @@ CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void studioapi_RestoreRenderer(void);
+
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int);
+void __fastcall GameStudioRenderer_StudioSaveBones(void* pthis, int);
 void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *pSubModel);
-void  R_StudioRenderModel(void);
-void  R_StudioRenderFinal(void);
+
+void R_StudioRenderModel(void);
+void R_StudioRenderFinal(void);
+void R_StudioSetupBones(void);
+void R_StudioMergeBones(model_t* pSubModel);
+void R_StudioSaveBones(void);
 
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;

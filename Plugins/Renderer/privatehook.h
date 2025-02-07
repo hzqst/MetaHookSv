@@ -153,6 +153,7 @@ typedef struct
 	void(*R_StudioRenderFinal)(void);
 	void(*R_StudioSetupBones)(void);
 	void(*R_StudioMergeBones)(model_t *pSubModel);
+	void(*R_StudioSaveBones)(void);
 
 	//SDL2
 	int (__cdecl * SDL_GL_SetAttribute)(int attr, int value);

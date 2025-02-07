@@ -326,7 +326,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		return result;
 	}
 
-	if (flags & STUDIO_RENDER)
+	if (1)
 	{
 		int entindex = ClientEntityManager()->GetEntityIndex((*currententity));
 
@@ -418,7 +418,7 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		return result;
 	}
 
-	if (flags & STUDIO_RENDER)
+	if (1)
 	{
 		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
 
@@ -1203,44 +1203,48 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 
 		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
 		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
+		gPrivateFuncs.GameStudioRenderer_StudioSaveBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSaveBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index];
 
 	}
 	else if ((void*)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void*)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 	{
-		const char sigs1[] = "Bip01 Spine\0";
-		auto Bip01_String = Search_Pattern_Data(sigs1);
-		if (!Bip01_String)
-			Bip01_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(Bip01_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
-		*(DWORD*)(pattern + 1) = (DWORD)Bip01_String;
-		auto Bip01_PushString = Search_Pattern(pattern);
-		Sig_VarNotFound(Bip01_PushString);
+		if (1)
+		{
+			const char sigs1[] = "Bip01 Spine\0";
+			auto Bip01_String = Search_Pattern_Data(sigs1);
+			if (!Bip01_String)
+				Bip01_String = Search_Pattern_Rdata(sigs1);
+			Sig_VarNotFound(Bip01_String);
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
+			*(DWORD*)(pattern + 1) = (DWORD)Bip01_String;
+			auto Bip01_PushString = Search_Pattern(pattern);
+			Sig_VarNotFound(Bip01_PushString);
 
-		gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
-			//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
-			//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-			//.text : 01D8DD98 33 C4 xor eax, esp
-			if (Candidate[0] == 0x83 &&
-				Candidate[1] == 0xEC &&
-				Candidate[3] == 0xA1 &&
-				Candidate[8] == 0x33 &&
-				Candidate[9] == 0xC4)
-				return TRUE;
+			gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
+				//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
+				//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+				//.text : 01D8DD98 33 C4 xor eax, esp
+				if (Candidate[0] == 0x83 &&
+					Candidate[1] == 0xEC &&
+					Candidate[3] == 0xA1 &&
+					Candidate[8] == 0x33 &&
+					Candidate[9] == 0xC4)
+					return TRUE;
 
-			//.text : 01D82A50 55                                                  push    ebp
-			//.text : 01D82A51 8B EC                                               mov     ebp, esp
-			//.text : 01D82A53 83 EC 48                                            sub     esp, 48h
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC &&
-				Candidate[3] == 0x83 &&
-				Candidate[4] == 0xEC)
-				return TRUE;
+				//.text : 01D82A50 55                                                  push    ebp
+				//.text : 01D82A51 8B EC                                               mov     ebp, esp
+				//.text : 01D82A53 83 EC 48                                            sub     esp, 48h
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x83 &&
+					Candidate[4] == 0xEC)
+					return TRUE;
 
-			return FALSE;
-		});
-		Sig_FuncNotFound(R_StudioSetupBones);
+				return FALSE;
+				});
+			Sig_FuncNotFound(R_StudioSetupBones);
+		}
 
 		gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))(*ppinterface)->StudioDrawModel;
 		gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))(*ppinterface)->StudioDrawPlayer;
@@ -1661,13 +1665,7 @@ void R_RenderView_SvEngine(int viewIdx)
 {
 	if (g_bIsUpdatingRefdef)
 		return;
-#if 0
-	if (g_bIsSvenCoop && gExportfuncs.CL_IsThirdPerson())
-	{
-		ClientPhysicManager()->UpdateAllPhysicObjects(0, 0, g_frametime, g_client_time);
-		ClientPhysicManager()->StepSimulation(g_frametime);
-	}
-#endif
+
 	gPrivateFuncs.R_RenderView_SvEngine(viewIdx);
 }
 

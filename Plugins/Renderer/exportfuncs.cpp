@@ -22,18 +22,21 @@ static hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
  
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
+static hook_t* g_phook_GameStudioRenderer_StudioSaveBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
 
 static hook_t *g_phook_R_StudioSetupBones = NULL;
 static hook_t *g_phook_R_StudioMergeBones = NULL;
+static hook_t* g_phook_R_StudioSaveBones = NULL;
 static hook_t *g_phook_R_StudioRenderModel = NULL;
 static hook_t *g_phook_R_StudioRenderFinal = NULL;
 
 static hook_t* g_phook_studioapi_RestoreRenderer = NULL;
 static hook_t* g_phook_studioapi_StudioDynamicLight = NULL;
 static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
+
 static hook_t* g_phook_CL_FxBlend = NULL;
 
 void R_UninstallHooksForEngineStudioInterface(void)
@@ -41,9 +44,14 @@ void R_UninstallHooksForEngineStudioInterface(void)
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
+
 	Uninstall_Hook(CL_FxBlend);
+
 	Uninstall_Hook(R_StudioRenderModel);
 	Uninstall_Hook(R_StudioRenderFinal);
+	Uninstall_Hook(R_StudioSetupBones);
+	Uninstall_Hook(R_StudioMergeBones);
+	Uninstall_Hook(R_StudioSaveBones);
 }
 
 void R_UninstallHooksForClientDLL(void)
@@ -57,6 +65,7 @@ void R_UninstallHooksForClientDLL(void)
 	//Client
 	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
 	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
+	Uninstall_Hook(GameStudioRenderer_StudioSaveBones);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderModel);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderFinal);
 }
@@ -93,13 +102,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
-
-#if 0
-void HUD_DrawTransparentTriangles(void)
-{
-	gExportfuncs.HUD_DrawTransparentTriangles();
-}
-#endif
 
 int HUD_Redraw(float time, int intermission)
 {
@@ -1743,52 +1745,138 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
+
 		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+		Install_InlineHook(GameStudioRenderer_StudioSaveBones);
 		Install_InlineHook(GameStudioRenderer_StudioMergeBones);
 	}
 	else if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 	{
+		if (1)
+		{
 #define R_STUDIORENDERMODEL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x10\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B"
 
-		auto addr = Search_Pattern(R_STUDIORENDERMODEL_SIG);
+			auto addr = Search_Pattern(R_STUDIORENDERMODEL_SIG);
 
-		Sig_AddrNotFound(R_StudioRenderModel);
+			Sig_AddrNotFound(R_StudioRenderModel);
 
-		auto call_addr = (PUCHAR)addr + 9;
+			auto call_addr = (PUCHAR)addr + 9;
 
-		gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))GetCallAddress(call_addr);
+			gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))GetCallAddress(call_addr);
 
-		Sig_FuncNotFound(R_StudioRenderModel);
+			Sig_FuncNotFound(R_StudioRenderModel);
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_StudioRenderModel, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_StudioRenderModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+
+					if (address[0] == 0xE8 && instLen == 5)
+					{
+						gPrivateFuncs.R_StudioRenderFinal = (decltype(gPrivateFuncs.R_StudioRenderFinal))pinst->detail->x86.operands[0].imm;
+					}
+
+					if (gPrivateFuncs.R_StudioRenderFinal)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+
+			Sig_FuncNotFound(R_StudioRenderFinal);
+		}
+
+		if (1)
 		{
-			auto pinst = (cs_insn *)inst;
+			const char sigs1[] = "Bip01 Spine\0";
+			auto Bip01_String = Search_Pattern_Data(sigs1);
+			if (!Bip01_String)
+				Bip01_String = Search_Pattern_Rdata(sigs1);
+			Sig_VarNotFound(Bip01_String);
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
+			*(DWORD*)(pattern + 1) = (DWORD)Bip01_String;
+			auto Bip01_PushString = Search_Pattern(pattern);
+			Sig_VarNotFound(Bip01_PushString);
 
-			if (address[0] == 0xE8 && instLen == 5)
-			{
-				gPrivateFuncs.R_StudioRenderFinal = (decltype(gPrivateFuncs.R_StudioRenderFinal))pinst->detail->x86.operands[0].imm;
-			}
+			gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
+				//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
+				//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+				//.text : 01D8DD98 33 C4 xor eax, esp
+				if (Candidate[0] == 0x83 &&
+					Candidate[1] == 0xEC &&
+					Candidate[3] == 0xA1 &&
+					Candidate[8] == 0x33 &&
+					Candidate[9] == 0xC4)
+					return TRUE;
 
-			if (gPrivateFuncs.R_StudioRenderFinal)
-				return TRUE;
+				//.text : 01D82A50 55                                                  push    ebp
+				//.text : 01D82A51 8B EC                                               mov     ebp, esp
+				//.text : 01D82A53 83 EC 48                                            sub     esp, 48h
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x83 &&
+					Candidate[4] == 0xEC)
+					return TRUE;
 
-			if (address[0] == 0xCC)
-				return TRUE;
+				return FALSE;
+			});
+			Sig_FuncNotFound(R_StudioSetupBones);
+		}
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+		if (1)
+		{
+			char pattern[] = "\x83\xB8\x08\x03\x00\x00\x0C";
+			auto R_StudioMergeBones_Pattern = Search_Pattern(pattern);
+			Sig_VarNotFound(R_StudioMergeBones_Pattern);
 
-			return FALSE;
-		}, 0, NULL);
+			g_pMetaHookAPI->DisasmRanges(R_StudioMergeBones_Pattern, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
 
-		Sig_FuncNotFound(R_StudioRenderFinal);
+					if (address[0] == 0xE8 && instLen == 5)
+					{
+						if (!gPrivateFuncs.R_StudioMergeBones)
+						{
+							gPrivateFuncs.R_StudioMergeBones = (decltype(gPrivateFuncs.R_StudioMergeBones))pinst->detail->x86.operands[0].imm;
+						}
+						else if (gPrivateFuncs.R_StudioMergeBones && !gPrivateFuncs.R_StudioSaveBones)
+						{
+							PVOID candidate = (decltype(candidate))pinst->detail->x86.operands[0].imm;
+							if (candidate != gPrivateFuncs.R_StudioSetupBones)
+							{
+								gPrivateFuncs.R_StudioSaveBones = (decltype(gPrivateFuncs.R_StudioSaveBones))candidate;
+							}
+						}
+					}
+
+					if (gPrivateFuncs.R_StudioMergeBones && gPrivateFuncs.R_StudioSaveBones)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+			}, 0, NULL);
+		}
 
 		Install_InlineHook(R_StudioRenderModel);
 		Install_InlineHook(R_StudioRenderFinal);
+
+		Install_InlineHook(R_StudioSetupBones);
+		Install_InlineHook(R_StudioSaveBones);
+		Install_InlineHook(R_StudioMergeBones);
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
+		Sys_Error("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 
 	return result;
