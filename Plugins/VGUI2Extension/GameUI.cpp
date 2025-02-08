@@ -3605,7 +3605,7 @@ void GameUI_FillAddress(void)
 					ctx->OperatorNewAddress = nextaddr;
 				}
 			}
-			else if (address > ctx->OperatorNewAddress && address[0] == 0xE8)
+			else if (ctx->OperatorNewAddress && address > ctx->OperatorNewAddress && address[0] == 0xE8)
 			{
 				PVOID call_candidate = (decltype(call_candidate))GetCallAddress(address);
 
@@ -3990,6 +3990,7 @@ void GameUI_InstallHooks(void)
 	{
 		Install_InlineHook(CBasePanel_ApplySchemeSettings);
 	}
+
 	if (gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
 	{
 		Install_InlineHook(GameUI_KeyValues_LoadFromFile);
