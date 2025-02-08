@@ -454,17 +454,12 @@ void R_NewMapLight_Post()
 
 cl_entity_t *R_GetDLightBindingEntity(dlight_t* dl)
 {
-	if (dl->key >= DLIGHT_KEY_PLAYER_FLASHLIGHT + 1 && dl->key <= DLIGHT_KEY_PLAYER_FLASHLIGHT + MAX_CLIENTS)
+	if (dl->key >= 1 && dl->key <= gEngfuncs.GetMaxClients())
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(dl->key - DLIGHT_KEY_PLAYER_FLASHLIGHT);
+		auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 		if (ent && ent->player)
 			return ent;
-	}
-
-	if (dl->key == DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT)
-	{
-		return gEngfuncs.GetLocalPlayer();
 	}
 
 	return nullptr;
@@ -472,17 +467,12 @@ cl_entity_t *R_GetDLightBindingEntity(dlight_t* dl)
 
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
-	if (dl->key >= DLIGHT_KEY_PLAYER_FLASHLIGHT + 1 && dl->key <= DLIGHT_KEY_PLAYER_FLASHLIGHT + MAX_CLIENTS)
+	if (dl->key >= 1 && dl->key <= gEngfuncs.GetMaxClients())
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(dl->key - DLIGHT_KEY_PLAYER_FLASHLIGHT);
+		auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 		if (ent && ent->player)
 			return true;
-	}
-
-	if (dl->key == DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT)
-	{
-		return true;
 	}
 
 	return false;

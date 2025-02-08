@@ -4011,7 +4011,7 @@ void R_SetupFlashlights()
 
 	dlight_t* dl = cl_dlights;
 	float curtime = (*cl_time);
-
+#if 0
 	for (int i = 0; i < max_dlight; i++, dl++)
 	{
 		if (dl->die < curtime || !dl->radius)
@@ -4065,4 +4065,5 @@ void R_SetupFlashlights()
 			}
 		}
 	}
+#endif
 }
