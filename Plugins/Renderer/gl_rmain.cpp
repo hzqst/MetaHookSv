@@ -1309,7 +1309,23 @@ void R_DrawCurrentEntity(bool bTransparent)
 		{
 			auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
 
-			if (pEntityComponentContainer && pEntityComponentContainer->AimEntity)
+			if (!pEntityComponentContainer || !pEntityComponentContainer->AimEntity)
+			{
+				//No aiment found?
+				return;
+			}
+
+			auto aiment = pEntityComponentContainer->AimEntity;
+
+			auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, false);
+
+			//The aiment is invisible ? hide me.
+			if (!pEntityComponentContainerAimEnt)
+			{
+				return;
+			}
+
+			if (aiment->model && aiment->model->type == mod_studio)
 			{
 				auto saved_currententity = (*currententity);
 
@@ -1325,15 +1341,15 @@ void R_DrawCurrentEntity(bool bTransparent)
 				}
 
 				(*currententity) = saved_currententity;
+			}
 
-				if ((*currententity)->player)
-				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
-				}
-				else
-				{
-					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-				}
+			if ((*currententity)->player)
+			{
+				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+			}
+			else
+			{
+				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 			}
 			return;
 		}
@@ -4005,65 +4021,142 @@ int __cdecl SDL_GL_SetAttribute(int attr, int value)
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
 
+void CL_EmitPlayerFlashlight(int entindex)
+{
+	cl_entity_t* ent = gEngfuncs.GetEntityByIndex(entindex);
+
+	if (!ent->player)
+		return;
+
+	dlight_t* dl = nullptr;
+
+	// JAY: Flashlight effect.  Currently just a light that floats in from of 
+	// the player a few feet. Using 3 lights is better looking, but SLOW.  
+	// A conical light projection might look better and be more efficient.
+
+	// BRJ: Modified the flashlight to use a true spotlight for model illumination
+	// and uses Jay's old method of making a spherical light that only illuminates
+	// the lightmaps at the intersection point.
+
+	if (ent->curstate.effects & (EF_BRIGHTLIGHT | EF_DIMLIGHT) && r_worldmodel)
+	{
+		dl = gEngfuncs.pEfxAPI->CL_AllocDlight(entindex);
+
+		if (ent->curstate.effects & EF_BRIGHTLIGHT)
+		{
+			dl->color.r = dl->color.g = dl->color.b = 250;
+			dl->radius = 400;
+			VectorCopy(ent->origin, dl->origin);
+			dl->origin[2] += 16;
+		}
+		else
+		{
+			vec3_t		end;
+			float		falloff;
+			vec3_t		vecForward;
+
+			AngleVectors(r_playerViewportAngles, vecForward, NULL, NULL);
+
+			VectorCopy(ent->origin, dl->origin);
+			//VectorAdd(ent->origin, cl_viewheight, dl->origin);
+			VectorMA(dl->origin, r_flashlight_distance->GetValue(), vecForward, end);
+
+			// Trace a line outward, don't use hitboxes (too slow)
+			pmove->usehull = 2;
+			auto trace = gEngfuncs.PM_TraceLine(dl->origin, end, PM_STUDIO_BOX, 2, -1);
+
+			if (trace->ent > 0 && pmove->physents[trace->ent].studiomodel)
+			{
+				VectorCopy(pmove->physents[trace->ent].origin, dl->origin);
+			}
+			else
+			{
+				VectorCopy(trace->endpos, dl->origin);
+			}
+
+			falloff = trace->fraction * r_flashlight_distance->GetValue();
+
+			if (falloff < 500)
+				falloff = 1.0;
+			else
+				falloff = 500.0 / falloff;
+
+			falloff *= falloff;
+
+			dl->radius = 80;
+			dl->color.r = dl->color.g = dl->color.b = 255 * falloff;
+		}
+
+		// Make it live for a bit
+		dl->die = (*cl_time) + 0.2f;
+	}
+}
+
 void R_SetupFlashlights()
 {
 	int max_dlight = EngineGetMaxDLights();
 
 	dlight_t* dl = cl_dlights;
 	float curtime = (*cl_time);
-#if 0
-	for (int i = 0; i < max_dlight; i++, dl++)
-	{
-		if (dl->die < curtime || !dl->radius)
-			continue;
 
-		if (dl->key == 4) {
-			memset(dl, 0, sizeof(dlight_t));
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		//SvEngine done a good job here we don't need to setup our own flashlights.
+	}
+	else
+	{
+		for (int i = 0; i < max_dlight; i++, dl++)
+		{
+			if (dl->die < curtime || !dl->radius)
+				continue;
+
+			if (dl->key == 4 || dl->key == 1) {
+				memset(dl, 0, sizeof(dlight_t));
+			}
+		}
+
+		for (int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			auto state = R_GetPlayerState(i);
+
+			if (state->messagenum != (*cl_parsecount))
+				continue;
+
+			if (!state->modelindex || (state->effects & EF_NODRAW))
+				continue;
+
+			auto entindex = state->number;
+			auto ent = gEngfuncs.GetEntityByIndex(entindex);
+
+			if (!ent)
+				continue;
+
+			if (ent->curstate.effects & EF_BRIGHTLIGHT)
+			{
+				dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_BRIGHTLIGHT + entindex);
+				if (dl)
+				{
+					VectorCopy(ent->origin, dl->origin);
+					dl->origin[2] += 16;
+					dl->color.r = dl->color.g = dl->color.b = 250;
+					dl->radius = gEngfuncs.pfnRandomFloat(400, 431);
+					dl->die = (*cl_time) + 0.001f;
+				}
+			}
+			if (ent->curstate.effects & EF_DIMLIGHT)
+			{
+				CL_EmitPlayerFlashlight(entindex);
+
+				dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT + entindex);
+				if (dl)
+				{
+					VectorCopy(ent->origin, dl->origin);
+					dl->color.r = dl->color.g = dl->color.b = 100;
+					dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
+					dl->die = (*cl_time) + 0.001f;
+				}
+			}
 		}
 	}
 
-	for (int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		auto state = R_GetPlayerState(i);
-
-		if (state->messagenum != (*cl_parsecount))
-			continue;
-
-		if (!state->modelindex || (state->effects & EF_NODRAW))
-			continue;
-
-		auto entindex = state->number;
-		auto ent = gEngfuncs.GetEntityByIndex(entindex);
-
-		if(!ent)
-			continue;
-
-		if (ent == gEngfuncs.GetLocalPlayer())
-			continue;
-
-		if (ent->curstate.effects & EF_BRIGHTLIGHT)
-		{
-			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_BRIGHTLIGHT + entindex);
-			if (dl)
-			{
-				VectorCopy(ent->origin, dl->origin);
-				dl->origin[2] += 16;
-				dl->color.r = dl->color.g = dl->color.b = 250;
-				dl->radius = gEngfuncs.pfnRandomFloat(400, 431);
-				dl->die = (*cl_time) + 0.001f;
-			}
-		}
-		if (ent->curstate.effects & EF_DIMLIGHT)
-		{
-			dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT + entindex);
-			if (dl)
-			{
-				VectorCopy(ent->origin, dl->origin);
-				dl->color.r = dl->color.g = dl->color.b = 100;
-				dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
-				dl->die = (*cl_time) + 0.001f;
-			}
-		}
-	}
-#endif
 }

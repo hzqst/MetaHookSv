@@ -1884,8 +1884,15 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
+	CEntityComponentContainer* pEntityComponentContainer = nullptr;
+
 	int r = gExportfuncs.HUD_AddEntity(type, ent, model);
 	
+	if (r && ent->model)
+	{
+		pEntityComponentContainer = R_GetEntityComponentContainer(ent, true);
+	}
+
 	if (r &&
 		ent->curstate.movetype == MOVETYPE_FOLLOW &&
 		ent->curstate.aiment > 0 &&
@@ -1895,18 +1902,9 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 	{
 		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
 
-		auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, true);
-
-		if (pEntityComponentContainerAimEnt)
+		if (aiment && pEntityComponentContainer)
 		{
-			pEntityComponentContainerAimEnt->FollowEnts.emplace_back(ent);
-		}
-
-		auto pEntityComponentContainerFollowEnt = R_GetEntityComponentContainer(ent, true);
-
-		if (pEntityComponentContainerFollowEnt)
-		{
-			pEntityComponentContainerFollowEnt->AimEntity = aiment;
+			pEntityComponentContainer->AimEntity = aiment;
 		}
 	}
 

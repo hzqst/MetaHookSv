@@ -35,7 +35,7 @@ class CEntityComponentContainer
 {
 public:
 	CEntityComponentContainer* pNext{};
-	std::vector<cl_entity_t *> FollowEnts;
+	//std::vector<cl_entity_t *> FollowEnts;
 	std::vector<decal_t *> Decals;
 	std::vector<CWaterSurfaceModel *> WaterVBOs;
 	std::vector<water_reflect_cache_t *> ReflectCaches;

@@ -16,7 +16,7 @@ void R_InitEntityComponents(void)
 	for (int i = 0; i < MAX_ENTITY_COMPONENTS; i++)
 	{
 		gEntityComponentPool[i].pNext = &gEntityComponentPool[i + 1];
-		gEntityComponentPool[i].FollowEnts.clear();
+		//gEntityComponentPool[i].FollowEnts.clear();
 		gEntityComponentPool[i].Decals.clear();
 		gEntityComponentPool[i].WaterVBOs.clear();
 		gEntityComponentPool[i].ReflectCaches.clear();
@@ -58,7 +58,7 @@ void R_EntityComponents_PreFrame(void)
 	auto p = gpEntityComponentActive;
 	while (p)
 	{
-		p->FollowEnts.clear();
+		//p->FollowEnts.clear();
 		p->Decals.clear();
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
