@@ -285,6 +285,12 @@ public:
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
 		
+		if (!pRequestInstance)
+		{
+			CSCModelQueryBase::OnFailure();
+			return;
+		}
+
 		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
 
 		m_RequestId = pRequestInstance->GetRequestId();
@@ -409,7 +415,13 @@ void CSCModelQueryModelFileTask::StartQuery()
 	m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_pQueryTaskList->m_repoId, m_pQueryTaskList->m_networkFileNameBase, m_networkFileName);
 
 	auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
-	
+
+	if (!pRequestInstance)
+	{
+		CSCModelQueryBase::OnFailure();
+		return;
+	}
+
 	UtilHTTPClient()->AddToRequestPool(pRequestInstance);
 
 	m_RequestId = pRequestInstance->GetRequestId();
@@ -484,6 +496,12 @@ public:
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+
+		if (!pRequestInstance)
+		{
+			CSCModelQueryBase::OnFailure();
+			return;
+		}
 
 		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
 
