@@ -765,7 +765,21 @@ public:
 				unsigned port_us = 0;
 
 				if (!port_str.empty()) {
-					port_us = std::stoi(port_str);
+
+					try {
+						size_t pos;
+						int port = std::stoi(port_str, &pos);
+						if (pos != port_str.size() || port < 0 || port > 65535) {
+							return nullptr;
+						}
+						port_us = static_cast<unsigned short>(port);
+					}
+					catch (const std::invalid_argument&) {
+						return nullptr;
+					}
+					catch (const std::out_of_range&) {
+						return nullptr;
+					}
 				}
 				else {
 					if (scheme == "http") {

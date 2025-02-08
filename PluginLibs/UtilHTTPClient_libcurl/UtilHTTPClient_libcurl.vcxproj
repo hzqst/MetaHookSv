@@ -69,7 +69,8 @@
       <AdditionalDependencies>$(LibCurlLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginLibsPostBuildCommand)</Command>
+      <Command>$(PluginLibsPostBuildCommand)
+$(LibCurlCopyBin)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(LibCurlCheckRequirements)</Command>
@@ -98,7 +99,8 @@
       <AdditionalDependencies>$(LibCurlLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginLibsPostBuildCommand)</Command>
+      <Command>$(PluginLibsPostBuildCommand)
+$(LibCurlCopyBin)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(LibCurlCheckRequirements)</Command>

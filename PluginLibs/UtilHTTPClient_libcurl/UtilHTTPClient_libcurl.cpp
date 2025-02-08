@@ -205,12 +205,30 @@ public:
 					auto value = line.substr(delimiter_pos + 1);
 
 					// Trim spaces
-					key = key.substr(0, key.find_last_not_of(" \t") + 1);
-					value = value.substr(value.find_first_not_of(" \t"));
-					value = value.substr(0, value.find_last_not_of(" \t") + 1);
+					size_t key_end = key.find_last_not_of(" \t");
+					if (key_end != std::string_view::npos) {
+						key = key.substr(0, key_end + 1);
+					}
+					else {
+						key = std::string_view();  // empty string if only whitespace
+					}
 
-					// Store in map
-					m_headers[std::string(key)] = std::string(value);
+					size_t value_start = value.find_first_not_of(" \t");
+					if (value_start != std::string_view::npos) {
+						value = value.substr(value_start);
+						size_t value_end = value.find_last_not_of(" \t");
+						if (value_end != std::string_view::npos) {
+							value = value.substr(0, value_end + 1);
+						}
+					}
+					else {
+						value = std::string_view();  // empty string if only whitespace
+					}
+
+					// Only store if both key and value are not empty
+					if (!key.empty()) {
+						m_headers[std::string(key)] = std::string(value);
+					}
 				}
 			}
 			start = end + 2; // Move past "\r\n"
@@ -860,7 +878,21 @@ public:
 				unsigned port_us = 0;
 
 				if (!port_str.empty()) {
-					port_us = std::stoi(port_str);
+
+					try {
+						size_t pos;
+						int port = std::stoi(port_str, &pos);
+						if (pos != port_str.size() || port < 0 || port > 65535) {
+							return nullptr;
+						}
+						port_us = static_cast<unsigned short>(port);
+					}
+					catch (const std::invalid_argument&) {
+						return nullptr;
+					}
+					catch (const std::out_of_range&) {
+						return nullptr;
+					}
 				}
 				else {
 					if (scheme == "http") {
