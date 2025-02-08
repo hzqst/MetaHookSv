@@ -69,7 +69,13 @@
       <AdditionalDependencies>$(FreeImageLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginLibsPostBuildCommand)</Command>
+      <Command>$(PluginLibsPostBuildCommand)
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage"
+
+copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(FreeImageCheckRequirements)</Command>
