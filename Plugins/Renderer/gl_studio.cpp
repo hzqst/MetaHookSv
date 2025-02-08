@@ -2980,6 +2980,12 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 template<typename CallType>
 __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis = nullptr, int dummy = 0)
 {
+	if (!(*pstudiohdr))
+	{
+		pfnSetupBones(pthis, dummy);
+		return;
+	}
+
 	//Never cache bones for viewmodel !
 	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
 	{
@@ -3010,6 +3016,12 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 template<typename CallType>
 __forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis = nullptr, int dummy = 0)
 {
+	if (!(*pstudiohdr))
+	{
+		pfnSaveBones(pthis, dummy);
+		return;
+	}
+
 	//Never cache bones for viewmodel !
 	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
 	{
@@ -3039,8 +3051,14 @@ __forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis =
 }
 
 template<typename CallType>
-void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, int dummy, model_t* pSubModel )
+void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, int dummy, model_t* pSubModel)
 {
+	if (!(*pstudiohdr))
+	{
+		pfnMergeBones(pthis, dummy, pSubModel);
+		return;
+	}
+
 	//Never cache bones for viewmodel !
 	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
 	{
