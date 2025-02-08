@@ -4146,15 +4146,6 @@ void R_SetupFlashlights()
 			if (ent->curstate.effects & EF_DIMLIGHT)
 			{
 				CL_EmitPlayerFlashlight(entindex);
-
-				dl = gEngfuncs.pEfxAPI->CL_AllocDlight(DLIGHT_KEY_PLAYER_FLASHLIGHT + entindex);
-				if (dl)
-				{
-					VectorCopy(ent->origin, dl->origin);
-					dl->color.r = dl->color.g = dl->color.b = 100;
-					dl->radius = gEngfuncs.pfnRandomFloat(200, 231);
-					dl->die = (*cl_time) + 0.001f;
-				}
 			}
 		}
 	}
