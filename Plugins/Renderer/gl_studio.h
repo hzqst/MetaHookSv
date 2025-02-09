@@ -190,10 +190,11 @@ public:
 };
 #endif
 
-typedef struct studio_skin_cache_s
+class CStudioSkinCache
 {
+public:
 	skin_t skins[MAX_SKINS];
-}studio_skin_cache_t;
+};
 
 class studio_bone_handle
 {
@@ -248,16 +249,16 @@ public:
 	}
 };
 
-class studio_bone_cache
+class CStudioBoneCache
 {
 public:
-	studio_bone_cache()
+	CStudioBoneCache()
 	{
 		memset(m_bonetransform, 0, sizeof(m_bonetransform));
 		memset(m_lighttransform, 0, sizeof(m_lighttransform));
 		m_next = NULL;
 	}
-	studio_bone_cache(float* _bonetransform, float* _lighttransform)
+	CStudioBoneCache(float* _bonetransform, float* _lighttransform)
 	{
 		memcpy(m_bonetransform, _bonetransform, sizeof(m_bonetransform));
 		memcpy(m_lighttransform, _lighttransform, sizeof(m_lighttransform));
@@ -266,13 +267,13 @@ public:
 
 	float m_bonetransform[MAXSTUDIOBONES][3][4];
 	float m_lighttransform[MAXSTUDIOBONES][3][4];
-	studio_bone_cache* m_next;
+	CStudioBoneCache* m_next;
 };
 
-typedef struct studio_setupskin_context_s
+class CStudioSetupSkinContext
 {
 public:
-	struct studio_setupskin_context_s(program_state_t* State)
+	CStudioSetupSkinContext(program_state_t* State)
 	{
 		StudioProgramState = State;
 		packedDiffuseIndex = -1;
@@ -300,7 +301,7 @@ public:
 	float s, t;
 	float framerate;
 	float numframes;
-}studio_setupskin_context_t;
+};
 
 //engine
 extern mstudiomodel_t **psubmodel;

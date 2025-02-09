@@ -9,15 +9,15 @@ static std::vector<CStudioModelRenderData*> g_StudioVBOCache;
 
 static std::unordered_map<int, CStudioModelRenderMaterial*> g_StudioVBOMaterialCache;
 
-static std::unordered_map<int, studio_skin_cache_t *> g_StudioSkinCache;
+static std::unordered_map<int, CStudioSkinCache*> g_StudioSkinCache;
 
-static std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
+static std::unordered_map<studio_bone_handle, CStudioBoneCache*, studio_bone_hasher> g_StudioBoneCacheManager;
 
 static std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
-static studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
+static CStudioBoneCache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
-static studio_bone_cache* g_pStudioBoneFreeCaches = NULL;
+static CStudioBoneCache* g_pStudioBoneFreeCaches = NULL;
 
 static CStudioModelRenderData* g_CurrentVBOCache = NULL;
 
@@ -181,7 +181,7 @@ void R_StudioBoneCaches_StartFrame()
 	R_StudioClearAllBoneCaches();
 }
 
-studio_bone_cache* R_StudioBoneCacheAlloc()
+CStudioBoneCache* R_StudioBoneCacheAlloc()
 {
 	if (!g_pStudioBoneFreeCaches)
 	{
@@ -197,7 +197,7 @@ studio_bone_cache* R_StudioBoneCacheAlloc()
 	return pTemp;
 }
 
-void R_StudioBoneCacheFree(studio_bone_cache* pTemp)
+void R_StudioBoneCacheFree(CStudioBoneCache* pTemp)
 {
 	pTemp->m_next = g_pStudioBoneFreeCaches;
 	g_pStudioBoneFreeCaches = pTemp;
@@ -1326,7 +1326,7 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 	}
 }
 
-void R_StudioSetupVBOMaterial(const CStudioModelRenderData* VBOData, const CStudioModelRenderMaterial* VBOMaterial, studio_setupskin_context_t* context)
+void R_StudioSetupVBOMaterial(const CStudioModelRenderData* VBOData, const CStudioModelRenderMaterial* VBOMaterial, CStudioSetupSkinContext* context)
 {
 	if (r_studio_external_textures->value > 0)
 	{
@@ -1401,7 +1401,7 @@ size_t safe_strlen(const char* str, size_t maxChars)
 	return count;
 }
 
-void R_ParsePackedSkinInternal(const char* texture, int i, studio_setupskin_context_t* context)
+void R_ParsePackedSkinInternal(const char* texture, int i, CStudioSetupSkinContext* context)
 {
 	char sz[2];
 	if (texture[i] == '_')
@@ -1460,7 +1460,7 @@ void R_ParsePackedSkinInternal(const char* texture, int i, studio_setupskin_cont
 	}
 }
 
-void R_ParsePackedSkin(const char* texture, studio_setupskin_context_t* context)
+void R_ParsePackedSkin(const char* texture, CStudioSetupSkinContext* context)
 {
 	if (!strnicmp(texture, "Packed_", sizeof("Packed_") - 1))
 	{
@@ -1572,32 +1572,6 @@ void R_StudioFlushSkins(int keynum)
 
 skin_t* R_StudioGetSkin(int keynum, int index)
 {
-#if 0
-
-	if (index >= MAX_SKINS)
-		index = 0;
-
-	auto pskin = (*pDM_RemapSkin)[keynum][index];
-
-	if (!pskin || pskin->keynum != keynum)
-	{
-		pskin = &(*DM_RemapSkin)[(*r_remapindex)][index];
-		(*r_remapindex) = ((*r_remapindex) + 1) % 64;
-		(*pDM_RemapSkin)[keynum][index] = pskin;
-		pskin->keynum = keynum;
-		pskin->topcolor = -1;
-		pskin->bottomcolor = -1;
-	}
-
-	return pskin;
-#endif
-
-#if 0
-	return gPrivateFuncs.R_StudioGetSkin(keynum, index);
-#endif
-
-#if 1
-
 	if (index >= MAX_SKINS)
 		index = 0;
 
@@ -1612,11 +1586,11 @@ skin_t* R_StudioGetSkin(int keynum, int index)
 	}
 	else
 	{
-		auto pSkinCache = new (std::nothrow) studio_skin_cache_t;
+		auto pSkinCache = new (std::nothrow) CStudioSkinCache;
 
 		if (pSkinCache)
 		{
-			memset(pSkinCache, 0, sizeof(studio_skin_cache_t));
+			memset(pSkinCache, 0, sizeof(CStudioSkinCache));
 
 			pSkinCache->skins[index].keynum = keynum;
 			pSkinCache->skins[index].topcolor = -1;
@@ -1627,8 +1601,7 @@ skin_t* R_StudioGetSkin(int keynum, int index)
 		}
 	}
 
-	return NULL;
-#endif
+	return nullptr;
 }
 
 byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
@@ -1777,7 +1750,7 @@ void PaletteHueReplace(byte* palette, int newHue, int start, int end)
 	}
 }
 
-void R_StudioSetupSkinEx(const CStudioModelRenderData* VBOData, studiohdr_t* ptexturehdr, int index, studio_setupskin_context_t*context)
+void R_StudioSetupSkinEx(const CStudioModelRenderData* VBOData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext*context)
 {
 	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		return;
@@ -2195,19 +2168,19 @@ void R_StudioDrawVBOMesh_DrawPass(
 		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
 	}
 
-	studio_setupskin_context_t StudioSetupSkinContext(&StudioProgramState);
+	CStudioSetupSkinContext Context(&StudioProgramState);
 
 	if (r_fullbright->value >= 2)
 	{
 		gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
 
-		StudioSetupSkinContext.s = 1.0f / 256.0f;
-		StudioSetupSkinContext.t = 1.0f / 256.0f;
+		Context.s = 1.0f / 256.0f;
+		Context.t = 1.0f / 256.0f;
 	}
 	else
 	{
-		StudioSetupSkinContext.width = ptexture[pskinref[pmesh->skinref]].width;
-		StudioSetupSkinContext.height = ptexture[pskinref[pmesh->skinref]].height;
+		Context.width = ptexture[pskinref[pmesh->skinref]].width;
+		Context.height = ptexture[pskinref[pmesh->skinref]].height;
 
 		if (StudioProgramState & STUDIO_GLOW_SHELL_ENABLED)
 		{
@@ -2217,7 +2190,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 		{
 			if (ptexturehdr && pskinref)
 			{
-				R_StudioSetupSkinEx(VBOData, ptexturehdr, pskinref[pmesh->skinref], &StudioSetupSkinContext);
+				R_StudioSetupSkinEx(VBOData, ptexturehdr, pskinref[pmesh->skinref], &Context);
 			}
 			else
 			{
@@ -2225,27 +2198,27 @@ void R_StudioDrawVBOMesh_DrawPass(
 			}
 		}
 
-		StudioSetupSkinContext.s = 1.0f / StudioSetupSkinContext.width;
-		StudioSetupSkinContext.t = 1.0f / StudioSetupSkinContext.height;
+		Context.s = 1.0f / Context.width;
+		Context.t = 1.0f / Context.height;
 	}
 
 	if (StudioProgramState & STUDIO_NF_CHROME)
 	{
 		if (StudioProgramState & STUDIO_GLOW_SHELL_ENABLED)
 		{
-			StudioSetupSkinContext.s /= 32.0f;
-			StudioSetupSkinContext.t /= 32.0f;
+			Context.s /= 32.0f;
+			Context.t /= 32.0f;
 		}
 		else
 		{
-			StudioSetupSkinContext.s = 1.0f / 2048.0f;
-			StudioSetupSkinContext.t = 1.0f / 2048.0f;
+			Context.s = 1.0f / 2048.0f;
+			Context.t = 1.0f / 2048.0f;
 		}
 	}
 
-	if ((StudioProgramState & STUDIO_PACKED_TEXTURE_ALLBITS) && StudioSetupSkinContext.packedCount > 0)
+	if ((StudioProgramState & STUDIO_PACKED_TEXTURE_ALLBITS) && Context.packedCount > 0)
 	{
-		StudioSetupSkinContext.packedStride = 1.0f / StudioSetupSkinContext.packedCount;
+		Context.packedStride = 1.0f / Context.packedCount;
 	}
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
@@ -2349,22 +2322,22 @@ void R_StudioDrawVBOMesh_DrawPass(
 
 	if (prog.r_uvscale != -1)
 	{
-		glUniform2f(prog.r_uvscale, StudioSetupSkinContext.s, StudioSetupSkinContext.t);
+		glUniform2f(prog.r_uvscale, Context.s, Context.t);
 	}
 
 	if (prog.r_packed_stride != -1)
 	{
-		glUniform1f(prog.r_packed_stride, StudioSetupSkinContext.packedStride);
+		glUniform1f(prog.r_packed_stride, Context.packedStride);
 	}
 
 	if (prog.r_packed_index != -1)
 	{
-		glUniform4f(prog.r_packed_index, StudioSetupSkinContext.packedDiffuseIndex, StudioSetupSkinContext.packedNormalIndex, StudioSetupSkinContext.packedParallaxIndex, StudioSetupSkinContext.packedSpecularIndex);
+		glUniform4f(prog.r_packed_index, Context.packedDiffuseIndex, Context.packedNormalIndex, Context.packedParallaxIndex, Context.packedSpecularIndex);
 	}
 
 	if (prog.r_framerate_numframes != -1)
 	{
-		glUniform2f(prog.r_framerate_numframes, StudioSetupSkinContext.framerate, StudioSetupSkinContext.numframes);
+		glUniform2f(prog.r_framerate_numframes, Context.framerate, Context.numframes);
 	}
 
 	if (VBOMesh->iIndiceCount)
