@@ -1307,19 +1307,17 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 		{
-			auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), false);
+			auto aiment = gEngfuncs.GetEntityByIndex((*currententity)->curstate.aiment);
 
-			if (!pEntityComponentContainer || !pEntityComponentContainer->AimEntity)
+			//The aiment is invalid ?
+			if (!aiment)
 			{
-				//No aiment found?
 				return;
 			}
 
-			auto aiment = pEntityComponentContainer->AimEntity;
-
 			auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, false);
 
-			//The aiment is invisible ? hide me.
+			//The aiment is invisible ?
 			if (!pEntityComponentContainerAimEnt)
 			{
 				return;
@@ -1329,7 +1327,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 			{
 				auto saved_currententity = (*currententity);
 
-				(*currententity) = pEntityComponentContainer->AimEntity;
+				(*currententity) = aiment;
 
 				if ((*currententity)->player)
 				{
