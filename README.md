@@ -36,13 +36,18 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 1. Why the game process hangs up / freeze occasionally for few seconds when playing on legacy / pirated version of GoldSrc game ?
 
-Q: This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
+A: This is because Valve uses `gethostbyname` with an non-existing hostname to query master servers. which is known to block the whole game loop for few seconds if the hostname is not available.
 
 You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
 
 2. Why the game process hangs up for tens of seconds on exiting / on restarting ?
 
-Q: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
+A: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
+
+3. Why I got black-screen in the main menu?
+
+A. The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
+
 
 ## One Click Installation
 

@@ -50,6 +50,10 @@ Q: 因为V社在引擎的主循环中使用了一个阻塞式API `gethostbyname`
 
 Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard)。
 
+3. 为什么我进到主菜单界面之后就会黑屏？
+
+A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 在软件渲染模式下无法正常工作。请切换至 OpenGL 模式以解决问题（在游戏启动项中添加 `-gl` 即可）。
+
 ## 一键安装方式 (推荐)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
