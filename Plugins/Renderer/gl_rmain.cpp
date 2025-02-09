@@ -1236,6 +1236,112 @@ entity_state_t *R_GetPlayerState(int index)
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
 }
 
+void R_DrawSpriteEntity(bool bTransparent)
+{
+	if ((*currententity)->curstate.body)
+	{
+		float* pAttachment;
+
+		pAttachment = R_GetAttachmentPoint((*currententity)->curstate.skin, (*currententity)->curstate.body);
+		VectorCopy(pAttachment, r_entorigin);
+	}
+	else
+	{
+		VectorCopy((*currententity)->origin, r_entorigin);
+	}
+
+	if (bTransparent)
+	{
+		if ((*currententity)->curstate.rendermode == kRenderGlow)
+			(*r_blend) *= R_GlowBlend((*currententity));
+	}
+	else
+	{
+		(*r_blend) = 1;
+	}
+
+	if ((*r_blend) > 0)
+	{
+		R_DrawSpriteModel((*currententity));
+	}
+
+}
+
+void R_DrawBrushEntity(bool bTransparent)
+{
+	if (bTransparent)
+	{
+		if ((*g_bUserFogOn))
+		{
+			if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
+			{
+				R_RestoreRenderingFog();
+			}
+		}
+	}
+
+	R_DrawBrushModel((*currententity));
+}
+
+void R_DrawStudioEntity(bool bTransparent)
+{
+	if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
+	{
+		auto aiment = gEngfuncs.GetEntityByIndex((*currententity)->curstate.aiment);
+
+		//The aiment is invalid ?
+		if (!aiment)
+		{
+			return;
+		}
+
+		auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, false);
+
+		//The aiment is invisible ?
+		if (!pEntityComponentContainerAimEnt)
+		{
+			return;
+		}
+
+		if (aiment->model && aiment->model->type == mod_studio)
+		{
+			auto saved_currententity = (*currententity);
+
+			(*currententity) = aiment;
+
+			if ((*currententity)->player)
+			{
+				(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
+			}
+			else
+			{
+				(*gpStudioInterface)->StudioDrawModel(0);
+			}
+
+			(*currententity) = saved_currententity;
+		}
+
+		if ((*currententity)->player)
+		{
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+		}
+		else
+		{
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+		}
+		return;
+	}
+
+	if ((*currententity)->player)
+	{
+		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+	}
+	else
+	{
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+	}
+}
+
 void R_DrawCurrentEntity(bool bTransparent)
 {
 	if (bTransparent)
@@ -1258,109 +1364,17 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 	case mod_sprite:
 	{
-		if ((*currententity)->curstate.body)
-		{
-			float *pAttachment;
-
-			pAttachment = R_GetAttachmentPoint((*currententity)->curstate.skin, (*currententity)->curstate.body);
-			VectorCopy(pAttachment, r_entorigin);
-		}
-		else
-		{
-			VectorCopy((*currententity)->origin, r_entorigin);
-		}
-
-		if (bTransparent)
-		{
-			if ((*currententity)->curstate.rendermode == kRenderGlow)
-				(*r_blend) *= R_GlowBlend((*currententity));
-		}
-		else
-		{
-			(*r_blend) = 1;
-		}
-
-		if ((*r_blend) > 0)
-		{
-			R_DrawSpriteModel((*currententity));
-		}
-
+		R_DrawSpriteEntity(bTransparent);
 		break;
 	}
 	case mod_brush:
 	{
-		if (bTransparent)
-		{
-			if ((*g_bUserFogOn))
-			{
-				if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
-				{
-					R_RestoreRenderingFog();
-				}
-			}
-		}
-
-		R_DrawBrushModel((*currententity));
+		R_DrawBrushEntity(bTransparent);
 		break;
 	}
 	case mod_studio:
 	{
-		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
-		{
-			auto aiment = gEngfuncs.GetEntityByIndex((*currententity)->curstate.aiment);
-
-			//The aiment is invalid ?
-			if (!aiment)
-			{
-				return;
-			}
-
-			auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, false);
-
-			//The aiment is invisible ?
-			if (!pEntityComponentContainerAimEnt)
-			{
-				return;
-			}
-
-			if (aiment->model && aiment->model->type == mod_studio)
-			{
-				auto saved_currententity = (*currententity);
-
-				(*currententity) = aiment;
-
-				if ((*currententity)->player)
-				{
-					(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
-				}
-				else
-				{
-					(*gpStudioInterface)->StudioDrawModel(0);
-				}
-
-				(*currententity) = saved_currententity;
-			}
-
-			if ((*currententity)->player)
-			{
-				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
-			}
-			else
-			{
-				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-			}
-			return;
-		}
-
-		if ((*currententity)->player)
-		{
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
-		}
-		else
-		{
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-		}
-
+		R_DrawStudioEntity(bTransparent);
 		break;
 	}
 	}
