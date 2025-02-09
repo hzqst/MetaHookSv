@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <deque>
 
 #include "ClientPhysicManager.h"
 #include "ClientPhysicConfig.h"
@@ -135,11 +136,24 @@ public:
 private:
 	//WorldVertexArray and WorldIndexArray Management
 	std::shared_ptr<CPhysicVertexArray> GenerateWorldVertexArray(model_t* mod);
+
+	template<class T, class T2>
+	std::shared_ptr<CPhysicVertexArray> GenerateWorldVertexArrayInternal(model_t* mod);
+
+	template<class T, class T2>
+	void BuildSurfaceDisplayList(model_t* mod, T *fa, std::deque<glpoly_t*>& glpolys);
+	
 	std::shared_ptr<CPhysicIndexArray> GenerateBrushIndexArray(model_t* mod, const std::shared_ptr<CPhysicVertexArray> & pWorldVertexArray);
 
+	template<class T, class T2>
 	void GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray);
-	void GenerateIndexArrayRecursiveWorldNode(model_t* mod, mnode_t* node, CPhysicIndexArray* pIndexArray);
-	void GenerateIndexArrayForSurface(model_t* mod, msurface_t* psurf, CPhysicIndexArray* pIndexArray);
+
+	template<class T, class T2>
+	void GenerateIndexArrayRecursiveWorldNode(model_t* mod, T2* node, CPhysicIndexArray* pIndexArray);
+
+	template<class T>
+	void GenerateIndexArrayForSurface(model_t* mod, T* psurf, CPhysicIndexArray* pIndexArray);
+
 	void GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray);
 
 	//Deprecated: use Resource Management now

@@ -20,6 +20,8 @@ IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
+DWORD g_dwVideoMode = VIDEOMODE_SOFTWARE;
+
 PVOID g_dwEngineBase = 0;
 DWORD g_dwEngineSize = 0;
 PVOID g_dwEngineTextBase = 0;
@@ -64,6 +66,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
+	g_dwVideoMode = g_pMetaHookAPI->GetVideoMode(nullptr, nullptr, nullptr, nullptr);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 

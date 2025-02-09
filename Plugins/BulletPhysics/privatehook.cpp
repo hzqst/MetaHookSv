@@ -52,8 +52,8 @@ private_funcs_t gPrivateFuncs = {0};
 studiohdr_t** pstudiohdr = NULL;
 model_t** r_model = NULL;
 void* g_pGameStudioRenderer = NULL;
-int* r_framecount = NULL;
-int* r_visframecount = NULL;
+//int* r_framecount = NULL;
+//int* r_visframecount = NULL;
 int* cl_parsecount = NULL;
 void* cl_frames = NULL;
 int size_of_frame = 0;
@@ -139,7 +139,7 @@ void Engine_FillAddreess(void)
 		}
 	}
 	Sig_FuncNotFound(R_DrawTEntitiesOnList);
-
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
@@ -159,6 +159,7 @@ void Engine_FillAddreess(void)
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_BLOB);
 	}
 	Sig_FuncNotFound(R_RecursiveWorldNode);
+#endif
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -178,7 +179,7 @@ void Engine_FillAddreess(void)
 	{
 		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern(R_CULLBOX_SIG_BLOB);
 	}
-	Sig_FuncNotFound(R_CullBox);
+	//Sig_FuncNotFound(R_CullBox);
 
 	if (1)
 	{
@@ -193,7 +194,7 @@ void Engine_FillAddreess(void)
 			auto R_RenderView_PushString = Search_Pattern(pattern);
 			if (R_RenderView_PushString)
 			{
-				PVOID Candidate = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_RenderView_PushString, 0x100, [](PUCHAR Candidate) {
+				PVOID Candidate = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_RenderView_PushString, 0x150, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0xD9 &&
 						Candidate[1] == 0x05)
@@ -210,17 +211,32 @@ void Engine_FillAddreess(void)
 						return TRUE;
 
 					return FALSE;
-					});
+				});
 
-				if (g_iEngineType == ENGINE_SVENGINE)
+				if (Candidate)
 				{
-					gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))Candidate;
+					if (g_iEngineType == ENGINE_SVENGINE)
+					{
+						gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))Candidate;
+					}
+					else
+					{
+						gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))Candidate;
+					}
 				}
 				else
 				{
-					gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))Candidate;
+					Sig_NotFound(R_RenderView);
 				}
 			}
+			else
+			{
+				Sig_NotFound(R_RenderView_PushString);
+			}
+		}
+		else
+		{
+			Sig_NotFound(R_RenderView_String);
 		}
 	}
 
@@ -235,7 +251,33 @@ void Engine_FillAddreess(void)
 
 	if ((gPrivateFuncs.R_RenderView || gPrivateFuncs.R_RenderView_SvEngine) && !gPrivateFuncs.V_RenderView)
 	{
-		if (1)
+		if (g_dwVideoMode == VIDEOMODE_SOFTWARE)
+		{
+			//R_RenderView: called without
+			const char V_RenderView_StringPattern[] = "R_RenderView: called without enough stack";
+			auto V_RenderView_String = Search_Pattern_Data(V_RenderView_StringPattern);
+			if (!V_RenderView_String)
+				V_RenderView_String = Search_Pattern_Rdata(V_RenderView_StringPattern);
+
+			Sig_VarNotFound(V_RenderView_String);
+
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD*)(pattern + 1) = (DWORD)V_RenderView_String;
+			auto V_RenderView_PushString = Search_Pattern(pattern);
+
+			Sig_VarNotFound(V_RenderView_PushString);
+
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(V_RenderView_PushString, 0x150, [](PUCHAR Candidate) {
+
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC)
+					return TRUE;
+
+				return FALSE;
+			});
+		}
+		else
 		{
 			const char pattern[] = "\x68\x00\x40\x00\x00\xFF";
 			/*
@@ -247,6 +289,7 @@ void Engine_FillAddreess(void)
 			while (SearchBegin < SearchLimit)
 			{
 				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+
 				if (pFound)
 				{
 					typedef struct
@@ -608,24 +651,64 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(cl_viewentity);
 	}
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_HL25);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_BLOB);
-	}
-	Sig_FuncNotFound(R_NewMap);
+		//Setting up renderer...
+		const char sigs1[] = "Setting up renderer...\n";
+		auto SettingUpRenderer_String = Search_Pattern_Data(sigs1);
+		if (!SettingUpRenderer_String)
+			SettingUpRenderer_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(SettingUpRenderer_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)SettingUpRenderer_String;
+		auto SettingUpRenderer_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(SettingUpRenderer_PushString);
 
+		g_pMetaHookAPI->DisasmRanges((PUCHAR)SettingUpRenderer_PushString + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8)
+			{
+				PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+
+				gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))target;
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, NULL);
+
+	}
+
+	if (!gPrivateFuncs.R_NewMap)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_BLOB);
+		}
+		Sig_FuncNotFound(R_NewMap);
+	}
+#if 0
 	if (1)
 	{
 		typedef struct
@@ -733,7 +816,7 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(r_framecount);
 		Sig_VarNotFound(r_visframecount);
 	}
-
+#endif
 	if (1)
 	{
 #define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
@@ -774,6 +857,19 @@ void Engine_FillAddreess(void)
 				Candidate[4] == 0xEC &&
 				Candidate[7] == 0x00 &&
 				Candidate[8] == 0x00)
+			{
+				return TRUE;
+			}
+
+			//.text : 101D5F00 55                                                  push    ebp
+			//.text : 101D5F01 8B EC                                               mov     ebp, esp
+			//.text : 101D5F03 83 EC 08                                            sub     esp, 8
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC &&
+				Candidate[5] == 0x08)
 			{
 				return TRUE;
 			}

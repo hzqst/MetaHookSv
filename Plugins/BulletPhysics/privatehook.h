@@ -88,8 +88,8 @@ extern void* g_pGameStudioRenderer;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4];
 
-extern int* r_framecount;
-extern int *r_visframecount;
+//extern int* r_framecount;
+//extern int *r_visframecount;
 extern int *cl_parsecount;
 extern void *cl_frames;
 extern int size_of_frame;

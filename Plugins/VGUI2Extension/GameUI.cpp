@@ -3622,7 +3622,7 @@ void GameUI_FillAddress(void)
 			return FALSE;
 
 		}, 0, &ctx);
-
+		Sig_FuncNotFound(CBasePanel_ctor);
 	}
 
 	if (1)

@@ -142,35 +142,6 @@ bool CL_IsFirstPersonMode(cl_entity_t *player)
 	return false;
 }
 
-msurface_t* GetWorldSurfaceByIndex(int index)
-{
-	msurface_t* surf;
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + index);
-	}
-	else
-	{
-		surf = r_worldmodel->surfaces + index;
-	}
-
-	return surf;
-}
-
-int GetWorldSurfaceIndex(msurface_t* surf)
-{
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		auto surf25 = (msurface_hl25_t*)surf;
-		auto surfbase = (msurface_hl25_t*)r_worldmodel->surfaces;
-
-		return surf25 - surfbase;
-	}
-
-	return surf - r_worldmodel->surfaces;
-}
-
 int EngineGetMaxClientEdicts(void)
 {
 	return (*cl_max_edicts);
@@ -508,7 +479,11 @@ int studioapi_StudioCheckBBox()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	return gPrivateFuncs.R_CullBox(mins, maxs);
+	if(gPrivateFuncs.R_CullBox)
+		return gPrivateFuncs.R_CullBox(mins, maxs);
+
+	//We don't have such thing in software mode
+	return false;
 }
 
 void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinterface, struct engine_studio_api_s* pstudio)

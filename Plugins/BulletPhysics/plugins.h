@@ -7,6 +7,8 @@ extern IFileSystem *g_pFileSystem;
 extern IFileSystem_HL25* g_pFileSystem_HL25;
 
 extern int g_iEngineType;
+extern DWORD g_dwVideoMode;
+
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
 extern PVOID g_dwEngineTextBase;

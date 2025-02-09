@@ -1437,7 +1437,6 @@ public:
 	void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1) override
 	{
 		//The texture must be reset to zero upon drawing.
-		vgui::surface()->DrawSetTexture(-1);
 		vgui::surface()->DrawSetTexture(0);
 
 		if (IsDebugDrawWallHackEnabled())

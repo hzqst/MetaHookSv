@@ -20,6 +20,21 @@
 
 #include <KeyValues.h>
 
+template<class T>
+inline T* GetWorldSurfaceByIndex(int index)
+{
+	return (((T*)r_worldmodel->surfaces) + index);
+}
+
+template<class T>
+inline int GetWorldSurfaceIndex(T* surf)
+{
+	auto surf25 = (T*)surf;
+	auto surfbase = (T*)r_worldmodel->surfaces;
+
+	return surf25 - surfbase;
+}
+
 IClientPhysicManager* g_pClientPhysicManager{};
 
 IClientPhysicManager* ClientPhysicManager()
@@ -4158,34 +4173,84 @@ void CBasePhysicManager::UpdateAllPhysicObjects(TEMPENTITY** ppTempEntFree, TEMP
 
 }
 
-std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray(model_t *mod)
+template<class T, class T2>
+void CBasePhysicManager::BuildSurfaceDisplayList(model_t* mod, T *fa, std::deque<glpoly_t*>& glpolys)
 {
-	std::string worldModelName;
+#define BLOCK_WIDTH 128
+#define BLOCK_HEIGHT 128
+	int i, lindex, lnumverts;
+	medge_t* pedges, * r_pedge;
+	float* vec;
+	float s, t;
+	glpoly_t* poly;
 
-	if (mod->name[0] == '*')
+	pedges = mod->edges;
+	lnumverts = fa->numedges;
+
+	int allocSize = (int)sizeof(glpoly_t) + ((lnumverts - 4) * VERTEXSIZE * sizeof(float));
+
+	if (allocSize < 0)
+		return;
+
+	poly = (glpoly_t*)malloc(allocSize);
+
+	glpolys.push_front(poly);
+
+	poly->next = NULL;
+	poly->flags = fa->flags;
+	//fa->polys = poly;
+	poly->numverts = lnumverts;
+	poly->chain = NULL;
+
+	for (i = 0; i < lnumverts; i++)
 	{
-		auto worldmodel = EngineFindWorldModelBySubModel(mod);
+		lindex = mod->surfedges[fa->firstedge + i];
 
-		if (!worldmodel)
+		if (lindex > 0)
 		{
-			gEngfuncs.Con_Printf("CBasePhysicManager::GenerateWorldVertexArray: Failed to find worldmodel for submodel \"%s\"!\n", mod->name);
-			return nullptr;
+			r_pedge = &pedges[lindex];
+			vec = mod->vertexes[r_pedge->v[0]].position;
+		}
+		else
+		{
+			r_pedge = &pedges[-lindex];
+			vec = mod->vertexes[r_pedge->v[1]].position;
 		}
 
-		worldModelName = worldmodel->name;
-	}
-	else
-	{
-		worldModelName = mod->name;
+		s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s /= fa->texinfo->texture->width;
+
+		t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t /= fa->texinfo->texture->height;
+
+		poly->verts[i][0] = vec[0];
+		poly->verts[i][1] = vec[1];
+		poly->verts[i][2] = vec[2];
+		poly->verts[i][3] = s;
+		poly->verts[i][4] = t;
+#if 0
+		s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s -= fa->texturemins[0];
+		s += fa->light_s * 16;
+		s += 8;
+		s /= BLOCK_WIDTH * 16;
+
+		t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t -= fa->texturemins[1];
+		t += fa->light_t * 16;
+		t += 8;
+		t /= BLOCK_HEIGHT * 16;
+#endif
+		poly->verts[i][5] = 0;
+		poly->verts[i][6] = 0;
 	}
 
-	auto found = m_worldVertexResources.find(worldModelName);
+	poly->numverts = lnumverts;
+}
 
-	if (found != m_worldVertexResources.end())
-	{
-		return found->second;
-	}
-
+template<class T, class T2>
+std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArrayInternal(model_t* mod)
+{
 	auto worldVertexArray = std::make_shared<CPhysicVertexArray>();
 
 	CPhysicBrushVertex Vertexes[3];
@@ -4197,12 +4262,17 @@ std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray
 
 	for (int i = 0; i < mod->numsurfaces; i++)
 	{
-		auto surf = GetWorldSurfaceByIndex(i);
+		auto surf = GetWorldSurfaceByIndex<T>(i);
 
 		if ((surf->flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
 			continue;
 
-		auto poly = surf->polys;
+		std::deque<glpoly_t*> glpolys;
+
+		BuildSurfaceDisplayList<T, T2>(mod, surf, glpolys);
+
+		if (glpolys.empty())
+			continue;
 
 		auto brushface = &worldVertexArray->vFaceBuffer[i];
 
@@ -4210,7 +4280,7 @@ std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray
 
 		brushface->start_vertex = iStartVert;
 
-		for (poly = surf->polys; poly; poly = poly->next)
+		for (const auto& poly : glpolys)
 		{
 			auto v = poly->verts[0];
 
@@ -4247,24 +4317,67 @@ std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray
 			}
 		}
 
+		for (auto& poly : glpolys)
+		{
+			free(poly);
+		}
+
 		brushface->num_vertexes = iNumVerts - iStartVert;
 	}
 
 	//Always shrink to save system memory
 	worldVertexArray->vVertexBuffer.shrink_to_fit();
 
+	return worldVertexArray;
+}
+
+std::shared_ptr<CPhysicVertexArray> CBasePhysicManager::GenerateWorldVertexArray(model_t *mod)
+{
+	std::string worldModelName;
+
+	if (mod->name[0] == '*')
+	{
+		auto worldmodel = EngineFindWorldModelBySubModel(mod);
+
+		if (!worldmodel)
+		{
+			gEngfuncs.Con_Printf("CBasePhysicManager::GenerateWorldVertexArray: Failed to find worldmodel for submodel \"%s\"!\n", mod->name);
+			return nullptr;
+		}
+
+		worldModelName = worldmodel->name;
+	}
+	else
+	{
+		worldModelName = mod->name;
+	}
+
+	auto found = m_worldVertexResources.find(worldModelName);
+
+	if (found != m_worldVertexResources.end())
+	{
+		return found->second;
+	}
+
+	std::shared_ptr<CPhysicVertexArray> worldVertexArray;
+
+	if (g_dwVideoMode == VIDEOMODE_SOFTWARE)
+	{
+		worldVertexArray = GenerateWorldVertexArrayInternal<msurface_sw_t, mnode_sw_t>(mod);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		worldVertexArray = GenerateWorldVertexArrayInternal<msurface_hl25_t, mnode_t>(mod);
+	}
+	else
+	{
+		worldVertexArray = GenerateWorldVertexArrayInternal<msurface_t, mnode_t>(mod);
+	}
+
 	m_worldVertexResources[worldModelName] = worldVertexArray;
 
 	return worldVertexArray;
 }
-
-/*void CBasePhysicManager::FreeWorldVertexArray()
-{
-	if (m_worldVertexArray) {
-		delete m_worldVertexArray;
-		m_worldVertexArray = NULL;
-	}
-}*/
 
 /*
 	Purpose : Generate IndexArray for world and all brush models
@@ -4276,7 +4389,18 @@ std::shared_ptr<CPhysicIndexArray> CBasePhysicManager::GenerateBrushIndexArray(m
 	pIndexArray->flags |= PhysicIndexArrayFlag_FromBSP;
 	pIndexArray->pVertexArray = pWorldVertexArray;
 
-	GenerateIndexArrayForBrushModel(mod, pIndexArray.get());
+	if (g_dwVideoMode == VIDEOMODE_SOFTWARE)
+	{
+		GenerateIndexArrayForBrushModel<msurface_sw_t, mnode_sw_t>(mod, pIndexArray.get());
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		GenerateIndexArrayForBrushModel<msurface_hl25_t, mnode_t>(mod, pIndexArray.get());
+	}
+	else
+	{
+		GenerateIndexArrayForBrushModel<msurface_t, mnode_t>(mod, pIndexArray.get());
+	}
 
 	auto name = UTIL_GetAbsoluteModelName(mod);
 
@@ -4302,19 +4426,20 @@ void CBasePhysicManager::FreeAllIndexArrays(int withflags, int withoutflags)
 	}
 }
 
+template<class T, class T2>
 void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray)
 {
 	if (mod == r_worldmodel)
 	{
-		GenerateIndexArrayRecursiveWorldNode(mod, mod->nodes, pIndexArray);
+		GenerateIndexArrayRecursiveWorldNode<T, T2>(mod, (T2 *)mod->nodes, pIndexArray);
 	}
 	else
 	{
 		for (int i = 0; i < mod->nummodelsurfaces; i++)
 		{
-			auto surf = GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
+			auto surf = GetWorldSurfaceByIndex<T>(mod->firstmodelsurface + i);
 
-			GenerateIndexArrayForSurface(mod, surf, pIndexArray);
+			GenerateIndexArrayForSurface<T>(mod, surf, pIndexArray);
 		}
 	}
 
@@ -4322,7 +4447,8 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIn
 	pIndexArray->vIndexBuffer.shrink_to_fit();
 }
 
-void CBasePhysicManager::GenerateIndexArrayForSurface(model_t* mod, msurface_t* surf, CPhysicIndexArray* pIndexArray)
+template<class T>
+void CBasePhysicManager::GenerateIndexArrayForSurface(model_t* mod, T* surf, CPhysicIndexArray* pIndexArray)
 {
 	if (surf->flags & SURF_DRAWTURB)
 	{
@@ -4339,12 +4465,13 @@ void CBasePhysicManager::GenerateIndexArrayForSurface(model_t* mod, msurface_t* 
 		return;
 	}
 
-	auto surfIndex = GetWorldSurfaceIndex(surf);
+	auto surfIndex = GetWorldSurfaceIndex<T>(surf);
 
 	GenerateIndexArrayForBrushface(&pIndexArray->pVertexArray->vFaceBuffer[surfIndex], pIndexArray);
 }
 
-void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(model_t* mod, mnode_t* node, CPhysicIndexArray* pIndexArray)
+template<class T, class T2>
+void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(model_t* mod, T2* node, CPhysicIndexArray* pIndexArray)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -4352,16 +4479,16 @@ void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(model_t* mod, mnod
 	if (node->contents < 0)
 		return;
 
-	GenerateIndexArrayRecursiveWorldNode(mod, node->children[0], pIndexArray);
+	GenerateIndexArrayRecursiveWorldNode<T, T2>(mod, node->children[0], pIndexArray);
 
 	for (int i = 0; i < node->numsurfaces; ++i)
 	{
-		auto surf = GetWorldSurfaceByIndex(node->firstsurface + i);
+		auto surf = GetWorldSurfaceByIndex<T>(node->firstsurface + i);
 
-		GenerateIndexArrayForSurface(mod, surf, pIndexArray);
+		GenerateIndexArrayForSurface<T>(mod, surf, pIndexArray);
 	}
 
-	GenerateIndexArrayRecursiveWorldNode(mod, node->children[1], pIndexArray);
+	GenerateIndexArrayRecursiveWorldNode<T, T2>(mod, node->children[1], pIndexArray);
 }
 
 void CBasePhysicManager::GenerateIndexArrayForBrushface(CPhysicBrushFace* brushface, CPhysicIndexArray* pIndexArray)

@@ -60,9 +60,6 @@ void HUD_Shutdown(void);
 void HUD_CreateEntities(void);
 void V_CalcRefdef(struct ref_params_s* pparams);
 
-msurface_t* GetWorldSurfaceByIndex(int index);
-int GetWorldSurfaceIndex(msurface_t* surf);
-
 entity_state_t* R_GetPlayerState(int index);
 
 void V_RenderView(void);

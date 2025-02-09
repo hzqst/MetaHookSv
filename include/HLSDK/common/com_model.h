@@ -130,6 +130,25 @@ typedef struct mnode_s
 	unsigned short		numsurfaces;
 } mnode_t;
 
+//software mode
+typedef struct mnode_sw_s
+{
+	// common with leaf
+	int			contents;		// 0, to differentiate from leafs
+	int			visframe;		// node needs to be traversed if current
+
+	short		minmaxs[6];		// for bounding box culling
+
+	struct mnode_sw_s* parent;
+
+	// node specific
+	mplane_t* plane;
+	struct mnode_sw_s* children[2];
+
+	unsigned short		firstsurface;
+	unsigned short		numsurfaces;
+} mnode_sw_t;
+
 typedef struct msurface_s	msurface_t;
 typedef struct decal_s		decal_t;
 
@@ -147,7 +166,7 @@ struct decal_s
 	short		entityIndex;	// Entity this is attached to
 };
 
-typedef struct mleaf_s
+typedef struct mleaf_sw_s
 {
 // common with node
 	int			contents;		// wil be a negative contents number
@@ -155,13 +174,33 @@ typedef struct mleaf_s
 
 	short		minmaxs[6];		// for bounding box culling
 
-	struct mnode_s	*parent;
+	struct mnode_sw_s	*parent;
 
 // leaf specific
 	byte		*compressed_vis;
 	struct efrag_s	*efrags;
 
 	msurface_t	**firstmarksurface;
+	int			nummarksurfaces;
+	int			key;			// BSP sequence number for leaf's contents
+	byte		ambient_sound_level[NUM_AMBIENTS];
+} mleaf_sw_t;
+
+typedef struct mleaf_s
+{
+	// common with node
+	int			contents;		// wil be a negative contents number
+	int			visframe;		// node needs to be traversed if current
+
+	float		minmaxs[6];		// for bounding box culling
+
+	struct mnode_s* parent;
+
+	// leaf specific
+	byte* compressed_vis;
+	struct efrag_s* efrags;
+
+	msurface_t** firstmarksurface;
 	int			nummarksurfaces;
 	int			key;			// BSP sequence number for leaf's contents
 	byte		ambient_sound_level[NUM_AMBIENTS];
