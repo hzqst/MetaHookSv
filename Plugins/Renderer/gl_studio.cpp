@@ -536,22 +536,6 @@ void R_StudioClearVBOCache(void)
 			}
 		}
 	}
-
-#if 0
-	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
-	{
-		auto VBOData = g_StudioVBOCache[i];
-
-		if (VBOData && VBOData->BodyModel->needload != NL_CLIENT)
-		{
-			
-
-			delete VBOData;
-
-			g_StudioVBOCache[i] = NULL;
-		}
-	}
-#endif
 }
 
 void R_StudioReloadVBOCache(void)
