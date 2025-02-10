@@ -1,5 +1,7 @@
 #include "gl_local.h"
 #include "pm_defs.h"
+#include <event_api.h>
+
 #include <intrin.h>
 #include <sstream>
 #include <set>
@@ -4065,28 +4067,53 @@ void CL_EmitPlayerFlashlight(int entindex)
 		{
 			vec3_t		end;
 			float		falloff;
-			vec3_t		vecForward;
+			vec3_t		vecForward, vecRight, vecUp;
 
-			AngleVectors(r_playerViewportAngles, vecForward, NULL, NULL);
+			AngleVectors(r_playerViewportAngles, vecForward, vecRight, vecUp);
 
 			VectorCopy(ent->origin, dl->origin);
-			//VectorAdd(ent->origin, cl_viewheight, dl->origin);
+
+			float viewheight[3]{};
+
+			gEngfuncs.pEventAPI->EV_LocalPlayerViewheight(viewheight);
+
+			VectorAdd(ent->origin, viewheight, dl->origin);
 			VectorMA(dl->origin, r_flashlight_distance->GetValue(), vecForward, end);
 
-			// Trace a line outward, don't use hitboxes (too slow)
-			pmove->usehull = 2;
-			auto trace = gEngfuncs.PM_TraceLine(dl->origin, end, PM_STUDIO_BOX, 2, -1);
+			struct pmtrace_s trace {};
 
-			if (trace->ent > 0 && pmove->physents[trace->ent].studiomodel)
+			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
 			{
-				VectorCopy(pmove->physents[trace->ent].origin, dl->origin);
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove_10152->usehull = 2;
+				trace = pmove_10152->PM_PlayerTrace(dl->origin, end, PM_STUDIO_BOX, -1);
+
+				if (trace.ent > 0 && pmove_10152->physents[trace.ent].studiomodel)
+				{
+					VectorCopy(pmove_10152->physents[trace.ent].origin, dl->origin);
+				}
+				else
+				{
+					VectorCopy(trace.endpos, dl->origin);
+				}
 			}
 			else
 			{
-				VectorCopy(trace->endpos, dl->origin);
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove->usehull = 2;
+				trace = pmove->PM_PlayerTrace(dl->origin, end, PM_STUDIO_BOX, -1);
+
+				if (trace.ent > 0 && pmove->physents[trace.ent].studiomodel)
+				{
+					VectorCopy(pmove->physents[trace.ent].origin, dl->origin);
+				}
+				else
+				{
+					VectorCopy(trace.endpos, dl->origin);
+				}
 			}
 
-			falloff = trace->fraction * r_flashlight_distance->GetValue();
+			falloff = trace.fraction * r_flashlight_distance->GetValue();
 
 			if (falloff < 500)
 				falloff = 1.0;

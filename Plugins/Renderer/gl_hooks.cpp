@@ -7707,8 +7707,87 @@ void sub_1D1A030()
 
 	if (1)
 	{
+		typedef struct
+		{
+			int MovClsStateInstCount;
+			int FldzInstCount;
+			int ZeroizedRegister[3];
+			int ZeroizedRegisterCount;
+			PVOID ZeroizedCandidate[6];
+			int ZeroizedCandidateCount;
+		}V_RenderView_ctx;
+
+		V_RenderView_ctx ctx = { 0 };
+
 		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.V_RenderView, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				
 				auto pinst = (cs_insn *)inst;
+				auto ctx = (V_RenderView_ctx*)context;
+
+				if (ctx->MovClsStateInstCount == 0 || instCount < ctx->MovClsStateInstCount + 6)
+				{
+					/*
+					.text:102318B3                 push    esi
+					.text:102318B4                 xor     esi, esi
+					.text:102318B6                 mov     dword ptr r_soundOrigin+8, esi
+					.text:102318BC                 mov     dword ptr r_soundOrigin+4, esi
+					.text:102318C2                 mov     dword ptr r_soundOrigin, esi
+					.text:102318C8                 mov     dword ptr r_soundOrigin+14h, esi
+					.text:102318CE                 mov     dword ptr r_soundOrigin+10h, esi
+					.text:102318D4                 mov     dword ptr r_soundOrigin+0Ch, esi
+					*/
+
+					if (ctx->ZeroizedRegisterCount < _ARRAYSIZE(ctx->ZeroizedRegister) &&
+						pinst->id == X86_INS_XOR && pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
+					{
+						ctx->ZeroizedRegister[ctx->ZeroizedRegisterCount] = pinst->detail->x86.operands[0].reg;
+						ctx->ZeroizedRegisterCount++;
+					}
+					if (ctx->ZeroizedCandidateCount < 6 &&
+						pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						(pinst->detail->x86.operands[1].reg == ctx->ZeroizedRegister[0] || pinst->detail->x86.operands[1].reg == ctx->ZeroizedRegister[1] || pinst->detail->x86.operands[1].reg == ctx->ZeroizedRegister[2]))
+					{
+						ctx->ZeroizedCandidate[ctx->ZeroizedCandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						ctx->ZeroizedCandidateCount++;
+					}
+
+					if (ctx->FldzInstCount > 0 && instCount > ctx->FldzInstCount && instCount < ctx->FldzInstCount + 10)
+					{
+						/*
+							.text:01DCDF74                 fldz
+							.text:01DCDF76                 fst     flt_96F8790
+							.text:01DCDF7C                 fst     flt_96F8794
+							.text:01DCDF82                 fst     flt_96F8798
+							.text:01DCDF88                 fst     flt_96F879C
+							.text:01DCDF8E                 push    esi
+							.text:01DCDF8F                 fst     flt_96F87A0
+							.text:01DCDF95                 xor     esi, esi
+							.text:01DCDF97                 cmp     dword_20D7D70, 5
+							.text:01DCDF9E                 fstp    flt_96F87A4
+						*/
+						if (ctx->ZeroizedCandidateCount < 6 &&
+							(pinst->id == X86_INS_FST || pinst->id == X86_INS_FSTP) &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0)
+						{
+							ctx->ZeroizedCandidate[ctx->ZeroizedCandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+							ctx->ZeroizedCandidateCount++;
+						}
+					}
+				}
+
+				if (!ctx->FldzInstCount && pinst->id == X86_INS_FLDZ)
+				{
+					ctx->FldzInstCount = instCount;
+				}
 
 				if (!cls_state &&
 					pinst->id == X86_INS_CMP &&
@@ -7723,6 +7802,7 @@ void sub_1D1A030()
 				{
 					//83 3D 30 9A 09 02 05                                cmp     cls_state, 5
 					cls_state = (decltype(cls_state))pinst->detail->x86.operands[0].mem.disp;
+					ctx->MovClsStateInstCount = instCount;
 				}
 				
 				if (!cls_signon &&
@@ -7750,10 +7830,23 @@ void sub_1D1A030()
 					return TRUE;
 
 				return FALSE;
-			}, 0, NULL);
+
+			}, 0, &ctx);
 
 		Sig_VarNotFound(cls_state);
 		Sig_VarNotFound(cls_signon);
+
+		if (ctx.ZeroizedCandidateCount == 6)
+		{
+			std::qsort(ctx.ZeroizedCandidate, ctx.ZeroizedCandidateCount, sizeof(ctx.ZeroizedCandidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+				});
+
+			r_soundOrigin = (decltype(r_soundOrigin))ctx.ZeroizedCandidate[0];
+			r_playerViewportAngles = (decltype(r_playerViewportAngles))ctx.ZeroizedCandidate[3];
+		}
+		Sig_VarNotFound(r_soundOrigin);
+		Sig_VarNotFound(r_playerViewportAngles);
 	}
 
 	if (1)
