@@ -4138,6 +4138,12 @@ void R_SetupFlashlights()
 	dlight_t* dl = cl_dlights;
 	float curtime = (*cl_time);
 
+	if (gEngfuncs.GetMaxClients() <= 1)
+	{
+		//Do nothing for singleplayer
+		return;
+	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		//SvEngine done a good job here we don't need to setup our own flashlights.
@@ -4154,7 +4160,7 @@ void R_SetupFlashlights()
 			}
 		}
 
-		for (int i = 0; i < MAX_CLIENTS; ++i)
+		for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
 		{
 			auto state = R_GetPlayerState(i);
 
