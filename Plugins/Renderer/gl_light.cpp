@@ -492,10 +492,10 @@ void R_SetGBufferBlend(int blendsrc, int blenddst)
 			glBlendFunci(i, blendsrc, blenddst);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_WORLDNORM)
-			glBlendFunci(i, GL_ONE, GL_ZERO);
+			glBlendFunci(i, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_SPECULAR)
-			glBlendFunci(i, GL_ONE, GL_ZERO);
+			glBlendFunci(i, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 }
 

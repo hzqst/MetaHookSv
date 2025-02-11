@@ -1066,10 +1066,10 @@ void R_DrawDecals(cl_entity_t *ent)
 
 	GL_BeginStencilCompareEqual(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 
-	//Decal only affects diffuse and normal channel
-	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_WORLDNORM);
+	//Decal only affects diffuse, normal and specular
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_WORLDNORM | GBUFFER_MASK_SPECULAR);
 
-	//Use AlphaBlend to blend with GBuffer.diffuse, for GBuffer.worldnorm it's overwrite
+	//Use AlphaBlend to blend with GBuffer.diffuse
 	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (gl_polyoffset && gl_polyoffset->value)

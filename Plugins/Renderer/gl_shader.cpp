@@ -79,7 +79,7 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 
 GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)
 {
-	GLuint shader_objects[32];
+	GLuint shader_objects[32] = {};
 	int shader_object_used = 0;
 
 	//gEngfuncs.Con_DPrintf("R_CompileShaderObject %s...", vsfile);
@@ -220,7 +220,7 @@ GLuint R_CompileShaderFileEx(
 
 	if (!vscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: \"%s\" not found!", vsfile);
+		Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", vsfile);
 		return 0;
 	}
 
@@ -240,7 +240,7 @@ GLuint R_CompileShaderFileEx(
 	auto fscode = (char *)gEngfuncs.COM_LoadFile(fsfile, 5, 0);
 	if (!fscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: \"%s\" not found!", fsfile);
+		Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", fsfile);
 		return 0;
 	}
 
