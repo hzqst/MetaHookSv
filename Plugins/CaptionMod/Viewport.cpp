@@ -759,18 +759,18 @@ void CViewport::LoadBaseDictionary(void)
 	gEngfuncs.Con_Printf("LoadBaseDictionary: %d lines are loaded.\n", nRowCount - 1);
 }
 
-const char* GetSenderName();
+//const char* GetSenderName();
 
 //KeyBinding Name(jump) -> Key Name(SPACE)
-const char *PrimaryKey_ForBinding(const char *binding)
+const char *PrimaryKey_ForBinding(const CStartSubtitleContext* pStartSubtitleContext, const char *binding)
 {
+	if (!strcmp(binding, "sender") && pStartSubtitleContext->m_pszSenderName)
+	{
+		return pStartSubtitleContext->m_pszSenderName;
+	}
+
 	if(binding[0] == '+')
 		binding ++;
-
-	if (!strcmp(binding, "sender") && GetSenderName())
-	{
-		return GetSenderName();
-	}
 
 	for (int i = 255; i >= 0; --i)
 	{
@@ -793,9 +793,9 @@ const char *PrimaryKey_ForBinding(const char *binding)
 	return "<not bound>";
 }
 
-void CDictionary::FinalizeString(std::wstring &output, bool bPrefix)
+void CDictionary::ProcessString(const std::wstring& input, const CStartSubtitleContext* pStartSubtitleContext, std::wstring& output)
 {
-	auto finalize = m_szSentence;
+	auto finalize = input;
 
 	static std::wregex pattern(L"(<([A-Za-z_]+)>)");
 	std::wsmatch result;
@@ -813,8 +813,8 @@ void CDictionary::FinalizeString(std::wstring &output, bool bPrefix)
 		auto wkeybind = result[2].str();
 
 		char akeybind[256] = {0};
-		g_pVGuiLocalize->ConvertUnicodeToANSI(wkeybind.c_str(), akeybind, sizeof(akeybind) - 1);
-		const char *pszBinding = PrimaryKey_ForBinding(akeybind);
+		localize()->ConvertUnicodeToANSI(wkeybind.c_str(), akeybind, sizeof(akeybind) - 1);
+		const char *pszBinding = PrimaryKey_ForBinding(pStartSubtitleContext, akeybind);
 
 		if (pszBinding)
 		{
@@ -842,11 +842,6 @@ void CDictionary::FinalizeString(std::wstring &output, bool bPrefix)
 
 		searchStart = result.suffix().first;
 	}
-
-	if(bPrefix)
-		output = m_szSpeaker + finalize;
-	else
-		output = finalize;
 }
 
 void CViewport::Start(void)
@@ -899,17 +894,17 @@ void CViewport::Init(void)
 	m_HudMenu.Init();
 }
 
-void CViewport::StartSubtitle(CDictionary *dict, float flDurationTime)
+void CViewport::StartSubtitle(CDictionary *dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetCurTime());
+		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetCurTime(), pStartSubtitleContext);
 	}
 }
 
-void CViewport::StartNextSubtitle(CDictionary* dict)
+void CViewport::StartNextSubtitle(CDictionary* dict, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitlePanel->StartNextSubtitle(dict);
+		m_pSubtitlePanel->StartNextSubtitle(dict, pStartSubtitleContext);
 	}
 }
 

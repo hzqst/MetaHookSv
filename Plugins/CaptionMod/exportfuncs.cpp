@@ -316,7 +316,9 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 		duration = S_GetDuration(sfx);
 	}
 
-	g_pViewPort->StartSubtitle(pDict, duration);
+	CStartSubtitleContext StartSubtitleContext;
+
+	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
 }
 
 static char szsentences[] = "sound/sentences.txt";
@@ -653,7 +655,9 @@ bool S_StartSentence(const char *name, float distance, float avol)
 		});
 	}
 
-	g_pViewPort->StartSubtitle(pDict, duration);
+	CStartSubtitleContext StartSubtitleContext;
+
+	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
 
 	return true;
 }
@@ -798,7 +802,9 @@ bool ScClient_StartSentence(const char* name, float distance, float avol)
 #endif
 	}
 
-	g_pViewPort->StartSubtitle(pDict, duration);
+	CStartSubtitleContext StartSubtitleContext;
+
+	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
 
 	return true;
 }
@@ -853,7 +859,9 @@ void ScClient_StartWave(const char* name, float distance, float avol, int ms_dur
 		duration = ms_duration / 1000.0f;
 	}
 
-	g_pViewPort->StartSubtitle(pDict, duration);
+	CStartSubtitleContext StartSubtitleContext;
+
+	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
 }
 
 void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength)

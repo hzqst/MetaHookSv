@@ -16,11 +16,11 @@ extern cvar_t *hud_saytext;
 extern cvar_t *hud_saytext_time;
 extern cvar_t *cap_newchat;
 
-static char *m_pSenderName = NULL;
+//static char *m_pSenderName = NULL;
 
-static client_textmessage_t *g_pCurrentTextMessage = NULL;
+//static client_textmessage_t *g_pCurrentTextMessage = NULL;
 
-const char *GetSenderName()
+/*const char* GetSenderName()
 {
 	return m_pSenderName;
 }
@@ -28,7 +28,7 @@ const char *GetSenderName()
 client_textmessage_t* GetCurrentTextMessage()
 {
 	return g_pCurrentTextMessage;
-}
+}*/
 
 CHudMessage m_HudMessage;
 CHudMenu m_HudMenu;
@@ -91,8 +91,6 @@ int __MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 		return 1;
 
 	int result =  m_pfnSendAudio(pszName, iSize, pbuf);
-
-	m_pSenderName = NULL;
 
 	return result;
 }
@@ -784,11 +782,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 					
-					g_pCurrentTextMessage = pMsg;
+					//g_pCurrentTextMessage = pMsg;
+					CStartSubtitleContext StartSubtitleContext;
+					StartSubtitleContext.m_pCurrentTextMessage = pMsg;
 
-					g_pViewPort->StartNextSubtitle(dict);
+					g_pViewPort->StartNextSubtitle(dict, &StartSubtitleContext);
 
-					g_pCurrentTextMessage = NULL;
+					//g_pCurrentTextMessage = NULL;
 
 					if (slotNum == -1)
 					{
@@ -834,11 +834,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 
-					g_pCurrentTextMessage = pMsg;
+					//g_pCurrentTextMessage = pMsg;
+					CStartSubtitleContext StartSubtitleContext;
+					StartSubtitleContext.m_pCurrentTextMessage = pMsg;
 
-					g_pViewPort->StartNextSubtitle(dict);
+					g_pViewPort->StartNextSubtitle(dict, &StartSubtitleContext);
 
-					g_pCurrentTextMessage = NULL;
+					//g_pCurrentTextMessage = NULL;
 
 					if (slotNum == -1)
 					{
@@ -917,11 +919,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
 
-					g_pCurrentTextMessage = pMsg;
+					//g_pCurrentTextMessage = pMsg;
+					CStartSubtitleContext StartSubtitleContext;
+					StartSubtitleContext.m_pCurrentTextMessage = pMsg;
 
-					g_pViewPort->StartNextSubtitle(dict);
+					g_pViewPort->StartNextSubtitle(dict, &StartSubtitleContext);
 
-					g_pCurrentTextMessage = NULL;
+					//g_pCurrentTextMessage = NULL;
 
 					if (slotNum == -1)
 					{
@@ -1015,11 +1019,13 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 					}
 				}
 
-				g_pCurrentTextMessage = pMsg;
+				//g_pCurrentTextMessage = pMsg;
+				CStartSubtitleContext StartSubtitleContext;
+				StartSubtitleContext.m_pCurrentTextMessage = pMsg;
 
-				g_pViewPort->StartNextSubtitle(dict);
+				g_pViewPort->StartNextSubtitle(dict, &StartSubtitleContext);
 
-				g_pCurrentTextMessage = NULL;
+				//g_pCurrentTextMessage = NULL;
 
 				if (slotNum == -1)
 				{
@@ -1050,8 +1056,6 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	hud_player_info_t info = {0};
 	gEngfuncs.pfnGetPlayerInfo(entIndex, &info);
 
-	m_pSenderName = info.name;
-
 	auto pDict = g_pViewPort->FindDictionary(pString, DICT_SENDAUDIO);
 
 	if (cap_debug && cap_debug->value)
@@ -1061,7 +1065,11 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 
 	if (pDict)
 	{
-		g_pViewPort->StartSubtitle(pDict, pDict->m_flDuration);
+		CStartSubtitleContext StartSubtitleContext;
+
+		StartSubtitleContext.m_pszSenderName = info.name;
+
+		g_pViewPort->StartSubtitle(pDict, pDict->m_flDuration, &StartSubtitleContext);
 	}
 
 	return 0;

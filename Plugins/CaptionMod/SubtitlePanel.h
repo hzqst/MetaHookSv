@@ -99,6 +99,7 @@ public:
 		m_Dict = Dict;
 		m_TextWide = 0;
 		m_TextAlign = ALIGN_DEFAULT;
+		m_bHasSenderName = false;
 	}
 	virtual ~CSubLine()
 	{
@@ -130,6 +131,8 @@ public:
 	CDictionary		*m_Dict;//Linked dictionary
 	int				m_TextWide;
 	textalign_t		m_TextAlign;
+	bool			m_bHasSenderName;
+	std::string		m_SenderName;
 };
 
 class SubtitlePanel : public vgui::EditablePanel
@@ -143,16 +146,20 @@ public:
 	void VidInit(void);
 	void ConnectToServer(const char* game, int IP, int port);
 	void AdjustClock(double flAdjustment);
+
 public://Subtitle interface
-	void StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime);
-	void StartNextSubtitle(CDictionary *pDict);
-	CSubLine* AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextLength);
+
+	void StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime, const CStartSubtitleContext * pStartSubtitleContext);
+	void StartNextSubtitle(CDictionary *pDict, const CStartSubtitleContext* pStartSubtitleContext);
+
+	CSubLine* AddLine(CDictionary *Dict, const CStartSubtitleContext* pStartSubtitleContext, const wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextLength);
 	void StartLine(CSubLine *Line);
 	void ClearSubtitle(void);
 #if 0
 	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
 	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
 #endif
+
 protected:
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void PaintBackground(void);

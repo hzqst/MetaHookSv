@@ -57,6 +57,20 @@ typedef struct QuerySubtitlePanelVars_s
 	float m_flHoldTimeScale;
 }SubtitlePanelVars_t;
 
+class CStartSubtitleContext
+{
+public:
+	CStartSubtitleContext()
+	{
+		m_pszSenderName = nullptr;
+		m_pCurrentTextMessage = nullptr;
+	}
+
+
+	const char* m_pszSenderName;
+	client_textmessage_t* m_pCurrentTextMessage;
+};
+
 class CDictionary
 {
 public:
@@ -64,7 +78,7 @@ public:
 	virtual ~CDictionary();
 
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
-	void FinalizeString(std::wstring &output, bool iPrefix);
+	void ProcessString(const std::wstring& input, const CStartSubtitleContext* pStartSubtitleContext, std::wstring& output);
 
 	dict_t					m_Type;
 	std::string				m_szTitle;
@@ -121,8 +135,8 @@ public:
 	void LinkDictionary(void);
 
 	//Subtitle Interface
-	void StartSubtitle(CDictionary *dict, float flDurationTime);
-	void StartNextSubtitle(CDictionary *dict);
+	void StartSubtitle(CDictionary *dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext);
+	void StartNextSubtitle(CDictionary *dict, const CStartSubtitleContext* pStartSubtitleContext);
 
 	//Dictionary Hashtable
 	CDictionary *FindDictionary(const char *szValue);

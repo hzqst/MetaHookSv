@@ -11,8 +11,6 @@
 #include "SubtitlePanel.h"
 #include "privatefuncs.h"
 
-client_textmessage_t* GetCurrentTextMessage();
-
 extern cvar_t* cap_subtitle_prefix;
 extern cvar_t* cap_subtitle_waitplay;
 extern cvar_t* cap_subtitle_antispam;
@@ -304,14 +302,14 @@ void CSubLine::Draw(int x, int w, int align)
 	surface()->DrawFlushText();
 }
 
-void SubtitlePanel::StartNextSubtitle(CDictionary *pDict)
+void SubtitlePanel::StartNextSubtitle(CDictionary *pDict, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	//Check if there is a next dict to be played
 	auto pNextDict = pDict->m_pNext;
 
-	if(pNextDict)
+	if (pNextDict)
 	{
-		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetCurTime() + pDict->m_flNextDelay);
+		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetCurTime() + pDict->m_flNextDelay, pStartSubtitleContext);
 	}
 }
 
@@ -382,10 +380,18 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 	//Fade it now
 	Line->AlphaFade(255, cap_subtitle_fadein->value);
 
-	StartNextSubtitle(Line->m_Dict);
+	//Do we really need sender name here?
+	CStartSubtitleContext StartSubtitleContext;
+
+	if (Line->m_bHasSenderName)
+	{
+		StartSubtitleContext.m_pszSenderName = Line->m_SenderName.c_str();
+	}
+
+	StartNextSubtitle(Line->m_Dict, &StartSubtitleContext);
 }
 
-CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
+CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, const CStartSubtitleContext* pStartSubtitleContext, const wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
 {
 	CSubLine *Line = new CSubLine(this, Dict);
 	m_BackLines[m_BackLines.AddToTail()] = Line;
@@ -398,9 +404,13 @@ CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nL
 	Line->m_Duration = flDuration;
 	Line->m_Color = Dict->m_Color;
 
-	if (Dict->m_bDefaultColor && GetCurrentTextMessage())
+	if (Dict->m_bDefaultColor && pStartSubtitleContext->m_pCurrentTextMessage)
 	{
-		Line->m_Color = Color(GetCurrentTextMessage()->r1, GetCurrentTextMessage()->g1, GetCurrentTextMessage()->b1, GetCurrentTextMessage()->a1);
+		Line->m_Color = Color(
+			pStartSubtitleContext->m_pCurrentTextMessage->r1, 
+			pStartSubtitleContext->m_pCurrentTextMessage->g1, 
+			pStartSubtitleContext->m_pCurrentTextMessage->b1, 
+			pStartSubtitleContext->m_pCurrentTextMessage->a1);
 	}
 
 	Line->m_Alpha = 0;
@@ -408,6 +418,12 @@ CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nL
 	Line->m_YPos = Line->CalcYPos();
 	Line->m_FadeOut = cap_subtitle_fadeout->value;
 	Line->m_TextAlign = Dict->m_iTextAlign ? Dict->m_iTextAlign : m_iTextAlign;
+
+	if (pStartSubtitleContext->m_pszSenderName)
+	{
+		Line->m_bHasSenderName = true;
+		Line->m_SenderName = pStartSubtitleContext->m_pszSenderName;
+	}
 
 	return Line;
 }
@@ -418,7 +434,7 @@ static bool IsNonBreakableCharacter(wchar_t ch)
 }
 
 //2015-11-26 added htimescale for SubtitlePanel
-void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime)
+void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	//Delay the current line till the last backline plays
 	float flLatestStart = 0;
@@ -449,15 +465,23 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		}
 	}
 
-	std::wstring sentence;
+	std::wstring speakerName;
+	std::wstring fullSentence;
 
-	pDict->FinalizeString(sentence, (cap_subtitle_prefix->value >= 1.0f) ? true : false);
+	pDict->ProcessString(pDict->m_szSentence, pStartSubtitleContext, fullSentence);
+
+	if (cap_subtitle_prefix->value >= 1.0f)
+	{
+		pDict->ProcessString(pDict->m_szSpeaker, pStartSubtitleContext, speakerName);
+
+		fullSentence = speakerName + fullSentence;
+	}
 
 	int iPanelWidth = GetWide();
 	int iMaxTextWidth = iPanelWidth - (m_iScaledXSpace << 1);
 
 	wchar_t szBuf[4096];
-	wchar_t *pStart = &sentence[0];
+	wchar_t *pStart = &fullSentence[0];
 	wchar_t *p = pStart;
 
 	if(!pStart[0])
@@ -491,15 +515,19 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 	if(flDuration <= 0)
 		flDuration = 4.0f;
 
-	if (!pDict->m_bOverrideDuration && GetCurrentTextMessage())
+	if (!pDict->m_bOverrideDuration && pStartSubtitleContext->m_pCurrentTextMessage)
 	{
-		if (GetCurrentTextMessage()->effect == 2 && GetCurrentTextMessage()->pMessage)
+		if (pStartSubtitleContext->m_pCurrentTextMessage->effect == 2 &&
+			pStartSubtitleContext->m_pCurrentTextMessage->pMessage)
 		{
-			flDuration = (GetCurrentTextMessage()->fadein * sentence.length() ) + GetCurrentTextMessage()->fadeout + GetCurrentTextMessage()->holdtime;
+			flDuration = (pStartSubtitleContext->m_pCurrentTextMessage->fadein * fullSentence.length() ) +
+				pStartSubtitleContext->m_pCurrentTextMessage->fadeout + pStartSubtitleContext->m_pCurrentTextMessage->holdtime;
 		}
 		else
 		{
-			flDuration = GetCurrentTextMessage()->holdtime + GetCurrentTextMessage()->fadein + GetCurrentTextMessage()->fadeout;
+			flDuration = pStartSubtitleContext->m_pCurrentTextMessage->holdtime +
+				pStartSubtitleContext->m_pCurrentTextMessage->fadein +
+				pStartSubtitleContext->m_pCurrentTextMessage->fadeout;
 		}
 	}
 
@@ -600,7 +628,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		else//real duration = original starttime - real starttime + original duration
 			flRealDuration = max(flStartTime + flCalcStartTime - flRealStartTime, 0) + flCalcDuration;
 
-		pAddedLine = AddLine(pDict, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
+		pAddedLine = AddLine(pDict, pStartSubtitleContext, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
 
 		//Skip CRLF
 		while (*p == L'\r' || *p == L'\n')
