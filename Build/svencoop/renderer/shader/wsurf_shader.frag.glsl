@@ -93,10 +93,11 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 
 	#if defined(DECAL_ENABLED)
 
-		//Decal only affects diffuse and worldnorm channel
+		//Decal only affects diffuse, worldnorm, specular channel
 		
 		layout(location = 0) out vec4 out_Diffuse;
 		layout(location = 1) out vec4 out_WorldNorm;
+		layout(location = 2) out vec4 out_Specular;
 
 	#else
 
@@ -513,13 +514,14 @@ void main()
 		#if defined(DECAL_ENABLED)
 
 			out_Diffuse = diffuseColor * detailColor;
-			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
+			out_Specular = specularColor;
 
 		#else
 
 			out_Diffuse = diffuseColor * detailColor;
 			out_Lightmap = lightmapColor;
-			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
 			out_Specular = specularColor;
 
 		#endif
