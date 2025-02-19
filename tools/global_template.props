@@ -6,7 +6,7 @@
     <MetaHookGameDirectory></MetaHookGameDirectory>
     <MetaHookModName></MetaHookModName>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(MetaHookBaseDir)' == '' ">
     <MetaHookBaseDir Condition="exists('$(ProjectDir)..\..\tools\global_common.props')">$(ProjectDir)..\..\</MetaHookBaseDir>
     <MetaHookBaseDir Condition="!exists('$(ProjectDir)..\..\tools\global_common.props') and exists('$(ProjectDir)..\tools\global_common.props')">$(ProjectDir)..\</MetaHookBaseDir>
     <MetaHookBaseDir Condition="!exists('$(ProjectDir)..\..\tools\global_common.props') and !exists('$(ProjectDir)..\tools\global_common.props')">$(SolutionDir)\</MetaHookBaseDir>
