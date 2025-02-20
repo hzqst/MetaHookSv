@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "pm_defs.h"
 #include <sstream>
 
 cvar_t *r_light_dynamic = NULL;
@@ -10,6 +11,7 @@ MapConVar *r_flashlight_specular = NULL;
 MapConVar *r_flashlight_specularpow = NULL;
 MapConVar *r_flashlight_attachment = NULL;
 MapConVar *r_flashlight_distance = NULL;
+MapConVar* r_flashlight_min_distance = NULL;
 MapConVar *r_flashlight_cone_cosine = NULL;
 
 MapConVar *r_dynlight_ambient = NULL;
@@ -297,6 +299,7 @@ void R_InitLight(void)
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_flashlight_distance = R_RegisterMapCvar("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_min_distance = R_RegisterMapCvar("r_flashlight_min_distance", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_cone_cosine = R_RegisterMapCvar("r_flashlight_cone_cosine", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -652,7 +655,12 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 			bool bIsFromLocalPlayer = (ent == gEngfuncs.GetLocalPlayer()) ? true : false;
 
-			vec3_t org;
+			vec3_t org = { 0 };
+			vec3_t end = { 0 };
+
+			float max_distance = r_flashlight_distance->GetValue();
+			float min_distance = r_flashlight_min_distance->GetValue();
+
 			//first person mode
 			if (bIsFromLocalPlayer && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
 			{
@@ -664,10 +672,13 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
 				{
 					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
+
 					attachmentIndex = math_clamp(attachmentIndex, 1, 4) - 1;
+
 					if (cl_viewent->model)
 					{
 						auto pstudiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(cl_viewent->model);
+
 						if (pstudiohdr)
 						{
 							auto numattachments = pstudiohdr->numattachments;
@@ -696,6 +707,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				}
 
 				VectorCopy(org, dlight_origin);
+				VectorMA(org, max_distance, dlight_vforward, end);
 			}
 			else
 			{
@@ -708,14 +720,41 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorMA(org, 10, dlight_vright, org);
 
 				VectorCopy(org, dlight_origin);
+				VectorMA(org, max_distance, dlight_vforward, end);
 			}
+#if 1
+			struct pmtrace_s trace {};
 
+			auto iLocalPlayerPhysEntIndex = EngineFindPhysEntIndexByEntity(gEngfuncs.GetLocalPlayer());
+
+			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+			{
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove_10152->usehull = 2;
+				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, iLocalPlayerPhysEntIndex);
+
+				float distance = trace.fraction * max_distance;
+
+				if (trace.startsolid || distance < min_distance)
+					continue;
+			}
+			else
+			{
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove->usehull = 2;
+				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, iLocalPlayerPhysEntIndex);
+
+				float distance = trace.fraction * max_distance;
+
+				if (trace.startsolid || distance < min_distance)
+					continue;
+			}
+#endif
 			float coneCosAngle = r_flashlight_cone_cosine->GetValue();
 			float coneAngle = acosf(coneCosAngle);
 			float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
 			float coneTanAngle = tanf(coneAngle);
-			float distance = r_flashlight_distance->GetValue();
-			float radius = distance * coneTanAngle;
+			float radius = max_distance * coneTanAngle;
 			
 			float ambient = r_flashlight_ambient->GetValue();
 			float diffuse = r_flashlight_diffuse->GetValue();
@@ -727,10 +766,10 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			color[1] = (float)dl->color.g / 255.0f;
 			color[2] = (float)dl->color.b / 255.0f;
 
-			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, distance))
+			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, max_distance))
 			{
 				if(spotlight_callback)
-					spotlight_callback(distance, radius,
+					spotlight_callback(max_distance, radius,
 					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
 					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
 					color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], true, bIsFromLocalPlayer);
@@ -738,7 +777,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			else
 			{
 				if (spotlight_callback)
-					spotlight_callback(distance, radius,
+					spotlight_callback(max_distance, radius,
 					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
 					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
 					color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], false, bIsFromLocalPlayer);

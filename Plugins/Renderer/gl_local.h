@@ -549,6 +549,7 @@ void GL_Texturemode_cb(cvar_t *);
 void GL_GenerateHashedTextureIndentifier(const char* identifier, GL_TEXTURETYPE textureType, char* hashedIdentifier, size_t len);
 void GL_GenerateHashedTextureIndentifier2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, char* hashedIdentifier, size_t len);
 void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, int numframes, char* hashedIdentifier, size_t len);
+
 GL_TEXTURETYPE GL_GetTextureTypeFromTextureIdentifier(const char* identifier);
 int GL_GetTextureTargetFromTextureEntry(const gltexture_t* glt);
 int GL_GetTextureTargetFromTextureIdentifier(const char* identifier);
@@ -566,6 +567,8 @@ cl_entity_t *EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
 TEMPENTITY *EngineGetTempTentsBase(void);
 TEMPENTITY *EngineGetTempTentByIndex(int index);
+
+int EngineFindPhysEntIndexByEntity(cl_entity_t* ent);
 
 float GetFrameRateFromFrameDuration(int frameduration);
 

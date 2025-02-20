@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "pm_defs.h"
 #include <algorithm>
 
 #define MAX_ENTITY_COMPONENTS 1024
@@ -172,4 +173,26 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 	}
 
 	return pContainer;
+}
+
+int EngineFindPhysEntIndexByEntity(cl_entity_t* ent)
+{
+	if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+	{
+		for (int i = 0; i < pmove_10152->numphysent; ++i)
+		{
+			if (pmove_10152->physents[i].info == ent->index)
+				return i;
+		}
+	}
+	else
+	{
+		for (int i = 0; i < pmove->numphysent; ++i)
+		{
+			if (pmove->physents[i].info == ent->index)
+				return i;
+		}
+	}
+
+	return -1;
 }
