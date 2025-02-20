@@ -725,13 +725,13 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 #if 1
 			struct pmtrace_s trace {};
 
-			auto iLocalPlayerPhysEntIndex = EngineFindPhysEntIndexByEntity(gEngfuncs.GetLocalPlayer());
+			//auto iLocalPlayerPhysEntIndex = EngineFindPhysEntIndexByEntity(gEngfuncs.GetLocalPlayer());
 
 			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
 				pmove_10152->usehull = 2;
-				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, iLocalPlayerPhysEntIndex);
+				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
 
 				float distance = trace.fraction * max_distance;
 
@@ -742,7 +742,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
 				pmove->usehull = 2;
-				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, iLocalPlayerPhysEntIndex);
+				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
 
 				float distance = trace.fraction * max_distance;
 

@@ -479,8 +479,7 @@ vec3 LinearToGamma3(vec3 color)
 	return color;
 }
 
-//This was being applied for R_BuildLightMap and R_StudioLighting
-float LightGammaToGammaInternal(float color)
+float LightGammaToGammaOverBrightInternal(float color)
 {
 	float fv = pow(color, SceneUBO.v_lightgamma);
 
@@ -493,7 +492,15 @@ float LightGammaToGammaInternal(float color)
 
 	fv = clamp(fv1, fv2, step(fv, SceneUBO.r_g3));
 
-	return clamp(pow( fv, SceneUBO.r_g ), 0.0, 1.0);
+	fv = pow(fv, SceneUBO.r_g);
+
+	return fv;
+}
+
+//This was being applied for R_BuildLightMap and R_StudioLighting
+float LightGammaToGammaInternal(float color)
+{
+	return clamp(LightGammaToGammaOverBrightInternal(color), 0.0, 1.0);
 }
 
 vec4 LightGammaToGamma(vec4 color)
@@ -501,23 +508,28 @@ vec4 LightGammaToGamma(vec4 color)
 	return vec4(LightGammaToGammaInternal(color.r), LightGammaToGammaInternal(color.g), LightGammaToGammaInternal(color.b), color.a);
 }
 
-float LightGammaToLinearInternal(float color)
+float LightGammaToLinearOverBrightInternal(float color)
 {
 	float fv = pow(color, SceneUBO.v_lightgamma);
 
 	fv = fv * max(SceneUBO.v_brightness, 1.0);
 
 	fv = mix(
-	  0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875,
-	  (fv / SceneUBO.r_g3) * 0.125, 
-	  step(fv, SceneUBO.r_g3));
+		0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875,
+		(fv / SceneUBO.r_g3) * 0.125,
+		step(fv, SceneUBO.r_g3));
 
 	/*if (fv > SceneUBO.r_g3)
 		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
 	else
 		fv = (fv / SceneUBO.r_g3) * 0.125;*/
 
-	return clamp(fv, 0.0, 1.0);
+	return fv;
+}
+
+float LightGammaToLinearInternal(float color)
+{
+	return clamp(LightGammaToLinearOverBrightInternal(color), 0.0, 1.0);
 }
 
 vec4 LightGammaToLinear(vec4 color)

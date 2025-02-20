@@ -4086,7 +4086,7 @@ void CL_EmitPlayerFlashlight(int entindex)
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
 				pmove_10152->usehull = 2;
-				trace = pmove_10152->PM_PlayerTrace(dl->origin, end, PM_STUDIO_BOX, -1);
+				trace = pmove_10152->PM_PlayerTrace(dl->origin, end, PM_NORMAL, -1);
 
 				if (trace.ent > 0 && pmove_10152->physents[trace.ent].studiomodel)
 				{
@@ -4101,7 +4101,7 @@ void CL_EmitPlayerFlashlight(int entindex)
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
 				pmove->usehull = 2;
-				trace = pmove->PM_PlayerTrace(dl->origin, end, PM_STUDIO_BOX, -1);
+				trace = pmove->PM_PlayerTrace(dl->origin, end, PM_NORMAL, -1);
 
 				if (trace.ent > 0 && pmove->physents[trace.ent].studiomodel)
 				{

@@ -160,7 +160,8 @@ public:
 
 	studio_celshade_control_t celshade_control;
 
-	bool bExternalFileLoaded{};
+	//Always reload
+	//bool bExternalFileLoaded{};
 };
 
 #if 0

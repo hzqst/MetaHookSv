@@ -3386,7 +3386,6 @@ void R_StudioLoadExternalFile_TextureFlagsArray(bspentity_t* ent, studiohdr_t* s
 
 void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
-
 	auto basetexture = ValueForKey(ent, "basetexture");
 
 	if (!basetexture)
@@ -3528,10 +3527,10 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* VBOData)
 {
-	if (VBOData->bExternalFileLoaded)
-		return;
+	//if (VBOData->bExternalFileLoaded)
+	//	return;
 
-	VBOData->bExternalFileLoaded = true;
+	//VBOData->bExternalFileLoaded = true;
 
 	std::string fullPath = mod->name;
 
