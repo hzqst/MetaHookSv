@@ -842,6 +842,8 @@ void CDictionary::ProcessString(const std::wstring& input, const CStartSubtitleC
 
 		searchStart = result.suffix().first;
 	}
+
+	output = finalize;
 }
 
 void CViewport::Start(void)
