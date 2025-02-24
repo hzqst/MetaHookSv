@@ -11,19 +11,19 @@ CEntityComponentContainer*gpEntityComponentFree = NULL;
 
 std::vector<CEntityComponentContainer*> g_ClientEntityRenderComponents;
 std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
+CEntityComponentContainer* g_ViewEntityRenderComponent = NULL;
 
 void R_InitEntityComponents(void)
 {
 	for (int i = 0; i < MAX_ENTITY_COMPONENTS; i++)
 	{
 		gEntityComponentPool[i].pNext = &gEntityComponentPool[i + 1];
-		//gEntityComponentPool[i].FollowEnts.clear();
 		gEntityComponentPool[i].Decals.clear();
 		gEntityComponentPool[i].WaterVBOs.clear();
 		gEntityComponentPool[i].ReflectCaches.clear();
 		gEntityComponentPool[i].DeferredStudioPasses.clear();
 	}
-	//???
+
 	gEntityComponentPool[MAX_ENTITY_COMPONENTS - 1].pNext = NULL;
 	gpEntityComponentFree = &gEntityComponentPool[0];
 	gpEntityComponentActive = NULL;
@@ -59,7 +59,6 @@ void R_EntityComponents_PreFrame(void)
 	auto p = gpEntityComponentActive;
 	while (p)
 	{
-		//p->FollowEnts.clear();
 		p->Decals.clear();
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
@@ -97,6 +96,8 @@ int EngineGetMaxTempEnts(void)
 	return MAX_TEMP_ENTITIES;
 }
 
+static_assert(sizeof(TEMPENTITY) == 3068, "Size Check");
+
 TEMPENTITY *EngineGetTempTentsBase(void)
 {
 	return gTempEnts;
@@ -119,11 +120,14 @@ int R_GetClientEntityIndex(cl_entity_t *ent)
 
 int R_GetTempEntityIndex(cl_entity_t *ent)
 {
-	if (ent >= &EngineGetTempTentsBase()->entity && ent < &EngineGetTempTentByIndex(EngineGetMaxTempEnts())->entity)
+	auto tempEntBase = EngineGetTempTentsBase();
+	auto tempEntEnd = EngineGetTempTentByIndex(EngineGetMaxTempEnts());
+
+	if (ent >= &tempEntBase->entity && ent < &tempEntEnd->entity)
 	{
 		auto tent = STRUCT_FROM_LINK(ent, TEMPENTITY, entity);
 
-		return tent - EngineGetTempTentsBase();
+		return tent - tempEntBase;
 	}
 
 	return -1;
@@ -133,26 +137,41 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 {
 	CEntityComponentContainer* pContainer = NULL;
 
-	int index = R_GetClientEntityIndex(ent);
-
-	if (index >= 0)
+	if (ent == cl_viewent)
 	{
-		if ((int)g_ClientEntityRenderComponents.size() < index + 1)
-		{
-			g_ClientEntityRenderComponents.resize((size_t)index + 1);
-		}
-		
-		pContainer = g_ClientEntityRenderComponents[(size_t)index];
+		pContainer = g_ViewEntityRenderComponent;
 
 		if (!pContainer && create_if_not_exists)
 		{
 			pContainer = R_AllocateEntityComponentContainer();
-			g_ClientEntityRenderComponents[(size_t)index] = pContainer;
+			g_ViewEntityRenderComponent = pContainer;
 		}
 	}
-	else
+
+	if (!pContainer)
 	{
-		index = R_GetTempEntityIndex(ent);
+		int index = R_GetClientEntityIndex(ent);
+
+		if (index >= 0)
+		{
+			if ((int)g_ClientEntityRenderComponents.size() < index + 1)
+			{
+				g_ClientEntityRenderComponents.resize((size_t)index + 1);
+			}
+
+			pContainer = g_ClientEntityRenderComponents[(size_t)index];
+
+			if (!pContainer && create_if_not_exists)
+			{
+				pContainer = R_AllocateEntityComponentContainer();
+				g_ClientEntityRenderComponents[(size_t)index] = pContainer;
+			}
+		}
+	}
+
+	if (!pContainer)
+	{
+		int index = R_GetTempEntityIndex(ent);
 
 		if (index >= 0)
 		{

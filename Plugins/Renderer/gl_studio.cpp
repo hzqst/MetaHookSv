@@ -2766,7 +2766,10 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	{
 		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-		pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAlphaMeshes);
+		if (pEntityComponentContainer)
+		{
+			pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAlphaMeshes);
+		}
 
 		r_draw_deferredtrans = true;
 	}
@@ -2775,7 +2778,10 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	{
 		auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-		pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAdditiveMeshes);
+		if (pEntityComponentContainer)
+		{
+			pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawAdditiveMeshes);
+		}
 
 		r_draw_deferredtrans = true;
 	}
@@ -2843,7 +2849,10 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 			auto pEntityComponentContainer = R_GetEntityComponentContainer((*currententity), true);
 
-			pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawGlowShell);
+			if (pEntityComponentContainer)
+			{
+				pEntityComponentContainer->DeferredStudioPasses.emplace_back(kRenderFxDrawGlowShell);
+			}
 
 			r_draw_deferredtrans = true;
 		}

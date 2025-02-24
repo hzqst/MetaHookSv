@@ -819,7 +819,7 @@ void CDictionary::ProcessString(const std::wstring& input, const CStartSubtitleC
 		if (pszBinding)
 		{
 			wchar_t wbinding[256] = {0};
-			Q_UTF8ToUnicode(pszBinding, wbinding, sizeof(wbinding) - sizeof(wchar_t));
+			Q_UTF8ToUnicode(pszBinding, wbinding, sizeof(wbinding));
 
 			if (searchStart != finalize.cbegin())
 			{
