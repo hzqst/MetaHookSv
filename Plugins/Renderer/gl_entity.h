@@ -34,8 +34,15 @@ public:
 class CEntityComponentContainer
 {
 public:
-	CEntityComponentContainer* pNext{};
-	//std::vector<cl_entity_t *> FollowEnts;
+	void Reset()
+	{
+		Decals.clear();
+		WaterVBOs.clear();
+		ReflectCaches.clear();
+		DeferredStudioPasses.clear();
+		AimEntity = nullptr;
+	}
+
 	std::vector<decal_t *> Decals;
 	std::vector<CWaterSurfaceModel *> WaterVBOs;
 	std::vector<water_reflect_cache_t *> ReflectCaches;
@@ -49,4 +56,4 @@ void R_InitEntityComponents(void);
 
 void R_ShutdownEntityComponents(void);
 
-void R_EntityComponents_PreFrame(void);
+void R_EntityComponents_StartFrame(void);

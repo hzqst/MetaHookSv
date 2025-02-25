@@ -218,6 +218,8 @@ typedef struct alight_s
 #define STUDIO_NF_ALPHA						0x0010
 #define STUDIO_NF_ADDITIVE					0x0020
 #define STUDIO_NF_MASKED					0x0040
+
+// renderer-private options
 #define STUDIO_NF_CELSHADE					0x1000
 #define STUDIO_NF_CELSHADE_FACE				0x2000
 #define STUDIO_NF_CELSHADE_HAIR				0x4000

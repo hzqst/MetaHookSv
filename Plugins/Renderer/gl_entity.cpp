@@ -2,80 +2,77 @@
 #include "pm_defs.h"
 #include <algorithm>
 
-#define MAX_ENTITY_COMPONENTS 1024
-
-CEntityComponentContainer gEntityComponentPool[MAX_ENTITY_COMPONENTS];
-
-CEntityComponentContainer*gpEntityComponentActive = NULL;
-CEntityComponentContainer*gpEntityComponentFree = NULL;
-
 std::vector<CEntityComponentContainer*> g_ClientEntityRenderComponents;
 std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
 CEntityComponentContainer* g_ViewEntityRenderComponent = NULL;
 
 void R_InitEntityComponents(void)
 {
-	for (int i = 0; i < MAX_ENTITY_COMPONENTS; i++)
-	{
-		gEntityComponentPool[i].pNext = &gEntityComponentPool[i + 1];
-		gEntityComponentPool[i].Decals.clear();
-		gEntityComponentPool[i].WaterVBOs.clear();
-		gEntityComponentPool[i].ReflectCaches.clear();
-		gEntityComponentPool[i].DeferredStudioPasses.clear();
-	}
-
-	gEntityComponentPool[MAX_ENTITY_COMPONENTS - 1].pNext = NULL;
-	gpEntityComponentFree = &gEntityComponentPool[0];
-	gpEntityComponentActive = NULL;
-
 	g_ClientEntityRenderComponents.clear();
 	g_TempEntityRenderComponents.clear();
+	g_ViewEntityRenderComponent = nullptr;
 }
 
 void R_ShutdownEntityComponents(void)
 {
-	R_InitEntityComponents();
+	for (auto itor = g_ClientEntityRenderComponents.begin(); itor != g_ClientEntityRenderComponents.end(); itor++)
+	{
+		auto pContainer = (*itor);
+
+		if (pContainer)
+		{
+			delete pContainer;
+		}
+	}
+	g_ClientEntityRenderComponents.clear();
+
+	for (auto itor = g_TempEntityRenderComponents.begin(); itor != g_TempEntityRenderComponents.end(); itor++)
+	{
+		auto pContainer = (*itor);
+
+		if (pContainer)
+		{
+			delete pContainer;
+		}
+	}
+	g_TempEntityRenderComponents.clear();
+
+	if (g_ViewEntityRenderComponent)
+	{
+		delete g_ViewEntityRenderComponent;
+		g_ViewEntityRenderComponent = nullptr;
+	}
 }
 
 CEntityComponentContainer *R_AllocateEntityComponentContainer(void)
 {
-	if (!gpEntityComponentFree)
-	{
-		gEngfuncs.Con_DPrintf("Overflow entity component container!\n");
-		return NULL;
-	}
-
-	auto pTemp = gpEntityComponentFree;
-	gpEntityComponentFree = pTemp->pNext;
-
-	pTemp->pNext = gpEntityComponentActive;
-	gpEntityComponentActive = pTemp;
-
-	return pTemp;
+	return new CEntityComponentContainer();
 }
 
-void R_EntityComponents_PreFrame(void)
+void R_EntityComponents_StartFrame(void)
 {
-	auto p = gpEntityComponentActive;
-	while (p)
+	for (auto itor = g_ClientEntityRenderComponents.begin(); itor != g_ClientEntityRenderComponents.end(); itor++)
 	{
-		p->Decals.clear();
-		p->WaterVBOs.clear();
-		p->ReflectCaches.clear();
-		p->DeferredStudioPasses.clear();
-		p->AimEntity = nullptr;
+		auto pContainer = (*itor);
 
-		auto temp = p->pNext;
-
-		p->pNext = gpEntityComponentFree;
-		gpEntityComponentFree = p;
-
-		p = temp;
+		if (pContainer)
+		{
+			pContainer->Reset();
+		}
 	}
-	gpEntityComponentActive = NULL;
-	
-	g_ClientEntityRenderComponents.clear();
-	g_TempEntityRenderComponents.clear();
+	for (auto itor = g_TempEntityRenderComponents.begin(); itor != g_TempEntityRenderComponents.end(); itor++)
+	{
+		auto pContainer = (*itor);
+
+		if (pContainer)
+		{
+			pContainer->Reset();
+		}
+	}
+	if (g_ViewEntityRenderComponent)
+	{
+		g_ViewEntityRenderComponent->Reset();
+	}
 }
 
 int EngineGetMaxClientEdicts(void)

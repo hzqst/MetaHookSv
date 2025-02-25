@@ -142,6 +142,11 @@ typedef struct studio_celshade_control_s
 class CStudioModelRenderData
 {
 public:
+	CStudioModelRenderData(model_t* mod) : BodyModel(mod)
+	{
+
+	}
+
 	~CStudioModelRenderData();
 
 	GLuint				hVBO{};
@@ -333,7 +338,7 @@ extern float *r_colormix;
 extern int *r_smodels_total;
 extern int *r_amodels_drawn;
 extern dlight_t *(*locallight)[3];
-extern int *numlight;
+extern int *numlights;
 extern int* r_topcolor;
 extern int* r_bottomcolor;
 #if 0
@@ -353,8 +358,8 @@ extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
 void R_StudioBoneCaches_StartFrame();
-CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
-void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData *VBOData);
+CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData * pRenderData);
 void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
 void R_StudioClearVBOCache(void);
@@ -365,8 +370,8 @@ void R_InitStudio(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
-studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* VBOData);
-void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* VBOData);
+studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData);
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
 void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
 void R_StudioFreeTextureCallback(gltexture_t* glt);
 CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);

@@ -1957,7 +1957,7 @@ bool SCR_IsLoadingVisible()
 
 void R_RenderPreFrame()
 {
-	R_EntityComponents_PreFrame();
+	R_EntityComponents_StartFrame();
 }
 
 void R_RenderStartView()

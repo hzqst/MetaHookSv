@@ -7895,9 +7895,9 @@ void sub_1D1A030()
 			int ZerodReg_InstCount;
 			int Candidate_locallight_InstCount;
 			PVOID Candidate_locallight;
-			int Candidate_numlight_instCount;
-			int Candidate_numlight_reg;
-			PVOID Candidate_numlight;
+			int Candidate_numlights_instCount;
+			int Candidate_numlights_reg;
+			PVOID Candidate_numlights;
 
 			int Candidate_locallight2_InstCount;
 			int Candidate_locallight2_reg;
@@ -8007,7 +8007,7 @@ void sub_1D1A030()
 				locallight = (decltype(locallight))ctx->Candidate_locallight2;
 			}
 
-			if (!numlight &&
+			if (!numlights &&
 				pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
@@ -8017,43 +8017,43 @@ void sub_1D1A030()
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG)
 			{
-				ctx->Candidate_numlight = (decltype(ctx->Candidate_numlight))pinst->detail->x86.operands[1].mem.disp;
-				ctx->Candidate_numlight_instCount = instCount;
-				ctx->Candidate_numlight_reg = pinst->detail->x86.operands[0].reg;
+				ctx->Candidate_numlights = (decltype(ctx->Candidate_numlights))pinst->detail->x86.operands[1].mem.disp;
+				ctx->Candidate_numlights_instCount = instCount;
+				ctx->Candidate_numlights_reg = pinst->detail->x86.operands[0].reg;
 			}
 
-			if (!numlight &&
-				ctx->Candidate_numlight &&
-				ctx->Candidate_numlight_instCount &&
-				instCount > ctx->Candidate_numlight_instCount &&
-				instCount < ctx->Candidate_numlight_instCount + 30 &&
+			if (!numlights &&
+				ctx->Candidate_numlights &&
+				ctx->Candidate_numlights_instCount &&
+				instCount > ctx->Candidate_numlights_instCount &&
+				instCount < ctx->Candidate_numlights_instCount + 30 &&
 				pinst->id == X86_INS_CMP &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg && 
+				((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlights_reg && 
 				pinst->detail->x86.operands[1].reg == ctx->ZerodReg) ||
-				(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlight_reg &&
+				(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlights_reg &&
 					pinst->detail->x86.operands[0].reg == ctx->ZerodReg)) )
 			{
-				numlight = (decltype(numlight))ctx->Candidate_numlight;
+				numlights = (decltype(numlights))ctx->Candidate_numlights;
 			}
 
-			if (!numlight &&
-				ctx->Candidate_numlight &&
-				ctx->Candidate_numlight_instCount &&
-				instCount > ctx->Candidate_numlight_instCount &&
-				instCount < ctx->Candidate_numlight_instCount + 30 &&
+			if (!numlights &&
+				ctx->Candidate_numlights &&
+				ctx->Candidate_numlights_instCount &&
+				instCount > ctx->Candidate_numlights_instCount &&
+				instCount < ctx->Candidate_numlights_instCount + 30 &&
 				pinst->id == X86_INS_TEST &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg)
+				pinst->detail->x86.operands[0].reg == ctx->Candidate_numlights_reg)
 			{
-				numlight = (decltype(numlight))ctx->Candidate_numlight;
+				numlights = (decltype(numlights))ctx->Candidate_numlights;
 			}
 
-			if (locallight && numlight)
+			if (locallight && numlights)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -8066,7 +8066,7 @@ void sub_1D1A030()
 		}, 0, &ctx);
 
 		Sig_VarNotFound(locallight);
-		Sig_VarNotFound(numlight);
+		Sig_VarNotFound(numlights);
 	}
 	else
 	{
@@ -8086,9 +8086,9 @@ void sub_1D1A030()
 			int ZerodReg_InstCount;
 			int Candidate_InstCount;
 			PVOID Candidate_locallight;
-			int Candidate_numlight_instCount;
-			int Candidate_numlight_reg;
-			PVOID Candidate_numlight;
+			int Candidate_numlights_instCount;
+			int Candidate_numlights_reg;
+			PVOID Candidate_numlights;
 		}R_LightStrength_Context;
 
 		R_LightStrength_Context ctx = { 0 };
@@ -8107,7 +8107,7 @@ void sub_1D1A030()
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (R_LightStrength_Context*)context;
 
-				if (locallight && numlight)
+				if (locallight && numlights)
 					return TRUE;
 
 				if (ctx->code.size() > ctx->max_insts)
@@ -8188,7 +8188,7 @@ void sub_1D1A030()
 					locallight = (decltype(locallight))ctx->Candidate_locallight;
 				}
 
-				if (!numlight &&
+				if (!numlights &&
 					pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
@@ -8198,26 +8198,26 @@ void sub_1D1A030()
 					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG)
 				{
-					ctx->Candidate_numlight = (decltype(ctx->Candidate_numlight))pinst->detail->x86.operands[1].mem.disp;
-					ctx->Candidate_numlight_instCount = instCount;
-					ctx->Candidate_numlight_reg = pinst->detail->x86.operands[0].reg;
+					ctx->Candidate_numlights = (decltype(ctx->Candidate_numlights))pinst->detail->x86.operands[1].mem.disp;
+					ctx->Candidate_numlights_instCount = instCount;
+					ctx->Candidate_numlights_reg = pinst->detail->x86.operands[0].reg;
 				}
 
-				if (!numlight &&
-					ctx->Candidate_numlight &&
-					ctx->Candidate_numlight_instCount &&
-					instCount > ctx->Candidate_numlight_instCount &&
-					instCount < ctx->Candidate_numlight_instCount + 30 &&
+				if (!numlights &&
+					ctx->Candidate_numlights &&
+					ctx->Candidate_numlights_instCount &&
+					instCount > ctx->Candidate_numlights_instCount &&
+					instCount < ctx->Candidate_numlights_instCount + 30 &&
 					pinst->id == X86_INS_CMP &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg &&
+					((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlights_reg &&
 						pinst->detail->x86.operands[1].reg == ctx->ZerodReg) ||
-						(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlight_reg &&
+						(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlights_reg &&
 							pinst->detail->x86.operands[0].reg == ctx->ZerodReg)))
 				{
-					numlight = (decltype(numlight))ctx->Candidate_numlight;
+					numlights = (decltype(numlights))ctx->Candidate_numlights;
 				}
 
 				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
@@ -8248,7 +8248,7 @@ void sub_1D1A030()
 		}
 
 		Sig_VarNotFound(locallight);
-		Sig_VarNotFound(numlight);
+		Sig_VarNotFound(numlights);
 	}
 
 	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterMode, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
