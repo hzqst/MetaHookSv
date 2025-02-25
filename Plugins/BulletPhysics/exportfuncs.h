@@ -87,6 +87,8 @@ model_t* EngineFindWorldModelBySubModel(model_t* psubmodel);
 int EngineGetMaxClientEdicts(void);
 cl_entity_t* EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
+TEMPENTITY* EngineGetTempTentsBase(void);
+TEMPENTITY* EngineGetTempTentByIndex(int index);
 
 #define OBS_SVEN_NONE				0
 #define OBS_SVEN_CHASE_FREE			1

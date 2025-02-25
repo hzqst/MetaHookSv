@@ -32,7 +32,10 @@ public:
 
 	bool IsEntityTempEntity(cl_entity_t* ent) override
 	{
-		if ((ULONG_PTR)ent > (ULONG_PTR)gTempEnts && (ULONG_PTR)ent < (ULONG_PTR)gTempEnts + sizeof(TEMPENTITY) * EngineGetMaxTempEnts())
+		auto tempEntBase = EngineGetTempTentsBase();
+		auto tempEntEnd = EngineGetTempTentByIndex(EngineGetMaxTempEnts());
+
+		if ((ULONG_PTR)ent >= (ULONG_PTR)&tempEntBase->entity && (ULONG_PTR)ent < (ULONG_PTR)tempEntEnd)
 		{
 			return true;
 		}
@@ -77,9 +80,12 @@ public:
 
 	int GetEntityIndexFromTempEntity(cl_entity_t* ent) override
 	{
-		auto pTempEnt = (TEMPENTITY*)((ULONG_PTR)ent - offsetof(TEMPENTITY, entity));
+		auto tempEntBase = EngineGetTempTentsBase();
+		auto tempEntEnd = EngineGetTempTentByIndex(EngineGetMaxTempEnts());
 
-		return (pTempEnt - gTempEnts) + ENTINDEX_TEMPENTITY;
+		auto tent = STRUCT_FROM_LINK(ent, TEMPENTITY, entity);
+
+		return (tent - tempEntBase) + ENTINDEX_TEMPENTITY;
 	}
 
 	int GetEntityIndexFromNetworkEntity(cl_entity_t* ent) override
@@ -102,6 +108,19 @@ public:
 		return -1;
 	}
 
+#if 0
+	bool IsEntityWater(cl_entity_t* ent) override
+	{
+		if (ent && ent->model && ent->model->type == mod_brush)
+		{
+			if (ent->curstate.skin == -3)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 	bool IsEntityBarnacle(cl_entity_t* ent) override
 	{
 		if (ent && ent->model && ent->model->type == mod_studio)
@@ -127,19 +146,7 @@ public:
 
 		return false;
 	}
-
-	bool IsEntityWater(cl_entity_t* ent) override
-	{
-		if (ent && ent->model && ent->model->type == mod_brush)
-		{
-			if (ent->curstate.skin == -3)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
+#endif
 
 	bool IsEntityPlayer(cl_entity_t* ent) override
 	{
@@ -182,7 +189,7 @@ public:
 
 		return false;
 	}
-
+#if 0
 	bool IsTempEntityPresent(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, TEMPENTITY* tent) override
 	{
 		auto pTEnt = (*ppTempEntActive);
@@ -199,7 +206,9 @@ public:
 
 		return false;
 	}
+#endif
 
+#if 0
 	bool IsEntityPresent(cl_entity_t* ent) override
 	{
 		//Bogus index ???
@@ -260,6 +269,8 @@ public:
 
 		return true;
 	}
+
+#endif
 
 	float GetEntityModelScaling(cl_entity_t* ent) override
 	{
@@ -405,7 +416,7 @@ public:
 		return false;
 	}
 
-	void DispatchEntityModel(cl_entity_t* ent, model_t* mod) override
+	void NotifyEntityModel(cl_entity_t* ent, model_t* mod) override
 	{
 		if (GetEntityIndex(ent) == m_iInspectEntityIndex)
 		{

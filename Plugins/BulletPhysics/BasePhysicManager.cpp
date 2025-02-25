@@ -3353,7 +3353,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
 			}
 
-			ClientEntityManager()->DispatchEntityModel(ent, model);
+			ClientEntityManager()->NotifyEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -3389,7 +3389,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
 			}
 
-			ClientEntityManager()->DispatchEntityModel(ent, model);
+			ClientEntityManager()->NotifyEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -3414,7 +3414,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			if (!model)
 				return;
 
-			ClientEntityManager()->DispatchEntityModel(ent, model);
+			ClientEntityManager()->NotifyEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -3442,7 +3442,7 @@ void CBasePhysicManager::CreatePhysicObjectForStudioModel(cl_entity_t* ent, enti
 			if (!model)
 				return;
 
-			ClientEntityManager()->DispatchEntityModel(ent, model);
+			ClientEntityManager()->NotifyEntityModel(ent, model);
 
 			auto PhysicObject = GetPhysicObject(entindex);
 
@@ -4032,7 +4032,7 @@ void CBasePhysicManager::CreatePhysicObjectFromConfig(cl_entity_t* ent, entity_s
 
 void CBasePhysicManager::CreatePhysicObjectForBrushModel(cl_entity_t* ent, entity_state_t* state, model_t* mod)
 {
-	ClientEntityManager()->DispatchEntityModel(ent, mod);
+	ClientEntityManager()->NotifyEntityModel(ent, mod);
 
 	auto entindex = ClientEntityManager()->GetEntityIndex(ent);
 

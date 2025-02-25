@@ -419,7 +419,7 @@ typedef enum
 }activity_e;
 
 #define MAX_TEMP_ENTITIES 500
-#define MAX_TEMP_ENTITIES_SVENGINE 2077
+#define MAX_TEMP_ENTITIES_SVENGINE 2048
 
 //Magic Number
 #define PhyCorpseFlag (1145141919)

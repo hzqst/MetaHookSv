@@ -160,6 +160,16 @@ int EngineGetMaxTempEnts(void)
 	return MAX_TEMP_ENTITIES;
 }
 
+TEMPENTITY* EngineGetTempTentsBase(void)
+{
+	return gTempEnts;
+}
+
+TEMPENTITY* EngineGetTempTentByIndex(int index)
+{
+	return &gTempEnts[index];
+}
+
 int EngineGetNumKnownModel()
 {
 	return (*mod_numknown);
