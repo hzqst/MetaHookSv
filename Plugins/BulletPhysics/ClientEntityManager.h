@@ -6,20 +6,6 @@
 #include <cl_entity.h>
 #include <com_model.h>
 
-class CPlayerDeathState
-{
-public:
-	bool bIsDying{};
-	float flClientTime{};
-	float flAnimTime{};
-	int iSequence{};
-	int iBody{};
-	int iModelIndex{};
-	char szModelName[64]{ 0 };
-	vec3_t vecOrigin{};
-	vec3_t vecAngles{};
-};
-
 class IClientEntityManager : public IBaseInterface
 {
 public:
@@ -107,6 +93,10 @@ public:
 	virtual void ClearAllPlayerDeathState() = 0;
 
 	virtual void SetPlayerDeathState(int entindex, entity_state_t* pplayer, model_t* model) = 0;
+
+	/*
+		Purpose: Find the player that is playing death animation right at the given origin with give angles, sequence and body. returns entindex if found. otherwise return 0.
+	*/
 	virtual int FindDyingPlayer(const char* modelname, vec3_t origin, vec3_t angles, int sequence, int body) = 0;
 
 	/*

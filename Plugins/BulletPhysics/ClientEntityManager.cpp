@@ -9,6 +9,20 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class CPlayerDeathState
+{
+public:
+	bool bIsDying{};
+	float flClientTime{};
+	float flAnimTime{};
+	int iSequence{};
+	int iBody{};
+	int iModelIndex{};
+	char szModelName[64]{ 0 };
+	vec3_t vecOrigin{};
+	vec3_t vecAngles{};
+};
+
 class CClientEntityManager : public IClientEntityManager
 {
 private:
@@ -318,9 +332,6 @@ public:
 		VectorClear(m_PlayerDeathState[entindex].vecOrigin);
 	}
 
-	/*
-		Purpose: Find the player that is playing death animation right at the given origin with give angles, sequence and body. returns entindex if found. otherwise return 0.
-	*/
 	int FindDyingPlayer(const char* modelname, vec3_t origin, vec3_t angles, int sequence, int body) override
 	{
 		for (int i = 1; i < _ARRAYSIZE(m_PlayerDeathState); ++i)
