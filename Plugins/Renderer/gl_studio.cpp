@@ -5,6 +5,8 @@
 #include <sstream>
 #include <algorithm>
 
+static GLuint g_hStudioUBO{};
+
 static std::vector<CStudioModelRenderData*> g_StudioVBOCache;
 
 static std::unordered_map<int, CStudioModelRenderMaterial*> g_StudioVBOMaterialCache;
@@ -138,10 +140,6 @@ CStudioModelRenderData::~CStudioModelRenderData()
 	if (hEBO)
 	{
 		GL_DeleteBuffer(hEBO);
-	}
-	if (hStudioUBO)
-	{
-		GL_DeleteBuffer(hStudioUBO);
 	}
 	for (auto pSubmodel : vSubmodels)
 	{
@@ -427,15 +425,15 @@ CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr
 
 				auto VBOSubmodel = new CStudioModelRenderSubModel;
 
-				VBOSubmodel->iSubmodelIndex = j;
+				//VBOSubmodel->iSubmodelIndex = j;
 
 				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, VBOSubmodel);
 
 				VBOData->vSubmodels.emplace_back(VBOSubmodel);
 
-				auto submodel_offset = (byte*)submodel - (byte*)studiohdr;
+				auto submodel_byteoffset = (byte*)submodel - (byte*)studiohdr;
 
-				VBOData->mSubmodels[submodel_offset] = VBOSubmodel;
+				VBOData->mSubmodels[submodel_byteoffset] = VBOSubmodel;
 			}
 		}
 	}
@@ -464,11 +462,6 @@ CStudioModelRenderData* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr
 			glDisableVertexAttribArray(2);
 			glDisableVertexAttribArray(3);
 		});
-
-	VBOData->hStudioUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	VBOData->celshade_control.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
 	VBOData->celshade_control.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
@@ -1204,10 +1197,21 @@ void R_ShutdownStudio(void)
 
 	R_StudioFlushAllSkins();
 	R_StudioClearVBOCache();
+
+	if (g_hStudioUBO)
+	{
+		GL_DeleteBuffer(g_hStudioUBO);
+		g_hStudioUBO = 0;
+	}
 }
 
 void R_InitStudio(void)
 {
+	g_hStudioUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, g_hStudioUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
 
 	r_studio_viewmodel_lightdir_adjust = gEngfuncs.pfnRegisterVariable("r_studio_viewmodel_lightdir_adjust", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1908,9 +1912,9 @@ void R_StudioDrawVBOBegin(CStudioModelRenderData* VBOData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-	GL_UploadSubDataToUBO(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
+	GL_UploadSubDataToUBO(g_hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, g_hStudioUBO);
 
 	GL_BindVAO(VBOData->hVAO);
 }

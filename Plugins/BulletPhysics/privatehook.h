@@ -61,7 +61,8 @@ typedef struct
 	void (*ThreadPerson_f)(void);
 
 	//Engine model managment
-	void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);
+	// unused
+	//void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);
 
 	//efxapi
 	TEMPENTITY	*(*efxapi_R_TempModel)				(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);

@@ -825,6 +825,8 @@ void Engine_FillAddreess(void)
 		mod_known = *(void **)(addr + 7);
 	}
 
+	//unused
+#if 0
 	if (1)
 	{
 		const char sigs1[] = "bogus\0";
@@ -878,7 +880,7 @@ void Engine_FillAddreess(void)
 		});
 		Sig_FuncNotFound(Mod_LoadStudioModel);
 	}
-
+#endif
 	if (1)
 	{
 		const char sigs1[] = "Cached models:\n";
@@ -1554,15 +1556,19 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 	return r;
 }
 
+#if 0//unused
 void Mod_LoadStudioModel(model_t* mod, void* buffer)
 {
 	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
 }
+#endif
 
 void Engine_InstallHook(void)
 {
 	Install_InlineHook(R_NewMap);
-	Install_InlineHook(Mod_LoadStudioModel);
+	
+	//unused
+	//Install_InlineHook(Mod_LoadStudioModel);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{

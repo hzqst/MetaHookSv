@@ -90,7 +90,7 @@ public:
 class CStudioModelRenderSubModel
 {
 public:
-	int iSubmodelIndex{-1};
+	//int iSubmodelIndex{-1};
 	std::vector<CStudioModelRenderMesh> vMesh;
 };
 
@@ -147,7 +147,7 @@ public:
 	GLuint				hVBO{};
 	GLuint				hEBO{};
 	GLuint				hVAO{};
-	GLuint				hStudioUBO{};
+	//GLuint				hStudioUBO{};
 
 	//vbo_submodel_t Storage
 	std::vector<CStudioModelRenderSubModel *> vSubmodels;
