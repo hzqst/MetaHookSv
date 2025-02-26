@@ -14,24 +14,10 @@ IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
-PVOID g_dwEngineBase = 0;
-DWORD g_dwEngineSize = 0;
-PVOID g_dwEngineTextBase = 0;
-DWORD g_dwEngineTextSize = 0;
-PVOID g_dwEngineDataBase = 0;
-DWORD g_dwEngineDataSize = 0;
-PVOID g_dwEngineRdataBase = 0;
-DWORD g_dwEngineRdataSize = 0;
+mh_dll_info_t g_EngineDLLInfo = { 0 };
+mh_dll_info_t g_ClientDLLInfo = { 0 };
+mh_dll_info_t g_MirroredEngineDLLInfo = {0};
 DWORD g_dwEngineBuildnum = 0;
-
-PVOID g_dwClientBase = 0;
-DWORD g_dwClientSize = 0;
-PVOID g_dwClientTextBase = 0;
-DWORD g_dwClientTextSize = 0;
-PVOID g_dwClientDataBase = 0;
-DWORD g_dwClientDataSize = 0;
-PVOID g_dwClientRdataBase = 0;
-DWORD g_dwClientRdataSize = 0;
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -61,7 +47,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		FreeImage_MinorVersion != FREEIMAGE_MINOR_VERSION ||
 		FreeImage_ReleaseSerial != FREEIMAGE_RELEASE_SERIAL)
 	{
-		Sys_Error("FreeImage.dll version mismatch, expect \"%d.%d.%d\", got \"%d.%d.%d\" !", 
+		Sys_Error("FreeImage.dll version mismatch, expect \"%d.%d.%d\", got \"%d.%d.%d\" ! Are you using an older version of FreeImage.dll ?", 
 			FREEIMAGE_MAJOR_VERSION, FREEIMAGE_MINOR_VERSION, FREEIMAGE_RELEASE_SERIAL, 
 			FreeImage_MajorVersion, FreeImage_MinorVersion, FreeImage_ReleaseSerial);
 	}
@@ -72,11 +58,17 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
-	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
-	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
-	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
-	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
-	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
+	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
+	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
+	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
+	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
+	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
+
+	g_MirroredEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
+	g_MirroredEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
+	g_MirroredEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirroredEngineDLLInfo.TextSize);
+	g_MirroredEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirroredEngineDLLInfo.DataSize);
+	g_MirroredEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirroredEngineDLLInfo.RdataSize);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
@@ -119,6 +111,12 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_CreateEntities = HUD_CreateEntities;
 	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
+
+	g_ClientDLLInfo.ImageBase = g_pMetaHookAPI->GetClientBase();
+	g_ClientDLLInfo.ImageSize = g_pMetaHookAPI->GetClientSize();
+	g_ClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".text\0\0\0", &g_ClientDLLInfo.TextSize);
+	g_ClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".data\0\0\0", &g_ClientDLLInfo.DataSize);
+	g_ClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".rdata\0\0", &g_ClientDLLInfo.RdataSize);
 
 	Client_FillAddress();
 }

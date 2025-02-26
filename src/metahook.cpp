@@ -1,14 +1,18 @@
 #include <Windows.h>
 #include "metahook.h"
-#include "LoadBlob.h"
-#include "LoadDllNotification.h"
-#include <detours.h>
 #include "interface.h"
+
+#include <detours.h>
 #include <capstone.h>
+#include <LoadDllMemoryApi.h>
+
 #include <fstream>
 #include <sstream>
 #include <set>
 #include <vector>
+
+#include "LoadBlob.h"
+#include "LoadDllNotification.h"
 
 extern PVOID g_BlobLoaderSectionBase;
 extern ULONG g_BlobLoaderSectionSize;
@@ -118,6 +122,7 @@ bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 char g_szEnvPath[4096] = { 0 };
 char g_szGameDirectory[32] = { 0 };
+HMEMORYMODULE g_hMirroredEngine = NULL;
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 BOOL MH_UnHook(hook_t *pHook);
@@ -149,6 +154,7 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 CreateInterfaceFn MH_GetEngineFactory(void);
+HMEMORYMODULE MH_LoadMirroredDLL(const char* szFileName);
 
 typedef struct plugin_s
 {
@@ -172,26 +178,12 @@ mh_enginesave_t gMetaSave = {0};
 extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
 
-#define MAX_SYS_ERROR_LENGTH 4096
 
 extern "C"
 {
-	void (*g_pfnSys_Error)(const char* fmt, ...) = NULL;
+#define MAX_SYS_ERROR_LENGTH 4096
 
-	void MH_SysErrorWrapper(const char* fmt, ...);
-
-	void MH_SysErrorInternal(const char* msg)
-	{
-#if 1
-		if (gMetaSave.pEngineFuncs)
-		{
-			if (gMetaSave.pEngineFuncs->pfnClientCmd)
-				gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
-		}
-#endif
-		MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)(-1), 0);
-	}
+	void(*g_pfnSys_Error)(const char* fmt, ...) = NULL;
 
 	void MH_SysError(const char* fmt, ...)
 	{
@@ -205,7 +197,15 @@ extern "C"
 
 		msg[MAX_SYS_ERROR_LENGTH - 1] = 0;
 
-		MH_SysErrorInternal(msg);
+#if 1
+		if (gMetaSave.pEngineFuncs)
+		{
+			if (gMetaSave.pEngineFuncs->pfnClientCmd)
+				gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
+		}
+#endif
+		MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)(-1), 0);
 	}
 }
 
@@ -1132,7 +1132,7 @@ void MH_ResetAllVars(void)
 	memset(g_szGameDirectory, 0, sizeof(g_szGameDirectory));
 }
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char * pszEngineDLL)
 {
 	MH_ResetAllVars();
 
@@ -1166,6 +1166,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		g_dwEngineBase = MH_GetModuleBase(hEngineModule);
 		g_dwEngineSize = MH_GetModuleSize(hEngineModule);
 		g_hEngineModule = hEngineModule;
+		g_hMirroredEngine = MH_LoadMirroredDLL(pszEngineDLL);
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
@@ -1174,6 +1175,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		g_dwEngineBase = GetBlobModuleImageBase(hBlobEngine);
 		g_dwEngineSize = GetBlobModuleImageSize(hBlobEngine);
 		g_hBlobEngine = hBlobEngine;
+		g_hMirroredEngine = NULL;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -2361,6 +2363,12 @@ void MH_ExitGame(int iResult)
 	if (cvar_callbacks)
 	{
 		(*cvar_callbacks) = NULL;
+	}
+
+	if (g_hMirroredEngine)
+	{
+		FreeLibraryMemory(g_hMirroredEngine);
+		g_hMirroredEngine = NULL;
 	}
 }
 
@@ -4069,6 +4077,46 @@ const char* MH_GetGameDirectory()
 	return g_szGameDirectory;
 }
 
+PVOID MH_GetMirrorEngineBase()
+{
+	return (PVOID)g_hMirroredEngine;
+}
+
+ULONG MH_GetMirrorEngineSize()
+{
+	return GetMemoryModuleSize(g_hMirroredEngine);
+}
+
+HMEMORYMODULE MH_LoadMirroredDLL(const char * szFileName)
+{
+	HMEMORYMODULE hMemoryModuleHandle = NULL;
+
+	size_t readBytes = 0;
+	auto hFileHandle = FILESYSTEM_ANY_OPEN(szFileName, "rb");
+	if (hFileHandle)
+	{
+		FILESYSTEM_ANY_SEEK(hFileHandle, 0, FILESYSTEM_SEEK_TAIL);
+		auto cbFileSize = FILESYSTEM_ANY_TELL(hFileHandle);
+		FILESYSTEM_ANY_SEEK(hFileHandle, 0, FILESYSTEM_SEEK_HEAD);
+
+		auto pFileBuffer = malloc(cbFileSize);
+
+		if (pFileBuffer)
+		{
+			FILESYSTEM_ANY_READ(pFileBuffer, cbFileSize, hFileHandle);
+
+			ULONG ImageSize = 0;
+			hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
+		
+			free(pFileBuffer);
+		}
+
+		FILESYSTEM_ANY_CLOSE(hFileHandle);
+	}
+
+	return hMemoryModuleHandle;
+}
+
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
 	MH_UnHook,
@@ -4144,6 +4192,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_HookCLParseFuncByOpcode,
 	MH_HookCLParseFuncByName,
 	MH_SearchPatternNoWildCard,
+	MH_GetMirrorEngineBase,
+	MH_GetMirrorEngineSize,
 	NULL
 };
 
@@ -4222,5 +4272,7 @@ metahook_api_t gMetaHookAPI =
 	MH_HookCLParseFuncByOpcode,
 	MH_HookCLParseFuncByName,
 	MH_SearchPatternNoWildCard,
+	MH_GetMirrorEngineBase,
+	MH_GetMirrorEngineSize,
 	NULL
 };

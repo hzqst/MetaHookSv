@@ -327,22 +327,14 @@
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
-void R_FillAddress(void)
+void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo)
 {
-	ULONG_PTR addr;
-
-	auto hSDL2 = GetModuleHandleA("SDL2.dll");
-	if (hSDL2)
-	{
-		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
-	}
-
 	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
 
 	if (engineFactory)
 	{
 #define ENGINE_SURFACE_VERSION "EngineSurface007"
-		void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
+		void* engineSurface = (void*)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
 		auto engineSurface_vftable = *(ULONG_PTR**)engineSurface;
 
@@ -374,9 +366,9 @@ void R_FillAddress(void)
 .rdata:102C94E8                 dd offset drawSetColor		//13
 			*/
 			index_createNewTextureID++;
-			index_drawSetTextureFile ++;
+			index_drawSetTextureFile++;
 			index_isTextureIDValid++;
-			index_drawFlushText ++;
+			index_drawFlushText++;
 		}
 
 		gPrivateFuncs.enginesurface_drawSetTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureRGBA))engineSurface_vftable[index_drawSetTextureRGBA];
@@ -416,71 +408,168 @@ void R_FillAddress(void)
 
 			return FALSE;
 
-		}, 0, &ctx);
+			}, 0, &ctx);
 
 		if (ctx.candicate && ctx.instCount <= 20)
 		{
 			gPrivateFuncs.staticGetTextureById = (decltype(gPrivateFuncs.staticGetTextureById))ctx.candicate;
 		}
 	}
+}
 
-	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
-	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
-	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
-	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
-	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
-
-	bHasOfficialFBOSupport = false;
-	bHasOfficialGLTexAllocSupport = true;
-
-	if (1)
+void R_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo)
+{
+	const char sigs[] = "FBO backbuffer rendering disabled";
+	auto FBO_String = Search_Pattern_Data(sigs, DllInfo);
+	if (!FBO_String)
+		FBO_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (FBO_String)
 	{
-		const char sigs1[] = "FBO backbuffer rendering disabled";
-		auto FBO_String = Search_Pattern_Data(sigs1);
-		if (!FBO_String)
-			FBO_String = Search_Pattern_Rdata(sigs1);
-		if (FBO_String)
+		bHasOfficialFBOSupport = true;
+	}
+}
+
+void R_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t &DllInfo)
+{
+	const char pattern[] = "\xA8\x16\x00\x00";
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
 		{
-			bHasOfficialFBOSupport = true;
+			typedef struct
+			{
+				bool bFoundPush;
+				bool bFoundCall;
+			}LoadSkysSearchContext;
+
+			LoadSkysSearchContext ctx = { 0 };
+
+			g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (LoadSkysSearchContext*)context;
+
+				if (instCount == 1 && pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG)
+				{
+					ctx->bFoundPush = true;
+				}
+
+				if (instCount == 2 && address[0] == 0xE8)
+				{
+					ctx->bFoundCall = true;
+				}
+
+				if (ctx->bFoundPush && ctx->bFoundCall)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, &ctx);
+
+			if (ctx.bFoundPush && ctx.bFoundCall)
+			{
+				bHasOfficialGLTexAllocSupport = false;
+
+				break;
+			}
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
 		}
 	}
+}
 
-	if (1)
+void R_FillAddress_GL_Init(const mh_dll_info_t& DllInfo)
+{
+	const char pattern[] = "\x68\x00\x1F\x00\x00\xFF";
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
 	{
-		const char pattern[] = "\xA8\x16\x00\x00";
-		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
-		while (SearchBegin < SearchLimit)
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
 		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
+			auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x80, [](PUCHAR Candidate) {
+
+				//.text:01D5E540 83 EC 14                                            sub     esp, 14h
+				//	.text : 01D5E543 56                                                  push    esi
+				if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
+					Candidate[0] == 0x83 &&
+					Candidate[1] == 0xEC &&
+					Candidate[2] == 0x14 &&
+					Candidate[3] >= 0x50 &&
+					Candidate[3] <= 0x57)
+					return TRUE;
+
+				//.text : 01D82A50 55                                                  push    ebp
+				//.text : 01D82A51 8B EC                                               mov     ebp, esp
+				//.text:01D4BE83 83 EC 14                                            sub     esp, 14h
+				if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
+					Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x83 &&
+					Candidate[4] == 0xEC)
+					return TRUE;
+
+				if (Candidate[-1] == 0x90 &&
+					Candidate[0] == 0x68 &&
+					Candidate[1] == 0x00 &&
+					Candidate[2] == 0x1F &&
+					Candidate[3] == 0x00 &&
+					Candidate[4] == 0x00)
+					return TRUE;
+
+				return FALSE;
+				});
+			if (pCandidateFunction)
 			{
 				typedef struct
 				{
-					bool bFoundPush;
-					bool bFoundCall;
-				}LoadSkysSearchContext;
+					bool bFoundPushString;
+				}GL_InitSearchContext;
 
-				LoadSkysSearchContext ctx = { 0 };
+				GL_InitSearchContext ctx = { 0 };
 
-				g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				g_pMetaHookAPI->DisasmRanges(pCandidateFunction, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 					auto pinst = (cs_insn*)inst;
-					auto ctx = (LoadSkysSearchContext*)context;
+					auto ctx = (GL_InitSearchContext*)context;
 
-					if (instCount == 1 && pinst->id == X86_INS_PUSH &&
+					if (pinst->id == X86_INS_PUSH &&
 						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG )
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						(
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize) ||
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineRdataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+							))
 					{
-						ctx->bFoundPush = true;
+						auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
+						if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1) ||
+							!memcmp(pString, "Failed to query gl vendor", sizeof("Failed to query gl vendor") - 1) ||
+							!memcmp(pString, "GL_VENDOR: %s", sizeof("GL_VENDOR: %s") - 1))
+						{
+							ctx->bFoundPushString = true;
+						}
 					}
 
-					if (instCount == 2 && address[0] == 0xE8)
-					{
-						ctx->bFoundCall = true;
-					}
-
-					if (ctx->bFoundPush && ctx->bFoundCall)
+					if (ctx->bFoundPushString)
 						return TRUE;
 
 					if (address[0] == 0xCC)
@@ -491,129 +580,73 @@ void R_FillAddress(void)
 
 					return FALSE;
 
-				}, 0, &ctx);
+					}, 0, &ctx);
 
-				if (ctx.bFoundPush && ctx.bFoundCall)
+				if (ctx.bFoundPushString)
 				{
-					bHasOfficialGLTexAllocSupport = false;
+					gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))pCandidateFunction;
 
 					break;
 				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-}
-			else
-			{
-				break;
 			}
-		}
-	}
 
-	if (1)
-	{
-		const char pattern[] = "\x68\x00\x1F\x00\x00\xFF";
-		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
-		while (SearchBegin < SearchLimit)
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
 		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x80, [](PUCHAR Candidate) {
-
-					//.text:01D5E540 83 EC 14                                            sub     esp, 14h
-					//	.text : 01D5E543 56                                                  push    esi
-					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) && 
-						Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[2] == 0x14 &&
-						Candidate[3] >= 0x50 &&
-						Candidate[3] <= 0x57)
-						return TRUE;
-
-					//.text : 01D82A50 55                                                  push    ebp
-					//.text : 01D82A51 8B EC                                               mov     ebp, esp
-					//.text:01D4BE83 83 EC 14                                            sub     esp, 14h
-					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
-						Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC &&
-						Candidate[3] == 0x83 &&
-						Candidate[4] == 0xEC)
-						return TRUE;
-
-					if (Candidate[-1] == 0x90 &&
-						Candidate[0] == 0x68 &&
-						Candidate[1] == 0x00 &&
-						Candidate[2] == 0x1F &&
-						Candidate[3] == 0x00 &&
-						Candidate[4] == 0x00)
-						return TRUE;
-
-					return FALSE;
-				});
-				if (pCandidateFunction)
-				{
-					typedef struct
-					{
-						bool bFoundPushString;
-					}GL_InitSearchContext;
-
-					GL_InitSearchContext ctx = { 0 };
-
-					g_pMetaHookAPI->DisasmRanges(pCandidateFunction, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (GL_InitSearchContext*)context;
-
-						if (pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-							(
-							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize) ||
-							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineRdataBase &&
-								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
-								) )
-						{
-							auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1) ||
-								!memcmp(pString, "Failed to query gl vendor", sizeof("Failed to query gl vendor") - 1) ||
-								!memcmp(pString, "GL_VENDOR: %s", sizeof("GL_VENDOR: %s") - 1))
-							{
-								ctx->bFoundPushString = true;
-							}
-						}
-
-						if (ctx->bFoundPushString)
-							return TRUE;
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx);
-
-					if (ctx.bFoundPushString)
-					{
-						gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))pCandidateFunction;
-
-						break;
-					}
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-}
-			else
-			{
-				break;
-			}
+			break;
 		}
 	}
+}
+
+void R_FillAddress(void)
+{
+	ULONG_PTR addr;
+
+	auto hSDL2 = GetModuleHandleA("SDL2.dll");
+	if (hSDL2)
+	{
+		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
+	}
+
+	R_FillAddress_EngineSurface(g_EngineDLLInfo);
+
+	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
+	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
+	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
+	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
+	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
+
+	bHasOfficialFBOSupport = false;
+	bHasOfficialGLTexAllocSupport = true;
+
+	if (g_MirroredEngineDLLInfo.ImageBase)
+	{
+		R_FillAddress_HasOfficialFBOSupport(g_MirroredEngineDLLInfo);
+	}
+	else
+	{
+		R_FillAddress_HasOfficialFBOSupport(g_EngineDLLInfo);
+	}
+
+	if (g_MirroredEngineDLLInfo.ImageBase)
+	{
+		R_FillAddress_HasOfficialGLTexAllocSupport(g_MirroredEngineDLLInfo);
+	}
+	else
+	{
+		R_FillAddress_HasOfficialGLTexAllocSupport(g_EngineDLLInfo);
+	}
+
+	if (g_MirroredEngineDLLInfo.ImageBase)
+	{
+		R_FillAddress_GL_Init(g_MirroredEngineDLLInfo);
+	}
+	else
+	{
+		R_FillAddress_GL_Init(g_EngineDLLInfo);
+	}
+
 	Sig_FuncNotFound(GL_Init);
 
 #if 0//unused
@@ -9038,24 +9071,5 @@ void R_PatchResetLatched(void)
 
 void Client_FillAddress(void)
 {
-	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
-	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
-
-	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
-
-	if (!g_dwClientTextBase)
-	{
-		Sys_Error("Failed to locate section \".text\" in client.dll!");
-		return;
-	}
-
-	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
-
-	if (!g_dwClientDataBase)
-	{
-		Sys_Error("Failed to locate section \".text\" in client.dll!");
-		return;
-	}
-
-	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
+	
 }

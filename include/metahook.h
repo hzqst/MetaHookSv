@@ -134,6 +134,18 @@ typedef struct mh_load_dll_notification_context_s
 	LPCWSTR BaseDllName;
 }mh_load_dll_notification_context_t;
 
+typedef struct mh_dll_info_s
+{
+	PVOID ImageBase;
+	DWORD ImageSize;
+	PVOID TextBase;
+	DWORD TextSize;
+	PVOID DataBase;
+	DWORD DataSize;
+	PVOID RdataBase;
+	DWORD RdataSize;
+}mh_dll_info_t;
+
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);
@@ -528,6 +540,16 @@ typedef struct metahook_api_s
 	*/
 	void* (*SearchPatternNoWildCard)(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
 
+	/*
+		Purpose: Return the image base of the mirrored engine dll (with .code relocation fixed), not available on blob engine.
+	*/
+	PVOID (*GetMirrorEngineBase)(VOID);
+
+	/*
+		Purpose: Return the image size of the mirrored engine dll (probably same as engine dll), not available on blob engine.
+	*/
+	ULONG (*GetMirrorEngineSize)(VOID);
+
 	//Always terminate with a NULL
 	PVOID Terminator;
 
@@ -539,15 +561,11 @@ typedef struct mh_enginesave_s
 	cl_enginefunc_t *pEngineFuncs;
 }mh_enginesave_t;
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName, const char* szFullGamePath);
-void MH_ExitGame(int iResult);
-void MH_Shutdown(void);
-
 #include <IFileSystem.h>
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 104
+#define METAHOOK_API_VERSION 105
 
 class ICommandLine;
 class IFileSystem;
