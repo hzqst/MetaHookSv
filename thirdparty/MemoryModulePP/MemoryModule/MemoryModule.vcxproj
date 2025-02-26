@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Initialize.cpp" />
+    <ClCompile Include="LoadDllMemoryApi.cpp" />
+    <ClCompile Include="MemoryModule.cpp" />
+    <ClCompile Include="MmpDotNet.cpp" />
+    <ClCompile Include="MmpLdrpTls.cpp" />
+    <ClCompile Include="MmpTls.cpp" />
+    <ClCompile Include="Loader.cpp" />
+    <ClCompile Include="InvertedFunctionTable.cpp" />
+    <ClCompile Include="LdrEntry.cpp" />
+    <ClCompile Include="BaseAddressIndex.cpp" />
+    <ClCompile Include="Utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\LoadDllMemoryApi.h" />
+    <ClInclude Include="..\include\Loader.h" />
+    <ClInclude Include="LoaderPrivate.h" />
+    <ClInclude Include="MemoryModule.h" />
+    <ClInclude Include="MmpDotNet.h" />
+    <ClInclude Include="MmpGlobalData.h" />
+    <ClInclude Include="MmpTls.h" />
+    <ClInclude Include="BaseAddressIndex.h" />
+    <ClInclude Include="InvertedFunctionTable.h" />
+    <ClInclude Include="LdrEntry.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MemoryModulePP.def" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>MemoryModule</RootNamespace>
+    <WindowsTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</WindowsTargetPlatformVersion>
+    <ProjectName>MemoryModule</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);</IncludePath>
+    <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)intermediate\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);</IncludePath>
+    <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)intermediate\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);</IncludePath>
+    <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)intermediate\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir);</IncludePath>
+    <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)intermediate\$(PlatformTarget)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;MMPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile />
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>..\include;$(SolutionDir)thirdparty\Musa.Veil_fork</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>MemoryModulePP.def</ModuleDefinitionFile>
+    </Link>
+    <Lib />
+    <PostBuildEvent>
+      <Command>mkdir "$(SolutionDir)thirdparty\install"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib\$(TargetName)$(TargetExt)" /y
+
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include"
+xcopy "$(ProjectDir)..\include" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include" /y /e</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;MMPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile />
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\include;$(SolutionDir)thirdparty\Musa.Veil_fork</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>MemoryModulePP.def</ModuleDefinitionFile>
+    </Link>
+    <Lib />
+    <PostBuildEvent>
+      <Command>mkdir "$(SolutionDir)thirdparty\install"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib\$(TargetName)$(TargetExt)" /y
+
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include"
+xcopy "$(ProjectDir)..\include" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include" /y /e</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;MMPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile />
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>..\include;$(SolutionDir)thirdparty\Musa.Veil_fork</AdditionalIncludeDirectories>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>MemoryModulePP.def</ModuleDefinitionFile>
+    </Link>
+    <Lib />
+    <PostBuildEvent>
+      <Command>mkdir "$(SolutionDir)thirdparty\install"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib\$(TargetName)$(TargetExt)" /y
+
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include"
+xcopy "$(ProjectDir)..\include" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include" /y /e</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;PHNT_NO_INLINE_INIT_STRING;MMPP_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile />
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\include;$(SolutionDir)thirdparty\Musa.Veil_fork</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>MemoryModulePP.def</ModuleDefinitionFile>
+    </Link>
+    <Lib />
+    <PostBuildEvent>
+      <Command>mkdir "$(SolutionDir)thirdparty\install"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)"
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\lib\$(TargetName)$(TargetExt)" /y
+
+mkdir "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include"
+xcopy "$(ProjectDir)..\include" "$(SolutionDir)thirdparty\install\MemoryModulePP\$(PlatformTarget)\$(Configuration)\include" /y /e</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

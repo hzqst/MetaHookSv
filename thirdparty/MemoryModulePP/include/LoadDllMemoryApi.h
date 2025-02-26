@@ -1,0 +1,57 @@
+#pragma once
+#include <Windows.h>
+
+typedef HMODULE HMEMORYMODULE;
+#include "Loader.h"
+
+#define MemoryModuleToModule(_hMemoryModule_) (_hMemoryModule_)
+
+#ifndef NT_SUCCESS
+#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+#endif
+
+HMEMORYMODULE WINAPI LoadLibraryMemory(_In_ PVOID BufferAddress, _In_ SIZE_T BufferSize);
+
+HMEMORYMODULE WINAPI LoadLibraryMemoryExA(
+	_In_ PVOID BufferAddress,
+	_In_ SIZE_T BufferSize,
+	_Out_opt_ DWORD* OutImageSize,
+	_In_opt_ LPCSTR DllBaseName,
+	_In_opt_ LPCSTR DllFullName,
+	_In_ DWORD Flags
+);
+
+HMEMORYMODULE WINAPI LoadLibraryMemoryExW(
+	_In_ PVOID BufferAddress,
+	_In_ SIZE_T BufferSize,
+	_Out_opt_ DWORD* OutImageSize,
+	_In_opt_ LPCWSTR DllBaseName,
+	_In_opt_ LPCWSTR DllFullName,
+	_In_ DWORD Flags
+);
+
+BOOL WINAPI FreeLibraryMemory(_In_ HMEMORYMODULE hMemoryModule);
+
+ULONG WINAPI GetMemoryModuleFileSize(HMEMORYMODULE hModule);
+
+ULONG WINAPI GetMemoryModuleSize(HMEMORYMODULE hModule);
+
+#define NtLoadDllMemory						LdrLoadDllMemory
+#define NtLoadDllMemoryExA					LdrLoadDllMemoryExA
+#define NtLoadDllMemoryExW					LdrLoadDllMemoryExW
+#define NtUnloadDllMemory					LdrUnloadDllMemory
+#define NtUnloadDllMemoryAndExitThread		LdrUnloadDllMemoryAndExitThread
+#define FreeLibraryMemoryAndExitThread		LdrUnloadDllMemoryAndExitThread
+#define NtQuerySystemMemoryModuleFeatures	LdrQuerySystemMemoryModuleFeatures
+
+#ifdef UNICODE
+#define LdrLoadDllMemoryEx LdrLoadDllMemoryExW
+#define LoadLibraryMemoryEx LoadLibraryMemoryExW
+#else
+#define LdrLoadDllMemoryEx LdrLoadDllMemoryExA
+#define LoadLibraryMemoryEx LoadLibraryMemoryExA
+#endif
+#define NtLoadDllMemoryEx LdrLoadDllMemoryEx
+
+
+
