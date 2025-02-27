@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MetaHook", "src\MetaHook.vcxproj", "{0931F284-681C-41F1-AF30-97D1DCE2283C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6} = {5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Renderer", "Plugins\Renderer\Renderer.vcxproj", "{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}"
 EndProject
@@ -53,6 +56,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeapPatch", "Plugins\HeapPatch\HeapPatch.vcxproj", "{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilHTTPClient_libcurl", "PluginLibs\UtilHTTPClient_libcurl\UtilHTTPClient_libcurl.vcxproj", "{724791C7-C33E-46D2-A624-4837359ED3F6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemoryModule", "thirdparty\MemoryModulePP\MemoryModule\MemoryModule.vcxproj", "{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -220,6 +227,14 @@ Global
 		{724791C7-C33E-46D2-A624-4837359ED3F6}.Release_blob|Win32.Build.0 = Release|Win32
 		{724791C7-C33E-46D2-A624-4837359ED3F6}.Release|Win32.ActiveCfg = Release|Win32
 		{724791C7-C33E-46D2-A624-4837359ED3F6}.Release|Win32.Build.0 = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Debug|Win32.Build.0 = Debug|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release_AVX2|Win32.ActiveCfg = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release_AVX2|Win32.Build.0 = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release_blob|Win32.ActiveCfg = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release_blob|Win32.Build.0 = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release|Win32.ActiveCfg = Release|Win32
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -244,6 +259,7 @@ Global
 		{C34EC03E-0DF9-44E3-BDFD-706ED7C10559} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{724791C7-C33E-46D2-A624-4837359ED3F6} = {C675D02D-BDD8-431A-91A7-59AE873F1BD0}
+		{5B1F46DB-036E-4A50-AF5F-F5D6584D42C6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}

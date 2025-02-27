@@ -157,6 +157,10 @@ typedef struct
 
 	//SDL2
 	int (__cdecl * SDL_GL_SetAttribute)(int attr, int value);
+
+	bool R_RenderScene_inlined;
+	bool R_LightStrength_inlined;
+	bool R_GlowBlend_inlined;
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;
