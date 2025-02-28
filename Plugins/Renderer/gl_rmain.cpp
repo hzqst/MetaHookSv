@@ -236,11 +236,11 @@ FBO_Container_t s_WaterSurfaceFBO = { 0 };
 FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
 
-bool bNoStretchAspect = true;
-bool bUseOITBlend = false;
-bool bUseLegacyTextureLoader = false;
-bool bHasOfficialFBOSupport = false;
-bool bHasOfficialGLTexAllocSupport = true;
+bool g_bNoStretchAspect = true;
+bool g_bUseOITBlend = false;
+bool g_bUseLegacyTextureLoader = false;
+bool g_bHasOfficialFBOSupport = false;
+bool g_bHasOfficialGLTexAllocSupport = true;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -1086,7 +1086,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 	if (R_IsRenderingShadowView())
 		return;
 
-	if (bUseOITBlend)
+	if (g_bUseOITBlend)
 	{
 		glColorMask(0, 0, 0, 0);
 
@@ -1192,7 +1192,7 @@ void R_AddTEntity(cl_entity_t *ent)
 		return;
 	}
 
-	if (bUseOITBlend)
+	if (g_bUseOITBlend)
 	{
 		(*transObjects)[(*numTransObjs)].pEnt = ent;
 		(*transObjects)[(*numTransObjs)].distance = 0;
@@ -1914,19 +1914,19 @@ void GL_Init(void)
 
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
 
-	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+	g_bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
 	if (gEngfuncs.CheckParm("-oitblend", NULL))
-		bUseOITBlend = true;
+		g_bUseOITBlend = true;
 
-	if (bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
-		bUseOITBlend = false;
+	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
+		g_bUseOITBlend = false;
 
-	if (bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
-		bUseOITBlend = false;
+	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
+		g_bUseOITBlend = false;
 
-	if (!bUseLegacyTextureLoader && gEngfuncs.CheckParm("-use_legacy_texloader", NULL))
-		bUseLegacyTextureLoader = true;
+	if (!g_bUseLegacyTextureLoader && gEngfuncs.CheckParm("-use_legacy_texloader", NULL))
+		g_bUseLegacyTextureLoader = true;
 
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();
@@ -2365,7 +2365,7 @@ void GL_EndRendering(void)
 	float fSrcAspect = (float)srcW / (float)srcH;
 	float fDstAspect = (float)dstX2 / (float)dstY2;
 
-	if (bNoStretchAspect)
+	if (g_bNoStretchAspect)
 	{
 		if (fSrcAspect > fDstAspect)
 		{
@@ -3407,7 +3407,7 @@ void R_DrawTEntitiesForViewModel(void)
 	if (!r_drawentities->value)
 		return;
 
-	if (bUseOITBlend)
+	if (g_bUseOITBlend)
 	{
 		//TODO: oit stuffs...
 	}

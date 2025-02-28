@@ -231,7 +231,7 @@ void R_InitPostProcess(void)
 	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
 
 	//OIT Blend
-	if (bUseOITBlend)
+	if (g_bUseOITBlend)
 	{
 		oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
 

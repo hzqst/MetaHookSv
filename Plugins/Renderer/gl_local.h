@@ -214,12 +214,12 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern bool bNoStretchAspect;
-extern bool bUseOITBlend;
+extern bool g_bNoStretchAspect;
+extern bool g_bUseOITBlend;
 //extern bool bVerticalFov;//unused
-extern bool bUseLegacyTextureLoader;
-extern bool bHasOfficialFBOSupport;
-extern bool bHasOfficialGLTexAllocSupport;
+extern bool g_bUseLegacyTextureLoader;
+extern bool g_bHasOfficialFBOSupport;
+extern bool g_bHasOfficialGLTexAllocSupport;
 
 extern FBO_Container_t s_FinalBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;

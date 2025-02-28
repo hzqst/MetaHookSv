@@ -111,7 +111,7 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 		if (state & WATER_GAMMA_BLEND_ENABLED)
 			defs << "#define GAMMA_BLEND_ENABLED\n";
 
-		if ((state & WATER_OIT_BLEND_ENABLED) && bUseOITBlend)
+		if ((state & WATER_OIT_BLEND_ENABLED) && g_bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
 		auto def = defs.str();

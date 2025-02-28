@@ -225,7 +225,7 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 		if (state & WSURF_ADDITIVE_BLEND_ENABLED)
 			defs << "#define ADDITIVE_BLEND_ENABLED\n";
 
-		if ((state & WSURF_OIT_BLEND_ENABLED) && bUseOITBlend)
+		if ((state & WSURF_OIT_BLEND_ENABLED) && g_bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
 		if (state & WSURF_GAMMA_BLEND_ENABLED)
@@ -1635,7 +1635,7 @@ void R_GenerateSceneUBO(void)
 		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 	});
 	
-	if (bUseOITBlend)
+	if (g_bUseOITBlend)
 	{
 		size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
 
