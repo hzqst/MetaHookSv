@@ -1319,12 +1319,12 @@ void R_FillAddress_R_CullBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 
 	Sig_FuncNotFound(R_CullBox);
 
-/*
-	mplane_t *frustum = NULL;
-	vec_t *vup = NULL;
-	vec_t *vpn = NULL;
-	vec_t *vright = NULL;
-*/
+	/*
+		mplane_t *frustum = NULL;
+		vec_t *vup = NULL;
+		vec_t *vpn = NULL;
+		vec_t *vright = NULL;
+	*/
 	ULONG_PTR frustum_VA = 0;
 	ULONG frustum_RVA = 0;
 
@@ -2468,14 +2468,14 @@ void R_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_d
 
 	Sig_FuncNotFound(R_DrawSequentialPoly);
 
-/*
-	//Global pointers that link into engine vars
-	byte *lightmaps = NULL;
-	int *lightmap_textures = NULL;
-	void *lightmap_rectchange = NULL;
-	int *gDecalSurfCount = NULL;
-	msurface_t **gDecalSurfs = NULL;
-*/
+	/*
+		//Global pointers that link into engine vars
+		byte *lightmaps = NULL;
+		int *lightmap_textures = NULL;
+		void *lightmap_rectchange = NULL;
+		int *gDecalSurfCount = NULL;
+		msurface_t **gDecalSurfs = NULL;
+	*/
 	ULONG_PTR lightmaps_VA = 0;
 	ULONG lightmaps_RVA = 0;
 
@@ -2528,229 +2528,229 @@ void R_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_d
 
 		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (R_DrawSequentialPoly_SearchContext*)context;
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_DrawSequentialPoly_SearchContext*)context;
 
-				if (ctx->lightmap_textures && ctx->lightmap_rectchange && ctx->lightmaps && ctx->gDecalSurfs && ctx->gDecalSurfCount && ctx->R_RenderDynamicLightmaps)
-					return TRUE;
+			if (ctx->lightmap_textures && ctx->lightmap_rectchange && ctx->lightmaps && ctx->gDecalSurfs && ctx->gDecalSurfCount && ctx->R_RenderDynamicLightmaps)
+				return TRUE;
 
-				if (ctx->code.size() > 1000)
-					return TRUE;
+			if (ctx->code.size() > 1000)
+				return TRUE;
 
-				if (ctx->code.find(address) != ctx->code.end())
-					return TRUE;
+			if (ctx->code.find(address) != ctx->code.end())
+				return TRUE;
 
-				ctx->code.emplace(address);
+			ctx->code.emplace(address);
 
-				if (
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base != 0 &&
-					pinst->detail->x86.operands[1].mem.disp == 0x38)
-				{//.text:01D47A28 8B 53 38 mov     edx, [ebx+38h]
+			if (
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base != 0 &&
+				pinst->detail->x86.operands[1].mem.disp == 0x38)
+			{//.text:01D47A28 8B 53 38 mov     edx, [ebx+38h]
 
-					ctx->mov_38_instcount = instCount;
-				}
-				else if (!ctx->lightmap_textures &&
-					ctx->mov_38_instcount &&
-					instCount < ctx->mov_38_instcount + 3 &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.index != 0 &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D47A2B 8B 04 95 00 32 34 02                                mov     eax, lightmap_textures[edx*4]
+				ctx->mov_38_instcount = instCount;
+			}
+			else if (!ctx->lightmap_textures &&
+				ctx->mov_38_instcount &&
+				instCount < ctx->mov_38_instcount + 3 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.index != 0 &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.scale == 4 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{//.text:01D47A2B 8B 04 95 00 32 34 02                                mov     eax, lightmap_textures[edx*4]
 
-					if ((ULONG_PTR)pinst->detail->x86.operands[1].mem.disp != (ULONG_PTR)lightmap_modified)
-						ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				}
-				else if (!ctx->lightmap_textures &&
-					ctx->mov_38_instcount &&
-					instCount < ctx->mov_38_instcount + 3 &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D5918C FF 34 85 C0 44 F5 03                                push    lightmap_textures[eax*4] 
-
-					ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				}
-				else if (!ctx->lightmap_textures &&
-					ctx->mov_38_instcount &&
-					instCount < ctx->mov_38_instcount + 3 &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//8B 3D 40 FB C0 02                                   mov     edi, lightmap_textures
-
+				if ((ULONG_PTR)pinst->detail->x86.operands[1].mem.disp != (ULONG_PTR)lightmap_modified)
 					ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				}
-				else if (!ctx->lightmap_rectchange &&
-					ctx->mov_38_instcount &&
-					instCount < ctx->mov_38_instcount + 15 &&
-					pinst->id == X86_INS_ADD &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D591B8 81 C6 C8 D8 F5 03                                   add     esi, offset lightmap_rectchange
+			}
+			else if (!ctx->lightmap_textures &&
+				ctx->mov_38_instcount &&
+				instCount < ctx->mov_38_instcount + 3 &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.index != 0 &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.scale == 4 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{//.text:01D5918C FF 34 85 C0 44 F5 03                                push    lightmap_textures[eax*4] 
 
-					ctx->lightmap_rectchange = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
-				}
-				else if (ctx->lightmap_rectchange && !ctx->lightmaps &&
-					ctx->mov_38_instcount &&
-					instCount < ctx->mov_38_instcount + 20 &&
-					pinst->id == X86_INS_ADD &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D591C9 81 C1 C8 18 FE 03                                   add     ecx, offset lightmaps 
+				ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (!ctx->lightmap_textures &&
+				ctx->mov_38_instcount &&
+				instCount < ctx->mov_38_instcount + 3 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{//8B 3D 40 FB C0 02                                   mov     edi, lightmap_textures
 
-					ctx->lightmaps = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
-				}
-				else if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					pinst->detail->x86.operands[0].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG)
-				{//89 3C 85 F8 8C FE 07 mov     gDecalSurfs[eax*4], edi
+				ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+			}
+			else if (!ctx->lightmap_rectchange &&
+				ctx->mov_38_instcount &&
+				instCount < ctx->mov_38_instcount + 15 &&
+				pinst->id == X86_INS_ADD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{//.text:01D591B8 81 C6 C8 D8 F5 03                                   add     esi, offset lightmap_rectchange
 
-					ctx->decalsurf_candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->decalsurf_instcount = instCount;
-					ctx->decalsurf_register = pinst->detail->x86.operands[0].mem.index;
-				}
-				else if (!ctx->gDecalSurfs &&
-					ctx->decalsurf_candidateVA &&
-					instCount < ctx->decalsurf_instcount + 3 &&
-					pinst->id == X86_INS_INC &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == ctx->decalsurf_register)
-				{//.text:01D47C0F 40                                                  inc     eax
+				ctx->lightmap_rectchange = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+			}
+			else if (ctx->lightmap_rectchange && !ctx->lightmaps &&
+				ctx->mov_38_instcount &&
+				instCount < ctx->mov_38_instcount + 20 &&
+				pinst->id == X86_INS_ADD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{//.text:01D591C9 81 C1 C8 18 FE 03                                   add     ecx, offset lightmaps 
 
-					ctx->gDecalSurfs = (ULONG_PTR)ctx->decalsurf_candidateVA;
-				}
-				else if (!ctx->gDecalSurfCount &&
-					ctx->decalsurf_candidateVA &&
-					instCount < ctx->decalsurf_instcount + 5 &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					pinst->detail->x86.operands[0].mem.scale == 1 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == ctx->decalsurf_register)
-				{//.text:01D47C15 A3 98 26 34 02                                      mov     gDecalSurfCount, eax
+				ctx->lightmaps = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index != 0 &&
+				pinst->detail->x86.operands[0].mem.scale == 4 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{//89 3C 85 F8 8C FE 07 mov     gDecalSurfs[eax*4], edi
 
-					ctx->gDecalSurfCount = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				}
-				if (address[0] == 0xE8)
+				ctx->decalsurf_candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				ctx->decalsurf_instcount = instCount;
+				ctx->decalsurf_register = pinst->detail->x86.operands[0].mem.index;
+			}
+			else if (!ctx->gDecalSurfs &&
+				ctx->decalsurf_candidateVA &&
+				instCount < ctx->decalsurf_instcount + 3 &&
+				pinst->id == X86_INS_INC &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->decalsurf_register)
+			{//.text:01D47C0F 40                                                  inc     eax
+
+				ctx->gDecalSurfs = (ULONG_PTR)ctx->decalsurf_candidateVA;
+			}
+			else if (!ctx->gDecalSurfCount &&
+				ctx->decalsurf_candidateVA &&
+				instCount < ctx->decalsurf_instcount + 5 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				pinst->detail->x86.operands[0].mem.scale == 1 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == ctx->decalsurf_register)
+			{//.text:01D47C15 A3 98 26 34 02                                      mov     gDecalSurfCount, eax
+
+				ctx->gDecalSurfCount = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+			}
+			if (address[0] == 0xE8)
+			{
+				PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+
+				typedef struct
 				{
-					PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+					bool bFoundImm14h{};
+					bool bFoundPush200{};
+				} R_DrawSequentialPoly_FindRenderDynamicLightsContext;
 
-					typedef struct
+				R_DrawSequentialPoly_FindRenderDynamicLightsContext ctx2 = {};
+
+				g_pMetaHookAPI->DisasmRanges(target, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx2 = (R_DrawSequentialPoly_FindRenderDynamicLightsContext*)context;
+
+					if (!ctx2->bFoundImm14h)
 					{
-						bool bFoundImm14h{};
-						bool bFoundPush200{};
-					} R_DrawSequentialPoly_FindRenderDynamicLightsContext;
-
-					R_DrawSequentialPoly_FindRenderDynamicLightsContext ctx2 = {};
-
-					g_pMetaHookAPI->DisasmRanges(target, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx2 = (R_DrawSequentialPoly_FindRenderDynamicLightsContext*)context;
-
-						if (!ctx2->bFoundImm14h)
+						if (pinst->detail->x86.op_count >= 2 &&
+							pinst->detail->x86.operands[pinst->detail->x86.op_count - 1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[pinst->detail->x86.op_count - 1].imm == 0x14)
 						{
-							if (pinst->detail->x86.op_count >= 2 &&
-								pinst->detail->x86.operands[pinst->detail->x86.op_count - 1].type == X86_OP_IMM &&
-								pinst->detail->x86.operands[pinst->detail->x86.op_count - 1].imm == 0x14)
-							{
-								ctx2->bFoundImm14h = true;
-							}
+							ctx2->bFoundImm14h = true;
 						}
-
-						if (!ctx2->bFoundPush200)
-						{
-							if (pinst->id == X86_INS_PUSH &&
-								pinst->detail->x86.op_count == 1 &&
-								pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-								pinst->detail->x86.operands[0].imm == 0x200)
-							{
-								ctx2->bFoundPush200 = true;
-							}
-						}
-
-						if (ctx2->bFoundImm14h && ctx2->bFoundPush200)
-							return TRUE;
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx2);
-
-					if (ctx2.bFoundImm14h && ctx2.bFoundPush200)
-					{
-						ctx->R_RenderDynamicLightmaps = (ULONG_PTR)target;
-					}
-				}
-
-				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM)
-				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < 16)
-							ctx->walks.emplace_back(imm, 0x300, depth + 1);
 					}
 
-					if (pinst->id == X86_INS_JMP)
+					if (!ctx2->bFoundPush200)
+					{
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm == 0x200)
+						{
+							ctx2->bFoundPush200 = true;
+						}
+					}
+
+					if (ctx2->bFoundImm14h && ctx2->bFoundPush200)
 						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx2);
+
+				if (ctx2.bFoundImm14h && ctx2.bFoundPush200)
+				{
+					ctx->R_RenderDynamicLightmaps = (ULONG_PTR)target;
+				}
+			}
+
+			if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+				auto foundbranch = ctx->branches.find(imm);
+				if (foundbranch == ctx->branches.end())
+				{
+					ctx->branches.emplace(imm);
+					if (depth + 1 < 16)
+						ctx->walks.emplace_back(imm, 0x300, depth + 1);
 				}
 
-				if (address[0] == 0xCC)
+				if (pinst->id == X86_INS_JMP)
 					return TRUE;
+			}
 
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
+			if (address[0] == 0xCC)
+				return TRUE;
 
-				return FALSE;
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-		}, walk.depth, & ctx);
+			return FALSE;
+
+			}, walk.depth, &ctx);
 	}
 
 	Convert_VA_to_RVA(lightmap_textures, DllInfo);
@@ -3109,10 +3109,10 @@ void R_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 
 	Sig_FuncNotFound(R_DrawWorld);
 
-/*
-	 //Global pointers that link into engine vars
-	 vec_t *modelorg = NULL;
- */
+	/*
+		 //Global pointers that link into engine vars
+		 vec_t *modelorg = NULL;
+	 */
 	ULONG_PTR modelorg_VA = 0;
 	ULONG modelorg_RVA = 0;
 
@@ -4137,11 +4137,11 @@ void R_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	Sig_FuncNotFound(CL_AllocDlight);
 
-/*
-	//Global pointers that link into engine vars
-	dlight_t *cl_dlights = NULL;
-	int *r_dlightactive = NULL;
-*/
+	/*
+		//Global pointers that link into engine vars
+		dlight_t *cl_dlights = NULL;
+		int *r_dlightactive = NULL;
+	*/
 	ULONG_PTR cl_dlights_VA = 0;
 	ULONG cl_dlights_RVA = 0;
 
@@ -6939,7 +6939,7 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 				return TRUE;
 
 			return FALSE;
-		});
+			});
 
 		Convert_VA_to_RVA(R_LoadSkyboxInt_SvEngine, DllInfo);
 
@@ -8061,6 +8061,124 @@ void R_FillAddress_R_RenderDynamicLightmaps(const mh_dll_info_t& DllInfo, const 
 	}
 
 	Sig_FuncNotFound(R_RenderDynamicLightmaps);
+
+	/*
+		 int *d_lightstylevalue = NULL;
+		 int *lightmap_modified = NULL;
+		 glpoly_t **lightmap_polys = NULL;
+	 */
+	ULONG_PTR d_lightstylevalue_VA = 0;
+	ULONG d_lightstylevalue_RVA = 0;
+
+	ULONG_PTR lightmap_modified_VA = 0;
+	ULONG lightmap_modified_RVA = 0;
+
+	ULONG_PTR lightmap_polys_VA = 0;
+	ULONG lightmap_polys_RVA = 0;
+
+	{
+
+		typedef struct
+		{
+			ULONG_PTR& d_lightstylevalue;
+			ULONG_PTR& lightmap_polys;
+			ULONG_PTR& lightmap_modified;
+			const mh_dll_info_t& DllInfo;
+
+			int cmp_al_FF_instcount{};
+		} R_RenderDynamicLightmaps_SearchContext;
+
+		R_RenderDynamicLightmaps_SearchContext ctx = { d_lightstylevalue_VA, lightmap_polys_VA, lightmap_modified_VA, DllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)R_RenderDynamicLightmaps_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_RenderDynamicLightmaps_SearchContext*)context;
+
+				if (!ctx->lightmap_polys &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.index != 0 &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.scale == 4 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
+				{//.text:01D58422 89 04 8D C8 B8 F5 03 mov     lightmap_polys[ecx*4], eax
+
+					ctx->lightmap_polys = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				}
+				else if (pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == X86_REG_AL &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0xFF)
+				{//.text:01D47F46 3C FF   cmp     al, 0FFh
+
+					ctx->cmp_al_FF_instcount = instCount;
+				}
+				else if (!ctx->d_lightstylevalue &&
+					ctx->cmp_al_FF_instcount &&
+					instCount < ctx->cmp_al_FF_instcount + 5 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.index != 0 &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					pinst->detail->x86.operands[1].mem.scale == 4 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//.text:01D47F4F 8B 04 85 20 9A BC 02                                mov     eax, d_lightstylevalue[eax*4]
+
+					ctx->d_lightstylevalue = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+				}
+				else if (!ctx->lightmap_modified &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.index != 0 &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.scale == 4 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 1)
+				{//.text:01D58489 C7 04 85 C8 C8 F5 03 01 00 00 00                    mov     lightmap_modified[eax*4], 1
+
+					ctx->lightmap_modified = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (ctx->d_lightstylevalue && ctx->lightmap_polys && ctx->lightmap_modified)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		Convert_VA_to_RVA(d_lightstylevalue, DllInfo);
+		Convert_VA_to_RVA(lightmap_polys, DllInfo);
+		Convert_VA_to_RVA(lightmap_modified, DllInfo);
+	}
+
+	if (d_lightstylevalue_RVA)
+		d_lightstylevalue = (decltype(d_lightstylevalue))VA_from_RVA(d_lightstylevalue, RealDllInfo);
+	if (lightmap_polys_RVA)
+		lightmap_polys = (decltype(lightmap_polys))VA_from_RVA(lightmap_polys, RealDllInfo);
+	if (lightmap_modified_RVA)
+		lightmap_modified = (decltype(lightmap_modified))VA_from_RVA(lightmap_modified, RealDllInfo);
+
+	Sig_VarNotFound(d_lightstylevalue);
+	Sig_VarNotFound(lightmap_polys);
+	Sig_VarNotFound(lightmap_modified);
 }
 
 void R_FillAddress(void)
@@ -8700,98 +8818,13 @@ void R_FillAddress(void)
 	if (1)
 	{
 		/*
-		int *d_lightstylevalue = NULL;
-		int *lightmap_modified = NULL;
-		glpoly_t **lightmap_polys = NULL;
+		float* r_shadelight = NULL;
+		int* r_ambientlight = NULL;
+		vec3_t* r_blightvec = NULL;
+		vec3_t* r_plightvec = NULL;
+		int* lightgammatable = NULL;
 		*/
-		typedef struct
-		{
-			int cmp_al_FF_instcount;
-		}R_RenderDynamicLightmaps_SearchContext;
 
-		R_RenderDynamicLightmaps_SearchContext ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderDynamicLightmaps, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (R_RenderDynamicLightmaps_SearchContext*)context;
-
-				if (!lightmap_polys &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-				{//.text:01D58422 89 04 8D C8 B8 F5 03 mov     lightmap_polys[ecx*4], eax
-
-					lightmap_polys = (decltype(lightmap_polys))pinst->detail->x86.operands[0].mem.disp;
-				}
-				else if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_AL &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0xFF)
-				{//.text:01D47F46 3C FF   cmp     al, 0FFh
-
-					ctx->cmp_al_FF_instcount = instCount;
-				}
-				else if (!d_lightstylevalue &&
-					ctx->cmp_al_FF_instcount &&
-					instCount < ctx->cmp_al_FF_instcount + 5 &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.index != 0 &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-				{//.text:01D47F4F 8B 04 85 20 9A BC 02                                mov     eax, d_lightstylevalue[eax*4]
-
-					d_lightstylevalue = (decltype(d_lightstylevalue))pinst->detail->x86.operands[1].mem.disp;
-				}
-				else if (!lightmap_modified &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.scale == 4 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 1)
-				{//.text:01D58489 C7 04 85 C8 C8 F5 03 01 00 00 00                    mov     lightmap_modified[eax*4], 1
-
-					lightmap_modified = (decltype(lightmap_modified))pinst->detail->x86.operands[0].mem.disp;
-				}
-
-				if (d_lightstylevalue && lightmap_polys && lightmap_modified)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-		Sig_VarNotFound(d_lightstylevalue);
-		Sig_VarNotFound(lightmap_polys);
-		Sig_VarNotFound(lightmap_modified);
-	}
-
-	if (1)
-	{
 		typedef struct
 		{
 			PVOID base;
@@ -8812,9 +8845,9 @@ void R_FillAddress(void)
 			int plightvec_xmmreg;
 			PUCHAR mov_437F0000h_instaddr;
 			PUCHAR fld_255_instaddr;
-		}R_StudioLighting_ctx;
+		}R_StudioLighting_SearchContext;
 
-		R_StudioLighting_ctx ctx = { 0 };
+		R_StudioLighting_SearchContext ctx = { 0 };
 
 		ctx.base = gPrivateFuncs.R_StudioLighting;
 		ctx.max_insts = 500;
@@ -8826,10 +8859,10 @@ void R_FillAddress(void)
 			auto walk = ctx.walks[ctx.walks.size() - 1];
 			ctx.walks.pop_back();
 
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
 					auto pinst = (cs_insn*)inst;
-					auto ctx = (R_StudioLighting_ctx*)context;
+					auto ctx = (R_StudioLighting_SearchContext*)context;
 
 					if (r_ambientlight && r_shadelight && r_blightvec && r_plightvec && lightgammatable)
 						return TRUE;
@@ -9084,7 +9117,6 @@ void R_FillAddress(void)
 						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize
 						)
 					{
-
 						if (*(DWORD*)pinst->detail->x86.operands[0].mem.disp == 0x437F0000)
 						{
 							ctx->fld_255_instaddr = address;
