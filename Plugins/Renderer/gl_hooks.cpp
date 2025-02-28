@@ -3873,6 +3873,60 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 	}
 
 	Sig_FuncNotFound(BuildGammaTable);
+
+	/*
+	//Global pointers that link into engine vars
+	byte *texgammatable = NULL;
+	*/
+	ULONG_PTR texgammatable_VA = 0;
+	ULONG texgammatable_RVA = 0;
+
+	if (1)
+	{
+		typedef struct
+		{
+			ULONG_PTR& texgammatable;
+			const mh_dll_info_t& DllInfo;
+		} BuildGammaTable_SearchContext;
+
+		BuildGammaTable_SearchContext ctx = { texgammatable_VA, DllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (BuildGammaTable_SearchContext*)context;
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].size == 1)
+				{
+					ctx->texgammatable = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (ctx->texgammatable)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+		Convert_VA_to_RVA(texgammatable, DllInfo);
+	}
+
+	if (texgammatable_RVA)
+		texgammatable = (decltype(texgammatable))VA_from_RVA(texgammatable, RealDllInfo);
+
+	Sig_VarNotFound(texgammatable);
 }
 
 void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -4455,6 +4509,392 @@ void R_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_i
 	}
 
 	Sig_FuncNotFound(R_StudioLighting);
+
+/*
+	float* r_shadelight = NULL;
+	int* r_ambientlight = NULL;
+	vec3_t* r_blightvec = NULL;
+	vec3_t* r_plightvec = NULL;
+	int* lightgammatable = NULL;
+*/
+	ULONG_PTR r_shadelight_VA = 0;
+	ULONG r_shadelight_RVA = 0;
+	ULONG_PTR r_ambientlight_VA = 0;
+	ULONG r_ambientlight_RVA = 0;
+	ULONG_PTR r_blightvec_VA = 0;
+	ULONG r_blightvec_RVA = 0;
+	ULONG_PTR r_plightvec_VA = 0;
+	ULONG r_plightvec_RVA = 0;
+	ULONG_PTR lightgammatable_VA = 0;
+	ULONG lightgammatable_RVA = 0;
+
+	{
+		typedef struct
+		{
+			ULONG_PTR& r_ambientlight;
+			ULONG_PTR& r_shadelight;
+			ULONG_PTR& r_blightvec;
+			ULONG_PTR& r_plightvec;
+			ULONG_PTR& lightgammatable;
+			const mh_dll_info_t& DllInfo;
+			ULONG_PTR base{};
+			size_t max_insts{};
+			int max_depth{};
+			std::set<PVOID> code{};
+			std::set<PVOID> branches{};
+			std::vector<walk_context_t> walks{};
+			int ambient_instcount{};
+			int lightvec_start{};
+			PVOID plightvec_cached{};
+			ULONG_PTR blightvec_candidateVA{};
+			int blightvec_instcount{};
+			int blightvec_xmmreg{};
+			ULONG_PTR plightvec_candidateVA{};
+			int plightvec_instcount{};
+			int plightvec_xmmreg{};
+			PUCHAR mov_437F0000h_instaddr{};
+			PUCHAR fld_255_instaddr{};
+		} R_StudioLighting_SearchContext;
+
+		R_StudioLighting_SearchContext ctx = { r_ambientlight_VA, r_shadelight_VA, r_blightvec_VA, r_plightvec_VA, lightgammatable_VA, DllInfo };
+		ctx.base = R_StudioLighting_VA;
+		ctx.max_insts = 500;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x500, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_StudioLighting_SearchContext*)context;
+
+				if (ctx->r_ambientlight && ctx->r_shadelight && ctx->r_blightvec && ctx->r_plightvec && ctx->lightgammatable)
+					return TRUE;
+
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
+
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (!ctx->r_ambientlight &&
+					pinst->id == X86_INS_FILD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//.text:01D83B54 DB 05 E8 95 75 02                                   fild    r_ambientlight
+					ctx->r_ambientlight = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+					ctx->ambient_instcount = instCount;
+				}
+
+				if (!ctx->r_ambientlight &&
+					pinst->id == X86_INS_MOVD &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//   movd    xmm3, r_ambientlight
+					ctx->r_ambientlight = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					ctx->ambient_instcount = instCount;
+				}
+
+				if (!ctx->r_shadelight &&
+					ctx->ambient_instcount &&
+					instCount < ctx->ambient_instcount + 10 &&
+					pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//.text:01D8A986 D9 05 60 61 52 08                                   fld     r_shadelight
+					ctx->r_shadelight = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (!ctx->r_shadelight &&
+					ctx->ambient_instcount &&
+					instCount < ctx->ambient_instcount + 10 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//   movss   xmm1, r_shadelight
+					ctx->r_shadelight = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+				}
+
+				if (
+					pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == -1)
+				{//.text:01D8A9A1 83 F8 FF                                            cmp     eax, 0FFFFFFFFh
+					ctx->lightvec_start = 1;
+				}
+				else if (ctx->plightvec_cached == address)
+				{
+					ctx->lightvec_start = 1;
+					ctx->plightvec_cached = 0;
+				}
+				else if (
+					ctx->lightvec_start &&
+					address[0] == 0xDE &&
+					address[1] == 0xC1)
+				{//.text:01D8A9BC DE C1                                               faddp   st(1), st
+					ctx->lightvec_start = 0;
+				}
+				else if (
+					pinst->id == X86_INS_LEA &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+					pinst->detail->x86.operands[1].mem.base == X86_REG_EAX &&
+					pinst->detail->x86.operands[1].mem.index == X86_REG_EAX &&
+					pinst->detail->x86.operands[1].mem.scale == 2 &&
+					pinst->detail->x86.operands[1].mem.disp == 0)
+				{//.text:01D8A9A6 8D 04 40                                            lea     eax, [eax+eax*2]
+					ctx->lightvec_start = 2;
+				}
+
+				if (!ctx->r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
+					ctx->blightvec_candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+					ctx->blightvec_instcount = instCount;
+					ctx->blightvec_xmmreg = 0;
+				}
+
+				if (!ctx->r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{// F3 0F 10 04 85 28 CE 20 11                          movss   xmm0, (r_blightvec+8)[eax*4]
+					ctx->blightvec_candidateVA = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					ctx->blightvec_instcount = instCount;
+					ctx->blightvec_xmmreg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!ctx->r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					ctx->blightvec_instcount &&
+					instCount < ctx->blightvec_instcount + 2 &&
+					pinst->id == X86_INS_FMUL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0)
+				{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
+					ctx->r_blightvec = (ULONG_PTR)(ctx->blightvec_candidateVA - pinst->detail->x86.operands[0].mem.disp);
+				}
+
+				if (!ctx->r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					ctx->blightvec_instcount &&
+					instCount < ctx->blightvec_instcount + 2 &&
+					pinst->id == X86_INS_MULSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->blightvec_xmmreg &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base != 0 &&
+					pinst->detail->x86.operands[1].mem.disp == 0x8)
+				{// F3 0F 59 41 08                                      mulss   xmm0, dword ptr [ecx+8]
+					ctx->r_blightvec = (ULONG_PTR)(ctx->blightvec_candidateVA - pinst->detail->x86.operands[1].mem.disp);
+				}
+
+				if (!ctx->r_plightvec &&
+					ctx->lightvec_start == 1 &&
+					pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
+					ctx->plightvec_candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+					ctx->plightvec_instcount = instCount;
+				}
+
+				if (!ctx->r_plightvec &&
+					ctx->lightvec_start == 1 &&
+					ctx->plightvec_instcount &&
+					instCount < ctx->plightvec_instcount + 15 &&
+					pinst->id == X86_INS_FMUL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0)
+				{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
+					ctx->r_plightvec = (ULONG_PTR)(ctx->plightvec_candidateVA - pinst->detail->x86.operands[0].mem.disp);
+				}
+
+				if (!ctx->r_plightvec &&
+					ctx->lightvec_start >= 1 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base != 0 &&
+					pinst->detail->x86.operands[1].mem.disp == 0x8)
+				{//F3 0F 10 41 08                                      movss   xmm0, dword ptr [ecx+8]
+					ctx->plightvec_instcount = instCount;
+					ctx->plightvec_xmmreg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!ctx->r_plightvec &&
+					ctx->lightvec_start >= 1 &&
+					ctx->plightvec_instcount &&
+					instCount < ctx->plightvec_instcount + 2 &&
+					pinst->id == X86_INS_MULSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->plightvec_xmmreg &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{// F3 0F 59 05 A8 0F DC 10                             mulss   xmm0, r_plightvec+8
+					ctx->r_plightvec = (ULONG_PTR)(pinst->detail->x86.operands[1].mem.disp - 8);
+				}
+
+				if (!ctx->mov_437F0000h_instaddr &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x437F0000
+					)
+				{
+					ctx->mov_437F0000h_instaddr = address;
+				}
+
+				if (!ctx->mov_437F0000h_instaddr &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.RdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize
+					)
+				{
+					if (*(DWORD*)pinst->detail->x86.operands[1].mem.disp == 0x437F0000)
+					{
+						ctx->mov_437F0000h_instaddr = address;
+					}
+				}
+
+				if (!ctx->fld_255_instaddr &&
+					pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.RdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize
+					)
+				{
+					if (*(DWORD*)pinst->detail->x86.operands[0].mem.disp == 0x437F0000)
+					{
+						ctx->fld_255_instaddr = address;
+					}
+				}
+
+				if (
+					ctx->mov_437F0000h_instaddr &&
+					address < ctx->mov_437F0000h_instaddr + 0x30 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{
+					ctx->lightgammatable = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+				}
+
+				if (
+					ctx->fld_255_instaddr &&
+					address < ctx->fld_255_instaddr + 0x80 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{
+					ctx->lightgammatable = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+				}
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+						{
+							ctx->walks.emplace_back(imm, 0x500, depth + 1);
+							if (!ctx->plightvec_cached && ctx->lightvec_start == 1)
+								ctx->plightvec_cached = imm;
+						}
+					}
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+				}, walk.depth, &ctx);
+		}
+
+		Convert_VA_to_RVA(r_ambientlight, DllInfo);
+		Convert_VA_to_RVA(r_shadelight, DllInfo);
+		Convert_VA_to_RVA(r_blightvec, DllInfo);
+		Convert_VA_to_RVA(r_plightvec, DllInfo);
+		Convert_VA_to_RVA(lightgammatable, DllInfo);
+	}
+
+	if (r_ambientlight_RVA)
+		r_ambientlight = (decltype(r_ambientlight))VA_from_RVA(r_ambientlight, RealDllInfo);
+	if (r_shadelight_RVA)
+		r_shadelight = (decltype(r_shadelight))VA_from_RVA(r_shadelight, RealDllInfo);
+	if (r_blightvec_RVA)
+		r_blightvec = (decltype(r_blightvec))VA_from_RVA(r_blightvec, RealDllInfo);
+	if (r_plightvec_RVA)
+		r_plightvec = (decltype(r_plightvec))VA_from_RVA(r_plightvec, RealDllInfo);
+	if (lightgammatable_RVA)
+		lightgammatable = (decltype(lightgammatable))VA_from_RVA(lightgammatable, RealDllInfo);
+
+	Sig_VarNotFound(r_ambientlight);
+	Sig_VarNotFound(r_shadelight);
+	Sig_VarNotFound(r_blightvec);
+	Sig_VarNotFound(r_plightvec);
+	Sig_VarNotFound(lightgammatable);
 }
 
 void R_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -8813,432 +9253,6 @@ void R_FillAddress(void)
 	else
 	{
 		R_FillAddress_R_RenderDynamicLightmaps(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
-
-	if (1)
-	{
-		/*
-		float* r_shadelight = NULL;
-		int* r_ambientlight = NULL;
-		vec3_t* r_blightvec = NULL;
-		vec3_t* r_plightvec = NULL;
-		int* lightgammatable = NULL;
-		*/
-
-		typedef struct
-		{
-			PVOID base;
-			size_t max_insts;
-			int max_depth;
-			std::set<PVOID> code;
-			std::set<PVOID> branches;
-			std::vector<walk_context_t> walks;
-
-			int ambient_instcount;
-			int lightvec_start;
-			PVOID plightvec_cached;
-			DWORD blightvec_candidate;
-			int blightvec_instcount;
-			int blightvec_xmmreg;
-			DWORD plightvec_candidate;
-			int plightvec_instcount;
-			int plightvec_xmmreg;
-			PUCHAR mov_437F0000h_instaddr;
-			PUCHAR fld_255_instaddr;
-		}R_StudioLighting_SearchContext;
-
-		R_StudioLighting_SearchContext ctx = { 0 };
-
-		ctx.base = gPrivateFuncs.R_StudioLighting;
-		ctx.max_insts = 500;
-		ctx.max_depth = 16;
-		ctx.walks.emplace_back(ctx.base, 0x500, 0);
-
-		while (ctx.walks.size())
-		{
-			auto walk = ctx.walks[ctx.walks.size() - 1];
-			ctx.walks.pop_back();
-
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (R_StudioLighting_SearchContext*)context;
-
-					if (r_ambientlight && r_shadelight && r_blightvec && r_plightvec && lightgammatable)
-						return TRUE;
-
-					if (ctx->code.size() > ctx->max_insts)
-						return TRUE;
-
-					if (ctx->code.find(address) != ctx->code.end())
-						return TRUE;
-
-					ctx->code.emplace(address);
-
-					if (!r_ambientlight &&
-						pinst->id == X86_INS_FILD &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//.text:01D83B54 DB 05 E8 95 75 02                                   fild    r_ambientlight
-
-						r_ambientlight = (decltype(r_ambientlight))pinst->detail->x86.operands[0].mem.disp;
-
-						ctx->ambient_instcount = instCount;
-					}
-
-					if (!r_ambientlight &&
-						pinst->id == X86_INS_MOVD &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//   movd    xmm3, r_ambientlight
-
-						r_ambientlight = (decltype(r_ambientlight))pinst->detail->x86.operands[1].mem.disp;
-
-						ctx->ambient_instcount = instCount;
-					}
-
-					if (!r_shadelight &&
-						ctx->ambient_instcount &&
-						instCount < ctx->ambient_instcount + 10 &&
-						pinst->id == X86_INS_FLD &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//.text:01D8A986 D9 05 60 61 52 08                                   fld     r_shadelight
-
-						r_shadelight = (decltype(r_shadelight))pinst->detail->x86.operands[0].mem.disp;
-					}
-
-					if (!r_shadelight &&
-						ctx->ambient_instcount &&
-						instCount < ctx->ambient_instcount + 10 &&
-						pinst->id == X86_INS_MOVSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//   movss   xmm1, r_shadelight
-
-						r_shadelight = (decltype(r_shadelight))pinst->detail->x86.operands[1].mem.disp;
-					}
-
-
-					if (
-						pinst->id == X86_INS_CMP &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == -1)
-					{//.text:01D8A9A1 83 F8 FF                                            cmp     eax, 0FFFFFFFFh
-
-						ctx->lightvec_start = 1;
-					}
-					else if (ctx->plightvec_cached == address)
-					{
-						ctx->lightvec_start = 1;
-						ctx->plightvec_cached = 0;
-					}
-					else if (
-						ctx->lightvec_start &&
-						address[0] == 0xDE &&
-						address[1] == 0xC1)
-					{//.text:01D8A9BC DE C1                                               faddp   st(1), st
-
-						ctx->lightvec_start = 0;
-					}
-					else if (
-						pinst->id == X86_INS_LEA &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-						pinst->detail->x86.operands[1].mem.base == X86_REG_EAX &&
-						pinst->detail->x86.operands[1].mem.index == X86_REG_EAX &&
-						pinst->detail->x86.operands[1].mem.scale == 2 &&
-						pinst->detail->x86.operands[1].mem.disp == 0)
-					{//.text:01D8A9A6 8D 04 40                                            lea     eax, [eax+eax*2]
-
-						ctx->lightvec_start = 2;
-					}
-
-					if (!r_blightvec &&
-						ctx->lightvec_start == 2 &&
-						pinst->id == X86_INS_FLD &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
-
-						ctx->blightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
-						ctx->blightvec_instcount = instCount;
-						ctx->blightvec_xmmreg = 0;
-					}
-
-					if (!r_blightvec &&
-						ctx->lightvec_start == 2 &&
-						pinst->id == X86_INS_MOVSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{// F3 0F 10 04 85 28 CE 20 11                          movss   xmm0, (r_blightvec+8)[eax*4]
-
-						ctx->blightvec_candidate = pinst->detail->x86.operands[1].mem.disp;
-						ctx->blightvec_instcount = instCount;
-						ctx->blightvec_xmmreg = pinst->detail->x86.operands[0].reg;
-					}
-
-					if (!r_blightvec &&
-						ctx->lightvec_start == 2 &&
-						ctx->blightvec_instcount &&
-						instCount < ctx->blightvec_instcount + 2 &&
-						pinst->id == X86_INS_FMUL &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base != 0)
-					{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
-						r_blightvec = (decltype(r_blightvec))(ctx->blightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
-					}
-
-					if (!r_blightvec &&
-						ctx->lightvec_start == 2 &&
-						ctx->blightvec_instcount &&
-						instCount < ctx->blightvec_instcount + 2 &&
-						pinst->id == X86_INS_MULSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == ctx->blightvec_xmmreg &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base != 0 &&
-						pinst->detail->x86.operands[1].mem.disp == 0x8)
-					{// F3 0F 59 41 08                                      mulss   xmm0, dword ptr [ecx+8]
-						r_blightvec = (decltype(r_blightvec))(ctx->blightvec_candidate - pinst->detail->x86.operands[1].mem.disp);
-					}
-
-					if (!r_plightvec &&
-						ctx->lightvec_start == 1 &&
-						pinst->id == X86_INS_FLD &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
-
-						ctx->plightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
-						ctx->plightvec_instcount = instCount;
-					}
-
-					if (!r_plightvec &&
-						ctx->lightvec_start == 1 &&
-						ctx->plightvec_instcount &&
-						instCount < ctx->plightvec_instcount + 15 &&
-						pinst->id == X86_INS_FMUL &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base != 0)
-					{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
-						r_plightvec = (decltype(r_plightvec))(ctx->plightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
-					}
-
-					if (!r_plightvec &&
-						ctx->lightvec_start >= 1 &&
-						pinst->id == X86_INS_MOVSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base != 0 &&
-						pinst->detail->x86.operands[1].mem.disp == 0x8)
-					{//F3 0F 10 41 08                                      movss   xmm0, dword ptr [ecx+8]
-
-						ctx->plightvec_instcount = instCount;
-						ctx->plightvec_xmmreg = pinst->detail->x86.operands[0].reg;
-					}
-
-					if (!r_plightvec &&
-						ctx->lightvec_start >= 1 &&
-						ctx->plightvec_instcount &&
-						instCount < ctx->plightvec_instcount + 2 &&
-						pinst->id == X86_INS_MULSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == ctx->plightvec_xmmreg &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{// F3 0F 59 05 A8 0F DC 10                             mulss   xmm0, r_plightvec+8
-						r_plightvec = (decltype(r_plightvec))(pinst->detail->x86.operands[1].mem.disp - 8);
-					}
-
-					if (!ctx->mov_437F0000h_instaddr &&
-						pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == 0x437F0000
-						)
-					{
-						ctx->mov_437F0000h_instaddr = address;
-					}
-
-					if (!ctx->mov_437F0000h_instaddr &&
-						pinst->id == X86_INS_MOVSS &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineRdataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize
-						)
-					{
-						if (*(DWORD*)pinst->detail->x86.operands[1].mem.disp == 0x437F0000)
-						{
-							ctx->mov_437F0000h_instaddr = address;
-						}
-					}
-
-					if (!ctx->fld_255_instaddr &&
-						pinst->id == X86_INS_FLD &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineRdataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize
-						)
-					{
-						if (*(DWORD*)pinst->detail->x86.operands[0].mem.disp == 0x437F0000)
-						{
-							ctx->fld_255_instaddr = address;
-						}
-					}
-
-					if (
-						ctx->mov_437F0000h_instaddr &&
-						address < ctx->mov_437F0000h_instaddr + 0x30 &&
-						pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{
-
-						lightgammatable = (decltype(lightgammatable))pinst->detail->x86.operands[1].imm;
-
-					}
-
-
-					if (
-						ctx->fld_255_instaddr &&
-						address < ctx->fld_255_instaddr + 0x80 &&
-						pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)g_dwEngineDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-					{
-
-						lightgammatable = (decltype(lightgammatable))pinst->detail->x86.operands[1].imm;
-
-					}
-
-					if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM)
-					{
-						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-						auto foundbranch = ctx->branches.find(imm);
-						if (foundbranch == ctx->branches.end())
-						{
-							ctx->branches.emplace(imm);
-							if (depth + 1 < ctx->max_depth)
-							{
-								ctx->walks.emplace_back(imm, 0x500, depth + 1);
-
-								if (!ctx->plightvec_cached && ctx->lightvec_start == 1)
-									ctx->plightvec_cached = imm;
-							}
-						}
-
-						if (pinst->id == X86_INS_JMP)
-							return TRUE;
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, walk.depth, &ctx);
-		}
-
-		Sig_VarNotFound(r_ambientlight);
-		Sig_VarNotFound(r_shadelight);
-		Sig_VarNotFound(r_blightvec);
-		Sig_VarNotFound(r_plightvec);
-		Sig_VarNotFound(lightgammatable);
-	}
-
-	if (1)
-	{
-		typedef struct
-		{
-			int unused;
-		}BuildGammaTable_ctx;
-
-		BuildGammaTable_ctx ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (BuildGammaTable_ctx*)context;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].size == 1)
-				{
-					texgammatable = (decltype(texgammatable))pinst->detail->x86.operands[0].mem.disp;
-				}
-
-				if (texgammatable)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-		Sig_VarNotFound(texgammatable);
-
-#if 0
-#define TEXGAMMATABLE_SIG "\x88\x86\x2A\x2A\x2A\x2A\x46"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gPrivateFuncs.BuildGammaTable, 0x300, TEXGAMMATABLE_SIG, sizeof(TEXGAMMATABLE_SIG) - 1);
-		Sig_AddrNotFound(texgammatable);
-		texgammatable = *(decltype(texgammatable)*)(addr + 2);
-#endif
 	}
 
 #if 0
