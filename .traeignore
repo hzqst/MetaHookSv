@@ -1,0 +1,47 @@
+# Build outputs
+Build/
+Debug/
+Release/
+Release_AVX2/
+intermediate/
+output/
+thirdparty/
+
+*.pdb
+*.exp
+*.ilk
+
+# IDE specific
+.vs/
+*.vcxproj.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Compiled files
+*.o
+*.obj
+*.lo
+*.slo
+*.la
+*.lai
+*.so
+*.dylib
+*.a
+*.out
+*.app
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Temporary files
+*.log
+*.tlog
+*.tmp
+*.temp
+
+# Other
+Thumbs.db 

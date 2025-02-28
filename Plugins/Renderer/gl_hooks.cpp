@@ -345,8 +345,8 @@ void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo)
 		{
 			/*
 .rdata:102C94B4 ; const EngineSurface::`vftable'
-.rdata:102C94B4 ??_7EngineSurface@@6B@ dd offset dtor_0 ; DATA XREF: dtor_0+2C¡üo
-.rdata:102C94B4                                         ; sub_102285C0+30¡üo ...
+.rdata:102C94B4 ??_7EngineSurface@@6B@ dd offset dtor_0 ; DATA XREF: dtor_0+2Cï¿½ï¿½o
+.rdata:102C94B4                                         ; sub_102285C0+30ï¿½ï¿½o ...
 .rdata:102C94B8                 dd offset pushMakeCurrent //1
 .rdata:102C94BC                 dd offset popMakeCurrent  //2
 .rdata:102C94C0                 dd offset drawFilledRect  //3
@@ -7020,8 +7020,8 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 		R_LoadSkyBox_SvEngine_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkyBox_PushString, 0x200, [](PUCHAR Candidate) {
 			/*
 				.text:01D5FEF0                                     ; void __cdecl R_LoadSkyName(const char *name)
-				.text:01D5FEF0                                     R_LoadSkyName   proc near               ; CODE XREF: sub_1D042D0+E¡üp
-				.text:01D5FEF0                                                                             ; R_LoadSkys_0+5¡ýp ...
+				.text:01D5FEF0                                     R_LoadSkyName   proc near               ; CODE XREF: sub_1D042D0+Eï¿½ï¿½p
+				.text:01D5FEF0                                                                             ; R_LoadSkys_0+5ï¿½ï¿½p ...
 				.text:01D5FEF0
 				.text:01D5FEF0                                     name            = dword ptr  4
 				.text:01D5FEF0
@@ -7264,7 +7264,7 @@ void R_FillAddress_GL_FilterMinMaxVars(const mh_dll_info_t& DllInfo, const mh_dl
 	{
 #define GL_FILTER_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x2A\xDB\x05"
 		/*
-			.text:01D501E4                                     loc_1D501E4:                            ; CODE XREF: .text:01D501D5¡üj
+			.text:01D501E4                                     loc_1D501E4:                            ; CODE XREF: .text:01D501D5ï¿½ï¿½j
 			.text:01D501E4 DB 05 F4 01 EE 01                                   fild    dword_1EE01F4
 			.text:01D501EA 51                                                  push    ecx
 			.text:01D501EB D9 1C 24                                            fstp    dword ptr [esp]
@@ -7732,7 +7732,7 @@ void R_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_i
 					{
 						auto candidate = (PUCHAR)pinst->detail->x86.operands[0].imm;
 
-						//.text:01D1A4E0                                     ClientDLL_DrawNormalTriangles proc near ; CODE XREF: R_RenderScene:loc_1D566A7¡ýp
+						//.text:01D1A4E0                                     ClientDLL_DrawNormalTriangles proc near ; CODE XREF: R_RenderScene:loc_1D566A7ï¿½ï¿½p
 						//.text:01D1A4E0 A1 70 5B 04 02                                      mov     eax, pfnDrawNormalTriangles
 						//.text:01D1A4E5 85 C0                                               test    eax, eax
 						if (candidate[0] == 0xA1 && candidate[5] == 0x85 && candidate[6] == 0xC0)
