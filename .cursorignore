@@ -4,10 +4,9 @@ Debug/
 Release/
 Release_AVX2/
 intermediate/
+output/
 thirdparty/
-*.exe
-*.dll
-*.lib
+
 *.pdb
 *.exp
 *.ilk
@@ -30,9 +29,7 @@ thirdparty/
 *.lai
 *.so
 *.dylib
-*.dll
 *.a
-*.lib
 *.out
 *.app
 
@@ -47,5 +44,4 @@ thirdparty/
 *.temp
 
 # Other
-.DS_Store
 Thumbs.db 
