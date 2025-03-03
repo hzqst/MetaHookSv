@@ -17,10 +17,6 @@ void *g_pGameStudioRenderer = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
-static hook_t *g_phook_ClientPortalManager_ResetAll = NULL;
-static hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
-static hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
- 
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t* g_phook_GameStudioRenderer_StudioSaveBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
@@ -39,7 +35,7 @@ static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
 
 static hook_t* g_phook_CL_FxBlend = NULL;
 
-void R_UninstallHooksForEngineStudioInterface(void)
+void R_UninstallHooksForEngineStudio(void)
 {
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
@@ -54,15 +50,8 @@ void R_UninstallHooksForEngineStudioInterface(void)
 	Uninstall_Hook(R_StudioSaveBones);
 }
 
-void R_UninstallHooksForClientDLL(void)
+void R_UninstallHooksForClientStudio(void)
 {
-	//SCClient
-
-	Uninstall_Hook(ClientPortalManager_ResetAll);
-	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
-	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
-
-	//Client
 	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
 	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
 	Uninstall_Hook(GameStudioRenderer_StudioSaveBones);
@@ -313,20 +302,32 @@ int HUD_Redraw(float time, int intermission)
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
-int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
+void EngineStudioAPI_FillAddress_GetCurrentEntity(struct engine_studio_api_s* pstudio, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	//Save StudioAPI Funcs
-	gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
-	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
-	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
+	PVOID GetCurrentEntity = ConvertDllInfoSpace(pstudio->GetTimes, RealDllInfo, DllInfo);
 
-	//Vars in Engine Studio API
-
-	if (1)
+	if (!GetCurrentEntity)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->GetCurrentEntity, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		Sig_NotFound(GetCurrentEntity);
+	}
+
+	/*
+	//Global pointers that link into engine vars.
+		cl_entity_t **currententity = NULL;
+	*/
+
+	typedef struct GetCurrentEntity_SearchContext_s
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	}GetCurrentEntity_SearchContext;
+
+	GetCurrentEntity_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)GetCurrentEntity, 0x10, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto pinst = (cs_insn *)inst;
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (GetCurrentEntity_SearchContext*)context;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -335,10 +336,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0 &&
 				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				currententity = (decltype(currententity))pinst->detail->x86.operands[1].mem.disp;
+				currententity = (decltype(currententity))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
 			if (currententity)
@@ -351,25 +352,36 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-		}, 0, NULL);
 
-		Sig_VarNotFound(currententity);
+	}, 0, &ctx);
+
+	Sig_VarNotFound(currententity);
+}
+
+void EngineStudioAPI_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID GetTimes = ConvertDllInfoSpace(pstudio->GetTimes, RealDllInfo, DllInfo);
+
+	if (!GetTimes)
+	{
+		Sig_NotFound(GetTimes);
 	}
 
-	if (1)
+	typedef struct GetTimes_SearchContext_t
 	{
-		typedef struct
-		{
-			DWORD candidate[10];
-			int candidate_count;
-		}GetTimes_ctx;
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
 
-		GetTimes_ctx ctx = { 0 };
+		ULONG_PTR candidates[10]{};
+		int candidate_count{};
+	}GetTimes_SearchContext;
 
-		g_pMetaHookAPI->DisasmRanges(pstudio->GetTimes, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+	GetTimes_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)GetTimes, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (GetTimes_ctx *)context;
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (GetTimes_SearchContext*)context;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -377,12 +389,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0 &&
 				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
 				if (ctx->candidate_count < 10)
 				{
-					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[1].mem.disp;
+					ctx->candidates[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->candidate_count++;
 				}
 			}
@@ -391,13 +403,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
-			
+
 				if (ctx->candidate_count < 10)
 				{
-					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[1].imm;
+					ctx->candidates[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
 					ctx->candidate_count++;
 				}
 			}
@@ -407,13 +419,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
 				if (!cl_time)
-					cl_time = (decltype(cl_time))pinst->detail->x86.operands[0].mem.disp;
+					cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				else if (!cl_oldtime)
-					cl_oldtime = (decltype(cl_oldtime))pinst->detail->x86.operands[0].mem.disp;
+					cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 			if (pinst->id == X86_INS_MOVSD &&
 				pinst->detail->x86.op_count == 2 &&
@@ -421,14 +433,14 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0 &&
 				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{// movsd   xmm0, cl_time	
 
 				if (!cl_time)
-					cl_time = (decltype(cl_time))pinst->detail->x86.operands[1].mem.disp;
+					cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				else if (!cl_oldtime)
-					cl_oldtime = (decltype(cl_oldtime))pinst->detail->x86.operands[1].mem.disp;
+					cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
 			if (address[0] == 0xCC)
@@ -440,37 +452,54 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			return FALSE;
 		}, 0, &ctx);
 
-		if (ctx.candidate_count >= 1)
-		{
-			r_framecount = (decltype(r_framecount))ctx.candidate[0];
-		}
-		if (ctx.candidate_count == 5)
-		{
-			cl_time = (decltype(cl_time))ctx.candidate[1];
-			cl_oldtime = (decltype(cl_time))ctx.candidate[3];
-		}
-
-		Sig_VarNotFound(r_framecount);
-		Sig_VarNotFound(cl_time);
-		Sig_VarNotFound(cl_oldtime);
+	if (ctx.candidate_count >= 1)
+	{
+		r_framecount = (decltype(r_framecount))ConvertDllInfoSpace((PVOID)ctx.candidates[0], DllInfo, RealDllInfo);
 	}
 
-	if (1)
+	if (ctx.candidate_count == 5)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->SetRenderModel, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)ctx.candidates[1], DllInfo, RealDllInfo);
+		cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)ctx.candidates[3], DllInfo, RealDllInfo);
+	}
+
+	Sig_VarNotFound(r_framecount);
+	Sig_VarNotFound(cl_time);
+	Sig_VarNotFound(cl_oldtime);
+}
+
+void EngineStudioAPI_FillAddress_SetRenderModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID SetRenderModel = ConvertDllInfoSpace(pstudio->SetRenderModel, RealDllInfo, DllInfo);
+
+	if (!SetRenderModel)
+	{
+		Sig_NotFound(SetRenderModel);
+	}
+
+	typedef struct 
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	}SetRenderModel_SearchContext;
+
+	SetRenderModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)SetRenderModel, 0x10, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto pinst = (cs_insn *)inst;
+			auto ctx = (SetRenderModel_SearchContext*)context;
+			auto pinst = (cs_insn*)inst;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG )
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{
-				r_model = (decltype(r_model))pinst->detail->x86.operands[0].mem.disp;
+				r_model = (decltype(r_model))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
 			if (r_model)
@@ -483,94 +512,147 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-		}, 0, NULL);
+		}, 0, &ctx);
 
-		Sig_VarNotFound(r_model);
+	Sig_VarNotFound(r_model);
+}
+
+void EngineStudioAPI_FillAddress_StudioSetHeader(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID StudioSetHeader = ConvertDllInfoSpace(pstudio->StudioSetHeader, RealDllInfo, DllInfo);
+
+	if (!StudioSetHeader)
+	{
+		Sig_NotFound(StudioSetHeader);
 	}
 
-	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetHeader, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		typedef struct
 		{
-			auto pinst = (cs_insn *)inst;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}StudioSetHeader_SearchContext;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
+		StudioSetHeader_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)StudioSetHeader, 0x10, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				pstudiohdr = (decltype(pstudiohdr))pinst->detail->x86.operands[0].mem.disp;
-			}
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (StudioSetHeader_SearchContext*)context;
 
-			if (pstudiohdr)
-				return TRUE;
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{
+					pstudiohdr = (decltype(pstudiohdr))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				}
 
-			if (address[0] == 0xCC)
-				return TRUE;
+				if (pstudiohdr)
+					return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			return FALSE;
-		}, 0, NULL);
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-		Sig_VarNotFound(pstudiohdr);
+				return FALSE;
+			}, 0, &ctx);
 	}
 
-	if (1)
-	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->SetForceFaceFlags, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
+	Sig_VarNotFound(pstudiohdr);
+}
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
+void EngineStudioAPI_FillAddress_SetForceFaceFlags(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID SetForceFaceFlags = ConvertDllInfoSpace(pstudio->SetForceFaceFlags, RealDllInfo, DllInfo);
+
+	if (!SetForceFaceFlags)
+	{
+		Sig_NotFound(SetForceFaceFlags);
+	}
+
+	{
+		typedef struct
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}SetForceFaceFlags_SearchContext;
+
+		SetForceFaceFlags_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)SetForceFaceFlags, 0x10, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				g_ForcedFaceFlags = (decltype(g_ForcedFaceFlags))pinst->detail->x86.operands[0].mem.disp;
-			}
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (SetForceFaceFlags_SearchContext*)context;
 
-			if (g_ForcedFaceFlags)
-				return TRUE;
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{
+					g_ForcedFaceFlags = (decltype(g_ForcedFaceFlags))ConvertDllInfoSpace((PVOID) pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				}
 
-			if (address[0] == 0xCC)
-				return TRUE;
+				if (g_ForcedFaceFlags)
+					return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			return FALSE;
-		}, 0, NULL);
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-		Sig_VarNotFound(g_ForcedFaceFlags);
+				return FALSE;
+
+			}, 0, &ctx);
+
 	}
 
+	Sig_VarNotFound(g_ForcedFaceFlags);
+}
 
-	if (1)
+void EngineStudioAPI_FillAddress_StudioSetRemapColors(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID StudioSetRemapColors = ConvertDllInfoSpace(pstudio->StudioSetRemapColors, RealDllInfo, DllInfo);
+
+	if (!StudioSetRemapColors)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetRemapColors, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		Sig_NotFound(StudioSetRemapColors);
+	}
+
+	{
+		typedef struct
 		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}StudioSetRemapColors_SearchContext;
+
+		StudioSetRemapColors_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)StudioSetRemapColors, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (StudioSetRemapColors_SearchContext*)context;
 
 			if (!r_topcolor && pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{
-				r_topcolor = (decltype(r_topcolor))pinst->detail->x86.operands[0].mem.disp;
+				r_topcolor = (decltype(r_topcolor))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
 			if (r_topcolor && !r_bottomcolor && pinst->id == X86_INS_MOV &&
@@ -578,13 +660,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{
-				if ((void*)r_topcolor != (void *)pinst->detail->x86.operands[0].mem.disp)
+				if ((PVOID)r_topcolor != (PVOID)ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo))
 				{
-					r_bottomcolor = (decltype(r_bottomcolor))pinst->detail->x86.operands[0].mem.disp;
+					r_bottomcolor = (decltype(r_bottomcolor))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
 			}
 
@@ -598,87 +680,163 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-		}, 0, NULL);
+		}, 0, &ctx);
 
-		Sig_VarNotFound(r_topcolor);
-		Sig_VarNotFound(r_bottomcolor);
 	}
 
-	if (1)
+	Sig_VarNotFound(r_topcolor);
+	Sig_VarNotFound(r_bottomcolor);
+}
+
+void EngineStudioAPI_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID StudioSetRenderamt = ConvertDllInfoSpace(pstudio->StudioSetRenderamt, RealDllInfo, DllInfo);
+
+	if (!StudioSetRenderamt)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetRenderamt, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-
-			if (address[0] == 0xE8 && instLen == 5)
-			{
-				gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))pinst->detail->x86.operands[0].imm;
-			}
-			else if (pinst->id == X86_INS_FSTP &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0)
-			{
-				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
-			}
-
-			if (gPrivateFuncs.CL_FxBlend && r_blend)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, NULL);
-
-		Sig_VarNotFound(r_blend);
-		Sig_FuncNotFound(CL_FxBlend);
+		Sig_NotFound(StudioSetRenderamt);
 	}
 
-	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->SetupRenderer, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		typedef struct
 		{
-			auto pinst = (cs_insn *)inst;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}StudioSetRenderamt_SearchContext;
 
-			if (address[0] == 0xC7 && address[1] == 0x05 && instLen == 10)//C7 05 C0 7D 73 02 98 14 36 02 mov     pauxverts, offset auxverts
+		StudioSetRenderamt_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)StudioSetRenderamt, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				if (!pauxverts)
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (StudioSetRenderamt_SearchContext*)context;
+
+				if (!gPrivateFuncs.CL_FxBlend && 
+					address[0] == 0xE8 && instLen == 5)
 				{
-					pauxverts = *(decltype(pauxverts)*)(address + 2);
-					auxverts = *(decltype(auxverts)*)(address + 6);
+					gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 				}
-				else if (!pvlightvalues)
+
+				else if (!r_blend && 
+					pinst->id == X86_INS_FSTP &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0)
 				{
-					pvlightvalues = *(decltype(pvlightvalues)*)(address + 2);
-					lightvalues = *(decltype(lightvalues)*)(address + 6);
+					r_blend = (decltype(r_blend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
-			}
 
-			if (pvlightvalues && lightvalues)
-				return TRUE;
+				if (gPrivateFuncs.CL_FxBlend && r_blend)
+					return TRUE;
 
-			if (address[0] == 0xCC)
-				return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-			return FALSE;
-		}, 0, NULL);
+				return FALSE;
+			}, 0, &ctx);
 
-		Sig_VarNotFound(pauxverts);
-		Sig_VarNotFound(pvlightvalues);
 	}
 
-	if (1)
+	Sig_VarNotFound(r_blend);
+	Sig_FuncNotFound(CL_FxBlend);
+}
+
+void EngineStudioAPI_FillAddress_SetupRenderer(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID SetupRenderer = ConvertDllInfoSpace(pstudio->SetupRenderer, RealDllInfo, DllInfo);
+
+	if (!SetupRenderer)
 	{
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupModel, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		Sig_NotFound(SetupRenderer);
+	}
+	/*
+	//Global pointers that link into engine
+	auxvert_t** pauxverts = NULL;
+	float** pvlightvalues = NULL;
+	*/
+	{
+		typedef struct
 		{
-			auto pinst = (cs_insn *)inst;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}SetupRenderer_SearchContext;
+
+		SetupRenderer_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)SetupRenderer, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (SetupRenderer_SearchContext*)context;
+
+				if (address[0] == 0xC7 && address[1] == 0x05 && instLen == 10)//C7 05 C0 7D 73 02 98 14 36 02 mov     pauxverts, offset auxverts
+				{
+					if (!pauxverts)
+					{
+						auto pauxverts_VA = *(ULONG_PTR*)(address + 2);
+						auto auxverts_VA = *(ULONG_PTR*)(address + 6);
+
+						pauxverts = (decltype(pauxverts))ConvertDllInfoSpace((PVOID)pauxverts_VA, ctx->DllInfo, ctx->RealDllInfo);
+						auxverts = (decltype(auxverts))ConvertDllInfoSpace((PVOID)auxverts_VA, ctx->DllInfo, ctx->RealDllInfo);
+					}
+					else if (!pvlightvalues)
+					{
+						auto pvlightvalues_VA = *(ULONG_PTR*)(address + 2);
+						auto lightvalues_VA = *(ULONG_PTR*)(address + 6);
+
+						pvlightvalues = (decltype(pvlightvalues))ConvertDllInfoSpace((PVOID)pvlightvalues_VA, ctx->DllInfo, ctx->RealDllInfo);
+						lightvalues = (decltype(lightvalues))ConvertDllInfoSpace((PVOID)lightvalues_VA, ctx->DllInfo, ctx->RealDllInfo);
+					}
+				}
+
+				if (pauxverts && auxverts && pvlightvalues && lightvalues)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, &ctx);
+
+	}
+
+	Sig_VarNotFound(pauxverts);
+	Sig_VarNotFound(auxverts);
+	Sig_VarNotFound(pvlightvalues);
+	Sig_VarNotFound(lightvalues);
+}
+
+void EngineStudioAPI_FillAddress_StudioSetupModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID StudioSetupModel = ConvertDllInfoSpace(pstudio->StudioSetupModel, RealDllInfo, DllInfo);
+
+	if (!StudioSetupModel)
+	{
+		Sig_NotFound(StudioSetupModel);
+	}
+
+	/*
+mstudiomodel_t** psubmodel = NULL;
+mstudiobodyparts_t** pbodypart = NULL;
+	*/
+
+	typedef struct
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	}StudioSetupModel_SearchContext;
+
+	StudioSetupModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)StudioSetupModel, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (StudioSetupModel_SearchContext*)context;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -687,16 +845,16 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].mem.index == 0 &&
 				pinst->detail->x86.operands[0].mem.disp == 0 &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize  )
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D87E55 C7 01 B8 94 37 02                                   mov     dword ptr [ecx], offset pbodypart
 				if (!pbodypart)
 				{
-					pbodypart = (decltype(pbodypart))pinst->detail->x86.operands[1].imm;
+					pbodypart = (decltype(pbodypart))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 				}
 				else if (!psubmodel)
 				{
-					psubmodel = (decltype(psubmodel))pinst->detail->x86.operands[1].imm;
+					psubmodel = (decltype(psubmodel))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 				}
 			}
 
@@ -710,40 +868,51 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-		}, 0, NULL);
+		}, 0, &ctx);
 
-		Sig_VarNotFound(pbodypart);
-		Sig_VarNotFound(psubmodel);
+	Sig_VarNotFound(pbodypart);
+	Sig_VarNotFound(psubmodel);
+}
+
+void EngineStudioAPI_FillAddress_SetChromeOrigin(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID SetChromeOrigin = ConvertDllInfoSpace(pstudio->SetChromeOrigin, RealDllInfo, DllInfo);
+
+	if (!SetChromeOrigin)
+	{
+		Sig_NotFound(SetChromeOrigin);
 	}
 
-	if(1)
+	typedef struct SetChromeOrigin_SearchContext_s
 	{
-		typedef struct
-		{
-			int r_origin_candidate_count;
-			PVOID r_origin_candidate[3];
-			int g_ChromeOrigin_candidate_count;
-			PVOID g_ChromeOrigin_candidate[3];
-		}SetChromeOrigin_ctx;
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
 
-		SetChromeOrigin_ctx ctx = { 0 };
+		ULONG_PTR r_origin_candidateVA[3]{};
+		int r_origin_candidate_count{};
+		ULONG_PTR g_ChromeOrigin_candidateVA[3]{};
+		int g_ChromeOrigin_candidate_count{};
 
-		g_pMetaHookAPI->DisasmRanges(pstudio->SetChromeOrigin, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+	}SetChromeOrigin_SearchContext;
+
+	SetChromeOrigin_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)SetChromeOrigin, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (SetChromeOrigin_ctx *)context;
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (SetChromeOrigin_SearchContext*)context;
 
 			if (pinst->id == X86_INS_FLD &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//D9 05 00 40 F5 03 fld     r_origin
 				if (ctx->r_origin_candidate_count < 3)
 				{
-					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->r_origin_candidateVA[ctx->r_origin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->r_origin_candidate_count++;
 				}
 			}
@@ -751,12 +920,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
 				if (ctx->r_origin_candidate_count < 3)
 				{
-					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+					ctx->r_origin_candidateVA[ctx->r_origin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->r_origin_candidate_count++;
 				}
 			}
@@ -764,12 +933,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
 				if (ctx->r_origin_candidate_count < 3)
 				{
-					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].imm;
+					ctx->r_origin_candidateVA[ctx->r_origin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
 					ctx->r_origin_candidate_count++;
 				}
 			}
@@ -777,12 +946,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
 				if (ctx->r_origin_candidate_count < 3)
 				{
-					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+					ctx->r_origin_candidateVA[ctx->r_origin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->r_origin_candidate_count++;
 				}
 			}
@@ -791,13 +960,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
 				if (ctx->g_ChromeOrigin_candidate_count < 3)
 				{
-					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidateVA[ctx->g_ChromeOrigin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->g_ChromeOrigin_candidate_count++;
 				}
 			}
@@ -805,13 +974,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
 				if (ctx->g_ChromeOrigin_candidate_count < 3)
 				{
-					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidateVA[ctx->g_ChromeOrigin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->g_ChromeOrigin_candidate_count++;
 				}
 			}
@@ -820,12 +989,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//D9 1D A0 39 DB 08 fstp    g_ChromeOrigin
 				if (ctx->g_ChromeOrigin_candidate_count < 3)
 				{
-					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidateVA[ctx->g_ChromeOrigin_candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->g_ChromeOrigin_candidate_count++;
 				}
 			}
@@ -837,66 +1006,78 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
+
 		}, 0, &ctx);
 
-		if (ctx.r_origin_candidate_count >= 2)
-		{
-			std::qsort(ctx.r_origin_candidate, ctx.r_origin_candidate_count, sizeof(ctx.r_origin_candidate[0]), [](const void* a, const void* b) {
-				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-			});
-			r_origin = (decltype(r_origin))ctx.r_origin_candidate[0];
-		}
-
-		if (ctx.g_ChromeOrigin_candidate_count >= 2)
-		{
-			std::qsort(ctx.g_ChromeOrigin_candidate, ctx.g_ChromeOrigin_candidate_count, sizeof(ctx.g_ChromeOrigin_candidate[0]), [](const void* a, const void* b) {
-				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-			});
-			g_ChromeOrigin = (decltype(g_ChromeOrigin))ctx.g_ChromeOrigin_candidate[0];
-		}
-
-		Sig_VarNotFound(r_origin);
-		Sig_VarNotFound(g_ChromeOrigin);
+	if (ctx.r_origin_candidate_count >= 2)
+	{
+		std::qsort(ctx.r_origin_candidateVA, ctx.r_origin_candidate_count, sizeof(ctx.r_origin_candidateVA[0]), [](const void* a, const void* b) {
+			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+		});
+		r_origin = (decltype(r_origin))ConvertDllInfoSpace((PVOID)ctx.r_origin_candidateVA[0], DllInfo, RealDllInfo);
 	}
 
-	if (1)
+	if (ctx.g_ChromeOrigin_candidate_count >= 2)
 	{
-		typedef struct
-		{
-			int and_FF00_start;
-			DWORD candidate[10];
-			int candidate_count;
-		}StudioSetupLighting_ctx;
+		std::qsort(ctx.g_ChromeOrigin_candidateVA, ctx.g_ChromeOrigin_candidate_count, sizeof(ctx.g_ChromeOrigin_candidateVA[0]), [](const void* a, const void* b) {
+			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+		});
+		g_ChromeOrigin = (decltype(g_ChromeOrigin))ConvertDllInfoSpace((PVOID)ctx.g_ChromeOrigin_candidateVA[0], DllInfo, RealDllInfo);
+	}
 
-		StudioSetupLighting_ctx ctx = { 0 };
+	Sig_VarNotFound(r_origin);
+	Sig_VarNotFound(g_ChromeOrigin);
+}
 
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupLighting, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+void EngineStudioAPI_FillAddress_StudioSetupLighting(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID StudioSetupLighting = ConvertDllInfoSpace(pstudio->StudioSetupLighting, RealDllInfo, DllInfo);
+
+	if (!StudioSetupLighting)
+	{
+		Sig_NotFound(StudioSetupLighting);
+	}
+
+	typedef struct StudioSetupLighting_SearchContext_s
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+
+		ULONG_PTR candidateVA[10]{};
+		int candidate_count{};
+		int and_FF00_start{};
+
+	}StudioSetupLighting_SearchContext;
+
+	StudioSetupLighting_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)StudioSetupLighting, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (StudioSetupLighting_ctx *)context;
-			
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (StudioSetupLighting_SearchContext*)context;
+
 			if (pinst->id == X86_INS_AND &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0xFF00 )
+				pinst->detail->x86.operands[1].imm == 0xFF00)
 			{
 				ctx->candidate_count = 0;
 				ctx->and_FF00_start = 1;
 			}
-			else if (ctx->and_FF00_start && 
+			else if (ctx->and_FF00_start &&
 				pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG )
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{//.text:01D84A49 89 0D 04 AE 75 02                                   mov     r_colormix+4, ecx
 				if (ctx->candidate_count < 10)
 				{
-					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->candidate_count++;
 				}
 			}
@@ -906,13 +1087,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D8F6AD D9 1D F0 EA 51 08                                   fstp    r_colormix
 
 				if (ctx->candidate_count < 10)
 				{
-					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->candidate_count++;
 				}
 			}
@@ -923,13 +1104,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D8F6AD D9 1D F0 EA 51 08                                   fstp    r_colormix
 
 				if (ctx->candidate_count < 10)
 				{
-					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->candidate_count++;
 				}
 			}
@@ -943,336 +1124,97 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			return FALSE;
 		}, 0, &ctx);
 
-		if (ctx.candidate_count >= 3)
-		{
-			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(ctx.candidate[0]), [](const void* a, const void* b) {
-				return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
+	if (ctx.candidate_count >= 3)
+	{
+		std::qsort(ctx.candidateVA, ctx.candidate_count, sizeof(ctx.candidateVA[0]), [](const void* a, const void* b) {
+			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
 			});
 
-			//other, other, other, r_colormix[0], r_colormix[1], r_colormix[2]
-			if (ctx.candidate[ctx.candidate_count - 3] + 4 == ctx.candidate[ctx.candidate_count - 2] &&
-				ctx.candidate[ctx.candidate_count - 2] + 4 == ctx.candidate[ctx.candidate_count - 1])
-			{
-				r_colormix = (decltype(r_colormix))ctx.candidate[ctx.candidate_count - 3];
-			}
-			//r_colormix[0], r_colormix[1], r_colormix[2], other, other, other
-			else if (ctx.candidate[0] + 4 == ctx.candidate[1] &&
-				ctx.candidate[1] + 4 == ctx.candidate[2])
-			{
-				r_colormix = (decltype(r_colormix))ctx.candidate[0];
-			}
+		//other, other, other, r_colormix[0], r_colormix[1], r_colormix[2]
+		if (ctx.candidateVA[ctx.candidate_count - 3] + 4 == ctx.candidateVA[ctx.candidate_count - 2] &&
+			ctx.candidateVA[ctx.candidate_count - 2] + 4 == ctx.candidateVA[ctx.candidate_count - 1])
+		{
+			r_colormix = (decltype(r_colormix))ConvertDllInfoSpace((PVOID)ctx.candidateVA[ctx.candidate_count - 3], DllInfo, RealDllInfo);
 		}
-
-		Sig_VarNotFound(r_colormix);
+		//r_colormix[0], r_colormix[1], r_colormix[2], other, other, other
+		else if (ctx.candidateVA[0] + 4 == ctx.candidateVA[1] &&
+			ctx.candidateVA[1] + 4 == ctx.candidateVA[2])
+		{
+			r_colormix = (decltype(r_colormix))ConvertDllInfoSpace((PVOID)ctx.candidateVA[0], DllInfo, RealDllInfo);
+		}
 	}
 
-	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
-	plighttransform = (decltype(plighttransform))pstudio->StudioGetLightTransform();
-	rotationmatrix = (decltype(rotationmatrix))pstudio->StudioGetRotationMatrix();
-	pstudio->GetModelCounters(&r_smodels_total, &r_amodels_drawn);
+	Sig_VarNotFound(r_colormix);
+}
 
-	cl_viewent = gEngfuncs.GetViewModel();
+void EngineStudioAPI_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	EngineStudioAPI_FillAddress_GetCurrentEntity(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_GetTimes(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_SetRenderModel(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_StudioSetHeader(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_SetForceFaceFlags(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_StudioSetRemapColors(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_StudioSetRenderamt(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_SetupRenderer(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_StudioSetupModel(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_SetChromeOrigin(pstudio, DllInfo, RealDllInfo);
+	EngineStudioAPI_FillAddress_StudioSetupLighting(pstudio, DllInfo, RealDllInfo);
+}
 
-	//Save Studio API
-	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
-	gpStudioInterface = ppinterface;
-
-	//InlineHook StudioAPI
+void EngineStudioAPI_InstalHooks()
+{
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
 	Install_InlineHook(CL_FxBlend);
+}
 
-	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
+void ClientStudio_FillAddress_StudioDrawPlayer(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	auto StudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
 
-	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
-
-	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
-
-	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
-
-	if (pfnClientFactory)
+	if (StudioDrawPlayerThunk)
 	{
-		auto SCClient001 = pfnClientFactory("SCClientDLL001", 0);
-		if (SCClient001)
+		StudioDrawPlayerThunk = (decltype(StudioDrawPlayerThunk))ConvertDllInfoSpace(StudioDrawPlayerThunk, RealDllInfo, DllInfo);
+	}
+
+	if (StudioDrawPlayerThunk)
+	{
+		//There is a E9 jmp in Debug build and we need to skip it.
+		if (StudioDrawPlayerThunk[0] == 0xE9)
 		{
-			if (1)
-			{
-#define SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG);
-
-				Sig_AddrNotFound(ClientPortalManager_ResetAll);
-
-				gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
-			}
-#if 0
-			if (1)
-			{
-#define SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG "\x8B\x2A\x24\x04\x83\xEC\x08\x2A\x2A\x2A\x2A\xC5\x9D\x1C\x81\x2A\x2A\x2A\x2A\x70\x2A\x2A\x6C"
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG);
-
-				Sig_AddrNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
-
-				gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))addr;
-			}
-			if (1)
-			{
-#define SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG "\x83\xEC\x2A\x2A\x8B\x74\x24\x2A\x2A\x8B\x7C\x24\x2A\x89\x4C\x24\x2A\x83\x2A\x28\x01"
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG);
-
-				Sig_AddrNotFound(ClientPortalManager_DrawPortalSurface);
-
-				gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))addr;
-			}
-
-#else
-			if (1)
-			{
-				/*
-.text:1004EED7 6A 01                                               push    1               ; alpha
-.text:1004EED9 6A 01                                               push    1               ; blue
-.text:1004EEDB 6A 01                                               push    1               ; green
-.text:1004EEDD 6A 01                                               push    1               ; red
-.text:1004EEDF FF 15 14 92 11 10                                   call    ds:glColorMask
-.text:1004EEE5 68 E1 0D 00 00                                      push    0DE1h           ; cap
-.text:1004EEEA FF 15 08 92 11 10                                   call    ds:glEnable
-.text:1004EEF0
-.text:1004EEF0                                     loc_1004EEF0:                           ; CODE XREF: sub_1004EA40+173¡üj
-.text:1004EEF0 8B 4C 24 20                                         mov     ecx, [esp+30h+var_10]
-.text:1004EEF4 56                                                  push    esi
-.text:1004EEF5 E8 66 EB FF FF                                      call    ClientPortalManager__GetOriginalSurfaceTexture
-				*/
-				const char pattern[] = "\x6A\x01\x6A\x01\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00";
-				PUCHAR SearchBegin = (PUCHAR)g_dwClientTextBase;
-				PUCHAR SearchLimit = (PUCHAR)g_dwClientTextBase + g_dwClientTextSize;
-				while (SearchBegin < SearchLimit)
-				{
-					PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-					if (pFound)
-					{
-						g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-							auto pinst = (cs_insn*)inst;
-
-							if (address[0] == 0xE8)
-							{
-								gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))pinst->detail->x86.operands[0].imm;
-								return TRUE;
-							}
-
-							if (address[0] == 0xCC)
-								return TRUE;
-
-							if (pinst->id == X86_INS_RET)
-								return TRUE;
-
-							return FALSE;
-
-						}, 0, NULL);
-
-						if (gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture)
-						{
-							gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x600, [](PUCHAR Candidate) {
-
-								if (Candidate[0] == 0x83 &&
-									Candidate[1] == 0xEC)
-									return TRUE;
-
-								return FALSE;
-							});
-
-							break;
-						}
-
-						SearchBegin = pFound + Sig_Length(pattern);
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
-
-			Sig_FuncNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
-			Sig_FuncNotFound(ClientPortalManager_DrawPortalSurface);
-#endif
-
-
-
-			if (1)
-			{
-#define SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x2A\x44\x24\x2A\x2A\x2A\x24\x2A\x2A\x2A\x24\x2A\x2A\x44\x24\x2A\xF3\x0F"
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG);
-
-				Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
-
-				gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))addr;
-			}
-
-			if (1)
-			{
-				const char pattern[] = "\x6A\x00\x6A\x00\x6A\x00\x8B\x2A\xFF\x50\x2A";
-				auto addr = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-				Sig_AddrNotFound(g_bRenderingPortals);
-
-				g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize &&
-						pinst->detail->x86.operands[1].imm == 1)
-					{
-						g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))pinst->detail->x86.operands[0].mem.disp;
-						return TRUE;
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, NULL);
-
-				Sig_VarNotFound(g_bRenderingPortals_SCClient);
-			}
-
-			if (1)
-			{
-				const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-				Sig_AddrNotFound(g_bRenderingPortals);
-				g_iWaterLevel = (decltype(g_iWaterLevel)) * (ULONG_PTR*)(addr + 1);
-				//g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 20);
-			}
-
-			if (1)
-			{
-				const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
-				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
-				Sig_AddrNotFound(g_iFogColor);
-
-				typedef struct
-				{
-					ULONG_PTR Candidates[16];
-					int iNumCandidates;
-				}V_CalcNormalRefdef_ctx;
-
-				V_CalcNormalRefdef_ctx ctx = { 0 };
-
-				g_pMetaHookAPI->DisasmRanges((void*)addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto ctx = (V_CalcNormalRefdef_ctx*)context;
-					auto pinst = (cs_insn*)inst;
-
-					if (ctx->iNumCandidates < 16)
-					{
-						if (pinst->id == X86_INS_MOVSS &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[0].reg == X86_REG_XMM0 &&
-							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].mem.base == 0 &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
-						{
-							ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-							ctx->iNumCandidates++;
-						}
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, &ctx);
-
-				if (ctx.iNumCandidates >= 5 &&
-					ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
-					ctx.Candidates[ctx.iNumCandidates - 2] == ctx.Candidates[ctx.iNumCandidates - 3] + sizeof(int) &&
-					ctx.Candidates[ctx.iNumCandidates - 3] == ctx.Candidates[ctx.iNumCandidates - 4] + sizeof(int))
-				{
-					g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))ctx.Candidates[0];
-					g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))ctx.Candidates[3];
-					g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))ctx.Candidates[4];
-				}
-			}
-			Sig_VarNotFound(g_iFogColor_SCClient);
-			Sig_VarNotFound(g_iStartDist_SCClient);
-			Sig_VarNotFound(g_iEndDist_SCClient);
-
-			Install_InlineHook(ClientPortalManager_ResetAll);
-			Install_InlineHook(ClientPortalManager_DrawPortalSurface);
-			Install_InlineHook(ClientPortalManager_EnableClipPlane);
-
-			g_bIsSvenCoop = true;
+			StudioDrawPlayerThunk = (PUCHAR)GetCallAddress(StudioDrawPlayerThunk);
 		}
 	}
 
-	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientTextBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (StudioDrawPlayerThunk)
 	{
 		typedef struct
 		{
-			ULONG_PTR Candidates[16];
-			int iNumCandidates;
-		}CL_IsThirdPerson_ctx;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}StudioDrawPlayer_SearchContext;
 
-		CL_IsThirdPerson_ctx ctx = { 0 };
+		StudioDrawPlayer_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges((void*)StudioDrawPlayerThunk, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (StudioDrawPlayer_SearchContext*)context;
 
-			auto ctx = (CL_IsThirdPerson_ctx *)context;
-			auto pinst = (cs_insn *)inst;
-
-			if (ctx->iNumCandidates < 16)
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDI
-						) &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
-				{
-					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-					ctx->iNumCandidates++;
-				}
+				g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
-				{
-					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
+			if (g_pGameStudioRenderer)
+				return TRUE;
 
 			if (address[0] == 0xCC)
 				return TRUE;
@@ -1281,47 +1223,98 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-
 		}, 0, &ctx);
 
-		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
-		{
-			g_iUser1 = (decltype(g_iUser1))ctx.Candidates[ctx.iNumCandidates - 2];
-			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
-		}
-	}
+		//g_pGameStudioRenderer is mandatory in this case
 
-	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
-	{
-		g_bIsCounterStrike = true;
+		Sig_VarNotFound(g_pGameStudioRenderer);
 
-		spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip_internal");
+		g_pMetaHookAPI->DisasmRanges((void*)StudioDrawPlayerThunk, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (StudioDrawPlayer_SearchContext*)context;
 
-		if(!spec_pip)
-			spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
-	}
-
-	auto StudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
-	if (StudioDrawPlayerThunk > g_dwClientTextBase && StudioDrawPlayerThunk < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
-	{
-		if (StudioDrawPlayerThunk[0] == 0xE9)
-		{
-			StudioDrawPlayerThunk = (PUCHAR)GetCallAddress(StudioDrawPlayerThunk);
-		}
-		g_pMetaHookAPI->DisasmRanges(StudioDrawPlayerThunk, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp >= 8 && pinst->detail->x86.operands[0].mem.disp <= 0x200)
 			{
-				auto pinst = (cs_insn*)inst;
+				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+			}
 
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				PVOID callTarget = (PVOID)pinst->detail->x86.operands[0].imm;
+
+				PVOID* vftable = *(PVOID**)g_pGameStudioRenderer;
+
+				for (int i = 1; i < 4; ++i)
 				{
-					g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
+					if (GetVFunctionFromVFTable(vftable, i, ctx->DllInfo, ctx->RealDllInfo, ctx->DllInfo) == callTarget)
+					{
+						gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = i;
+						break;
+					}
 				}
+			}
+
+			if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, &ctx);
+
+		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index == 0)
+			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = 3;
+	}
+}
+
+void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	ULONG_PTR StudioDrawModel_VA = 0;
+	ULONG StudioDrawModel_RVA = 0;
+
+	auto StudioDrawModelThunk = (PUCHAR)(*ppinterface)->StudioDrawModel;
+
+	if (StudioDrawModelThunk)
+	{
+		StudioDrawModelThunk = (decltype(StudioDrawModelThunk))ConvertDllInfoSpace(StudioDrawModelThunk, RealDllInfo, DllInfo);
+	}
+
+	if (StudioDrawModelThunk)
+	{
+		//There is a E9 jmp in Debug build and we need to skip it.
+		if (StudioDrawModelThunk[0] == 0xE9)
+		{
+			StudioDrawModelThunk = (PUCHAR)GetCallAddress(StudioDrawModelThunk);
+		}
+	}
+
+	if (StudioDrawModelThunk)
+	{
+		PVOID* vftable = *(PVOID**)g_pGameStudioRenderer;
+
+		{
+			typedef struct
+			{
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+			}StudioDrawModel_SearchContext;
+
+			StudioDrawModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
+			g_pMetaHookAPI->DisasmRanges((void*)StudioDrawModelThunk, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (StudioDrawModel_SearchContext*)context;
 
 				if (pinst->id == X86_INS_CALL &&
 					pinst->detail->x86.op_count == 1 &&
@@ -1329,27 +1322,27 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					pinst->detail->x86.operands[0].mem.base != 0 &&
 					pinst->detail->x86.operands[0].mem.disp >= 8 && pinst->detail->x86.operands[0].mem.disp <= 0x200)
 				{
-					gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+					gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
 				}
 
 				if (pinst->id == X86_INS_CALL &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM)
 				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-
+					PVOID callTarget = (PVOID)pinst->detail->x86.operands[0].imm;
 					PVOID* vftable = *(PVOID**)g_pGameStudioRenderer;
+
 					for (int i = 1; i < 4; ++i)
 					{
-						if (vftable[i] == imm)
+						if (GetVFunctionFromVFTable(vftable, i, ctx->DllInfo, ctx->RealDllInfo, ctx->DllInfo) == callTarget)
 						{
-							gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = i;
+							gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = i;
 							break;
 						}
 					}
 				}
 
-				if (g_pGameStudioRenderer && gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
+				if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)
 					return TRUE;
 
 				if (address[0] == 0xCC)
@@ -1359,208 +1352,167 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					return TRUE;
 
 				return FALSE;
-			}, 0, NULL);
+				}, 0, NULL);
 
-		Sig_VarNotFound(g_pGameStudioRenderer);
-
-		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index == 0)
-			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = 3;
-	}
-
-	auto StudioDrawModelThunk = (PUCHAR)(*ppinterface)->StudioDrawModel;
-	if (StudioDrawModelThunk > g_dwClientTextBase && StudioDrawModelThunk < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
-	{
-		if (StudioDrawModelThunk[0] == 0xE9)
-		{
-			StudioDrawModelThunk = (PUCHAR)GetCallAddress(StudioDrawModelThunk);
+			if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index == 0)
+				gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = 2;
 		}
-		g_pMetaHookAPI->DisasmRanges(StudioDrawModelThunk, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+
 		{
-			auto pinst = (cs_insn*)inst;
+			//Search for GameStudioRenderer_StudioCalcAttachments_vftable_index
 
-			if (pinst->id == X86_INS_CALL &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base != 0 &&
-				pinst->detail->x86.operands[0].mem.disp >= 8 && pinst->detail->x86.operands[0].mem.disp <= 0x200)
+			for (int i = 4; i < 9; ++i)
 			{
-				gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
-			}
-
-			if (pinst->id == X86_INS_CALL &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-
-				PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
-				for (int i = 1; i < 4; ++i)
+				typedef struct StudioCalcAttachments_SearchContext_s
 				{
-					if (vftable[i] == imm)
-					{
-						gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = i;
-						break;
-					}
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+					PVOID base{};
+					size_t max_insts{};
+					int max_depth{};
+					std::set<PVOID> code;
+					std::set<PVOID> branches;
+					std::vector<walk_context_t> walks;
+					int vftable_index{};
+					bool bFoundD4h{};
+					bool bFoundD8h{};
+				}StudioCalcAttachments_SearchContext;
+
+				StudioCalcAttachments_SearchContext ctx = { DllInfo, RealDllInfo };
+
+				ctx.base = (void*)GetVFunctionFromVFTable(vftable, i, DllInfo, RealDllInfo, DllInfo);
+				ctx.vftable_index = i;
+				ctx.bFoundD4h = false;
+				ctx.bFoundD8h = false;
+
+				ctx.max_insts = 1000;
+				ctx.max_depth = 16;
+				ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+				while (ctx.walks.size())
+				{
+					auto walk = ctx.walks[ctx.walks.size() - 1];
+					ctx.walks.pop_back();
+
+					g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (StudioCalcAttachments_SearchContext*)context;
+
+						if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+							return TRUE;
+
+						if (ctx->code.size() > ctx->max_insts)
+							return TRUE;
+
+						if (ctx->code.find(address) != ctx->code.end())
+							return TRUE;
+
+						ctx->code.emplace(address);
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.ImageBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
+						{
+							const char* pPushedString = (const char*)pinst->detail->x86.operands[0].imm;
+
+							if (0 == memcmp(pPushedString, "Too many attachments on %s\n", sizeof("Too many attachments on %s\n") - 1))
+							{
+								gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->vftable_index;
+							}
+						}
+
+						if (address < (PUCHAR)ctx->base + 0x60)
+						{
+							if (!ctx->bFoundD4h)
+							{
+								if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+									pinst->detail->x86.op_count == 2 &&
+									pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+									pinst->detail->x86.operands[0].mem.base != 0 &&
+									pinst->detail->x86.operands[0].mem.disp == 0xD4)
+								{
+									ctx->bFoundD4h = true;
+								}
+								else if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+									pinst->detail->x86.op_count == 2 &&
+									pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+									pinst->detail->x86.operands[1].mem.base != 0 &&
+									pinst->detail->x86.operands[1].mem.disp == 0xD4)
+								{
+									ctx->bFoundD4h = true;
+								}
+							}
+							if (!ctx->bFoundD8h)
+							{
+								if (pinst->id == X86_INS_MOV &&
+									pinst->detail->x86.op_count == 2 &&
+									pinst->detail->x86.operands[0].type == X86_OP_REG &&
+									pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+									pinst->detail->x86.operands[1].mem.base != 0 &&
+									pinst->detail->x86.operands[1].mem.disp == 0xD8)
+								{
+									ctx->bFoundD8h = true;
+								}
+							}
+
+							if (ctx->bFoundD4h && ctx->bFoundD8h)
+							{
+								gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->vftable_index;
+							}
+						}
+
+						if (gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index)
+							return TRUE;
+
+						if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM)
+						{
+							PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+							auto foundbranch = ctx->branches.find(imm);
+							if (foundbranch == ctx->branches.end())
+							{
+								ctx->branches.emplace(imm);
+								if (depth + 1 < ctx->max_depth)
+									ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							}
+
+							if (pinst->id == X86_INS_JMP)
+								return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+						}, walk.depth, &ctx);
 				}
 			}
 
-			if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, NULL);
-
-		if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index == 0)
-			gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = 2;
-
-		PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
-
-		for (int i = 4; i < 9; ++i)
-		{
-			//GameStudioRenderer_StudioCalcAttachments_vftable_index
-
-			typedef struct
-			{
-				PVOID base;
-				size_t max_insts;
-				int max_depth;
-				std::set<PVOID> code;
-				std::set<PVOID> branches;
-				std::vector<walk_context_t> walks;
-				int index;
-				bool bFoundD4h;
-				bool bFoundD8h;
-			}StudioCalcAttachments_SearchContext;
-
-			StudioCalcAttachments_SearchContext ctx;
-
-			ctx.base = (void*)vftable[i];
-			ctx.index = i;
-			ctx.bFoundD4h = false;
-			ctx.bFoundD8h = false;
-
-			ctx.max_insts = 1000;
-			ctx.max_depth = 16;
-			ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-			while (ctx.walks.size())
-			{
-				auto walk = ctx.walks[ctx.walks.size() - 1];
-				ctx.walks.pop_back();
-
-				g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (StudioCalcAttachments_SearchContext*)context;
-
-					if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
-						return TRUE;
-
-					if (ctx->code.size() > ctx->max_insts)
-						return TRUE;
-
-					if (ctx->code.find(address) != ctx->code.end())
-						return TRUE;
-
-					ctx->code.emplace(address);
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						(PUCHAR)pinst->detail->x86.operands[0].imm >(PUCHAR)g_dwClientBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
-					{
-						const char* pPushedString = (const char*)pinst->detail->x86.operands[0].imm;
-						if (0 == memcmp(pPushedString, "Too many attachments on %s\n", sizeof("Too many attachments on %s\n") - 1))
-						{
-							gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
-						}
-					}
-
-					if (address < (PUCHAR)ctx->base + 0x60)
-					{
-						if (!ctx->bFoundD4h)
-						{
-							if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
-								pinst->detail->x86.op_count == 2 &&
-								pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-								pinst->detail->x86.operands[0].mem.base != 0 &&
-								pinst->detail->x86.operands[0].mem.disp == 0xD4)
-							{
-								ctx->bFoundD4h = true;
-							} 
-							else if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
-								pinst->detail->x86.op_count == 2 &&
-								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-								pinst->detail->x86.operands[1].mem.base != 0 &&
-								pinst->detail->x86.operands[1].mem.disp == 0xD4)
-							{
-								ctx->bFoundD4h = true;
-							}
-						}
-						if (!ctx->bFoundD8h)
-						{
-							if (pinst->id == X86_INS_MOV &&
-								pinst->detail->x86.op_count == 2 &&
-								pinst->detail->x86.operands[0].type == X86_OP_REG &&
-								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-								pinst->detail->x86.operands[1].mem.base != 0 &&
-								pinst->detail->x86.operands[1].mem.disp == 0xD8)
-							{
-								ctx->bFoundD8h = true;
-							}
-						}
-
-						if (ctx->bFoundD4h && ctx->bFoundD8h)
-						{
-							gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
-						}
-					}
-
-					if (gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index)
-						return TRUE;
-
-					if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM)
-					{
-						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-						auto foundbranch = ctx->branches.find(imm);
-						if (foundbranch == ctx->branches.end())
-						{
-							ctx->branches.emplace(imm);
-							if (depth + 1 < ctx->max_depth)
-								ctx->walks.emplace_back(imm, 0x300, depth + 1);
-						}
-
-						if (pinst->id == X86_INS_JMP)
-							return TRUE;
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, walk.depth, &ctx);
-			}
+			Sig_FuncNotFound(GameStudioRenderer_StudioCalcAttachments_vftable_index);
 		}
-
-		Sig_FuncNotFound(GameStudioRenderer_StudioCalcAttachments_vftable_index);
 
 		if (g_bIsCounterStrike)
 		{
-			g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			PVOID GameStudioRenderer_StudioDrawPlayerThunk = ConvertDllInfoSpace(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, RealDllInfo, DllInfo);
 
-				auto pinst = (cs_insn *)inst;
+			if (!GameStudioRenderer_StudioDrawPlayerThunk)
+			{
+				Sig_NotFound(GameStudioRenderer_StudioDrawPlayerThunk);
+			}
+
+			/*
+				Search for GameStudioRenderer::_StudioDrawPlayer, from GameStudioRenderer::StudioDrawPlayer
+			*/
+			g_pMetaHookAPI->DisasmRanges((void *)GameStudioRenderer_StudioDrawPlayerThunk, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
 
 				if (address[0] == 0xCC)
 					return TRUE;
@@ -1581,131 +1533,148 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					return TRUE;
 
 				return FALSE;
+
 			}, 0, NULL);
 
 			if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index == 0)
 				gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index = 100 / 4;
-
 		}
 
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)
-			gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
+			gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
-			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
+			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
 		if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index)
-			gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))vftable[gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index];
+			gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
-		typedef struct
 		{
-			PVOID base;
-			size_t max_insts;
-			int max_depth;
-			std::set<PVOID> code;
-			std::set<PVOID> branches;
-			std::vector<walk_context_t> walks;
-			int StudioSetRemapColors_instcount;
-		}GameStudioRenderer_StudioDrawPlayer_ctx;
-
-		GameStudioRenderer_StudioDrawPlayer_ctx ctx = { 0 };
-
-		ctx.base = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer;
-
-		if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer)
-		{
-			ctx.base = gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer;
-		}
-
-		ctx.max_insts = 1000;
-		ctx.max_depth = 16;
-		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-		while (ctx.walks.size())
-		{
-			auto walk = ctx.walks[ctx.walks.size() - 1];
-			ctx.walks.pop_back();
-
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn *)inst;
-				auto ctx = (GameStudioRenderer_StudioDrawPlayer_ctx *)context;
-
-				if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
-					return TRUE;
-
-				if (ctx->code.size() > ctx->max_insts)
-					return TRUE;
-
-				if (ctx->code.find(address) != ctx->code.end())
-					return TRUE;
-
-				ctx->code.emplace(address);
-
-				if (pinst->id == X86_INS_CALL &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.disp >= (ULONG_PTR)g_dwClientBase &&
-					pinst->detail->x86.operands[0].mem.disp < (ULONG_PTR)g_dwClientBase + g_dwClientSize)
-				{
-					PVOID pfnCall = *(PVOID *)pinst->detail->x86.operands[0].mem.disp;
-
-					if (pfnCall == IEngineStudio.StudioSetRemapColors)
-					{
-						ctx->StudioSetRemapColors_instcount = instCount;
-					}
-				}
-
-				if (ctx->StudioSetRemapColors_instcount != 0 &&
-					instCount > ctx->StudioSetRemapColors_instcount &&
-					instCount < ctx->StudioSetRemapColors_instcount + 6 &&
-					pinst->id == X86_INS_CALL &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					(pinst->detail->x86.operands[0].mem.base == X86_REG_EAX ||
-					pinst->detail->x86.operands[0].mem.base == X86_REG_EBX ||
-					pinst->detail->x86.operands[0].mem.base == X86_REG_ECX ||
-					pinst->detail->x86.operands[0].mem.base == X86_REG_EDX ||
-					pinst->detail->x86.operands[0].mem.base == X86_REG_ESI ||
-					pinst->detail->x86.operands[0].mem.base == X86_REG_EDI) &&
-					pinst->detail->x86.operands[0].mem.disp > 0x30 &&
-					pinst->detail->x86.operands[0].mem.disp < 0x80)
-				{
-					gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
-				}
-
-				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM)
-				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x1000, depth + 1);
-					}
-
-					if (pinst->id == X86_INS_JMP)
-						return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, walk.depth, &ctx);
-		}
-
-		gPrivateFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderModel))vftable[gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index];
-
-		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GameStudioRenderer_StudioRenderModel, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			typedef struct GameStudioRenderer_StudioDrawPlayer_SearchContext_s
 			{
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+				PVOID base{};
+				size_t max_insts{};
+				int max_depth{};
+				std::set<PVOID> code;
+				std::set<PVOID> branches;
+				std::vector<walk_context_t> walks;
+				int StudioSetRemapColors_instcount{};
+			}GameStudioRenderer_StudioDrawPlayer_SearchContext;
+
+			GameStudioRenderer_StudioDrawPlayer_SearchContext ctx = { DllInfo, RealDllInfo };
+
+			ctx.base = ConvertDllInfoSpace(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, RealDllInfo, DllInfo);
+
+			if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer)
+			{
+				ctx.base = ConvertDllInfoSpace(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer, RealDllInfo, DllInfo);
+			}
+
+			if (!ctx.base)
+			{
+				Sig_NotFound(GameStudioRenderer_StudioDrawPlayer);
+			}
+
+			ctx.max_insts = 1000;
+			ctx.max_depth = 16;
+			ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+			while (ctx.walks.size())
+			{
+				auto walk = ctx.walks[ctx.walks.size() - 1];
+				ctx.walks.pop_back();
+
+				g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (GameStudioRenderer_StudioDrawPlayer_SearchContext*)context;
+
+					if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+						return TRUE;
+
+					if (ctx->code.size() > ctx->max_insts)
+						return TRUE;
+
+					if (ctx->code.find(address) != ctx->code.end())
+						return TRUE;
+
+					ctx->code.emplace(address);
+
+					if (pinst->id == X86_INS_CALL &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.disp >= (ULONG_PTR)ctx->DllInfo.ImageBase &&
+						pinst->detail->x86.operands[0].mem.disp < (ULONG_PTR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
+					{
+						PVOID pfnCall = *(PVOID*)pinst->detail->x86.operands[0].mem.disp;
+
+						auto pfnCall_RealDllInfo = ConvertDllInfoSpace(pfnCall, ctx->DllInfo, ctx->RealDllInfo);
+
+						if (pfnCall_RealDllInfo == IEngineStudio.StudioSetRemapColors)
+						{
+							ctx->StudioSetRemapColors_instcount = instCount;
+						}
+					}
+
+					if (ctx->StudioSetRemapColors_instcount != 0 &&
+						instCount > ctx->StudioSetRemapColors_instcount &&
+						instCount < ctx->StudioSetRemapColors_instcount + 6 &&
+						pinst->id == X86_INS_CALL &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						(pinst->detail->x86.operands[0].mem.base == X86_REG_EAX ||
+							pinst->detail->x86.operands[0].mem.base == X86_REG_EBX ||
+							pinst->detail->x86.operands[0].mem.base == X86_REG_ECX ||
+							pinst->detail->x86.operands[0].mem.base == X86_REG_EDX ||
+							pinst->detail->x86.operands[0].mem.base == X86_REG_ESI ||
+							pinst->detail->x86.operands[0].mem.base == X86_REG_EDI) &&
+						pinst->detail->x86.operands[0].mem.disp > 0x30 &&
+						pinst->detail->x86.operands[0].mem.disp < 0x80)
+					{
+						gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+					}
+
+					if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM)
+					{
+						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+						auto foundbranch = ctx->branches.find(imm);
+						if (foundbranch == ctx->branches.end())
+						{
+							ctx->branches.emplace(imm);
+							if (depth + 1 < ctx->max_depth)
+								ctx->walks.emplace_back(imm, 0x1000, depth + 1);
+						}
+
+						if (pinst->id == X86_INS_JMP)
+							return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+				}, walk.depth, &ctx);
+			}
+
+			gPrivateFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderModel))
+				GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+		}
+
+		{
+			auto GameStudioRenderer_StudioRenderModel = ConvertDllInfoSpace(gPrivateFuncs.GameStudioRenderer_StudioRenderModel, RealDllInfo, DllInfo);
+
+			g_pMetaHookAPI->DisasmRanges((void*)GameStudioRenderer_StudioRenderModel, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 				auto pinst = (cs_insn*)inst;
 
 				if (pinst->id == X86_INS_CALL &&
@@ -1730,39 +1699,64 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return FALSE;
 			}, 0, NULL);
 
-		if (!gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
-			gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 1;
+			if (!gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+				gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 1;
 
-		gPrivateFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal))vftable[gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index];
+			gPrivateFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal))
+				GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+		}
 
 		gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
 		gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 1;
 		gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 2;
 
-		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
-		gPrivateFuncs.GameStudioRenderer_StudioSaveBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSaveBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index];
-		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))vftable[gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
+		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.GameStudioRenderer_StudioSaveBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSaveBones))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+	
+		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
-		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
-		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
-
-		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
-		Install_InlineHook(GameStudioRenderer_StudioSaveBones);
-		Install_InlineHook(GameStudioRenderer_StudioMergeBones);
 	}
-	else if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
-	{
-		if (1)
-		{
-#define R_STUDIORENDERMODEL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x10\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B"
+}
 
-			auto addr = Search_Pattern(R_STUDIORENDERMODEL_SIG);
+void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	auto EngineStudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
+
+	if (EngineStudioDrawPlayerThunk)
+	{
+		EngineStudioDrawPlayerThunk = (decltype(EngineStudioDrawPlayerThunk))ConvertDllInfoSpace(EngineStudioDrawPlayerThunk, RealDllInfo, DllInfo);
+	}
+
+	if (EngineStudioDrawPlayerThunk)
+	{
+		//There is a E9 jmp in Debug build and we need to skip it.
+		if (EngineStudioDrawPlayerThunk[0] == 0xE9)
+		{
+			EngineStudioDrawPlayerThunk = (PUCHAR)GetCallAddress(EngineStudioDrawPlayerThunk);
+		}
+	}
+
+	if (EngineStudioDrawPlayerThunk)
+	{
+		{
+			/*
+.text:01D8A906 50                                                  push    eax
+.text:01D8A907 E8 F4 5A 00 00                                      call    sub_1D90400
+.text:01D8A90C 83 C4 10                                            add     esp, 10h
+.text:01D8A90F E8 7C 20 00 00                                      call    sub_1D8C990
+.text:01D8A914 E8 97 00 00 00                                      call    sub_1D8A9B0
+.text:01D8A919 8B 3D 50 41 F9 03                                   mov     edi, dword_3F94150
+			*/
+			const char pattern[] = "\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x10\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B";
+
+			auto addr = Search_Pattern(pattern, DllInfo);
 
 			Sig_AddrNotFound(R_StudioRenderModel);
 
-			auto call_addr = (PUCHAR)addr + 9;
-
-			gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))GetCallAddress(call_addr);
+			gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))GetCallAddress((PUCHAR)addr + 9);
 
 			Sig_FuncNotFound(R_StudioRenderModel);
 
@@ -1790,19 +1784,20 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_FuncNotFound(R_StudioRenderFinal);
 		}
 
-		if (1)
 		{
-			const char sigs1[] = "Bip01 Spine\0";
-			auto Bip01_String = Search_Pattern_Data(sigs1);
+			const char sigs[] = "Bip01 Spine\0";
+			auto Bip01_String = Search_Pattern_Data(sigs, DllInfo);
 			if (!Bip01_String)
-				Bip01_String = Search_Pattern_Rdata(sigs1);
+				Bip01_String = Search_Pattern_Rdata(sigs, DllInfo);
+
 			Sig_VarNotFound(Bip01_String);
+
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
 			*(DWORD*)(pattern + 1) = (DWORD)Bip01_String;
-			auto Bip01_PushString = Search_Pattern(pattern);
+			auto Bip01_PushString = Search_Pattern(pattern, DllInfo);
 			Sig_VarNotFound(Bip01_PushString);
 
-			gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
+			PVOID R_StudioSetupBones_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x1000, [](PUCHAR Candidate) {
 				//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
 				//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 				//.text : 01D8DD98 33 C4 xor eax, esp
@@ -1824,29 +1819,42 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					return TRUE;
 
 				return FALSE;
-			});
+				});
+
+			if (R_StudioSetupBones_VA)
+				gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))ConvertDllInfoSpace(R_StudioSetupBones_VA, DllInfo, RealDllInfo);
+
 			Sig_FuncNotFound(R_StudioSetupBones);
 		}
 
-		if (1)
 		{
 			char pattern[] = "\x83\xB8\x08\x03\x00\x00\x0C";
-			auto R_StudioMergeBones_Pattern = Search_Pattern(pattern);
-			Sig_VarNotFound(R_StudioMergeBones_Pattern);
+			auto addr = Search_Pattern(pattern, DllInfo);
+			Sig_AddrNotFound(R_StudioMergeBones);
 
-			g_pMetaHookAPI->DisasmRanges(R_StudioMergeBones_Pattern, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			typedef struct
+			{
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+			}R_StudioMergeBones_SearchContext;
+
+			R_StudioMergeBones_SearchContext ctx = { DllInfo, RealDllInfo };
+
+			g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
 					auto pinst = (cs_insn*)inst;
+					auto ctx = (R_StudioMergeBones_SearchContext*)context;
 
 					if (address[0] == 0xE8 && instLen == 5)
 					{
 						if (!gPrivateFuncs.R_StudioMergeBones)
 						{
-							gPrivateFuncs.R_StudioMergeBones = (decltype(gPrivateFuncs.R_StudioMergeBones))pinst->detail->x86.operands[0].imm;
+							gPrivateFuncs.R_StudioMergeBones = (decltype(gPrivateFuncs.R_StudioMergeBones))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 						}
 						else if (gPrivateFuncs.R_StudioMergeBones && !gPrivateFuncs.R_StudioSaveBones)
 						{
-							PVOID candidate = (decltype(candidate))pinst->detail->x86.operands[0].imm;
+							PVOID candidate = (decltype(candidate))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+
 							if (candidate != gPrivateFuncs.R_StudioSetupBones)
 							{
 								gPrivateFuncs.R_StudioSaveBones = (decltype(gPrivateFuncs.R_StudioSaveBones))candidate;
@@ -1864,19 +1872,73 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 						return TRUE;
 
 					return FALSE;
-			}, 0, NULL);
+				}, 0, &ctx);
 		}
-
-		Install_InlineHook(R_StudioRenderModel);
-		Install_InlineHook(R_StudioRenderFinal);
-
-		Install_InlineHook(R_StudioSetupBones);
-		Install_InlineHook(R_StudioSaveBones);
-		Install_InlineHook(R_StudioMergeBones);
 	}
 	else
 	{
 		Sys_Error("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
+	}
+}
+
+void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	ClientStudio_FillAddress_StudioDrawPlayer(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	ClientStudio_FillAddress_StudioDrawModel(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	ClientStudio_FillAddress_EngineStudioDrawPlayer(ppinterface, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+}
+
+void ClientStudio_InstallHooks()
+{
+	Install_InlineHook(GameStudioRenderer_StudioRenderModel);
+	Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
+	Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+	Install_InlineHook(GameStudioRenderer_StudioSaveBones);
+	Install_InlineHook(GameStudioRenderer_StudioMergeBones);
+
+	Install_InlineHook(R_StudioRenderModel);
+	Install_InlineHook(R_StudioRenderFinal);
+	Install_InlineHook(R_StudioSetupBones);
+	Install_InlineHook(R_StudioSaveBones);
+	Install_InlineHook(R_StudioMergeBones);
+}
+
+int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
+{
+	gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
+	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
+	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
+
+	EngineStudioAPI_FillAddress(pstudio, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	EngineStudioAPI_InstalHooks();
+
+	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
+	plighttransform = (decltype(plighttransform))pstudio->StudioGetLightTransform();
+	rotationmatrix = (decltype(rotationmatrix))pstudio->StudioGetRotationMatrix();
+
+	pstudio->GetModelCounters(&r_smodels_total, &r_amodels_drawn);
+
+	cl_viewent = gEngfuncs.GetViewModel();
+
+	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
+	gpStudioInterface = ppinterface;
+
+	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
+	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
+
+	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
+
+	ClientStudio_FillAddress(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	ClientStudio_InstallHooks();
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCounterStrike = true;
+
+		spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip_internal");
+
+		if(!spec_pip)
+			spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
 	}
 
 	return result;
@@ -1951,8 +2013,8 @@ void HUD_Shutdown(void)
 
 	GL_Shutdown();
 
-	R_UninstallHooksForEngineStudioInterface();
-	R_UninstallHooksForClientDLL();
+	R_UninstallHooksForEngineStudio();
+	R_UninstallHooksForClientStudio();
 }
 
 void HUD_OnClientDisconnect(void)

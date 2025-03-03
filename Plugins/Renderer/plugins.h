@@ -8,8 +8,9 @@ extern IFileSystem_HL25* g_pFileSystem_HL25;
 
 extern int g_iEngineType;
 extern mh_dll_info_t g_EngineDLLInfo;
-extern mh_dll_info_t g_MirroredEngineDLLInfo;
+extern mh_dll_info_t g_MirrorEngineDLLInfo;
 extern mh_dll_info_t g_ClientDLLInfo;
+extern mh_dll_info_t g_MirrorClientDLLInfo;
 extern DWORD g_dwEngineBuildnum;
 
 #define MHPluginName "Renderer"
@@ -34,6 +35,7 @@ extern DWORD g_dwEngineBuildnum;
 #define Uninstall_Hook(fn) if(g_phook_##fn){g_pMetaHookAPI->UnHook(g_phook_##fn);g_phook_##fn = NULL;}
 #define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)addr, 1)
 
+#define RVA_from_VA(name, dllinfo) (ULONG)((ULONG_PTR)name##_VA - (ULONG_PTR)dllinfo.ImageBase)
 #define VA_from_RVA(name, dllinfo) ((ULONG_PTR)dllinfo.ImageBase + (ULONG_PTR)name##_RVA)
 #define Convert_VA_to_RVA(name, dllinfo) if(name##_VA) name##_RVA = ((ULONG_PTR)name##_VA - (ULONG_PTR)dllinfo.ImageBase)
 #define Convert_RVA_to_VA(name, dllinfo) if(name##_RVA) name##_VA = (decltype(name##_VA))VA_from_RVA(name, dllinfo)

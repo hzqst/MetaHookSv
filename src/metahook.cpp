@@ -122,7 +122,8 @@ bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 char g_szEnvPath[4096] = { 0 };
 char g_szGameDirectory[32] = { 0 };
-HMEMORYMODULE g_hMirroredEngine = NULL;
+HMEMORYMODULE g_hMirrorEngine = NULL;
+HMEMORYMODULE g_hMirrorClient = NULL;
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 BOOL MH_UnHook(hook_t *pHook);
@@ -154,7 +155,8 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 CreateInterfaceFn MH_GetEngineFactory(void);
-HMEMORYMODULE MH_LoadMirroredDLL(const char* szFileName);
+HMEMORYMODULE MH_LoadMirrorDLL_Std(const char* szFileName);
+HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char* szFileName);
 
 typedef struct plugin_s
 {
@@ -1072,6 +1074,11 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
 	memcpy(gMetaSave.pEngineFuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
 
+	if (g_phClientModule && (*g_phClientModule))
+	{
+		g_hMirrorClient = MH_LoadMirrorDLL_FileSystem("cl_dlls\\client.dll");
+	}
+
 	MH_TransactionHookBegin();
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
@@ -1132,7 +1139,27 @@ void MH_ResetAllVars(void)
 	memset(g_szGameDirectory, 0, sizeof(g_szGameDirectory));
 }
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char * pszEngineDLL)
+bool MH_GetModuleFilePathA(HMODULE hModule, std::string& filePath)
+{
+	std::string ModulePath(MAX_PATH, '\0');
+
+	DWORD length = GetModuleFileNameA(hModule, &ModulePath[0], ModulePath.size());
+
+	if (length == 0)
+		return false;
+
+	while (length >= ModulePath.size() && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+	{
+		ModulePath.resize(length + 1024);
+		length = GetModuleFileNameA(hModule, &ModulePath[0], ModulePath.size());
+	}
+
+	ModulePath.resize(length);
+	filePath = ModulePath;
+	return true;
+}
+
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
 {
 	MH_ResetAllVars();
 
@@ -1166,7 +1193,12 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		g_dwEngineBase = MH_GetModuleBase(hEngineModule);
 		g_dwEngineSize = MH_GetModuleSize(hEngineModule);
 		g_hEngineModule = hEngineModule;
-		g_hMirroredEngine = MH_LoadMirroredDLL(pszEngineDLL);
+
+		std::string EngineDllPath;
+		if (MH_GetModuleFilePathA(hEngineModule, EngineDllPath))
+		{
+			g_hMirrorEngine = MH_LoadMirrorDLL_Std(EngineDllPath.c_str());
+		}
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
@@ -1175,7 +1207,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		g_dwEngineBase = GetBlobModuleImageBase(hBlobEngine);
 		g_dwEngineSize = GetBlobModuleImageSize(hBlobEngine);
 		g_hBlobEngine = hBlobEngine;
-		g_hMirroredEngine = NULL;
+		g_hMirrorEngine = NULL;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -2365,10 +2397,10 @@ void MH_ExitGame(int iResult)
 		(*cvar_callbacks) = NULL;
 	}
 
-	if (g_hMirroredEngine)
+	if (g_hMirrorEngine)
 	{
-		FreeLibraryMemory(g_hMirroredEngine);
-		g_hMirroredEngine = NULL;
+		FreeLibraryMemory(g_hMirrorEngine);
+		g_hMirrorEngine = NULL;
 	}
 }
 
@@ -4079,19 +4111,60 @@ const char* MH_GetGameDirectory()
 
 PVOID MH_GetMirrorEngineBase()
 {
-	return (PVOID)g_hMirroredEngine;
+	return (PVOID)g_hMirrorEngine;
 }
 
 ULONG MH_GetMirrorEngineSize()
 {
-	return GetMemoryModuleSize(g_hMirroredEngine);
+	return GetMemoryModuleSize(g_hMirrorEngine);
 }
 
-HMEMORYMODULE MH_LoadMirroredDLL(const char * szFileName)
+PVOID MH_GetMirrorClientBase()
+{
+	return (PVOID)g_hMirrorClient;
+}
+
+ULONG MH_GetMirrorClientSize()
+{
+	return GetMemoryModuleSize(g_hMirrorClient);
+}
+
+HMEMORYMODULE MH_LoadMirrorDLL_Std(const char* szFileName)
 {
 	HMEMORYMODULE hMemoryModuleHandle = NULL;
 
-	size_t readBytes = 0;
+	auto hFileHandle = fopen(szFileName, "rb");
+	if (hFileHandle)
+	{
+		fseek(hFileHandle, 0, FILESYSTEM_SEEK_TAIL);
+		auto cbFileSize = ftell(hFileHandle);
+		fseek(hFileHandle, 0, FILESYSTEM_SEEK_HEAD);
+
+		auto pFileBuffer = malloc(cbFileSize);
+
+		if (pFileBuffer)
+		{
+			auto cbReadBytes = fread(pFileBuffer, 1, cbFileSize, hFileHandle);
+
+			if (cbReadBytes == cbFileSize)
+			{
+				ULONG ImageSize = 0;
+				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
+			}
+
+			free(pFileBuffer);
+		}
+
+		fclose(hFileHandle);
+	}
+
+	return hMemoryModuleHandle;
+}
+
+HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char * szFileName)
+{
+	HMEMORYMODULE hMemoryModuleHandle = NULL;
+
 	auto hFileHandle = FILESYSTEM_ANY_OPEN(szFileName, "rb");
 	if (hFileHandle)
 	{
@@ -4103,11 +4176,14 @@ HMEMORYMODULE MH_LoadMirroredDLL(const char * szFileName)
 
 		if (pFileBuffer)
 		{
-			FILESYSTEM_ANY_READ(pFileBuffer, cbFileSize, hFileHandle);
+			auto cbReadBytes = FILESYSTEM_ANY_READ(pFileBuffer, cbFileSize, hFileHandle);
 
-			ULONG ImageSize = 0;
-			hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
-		
+			if (cbReadBytes == cbFileSize)
+			{
+				ULONG ImageSize = 0;
+				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
+			}
+
 			free(pFileBuffer);
 		}
 
@@ -4194,6 +4270,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_SearchPatternNoWildCard,
 	MH_GetMirrorEngineBase,
 	MH_GetMirrorEngineSize,
+	MH_GetMirrorClientBase,
+	MH_GetMirrorClientSize,
 	NULL
 };
 
@@ -4274,5 +4352,7 @@ metahook_api_t gMetaHookAPI =
 	MH_SearchPatternNoWildCard,
 	MH_GetMirrorEngineBase,
 	MH_GetMirrorEngineSize,
+	MH_GetMirrorClientBase,
+	MH_GetMirrorClientSize,
 	NULL
 };

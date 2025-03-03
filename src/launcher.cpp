@@ -20,7 +20,7 @@ ULONG g_BlobLoaderSectionSize = 0;
 PVOID MH_GetEngineBase(void);
 DWORD MH_GetEngineSize(void);
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char* pszEngineDLL);
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath);
 void MH_ExitGame(int iResult);
 void MH_Shutdown(void);
 
@@ -429,7 +429,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (EngineAPI)
 		{
-			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName, szFullPath, pszEngineDLL);
+			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName, szFullPath);
 
 			iResult = EngineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 

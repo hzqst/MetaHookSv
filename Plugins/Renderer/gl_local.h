@@ -323,14 +323,6 @@ extern cvar_t *r_additive_shift;
 
 extern cvar_t* r_detailskytextures;
 
-void R_FillAddress(void);
-void R_InstallHooks(void);
-void R_UninstallHooksForEngineStudioInterface(void);
-void R_UninstallHooksForEngineDLL(void);
-void R_UninstallHooksForClientDLL(void);
-void R_RedirectLegacyOpenGLTextureAllocation(void);
-void R_PatchResetLatched(void);
-
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);

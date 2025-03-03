@@ -15,8 +15,9 @@ IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
 mh_dll_info_t g_EngineDLLInfo = { 0 };
+mh_dll_info_t g_MirrorEngineDLLInfo = {0};
 mh_dll_info_t g_ClientDLLInfo = { 0 };
-mh_dll_info_t g_MirroredEngineDLLInfo = {0};
+mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 DWORD g_dwEngineBuildnum = 0;
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
@@ -64,18 +65,22 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
 	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
 
-	g_MirroredEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
-	g_MirroredEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
-	g_MirroredEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirroredEngineDLLInfo.TextSize);
-	g_MirroredEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirroredEngineDLLInfo.DataSize);
-	g_MirroredEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirroredEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirroredEngineDLLInfo.RdataSize);
+	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
+	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
+
+	if (g_MirrorEngineDLLInfo.ImageBase)
+	{
+		g_MirrorEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirrorEngineDLLInfo.TextSize);
+		g_MirrorEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirrorEngineDLLInfo.DataSize);
+		g_MirrorEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirrorEngineDLLInfo.RdataSize);
+	}
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
 	R_FillAddress();
 	R_InstallHooks();
-	R_RedirectLegacyOpenGLTextureAllocation();
-	R_PatchResetLatched();
+	R_RedirectLegacyOpenGLTextureAllocation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	R_PatchResetLatched(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	VGUI2Extension_Init();
 	BaseUI_InstallHooks();
@@ -118,7 +123,18 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_ClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".data\0\0\0", &g_ClientDLLInfo.DataSize);
 	g_ClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".rdata\0\0", &g_ClientDLLInfo.RdataSize);
 
+	g_MirrorClientDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorClientBase();
+	g_MirrorClientDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorClientSize();
+
+	if (g_MirrorClientDLLInfo.ImageBase)
+	{
+		g_MirrorClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".text\0\0\0", &g_MirrorClientDLLInfo.TextSize);
+		g_MirrorClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".data\0\0\0", &g_MirrorClientDLLInfo.DataSize);
+		g_MirrorClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".rdata\0\0", &g_MirrorClientDLLInfo.RdataSize);
+	}
+
 	Client_FillAddress();
+	Client_InstallHooks();
 }
 
 void IPluginsV4::ExitGame(int iResult)

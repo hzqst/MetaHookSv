@@ -546,9 +546,19 @@ typedef struct metahook_api_s
 	PVOID (*GetMirrorEngineBase)(VOID);
 
 	/*
-		Purpose: Return the image size of the mirrored engine dll (probably same as engine dll), not available on blob engine.
+		Purpose: Return the image size of the mirrored engine dll (same as GetEngineSize), not available on blob engine (because blob engine must be loaded at fixed image base).
 	*/
 	ULONG (*GetMirrorEngineSize)(VOID);
+
+	/*
+		Purpose: Return the image base of the mirrored client dll (with .code relocation fixed), not available on blob engine.
+	*/
+	PVOID(*GetMirrorClientBase)(VOID);
+
+	/*
+		Purpose: Return the image size of the mirrored client dll (same as GetClientSize), not available on blob client (because blob client must be loaded at fixed image base).
+	*/
+	ULONG(*GetMirrorClientSize)(VOID);
 
 	//Always terminate with a NULL
 	PVOID Terminator;
