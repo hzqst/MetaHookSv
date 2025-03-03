@@ -38,7 +38,6 @@
 #define R_ROTATEFORENTITY_HL25     "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
 #define R_ROTATEFORENTITY_NEW      "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
 #define R_ROTATEFORENTITY_BLOB     "\x83\xEC\x20\x8B\x44\x24\x24\x8B\x08\x8B\x50\x04\x8B\x40\x08"
-#define R_ROTATEFORENTITY_GOLDSRC  "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x2A\x48\x0B\x00\x00\x2A\x2A\xE8"
 
 #define R_DECALSHOTINTERNAL_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x8B\x54\x24\x2A\x8B\x4C\x24\x2A\x53\x8B\x5C\x24\x2A\x56\x69\xF2\xB8\x0B\x00\x00"
 
@@ -374,12 +373,12 @@ void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info
 		gPrivateFuncs.enginesurface_isTextureIDValid = (decltype(gPrivateFuncs.enginesurface_isTextureIDValid))			GetVFunctionFromVFTable(engineSurface_vftable, index_isTextureIDValid,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawFlushText = (decltype(gPrivateFuncs.enginesurface_drawFlushText))				GetVFunctionFromVFTable(engineSurface_vftable, index_drawFlushText,			DllInfo, RealDllInfo, RealDllInfo);
 
-		auto enginesurface_isTextureIDValid = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_isTextureIDValid, RealDllInfo, DllInfo);
+		auto enginesurface_isTextureIDValid_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_isTextureIDValid, RealDllInfo, DllInfo);
 
-		if (!enginesurface_isTextureIDValid)
+		if (!enginesurface_isTextureIDValid_VA)
 		{
 			//Someone just hooked enginesurface_isTextureIDValid ?
-			Sig_NotFound(enginesurface_isTextureIDValid);
+			Sig_NotFound(enginesurface_isTextureIDValid_VA);
 		}
 
 		typedef struct enginesurface_isTextureIDValid_SearchContext_s
@@ -392,7 +391,7 @@ void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 		enginesurface_isTextureIDValid_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges(enginesurface_isTextureIDValid, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(enginesurface_isTextureIDValid_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (enginesurface_isTextureIDValid_SearchContext*)context;
@@ -982,16 +981,17 @@ void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)GL_LoadTexture2_VA, 0x300, pattern2);
 			Sig_AddrNotFound(maxgltextures_SvEngine);
+
 			auto maxgltextures_SvEngine_VA = *(PVOID*)(addr + 5);
 			maxgltextures_SvEngine = (decltype(maxgltextures_SvEngine))ConvertDllInfoSpace(maxgltextures_SvEngine_VA, DllInfo, RealDllInfo);
-		}
+			Sig_VarNotFound(maxgltextures_SvEngine);
 
-		{
 			const char pattern3[] = "\x51\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern3);
+			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern3);
 			Sig_AddrNotFound(realloc_SvEngine);
 			auto realloc_SvEngine_VA = GetCallAddress(addr + 1);
 			gPrivateFuncs.realloc_SvEngine = (decltype(gPrivateFuncs.realloc_SvEngine))ConvertDllInfoSpace(realloc_SvEngine_VA, DllInfo, RealDllInfo);
+			Sig_FuncNotFound(realloc_SvEngine);
 		}
 
 		{
@@ -1005,6 +1005,7 @@ void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_in
 			auto gHostSpawnCount_VA = *(PVOID*)(addr + 3);
 
 			gHostSpawnCount = (decltype(gHostSpawnCount))ConvertDllInfoSpace(gHostSpawnCount_VA, DllInfo, RealDllInfo);
+			Sig_VarNotFound(gHostSpawnCount);
 		}
 
 		{
@@ -1019,6 +1020,7 @@ void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_in
 			auto peakgltextures_SvEngine_VA = *(PVOID*)(addr + 8);
 
 			peakgltextures_SvEngine = (decltype(peakgltextures_SvEngine))ConvertDllInfoSpace(peakgltextures_SvEngine_VA, DllInfo, RealDllInfo);
+			Sig_VarNotFound(peakgltextures_SvEngine);
 		}
 	}
 	else
@@ -1038,145 +1040,145 @@ void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 		GL_LoadTexture2_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)GL_LoadTexture2_VA, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges((void*)GL_LoadTexture2_VA, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (GL_LoadTexture2_SearchContext*)context;
+
+			if (!ctx->xor_exi_exi_instCount && pinst->id == X86_INS_XOR &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg
+				)
 			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (GL_LoadTexture2_SearchContext*)context;
+				//  xor     esi, esi
 
-				if (!ctx->xor_exi_exi_instCount && pinst->id == X86_INS_XOR &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-					&&
-					pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg
-					)
+				ctx->xor_exi_exi_instCount = instCount;
+				ctx->xor_exi_exi_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
+				)
+			{
+				//  mov     edi, offset gltextures
+				gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			}
+
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
+				)
+			{
+				//  mov     edi, offset gltextures
+				gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
+			}
+
+			if (pinst->id == X86_INS_INC &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG)
+			{
+				// inc     ecx
+
+				ctx->inc_exx_instCount = instCount;
+				ctx->inc_exx_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == ctx->inc_exx_reg &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
+				)
+			{
+				//  mov     numgltextures, ecx
+				if (!g_bHasOfficialGLTexAllocSupport &&
+					instCount > ctx->mov_mem_exx_instCount && instCount < ctx->mov_mem_exx_instCount + 5 &&
+					pinst->detail->x86.operands[1].reg == ctx->mov_mem_exx_reg)
 				{
-					//  xor     esi, esi
-
-					ctx->xor_exi_exi_instCount = instCount;
-					ctx->xor_exi_exi_reg = pinst->detail->x86.operands[0].reg;
-				}
-
-				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-					&&
-					pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-					)
-				{
-					//  mov     edi, offset gltextures
-					gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
-					&&
-					pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-					)
-				{
-					//  mov     edi, offset gltextures
-					gltextures = (decltype(gltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (pinst->id == X86_INS_INC &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG)
-				{
-					// inc     ecx
-
-					ctx->inc_exx_instCount = instCount;
-					ctx->inc_exx_reg = pinst->detail->x86.operands[0].reg;
-				}
-
-				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == ctx->inc_exx_reg &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-					)
-				{
-					//  mov     numgltextures, ecx
-					if (!g_bHasOfficialGLTexAllocSupport &&
-						instCount > ctx->mov_mem_exx_instCount && instCount < ctx->mov_mem_exx_instCount + 5 &&
-						pinst->detail->x86.operands[1].reg == ctx->mov_mem_exx_reg)
-					{
-						allocated_textures = (decltype(allocated_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-					}
-					else
-					{
-						numgltextures = (decltype(numgltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-
-				if (ctx->xor_exi_exi_instCount && (pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].size == 2 &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-					)
-				{
-					//                        mov     ax, word ptr gHostSpawnCount
-					//                        movzx   eax, word ptr gHostSpawnCount
-					gHostSpawnCount = (decltype(gHostSpawnCount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (!g_bHasOfficialGLTexAllocSupport)
-				{
-					if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].mem.base != 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp == 0 &&
-						pinst->detail->x86.operands[1].type == X86_OP_REG
-						)
-					{// 89 06 mov     [esi], eax
-						ctx->mov_mem_exx_instCount = instCount;
-						ctx->mov_mem_exx_reg = pinst->detail->x86.operands[1].reg;
-					}
-				}
-
-				if (!g_bHasOfficialGLTexAllocSupport)
-				{
-					if (gltextures && numgltextures && gHostSpawnCount && allocated_textures)
-						return TRUE;
+					allocated_textures = (decltype(allocated_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
 				else
 				{
-					if (gltextures && numgltextures && gHostSpawnCount)
-						return TRUE;
+					numgltextures = (decltype(numgltextures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
+			}
 
-				if (address[0] == 0xCC)
+			if (ctx->xor_exi_exi_instCount && (pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].size == 2 &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
+				)
+			{
+				//                        mov     ax, word ptr gHostSpawnCount
+				//                        movzx   eax, word ptr gHostSpawnCount
+				gHostSpawnCount = (decltype(gHostSpawnCount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			}
+
+			if (!g_bHasOfficialGLTexAllocSupport)
+			{
+				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG
+					)
+				{// 89 06 mov     [esi], eax
+					ctx->mov_mem_exx_instCount = instCount;
+					ctx->mov_mem_exx_reg = pinst->detail->x86.operands[1].reg;
+				}
+			}
+
+			if (!g_bHasOfficialGLTexAllocSupport)
+			{
+				if (gltextures && numgltextures && gHostSpawnCount && allocated_textures)
 					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
+			}
+			else
+			{
+				if (gltextures && numgltextures && gHostSpawnCount)
 					return TRUE;
+			}
 
-				return FALSE;
-			}, 0, &ctx);
+			if (address[0] == 0xCC)
+				return TRUE;
 
-	}
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-	Sig_VarNotFound(gltextures);
-	Sig_VarNotFound(numgltextures);
-	Sig_VarNotFound(gHostSpawnCount);
+			return FALSE;
+		}, 0, &ctx);
 
-	if (!g_bHasOfficialGLTexAllocSupport)
-	{
-		Sig_VarNotFound(allocated_textures);
+
+		Sig_VarNotFound(gltextures);
+		Sig_VarNotFound(numgltextures);
+		Sig_VarNotFound(gHostSpawnCount);
+
+		if (!g_bHasOfficialGLTexAllocSupport)
+		{
+			Sig_VarNotFound(allocated_textures);
+		}
 	}
 }
 
@@ -2175,36 +2177,32 @@ void R_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 	if (gPrivateFuncs.R_NewMap)
 		return;
 
-	ULONG_PTR R_NewMap_VA = 0;
-	ULONG R_NewMap_RVA = 0;
+	PVOID R_NewMap_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_NewMap_VA = (ULONG_PTR)Search_Pattern(R_NEWMAP_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_NewMap, DllInfo);
+		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_NewMap_VA = (ULONG_PTR)Search_Pattern(R_NEWMAP_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_NewMap, DllInfo);
+		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_HL25, DllInfo);
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_NewMap_VA = (ULONG_PTR)Search_Pattern(R_NEWMAP_SIG_NEW, DllInfo);
-		Convert_VA_to_RVA(R_NewMap, DllInfo);
+		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_NEW, DllInfo);
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_NewMap_VA = (ULONG_PTR)Search_Pattern(R_NEWMAP_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_NewMap, DllInfo);
+		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
 	}
 
-	if (R_NewMap_RVA)
-	{
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))VA_from_RVA(R_NewMap, RealDllInfo);
-	}
+	Sig_FuncNotFound(R_NewMap);
 
-	if (R_NewMap_RVA)
+	if (R_NewMap_VA)
 	{
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF";
 		auto addr = (ULONG_PTR)Search_Pattern_From_Size(R_NewMap_VA, 0x100, pattern);
@@ -2222,54 +2220,43 @@ void R_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 		}
 	}
 
-	Sig_FuncNotFound(R_NewMap);
-
-	ULONG_PTR GL_UnloadTextures_VA = 0;
-	ULONG GL_UnloadTextures_RVA = 0;
-
 	{
 		typedef struct R_NewMap_SearchContext_s
 		{
-			ULONG_PTR& GL_UnloadTextures_VA;
 			const mh_dll_info_t& DllInfo;
 			ULONG_PTR candidateE8_VA{};
 			bool bFoundRet{};
 		} R_NewMap_SearchContext;
 
-		R_NewMap_SearchContext ctx = { GL_UnloadTextures_VA, DllInfo };
+		R_NewMap_SearchContext ctx = { DllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)R_NewMap_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(R_NewMap_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+	
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_NewMap_SearchContext*)context;
+
+			if (address[0] == 0xE8 && instLen == 5)
 			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (R_NewMap_SearchContext*)context;
+				ctx->candidateE8_VA = (ULONG_PTR)pinst->detail->x86.operands[0].imm;
+			}
 
-				if (address[0] == 0xE8 && instLen == 5)
-				{
-					ctx->candidateE8_VA = (ULONG_PTR)pinst->detail->x86.operands[0].imm;
-				}
+			if (address[0] == 0xCC)
+				return TRUE;
 
-				if (address[0] == 0xCC)
-					return TRUE;
+			if (pinst->id == X86_INS_RET)
+			{
+				ctx->bFoundRet = true;
+				return TRUE;
+			}
 
-				if (pinst->id == X86_INS_RET)
-				{
-					ctx->bFoundRet = true;
-					return TRUE;
-				}
-
-				return FALSE;
-			}, 0, &ctx);
+			return FALSE;
+		}, 0, &ctx);
 
 		if (ctx.bFoundRet && ctx.candidateE8_VA)
 		{
-			GL_UnloadTextures_VA = ctx.candidateE8_VA;
+			gPrivateFuncs.GL_UnloadTextures = (decltype(gPrivateFuncs.GL_UnloadTextures))ConvertDllInfoSpace((PVOID)ctx.candidateE8_VA, DllInfo, RealDllInfo);
 		}
-
-		Convert_VA_to_RVA(GL_UnloadTextures, DllInfo);
 	}
-
-	if (GL_UnloadTextures_RVA)
-		gPrivateFuncs.GL_UnloadTextures = (decltype(gPrivateFuncs.GL_UnloadTextures))VA_from_RVA(GL_UnloadTextures, RealDllInfo);
 
 	Sig_FuncNotFound(GL_UnloadTextures);
 }
@@ -2279,33 +2266,27 @@ void R_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_
 	if (gPrivateFuncs.GL_BuildLightmaps)
 		return;
 
-	ULONG_PTR GL_BuildLightmaps_VA = 0;
-	ULONG GL_BuildLightmaps_RVA = 0;
+	PVOID GL_BuildLightmaps_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		GL_BuildLightmaps_VA = (ULONG_PTR)Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(GL_BuildLightmaps, DllInfo);
+		GL_BuildLightmaps_VA = Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))ConvertDllInfoSpace((PVOID)GL_BuildLightmaps_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		GL_BuildLightmaps_VA = (ULONG_PTR)Search_Pattern(GL_BUILDLIGHTMAPS_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(GL_BuildLightmaps, DllInfo);
+		GL_BuildLightmaps_VA = Search_Pattern(GL_BUILDLIGHTMAPS_SIG_HL25, DllInfo);
+		gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))ConvertDllInfoSpace((PVOID)GL_BuildLightmaps_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		GL_BuildLightmaps_VA = (ULONG_PTR)Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW, DllInfo);
-		Convert_VA_to_RVA(GL_BuildLightmaps, DllInfo);
+		GL_BuildLightmaps_VA = Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW, DllInfo);
+		gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))ConvertDllInfoSpace((PVOID)GL_BuildLightmaps_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		GL_BuildLightmaps_VA = (ULONG_PTR)Search_Pattern(GL_BUILDLIGHTMAPS_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(GL_BuildLightmaps, DllInfo);
-	}
-
-	if (GL_BuildLightmaps_RVA)
-	{
-		gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))VA_from_RVA(GL_BuildLightmaps, RealDllInfo);
+		GL_BuildLightmaps_VA = Search_Pattern(GL_BUILDLIGHTMAPS_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_BuildLightmaps = (decltype(gPrivateFuncs.GL_BuildLightmaps))ConvertDllInfoSpace((PVOID)GL_BuildLightmaps_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(GL_BuildLightmaps);
@@ -2316,8 +2297,7 @@ void R_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (gPrivateFuncs.R_BuildLightMap)
 		return;
 
-	ULONG_PTR R_BuildLightMap_VA = 0;
-	ULONG R_BuildLightMap_RVA = 0;
+	PVOID R_BuildLightMap_VA = 0;
 
 	{
 		const char sigs[] = "Error: lightmap for texture %s too large";
@@ -2331,7 +2311,7 @@ void R_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_in
 			auto Error_Call = Search_Pattern(pattern, DllInfo);
 			if (Error_Call)
 			{
-				R_BuildLightMap_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Error_Call, 0x300, [](PUCHAR Candidate) {
+				R_BuildLightMap_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Error_Call, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0xD9 &&
 						Candidate[1] == 0x05)
@@ -2345,38 +2325,33 @@ void R_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_in
 					return FALSE;
 					});
 
-				Convert_VA_to_RVA(R_BuildLightMap, DllInfo);
+				gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))ConvertDllInfoSpace((PVOID)R_BuildLightMap_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!R_BuildLightMap_RVA)
+	if (!gPrivateFuncs.R_BuildLightMap)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_BuildLightMap_VA = (ULONG_PTR)Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_BuildLightMap, DllInfo);
+			R_BuildLightMap_VA = Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))ConvertDllInfoSpace((PVOID)R_BuildLightMap_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_BuildLightMap_VA = (ULONG_PTR)Search_Pattern(R_BUILDLIGHTMAP_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_BuildLightMap, DllInfo);
+			R_BuildLightMap_VA = Search_Pattern(R_BUILDLIGHTMAP_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))ConvertDllInfoSpace((PVOID)R_BuildLightMap_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_BuildLightMap_VA = (ULONG_PTR)Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(R_BuildLightMap, DllInfo);
+			R_BuildLightMap_VA = Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW, DllInfo);
+			gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))ConvertDllInfoSpace((PVOID)R_BuildLightMap_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_BuildLightMap_VA = (ULONG_PTR)Search_Pattern(R_BUILDLIGHTMAP_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_BuildLightMap, DllInfo);
+			R_BuildLightMap_VA = Search_Pattern(R_BUILDLIGHTMAP_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))ConvertDllInfoSpace((PVOID)R_BuildLightMap_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_BuildLightMap_RVA)
-	{
-		gPrivateFuncs.R_BuildLightMap = (decltype(gPrivateFuncs.R_BuildLightMap))VA_from_RVA(R_BuildLightMap, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_BuildLightMap);
@@ -2387,24 +2362,29 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 	if (gPrivateFuncs.R_AddDynamicLights)
 		return;
 
-	ULONG_PTR	R_AddDynamicLights_VA = 0;
-	ULONG		R_AddDynamicLights_RVA = 0;
-
 	{
+		PVOID R_BuildLightMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_BuildLightMap, RealDllInfo, DllInfo);
+
+		if (!R_BuildLightMap_VA)
+		{
+			Sig_NotFound(R_BuildLightMap_VA);
+		}
+
 		typedef struct R_AddDynamicLights_SearchContext_s
 		{
-			ULONG_PTR& R_AddDynamicLights;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
 			PVOID base{};
 			size_t max_insts{};
 			int max_depth{};
-			std::set<PVOID> code;
-			std::set<PVOID> branches;
-			std::vector<walk_context_t> walks;
+			std::set<PVOID> code{};
+			std::set<PVOID> branches{};
+			std::vector<walk_context_t> walks{};
 		}R_AddDynamicLights_SearchContext;
 
-		R_AddDynamicLights_SearchContext ctx = { R_AddDynamicLights_VA };
+		R_AddDynamicLights_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		ctx.base = gPrivateFuncs.R_BuildLightMap;
+		ctx.base = R_BuildLightMap_VA;
 		ctx.max_insts = 1000;
 		ctx.max_depth = 16;
 		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
@@ -2418,7 +2398,7 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (R_AddDynamicLights_SearchContext*)context;
 
-				if (ctx->R_AddDynamicLights)
+				if (gPrivateFuncs.R_AddDynamicLights)
 					return TRUE;
 
 				if (ctx->code.size() > ctx->max_insts)
@@ -2429,7 +2409,7 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 
 				ctx->code.emplace(address);
 
-				if (!ctx->R_AddDynamicLights &&
+				if (!gPrivateFuncs.R_AddDynamicLights &&
 					pinst->id == X86_INS_PUSH &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG)
@@ -2440,7 +2420,8 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 						nextaddr[6] == 0xC4 &&
 						nextaddr[7] == 0x04)
 					{
-						ctx->R_AddDynamicLights = (ULONG_PTR)GetCallAddress(nextaddr);
+						auto nextaddr_VA = GetCallAddress(nextaddr);
+						gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))ConvertDllInfoSpace(nextaddr_VA, ctx->DllInfo, ctx->RealDllInfo);
 					}
 				}
 
@@ -2471,37 +2452,30 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 
 				}, walk.depth, &ctx);
 		}
-
-		Convert_VA_to_RVA(R_AddDynamicLights, DllInfo);
 	}
 
-	if (!R_AddDynamicLights_RVA)
+	if (!gPrivateFuncs.R_AddDynamicLights)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_AddDynamicLights_VA = (ULONG_PTR)Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_AddDynamicLights, DllInfo);
+			PVOID R_AddDynamicLights_VA = Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))ConvertDllInfoSpace((PVOID)R_AddDynamicLights_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_AddDynamicLights_VA = (ULONG_PTR)Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_AddDynamicLights, DllInfo);
+			PVOID R_AddDynamicLights_VA = Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))ConvertDllInfoSpace((PVOID)R_AddDynamicLights_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_AddDynamicLights_VA = (ULONG_PTR)Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(R_AddDynamicLights, DllInfo);
+			PVOID R_AddDynamicLights_VA = Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_NEW, DllInfo);
+			gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))ConvertDllInfoSpace((PVOID)R_AddDynamicLights_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_AddDynamicLights_VA = (ULONG_PTR)Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_AddDynamicLights, DllInfo);
+			PVOID R_AddDynamicLights_VA = Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))ConvertDllInfoSpace((PVOID)R_AddDynamicLights_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_AddDynamicLights_RVA)
-	{
-		gPrivateFuncs.R_AddDynamicLights = (decltype(gPrivateFuncs.R_AddDynamicLights))VA_from_RVA(R_AddDynamicLights, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_AddDynamicLights);
@@ -2512,51 +2486,33 @@ void R_FillAddress_GL_DisableMultitexture(const mh_dll_info_t& DllInfo, const mh
 	if (gPrivateFuncs.GL_DisableMultitexture)
 		return;
 
-	ULONG_PTR GL_DisableMultitexture_VA = 0;
-	ULONG GL_DisableMultitexture_RVA = 0;
+	PVOID GL_DisableMultitexture_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		GL_DisableMultitexture_VA = (ULONG_PTR)Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(GL_DisableMultitexture, DllInfo);
+		GL_DisableMultitexture_VA = Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		ULONG_PTR R_NewMap_VA = (ULONG_PTR)gPrivateFuncs.R_NewMap;
-		ULONG R_NewMap_RVA = 0;
+		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(R_NewMap, RealDllInfo);
-		Convert_RVA_to_VA(R_NewMap, DllInfo);
-
-		GL_DisableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(GL_DisableMultitexture, DllInfo);
+		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_HL25, DllInfo);
+		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		ULONG_PTR R_NewMap_VA = (ULONG_PTR)gPrivateFuncs.R_NewMap;
-		ULONG R_NewMap_RVA = 0;
+		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(R_NewMap, RealDllInfo);
-		Convert_RVA_to_VA(R_NewMap, DllInfo);
-
-		GL_DisableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_NEW, DllInfo);
-		Convert_VA_to_RVA(GL_DisableMultitexture, DllInfo);
+		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_NEW, DllInfo);
+		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		ULONG_PTR R_NewMap_VA = (ULONG_PTR)gPrivateFuncs.R_NewMap;
-		ULONG R_NewMap_RVA = 0;
+		PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(R_NewMap, RealDllInfo);
-		Convert_RVA_to_VA(R_NewMap, DllInfo);
-
-		GL_DisableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(GL_DisableMultitexture, DllInfo);
-	}
-
-	if (GL_DisableMultitexture_RVA)
-	{
-		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))VA_from_RVA(GL_DisableMultitexture, RealDllInfo);
+		GL_DisableMultitexture_VA = Search_Pattern_From(R_NewMap_VA, GL_DISABLEMULTITEXTURE_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_DisableMultitexture = (decltype(gPrivateFuncs.GL_DisableMultitexture))ConvertDllInfoSpace((PVOID)GL_DisableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(GL_DisableMultitexture);
@@ -2567,135 +2523,102 @@ void R_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, const mh_
 	if (gPrivateFuncs.GL_EnableMultitexture)
 		return;
 
-	ULONG_PTR GL_EnableMultitexture_VA = 0;
-	ULONG GL_EnableMultitexture_RVA = 0;
+	PVOID GL_EnableMultitexture_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		GL_EnableMultitexture_VA = (ULONG_PTR)Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(GL_EnableMultitexture, DllInfo);
+		GL_EnableMultitexture_VA = Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))ConvertDllInfoSpace((PVOID)GL_EnableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		ULONG_PTR GL_DisableMultitexture_VA = (ULONG_PTR)gPrivateFuncs.GL_DisableMultitexture;
-		ULONG GL_DisableMultitexture_RVA = 0;
+		PVOID GL_DisableMultitexture_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_DisableMultitexture, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(GL_DisableMultitexture, RealDllInfo);
-		Convert_RVA_to_VA(GL_DisableMultitexture, DllInfo);
-
-		GL_EnableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(GL_EnableMultitexture, DllInfo);
+		GL_EnableMultitexture_VA = Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_HL25, DllInfo);
+		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))ConvertDllInfoSpace((PVOID)GL_EnableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		ULONG_PTR GL_DisableMultitexture_VA = (ULONG_PTR)gPrivateFuncs.GL_DisableMultitexture;
-		ULONG GL_DisableMultitexture_RVA = 0;
+		PVOID GL_DisableMultitexture_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_DisableMultitexture, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(GL_DisableMultitexture, RealDllInfo);
-		Convert_RVA_to_VA(GL_DisableMultitexture, DllInfo);
-
-		GL_EnableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_NEW, DllInfo);
-		Convert_VA_to_RVA(GL_EnableMultitexture, DllInfo);
+		GL_EnableMultitexture_VA = Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_NEW, DllInfo);
+		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))ConvertDllInfoSpace((PVOID)GL_EnableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		ULONG_PTR GL_DisableMultitexture_VA = (ULONG_PTR)gPrivateFuncs.GL_DisableMultitexture;
-		ULONG GL_DisableMultitexture_RVA = 0;
+		PVOID GL_DisableMultitexture_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_DisableMultitexture, RealDllInfo, DllInfo);
 
-		Convert_VA_to_RVA(GL_DisableMultitexture, RealDllInfo);
-		Convert_RVA_to_VA(GL_DisableMultitexture, DllInfo);
-
-		GL_EnableMultitexture_VA = (ULONG_PTR)Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(GL_EnableMultitexture, DllInfo);
-	}
-
-	if (GL_EnableMultitexture_RVA)
-	{
-		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))VA_from_RVA(GL_EnableMultitexture, RealDllInfo);
+		GL_EnableMultitexture_VA = Search_Pattern_From(GL_DisableMultitexture_VA, GL_ENABLEMULTITEXTURE_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_EnableMultitexture = (decltype(gPrivateFuncs.GL_EnableMultitexture))ConvertDllInfoSpace((PVOID)GL_EnableMultitexture_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(GL_EnableMultitexture);
 
-	ULONG_PTR gl_mtexable_VA = 0;
-	ULONG gl_mtexable_RVA = 0;
-	ULONG_PTR mtexenabled_VA = 0;
-	ULONG mtexenabled_RVA = 0;
-
+	typedef struct GL_EnableMultitexture_SearchContext_s
 	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	} GL_EnableMultitexture_SearchContext;
 
-		typedef struct
+	GL_EnableMultitexture_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges(GL_EnableMultitexture_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (GL_EnableMultitexture_SearchContext*)context;
+
+		if (!gl_mtexable &&
+			pinst->id == X86_INS_CMP &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			pinst->detail->x86.operands[0].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[1].imm == 0)
 		{
-			ULONG_PTR& gl_mtexable_VA;
-			ULONG_PTR& mtexenabled_VA;
-			const mh_dll_info_t& DllInfo;
-		} GL_EnableMultitexture_SearchContext;
+			//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
+			gl_mtexable = (decltype(gl_mtexable))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
+		else if (!gl_mtexable &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base == 0 &&
+			pinst->detail->x86.operands[1].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+		{
+			//.text:01D478D0 A1 44 34 34 02                                      mov     eax, gl_mtexable
+			gl_mtexable = (decltype(gl_mtexable))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
+		else if (!mtexenabled &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			pinst->detail->x86.operands[0].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[1].imm == 1)
+		{
+			//.text:01D478F2 C7 05 10 33 34 02 01 00 00 00                       mov     mtexenabled, 1
+			mtexenabled = (decltype(mtexenabled))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
 
-		GL_EnableMultitexture_SearchContext ctx = { gl_mtexable_VA, mtexenabled_VA, DllInfo };
+		if (gl_mtexable && mtexenabled)
+			return TRUE;
 
-		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GL_EnableMultitexture, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (GL_EnableMultitexture_SearchContext*)context;
+		if (address[0] == 0xCC)
+			return TRUE;
 
-				if (!ctx->gl_mtexable_VA &&
-					pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0)
-				{//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
-					ctx->gl_mtexable_VA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				}
-				else if (!ctx->gl_mtexable_VA &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D478D0 A1 44 34 34 02                                      mov     eax, gl_mtexable
-					ctx->gl_mtexable_VA = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				}
-				else if (!ctx->mtexenabled_VA &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 1)
-				{//.text:01D478F2 C7 05 10 33 34 02 01 00 00 00                       mov     mtexenabled, 1
-					ctx->mtexenabled_VA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				}
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
 
-				if (ctx->gl_mtexable_VA && ctx->mtexenabled_VA)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-		Convert_VA_to_RVA(gl_mtexable, DllInfo);
-		Convert_VA_to_RVA(mtexenabled, DllInfo);
-	}
-
-	if (gl_mtexable_RVA)
-		gl_mtexable = (decltype(gl_mtexable))VA_from_RVA(gl_mtexable, RealDllInfo);
-	if (mtexenabled_RVA)
-		mtexenabled = (decltype(mtexenabled))VA_from_RVA(mtexenabled, RealDllInfo);
+		return FALSE;
+	}, 0, &ctx);
 
 	Sig_VarNotFound(gl_mtexable);
 	Sig_VarNotFound(mtexenabled);
@@ -3481,8 +3404,7 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (gPrivateFuncs.R_DrawViewModel)
 		return;
 
-	ULONG_PTR R_DrawViewModel_VA = 0;
-	ULONG R_DrawViewModel_RVA = 0;
+	PVOID R_DrawViewModel_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -3490,26 +3412,9 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 	}
 	else
 	{
-		ULONG_PTR R_RenderView_VA = (ULONG_PTR)gPrivateFuncs.R_RenderView;
-		ULONG R_RenderView_RVA = 0;
-
-		// Convert R_RenderView_VA to DllInfo-based
-		Convert_VA_to_RVA(R_RenderView, RealDllInfo);
-		Convert_RVA_to_VA(R_RenderView, DllInfo);
-
-		ULONG_PTR R_PolyBlend_VA = (ULONG_PTR)gPrivateFuncs.R_PolyBlend;
-		ULONG R_PolyBlend_RVA = 0;
-
-		// Convert R_PolyBlend_VA to DllInfo-based
-		Convert_VA_to_RVA(R_PolyBlend, RealDllInfo);
-		Convert_RVA_to_VA(R_PolyBlend, DllInfo);
-
-		ULONG_PTR S_ExtraUpdate_VA = (ULONG_PTR)gPrivateFuncs.S_ExtraUpdate;
-		ULONG S_ExtraUpdate_RVA = 0;
-
-		// Convert S_ExtraUpdate_VA to DllInfo-based
-		Convert_VA_to_RVA(S_ExtraUpdate, RealDllInfo);
-		Convert_RVA_to_VA(S_ExtraUpdate, DllInfo);
+		PVOID R_RenderView_VA = ConvertDllInfoSpace(gPrivateFuncs.R_RenderView, RealDllInfo, DllInfo);
+		PVOID R_PolyBlend_VA = ConvertDllInfoSpace(gPrivateFuncs.R_PolyBlend, RealDllInfo, DllInfo);
+		PVOID S_ExtraUpdate_VA = ConvertDllInfoSpace(gPrivateFuncs.S_ExtraUpdate, RealDllInfo, DllInfo);
 
 		const char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
 		PUCHAR SearchBegin = (PUCHAR)R_RenderView_VA;
@@ -3523,10 +3428,10 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 				auto target2 = GetCallAddress(pFound + 5);
 				auto target3 = GetCallAddress(pFound + 10);
 
-				if ((ULONG_PTR)target2 == R_PolyBlend_VA && (ULONG_PTR)target3 == S_ExtraUpdate_VA)
+				if ((ULONG_PTR)target2 == (ULONG_PTR)R_PolyBlend_VA && (ULONG_PTR)target3 == (ULONG_PTR)S_ExtraUpdate_VA)
 				{
-					R_DrawViewModel_VA = (ULONG_PTR)target1;
-					Convert_VA_to_RVA(R_DrawViewModel, DllInfo);
+					R_DrawViewModel_VA = target1;
+					gPrivateFuncs.R_DrawViewModel = (decltype(gPrivateFuncs.R_DrawViewModel))ConvertDllInfoSpace(R_DrawViewModel_VA, DllInfo, RealDllInfo);
 					break;
 				}
 
@@ -3537,14 +3442,9 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 				break;
 			}
 		}
-	}
 
-	if (R_DrawViewModel_RVA)
-	{
-		gPrivateFuncs.R_DrawViewModel = (decltype(gPrivateFuncs.R_DrawViewModel))VA_from_RVA(R_DrawViewModel, RealDllInfo);
+		Sig_FuncNotFound(R_DrawViewModel);
 	}
-
-	Sig_FuncNotFound(R_DrawViewModel);
 
 	/*
 		//Global pointers that link into engine vars
@@ -3554,111 +3454,96 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 		int *cl_weaponsequence = NULL;
 		int *cl_light_level = NULL;
 	*/
-	ULONG_PTR envmap_VA = 0;
-	ULONG envmap_RVA = 0;
-	ULONG_PTR cl_stats_VA = 0;
-	ULONG cl_stats_RVA = 0;
-	ULONG_PTR cl_weaponstarttime_VA = 0;
-	ULONG cl_weaponstarttime_RVA = 0;
-	ULONG_PTR cl_weaponsequence_VA = 0;
-	ULONG cl_weaponsequence_RVA = 0;
-	ULONG_PTR cl_light_level_VA = 0;
-	ULONG cl_light_level_RVA = 0;
 
+	typedef struct R_DrawViewModel_SearchContext_s
 	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			const char pattern1[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern(pattern1, DllInfo);
-			Sig_AddrNotFound(envmap);
-			envmap_VA = *(ULONG_PTR*)(addr + 11);
-			cl_stats_VA = *(ULONG_PTR*)(addr + 24);
-			Convert_VA_to_RVA(envmap, DllInfo);
-			Convert_VA_to_RVA(cl_stats, DllInfo);
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	} R_DrawViewModel_SearchContext;
 
-			//SvEngine 10182, R_PreDrawViewModel not inlined
-			const char pattern2[] = "\xD9\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-			addr = (ULONG_PTR)Search_Pattern(pattern2, DllInfo);
-			Sig_AddrNotFound(cl_weaponstarttime);
-			cl_weaponstarttime_VA = *(ULONG_PTR*)(addr + 2);
-			cl_weaponsequence_VA = *(ULONG_PTR*)(addr + 7);
-			Convert_VA_to_RVA(cl_weaponstarttime, DllInfo);
-			Convert_VA_to_RVA(cl_weaponsequence, DllInfo);
+	R_DrawViewModel_SearchContext ctx = { DllInfo, RealDllInfo };
 
-			const char pattern3[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x300, pattern3);
-			Sig_AddrNotFound(cl_light_level);
-			cl_light_level_VA = *(ULONG_PTR*)(addr + 4);
-			Convert_VA_to_RVA(cl_light_level, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			const char pattern1[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawViewModel_VA, 0x100, pattern1);
-			Sig_AddrNotFound(envmap);
-			envmap_VA = *(ULONG_PTR*)(addr + 2);
-			Convert_VA_to_RVA(envmap, DllInfo);
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char pattern1[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(pattern1, DllInfo);
+		Sig_AddrNotFound(envmap);
+		PVOID envmap_VA = (PVOID)(*(ULONG_PTR*)(addr + 11));
+		PVOID cl_stats_VA = (PVOID)(*(ULONG_PTR*)(addr + 24));
+		envmap = (decltype(envmap))ConvertDllInfoSpace(envmap_VA, DllInfo, RealDllInfo);
+		cl_stats = (decltype(cl_stats))ConvertDllInfoSpace(cl_stats_VA, DllInfo, RealDllInfo);
 
-			const char pattern2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x83\xB9\x94\x0B\x00\x00\x00";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern2);
-			Sig_AddrNotFound(cl_stats);
-			cl_stats_VA = *(ULONG_PTR*)(addr + 2);
-			Convert_VA_to_RVA(cl_stats, DllInfo);
+		//SvEngine 10182, R_PreDrawViewModel not inlined
+		const char pattern2[] = "\xD9\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
+		addr = (ULONG_PTR)Search_Pattern(pattern2, DllInfo);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		PVOID cl_weaponstarttime_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		PVOID cl_weaponsequence_VA = (PVOID)(*(ULONG_PTR*)(addr + 7));
+		cl_weaponstarttime = (decltype(cl_weaponstarttime))ConvertDllInfoSpace(cl_weaponstarttime_VA, DllInfo, RealDllInfo);
+		cl_weaponsequence = (decltype(cl_weaponsequence))ConvertDllInfoSpace(cl_weaponsequence_VA, DllInfo, RealDllInfo);
 
-			const char pattern3[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x500, pattern3);
-			Sig_AddrNotFound(cl_weaponstarttime);
-			cl_weaponstarttime_VA = *(ULONG_PTR*)(addr + 4);
-			cl_weaponsequence_VA = *(ULONG_PTR*)(addr + 9);
-			Convert_VA_to_RVA(cl_weaponstarttime, DllInfo);
-			Convert_VA_to_RVA(cl_weaponsequence, DllInfo);
-
-			const char pattern4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\x8B\x40\x04";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x600, pattern4);
-			Sig_AddrNotFound(cl_light_level);
-			cl_light_level_VA = *(ULONG_PTR*)(addr + 4);
-			Convert_VA_to_RVA(cl_light_level, DllInfo);
-		}
-		else
-		{
-			const char pattern1[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawViewModel_VA, 0x100, pattern1);
-			Sig_AddrNotFound(envmap);
-			envmap_VA = *(ULONG_PTR*)(addr + 2);
-			Convert_VA_to_RVA(envmap, DllInfo);
-
-			const char pattern2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern2);
-			Sig_AddrNotFound(cl_stats);
-			cl_stats_VA = *(ULONG_PTR*)(addr + 2);
-			Convert_VA_to_RVA(cl_stats, DllInfo);
-
-			const char pattern3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x500, pattern3);
-			Sig_AddrNotFound(cl_weaponstarttime);
-			cl_weaponstarttime_VA = *(ULONG_PTR*)(addr + 2);
-			cl_weaponsequence_VA = *(ULONG_PTR*)(addr + 7);
-			Convert_VA_to_RVA(cl_weaponstarttime, DllInfo);
-			Convert_VA_to_RVA(cl_weaponsequence, DllInfo);
-
-			const char pattern4[] = "\x89\x15\x2A\x2A\x2A\x2A\x89\x2A\x2A\x2A\x2A\x2A\xFF";
-			addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x600, pattern4);
-			Sig_AddrNotFound(cl_light_level);
-			cl_light_level_VA = *(ULONG_PTR*)(addr + 2);
-			Convert_VA_to_RVA(cl_light_level, DllInfo);
-		}
+		const char pattern3[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x300, pattern3);
+		Sig_AddrNotFound(cl_light_level);
+		PVOID cl_light_level_VA = (PVOID)(*(ULONG_PTR*)(addr + 4));
+		cl_light_level = (decltype(cl_light_level))ConvertDllInfoSpace(cl_light_level_VA, DllInfo, RealDllInfo);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char pattern1[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawViewModel_VA, 0x100, pattern1);
+		Sig_AddrNotFound(envmap);
+		PVOID envmap_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		envmap = (decltype(envmap))ConvertDllInfoSpace(envmap_VA, DllInfo, RealDllInfo);
 
-	if (envmap_RVA)
-		envmap = (decltype(envmap))VA_from_RVA(envmap, RealDllInfo);
-	if (cl_stats_RVA)
-		cl_stats = (decltype(cl_stats))VA_from_RVA(cl_stats, RealDllInfo);
-	if (cl_weaponstarttime_RVA)
-		cl_weaponstarttime = (decltype(cl_weaponstarttime))VA_from_RVA(cl_weaponstarttime, RealDllInfo);
-	if (cl_weaponsequence_RVA)
-		cl_weaponsequence = (decltype(cl_weaponsequence))VA_from_RVA(cl_weaponsequence, RealDllInfo);
-	if (cl_light_level_RVA)
-		cl_light_level = (decltype(cl_light_level))VA_from_RVA(cl_light_level, RealDllInfo);
+		const char pattern2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x83\xB9\x94\x0B\x00\x00\x00";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern2);
+		Sig_AddrNotFound(cl_stats);
+		PVOID cl_stats_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		cl_stats = (decltype(cl_stats))ConvertDllInfoSpace(cl_stats_VA, DllInfo, RealDllInfo);
+
+		const char pattern3[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x500, pattern3);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		PVOID cl_weaponstarttime_VA = (PVOID)(*(ULONG_PTR*)(addr + 4));
+		PVOID cl_weaponsequence_VA = (PVOID)(*(ULONG_PTR*)(addr + 9));
+		cl_weaponstarttime = (decltype(cl_weaponstarttime))ConvertDllInfoSpace(cl_weaponstarttime_VA, DllInfo, RealDllInfo);
+		cl_weaponsequence = (decltype(cl_weaponsequence))ConvertDllInfoSpace(cl_weaponsequence_VA, DllInfo, RealDllInfo);
+
+		const char pattern4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\x8B\x40\x04";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x600, pattern4);
+		Sig_AddrNotFound(cl_light_level);
+		PVOID cl_light_level_VA = (PVOID)(*(ULONG_PTR*)(addr + 4));
+		cl_light_level = (decltype(cl_light_level))ConvertDllInfoSpace(cl_light_level_VA, DllInfo, RealDllInfo);
+	}
+	else
+	{
+		const char pattern1[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawViewModel_VA, 0x100, pattern1);
+		Sig_AddrNotFound(envmap);
+		PVOID envmap_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		envmap = (decltype(envmap))ConvertDllInfoSpace(envmap_VA, DllInfo, RealDllInfo);
+
+		const char pattern2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, pattern2);
+		Sig_AddrNotFound(cl_stats);
+		PVOID cl_stats_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		cl_stats = (decltype(cl_stats))ConvertDllInfoSpace(cl_stats_VA, DllInfo, RealDllInfo);
+
+		const char pattern3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x500, pattern3);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		PVOID cl_weaponstarttime_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		PVOID cl_weaponsequence_VA = (PVOID)(*(ULONG_PTR*)(addr + 7));
+		cl_weaponstarttime = (decltype(cl_weaponstarttime))ConvertDllInfoSpace(cl_weaponstarttime_VA, DllInfo, RealDllInfo);
+		cl_weaponsequence = (decltype(cl_weaponsequence))ConvertDllInfoSpace(cl_weaponsequence_VA, DllInfo, RealDllInfo);
+
+		const char pattern4[] = "\x89\x15\x2A\x2A\x2A\x2A\x89\x2A\x2A\x2A\x2A\x2A\xFF";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x600, pattern4);
+		Sig_AddrNotFound(cl_light_level);
+		PVOID cl_light_level_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+		cl_light_level = (decltype(cl_light_level))ConvertDllInfoSpace(cl_light_level_VA, DllInfo, RealDllInfo);
+	}
 
 	Sig_VarNotFound(envmap);
 	Sig_VarNotFound(cl_stats);
@@ -4248,8 +4133,7 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (gPrivateFuncs.BuildGammaTable)
 		return;
 
-	ULONG_PTR BuildGammaTable_VA = 0;
-	ULONG BuildGammaTable_RVA = 0;
+	PVOID BuildGammaTable_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -4273,8 +4157,8 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 				if ((ULONG_PTR)calltarget > (ULONG_PTR)DllInfo.TextBase && (ULONG_PTR)calltarget < (ULONG_PTR)DllInfo.TextBase + DllInfo.TextSize)
 				{
-					BuildGammaTable_VA = (ULONG_PTR)calltarget;
-					Convert_VA_to_RVA(BuildGammaTable, DllInfo);
+					BuildGammaTable_VA = calltarget;
+					gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))ConvertDllInfoSpace(BuildGammaTable_VA, DllInfo, RealDllInfo);
 					break;
 				}
 
@@ -4287,33 +4171,28 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 		}
 	}
 
-	if (!BuildGammaTable_RVA)
+	if (!gPrivateFuncs.BuildGammaTable)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			BuildGammaTable_VA = (ULONG_PTR)Search_Pattern(BUILDGAMMATABLE_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(BuildGammaTable, DllInfo);
+			BuildGammaTable_VA = Search_Pattern(BUILDGAMMATABLE_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))ConvertDllInfoSpace(BuildGammaTable_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			BuildGammaTable_VA = (ULONG_PTR)Search_Pattern(BUILDGAMMATABLE_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(BuildGammaTable, DllInfo);
+			BuildGammaTable_VA = Search_Pattern(BUILDGAMMATABLE_SIG_HL25, DllInfo);
+			gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))ConvertDllInfoSpace(BuildGammaTable_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			BuildGammaTable_VA = (ULONG_PTR)Search_Pattern(BUILDGAMMATABLE_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(BuildGammaTable, DllInfo);
+			BuildGammaTable_VA = Search_Pattern(BUILDGAMMATABLE_SIG_NEW, DllInfo);
+			gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))ConvertDllInfoSpace(BuildGammaTable_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			BuildGammaTable_VA = (ULONG_PTR)Search_Pattern(BUILDGAMMATABLE_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(BuildGammaTable, DllInfo);
+			BuildGammaTable_VA = Search_Pattern(BUILDGAMMATABLE_SIG_BLOB, DllInfo);
+			gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))ConvertDllInfoSpace(BuildGammaTable_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (BuildGammaTable_RVA)
-	{
-		gPrivateFuncs.BuildGammaTable = (decltype(gPrivateFuncs.BuildGammaTable))VA_from_RVA(BuildGammaTable, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(BuildGammaTable);
@@ -4322,53 +4201,43 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 	//Global pointers that link into engine vars
 	byte *texgammatable = NULL;
 	*/
-	ULONG_PTR texgammatable_VA = 0;
-	ULONG texgammatable_RVA = 0;
 
-	if (1)
+	typedef struct BuildGammaTable_SearchContext_s
 	{
-		typedef struct
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	} BuildGammaTable_SearchContext;
+
+	BuildGammaTable_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges(BuildGammaTable_VA, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (BuildGammaTable_SearchContext*)context;
+
+		if (pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+			pinst->detail->x86.operands[1].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].size == 1)
 		{
-			ULONG_PTR& texgammatable;
-			const mh_dll_info_t& DllInfo;
-		} BuildGammaTable_SearchContext;
+			texgammatable = (decltype(texgammatable))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
 
-		BuildGammaTable_SearchContext ctx = { texgammatable_VA, DllInfo };
+		if (texgammatable)
+			return TRUE;
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (BuildGammaTable_SearchContext*)context;
+		if (address[0] == 0xCC)
+			return TRUE;
 
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].size == 1)
-				{
-					ctx->texgammatable = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				}
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
 
-				if (ctx->texgammatable)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-		Convert_VA_to_RVA(texgammatable, DllInfo);
-	}
-
-	if (texgammatable_RVA)
-		texgammatable = (decltype(texgammatable))VA_from_RVA(texgammatable, RealDllInfo);
+		return FALSE;
+	}, 0, &ctx);
 
 	Sig_VarNotFound(texgammatable);
 }
@@ -4378,8 +4247,7 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (gPrivateFuncs.R_DrawParticles)
 		return;
 
-	ULONG_PTR R_DrawParticles_VA = 0;
-	ULONG R_DrawParticles_RVA = 0;
+	PVOID R_DrawParticles_VA = 0;
 
 	{
 		/*
@@ -4402,7 +4270,7 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 					bool bFound302h{};
 				}R_DrawParticle_SearchContext;
 
-				R_DrawParticle_SearchContext ctx = { 0 };
+				R_DrawParticle_SearchContext ctx = { };
 
 				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -4491,7 +4359,7 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 						return FALSE;
 						});
 
-					Convert_VA_to_RVA(R_DrawParticles, DllInfo);
+					gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
 					break;
 				}
 
@@ -4504,139 +4372,119 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 		}
 	}
 
-	if (!R_DrawParticles_RVA)
+	if (!gPrivateFuncs.R_DrawParticles)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_DrawParticles_VA = (ULONG_PTR)Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_DrawParticles, DllInfo);
+			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_DrawParticles_VA = (ULONG_PTR)Search_Pattern(R_DRAWPARTICLES_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_DrawParticles, DllInfo);
+			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_DrawParticles_VA = (ULONG_PTR)Search_Pattern(R_DRAWPARTICLES_SIG_NEW, DllInfo);
+			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_NEW, DllInfo);
 
 			if (!R_DrawParticles_VA)
-				R_DrawParticles_VA = (ULONG_PTR)Search_Pattern(R_DRAWPARTICLES_SIG_NEW2, DllInfo);
+				R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_NEW2, DllInfo);
 
-			Convert_VA_to_RVA(R_DrawParticles, DllInfo);
+			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_DrawParticles_VA = (ULONG_PTR)Search_Pattern(R_DRAWPARTICLES_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_DrawParticles, DllInfo);
+			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_DrawParticles_RVA)
-	{
-		gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))VA_from_RVA(R_DrawParticles, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_DrawParticles);
 
-	ULONG_PTR particletexture_VA = 0;
-	ULONG particletexture_RVA = 0;
-	ULONG_PTR active_particles_VA = 0;
-	ULONG active_particles_RVA = 0;
-
+	typedef struct R_DrawParticles_SearchContext_s
 	{
-		typedef struct
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	} R_DrawParticles_SearchContext;
+
+	R_DrawParticles_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges(R_DrawParticles_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (R_DrawParticles_SearchContext*)context;
+
+		if (!particletexture &&
+			pinst->id == X86_INS_PUSH &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			pinst->detail->x86.operands[0].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 		{
-			ULONG_PTR& particletexture;
-			ULONG_PTR& active_particles;
-			const mh_dll_info_t& DllInfo;
-		} R_DrawParticles_SearchContext;
+			particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
 
-		R_DrawParticles_SearchContext ctx = { particletexture_VA, active_particles_VA, DllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawParticles, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_DrawParticles_SearchContext*)context;
-
-			if (!ctx->particletexture &&
-				pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+		if (!particletexture &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base == 0 &&
+			pinst->detail->x86.operands[1].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+		{
+			//Skip this shit
+			//.text:101EBCA6 A1 F4 36 32 10                                      mov     eax, ___security_cookie
+			//.text:101EBCAB 33 C5 xor eax, ebp
+			if (address[instLen] == 0x33 && address[instLen + 1] == 0xC5)
 			{
-				ctx->particletexture = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-			}
 
-			if (!ctx->particletexture &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			}
+			else if (address[instLen] == 0x33 && address[instLen + 1] == 0xC4)
 			{
-				//Skip this shit
-				//.text:101EBCA6 A1 F4 36 32 10                                      mov     eax, ___security_cookie
-				//.text:101EBCAB 33 C5 xor eax, ebp
-				if (address[instLen] == 0x33 && address[instLen + 1] == 0xC5)
-				{
 
-				}
-				else if (address[instLen] == 0x33 && address[instLen + 1] == 0xC4)
-				{
-
-				}
-				else
-				{
-					ctx->particletexture = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				}
 			}
-
-			if (!ctx->active_particles &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			else
 			{
-				if (address[-5] == 0xE8)
-				{
-					gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
-					ctx->active_particles = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-				}
+				particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
+		}
 
-			if (ctx->particletexture && ctx->active_particles)
-				return TRUE;
+		if (!active_particles &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base == 0 &&
+			pinst->detail->x86.operands[1].mem.index == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+		{
+			if (address[-5] == 0xE8)
+			{
+				gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
+				active_particles = (decltype(active_particles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			}
+		}
 
-			if (address[0] == 0xCC)
-				return TRUE;
+		if (particletexture && active_particles)
+			return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+		if (address[0] == 0xCC)
+			return TRUE;
 
-			return FALSE;
-			}, 0, &ctx);
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
 
-		Convert_VA_to_RVA(particletexture, DllInfo);
-		Convert_VA_to_RVA(active_particles, DllInfo);
-	}
+		return FALSE;
+		}, 0, &ctx);
 
-	if (particletexture_RVA)
-		particletexture = (decltype(particletexture))VA_from_RVA(particletexture, RealDllInfo);
-	if (active_particles_RVA)
-		active_particles = (decltype(active_particles))VA_from_RVA(active_particles, RealDllInfo);
-
+	Sig_VarNotFound(active_particles);
 	Sig_VarNotFound(particletexture);
 
 	{
@@ -4644,15 +4492,11 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 		auto addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawParticles_VA, 0x800, R_TRACERDRAW_SIG);
 		Sig_AddrNotFound(R_TracerDraw);
 
-		ULONG_PTR R_TracerDraw_VA = (ULONG_PTR)GetCallAddress(addr + 6);
-		ULONG R_TracerDraw_RVA = 0;
-		Convert_VA_to_RVA(R_TracerDraw, DllInfo);
-		gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))VA_from_RVA(R_TracerDraw, RealDllInfo);
+		PVOID R_TracerDraw_VA = GetCallAddress(addr + 6);
+		gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))ConvertDllInfoSpace(R_TracerDraw_VA, DllInfo, RealDllInfo);
 
-		ULONG_PTR R_BeamDrawList_VA = (ULONG_PTR)GetCallAddress(addr + 11);
-		ULONG R_BeamDrawList_RVA = 0;
-		Convert_VA_to_RVA(R_BeamDrawList, DllInfo);
-		gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))VA_from_RVA(R_BeamDrawList, RealDllInfo);
+		PVOID R_BeamDrawList_VA = GetCallAddress(addr + 11);
+		gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))ConvertDllInfoSpace(R_BeamDrawList_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_TracerDraw);
@@ -5040,12 +4884,12 @@ void R_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_i
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		R_StudioLighting_VA = Search_Pattern(R_STUDIOLIGHTING_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_StudioLighting, DllInfo);
+		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))ConvertDllInfoSpace(R_StudioLighting_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		R_StudioLighting_VA = Search_Pattern(R_STUDIOLIGHTING_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_StudioLighting, DllInfo);
+		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))ConvertDllInfoSpace(R_StudioLighting_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
@@ -5054,17 +4898,12 @@ void R_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_i
 		if (!R_StudioLighting_VA)
 			R_StudioLighting_VA = Search_Pattern(R_STUDIOLIGHTING_SIG_NEW2, DllInfo);
 
-		Convert_VA_to_RVA(R_StudioLighting, DllInfo);
+		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))ConvertDllInfoSpace(R_StudioLighting_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		R_StudioLighting_VA = Search_Pattern(R_STUDIOLIGHTING_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_StudioLighting, DllInfo);
-	}
-
-	if (R_StudioLighting_RVA)
-	{
-		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))VA_from_RVA(R_StudioLighting, RealDllInfo);
+		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))ConvertDllInfoSpace(R_StudioLighting_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_StudioLighting);
@@ -5428,37 +5267,31 @@ void R_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	if (gPrivateFuncs.R_StudioChrome)
 		return;
 
-	ULONG_PTR R_StudioChrome_VA = 0;
-	ULONG R_StudioChrome_RVA = 0;
+	PVOID R_StudioChrome_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_StudioChrome_VA = (ULONG_PTR)Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_StudioChrome, DllInfo);
+		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_StudioChrome_VA = (ULONG_PTR)Search_Pattern(R_STUDIOCHROME_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_StudioChrome, DllInfo);
+		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_HL25, DllInfo);
+		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_StudioChrome_VA = (ULONG_PTR)Search_Pattern(R_STUDIOCHROME_SIG_NEW, DllInfo);
+		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_NEW, DllInfo);
 
 		if (!R_StudioChrome_VA)
-			R_StudioChrome_VA = (ULONG_PTR)Search_Pattern(R_STUDIOCHROME_SIG_NEW2, DllInfo);
+			R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_NEW2, DllInfo);
 
-		Convert_VA_to_RVA(R_StudioChrome, DllInfo);
+		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_StudioChrome_VA = (ULONG_PTR)Search_Pattern(R_STUDIOCHROME_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_StudioChrome, DllInfo);
-	}
-
-	if (R_StudioChrome_RVA)
-	{
-		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))VA_from_RVA(R_StudioChrome, RealDllInfo);
+		R_StudioChrome_VA = Search_Pattern(R_STUDIOCHROME_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))ConvertDllInfoSpace(R_StudioChrome_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_StudioChrome);
@@ -5469,37 +5302,31 @@ void R_FillAddress_R_LightLambert(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	if (gPrivateFuncs.R_LightLambert)
 		return;
 
-	ULONG_PTR R_LightLambert_VA = 0;
-	ULONG R_LightLambert_RVA = 0;
+	PVOID R_LightLambert_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_LightLambert_VA = (ULONG_PTR)Search_Pattern(R_LIGHTLAMBERT_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_LightLambert, DllInfo);
+		R_LightLambert_VA = Search_Pattern(R_LIGHTLAMBERT_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))ConvertDllInfoSpace(R_LightLambert_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_LightLambert_VA = (ULONG_PTR)Search_Pattern(R_LIGHTLAMBERT_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_LightLambert, DllInfo);
+		R_LightLambert_VA = Search_Pattern(R_LIGHTLAMBERT_SIG_HL25, DllInfo);
+		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))ConvertDllInfoSpace(R_LightLambert_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_LightLambert_VA = (ULONG_PTR)Search_Pattern(R_LIGHTLAMBERT_SIG_NEW, DllInfo);
+		R_LightLambert_VA = Search_Pattern(R_LIGHTLAMBERT_SIG_NEW, DllInfo);
 
 		if (!R_LightLambert_VA)
-			R_LightLambert_VA = (ULONG_PTR)Search_Pattern(R_LIGHTLAMBERT_SIG_NEW2, DllInfo);
+			R_LightLambert_VA = Search_Pattern(R_LIGHTLAMBERT_SIG_NEW2, DllInfo);
 
-		Convert_VA_to_RVA(R_LightLambert, DllInfo);
+		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))ConvertDllInfoSpace(R_LightLambert_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_LightLambert_VA = (ULONG_PTR)Search_Pattern(R_LIGHTLAMBERT_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_LightLambert, DllInfo);
-	}
-
-	if (R_LightLambert_RVA)
-	{
-		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))VA_from_RVA(R_LightLambert, RealDllInfo);
+		R_LightLambert_VA = Search_Pattern(R_LIGHTLAMBERT_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))ConvertDllInfoSpace(R_LightLambert_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_LightLambert);
@@ -5713,8 +5540,7 @@ void R_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	if (gPrivateFuncs.Cache_Alloc)
 		return;
 
-	ULONG_PTR Cache_Alloc_VA = 0;
-	ULONG Cache_Alloc_RVA = 0;
+	PVOID Cache_Alloc_VA = 0;
 
 	if (1)
 	{
@@ -5729,7 +5555,7 @@ void R_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 		auto Cache_Alloc_Call = Search_Pattern(pattern, DllInfo);
 		Sig_VarNotFound(Cache_Alloc_Call);
 
-		Cache_Alloc_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cache_Alloc_Call, 0x80, [](PUCHAR Candidate) {
+		Cache_Alloc_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cache_Alloc_Call, 0x80, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x53 &&
 				Candidate[1] == 0x8B &&
@@ -5742,75 +5568,60 @@ void R_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 				return TRUE;
 
 			return FALSE;
-			});
-		Convert_VA_to_RVA(Cache_Alloc, DllInfo);
-	}
+		});
 
-	if (Cache_Alloc_RVA)
-	{
-		gPrivateFuncs.Cache_Alloc = (decltype(gPrivateFuncs.Cache_Alloc))VA_from_RVA(Cache_Alloc, RealDllInfo);
+		gPrivateFuncs.Cache_Alloc = (decltype(gPrivateFuncs.Cache_Alloc))ConvertDllInfoSpace(Cache_Alloc_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Cache_Alloc);
 
-	ULONG_PTR cache_head_VA = 0;
-	ULONG cache_head_RVA = 0;
-
+	typedef struct cache_head_SearchContext_s
 	{
-		typedef struct
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	} cache_head_SearchContext;
+
+	cache_head_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges((void*)Cache_Alloc_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (cache_head_SearchContext*)context;
+
+		if (!cache_head &&
+			pinst->id == X86_INS_CMP &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 		{
-			ULONG_PTR& cache_head;
-			const mh_dll_info_t& DllInfo;
-		} Cache_Alloc_SearchContext;
+			cache_head = (decltype(cache_head))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
+		}
+		else if (!cache_head &&
+			pinst->id == X86_INS_CMP &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+		{
+			cache_head = (decltype(cache_head))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
+		}
 
-		Cache_Alloc_SearchContext ctx = { cache_head_VA, DllInfo };
+		if (cache_head)
+			return TRUE;
 
-		g_pMetaHookAPI->DisasmRanges((void*)Cache_Alloc_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		if (address[0] == 0xCC)
+			return TRUE;
 
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (Cache_Alloc_SearchContext*)context;
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
 
-			if (!ctx->cache_head &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				ctx->cache_head = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
-			}
-			else if (!ctx->cache_head &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				ctx->cache_head = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
-			}
-
-			if (ctx->cache_head)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-
-		Convert_VA_to_RVA(cache_head, DllInfo);
-
-	}
-
-	if (cache_head_RVA)
-		cache_head = (decltype(cache_head))VA_from_RVA(cache_head, RealDllInfo);
+		return FALSE;
+		}, 0, &ctx);
 
 	Sig_VarNotFound(cache_head);
 }
@@ -5855,34 +5666,29 @@ void R_FillAddress_Draw_MiptexTexture(const mh_dll_info_t& DllInfo, const mh_dll
 
 					return FALSE;
 					});
-				Convert_VA_to_RVA(Draw_MiptexTexture, DllInfo);
+				gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))ConvertDllInfoSpace(Draw_MiptexTexture_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!Draw_MiptexTexture_RVA)
+	if (!gPrivateFuncs.Draw_MiptexTexture)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			Draw_MiptexTexture_VA = Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(Draw_MiptexTexture, DllInfo);
+			gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))ConvertDllInfoSpace(Draw_MiptexTexture_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			Draw_MiptexTexture_VA = Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(Draw_MiptexTexture, DllInfo);
+			gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))ConvertDllInfoSpace(Draw_MiptexTexture_VA, DllInfo, RealDllInfo);
 		}
 		else
 		{
 			//GoldSrc_Blob and GoldSrc_New use the same signature
 			Draw_MiptexTexture_VA = Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(Draw_MiptexTexture, DllInfo);
+			gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))ConvertDllInfoSpace(Draw_MiptexTexture_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (Draw_MiptexTexture_RVA)
-	{
-		gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))VA_from_RVA(Draw_MiptexTexture, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Draw_MiptexTexture);
@@ -5989,8 +5795,7 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 	if (gPrivateFuncs.Draw_DecalTexture)
 		return;
 
-	ULONG_PTR Draw_DecalTexture_VA = 0;
-	ULONG Draw_DecalTexture_RVA = 0;
+	PVOID Draw_DecalTexture_VA = 0;
 
 	{
 		const char sigs[] = "Failed to load custom decal for player";
@@ -6004,7 +5809,7 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 			auto Draw_DecalTexture_Call = Search_Pattern(pattern, DllInfo);
 			if (Draw_DecalTexture_Call)
 			{
-				Draw_DecalTexture_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Draw_DecalTexture_Call, 0x300, [](PUCHAR Candidate) {
+				Draw_DecalTexture_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Draw_DecalTexture_Call, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -6031,61 +5836,52 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 					return FALSE;
 					});
 
-				Convert_VA_to_RVA(Draw_DecalTexture, DllInfo);
+				gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))ConvertDllInfoSpace(Draw_DecalTexture_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!Draw_DecalTexture_RVA)
+	if (!gPrivateFuncs.Draw_DecalTexture)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			Draw_DecalTexture_VA = (ULONG_PTR)Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(Draw_DecalTexture, DllInfo);
+			Draw_DecalTexture_VA = Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))ConvertDllInfoSpace(Draw_DecalTexture_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			Draw_DecalTexture_VA = (ULONG_PTR)Search_Pattern(DRAW_DECALTEXTURE_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(Draw_DecalTexture, DllInfo);
+			Draw_DecalTexture_VA = Search_Pattern(DRAW_DECALTEXTURE_SIG_HL25, DllInfo);
+			gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))ConvertDllInfoSpace(Draw_DecalTexture_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			Draw_DecalTexture_VA = (ULONG_PTR)Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(Draw_DecalTexture, DllInfo);
+			Draw_DecalTexture_VA = Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW, DllInfo);
+			gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))ConvertDllInfoSpace(Draw_DecalTexture_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			Draw_DecalTexture_VA = (ULONG_PTR)Search_Pattern(DRAW_DECALTEXTURE_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(Draw_DecalTexture, DllInfo);
+			Draw_DecalTexture_VA = Search_Pattern(DRAW_DECALTEXTURE_SIG_BLOB, DllInfo);
+			gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))ConvertDllInfoSpace(Draw_DecalTexture_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (Draw_DecalTexture_RVA)
-	{
-		gPrivateFuncs.Draw_DecalTexture = (decltype(gPrivateFuncs.Draw_DecalTexture))VA_from_RVA(Draw_DecalTexture, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Draw_DecalTexture);
 
-	ULONG_PTR decal_wad_VA = 0;
-	ULONG decal_wad_RVA = 0;
-
 	{
-		typedef struct
+		typedef struct Draw_DecalTexture_SearchContext_s
 		{
-			ULONG_PTR& decal_wad;
 			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
 		} Draw_DecalTexture_SearchContext;
 
-		Draw_DecalTexture_SearchContext ctx = { decal_wad_VA, DllInfo };
+		Draw_DecalTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges((void*)Draw_DecalTexture_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (Draw_DecalTexture_SearchContext*)context;
 
-			if (!ctx->decal_wad &&
-				pinst->id == X86_INS_PUSH &&
+			if (pinst->id == X86_INS_PUSH &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
@@ -6093,10 +5889,9 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				ctx->decal_wad = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (!ctx->decal_wad &&
-				pinst->id == X86_INS_MOV &&
+			else if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
@@ -6105,9 +5900,9 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				ctx->decal_wad = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+				decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			if (ctx->decal_wad)
+			if (decal_wad)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -6118,12 +5913,7 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 
 			return FALSE;
 			}, 0, &ctx);
-
-		Convert_VA_to_RVA(decal_wad, DllInfo);
 	}
-
-	if (decal_wad_RVA)
-		decal_wad = (decltype(decal_wad))VA_from_RVA(decal_wad, RealDllInfo);
 
 	Sig_VarNotFound(decal_wad);
 }
@@ -6133,8 +5923,7 @@ void R_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_
 	if (gPrivateFuncs.R_DrawSpriteModel)
 		return;
 
-	ULONG_PTR R_DrawSpriteModel_VA = 0;
-	ULONG R_DrawSpriteModel_RVA = 0;
+	PVOID R_DrawSpriteModel_VA = 0;
 
 	{
 		const char sigs[] = "R_DrawSpriteModel:  couldn";
@@ -6148,7 +5937,7 @@ void R_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_
 			auto R_DrawSpriteModel_Call = Search_Pattern(pattern, DllInfo);
 			if (R_DrawSpriteModel_Call)
 			{
-				R_DrawSpriteModel_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_DrawSpriteModel_Call, 0x300, [](PUCHAR Candidate) {
+				R_DrawSpriteModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_DrawSpriteModel_Call, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -6168,38 +5957,33 @@ void R_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_
 
 					return FALSE;
 					});
-				Convert_VA_to_RVA(R_DrawSpriteModel, DllInfo);
+				gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!R_DrawSpriteModel_RVA)
+	if (!gPrivateFuncs.R_DrawSpriteModel)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_DrawSpriteModel_VA = (ULONG_PTR)Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_DrawSpriteModel, DllInfo);
+			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_DrawSpriteModel_VA = (ULONG_PTR)Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_DrawSpriteModel, DllInfo);
+			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_DrawSpriteModel_VA = (ULONG_PTR)Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(R_DrawSpriteModel, DllInfo);
+			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW, DllInfo);
+			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_DrawSpriteModel_VA = (ULONG_PTR)Search_Pattern(R_DRAWSRPITEMODEL_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_DrawSpriteModel, DllInfo);
+			R_DrawSpriteModel_VA = Search_Pattern(R_DRAWSRPITEMODEL_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))ConvertDllInfoSpace(R_DrawSpriteModel_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_DrawSpriteModel_RVA)
-	{
-		gPrivateFuncs.R_DrawSpriteModel = (decltype(gPrivateFuncs.R_DrawSpriteModel))VA_from_RVA(R_DrawSpriteModel, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_DrawSpriteModel);
@@ -6210,41 +5994,34 @@ void R_FillAddress_R_LightStrength(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (gPrivateFuncs.R_LightStrength)
 		return;
 
-	ULONG_PTR R_LightStrength_VA = 0;
-	ULONG R_LightStrength_RVA = 0;
+	PVOID R_LightStrength_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_LightStrength_VA = (ULONG_PTR)Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE, DllInfo);
+		R_LightStrength_VA = Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE, DllInfo);
 		if (!R_LightStrength_VA)
-			R_LightStrength_VA = (ULONG_PTR)Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE_10152, DllInfo);
-		Convert_VA_to_RVA(R_LightStrength, DllInfo);
+			R_LightStrength_VA = Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE_10152, DllInfo);
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))ConvertDllInfoSpace(R_LightStrength_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		//Inlined
 		gPrivateFuncs.R_LightStrength_inlined = true;
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_LightStrength_VA = (ULONG_PTR)Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW, DllInfo);
+		R_LightStrength_VA = Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW, DllInfo);
 		if (!R_LightStrength_VA)
-			R_LightStrength_VA = (ULONG_PTR)Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW2, DllInfo);
-		Convert_VA_to_RVA(R_LightStrength, DllInfo);
+			R_LightStrength_VA = Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW2, DllInfo);
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))ConvertDllInfoSpace(R_LightStrength_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_LightStrength_VA = (ULONG_PTR)Search_Pattern(R_LIGHTSTRENGTH_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_LightStrength, DllInfo);
+		R_LightStrength_VA = Search_Pattern(R_LIGHTSTRENGTH_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))ConvertDllInfoSpace(R_LightStrength_VA, DllInfo, RealDllInfo);
 	}
 
 	if (gPrivateFuncs.R_LightStrength_inlined)
 		return;
-
-	if (R_LightStrength_RVA)
-	{
-		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))VA_from_RVA(R_LightStrength, RealDllInfo);
-	}
 
 	Sig_FuncNotFound(R_LightStrength);
 }
@@ -6254,8 +6031,7 @@ void R_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_
 	if (gPrivateFuncs.R_RotateForEntity)
 		return;
 
-	ULONG_PTR R_RotateForEntity_VA = 0;
-	ULONG R_RotateForEntity_RVA = 0;
+	PVOID R_RotateForEntity_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -6263,41 +6039,37 @@ void R_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_
 	}
 	else
 	{
+#define R_ROTATEFORENTITY_GOLDSRC  "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x2A\x48\x0B\x00\x00\x2A\x2A\xE8"
 		auto addr = Search_Pattern(R_ROTATEFORENTITY_GOLDSRC, DllInfo);
 		if (addr)
 		{
-			R_RotateForEntity_VA = (ULONG_PTR)GetCallAddress((PUCHAR)addr + Sig_Length(R_ROTATEFORENTITY_GOLDSRC) - 1);
-			Convert_VA_to_RVA(R_RotateForEntity, DllInfo);
+			R_RotateForEntity_VA = GetCallAddress((PUCHAR)addr + Sig_Length(R_ROTATEFORENTITY_GOLDSRC) - 1);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
 		}
 	}
 
-	if (!R_RotateForEntity_RVA)
+	if (!gPrivateFuncs.R_RotateForEntity)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_RotateForEntity_VA = (ULONG_PTR)Search_Pattern(R_ROTATEFORENTITY_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_RotateForEntity, DllInfo);
+			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_SVENGINE, DllInfo);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_RotateForEntity_VA = (ULONG_PTR)Search_Pattern(R_ROTATEFORENTITY_HL25, DllInfo);
-			Convert_VA_to_RVA(R_RotateForEntity, DllInfo);
+			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_HL25, DllInfo);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_RotateForEntity_VA = (ULONG_PTR)Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
-			Convert_VA_to_RVA(R_RotateForEntity, DllInfo);
+			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_RotateForEntity_VA = (ULONG_PTR)Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
-			Convert_VA_to_RVA(R_RotateForEntity, DllInfo);
+			R_RotateForEntity_VA = Search_Pattern(R_ROTATEFORENTITY_NEW, DllInfo);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))ConvertDllInfoSpace(R_RotateForEntity_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_RotateForEntity_RVA)
-	{
-		gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))VA_from_RVA(R_RotateForEntity, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_RotateForEntity);
@@ -6308,8 +6080,7 @@ void R_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	if (gPrivateFuncs.R_GlowBlend)
 		return;
 
-	ULONG_PTR R_GlowBlend_VA = 0;
-	ULONG R_GlowBlend_RVA = 0;
+	PVOID R_GlowBlend_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -6323,20 +6094,15 @@ void R_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_GlowBlend_VA = (ULONG_PTR)Search_Pattern(R_GLOW_BLEND_SIG_NEW, DllInfo);
+		R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_NEW, DllInfo);
 		if (!R_GlowBlend_VA)
-			R_GlowBlend_VA = (ULONG_PTR)Search_Pattern(R_GLOW_BLEND_SIG_NEW2, DllInfo);
-		Convert_VA_to_RVA(R_GlowBlend, DllInfo);
+			R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_NEW2, DllInfo);
+		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))ConvertDllInfoSpace(R_GlowBlend_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_GlowBlend_VA = (ULONG_PTR)Search_Pattern(R_GLOW_BLEND_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_GlowBlend, DllInfo);
-	}
-
-	if (R_GlowBlend_RVA)
-	{
-		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))VA_from_RVA(R_GlowBlend, RealDllInfo);
+		R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))ConvertDllInfoSpace(R_GlowBlend_VA, DllInfo, RealDllInfo);
 	}
 
 	if (!gPrivateFuncs.R_GlowBlend_inlined)
@@ -6350,33 +6116,25 @@ void R_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh
 	if (gPrivateFuncs.SCR_BeginLoadingPlaque)
 		return;
 
-	ULONG_PTR SCR_BeginLoadingPlaque_VA = 0;
-	ULONG SCR_BeginLoadingPlaque_RVA = 0;
+	PVOID SCR_BeginLoadingPlaque_VA = 0;
 
 	//All engine use the same signature
-	SCR_BeginLoadingPlaque_VA = (ULONG_PTR)Search_Pattern(SCR_BEGIN_LOADING_PLAQUE, DllInfo);
-	Convert_VA_to_RVA(SCR_BeginLoadingPlaque, DllInfo);
+	SCR_BeginLoadingPlaque_VA = Search_Pattern(SCR_BEGIN_LOADING_PLAQUE, DllInfo);
 
-	if (SCR_BeginLoadingPlaque_RVA)
-	{
-		gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))VA_from_RVA(SCR_BeginLoadingPlaque, RealDllInfo);
-	}
+	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))ConvertDllInfoSpace(SCR_BeginLoadingPlaque_VA, DllInfo, RealDllInfo);
 
 	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
 
 	{
-		ULONG_PTR scr_drawloading_VA = 0;
-		ULONG scr_drawloading_RVA = 0;
-
-		typedef struct
+		typedef struct SCR_BeginLoadingPlaque_SearchContext_s
 		{
-			ULONG_PTR& scr_drawloading;
 			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
 		} SCR_BeginLoadingPlaque_SearchContext;
 
-		SCR_BeginLoadingPlaque_SearchContext ctx = { scr_drawloading_VA, DllInfo };
+		SCR_BeginLoadingPlaque_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)SCR_BeginLoadingPlaque_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(SCR_BeginLoadingPlaque_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (SCR_BeginLoadingPlaque_SearchContext*)context;
 
@@ -6392,10 +6150,10 @@ void R_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh
 				pinst->detail->x86.operands[1].imm == 1)
 			{
 				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
-				ctx->scr_drawloading = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				scr_drawloading = (decltype(scr_drawloading))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
-			if (ctx->scr_drawloading)
+			if (scr_drawloading)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -6407,11 +6165,6 @@ void R_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh
 			return FALSE;
 			}, 0, &ctx);
 
-		Convert_VA_to_RVA(scr_drawloading, DllInfo);
-
-		if (scr_drawloading_RVA)
-			scr_drawloading = (decltype(scr_drawloading))VA_from_RVA(scr_drawloading, RealDllInfo);
-
 		Sig_VarNotFound(scr_drawloading);
 	}
 }
@@ -6421,8 +6174,7 @@ void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const m
 	if (gPrivateFuncs.Host_IsSinglePlayerGame)
 		return;
 
-	ULONG_PTR Host_IsSinglePlayerGame_VA = 0;
-	ULONG Host_IsSinglePlayerGame_RVA = 0;
+	PVOID Host_IsSinglePlayerGame_VA = 0;
 
 	if (1)
 	{
@@ -6440,12 +6192,13 @@ void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const m
 				auto setpause_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(setpause_PushString, 0x50);
 				if (setpause_Function)
 				{
-					typedef struct
+					typedef struct Host_IsSinglePlayerGame_SearchContext_s
 					{
-						ULONG_PTR& Host_IsSinglePlayerGame;
-					}Host_IsSinglePlayerGame_SearchContext;
+						const mh_dll_info_t& DllInfo;
+						const mh_dll_info_t& RealDllInfo;
+					} Host_IsSinglePlayerGame_SearchContext;
 
-					Host_IsSinglePlayerGame_SearchContext ctx = { Host_IsSinglePlayerGame_VA };
+					Host_IsSinglePlayerGame_SearchContext ctx = { DllInfo, RealDllInfo };
 
 					g_pMetaHookAPI->DisasmRanges(setpause_Function, setpause_PushString - setpause_Function, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 						auto pinst = (cs_insn*)inst;
@@ -6454,7 +6207,7 @@ void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const m
 						if (address[0] == 0xE8 && instLen == 5 &&
 							address[5] == 0x85 && address[6] == 0xC0)
 						{
-							ctx->Host_IsSinglePlayerGame = (ULONG_PTR)pinst->detail->x86.operands[0].imm;
+							gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 						}
 
 						if (address[0] == 0xCC)
@@ -6464,45 +6217,38 @@ void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const m
 							return TRUE;
 
 						return FALSE;
-						}, 0, NULL);
-
-					Convert_VA_to_RVA(Host_IsSinglePlayerGame, DllInfo);
+					}, 0, &ctx);
 				}
 			}
 		}
 	}
 
-	if (!Host_IsSinglePlayerGame_RVA)
+	if (!gPrivateFuncs.Host_IsSinglePlayerGame)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(Host_IsSinglePlayerGame, DllInfo);
+			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE, DllInfo);
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25, DllInfo);
-			Convert_VA_to_RVA(Host_IsSinglePlayerGame, DllInfo);
+			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25, DllInfo);
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW, DllInfo);
+			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW, DllInfo);
 			if (!Host_IsSinglePlayerGame_VA)
-				Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2, DllInfo);
+				Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2, DllInfo);
 			if (!Host_IsSinglePlayerGame_VA)
-				Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW3, DllInfo);
-			Convert_VA_to_RVA(Host_IsSinglePlayerGame, DllInfo);
+				Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW3, DllInfo);
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			Host_IsSinglePlayerGame_VA = (ULONG_PTR)Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB, DllInfo);
-			Convert_VA_to_RVA(Host_IsSinglePlayerGame, DllInfo);
+			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB, DllInfo);
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (Host_IsSinglePlayerGame_RVA)
-	{
-		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))VA_from_RVA(Host_IsSinglePlayerGame, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Host_IsSinglePlayerGame);
@@ -6513,35 +6259,29 @@ void R_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const 
 	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
 		return;
 
-	ULONG_PTR Mod_UnloadSpriteTextures_VA = 0;
-	ULONG Mod_UnloadSpriteTextures_RVA = 0;
+	PVOID Mod_UnloadSpriteTextures_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		Mod_UnloadSpriteTextures_VA = (ULONG_PTR)Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(Mod_UnloadSpriteTextures, DllInfo);
+		Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE, DllInfo);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))ConvertDllInfoSpace(Mod_UnloadSpriteTextures_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		Mod_UnloadSpriteTextures_VA = (ULONG_PTR)Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25, DllInfo);
-		Convert_VA_to_RVA(Mod_UnloadSpriteTextures, DllInfo);
+		Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25, DllInfo);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))ConvertDllInfoSpace(Mod_UnloadSpriteTextures_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		Mod_UnloadSpriteTextures_VA = (ULONG_PTR)Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW, DllInfo);
+		Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW, DllInfo);
 		if (!Mod_UnloadSpriteTextures_VA)
-			Mod_UnloadSpriteTextures_VA = (ULONG_PTR)Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW2, DllInfo);
-		Convert_VA_to_RVA(Mod_UnloadSpriteTextures, DllInfo);
+			Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW2, DllInfo);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))ConvertDllInfoSpace(Mod_UnloadSpriteTextures_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		Mod_UnloadSpriteTextures_VA = (ULONG_PTR)Search_Pattern(MOD_UNLOADSPRITETEXTURES_BLOB, DllInfo);
-		Convert_VA_to_RVA(Mod_UnloadSpriteTextures, DllInfo);
-	}
-
-	if (Mod_UnloadSpriteTextures_RVA)
-	{
-		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))VA_from_RVA(Mod_UnloadSpriteTextures, RealDllInfo);
+		Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_BLOB, DllInfo);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))ConvertDllInfoSpace(Mod_UnloadSpriteTextures_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Mod_UnloadSpriteTextures);
@@ -6552,7 +6292,7 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 	if (gPrivateFuncs.Mod_LoadSpriteModel)
 		return;
 
-	ULONG_PTR Mod_LoadSpriteModel_VA = 0;
+	PVOID Mod_LoadSpriteModel_VA = 0;
 	ULONG Mod_LoadSpriteModel_RVA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -6568,6 +6308,14 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (Sprite_PushString)
 			{
+				typedef struct Mod_LoadSpriteModel_SearchContext_s
+				{
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+				} Mod_LoadSpriteModel_SearchContext;
+
+				Mod_LoadSpriteModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
 				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Sprite_PushString, 0x100, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x83 &&
@@ -6586,8 +6334,8 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 
 				if (Sprite_Function)
 				{
-					Mod_LoadSpriteModel_VA = (ULONG_PTR)Sprite_Function;
-					Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+					Mod_LoadSpriteModel_VA = (PVOID)Sprite_Function;
+					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 				}
 			}
 		}
@@ -6605,6 +6353,14 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (Sprite_PushString)
 			{
+				typedef struct Mod_LoadSpriteModel_SearchContext_s
+				{
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+				} Mod_LoadSpriteModel_SearchContext;
+
+				Mod_LoadSpriteModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
 				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Sprite_PushString, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
@@ -6633,42 +6389,37 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 
 				if (Sprite_Function)
 				{
-					Mod_LoadSpriteModel_VA = (ULONG_PTR)Sprite_Function;
-					Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+					Mod_LoadSpriteModel_VA = (PVOID)Sprite_Function;
+					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 				}
 			}
 		}
 	}
 
-	if (!Mod_LoadSpriteModel_RVA)
+	if (!gPrivateFuncs.Mod_LoadSpriteModel)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			Mod_LoadSpriteModel_VA = (ULONG_PTR)Search_Pattern(MOD_LOADSPRITEMODEL_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+			Mod_LoadSpriteModel_VA = (PVOID)Search_Pattern(MOD_LOADSPRITEMODEL_SVENGINE, DllInfo);
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			Mod_LoadSpriteModel_VA = (ULONG_PTR)Search_Pattern(MOD_LOADSPRITEMODEL_HL25, DllInfo);
-			Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+			Mod_LoadSpriteModel_VA = (PVOID)Search_Pattern(MOD_LOADSPRITEMODEL_HL25, DllInfo);
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			Mod_LoadSpriteModel_VA = (ULONG_PTR)Search_Pattern(MOD_LOADSPRITEMODEL_NEW, DllInfo);
+			Mod_LoadSpriteModel_VA = (PVOID)Search_Pattern(MOD_LOADSPRITEMODEL_NEW, DllInfo);
 			if (!Mod_LoadSpriteModel_VA)
-				Mod_LoadSpriteModel_VA = (ULONG_PTR)Search_Pattern(MOD_LOADSPRITEMODEL_NEW2, DllInfo);
-			Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+				Mod_LoadSpriteModel_VA = (PVOID)Search_Pattern(MOD_LOADSPRITEMODEL_NEW2, DllInfo);
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			Mod_LoadSpriteModel_VA = (ULONG_PTR)Search_Pattern(MOD_LOADSPRITEMODEL_BLOB, DllInfo);
-			Convert_VA_to_RVA(Mod_LoadSpriteModel, DllInfo);
+			Mod_LoadSpriteModel_VA = (PVOID)Search_Pattern(MOD_LOADSPRITEMODEL_BLOB, DllInfo);
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))ConvertDllInfoSpace(Mod_LoadSpriteModel_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (Mod_LoadSpriteModel_RVA)
-	{
-		gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))VA_from_RVA(Mod_LoadSpriteModel, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(Mod_LoadSpriteModel);
@@ -7808,7 +7559,7 @@ void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const
 			}
 		}
 
-		if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
+		if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles || !gPrivateFuncs.pfnDrawTransparentTriangles)
 		{
 			if (!ctx->push2300_instcount)
 			{
@@ -7823,23 +7574,19 @@ void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const
 
 			if (ctx->push2300_instcount > 0 && instCount > ctx->push2300_instcount)
 			{
-				if (address[0] == 0xE8 && instLen == 5)
+				if (!gPrivateFuncs.ClientDLL_DrawTransparentTriangles && address[0] == 0xE8 && instLen == 5)
 				{
 					gPrivateFuncs.ClientDLL_DrawTransparentTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawTransparentTriangles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 					ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount = instCount;
 				}
 
-				if (gPrivateFuncs.ClientDLL_DrawTransparentTriangles && instCount == ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount + 1)
+				if (!gPrivateFuncs.pfnDrawTransparentTriangles && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && instCount == ctx->ClientDLL_DrawTransparentTriangles_candidate_instcount + 1)
 				{
 					/*
 						.text:01D88E15 E8 96 2C F8 FF                                      call    ClientDLL_DrawTransparentTriangles
 						.text:01D88E1A A1 E4 23 73 02                                      mov     eax, g_bUserFogOn
 					*/
-					ULONG_PTR g_bUserFogOn_VA = 0;
-					if (g_bUserFogOn)
-					{
-						g_bUserFogOn_VA = (ULONG_PTR)g_bUserFogOn;
-					}
+					PVOID g_bUserFogOn_VA = ConvertDllInfoSpace(g_bUserFogOn, ctx->RealDllInfo, ctx->DllInfo);
 
 					if (pinst->id == X86_INS_CMP &&
 						pinst->detail->x86.op_count == 2 &&
@@ -7872,18 +7619,20 @@ void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const
 
 					if (gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
 					{
-						PUCHAR code = (PUCHAR)gPrivateFuncs.ClientDLL_DrawTransparentTriangles;
+						PUCHAR code = (PUCHAR)ConvertDllInfoSpace(gPrivateFuncs.ClientDLL_DrawTransparentTriangles, ctx->RealDllInfo, ctx->DllInfo);
 
 						if (code[0] == 0xA1)
 						{
-							gPrivateFuncs.pfnDrawTransparentTriangles = (decltype(gPrivateFuncs.pfnDrawTransparentTriangles))ConvertDllInfoSpace((PVOID)(*(ULONG_PTR*)(code + 1)), ctx->DllInfo, ctx->RealDllInfo);
+							PVOID pfnDrawTransparentTriangles_VA = *(PVOID*)(code + 1);
+							gPrivateFuncs.pfnDrawTransparentTriangles = (decltype(gPrivateFuncs.pfnDrawTransparentTriangles))
+								ConvertDllInfoSpace(pfnDrawTransparentTriangles_VA, ctx->DllInfo, ctx->RealDllInfo);
 						}
 					}
 				}
 			}
 		}
 
-		if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles)
+		if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && gPrivateFuncs.pfnDrawTransparentTriangles)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -7900,6 +7649,7 @@ void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const
 	Sig_VarNotFound(cl_parsecount);
 	Sig_VarNotFound(size_of_frame);
 	Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
+	Sig_FuncNotFound(pfnDrawTransparentTriangles);
 
 	if (ctx.r_entorigin_candidate_count >= 2)
 	{
@@ -8086,13 +7836,8 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	*/
 
 	PVOID R_LoadSkyboxInt_SvEngine_VA = 0;
-	ULONG R_LoadSkyboxInt_SvEngine_RVA = 0;
-
 	PVOID R_LoadSkyBox_SvEngine_VA = 0;
-	ULONG R_LoadSkyBox_SvEngine_RVA = 0;
-
 	PVOID R_LoadSkys_VA = 0;
-	ULONG R_LoadSkys_RVA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -8120,8 +7865,6 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 			return FALSE;
 			});
-
-		Convert_VA_to_RVA(R_LoadSkyboxInt_SvEngine, DllInfo);
 
 		//SvEngine always has g_bHasOfficialGLTexAllocSupport == true
 
@@ -8214,8 +7957,6 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 			return FALSE;
 			});
-
-		Convert_VA_to_RVA(R_LoadSkyBox_SvEngine, DllInfo);
 	}
 	else
 	{
@@ -8258,8 +7999,6 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 			return FALSE;
 			});
-
-		Convert_VA_to_RVA(R_LoadSkys, DllInfo);
 
 		if (g_bHasOfficialGLTexAllocSupport)
 		{
@@ -8338,18 +8077,19 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 		}
 	}
 
-	if (R_LoadSkyboxInt_SvEngine_RVA)
-		gPrivateFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyboxInt_SvEngine))VA_from_RVA(R_LoadSkyboxInt_SvEngine, RealDllInfo);
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gPrivateFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyboxInt_SvEngine))ConvertDllInfoSpace(R_LoadSkyboxInt_SvEngine_VA, DllInfo, RealDllInfo);
+		gPrivateFuncs.R_LoadSkyBox_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyBox_SvEngine))ConvertDllInfoSpace(R_LoadSkyBox_SvEngine_VA, DllInfo, RealDllInfo);
 
-	if (R_LoadSkyBox_SvEngine_RVA)
-		gPrivateFuncs.R_LoadSkyBox_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyBox_SvEngine))VA_from_RVA(R_LoadSkyBox_SvEngine, RealDllInfo);
-
-	if (R_LoadSkys_RVA)
-		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))VA_from_RVA(R_LoadSkys, RealDllInfo);
-
-	Sig_FuncNotFound(R_LoadSkyboxInt_SvEngine);
-	Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
-	Sig_FuncNotFound(R_LoadSkys);
+		Sig_FuncNotFound(R_LoadSkyboxInt_SvEngine);
+		Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
+	}
+	else
+	{
+		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))ConvertDllInfoSpace(R_LoadSkys_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_LoadSkys);
+	}
 	Sig_VarNotFound(gSkyTexNumber);
 
 	/*
@@ -8734,9 +8474,6 @@ void R_FillAddress_RenderSceneVars(const mh_dll_info_t& DllInfo, const mh_dll_in
 //Got ClientDLL_DrawNormalTriangles_VA, cl_waterlevel and gDevOverview here
 void R_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID cl_waterlevel_VA = 0;
-	PVOID ClientDLL_DrawNormalTriangles_VA = 0;
-	PVOID gDevOverview_VA = 0;
 	PVOID SearchBase_VA = 0;
 	SIZE_T SearchLength = 0;
 
@@ -8820,9 +8557,9 @@ void R_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_i
 				//.text:01D1A4E5 85 C0                                               test    eax, eax
 				if (candidate[0] == 0xA1 && candidate[5] == 0x85 && candidate[6] == 0xC0)
 				{
-					auto pfnDrawNormalTriangles = *(ULONG_PTR*)(candidate + 1);
-
-					if (pfnDrawNormalTriangles == (ULONG_PTR)gPrivateFuncs.pfnDrawTransparentTriangles - sizeof(ULONG_PTR))
+					auto pfnDrawNormalTriangles = *(PVOID*)(candidate + 1);
+					auto pfnDrawNormalTriangles_RealDllBased = ConvertDllInfoSpace(pfnDrawNormalTriangles, ctx->DllInfo, ctx->RealDllInfo);
+					if ((ULONG_PTR)pfnDrawNormalTriangles_RealDllBased == (ULONG_PTR)gPrivateFuncs.pfnDrawTransparentTriangles - sizeof(ULONG_PTR))
 					{
 						gPrivateFuncs.ClientDLL_DrawNormalTriangles = (decltype(gPrivateFuncs.ClientDLL_DrawNormalTriangles))ConvertDllInfoSpace((PVOID)candidate, ctx->DllInfo, ctx->RealDllInfo);
 					}
@@ -10303,16 +10040,18 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	typedef struct SetFilterColor_SearchContext_s
 	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
 		ULONG_PTR CandidateVA[3];
 		int CandidateCount{};
 	}SetFilterColor_SearchContext;
 
-	SetFilterColor_SearchContext ctx = { 0 };
+	SetFilterColor_SearchContext ctx = { DllInfo, RealDllInfo };
 
 	g_pMetaHookAPI->DisasmRanges(pfnSetFilterColor_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
-		auto ctx = (SetFilterColor_SearchContext*)context;
 		auto pinst = (cs_insn*)inst;
+		auto ctx = (SetFilterColor_SearchContext*)context;
 
 		if (ctx->CandidateCount < 3)
 		{
@@ -10322,8 +10061,8 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_EngineDLLInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_EngineDLLInfo.DataBase + g_EngineDLLInfo.DataSize)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 				{
 					//  .text : 01D1B120 D9 44 24 04                                         fld[esp + arg_0]
 					//	.text : 01D1B124 D9 1D 90 83 ED 01                                   fstp    r_filter_color
@@ -10342,8 +10081,8 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_EngineDLLInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_EngineDLLInfo.DataBase + g_EngineDLLInfo.DataSize)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 				{
 					//  .text : 01D1B120 D9 44 24 04                                         fld[esp + arg_0]
 					//	.text : 01D1B124 D9 1D 90 83 ED 01                                   fstp    r_filter_color
@@ -10363,8 +10102,8 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_EngineDLLInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_EngineDLLInfo.DataBase + g_EngineDLLInfo.DataSize)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 				{
 					//.text:01D115C1 A3 C4 71 E4 01                                      mov     filterColorRed, eax
 					ctx->CandidateVA[ctx->CandidateCount] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
@@ -10383,15 +10122,18 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 			return TRUE;
 
 		return FALSE;
-		}, 0, &ctx);
+	}, 0, &ctx);
 
-	std::qsort(ctx.CandidateVA, ctx.CandidateCount, sizeof(ctx.CandidateVA[0]), [](const void* a, const void* b) {
-		return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-	});
+	if (ctx.CandidateCount >= 3)
+	{
+		std::qsort(ctx.CandidateVA, ctx.CandidateCount, sizeof(ctx.CandidateVA[0]), [](const void* a, const void* b) {
+			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+		});
 
-	filterColorRed = (decltype(filterColorRed))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[0], DllInfo, RealDllInfo);
-	filterColorGreen = (decltype(filterColorGreen))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[1], DllInfo, RealDllInfo);
-	filterColorBlue = (decltype(filterColorBlue))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[2], DllInfo, RealDllInfo);
+		filterColorRed = (decltype(filterColorRed))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[0], DllInfo, RealDllInfo);
+		filterColorGreen = (decltype(filterColorGreen))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[1], DllInfo, RealDllInfo);
+		filterColorBlue = (decltype(filterColorBlue))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[2], DllInfo, RealDllInfo);
+	}
 
 	Sig_VarNotFound(filterColorRed);
 	Sig_VarNotFound(filterColorGreen);
@@ -10411,7 +10153,7 @@ void R_FillAddress_SetFilterBrightness(const mh_dll_info_t& DllInfo, const mh_dl
 		Sig_NotFound(pfnSetFilterBrightness_VA);
 	}
 
-	typedef struct
+	typedef struct SetFilterBrightness_SearchContext_s
 	{
 		const mh_dll_info_t& DllInfo;
 		const mh_dll_info_t& RealDllInfo;
@@ -10533,12 +10275,6 @@ void R_FillAddress_MoveVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 
 void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	ULONG_PTR r_missingtexture_VA = 0;
-	ULONG r_missingtexture_RVA = 0;
-
-	ULONG_PTR r_notexture_mip_VA = 0;
-	ULONG r_notexture_mip_RVA = 0;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		/*
@@ -10557,13 +10293,13 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 			auto Missing_Call = Search_Pattern(pattern, DllInfo);
 			if (Missing_Call)
 			{
-				typedef struct
+				typedef struct MissingTexture_SearchContext_s
 				{
-					ULONG_PTR& r_missingtexture;
 					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
 				} MissingTexture_SearchContext;
 
-				MissingTexture_SearchContext ctx = { r_missingtexture_VA, DllInfo };
+				MissingTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
 				g_pMetaHookAPI->DisasmRanges((PUCHAR)Missing_Call + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -10577,10 +10313,10 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 					{
-						ctx->r_missingtexture = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+						r_missingtexture = (decltype(r_missingtexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					}
 
-					if (ctx->r_missingtexture)
+					if (r_missingtexture)
 						return TRUE;
 
 					if (address[0] == 0xCC)
@@ -10618,13 +10354,13 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 			auto Empty_Call = Search_Pattern(pattern, DllInfo);
 			if (Empty_Call)
 			{
-				typedef struct
+				typedef struct EmptyTexture_SearchContext_s
 				{
-					ULONG_PTR& r_notexture_mip;
 					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
 				} EmptyTexture_SearchContext;
 
-				EmptyTexture_SearchContext ctx = { r_notexture_mip_VA, DllInfo };
+				EmptyTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
 				g_pMetaHookAPI->DisasmRanges((PUCHAR)Empty_Call + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 					auto pinst = (cs_insn*)inst;
@@ -10637,10 +10373,10 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 					{
-						ctx->r_notexture_mip = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+						r_notexture_mip = (decltype(r_notexture_mip))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					}
 
-					if (ctx->r_notexture_mip)
+					if (r_notexture_mip)
 						return TRUE;
 
 					if (address[0] == 0xCC)
@@ -10655,19 +10391,11 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 		}
 		Sig_VarNotFound(r_notexture_mip);
 	}
-
-	Convert_VA_to_RVA(r_missingtexture, DllInfo);
-	Convert_VA_to_RVA(r_notexture_mip, DllInfo);
-
-	if (r_missingtexture_RVA)
-		r_missingtexture = (decltype(r_missingtexture))VA_from_RVA(r_missingtexture, RealDllInfo);
-	if (r_notexture_mip_RVA)
-		r_notexture_mip = (decltype(r_notexture_mip))VA_from_RVA(r_notexture_mip, RealDllInfo);
 }
 
 void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	ULONG_PTR r_notexture_mip_VA = 0;
+	PVOID r_notexture_mip_VA = 0;
 	ULONG r_notexture_mip_RVA = 0;
 
 	if (1)
@@ -10688,13 +10416,13 @@ void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 			auto Empty_Call = Search_Pattern(pattern, DllInfo);
 			if (Empty_Call)
 			{
-				typedef struct
+				typedef struct EmptyTexture_SearchContext_s
 				{
-					ULONG_PTR& r_notexture_mip;
 					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
 				} EmptyTexture_SearchContext;
 
-				EmptyTexture_SearchContext ctx = { r_notexture_mip_VA, DllInfo };
+				EmptyTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
 				g_pMetaHookAPI->DisasmRanges((PUCHAR)Empty_Call + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 					auto pinst = (cs_insn*)inst;
@@ -10707,10 +10435,10 @@ void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 					{
-						ctx->r_notexture_mip = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+						r_notexture_mip = (decltype(r_notexture_mip))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					}
 
-					if (ctx->r_notexture_mip)
+					if (r_notexture_mip)
 						return TRUE;
 
 					if (address[0] == 0xCC)
@@ -10725,22 +10453,11 @@ void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 		}
 		Sig_VarNotFound(r_notexture_mip);
 	}
-
-	Convert_VA_to_RVA(r_notexture_mip, DllInfo);
-
-	if (r_notexture_mip_RVA)
-		r_notexture_mip = (decltype(r_notexture_mip))VA_from_RVA(r_notexture_mip, RealDllInfo);
 }
 
 void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	ULONG_PTR DT_Initialize_VA = 0;
-	ULONG DT_Initialize_RVA = 0;
-
-	ULONG_PTR detTexSupported_VA = 0;
-	ULONG detTexSupported_RVA = 0;
-
-	ULONG_PTR detTexSupportedCallVA = 0;
+	PVOID detTexSupportedCallVA = 0;
 	{
 		/*
 	.text:01D4780A 68 73 85 00 00                                      push    8573h           ; pname
@@ -10749,12 +10466,12 @@ void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info
 			*/
 		const char pattern[] = "\x68\x73\x85\x00\x00\x68\x00\x23\x00\x00\xFF";
 
-		auto addr = (ULONG_PTR)Search_Pattern(pattern, DllInfo);
-		Sig_AddrNotFound(detTexSupported);
+		auto addr = Search_Pattern(pattern, DllInfo);
+		Sig_AddrNotFound(detTexSupportedCallVA);
 
 		detTexSupportedCallVA = addr;
 
-		DT_Initialize_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx((void*)detTexSupportedCallVA, 0x100, [](PUCHAR Candidate) {
+		PVOID DT_Initialize_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx((void*)detTexSupportedCallVA, 0x100, [](PUCHAR Candidate) {
 
 			if (Candidate[-1] == 0xC3 &&
 				Candidate[0] == 0x56 &&
@@ -10766,25 +10483,22 @@ void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info
 				return TRUE;
 
 			return FALSE;
-			});
-
-		Convert_VA_to_RVA(DT_Initialize, DllInfo);
+		});
+		gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))ConvertDllInfoSpace(DT_Initialize_VA, DllInfo, RealDllInfo);
 	}
-
-	gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))VA_from_RVA(DT_Initialize, RealDllInfo);
 
 	Sig_FuncNotFound(DT_Initialize);
 
 	{
-		typedef struct
+		typedef struct DT_Initialize_SearchContext_s
 		{
-			ULONG_PTR& detTexSupported;
 			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
 		} DT_Initialize_SearchContext;
 
-		DT_Initialize_SearchContext ctx = { detTexSupported_VA, DllInfo };
+		DT_Initialize_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)detTexSupportedCallVA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(detTexSupportedCallVA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (DT_Initialize_SearchContext*)context;
@@ -10799,10 +10513,10 @@ void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				ctx->detTexSupported = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				detTexSupported = (decltype(detTexSupported))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
-			if (ctx->detTexSupported)
+			if (detTexSupported)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -10812,12 +10526,8 @@ void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
-
-		Convert_VA_to_RVA(detTexSupported, DllInfo);
+		}, 0, &ctx);
 	}
-
-	detTexSupported = (decltype(detTexSupported))VA_from_RVA(detTexSupported, RealDllInfo);
 
 	Sig_VarNotFound(detTexSupported);
 }
@@ -10845,772 +10555,179 @@ void R_FillAddress(void)
 
 	R_FillAddress_HasOfficialGLTexAllocSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_Init(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_Init(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_Init(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_PolyBlend(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_PolyBlend(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_PolyBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_S_ExtraUpdate(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_S_ExtraUpdate(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_S_ExtraUpdate(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_Bind(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_Bind(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_Bind(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_SelectTexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_SelectTexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_SelectTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_LoadTexture2(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_LoadTexture2(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_LoadTexture2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_CullBox(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_CullBox(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_CullBox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_SetupFrame(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_SetupFrame(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_SetupFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_SetupGL(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_SetupGL(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_SetupGL(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RenderView(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RenderView(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_V_RenderView(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_V_RenderView(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_V_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RenderScene(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RenderScene(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RenderScene(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_NewMap(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_NewMap(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_NewMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_BuildLightmaps(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_BuildLightmaps(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_BuildLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_BuildLightMap(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_BuildLightMap(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_BuildLightMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_AddDynamicLights(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_AddDynamicLights(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_AddDynamicLights(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_DisableMultitexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_DisableMultitexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_DisableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_EnableMultitexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_EnableMultitexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_EnableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawSequentialPoly(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawSequentialPoly(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawSequentialPoly(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_TextureAnimation(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_TextureAnimation(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_TextureAnimation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawBrushModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawBrushModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RecursiveWorldNode(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RecursiveWorldNode(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RecursiveWorldNode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawWorld(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawWorld(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawWorld(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawViewModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawViewModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawViewModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_MarkLeaves(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_MarkLeaves(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_MarkLeaves(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_BeginRendering(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_BeginRendering(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_BeginRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_EndRendering(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_EndRendering(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_EndRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_EmitWaterPolys(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_EmitWaterPolys(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_EmitWaterPolys(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_VID_UpdateWindowVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_VID_UpdateWindowVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_VID_UpdateWindowVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_PointInLeaf(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_PointInLeaf(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_PointInLeaf(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawTEntitiesOnList(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawTEntitiesOnList(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawTEntitiesOnList(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_BuildGammaTable(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_BuildGammaTable(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_BuildGammaTable(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawParticles(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawParticles(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawParticles(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_CL_AllocDlight(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_CL_AllocDlight(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_CL_AllocDlight(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_GLStudioDrawPoints(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_GLStudioDrawPoints(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_GLStudioDrawPoints(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_StudioLighting(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_StudioLighting(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_StudioLighting(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_StudioChrome(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_StudioChrome(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_StudioChrome(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_LightLambert(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_LightLambert(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_LightLambert(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_StudioSetupSkin(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_StudioSetupSkin(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_StudioSetupSkin(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Cache_Alloc(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Cache_Alloc(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Cache_Alloc(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Draw_MiptexTexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Draw_MiptexTexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Draw_MiptexTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Draw_DecalTexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Draw_DecalTexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Draw_DecalTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawSpriteModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawSpriteModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_LightStrength(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_LightStrength(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_LightStrength(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RotateForEntity(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RotateForEntity(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RotateForEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_GlowBlend(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_GlowBlend(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_GlowBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_SCR_BeginLoadingPlaque(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_SCR_BeginLoadingPlaque(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_SCR_BeginLoadingPlaque(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Host_IsSinglePlayerGame(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Host_IsSinglePlayerGame(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Host_IsSinglePlayerGame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_UnloadSpriteTextures(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_UnloadSpriteTextures(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_UnloadSpriteTextures(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_LoadSpriteModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_LoadSpriteModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_LoadSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_LoadSpriteFrame(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_LoadSpriteFrame(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_LoadSpriteFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_AddTEntity(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_AddTEntity(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_AddTEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Hunk_AllocName(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Hunk_AllocName(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Hunk_AllocName(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_EndRenderingVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_EndRenderingVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_EndRenderingVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_VisEdicts(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_VisEdicts(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_VisEdicts(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_AllocTransObjectsVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_AllocTransObjectsVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_AllocTransObjectsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DrawTEntitiesOnListVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DrawTEntitiesOnListVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RenderFinalFog(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RecursiveWorldNodeVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RecursiveWorldNodeVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DrawTEntitiesOnListVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_LoadSkybox(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_LoadSkybox(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RecursiveWorldNodeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_GL_FilterMinMaxVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_GL_FilterMinMaxVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_LoadSkybox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_ScrFov(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_ScrFov(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_GL_FilterMinMaxVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+
+	R_FillAddress_ScrFov(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	//Got CL_IsDevOverviewMode, CL_SetDevOverView and refdef here
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_RenderSceneVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_RenderSceneVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_RenderSceneVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	//Got ClientDLL_DrawNormalTriangles_VA, cl_waterlevel and gDevOverview here
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_RenderSceneVars2(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_RenderSceneVars2(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_RenderSceneVars2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_CL_IsDevOverviewModeVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_CL_IsDevOverviewModeVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_CL_IsDevOverviewModeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_DecalInit(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_DecalInit(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_DecalInit(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_RenderDynamicLightmaps(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_RenderDynamicLightmaps(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_RenderDynamicLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_StudioChromeVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_StudioChromeVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_StudioChromeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_CL_ViewEntityVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_CL_ViewEntityVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_CL_ViewEntityVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_CL_ReallocateDynamicData(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_CL_ReallocateDynamicData(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_CL_ReallocateDynamicData(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_TempEntsVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_TempEntsVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_TempEntsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_WaterVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_WaterVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_WaterVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_ModKnown(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_ModKnown(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_ModKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_NumKnown(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_NumKnown(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_NumKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_LoadStudioModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_LoadStudioModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_LoadStudioModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_LoadBrushModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_LoadBrushModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_LoadBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_Mod_LoadModel(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_Mod_LoadModel(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_Mod_LoadModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_BasePalette(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_BasePalette(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_BasePalette(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_R_LightStrengthVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_R_LightStrengthVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_R_LightStrengthVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_SetFilterMode(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_SetFilterMode(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_SetFilterMode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_SetFilterColor(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_SetFilterColor(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_SetFilterColor(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_SetFilterBrightness(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_SetFilterBrightness(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_SetFilterBrightness(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_MoveVars(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_MoveVars(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_MoveVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_MissingTexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_MissingTexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_MissingTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_NoTexture(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_NoTexture(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_NoTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		R_FillAddress_DT_Initialize(g_MirrorEngineDLLInfo, g_EngineDLLInfo);
-	}
-	else
-	{
-		R_FillAddress_DT_Initialize(g_EngineDLLInfo, g_EngineDLLInfo);
-	}
+	R_FillAddress_DT_Initialize(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 }
 
 static hook_t* g_phook_GL_Init = NULL;
@@ -11773,35 +10890,43 @@ void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const
 		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
 		if (pFound)
 		{
-			typedef struct
+			typedef struct RedirectBlobEngineOpenGLTexture_SearchContext_s
 			{
 				const mh_dll_info_t& DllInfo;
 				const mh_dll_info_t& RealDllInfo;
-				bool bFoundWriteBack;
-				bool bFoundGL_Bind;
-			}RedirectBlobEngineOpenGLTextureSearchContext;
+				bool bFoundWriteBack{};
+				bool bFoundGL_Bind{};
+			}RedirectBlobEngineOpenGLTexture_SearchContext;
 
-			RedirectBlobEngineOpenGLTextureSearchContext ctx = { DllInfo, RealDllInfo };
+			RedirectBlobEngineOpenGLTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
 			g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 				auto pinst = (cs_insn*)inst;
-				auto ctx = (RedirectBlobEngineOpenGLTextureSearchContext*)context;
+				auto ctx = (RedirectBlobEngineOpenGLTexture_SearchContext*)context;
 
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp == (PUCHAR)allocated_textures &&
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
 				{
-					ctx->bFoundWriteBack = true;
+					auto ConvertedImm = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+
+					if (ConvertedImm == allocated_textures)
+					{
+						ctx->bFoundWriteBack = true;
+					}
 				}
 
-				if (address[0] == 0xE8 &&
-					(PUCHAR)pinst->detail->x86.operands[0].imm == (PUCHAR)gPrivateFuncs.GL_Bind)
+				if (address[0] == 0xE8)
 				{
-					ctx->bFoundGL_Bind = true;
+					auto ConvertedImm = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+
+					if (ConvertedImm == gPrivateFuncs.GL_Bind)
+					{
+						ctx->bFoundGL_Bind = true;
+					}
 				}
 
 				if (ctx->bFoundWriteBack || ctx->bFoundGL_Bind)
@@ -11878,11 +11003,14 @@ void R_PatchResetLatched(const mh_dll_info_t &DllInfo, const mh_dll_info_t& Real
 				if (ctx->bFoundMov308h && address[0] == 0xE8 && instLen == 5)
 				{
 					ctx->bFoundResetLatched = true;
-					gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))GetCallAddress(address);
 
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+					PVOID R_ResetLatched_VA = GetCallAddress(address);
 
-					g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, R_ResetLatched_Patched, NULL);
+					gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))ConvertDllInfoSpace(R_ResetLatched_VA, ctx->DllInfo, ctx->RealDllInfo);
+
+					auto Call_R_ResetLatched_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+					g_pMetaHookAPI->InlinePatchRedirectBranch(Call_R_ResetLatched_RealDllBased, R_ResetLatched_Patched, NULL);
 
 					return TRUE;
 				}
@@ -11973,7 +11101,7 @@ void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortal
 	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
 	PUCHAR SearchLimit = SearchBegin + DllInfo.TextSize;
 
-	typedef struct
+	typedef struct ClientPortalManager_GetOriginalSurfaceTexture_SearchContext_s
 	{
 		const mh_dll_info_t& DllInfo;
 		const mh_dll_info_t& RealDllInfo;
@@ -11990,6 +11118,7 @@ void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortal
 
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (ClientPortalManager_GetOriginalSurfaceTexture_SearchContext*)context;
+
 				if (address[0] == 0xE8)
 				{
 					gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))
@@ -12053,11 +11182,11 @@ void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t&
 .text:1004F886 8B 44 24 60                                         mov     eax, [esp+58h+arg_4]
 	*/
 	const char pattern[] = "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x2A\x44\x24\x2A\x2A\x2A\x24\x2A\x2A\x2A\x24\x2A\x2A\x44\x24\x2A\xF3\x0F";
-	ULONG_PTR addr = (ULONG_PTR)Search_Pattern(pattern, DllInfo);
+	auto addr = Search_Pattern(pattern, DllInfo);
 
 	Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
 
-	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))ConvertDllInfoSpace((PVOID)addr, DllInfo, RealDllInfo);
+	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
 }
 
 void Client_FillAddress_RenderingPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -12077,7 +11206,7 @@ void Client_FillAddress_RenderingPortals(const mh_dll_info_t& DllInfo, const mh_
 	auto addr = Search_Pattern(pattern, DllInfo);
 	Sig_AddrNotFound(g_bRenderingPortals);
 
-	typedef struct
+	typedef struct RenderingPortals_SearchContext_s
 	{
 		const mh_dll_info_t& DllInfo;
 		const mh_dll_info_t& RealDllInfo;
@@ -12098,7 +11227,7 @@ void Client_FillAddress_RenderingPortals(const mh_dll_info_t& DllInfo, const mh_
 			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 			pinst->detail->x86.operands[1].imm == 1)
 		{
-			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))pinst->detail->x86.operands[0].mem.disp;
+			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			return TRUE;
 		}
 
@@ -12140,7 +11269,7 @@ void Client_FillAddress_WaterLevel(const mh_dll_info_t& DllInfo, const mh_dll_in
 .text:1007238E 83 BE AC 00 00 00 01                                cmp     dword ptr [esi+0ACh], 1
 				*/
 	const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
-	ULONG_PTR addr = (ULONG_PTR)Search_Pattern(pattern, DllInfo);
+	auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
 	Sig_AddrNotFound(g_iWaterLevel);
 
 	auto g_iWaterLevel_VA = *(PVOID*)(addr + 1);
@@ -12153,7 +11282,9 @@ void Client_FillAddress_WaterLevel(const mh_dll_info_t& DllInfo, const mh_dll_in
 void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
+
 	PVOID addr = Search_Pattern(pattern, DllInfo);
+
 	Sig_AddrNotFound(g_iFogColor);
 
 	typedef struct V_CalcNormalRefdef_SearchContext_s
@@ -12166,7 +11297,7 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	V_CalcNormalRefdef_SearchContext ctx = { DllInfo, RealDllInfo };
 
-	g_pMetaHookAPI->DisasmRanges((void*)addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+	g_pMetaHookAPI->DisasmRanges(addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 		auto ctx = (V_CalcNormalRefdef_SearchContext*)context;
 		auto pinst = (cs_insn*)inst;
@@ -12195,7 +11326,7 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 		return FALSE;
 
-		}, 0, &ctx);
+	}, 0, &ctx);
 
 	if (ctx.iNumCandidates >= 5 &&
 		ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
@@ -12265,7 +11396,7 @@ void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t &DllInfo, const mh_
 
 		CL_IsThirdPerson_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)CL_IsThirdPerson, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(CL_IsThirdPerson, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto ctx = (CL_IsThirdPerson_SearchContext*)context;
 			auto pinst = (cs_insn*)inst;

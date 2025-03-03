@@ -304,7 +304,7 @@ int HUD_Redraw(float time, int intermission)
 
 void EngineStudioAPI_FillAddress_GetCurrentEntity(struct engine_studio_api_s* pstudio, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID GetCurrentEntity = ConvertDllInfoSpace(pstudio->GetTimes, RealDllInfo, DllInfo);
+	PVOID GetCurrentEntity = ConvertDllInfoSpace(pstudio->GetCurrentEntity, RealDllInfo, DllInfo);
 
 	if (!GetCurrentEntity)
 	{
@@ -487,8 +487,8 @@ void EngineStudioAPI_FillAddress_SetRenderModel(struct engine_studio_api_s* pstu
 
 	g_pMetaHookAPI->DisasmRanges((void*)SetRenderModel, 0x10, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			auto ctx = (SetRenderModel_SearchContext*)context;
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (SetRenderModel_SearchContext*)context;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -527,7 +527,7 @@ void EngineStudioAPI_FillAddress_StudioSetHeader(struct engine_studio_api_s* pst
 	}
 
 	{
-		typedef struct
+		typedef struct StudioSetHeader_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
@@ -1303,7 +1303,7 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 		PVOID* vftable = *(PVOID**)g_pGameStudioRenderer;
 
 		{
-			typedef struct
+			typedef struct StudioDrawModel_SearchContext_s
 			{
 				const mh_dll_info_t& DllInfo;
 				const mh_dll_info_t& RealDllInfo;
@@ -1352,7 +1352,7 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 					return TRUE;
 
 				return FALSE;
-				}, 0, NULL);
+			}, 0, &ctx);
 
 			if (gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index == 0)
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = 2;
@@ -1510,7 +1510,7 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 			/*
 				Search for GameStudioRenderer::_StudioDrawPlayer, from GameStudioRenderer::StudioDrawPlayer
 			*/
-			g_pMetaHookAPI->DisasmRanges((void *)GameStudioRenderer_StudioDrawPlayerThunk, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			g_pMetaHookAPI->DisasmRanges(GameStudioRenderer_StudioDrawPlayerThunk, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 				auto pinst = (cs_insn*)inst;
 
@@ -1756,30 +1756,41 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 
 			Sig_AddrNotFound(R_StudioRenderModel);
 
-			gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))GetCallAddress((PUCHAR)addr + 9);
+			PVOID R_StudioRenderModel_VA = GetCallAddress((PUCHAR)addr + 9);
+			gPrivateFuncs.R_StudioRenderModel = (decltype(gPrivateFuncs.R_StudioRenderModel))ConvertDllInfoSpace(R_StudioRenderModel_VA, DllInfo, RealDllInfo);
 
 			Sig_FuncNotFound(R_StudioRenderModel);
 
-			g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_StudioRenderModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			typedef struct R_StudioRenderModel_SearchContext_s
+			{
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+			}R_StudioRenderModel_SearchContext;
+
+			R_StudioRenderModel_SearchContext ctx = { DllInfo, RealDllInfo };
+
+			g_pMetaHookAPI->DisasmRanges(R_StudioRenderModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_StudioRenderModel_SearchContext*)context;
+
+				if (address[0] == 0xE8 && instLen == 5)
 				{
-					auto pinst = (cs_insn*)inst;
+					gPrivateFuncs.R_StudioRenderFinal = (decltype(gPrivateFuncs.R_StudioRenderFinal))
+						ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+				}
 
-					if (address[0] == 0xE8 && instLen == 5)
-					{
-						gPrivateFuncs.R_StudioRenderFinal = (decltype(gPrivateFuncs.R_StudioRenderFinal))pinst->detail->x86.operands[0].imm;
-					}
+				if (gPrivateFuncs.R_StudioRenderFinal)
+					return TRUE;
 
-					if (gPrivateFuncs.R_StudioRenderFinal)
-						return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-					if (address[0] == 0xCC)
-						return TRUE;
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, 0, NULL);
+				return FALSE;
+			}, 0, &ctx);
 
 			Sig_FuncNotFound(R_StudioRenderFinal);
 		}
@@ -1821,8 +1832,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 				return FALSE;
 				});
 
-			if (R_StudioSetupBones_VA)
-				gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))ConvertDllInfoSpace(R_StudioSetupBones_VA, DllInfo, RealDllInfo);
+			gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))ConvertDllInfoSpace(R_StudioSetupBones_VA, DllInfo, RealDllInfo);
 
 			Sig_FuncNotFound(R_StudioSetupBones);
 		}
@@ -1832,7 +1842,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 			auto addr = Search_Pattern(pattern, DllInfo);
 			Sig_AddrNotFound(R_StudioMergeBones);
 
-			typedef struct
+			typedef struct R_StudioMergeBones_SearchContext_s
 			{
 				const mh_dll_info_t& DllInfo;
 				const mh_dll_info_t& RealDllInfo;
@@ -1840,52 +1850,56 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 
 			R_StudioMergeBones_SearchContext ctx = { DllInfo, RealDllInfo };
 
-			g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_StudioMergeBones_SearchContext*)context;
+
+				if (address[0] == 0xE8 && instLen == 5)
 				{
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (R_StudioMergeBones_SearchContext*)context;
-
-					if (address[0] == 0xE8 && instLen == 5)
+					if (!gPrivateFuncs.R_StudioMergeBones)
 					{
-						if (!gPrivateFuncs.R_StudioMergeBones)
-						{
-							gPrivateFuncs.R_StudioMergeBones = (decltype(gPrivateFuncs.R_StudioMergeBones))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-						}
-						else if (gPrivateFuncs.R_StudioMergeBones && !gPrivateFuncs.R_StudioSaveBones)
-						{
-							PVOID candidate = (decltype(candidate))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+						gPrivateFuncs.R_StudioMergeBones = (decltype(gPrivateFuncs.R_StudioMergeBones))
+							ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+					}
+					else if (gPrivateFuncs.R_StudioMergeBones && !gPrivateFuncs.R_StudioSaveBones)
+					{
+						PVOID candidate = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 
-							if (candidate != gPrivateFuncs.R_StudioSetupBones)
-							{
-								gPrivateFuncs.R_StudioSaveBones = (decltype(gPrivateFuncs.R_StudioSaveBones))candidate;
-							}
+						if (candidate != gPrivateFuncs.R_StudioSetupBones)
+						{
+							gPrivateFuncs.R_StudioSaveBones = (decltype(gPrivateFuncs.R_StudioSaveBones))candidate;
 						}
 					}
+				}
 
-					if (gPrivateFuncs.R_StudioMergeBones && gPrivateFuncs.R_StudioSaveBones)
-						return TRUE;
+				if (gPrivateFuncs.R_StudioMergeBones && gPrivateFuncs.R_StudioSaveBones)
+					return TRUE;
 
-					if (address[0] == 0xCC)
-						return TRUE;
+				if (address[0] == 0xCC)
+					return TRUE;
 
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-					return FALSE;
-				}, 0, &ctx);
+				return FALSE;
+			}, 0, &ctx);
+
+			Sig_FuncNotFound(R_StudioSaveBones);
+			Sig_FuncNotFound(R_StudioMergeBones);
 		}
-	}
-	else
-	{
-		Sys_Error("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 }
 
-void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 {
 	ClientStudio_FillAddress_StudioDrawPlayer(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	ClientStudio_FillAddress_StudioDrawModel(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	ClientStudio_FillAddress_EngineStudioDrawPlayer(ppinterface, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+
+	if(!g_pGameStudioRenderer && !gPrivateFuncs.R_StudioRenderModel)
+	{
+		Sys_Error("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
+	}
 }
 
 void ClientStudio_InstallHooks()
@@ -1909,7 +1923,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
 
-	EngineStudioAPI_FillAddress(pstudio, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	EngineStudioAPI_FillAddress(pstudio, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 	EngineStudioAPI_InstalHooks();
 
 	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
@@ -1928,7 +1942,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
 
-	ClientStudio_FillAddress(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	ClientStudio_FillAddress(ppinterface);
 	ClientStudio_InstallHooks();
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
