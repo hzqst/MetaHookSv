@@ -10557,7 +10557,7 @@ void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(detTexSupported);
 }
 
-void Engine_FillAddress(void)
+void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
 
@@ -10566,7 +10566,7 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
 	}
 
-	Engine_FillAddress_EngineSurface(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_EngineSurface(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
@@ -10574,183 +10574,183 @@ void Engine_FillAddress(void)
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
-	Engine_FillAddress_HasOfficialFBOSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_HasOfficialFBOSupport(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_HasOfficialGLTexAllocSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_HasOfficialGLTexAllocSupport(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_Init(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_Init(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_PolyBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_PolyBlend(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_S_ExtraUpdate(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_S_ExtraUpdate(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_Bind(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_Bind(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_SelectTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_SelectTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_LoadTexture2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_LoadTexture2(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_CullBox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_CullBox(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_SetupFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_SetupFrame(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_SetupGL(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_SetupGL(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderView(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_V_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_V_RenderView(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RenderScene(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderScene(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_NewMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_NewMap(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_BuildLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_BuildLightmaps(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_BuildLightMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_BuildLightMap(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_AddDynamicLights(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AddDynamicLights(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_DisableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_DisableMultitexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_EnableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EnableMultitexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawSequentialPoly(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawSequentialPoly(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_TextureAnimation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_TextureAnimation(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawBrushModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RecursiveWorldNode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RecursiveWorldNode(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawWorld(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawWorld(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawViewModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawViewModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_MarkLeaves(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_MarkLeaves(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_BeginRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_BeginRendering(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_EndRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EndRendering(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_EmitWaterPolys(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_EmitWaterPolys(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_VID_UpdateWindowVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_VID_UpdateWindowVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_PointInLeaf(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_PointInLeaf(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawTEntitiesOnList(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawTEntitiesOnList(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_BuildGammaTable(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_BuildGammaTable(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawParticles(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawParticles(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_AllocDlight(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_AllocDlight(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_GLStudioDrawPoints(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_GLStudioDrawPoints(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_StudioLighting(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioLighting(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_StudioChrome(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioChrome(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_LightLambert(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightLambert(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_StudioSetupSkin(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioSetupSkin(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Cache_Alloc(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Cache_Alloc(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Draw_MiptexTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Draw_MiptexTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Draw_DecalTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Draw_DecalTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawSpriteModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_LightStrength(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightStrength(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RotateForEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RotateForEntity(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_GlowBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_GlowBlend(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_SCR_BeginLoadingPlaque(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SCR_BeginLoadingPlaque(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Host_IsSinglePlayerGame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Host_IsSinglePlayerGame(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_UnloadSpriteTextures(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_UnloadSpriteTextures(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_LoadSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadSpriteModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_LoadSpriteFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadSpriteFrame(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_AddTEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AddTEntity(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Hunk_AllocName(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Hunk_AllocName(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_EndRenderingVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EndRenderingVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_VisEdicts(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_VisEdicts(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_AllocTransObjectsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AllocTransObjectsVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RenderFinalFog(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderFinalFog(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DrawTEntitiesOnListVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawTEntitiesOnListVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RecursiveWorldNodeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RecursiveWorldNodeVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_LoadSkybox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LoadSkybox(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_FilterMinMaxVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_FilterMinMaxVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_ScrFov(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_ScrFov(DllInfo, RealDllInfo);
 
 	//Got CL_IsDevOverviewMode, CL_SetDevOverView and refdef here
-	Engine_FillAddress_RenderSceneVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_RenderSceneVars(DllInfo, RealDllInfo);
 
 	//Got ClientDLL_DrawNormalTriangles_VA, cl_waterlevel and gDevOverview here
-	Engine_FillAddress_RenderSceneVars2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_RenderSceneVars2(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_IsDevOverviewModeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_IsDevOverviewModeVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_DecalInit(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DecalInit(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_RenderDynamicLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderDynamicLightmaps(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_StudioChromeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioChromeVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_ViewEntityVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_ViewEntityVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_ReallocateDynamicData(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_ReallocateDynamicData(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_TempEntsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_TempEntsVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_WaterVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_WaterVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_ModKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_ModKnown(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_NumKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_NumKnown(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_LoadStudioModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadStudioModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_LoadBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadBrushModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Mod_LoadModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_BasePalette(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_BasePalette(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_LightStrengthVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightStrengthVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_SetFilterMode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterMode(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_SetFilterColor(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterColor(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_SetFilterBrightness(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterBrightness(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_MoveVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_MoveVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_MissingTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_MissingTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_NoTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_NoTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_DT_Initialize(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_DT_Initialize(DllInfo, RealDllInfo);
 }
 
 static hook_t* g_phook_GL_Init = NULL;

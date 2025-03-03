@@ -201,7 +201,7 @@ void Client_FillAddress(void);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);
-void Engine_FillAddress(void);
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHooks(void);

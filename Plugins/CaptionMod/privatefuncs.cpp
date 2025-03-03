@@ -90,7 +90,7 @@ bool SCR_IsLoadingVisible(void)
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
-void Engine_FillAddress(void)
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{

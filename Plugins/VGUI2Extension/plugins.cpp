@@ -11,25 +11,13 @@ IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25 *g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
-PVOID g_dwEngineBase = NULL;
-DWORD g_dwEngineSize = 0;
-PVOID g_dwEngineTextBase = NULL;
-DWORD g_dwEngineTextSize = 0;
-PVOID g_dwEngineDataBase = NULL;
-DWORD g_dwEngineDataSize = 0;
-PVOID g_dwEngineRdataBase = NULL;
-DWORD g_dwEngineRdataSize = 0;
 DWORD g_dwEngineBuildnum = 0;
-
 HMODULE g_hClientModule = NULL;
-PVOID g_dwClientBase = 0;
-DWORD g_dwClientSize = 0;
-PVOID g_dwClientTextBase = 0;
-DWORD g_dwClientTextSize = 0;
-PVOID g_dwClientDataBase = 0;
-DWORD g_dwClientDataSize = 0;
-PVOID g_dwClientRdataBase = 0;
-DWORD g_dwClientRdataSize = 0;
+
+mh_dll_info_t g_EngineDLLInfo = {0};
+mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
+mh_dll_info_t g_ClientDLLInfo = { 0 };
+mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
@@ -75,11 +63,22 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
-	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
-	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
-	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
-	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
-	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
+	
+	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
+	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
+	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
+	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
+	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
+
+	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
+	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
+
+	if (g_MirrorEngineDLLInfo.ImageBase)
+	{
+		g_MirrorEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirrorEngineDLLInfo.TextSize);
+		g_MirrorEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirrorEngineDLLInfo.DataSize);
+		g_MirrorEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirrorEngineDLLInfo.RdataSize);
+	}
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
@@ -90,7 +89,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	SDL2_FillAddress();
 
-	Engine_FillAddress();
+	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	Engine_InstallHooks();
 

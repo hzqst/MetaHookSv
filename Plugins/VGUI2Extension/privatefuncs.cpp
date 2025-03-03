@@ -592,7 +592,7 @@ PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase
 	return ctx.KeyValues_vftable;
 }
 
-void Engine_FillAddress(void)
+void Engine_FillAddress_RealTime(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
@@ -612,211 +612,112 @@ void Engine_FillAddress(void)
 
 		realtime = *(decltype(realtime)*)(addr + 6);
 	}
+}
+
+void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	/*
+		//Global pointers that link into engine vars
+		int *cl_viewentity = NULL;
+	*/
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
+		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_SVENGINE);
 		Sig_AddrNotFound(cl_viewentity);
-		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 10);
+		PVOID cl_viewentity_VA = *(PVOID*)(addr + 10);
+		cl_viewentity = (decltype(cl_viewentity))ConvertDllInfoSpace(cl_viewentity_VA, DllInfo, RealDllInfo);
 	}
 	else
 	{
 #define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
-		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_GOLDSRC);
+		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_GOLDSRC);
 		Sig_AddrNotFound(cl_viewentity);
 
-		typedef struct
+		typedef struct CL_ViewEntity_SearchContext_s
 		{
-			bool found_cmp_200;
-		}CL_ViewEntity_ctx;
+			const mh_dll_info_t& DllInfo;
+			bool found_cmp_200{};
+		} CL_ViewEntity_SearchContext;
 
-		CL_ViewEntity_ctx ctx = { 0 };
+		CL_ViewEntity_SearchContext ctx = { DllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((PVOID)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges((void*)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CL_ViewEntity_SearchContext*)context;
+
+			if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0x200)
 			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (CL_ViewEntity_ctx*)context;
+				ctx->found_cmp_200 = true;
+			}
 
-				if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0x200)
-				{
-					ctx->found_cmp_200 = true;
-				}
+			if (ctx->found_cmp_200)
+				return TRUE;
 
-				if (ctx->found_cmp_200)
-					return TRUE;
+			if (address[0] == 0xCC)
+				return TRUE;
 
-				if (address[0] == 0xCC)
-					return TRUE;
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, & ctx);
+			return FALSE;
+			}, 0, &ctx);
 
 		if (ctx.found_cmp_200)
 		{
-			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 1);
+			PVOID cl_viewentity_VA = *(PVOID*)(addr + 1);
+			cl_viewentity = (decltype(cl_viewentity))ConvertDllInfoSpace(cl_viewentity_VA, DllInfo, RealDllInfo);
 		}
-		Sig_VarNotFound(cl_viewentity);
-
-#if 0
-#define CL_VIEWENTITY_SIG_HL25 "\xE8\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xC3"
-		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_HL25);
-		Sig_AddrNotFound(cl_viewentity);
-		cl_viewentity = (decltype(cl_viewentity))(addr + 5);
-	}
-	else
-	{
-#define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
-		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
-		Sig_AddrNotFound(cl_viewentity);
-		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 2);
-#endif
 	}
 
+	Sig_VarNotFound(cl_viewentity);
+}
+
+void Engine_FillAddress_ListenerOrigin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-#define LISTENER_ORIGIN_SIG_SVENGINE "\xD9\x54\x24\x2A\xD9\x1C\x24\x68\x2A\x2A\x2A\x2A\x50\x6A\x00\x2A\xE8"
-		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_SVENGINE);
+		const char pattern[] = "\xD9\x54\x24\x2A\xD9\x1C\x24\x68\x2A\x2A\x2A\x2A\x50\x6A\x00\x2A\xE8";
+		DWORD addr = (DWORD)Search_Pattern(pattern, DllInfo);
 		Sig_AddrNotFound(listener_origin);
-		listener_origin = *(decltype(listener_origin) *)(addr + 8);
+		listener_origin = *(decltype(listener_origin)*)(addr + 8);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-#define LISTENER_ORIGIN_SIG_HL25 "\xF3\x0F\x10\x00\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x10\x40\x04"
-		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_HL25);
+		const char pattern[] = "\xF3\x0F\x10\x00\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x10\x40\x04";
+		DWORD addr = (DWORD)Search_Pattern(pattern, DllInfo);
 		Sig_AddrNotFound(listener_origin);
 		listener_origin = (decltype(listener_origin))(addr + 4);
 	}
 	else
 	{
-#define LISTENER_ORIGIN_SIG_NEW "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xC8"
-		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_NEW);
+		const char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xC8";
+		DWORD addr = (DWORD)Search_Pattern(pattern, DllInfo);
 		Sig_AddrNotFound(listener_origin);
-		listener_origin = *(decltype(listener_origin) *)(addr + 2);
+		listener_origin = *(decltype(listener_origin)*)(addr + 2);
 	}
+}
 
-#if 0
+void Engine_FillAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		const char sigs1[] = "User Token 2";
-		auto UserToken2_String = Search_Pattern_Data(sigs1);
-		if (!UserToken2_String)
-			UserToken2_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(UserToken2_String);
-		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8D\x84\x24";
-		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
-		auto UserToken2_PushString = Search_Pattern(pattern);
-		Sig_VarNotFound(UserToken2_PushString);
-
-		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
-			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
-
-			//.text : 01D4DA50 81 EC 90 04 00 00                                            sub     esp, 490h
-			//.text : 01D4DA56 A1 E8 F0 ED 01                                               mov     eax, ___security_cookie
-			//.text : 01D4DA5B 33 C4                                                        xor     eax, esp
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC &&
-				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00 &&
-				Candidate[6] == 0xA1 &&
-				Candidate[11] == 0x33 &&
-				Candidate[12] == 0xC4)
-				return TRUE;
-
-			return FALSE;
-		});
-		Sig_FuncNotFound(FileSystem_SetGameDirectory);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		const char sigs1[] = "User Token 2";
-		auto UserToken2_String = Search_Pattern_Data(sigs1);
-		if (!UserToken2_String)
-			UserToken2_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(UserToken2_String);
-		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
-		auto UserToken2_PushString = Search_Pattern(pattern);
-		Sig_VarNotFound(UserToken2_PushString);
-
-		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
-			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
-
-			//.text	: 101C8B30 55												push    ebp
-			//.text : 101C8B31 8B EC											mov     ebp, esp
-			//.text : 101C8B33 81 EC 10 04 00 00								sub     esp, 410h xor     eax, ebp
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC &&
-				Candidate[3] == 0x81 &&
-				Candidate[4] == 0xEC &&
-				Candidate[7] == 0x00 &&
-				Candidate[8] == 0x00)
-				return TRUE;
-
-			return FALSE;
-		});
-		Sig_FuncNotFound(FileSystem_SetGameDirectory);
-	}
-	else
-	{
-		const char sigs1[] = "User Token 2";
-		auto UserToken2_String = Search_Pattern_Data(sigs1);
-		if (!UserToken2_String)
-			UserToken2_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(UserToken2_String);
-		char pattern[] = "\x51\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
-		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
-		auto UserToken2_PushString = Search_Pattern(pattern);
-		Sig_VarNotFound(UserToken2_PushString);
-
-		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
-			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
-
-			//.text : 01D3B150 55                                                  push    ebp
-			//.text : 01D3B151 8B EC                                               mov     ebp, esp
-			//.text : 01D3B153 81 EC 08 04 00 00                                   sub     esp, 408h
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC &&
-				Candidate[3] == 0x81 &&
-				Candidate[4] == 0xEC &&
-				Candidate[7] == 0x00 &&
-				Candidate[8] == 0x00)
-				return TRUE;
-
-			//.text:01D3BB30 81 EC 8C 04 00 00                                   sub     esp, 48Ch
-			//.text : 01D3BB36 8B 0D C8 0A 08 02                                   mov     ecx, dword_2080AC8
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC)
-				return TRUE;
-
-
-			return FALSE;
-		});
-		Sig_FuncNotFound(FileSystem_SetGameDirectory);
-	}
-#endif
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		const char sigs1[] = "VClientVGUI001";
-		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
+		const char sigs[] = "VClientVGUI001";
+		auto VClientVGUI001_String = Search_Pattern_Data(sigs, DllInfo);
 		if (!VClientVGUI001_String)
-			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
+			VClientVGUI001_String = Search_Pattern_Rdata(sigs, DllInfo);
 		Sig_VarNotFound(VClientVGUI001_String);
 		char pattern[] = "\x8B\x2A\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
-		auto VClientVGUI001_PushString = Search_Pattern(pattern);
+		*(DWORD*)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		auto VClientVGUI001_PushString = Search_Pattern(pattern, DllInfo);
 		Sig_VarNotFound(VClientVGUI001_PushString);
 
 		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
@@ -824,6 +725,8 @@ void Engine_FillAddress(void)
 		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
 
 		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 15;
+
+		address = ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
 
 		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
@@ -837,29 +740,32 @@ void Engine_FillAddress(void)
 			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
 		Sig_VarNotFound(VClientVGUI001_String);
 		char pattern[] = "\x8B\x4B\x1C\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		*(DWORD*)(pattern + 6) = (DWORD)VClientVGUI001_String;
 		auto VClientVGUI001_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(VClientVGUI001_PushString);
 
-/*
-		if ( !dword_1E67088 )
-		__debugbreak();
-		if ( ClientFactory )
-		{
-			factory = VGUIClient001_CreateInterface(hModule);
-			if ( factory )
-			{
-				v4[v4[7]++ + 1] = factory;
-				dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
-			}
-		}
-*/
+		/*
+				if ( !dword_1E67088 )
+				__debugbreak();
+				if ( ClientFactory )
+				{
+					factory = VGUIClient001_CreateInterface(hModule);
+					if ( factory )
+					{
+						v4[v4[7]++ + 1] = factory;
+						dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
+					}
+				}
+		*/
 
 		const char sigs2[] = "\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0\x74\x28";
+
 		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
 		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
 
 		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
+
+		address = ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
 
 		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
@@ -873,7 +779,7 @@ void Engine_FillAddress(void)
 			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
 		Sig_VarNotFound(VClientVGUI001_String);
 		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD *)(pattern + 3) = (DWORD)VClientVGUI001_String;
+		*(DWORD*)(pattern + 3) = (DWORD)VClientVGUI001_String;
 		auto VClientVGUI001_PushString = Search_Pattern(pattern);
 		if (!VClientVGUI001_PushString)
 		{
@@ -885,7 +791,7 @@ void Engine_FillAddress(void)
 
 		/*
 		if ( !dword_1E67088 )
-		__debugbreak();
+			__debugbreak();
 		if ( ClientFactory )
 		{
 			factory = VGUIClient001_CreateInterface(hModule);
@@ -903,9 +809,11 @@ void Engine_FillAddress(void)
 		{
 			PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
 
+			address = ConvertDllInfoSpace(address, DllInfo, RealDllInfo);
+
 			gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
-			g_pMetaHookAPI->InlinePatchRedirectBranch(address , VGUIClient001_CreateInterface, NULL);
+			g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
 		}
 		else
 		{
@@ -941,6 +849,15 @@ void Engine_FillAddress(void)
 #endif
 		}
 	}
+}
+
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	Engine_FillAddress_RealTime(DllInfo, RealDllInfo);
+	Engine_FillAddress_CL_ViewEntityVars(DllInfo, RealDllInfo);
+	Engine_FillAddress_ListenerOrigin(DllInfo, RealDllInfo);
+	Engine_FillAddress_VGUIClient001(DllInfo, RealDllInfo);
+	
 
 	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))VGUI2_FindPanelInit(g_dwEngineTextBase, g_dwEngineTextSize);
 	Sig_FuncNotFound(EngineVGUI2_Panel_Init);
@@ -1077,14 +994,6 @@ void Engine_FillAddress(void)
 							else if (address[0] == 0xFF && address[1] == 0x15)
 							{
 								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR**)(address + 2);
-
-								//PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-								//int rva = pfnNewV_strncpy - (address + 5);
-
-								//char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
-								//*(int*)(trampoline + 1) = rva;
-
-								//g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
 								g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
 								return TRUE;
 							}
@@ -1195,15 +1104,6 @@ void Engine_FillAddress(void)
 						}
 						else if (address[0] == 0xFF && address[1] == 0x15)
 						{
-							//gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR **)(address + 2);
-							
-							//PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-							//int rva = pfnNewV_strncpy - (address + 5);
-
-							//char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
-							//*(int*)(trampoline + 1) = rva;
-
-							//g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
 							g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
 							return TRUE;
 						}

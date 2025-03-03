@@ -171,9 +171,8 @@ typedef struct
 extern private_funcs_t gPrivateFuncs;
 
 
-void Engine_FillAddress();
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();
-
 void Engine_UninstallHooks();
 void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
