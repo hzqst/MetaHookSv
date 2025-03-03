@@ -171,16 +171,16 @@ typedef struct
 extern private_funcs_t gPrivateFuncs;
 
 
-void R_FillAddress(void);
-void R_InstallHooks(void);
+void Engine_FillAddress();
+void Engine_InstallHooks();
 
-void R_UninstallHooksForEngineStudio(void);
-void R_UninstallHooksForEngineDLL(void);
-void R_UninstallHooksForClientStudio(void);
+void Engine_UninstallHooks();
+void ClientStudio_UninstallHooks();
+void EngineStudio_UninstallHooks();
 void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
-void Client_FillAddress(void);
+void Client_FillAddress();
 void Client_InstallHooks();
 void Client_UninstallHooks();
 

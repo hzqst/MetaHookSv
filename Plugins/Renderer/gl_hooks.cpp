@@ -320,7 +320,7 @@
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
-void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
 
@@ -422,7 +422,7 @@ void R_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info
 	}
 }
 
-void R_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char sigs[] = "FBO backbuffer rendering disabled";
 	auto FBO_String = Search_Pattern_Data(sigs, DllInfo);
@@ -434,7 +434,7 @@ void R_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo, const mh_
 	}
 }
 
-void R_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xA8\x16\x00\x00";
 	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
@@ -498,7 +498,7 @@ void R_FillAddress_HasOfficialGLTexAllocSupport(const mh_dll_info_t& DllInfo, co
 	}
 }
 
-void R_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_Init)
 		return;
@@ -613,7 +613,7 @@ void R_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Re
 	Sig_FuncNotFound(GL_Init);
 }
 
-void R_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_PolyBlend)
 		return;
@@ -646,7 +646,7 @@ void R_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	Sig_FuncNotFound(R_PolyBlend);
 }
 
-void R_FillAddress_S_ExtraUpdate(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_S_ExtraUpdate(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.S_ExtraUpdate)
 		return;
@@ -679,7 +679,7 @@ void R_FillAddress_S_ExtraUpdate(const mh_dll_info_t& DllInfo, const mh_dll_info
 	Sig_FuncNotFound(S_ExtraUpdate);
 }
 
-void R_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_Bind)
 		return;
@@ -758,7 +758,7 @@ void R_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Re
 	Sig_VarNotFound(currenttexture);
 }
 
-void R_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_SelectTexture)
 		return;
@@ -835,7 +835,7 @@ void R_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_VarNotFound(oldtarget);
 }
 
-void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_LoadTexture2)
 		return;
@@ -1182,7 +1182,7 @@ void R_FillAddress_GL_LoadTexture2(const mh_dll_info_t& DllInfo, const mh_dll_in
 	}
 }
 
-void R_FillAddress_R_CullBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_CullBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_CullBox)
 		return;
@@ -1295,7 +1295,7 @@ void R_FillAddress_R_CullBox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 	Sig_VarNotFound(vright);
 }
 
-void R_FillAddress_R_SetupFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_SetupFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_SetupFrame)
 		return;
@@ -1391,7 +1391,7 @@ void R_FillAddress_R_SetupFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_FuncNotFound(R_AnimateLight);
 }
 
-void R_FillAddress_R_SetupGL(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_SetupGL(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_SetupGL)
 		return;
@@ -1612,7 +1612,7 @@ void R_FillAddress_R_SetupGL(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 		Sig_VarNotFound(vertical_fov_SvEngine);
 }
 
-void R_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_RenderView_SvEngine || gPrivateFuncs.R_RenderView)
 		return;
@@ -1747,20 +1747,16 @@ void R_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_VarNotFound(c_brush_polys);
 }
 
-void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.V_RenderView)
 		return;
 
 	PVOID V_RenderView_VA = 0;
-	ULONG V_RenderView_RVA = 0;
 
-	ULONG_PTR R_RenderView_VA = (gPrivateFuncs.R_RenderView_SvEngine) ? (ULONG_PTR)gPrivateFuncs.R_RenderView_SvEngine : (ULONG_PTR)gPrivateFuncs.R_RenderView;
-	ULONG R_RenderView_RVA = 0;
-
-	//Convert R_RenderView_VA to DllInfo-based.
-	Convert_VA_to_RVA(R_RenderView, RealDllInfo);
-	Convert_RVA_to_VA(R_RenderView, DllInfo);
+	PVOID R_RenderView_VA = ConvertDllInfoSpace(
+		(gPrivateFuncs.R_RenderView_SvEngine) ? (PVOID)gPrivateFuncs.R_RenderView_SvEngine : (PVOID)gPrivateFuncs.R_RenderView,
+		RealDllInfo, DllInfo);
 
 	{
 		const char pattern[] = "\x68\x00\x40\x00\x00\xFF";
@@ -1777,7 +1773,7 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 			{
 				typedef struct V_RenderView_SearchContext_s
 				{
-					ULONG_PTR R_RenderView_VA;
+					PVOID R_RenderView_VA;
 					bool bFoundCallRenderView{};
 				}V_RenderView_SearchContext;
 
@@ -1790,9 +1786,9 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 					if (address[0] == 0xE8)
 					{
-						ULONG_PTR target = (decltype(target))pinst->detail->x86.operands[0].imm;
+						PVOID callTarget = (PVOID)pinst->detail->x86.operands[0].imm;
 
-						if (target == ctx->R_RenderView_VA)
+						if (callTarget == ctx->R_RenderView_VA)
 						{
 							ctx->bFoundCallRenderView = true;
 							return TRUE;
@@ -1830,9 +1826,9 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 							return TRUE;
 
 						return FALSE;
-						});
+					});
 
-					Convert_VA_to_RVA(V_RenderView, DllInfo);
+					gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))ConvertDllInfoSpace(V_RenderView_VA, DllInfo, RealDllInfo);
 
 					break;
 				}
@@ -1846,17 +1842,17 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 		}
 	}
 
-	if (!V_RenderView_RVA)
+	if (!gPrivateFuncs.V_RenderView)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			V_RenderView_VA = (PVOID)Search_Pattern(V_RENDERVIEW_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(V_RenderView, DllInfo);
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))ConvertDllInfoSpace(V_RenderView_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			V_RenderView_VA = (PVOID)Search_Pattern(V_RENDERVIEW_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(V_RenderView, DllInfo);
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))ConvertDllInfoSpace(V_RenderView_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
@@ -1865,18 +1861,13 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 			if (!V_RenderView_VA)
 				V_RenderView_VA = (PVOID)Search_Pattern(V_RENDERVIEW_SIG_NEW2, DllInfo);
 
-			Convert_VA_to_RVA(V_RenderView, DllInfo);
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))ConvertDllInfoSpace(V_RenderView_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
 			V_RenderView_VA = (PVOID)Search_Pattern(V_RENDERVIEW_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(V_RenderView, DllInfo);
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))ConvertDllInfoSpace(V_RenderView_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (V_RenderView_RVA)
-	{
-		gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))VA_from_RVA(V_RenderView, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(V_RenderView);
@@ -2029,7 +2020,7 @@ void R_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	}
 }
 
-void R_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_RenderScene)
 		return;
@@ -2172,38 +2163,84 @@ void R_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll_info
 	Sig_FuncNotFound(R_RenderScene);
 }
 
-void R_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_NewMap)
 		return;
 
-	PVOID R_NewMap_VA = 0;
+	{
+		//Setting up renderer...
+		const char sigs[] = "Setting up renderer...\n";
+		auto SettingUpRenderer_String = Search_Pattern_Data(sigs, DllInfo);
+		if (!SettingUpRenderer_String)
+			SettingUpRenderer_String = Search_Pattern_Rdata(sigs, DllInfo);
+		Sig_VarNotFound(SettingUpRenderer_String);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)SettingUpRenderer_String;
+		auto SettingUpRenderer_PushString = Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(SettingUpRenderer_PushString);
+
+		typedef struct SettingUpRenderer_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}SettingUpRenderer_SearchContext;
+
+		SettingUpRenderer_SearchContext ctx = { DllInfo , RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((PUCHAR)SettingUpRenderer_PushString + Sig_Length(pattern), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (SettingUpRenderer_SearchContext*)context;
+
+			if (address[0] == 0xE8)
+			{
+				gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (!gPrivateFuncs.R_NewMap)
 	{
-		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_HL25, DllInfo);
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_NEW, DllInfo);
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_BLOB, DllInfo);
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			PVOID R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_SVENGINE, DllInfo);
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			PVOID R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			PVOID R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_NEW, DllInfo);
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			PVOID R_NewMap_VA = Search_Pattern(R_NEWMAP_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))ConvertDllInfoSpace(R_NewMap_VA, DllInfo, RealDllInfo);
+		}
 	}
 
 	Sig_FuncNotFound(R_NewMap);
 
-	if (R_NewMap_VA)
+	PVOID R_NewMap_VA = ConvertDllInfoSpace(gPrivateFuncs.R_NewMap, RealDllInfo, DllInfo);
+
 	{
+
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF";
 		auto addr = (ULONG_PTR)Search_Pattern_From_Size(R_NewMap_VA, 0x100, pattern);
 		if (addr)
@@ -2261,7 +2298,7 @@ void R_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 	Sig_FuncNotFound(GL_UnloadTextures);
 }
 
-void R_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_BuildLightmaps)
 		return;
@@ -2292,7 +2329,7 @@ void R_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(GL_BuildLightmaps);
 }
 
-void R_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_BuildLightMap)
 		return;
@@ -2357,7 +2394,7 @@ void R_FillAddress_R_BuildLightMap(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_FuncNotFound(R_BuildLightMap);
 }
 
-void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_AddDynamicLights)
 		return;
@@ -2481,7 +2518,7 @@ void R_FillAddress_R_AddDynamicLights(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_FuncNotFound(R_AddDynamicLights);
 }
 
-void R_FillAddress_GL_DisableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_DisableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_DisableMultitexture)
 		return;
@@ -2518,7 +2555,7 @@ void R_FillAddress_GL_DisableMultitexture(const mh_dll_info_t& DllInfo, const mh
 	Sig_FuncNotFound(GL_DisableMultitexture);
 }
 
-void R_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_EnableMultitexture)
 		return;
@@ -2624,7 +2661,7 @@ void R_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, const mh_
 	Sig_VarNotFound(mtexenabled);
 }
 
-void R_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawSequentialPoly)
 		return;
@@ -2977,7 +3014,7 @@ void R_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_VarNotFound(gDecalSurfCount);
 }
 
-void R_FillAddress_R_TextureAnimation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_TextureAnimation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_TextureAnimation)
 		return;
@@ -3070,7 +3107,7 @@ void R_FillAddress_R_TextureAnimation(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(rtable);
 }
 
-void R_FillAddress_R_DrawBrushModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawBrushModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawBrushModel)
 		return;
@@ -3112,7 +3149,7 @@ void R_FillAddress_R_DrawBrushModel(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_FuncNotFound(R_DrawBrushModel);
 }
 
-void R_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_RecursiveWorldNode)
 		return;
@@ -3154,7 +3191,7 @@ void R_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_FuncNotFound(R_RecursiveWorldNode);
 }
 
-void R_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawWorld)
 		return;
@@ -3399,7 +3436,7 @@ void R_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	}
 }
 
-void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawViewModel)
 		return;
@@ -3552,7 +3589,7 @@ void R_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_VarNotFound(cl_light_level);
 }
 
-void R_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_MarkLeaves)
 		return;
@@ -3666,7 +3703,7 @@ void R_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_VarNotFound(r_oldviewleaf);
 }
 
-void R_FillAddress_GL_BeginRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_BeginRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_BeginRendering)
 		return;
@@ -3707,7 +3744,7 @@ void R_FillAddress_GL_BeginRendering(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(GL_BeginRendering);
 }
 
-void R_FillAddress_GL_EndRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_EndRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.GL_EndRendering)
 		return;
@@ -3786,7 +3823,7 @@ void R_FillAddress_GL_EndRendering(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_FuncNotFound(GL_EndRendering);
 }
 
-void R_FillAddress_EmitWaterPolys(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_EmitWaterPolys(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.EmitWaterPolys)
 		return;
@@ -3827,7 +3864,7 @@ void R_FillAddress_EmitWaterPolys(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_FuncNotFound(EmitWaterPolys);
 }
 
-void R_FillAddress_VID_UpdateWindowVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_VID_UpdateWindowVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.VID_UpdateWindowVars)
 		return;
@@ -3970,7 +4007,7 @@ void R_FillAddress_VID_UpdateWindowVars(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_VarNotFound(window_rect);
 }
 
-void R_FillAddress_Mod_PointInLeaf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_PointInLeaf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_PointInLeaf)
 		return;
@@ -4051,7 +4088,7 @@ void R_FillAddress_Mod_PointInLeaf(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_FuncNotFound(Mod_PointInLeaf);
 }
 
-void R_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawTEntitiesOnList)
 		return;
@@ -4087,22 +4124,22 @@ void R_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, const mh_
 
 					return FALSE;
 					});
-				Convert_VA_to_RVA(R_DrawTEntitiesOnList, DllInfo);
+				gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!R_DrawTEntitiesOnList_RVA)
+	if (!gPrivateFuncs.R_DrawTEntitiesOnList)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_DrawTEntitiesOnList, DllInfo);
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_DrawTEntitiesOnList, DllInfo);
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
@@ -4111,24 +4148,19 @@ void R_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, const mh_
 			if (!R_DrawTEntitiesOnList_VA)
 				R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW2, DllInfo);
 
-			Convert_VA_to_RVA(R_DrawTEntitiesOnList, DllInfo);
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
 			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_DrawTEntitiesOnList, DllInfo);
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 		}
-	}
-
-	if (R_DrawTEntitiesOnList_RVA)
-	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))VA_from_RVA(R_DrawTEntitiesOnList, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_DrawTEntitiesOnList);
 }
 
-void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.BuildGammaTable)
 		return;
@@ -4242,7 +4274,7 @@ void R_FillAddress_BuildGammaTable(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_VarNotFound(texgammatable);
 }
 
-void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawParticles)
 		return;
@@ -4467,7 +4499,10 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 		{
 			if (address[-5] == 0xE8)
 			{
-				gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
+				PVOID R_FreeDeadParticles_VA = GetCallAddress(address - 5);
+
+				gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))ConvertDllInfoSpace(R_FreeDeadParticles_VA, ctx->DllInfo, ctx->RealDllInfo);
+
 				active_particles = (decltype(active_particles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 		}
@@ -4503,7 +4538,7 @@ void R_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_FuncNotFound(R_BeamDrawList);
 }
 
-void R_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.CL_AllocDlight)
 		return;
@@ -4695,7 +4730,7 @@ void R_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(r_dlightactive);
 }
 
-void R_FillAddress_R_GLStudioDrawPoints(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_GLStudioDrawPoints(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_GLStudioDrawPoints)
 		return;
@@ -4873,7 +4908,7 @@ void R_FillAddress_R_GLStudioDrawPoints(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_FuncNotFound(R_GLStudioDrawPoints);
 }
 
-void R_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_StudioLighting)
 		return;
@@ -5262,7 +5297,7 @@ void R_FillAddress_R_StudioLighting(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_VarNotFound(lightgammatable);
 }
 
-void R_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_StudioChrome)
 		return;
@@ -5297,7 +5332,7 @@ void R_FillAddress_R_StudioChrome(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_FuncNotFound(R_StudioChrome);
 }
 
-void R_FillAddress_R_LightLambert(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_LightLambert(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_LightLambert)
 		return;
@@ -5332,7 +5367,7 @@ void R_FillAddress_R_LightLambert(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_FuncNotFound(R_LightLambert);
 }
 
-void R_FillAddress_R_StudioSetupSkin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_StudioSetupSkin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_StudioSetupSkin)
 		return;
@@ -5535,7 +5570,7 @@ void R_FillAddress_R_StudioSetupSkin(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(tmp_palette);
 }
 
-void R_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Cache_Alloc)
 		return;
@@ -5626,7 +5661,7 @@ void R_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	Sig_VarNotFound(cache_head);
 }
 
-void R_FillAddress_Draw_MiptexTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Draw_MiptexTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_MiptexTexture)
 		return;
@@ -5790,7 +5825,7 @@ void R_FillAddress_Draw_MiptexTexture(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(szCustName);
 }
 
-void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_DecalTexture)
 		return;
@@ -5918,7 +5953,7 @@ void R_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(decal_wad);
 }
 
-void R_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawSpriteModel)
 		return;
@@ -5989,7 +6024,7 @@ void R_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(R_DrawSpriteModel);
 }
 
-void R_FillAddress_R_LightStrength(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_LightStrength(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_LightStrength)
 		return;
@@ -6026,7 +6061,7 @@ void R_FillAddress_R_LightStrength(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_FuncNotFound(R_LightStrength);
 }
 
-void R_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_RotateForEntity)
 		return;
@@ -6075,7 +6110,7 @@ void R_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(R_RotateForEntity);
 }
 
-void R_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_GlowBlend)
 		return;
@@ -6111,7 +6146,7 @@ void R_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	}
 }
 
-void R_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.SCR_BeginLoadingPlaque)
 		return;
@@ -6169,7 +6204,7 @@ void R_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh
 	}
 }
 
-void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Host_IsSinglePlayerGame)
 		return;
@@ -6254,7 +6289,7 @@ void R_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const m
 	Sig_FuncNotFound(Host_IsSinglePlayerGame);
 }
 
-void R_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
 		return;
@@ -6287,7 +6322,7 @@ void R_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const 
 	Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 }
 
-void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_LoadSpriteModel)
 		return;
@@ -6425,7 +6460,7 @@ void R_FillAddress_Mod_LoadSpriteModel(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_FuncNotFound(Mod_LoadSpriteModel);
 }
 
-void R_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_LoadSpriteFrame)
 		return;
@@ -6568,7 +6603,7 @@ void R_FillAddress_Mod_LoadSpriteFrame(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_VarNotFound(gSpriteMipMap);
 }
 
-void R_FillAddress_R_AddTEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_AddTEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_AddTEntity)
 		return;
@@ -6618,7 +6653,7 @@ void R_FillAddress_R_AddTEntity(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_FuncNotFound(R_AddTEntity);
 }
 
-void R_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Hunk_AllocName)
 		return;
@@ -6704,7 +6739,7 @@ void R_FillAddress_Hunk_AllocName(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_FuncNotFound(Hunk_AllocName);
 }
 
-void R_FillAddress_GL_EndRenderingVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_EndRenderingVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Global float pointers that link into engine vars or our global vars.
@@ -6860,7 +6895,7 @@ void R_FillAddress_GL_EndRenderingVars(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_VarNotFound(s_fYMouseAspectAdjustment);
 }
 
-void R_FillAddress_R_AllocTransObjectsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_AllocTransObjectsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars.
@@ -6990,7 +7025,7 @@ void R_FillAddress_R_AllocTransObjectsVars(const mh_dll_info_t& DllInfo, const m
 	Sig_VarNotFound(numTransObjs);
 }
 
-void R_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars.
@@ -6998,11 +7033,8 @@ void R_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 		cl_entity_t **cl_visedicts = NULL;
 	*/
 
-	ULONG_PTR cl_numvisedicts_VA = 0;
-	ULONG cl_numvisedicts_RVA = 0;
-
-	ULONG_PTR cl_visedicts_VA = 0;
-	ULONG cl_visedicts_RVA = 0;
+	PVOID cl_numvisedicts_VA = 0;
+	PVOID cl_visedicts_VA = 0;
 
 	{
 		/*
@@ -7013,22 +7045,21 @@ void R_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern, DllInfo);
 		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
 
-		cl_numvisedicts_VA = *(ULONG_PTR*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
+		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
 
-		typedef struct
+		typedef struct VisEdicts_SearchContext_s
 		{
-			ULONG_PTR& cl_numvisedicts;
-			ULONG_PTR& cl_visedicts;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
 		} VisEdicts_SearchContext;
 
-		VisEdicts_SearchContext ctx = { cl_numvisedicts_VA, cl_visedicts_VA };
+		VisEdicts_SearchContext ctx = { DllInfo, RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges(ClientDLL_AddEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (VisEdicts_SearchContext*)context;
 
-			if (ctx->cl_visedicts == 0 &&
-				pinst->id == X86_INS_MOV &&
+			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
@@ -7039,10 +7070,10 @@ void R_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 				//.text:01D198C9 89 04 8D 00 3A 6E 02                                mov     cl_visedicts[ecx*4], eax
 				//.text:01D0C7C5 89 14 8D C0 F0 D5 02                                mov     cl_visedicts[ecx*4], edx
 
-				ctx->cl_visedicts = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				cl_visedicts = (decltype(cl_visedicts))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
-			if (ctx->cl_visedicts)
+			if (cl_visedicts)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -7054,20 +7085,14 @@ void R_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 			return FALSE;
 			}, 0, &ctx);
 
-		Convert_VA_to_RVA(cl_numvisedicts, DllInfo);
-		Convert_VA_to_RVA(cl_visedicts, DllInfo);
+		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
 	}
-
-	if (cl_numvisedicts_RVA)
-		cl_numvisedicts = (decltype(cl_numvisedicts))VA_from_RVA(cl_numvisedicts, RealDllInfo);
-	if (cl_visedicts_RVA)
-		cl_visedicts = (decltype(cl_visedicts))VA_from_RVA(cl_visedicts, RealDllInfo);
 
 	Sig_VarNotFound(cl_visedicts);
 	Sig_VarNotFound(cl_numvisedicts);
 }
 
-void R_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -7299,7 +7324,7 @@ void R_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_VarNotFound(g_UserFogEnd);
 }
 
-void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -7670,7 +7695,7 @@ void R_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const
 	Sig_VarNotFound(r_entorigin);
 }
 
-void R_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars.
@@ -7828,7 +7853,7 @@ void R_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, const 
 	Sig_VarNotFound(waterchain);
 }
 
-void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -8153,7 +8178,7 @@ void R_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_VarNotFound(r_loading_skybox);
 }
 
-void R_FillAddress_GL_FilterMinMaxVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GL_FilterMinMaxVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Global pointers that link into engine vars.
@@ -8272,7 +8297,7 @@ void R_FillAddress_GL_FilterMinMaxVars(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_VarNotFound(gl_filter_max);
 }
 
-void R_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Global pointers that link into engine vars.
@@ -8331,7 +8356,7 @@ void R_FillAddress_ScrFov(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 }
 
 //Got CL_IsDevOverviewMode, CL_SetDevOverView and refdef here
-void R_FillAddress_RenderSceneVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_RenderSceneVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	 // We use our own struct and use pointer to link to actual engine refdef_t
@@ -8472,7 +8497,7 @@ void R_FillAddress_RenderSceneVars(const mh_dll_info_t& DllInfo, const mh_dll_in
 }
 
 //Got ClientDLL_DrawNormalTriangles_VA, cl_waterlevel and gDevOverview here
-void R_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID SearchBase_VA = 0;
 	SIZE_T SearchLength = 0;
@@ -8661,7 +8686,7 @@ void R_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_VarNotFound(gDevOverview);
 }
 
-void R_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Sven Co-op only
@@ -8717,7 +8742,7 @@ void R_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, const 
 	}
 }
 
-void R_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -8788,39 +8813,39 @@ void R_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	Sig_VarNotFound(gDecalCache);
 }
 
-void R_FillAddress_R_RenderDynamicLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_RenderDynamicLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_RenderDynamicLightmaps)
-		return;
+	if (!gPrivateFuncs.R_RenderDynamicLightmaps)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			PVOID R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE, DllInfo);
+			if (!R_RenderDynamicLightmaps_VA)
+				R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE_10152, DllInfo);
+			gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			PVOID R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_HL25, DllInfo);
+			gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			PVOID R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW, DllInfo);
+			if (!R_RenderDynamicLightmaps_VA)
+				R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW2, DllInfo);
+			gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			PVOID R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_BLOB, DllInfo);
+			gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
+		}
 
-	PVOID R_RenderDynamicLightmaps_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE, DllInfo);
-		if (!R_RenderDynamicLightmaps_VA)
-			R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE_10152, DllInfo);
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_HL25, DllInfo);
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW, DllInfo);
-		if (!R_RenderDynamicLightmaps_VA)
-			R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW2, DllInfo);
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		R_RenderDynamicLightmaps_VA = Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_BLOB, DllInfo);
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(R_RenderDynamicLightmaps_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 
-	Sig_FuncNotFound(R_RenderDynamicLightmaps);
+	PVOID R_RenderDynamicLightmaps_VA = ConvertDllInfoSpace(gPrivateFuncs.R_RenderDynamicLightmaps, RealDllInfo, DllInfo);
 
 	/*
 		 int *d_lightstylevalue = NULL;
@@ -8920,7 +8945,7 @@ void R_FillAddress_R_RenderDynamicLightmaps(const mh_dll_info_t& DllInfo, const 
 	Sig_VarNotFound(lightmap_modified);
 }
 
-void R_FillAddress_R_StudioChromeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_StudioChromeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -8989,7 +9014,7 @@ void R_FillAddress_R_StudioChromeVars(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(chrome);
 }
 
-void R_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9056,7 +9081,7 @@ void R_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(cl_viewentity);
 }
 
-void R_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9098,7 +9123,7 @@ void R_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& DllInfo, const 
 		}
 
 		return FALSE;
-		});
+	});
 
 	Sig_VarNotFound(CL_ReallocateDynamicData_VA);
 
@@ -9169,7 +9194,7 @@ void R_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& DllInfo, const 
 	Sig_VarNotFound(cl_entities);
 }
 
-void R_FillAddress_TempEntsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_TempEntsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9196,7 +9221,7 @@ void R_FillAddress_TempEntsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_VarNotFound(gTempEnts);
 }
 
-void R_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9229,7 +9254,7 @@ void R_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 	Sig_VarNotFound(cshift_water);
 }
 
-void R_FillAddress_ModKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_ModKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Global pointers that link into engine vars
@@ -9246,7 +9271,7 @@ void R_FillAddress_ModKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 	Sig_VarNotFound(mod_known);
 }
 
-void R_FillAddress_Mod_NumKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_NumKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9308,7 +9333,7 @@ void R_FillAddress_Mod_NumKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_VarNotFound(mod_numknown);
 }
 
-void R_FillAddress_Mod_LoadStudioModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_LoadStudioModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char sigs[] = "bogus\0";
 	auto Bogus_String = Search_Pattern_Data(sigs, DllInfo);
@@ -9360,7 +9385,7 @@ void R_FillAddress_Mod_LoadStudioModel(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_FuncNotFound(Mod_LoadStudioModel);
 }
 
-void R_FillAddress_Mod_LoadBrushModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_LoadBrushModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char sigs[] = "Mod_LoadBrushModel: %s has wrong version number";
 	auto Bogus_String = Search_Pattern_Data(sigs, DllInfo);
@@ -9417,7 +9442,7 @@ void R_FillAddress_Mod_LoadBrushModel(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_FuncNotFound(Mod_LoadBrushModel);
 }
 
-void R_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	 //Global pointers that link into engine vars.
@@ -9566,7 +9591,7 @@ void R_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info
 	Sig_VarNotFound(loadmodel);
 }
 
-void R_FillAddress_BasePalette(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_BasePalette(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		.text:101D2EF5 68 D0 EC 2B 10                                      push    offset aPaletteLmp ; "palette.lmp"
@@ -9585,7 +9610,7 @@ void R_FillAddress_BasePalette(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	Sig_VarNotFound(host_basepal);
 }
 
-void R_FillAddress_R_LightStrengthVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_R_LightStrengthVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		//Global pointers that link into engine vars
@@ -9970,7 +9995,7 @@ void R_FillAddress_R_LightStrengthVars(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_VarNotFound(numlights);
 }
 
-void R_FillAddress_SetFilterMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_SetFilterMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		int *filterMode = NULL;
@@ -10023,7 +10048,7 @@ void R_FillAddress_SetFilterMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 	Sig_VarNotFound(filterMode);
 }
 
-void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		float *filterColorRed = NULL;
@@ -10140,7 +10165,7 @@ void R_FillAddress_SetFilterColor(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(filterColorBlue);
 }
 
-void R_FillAddress_SetFilterBrightness(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_SetFilterBrightness(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 		float *filterBrightness = NULL;
@@ -10220,7 +10245,7 @@ void R_FillAddress_SetFilterBrightness(const mh_dll_info_t& DllInfo, const mh_dl
 	Sig_VarNotFound(filterBrightness);
 }
 
-void R_FillAddress_MoveVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_MoveVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -10273,7 +10298,7 @@ void R_FillAddress_MoveVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& R
 	Sig_VarNotFound(pmovevars);
 }
 
-void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -10393,7 +10418,7 @@ void R_FillAddress_MissingTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	}
 }
 
-void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID r_notexture_mip_VA = 0;
 	ULONG r_notexture_mip_RVA = 0;
@@ -10455,7 +10480,7 @@ void R_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& 
 	}
 }
 
-void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID detTexSupportedCallVA = 0;
 	{
@@ -10532,10 +10557,8 @@ void R_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info
 	Sig_VarNotFound(detTexSupported);
 }
 
-void R_FillAddress(void)
+void Engine_FillAddress(void)
 {
-	ULONG_PTR addr;
-
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
 
 	if (hSDL2)
@@ -10543,7 +10566,7 @@ void R_FillAddress(void)
 		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
 	}
 
-	R_FillAddress_EngineSurface(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_EngineSurface(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
@@ -10551,183 +10574,183 @@ void R_FillAddress(void)
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
-	R_FillAddress_HasOfficialFBOSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_HasOfficialFBOSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_HasOfficialGLTexAllocSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_HasOfficialGLTexAllocSupport(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_Init(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_Init(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_PolyBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_PolyBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_S_ExtraUpdate(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_S_ExtraUpdate(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_Bind(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_Bind(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_SelectTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_SelectTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_LoadTexture2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_LoadTexture2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_CullBox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_CullBox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_SetupFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_SetupFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_SetupGL(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_SetupGL(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_V_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_V_RenderView(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RenderScene(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderScene(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_NewMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_NewMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_BuildLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_BuildLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_BuildLightMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_BuildLightMap(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_AddDynamicLights(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AddDynamicLights(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_DisableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_DisableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_EnableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EnableMultitexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawSequentialPoly(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawSequentialPoly(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_TextureAnimation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_TextureAnimation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RecursiveWorldNode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RecursiveWorldNode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawWorld(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawWorld(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawViewModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawViewModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_MarkLeaves(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_MarkLeaves(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_BeginRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_BeginRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_EndRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EndRendering(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_EmitWaterPolys(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_EmitWaterPolys(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_VID_UpdateWindowVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_VID_UpdateWindowVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_PointInLeaf(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_PointInLeaf(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawTEntitiesOnList(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawTEntitiesOnList(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_BuildGammaTable(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_BuildGammaTable(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawParticles(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawParticles(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_CL_AllocDlight(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_AllocDlight(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_GLStudioDrawPoints(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_GLStudioDrawPoints(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_StudioLighting(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioLighting(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_StudioChrome(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioChrome(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_LightLambert(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightLambert(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_StudioSetupSkin(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioSetupSkin(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Cache_Alloc(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Cache_Alloc(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Draw_MiptexTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Draw_MiptexTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Draw_DecalTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Draw_DecalTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_LightStrength(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightStrength(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RotateForEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RotateForEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_GlowBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_GlowBlend(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_SCR_BeginLoadingPlaque(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SCR_BeginLoadingPlaque(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Host_IsSinglePlayerGame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Host_IsSinglePlayerGame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_UnloadSpriteTextures(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_UnloadSpriteTextures(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_LoadSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadSpriteModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_LoadSpriteFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadSpriteFrame(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_AddTEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AddTEntity(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Hunk_AllocName(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Hunk_AllocName(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_EndRenderingVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_EndRenderingVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_VisEdicts(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_VisEdicts(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_AllocTransObjectsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_AllocTransObjectsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RenderFinalFog(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderFinalFog(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DrawTEntitiesOnListVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DrawTEntitiesOnListVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RecursiveWorldNodeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RecursiveWorldNodeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_LoadSkybox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LoadSkybox(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_GL_FilterMinMaxVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_GL_FilterMinMaxVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_ScrFov(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_ScrFov(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	//Got CL_IsDevOverviewMode, CL_SetDevOverView and refdef here
-	R_FillAddress_RenderSceneVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_RenderSceneVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	//Got ClientDLL_DrawNormalTriangles_VA, cl_waterlevel and gDevOverview here
-	R_FillAddress_RenderSceneVars2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_RenderSceneVars2(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_CL_IsDevOverviewModeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_IsDevOverviewModeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_DecalInit(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_DecalInit(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_RenderDynamicLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_RenderDynamicLightmaps(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_StudioChromeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_StudioChromeVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_CL_ViewEntityVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_ViewEntityVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_CL_ReallocateDynamicData(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_CL_ReallocateDynamicData(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_TempEntsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_TempEntsVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_WaterVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_WaterVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_ModKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_ModKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_NumKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_NumKnown(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_LoadStudioModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadStudioModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_LoadBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadBrushModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_Mod_LoadModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_Mod_LoadModel(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_BasePalette(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_BasePalette(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_R_LightStrengthVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_R_LightStrengthVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_SetFilterMode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterMode(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_SetFilterColor(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterColor(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_SetFilterBrightness(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_SetFilterBrightness(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_MoveVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_MoveVars(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_MissingTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_MissingTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_NoTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_NoTexture(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	R_FillAddress_DT_Initialize(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress_DT_Initialize(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 }
 
 static hook_t* g_phook_GL_Init = NULL;
@@ -10768,7 +10791,7 @@ static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
 
-void R_InstallHooks(void)
+void Engine_InstallHooks(void)
 {
 	Install_InlineHook(GL_Init);
 	Install_InlineHook(GL_BeginRendering);
@@ -10817,7 +10840,7 @@ void R_InstallHooks(void)
 	}
 }
 
-void R_UninstallHooksForEngineDLL(void)
+void Engine_UninstallHooks(void)
 {
 	//Engine
 	Uninstall_Hook(GL_Init);

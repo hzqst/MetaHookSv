@@ -53,12 +53,19 @@ typedef struct
 	int (*R_StudioDrawModel)(int flags);
 	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
 	void (*R_StudioSetupBones)(void);
+	void (*R_StudioMergeBones)(void);
+	void (*R_StudioSaveBones)(void);
+	void (*R_StudioRenderModel)(void);
+	void (*R_StudioRenderFinal)(void);
 
 	//IEngineStudio
 	int (*studioapi_StudioCheckBBox)(void);
 
 	void (*FirstPerson_f)(void);
 	void (*ThreadPerson_f)(void);
+
+	//Client DLL
+	int (*CL_IsThirdPerson)(void);
 
 	//Engine model managment
 	// unused
@@ -74,14 +81,18 @@ void R_RenderView();
 
 TEMPENTITY* efxapi_R_TempModel(float* pos, float* dir, float* angles, float life, int modelIndex, int soundtype);
 
-void Engine_FillAddreess(void);
-void Client_FillAddress(void);
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHook(void);
 void Engine_UninstallHook(void);
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_InstallHooks(void);
 void ClientStudio_InstallHooks();
-void EngineStudio_InstallHooks();
-void ClientStudio_UninstallHooks();
-void EngineStudio_UninstallHooks();
+void EngineStudio_InstallHooks(void);
+void ClientStudio_UninstallHooks(void);
+void EngineStudio_UninstallHooks(void);
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);
 
 extern studiohdr_t** pstudiohdr;
 extern model_t** r_model;

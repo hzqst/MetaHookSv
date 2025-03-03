@@ -35,7 +35,7 @@ static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
 
 static hook_t* g_phook_CL_FxBlend = NULL;
 
-void R_UninstallHooksForEngineStudio(void)
+void EngineStudio_UninstallHooks(void)
 {
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
@@ -50,7 +50,7 @@ void R_UninstallHooksForEngineStudio(void)
 	Uninstall_Hook(R_StudioSaveBones);
 }
 
-void R_UninstallHooksForClientStudio(void)
+void ClientStudio_UninstallHooks(void)
 {
 	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
 	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
@@ -302,7 +302,7 @@ int HUD_Redraw(float time, int intermission)
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
-void EngineStudioAPI_FillAddress_GetCurrentEntity(struct engine_studio_api_s* pstudio, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_GetCurrentEntity(struct engine_studio_api_s* pstudio, const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID GetCurrentEntity = ConvertDllInfoSpace(pstudio->GetCurrentEntity, RealDllInfo, DllInfo);
 
@@ -358,7 +358,7 @@ void EngineStudioAPI_FillAddress_GetCurrentEntity(struct engine_studio_api_s* ps
 	Sig_VarNotFound(currententity);
 }
 
-void EngineStudioAPI_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID GetTimes = ConvertDllInfoSpace(pstudio->GetTimes, RealDllInfo, DllInfo);
 
@@ -468,7 +468,7 @@ void EngineStudioAPI_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, c
 	Sig_VarNotFound(cl_oldtime);
 }
 
-void EngineStudioAPI_FillAddress_SetRenderModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_SetRenderModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID SetRenderModel = ConvertDllInfoSpace(pstudio->SetRenderModel, RealDllInfo, DllInfo);
 
@@ -517,7 +517,7 @@ void EngineStudioAPI_FillAddress_SetRenderModel(struct engine_studio_api_s* pstu
 	Sig_VarNotFound(r_model);
 }
 
-void EngineStudioAPI_FillAddress_StudioSetHeader(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_StudioSetHeader(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID StudioSetHeader = ConvertDllInfoSpace(pstudio->StudioSetHeader, RealDllInfo, DllInfo);
 
@@ -568,7 +568,7 @@ void EngineStudioAPI_FillAddress_StudioSetHeader(struct engine_studio_api_s* pst
 	Sig_VarNotFound(pstudiohdr);
 }
 
-void EngineStudioAPI_FillAddress_SetForceFaceFlags(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_SetForceFaceFlags(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID SetForceFaceFlags = ConvertDllInfoSpace(pstudio->SetForceFaceFlags, RealDllInfo, DllInfo);
 
@@ -621,7 +621,7 @@ void EngineStudioAPI_FillAddress_SetForceFaceFlags(struct engine_studio_api_s* p
 	Sig_VarNotFound(g_ForcedFaceFlags);
 }
 
-void EngineStudioAPI_FillAddress_StudioSetRemapColors(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_StudioSetRemapColors(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID StudioSetRemapColors = ConvertDllInfoSpace(pstudio->StudioSetRemapColors, RealDllInfo, DllInfo);
 
@@ -688,7 +688,7 @@ void EngineStudioAPI_FillAddress_StudioSetRemapColors(struct engine_studio_api_s
 	Sig_VarNotFound(r_bottomcolor);
 }
 
-void EngineStudioAPI_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID StudioSetRenderamt = ConvertDllInfoSpace(pstudio->StudioSetRenderamt, RealDllInfo, DllInfo);
 
@@ -744,7 +744,7 @@ void EngineStudioAPI_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* 
 	Sig_FuncNotFound(CL_FxBlend);
 }
 
-void EngineStudioAPI_FillAddress_SetupRenderer(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_SetupRenderer(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID SetupRenderer = ConvertDllInfoSpace(pstudio->SetupRenderer, RealDllInfo, DllInfo);
 
@@ -811,7 +811,7 @@ void EngineStudioAPI_FillAddress_SetupRenderer(struct engine_studio_api_s* pstud
 	Sig_VarNotFound(lightvalues);
 }
 
-void EngineStudioAPI_FillAddress_StudioSetupModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_StudioSetupModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID StudioSetupModel = ConvertDllInfoSpace(pstudio->StudioSetupModel, RealDllInfo, DllInfo);
 
@@ -874,7 +874,7 @@ mstudiobodyparts_t** pbodypart = NULL;
 	Sig_VarNotFound(psubmodel);
 }
 
-void EngineStudioAPI_FillAddress_SetChromeOrigin(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_SetChromeOrigin(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID SetChromeOrigin = ConvertDllInfoSpace(pstudio->SetChromeOrigin, RealDllInfo, DllInfo);
 
@@ -1029,7 +1029,7 @@ void EngineStudioAPI_FillAddress_SetChromeOrigin(struct engine_studio_api_s* pst
 	Sig_VarNotFound(g_ChromeOrigin);
 }
 
-void EngineStudioAPI_FillAddress_StudioSetupLighting(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress_StudioSetupLighting(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	PVOID StudioSetupLighting = ConvertDllInfoSpace(pstudio->StudioSetupLighting, RealDllInfo, DllInfo);
 
@@ -1147,22 +1147,22 @@ void EngineStudioAPI_FillAddress_StudioSetupLighting(struct engine_studio_api_s*
 	Sig_VarNotFound(r_colormix);
 }
 
-void EngineStudioAPI_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	EngineStudioAPI_FillAddress_GetCurrentEntity(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_GetTimes(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_SetRenderModel(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_StudioSetHeader(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_SetForceFaceFlags(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_StudioSetRemapColors(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_StudioSetRenderamt(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_SetupRenderer(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_StudioSetupModel(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_SetChromeOrigin(pstudio, DllInfo, RealDllInfo);
-	EngineStudioAPI_FillAddress_StudioSetupLighting(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_GetCurrentEntity(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_GetTimes(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_SetRenderModel(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_StudioSetHeader(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_SetForceFaceFlags(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_StudioSetRemapColors(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_StudioSetRenderamt(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_SetupRenderer(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_StudioSetupModel(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_SetChromeOrigin(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_StudioSetupLighting(pstudio, DllInfo, RealDllInfo);
 }
 
-void EngineStudioAPI_InstalHooks()
+void EngineStudio_InstalHooks()
 {
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
@@ -1544,6 +1544,7 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 			gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioDrawModel_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
+
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
 			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
@@ -1551,6 +1552,9 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 		if (gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index)
 			gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(GameStudioRenderer_StudioDrawModel);
+		Sig_FuncNotFound(GameStudioRenderer_StudioDrawPlayer);
 
 		{
 			typedef struct GameStudioRenderer_StudioDrawPlayer_SearchContext_s
@@ -1612,11 +1616,10 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 						pinst->detail->x86.operands[0].mem.disp >= (ULONG_PTR)ctx->DllInfo.ImageBase &&
 						pinst->detail->x86.operands[0].mem.disp < (ULONG_PTR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
 					{
-						PVOID pfnCall = *(PVOID*)pinst->detail->x86.operands[0].mem.disp;
+						PVOID calltarget_pfn = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+						calltarget_pfn = ConvertDllInfoSpace(calltarget_pfn, ctx->DllInfo, ctx->RealDllInfo);
 
-						auto pfnCall_RealDllInfo = ConvertDllInfoSpace(pfnCall, ctx->DllInfo, ctx->RealDllInfo);
-
-						if (pfnCall_RealDllInfo == IEngineStudio.StudioSetRemapColors)
+						if (calltarget_pfn && *(PVOID *)calltarget_pfn == IEngineStudio.StudioSetRemapColors)
 						{
 							ctx->StudioSetRemapColors_instcount = instCount;
 						}
@@ -1669,6 +1672,9 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 
 			gPrivateFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderModel))
 				GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioRenderModel_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+
+			Sig_FuncNotFound(GameStudioRenderer_StudioRenderModel);
+
 		}
 
 		{
@@ -1704,6 +1710,8 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 
 			gPrivateFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal))
 				GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+
+			Sig_FuncNotFound(GameStudioRenderer_StudioRenderFinal);
 		}
 
 		gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
@@ -1714,10 +1722,12 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioSetupBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.GameStudioRenderer_StudioSaveBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSaveBones))
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioSaveBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
-	
 		gPrivateFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioMergeBones))
 			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioMergeBones_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
 
+		Sig_FuncNotFound(GameStudioRenderer_StudioSetupBones);
+		Sig_FuncNotFound(GameStudioRenderer_StudioSaveBones);
+		Sig_FuncNotFound(GameStudioRenderer_StudioMergeBones);
 	}
 }
 
@@ -1769,7 +1779,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 
 			R_StudioRenderModel_SearchContext ctx = { DllInfo, RealDllInfo };
 
-			g_pMetaHookAPI->DisasmRanges(R_StudioRenderModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			g_pMetaHookAPI->DisasmRanges(R_StudioRenderModel_VA, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 				
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (R_StudioRenderModel_SearchContext*)context;
@@ -1923,8 +1933,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
 
-	EngineStudioAPI_FillAddress(pstudio, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
-	EngineStudioAPI_InstalHooks();
+	EngineStudio_FillAddress(pstudio, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	EngineStudio_InstalHooks();
 
 	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
 	plighttransform = (decltype(plighttransform))pstudio->StudioGetLightTransform();
@@ -2027,8 +2037,8 @@ void HUD_Shutdown(void)
 
 	GL_Shutdown();
 
-	R_UninstallHooksForEngineStudio();
-	R_UninstallHooksForClientStudio();
+	ClientStudio_UninstallHooks();
+	EngineStudio_UninstallHooks();
 }
 
 void HUD_OnClientDisconnect(void)
