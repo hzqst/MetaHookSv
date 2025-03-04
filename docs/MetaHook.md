@@ -115,9 +115,9 @@ Cvar callbacks are a feature added by Valve in build number 6153 of the GoldSrc 
 
 ### API: Mirror-DLL
 
-Mirror-DLL is a DLL loaded in memory module form, without executable permissions, and has not executed the DLL entry point, only undergoing relocation fixes. The code segment (.text) and data segment (.rdata, .data) contents of the Mirror-DLL remain consistent with the state of the target DLL when it was first loaded.
+Mirror-DLL is a memory module without executable permissions, and loaded without executing DLL entry point, only undergoing relocation fixes. The code segment (.text) and data segment (.rdata, .data) contents of the Mirror-DLL remain consistent with the state of the target DLL when it was first loaded.
 
-Mirror-DLL provides a clean environment for plugins to search for patterns. When a plugin searches for patterns from a Mirror-DLL instead of the original module, it will not fail even if the target module has been hooked or patched by other third-party modules.
+Mirror-DLL provides a clean environment for plugins to search for signatures. When a plugin searches for signatures from a Mirror-DLL instead of the original DLL, it will not fail even if the target module has been hooked or patched by other third-party modules (like HLAE).
 
 Since modules loaded in Blob format do not support relocation, Blob Engine and Blob Client do not provide corresponding Mirror-DLL support.
 
