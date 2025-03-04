@@ -41,30 +41,30 @@ jobs:
         run: scripts\build-Plugins.bat
         shell: cmd
 
-      - name: Create Output directory
+      - name: Create Build-Output directory
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: mkdir Output
+        run: mkdir Build-Output
         shell: cmd
 
-      - name: Copy Build to Output
+      - name: Copy Build to Build-Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir "Output\Build"
-          xcopy "Build" "Output\Build" /y /e
+          mkdir "Build-Output\Build"
+          xcopy "Build" "Build-Output\Build" /y /e
         shell: cmd
 
-      - name: Copy install bat to Output
+      - name: Copy install bat to Build-Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir "Output\scripts"
-          copy "scripts\install-helper-*.bat" "Output\scripts" /y
-          copy "scripts\install-to-CustomGame.bat" "Output\scripts" /y
+          mkdir "Build-Output\scripts"
+          copy "scripts\install-helper-*.bat" "Build-Output\scripts" /y
+          copy "scripts\install-to-CustomGame.bat" "Build-Output\scripts" /y
         shell: cmd
 
       - name: Zipping All
         uses: vimtor/action-zip@v1
         with:
-          files: Output/
+          files: Build-Output/
           dest: MetaHookSv-windows-x86-blob-support.zip
 
       - name: Create Release
