@@ -156,7 +156,9 @@ cvar回调是Valve在buildnum 6153 GoldSrc引擎中添加的功能，用于在cv
 
 ### API: Mirror-DLL
 
-Mirror-DLL 是以内存模块形式加载的DLL，不包含可执行权限，没有执行过DLL入口点，只经过重定位修正。用于给插件提供一个干净的搜索特征码的环境。Mirror-DLL中的代码段(.text)和数据段(.rdata .data)内容与目标DLL刚加载时的状态保持一致。
+Mirror-DLL 是以内存模块形式加载的DLL，不包含可执行权限，没有执行过DLL入口点，只经过重定位修正。Mirror-DLL中的代码段(.text)和数据段(.rdata .data)内容与目标DLL刚加载时的状态保持一致。
+
+Mirror-DLL 用于给插件提供一个干净的搜索特征码的环境。当插件从Mirror-DLL而非原始模块中搜索特征码时，即使目标模块已经被其他第三方模块hook或patch过，也不会导致特征码搜索失败。
 
 由于Blob形式加载的模块不支持重定位，所以Blob Engine和Blob Client不提供对应的Mirror-DLL支持。
 
