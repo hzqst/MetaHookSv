@@ -97,13 +97,16 @@ cl_entity_t *EngineGetViewEntity(void);
 
 bool SCR_IsLoadingVisible(void);
 
-void Client_FillAddress(void);
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
-void Engine_FillAddress(void);
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void FMOD_InstallHooks(HMODULE fmodex);
 void FMOD_UninstallHooks(HMODULE fmodex);
 
 void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);

@@ -567,9 +567,14 @@ void Engine_FillAddress_PanelInit(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 void Engine_FillAddress_GetClientTime(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	ULONG_PTR addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern((void*)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
+	PVOID GetClientTime_VA = ConvertDllInfoSpace(gEngfuncs.GetClientTime, RealDllInfo, DllInfo);
+
+	ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(GetClientTime_VA, 0x20, "\xDD\x05");
 	Sig_AddrNotFound("cl_time");
-	cl_time = (double*)*(ULONG_PTR*)(addr + 2);
+
+	PVOID cl_time_VA = *(PVOID*)(addr + 2);
+
+	cl_time = (double*)ConvertDllInfoSpace(cl_time_VA, DllInfo, RealDllInfo);
 	cl_oldtime = cl_time + 1;
 }
 
@@ -628,7 +633,7 @@ void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_SVENGINE);
+		auto addr = (PUCHAR)Search_Pattern_From_Size(DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_SVENGINE);
 		Sig_AddrNotFound(cl_viewentity);
 		PVOID cl_viewentity_VA = *(PVOID*)(addr + 10);
 		cl_viewentity = (decltype(cl_viewentity))ConvertDllInfoSpace(cl_viewentity_VA, DllInfo, RealDllInfo);
@@ -636,7 +641,7 @@ void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh
 	else
 	{
 #define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
-		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_GOLDSRC);
+		auto addr = (PUCHAR)Search_Pattern_From_Size(DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_GOLDSRC);
 		Sig_AddrNotFound(cl_viewentity);
 
 		typedef struct CL_ViewEntity_SearchContext_s
@@ -673,7 +678,7 @@ void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
+		}, 0, &ctx);
 
 		if (ctx.found_cmp_200)
 		{
