@@ -93,7 +93,7 @@ int CSchemeManagerProxy::GetProportionalScaledValue(int normalizedValue)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -113,7 +113,7 @@ int CSchemeManagerProxy::GetProportionalNormalizedValue(int scaledValue)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -203,7 +203,7 @@ int CSchemeManagerProxy_HL25::GetProportionalScaledValue(int normalizedValue)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -223,7 +223,7 @@ int CSchemeManagerProxy_HL25::GetProportionalNormalizedValue(int scaledValue)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -243,7 +243,7 @@ float CSchemeManagerProxy_HL25::GetProportionalScale(void)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -263,7 +263,7 @@ int CSchemeManagerProxy_HL25::GetHDProportionalScaledValue(int normalizedValue)
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
@@ -283,7 +283,7 @@ int CSchemeManagerProxy_HL25::GetHDProportionalNormalizedValue(int normalizedVal
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 

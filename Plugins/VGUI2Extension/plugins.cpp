@@ -82,14 +82,11 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	ULONG_PTR addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
-	Sig_AddrNotFound("cl_time");
-	cl_time = (double *)*(ULONG_PTR*)(addr + 2);
-	cl_oldtime = cl_time + 1;
-
 	SDL2_FillAddress();
 
 	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_PatchAddress_VGUIClient001(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_PatchAddress_LanguageStrncpy(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	Engine_InstallHooks();
 
@@ -105,22 +102,34 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	pExportFunc->HUD_Init = HUD_Init;
-	//pExportFunc->HUD_VidInit = HUD_VidInit;
-	//pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->IN_MouseEvent = IN_MouseEvent;
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
 
-	Client_FillAddress();
+	g_ClientDLLInfo.ImageBase = g_pMetaHookAPI->GetClientBase();
+	g_ClientDLLInfo.ImageSize = g_pMetaHookAPI->GetClientSize();
+	g_ClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".text\0\0\0", &g_ClientDLLInfo.TextSize);
+	g_ClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".data\0\0\0", &g_ClientDLLInfo.DataSize);
+	g_ClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".rdata\0\0", &g_ClientDLLInfo.RdataSize);
 
+	g_MirrorClientDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorClientBase();
+	g_MirrorClientDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorClientSize();
+
+	if (g_MirrorClientDLLInfo.ImageBase)
+	{
+		g_MirrorClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".text\0\0\0", &g_MirrorClientDLLInfo.TextSize);
+		g_MirrorClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".data\0\0\0", &g_MirrorClientDLLInfo.DataSize);
+		g_MirrorClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".rdata\0\0", &g_MirrorClientDLLInfo.RdataSize);
+	}
+
+	g_hClientModule = g_pMetaHookAPI->GetClientModule();
+
+	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();
-
 	ClientVGUI_InstallHooks(pExportFunc);
-
 	VGUI1_InstallHooks();
-
 	InitWindowStuffs();
 
 	DpiManagerInternal()->InitClient();

@@ -64,9 +64,6 @@ typedef struct
 	void (*FirstPerson_f)(void);
 	void (*ThreadPerson_f)(void);
 
-	//Client DLL
-	int (*CL_IsThirdPerson)(void);
-
 	//Engine model managment
 	// unused
 	//void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);

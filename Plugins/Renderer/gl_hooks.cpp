@@ -11366,7 +11366,7 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(g_iEndDist_SCClient);
 }
 
-void Client_FillAddress_SCClient()
+void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -11376,12 +11376,12 @@ void Client_FillAddress_SCClient()
 
 		if (SCClient001)
 		{
-			Client_FillAddress_ClientPortalManager_ResetAll(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_ClientPortalManager_EnableClipPlane(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_RenderingPortals(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_WaterLevel(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_FogParams(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+			Client_FillAddress_ClientPortalManager_ResetAll(DllInfo, RealDllInfo);
+			Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(DllInfo, RealDllInfo);
+			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
+			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
+			Client_FillAddress_WaterLevel(DllInfo, RealDllInfo);
+			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
 
 			g_bIsSvenCoop = true;
 		}
@@ -11390,22 +11390,15 @@ void Client_FillAddress_SCClient()
 
 void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.CL_IsThirdPerson)
-		return;
+	PVOID CL_IsThirdPerson = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, RealDllInfo, DllInfo);
 
-	if ((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > RealDllInfo.TextBase && (void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)RealDllInfo.TextBase + RealDllInfo.TextSize)
-	{
-		gPrivateFuncs.CL_IsThirdPerson = (decltype(gPrivateFuncs.CL_IsThirdPerson))(void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson;
-	}
-	else
+	if (!CL_IsThirdPerson)
 	{
 		if (g_pMetaHookAPI->GetClientModule())
 		{
-			gPrivateFuncs.CL_IsThirdPerson = (decltype(gPrivateFuncs.CL_IsThirdPerson))GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson");
+			CL_IsThirdPerson = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson"), RealDllInfo, DllInfo);
 		}
 	}
-
-	PVOID CL_IsThirdPerson = ConvertDllInfoSpace(gPrivateFuncs.CL_IsThirdPerson, RealDllInfo, DllInfo);
 
 	if (CL_IsThirdPerson)
 	{
@@ -11481,10 +11474,10 @@ void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t &DllInfo, const mh_
 	}
 }
 
-void Client_FillAddress()
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	Client_FillAddress_CL_IsThirdPerson(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-	Client_FillAddress_SCClient();
+	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
+	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 }
 
 void Client_InstallHooks()

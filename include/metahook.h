@@ -123,6 +123,8 @@ typedef struct hook_s hook_t;
 
 typedef void* BlobHandle_t;
 
+typedef HMODULE HMEMORYMODULE;
+
 typedef struct mh_load_dll_notification_context_s
 {
 	HMODULE hModule;
@@ -559,6 +561,36 @@ typedef struct metahook_api_s
 		Purpose: Return the image size of the mirrored client dll (same as GetClientSize), not available on blob client (because blob client must be loaded at fixed image base).
 	*/
 	ULONG(*GetMirrorClientSize)(VOID);
+
+	/*
+		Purpose: Load mirrored-dll with no execute permission. the dll is opened via fopen.
+	*/
+
+	HMEMORYMODULE (*MH_LoadMirrorDLL_Std)(const char* szFileName);
+
+	/*
+		Purpose: Load mirrored-dll with no execute permission. the dll is opened via g_pFileSystem.
+	*/
+
+	HMEMORYMODULE (*MH_LoadMirrorDLL_FileSystem)(const char* szFileName);
+
+	/*
+		Purpose: Free the given mirrored-dll.
+	*/
+
+	void (*MH_FreeMirrorDLL)(HMEMORYMODULE hMemoryModule);
+
+	/*
+		Purpose: Get ImageBase from the given mirrored-dll.
+	*/
+
+	PVOID(*MH_GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
+
+	/*
+		Purpose: Get ImageSize from the given mirrored-dll.
+	*/
+
+	ULONG (*MH_GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
 
 	//Always terminate with a NULL
 	PVOID Terminator;

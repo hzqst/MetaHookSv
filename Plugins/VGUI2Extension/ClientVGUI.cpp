@@ -890,8 +890,8 @@ void CClientVGUIProxy::Start(void)
 		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
 	
 		if (
-			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_dwClientBase &&
-				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
+				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
 		{
 			Sig_NotFound("CCSBackGroundPanel");
 		}
@@ -918,8 +918,8 @@ void CClientVGUIProxy::Start(void)
 		gPrivateFuncs.CWorldMap_vftable = *(PVOID**)g_pWorldMapPanel;
 
 		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_dwClientBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
 		{
 			Sig_NotFound("CWorldMap");
 		}
@@ -954,8 +954,8 @@ void CClientVGUIProxy::Start(void)
 		gPrivateFuncs.CWorldMapMissionSelect_vftable = *(PVOID**)g_pWorldMapMissionSelectPanel;
 
 		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_dwClientBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_dwClientBase + g_dwClientSize))
+			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
 		{
 			Sig_NotFound("CWorldMapMissionSelect_vftable");
 		}
@@ -1331,14 +1331,16 @@ EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION
 	Purpose : Install hooks for native ClientUI interface
 */
 
-typedef struct
+void NativeClientUI_RichText_Search(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, PVOID Candidate, bool bIsUnicode)
 {
-	bool bIsUnicode;
-}NativeClientUI_RichText_SearchContext;
+	typedef struct NativeClientUI_RichText_SearchContext_s
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+		bool bIsUnicode{};
+	}NativeClientUI_RichText_SearchContext;
 
-void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
-{
-	NativeClientUI_RichText_SearchContext ctx = { 0 };
+	NativeClientUI_RichText_SearchContext ctx = { DllInfo, RealDllInfo };
 
 	ctx.bIsUnicode = bIsUnicode;
 
@@ -1353,7 +1355,7 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 		{
 			PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
 
-			NativeClientUI_RichText_Search(imm, true);
+			NativeClientUI_RichText_Search(ctx->DllInfo, ctx->RealDllInfo, imm, true);
 			return FALSE;
 		}
 
@@ -1363,15 +1365,20 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 			{
 				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextW)
 				{
-					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address);
-					g_pMetaHookAPI->InlinePatchRedirectBranch(address, ClientVGUI_RichText_SetTextW_Proxy, NULL);
+					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address_RealDllBased);
+
+					g_pMetaHookAPI->InlinePatchRedirectBranch(address_RealDllBased, ClientVGUI_RichText_SetTextW_Proxy, NULL);
 				}
 			}
 			else
 			{
 				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextA)
 				{
-					gPrivateFuncs.ClientVGUI_RichText_SetTextA = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextA))GetCallAddress(address);
+					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+					gPrivateFuncs.ClientVGUI_RichText_SetTextA = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextA))GetCallAddress(address_RealDllBased);
 				}
 			}
 			return TRUE;
@@ -1391,26 +1398,14 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 	}, 0, &ctx);
 }
 
-void NativeClientUI_FillAddress(void)
+void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	ULONG ClientTextSize = g_dwClientTextSize;
-	PVOID ClientTextBase = g_dwClientTextBase;
-
-	ULONG ClientDataSize = 0;
-	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
-
-	ULONG ClientRdataSize = 0;
-	auto ClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRdataSize);
-
 	if (1)
 	{
-		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(ClientTextBase, ClientTextSize);
+		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(DllInfo, RealDllInfo);
 		Sig_FuncNotFound(ClientVGUI_Panel_Init);
 
-		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(
-			ClientTextBase, ClientTextSize,
-			ClientRdataBase, ClientRdataSize,
-			ClientDataBase, ClientDataSize);
+		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(DllInfo, RealDllInfo);
 		Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
 
 		gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))gPrivateFuncs.ClientVGUI_KeyValues_vftable[2];
@@ -1418,24 +1413,34 @@ void NativeClientUI_FillAddress(void)
 
 	if (1)
 	{
-		const char sigs1[] = "Resource/UI/TeamMenu.res";
-		auto TeamMenu_res_String = Search_Pattern_From_Size(ClientRdataBase, ClientRdataSize, sigs1);
+		const char sigs[] = "Resource/UI/TeamMenu.res";
+		auto TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
 		if (!TeamMenu_res_String)
-			TeamMenu_res_String = Search_Pattern_From_Size(ClientDataBase, ClientDataSize, sigs1);
+			TeamMenu_res_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
 		Sig_VarNotFound(TeamMenu_res_String);
 
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 1) = (DWORD)TeamMenu_res_String;
-		auto TeamMenu_res_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		auto TeamMenu_res_PushString = Search_Pattern_From_Size(DllInfo.TextBase, DllInfo.TextSize, pattern);
 		Sig_VarNotFound(TeamMenu_res_PushString);
+
+		typedef struct TeamMenu_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}TeamMenu_SearchContext;
+
+		TeamMenu_SearchContext ctx = { DllInfo , RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges(TeamMenu_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (TeamMenu_SearchContext*)context;
 
 			if (address[0] == 0xE8 && instCount <= 8)
 			{
-				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GetCallAddress(address);
+				PVOID ClientVGUI_LoadControlSettings_VA = GetCallAddress(address);;
+				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))ConvertDllInfoSpace(ClientVGUI_LoadControlSettings_VA, ctx->DllInfo, ctx->RealDllInfo);
 
 				return TRUE;
 			}
@@ -1455,28 +1460,28 @@ void NativeClientUI_FillAddress(void)
 
 	if (g_bIsCounterStrike)
 	{
-		const char sigs1[] = "maps/%s.txt";
-		auto MAPS_String = Search_Pattern_From_Size(ClientRdataBase, ClientRdataSize, sigs1);
+		const char sigs[] = "maps/%s.txt";
+		auto MAPS_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs);
 		if (!MAPS_String)
-			MAPS_String = Search_Pattern_From_Size(ClientDataBase, ClientDataSize, sigs1);
+			MAPS_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs);
 		Sig_VarNotFound(MAPS_String);
 
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x8D";
 		*(DWORD*)(pattern + 1) = (DWORD)MAPS_String;
-		auto MAPS_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		auto MAPS_PushString = Search_Pattern(pattern, DllInfo);
 		Sig_VarNotFound(MAPS_PushString);
 
-		typedef struct
+		typedef struct TeamMenu_LoadMapPage_SearchContext_s
 		{
-			PVOID InstAddress_FEFF;
-		}CTeamMenu_LoadMapPage_SearchContext;
+			PVOID InstAddress_FEFF{};
+		}TeamMenu_LoadMapPage_SearchContext;
 
-		CTeamMenu_LoadMapPage_SearchContext ctx = { 0 };
+		TeamMenu_LoadMapPage_SearchContext ctx = {  };
 
 		g_pMetaHookAPI->DisasmRanges(MAPS_PushString, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
-			auto ctx = (CTeamMenu_LoadMapPage_SearchContext*)context;
+			auto ctx = (TeamMenu_LoadMapPage_SearchContext*)context;
 
 			if(pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
@@ -1502,7 +1507,7 @@ void NativeClientUI_FillAddress(void)
 			Sig_NotFound(ctx.InstAddress_FEFF);
 		}
 
-		NativeClientUI_RichText_Search(ctx.InstAddress_FEFF, false);
+		NativeClientUI_RichText_Search(DllInfo, RealDllInfo, ctx.InstAddress_FEFF, false);
 
 		Sig_FuncNotFound(ClientVGUI_RichText_SetTextW);
 		Sig_FuncNotFound(ClientVGUI_RichText_SetTextA);
@@ -1567,7 +1572,7 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
 
-			NativeClientUI_FillAddress();
+			NativeClientUI_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 			NativeClientUI_InstallHooks();
 
 			g_IsNativeClientVGUI2 = true;

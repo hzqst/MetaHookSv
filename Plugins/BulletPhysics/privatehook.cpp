@@ -1214,22 +1214,15 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t &RealD
 
 void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.CL_IsThirdPerson)
-		return;
+	PVOID CL_IsThirdPerson = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, RealDllInfo, DllInfo);
 
-	if ((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > RealDllInfo.TextBase && (void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)RealDllInfo.TextBase + RealDllInfo.TextSize)
-	{
-		gPrivateFuncs.CL_IsThirdPerson = (decltype(gPrivateFuncs.CL_IsThirdPerson))(void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson;
-	}
-	else
+	if(!CL_IsThirdPerson)
 	{
 		if (g_pMetaHookAPI->GetClientModule())
 		{
-			gPrivateFuncs.CL_IsThirdPerson = (decltype(gPrivateFuncs.CL_IsThirdPerson))GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson");
+			CL_IsThirdPerson = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson"), RealDllInfo, DllInfo);
 		}
 	}
-
-	PVOID CL_IsThirdPerson = ConvertDllInfoSpace(gPrivateFuncs.CL_IsThirdPerson, RealDllInfo, DllInfo);
 
 	if (CL_IsThirdPerson)
 	{
@@ -1416,7 +1409,7 @@ void Client_FillAddress_Drift(const mh_dll_info_t& DllInfo, const mh_dll_info_t&
 	g_pitchdrift = (decltype(g_pitchdrift))ConvertDllInfoSpace(g_pitchdrift_VA, DllInfo, RealDllInfo);
 }
 
-void Client_FillAddress_SCClient()
+void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -1426,9 +1419,9 @@ void Client_FillAddress_SCClient()
 
 		if (SCClient001)
 		{
-			Client_FillAddress_RenderingPortals(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_ViewEntityIndex(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
-			Client_FillAddress_Drift(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
+			Client_FillAddress_ViewEntityIndex(DllInfo, RealDllInfo);
+			Client_FillAddress_Drift(DllInfo, RealDllInfo);
 
 			g_bIsSvenCoop = true;
 		}
@@ -1699,7 +1692,7 @@ void Client_FillAddress_PlayerExtraInfo(const mh_dll_info_t& DllInfo, const mh_d
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	Client_FillAddress_SCClient();
+	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 
 	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
 
@@ -1734,20 +1727,10 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 	return r;
 }
 
-#if 0//unused
-void Mod_LoadStudioModel(model_t* mod, void* buffer)
-{
-	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
-}
-#endif
-
 void Engine_InstallHook(void)
 {
 	Install_InlineHook(R_NewMap);
 	
-	//unused
-	//Install_InlineHook(Mod_LoadStudioModel);
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		Install_InlineHook(R_RenderView_SvEngine);
