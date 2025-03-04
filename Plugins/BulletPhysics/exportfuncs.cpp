@@ -914,10 +914,16 @@ void ClientStudio_FillAddress_StudioDrawPlayer(struct r_studio_interface_s** ppi
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
+		}, 0, &ctx);
 
 		if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index == 0)
 			gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = 3;
+
+		PVOID* vftable = *(PVOID**)g_pGameStudioRenderer;
+
+		gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
+			GetVFunctionFromVFTable(vftable, gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index, DllInfo, RealDllInfo, RealDllInfo);
+		Sig_FuncNotFound(GameStudioRenderer_StudioDrawPlayer);
 	}
 }
 

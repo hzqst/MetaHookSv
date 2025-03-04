@@ -1618,7 +1618,6 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 		return;
 
 	PVOID R_RenderView_VA = 0;
-	ULONG R_RenderView_RVA = 0;
 
 	{
 		const char sig[] = "R_RenderView: NULL worldmodel";
@@ -1649,24 +1648,20 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 						return TRUE;
 
 					return FALSE;
-					});
-
-				Convert_VA_to_RVA(R_RenderView, DllInfo);
+				});
 			}
 		}
 	}
 
-	if (!R_RenderView_RVA)
+	if (!R_RenderView_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
@@ -1674,25 +1669,22 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 
 			if (!R_RenderView_VA)
 				R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_NEW2, DllInfo);
-
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 	}
 
-	if (R_RenderView_RVA)
+	if (R_RenderView_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))VA_from_RVA(R_RenderView, RealDllInfo);
+			gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))ConvertDllInfoSpace(R_RenderView_VA, DllInfo, RealDllInfo);
 		}
 		else
 		{
-			gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))VA_from_RVA(R_RenderView, RealDllInfo);
+			gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))ConvertDllInfoSpace(R_RenderView_VA, DllInfo, RealDllInfo);
 		}
 	}
 
@@ -1714,7 +1706,7 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 			if (gPrivateFuncs.R_RenderScene_inlined)
 				SearchLength = 0x1000;
 
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_RenderView_VA, SearchLength, pattern);
+			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_RenderView_VA, SearchLength, pattern);
 			Sig_AddrNotFound(c_brush_polys);
 			PVOID c_alias_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
 			PVOID c_brush_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 14));
@@ -1723,23 +1715,32 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
+			/*
+.text:1024466F C7 05 B0 55 DC 10 00 00 00 00                       mov     c_brush_polys, 0
+.text:10244679 C7 05 AC 55 DC 10 00 00 00 00                       mov     c_alias_polys, 0
+.text:10244683
+.text:10244683                                     loc_10244683:                           ; CODE XREF: R_RenderView+4F↑j
+.text:10244683 33 C0                                               xor     eax, eax
+.text:10244685 C7 05 E4 50 DC 10 00 00 00 00                       mov     dword_10DC50E4, 0
+.text:1024468F 83 3D 44 CC 3F 11 01                                cmp     dword_113FCC44, 1
+			*/
 			const char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_RenderView_VA, 0x100, pattern);
+			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_RenderView_VA, 0x100, pattern);
 			Sig_AddrNotFound(c_brush_polys);
-			PVOID c_alias_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
-			PVOID c_brush_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 14));
-			c_brush_polys = (decltype(c_brush_polys))ConvertDllInfoSpace(c_alias_polys_VA, DllInfo, RealDllInfo);
-			c_alias_polys = (decltype(c_alias_polys))ConvertDllInfoSpace(c_brush_polys_VA, DllInfo, RealDllInfo);
+			PVOID c_brush_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 2));
+			PVOID c_alias_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 12));
+			c_brush_polys = (decltype(c_brush_polys))ConvertDllInfoSpace(c_brush_polys_VA, DllInfo, RealDllInfo);
+			c_alias_polys = (decltype(c_alias_polys))ConvertDllInfoSpace(c_alias_polys_VA, DllInfo, RealDllInfo);
 		}
 		else
 		{
 			const char pattern[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x51";
-			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_RenderView_VA, 0x150, pattern);
+			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(R_RenderView_VA, 0x150, pattern);
 			Sig_AddrNotFound(c_brush_polys);
 			PVOID c_alias_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 1));
 			PVOID c_brush_polys_VA = (PVOID)(*(ULONG_PTR*)(addr + 7));
-			c_brush_polys = (decltype(c_brush_polys))ConvertDllInfoSpace(c_alias_polys_VA, DllInfo, RealDllInfo);
-			c_alias_polys = (decltype(c_alias_polys))ConvertDllInfoSpace(c_brush_polys_VA, DllInfo, RealDllInfo);
+			c_alias_polys = (decltype(c_alias_polys))ConvertDllInfoSpace(c_alias_polys_VA, DllInfo, RealDllInfo);
+			c_brush_polys = (decltype(c_brush_polys))ConvertDllInfoSpace(c_brush_polys_VA, DllInfo, RealDllInfo);
 		}
 	}
 
@@ -3154,38 +3155,54 @@ void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const
 	if (gPrivateFuncs.R_RecursiveWorldNode)
 		return;
 
-	ULONG_PTR R_RecursiveWorldNode_VA = 0;
-	ULONG R_RecursiveWorldNode_RVA = 0;
+	PVOID R_RecursiveWorldNode_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_RecursiveWorldNode_VA = (ULONG_PTR)Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_RecursiveWorldNode, DllInfo);
+		R_RecursiveWorldNode_VA = Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_RecursiveWorldNode_VA = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_DrawSequentialPoly, R_RECURSIVEWORLDNODE_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_RecursiveWorldNode, DllInfo);
+		PVOID R_DrawSequentialPoly_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawSequentialPoly, RealDllInfo, DllInfo);
+
+		if (!R_DrawSequentialPoly_VA)
+		{
+			Sig_NotFound(R_DrawSequentialPoly_VA);
+		}
+
+		R_RecursiveWorldNode_VA = Search_Pattern_From(R_DrawSequentialPoly_VA, R_RECURSIVEWORLDNODE_SIG_HL25, DllInfo);
+
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_RecursiveWorldNode_VA = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW, DllInfo);
+		PVOID R_DrawBrushModel_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawBrushModel, RealDllInfo, DllInfo);
+
+		if (!R_DrawBrushModel_VA)
+		{
+			Sig_NotFound(R_DrawBrushModel_VA);
+		}
+
+		R_RecursiveWorldNode_VA = Search_Pattern_From(R_DrawBrushModel_VA, R_RECURSIVEWORLDNODE_SIG_NEW, DllInfo);
 
 		//try another signature
 		if (!R_RecursiveWorldNode_VA)
-			R_RecursiveWorldNode_VA = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW2, DllInfo);
+			R_RecursiveWorldNode_VA = Search_Pattern_From(R_DrawBrushModel_VA, R_RECURSIVEWORLDNODE_SIG_NEW2, DllInfo);
 
-		Convert_VA_to_RVA(R_RecursiveWorldNode, DllInfo);
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_RecursiveWorldNode_VA = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_RecursiveWorldNode, DllInfo);
-	}
+		PVOID R_DrawBrushModel_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawBrushModel, RealDllInfo, DllInfo);
 
-	if (R_RecursiveWorldNode_RVA)
-	{
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))VA_from_RVA(R_RecursiveWorldNode, RealDllInfo);
+		if (!R_DrawBrushModel_VA)
+		{
+			Sig_NotFound(R_DrawBrushModel_VA);
+		}
+
+		R_RecursiveWorldNode_VA = Search_Pattern_From(R_DrawBrushModel_VA, R_RECURSIVEWORLDNODE_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_RecursiveWorldNode);

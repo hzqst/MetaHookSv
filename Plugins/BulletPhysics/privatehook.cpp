@@ -197,7 +197,6 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 		return;
 
 	PVOID R_RenderView_VA = 0;
-	ULONG R_RenderView_RVA = 0;
 
 	{
 		const char sig[] = "R_RenderView: NULL worldmodel";
@@ -229,23 +228,19 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 
 					return FALSE;
 					});
-
-				Convert_VA_to_RVA(R_RenderView, DllInfo);
 			}
 		}
 	}
 
-	if (!R_RenderView_RVA)
+	if (!R_RenderView_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
@@ -253,25 +248,22 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 
 			if (!R_RenderView_VA)
 				R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_NEW2, DllInfo);
-
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
 			R_RenderView_VA = (decltype(R_RenderView_VA))Search_Pattern(R_RENDERVIEW_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_RenderView, DllInfo);
 		}
 	}
 
-	if (R_RenderView_RVA)
+	if (R_RenderView_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))VA_from_RVA(R_RenderView, RealDllInfo);
+			gPrivateFuncs.R_RenderView_SvEngine = (decltype(gPrivateFuncs.R_RenderView_SvEngine))ConvertDllInfoSpace(R_RenderView_VA, DllInfo, RealDllInfo);
 		}
 		else
 		{
-			gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))VA_from_RVA(R_RenderView, RealDllInfo);
+			gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))ConvertDllInfoSpace(R_RenderView_VA, DllInfo, RealDllInfo);
 		}
 	}
 

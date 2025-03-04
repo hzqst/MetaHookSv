@@ -2073,7 +2073,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 		else
 		{
 			const char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A";
-			*(ULONG_PTR*)(pattern2 + sizeof(pattern2) - 1 - 4) = (ULONG_PTR)g_phClientModule;
+			*(ULONG_PTR*)(pattern2 + sizeof(pattern2) - 1 - 4) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
 
 			auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern2, sizeof(pattern2) - 1);
 			if (FreeBlob_Call)
@@ -2084,7 +2084,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 			else
 			{
 				const char pattern3[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50";
-				*(ULONG_PTR*)(pattern3 + sizeof(pattern2) - 1 - 5) = (ULONG_PTR)g_phClientModule;
+				*(ULONG_PTR*)(pattern3 + sizeof(pattern2) - 1 - 5) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
 				auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern3, sizeof(pattern3) - 1);
 				if (FreeBlob_Call)
 				{

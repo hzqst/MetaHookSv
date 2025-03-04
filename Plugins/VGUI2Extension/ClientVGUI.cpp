@@ -889,11 +889,11 @@ void CClientVGUIProxy::Start(void)
 
 		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
 	
-		if (
-			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
-				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
+		if (//The vftable must be inside client dll image.
+			!((ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
+				(ULONG_PTR)gPrivateFuncs.CCSBackGroundPanel_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
 		{
-			Sig_NotFound("CCSBackGroundPanel");
+			Sig_NotFound(CCSBackGroundPanel);
 		}
 
 		for (int index = 159; index <= 160; ++index)
@@ -1439,7 +1439,7 @@ void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 			if (address[0] == 0xE8 && instCount <= 8)
 			{
-				PVOID ClientVGUI_LoadControlSettings_VA = GetCallAddress(address);;
+				PVOID ClientVGUI_LoadControlSettings_VA = GetCallAddress(address);
 				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))ConvertDllInfoSpace(ClientVGUI_LoadControlSettings_VA, ctx->DllInfo, ctx->RealDllInfo);
 
 				return TRUE;
@@ -1453,7 +1453,7 @@ void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 			return FALSE;
 
-		}, 0, NULL);
+		}, 0, &ctx);
 
 		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
 	}
