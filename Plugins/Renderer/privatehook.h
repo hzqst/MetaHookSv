@@ -104,7 +104,7 @@ typedef struct
 	void *(*Hunk_AllocName)(int size, const char *name);
 	void *(*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 
-	//Sven Client DLL
+	//Sven Co-op Client DLL
 	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
 	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
 	void(__fastcall *ClientPortalManager_DrawPortalSurface)(void * pthis, int dummy, void *ClientPortal, msurface_t *surf, GLuint texture);
@@ -148,6 +148,9 @@ typedef struct
 	int GameStudioRenderer_StudioRenderModel_vftable_index;
 	int GameStudioRenderer_StudioRenderFinal_vftable_index;
 
+	//Client DLL
+	int (*CL_IsThirdPerson)(void);
+
 	//Engine Studio
 	void(*R_StudioRenderModel)(void);
 	void(*R_StudioRenderFinal)(void);
@@ -157,8 +160,28 @@ typedef struct
 
 	//SDL2
 	int (__cdecl * SDL_GL_SetAttribute)(int attr, int value);
+
+	bool R_ForceCVars_inlined;
+	bool R_SetupFrame_inlined;
+	bool R_RenderScene_inlined;
+	bool R_LightStrength_inlined;
+	bool R_GlowBlend_inlined;
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;
 
-void Client_FillAddress(void);
+
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_InstallHooks();
+void Engine_UninstallHooks();
+void ClientStudio_UninstallHooks();
+void EngineStudio_UninstallHooks();
+void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_InstallHooks();
+void Client_UninstallHooks();
+
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);

@@ -1,0 +1,13 @@
+LIBRARY
+EXPORTS
+LoadLibraryMemory
+LoadLibraryMemoryExA
+LoadLibraryMemoryExW
+FreeLibraryMemory
+
+LdrLoadDllMemoryExW
+LdrUnloadDllMemory
+LdrUnloadDllMemoryAndExitThread
+LdrQuerySystemMemoryModuleFeatures
+
+MmpGlobalDataPtr

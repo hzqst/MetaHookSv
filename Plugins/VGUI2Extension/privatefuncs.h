@@ -188,20 +188,24 @@ const char* GetCurrentGameLanguage();
 extern HMODULE g_hGameUI;
 extern HMODULE g_hServerBrowser;
 extern bool g_bIsServerBrowserHooked;
+extern mh_dll_info_t g_GameUIDllInfo;
+extern mh_dll_info_t g_ServerBrowserDllInfo;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 bool SCR_IsLoadingVisible(void);
 
-PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize);
-PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize);
-PVOID* VGUI2_FindMenuVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize);
+PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+PVOID *VGUI2_FindKeyValueVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+PVOID* VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
-void Client_FillAddress(void);
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
 void SDL2_FillAddress(void);
-void Engine_FillAddress(void);
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHooks(void);
@@ -226,3 +230,6 @@ void KeyValuesSystem_UninstallHooks(void);
 void InputWin32_FillAddress(void);
 
 void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);

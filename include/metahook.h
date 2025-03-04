@@ -123,6 +123,8 @@ typedef struct hook_s hook_t;
 
 typedef void* BlobHandle_t;
 
+typedef HMODULE HMEMORYMODULE;
+
 typedef struct mh_load_dll_notification_context_s
 {
 	HMODULE hModule;
@@ -133,6 +135,18 @@ typedef struct mh_load_dll_notification_context_s
 	LPCWSTR FullDllName;
 	LPCWSTR BaseDllName;
 }mh_load_dll_notification_context_t;
+
+typedef struct mh_dll_info_s
+{
+	PVOID ImageBase;
+	DWORD ImageSize;
+	PVOID TextBase;
+	DWORD TextSize;
+	PVOID DataBase;
+	DWORD DataSize;
+	PVOID RdataBase;
+	DWORD RdataSize;
+}mh_dll_info_t;
 
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
@@ -528,6 +542,56 @@ typedef struct metahook_api_s
 	*/
 	void* (*SearchPatternNoWildCard)(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
 
+	/*
+		Purpose: Return the image base of the mirrored engine dll (with .code relocation fixed), not available on blob engine.
+	*/
+	PVOID (*GetMirrorEngineBase)(VOID);
+
+	/*
+		Purpose: Return the image size of the mirrored engine dll (same as GetEngineSize), not available on blob engine (because blob engine must be loaded at fixed image base).
+	*/
+	ULONG (*GetMirrorEngineSize)(VOID);
+
+	/*
+		Purpose: Return the image base of the mirrored client dll (with .code relocation fixed), not available on blob engine.
+	*/
+	PVOID(*GetMirrorClientBase)(VOID);
+
+	/*
+		Purpose: Return the image size of the mirrored client dll (same as GetClientSize), not available on blob client (because blob client must be loaded at fixed image base).
+	*/
+	ULONG(*GetMirrorClientSize)(VOID);
+
+	/*
+		Purpose: Load mirrored-dll with no execute permission. the dll is opened via fopen.
+	*/
+
+	HMEMORYMODULE (*MH_LoadMirrorDLL_Std)(const char* szFileName);
+
+	/*
+		Purpose: Load mirrored-dll with no execute permission. the dll is opened via g_pFileSystem.
+	*/
+
+	HMEMORYMODULE (*MH_LoadMirrorDLL_FileSystem)(const char* szFileName);
+
+	/*
+		Purpose: Free the given mirrored-dll.
+	*/
+
+	void (*MH_FreeMirrorDLL)(HMEMORYMODULE hMemoryModule);
+
+	/*
+		Purpose: Get ImageBase from the given mirrored-dll.
+	*/
+
+	PVOID(*MH_GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
+
+	/*
+		Purpose: Get ImageSize from the given mirrored-dll.
+	*/
+
+	ULONG (*MH_GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
+
 	//Always terminate with a NULL
 	PVOID Terminator;
 
@@ -539,15 +603,11 @@ typedef struct mh_enginesave_s
 	cl_enginefunc_t *pEngineFuncs;
 }mh_enginesave_t;
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName, const char* szFullGamePath);
-void MH_ExitGame(int iResult);
-void MH_Shutdown(void);
-
 #include <IFileSystem.h>
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 104
+#define METAHOOK_API_VERSION 105
 
 class ICommandLine;
 class IFileSystem;

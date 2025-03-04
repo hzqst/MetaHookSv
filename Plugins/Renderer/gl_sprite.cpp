@@ -26,7 +26,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		if(state & SPRITE_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
-		if ((state & SPRITE_OIT_BLEND_ENABLED) && bUseOITBlend)
+		if ((state & SPRITE_OIT_BLEND_ENABLED) && g_bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
 		if (state & SPRITE_GAMMA_BLEND_ENABLED)

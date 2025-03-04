@@ -214,12 +214,12 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern bool bNoStretchAspect;
-extern bool bUseOITBlend;
+extern bool g_bNoStretchAspect;
+extern bool g_bUseOITBlend;
 //extern bool bVerticalFov;//unused
-extern bool bUseLegacyTextureLoader;
-extern bool bHasOfficialFBOSupport;
-extern bool bHasOfficialGLTexAllocSupport;
+extern bool g_bUseLegacyTextureLoader;
+extern bool g_bHasOfficialFBOSupport;
+extern bool g_bHasOfficialGLTexAllocSupport;
 
 extern FBO_Container_t s_FinalBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
@@ -322,14 +322,6 @@ extern cvar_t *r_alpha_shift;
 extern cvar_t *r_additive_shift;
 
 extern cvar_t* r_detailskytextures;
-
-void R_FillAddress(void);
-void R_InstallHooks(void);
-void R_UninstallHooksForEngineStudioInterface(void);
-void R_UninstallHooksForEngineDLL(void);
-void R_UninstallHooksForClientDLL(void);
-void R_RedirectLegacyOpenGLTextureAllocation(void);
-void R_PatchResetLatched(void);
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);

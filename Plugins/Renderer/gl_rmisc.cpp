@@ -417,7 +417,7 @@ void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 	//We have to allocate a new texture manually to fix this issue.
 	//Until we rewrite GL_LoadTexture2
 #if 1
-	if (!bHasOfficialGLTexAllocSupport)
+	if (!g_bHasOfficialGLTexAllocSupport)
 	{
 		glt->texnum = GL_GenTexture();
 	}

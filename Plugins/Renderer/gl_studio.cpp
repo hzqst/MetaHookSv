@@ -679,7 +679,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_ADDITIVE_BLEND_ENABLED)
 			defs << "#define ADDITIVE_BLEND_ENABLED\n";
 
-		if ((state & STUDIO_OIT_BLEND_ENABLED) && bUseOITBlend)
+		if ((state & STUDIO_OIT_BLEND_ENABLED) && g_bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
 		if (state & STUDIO_GAMMA_BLEND_ENABLED)

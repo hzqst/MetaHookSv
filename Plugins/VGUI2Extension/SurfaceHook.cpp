@@ -899,7 +899,7 @@ void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
 		{
@@ -1779,7 +1779,7 @@ void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_ClientDLLInfo.TextBase && retaddr < (PUCHAR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize)
 	{
 		if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
 		{

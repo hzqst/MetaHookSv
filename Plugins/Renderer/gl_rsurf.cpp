@@ -5,18 +5,18 @@ msurface_t **skychain = NULL;
 msurface_t **waterchain = NULL;
 
 //engine
-byte *lightmaps;
-int *lightmap_textures;
-void *lightmap_rectchange;
-int *lightmap_modified;
-glpoly_t **lightmap_polys;
-int *d_lightstylevalue;
-dlight_t *cl_dlights;
-int *r_dlightactive;
-int *gDecalSurfCount;
-msurface_t **gDecalSurfs;
-decal_t *gDecalPool;
-decalcache_t *gDecalCache;
+byte *lightmaps = NULL;
+int *lightmap_textures = NULL;
+void *lightmap_rectchange = NULL;
+int *lightmap_modified = NULL;
+glpoly_t **lightmap_polys = NULL;
+int *d_lightstylevalue = NULL;
+dlight_t *cl_dlights = NULL;
+int *r_dlightactive = NULL;
+int *gDecalSurfCount = NULL;
+msurface_t **gDecalSurfs = NULL;
+decal_t *gDecalPool = NULL;
+decalcache_t *gDecalCache = NULL;
 
 decal_drawbatch_t g_DecalBaseDrawBatch = { 0 };
 decal_drawbatch_t g_DecalDetailDrawBatch = { 0 };

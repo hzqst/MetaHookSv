@@ -1,3 +1,10 @@
+# Build outputs
+output/
+Debug/
+Release/
+Release_AVX2/
+intermediate/
+
 # Prerequisites
 *.d
 
