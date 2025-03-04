@@ -566,31 +566,31 @@ typedef struct metahook_api_s
 		Purpose: Load mirrored-dll with no execute permission. the dll is opened via fopen.
 	*/
 
-	HMEMORYMODULE (*MH_LoadMirrorDLL_Std)(const char* szFileName);
+	HMEMORYMODULE (*LoadMirrorDLL_Std)(const char* szFileName);
 
 	/*
 		Purpose: Load mirrored-dll with no execute permission. the dll is opened via g_pFileSystem.
 	*/
 
-	HMEMORYMODULE (*MH_LoadMirrorDLL_FileSystem)(const char* szFileName);
+	HMEMORYMODULE (*LoadMirrorDLL_FileSystem)(const char* szFileName);
 
 	/*
 		Purpose: Free the given mirrored-dll.
 	*/
 
-	void (*MH_FreeMirrorDLL)(HMEMORYMODULE hMemoryModule);
+	void (*FreeMirrorDLL)(HMEMORYMODULE hMemoryModule);
 
 	/*
 		Purpose: Get ImageBase from the given mirrored-dll.
 	*/
 
-	PVOID(*MH_GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
+	PVOID(*GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
 
 	/*
 		Purpose: Get ImageSize from the given mirrored-dll.
 	*/
 
-	ULONG (*MH_GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
+	ULONG (*GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
 
 	//Always terminate with a NULL
 	PVOID Terminator;

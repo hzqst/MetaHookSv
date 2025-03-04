@@ -154,6 +154,30 @@ cvar回调是Valve在buildnum 6153 GoldSrc引擎中添加的功能，用于在cv
 
 `g_pMetaHookAPI->InlinePatchRedirectBranch` ：以内存补丁的方式重定向call/jmp指令到新的函数上，只由被patch的那条指令会受该hook影响。
 
+### API: Mirror-DLL
+
+Mirror-DLL 是以内存模块形式加载的DLL，不包含可执行权限，没有执行过DLL入口点，只经过重定位修正。用于给插件提供一个干净的搜索特征码的环境。Mirror-DLL中的代码段(.text)和数据段(.rdata .data)内容与目标DLL刚加载时的状态保持一致。
+
+由于Blob形式加载的模块不支持重定位，所以Blob Engine和Blob Client不提供对应的Mirror-DLL支持。
+
+`g_pMetaHookAPI->GetMirrorEngineBase` : 获取以Mirror-DLL形式加载的引擎基地址。对于Blob Engine返回0
+
+`g_pMetaHookAPI->GetMirrorEngineSize` : 获取以Mirror-DLL形式加载的引擎模块大小。对于Blob Engine返回0
+
+`g_pMetaHookAPI->GetMirrorClientBase` : 获取以Mirror-DLL形式加载的client.dll模块基地址。对于Blob Engine返回0
+
+`g_pMetaHookAPI->GetMirrorClientSize` : 获取以Mirror-DLL形式加载的client.dll模块大小。对于Blob Engine返回0
+
+`g_pMetaHookAPI->LoadMirrorDLL_Std` : 以Mirror-DLL形式加载特定模块。内部使用fopen打开DLL文件。
+
+`g_pMetaHookAPI->LoadMirrorDLL_FileSystem` : 以Mirror-DLL形式加载特定模块。内部使用IFileSystem打开DLL文件。
+
+`g_pMetaHookAPI->FreeMirrorDLL` : 释放以Mirror-DLL形式加载的模块。
+
+`g_pMetaHookAPI->GetMirrorDLLBase` : 获得以Mirror-DLL形式加载的模块的基地址。
+
+`g_pMetaHookAPI->GetMirrorDLLSize` : 获得以Mirror-DLL形式加载的模块的大小。
+
 ### 自动检测并加载 SSE / SSE2 / AVX / AVX2 版本的插件
 
 1. MetaHook启动器总是会以从上到下的顺序加载 `\(ModDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
