@@ -7,7 +7,7 @@
 #include <set>
 #include <SDL2/SDL_video.h>
 
-//#define HAS_VIEWMODEL_PASS
+#define HAS_VIEWMODEL_PASS 1
 
 private_funcs_t gPrivateFuncs = { 0 };
 
@@ -156,6 +156,7 @@ int *g_iUser2 = NULL;
 
 int* g_iWaterLevel = NULL;
 bool *g_bRenderingPortals_SCClient = NULL;
+int* g_ViewEntityIndex_SCClient = NULL;//Sniber NMSL
 
 float* g_iFogColor_SCClient = NULL;
 float* g_iStartDist_SCClient = NULL;
@@ -168,9 +169,8 @@ vec4_t g_PortalClipPlane[6] = {0};
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = {0};
 
-#if defined(HAS_VIEWMODEL_PASS)
-std::vector<cl_entity_t*> g_ViewModelPassOpaqueEntity;
-std::vector<transObjRef> g_ViewModelPassTransEntity;
+#if 1
+std::vector<cl_entity_t*> g_ViewModelPassEntity;
 #endif
 
 //This is the pass that collects tempents created by ViewModel's StudioEvents
@@ -326,6 +326,8 @@ cvar_t* r_gamma_blend = NULL;
 cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
+
+cvar_t* r_draw_lowerbody = NULL;
 
 /*
 	Purpose : Check if we can render fog
@@ -1484,11 +1486,6 @@ void R_DrawViewModel(void)
 
 	glDepthRange(0, 0.3);
 
-#if 0
-	int original_numVisEdicts = (*cl_numvisedicts);
-	int original_numTransObjects = (*numTransObjs);
-#endif
-
 	switch ((*currententity)->model->type)
 	{
 	case mod_studio:
@@ -1530,11 +1527,32 @@ void R_DrawViewModel(void)
 	}
 	}
 
-#if 0
+	(*cl_numvisedicts) = 0;
+	(*numTransObjs) = 0;
 
-	R_DrawEntitiesForViewModel();
-	R_DrawTEntitiesForViewModel();
-#endif
+	for (size_t i = 0; i < g_ViewModelPassEntity.size(); ++i)
+	{
+		auto ent = g_ViewModelPassEntity[i];
+
+		if ((*cl_numvisedicts) >= EngineGetMaxVisEdicts())
+			break;
+
+		cl_visedicts[i] = ent;
+		(*cl_numvisedicts)++;
+	}
+
+	if ((*cl_numvisedicts) > 0)
+	{
+		//Sniber NMSL
+		auto iSavedViewEntityIndex = (*g_ViewEntityIndex_SCClient);
+
+		(*g_ViewEntityIndex_SCClient) = 0;
+
+		R_DrawEntitiesOnList();
+		R_DrawTransEntities((*r_refdef.onlyClientDraws));
+
+		(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex;
+	}
 
 	glDepthRange(0, 1);
 
@@ -1955,24 +1973,23 @@ bool SCR_IsLoadingVisible()
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
-void R_RenderPreFrame()
+void R_GameFrameStart()
 {
 	R_EntityComponents_StartFrame();
+
+	g_ViewModelPassEntity.clear();
 }
 
-void R_RenderStartView()
+void R_RenderViewStart()
 {
-#if defined(HAS_VIEWMODEL_PASS)
-	g_ViewModelPassOpaqueEntity.clear();
-	g_ViewModelPassTransEntity.clear();
-#endif
+
 }
 
 /*
 	Purpose: Called once per frame, before running any render pass, but after physics and networking
 */
 
-void R_RenderStartFrame()
+void R_RenderFrameStart()
 {
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
@@ -2027,7 +2044,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		GL_FlushFinalBuffer();
 	}
 
-	R_RenderStartFrame();
+	R_RenderFrameStart();
 
 	r_renderview_pass = 0;
 	*c_alias_polys = 0;
@@ -2055,7 +2072,7 @@ void R_PreRenderView()
 	r_draw_gammablend = false;
 
 	//Currently unused
-	R_RenderStartView();
+	R_RenderViewStart();
 
 	R_RenderShadowMap();
 
@@ -2161,10 +2178,10 @@ void R_PreDrawViewModel(void)
 
 	r_draw_predrawviewmodel = true;
 
-#if defined(HAS_VIEWMODEL_PASS)
+#if HAS_VIEWMODEL_PASS
 
 	int original_numVisEdicts = (*cl_numvisedicts);
-	int original_numTransObjects = (*numTransObjs);
+
 #endif
 
 	switch ((*currententity)->model->type)
@@ -2194,19 +2211,14 @@ void R_PreDrawViewModel(void)
 	}
 	}
 
-#if defined(HAS_VIEWMODEL_PASS)
+#if HAS_VIEWMODEL_PASS
+
 	for (int i = original_numVisEdicts; i < (*cl_numvisedicts); ++i)
 	{
-		g_ViewModelPassOpaqueEntity.emplace_back(cl_visedicts[i]);
-	}
-
-	for (int i = original_numTransObjects; i < (*numTransObjs); ++i)
-	{
-		g_ViewModelPassTransEntity.emplace_back((*transObjects)[i]);
+		R_AddViewModelPassEntity(cl_visedicts[i]);
 	}
 
 	(*cl_numvisedicts) = original_numVisEdicts;
-	(*numTransObjs) = original_numTransObjects;
 
 #endif
 
@@ -2535,6 +2547,8 @@ void R_InitCvars(void)
 	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_sprite_lerping = gEngfuncs.pfnRegisterVariable("r_sprite_lerping", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	r_draw_lowerbody = gEngfuncs.pfnRegisterVariable("r_draw_lowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
@@ -3321,117 +3335,6 @@ void R_DrawEntitiesOnList(void)
 	}
 }
 
-#if defined(HAS_VIEWMODEL_PASS)
-
-void R_AddTEntityForViewModel(cl_entity_t* ent)
-{
-	if (R_IsRenderingShadowView())
-		return;
-
-	if (!ent->model)
-		return;
-
-	//Brush models with kRenderTransAlpha are forced to be opaque, except renderamt = 0 
-	if (ent->model->type == mod_brush && ent->curstate.rendermode == kRenderTransAlpha)
-	{
-		if (ent->curstate.renderamt == 0)
-			return;
-
-		(*currententity) = ent;
-
-		R_DrawCurrentEntity(false);
-
-		return;
-	}
-
-	transObjRef ref;
-
-	float dist;
-	vec3_t v;
-
-	if (!ent->model || ent->model->type != mod_brush || ent->curstate.rendermode != kRenderTransAlpha)
-	{
-		VectorAdd(ent->model->mins, ent->model->maxs, v);
-		VectorScale(v, 0.5f, v);
-		VectorAdd(v, ent->origin, v);
-		VectorSubtract(r_origin, v, v);
-		dist = DotProduct(v, v);
-	}
-	else
-	{
-		dist = 1000000000;
-	}
-
-	ref.distance = dist;
-	ref.pEnt = ent;
-
-	g_ViewModelPassTransEntity.emplace_back(ref);
-}
-
-void R_DrawEntitiesForViewModel(void)
-{
-	if (!r_drawentities->value)
-		return;
-
-	for (size_t i = 0; i < g_ViewModelPassOpaqueEntity.size(); ++i)
-	{
-		(*currententity) = g_ViewModelPassOpaqueEntity[i];
-
-		if ((*currententity)->curstate.rendermode != kRenderNormal)
-		{
-			R_AddTEntityForViewModel((*currententity));
-			continue;
-		}
-
-		if ((*currententity)->curstate.rendermode == kRenderNormal &&
-			(*currententity)->model &&
-			(*currententity)->model->type == mod_sprite &&
-			gl_spriteblend->value)
-		{
-			R_AddTEntityForViewModel((*currententity));
-			continue;
-		}
-
-		if ((*currententity)->model &&
-			(*currententity)->model->type != mod_sprite)
-		{
-			R_DrawCurrentEntity(false);
-		}
-
-		//TODO: defer pass?
-	}
-}
-
-void R_DrawTEntitiesForViewModel(void)
-{
-	if (!r_drawentities->value)
-		return;
-
-	if (g_bUseOITBlend)
-	{
-		//TODO: oit stuffs...
-	}
-	else
-	{
-		std::qsort(g_ViewModelPassTransEntity.data(), g_ViewModelPassTransEntity.size(), sizeof(transObjRef), [](const void* a, const void* b) {
-
-			const auto arg1 = (const transObjRef *)(a);
-			const auto arg2 = (const transObjRef *)(b);
-
-			return (int)(arg1->distance > arg2->distance);
-		});
-
-		for (size_t i = 0; i < g_ViewModelPassTransEntity.size(); ++i)
-		{
-			(*currententity) = g_ViewModelPassTransEntity[i].pEnt;
-
-			R_DrawCurrentEntity(true);
-		}
-	}
-}
-
-#endif
-
 void R_SetupFog(void)
 {
 	scene_ubo_t SceneUBO;
@@ -3611,9 +3514,7 @@ void R_RenderScene(void)
 	if (!(*r_refdef.onlyClientDraws))
 	{
 		R_DrawWorld();
-
 		S_ExtraUpdate();
-
 		R_DrawEntitiesOnList();
 	}
 
@@ -4131,7 +4032,7 @@ void CL_EmitPlayerFlashlight(int entindex)
 	}
 }
 
-void R_SetupFlashlights()
+void R_EmitFlashlights()
 {
 	int max_dlight = EngineGetMaxDLights();
 
@@ -4194,5 +4095,27 @@ void R_SetupFlashlights()
 			}
 		}
 	}
+}
 
+void R_AddViewModelPassEntity(cl_entity_t* ent)
+{
+	g_ViewModelPassEntity.emplace_back(ent);
+}
+
+void R_CreateFirstViewLocalPlayerModel()
+{
+	if (r_draw_lowerbody->value < 1)
+		return;
+
+	auto LocalPlayer = gEngfuncs.GetLocalPlayer();
+
+	if (EngineIsEntityInVisibleList(LocalPlayer))
+		return;
+
+	auto state = R_GetPlayerState(LocalPlayer->index);
+
+	if (!state->modelindex || (state->effects & EF_NODRAW))
+		return;
+
+	R_AddViewModelPassEntity(LocalPlayer);
 }

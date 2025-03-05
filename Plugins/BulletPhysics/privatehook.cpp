@@ -1121,14 +1121,16 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	{
 		/*
+		 //CL_CreateVisibleEntity
 			.text:01D0C7AF 8B 0D 50 F9 F0 02                                   mov     ecx, dword_2F0F950
 			.text:01D0C7B5 81 F9 00 02 00 00                                   cmp     ecx, 200h
 		*/
 		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x2A\x00\x00";
-		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
+		auto CL_CreateVisibleEntity_Pattern = Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(CL_CreateVisibleEntity_Pattern);
 
-		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
+		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)CL_CreateVisibleEntity_Pattern + 2);
+		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
 
 		typedef struct VisEdicts_SearchContext_s
 		{
@@ -1138,7 +1140,7 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 		VisEdicts_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges(ClientDLL_AddEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(CL_CreateVisibleEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (VisEdicts_SearchContext*)context;
 
@@ -1167,8 +1169,6 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 			return FALSE;
 			}, 0, &ctx);
-
-		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_VarNotFound(cl_visedicts);

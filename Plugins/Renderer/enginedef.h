@@ -233,6 +233,11 @@ typedef struct alight_s
 #define STUDIO_NF_CELSHADE_EXTENSIONBITS	(STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H)
 #define STUDIO_NF_CELSHADE_ALLBITS	(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_EXTENSIONBITS)
 
+#define STUDIO_BF_VIS_GROUP_0	0x1
+#define STUDIO_BF_VIS_GROUP_1	0x2
+#define STUDIO_BF_VIS_GROUP_2	0x4
+#define STUDIO_BF_VIS_GROUP_3	0x8
+
 //Vanilla GoldSrc flags for studio models
 #define EF_ROCKET			1			//! leave a trail
 #define EF_GRENADE			2			//! leave a trail
@@ -627,6 +632,8 @@ typedef enum
 #define SIGNONS 2
 
 #define MAX_VISEDICTS 512
+
+#define MAX_VISEDICTS_10152 1024
 
 #define PhyCorpseFlag (1145141919)
 

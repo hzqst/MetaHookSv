@@ -16,8 +16,6 @@ int g_iNumWaterReflectCaches = 0;
 std::vector<cl_entity_t *> g_VisibleWaterEntity;
 std::vector<CWaterSurfaceModel *> g_VisibleWaterSurfaceModels;
 
-int g_VisWaterIndices[MAX_VISEDICTS] = { 0 };
-
 std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
 std::vector<CEnvWaterControl *> g_EnvWaterControls;

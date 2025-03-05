@@ -93,17 +93,25 @@ int EngineGetMaxTempEnts(void)
 	return MAX_TEMP_ENTITIES;
 }
 
-static_assert(sizeof(TEMPENTITY) == 3068, "Size Check");
+int EngineGetMaxVisEdicts(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+		return MAX_VISEDICTS_10152;
 
-TEMPENTITY *EngineGetTempTentsBase(void)
+	return MAX_VISEDICTS;
+}
+
+TEMPENTITY* EngineGetTempTentsBase(void)
 {
 	return gTempEnts;
 }
 
-TEMPENTITY *EngineGetTempTentByIndex(int index)
+TEMPENTITY* EngineGetTempTentByIndex(int index)
 {
 	return &gTempEnts[index];
 }
+
+static_assert(sizeof(TEMPENTITY) == 3068, "Size Check");
 
 int R_GetClientEntityIndex(cl_entity_t *ent)
 {
@@ -211,4 +219,15 @@ int EngineFindPhysEntIndexByEntity(cl_entity_t* ent)
 	}
 
 	return -1;
+}
+
+bool EngineIsEntityInVisibleList(cl_entity_t* ent)
+{
+	for (int i = 0; i < (*cl_numvisedicts); ++i)
+	{
+		if (cl_visedicts[i] == ent)
+			return true;
+	}
+
+	return false;
 }

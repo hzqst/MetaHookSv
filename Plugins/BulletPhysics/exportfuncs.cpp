@@ -812,6 +812,7 @@ void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_
 	EngineStudio_FillAddress_GetCurrentEntity(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_SetRenderModel(pstudio, DllInfo, RealDllInfo);
 	EngineStudio_FillAddress_StudioSetHeader(pstudio, DllInfo, RealDllInfo);
+	EngineStudio_FillAddress_SetChromeOrigin(pstudio, DllInfo, RealDllInfo);
 }
 
 void ClientStudio_FillAddress_StudioDrawPlayer(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

@@ -21,7 +21,7 @@ static CStudioBoneCache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
 static CStudioBoneCache* g_pStudioBoneFreeCaches = NULL;
 
-static CStudioModelRenderData* g_CurrentVBOCache = NULL;
+static CStudioModelRenderData* g_CurrentRenderData = NULL;
 
 static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
 
@@ -771,9 +771,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec4_t values = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.base_specular.GetValues(values);
+				g_CurrentRenderData->celshade_control.base_specular.GetValues(values);
 			}
 			else
 			{
@@ -787,9 +787,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec4_t values = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.celshade_specular.GetValues(values);
+				g_CurrentRenderData->celshade_control.celshade_specular.GetValues(values);
 			}
 			else
 			{
@@ -801,9 +801,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_celshade_midpoint != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_celshade_midpoint, g_CurrentVBOCache->celshade_control.celshade_midpoint.GetValue());
+				glUniform1f(prog.r_celshade_midpoint, g_CurrentRenderData->celshade_control.celshade_midpoint.GetValue());
 			}
 			else
 			{
@@ -813,9 +813,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_celshade_softness != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_celshade_softness, g_CurrentVBOCache->celshade_control.celshade_softness.GetValue());
+				glUniform1f(prog.r_celshade_softness, g_CurrentRenderData->celshade_control.celshade_softness.GetValue());
 			}
 			else
 			{
@@ -827,9 +827,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec3_t color = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.celshade_shadow_color.GetValues(color);
+				g_CurrentRenderData->celshade_control.celshade_shadow_color.GetValues(color);
 			}
 			else
 			{
@@ -841,10 +841,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_celshade_head_offset != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec3_t offset = { 0 };
-				g_CurrentVBOCache->celshade_control.celshade_head_offset.GetValues(offset);
+				g_CurrentRenderData->celshade_control.celshade_head_offset.GetValues(offset);
 				glUniform3f(prog.r_celshade_head_offset, offset[0], offset[1], offset[2]);
 			}
 			else
@@ -857,10 +857,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_celshade_lightdir_adjust != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec2_t value = { 0 };
-				g_CurrentVBOCache->celshade_control.celshade_lightdir_adjust.GetValues(value);
+				g_CurrentRenderData->celshade_control.celshade_lightdir_adjust.GetValues(value);
 				glUniform2f(prog.r_celshade_lightdir_adjust, value[0], value[1]);
 			}
 			else
@@ -873,9 +873,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_outline_dark != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_outline_dark, g_CurrentVBOCache->celshade_control.outline_dark.GetValue());
+				glUniform1f(prog.r_outline_dark, g_CurrentRenderData->celshade_control.outline_dark.GetValue());
 			}
 			else
 			{
@@ -885,9 +885,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_rimlight_power != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimlight_power, g_CurrentVBOCache->celshade_control.rimlight_power.GetValue());
+				glUniform1f(prog.r_rimlight_power, g_CurrentRenderData->celshade_control.rimlight_power.GetValue());
 			}
 			else
 			{
@@ -897,9 +897,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_rimlight_smooth != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimlight_smooth, g_CurrentVBOCache->celshade_control.rimlight_smooth.GetValue());
+				glUniform1f(prog.r_rimlight_smooth, g_CurrentRenderData->celshade_control.rimlight_smooth.GetValue());
 			}
 			else
 			{
@@ -911,9 +911,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec2_t values = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.rimlight_smooth2.GetValues(values);
+				g_CurrentRenderData->celshade_control.rimlight_smooth2.GetValues(values);
 			}
 			else
 			{
@@ -926,9 +926,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (prog.r_rimlight_color != -1)
 		{
 			vec3_t color = { 0 };
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.rimlight_color.GetValues(color);
+				g_CurrentRenderData->celshade_control.rimlight_color.GetValues(color);
 			}
 			else
 			{
@@ -939,9 +939,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_rimdark_power != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimdark_power, g_CurrentVBOCache->celshade_control.rimdark_power.GetValue());
+				glUniform1f(prog.r_rimdark_power, g_CurrentRenderData->celshade_control.rimdark_power.GetValue());
 			}
 			else
 			{
@@ -951,9 +951,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_rimdark_smooth != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimdark_smooth, g_CurrentVBOCache->celshade_control.rimdark_smooth.GetValue());
+				glUniform1f(prog.r_rimdark_smooth, g_CurrentRenderData->celshade_control.rimdark_smooth.GetValue());
 			}
 			else
 			{
@@ -965,9 +965,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec2_t values = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.rimdark_smooth2.GetValues(values);
+				g_CurrentRenderData->celshade_control.rimdark_smooth2.GetValues(values);
 			}
 			else
 			{
@@ -981,9 +981,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			vec3_t color = { 0 };
 
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				g_CurrentVBOCache->celshade_control.rimdark_color.GetValues(color);
+				g_CurrentRenderData->celshade_control.rimdark_color.GetValues(color);
 			}
 			else
 			{
@@ -995,9 +995,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_exp != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_hair_specular_exp, g_CurrentVBOCache->celshade_control.hair_specular_exp.GetValue());
+				glUniform1f(prog.r_hair_specular_exp, g_CurrentRenderData->celshade_control.hair_specular_exp.GetValue());
 			}
 			else
 			{
@@ -1007,10 +1007,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_noise != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec4_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_specular_noise.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_specular_noise.GetValues(values);
 				glUniform4f(prog.r_hair_specular_noise, values[0], values[1], values[2], values[3]);
 			}
 			else
@@ -1023,10 +1023,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_intensity != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec3_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_specular_intensity.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_specular_intensity.GetValues(values);
 				glUniform3f(prog.r_hair_specular_intensity, values[0], values[1], values[2]);
 			}
 			else
@@ -1039,9 +1039,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_exp2 != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_hair_specular_exp2, g_CurrentVBOCache->celshade_control.hair_specular_exp2.GetValue());
+				glUniform1f(prog.r_hair_specular_exp2, g_CurrentRenderData->celshade_control.hair_specular_exp2.GetValue());
 			}
 			else
 			{
@@ -1051,10 +1051,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_noise2 != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec4_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_specular_noise2.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_specular_noise2.GetValues(values);
 				glUniform4f(prog.r_hair_specular_noise2, values[0], values[1], values[2], values[3]);
 			}
 			else
@@ -1067,10 +1067,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_intensity2 != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec3_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_specular_intensity2.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_specular_intensity2.GetValues(values);
 				glUniform3f(prog.r_hair_specular_intensity2, values[0], values[1], values[2]);
 			}
 			else
@@ -1083,10 +1083,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_specular_smooth != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec2_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_specular_smooth.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_specular_smooth.GetValues(values);
 				glUniform2f(prog.r_hair_specular_smooth, values[0], values[1]);
 			}
 			else
@@ -1099,10 +1099,10 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (prog.r_hair_shadow_offset != -1)
 		{
-			if (g_CurrentVBOCache)
+			if (g_CurrentRenderData)
 			{
 				vec2_t values = { 0 };
-				g_CurrentVBOCache->celshade_control.hair_shadow_offset.GetValues(values);
+				g_CurrentRenderData->celshade_control.hair_shadow_offset.GetValues(values);
 				glUniform2f(prog.r_hair_shadow_offset, values[0], values[1]);
 			}
 			else
@@ -1149,6 +1149,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_ANIMATED_TEXTURE_ENABLED		,"STUDIO_ANIMATED_TEXTURE_ENABLED"			},
 { STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"				},
 { STUDIO_STENCIL_TEXTURE_ENABLED		,"STUDIO_STENCIL_TEXTURE_ENABLED"			},
+{ STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -1732,7 +1733,7 @@ void PaletteHueReplace(byte* palette, int newHue, int start, int end)
 	}
 }
 
-void R_StudioSetupSkinEx(const CStudioModelRenderData* VBOData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext*context)
+void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext*context)
 {
 	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		return;
@@ -1813,16 +1814,16 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* VBOData, studiohdr_t* pte
 
 		if (VBOMaterial)
 		{
-			R_StudioSetupVBOMaterial(VBOData, VBOMaterial, context);
+			R_StudioSetupVBOMaterial(pRenderData, VBOMaterial, context);
 		}
 	}
 }
 
 void R_StudioDrawVBOBegin(CStudioModelRenderData* pRenderData)
 {
-	studio_ubo_t StudioUBO;
+	studio_ubo_t StudioUBO = {0};
 
-	g_CurrentVBOCache = pRenderData;
+	g_CurrentRenderData = pRenderData;
 
 	StudioUBO.r_origin[0] = r_origin[0];
 	StudioUBO.r_origin[1] = r_origin[1];
@@ -1865,7 +1866,7 @@ void R_StudioDrawVBOBegin(CStudioModelRenderData* pRenderData)
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		StudioUBO.r_scale = g_CurrentVBOCache->celshade_control.outline_size.GetValue() * 0.05f;
+		StudioUBO.r_scale = g_CurrentRenderData->celshade_control.outline_size.GetValue() * 0.05f;
 	}
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
@@ -1906,6 +1907,18 @@ void R_StudioDrawVBOBegin(CStudioModelRenderData* pRenderData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
+	auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+	{
+		if (pbones[i].flags & STUDIO_BF_VIS_GROUP_0)
+		{
+			int slot = i / 32;
+			int index = i - slot * 4;
+			StudioUBO.r_clipbone[slot] |= index;
+		}
+	}
+
 	GL_UploadSubDataToUBO(g_hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, g_hStudioUBO);
@@ -1917,7 +1930,7 @@ void R_StudioDrawVBOEnd()
 {
 	GL_BindVAO(0);
 
-	g_CurrentVBOCache = NULL;
+	g_CurrentRenderData = NULL;
 }
 
 void R_StudioDrawMesh_AnalysisPass(
@@ -3050,17 +3063,6 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 	}
 
 	pfnMergeBones(pthis, dummy, pSubModel);
-#if 0
-	auto cache = R_StudioBoneCacheAlloc();
-
-	if (cache)
-	{
-		memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
-		memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
-
-		g_StudioBoneCacheManager[handle] = cache;
-	}
-#endif
 }
 
 /*

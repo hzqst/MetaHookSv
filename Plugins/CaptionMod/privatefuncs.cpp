@@ -1102,7 +1102,7 @@ void Client_FillAddress_SCClient_GetClientColor(const mh_dll_info_t& DllInfo, co
 	Sig_FuncNotFound(GetClientColor);
 }
 
-void Client_FillAddress_GameViewport_AllowedToPrintText(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Client_FillAddress_SCClient_GameViewport_AllowedToPrintText(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
 	//Global pointers that link into client dll vars.
@@ -1116,6 +1116,8 @@ void Client_FillAddress_GameViewport_AllowedToPrintText(const mh_dll_info_t& Dll
 
 	PVOID GameViewport_VA = *(PVOID*)(addr + 2);
 	GameViewport = (decltype(GameViewport))ConvertDllInfoSpace(GameViewport_VA, DllInfo, RealDllInfo);
+
+	Sig_VarNotFound(GameViewport);
 
 	PVOID GameViewport_AllowedToPrintText_VA = GetCallAddress(addr + 10);
 	gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))ConvertDllInfoSpace(GameViewport_AllowedToPrintText_VA, DllInfo, RealDllInfo);
@@ -1254,6 +1256,8 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 		Client_FillAddress_SCClient_SoundEngine_LookupSoundBySentenceIndex(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_GetClientColor(DllInfo, RealDllInfo);
+
+		Client_FillAddress_SCClient_GameViewport_AllowedToPrintText(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_GameViewport_IsScoreBoardVisible(DllInfo, RealDllInfo);
 

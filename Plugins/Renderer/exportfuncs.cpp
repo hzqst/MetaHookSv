@@ -2019,14 +2019,15 @@ void HUD_PlayerMoveInit(struct playermove_s* ppmove)
 
 void HUD_Frame(double time)
 {
-	R_RenderPreFrame();
+	R_GameFrameStart();
 
 	gExportfuncs.HUD_Frame(time);
 }
 
 void HUD_CreateEntities(void)
 {
-	R_SetupFlashlights();
+	R_EmitFlashlights();
+	R_CreateFirstViewLocalPlayerModel();
 
 	gExportfuncs.HUD_CreateEntities();
 }

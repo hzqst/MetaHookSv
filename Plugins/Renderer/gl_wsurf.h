@@ -270,6 +270,7 @@ typedef struct studio_ubo_s
 	vec4 r_elight_origin[4];
 	vec4 r_elight_radius;
 	mat3x4 bonematrix[128];
+	uvec4 r_clipbone;
 }studio_ubo_t;
 
 static_assert((sizeof(studio_ubo_t) % 16) == 0, "Size check");

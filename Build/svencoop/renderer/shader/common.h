@@ -186,6 +186,7 @@ struct studio_ubo_t{
 	vec4 r_elight_origin[4];
 	vec4 r_elight_radius;
 	mat3x4 bonematrix[128];
+	uvec4 r_clipbone;
 };
 
 //Scene level

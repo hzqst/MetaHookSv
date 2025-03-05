@@ -166,6 +166,7 @@ extern float* g_iEndDist_SCClient;
 
 extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
+extern int* g_ViewEntityIndex_SCClient;
 
 extern bool g_bPortalClipPlaneEnabled[6];
 
@@ -353,8 +354,8 @@ void R_AnimateLight(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
 void R_SetupSceneUBO(void);
-void R_RenderPreFrame();
-void R_RenderStartFrame();
+void R_GameFrameStart();
+void R_RenderFrameStart();
 void R_RenderEndFrame();
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);
@@ -559,14 +560,19 @@ cl_entity_t *EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
 TEMPENTITY *EngineGetTempTentsBase(void);
 TEMPENTITY *EngineGetTempTentByIndex(int index);
+int EngineGetMaxVisEdicts(void);
 
 int EngineFindPhysEntIndexByEntity(cl_entity_t* ent);
+
+bool EngineIsEntityInVisibleList(cl_entity_t* ent);
 
 float GetFrameRateFromFrameDuration(int frameduration);
 
 int _cdecl SDL_GL_SetAttribute(int attr, int value);
 
-void R_SetupFlashlights();
+void R_EmitFlashlights();
+void R_AddViewModelPassEntity(cl_entity_t* ent);
+void R_CreateFirstViewLocalPlayerModel();
 
 //void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 

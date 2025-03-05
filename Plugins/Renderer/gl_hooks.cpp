@@ -3470,6 +3470,21 @@ void Engine_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_d
 		PVOID R_PolyBlend_VA = ConvertDllInfoSpace(gPrivateFuncs.R_PolyBlend, RealDllInfo, DllInfo);
 		PVOID S_ExtraUpdate_VA = ConvertDllInfoSpace(gPrivateFuncs.S_ExtraUpdate, RealDllInfo, DllInfo);
 
+		if (!R_RenderView_VA)
+		{
+			Sig_NotFound(R_RenderView_VA);
+		}
+
+		if (!R_PolyBlend_VA)
+		{
+			Sig_NotFound(R_PolyBlend_VA);
+		}
+
+		if (!S_ExtraUpdate_VA)
+		{
+			Sig_NotFound(S_ExtraUpdate_VA);
+		}
+
 		const char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
 		PUCHAR SearchBegin = (PUCHAR)R_RenderView_VA;
 		PUCHAR SearchLimit = SearchBegin + 0x500;
@@ -7055,14 +7070,16 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	{
 		/*
+		 //CL_CreateVisibleEntity
 			.text:01D0C7AF 8B 0D 50 F9 F0 02                                   mov     ecx, dword_2F0F950
 			.text:01D0C7B5 81 F9 00 02 00 00                                   cmp     ecx, 200h
 		*/
 		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x2A\x00\x00";
-		auto ClientDLL_AddEntity_Pattern = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(ClientDLL_AddEntity_Pattern);
+		auto CL_CreateVisibleEntity_Pattern = Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(CL_CreateVisibleEntity_Pattern);
 
-		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)ClientDLL_AddEntity_Pattern + 2);
+		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)CL_CreateVisibleEntity_Pattern + 2);
+		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
 
 		typedef struct VisEdicts_SearchContext_s
 		{
@@ -7072,7 +7089,7 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 		VisEdicts_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges(ClientDLL_AddEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(CL_CreateVisibleEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (VisEdicts_SearchContext*)context;
 
@@ -7100,9 +7117,7 @@ void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_inf
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
-
-		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
+		}, 0, &ctx);
 	}
 
 	Sig_VarNotFound(cl_visedicts);
@@ -11383,6 +11398,52 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(g_iEndDist_SCClient);
 }
 
+void Client_FillAddress_ViewEntityIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (g_dwEngineBuildnum >= 10182)
+	{
+		const char pattern[] = "\xFF\x15\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x00\x2A\x05";
+		auto addr = Search_Pattern(pattern, DllInfo);
+		Sig_AddrNotFound(g_ViewEntityIndex_SCClient);
+
+		typedef struct ViewEntityIndex_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}ViewEntityIndex_SearchContext;
+
+		ViewEntityIndex_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (ViewEntityIndex_SearchContext*)context;
+
+			if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{
+				g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &ctx);
+
+		Sig_VarNotFound(g_ViewEntityIndex_SCClient);
+	}
+}
+
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
@@ -11397,9 +11458,9 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
 			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
+			Client_FillAddress_ViewEntityIndex(DllInfo, RealDllInfo);
 			Client_FillAddress_WaterLevel(DllInfo, RealDllInfo);
 			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
-
 			g_bIsSvenCoop = true;
 		}
 	}
