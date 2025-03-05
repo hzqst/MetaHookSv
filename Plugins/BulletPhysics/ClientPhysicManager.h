@@ -193,7 +193,7 @@ public:
 	{
 		return false;
 	}
-	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
 	{
 		return false;
 	}
@@ -357,7 +357,7 @@ public:
 	virtual bool SetupBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) = 0;
 	virtual bool StudioCheckBBox(studiohdr_t* studiohdr, int *nVisible) = 0;
-	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) = 0;
+	virtual bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) = 0;
 
 	virtual void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters &filters) = 0;
 	virtual void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) = 0;
@@ -448,7 +448,7 @@ public:
 	virtual int GetGargantuaIndex() const = 0;
 	virtual bool IsDebugAnimEnabled() const = 0;
 	virtual void SetDebugAnimEnabled(bool bEnabled) = 0;
-	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) = 0;
+	virtual bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) = 0;
 };
 
 class IClientPhysicManager : public IBaseInterface

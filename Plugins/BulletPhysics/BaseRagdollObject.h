@@ -26,8 +26,8 @@ public:
 	bool Rebuild(const CPhysicObjectCreationParameter& CreationParam) override;
 	void Update(CPhysicObjectUpdateContext* ObjectUpdateContext) override;
 	bool GetGoldSrcOriginAngles(float* origin, float* angles) override;
-	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) override;
-	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView,void(*callback)(struct ref_params_s* pparams)) override;
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) override;
+	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) override;
 	void UpdateBones(entity_state_t* curstate) override;
 	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
 	bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) override;

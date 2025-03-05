@@ -221,7 +221,7 @@ bool CBaseDynamicObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
 	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
-bool CBaseDynamicObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))
+bool CBaseDynamicObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncView, void(*callback)(struct ref_params_s* pparams))
 {
 	return false;
 }

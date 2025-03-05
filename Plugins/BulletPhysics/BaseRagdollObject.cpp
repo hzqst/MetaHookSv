@@ -419,12 +419,12 @@ bool CBaseRagdollObject::GetGoldSrcOriginAngles(float* origin, float* angles)
 	return false;
 }
 
-bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+bool CBaseRagdollObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
 {
-	return SyncCameraView(pparams, bIsThirdPersonView, callback);
+	return SyncCameraView(pparams, bIsThirdPersonView, iSyncViewLevel, callback);
 }
 
-bool CBaseRagdollObject::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+bool CBaseRagdollObject::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
 {
 	//Inspecting self ?
 	if (!bIsThirdPersonView && g_bIsCounterStrike && GetEntityIndex() == gEngfuncs.GetLocalPlayer()->index)
@@ -437,7 +437,7 @@ bool CBaseRagdollObject::SyncCameraView(struct ref_params_s* pparams, bool bIsTh
 	{
 		if (pPhysicComponent->IsCameraView())
 		{
-			if (pPhysicComponent->SyncCameraView(pparams, bIsThirdPersonView, callback))
+			if (pPhysicComponent->SyncCameraView(pparams, bIsThirdPersonView, iSyncViewLevel, callback))
 			{
 				return true;
 			}

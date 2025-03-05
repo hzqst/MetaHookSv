@@ -70,8 +70,8 @@ bool AllowCheats();
 
 bool IsDebugDrawEnabled();
 bool IsDebugDrawWallHackEnabled();
-bool ShouldSyncronizeView();
 bool ShouldForceUpdateBones();
+int GetSyncronizeViewLevel();
 
 float GetSimulationTickRate();
 

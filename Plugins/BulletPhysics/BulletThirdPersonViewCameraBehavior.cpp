@@ -20,7 +20,7 @@ const char* CBulletThirdPersonViewCameraBehavior::GetTypeLocalizationTokenString
 	return "#BulletPhysics_ThirdPersonViewCamera";
 }
 
-bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams))
+bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
 {
 	if (!ShouldSyncCameraView())
 		return false;

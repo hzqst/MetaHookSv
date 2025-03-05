@@ -30,7 +30,7 @@ public:
 	bool SetupBones(CRagdollObjectSetupBoneContext* Context) override;
 	bool SetupJiggleBones(CRagdollObjectSetupBoneContext* Context) override;
 	bool StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible) override;
-	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams)) override;
+	bool CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) override;
 	void AddPhysicComponentsToPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsFromPhysicWorld(void* world, const CPhysicComponentFilters& filters) override;
 	void RemovePhysicComponentsWithFilters(const CPhysicComponentFilters& filters) override;

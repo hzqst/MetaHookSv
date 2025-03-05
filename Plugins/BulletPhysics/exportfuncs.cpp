@@ -94,14 +94,14 @@ bool IsDebugDrawWallHackEnabled()
 	return bv_debug_draw_wallhack->value >= 1;
 }
 
-bool ShouldSyncronizeView()
-{
-	return bv_syncview->value >= 1;
-}
-
 bool ShouldForceUpdateBones()
 {
 	return bv_force_updatebones->value >= 1;
+}
+
+int GetSyncronizeViewLevel()
+{
+	return (int)bv_syncview->value;
 }
 
 float GetSimulationTickRate()
@@ -1935,7 +1935,7 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 
 	if (pLocalPlayer && pLocalPlayer->player)
 	{
-		if (ShouldSyncronizeView())
+		if (GetSyncronizeViewLevel() >= 1)
 		{
 			auto pSpectatingPlayer = pLocalPlayer;
 
@@ -1948,7 +1948,7 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 
 			if (pPhysicObject)
 			{
-				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, gExportfuncs.V_CalcRefdef))
+				if (pPhysicObject->CalcRefDef(pparams, !CL_IsFirstPersonMode(pSpectatingPlayer) ? true : false, GetSyncronizeViewLevel(), gExportfuncs.V_CalcRefdef))
 				{
 					return;
 				}

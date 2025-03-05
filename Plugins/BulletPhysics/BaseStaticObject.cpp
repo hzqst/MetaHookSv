@@ -212,7 +212,7 @@ bool CBaseStaticObject::StudioCheckBBox(studiohdr_t* studiohdr, int* nVisible)
 	return DispatchStudioCheckBBox(m_PhysicComponents, studiohdr, nVisible);
 }
 
-bool CBaseStaticObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPerson, void(*callback)(struct ref_params_s* pparams))
+bool CBaseStaticObject::CalcRefDef(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
 {
 	return false;
 }

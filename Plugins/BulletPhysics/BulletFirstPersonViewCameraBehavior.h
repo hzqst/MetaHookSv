@@ -14,5 +14,5 @@ public:
 
 	const char* GetTypeLocalizationTokenString() const override;
 
-	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, void(*callback)(struct ref_params_s* pparams)) override;
+	bool SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams)) override;
 };
