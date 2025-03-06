@@ -1381,6 +1381,8 @@
 				"CameraActivateOnIdle"		"0.000000"
 				"CameraActivateOnDeath"		"1.000000"
 				"CameraActivateOnCaughtByBarnacle"		"1.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"0.000000"
 			}
 		}
 		"HeadCamera (Idle)"
