@@ -65,6 +65,16 @@
 }
 {
     "classname" "studio_bone"
+    "name" "Bip01 L Arm"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 R Arm"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
     "name" "Bip01 L Leg"
     "flags" "STUDIO_BF_LOWERBODY"
 }
@@ -80,12 +90,12 @@
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 L knee2-smooth"
+    "name" "Bip07 L knee2-smooth"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 L knee1-smooth"
+    "name" "Bip07 L knee1-smooth"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
@@ -105,37 +115,37 @@
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 R knee2-smooth"
+    "name" "Bip07 R knee2-smooth"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 R knee1-smooth"
+    "name" "Bip07 R knee1-smooth"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 L Leg-smooth2"
+    "name" "Bip07 L Leg-smooth2"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 L Leg-smooth1"
+    "name" "Bip07 L Leg-smooth1"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 R Leg-smooth2"
+    "name" "Bip07 R Leg-smooth2"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 R Leg-smooth1"
+    "name" "Bip07 R Leg-smooth1"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
     "classname" "studio_bone"
-    "name" "Bip01 M Leg_skirt"
+    "name" "Bip07 M Leg_skirt"
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
