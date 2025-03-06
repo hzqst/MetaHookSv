@@ -1,5 +1,7 @@
 "PhysicObjectConfig"
 {
+	"verifyBoneChunk"		"1"
+	"crc32BoneChunk"		"ce70a3a1"
 	"type"		"RagdollObject"
 	"rigidBodies"
 	{
@@ -946,6 +948,8 @@
 				"CameraActivateOnIdle"		"0.000000"
 				"CameraActivateOnDeath"		"1.000000"
 				"CameraActivateOnCaughtByBarnacle"		"1.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"1.000000"
 			}
 		}
 		"PelvisCamera"
@@ -957,6 +961,8 @@
 				"CameraActivateOnIdle"		"0.000000"
 				"CameraActivateOnDeath"		"1.000000"
 				"CameraActivateOnCaughtByBarnacle"		"1.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"0.000000"
 			}
 		}
 		"BarnacleDrag|LLeg2"
@@ -1253,6 +1259,21 @@
 				"SimpleBuoyancyMagnitude"		"0.475000"
 				"SimpleBuoyancyLinearDamping"		"0.500000"
 				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"HeadCamera (Idle)"
+		{
+			"type"		"FirstPersonViewCamera"
+			"rigidbodyA"		"Head"
+			"origin"		"4 0 0"
+			"angles"		"0 0 90"
+			"factors"
+			{
+				"CameraActivateOnIdle"		"1.000000"
+				"CameraActivateOnDeath"		"0.000000"
+				"CameraActivateOnCaughtByBarnacle"		"0.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"0.000000"
 			}
 		}
 	}
