@@ -701,7 +701,7 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	GammaToLinear(vecClearColor);
 
-	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	R_PushRefDef();
 
@@ -960,14 +960,6 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 {
 	R_DrawWaterSurfaceModelBegin(pWaterModel);
 
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_ALL);
-	}
-
-	R_SetRenderMode(ent);
-	R_SetGBufferMask(GBUFFER_MASK_ALL);
-
 	bool bIsAboveWater = (pWaterModel->normal[2] > 0) && R_IsAboveWater(pWaterModel) ? true : false;
 
 	float color[4];
@@ -1028,6 +1020,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				}
 
 				//Restore BackBufferFBO2 to it's original states.
+				// -- use s_WaterSurfaceFBO instead now
 				//GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
 
 				//Restore previous framebuffer
@@ -1041,6 +1034,18 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 
 			ReflectCache->refractmap_ready = true;
 		}
+
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			//no stencil-write here
+		}
+
+		R_SetRenderMode(ent);
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 		program_state_t WaterProgramState = 0;
 
@@ -1162,9 +1167,25 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		glActiveTexture(*oldtarget);
 
 		glDisable(GL_BLEND);
+
+		GL_UseProgram(0);
+
+		GL_EndStencil();
 	}
 	else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value > 0)
 	{
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			//no stencil-write here
+		}
+
+		R_SetRenderMode(ent);
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
+
 		program_state_t WaterProgramState = WATER_LEGACY_ENABLED;
 
 		if (!bIsAboveWater)
@@ -1228,9 +1249,25 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += pWaterModel->iPolyCount;
+
+		GL_UseProgram(0);
+
+		GL_EndStencil();
 	}
 	else
 	{
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			//no stencil-write here
+		}
+
+		R_SetRenderMode(ent);
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
+
 		float scale;
 
 		if (bIsAboveWater)
@@ -1301,12 +1338,9 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += pWaterModel->iPolyCount;
-	}
 
-	GL_UseProgram(0);
+		GL_UseProgram(0);
 
-	if (r_draw_opaque)
-	{
 		GL_EndStencil();
 	}
 

@@ -2,10 +2,16 @@
 
 CBulletCameraViewBehavior::CBulletCameraViewBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
-	int attachedPhysicComponentId, bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle) :
+	int attachedPhysicComponentId, 
+	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle, 
+	bool syncViewOrigin, bool syncViewAngles) :
+
 	m_bActivateOnIdle(activateOnIdle),
 	m_bActivateOnDeath(activateOnDeath),
 	m_bActivateOnCaughtByBarnacle(activateOnCaughtByBarnacle),
+	m_bSyncViewOrigin(syncViewOrigin),
+	m_bSyncViewAngles(syncViewAngles),
+
 	CBulletPhysicComponentBehavior(
 		id,
 		entindex,
@@ -42,7 +48,7 @@ void CBulletCameraViewBehavior::Update(CPhysicComponentUpdateContext* ComponentC
 	}
 }
 
-bool CBulletCameraViewBehavior::ShouldSyncCameraView() const
+bool CBulletCameraViewBehavior::ShouldSyncCameraView(bool bIsThirdPersonView, int iSyncViewLevel) const
 {
 	if (m_pPhysicObject->IsRagdollObject())
 	{

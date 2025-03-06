@@ -485,6 +485,8 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnIdle);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnDeath);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraSyncViewOrigin);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraSyncViewAngles);
 		break;
 	}
 	case PhysicBehavior_SimpleBuoyancy: {

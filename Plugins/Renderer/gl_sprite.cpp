@@ -108,6 +108,8 @@ const program_state_mapping_t s_SpriteProgramStateName[] = {
 { SPRITE_EXP_FOG_ENABLED			  ,"SPRITE_EXP_FOG_ENABLED"				},
 { SPRITE_EXP2_FOG_ENABLED			  ,"SPRITE_EXP2_FOG_ENABLED"			},
 { SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
+{ SPRITE_LERP_ENABLED				  ,"SPRITE_LERP_ENABLED"				},
+
 { SPRITE_PARALLEL_UPRIGHT_ENABLED	  ,"SPRITE_PARALLEL_UPRIGHT_ENABLED"	},
 { SPRITE_FACING_UPRIGHT_ENABLED		  ,"SPRITE_FACING_UPRIGHT_ENABLED"		},
 { SPRITE_PARALLEL_ORIENTED_ENABLED	  ,"SPRITE_PARALLEL_ORIENTED_ENABLED"	},
@@ -654,16 +656,32 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
+	bool bNoBloom = false;
+
 	if (pSpriteVBOData && (pSpriteVBOData->flags & EF_NOBLOOM))
 	{
-		if (r_draw_opaque)
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_BLOOM, STENCIL_MASK_ALL);
-		}
-		else
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_NO_BLOOM, STENCIL_MASK_NO_BLOOM);
-		}
+		bNoBloom = true;
+	}
+
+	if (r_draw_opaque)
+	{
+		int iStencilRef = STENCIL_MASK_WORLD;
+		
+		if (bNoBloom)
+			iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
+		//has stencil write-in
+		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
+	}
+	else
+	{
+		int iStencilRef = 0;
+
+		if (bNoBloom)
+			iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
+		//has stencil write-in
+		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_NO_BLOOM);
 	}
 
 	sprite_program_t prog = { 0 };

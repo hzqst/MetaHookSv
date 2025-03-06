@@ -496,6 +496,7 @@ void GL_PopFrameBuffer(void);
 bool R_IsRenderingGBuffer();
 bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
+bool R_IsRenderingViewModel(void);
 bool R_IsRenderingPortal(void);
 
 //Fog
@@ -530,7 +531,9 @@ void GL_ClearStencil(int stencilmask);
 
 void GL_BeginStencilCompareEqual(int ref, int mask);
 void GL_BeginStencilCompareNotEqual(int ref, int mask);
-void GL_BeginStencilWrite(int ref, int mask);
+void GL_BeginStencilWrite(int ref, int write_mask);
+void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask);
+void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_EndStencil();
 
 void GL_BeginFullScreenQuad(bool enableDepthTest);
@@ -606,16 +609,13 @@ extern bool g_bIsCounterStrike;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
 
-
 #define STENCIL_MASK_ALL						0xFF
-#define STENCIL_MASK_SKY						0
+#define STENCIL_MASK_NONE						0
 #define STENCIL_MASK_WORLD						1
-#define STENCIL_MASK_WATER						2
-#define STENCIL_MASK_STUDIO_MODEL				4
 #define STENCIL_MASK_NO_BLOOM					8
 #define STENCIL_MASK_HAS_OUTLINE				0x10
 #define STENCIL_MASK_HAS_SHADOW					0x20
 #define STENCIL_MASK_HAS_DECAL					0x40
 #define STENCIL_MASK_HAS_FLATSHADE				0x80
 
-#define STENCIL_MASK_HAS_FOG					(STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL)
+#define STENCIL_MASK_HAS_FOG					STENCIL_MASK_WORLD

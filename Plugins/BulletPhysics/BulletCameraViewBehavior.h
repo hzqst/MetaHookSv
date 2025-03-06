@@ -7,7 +7,9 @@ class CBulletCameraViewBehavior : public CBulletPhysicComponentBehavior
 public:
 	CBulletCameraViewBehavior(
 		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
-		int attachedPhysicComponentId, bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle);
+		int attachedPhysicComponentId,
+		bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle,
+		bool syncViewOrigin, bool syncViewAngles);
 
 	const char* GetTypeString() const override;
 
@@ -17,10 +19,12 @@ public:
 
 	void Update(CPhysicComponentUpdateContext* ComponentContext) override;
 
-	virtual bool ShouldSyncCameraView() const;
+	virtual bool ShouldSyncCameraView(bool bIsThirdPersonView, int iSyncViewLevel) const;
 
 protected:
 	bool m_bActivateOnIdle{};
 	bool m_bActivateOnDeath{};
 	bool m_bActivateOnCaughtByBarnacle{};
+	bool m_bSyncViewOrigin{};
+	bool m_bSyncViewAngles{};
 };

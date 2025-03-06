@@ -433,6 +433,7 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 	if (bUseStencilFilter && src_stencil)
 	{
 		GL_BlitFrameBufferToFrameBufferStencilOnly(src_stencil, dst);
+
 		GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_BLOOM, STENCIL_MASK_NO_BLOOM);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -908,9 +909,6 @@ bool R_IsAmbientOcclusionEnabled(void)
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	if (r_xfov < 75 || r_yfov < 75)
-		return false;
-
 	return true;
 }
 
@@ -929,7 +927,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 		-(1.0f + ProjMatrix[4 * 2 + 1]) / ProjMatrix[4 * 1 + 1], // B/N
 	};
 
-	float projScale = float(glheight) / (tanf(r_yfov * 0.5f) * 2.0f);
+	float projScale = float(glheight) / (tanf(r_yfov * M_PI * 0.5f / 180.f) * 2.0f);
 
 	// radius
 	float meters2viewspace = 1.0f;
@@ -1032,8 +1030,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
-	//Only draw on brush surfaces
-	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL);
+	//Only draw on non-flatshade surfaces
+	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_HAS_FLATSHADE);
 
 	GL_UseProgram(hbao_blur2.program);
 
@@ -1043,6 +1041,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	//Texture unit 0 = calc2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
+	//fullscreen triangle.
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);

@@ -748,11 +748,27 @@ void GL_BeginStencilCompareNotEqual(int ref, int mask)
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 }
 
-void GL_BeginStencilWrite(int ref, int mask)
+void GL_BeginStencilWrite(int ref, int write_mask)
 {
 	glEnable(GL_STENCIL_TEST);
-	glStencilMask(mask);
-	glStencilFunc(GL_ALWAYS, ref, mask);
+	glStencilMask(write_mask);
+	glStencilFunc(GL_ALWAYS, ref, write_mask);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+}
+
+void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask)
+{
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(write_mask);
+	glStencilFunc(GL_EQUAL, ref, compare_mask);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+}
+
+void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask)
+{
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(write_mask);
+	glStencilFunc(GL_NOTEQUAL, ref, compare_mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 }
 

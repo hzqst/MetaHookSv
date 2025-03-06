@@ -7,7 +7,6 @@ layout(location=1) uniform vec2 g_InvResolutionDirection; // either set x to 1/w
 
 layout(binding=0) uniform sampler2D texSource;
 
-
 in vec2 texCoord;
 
 layout(location=0,index=0) out vec4 out_Color;

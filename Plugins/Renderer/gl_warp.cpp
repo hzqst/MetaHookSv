@@ -22,8 +22,6 @@ void R_DrawSkyBox(void)
 	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
 		return;
 
-	GL_BeginStencilWrite(STENCIL_MASK_SKY, STENCIL_MASK_ALL);
-
 	glDisable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 
@@ -90,6 +88,4 @@ void R_DrawSkyBox(void)
 	GL_UseProgram(0);
 
 	glDepthMask(GL_TRUE);
-
-	GL_EndStencil();
 }

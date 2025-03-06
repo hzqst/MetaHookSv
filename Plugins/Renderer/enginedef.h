@@ -252,8 +252,8 @@ typedef struct alight_s
 #define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
 
 //Renderer specified flags added by hzqst
-#define EF_OUTLINE			0x1000
-#define EF_NOBLOOM			0x2000
+#define EF_OUTLINE			0x1000		//Only work with studiomodel now.
+#define EF_NOBLOOM			0x2000		//Only work with sprite now.
 
 #define kRenderFxDrawDeferedTransparentMeshes 0x80000000
 
@@ -271,6 +271,9 @@ typedef struct alight_s
 
 //This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
 #define kRenderFxDrawShadowHair 0x80000005
+
+//This is the pass that draw only lowerbody
+#define kRenderFxDrawLowerbody 0x80000006
 
 //gl_model
 

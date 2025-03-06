@@ -394,7 +394,7 @@ void R_RenderShadowScene(void)
 
 			vec4_t vecClearColor = { -99999, -99999, -99999, 1 };
 
-			GL_ClearColorDepthStencil(vecClearColor, 0, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+			GL_ClearColorDepthStencil(vecClearColor, 0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
 			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
@@ -475,7 +475,7 @@ void R_RenderShadowDynamicLights(void)
 					glEnable(GL_POLYGON_OFFSET_FILL);
 					glPolygonOffset(10, 10);
 
-					GL_ClearDepthStencil(1.0f, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 

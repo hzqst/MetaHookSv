@@ -571,7 +571,7 @@ bool R_BeginRenderGBuffer(void)
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 
-	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	return true;
 }

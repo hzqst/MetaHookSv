@@ -638,6 +638,8 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnIdle);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnDeath);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewOrigin);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewAngles);
 
 		return new CBulletFirstPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
@@ -647,7 +649,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pRigidBodyA->GetPhysicComponentId(),
 			CameraActivateOnIdle >= 1 ? true : false,
 			CameraActivateOnDeath >= 1 ? true : false,
-			CameraActivateOnCaughtByBarnacle >= 1 ? true : false);
+			CameraActivateOnCaughtByBarnacle >= 1 ? true : false,
+			CameraSyncViewOrigin >= 1 ? true : false,
+			CameraSyncViewAngles >= 1 ? true : false);
 	}
 	case PhysicBehavior_ThirdPersonViewCamera:
 	{
@@ -662,6 +666,8 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnIdle);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnDeath);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewOrigin);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewAngles);
 
 		return new CBulletThirdPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
@@ -671,7 +677,9 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			pRigidBodyA->GetPhysicComponentId(),
 			CameraActivateOnIdle >= 1 ? true : false,
 			CameraActivateOnDeath >= 1 ? true : false,
-			CameraActivateOnCaughtByBarnacle >= 1 ? true : false);
+			CameraActivateOnCaughtByBarnacle >= 1 ? true : false,
+			CameraSyncViewOrigin >= 1 ? true : false,
+			CameraSyncViewAngles >= 1 ? true : false);
 	}
 	}
 

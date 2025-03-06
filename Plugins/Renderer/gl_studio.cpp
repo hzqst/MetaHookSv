@@ -1819,7 +1819,7 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 	}
 }
 
-void R_StudioDrawVBOBegin(CStudioModelRenderData* pRenderData)
+void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 {
 	studio_ubo_t StudioUBO = {0};
 
@@ -1924,13 +1924,6 @@ void R_StudioDrawVBOBegin(CStudioModelRenderData* pRenderData)
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, g_hStudioUBO);
 
 	GL_BindVAO(pRenderData->hVAO);
-}
-
-void R_StudioDrawVBOEnd()
-{
-	GL_BindVAO(0);
-
-	g_CurrentRenderData = NULL;
 }
 
 void R_StudioDrawMesh_AnalysisPass(
@@ -2163,6 +2156,16 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
 	}
 
+	if (R_IsFlippedViewModel())
+	{
+		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
+	}
+
+	if (r_studio_debug->value > 0)
+	{
+		StudioProgramState |= STUDIO_DEBUG_ENABLED;
+	}
+
 	CStudioSetupSkinContext Context(&StudioProgramState);
 
 	if (r_fullbright->value >= 2)
@@ -2220,6 +2223,7 @@ void R_StudioDrawMesh_DrawPass(
 
 	if (StudioProgramState & STUDIO_OUTLINE_ENABLED)
 	{
+		//Writing outline...
 		GL_BeginStencilCompareNotEqual(STENCIL_MASK_HAS_OUTLINE, STENCIL_MASK_HAS_OUTLINE);
 	}
 	else if (StudioProgramState & STUDIO_HAIR_SHADOW_ENABLED)
@@ -2236,24 +2240,34 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else
 	{
-		int iStencilRef = STENCIL_MASK_STUDIO_MODEL;
+		if (r_draw_opaque)
+		{
+			int iStencilRef = STENCIL_MASK_WORLD;
 
-		if (r_draw_hasoutline)
-			iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
+			if (r_draw_hasoutline)
+				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
 
-		if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
-			iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
+			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
+				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 
-		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
+			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			int iStencilRef = 0;
+
+			if (r_draw_hasoutline)
+				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
+
+			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
+				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
+
+			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_HAS_OUTLINE | STENCIL_MASK_HAS_FLATSHADE);
+		}
 	}
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
-
-	if (R_IsFlippedViewModel())
-	{
-		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
-	}
 
 	if (StudioProgramState & STUDIO_NF_DOUBLE_FACE)
 	{
@@ -2262,7 +2276,7 @@ void R_StudioDrawMesh_DrawPass(
 
 	if (StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED)
 	{
-		//client.dll!StudioRenderFinal enables GL_BLEND and this will mess everything up.
+		//client.dll!StudioRenderFinal enables GL_BLEND in GL_SetRenderMode and this will mess everything up. see r_studio.c~studioapi_GL_SetRenderMode~qglEnable( GL_BLEND );
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
 	}
@@ -2304,11 +2318,6 @@ void R_StudioDrawMesh_DrawPass(
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
 		}
-	}
-
-	if (r_studio_debug->value > 0)
-	{
-		StudioProgramState |= STUDIO_DEBUG_ENABLED;
 	}
 
 	studio_program_t prog = { 0 };
@@ -2469,13 +2478,13 @@ void R_StudioDrawSubmodel(
 	}
 }
 
-void R_StudioDrawVBO(CStudioModelRenderData* pRenderData)
+void R_StudioDrawRenderData(CStudioModelRenderData* pRenderData)
 {
 	auto submodel_byteoffset = (byte*)(*psubmodel) - (byte*)(*pstudiohdr);
 	auto found_VBOSubmodel = pRenderData->mSubmodels.find(submodel_byteoffset);
 
 	if (found_VBOSubmodel == pRenderData->mSubmodels.end()) {
-		Sys_Error("R_StudioDrawVBO: invalid submodel!\n submodel_byteoffset = %d\n  psubmodel->name = %s\n  pstudiohdr->name = %s", submodel_byteoffset, (*psubmodel)->name, (*pstudiohdr)->name);
+		Sys_Error("R_StudioDrawRenderData: invalid submodel!\n submodel_byteoffset = %d\n  psubmodel->name = %s\n  pstudiohdr->name = %s", submodel_byteoffset, (*psubmodel)->name, (*pstudiohdr)->name);
 		return;
 	}
 
@@ -2496,14 +2505,15 @@ void R_StudioDrawVBO(CStudioModelRenderData* pRenderData)
 		if ((*currententity)->curstate.skin > 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 			pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
 	}
-#if 0
-	if ((*pstudiohdr)->numbones > MAXSTUDIOBONES)
-	{
-		g_pMetaHookAPI->SysError("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", (*pstudiohdr)->name, (*pstudiohdr)->numbones, MAXSTUDIOBONES);
-		return;
-	}
-#endif
+
 	R_StudioDrawSubmodel(pRenderData, pRenderSubmodel, ptexturehdr, ptexture, pskinref);
+}
+
+void R_StudioDrawRenderDataEnd()
+{
+	GL_BindVAO(0);
+
+	g_CurrentRenderData = NULL;
 }
 
 //Engine exported StudioAPI
@@ -2523,11 +2533,11 @@ void R_GLStudioDrawPoints(void)
 		return;
 	}
 
-	R_StudioDrawVBOBegin(pRenderData);
+	R_StudioDrawRenderDataBegin(pRenderData);
 
-	R_StudioDrawVBO(pRenderData);
+	R_StudioDrawRenderData(pRenderData);
 
-	R_StudioDrawVBOEnd();
+	R_StudioDrawRenderDataEnd();
 }
 
 void R_StudioTransformVector(vec3_t in, vec3_t out)
@@ -2806,7 +2816,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 		glDrawBuffer(GL_NONE);
 
-		GL_ClearDepthStencil(1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+		GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 		int saved_renderfx = (*currententity)->curstate.renderfx;
 		int saved_renderamt = (*currententity)->curstate.renderamt;

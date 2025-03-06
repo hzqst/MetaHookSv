@@ -3,9 +3,11 @@
 CBulletThirdPersonViewCameraBehavior::CBulletThirdPersonViewCameraBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
-	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle) :
+	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle,
+	bool syncViewOrigin, bool syncViewAngles) :
 	CBulletCameraViewBehavior(id, entindex, pPhysicObject, pPhysicBehaviorConfig, attachedPhysicComponentId,
-		activateOnIdle, activateOnDeath, activateOnCaughtByBarnacle)
+		activateOnIdle, activateOnDeath, activateOnCaughtByBarnacle,
+		syncViewOrigin, syncViewAngles)
 {
 
 }
@@ -20,21 +22,30 @@ const char* CBulletThirdPersonViewCameraBehavior::GetTypeLocalizationTokenString
 	return "#BulletPhysics_ThirdPersonViewCamera";
 }
 
-bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
+bool CBulletThirdPersonViewCameraBehavior::ShouldSyncCameraView(bool bIsThirdPersonView, int iSyncViewLevel) const
 {
-	if (!ShouldSyncCameraView())
+	if (!CBulletCameraViewBehavior::ShouldSyncCameraView(bIsThirdPersonView, iSyncViewLevel))
 		return false;
 
-	if (bIsThirdPersonView)
+	if (!bIsThirdPersonView)
+		return false;
+
+	return true;
+}
+
+bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* pparams, bool bIsThirdPersonView, int iSyncViewLevel, void(*callback)(struct ref_params_s* pparams))
+{
+	if (!ShouldSyncCameraView(bIsThirdPersonView, iSyncViewLevel))
+		return false;
+
+	auto pRigidBody = GetAttachedRigidBody();
+
+	if (pRigidBody)
 	{
-		auto pRigidBody = GetAttachedRigidBody();
+		vec3_t vecGoldSrcNewOrigin;
 
-		if (pRigidBody)
+		if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_origin, m_angles, vecGoldSrcNewOrigin, nullptr))
 		{
-			vec3_t vecGoldSrcNewOrigin;
-
-			pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_origin, m_angles, vecGoldSrcNewOrigin, nullptr);
-
 			vec3_t vecSavedSimOrgigin;
 
 			VectorCopy(pparams->simorg, vecSavedSimOrgigin);
@@ -54,5 +65,6 @@ bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 			return true;
 		}
 	}
+
 	return false;
 }

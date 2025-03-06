@@ -300,10 +300,14 @@ const float PhysicBehaviorFactorDefaultValue_BarnacleConstraintLimitAdjustmentAx
 const int PhysicBehaviorFactorIdx_CameraActivateOnIdle = 0;
 const int PhysicBehaviorFactorIdx_CameraActivateOnDeath = 1;
 const int PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle = 2;
+const int PhysicBehaviorFactorIdx_CameraSyncViewOrigin = 3;
+const int PhysicBehaviorFactorIdx_CameraSyncViewAngles = 4;
 
-const float PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle = 0;
-const float PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath = 1;
-const float PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle = 2;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle = 0.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraSyncViewAngles = 1.0f;
 
 const int PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude = 0;
 const int PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping = 1;

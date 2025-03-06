@@ -2258,6 +2258,8 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 							SET_FACTOR_FLOAT(CameraActivateOnIdle);
 							SET_FACTOR_FLOAT(CameraActivateOnDeath);
 							SET_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
+							SET_FACTOR_FLOAT(CameraSyncViewOrigin);
+							SET_FACTOR_FLOAT(CameraSyncViewAngles);
 							break;
 						}
 						case PhysicBehavior_SimpleBuoyancy:
@@ -2809,9 +2811,11 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 		pPhysicBehaviorConfigFirstPersonView->name = "HeadCamera";
 		pPhysicBehaviorConfigFirstPersonView->type = PhysicBehavior_FirstPersonViewCamera;
 		pPhysicBehaviorConfigFirstPersonView->rigidbodyA = "Head";
-		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = 0;
-		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = 1;
-		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = 1;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewOrigin] = PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewAngles] = PhysicBehaviorFactorDefaultValue_CameraSyncViewAngles;
 
 		ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfigFirstPersonView->configId, pPhysicBehaviorConfigFirstPersonView);
 

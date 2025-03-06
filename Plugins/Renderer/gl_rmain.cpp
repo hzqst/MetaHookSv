@@ -384,6 +384,15 @@ bool R_IsRenderingWaterView(void)
 }
 
 /*
+	Purpose: Check if we are rendering viewmodel
+*/
+
+bool R_IsRenderingViewModel(void)
+{
+	return r_draw_drawviewmodel;
+}
+
+/*
 	Purpose : Check if we are rendering Portal Pass
 */
 
@@ -1527,6 +1536,8 @@ void R_DrawViewModel(void)
 	}
 	}
 
+	glDepthRange(0, 1);
+
 	(*cl_numvisedicts) = 0;
 	(*numTransObjs) = 0;
 
@@ -1553,8 +1564,6 @@ void R_DrawViewModel(void)
 
 		(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex;
 	}
-
-	glDepthRange(0, 1);
 
 	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1965,7 +1974,7 @@ void GL_FlushFinalBuffer()
 	GL_BindFrameBuffer(&s_FinalBufferFBO);
 	
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
-	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 }
 
 bool SCR_IsLoadingVisible()
@@ -2095,7 +2104,7 @@ void R_PreRenderView()
 
 	GammaToLinear(vecClearColor);
 
-	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0, 1);
@@ -2281,7 +2290,6 @@ void R_RenderView_SvEngine(int viewIdx)
 
 		if (!(*r_refdef.onlyClientDraws))
 		{
-			//ViewModel and Muzzleflash here
 			R_SetupGLForViewModel();
 			R_DrawViewModel();
 		}
