@@ -322,7 +322,7 @@ cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
 
-cvar_t* r_draw_lowerbody = NULL;
+cvar_t* r_drawlowerbody = NULL;
 
 /*
 	Purpose : Check if we can render fog
@@ -2526,7 +2526,7 @@ void R_InitCvars(void)
 
 	r_sprite_lerping = gEngfuncs.pfnRegisterVariable("r_sprite_lerping", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	r_draw_lowerbody = gEngfuncs.pfnRegisterVariable("r_draw_lowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
@@ -4077,7 +4077,7 @@ void R_EmitFlashlights()
 
 void R_CreateLowerBodyModel()
 {
-	if (r_draw_lowerbody->value < 1)
+	if (r_drawlowerbody->value < 1)
 		return;
 
 	auto LocalPlayer = gEngfuncs.GetLocalPlayer();
@@ -4091,6 +4091,8 @@ void R_CreateLowerBodyModel()
 		return;
 
 	g_LowerBodyEntity = (*LocalPlayer);
+
+	//g_LowerBodyEntity.curstate.angles[1] = (*r_refdef.viewangles)[1];
 
 	//Just like the VoiceStatus icons.
 	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, &g_LowerBodyEntity);
