@@ -997,8 +997,8 @@ void R_DrawDecals(cl_entity_t *ent)
 			//Build VBO data for this decal if not built yet
 			if (!(plist->flags & FDECAL_VBO))
 			{
-				int vertCount;
-				float *v;
+				int vertCount = 0;
+				float *v = nullptr;
 
 				auto ptexture = Draw_DecalTexture(plist->texture);
 

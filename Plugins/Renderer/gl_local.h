@@ -497,6 +497,7 @@ bool R_IsRenderingGBuffer();
 bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
 bool R_IsRenderingViewModel(void);
+bool R_IsRenderingFlippedViewModel(void);
 bool R_IsRenderingPortal(void);
 
 //Fog
@@ -574,8 +575,7 @@ float GetFrameRateFromFrameDuration(int frameduration);
 int _cdecl SDL_GL_SetAttribute(int attr, int value);
 
 void R_EmitFlashlights();
-void R_AddViewModelPassEntity(cl_entity_t* ent);
-void R_CreateFirstViewLocalPlayerModel();
+void R_CreateLowerBodyModel();
 
 //void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
@@ -584,7 +584,6 @@ extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 
 extern bool r_draw_predrawviewmodel;
-extern bool r_draw_drawviewmodel;
 extern bool r_draw_analyzingstudio;
 extern bool r_draw_deferredtrans;
 extern bool r_draw_hasalpha;

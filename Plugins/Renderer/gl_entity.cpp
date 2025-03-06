@@ -1,16 +1,20 @@
 #include "gl_local.h"
 #include "pm_defs.h"
+#include <vector>
+#include <map>
 #include <algorithm>
 
 std::vector<CEntityComponentContainer*> g_ClientEntityRenderComponents;
 std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
-CEntityComponentContainer* g_ViewEntityRenderComponent = NULL;
+
+//For cl_viewent and client.dll VoiceStatus bakamono.
+std::map<void *, CEntityComponentContainer*> g_UnmanagedEntityRenderComponent;
 
 void R_InitEntityComponents(void)
 {
 	g_ClientEntityRenderComponents.clear();
 	g_TempEntityRenderComponents.clear();
-	g_ViewEntityRenderComponent = nullptr;
+	g_UnmanagedEntityRenderComponent.clear();
 }
 
 void R_ShutdownEntityComponents(void)
@@ -37,11 +41,16 @@ void R_ShutdownEntityComponents(void)
 	}
 	g_TempEntityRenderComponents.clear();
 
-	if (g_ViewEntityRenderComponent)
+	for (auto itor = g_UnmanagedEntityRenderComponent.begin(); itor != g_UnmanagedEntityRenderComponent.end(); itor++)
 	{
-		delete g_ViewEntityRenderComponent;
-		g_ViewEntityRenderComponent = nullptr;
+		auto pContainer = (*itor).second;
+
+		if (pContainer)
+		{
+			delete pContainer;
+		}
 	}
+	g_UnmanagedEntityRenderComponent.clear();
 }
 
 CEntityComponentContainer *R_AllocateEntityComponentContainer(void)
@@ -69,9 +78,14 @@ void R_EntityComponents_StartFrame(void)
 			pContainer->Reset();
 		}
 	}
-	if (g_ViewEntityRenderComponent)
+	for (auto itor = g_UnmanagedEntityRenderComponent.begin(); itor != g_UnmanagedEntityRenderComponent.end(); itor++)
 	{
-		g_ViewEntityRenderComponent->Reset();
+		auto pContainer = (*itor).second;
+
+		if (pContainer)
+		{
+			pContainer->Reset();
+		}
 	}
 }
 
@@ -142,16 +156,7 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 {
 	CEntityComponentContainer* pContainer = NULL;
 
-	if (ent == cl_viewent)
-	{
-		pContainer = g_ViewEntityRenderComponent;
-
-		if (!pContainer && create_if_not_exists)
-		{
-			pContainer = R_AllocateEntityComponentContainer();
-			g_ViewEntityRenderComponent = pContainer;
-		}
-	}
+	//TODO: unordered_map ?
 
 	if (!pContainer)
 	{
@@ -193,6 +198,22 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 
 				g_TempEntityRenderComponents[(size_t)index] = pContainer;
 			}
+		}
+	}
+
+	if (!pContainer)
+	{
+		auto itor = g_UnmanagedEntityRenderComponent.find(ent);
+
+		if (itor != g_UnmanagedEntityRenderComponent.end())
+		{
+			pContainer = (*itor).second;
+		}
+
+		if (!pContainer && create_if_not_exists)
+		{
+			pContainer = R_AllocateEntityComponentContainer();
+			g_UnmanagedEntityRenderComponent[ent] = pContainer;
 		}
 	}
 

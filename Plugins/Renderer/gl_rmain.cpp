@@ -169,15 +169,10 @@ vec4_t g_PortalClipPlane[6] = {0};
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = {0};
 
-#if 1
-std::vector<cl_entity_t*> g_ViewModelPassEntity;
-#endif
+cl_entity_t g_LowerBodyEntity = {0};
 
 //This is the pass that collects tempents created by ViewModel's StudioEvents
 bool r_draw_predrawviewmodel = false;
-
-//This is the pass that actually draw ViewModel and it's muzzleflash
-bool r_draw_drawviewmodel = false;
 
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
@@ -389,7 +384,27 @@ bool R_IsRenderingWaterView(void)
 
 bool R_IsRenderingViewModel(void)
 {
-	return r_draw_drawviewmodel;
+	return (*currententity) == cl_viewent;
+}
+
+bool R_IsRenderingFlippedViewModel(void)
+{
+	if (cl_righthand && cl_righthand->value > 0)
+	{
+		return R_IsRenderingViewModel();
+	}
+
+	return false;
+}
+
+
+/*
+	Purpose: Check if we are rendering lowerbody entity
+*/
+
+bool R_IsRenderingLowerBody(void)
+{
+	return (*currententity) == &g_LowerBodyEntity;
 }
 
 /*
@@ -1246,6 +1261,12 @@ void R_AddTEntity(cl_entity_t *ent)
 
 entity_state_t *R_GetPlayerState(int index)
 {
+	if (!(index >= 0 && index <= 31))
+	{
+		Sys_Error("R_GetPlayerState: Invalid index %d !", index);
+		return nullptr;
+	}
+
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
 }
 
@@ -1491,8 +1512,6 @@ void R_DrawViewModel(void)
 		return;
 	}
 
-	r_draw_drawviewmodel = true;
-
 	glDepthRange(0, 0.3);
 
 	switch ((*currententity)->model->type)
@@ -1536,39 +1555,10 @@ void R_DrawViewModel(void)
 	}
 	}
 
-	glDepthRange(0, 1);
-
-	(*cl_numvisedicts) = 0;
-	(*numTransObjs) = 0;
-
-	for (size_t i = 0; i < g_ViewModelPassEntity.size(); ++i)
-	{
-		auto ent = g_ViewModelPassEntity[i];
-
-		if ((*cl_numvisedicts) >= EngineGetMaxVisEdicts())
-			break;
-
-		cl_visedicts[i] = ent;
-		(*cl_numvisedicts)++;
-	}
-
-	if ((*cl_numvisedicts) > 0)
-	{
-		//Sniber NMSL
-		auto iSavedViewEntityIndex = (*g_ViewEntityIndex_SCClient);
-
-		(*g_ViewEntityIndex_SCClient) = 0;
-
-		R_DrawEntitiesOnList();
-		R_DrawTransEntities((*r_refdef.onlyClientDraws));
-
-		(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex;
-	}
-
+	glDepthRange(0.3, 1);
+	
 	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	r_draw_drawviewmodel = false;
 }
 
 void R_PolyBlend(void)
@@ -1985,8 +1975,6 @@ bool SCR_IsLoadingVisible()
 void R_GameFrameStart()
 {
 	R_EntityComponents_StartFrame();
-
-	g_ViewModelPassEntity.clear();
 }
 
 void R_RenderViewStart()
@@ -2107,7 +2095,7 @@ void R_PreRenderView()
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0, 1);
+	glDepthRange(0.3, 1);
 }
 
 void R_PostRenderView()
@@ -2187,12 +2175,6 @@ void R_PreDrawViewModel(void)
 
 	r_draw_predrawviewmodel = true;
 
-#if HAS_VIEWMODEL_PASS
-
-	int original_numVisEdicts = (*cl_numvisedicts);
-
-#endif
-
 	switch ((*currententity)->model->type)
 	{
 	case mod_studio:
@@ -2219,17 +2201,6 @@ void R_PreDrawViewModel(void)
 		break;
 	}
 	}
-
-#if HAS_VIEWMODEL_PASS
-
-	for (int i = original_numVisEdicts; i < (*cl_numvisedicts); ++i)
-	{
-		R_AddViewModelPassEntity(cl_visedicts[i]);
-	}
-
-	(*cl_numvisedicts) = original_numVisEdicts;
-
-#endif
 
 	r_draw_predrawviewmodel = false;
 }
@@ -4105,12 +4076,7 @@ void R_EmitFlashlights()
 	}
 }
 
-void R_AddViewModelPassEntity(cl_entity_t* ent)
-{
-	g_ViewModelPassEntity.emplace_back(ent);
-}
-
-void R_CreateFirstViewLocalPlayerModel()
+void R_CreateLowerBodyModel()
 {
 	if (r_draw_lowerbody->value < 1)
 		return;
@@ -4125,5 +4091,8 @@ void R_CreateFirstViewLocalPlayerModel()
 	if (!state->modelindex || (state->effects & EF_NODRAW))
 		return;
 
-	R_AddViewModelPassEntity(LocalPlayer);
+	g_LowerBodyEntity = (*LocalPlayer);
+
+	//Just like the VoiceStatus icons.
+	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, &g_LowerBodyEntity);
 }

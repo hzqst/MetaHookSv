@@ -2027,7 +2027,7 @@ void HUD_Frame(double time)
 void HUD_CreateEntities(void)
 {
 	R_EmitFlashlights();
-	R_CreateFirstViewLocalPlayerModel();
+	R_CreateLowerBodyModel();
 
 	gExportfuncs.HUD_CreateEntities();
 }

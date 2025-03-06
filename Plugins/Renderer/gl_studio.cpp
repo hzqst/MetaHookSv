@@ -85,7 +85,9 @@ cvar_t* r_studio_debug = NULL;
 MapConVar* r_studio_base_specular = NULL;
 MapConVar* r_studio_celshade_specular = NULL;
 
+#if 0
 cvar_t* r_studio_viewmodel_lightdir_adjust = NULL;
+#endif
 
 cvar_t* r_studio_celshade = NULL;
 cvar_t* r_studio_celshade_midpoint = NULL;
@@ -1208,9 +1210,9 @@ void R_InitStudio(void)
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
-
+#if 0
 	r_studio_viewmodel_lightdir_adjust = gEngfuncs.pfnRegisterVariable("r_studio_viewmodel_lightdir_adjust", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
+#endif
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1255,17 +1257,6 @@ void R_InitStudio(void)
 
 	r_studio_base_specular = R_RegisterMapCvar("r_studio_base_specular", "1.0 2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2, ConVar_None);
 	r_studio_celshade_specular = R_RegisterMapCvar("r_studio_celshade_specular", "1.0  36.0  0.4  0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 4, ConVar_None);
-}
-
-bool R_IsFlippedViewModel(void)
-{
-	if (cl_righthand && cl_righthand->value > 0)
-	{
-		if (cl_viewent == (*currententity))
-			return true;
-	}
-
-	return false;
 }
 
 studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData)
@@ -1871,13 +1862,14 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
 
-	if (r_draw_drawviewmodel && r_studio_viewmodel_lightdir_adjust->value > 0)
+#if 0
+	if (R_IsRenderingViewModel() && r_studio_viewmodel_lightdir_adjust->value > 0)
 	{
 		StudioUBO.r_plightvec[2] = StudioUBO.r_plightvec[2] * math_clamp(r_studio_viewmodel_lightdir_adjust->value, 0, 1);
 
 		VectorNormalize(StudioUBO.r_plightvec);
 	}
-
+#endif
 	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 
@@ -1911,7 +1903,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
 	{
-		if (pbones[i].flags & STUDIO_BF_VIS_GROUP_0)
+		if (!(pbones[i].flags & STUDIO_BF_LOWERBODY))
 		{
 			int slot = i / 32;
 			int index = i - slot * 4;
@@ -2156,7 +2148,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
 	}
 
-	if (R_IsFlippedViewModel())
+	if (R_IsRenderingFlippedViewModel())
 	{
 		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
 	}
@@ -3478,7 +3470,7 @@ void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, CStu
 	}\
 	if (flags_string && !strcmp(flags_string, "-" #name))\
 	{\
-		studiohdr->flags |= name; \
+		studiohdr->flags &= ~name; \
 	}
 
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_ROCKET);
@@ -3495,6 +3487,42 @@ void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, CStu
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_OUTLINE);
 
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
+}
+
+void R_StudioLoadExternalFile_BoneInternal(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData, mstudiobone_t* pbone)
+{
+	auto flags_string = ValueForKey(ent, "flags");
+
+#define REGISTER_BONE_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
+	{\
+		pbone->flags |= name; \
+	}\
+	if (flags_string && !strcmp(flags_string, "-" #name))\
+	{\
+		pbone->flags &= ~name; \
+	}
+
+	REGISTER_BONE_FLAGS_KEY_VALUE(STUDIO_BF_LOWERBODY);
+}
+
+void R_StudioLoadExternalFile_Bone(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
+{
+	auto name_string = ValueForKey(ent, "name");
+	if (name_string && name_string[0])
+	{
+		auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+		for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+		{
+			if (!strcmp(pbones[i].name, name_string))
+			{
+				R_StudioLoadExternalFile_BoneInternal(ent, studiohdr, pRenderData, &pbones[i]);
+				return;
+			}
+		}
+
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find \"%s\" in entity \"studio_bone\"\n"); \
+	}
 }
 
 void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
@@ -3580,6 +3608,10 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 			else if (!strcmp(classname, "studio_celshade_control"))
 			{
 				R_StudioLoadExternalFile_Celshade(ent, studiohdr, pRenderData);
+			}
+			else if (!strcmp(classname, "studio_bone"))
+			{
+				R_StudioLoadExternalFile_Bone(ent, studiohdr, pRenderData);
 			}
 		}
 
