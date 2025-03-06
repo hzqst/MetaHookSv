@@ -1597,6 +1597,8 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 			LOAD_FACTOR_FLOAT(CameraActivateOnIdle);
 			LOAD_FACTOR_FLOAT(CameraActivateOnDeath);
 			LOAD_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
+			LOAD_FACTOR_FLOAT(CameraSyncViewOrigin);
+			LOAD_FACTOR_FLOAT(CameraSyncViewAngles);
 			break;
 		}
 		case PhysicBehavior_SimpleBuoyancy:
@@ -2836,6 +2838,8 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = 0;
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = 1;
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = 1;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewOrigin] = PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewAngles] = 0;
 
 		ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfigThirdPersonView->configId, pPhysicBehaviorConfigThirdPersonView);
 

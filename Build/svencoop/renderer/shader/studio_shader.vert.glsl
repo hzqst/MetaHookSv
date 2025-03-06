@@ -15,6 +15,7 @@ out vec3 v_worldpos;
 out vec3 v_normal;
 out vec2 v_texcoord;
 out vec4 v_projpos;
+flat out ivec2 v_vertnormbone;
 
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
@@ -62,6 +63,7 @@ void main(void)
 
 	v_worldpos = outvert;
 	v_normal = outnorm;
+	v_vertnormbone = in_vertnormbone;
 
 #if !defined(SHADOW_CASTER_ENABLED)
 

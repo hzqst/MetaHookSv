@@ -1,7 +1,5 @@
 "PhysicObjectConfig"
 {
-	"verifyBoneChunk"		"1"
-	"crc32BoneChunk"		"7d55ac08"
 	"type"		"RagdollObject"
 	"rigidBodies"
 	{
@@ -11,8 +9,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"15"
-			"origin"		"3.857322 -0.9195566 0.031764112"
-			"angles"		"0.10386674 83.31231 1.5449874"
+			"origin"		"3.9479752 -0.11955643 -0.6319885"
+			"angles"		"8.708661 86.86097 9.19728"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"6"
@@ -28,8 +26,8 @@
 			"AngularSleepingThreshold"		"3.000000"
 			"collisionShape"
 			{
-				"type"		"Sphere"
-				"size"		"5.149999 0.1 0"
+				"type"		"Capsule"
+				"size"		"4.25 0.1 0"
 			}
 		}
 		"Spine"
@@ -38,8 +36,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"5"
-			"origin"		"2.9807768 -0.33667707 -0.04052177"
-			"angles"		"0.86602646 -96.43184 -0.773879"
+			"origin"		"2.9807816 -0.33665466 -0.040496826"
+			"angles"		"0.8659672 -96.43158 -0.77385604"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"6"
@@ -65,8 +63,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"1"
-			"origin"		"2.905614 0.7363192 0.12341447"
-			"angles"		"-3.0269992 104.094604 -2.3611376"
+			"origin"		"2.905632 0.7362976 0.1233654"
+			"angles"		"-3.025603 104.09518 -2.3600147"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"2"
@@ -92,8 +90,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"8"
-			"origin"		"5.980758 -0.4754855 -0.06702003"
-			"angles"		"0.69190896 -94.53797 -0.6391711"
+			"origin"		"5.9807625 -0.47549438 -0.06704712"
+			"angles"		"0.6924361 -94.53793 -0.639645"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"9"
@@ -119,8 +117,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"9"
-			"origin"		"4.497128 -0.15904585 0.022565287"
-			"angles"		"-0.29812273 -92.02486 0.28775534"
+			"origin"		"4.4971313 -0.15908813 0.02255249"
+			"angles"		"-0.29734948 -92.02469 0.28704095"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"10"
@@ -146,8 +144,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"11"
-			"origin"		"3.15501 -0.19955823 5.099623"
-			"angles"		"-27.535706 -36.37079 73.4385"
+			"origin"		"3.643402 0.14303589 4.7649994"
+			"angles"		"-28.100107 -43.501495 64.195816"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"13"
@@ -173,8 +171,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"13"
-			"origin"		"4.4958425 -0.12623043 -0.14652418"
-			"angles"		"1.9178349 -91.54464 -1.8668263"
+			"origin"		"4.4958496 -0.12618637 -0.14654541"
+			"angles"		"1.9178859 -91.54503 -1.8668449"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"14"
@@ -200,8 +198,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"41"
-			"origin"		"5.942142 -0.48907724 0.6721339"
-			"angles"		"-6.937704 -93.919464 6.4796376"
+			"origin"		"5.9421387 -0.4890442 0.6721344"
+			"angles"		"-6.9376597 -93.91955 6.479565"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"42"
@@ -227,8 +225,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"42"
-			"origin"		"7.9594355 0.7476206 0.29760084"
-			"angles"		"-1.9398291 -84.561844 2.1332245"
+			"origin"		"7.9594345 0.7475891 0.29759216"
+			"angles"		"-1.9401034 -84.56205 2.1334884"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"43"
@@ -245,7 +243,7 @@
 			"collisionShape"
 			{
 				"type"		"Capsule"
-				"size"		"1.5 14 0"
+				"size"		"1.5 8 0"
 			}
 		}
 		"LFoot"
@@ -254,8 +252,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"43"
-			"origin"		"1.9950942 2.1747923 0.1183645"
-			"angles"		"-0.31631613 91.53787 -3.3994246"
+			"origin"		"1.9532318 0.3131714 -0.29458618"
+			"angles"		"9.82008 97.63075 8.597097"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"42"
@@ -271,8 +269,8 @@
 			"AngularSleepingThreshold"		"3.000000"
 			"collisionShape"
 			{
-				"type"		"Box"
-				"size"		"3.8 1.5 1.5"
+				"type"		"Capsule"
+				"size"		"2.2 1 0"
 			}
 		}
 		"RLeg"
@@ -281,8 +279,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"46"
-			"origin"		"5.941682 -0.49024117 -0.67532533"
-			"angles"		"6.971625 -93.92365 -6.510869"
+			"origin"		"5.941677 -0.49023438 -0.6753082"
+			"angles"		"6.9718447 -93.92324 -6.5111322"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"47"
@@ -308,8 +306,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"47"
-			"origin"		"7.958628 0.7477708 -0.31784764"
-			"angles"		"2.0715737 -84.54967 -2.278601"
+			"origin"		"7.958626 0.74780273 -0.31785583"
+			"angles"		"2.0714636 -84.549995 -2.278477"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"48"
@@ -326,7 +324,7 @@
 			"collisionShape"
 			{
 				"type"		"Capsule"
-				"size"		"1.5 14 0"
+				"size"		"1.5 8 0"
 			}
 		}
 		"RFoot"
@@ -335,8 +333,8 @@
 			"invertStateOnCaughtByBarnacle"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"48"
-			"origin"		"1.9886615 2.6875255 0.009649382"
-			"angles"		"0.5518634 83.90105 -0.27607322"
+			"origin"		"1.9930954 -0.033996582 0.16258621"
+			"angles"		"-4.5686936 88.65042 -4.6774726"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"47"
@@ -352,8 +350,8 @@
 			"AngularSleepingThreshold"		"3.000000"
 			"collisionShape"
 			{
-				"type"		"Box"
-				"size"		"3.8 1.5 1.5"
+				"type"		"Capsule"
+				"size"		"2.2 1 0"
 			}
 		}
 		"FakehairL1"
@@ -361,8 +359,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"56"
-			"origin"		"-1.923287 -0.51267505 0.1953906"
-			"angles"		"7.2589545 104.209366 5.6529703"
+			"origin"		"-1.9232864 -0.51268005 0.19540405"
+			"angles"		"7.258557 104.209656 5.652618"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"57"
@@ -387,8 +385,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"57"
-			"origin"		"-2.883072 0.12850198 0.8194278"
-			"angles"		"14.57981 83.21166 16.394655"
+			"origin"		"-2.8830414 0.12853241 0.8194885"
+			"angles"		"14.579407 83.21206 16.394077"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"58"
@@ -413,8 +411,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"58"
-			"origin"		"-3.844077 0.17137977 1.0926329"
-			"angles"		"15.917839 -87.90764 -16.502008"
+			"origin"		"-3.8403168 0.24111176 1.0926514"
+			"angles"		"16.20504 -88.858864 -16.526611"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"57"
@@ -439,8 +437,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"59"
-			"origin"		"-1.9253333 -0.5360851 -0.075463235"
-			"angles"		"-2.8438911 105.45222 -2.1646028"
+			"origin"		"-1.9253387 -0.5361023 -0.07543945"
+			"angles"		"-2.8442686 105.45228 -2.164895"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"60"
@@ -465,8 +463,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"60"
-			"origin"		"-2.883072 0.12844567 -0.8194559"
-			"angles"		"-14.5798025 83.21359 -16.394089"
+			"origin"		"-2.883049 0.12843323 -0.819458"
+			"angles"		"-14.579752 83.21346 -16.394085"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"61"
@@ -491,8 +489,8 @@
 			"alwaysDynamic"		"1"
 			"DebugDrawLevel"		"1"
 			"boneindex"		"61"
-			"origin"		"-3.8440678 0.17124838 -1.0926188"
-			"angles"		"-15.917114 -87.90608 16.501682"
+			"origin"		"-3.8403168 0.24113464 -1.0925903"
+			"angles"		"-16.204683 -88.85918 16.526112"
 			"forward"		"0 1 0"
 			"isLegacyConfig"		"0"
 			"pboneindex"		"60"
@@ -520,10 +518,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Spine"
 			"rigidbodyB"		"Head"
-			"originA"		"-0.2996253 4.929 -0.4000145"
-			"anglesA"		"1.2349656 141.21478 1.2902671"
-			"originB"		"0 0.15240014 2.3841858e-07"
-			"anglesB"		"-0.2961566 -66.11254 0.45500246"
+			"originA"		"0.014755249 5.078743 -0.00061035156"
+			"anglesA"		"10.14876 115.57838 21.628237"
+			"originB"		"7.6293945e-06 6.0000153 3.0517578e-05"
+			"anglesB"		"8.70862 -86.86095 -9.197189"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"6"
@@ -531,8 +529,8 @@
 			"offsetB"		"0 6 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.050000"
-				"ConeTwistSwingSpanLimit2"		"0.050000"
+				"ConeTwistSwingSpanLimit1"		"0.010000"
+				"ConeTwistSwingSpanLimit2"		"0.010000"
 				"ConeTwistTwistSpanLimit"		"0.200000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
@@ -545,10 +543,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Pelvis"
 			"rigidbodyB"		"Spine"
-			"originA"		"-2.200001 -2.5 0.20159969"
-			"anglesA"		"-3.0270042 -104.094604 2.361115"
-			"originB"		"0.050033092 -0.21546936 0.09835434"
-			"anglesB"		"1.2065086 109.90139 2.6257522"
+			"originA"		"-3.0517578e-05 7.6293945e-06 3.9999962"
+			"anglesA"		"-3.0256345 -104.09521 2.359973"
+			"originB"		"4.6323395 -8.869553 -2.323822"
+			"anglesB"		"-20.393469 90.91281 105.574196"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"1"
@@ -571,10 +569,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Spine"
 			"rigidbodyB"		"LArm"
-			"originA"		"1.3325447 -0.31243306 4.625464"
-			"anglesA"		"16 -63.60002 85.80005"
-			"originB"		"0 -0.08890009 4.7683716e-07"
-			"anglesB"		"0.69195443 94.53798 0.63921803"
+			"originA"		"3.1404953 0.33052063 4.778412"
+			"anglesA"		"-2.8487706 -57.803493 -40.698856"
+			"originB"		"0 -3.5000114 -3.0517578e-05"
+			"anglesB"		"0.6924211 94.53796 0.6395861"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"7"
@@ -582,9 +580,9 @@
 			"offsetB"		"0 -3.5 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.250000"
-				"ConeTwistSwingSpanLimit2"		"0.250000"
-				"ConeTwistTwistSpanLimit"		"0.400000"
+				"ConeTwistSwingSpanLimit1"		"0.500000"
+				"ConeTwistSwingSpanLimit2"		"0.500000"
+				"ConeTwistTwistSpanLimit"		"0.500000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
 				"AngularERP"		"0.300000"
@@ -596,10 +594,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"LArm"
 			"rigidbodyB"		"LArm2"
-			"originA"		"-1.9073486e-06 4.3580503 -1.9073486e-06"
-			"anglesA"		"0.42819235 74.23377 86.63956"
-			"originB"		"-9.536743e-07 -0.114299774 0"
-			"anglesB"		"-0.29808423 92.02485 -0.2876763"
+			"originA"		"-1.5258789e-05 2.2854996 3.0517578e-05"
+			"anglesA"		"-0.69206303 37.574398 -0.4009785"
+			"originB"		"-7.6293945e-06 -4.4999847 0"
+			"anglesB"		"-0.297306 92.02474 -0.287059"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"8"
@@ -621,10 +619,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Spine"
 			"rigidbodyB"		"RArm"
-			"originA"		"1.2191709 1.0339584 -4.0991235"
-			"anglesA"		"-13.967314 -68.1907 -98.74708"
-			"originB"		"-2.3841858e-07 -0.08890009 -9.536743e-07"
-			"anglesB"		"-1.0054033 103.128044 -60.53323"
+			"originA"		"1.5567856 1.7071838 -3.937683"
+			"anglesA"		"-13.532081 -51.107506 9.43942"
+			"originB"		"0 -3.5 0"
+			"anglesB"		"-2.1017942 101.43921 -72.73371"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"11"
@@ -632,9 +630,9 @@
 			"offsetB"		"0 -3.5 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.250000"
-				"ConeTwistSwingSpanLimit2"		"0.250000"
-				"ConeTwistTwistSpanLimit"		"0.400000"
+				"ConeTwistSwingSpanLimit1"		"0.500000"
+				"ConeTwistSwingSpanLimit2"		"0.500000"
+				"ConeTwistTwistSpanLimit"		"0.500000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
 				"AngularERP"		"0.300000"
@@ -646,10 +644,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"RArm"
 			"rigidbodyB"		"RArm2"
-			"originA"		"-0.2999981 4.6100216 0.100000955"
-			"anglesA"		"-0.9040913 -74.00622 -25.9734"
-			"originB"		"0 -0.11430001 0"
-			"anglesB"		"1.917844 91.54462 1.8668526"
+			"originA"		"0 4.4568024 1.5258789e-05"
+			"anglesA"		"67.498436 62.85803 -44.801826"
+			"originB"		"1.5258789e-05 -4.5 0"
+			"anglesB"		"1.9178859 91.54507 1.8667992"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"12"
@@ -671,10 +669,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Pelvis"
 			"rigidbodyB"		"LLeg"
-			"originA"		"-0.21390744 5.402728 3.3894877"
-			"anglesA"		"5.862014 55.365612 174.07831"
-			"originB"		"-9.536743e-07 -0.17780018 4.7683716e-07"
-			"anglesB"		"-6.937708 93.91945 -6.4796033"
+			"originA"		"-0.41830444 3.991806 3.3579216"
+			"anglesA"		"11.816028 60.033466 -150.2976"
+			"originB"		"3.0517578e-05 -7.0000153 1.5258789e-05"
+			"anglesB"		"-6.9376855 93.91953 -6.4794483"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"41"
@@ -696,10 +694,10 @@
 			"type"		"Hinge"
 			"rigidbodyA"		"LLeg2"
 			"rigidbodyB"		"LLeg"
-			"originA"		"-0.007715225 -8.877862 0.0017783642"
-			"anglesA"		"-2.680152 111.508224 -1.006692"
-			"originB"		"-9.536743e-07 0.2032001 -4.7683716e-07"
-			"anglesB"		"-6.937708 93.91945 -6.4796033"
+			"originA"		"-0.35220337 -7.016121 0.0049743652"
+			"anglesA"		"-6.0728054 114.522026 1.3390673"
+			"originB"		"0 8.0000305 0"
+			"anglesB"		"-6.9376855 93.91953 -6.4794483"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"41"
@@ -720,10 +718,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"LLeg2"
 			"rigidbodyB"		"LFoot"
-			"originA"		"0 8.681688 2.3841858e-07"
-			"anglesA"		"-3.1847198 87.55476 -5.264234"
-			"originB"		"0 0.10160017 1.1920929e-07"
-			"anglesB"		"-3.5163293 -91.93785 3.399426"
+			"originA"		"-3.0517578e-05 7.1532 -1.5258789e-05"
+			"anglesA"		"8.473662 80.89591 0.6522189"
+			"originB"		"0 4.000017 3.0517578e-05"
+			"anglesB"		"9.819992 -97.63065 -8.596988"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"43"
@@ -731,9 +729,9 @@
 			"offsetB"		"0 4 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.050000"
-				"ConeTwistSwingSpanLimit2"		"0.050000"
-				"ConeTwistTwistSpanLimit"		"0.300000"
+				"ConeTwistSwingSpanLimit1"		"0.100000"
+				"ConeTwistSwingSpanLimit2"		"0.100000"
+				"ConeTwistTwistSpanLimit"		"0.100000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
 				"AngularERP"		"0.300000"
@@ -745,10 +743,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Pelvis"
 			"rigidbodyB"		"RLeg"
-			"originA"		"0.0024843216 5.7073493 -2.6893616"
-			"anglesA"		"4.4235134 72.59522 -173.72566"
-			"originB"		"0 -0.17780018 0"
-			"anglesB"		"6.9716315 93.92365 6.5108814"
+			"originA"		"0.33102417 4.180397 -3.3343697"
+			"anglesA"		"-4.460333 84.29193 166.42413"
+			"originB"		"0 -6.999996 -1.5258789e-05"
+			"anglesB"		"6.9718213 93.92328 6.5111823"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"46"
@@ -770,10 +768,10 @@
 			"type"		"Hinge"
 			"rigidbodyA"		"RLeg2"
 			"rigidbodyB"		"RLeg"
-			"originA"		"-0.0028791279 -8.876734 -0.0018506199"
-			"anglesA"		"2.6243932 100.72171 1.6109146"
-			"originB"		"0 0.2032001 -4.7683716e-07"
-			"anglesB"		"6.9716315 93.92365 6.5108814"
+			"originA"		"-0.005004883 -6.9507065 -0.05155182"
+			"anglesA"		"3.7477818 94.84506 1.0744021"
+			"originB"		"3.0517578e-05 8.000004 -3.8146973e-05"
+			"anglesB"		"6.9718213 93.92328 6.5111823"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"46"
@@ -794,10 +792,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"RLeg2"
 			"rigidbodyB"		"RFoot"
-			"originA"		"9.536743e-07 8.281694 0"
-			"anglesA"		"1.1357243 95.99764 13.280112"
-			"originB"		"-9.536743e-07 0.10160011 0"
-			"anglesB"		"-0.2481554 -83.901054 0.27614766"
+			"originA"		"0 7.153488 3.8146973e-05"
+			"anglesA"		"-4.264556 92.12455 14.713094"
+			"originB"		"0 4 2.4795532e-05"
+			"anglesB"		"-4.568737 -88.65039 4.6775274"
 			"forward"		"0 1 0"
 			"disableCollision"		"0"
 			"boneindexA"		"48"
@@ -805,9 +803,9 @@
 			"offsetB"		"0 4 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.050000"
-				"ConeTwistSwingSpanLimit2"		"0.050000"
-				"ConeTwistTwistSpanLimit"		"0.300000"
+				"ConeTwistSwingSpanLimit1"		"0.100000"
+				"ConeTwistSwingSpanLimit2"		"0.100000"
+				"ConeTwistTwistSpanLimit"		"0.100000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
 				"AngularERP"		"0.300000"
@@ -819,18 +817,18 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Head"
 			"rigidbodyB"		"FakehairL1"
-			"originA"		"-0.40000156 1.3000002 4.0000014"
-			"anglesA"		"169.1 -64.50001 191.5"
-			"originB"		"4.7683716e-07 -0.10159969 4.7683716e-07"
-			"anglesB"		"7.25893 -104.20936 -5.652968"
+			"originA"		"-0.002922058 1.9747581 4.641388"
+			"anglesA"		"8.203847 -85.43914 -24.17366"
+			"originB"		"7.6293945e-06 -4.0000114 -3.0517578e-05"
+			"anglesB"		"7.258504 -104.20965 -5.65254"
 			"forward"		"0 1 0"
 			"boneindexA"		"56"
 			"boneindexB"		"56"
 			"offsetB"		"0 -4 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.100000"
-				"ConeTwistSwingSpanLimit2"		"0.100000"
+				"ConeTwistSwingSpanLimit1"		"0.500000"
+				"ConeTwistSwingSpanLimit2"		"0.500000"
 				"ConeTwistTwistSpanLimit"		"0.050000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
@@ -843,10 +841,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"FakehairL1"
 			"rigidbodyB"		"FakehairL2"
-			"originA"		"-0.007867813 3.9235601 -0.0036597252"
-			"anglesA"		"1.1589174 90.49087 -0.25276613"
-			"originB"		"-9.536743e-07 -0.10160005 -4.7683716e-07"
-			"anglesB"		"14.579786 -83.211655 -16.394655"
+			"originA"		"-0.3086319 4.8642387 -0.14413452"
+			"anglesA"		"7.252018 -104.14359 -5.660643"
+			"originB"		"-1.5258789e-05 -4.0000076 -3.0517578e-05"
+			"anglesB"		"14.579366 -83.212036 -16.393982"
 			"forward"		"0 1 0"
 			"boneindexA"		"57"
 			"boneindexB"		"57"
@@ -867,10 +865,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"FakehairL2"
 			"rigidbodyB"		"FakehairL3"
-			"originA"		"0.3 4.3448324 0"
-			"anglesA"		"1.5798349 90.78856 -0.29447746"
-			"originB"		"4.7683716e-07 0.10160029 1.9073486e-06"
-			"anglesB"		"15.917815 87.90767 16.502007"
+			"originA"		"-2.2888184e-05 5.7021294 0"
+			"anglesA"		"14.283743 -82.18266 -16.650322"
+			"originB"		"1.5258789e-05 3.9999962 0"
+			"anglesB"		"16.20502 88.858894 16.526657"
 			"forward"		"0 1 0"
 			"boneindexA"		"58"
 			"boneindexB"		"58"
@@ -891,18 +889,18 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"Head"
 			"rigidbodyB"		"FakehairR1"
-			"originA"		"-0.29215315 1.6322253 -5.1146474"
-			"anglesA"		"-3.117363 115.13954 -10.176895"
-			"originB"		"0 -0.10160017 1.1920929e-07"
-			"anglesB"		"-2.8439224 -105.45222 2.1646142"
+			"originA"		"-1.3474503 0.6670456 -3.8460999"
+			"anglesA"		"8.7376795 -85.34956 5.3414555"
+			"originB"		"0 -4 0"
+			"anglesB"		"-2.8443248 -105.452255 2.1649694"
 			"forward"		"0 1 0"
 			"boneindexA"		"59"
 			"boneindexB"		"59"
 			"offsetB"		"0 -4 0"
 			"factors"
 			{
-				"ConeTwistSwingSpanLimit1"		"0.100000"
-				"ConeTwistSwingSpanLimit2"		"0.100000"
+				"ConeTwistSwingSpanLimit1"		"0.500000"
+				"ConeTwistSwingSpanLimit2"		"0.500000"
 				"ConeTwistTwistSpanLimit"		"0.050000"
 				"LinearERP"		"0.300000"
 				"LinearCFM"		"0.010000"
@@ -915,10 +913,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"FakehairR1"
 			"rigidbodyB"		"FakehairR2"
-			"originA"		"-0.30788684 4.419834 0.20567265"
-			"anglesA"		"0.9560208 -281.45364 2.1646044"
-			"originB"		"9.536743e-07 -0.101599455 2.3841858e-07"
-			"anglesB"		"-14.5798235 -83.21358 16.394083"
+			"originA"		"-0.30947876 4.717499 0.22335815"
+			"anglesA"		"-2.8418927 -105.38799 2.1682134"
+			"originB"		"7.6293945e-06 -4.0000153 3.0517578e-05"
+			"anglesB"		"-14.579819 -83.21343 16.394154"
 			"forward"		"0 1 0"
 			"boneindexA"		"60"
 			"boneindexB"		"60"
@@ -939,10 +937,10 @@
 			"type"		"ConeTwist"
 			"rigidbodyA"		"FakehairR2"
 			"rigidbodyB"		"FakehairR3"
-			"originA"		"0 6.1448345 -2.3841858e-07"
-			"anglesA"		"-0.5798187 89.78644 -0.6059208"
-			"originB"		"0 0.10159993 -2.3841858e-07"
-			"anglesB"		"-15.917144 87.9061 -16.501669"
+			"originA"		"3.8146973e-06 5.702118 9.1552734e-05"
+			"anglesA"		"-14.283514 -82.182076 16.651203"
+			"originB"		"-1.5258789e-05 4 0"
+			"anglesB"		"-16.204735 88.85919 -16.52607"
 			"forward"		"0 1 0"
 			"boneindexA"		"61"
 			"boneindexB"		"61"
@@ -961,7 +959,7 @@
 		"BarnacleConstraint|LLeg2"
 		{
 			"barnacle"		"1"
-			"type"		"Dof6Spring"
+			"type"		"Dof6"
 			"rigidbodyA"		"@barnacle.Body"
 			"rigidbodyB"		"LLeg2"
 			"originA"		"0 0 4"
@@ -985,7 +983,7 @@
 		"BarnacleConstraint|RLeg"
 		{
 			"barnacle"		"1"
-			"type"		"Dof6Spring"
+			"type"		"Dof6"
 			"rigidbodyA"		"@barnacle.Body"
 			"rigidbodyB"		"RLeg"
 			"originA"		"0 0 -16"
@@ -1005,94 +1003,9 @@
 				"Dof6UpperLinearLimitZ"		"0.000000"
 			}
 		}
-		"BarnacleConstraint|Tongue6"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue6"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
-		"BarnacleConstraint|Tongue5"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue5"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
-		"BarnacleConstraint|Tongue4"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue4"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
-		"BarnacleConstraint|Tongue3"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue3"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
-		"BarnacleConstraint|Tongue2"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue2"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
-		"BarnacleConstraint|Tongue1"
-		{
-			"barnacle"		"1"
-			"deactiveOnDeathActivity"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
-			"DeferredCreate"		"1"
-			"type"		"Point"
-			"rigidbodyA"		"@barnacle.Tongue1"
-			"rigidbodyB"		"LLeg2"
-			"originB"		"0 8 0"
-			"forward"		"1 0 0"
-			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
-		}
 		"GargConstraint|Head"
 		{
 			"gargantua"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
 			"type"		"Dof6Spring"
 			"rigidbodyA"		"@gargantua.GargMouth"
 			"rigidbodyB"		"Head"
@@ -1102,17 +1015,19 @@
 			"disableCollision"		"0"
 			"useSeperateLocalFrame"		"1"
 			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
 			"factors"
 			{
 				"Dof6LowerLinearLimitX"		"-60.000000"
+				"Dof6LowerLinearLimitY"		"0.000000"
+				"Dof6LowerLinearLimitZ"		"0.000000"
 				"Dof6UpperLinearLimitX"		"30.000000"
+				"Dof6UpperLinearLimitY"		"0.000000"
+				"Dof6UpperLinearLimitZ"		"0.000000"
 			}
 		}
 		"GargConstraint|Spine"
 		{
 			"gargantua"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
 			"type"		"Dof6Spring"
 			"rigidbodyA"		"@gargantua.GargMouth"
 			"rigidbodyB"		"Spine"
@@ -1122,17 +1037,19 @@
 			"disableCollision"		"0"
 			"useSeperateLocalFrame"		"1"
 			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
 			"factors"
 			{
 				"Dof6LowerLinearLimitX"		"-60.000000"
+				"Dof6LowerLinearLimitY"		"0.000000"
+				"Dof6LowerLinearLimitZ"		"0.000000"
 				"Dof6UpperLinearLimitX"		"30.000000"
+				"Dof6UpperLinearLimitY"		"0.000000"
+				"Dof6UpperLinearLimitZ"		"0.000000"
 			}
 		}
 		"GargConstraint|Pelvis"
 		{
 			"gargantua"		"1"
-			"dontResetPoseOnErrorCorrection"		"1"
 			"type"		"Dof6Spring"
 			"rigidbodyA"		"@gargantua.GargMouth"
 			"rigidbodyB"		"Pelvis"
@@ -1142,22 +1059,24 @@
 			"disableCollision"		"0"
 			"useSeperateLocalFrame"		"1"
 			"DebugDrawLevel"		"2"
-			"maxTolerantLinearError"		"9999.000000"
 			"factors"
 			{
 				"Dof6LowerLinearLimitX"		"-60.000000"
+				"Dof6LowerLinearLimitY"		"0.000000"
+				"Dof6LowerLinearLimitZ"		"0.000000"
 				"Dof6UpperLinearLimitX"		"30.000000"
+				"Dof6UpperLinearLimitY"		"0.000000"
+				"Dof6UpperLinearLimitZ"		"0.000000"
 			}
 		}
 	}
 	"physicBehaviors"
 	{
-		"BarnacleDragForce|LLeg2"
+		"BarnacleDrag|LLeg2"
 		{
 			"type"		"BarnacleDragOnRigidBody"
 			"rigidbodyA"		"LLeg2"
 			"barnacle"		"1"
-			"origin"		"0 8 0"
 			"factors"
 			{
 				"BarnacleDragMagnitude"		"400000.000000"
@@ -1171,12 +1090,12 @@
 			"barnacle"		"1"
 			"factors"
 			{
-				"BarnacleConstraintLimitAdjustmentExtraHeight"		"4.000000"
-				"BarnacleConstraintLimitAdjustmentInterval"		"1.000000"
+				"BarnacleConstraintLimitAdjustmentExtraHeight"		"1.000000"
+				"BarnacleConstraintLimitAdjustmentInterval"		"4.000000"
 				"BarnacleConstraintLimitAdjustmentAxis"		"-1.000000"
 			}
 		}
-		"BarnacleDragForce|RLeg"
+		"BarnacleDrag|RLeg"
 		{
 			"type"		"BarnacleDragOnRigidBody"
 			"rigidbodyA"		"RLeg"
@@ -1194,12 +1113,12 @@
 			"barnacle"		"1"
 			"factors"
 			{
-				"BarnacleConstraintLimitAdjustmentExtraHeight"		"4.000000"
-				"BarnacleConstraintLimitAdjustmentInterval"		"1.000000"
+				"BarnacleConstraintLimitAdjustmentExtraHeight"		"1.000000"
+				"BarnacleConstraintLimitAdjustmentInterval"		"4.000000"
 				"BarnacleConstraintLimitAdjustmentAxis"		"-1.000000"
 			}
 		}
-		"BarnacleChewForce|Pelvis"
+		"BarnacleChew|Pelvis"
 		{
 			"type"		"BarnacleChew"
 			"rigidbodyA"		"Pelvis"
@@ -1208,6 +1127,235 @@
 			{
 				"BarnacleChewMagnitude"		"80000.000000"
 				"BarnacleChewInterval"		"1.000000"
+			}
+		}
+		"GargantuaDragForce|Head"
+		{
+			"type"		"GargantuaDragOnConstraint"
+			"constraint"		"GargConstraint|Head"
+			"gargantua"		"1"
+			"factors"
+			{
+				"BarnacleDragMagnitude"		"200000.000000"
+				"BarnacleDragVelocity"		"-60.000000"
+				"BarnacleDragExtraHeight"		"0.000000"
+				"BarnacleDragLimitAxis"		"0.000000"
+				"BarnacleDragUseServoMotor"		"0.000000"
+			}
+		}
+		"GargantuaDragForce|Spine"
+		{
+			"type"		"GargantuaDragOnConstraint"
+			"constraint"		"GargConstraint|Spine"
+			"gargantua"		"1"
+			"factors"
+			{
+				"BarnacleDragMagnitude"		"200000.000000"
+				"BarnacleDragVelocity"		"-60.000000"
+				"BarnacleDragExtraHeight"		"0.000000"
+				"BarnacleDragLimitAxis"		"0.000000"
+				"BarnacleDragUseServoMotor"		"0.000000"
+			}
+		}
+		"GargantuaDragForce|Pelvis"
+		{
+			"type"		"GargantuaDragOnConstraint"
+			"constraint"		"GargConstraint|Pelvis"
+			"gargantua"		"1"
+			"factors"
+			{
+				"BarnacleDragMagnitude"		"200000.000000"
+				"BarnacleDragVelocity"		"-60.000000"
+				"BarnacleDragExtraHeight"		"0.000000"
+				"BarnacleDragLimitAxis"		"0.000000"
+				"BarnacleDragUseServoMotor"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|Head"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Head"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|Spine"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Spine"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|Pelvis"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"Pelvis"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|LArm"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LArm"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.950000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|LArm2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LArm2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.950000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|RArm"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RArm"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.950000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|RArm2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RArm2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.950000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|LLeg"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.475000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|LLeg2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"LLeg2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.475000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|RLeg"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.475000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|RLeg2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"RLeg2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"0.475000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL1"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL1"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairL3"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairL3"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR1"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairR1"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR2"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairR2"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
+			}
+		}
+		"SimpleBuoyancy|FakehairR3"
+		{
+			"type"		"SimpleBuoyancy"
+			"rigidbodyA"		"FakehairR3"
+			"factors"
+			{
+				"SimpleBuoyancyMagnitude"		"1.050000"
+				"SimpleBuoyancyLinearDamping"		"0.500000"
+				"SimpleBuoyancyAngularDamping"		"0.000000"
 			}
 		}
 		"HeadCamera"
@@ -1220,6 +1368,8 @@
 				"CameraActivateOnIdle"		"0.000000"
 				"CameraActivateOnDeath"		"1.000000"
 				"CameraActivateOnCaughtByBarnacle"		"1.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"1.000000"
 			}
 		}
 		"PelvisCamera"
@@ -1233,357 +1383,19 @@
 				"CameraActivateOnCaughtByBarnacle"		"1.000000"
 			}
 		}
-		"RigidBodyRelocation|Togue6"
+		"HeadCamera (Idle)"
 		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue6"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"RigidBodyRelocation|Togue5"
-		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue5"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"RigidBodyRelocation|Togue4"
-		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue4"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"RigidBodyRelocation|Togue3"
-		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue3"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"RigidBodyRelocation|Togue2"
-		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue2"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"RigidBodyRelocation|Togue1"
-		{
-			"type"		"RigidBodyRelocation"
-			"rigidbodyA"		"@barnacle.Tongue1"
-			"rigidbodyB"		"LLeg2"
-			"barnacle"		"1"
-			"origin"		"0 8 0"
-			"angles"		"0 179 0"
-		}
-		"GargDragForce|Head"
-		{
-			"type"		"GargantuaDragOnConstraint"
-			"constraint"		"GargConstraint|Head"
-			"gargantua"		"1"
-			"factors"
-			{
-				"BarnacleDragMagnitude"		"200000.000000"
-				"BarnacleDragVelocity"		"-80.000000"
-				"BarnacleDragExtraHeight"		"0.000000"
-				"BarnacleDragLimitAxis"		"0.000000"
-				"BarnacleDragUseServoMotor"		"0.000000"
-			}
-		}
-		"GargDragForce|Spine"
-		{
-			"type"		"GargantuaDragOnConstraint"
-			"constraint"		"GargConstraint|Spine"
-			"gargantua"		"1"
-			"factors"
-			{
-				"BarnacleDragMagnitude"		"200000.000000"
-				"BarnacleDragVelocity"		"-80.000000"
-				"BarnacleDragExtraHeight"		"0.000000"
-				"BarnacleDragLimitAxis"		"0.000000"
-				"BarnacleDragUseServoMotor"		"0.000000"
-			}
-		}
-		"GargDragForce|Pelvis"
-		{
-			"type"		"GargantuaDragOnConstraint"
-			"constraint"		"GargConstraint|Pelvis"
-			"gargantua"		"1"
-			"factors"
-			{
-				"BarnacleDragMagnitude"		"200000.000000"
-				"BarnacleDragVelocity"		"-80.000000"
-				"BarnacleDragExtraHeight"		"0.000000"
-				"BarnacleDragLimitAxis"		"0.000000"
-				"BarnacleDragUseServoMotor"		"0.000000"
-			}
-		}
-		"SimpleBuoyancy|Head"
-		{
-			"type"		"SimpleBuoyancy"
+			"type"		"FirstPersonViewCamera"
 			"rigidbodyA"		"Head"
+			"angles"		"0 0 90"
+			"origin"		"4 0 0"
 			"factors"
 			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|Spine"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"Spine"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|Pelvis"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"Pelvis"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LArm"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LArm"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LArm2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LArm2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RArm"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RArm"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RArm2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RArm2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LLeg"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LLeg"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LLeg (Clone)"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LLeg"
-			"origin"		"0 8 0"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LLeg2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LLeg2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LLeg2 (Clone)"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LLeg2"
-			"origin"		"0 8 0"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|LFoot"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"LFoot"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RLeg"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RLeg"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RLeg (Clone)"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RLeg"
-			"origin"		"0 8 0"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RLeg2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RLeg2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RLeg2 (Clone)"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RLeg2"
-			"origin"		"0 8 0"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"0.550000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|RFoot"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"RFoot"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.100000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairL1"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairL1"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairL2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairL2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairL3"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairL3"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairR1"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairR1"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairR2"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairL2"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
-			}
-		}
-		"SimpleBuoyancy|FakehairR3"
-		{
-			"type"		"SimpleBuoyancy"
-			"rigidbodyA"		"FakehairR3"
-			"factors"
-			{
-				"SimpleBuoyancyMagnitude"		"1.000000"
-				"SimpleBuoyancyLinearDamping"		"0.500000"
-				"SimpleBuoyancyAngularDamping"		"0.500000"
+				"CameraActivateOnIdle"		"1.000000"
+				"CameraActivateOnDeath"		"0.000000"
+				"CameraActivateOnCaughtByBarnacle"		"0.000000"
+				"CameraSyncViewOrigin"		"1.000000"
+				"CameraSyncViewAngles"		"0.000000"
 			}
 		}
 	}
@@ -1692,22 +1504,6 @@
 			"animframe"		"0.000000"
 			"activityType"		"1"
 			"flags"		"1"
-			"controller_0"		"0"
-			"controller_1"		"0"
-			"controller_2"		"0"
-			"controller_3"		"0"
-			"blending_0"		"0"
-			"blending_1"		"0"
-			"blending_2"		"0"
-			"blending_3"		"0"
-		}
-		"8"
-		{
-			"sequence"		"2"
-			"gaitsequence"		"-1"
-			"animframe"		"0.000000"
-			"activityType"		"0"
-			"flags"		"0"
 			"controller_0"		"0"
 			"controller_1"		"0"
 			"controller_2"		"0"

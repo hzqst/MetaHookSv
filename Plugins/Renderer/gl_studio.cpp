@@ -723,6 +723,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_STENCIL_TEXTURE_ENABLED)
 			defs << "#define STENCIL_TEXTURE_ENABLED\n";
 
+		if (state & STUDIO_CLIP_BONE_ENABLED)
+			defs << "#define CLIP_BONE_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -1899,15 +1902,18 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-	auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
-
-	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+	if (R_IsRenderingLowerBody())
 	{
-		if (!(pbones[i].flags & STUDIO_BF_LOWERBODY))
+		auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+		for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
 		{
-			int slot = i / 32;
-			int index = i - slot * 4;
-			StudioUBO.r_clipbone[slot] |= index;
+			if (!(pbones[i].flags & STUDIO_BF_LOWERBODY))
+			{
+				int slot = i / 32;
+				int index = i - slot * 4;
+				StudioUBO.r_clipbone[slot] |= (1 << index);
+			}
 		}
 	}
 
@@ -2151,6 +2157,11 @@ void R_StudioDrawMesh_DrawPass(
 	if (R_IsRenderingFlippedViewModel())
 	{
 		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
+	}
+
+	if (R_IsRenderingLowerBody())
+	{
+		StudioProgramState |= STUDIO_CLIP_BONE_ENABLED;
 	}
 
 	if (r_studio_debug->value > 0)
@@ -3510,9 +3521,9 @@ void R_StudioLoadExternalFile_Bone(bspentity_t* ent, studiohdr_t* studiohdr, CSt
 	auto name_string = ValueForKey(ent, "name");
 	if (name_string && name_string[0])
 	{
-		auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+		auto pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
 
-		for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+		for (int i = 0; i < studiohdr->numbones; ++i)
 		{
 			if (!strcmp(pbones[i].name, name_string))
 			{
@@ -3521,7 +3532,24 @@ void R_StudioLoadExternalFile_Bone(bspentity_t* ent, studiohdr_t* studiohdr, CSt
 			}
 		}
 
-		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find \"%s\" in entity \"studio_bone\"\n"); \
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find \"%s\" in entity \"studio_bone\"\n", name_string);
+		return;
+	}
+
+	auto index_string = ValueForKey(ent, "index");
+	if (index_string && index_string[0])
+	{
+		int boneindex = atoi(index_string);
+
+		if (boneindex >= 0 && boneindex < studiohdr->numbones)
+		{
+			auto pbones = (mstudiobone_t*)((byte*)studiohdr + studiohdr->boneindex);
+
+			R_StudioLoadExternalFile_BoneInternal(ent, studiohdr, pRenderData, &pbones[boneindex]);
+		}
+
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find bone index \"%s\" in entity \"studio_bone\"\n", index_string);
+		return;
 	}
 }
 

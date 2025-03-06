@@ -43,6 +43,7 @@ in vec3 v_worldpos;
 in vec3 v_normal;
 in vec2 v_texcoord;
 in vec4 v_projpos;
+flat in ivec2 v_vertnormbone;
 
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
@@ -631,8 +632,32 @@ vec4 SampleRawSpecularTexture(vec2 baseTexcoord)
 
 #endif
 
+#if defined(CLIP_BONE_ENABLED)
+
+bool IsBoneClipped(int boneindex)
+{
+	int slot = boneindex / 32;
+	int index = boneindex - slot * 4;
+	
+	if((StudioUBO.r_clipbone[slot] & (1 << index)) != 0)
+		return true;
+
+	return false;
+}
+
+#endif
+
 void main(void)
 {
+	#if defined(CLIP_BONE_ENABLED)
+
+		int vertbone = v_vertnormbone.x;
+
+		if(IsBoneClipped(vertbone))
+			discard;
+
+	#endif
+
 #if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
 
 	vec3 vWorldPos = v_worldpos.xyz;

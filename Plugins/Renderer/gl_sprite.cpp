@@ -777,7 +777,7 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_v
 	}\
 	if (flags_string && !strcmp(flags_string, "-" #name))\
 	{\
-		pSpriteVBOData->flags |= name; \
+		pSpriteVBOData->flags &= ~name; \
 	}
 
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_NOBLOOM);

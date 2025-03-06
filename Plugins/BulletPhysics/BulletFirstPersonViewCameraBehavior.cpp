@@ -74,6 +74,7 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 
 			if (m_bSyncViewAngles)
 			{
+				//bypass V_CalcViewRoll
 				pparams->health = 1;
 			}
 

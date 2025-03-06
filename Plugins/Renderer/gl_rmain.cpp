@@ -397,7 +397,6 @@ bool R_IsRenderingFlippedViewModel(void)
 	return false;
 }
 
-
 /*
 	Purpose: Check if we are rendering lowerbody entity
 */
@@ -4095,4 +4094,8 @@ void R_CreateLowerBodyModel()
 
 	//Just like the VoiceStatus icons.
 	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, &g_LowerBodyEntity);
+
+	//Sniber NMSL
+	if(g_ViewEntityIndex_SCClient)
+		(*g_ViewEntityIndex_SCClient) = 0;
 }
