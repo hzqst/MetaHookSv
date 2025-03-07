@@ -322,6 +322,10 @@ extern cvar_t *r_alpha_shift;
 
 extern cvar_t *r_additive_shift;
 
+extern cvar_t* r_drawlowerbody;
+
+extern cvar_t* r_sprite_lerping;
+
 extern cvar_t* r_detailskytextures;
 
 void GammaToLinear(float *color);
@@ -584,7 +588,8 @@ extern GLint r_viewport[4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 
-extern bool r_draw_predrawviewmodel;
+extern cl_entity_t g_LowerBodyEntity;
+
 extern bool r_draw_analyzingstudio;
 extern bool r_draw_deferredtrans;
 extern bool r_draw_hasalpha;

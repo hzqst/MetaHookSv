@@ -4,13 +4,25 @@ CBulletCameraViewBehavior::CBulletCameraViewBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId, 
 	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle, 
-	bool syncViewOrigin, bool syncViewAngles) :
+	bool syncViewOrigin, bool syncViewAngles,
+	bool useSimOrigin,
+	float originalViewHeightStand,
+	float originalViewHeightDuck,
+	float mappedViewHeightStand,
+	float mappedViewHeightDuck,
+	float newViewHeightDucking) :
 
 	m_bActivateOnIdle(activateOnIdle),
 	m_bActivateOnDeath(activateOnDeath),
 	m_bActivateOnCaughtByBarnacle(activateOnCaughtByBarnacle),
 	m_bSyncViewOrigin(syncViewOrigin),
 	m_bSyncViewAngles(syncViewAngles),
+	m_bUseSimOrigin(useSimOrigin),
+	m_flOriginalViewHeightStand(originalViewHeightStand),
+	m_flOriginalViewHeightDuck(originalViewHeightDuck),
+	m_flMappedViewHeightStand(mappedViewHeightStand),
+	m_flMappedViewHeightDuck(mappedViewHeightDuck),
+	m_flNewViewHeightDucking(newViewHeightDucking),
 
 	CBulletPhysicComponentBehavior(
 		id,

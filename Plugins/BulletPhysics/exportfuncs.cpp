@@ -68,6 +68,8 @@ int g_iRagdollRenderEntIndex = 0;
 int g_iRagdollRenderFlags = 0;
 bool g_bIsUpdatingRefdef = false;
 
+int g_iPlayerFlags = 0;
+
 ref_params_t r_params = { 0 };
 
 model_t* r_worldmodel = NULL;
@@ -117,6 +119,11 @@ bool R_IsRenderingPortals()
 float* EngineGetRendererViewOrigin()
 {
 	return r_origin;
+}
+
+int ClientGetPlayerFlags()
+{
+	return g_iPlayerFlags;
 }
 
 bool AllowCheats()
@@ -1957,6 +1964,13 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 	}
 skip:
 	gExportfuncs.V_CalcRefdef(pparams);
+}
+
+void HUD_PostRunCmd(struct local_state_s* from, struct local_state_s* to, struct usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed)
+{
+	gExportfuncs.HUD_PostRunCmd(from, to, cmd, runfuncs, time, random_seed);
+
+	g_iPlayerFlags = to->client.flags;
 }
 
 void V_RenderView(void)

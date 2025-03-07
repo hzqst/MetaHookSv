@@ -12,8 +12,6 @@ int *particletexture = NULL;
 particle_t **active_particles = NULL;
 word **host_basepal = NULL;
 
-cvar_t *r_sprite_lerping = NULL;
-
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 {
 	sprite_program_t prog = { 0 };

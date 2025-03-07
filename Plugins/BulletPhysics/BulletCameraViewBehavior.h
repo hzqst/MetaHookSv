@@ -9,7 +9,13 @@ public:
 		int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 		int attachedPhysicComponentId,
 		bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle,
-		bool syncViewOrigin, bool syncViewAngles);
+		bool syncViewOrigin, bool syncViewAngles,
+		bool useSimOrigin,
+		float originalViewHeightStand,
+		float originalViewHeightDuck,
+		float mappedViewHeightStand,
+		float mappedViewHeightDuck,
+		float newViewHeightDucking);
 
 	const char* GetTypeString() const override;
 
@@ -27,4 +33,10 @@ protected:
 	bool m_bActivateOnCaughtByBarnacle{};
 	bool m_bSyncViewOrigin{};
 	bool m_bSyncViewAngles{};
+	bool m_bUseSimOrigin{};
+	float m_flOriginalViewHeightStand{};
+	float m_flOriginalViewHeightDuck{};
+	float m_flMappedViewHeightStand{};
+	float m_flMappedViewHeightDuck{};
+	float m_flNewViewHeightDucking{};
 };

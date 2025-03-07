@@ -302,12 +302,24 @@ const int PhysicBehaviorFactorIdx_CameraActivateOnDeath = 1;
 const int PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle = 2;
 const int PhysicBehaviorFactorIdx_CameraSyncViewOrigin = 3;
 const int PhysicBehaviorFactorIdx_CameraSyncViewAngles = 4;
+const int PhysicBehaviorFactorIdx_CameraUseSimOrigin = 5;
+const int PhysicBehaviorFactorIdx_CameraOriginalViewHeightStand = 6;
+const int PhysicBehaviorFactorIdx_CameraOriginalViewHeightDuck = 7;
+const int PhysicBehaviorFactorIdx_CameraMappedViewHeightStand = 8;
+const int PhysicBehaviorFactorIdx_CameraMappedViewHeightDuck = 9;
+const int PhysicBehaviorFactorIdx_CameraNewViewHeightDucking = 10;
 
 const float PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle = 0.0f;
 const float PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath = 1.0f;
 const float PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle = 1.0f;
 const float PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin = 1.0f;
 const float PhysicBehaviorFactorDefaultValue_CameraSyncViewAngles = 1.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraUseSimOrigin = 0.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightStand = 28.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightDuck = 5.75f;
+const float PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightStand = 28.0f;
+const float PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightDuck = -5.75f;
+const float PhysicBehaviorFactorDefaultValue_CameraNewViewHeightDucking = 12.0f;
 
 const int PhysicBehaviorFactorIdx_SimpleBuoyancyMagnitude = 0;
 const int PhysicBehaviorFactorIdx_SimpleBuoyancyLinearDamping = 1;

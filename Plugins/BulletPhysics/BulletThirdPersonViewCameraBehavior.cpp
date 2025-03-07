@@ -4,10 +4,23 @@ CBulletThirdPersonViewCameraBehavior::CBulletThirdPersonViewCameraBehavior(
 	int id, int entindex, IPhysicObject* pPhysicObject, const CClientPhysicBehaviorConfig* pPhysicBehaviorConfig,
 	int attachedPhysicComponentId,
 	bool activateOnIdle, bool activateOnDeath, bool activateOnCaughtByBarnacle,
-	bool syncViewOrigin, bool syncViewAngles) :
+	bool syncViewOrigin, bool syncViewAngles,
+	bool useSimOrigin,
+	float originalViewHeightStand,
+	float originalViewHeightDuck,
+	float mappedViewHeightStand,
+	float mappedViewHeightDuck,
+	float newViewHeightDucking)
+	:
 	CBulletCameraViewBehavior(id, entindex, pPhysicObject, pPhysicBehaviorConfig, attachedPhysicComponentId,
 		activateOnIdle, activateOnDeath, activateOnCaughtByBarnacle,
-		syncViewOrigin, syncViewAngles)
+		syncViewOrigin, syncViewAngles,
+		useSimOrigin,
+		originalViewHeightStand,
+		originalViewHeightDuck,
+		mappedViewHeightStand,
+		mappedViewHeightDuck,
+		newViewHeightDucking)
 {
 
 }
@@ -52,13 +65,7 @@ bool CBulletThirdPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 
 			VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
 
-			//int iSavedHealth = pparams->health;
-
-			//pparams->health = 1;
-
 			callback(pparams);
-
-			//pparams->health = iSavedHealth;
 
 			VectorCopy(vecSavedSimOrgigin, pparams->simorg);
 

@@ -5,8 +5,6 @@ cshift_t *cshift_water = NULL;
 int *gSkyTexNumber = NULL;
 int *r_loading_skybox = NULL;
 
-cvar_t* r_detailskytextures = NULL;
-
 /*
 	Purpose : Draw skybox
 */

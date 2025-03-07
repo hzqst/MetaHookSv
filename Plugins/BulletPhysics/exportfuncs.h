@@ -31,6 +31,7 @@ extern bool g_bIsCounterStrike;
 extern bool g_bIsDayOfDefeat;
 
 extern bool g_bIsUpdatingRefdef;
+extern int g_iPlayerFlags;
 
 extern cvar_t* bv_debug_draw_level_ragdoll;
 extern cvar_t* bv_debug_draw_level_static;
@@ -59,6 +60,8 @@ void HUD_Frame(double frametime);
 void HUD_Shutdown(void);
 void HUD_CreateEntities(void);
 void V_CalcRefdef(struct ref_params_s* pparams);
+
+void HUD_PostRunCmd(struct local_state_s* from, struct local_state_s* to, struct usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed);
 
 entity_state_t* R_GetPlayerState(int index);
 
@@ -89,6 +92,8 @@ cl_entity_t* EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
 TEMPENTITY* EngineGetTempTentsBase(void);
 TEMPENTITY* EngineGetTempTentByIndex(int index);
+
+int ClientGetPlayerFlags();
 
 #define OBS_SVEN_NONE				0
 #define OBS_SVEN_CHASE_FREE			1

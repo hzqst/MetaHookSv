@@ -171,9 +171,6 @@ float r_entity_color[4] = {0};
 
 cl_entity_t g_LowerBodyEntity = {0};
 
-//This is the pass that collects tempents created by ViewModel's StudioEvents
-bool r_draw_predrawviewmodel = false;
-
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
 
@@ -321,6 +318,10 @@ cvar_t* r_gamma_blend = NULL;
 cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
+
+cvar_t* r_detailskytextures = NULL;
+
+cvar_t* r_sprite_lerping = NULL;
 
 cvar_t* r_drawlowerbody = NULL;
 
@@ -2172,8 +2173,6 @@ void R_PreDrawViewModel(void)
 	if ((*cl_viewentity) > r_params.maxclients)
 		return;
 
-	r_draw_predrawviewmodel = true;
-
 	switch ((*currententity)->model->type)
 	{
 	case mod_studio:
@@ -2200,8 +2199,6 @@ void R_PreDrawViewModel(void)
 		break;
 	}
 	}
-
-	r_draw_predrawviewmodel = false;
 }
 
 void R_ClearPortalClipPlanes(void)
@@ -4091,6 +4088,8 @@ void R_CreateLowerBodyModel()
 		return;
 
 	g_LowerBodyEntity = (*LocalPlayer);
+
+	//VectorCopy(g_LowerBodyEntity.origin, g_LowerBodyEntity.curstate.origin);
 
 	//g_LowerBodyEntity.curstate.angles[1] = (*r_refdef.viewangles)[1];
 

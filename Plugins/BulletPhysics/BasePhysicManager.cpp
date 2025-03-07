@@ -1599,6 +1599,12 @@ static std::shared_ptr<CClientPhysicBehaviorConfig> LoadPhysicBehaviorFromKeyVal
 			LOAD_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
 			LOAD_FACTOR_FLOAT(CameraSyncViewOrigin);
 			LOAD_FACTOR_FLOAT(CameraSyncViewAngles);
+			LOAD_FACTOR_FLOAT(CameraUseSimOrigin);
+			LOAD_FACTOR_FLOAT(CameraOriginalViewHeightStand);
+			LOAD_FACTOR_FLOAT(CameraOriginalViewHeightDuck);
+			LOAD_FACTOR_FLOAT(CameraMappedViewHeightStand);
+			LOAD_FACTOR_FLOAT(CameraMappedViewHeightDuck);
+			LOAD_FACTOR_FLOAT(CameraNewViewHeightDucking);
 			break;
 		}
 		case PhysicBehavior_SimpleBuoyancy:
@@ -2262,6 +2268,12 @@ static void AddPhysicBehaviorsToKeyValues(KeyValues* pKeyValues, const std::vect
 							SET_FACTOR_FLOAT(CameraActivateOnCaughtByBarnacle);
 							SET_FACTOR_FLOAT(CameraSyncViewOrigin);
 							SET_FACTOR_FLOAT(CameraSyncViewAngles);
+							SET_FACTOR_FLOAT(CameraUseSimOrigin);
+							SET_FACTOR_FLOAT(CameraOriginalViewHeightStand);
+							SET_FACTOR_FLOAT(CameraOriginalViewHeightDuck);
+							SET_FACTOR_FLOAT(CameraMappedViewHeightStand);
+							SET_FACTOR_FLOAT(CameraMappedViewHeightDuck);
+							SET_FACTOR_FLOAT(CameraNewViewHeightDucking);
 							break;
 						}
 						case PhysicBehavior_SimpleBuoyancy:
@@ -2816,8 +2828,14 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnIdle] = PhysicBehaviorFactorDefaultValue_CameraActivateOnIdle;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnDeath] = PhysicBehaviorFactorDefaultValue_CameraActivateOnDeath;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = PhysicBehaviorFactorDefaultValue_CameraActivateOnCaughtByBarnacle;
-		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewOrigin] = PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin;
-		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewAngles] = PhysicBehaviorFactorDefaultValue_CameraSyncViewAngles;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewOrigin] = 1.0f;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewAngles] = 1.0f;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraUseSimOrigin] = 0.0f;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraOriginalViewHeightStand] = PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightStand;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraOriginalViewHeightDuck] = PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightDuck;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraMappedViewHeightStand] = PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightStand;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraMappedViewHeightDuck] = PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightDuck;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraNewViewHeightDucking] = PhysicBehaviorFactorDefaultValue_CameraNewViewHeightDucking;
 
 		ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfigFirstPersonView->configId, pPhysicBehaviorConfigFirstPersonView);
 
@@ -2840,6 +2858,12 @@ static bool ParseLegacyCameraControl(CClientRagdollObjectConfig* pRagdollConfig,
 		pPhysicBehaviorConfigThirdPersonView->factors[PhysicBehaviorFactorIdx_CameraActivateOnCaughtByBarnacle] = 1;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewOrigin] = PhysicBehaviorFactorDefaultValue_CameraSyncViewOrigin;
 		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraSyncViewAngles] = 0;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraUseSimOrigin] = 0;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraOriginalViewHeightStand] = PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightStand;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraOriginalViewHeightDuck] = PhysicBehaviorFactorDefaultValue_CameraOriginalViewHeightDuck;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraMappedViewHeightStand] = PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightStand;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraMappedViewHeightDuck] = PhysicBehaviorFactorDefaultValue_CameraMappedViewHeightDuck;
+		pPhysicBehaviorConfigFirstPersonView->factors[PhysicBehaviorFactorIdx_CameraNewViewHeightDucking] = PhysicBehaviorFactorDefaultValue_CameraNewViewHeightDucking;
 
 		ClientPhysicManager()->AddPhysicConfig(pPhysicBehaviorConfigThirdPersonView->configId, pPhysicBehaviorConfigThirdPersonView);
 

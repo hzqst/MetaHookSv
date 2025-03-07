@@ -87,6 +87,23 @@ int HUD_VidInit(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
+#if 0
+	if (r_drawlowerbody->value >= 1)
+	{
+		if (EngineIsEntityInVisibleList(&g_LowerBodyEntity))
+		{
+			if (pparams->viewheight[2] == 28)
+			{
+				pparams->viewheight[2] = 17;
+			}
+			vec3_t viewangles, forward, right, up;
+			VectorCopy(pparams->cl_viewangles, viewangles);
+			viewangles[0] = 0;
+			AngleVectors(viewangles, forward, right, up);
+			VectorMA(pparams->viewheight, 4, forward, pparams->viewheight);
+		}
+	}
+#endif
 	gExportfuncs.V_CalcRefdef(pparams);
 
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));

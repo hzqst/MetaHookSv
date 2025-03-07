@@ -69,7 +69,7 @@ typedef struct
 	//void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);
 
 	//efxapi
-	TEMPENTITY	*(*efxapi_R_TempModel)				(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
+	TEMPENTITY	*(*efxapi_R_TempModel)(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 }private_funcs_t;
 
 void R_NewMap(void);

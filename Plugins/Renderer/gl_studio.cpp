@@ -1873,6 +1873,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 		VectorNormalize(StudioUBO.r_plightvec);
 	}
 #endif
+
 	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 

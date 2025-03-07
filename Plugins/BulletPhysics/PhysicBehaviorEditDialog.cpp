@@ -487,6 +487,12 @@ void CPhysicBehaviorEditDialog::LoadAvailableFactorsIntoControls(int type)
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraSyncViewOrigin);
 		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraSyncViewAngles);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraUseSimOrigin);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraOriginalViewHeightStand);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraOriginalViewHeightDuck);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraMappedViewHeightStand);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraMappedViewHeightDuck);
+		LOAD_FACTOR_INTO_LISTPANEL_DEFAULT_VALUE(CameraNewViewHeightDucking);
 		break;
 	}
 	case PhysicBehavior_SimpleBuoyancy: {

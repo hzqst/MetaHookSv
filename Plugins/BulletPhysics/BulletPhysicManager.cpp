@@ -1368,6 +1368,10 @@ void CFollowConstraintMotionState::setWorldTransform(const btTransform& worldTra
 
 void CFollowPhysicComponentMotionState::getWorldTransform(btTransform& worldTrans) const
 {
+	//Really?
+	if (!m_attachedPhysicComponentId)
+		return;
+
 	auto pAttachedPhysicComponent = ClientPhysicManager()->GetPhysicComponent(m_attachedPhysicComponentId);
 
 	if (!pAttachedPhysicComponent)

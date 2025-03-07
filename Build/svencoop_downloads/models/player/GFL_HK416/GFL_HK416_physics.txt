@@ -1265,8 +1265,7 @@
 		{
 			"type"		"FirstPersonViewCamera"
 			"rigidbodyA"		"Head"
-			"origin"		"4 0 0"
-			"angles"		"0 0 90"
+			"origin"		"10 0 0"
 			"factors"
 			{
 				"CameraActivateOnIdle"		"1.000000"
@@ -1274,6 +1273,12 @@
 				"CameraActivateOnCaughtByBarnacle"		"0.000000"
 				"CameraSyncViewOrigin"		"1.000000"
 				"CameraSyncViewAngles"		"0.000000"
+				"CameraUseSimOrigin"		"1.000000"
+				"CameraOriginalViewHeightStand"		"28.000000"
+				"CameraOriginalViewHeightDuck"		"-5.750000"
+				"CameraMappedViewHeightStand"		"20.000000"
+				"CameraMappedViewHeightDuck"		"-5.750000"
+				"CameraNewViewHeightDucking"		"12.000000"
 			}
 		}
 	}

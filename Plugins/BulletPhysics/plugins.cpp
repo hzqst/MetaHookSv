@@ -94,6 +94,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
+	pExportFunc->HUD_PostRunCmd = HUD_PostRunCmd;
 
 	g_ClientDLLInfo.ImageBase = g_pMetaHookAPI->GetClientBase();
 	g_ClientDLLInfo.ImageSize = g_pMetaHookAPI->GetClientSize();

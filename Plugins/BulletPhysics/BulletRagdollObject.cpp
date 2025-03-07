@@ -640,6 +640,12 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewOrigin);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewAngles);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraUseSimOrigin);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraOriginalViewHeightStand);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraOriginalViewHeightDuck);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraMappedViewHeightStand);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraMappedViewHeightDuck);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraNewViewHeightDucking);
 
 		return new CBulletFirstPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
@@ -651,7 +657,13 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			CameraActivateOnDeath >= 1 ? true : false,
 			CameraActivateOnCaughtByBarnacle >= 1 ? true : false,
 			CameraSyncViewOrigin >= 1 ? true : false,
-			CameraSyncViewAngles >= 1 ? true : false);
+			CameraSyncViewAngles >= 1 ? true : false,
+			CameraUseSimOrigin >= 1 ? true : false,
+			CameraOriginalViewHeightStand,
+			CameraOriginalViewHeightDuck,
+			CameraMappedViewHeightStand,
+			CameraMappedViewHeightDuck,
+			CameraNewViewHeightDucking);
 	}
 	case PhysicBehavior_ThirdPersonViewCamera:
 	{
@@ -668,6 +680,12 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraActivateOnCaughtByBarnacle);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewOrigin);
 		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraSyncViewAngles);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraUseSimOrigin);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraOriginalViewHeightStand);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraOriginalViewHeightDuck);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraMappedViewHeightStand);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraMappedViewHeightDuck);
+		LOAD_FACTOR_WITH_DEFAULT_VALUE(CameraNewViewHeightDucking);
 
 		return new CBulletThirdPersonViewCameraBehavior(
 			physicComponentId ? physicComponentId : ClientPhysicManager()->AllocatePhysicComponentId(),
@@ -679,7 +697,13 @@ IPhysicBehavior* CBulletRagdollObject::CreatePhysicBehavior(const CPhysicObjectC
 			CameraActivateOnDeath >= 1 ? true : false,
 			CameraActivateOnCaughtByBarnacle >= 1 ? true : false,
 			CameraSyncViewOrigin >= 1 ? true : false,
-			CameraSyncViewAngles >= 1 ? true : false);
+			CameraSyncViewAngles >= 1 ? true : false,
+			CameraUseSimOrigin >= 1 ? true : false,
+			CameraOriginalViewHeightStand,
+			CameraOriginalViewHeightDuck,
+			CameraMappedViewHeightStand,
+			CameraMappedViewHeightDuck,
+			CameraNewViewHeightDucking);
 	}
 	}
 
