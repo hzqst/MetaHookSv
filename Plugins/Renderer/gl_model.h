@@ -1,6 +1,6 @@
 #pragma once
 
-extern byte mod_novis[MAX_MAP_LEAFS / 8];
+extern byte mod_novis[MAX_MAP_LEAFS_SVENGINE / 8];
 
 void Mod_UnloadSpriteTextures(model_t* mod);
 void Mod_LoadSpriteModel(model_t* mod, void* buffer);

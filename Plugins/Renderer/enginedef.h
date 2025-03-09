@@ -193,7 +193,7 @@ typedef enum
 }GL_TEXTURETYPE;
 
 //gl_studio
-
+#if 0
 typedef struct auxvert_s
 {
 	float	fv[3];
@@ -206,6 +206,7 @@ typedef struct alight_s
 	vec3_t color;
 	float *plightvec;
 }alight_t;
+#endif
 
 #define STUDIO_RENDER 1
 #define STUDIO_EVENTS 2
@@ -270,14 +271,24 @@ typedef struct alight_s
 //This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
 #define kRenderFxDrawShadowHair 0x80000005
 
-//This is the pass that draw only lowerbody
-#define kRenderFxDrawLowerbody 0x80000006
+//This is the renderfx for rendering lowerbody
+#define kRenderFxLowerBody 30
 
 //gl_model
 
 #include "modelgen.h"
 #include "spritegn.h"
 
+#define SURF_PLANEBACK 2
+#define SURF_DRAWSKY 4
+#define SURF_DRAWSPRITE 8
+#define SURF_DRAWTURB 0x10
+#define SURF_DRAWTILED 0x20
+#define SURF_DRAWBACKGROUND 0x40
+#define SURF_UNDERWATER 0x80
+#define SURF_DONTWARP 0x100
+
+#if 0
 typedef struct
 {
 	vec3_t position;
@@ -311,15 +322,6 @@ typedef struct texture_s
 	unsigned offsets[MIPLEVELS];
 	unsigned char *pPal;
 }texture_t;
-
-#define SURF_PLANEBACK 2
-#define SURF_DRAWSKY 4
-#define SURF_DRAWSPRITE 8
-#define SURF_DRAWTURB 0x10
-#define SURF_DRAWTILED 0x20
-#define SURF_DRAWBACKGROUND 0x40
-#define SURF_UNDERWATER 0x80
-#define SURF_DONTWARP 0x100
 
 typedef struct
 {
@@ -392,47 +394,6 @@ typedef struct decal_s
 	short entityIndex;
 }decal_t;
 
-typedef struct decalcache_s
-{
-	int		decalIndex;
-	float	decalVert[4][VERTEXSIZE];
-} decalcache_t;
-
-class mbasenode_s
-{
-public:
-	int contents;
-	int visframe;
-	float minmaxs[6];
-	mbasenode_s* parent;
-};
-
-typedef mbasenode_s mbasenode_t;
-
-class mnode_s : public mbasenode_s
-{
-public:
-	mplane_t* plane;
-	mbasenode_t* children[2];
-	unsigned short firstsurface;
-	unsigned short numsurfaces;
-};
-
-typedef mnode_s mnode_t;
-
-class mleaf_s : public mbasenode_t
-{
-public:
-	byte* compressed_vis;
-	struct efrag_s* efrags;
-	msurface_t** firstmarksurface;
-	int nummarksurfaces;
-	int key;
-	byte ambient_sound_level[NUM_AMBIENTS];
-};
-
-typedef mleaf_s mleaf_t;
-
 typedef struct hull_s
 {
 	dclipnode_t *clipnodes;
@@ -442,6 +403,41 @@ typedef struct hull_s
 	vec3_t clip_mins;
 	vec3_t clip_maxs;
 }hull_t;
+
+typedef struct mbasenode_s
+{
+	int contents;
+	int visframe;
+	float minmaxs[6];
+	mbasenode_s* parent;
+}mbasenode_t;
+
+typedef struct mnode_s : public mbasenode_t
+{
+	mplane_t * plane;
+	mbasenode_t* children[2];
+	unsigned short firstsurface;
+	unsigned short numsurfaces;
+}mnode_t;
+
+typedef mnode_s mnode_t;
+
+typedef struct mleaf_s : public mbasenode_t
+{
+	byte * compressed_vis;
+	struct efrag_s* efrags;
+	msurface_t** firstmarksurface;
+	int nummarksurfaces;
+	int key;
+	byte ambient_sound_level[NUM_AMBIENTS];
+}mleaf_t;
+#endif
+
+typedef struct decalcache_s
+{
+	int		decalIndex;
+	float	decalVert[4][VERTEXSIZE];
+} decalcache_t;
 
 typedef struct mspriteframe_s
 {
@@ -550,6 +546,7 @@ extern stvert_t stverts[MAXALIASVERTS];
 extern mtriangle_t triangles[MAXALIASTRIS];
 extern trivertx_t *poseverts[MAXALIASFRAMES];
 
+#if 0
 typedef enum
 {
 	mod_brush,
@@ -611,6 +608,7 @@ typedef struct model_s
 	char *entities;
 	cache_user_t cache;
 }model_t;
+#endif
 
 typedef struct overviewInfo_s
 {
@@ -680,11 +678,14 @@ typedef enum
 #define MAX_DLIGHTS_SVENGINE 256
 
 //Don't use this, use cl.max_edicts instead
-#define MAX_EDICTS 1800
+//#define MAX_EDICTS 1800
+
 #define MAX_EDICTS_SVENGINE 8192
 
 #define MAX_TEMP_ENTITIES 500
 #define MAX_TEMP_ENTITIES_SVENGINE 2048//2077
+
+#define MAX_MAP_LEAFS_SVENGINE 65536
 
 #define MAX_DECALCLIPVERT		32
 
@@ -740,3 +741,128 @@ public:
 	float	_s1;
 	float	_t1;
 };
+
+typedef enum
+{
+	ACT_RESET,
+	ACT_IDLE,
+	ACT_GUARD,
+	ACT_WALK,
+	ACT_RUN,
+	ACT_FLY,
+	ACT_SWIM,
+	ACT_HOP,
+	ACT_LEAP,
+	ACT_FALL,
+	ACT_LAND,
+	ACT_STRAFE_LEFT,
+	ACT_STRAFE_RIGHT,
+	ACT_ROLL_LEFT,
+	ACT_ROLL_RIGHT,
+	ACT_TURN_LEFT,
+	ACT_TURN_RIGHT,
+	ACT_CROUCH,
+	ACT_CROUCHIDLE,
+	ACT_STAND,
+	ACT_USE,
+	ACT_SIGNAL1,
+	ACT_SIGNAL2,
+	ACT_SIGNAL3,
+	ACT_TWITCH,
+	ACT_COWER,
+	ACT_SMALL_FLINCH,
+	ACT_BIG_FLINCH,
+	ACT_RANGE_ATTACK1,
+	ACT_RANGE_ATTACK2,
+	ACT_MELEE_ATTACK1,
+	ACT_MELEE_ATTACK2,
+	ACT_RELOAD,
+	ACT_ARM,
+	ACT_DISARM,
+	ACT_EAT,
+	ACT_DIESIMPLE,
+	ACT_DIEBACKWARD,
+	ACT_DIEFORWARD,
+	ACT_DIEVIOLENT,
+	ACT_BARNACLE_HIT,
+	ACT_BARNACLE_PULL,
+	ACT_BARNACLE_CHOMP,
+	ACT_BARNACLE_CHEW,
+	ACT_SLEEP,
+	ACT_INSPECT_FLOOR,
+	ACT_INSPECT_WALL,
+	ACT_IDLE_ANGRY,
+	ACT_WALK_HURT,
+	ACT_RUN_HURT,
+	ACT_HOVER,
+	ACT_GLIDE,
+	ACT_FLY_LEFT,
+	ACT_FLY_RIGHT,
+	ACT_DETECT_SCENT,
+	ACT_SNIFF,
+	ACT_BITE,
+	ACT_THREAT_DISPLAY,
+	ACT_FEAR_DISPLAY,
+	ACT_EXCITED,
+	ACT_SPECIAL_ATTACK1,
+	ACT_SPECIAL_ATTACK2,
+	ACT_COMBAT_IDLE,
+	ACT_WALK_SCARED,
+	ACT_RUN_SCARED,
+	ACT_VICTORY_DANCE,
+	ACT_DIE_HEADSHOT,
+	ACT_DIE_CHESTSHOT,
+	ACT_DIE_GUTSHOT,
+	ACT_DIE_BACKSHOT,
+	ACT_FLINCH_HEAD,
+	ACT_FLINCH_CHEST,
+	ACT_FLINCH_STOMACH,
+	ACT_FLINCH_LEFTARM,
+	ACT_FLINCH_RIGHTARM,
+	ACT_FLINCH_LEFTLEG,
+	ACT_FLINCH_RIGHTLEG,
+	ACT_FLINCH_SMALL,
+	ACT_FLINCH_LARGE,
+	ACT_HOLDBOMB
+}activity_e;
+
+//For Counter-Strike
+typedef struct extra_player_info_s
+{
+	short frags;//00000000 frags           dw ? ; XREF: CounterStrikeViewport::MsgFunc_TeamInfo(char const*, int, void *) + F8 / w
+	short deaths;//00000002 deaths          dw ?
+	short team_id; //00000004 team_id         dw ?
+	short padding;//00000006                 db ? ; undefined
+	int has_c4;//00000008 has_c4          dd ?
+	int vip;//0000000C vip             dd ?
+	vec3_t origin;//00000010 origin          Vector ?
+	float radarflash;//0000001C radarflash      dd ?
+	int radarflashon;//00000020 radarflashon    dd ?
+	int radarflashes;//00000024 radarflashes    dd ?
+	short playerclass;//00000028 playerclass     dw ?
+	short teamnumber;//0000002A teamnumber      dw ?
+	char teamname[16];//0000002C teamname        db 16 dup(? )
+	char dead;//0000003C dead
+	float showhealth;//0x40
+	int health;//0x44
+	char location[32];//0x48
+	int sb_health;//0x68
+	int sb_account;//0x6C
+	int has_defuse_kit;//0x70
+}extra_player_info_t;
+
+static_assert(sizeof(extra_player_info_t) == 0x74, "Size check");
+
+typedef struct extra_player_info_czds_s
+{
+	short frags;//0
+	short deaths;   //2
+	short playerclass;//4
+	short health;//6
+	char dead;//8
+	char padding;
+	short teamnumber;//0xA
+	char teamname[16];//0xC
+}extra_player_info_czds_t;
+
+static_assert(sizeof(extra_player_info_czds_t) == 0x1C, "Size check");

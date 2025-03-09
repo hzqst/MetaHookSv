@@ -55,6 +55,7 @@ lump_t;
 
 #define HEADER_LUMPS 15
 
+#if 0
 typedef struct
 {
 	float mins[3], maxs[3];
@@ -64,6 +65,7 @@ typedef struct
 	int firstface, numfaces;
 }
 dmodel_t;
+#endif
 
 typedef struct
 {
@@ -140,12 +142,14 @@ typedef struct
 }
 dnode_t;
 
+#if 0
 typedef struct
 {
 	int planenum;
 	short children[2];
 }
 dclipnode_t;
+#endif
 
 typedef struct texinfo_s
 {

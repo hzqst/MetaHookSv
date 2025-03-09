@@ -55,15 +55,6 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 
 	if (m_bUseSimOrigin)
 	{
-		//vec3_t vecSavedSimOrgigin;
-		//vec3_t vecSavedViewHeight;
-		//vec3_t vecSavedClientViewAngles;
-		//VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-		//VectorCopy(pparams->viewheight, vecSavedViewHeight);
-		//VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-		
-		//gEngfuncs.Con_DPrintf("viewheight[2]=%f flags=%X\n", pparams->viewheight[2], ClientGetPlayerFlags());
-
 		if (m_bSyncViewOrigin)
 		{
 			float currentViewHeight = pparams->viewheight[2];
@@ -100,12 +91,11 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 			VectorMA(pparams->viewheight, m_origin[2], up, pparams->viewheight);
 			
 			//bypass V_CalcViewRoll
-			pparams->health = 1;
+			//pparams->health = 1;
 		}
 
 		if (m_bSyncViewAngles)
 		{
-
 			//bypass V_CalcViewRoll
 			pparams->health = 1;
 		}
@@ -115,10 +105,6 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 		callback(pparams);
 
 		pparams->health = iSavedHealth;
-
-		//VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-		//VectorCopy(vecSavedViewHeight, pparams->viewheight);
-		//VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
 
 		return true;
 	}
@@ -132,16 +118,6 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 
 			if (pRigidBody->GetGoldSrcOriginAnglesWithLocalOffset(m_origin, m_angles, vecGoldSrcNewOrigin, vecGoldSrcNewAngles))
 			{
-				//vec3_t vecSavedSimOrgigin;
-				//vec3_t vecSavedViewHeight;
-				//vec3_t vecSavedClientViewAngles;
-				//VectorCopy(pparams->simorg, vecSavedSimOrgigin);
-				//VectorCopy(pparams->viewheight, vecSavedViewHeight);
-				//VectorCopy(pparams->cl_viewangles, vecSavedClientViewAngles);
-
-				//VectorClear(pparams->viewheight);
-				//VectorCopy(vecGoldSrcNewOrigin, pparams->simorg);
-
 				if (m_bSyncViewOrigin)
 				{
 					vec3_t vecOffset = { 0 };
@@ -167,10 +143,6 @@ bool CBulletFirstPersonViewCameraBehavior::SyncCameraView(struct ref_params_s* p
 				callback(pparams);
 
 				pparams->health = iSavedHealth;
-
-				//VectorCopy(vecSavedSimOrgigin, pparams->simorg);
-				//VectorCopy(vecSavedViewHeight, pparams->viewheight);
-				//VectorCopy(vecSavedClientViewAngles, pparams->cl_viewangles);
 
 				return true;
 			}

@@ -17,12 +17,14 @@ void *g_pGameStudioRenderer = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
+static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t* g_phook_GameStudioRenderer_StudioSaveBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
 
+static hook_t* g_phook_R_StudioDrawPlayer = NULL;
 static hook_t *g_phook_R_StudioSetupBones = NULL;
 static hook_t *g_phook_R_StudioMergeBones = NULL;
 static hook_t* g_phook_R_StudioSaveBones = NULL;
@@ -87,23 +89,6 @@ int HUD_VidInit(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
-#if 0
-	if (r_drawlowerbody->value >= 1)
-	{
-		if (EngineIsEntityInVisibleList(&g_LowerBodyEntity))
-		{
-			if (pparams->viewheight[2] == 28)
-			{
-				pparams->viewheight[2] = 17;
-			}
-			vec3_t viewangles, forward, right, up;
-			VectorCopy(pparams->cl_viewangles, viewangles);
-			viewangles[0] = 0;
-			AngleVectors(viewangles, forward, right, up);
-			VectorMA(pparams->viewheight, 4, forward, pparams->viewheight);
-		}
-	}
-#endif
 	gExportfuncs.V_CalcRefdef(pparams);
 
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
@@ -1937,12 +1922,15 @@ void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 
 void ClientStudio_InstallHooks()
 {
+	Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
 	Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 	Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
 	Install_InlineHook(GameStudioRenderer_StudioSetupBones);
 	Install_InlineHook(GameStudioRenderer_StudioSaveBones);
 	Install_InlineHook(GameStudioRenderer_StudioMergeBones);
 
+	//TODO
+	//Install_InlineHook(R_StudioDrawPlayer);
 	Install_InlineHook(R_StudioRenderModel);
 	Install_InlineHook(R_StudioRenderFinal);
 	Install_InlineHook(R_StudioSetupBones);
@@ -1993,31 +1981,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	CEntityComponentContainer* pEntityComponentContainer = nullptr;
-
-	int r = gExportfuncs.HUD_AddEntity(type, ent, model);
-	
-	if (r && ent->model)
-	{
-		pEntityComponentContainer = R_GetEntityComponentContainer(ent, true);
-	}
-
-	if (r &&
-		ent->curstate.movetype == MOVETYPE_FOLLOW &&
-		ent->curstate.aiment > 0 &&
-		ent->curstate.aiment < EngineGetMaxClientEdicts() &&
-		ent->model && 
-		ent->model->type == mod_studio)
-	{
-		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
-
-		if (aiment && pEntityComponentContainer)
-		{
-			pEntityComponentContainer->AimEntity = aiment;
-		}
-	}
-
-	return r;
+	return gExportfuncs.HUD_AddEntity(type, ent, model);
 }
 
 void HUD_PlayerMoveInit(struct playermove_s* ppmove)
@@ -2047,6 +2011,8 @@ void HUD_CreateEntities(void)
 	R_CreateLowerBodyModel();
 
 	gExportfuncs.HUD_CreateEntities();
+
+	R_AllocateEntityComponentsForVisEdicts();
 }
 
 //Client DLL Shutting down...

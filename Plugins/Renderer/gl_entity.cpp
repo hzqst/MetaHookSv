@@ -156,8 +156,6 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 {
 	CEntityComponentContainer* pContainer = NULL;
 
-	//TODO: unordered_map ?
-
 	if (!pContainer)
 	{
 		int index = R_GetClientEntityIndex(ent);
@@ -218,6 +216,19 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 	}
 
 	return pContainer;
+}
+
+void R_AllocateEntityComponentsForVisEdicts()
+{
+	for (int i = 0; i < (*cl_numvisedicts); ++i)
+	{
+		auto ent = cl_visedicts[i];
+
+		if (ent && ent->model)
+		{
+			R_GetEntityComponentContainer(ent, true);
+		}
+	}
 }
 
 int EngineFindPhysEntIndexByEntity(cl_entity_t* ent)

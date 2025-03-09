@@ -6,6 +6,7 @@
 #include <archtypes.h>
 #include <const.h>
 #include <custom.h>
+#include <com_model.h>
 #include <ref_params.h>
 #include <cvardef.h>
 #include <studio.h>
@@ -77,7 +78,7 @@ extern float r_yfov_currentpass;
 extern float r_screenaspect;
 extern cl_entity_t *r_worldentity;
 extern model_t *r_worldmodel;
-extern model_t *r_playermodel;
+//extern model_t *r_playermodel;
 
 extern int *cl_numvisedicts;
 extern cl_entity_t **cl_visedicts;
@@ -111,6 +112,8 @@ extern overviewInfo_t *gDevOverview;
 extern mplane_t *frustum;
 
 extern qboolean* vertical_fov_SvEngine;
+
+extern vec_t* cl_simorg;
 
 extern int *r_framecount;
 extern int *r_visframecount;
@@ -171,6 +174,8 @@ extern int* g_ViewEntityIndex_SCClient;
 extern bool g_bPortalClipPlaneEnabled[6];
 
 extern vec4_t g_PortalClipPlane[6];
+
+extern bool g_bHasLowerBody;
 
 //gl extension
 
@@ -587,8 +592,6 @@ void R_CreateLowerBodyModel();
 extern GLint r_viewport[4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
-
-extern cl_entity_t g_LowerBodyEntity;
 
 extern bool r_draw_analyzingstudio;
 extern bool r_draw_deferredtrans;

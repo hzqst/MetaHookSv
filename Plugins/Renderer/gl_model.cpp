@@ -1,6 +1,6 @@
 #include "gl_local.h"
 
-byte mod_novis[MAX_MAP_LEAFS / 8];
+byte mod_novis[MAX_MAP_LEAFS_SVENGINE / 8] = {0};
 
 int* gSpriteMipMap = NULL;
 
@@ -46,7 +46,7 @@ void CM_DecompressPVS(byte* in, byte* decompressed, int byteCount)
 
 byte* Mod_DecompressVis(byte* in, model_t* model)
 {
-	static byte	decompressed[MAX_MAP_LEAFS / 8];
+	static byte	decompressed[MAX_MAP_LEAFS_SVENGINE / 8];
 	int		row;
 
 	row = (model->numleafs + 7) >> 3;

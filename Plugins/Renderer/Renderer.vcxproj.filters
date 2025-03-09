@@ -434,6 +434,9 @@
     <ClCompile Include="util.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="CounterStrike.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -750,6 +753,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Build\svencoop\renderer\shader\common.h">
       <Filter>GLSL</Filter>
+    </ClInclude>
+    <ClInclude Include="CounterStrike.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

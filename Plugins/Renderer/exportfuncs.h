@@ -17,3 +17,19 @@ void HUD_OnClientDisconnect(void);
 #define DLIGHT_KEY_PLAYER_BRIGHTLIGHT 0x40000
 #define DLIGHT_KEY_PLAYER_FLASHLIGHT 0x80000
 #define DLIGHT_KEY_LOCAL_PLAYER_FLASHLIGHT 1
+
+enum StudioAnimActivityType
+{
+	StudioAnimActivityType_Idle,
+	StudioAnimActivityType_Death,
+	StudioAnimActivityType_CaughtByBarnacle,
+	StudioAnimActivityType_BarnaclePulling,
+	StudioAnimActivityType_BarnacleChewing,
+	StudioAnimActivityType_GargantuaBite,
+	StudioAnimActivityType_Debug,
+	StudioAnimActivityType_Maximum,
+};
+
+const int AnimControlFlag_OverrideAllBones = 0x1;
+const int AnimControlFlag_OverrideController = 0x2;
+const int AnimControlFlag_OverrideBlending = 0x4;

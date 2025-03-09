@@ -2,6 +2,8 @@
 
 #include "qgl.h"
 
+#include <studio.h>
+
 #include "enginedef.h"
 
 typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
@@ -109,6 +111,7 @@ typedef struct
 	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
 	void(__fastcall *ClientPortalManager_DrawPortalSurface)(void * pthis, int dummy, void *ClientPortal, msurface_t *surf, GLuint texture);
 	void(__fastcall *ClientPortalManager_EnableClipPlane)(void * pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
+	void(__cdecl* UpdatePlayerPitch)(cl_entity_t *a1, float a2);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
@@ -152,6 +155,8 @@ typedef struct
 	int (*CL_IsThirdPerson)(void);
 
 	//Engine Studio
+	int (*R_StudioDrawModel)(int flags);
+	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s* pplayer);
 	void(*R_StudioRenderModel)(void);
 	void(*R_StudioRenderFinal)(void);
 	void(*R_StudioSetupBones)(void);
@@ -170,6 +175,8 @@ typedef struct
 
 extern private_funcs_t gPrivateFuncs;
 
+extern extra_player_info_t(*g_PlayerExtraInfo)[65];
+extern extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65];
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();

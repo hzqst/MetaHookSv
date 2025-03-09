@@ -40,20 +40,16 @@ public:
 		WaterVBOs.clear();
 		ReflectCaches.clear();
 		DeferredStudioPasses.clear();
-		AimEntity = nullptr;
 	}
 
 	std::vector<decal_t *> Decals;
 	std::vector<CWaterSurfaceModel *> WaterVBOs;
 	std::vector<water_reflect_cache_t *> ReflectCaches;
 	std::vector<int> DeferredStudioPasses;
-	cl_entity_t* AimEntity{};
 };
 
 CEntityComponentContainer*R_GetEntityComponentContainer(cl_entity_t *ent, bool create_if_not_exists);
-
 void R_InitEntityComponents(void);
-
 void R_ShutdownEntityComponents(void);
-
 void R_EntityComponents_StartFrame(void);
+void R_AllocateEntityComponentsForVisEdicts();

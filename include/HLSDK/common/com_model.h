@@ -90,17 +90,33 @@ typedef struct
 	unsigned int	cachededgeoffset;
 } medge_t;
 
-typedef struct texture_s
+typedef struct texture_base_s
 {
-	char		name[16];
-	unsigned	width, height;
+	char name[16];
+	unsigned width, height;
+}texture_base_t;
+
+typedef struct texture_sw_s : public texture_base_t
+{
 	int			anim_total;				// total tenths in sequence ( 0 = no)
 	int			anim_min, anim_max;		// time for this frame min <=time< max
 	struct texture_s *anim_next;		// in the animation sequence
 	struct texture_s *alternate_anims;	// bmodels in frame 1 use these
 	unsigned	offsets[MIPLEVELS];		// four mip maps stored
 	unsigned	paloffset;
-} texture_t;
+} texture_sw_t;
+
+typedef struct texture_s : public texture_base_t
+{
+	int gl_texturenum;
+	struct msurface_s* texturechain;
+	int anim_total;
+	int anim_min, anim_max;
+	struct texture_s* anim_next;
+	struct texture_s* alternate_anims;
+	unsigned offsets[MIPLEVELS];
+	unsigned char* pPal;
+}texture_t;
 
 typedef struct
 {
@@ -112,130 +128,88 @@ typedef struct
 	int			flags;			// sky or slime, no lightmap or 256 subdivision
 } mtexinfo_t;
 
-typedef struct mnode_s
-{
-// common with leaf
-	int			contents;		// 0, to differentiate from leafs
-	int			visframe;		// node needs to be traversed if current
-	
-	float		minmaxs[6];		// for bounding box culling
-
-	struct mnode_s	*parent;
-
-// node specific
-	mplane_t	*plane;
-	struct mnode_s	*children[2];	
-
-	unsigned short		firstsurface;
-	unsigned short		numsurfaces;
-} mnode_t;
-
-//software mode
-typedef struct mnode_sw_s
-{
-	// common with leaf
-	int			contents;		// 0, to differentiate from leafs
-	int			visframe;		// node needs to be traversed if current
-
-	short		minmaxs[6];		// for bounding box culling
-
-	struct mnode_sw_s* parent;
-
-	// node specific
-	mplane_t* plane;
-	struct mnode_sw_s* children[2];
-
-	unsigned short		firstsurface;
-	unsigned short		numsurfaces;
-} mnode_sw_t;
-
+typedef struct msurface_sw_s msurface_sw_t;
 typedef struct msurface_s	msurface_t;
 typedef struct decal_s		decal_t;
 
-// JAY: Compress this as much as possible
-struct decal_s
+typedef struct mbasenode_s
 {
-	decal_t		*pnext;			// linked list for each surface
-	msurface_t	*psurface;		// Surface id for persistence / unlinking
+	int contents;
+	int visframe;
+	float minmaxs[6];
+	struct mbasenode_s* parent;
+}mbasenode_t;
+
+typedef struct mbasenode_sw_s
+{
+	int contents;
+	int visframe;
+	short minmaxs[6];
+	struct mbasenode_sw_s* parent;
+}mbasenode_sw_t;
+
+typedef struct mnode_s : public mbasenode_t
+{
+	mplane_t* plane;
+	struct mnode_s* children[2];
+	unsigned short firstsurface;
+	unsigned short numsurfaces;
+}mnode_t;
+
+typedef struct mleaf_s : public mbasenode_t
+{
+	byte* compressed_vis;
+	struct efrag_s* efrags;
+	msurface_t** firstmarksurface;
+	int nummarksurfaces;
+	int key;
+	byte ambient_sound_level[NUM_AMBIENTS];
+}mleaf_t;
+
+typedef struct mnode_sw_s : public mbasenode_sw_t
+{
+	mplane_t* plane;
+	struct mnode_sw_s* children[2];
+	unsigned short firstsurface;
+	unsigned short numsurfaces;
+}mnode_sw_t;
+
+typedef struct mleaf_sw_s : public mbasenode_sw_t
+{
+	byte* compressed_vis;
+	struct efrag_s* efrags;
+	msurface_sw_t** firstmarksurface;
+	int nummarksurfaces;
+	int key;
+	byte ambient_sound_level[NUM_AMBIENTS];
+}mleaf_sw_t;
+
+// JAY: Compress this as much as possible
+typedef struct decalbase_s
+{
+	struct decalbase_s* pnext;			// linked list for each surface
+	struct msurface_s* psurface;		// Surface id for persistence / unlinking
+}decalbase_t;
+
+typedef struct decal_s : public decalbase_t
+{
+	float dx;
+	float dy;
+	float scale;
+	short texture;
+	short flags;
+	short entityIndex;
+}decal_t;
+
+typedef struct decal_sw_s : public decalbase_t
+{
 	short		dx;				// Offsets into surface texture (in texture coordinates, so we don't need floats)
 	short		dy;
 	short		texture;		// Decal texture
 	byte		scale;			// Pixel scale
 	byte		flags;			// Decal flags
-
 	short		entityIndex;	// Entity this is attached to
-};
-
-typedef struct mleaf_sw_s
-{
-// common with node
-	int			contents;		// wil be a negative contents number
-	int			visframe;		// node needs to be traversed if current
-
-	short		minmaxs[6];		// for bounding box culling
-
-	struct mnode_sw_s	*parent;
-
-// leaf specific
-	byte		*compressed_vis;
-	struct efrag_s	*efrags;
-
-	msurface_t	**firstmarksurface;
-	int			nummarksurfaces;
-	int			key;			// BSP sequence number for leaf's contents
-	byte		ambient_sound_level[NUM_AMBIENTS];
-} mleaf_sw_t;
-
-typedef struct mleaf_s
-{
-	// common with node
-	int			contents;		// wil be a negative contents number
-	int			visframe;		// node needs to be traversed if current
-
-	float		minmaxs[6];		// for bounding box culling
-
-	struct mnode_s* parent;
-
-	// leaf specific
-	byte* compressed_vis;
-	struct efrag_s* efrags;
-
-	msurface_t** firstmarksurface;
-	int			nummarksurfaces;
-	int			key;			// BSP sequence number for leaf's contents
-	byte		ambient_sound_level[NUM_AMBIENTS];
-} mleaf_t;
-
-/*struct msurface_s
-{
-	int			visframe;		// should be drawn when node is crossed
-
-	int			dlightframe;	// last frame the surface was checked by an animated light
-	int			dlightbits;		// dynamically generated. Indicates if the surface illumination 
-								// is modified by an animated light.
-
-	mplane_t	*plane;			// pointer to shared plane			
-	int			flags;			// see SURF_ #defines
-
-	int			firstedge;	// look up in model->surfedges[], negative numbers
-	int			numedges;	// are backwards edges
-	
-// surface generation data
-	struct surfcache_s	*cachespots[MIPLEVELS];
-
-	short		texturemins[2]; // smallest s/t position on the surface.
-	short		extents[2];		// ?? s/t texture size, 1..256 for all non-sky surfaces
-
-	mtexinfo_t	*texinfo;		
-	
-// lighting info
-	byte		styles[MAXLIGHTMAPS]; // index into d_lightstylevalue[] for animated lights 
-									  // no one surface can be effected by more than 4 
-									  // animated lights.
-	color24		*samples;
-	
-	decal_t		*pdecals;
-};*/
+}decal_sw_t;
 
 #define VERTEXSIZE 7
 
@@ -248,11 +222,14 @@ typedef struct glpoly_s
 	float verts[4][VERTEXSIZE];
 }glpoly_t;
 
-//no need when we are in hw.dll / hw.so
-typedef struct msurface_sw_s
+typedef struct msurface_base_s
 {
 	int			visframe;		// should be drawn when node is crossed
+}msurface_base_t;
 
+//no need when we are in hw.dll / hw.so
+typedef struct msurface_sw_s : public msurface_base_t
+{
 	int			dlightframe;	// last frame the surface was checked by an animated light
 	int			dlightbits;		// dynamically generated. Indicates if the surface illumination 
 	// is modified by an animated light.
@@ -273,6 +250,7 @@ typedef struct msurface_sw_s
 
 	// lighting info
 	byte		styles[MAXLIGHTMAPS]; // index into d_lightstylevalue[] for animated lights 
+
 	// no one surface can be effected by more than 4 
 	// animated lights.
 	color24* samples;
@@ -280,9 +258,8 @@ typedef struct msurface_sw_s
 	decal_t* pdecals;
 }msurface_sw_t;
 
-typedef struct msurface_s
+typedef struct msurface_s : public msurface_base_t
 {
-	int visframe;
 	mplane_t *plane;
 	int flags;
 	int firstedge;

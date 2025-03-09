@@ -9046,6 +9046,70 @@ void Engine_FillAddress_R_StudioChromeVars(const mh_dll_info_t& DllInfo, const m
 	Sig_VarNotFound(chrome);
 }
 
+void Engine_FillAddress_CL_SimOrgVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		/*
+.text:01D24BAE                                     loc_1D24BAE:                            ; CODE XREF: sub_1D249E0+179↑j
+.text:01D24BAE D9 05 D8 B6 34 02                                   fld     cl_simorg
+.text:01D24BB4 D9 9E 48 0B 00 00                                   fstp    dword ptr [esi+0B48h]
+.text:01D24BBA D9 05 DC B6 34 02                                   fld     flt_234B6DC
+.text:01D24BC0 D9 9E 4C 0B 00 00                                   fstp    dword ptr [esi+0B4Ch]
+.text:01D24BC6 D9 05 E0 B6 34 02                                   fld     flt_234B6E0
+.text:01D24BCC D9 9E 50 0B 00 00                                   fstp    dword ptr [esi+0B50h]
+		*/
+		//D9 05 ?? ?? ?? ?? D9 9E 48 0B 00 00 D9 05 ?? ?? ?? ?? D9 9E 4C 0B 00 00 D9 05
+#define CL_SIMORG_SIG_SVENGINE "\xD9\x05\x2A\x2A\x2A\x2A\xD9\x9E\x48\x0B\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\x9E\x4C\x0B\x00\x00\xD9\x05"
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(CL_SIMORG_SIG_SVENGINE, DllInfo);
+		Sig_AddrNotFound(cl_simorg);
+		PVOID cl_simorg_VA = *(PVOID*)(addr + 2);
+		cl_simorg = (decltype(cl_simorg))ConvertDllInfoSpace(cl_simorg_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		/*
+		* F3 0F 10 05 ?? ?? ?? ?? F3 0F 11 87 48 0B 00 00 F3 0F 10 05 ?? ?? ?? ?? F3 0F 11 87 4C 0B 00 00
+.text:1019E7D5                                     loc_1019E7D5:                           ; CODE XREF: CL_LinkPlayers+1A0↑j
+.text:1019E7D5 F3 0F 10 05 68 2B 28 11                             movss   xmm0, cl_simorg
+.text:1019E7DD F3 0F 11 87 48 0B 00 00                             movss   dword ptr [edi+0B48h], xmm0
+.text:1019E7E5 F3 0F 10 05 6C 2B 28 11                             movss   xmm0, dword_11282B6C
+.text:1019E7ED F3 0F 11 87 4C 0B 00 00                             movss   dword ptr [edi+0B4Ch], xmm0
+.text:1019E7F5 F3 0F 10 05 70 2B 28 11                             movss   xmm0, dword_11282B70
+.text:1019E7FD F3 0F 11 87 50 0B 00 00                             movss   dword ptr [edi+0B50h], xmm0
+.text:1019E805
+*/
+#define CL_SIMORG_SIG_HL25 "\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\xF3\x0F\x11\x87\x48\x0B\x00\x00\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\xF3\x0F\x11\x87\x4C\x0B\x00\x00"
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(CL_SIMORG_SIG_HL25, DllInfo);
+		Sig_AddrNotFound(cl_simorg);
+		PVOID cl_simorg_VA = *(PVOID*)(addr + 4);
+		cl_simorg = (decltype(cl_simorg))ConvertDllInfoSpace(cl_simorg_VA, DllInfo, RealDllInfo);
+	}
+	else
+	{
+		/*
+		* 
+		* 8B ?? ?? ?? ?? ?? A1 ?? ?? ?? ?? 8B ?? ?? ?? ?? ?? 89 96 48 0B 00 00 89 86 4C 0B 00 00
+		* 
+.text:01D140AE                                     loc_1D140AE:                            ; CODE XREF: sub_1D13ED0+189↑j
+.text:01D140AE 8B 15 E8 AE D8 02                                   mov     edx, cl_simorg
+.text:01D140B4 A1 EC AE D8 02                                      mov     eax, dword_2D8AEEC
+.text:01D140B9 8B 0D F0 AE D8 02                                   mov     ecx, dword_2D8AEF0
+.text:01D140BF 89 96 48 0B 00 00                                   mov     [esi+0B48h], edx
+.text:01D140C5 89 86 4C 0B 00 00                                   mov     [esi+0B4Ch], eax
+.text:01D140CB 89 8E 50 0B 00 00                                   mov     [esi+0B50h], ecx
+		*/
+
+#define CL_SIMORG_SIG "\x8B\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x2A\x2A\x89\x96\x48\x0B\x00\x00\x89\x86\x4C\x0B\x00\x00"
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(CL_SIMORG_SIG, DllInfo);
+		Sig_AddrNotFound(cl_simorg);
+		PVOID cl_simorg_VA = *(PVOID*)(addr + 2);
+		cl_simorg = (decltype(cl_simorg))ConvertDllInfoSpace(cl_simorg_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_VarNotFound(cl_simorg);
+}
+
 void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -10748,6 +10812,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_StudioChromeVars(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_CL_SimOrgVars(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_CL_ViewEntityVars(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_CL_ReallocateDynamicData(DllInfo, RealDllInfo);
@@ -10822,6 +10888,7 @@ static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
+static hook_t* g_phook_UpdatePlayerPitch = NULL;
 
 void Engine_InstallHooks(void)
 {
@@ -11244,6 +11311,26 @@ void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t&
 	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
 }
 
+void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	/*
+		FF 73 40 E8 ?? ?? ?? ?? 83 C4 08 80 3D ?? ?? ?? ?? 00
+
+		.text:10056F86 FF 73 40                                            push    dword ptr [ebx+40h] ; a1
+		.text:10056F89 E8 62 B6 01 00                                      call    UpdatePlayerPitch
+		.text:10056F8E 83 C4 08                                            add     esp, 8
+		.text:10056F91 80 3D 05 C8 63 10 00                                cmp     g_bIsRenderingPortals, 0
+	*/
+	const char pattern[] = "\xFF\x73\x40\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x80\x3D\x2A\x2A\x2A\x2A\x00";
+	auto addr = Search_Pattern(pattern, DllInfo);
+
+	Sig_AddrNotFound(UpdatePlayerPitch);
+
+	PVOID ClientPortalManager_EnableClipPlane_VA = GetCallAddress(addr + 3);
+
+	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))ConvertDllInfoSpace(ClientPortalManager_EnableClipPlane_VA, DllInfo, RealDllInfo);
+}
+
 void Client_FillAddress_RenderingPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -11457,10 +11544,12 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_ResetAll(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
+			Client_FillAddress_UpdatePlayerPitch(DllInfo, RealDllInfo);
 			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
 			Client_FillAddress_ViewEntityIndex(DllInfo, RealDllInfo);
 			Client_FillAddress_WaterLevel(DllInfo, RealDllInfo);
 			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
+
 			g_bIsSvenCoop = true;
 		}
 	}
@@ -11552,17 +11641,302 @@ void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t &DllInfo, const mh_
 	}
 }
 
+void Client_FillAddress_PlayerExtraInfo(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	/*
+	 //Global pointers that link into client dll vars.
+	extra_player_info_t(*g_PlayerExtraInfo)[65] = NULL;
+	extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65] = NULL;
+	*/
+
+	//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
+	/*
+	.text:019A4575 66 85 C0                                            test    ax, ax
+	.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
+	.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
+	.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
+	.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
+	*/
+	if (1)
+	{
+		char pattern[] = "\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A";
+		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				typedef struct MsgFunc_ScoreInfo_SearchContext_s
+				{
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+					ULONG_PTR Candidates[4]{};
+					int iNumCandidates{};
+				} MsgFunc_ScoreInfo_SearchContext;
+
+				MsgFunc_ScoreInfo_SearchContext ctx = { DllInfo, RealDllInfo };
+
+				g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto ctx = (MsgFunc_ScoreInfo_SearchContext*)context;
+					auto pinst = (cs_insn*)inst;
+
+					if (ctx->iNumCandidates < 4)
+					{
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].size == 2)
+						{
+							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+								)
+							{
+								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+								ctx->iNumCandidates++;
+							}
+						}
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].size == 2 &&
+							pinst->detail->x86.operands[1].imm == 0)
+						{
+							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+								)
+							{
+								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+								ctx->iNumCandidates++;
+							}
+						}
+					}
+
+					if (ctx->iNumCandidates == 4)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &ctx);
+
+				if (ctx.iNumCandidates >= 3)
+				{
+					std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
+						return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+						});
+
+					if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+					{
+						if (ctx.Candidates[ctx.iNumCandidates - 2] +
+							(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass))
+							==
+							ctx.Candidates[ctx.iNumCandidates - 1])
+						{
+							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
+							g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
+							break;
+						}
+					}
+					else
+					{
+						if (ctx.Candidates[ctx.iNumCandidates - 2] +
+							(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
+							== ctx.Candidates[ctx.iNumCandidates - 1])
+						{
+							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
+							g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
+							break;
+						}
+					}
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	if (!g_PlayerExtraInfo)
+	{
+		//For HL25
+		char pattern[] = "\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A";
+		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				typedef struct MsgFunc_ScoreInfo_ctx_s
+				{
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+					ULONG_PTR Candidates[4]{};
+					int iNumCandidates{};
+				} MsgFunc_ScoreInfo_ctx;
+
+				MsgFunc_ScoreInfo_ctx ctx = { DllInfo, RealDllInfo };
+
+				g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto ctx = (MsgFunc_ScoreInfo_ctx*)context;
+					auto pinst = (cs_insn*)inst;
+
+					if (ctx->iNumCandidates < 4)
+					{
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].size == 2)
+						{
+							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+								)
+							{
+								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+								ctx->iNumCandidates++;
+							}
+						}
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].size == 2 &&
+							pinst->detail->x86.operands[1].imm == 0)
+						{
+							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
+								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
+								)
+							{
+								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+								ctx->iNumCandidates++;
+							}
+						}
+					}
+
+					if (ctx->iNumCandidates == 4)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx);
+
+				if (ctx.iNumCandidates >= 3)
+				{
+					std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
+						return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+						});
+
+					if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+					{
+						if (ctx.Candidates[ctx.iNumCandidates - 2] +
+							(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass))
+							==
+							ctx.Candidates[ctx.iNumCandidates - 1])
+						{
+							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
+							g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
+							break;
+						}
+					}
+					else
+					{
+						if (ctx.Candidates[ctx.iNumCandidates - 2] +
+							(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
+							== ctx.Candidates[ctx.iNumCandidates - 1])
+						{
+							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
+							g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
+							break;
+						}
+					}
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror")) {
+		Sig_VarNotFound(g_PlayerExtraInfo_CZDS);
+	}
+	else {
+		Sig_VarNotFound(g_PlayerExtraInfo);
+	}
+}
+
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
 	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCounterStrike = true;
+
+		Client_FillAddress_PlayerExtraInfo(DllInfo, RealDllInfo);
+	}
 }
 
 void Client_InstallHooks()
 {
-	Install_InlineHook(ClientPortalManager_ResetAll);
-	Install_InlineHook(ClientPortalManager_DrawPortalSurface);
-	Install_InlineHook(ClientPortalManager_EnableClipPlane);
+	if (gPrivateFuncs.ClientPortalManager_ResetAll)
+	{
+		Install_InlineHook(ClientPortalManager_ResetAll);
+	}
+
+	if (gPrivateFuncs.ClientPortalManager_DrawPortalSurface)
+	{
+		Install_InlineHook(ClientPortalManager_DrawPortalSurface);
+	}
+
+	if (gPrivateFuncs.ClientPortalManager_EnableClipPlane)
+	{
+		Install_InlineHook(ClientPortalManager_EnableClipPlane);
+	}
+
+	if (gPrivateFuncs.UpdatePlayerPitch)
+	{
+		Install_InlineHook(UpdatePlayerPitch);
+	}
 }
 
 void Client_UninstallHooks()
@@ -11570,6 +11944,7 @@ void Client_UninstallHooks()
 	Uninstall_Hook(ClientPortalManager_ResetAll);
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
+	Uninstall_Hook(UpdatePlayerPitch);
 }
 
 PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)

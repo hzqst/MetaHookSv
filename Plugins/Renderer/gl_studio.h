@@ -110,8 +110,9 @@ public:
 	CStudioModelRenderTexture textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
 };
 
-typedef struct studio_celshade_control_s
+class CStudioCelshadeControl
 {
+public:
 	StudioConVar base_specular;
 	StudioConVar celshade_specular;
 	StudioConVar celshade_midpoint;
@@ -137,7 +138,14 @@ typedef struct studio_celshade_control_s
 	StudioConVar hair_specular_noise2;
 	StudioConVar hair_specular_smooth;
 	StudioConVar hair_shadow_offset;
-}studio_celshade_control_t;
+};
+
+class CStudioLowerBodyControl
+{
+public:
+	StudioConVar model_origin;
+	StudioConVar model_scale;
+};
 
 class CStudioModelRenderData
 {
@@ -163,7 +171,9 @@ public:
 	model_t* BodyModel{};
 	model_t* TextureModel{};
 
-	studio_celshade_control_t celshade_control;
+	CStudioCelshadeControl CelshadeControl;
+
+	CStudioLowerBodyControl LowerBodyControl;
 
 	//Always reload
 	//bool bExternalFileLoaded{};
@@ -357,7 +367,6 @@ extern int r_studio_polys;
 extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
-void R_StudioBoneCaches_StartFrame();
 CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData * pRenderData);
 void R_StudioClearVanillaBonesCaches();
@@ -367,6 +376,8 @@ void R_StudioReloadVBOCache(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
+void R_StudioStartFrame(void);
+void R_StudioEndFrame(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
@@ -378,7 +389,9 @@ CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void studioapi_RestoreRenderer(void);
+void UpdatePlayerPitch(cl_entity_t* ent, float a2);
 
+int __fastcall GameStudioRenderer_StudioDrawPlayer(void* pthis, int dummy, int flags, struct entity_state_s* pplayer);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int);

@@ -1,5 +1,6 @@
 #include "gl_local.h"
 #include "pm_defs.h"
+#include "CounterStrike.h"
 #include <event_api.h>
 
 #include <intrin.h>
@@ -32,7 +33,7 @@ float r_fog_color[4] = { 0 };
 
 cl_entity_t *r_worldentity = NULL;
 model_t *r_worldmodel = NULL;
-model_t *r_playermodel = NULL;
+//model_t *r_playermodel = NULL;
 RECT *window_rect = NULL;
 
 float * s_fXMouseAspectAdjustment = NULL;
@@ -66,6 +67,8 @@ overviewInfo_t *gDevOverview = NULL;
 mplane_t *frustum = NULL;
 
 qboolean* vertical_fov_SvEngine = NULL;
+
+vec_t* cl_simorg = NULL;
 
 int *g_bUserFogOn = NULL;
 float *g_UserFogColor = NULL;
@@ -166,10 +169,10 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
+bool g_bHasLowerBody = false;
+
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = {0};
-
-cl_entity_t g_LowerBodyEntity = {0};
 
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
@@ -399,21 +402,21 @@ bool R_IsRenderingFlippedViewModel(void)
 }
 
 /*
-	Purpose: Check if we are rendering lowerbody entity
-*/
-
-bool R_IsRenderingLowerBody(void)
-{
-	return (*currententity) == &g_LowerBodyEntity;
-}
-
-/*
 	Purpose : Check if we are rendering Portal Pass
 */
 
 bool R_IsRenderingPortal(void)
 {
 	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
+}
+
+/*
+	Purpose: Check if we are rendering lowerbody entity
+*/
+
+bool R_IsRenderingLowerBody(void)
+{
+	return (*currententity) == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
 }
 
 /*
@@ -1319,59 +1322,58 @@ void R_DrawBrushEntity(bool bTransparent)
 
 void R_DrawStudioEntity(bool bTransparent)
 {
-	if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
-	{
-		auto aiment = gEngfuncs.GetEntityByIndex((*currententity)->curstate.aiment);
-
-		//The aiment is invalid ?
-		if (!aiment)
-		{
-			return;
-		}
-
-		auto pEntityComponentContainerAimEnt = R_GetEntityComponentContainer(aiment, false);
-
-		//The aiment is invisible ?
-		if (!pEntityComponentContainerAimEnt)
-		{
-			return;
-		}
-
-		if (aiment->model && aiment->model->type == mod_studio)
-		{
-			auto saved_currententity = (*currententity);
-
-			(*currententity) = aiment;
-
-			if ((*currententity)->player)
-			{
-				(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
-			}
-			else
-			{
-				(*gpStudioInterface)->StudioDrawModel(0);
-			}
-
-			(*currententity) = saved_currententity;
-		}
-
-		if ((*currententity)->player)
-		{
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
-		}
-		else
-		{
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-		}
-		return;
-	}
-
 	if ((*currententity)->player)
 	{
 		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 	}
 	else
 	{
+		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
+		{
+			auto aiment = gEngfuncs.GetEntityByIndex((*currententity)->curstate.aiment);
+
+			//The aiment is invalid ?
+			if (!aiment)
+			{
+				return;
+			}
+
+			//The aiment is invisible ?
+			if (!EngineIsEntityInVisibleList(aiment))
+			{
+				return;
+			}
+
+			if (aiment->model && aiment->model->type == mod_studio)
+			{
+				auto saved_currententity = (*currententity);
+
+				(*currententity) = aiment;
+
+				if ((*currententity)->player)
+				{
+					(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
+				}
+				else
+				{
+					(*gpStudioInterface)->StudioDrawModel(0);
+				}
+
+				(*currententity) = saved_currententity;
+			}
+
+			if ((*currententity)->player)
+			{
+				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+			}
+			else
+			{
+				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+			}
+
+			return;
+		}
+
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 	}
 }
@@ -1486,79 +1488,6 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		break;
 	}
 	}
-}
-
-void R_DrawViewModel(void)
-{
-	float lightvec[3];
-
-	lightvec[0] = -1;
-	lightvec[1] = 0;
-	lightvec[2] = 0;
-
-	(*currententity) = cl_viewent;
-
-	if (!r_drawviewmodel->value ||
-		gExportfuncs.CL_IsThirdPerson() ||
-		chase_active->value ||
-		(*envmap) ||
-		!r_drawentities->value ||
-		cl_stats[0] <= 0 ||
-		!(*currententity)->model ||
-		(*cl_viewentity) > r_params.maxclients)
-	{
-		auto c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	glDepthRange(0, 0.3);
-
-	switch ((*currententity)->model->type)
-	{
-	case mod_studio:
-	{
-		if (!(*cl_weaponstarttime))
-			(*cl_weaponstarttime) = (*cl_time);
-
-		hud_player_info_t hudPlayerInfo;
-		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
-
-		(*currententity)->curstate.frame = 0;
-		(*currententity)->curstate.framerate = 1;
-		(*currententity)->curstate.sequence = (*cl_weaponsequence);
-		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
-		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
-
-		auto c = R_LightPoint((*currententity)->origin);
-
-		if (r_shadows)
-		{
-			auto oldShadows = r_shadows->value;
-			r_shadows->value = 0;
-			(*cl_light_level) = (c.r + c.g + c.b) / 3;
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-			r_shadows->value = oldShadows;
-		}
-		else
-		{
-			(*cl_light_level) = (c.r + c.g + c.b) / 3;
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-		}
-		break;
-	}
-
-	case mod_brush:
-	{
-		R_DrawBrushModel((*currententity));
-		break;
-	}
-	}
-
-	glDepthRange(0.3, 1);
-	
-	//Valve add this shit for what? idk
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
 void R_PolyBlend(void)
@@ -1974,6 +1903,8 @@ bool SCR_IsLoadingVisible()
 
 void R_GameFrameStart()
 {
+	g_bHasLowerBody = false;
+
 	R_EntityComponents_StartFrame();
 }
 
@@ -1993,7 +1924,7 @@ void R_RenderFrameStart()
 
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
-	R_StudioBoneCaches_StartFrame();
+	R_StudioStartFrame();
 	R_CheckVariables();
 	R_AnimateLight();
 }
@@ -2004,7 +1935,7 @@ void R_RenderFrameStart()
 
 void R_RenderEndFrame()
 {
-
+	R_StudioEndFrame();
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
@@ -2154,23 +2085,28 @@ void R_PostRenderView()
 	glDisable(GL_BLEND);
 }
 
+bool R_ShouldDrawViewModel()
+{
+	if (!r_drawviewmodel->value ||
+		gExportfuncs.CL_IsThirdPerson() ||
+		chase_active->value ||
+		(*envmap) ||
+		!r_drawentities->value ||
+		cl_stats[0] <= 0 ||
+		!cl_viewent->model ||
+		(*cl_viewentity) > r_params.maxclients)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void R_PreDrawViewModel(void)
 {
 	(*currententity) = cl_viewent;
 
-	if (!r_drawviewmodel->value)
-		return;
-
-	if (!r_drawentities->value)
-		return;
-
-	if (cl_stats[0] <= 0)
-		return;
-
-	if (!(*currententity)->model)
-		return;
-
-	if ((*cl_viewentity) > r_params.maxclients)
+	if (!R_ShouldDrawViewModel())
 		return;
 
 	switch ((*currententity)->model->type)
@@ -2199,6 +2135,72 @@ void R_PreDrawViewModel(void)
 		break;
 	}
 	}
+}
+
+void R_DrawViewModel(void)
+{
+	float lightvec[3];
+
+	lightvec[0] = -1;
+	lightvec[1] = 0;
+	lightvec[2] = 0;
+
+	(*currententity) = cl_viewent;
+
+	if (!R_ShouldDrawViewModel())
+	{
+		auto c = R_LightPoint((*currententity)->origin);
+		(*cl_light_level) = (c.r + c.g + c.b) / 3;
+		return;
+	}
+
+	glDepthRange(0, 0.3);
+
+	switch ((*currententity)->model->type)
+	{
+	case mod_studio:
+	{
+		if (!(*cl_weaponstarttime))
+			(*cl_weaponstarttime) = (*cl_time);
+
+		hud_player_info_t hudPlayerInfo;
+		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
+
+		(*currententity)->curstate.frame = 0;
+		(*currententity)->curstate.framerate = 1;
+		(*currententity)->curstate.sequence = (*cl_weaponsequence);
+		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
+		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
+
+		auto c = R_LightPoint((*currententity)->origin);
+
+		if (r_shadows)
+		{
+			auto oldShadows = r_shadows->value;
+			r_shadows->value = 0;
+			(*cl_light_level) = (c.r + c.g + c.b) / 3;
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+			r_shadows->value = oldShadows;
+		}
+		else
+		{
+			(*cl_light_level) = (c.r + c.g + c.b) / 3;
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+		}
+		break;
+	}
+
+	case mod_brush:
+	{
+		R_DrawBrushModel((*currententity));
+		break;
+	}
+	}
+
+	glDepthRange(0.3, 1);
+
+	//Valve add this shit for what? idk
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
 void R_ClearPortalClipPlanes(void)
@@ -2662,7 +2664,7 @@ void R_NewMap(void)
 {
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
-	r_playermodel = NULL;
+	//r_playermodel = NULL;
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_GenerateSceneUBO();
@@ -4072,6 +4074,76 @@ void R_EmitFlashlights()
 	}
 }
 
+bool StudioGetActivityType(model_t* mod, entity_state_t* entstate, StudioAnimActivityType* pStudioAnimActivityType, int* pAnimControlFlags)
+{
+	if (mod->type != mod_studio)
+		return false;
+
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (!studiohdr)
+		return false;
+
+	int sequence = entstate->sequence;
+
+	if (sequence < 0 || sequence >= studiohdr->numseq)
+		return false;
+
+	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
+
+	if (
+		pseqdesc->activity == ACT_DIESIMPLE ||
+		pseqdesc->activity == ACT_DIEBACKWARD ||
+		pseqdesc->activity == ACT_DIEFORWARD ||
+		pseqdesc->activity == ACT_DIEVIOLENT ||
+		pseqdesc->activity == ACT_DIE_HEADSHOT ||
+		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
+		pseqdesc->activity == ACT_DIE_GUTSHOT ||
+		pseqdesc->activity == ACT_DIE_BACKSHOT
+		)
+	{
+		(*pStudioAnimActivityType) = StudioAnimActivityType_Death;
+		(*pAnimControlFlags) = AnimControlFlag_OverrideAllBones;
+		return true;
+	}
+
+	if (
+		pseqdesc->activity == ACT_BARNACLE_HIT ||
+		pseqdesc->activity == ACT_BARNACLE_PULL ||
+		pseqdesc->activity == ACT_BARNACLE_CHOMP ||
+		pseqdesc->activity == ACT_BARNACLE_CHEW
+		)
+	{
+		(*pStudioAnimActivityType) = StudioAnimActivityType_CaughtByBarnacle;
+		(*pAnimControlFlags) = AnimControlFlag_OverrideAllBones;
+		return true;
+	}
+
+	if (
+		pseqdesc->activity == ACT_EAT
+		&& 0 == stricmp(mod->name, "models/barnacle.mdl")
+		)
+	{
+		(*pStudioAnimActivityType) = StudioAnimActivityType_BarnacleChewing;
+		(*pAnimControlFlags) = 0;
+		return true;
+	}
+
+	if (
+		pseqdesc->activity == ACT_RANGE_ATTACK2
+		&& 0 == stricmp(mod->name, "models/garg.mdl")
+		)
+	{
+		(*pStudioAnimActivityType) = StudioAnimActivityType_GargantuaBite;
+		(*pAnimControlFlags) = 0;
+		return true;
+	}
+
+	(*pStudioAnimActivityType) = StudioAnimActivityType_Idle;
+	(*pAnimControlFlags) = 0;
+	return true;
+}
+
 void R_CreateLowerBodyModel()
 {
 	if (r_drawlowerbody->value < 1)
@@ -4087,16 +4159,42 @@ void R_CreateLowerBodyModel()
 	if (!state->modelindex || (state->effects & EF_NODRAW))
 		return;
 
-	g_LowerBodyEntity = (*LocalPlayer);
+#if 0
 
-	//VectorCopy(g_LowerBodyEntity.origin, g_LowerBodyEntity.curstate.origin);
+	if (cl_stats[0] <= 0)
+		return;
 
-	//g_LowerBodyEntity.curstate.angles[1] = (*r_refdef.viewangles)[1];
+	//TODO: move to studio renderer
+	auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+	if (!model)
+		return;
+
+	if (g_bIsCounterStrike)
+	{
+		//Counter-Strike redirects playermodel in a pretty tricky way
+		int modelindex = 0;
+		model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+	}
+
+	if (!model)
+		return;
+
+	StudioAnimActivityType ActivityType{};
+	int iAnimControlFlags{};
+	StudioGetActivityType(model, R_GetPlayerState(playerindex), &ActivityType, &iAnimControlFlags);
+
+	if (ActivityType == StudioAnimActivityType_Death)
+		return;
+
+#endif
+
+	memcpy(&LocalPlayer->curstate, state, sizeof(*state));
+	VectorCopy(cl_simorg, LocalPlayer->origin);
+	VectorCopy(cl_simorg, LocalPlayer->curstate.origin);
 
 	//Just like the VoiceStatus icons.
-	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, &g_LowerBodyEntity);
+	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, LocalPlayer);
 
-	//Sniber NMSL
-	if(g_ViewEntityIndex_SCClient)
-		(*g_ViewEntityIndex_SCClient) = 0;
+	g_bHasLowerBody = true;
 }

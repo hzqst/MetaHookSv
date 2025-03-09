@@ -1,6 +1,7 @@
 #include "gl_local.h"
 #include "triangleapi.h"
 #include "mathlib2.h"
+#include "CounterStrike.h"
 
 #include <sstream>
 #include <algorithm>
@@ -24,6 +25,17 @@ static CStudioBoneCache* g_pStudioBoneFreeCaches = NULL;
 static CStudioModelRenderData* g_CurrentRenderData = NULL;
 
 static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
+
+class CEnginePlayerInfoStorage
+{
+public:
+	struct player_info_s SavedPlayerInfo {};
+	struct player_info_s ChangedPlayerInfo {};
+	bool Filled{};
+	int FilledWithRenderFlags{ };
+};
+
+static CEnginePlayerInfoStorage g_PlayerInfoStorage[MAX_CLIENTS]{};
 
 //Engine private vars
 
@@ -129,6 +141,9 @@ cvar_t* r_studio_bone_caches = NULL;
 
 cvar_t* r_studio_external_textures = NULL;
 
+cvar_t* r_lowerbody_model_offset = NULL;
+cvar_t* r_lowerbody_model_scale = NULL;
+
 CStudioModelRenderData::~CStudioModelRenderData()
 {
 	if (hVAO)
@@ -174,11 +189,6 @@ void R_StudioClearAllBoneCaches()
 	g_pStudioBoneFreeCaches = &g_StudioBoneCaches[0];
 
 	g_StudioBoneCacheManager.clear();
-}
-
-void R_StudioBoneCaches_StartFrame()
-{
-	R_StudioClearAllBoneCaches();
 }
 
 CStudioBoneCache* R_StudioBoneCacheAlloc()
@@ -459,36 +469,39 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 			glDisableVertexAttribArray(3);
 		});
 
-	pRenderData->celshade_control.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
-	pRenderData->celshade_control.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
+	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
+	pRenderData->CelshadeControl.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
 
-	pRenderData->celshade_control.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
-	pRenderData->celshade_control.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
-	pRenderData->celshade_control.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
-	pRenderData->celshade_control.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
-	pRenderData->celshade_control.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
+	pRenderData->CelshadeControl.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+	pRenderData->CelshadeControl.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
+	pRenderData->CelshadeControl.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
 
-	pRenderData->celshade_control.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
-	pRenderData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
+	pRenderData->CelshadeControl.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
+	pRenderData->CelshadeControl.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
 
-	pRenderData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
-	pRenderData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
-	pRenderData->celshade_control.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
-	pRenderData->celshade_control.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
+	pRenderData->CelshadeControl.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
 
-	pRenderData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
-	pRenderData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
-	pRenderData->celshade_control.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
-	pRenderData->celshade_control.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
+	pRenderData->CelshadeControl.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
 
-	pRenderData->celshade_control.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
-	pRenderData->celshade_control.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
-	pRenderData->celshade_control.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
-	pRenderData->celshade_control.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
-	pRenderData->celshade_control.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
-	pRenderData->celshade_control.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
-	pRenderData->celshade_control.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
-	pRenderData->celshade_control.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
+	pRenderData->CelshadeControl.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
+
+	pRenderData->LowerBodyControl.model_origin.Init(r_lowerbody_model_offset, 3, ConVar_None);
+	pRenderData->LowerBodyControl.model_scale.Init(r_lowerbody_model_scale, 1, ConVar_None);
 
 	return pRenderData;
 }
@@ -537,8 +550,8 @@ void R_StudioReloadVBOCache(void)
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
-				if (!strcmp(mod->name, "models/player.mdl"))
-					r_playermodel = mod;
+				//if (!strcmp(mod->name, "models/player.mdl"))
+				//	r_playermodel = mod;
 
 				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 
@@ -778,7 +791,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.base_specular.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.base_specular.GetValues(values);
 			}
 			else
 			{
@@ -794,7 +807,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.celshade_specular.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.celshade_specular.GetValues(values);
 			}
 			else
 			{
@@ -808,7 +821,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_celshade_midpoint, g_CurrentRenderData->celshade_control.celshade_midpoint.GetValue());
+				glUniform1f(prog.r_celshade_midpoint, g_CurrentRenderData->CelshadeControl.celshade_midpoint.GetValue());
 			}
 			else
 			{
@@ -820,7 +833,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_celshade_softness, g_CurrentRenderData->celshade_control.celshade_softness.GetValue());
+				glUniform1f(prog.r_celshade_softness, g_CurrentRenderData->CelshadeControl.celshade_softness.GetValue());
 			}
 			else
 			{
@@ -834,7 +847,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.celshade_shadow_color.GetValues(color);
+				g_CurrentRenderData->CelshadeControl.celshade_shadow_color.GetValues(color);
 			}
 			else
 			{
@@ -849,7 +862,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec3_t offset = { 0 };
-				g_CurrentRenderData->celshade_control.celshade_head_offset.GetValues(offset);
+				g_CurrentRenderData->CelshadeControl.celshade_head_offset.GetValues(offset);
 				glUniform3f(prog.r_celshade_head_offset, offset[0], offset[1], offset[2]);
 			}
 			else
@@ -865,7 +878,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec2_t value = { 0 };
-				g_CurrentRenderData->celshade_control.celshade_lightdir_adjust.GetValues(value);
+				g_CurrentRenderData->CelshadeControl.celshade_lightdir_adjust.GetValues(value);
 				glUniform2f(prog.r_celshade_lightdir_adjust, value[0], value[1]);
 			}
 			else
@@ -880,7 +893,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_outline_dark, g_CurrentRenderData->celshade_control.outline_dark.GetValue());
+				glUniform1f(prog.r_outline_dark, g_CurrentRenderData->CelshadeControl.outline_dark.GetValue());
 			}
 			else
 			{
@@ -892,7 +905,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimlight_power, g_CurrentRenderData->celshade_control.rimlight_power.GetValue());
+				glUniform1f(prog.r_rimlight_power, g_CurrentRenderData->CelshadeControl.rimlight_power.GetValue());
 			}
 			else
 			{
@@ -904,7 +917,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimlight_smooth, g_CurrentRenderData->celshade_control.rimlight_smooth.GetValue());
+				glUniform1f(prog.r_rimlight_smooth, g_CurrentRenderData->CelshadeControl.rimlight_smooth.GetValue());
 			}
 			else
 			{
@@ -918,7 +931,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.rimlight_smooth2.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.rimlight_smooth2.GetValues(values);
 			}
 			else
 			{
@@ -933,7 +946,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			vec3_t color = { 0 };
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.rimlight_color.GetValues(color);
+				g_CurrentRenderData->CelshadeControl.rimlight_color.GetValues(color);
 			}
 			else
 			{
@@ -946,7 +959,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimdark_power, g_CurrentRenderData->celshade_control.rimdark_power.GetValue());
+				glUniform1f(prog.r_rimdark_power, g_CurrentRenderData->CelshadeControl.rimdark_power.GetValue());
 			}
 			else
 			{
@@ -958,7 +971,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_rimdark_smooth, g_CurrentRenderData->celshade_control.rimdark_smooth.GetValue());
+				glUniform1f(prog.r_rimdark_smooth, g_CurrentRenderData->CelshadeControl.rimdark_smooth.GetValue());
 			}
 			else
 			{
@@ -972,7 +985,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.rimdark_smooth2.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.rimdark_smooth2.GetValues(values);
 			}
 			else
 			{
@@ -988,7 +1001,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 			if (g_CurrentRenderData)
 			{
-				g_CurrentRenderData->celshade_control.rimdark_color.GetValues(color);
+				g_CurrentRenderData->CelshadeControl.rimdark_color.GetValues(color);
 			}
 			else
 			{
@@ -1002,7 +1015,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_hair_specular_exp, g_CurrentRenderData->celshade_control.hair_specular_exp.GetValue());
+				glUniform1f(prog.r_hair_specular_exp, g_CurrentRenderData->CelshadeControl.hair_specular_exp.GetValue());
 			}
 			else
 			{
@@ -1015,7 +1028,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec4_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_specular_noise.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_specular_noise.GetValues(values);
 				glUniform4f(prog.r_hair_specular_noise, values[0], values[1], values[2], values[3]);
 			}
 			else
@@ -1031,7 +1044,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec3_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_specular_intensity.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_specular_intensity.GetValues(values);
 				glUniform3f(prog.r_hair_specular_intensity, values[0], values[1], values[2]);
 			}
 			else
@@ -1046,7 +1059,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		{
 			if (g_CurrentRenderData)
 			{
-				glUniform1f(prog.r_hair_specular_exp2, g_CurrentRenderData->celshade_control.hair_specular_exp2.GetValue());
+				glUniform1f(prog.r_hair_specular_exp2, g_CurrentRenderData->CelshadeControl.hair_specular_exp2.GetValue());
 			}
 			else
 			{
@@ -1059,7 +1072,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec4_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_specular_noise2.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_specular_noise2.GetValues(values);
 				glUniform4f(prog.r_hair_specular_noise2, values[0], values[1], values[2], values[3]);
 			}
 			else
@@ -1075,7 +1088,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec3_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_specular_intensity2.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_specular_intensity2.GetValues(values);
 				glUniform3f(prog.r_hair_specular_intensity2, values[0], values[1], values[2]);
 			}
 			else
@@ -1091,7 +1104,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec2_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_specular_smooth.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_specular_smooth.GetValues(values);
 				glUniform2f(prog.r_hair_specular_smooth, values[0], values[1]);
 			}
 			else
@@ -1107,7 +1120,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			if (g_CurrentRenderData)
 			{
 				vec2_t values = { 0 };
-				g_CurrentRenderData->celshade_control.hair_shadow_offset.GetValues(values);
+				g_CurrentRenderData->CelshadeControl.hair_shadow_offset.GetValues(values);
 				glUniform2f(prog.r_hair_shadow_offset, values[0], values[1]);
 			}
 			else
@@ -1260,6 +1273,9 @@ void R_InitStudio(void)
 
 	r_studio_base_specular = R_RegisterMapCvar("r_studio_base_specular", "1.0 2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2, ConVar_None);
 	r_studio_celshade_specular = R_RegisterMapCvar("r_studio_celshade_specular", "1.0  36.0  0.4  0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 4, ConVar_None);
+
+	r_lowerbody_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_lowerbody_model_scale = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData)
@@ -1860,7 +1876,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		StudioUBO.r_scale = g_CurrentRenderData->celshade_control.outline_size.GetValue() * 0.05f;
+		StudioUBO.r_scale = g_CurrentRenderData->CelshadeControl.outline_size.GetValue() * 0.05f;
 	}
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
@@ -2970,6 +2986,140 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 	StudioRenderModel_Template(gPrivateFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
+/*
+
+	Purpose : StudioDrawPlayer hook handler
+
+*/
+
+template<typename CallType>
+__forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, struct entity_state_s* pplayer, void* pthis = nullptr, int dummy = 0)
+{
+	int playerindex = pplayer->number - 1;
+
+	auto pPlayerInfo = IEngineStudio.PlayerInfo(playerindex);
+
+	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
+	{
+		g_PlayerInfoStorage[playerindex].SavedPlayerInfo = (*pPlayerInfo);
+	}
+
+	int result = 0;
+
+	if (R_IsRenderingLowerBody())
+	{
+		//Sniber NMSL
+		vec3_t vecSavedModelOrigin = {0};
+		float flSavedModelScale = 0;
+		int iSavedViewEntityIndex_SCClient = 0;
+
+		float* pScale = &(*currententity)->curstate.scale;
+		float* pModelPos = (*currententity)->origin;
+		VectorCopy(pModelPos, vecSavedModelOrigin);
+
+		flSavedModelScale = (*pScale);
+
+		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+
+		if (g_bIsCounterStrike)
+		{
+			//Counter-Strike redirects playermodel in a pretty tricky way
+			int modelindex = 0;
+			model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+		}
+
+		if (model)
+		{
+			auto pRenderData = R_GetStudioRenderDataFromModel(model);
+
+			if (pRenderData)
+			{
+				vec3_t viewangles, forward, right, up;
+				gEngfuncs.GetViewAngles(viewangles);
+				viewangles[0] = 0;
+				AngleVectors(viewangles, forward, right, up);
+
+				float model_scale = pRenderData->LowerBodyControl.model_scale.GetValue();
+				if (model_scale > 0)
+				{
+					(*pScale) = model_scale;
+				}
+
+				vec3_t model_origin = { 0 };
+				if (pRenderData->LowerBodyControl.model_origin.GetValues(model_origin))
+				{
+					VectorMA(pModelPos, model_origin[0], forward, pModelPos);
+					VectorMA(pModelPos, model_origin[1], right, pModelPos);
+					VectorMA(pModelPos, model_origin[2], up, pModelPos);
+				}
+			}
+		}
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			iSavedViewEntityIndex_SCClient = (*g_ViewEntityIndex_SCClient);
+			(*g_ViewEntityIndex_SCClient) = 0;
+		}
+
+		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
+
+		if (g_ViewEntityIndex_SCClient)
+		{
+			(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex_SCClient;
+		}
+
+		VectorCopy(vecSavedModelOrigin, pModelPos);
+		(*pScale) = flSavedModelScale;
+	}
+	else
+	{
+		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
+	}
+
+
+	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
+	{
+		if (!g_PlayerInfoStorage[playerindex].Filled)
+		{
+			g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+			g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
+			g_PlayerInfoStorage[playerindex].Filled = true;
+		}
+		else
+		{
+			if ((g_PlayerInfoStorage[playerindex].FilledWithRenderFlags & STUDIO_RENDER) && !(flags & STUDIO_RENDER))
+			{
+				
+			}
+			else
+			{
+				g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+				g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
+				g_PlayerInfoStorage[playerindex].Filled = true;
+			}
+		}
+
+		(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].SavedPlayerInfo;
+	}
+
+	return result;
+}
+
+__forceinline int R_StudioDrawPlayer_originalcall_wrapper(void* pthis, int dummy, int flags, struct entity_state_s* pplayer)
+{
+	return gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
+}
+
+int R_StudioDrawPlayer(int flags, struct entity_state_s* pplayer)
+{
+	return StudioDrawPlayer_Template(R_StudioDrawPlayer_originalcall_wrapper, flags, pplayer);
+}
+
+int __fastcall GameStudioRenderer_StudioDrawPlayer(void* pthis, int dummy, int flags, struct entity_state_s* pplayer)
+{
+	return StudioDrawPlayer_Template(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer, flags, pplayer, pthis, dummy);
+}
+
 template<typename CallType>
 __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis = nullptr, int dummy = 0)
 {
@@ -2980,7 +3130,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnSetupBones(pthis, dummy);
 		return;
@@ -3016,7 +3166,7 @@ __forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis =
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnSaveBones(pthis, dummy);
 		return;
@@ -3053,7 +3203,7 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnMergeBones(pthis, dummy, pSubModel);
 		return;
@@ -3564,8 +3714,8 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 			vec4_t values = { 0 };\
 			if (parser(name, values))\
 			{\
-				pRenderData->celshade_control.name.SetOverrideValues(values);\
-				pRenderData->celshade_control.name.SetOverride(true);\
+				pRenderData->CelshadeControl.name.SetOverrideValues(values);\
+				pRenderData->CelshadeControl.name.SetOverride(true);\
 			}\
 			else\
 			{\
@@ -3603,6 +3753,30 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 #undef REGISTER_CELSHADE_KEY_VALUE
 }
 
+void R_StudioLoadExternalFile_LowerBody(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
+{
+#define REGISTER_LOWERBODY_KEY_VALUE(name, parser) if (1)\
+	{\
+		auto name = ValueForKey(ent, #name);\
+		if (name && name[0])\
+		{\
+			vec4_t values = { 0 };\
+			if (parser(name, values))\
+			{\
+				pRenderData->LowerBodyControl.name.SetOverrideValues(values);\
+				pRenderData->LowerBodyControl.name.SetOverride(true);\
+			}\
+			else\
+			{\
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"" #name  "\" in entity \"studio_lowerbody_control\"\n");\
+			}\
+		}\
+	}
+
+	REGISTER_LOWERBODY_KEY_VALUE(model_origin, UTIL_ParseStringAsVector3);
+	REGISTER_LOWERBODY_KEY_VALUE(model_scale, UTIL_ParseStringAsVector1);
+}
+
 void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
 {
 	std::string fullPath = mod->name;
@@ -3638,6 +3812,10 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 			{
 				R_StudioLoadExternalFile_Celshade(ent, studiohdr, pRenderData);
 			}
+			else if (!strcmp(classname, "studio_lowerbody_control"))
+			{
+				R_StudioLoadExternalFile_LowerBody(ent, studiohdr, pRenderData);
+			}
 			else if (!strcmp(classname, "studio_bone"))
 			{
 				R_StudioLoadExternalFile_Bone(ent, studiohdr, pRenderData);
@@ -3651,4 +3829,82 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 
 		gEngfuncs.COM_FreeFile((void*)pFile);
 	}
+}
+
+void R_StudioStartFrame(void)
+{
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		auto playerindex = i;
+
+		g_PlayerInfoStorage[playerindex].Filled = false;
+		g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = 0;
+	}
+
+	R_StudioClearAllBoneCaches();
+}
+
+void R_StudioEndFrame(void)
+{
+	for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
+	{
+		auto state = R_GetPlayerState(i);
+
+		if (state->messagenum != (*cl_parsecount))
+			continue;
+
+		if (!state->modelindex || (state->effects & EF_NODRAW))
+			continue;
+
+		auto entindex = state->number;
+		auto ent = gEngfuncs.GetEntityByIndex(entindex);
+
+		if (!ent)
+			continue;
+
+		auto playerindex = entindex - 1;
+
+		//Commit the playerinfo
+		if (g_PlayerInfoStorage[playerindex].Filled)
+		{
+			auto pPlayerInfo = IEngineStudio.PlayerInfo(playerindex);
+
+			(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].ChangedPlayerInfo;
+		}
+	}
+}
+
+void UpdatePlayerPitch(cl_entity_t *ent, float a2)
+{
+	//Sniber NMSL
+#if 1
+	return;
+#else
+	if (R_IsRenderingLowerBody())
+	{
+		float pitch; // xmm1_4
+
+		pitch = a2;
+		if (a2 <= 180.0)
+		{
+			if (a2 < -180.0)
+				pitch = a2 + 360.0;
+		}
+		else
+		{
+			pitch = a2 - 360.0;
+		}
+
+		pitch /= -3.0f;
+
+		ent->angles[0] = 30;
+		ent->curstate.angles[0] = 30;
+		ent->latched.prevangles[0] = 30;
+		ent->prevstate.angles[0] = 30;
+		return;
+	}
+
+#endif
+
+	return gPrivateFuncs.UpdatePlayerPitch(ent, a2);
 }

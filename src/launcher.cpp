@@ -300,6 +300,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if (pszGameName && 0 == strnicmp(pszGameName, "czero", sizeof("czero") - 1))
 		CommandLine()->AppendParm("-forcevalve", NULL);
 
+	// see https://github.com/libsdl-org/sdl2-compat/issues/400
+	SetEnvironmentVariableA("SDL_HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE", "0");
+
 	if (registry->ReadInt("CrashInitializingVideoMode", FALSE))
 	{
 		registry->WriteInt("CrashInitializingVideoMode", FALSE);

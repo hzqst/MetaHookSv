@@ -298,6 +298,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
     <ClCompile Include="BaseUI.cpp" />
+    <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
@@ -407,6 +408,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="..\..\include\vgui_controls\WizardPanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\WizardSubPanel.h" />
     <ClInclude Include="bspfile.h" />
+    <ClInclude Include="CounterStrike.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="gl_cvar.h" />
