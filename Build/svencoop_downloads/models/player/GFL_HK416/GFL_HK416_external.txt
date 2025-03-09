@@ -186,3 +186,7 @@
     "hair_specular_smooth" "0.0 0.3"
     "hair_shadow_offset" "0.3 -0.3"
 }
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "-10 0 8"
+}
