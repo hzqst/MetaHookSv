@@ -51,7 +51,7 @@ void CBulletStaticRigidBody::Update(CPhysicComponentUpdateContext* ComponentUpda
 			break;
 		}
 
-		if ((ent != r_worldentity) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP))
+		if ((ent != r_worldentity && ent != gEngfuncs.GetEntityByIndex(0)) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP))
 		{
 			bKinematic = true;
 			break;

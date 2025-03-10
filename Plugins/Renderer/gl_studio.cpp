@@ -334,7 +334,7 @@ CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderFast(studiohdr_t* s
 
 		if (mod && mod->type == mod_studio)
 		{
-			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT || mod->needload == NL_UNREFERENCED)
 			{
 				if (mod->cache.data == studiohdr)
 				{
@@ -353,9 +353,9 @@ CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderSlow(studiohdr_t* s
 	{
 		auto mod = EngineGetModelByIndex(i);
 
-		if (mod &&mod->type == mod_studio)
+		if (mod && mod->type == mod_studio)
 		{
-			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT || mod->needload == NL_UNREFERENCED)
 			{
 				if (mod->cache.data == studiohdr)
 				{
@@ -411,10 +411,12 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 	{
 		studiohdr->soundtable = EngineGetModelIndex(mod);
 
+		gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
 		return pRenderData;
 	}
 
-	//gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
+	gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
 
 	pRenderData = new CStudioModelRenderData(mod);
 
@@ -518,7 +520,7 @@ void R_FreeStudioRenderData(CStudioModelRenderData *pRenderData)
 
 	delete pRenderData;
 
-	//gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
+	gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
 }
 
 void R_StudioFreeAllUnreferencedRenderData(void)
@@ -3653,7 +3655,7 @@ void R_StudioLoadExternalFile_LowerBody(bspentity_t* ent, studiohdr_t* studiohdr
 
 void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
 {
-	//gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: for \"%s\".\n", mod->name);
+	gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: for \"%s\".\n", mod->name);
 
 	std::string fullPath = mod->name;
 

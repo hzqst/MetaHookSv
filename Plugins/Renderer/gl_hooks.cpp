@@ -1746,6 +1746,80 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 
 	Sig_VarNotFound(c_alias_polys);
 	Sig_VarNotFound(c_brush_polys);
+
+	{
+		typedef struct R_RenderView_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+			PVOID Candidate[2]{ };
+			int CandidateCount{};
+		}R_RenderView_SearchContext;
+
+		R_RenderView_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(R_RenderView_VA, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_RenderView_SearchContext*)context;
+
+			if (ctx->CandidateCount < 2 &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0)
+			{
+				ctx->Candidate[ctx->CandidateCount] = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				ctx->CandidateCount++;
+			}
+
+			if (ctx->CandidateCount < 2 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{
+				if (0 == memcmp(address + instCount, "\x85\xC0", 2))
+				{
+					ctx->Candidate[ctx->CandidateCount] = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					ctx->CandidateCount++;
+				}
+			}
+
+			if (instCount >= 30)
+				return TRUE;
+
+			if(ctx->CandidateCount >= 2)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
+
+		if (ctx.CandidateCount == 2)
+		{
+			r_worldentity = (decltype(r_worldentity))((PUCHAR)ctx.Candidate[0] - offsetof(cl_entity_t, model));
+			cl_worldmodel = (decltype(cl_worldmodel))ctx.Candidate[1];
+		}
+	}
+	Sig_VarNotFound(r_worldentity);
+	Sig_VarNotFound(cl_worldmodel);
 }
 
 void Engine_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

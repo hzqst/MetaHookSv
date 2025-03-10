@@ -390,8 +390,6 @@ void GL_BuildLightmaps(void)
 	}
 	
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-	R_LoadWorldResources();
 }
 
 colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
@@ -522,9 +520,9 @@ colorVec R_LightVec(vec3_t start, vec3_t end)
 {
 	colorVec c;
 
-	if (r_worldmodel->lightdata)
+	if ((*cl_worldmodel)->lightdata)
 	{
-		c = RecursiveLightPoint(r_worldmodel->nodes, start, end);
+		c = RecursiveLightPoint((*cl_worldmodel)->nodes, start, end);
 
 		c.r += (*r_refdef.ambientlight).r;
 		c.g += (*r_refdef.ambientlight).g;
@@ -558,7 +556,7 @@ colorVec R_LightPoint(vec3_t p)
 	end[1] = p[1];
 	end[2] = p[2] - 2048;
 
-	return RecursiveLightPoint(r_worldmodel->nodes, p, end);
+	return RecursiveLightPoint((*cl_worldmodel)->nodes, p, end);
 }
 
 static int R_DecalIndex(decal_t *pdecal)
@@ -1092,7 +1090,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
-		if (r_fullbright->value || !r_worldmodel->lightdata)
+		if (r_fullbright->value || !(*cl_worldmodel)->lightdata)
 		{
 			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 		}

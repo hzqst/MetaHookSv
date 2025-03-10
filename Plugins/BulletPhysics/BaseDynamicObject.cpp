@@ -76,7 +76,7 @@ int CBaseDynamicObject::GetPhysicConfigId() const
 
 bool CBaseDynamicObject::IsClientEntityNonSolid() const
 {
-	if (GetClientEntity() == r_worldentity)
+	if (GetClientEntity() == r_worldentity || GetClientEntity() == gEngfuncs.GetEntityByIndex(0))
 		return false;
 
 	return GetClientEntityState()->solid <= SOLID_TRIGGER ? true : false;

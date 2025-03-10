@@ -31,9 +31,6 @@ int r_fog_mode = 0;
 float r_fog_control[3] = { 0 };
 float r_fog_color[4] = { 0 };
 
-cl_entity_t *r_worldentity = NULL;
-model_t *r_worldmodel = NULL;
-//model_t *r_playermodel = NULL;
 RECT *window_rect = NULL;
 
 float * s_fXMouseAspectAdjustment = NULL;
@@ -41,6 +38,9 @@ float * s_fYMouseAspectAdjustment = NULL;
 
 float s_fXMouseAspectAdjustment_Storage = 0;
 float s_fYMouseAspectAdjustment_Storage = 0;
+
+cl_entity_t* r_worldentity = NULL;
+model_t** cl_worldmodel = NULL;
 
 int *cl_numvisedicts = NULL;
 cl_entity_t **cl_visedicts = NULL;
@@ -933,7 +933,7 @@ void triapi_GetMatrix(const int pname, float* matrix)
 
 int triapi_BoxInPVS(float* mins, float* maxs)
 {
-	return R_PVSNode(r_worldmodel->nodes, mins, maxs) != NULL;
+	return R_PVSNode((*cl_worldmodel)->nodes, mins, maxs) != NULL;
 }
 
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn)
@@ -2242,7 +2242,7 @@ void R_RenderView_SvEngine(int viewIdx)
 
 	if (!r_norefresh->value)
 	{
-		if (!r_worldmodel)
+		if (!r_worldentity->model || !(*cl_worldmodel))
 		{
 			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
 		}
@@ -2578,8 +2578,6 @@ void R_ForceCVars(qboolean mp)
 
 void R_NewMap(void)
 {
-	r_worldentity = gEngfuncs.GetEntityByIndex(0);
-	r_worldmodel = r_worldentity->model;
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_GenerateSceneUBO();
@@ -2589,7 +2587,6 @@ void R_NewMap(void)
 	gPrivateFuncs.R_NewMap();
 
 	R_LoadLightResources();
-	//R_StudioReloadAllRenderData();
 
 	R_StudioFlushAllSkins();
 
@@ -3111,15 +3108,15 @@ void R_SetupFrame(void)
 
 	if (R_IsRenderingWaterView())
 	{
-		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, r_worldmodel);
+		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, (*cl_worldmodel));
 	}
 	else if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{
-		(*r_viewleaf) = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, r_worldmodel);
+		(*r_viewleaf) = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, (*cl_worldmodel));
 	}
 	else
 	{
-		(*r_viewleaf) = Mod_PointInLeaf(r_origin, r_worldmodel);
+		(*r_viewleaf) = Mod_PointInLeaf(r_origin, (*cl_worldmodel));
 	}
 
 	R_DisableRenderingFog();
@@ -3157,14 +3154,14 @@ void R_MarkLeaves(void)
 	}
 	else
 	{
-		vis = Mod_LeafPVS((*r_viewleaf), r_worldmodel);
+		vis = Mod_LeafPVS((*r_viewleaf), (*cl_worldmodel));
 	}
 
-	for (int i = 0; i < r_worldmodel->numleafs; i++)
+	for (int i = 0; i < (*cl_worldmodel)->numleafs; i++)
 	{
 		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
-			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
+			auto basenode = (mbasenode_t *)&(*cl_worldmodel)->leafs[i + 1];
 
 			do
 			{
@@ -3612,7 +3609,7 @@ void R_LoadSkys(void)
 void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 {
 	char name[64];
-	COM_FileBase(r_worldmodel->name, name);
+	COM_FileBase((*cl_worldmodel)->name, name);
 
 	if (!g_pFileSystem->IsDirectory("gfx/cubemap"))
 		g_pFileSystem->CreateDirHierarchy("gfx/cubemap");
@@ -3703,7 +3700,7 @@ void R_BuildCubemap(cubemap_t *cubemap)
 
 void R_BuildCubemaps_f(void)
 {
-	if (!r_worldmodel || !r_worldmodel->name[0])
+	if (!(*cl_worldmodel) || !(*cl_worldmodel)->name[0])
 	{
 		gEngfuncs.Con_Printf("Cannot build cubemap, no map loaded!\n");
 		return;
@@ -3741,7 +3738,7 @@ cubemap_t *R_FindCubemap(float *origin)
 void R_LoadCubemap(cubemap_t *cubemap)
 {
 	char name[64];
-	COM_FileBase(r_worldmodel->name, name);
+	COM_FileBase((*cl_worldmodel)->name, name);
 
 	char filepath[1024];
 	char identifier[256];
@@ -3836,7 +3833,7 @@ void CL_EmitPlayerFlashlight(int entindex)
 	// and uses Jay's old method of making a spherical light that only illuminates
 	// the lightmaps at the intersection point.
 
-	if (ent->curstate.effects & (EF_BRIGHTLIGHT | EF_DIMLIGHT) && r_worldmodel)
+	if (ent->curstate.effects & (EF_BRIGHTLIGHT | EF_DIMLIGHT) && (*cl_worldmodel))
 	{
 		dl = gEngfuncs.pEfxAPI->CL_AllocDlight(entindex);
 
@@ -4111,7 +4108,7 @@ void R_Reload_f(void)
 
 	std::vector<bspentity_t*> vBSPEntities;
 
-	R_ParseBSPEntities(r_worldmodel->entities, vBSPEntities);
+	R_ParseBSPEntities((*cl_worldmodel)->entities, vBSPEntities);
 	R_LoadExternalEntities(vBSPEntities);
 	R_LoadBSPEntities(vBSPEntities);
 

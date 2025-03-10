@@ -76,9 +76,9 @@ extern float r_yfov_viewmodel;
 extern float r_xfov_currentpass;
 extern float r_yfov_currentpass;
 extern float r_screenaspect;
-extern cl_entity_t *r_worldentity;
-extern model_t *r_worldmodel;
-//extern model_t *r_playermodel;
+
+extern cl_entity_t* r_worldentity;
+extern model_t** cl_worldmodel;
 
 extern int *cl_numvisedicts;
 extern cl_entity_t **cl_visedicts;

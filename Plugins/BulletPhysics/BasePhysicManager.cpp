@@ -23,14 +23,14 @@
 template<class T>
 inline T* GetWorldSurfaceByIndex(int index)
 {
-	return (((T*)r_worldmodel->surfaces) + index);
+	return (((T*)(*cl_worldmodel)->surfaces) + index);
 }
 
 template<class T>
 inline int GetWorldSurfaceIndex(T* surf)
 {
 	auto surf25 = (T*)surf;
-	auto surfbase = (T*)r_worldmodel->surfaces;
+	auto surfbase = (T*)(*cl_worldmodel)->surfaces;
 
 	return surf25 - surfbase;
 }
@@ -805,7 +805,7 @@ void CBasePhysicManager::NewMap()
 
 	LoadPhysicObjectConfigs();
 
-	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, r_worldmodel);
+	CreatePhysicObjectForBrushModel(r_worldentity, &r_worldentity->curstate, (*cl_worldmodel));
 }
 
 void CBasePhysicManager::SetGravity(float value)
@@ -3092,7 +3092,7 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	pRigidBodyConfig->name = mod->name;
 	pRigidBodyConfig->mass = 0;
 	pRigidBodyConfig->flags = 0;
-	pRigidBodyConfig->debugDrawLevel = (mod == r_worldmodel) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
+	pRigidBodyConfig->debugDrawLevel = (mod == (*cl_worldmodel)) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
 	pRigidBodyConfig->collisionShape = pCollisionShapeConfig;
 
 	ClientPhysicManager()->AddPhysicConfig(pRigidBodyConfig->configId, pRigidBodyConfig);
@@ -3100,7 +3100,7 @@ bool CBasePhysicManager::LoadPhysicObjectConfigFromBSP(model_t *mod, CClientPhys
 	auto pStaticObjectConfig = std::make_shared<CClientStaticObjectConfig>();
 
 	pStaticObjectConfig->flags |= PhysicObjectFlag_FromBSP;
-	pStaticObjectConfig->debugDrawLevel = (mod == r_worldmodel) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
+	pStaticObjectConfig->debugDrawLevel = (mod == (*cl_worldmodel)) ? BULLET_WORLD_DEBUG_DRAW_LEVEL : BULLET_DEFAULT_DEBUG_DRAW_LEVEL;
 
 	pStaticObjectConfig->RigidBodyConfigs.emplace_back(pRigidBodyConfig);
 
@@ -4461,7 +4461,7 @@ void CBasePhysicManager::FreeAllIndexArrays(int withflags, int withoutflags)
 template<class T, class T2>
 void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicIndexArray* pIndexArray)
 {
-	if (mod == r_worldmodel)
+	if (mod == (*cl_worldmodel))
 	{
 		GenerateIndexArrayRecursiveWorldNode<T, T2>(mod, (T2 *)mod->nodes, pIndexArray);
 	}

@@ -72,8 +72,8 @@ int g_iPlayerFlags = 0;
 
 ref_params_t r_params = { 0 };
 
-model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
+model_t** cl_worldmodel = NULL;
 
 int* cl_max_edicts = NULL;
 cl_entity_t** cl_entities = NULL;
@@ -1793,9 +1793,6 @@ void HUD_Init(void)
 
 void R_NewMap(void)
 {
-	r_worldentity = gEngfuncs.GetEntityByIndex(0);
-	r_worldmodel = r_worldentity->model;
-
 	gPrivateFuncs.R_NewMap();
 	ClientPhysicManager()->NewMap();
 	ClientEntityManager()->NewMap();

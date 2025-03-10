@@ -417,13 +417,13 @@ void R_RecursiveFindLeaves(mbasenode_t *basenode, std::set<mleaf_t *> &vLeafs)
 void R_MarkPVSForLeaf(mleaf_t *leaf, int visframecount)
 {
 	//Decompress vis bytes from world model.
-	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
+	auto vis = Mod_LeafPVS(leaf, (*cl_worldmodel));
 
-	for (int i = 0; i < r_worldmodel->numleafs; i++)
+	for (int i = 0; i < (*cl_worldmodel)->numleafs; i++)
 	{
 		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
-			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
+			auto basenode = (mbasenode_t *)&(*cl_worldmodel)->leafs[i + 1];
 
 			do
 			{
@@ -1010,7 +1010,7 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 	pModel->mod = mod;
 
-	if (mod == r_worldmodel)
+	if (mod == (*cl_worldmodel))
 	{
 		auto pWorldModel = R_GetWorldSurfaceWorldModel(mod);
 
@@ -1791,7 +1791,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
-			if (r_fullbright->value || !r_worldmodel->lightdata)
+			if (r_fullbright->value || !(*cl_worldmodel)->lightdata)
 			{
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
@@ -2009,7 +2009,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
-			if (r_fullbright->value || !r_worldmodel->lightdata)
+			if (r_fullbright->value || !(*cl_worldmodel)->lightdata)
 			{
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
@@ -2192,9 +2192,9 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	CWorldSurfaceLeaf* pLeaf = NULL;
 
-	if (pModel->mod == r_worldmodel)
+	if (pModel->mod == (*cl_worldmodel))
 	{
-		int leafIndex = R_GetWorldLeafIndex(r_worldmodel, (*r_viewleaf));
+		int leafIndex = R_GetWorldLeafIndex((*cl_worldmodel), (*r_viewleaf));
 
 		if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
 		{
@@ -2328,7 +2328,7 @@ void R_LoadWorldResources(void)
 
 	std::vector<bspentity_t*> vBSPEntities;
 
-	R_ParseBSPEntities(r_worldmodel->entities, vBSPEntities);
+	R_ParseBSPEntities((*cl_worldmodel)->entities, vBSPEntities);
 	R_LoadExternalEntities(vBSPEntities);
 	R_LoadBSPEntities(vBSPEntities);
 
@@ -3987,7 +3987,6 @@ void R_DrawWorld(void)
 
 	VectorCopy((*r_refdef.vieworg), modelorg);
 
-	//TODO: what the heck is this ???
 	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
@@ -4013,7 +4012,7 @@ void R_DrawWorld(void)
 		g_WorldSurfaceRenderer.bDiffuseTexture = true;
 		g_WorldSurfaceRenderer.bLightmapTexture = true;
 
-		auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
+		auto pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
 		if (pModel)
 		{

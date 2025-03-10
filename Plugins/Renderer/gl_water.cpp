@@ -868,18 +868,18 @@ void R_RenderWaterPass(void)
 
 	if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{
-		viewleaf = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, r_worldmodel);
+		viewleaf = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, (*cl_worldmodel));
 	}
 	else
 	{
-		viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);
+		viewleaf = Mod_PointInLeaf(r_origin, (*cl_worldmodel));
 	}
 	R_SetupGL();
 	R_SetFrustum();
 
-	auto pModel = R_GetWorldSurfaceModel(r_worldmodel);
+	auto pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
-	int leafIndex = R_GetWorldLeafIndex(r_worldmodel, viewleaf);
+	int leafIndex = R_GetWorldLeafIndex((*cl_worldmodel), viewleaf);
 
 	if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
 	{

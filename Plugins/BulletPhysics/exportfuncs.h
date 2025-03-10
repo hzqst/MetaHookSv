@@ -14,8 +14,8 @@ extern cl_exportfuncs_t gExportfuncs;
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t** gpStudioInterface;
 
-extern model_t* r_worldmodel;
 extern cl_entity_t* r_worldentity;
+extern model_t** cl_worldmodel;
 
 extern int* cl_max_edicts;
 extern cl_entity_t** cl_entities;
