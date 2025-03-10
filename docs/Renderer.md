@@ -299,7 +299,7 @@ The following files will be used to replace basetexture if exists:
 
 ### Cvars
 
-* Use cvar `r_studio_external_textures 0` to disable StudioModel texture replacer temporarily.
+* Use cvar `r_studio_external_textures 0` to disable StudioModel texture replactment temporarily.
 
 ## StudioModel normal texture
 
@@ -454,6 +454,45 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
     "hair_shadow_offset" "0.3 -0.3"
 }
 ```
+
+### Draw lower body
+
+Use cvar `r_drawlowerbody 1` to enable lower body rendering.
+
+You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
+
+```
+{
+    "classname" "studio_bone"
+    "name" "Bip01"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Pelvis"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Spine"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "0 0 0"
+    "model_scale" "1"
+}
+```
+
+to make the specified bone-based bodypart visible when rendering `[modelname].mdl` as lowerbody model.
+
+* Any bodypart without being marked as `STUDIO_BF_LOWERBODY` will be culled.
+
+* You can check the actual bone name with Half-Life Asset Manager or similar tools.
+
+* `model_origin` is for adjusting the position of lowerbody model with a given offset.
+
+* `model_scale` is for adjusting the curstate.scale of lowerbod model (Sven Co-op only).
 
 ### Console vars
 

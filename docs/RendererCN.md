@@ -442,6 +442,45 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 2. 其表面会产生Kajiya-Kay Shading算法计算出的高光，具体参数见`r_studio_hair_specular_[...]`。该高光在头发加载了高光贴图的情况下，仅会在高光贴图的红色通道上有颜色的区域上显示头发高光，并且强度按红色通道强度进行插值。如果头发没有加载高光贴图则无显示区域限制。
 
+### 下半身模型
+
+使用控制台参数 `r_drawlowerbody 1` 来启用渲染下半身模型的功能。
+
+你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+
+```
+{
+    "classname" "studio_bone"
+    "name" "Bip01"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Pelvis"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Spine"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "0 0 0"
+    "model_scale" "1"
+}
+```
+
+以使得 `[modelname].mdl` 可以作为下半身模型被正确渲染。
+
+* 任何没有被标记为 `STUDIO_BF_LOWERBODY` 的部位都将在渲染时被剔除。
+
+* 你可以使用 Half-Life Asset Manager 等工具查看真实的骨骼名称。
+
+* `model_origin` 用于调整下半身模型的位置偏移。
+
+* `model_scale` 用于下半身模型的缩放 (仅支持Sven Co-op)。
+
 ### 控制台参数
 
 `r_studio_celshade` 设为 1 启用卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光。
