@@ -69,6 +69,7 @@ void HUD_Init(void)
 
 	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
 	gEngfuncs.pfnAddCommand("r_reload", R_Reload_f);
+	gEngfuncs.pfnAddCommand("r_dumptextures", R_DumpTextures_f);
 
 #if 0
 	gEngfuncs.pfnAddCommand("r_buildcubemaps", R_BuildCubemaps_f);
@@ -2033,5 +2034,8 @@ void HUD_Shutdown(void)
 
 void HUD_OnClientDisconnect(void)
 {
-	R_StudioClearVBOCache();
+	//The engine have done Mod_Clear before...
+	
+	//TODO: free bsp VBO?
+	R_StudioFreeAllUnreferencedRenderData();
 }

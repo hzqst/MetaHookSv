@@ -429,12 +429,7 @@ void R_InitLight(void)
 	r_draw_gbuffer = false;
 }
 
-void R_NewMapLight_Pre()
-{
-
-}
-
-void R_NewMapLight_Post()
+void R_LoadLightResources()
 {
 	if (!r_flashlight_cone_texture_name.empty())
 	{

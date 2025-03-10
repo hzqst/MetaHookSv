@@ -88,8 +88,8 @@ void Mod_UnloadSpriteTextures(model_t* mod)
 		char name[260] = {0};
 		snprintf(name, sizeof(name), "%s_%i", mod->name, i);
 
-		GL_UnloadTextureWithType(name, GLT_SPRITE, true);
-		GL_UnloadTextureWithType(name, GLT_HUDSPRITE, true);
+		GL_UnloadTextureWithType(name, GLT_SPRITE);
+		GL_UnloadTextureWithType(name, GLT_HUDSPRITE);
 	}
 }
 
@@ -108,6 +108,14 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 			R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
 			R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
 		}
+		else
+		{
+			gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: pRenderData not available for \"%s\".\n", mod->name);
+		}
+	}
+	else
+	{
+		gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: studiohdr not available for \"%s\".\n", mod->name);
 	}
 }
 

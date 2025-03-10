@@ -172,7 +172,7 @@ typedef struct gltexture_s
 {
 	int texnum;
 	short servercount;
-	short paletteIndex;
+	short paletteIndex;//We use this as refcount?
 	int width;
 	int height;
 	qboolean mipmap;

@@ -61,8 +61,7 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 
 void R_LoadPortalProgramStates(void);
 void R_SavePortalProgramStates(void);
-void R_NewMapPortal(void);
-void R_NewMapPortal_Pre(void);
+void R_FreePortalResouces(void);
 void R_ShutdownPortal(void);
 void R_InitPortal(void);
 

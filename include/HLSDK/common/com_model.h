@@ -100,8 +100,8 @@ typedef struct texture_sw_s : public texture_base_t
 {
 	int			anim_total;				// total tenths in sequence ( 0 = no)
 	int			anim_min, anim_max;		// time for this frame min <=time< max
-	struct texture_s *anim_next;		// in the animation sequence
-	struct texture_s *alternate_anims;	// bmodels in frame 1 use these
+	struct texture_sw_s*anim_next;		// in the animation sequence
+	struct texture_sw_s*alternate_anims;	// bmodels in frame 1 use these
 	unsigned	offsets[MIPLEVELS];		// four mip maps stored
 	unsigned	paloffset;
 } texture_sw_t;

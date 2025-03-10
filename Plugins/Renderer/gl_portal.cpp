@@ -99,7 +99,7 @@ void R_LoadPortalProgramStates(void)
 	});
 }
 
-void R_NewMapPortal_Pre(void)
+void R_FreePortalResouces(void)
 {
 	for (auto& p : g_PortalSurfaceModels)
 	{
@@ -111,14 +111,11 @@ void R_NewMapPortal_Pre(void)
 	g_PortalSurfaceModels.clear();
 }
 
-void R_NewMapPortal(void)
-{
-
-}
-
 void R_ShutdownPortal(void)
 {
 	g_PortalProgramTable.clear();
+
+	R_FreePortalResouces();
 }
 
 void R_InitPortal(void)

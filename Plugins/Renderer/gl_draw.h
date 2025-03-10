@@ -325,9 +325,9 @@ typedef struct
 } DDS_FILEHEADER10;
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
-void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback);
-void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, bool notify_callback);
-void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, bool notify_callback);
+void GL_UnloadTextureByTextureId(int gltexturenum);
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType);
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height);
 const char * V_GetFileExtension(const char * path);
 const char * V_UnqualifiedFileName(const char * in);
 int GL_GetAnsioValue();

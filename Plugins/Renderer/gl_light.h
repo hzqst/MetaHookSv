@@ -80,8 +80,7 @@ typedef struct
 	int u_ssrFade;
 }dfinal_program_t;
 
-void R_NewMapLight(void);
-void R_NewMapLight_Post(void);
+void R_LoadLightResources(void);
 void R_InitLight(void);
 void R_ShutdownLight(void);
 bool R_BeginRenderGBuffer(void);

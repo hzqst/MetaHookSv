@@ -2576,119 +2576,25 @@ void R_ForceCVars(qboolean mp)
 	//TODO implement this for 3266, inlined ?
 }
 
-void R_AddReferencedTextures(std::set<int> &textures)
-{
-	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
-
-		if (mod && (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT))
-		{
-			if (mod->type == mod_studio)
-			{
-				auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
-
-				if (studiohdr)
-				{
-					gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [mdl] [%s].\n", mod->name);
-
-					R_StudioTextureAddReferences(mod, studiohdr, textures);
-				}
-			}
-			else if (mod->type == mod_sprite)
-			{
-				auto pSprite = (msprite_t*)mod->cache.data;
-
-				if (pSprite)
-				{
-					gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [spr] [%s].\n", mod->name);
-
-					R_SpriteTextureAddReferences(mod, pSprite, textures);
-				}
-			}
-		}
-	}
-}
-
-void R_UnloadNoreferenceTextures(const std::set<int>& textures)
-{
-	int i;
-	gltexture_t* glt;
-
-	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
-	{
-		if (glt->texnum > 0 && glt->servercount == 0)
-		{
-			//"lambda" goes LoadTransPic
-			//BSP detail texture goes GLT_SPRITE under GoldSrc while GLT_DETAIL under SvEngine, need to block vanilla detail texture
-
-			auto textureType = GL_GetTextureTypeFromTextureIdentifier(glt->identifier);
-
-			if (textureType == GLT_STUDIO || textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
-			{
-				if (textures.find(glt->texnum) == textures.end())
-				{
-					gEngfuncs.Con_DPrintf("R_UnloadNoreferenceTextures: [%d] [%s].\n", glt->texnum, glt->identifier);
-
-					GL_FreeTextureEntry(glt, true);
-				}
-			}
-		}
-	}
-}
-
-void R_UnloadNoreferenceModels()
-{
-	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
-
-		if (mod && (mod->needload == NL_UNREFERENCED))
-		{
-			if (mod->type == mod_studio)
-			{
-				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
-
-				if (studiohdr)
-				{
-					gEngfuncs.Con_DPrintf("R_UnloadNoreferenceModel: [mdl] [%s].\n", mod->name);
-
-					Cache_Free(&mod->cache);
-				}
-			}
-		}
-	}
-}
-
 void R_NewMap(void)
 {
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
-	//r_playermodel = NULL;
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_GenerateSceneUBO();
-	R_NewMapWSurf_Pre();
-	R_NewMapPortal_Pre();
+	R_FreeWorldResources();
+	R_FreePortalResouces();
 
 	gPrivateFuncs.R_NewMap();
 
-	R_NewMapWSurf_Post();
-	R_NewMapLight_Post();
+	R_LoadLightResources();
+	//R_StudioReloadAllRenderData();
 
 	R_StudioFlushAllSkins();
-	R_StudioClearVBOCache();
-	R_StudioReloadVBOCache();
 
-	//This is for GoldSrc
-	//Cuz SvEngine always unloads all GLT_STUDIO and GLT_SPRITE textures
-	/*if (g_iEngineType != ENGINE_SVENGINE)
-	{
-		std::set<int> textures;
-		R_AddReferencedTextures(textures);
-		R_UnloadNoreferenceTextures(textures);
-		R_UnloadNoreferenceModels();
-	}*/
+	//Free GPU resources...
+	R_StudioFreeAllUnreferencedRenderData();
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;
@@ -4197,4 +4103,35 @@ void R_CreateLowerBodyModel()
 	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, LocalPlayer);
 
 	g_bHasLowerBody = true;
+}
+
+void R_Reload_f(void)
+{
+	R_ClearBSPEntities();
+
+	std::vector<bspentity_t*> vBSPEntities;
+
+	R_ParseBSPEntities(r_worldmodel->entities, vBSPEntities);
+	R_LoadExternalEntities(vBSPEntities);
+	R_LoadBSPEntities(vBSPEntities);
+
+	for (auto ent : vBSPEntities)
+	{
+		delete ent;
+	}
+
+	gEngfuncs.Con_Printf("Map entities reloaded\n");
+}
+
+void R_DumpTextures_f(void)
+{
+	auto pgltextures = gltextures_get();
+
+	for (int j = 0; j < (*numgltextures); ++j)
+	{
+		if (pgltextures[j].texnum)
+		{
+			gEngfuncs.Con_Printf("[%s] texid[%d], servercount[%d]\n", pgltextures[j].identifier, pgltextures[j].texnum, pgltextures[j].servercount);
+		}
+	}
 }

@@ -160,13 +160,15 @@ public:
 	GLuint				hVBO{};
 	GLuint				hEBO{};
 	GLuint				hVAO{};
-	//GLuint				hStudioUBO{};
 
-	//vbo_submodel_t Storage
+	//CStudioModelRenderSubModel Storage
 	std::vector<CStudioModelRenderSubModel *> vSubmodels;
 
-	//Memory Offset -> vbo_submodel_t Mapping Table
+	//Memory Offset -> CStudioModelRenderSubModel Mapping Table
 	std::unordered_map<int, CStudioModelRenderSubModel*> mSubmodels;
+
+	//Material Storage
+	std::unordered_map<int, CStudioModelRenderMaterial*> mStudioMaterials;
 
 	model_t* BodyModel{};
 	model_t* TextureModel{};
@@ -174,9 +176,6 @@ public:
 	CStudioCelshadeControl CelshadeControl;
 
 	CStudioLowerBodyControl LowerBodyControl;
-
-	//Always reload
-	//bool bExternalFileLoaded{};
 };
 
 #if 0
@@ -371,8 +370,8 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData * pRenderData);
 void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
-void R_StudioClearVBOCache(void);
-void R_StudioReloadVBOCache(void);
+void R_StudioFreeAllUnreferencedRenderData(void);
+void R_StudioReloadAllRenderData(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
@@ -384,8 +383,12 @@ void R_GLStudioDrawPoints(void);
 studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
 void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
-void R_StudioFreeTextureCallback(gltexture_t* glt);
-CStudioModelRenderMaterial* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
+
+void R_StudioFreeAllTexturesInMaterial(CStudioModelRenderMaterial* pStudioMaterial);
+bool R_StudioFreeTextureInMaterial(CStudioModelRenderMaterial* pStudioMaterial, int gltexturenum);
+bool R_StudioFreeMaterialByTextureId(int gltexturenum);
+CStudioModelRenderMaterial* R_StudioGetMaterialFromTextureId(const CStudioModelRenderData* pRenderData, int gltexturenum);
+
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void studioapi_RestoreRenderer(void);

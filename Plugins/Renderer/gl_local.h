@@ -394,7 +394,7 @@ GLuint GL_GenBuffer(void);
 GLuint GL_GenVAO(void);
 void GL_ClearFBO(FBO_Container_t* s);
 void GL_FreeFBO(FBO_Container_t* s);
-void GL_DeleteTexture(GLuint tex);
+void GL_DeleteTexture(GLuint texid);
 void GL_DeleteBuffer(GLuint buf);
 void GL_DeleteVAO(GLuint VAO);
 void GL_BindVAO(GLuint VAO);
@@ -496,6 +496,9 @@ void R_LoadProgramStates_f(void);
 void R_LoadLegacyOpenGLMatrixForViewModel();
 void R_LoadLegacyOpenGLMatrixForWorld();
 
+void R_Reload_f(void);
+void R_DumpTextures_f(void);
+
 void COM_FileBase(const char *in, char *out);
 
 //Framebuffer
@@ -524,7 +527,7 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 
-void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback);
+void GL_FreeTextureEntry(gltexture_t *glt);
 void GL_PushMatrix(void);
 void GL_PopMatrix(void);
 

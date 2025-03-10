@@ -4,7 +4,6 @@
 #include <FreeImage.h>
 #include <strtools.h>
 
-// Definitions for the translation and pixel arrays, presumably for texture processing.
 static byte texloader_buffer[4096 * 4096 * 4];
 
 gltexture_t *gltextures = NULL;
@@ -360,9 +359,11 @@ void GL_DeleteVAO(GLuint VAO)
 	glDeleteVertexArrays(1, &VAO);
 }
 
-void GL_DeleteTexture(GLuint tex)
+void GL_DeleteTexture(GLuint texid)
 {
-	glDeleteTextures(1, &tex);
+	gEngfuncs.Con_DPrintf("GL_DeleteTexture: texid [%d].\n", texid);
+
+	glDeleteTextures(1, &texid);
 }
 
 void GL_BindVAO(GLuint VAO)
@@ -479,7 +480,7 @@ void GL_EnableMultitexture(void)
 	gPrivateFuncs.GL_EnableMultitexture();
 }
 
-void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
+void GL_UnloadTextureByIdentifier(const char* identifier)
 {
 	int i;
 	gltexture_t* glt;
@@ -490,7 +491,7 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 		{
 			if (glt->texnum > 0 && !strncmp(glt->identifier, identifier, sizeof("@SPR_DEADBEEF") - 1))
 			{
-				GL_FreeTextureEntry(glt, notify_callback);
+				GL_FreeTextureEntry(glt);
 				return;
 			}
 		}
@@ -501,7 +502,7 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 		{
 			if (glt->texnum > 0 && !strcmp(glt->identifier, identifier))
 			{
-				GL_FreeTextureEntry(glt, notify_callback);
+				GL_FreeTextureEntry(glt);
 				return;
 			}
 		}
@@ -510,6 +511,8 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 
 void GL_UnloadTextures(void)
 {
+	//Being called in R_NewMap
+
 	/*
 		This is how SvEngine does in GL_UnloadTextures, they traverse the gltextures from back to beginning
 
@@ -532,6 +535,7 @@ void GL_UnloadTextures(void)
 			v0 = numgltextures;
 			*((_WORD *)dest + 2) = -1;
 	*/
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		int i = (*numgltextures) - 1;
@@ -543,7 +547,8 @@ void GL_UnloadTextures(void)
 			{
 				if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
 				{
-					GL_FreeTextureEntry(glt, true);
+					//gEngfuncs.Con_DPrintf("GL_UnloadTextures: free glt %p [%s] texid[%d] server[%d].\n", glt->identifier, glt->texnum, (int)glt->servercount);
+					GL_FreeTextureEntry(glt);
 				}
 
 				glt--;
@@ -559,29 +564,29 @@ void GL_UnloadTextures(void)
 		{
 			if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
 			{
-				GL_FreeTextureEntry(glt, true);
+				GL_FreeTextureEntry(glt);
 			}
 		}
 	}
 }
 
-void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, bool notify_callback)
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType)
 {
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
 
-	GL_UnloadTextureByIdentifier(hashedIdentifier, notify_callback);
+	GL_UnloadTextureByIdentifier(hashedIdentifier);
 }
 
-void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, bool notify_callback)
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
 {
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
 
-	GL_UnloadTextureByIdentifier(hashedIdentifier, notify_callback);
+	GL_UnloadTextureByIdentifier(hashedIdentifier);
 }
 
-void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
+void GL_UnloadTextureByTextureId(int gltexturenum)
 {
 	int i;
 	gltexture_t* glt;
@@ -590,7 +595,7 @@ void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
 	{
 		if (glt->texnum == gltexturenum)
 		{
-			GL_FreeTextureEntry(glt, notify_callback);
+			GL_FreeTextureEntry(glt);
 			break;
 		}
 	}
@@ -872,7 +877,7 @@ int GL_FindTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int *wi
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -929,7 +934,7 @@ gltexture_t* GL_FindTextureEntryEx(const char* identifier, GL_TEXTURETYPE textur
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -945,7 +950,7 @@ gltexture_t* GL_FindTextureEntryEx(const char* identifier, GL_TEXTURETYPE textur
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -976,7 +981,7 @@ int GL_FindTextureEx2(const char* identifier, GL_TEXTURETYPE textureType, int wi
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -992,7 +997,7 @@ int GL_FindTextureEx2(const char* identifier, GL_TEXTURETYPE textureType, int wi
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -1023,7 +1028,7 @@ gltexture_t * GL_FindTextureEntryEx2(const char* identifier, GL_TEXTURETYPE text
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -1039,7 +1044,7 @@ gltexture_t * GL_FindTextureEntryEx2(const char* identifier, GL_TEXTURETYPE text
 				{
 					if (textureType == GLT_WORLD)
 					{
-						if (slot->servercount != *gHostSpawnCount)
+						if (slot->servercount != (*gHostSpawnCount))
 							continue;
 					}
 
@@ -1135,8 +1140,9 @@ gltexture_t * GL_AllocTextureEntry(const char* identifier, GL_TEXTURETYPE textur
 
 			if (!strcmp(identifier, slot->identifier) && width == slot->width && height == slot->height)
 			{
+				//Update servercount so it won't be unloaded by GL_UnloadTextures
 				if (slot->servercount > 0)
-					slot->servercount = *gHostSpawnCount;
+					slot->servercount = (*gHostSpawnCount);
 
 				if (foundExisting)
 					*foundExisting = true;
@@ -1168,8 +1174,8 @@ gltexture_t * GL_AllocTextureEntry(const char* identifier, GL_TEXTURETYPE textur
 					}
 				}
 
-				*maxgltextures_SvEngine += v16;
-				*gltextures_SvEngine = (gltexture_t*)gPrivateFuncs.realloc_SvEngine((void*)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
+				(*maxgltextures_SvEngine) += v16;
+				(*gltextures_SvEngine) = (gltexture_t*)gPrivateFuncs.realloc_SvEngine((void*)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
 			}
 		}
 		else
@@ -1217,6 +1223,7 @@ gltexture_t * GL_AllocTextureEntry(const char* identifier, GL_TEXTURETYPE textur
 	}
 
 	glt->paletteIndex = -1;
+	//glt->refcount = 1;
 
 	if (foundExisting)
 		*foundExisting = false;
@@ -1224,6 +1231,7 @@ gltexture_t * GL_AllocTextureEntry(const char* identifier, GL_TEXTURETYPE textur
 	return glt;
 }
 
+#if 0
 int GL_AllocTexture(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap, bool* foundExisting)
 {
 	auto glt = GL_AllocTextureEntry(identifier, textureType, width, height, mipmap, foundExisting);
@@ -1233,6 +1241,7 @@ int GL_AllocTexture(const char* identifier, GL_TEXTURETYPE textureType, int widt
 
 	return glt->texnum;
 }
+#endif
 
 void GL_BoxFilter3x3(unsigned char* out, unsigned char* in, int w, int h, int x, int y)
 {
@@ -1515,7 +1524,7 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 	{
 		int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
 
-		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Using legacy texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Loading with legacy texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
 
 		return gltexturenum;
 	}
@@ -1532,11 +1541,12 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 
 	if (foundExisting)
 	{
-		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Found existing texture entry [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
-		return glt->texnum;
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Reuse existing texture entry [%s] -> [%s] texid[%d], server[%d]\n", identifier, hashedIdentifier, glt->texnum, (int)glt->servercount);
 	}
-
-	gEngfuncs.Con_DPrintf("GL_LoadTexture2: Using new texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
+	else
+	{
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Loading with new texture loader [%s] -> [%s] texid[%d], server[%d]\n", identifier, hashedIdentifier, glt->texnum, (int)glt->servercount);
+	}
 
 	gl_loadtexture_context_t context;
 
@@ -1570,6 +1580,7 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 		}
 	}
 
+	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, &context);
 
 	return glt->texnum;
@@ -1612,11 +1623,12 @@ gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType
 
 	if (foundExisting)
 	{
-		gEngfuncs.Con_DPrintf("GL_LoadTextureEx: Found existing texture entry [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
-		return glt;
+		gEngfuncs.Con_DPrintf("GL_LoadTextureEx: Reuse existing texture entry [%s] -> [%s] texid[%d], server[%d]\n", identifier, hashedIdentifier, glt->texnum, (int)glt->servercount);
 	}
-
-	gEngfuncs.Con_DPrintf("GL_LoadTextureEx: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
+	else
+	{
+		gEngfuncs.Con_DPrintf("GL_LoadTextureEx: Loading [%s] -> [%s] texid[%d], server[%d]\n", identifier, hashedIdentifier, glt->texnum, (int)glt->servercount);
+	}
 
 	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, context);
@@ -1689,7 +1701,7 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 		tex->name[0] = '}';
 
 		if ((*gfCustomBuild))
-			GL_UnloadTextureWithType(tex->name, GLT_DECAL, true);
+			GL_UnloadTextureWithType(tex->name, GLT_DECAL);
 
 		//Why'th fuck 2 in SvEngine?
 		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_GRADIENT_SVENGINE : TEX_TYPE_ALPHA_GRADIENT;
@@ -3083,12 +3095,17 @@ bool LoadVideoFrames(const char* filename, const char* pathId, gl_loadtexture_co
 
 bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEXTURETYPE textureType, bool mipmap, gl_loadtexture_result_t* result)
 {
-	auto textureEntry = GL_FindTextureEntry(identifier, textureType);
+	auto glt = GL_FindTextureEntry(identifier, textureType);
 
-	if (textureEntry)
+	if (glt)
 	{
-		GL_FillLoadTextureResultFromTextureEntry(textureEntry, result);
+		//Update servercount so it won't be unloaded by GL_UnloadTextures
+		if (glt->servercount > 0)
+			glt->servercount = (*gHostSpawnCount);
 
+		gEngfuncs.Con_DPrintf("R_LoadTextureFromFile: Found textureEntry for [%s] -> [%s], texid[%d] server[%d].\n", filename, identifier, glt->texnum, (int)glt->servercount);
+
+		GL_FillLoadTextureResultFromTextureEntry(glt, result);
 		return true;
 	}
 
@@ -3103,13 +3120,13 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 	gl_loadtexture_context_t context;
 
 	context.mipmap = mipmap;
-	context.callback = [&textureEntry, identifier, textureType, result](gl_loadtexture_context_t *ctx) {
+	context.callback = [&glt, identifier, textureType, result](gl_loadtexture_context_t *ctx) {
 
-		textureEntry = GL_LoadTextureEx(identifier, textureType, ctx);
+		glt = GL_LoadTextureEx(identifier, textureType, ctx);
 
-		if (textureEntry)
+		if (glt)
 		{
-			GL_FillLoadTextureResultFromLoadTextureContext(textureEntry, ctx, result);
+			GL_FillLoadTextureResultFromLoadTextureContext(glt, ctx, result);
 			return true;
 		}
 
@@ -3156,7 +3173,9 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 	{
 		return true;
 	}
-	
+
+	gEngfuncs.Con_DPrintf("R_LoadTextureFromFile: Failed for filename [%s] -> [%s].\n", filename, identifier);
+
 	return false;
 }
 
@@ -3308,7 +3327,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 
 int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
 {
-	// allocated_surface_texture = 5810;
+	// allocated_surface_texture = 5810; from BlobEngine
 	return (int)GL_GenTexture();
 }
 

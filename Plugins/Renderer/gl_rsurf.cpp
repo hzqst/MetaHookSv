@@ -390,6 +390,8 @@ void GL_BuildLightmaps(void)
 	}
 	
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+	R_LoadWorldResources();
 }
 
 colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)

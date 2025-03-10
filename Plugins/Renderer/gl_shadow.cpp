@@ -99,18 +99,21 @@ void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 {
 	if (shadowtex->color)
 	{
+		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete color [%d].\n", shadowtex->color);
 		GL_DeleteTexture(shadowtex->color);
 		shadowtex->color = 0;
 	}
 
 	if (shadowtex->color_array_as_depth)
 	{
+		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete color_array_as_depth [%d].\n", shadowtex->color_array_as_depth);
 		GL_DeleteTexture(shadowtex->color_array_as_depth);
 		shadowtex->color_array_as_depth = 0;
 	}
 
 	if (shadowtex->depth_stencil)
 	{
+		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete depth_stencil [%d].\n", shadowtex->depth_stencil);
 		GL_DeleteTexture(shadowtex->depth_stencil);
 		shadowtex->depth_stencil = 0;
 	}

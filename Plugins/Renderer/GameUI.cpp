@@ -284,6 +284,7 @@ public:
 
 	void DisconnectFromServer(VGUI2Extension_CallbackContext* CallbackContext) override
 	{
+		//Called from CL_Disconnect, after CL_ClearState and CL_DeallocateDynamicData
 		HUD_OnClientDisconnect();
 	}
 

@@ -72,28 +72,60 @@ CWorldSurfaceModel::~CWorldSurfaceModel()
 	}
 }
 
+void R_FreeWorldSurfaceModels(model_t *mod)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex < g_WorldSurfaceModels.size() && g_WorldSurfaceModels[modelindex])
+	{
+		gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceModels: [%s] freed.\n", mod->name);
+
+		delete g_WorldSurfaceModels[modelindex];
+		g_WorldSurfaceModels[modelindex] = nullptr;
+
+		return;
+	}
+	gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceModels: Could not found world surface model for [%s].\n", mod->name);
+}
+
+void R_FreeWorldSurfaceWorldModels(model_t* mod)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex < g_WorldSurfaceWorldModels.size() && g_WorldSurfaceWorldModels[modelindex])
+	{
+		gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceWorldModels: [%s] freed.\n", mod->name);
+
+		delete g_WorldSurfaceWorldModels[modelindex];
+		g_WorldSurfaceWorldModels[modelindex] = nullptr;
+
+		return;
+	}
+	gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceWorldModels: Could not found world surface world model for [%s].\n", mod->name);
+}
+
 void R_ClearWorldSurfaceModels(void)
 {
-	for (auto pModel : g_WorldSurfaceModels)
+	for (size_t i = 0;i < g_WorldSurfaceModels.size(); ++i)
 	{
-		if (pModel)
+		if (g_WorldSurfaceModels[i])
 		{
-			delete pModel;
+			delete g_WorldSurfaceModels[i];
+			g_WorldSurfaceModels[i] = nullptr;
 		}
 	}
-	g_WorldSurfaceModels.clear();
 }
 
 void R_ClearWorldSurfaceWorldModels(void)
 {
-	for (auto pWorldModel : g_WorldSurfaceWorldModels)
+	for (size_t i = 0; i < g_WorldSurfaceWorldModels.size(); ++i)
 	{
-		if (pWorldModel)
+		if (g_WorldSurfaceWorldModels[i])
 		{
-			delete pWorldModel;
+			delete g_WorldSurfaceWorldModels[i];
+			g_WorldSurfaceWorldModels[i] = nullptr;
 		}
 	}
-	g_WorldSurfaceWorldModels.clear();
 }
 
 const program_state_mapping_t s_WSurfProgramStateName[] = {
@@ -359,6 +391,7 @@ void R_FreeLightmapTextures()
 {
 	if (g_WorldSurfaceRenderer.iLightmapTextureArray)
 	{
+		//gEngfuncs.Con_DPrintf("R_FreeLightmapTextures: delete texid [%d].\n", g_WorldSurfaceRenderer.iLightmapTextureArray);
 		GL_DeleteTexture(g_WorldSurfaceRenderer.iLightmapTextureArray);
 		g_WorldSurfaceRenderer.iLightmapTextureArray = 0;
 	}
@@ -2248,24 +2281,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 	}
 }
 
-void R_Reload_f(void)
-{
-	R_ClearBSPEntities();
-
-	std::vector<bspentity_t *> vBSPEntities;
-
-	R_ParseBSPEntities(r_worldmodel->entities, vBSPEntities);
-	R_LoadExternalEntities(vBSPEntities);
-	R_LoadBSPEntities(vBSPEntities);
-
-	for (auto ent : vBSPEntities)
-	{
-		delete ent;
-	}
-
-	gEngfuncs.Con_Printf("Map entities reloaded\n");
-}
-
 void R_InitWSurf(void)
 {
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2275,20 +2290,37 @@ void R_InitWSurf(void)
 	R_ClearBSPEntities();
 }
 
-void R_NewMapWSurf_Pre(void)
+void R_FreeWorldResources(void)
 {
 	R_ClearDecalCache();
 	R_ClearDetailTextureCache();
+
+	R_ClearBSPEntities();
 
 	R_FreeLightmapTextures();
 
 	R_ClearWorldSurfaceModels();
 	R_ClearWorldSurfaceWorldModels();
-
-	R_ClearBSPEntities();
 }
 
-void R_NewMapWSurf_Post(void)
+void R_FreeUnreferencedWorldSurfaceModels(void)
+{
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod->type == mod_brush)
+		{
+			if (mod->needload == NL_UNREFERENCED)
+			{
+				R_FreeWorldSurfaceModels(mod);
+				R_FreeWorldSurfaceWorldModels(mod);
+			}
+		}
+	}
+}
+
+void R_LoadWorldResources(void)
 {
 	R_LoadMapDetailTextures();
 	R_LoadBaseDetailTextures();
@@ -2459,7 +2491,7 @@ void R_LoadDecalTextures(const char * pFileContent)
 		{
 			if (cache->tex[texType].gltexturenum)
 			{
-				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: %s already exists for basetexture %s\n", textypeNames[texType], base.c_str());
+				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: \"%s\" already exists for basetexture \"%s\".\n", textypeNames[texType], base.c_str());
 				continue;
 			}
 
@@ -2503,7 +2535,7 @@ void R_LoadDecalTextures(const char * pFileContent)
 
 			if (!bLoaded)
 			{
-				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
+				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: Failed to load \"%s\" as \"%s\" for basetexture \"%s\".\n", detailtexture, textypeNames[texType], base.c_str());
 				continue;
 			}
 
@@ -3185,7 +3217,7 @@ void R_LoadExternalEntities(std::vector<bspentity_t*>& vBSPEntities)
 
 		if (!pFile)
 		{
-			gEngfuncs.Con_DPrintf("R_LoadExternalEntities: Could not load %s.\n", fullPath);
+			gEngfuncs.Con_DPrintf("R_LoadExternalEntities: Could not load \"%s\".\n", fullPath);
 			return;
 		}
 	}

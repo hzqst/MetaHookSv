@@ -10890,6 +10890,16 @@ static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
 static hook_t* g_phook_UpdatePlayerPitch = NULL;
 
+#if 0
+#include <intrin.h>
+void __stdcall NewglDeleteTextures(GLsizei n, const GLuint* textures)
+{
+	gEngfuncs.Con_DPrintf("glDeleteTextures: n=%d, texid=[%d], retaddr=%p.\n", n, textures[0], _ReturnAddress());
+
+	gPrivateFuncs.glDeleteTextures(n, textures);
+}
+#endif
+
 void Engine_InstallHooks(void)
 {
 	Install_InlineHook(GL_Init);
@@ -10937,6 +10947,11 @@ void Engine_InstallHooks(void)
 	{
 		Install_InlineHook(SDL_GL_SetAttribute);
 	}
+#if 0
+	gPrivateFuncs.glDeleteTextures = glDeleteTextures;
+
+	g_pMetaHookAPI->InlineHook(gPrivateFuncs.glDeleteTextures, NewglDeleteTextures, (void**)&gPrivateFuncs.glDeleteTextures);
+#endif
 }
 
 void Engine_UninstallHooks(void)

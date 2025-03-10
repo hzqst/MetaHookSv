@@ -171,6 +171,9 @@ typedef struct
 	bool R_RenderScene_inlined;
 	bool R_LightStrength_inlined;
 	bool R_GlowBlend_inlined;
+
+	//Just for debugging
+	//void(__stdcall* glDeleteTextures)(GLsizei n, const GLuint* textures);
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;

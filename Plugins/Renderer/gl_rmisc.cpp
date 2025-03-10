@@ -389,26 +389,8 @@ GLuint GL_GenShadowTexture(int w, int h, float *borderColor)
 	return texid;
 }
 
-void GL_FreeTextureNotifyCallback(gltexture_t* glt)
+void GL_FreeTextureEntryInternal(gltexture_t* glt)
 {
-	R_StudioFreeTextureCallback(glt);
-}
-
-void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
-{
-	if (glt->texnum <= 0)
-	{
-		gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: Bogus texture entry [%d] [%s] ?\n", glt->texnum, glt->identifier);
-		return;
-	}
-
-	gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: [%d] [%s] [%d].\n", glt->texnum, glt->identifier, notify_callback ? 1 : 0);
-
-	if (notify_callback)
-	{
-		GL_FreeTextureNotifyCallback(glt);
-	}
-
 	GL_DeleteTexture(glt->texnum);
 	memset(glt, 0, sizeof(*glt));
 	glt->servercount = -1;
@@ -425,18 +407,67 @@ void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 	/*
 		SvEngine remove the entire glt struct from CUtlVector, instead of simply zeroing the struct
 	*/
+#if 1
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		/*
+			void __cdecl GL_UnloadTexture(char *a1)
+			{
+			  int gltindex; // esi
+			  int i; // edi
+			  const GLuint *v3; // ebx
+			  int previous_numgltextures; // eax
+
+			  gltindex = 0;
+			  if ( numgltextures > 0 )
+			  {
+				for ( i = 0; ; i += 84 )
+				{
+				  v3 = (const GLuint *)((char *)gltextures + i);
+				  if ( !strcmp(a1, (_BYTE *)gltextures + i + 20) )
+					break;
+				  if ( ++gltindex >= numgltextures )
+					return;
+				}
+				glDeleteTextures(1, v3);
+				previous_numgltextures = numgltextures;
+				if ( numgltextures - gltindex - 1 > 0 )
+				{
+				  memmove(
+					(char *)gltextures + 84 * gltindex,
+					(char *)gltextures + 84 * gltindex + 84,
+					84 * (numgltextures - gltindex - 1));
+				  previous_numgltextures = numgltextures;
+				}
+				numgltextures = previous_numgltextures - 1;
+			  }
+			}
+		*/
+
 		int gltindex = glt - gltextures_get();
 		if ((*numgltextures) - gltindex - 1 > 0)
 		{
 			memmove(
-				glt - 1,
 				glt,
+				glt + 1,
 				sizeof(gltexture_t) * ((*numgltextures) - gltindex - 1));
 		}
-		(*numgltextures) --;
+		(*numgltextures)--;
 	}
+#endif
+}
+
+void GL_FreeTextureEntry(gltexture_t *glt)
+{
+	if (glt->texnum <= 0)
+	{
+		gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: Bogus texture entry [%s] texid[%d] ?\n", glt->identifier, glt->texnum);
+		return;
+	}
+
+	gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: [%s] texid[%d], server[%d].\n", glt->identifier, glt->texnum, (int)glt->servercount);
+
+	GL_FreeTextureEntryInternal(glt);
 }
 
 void GL_GenFrameBuffer(FBO_Container_t *s)

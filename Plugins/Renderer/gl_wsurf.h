@@ -366,8 +366,13 @@ extern cl_entity_t *g_OITBlendObjects[512];
 extern int g_iNumOITBlendObjects;
 
 void R_InitWSurf(void);
-void R_NewMapWSurf_Pre();
-void R_NewMapWSurf_Post();
+void R_FreeWorldResources(void);
+void R_LoadWorldResources(void);
+void R_FreeUnreferencedWorldSurfaceModels(void);
+void R_FreeWorldSurfaceModels(model_t* mod);
+void R_FreeWorldSurfaceWorldModels(model_t* mod);
+void R_ClearWorldSurfaceModels(void);
+void R_ClearWorldSurfaceWorldModels(void);
 
 //engine
 extern byte *lightmaps;
@@ -427,7 +432,6 @@ void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfP
 void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState);
 void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_ShutdownWSurf(void);
-void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
