@@ -1,0 +1,64 @@
+{
+    "classname" "studio_bone"
+    "name" "Bip01"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Pelvis"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Spine"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 Spine1"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 L Thigh"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 L Calf"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 L Foot"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 L Toe0"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 R Thigh"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 R Calf"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 R Foot"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "name" "Bip01 R Toe0"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "-14 0 0"
+}
