@@ -319,7 +319,7 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{
-				if (0 == memcmp(address + instCount, "\x85\xC0", 2))
+				if (0 == memcmp(address + instLen, "\x85\xC0", 2))
 				{
 					ctx->Candidate[ctx->CandidateCount] = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					ctx->CandidateCount++;
