@@ -1269,7 +1269,7 @@ void R_AddTEntity(cl_entity_t *ent)
 
 entity_state_t *R_GetPlayerState(int index)
 {
-	if (!(index >= 0 && index <= 31))
+	if (!(index >= 0 && index <= MAX_CLIENTS))
 	{
 		Sys_Error("R_GetPlayerState: Invalid index %d !", index);
 		return nullptr;
