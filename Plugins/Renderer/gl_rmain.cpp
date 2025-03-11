@@ -2591,6 +2591,7 @@ void R_NewMap(void)
 
 	gPrivateFuncs.R_NewMap();
 
+	R_LoadWorldResources();
 	R_LoadLightResources();
 
 	R_StudioFlushAllSkins();

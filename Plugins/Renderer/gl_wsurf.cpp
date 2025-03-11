@@ -2303,23 +2303,6 @@ void R_FreeWorldResources(void)
 	R_ClearWorldSurfaceWorldModels();
 }
 
-void R_FreeUnreferencedWorldSurfaceModels(void)
-{
-	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
-
-		if (mod->type == mod_brush)
-		{
-			if (mod->needload == NL_UNREFERENCED)
-			{
-				R_FreeWorldSurfaceModels(mod);
-				R_FreeWorldSurfaceWorldModels(mod);
-			}
-		}
-	}
-}
-
 void R_LoadWorldResources(void)
 {
 	R_LoadMapDetailTextures();

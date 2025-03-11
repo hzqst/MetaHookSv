@@ -160,7 +160,12 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 	{
 		int index = R_GetClientEntityIndex(ent);
 
-		if (index >= 0)
+		if (index == 0)
+		{
+			//worldaround
+			ent = r_worldentity;
+		}
+		else if (index > 0)
 		{
 			if ((int)g_ClientEntityRenderComponents.size() < index + 1)
 			{
