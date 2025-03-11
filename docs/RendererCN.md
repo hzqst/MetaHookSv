@@ -119,6 +119,8 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `r_light_dynamic` 设为1启用 延迟着色渲染管线 和 动态灯光
 
+`r_flashlight_enable` 用于启用基于探照灯的手电。 (只在 `r_light_dynamic` 为1时可用)
+
 `r_flashlight_cone` 控制手电筒圆锥光束的圆锥夹角cosine值，越接近1则夹角越小，越接近0则夹角越大
 
 `r_flashlight_distance` 控制手电筒的最大照明距离
