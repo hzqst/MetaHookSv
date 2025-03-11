@@ -17,6 +17,8 @@ extern std::vector<light_dynamic_t> g_DynamicLights;
 
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
+
+extern MapConVar* r_flashlight_enable;
 extern MapConVar *r_flashlight_ambient;
 extern MapConVar *r_flashlight_diffuse;
 extern MapConVar *r_flashlight_specular;

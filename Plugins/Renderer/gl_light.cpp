@@ -5,6 +5,7 @@
 cvar_t *r_light_dynamic = NULL;
 cvar_t *r_light_debug = NULL;
 
+MapConVar* r_flashlight_enable = NULL;
 MapConVar *r_flashlight_ambient = NULL;
 MapConVar *r_flashlight_diffuse = NULL;
 MapConVar *r_flashlight_specular = NULL;
@@ -292,6 +293,7 @@ void R_InitLight(void)
 	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_radius_scale = R_RegisterMapCvar("r_dynlight_radius_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	r_flashlight_enable = R_RegisterMapCvar("r_flashlight_enable", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -465,12 +467,23 @@ cl_entity_t *R_GetDLightBindingEntity(dlight_t* dl)
 
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
+	if (!r_flashlight_enable || r_flashlight_enable->GetValue() < 1)
+		return false;
+
 	if (dl->key >= 1 && dl->key <= gEngfuncs.GetMaxClients())
 	{
 		auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 		if (ent && ent->player)
 			return true;
+	}
+
+	if (g_bIsAoMDC)
+	{
+		if (dl->key == 0 && dl->decay == 100 && dl->radius == 110 && dl->minlight == 0 && dl->color.r == 48 && dl->color.g == 48 && dl->color.b == 48)
+		{
+			dl->key = gEngfuncs.GetLocalPlayer()->index;
+		}
 	}
 
 	return false;

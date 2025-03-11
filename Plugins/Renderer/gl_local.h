@@ -618,6 +618,7 @@ extern int r_renderview_pass;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
+extern bool g_bIsAoMDC;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
 

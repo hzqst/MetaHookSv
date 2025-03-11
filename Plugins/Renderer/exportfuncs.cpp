@@ -16,6 +16,7 @@ void *g_pGameStudioRenderer = NULL;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
+bool g_bIsAoMDC = false;
 
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
@@ -1972,6 +1973,11 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		if(!spec_pip)
 			spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
+	}
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "aomdc"))
+	{
+		g_bIsAoMDC = true;
 	}
 
 	return result;

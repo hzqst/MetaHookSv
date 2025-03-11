@@ -12003,6 +12003,11 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 		Client_FillAddress_PlayerExtraInfo(DllInfo, RealDllInfo);
 	}
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "aomdc"))
+	{
+		g_bIsAoMDC = true;
+	}
 }
 
 void Client_InstallHooks()

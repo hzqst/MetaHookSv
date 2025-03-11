@@ -4312,22 +4312,7 @@ HMEMORYMODULE MH_LoadMirrorDLL_Std(const char* szFileName)
 			if (cbReadBytes == cbFileSize)
 			{
 				ULONG ImageSize = 0;
-				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
-			
-				if (hMemoryModuleHandle)
-				{
-					auto pNtHeader = RtlImageNtHeader(hMemoryModuleHandle);
-
-					if (pNtHeader)
-					{
-						if (!(pNtHeader->OptionalHeader.DllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE))
-						{
-							//Relocation not supported ?
-							MH_FreeMirrorDLL(hMemoryModuleHandle);
-							hMemoryModuleHandle = nullptr;
-						}
-					}
-				}
+				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION | LOAD_FLAGS_FORCE_RELOCATION);
 			}
 
 			free(pFileBuffer);
@@ -4359,22 +4344,7 @@ HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char * szFileName)
 			if (cbReadBytes == cbFileSize)
 			{
 				ULONG ImageSize = 0;
-				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION);
-
-				if (hMemoryModuleHandle)
-				{
-					auto pNtHeader = RtlImageNtHeader(hMemoryModuleHandle);
-
-					if (pNtHeader)
-					{
-						if (!(pNtHeader->OptionalHeader.DllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE))
-						{
-							//Relocation not supported ?
-							MH_FreeMirrorDLL(hMemoryModuleHandle);
-							hMemoryModuleHandle = nullptr;
-						}
-					}
-				}
+				hMemoryModuleHandle = LoadLibraryMemoryExW(pFileBuffer, cbFileSize, &ImageSize, NULL, NULL, LOAD_FLAGS_NOT_MAP_DLL | LOAD_FLAGS_NO_RESOLVE_IMPORTS | LOAD_FLAGS_NOT_HANDLE_TLS | LOAD_FLAGS_NO_EXECUTE | LOAD_FLAGS_READ_ONLY | IMAGE_DLLCHARACTERISTICS_NO_SEH | LOAD_FLAGS_NO_DISCARD_SECTION | LOAD_FLAGS_FORCE_RELOCATION);
 			}
 
 			free(pFileBuffer);

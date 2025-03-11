@@ -3726,7 +3726,7 @@ void R_StudioEndFrame(void)
 {
 	for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
 	{
-		auto state = R_GetPlayerState(i);
+		auto state = R_GetPlayerState(i + 1);
 
 		if (state->messagenum != (*cl_parsecount))
 			continue;

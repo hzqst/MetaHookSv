@@ -3927,6 +3927,7 @@ void R_EmitFlashlights()
 	if (gEngfuncs.GetMaxClients() <= 1)
 	{
 		//Do nothing for singleplayer
+
 		return;
 	}
 
@@ -3948,7 +3949,7 @@ void R_EmitFlashlights()
 
 		for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
 		{
-			auto state = R_GetPlayerState(i);
+			auto state = R_GetPlayerState(i + 1);
 
 			if (state->messagenum != (*cl_parsecount))
 				continue;
