@@ -55,6 +55,8 @@ NTSTATUS NTAPI LdrQuerySystemMemoryModuleFeatures(_Out_ PDWORD pFeatures);
 
 #define LOAD_FLAGS_NO_DISCARD_SECTION				0x00000100
 
+#define LOAD_FLAGS_FORCE_RELOCATION					0x00000200
+
 NTSTATUS NTAPI LdrLoadDllMemoryExW(
 	_Out_ HMEMORYMODULE* BaseAddress,		// Output module base address
 	_Out_ DWORD* OutImageSize,					// Output module base address

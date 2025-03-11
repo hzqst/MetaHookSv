@@ -120,7 +120,7 @@ NTSTATUS NTAPI LdrLoadDllMemoryExW(
 		}
 	}
 
-	status = MemoryLoadLibrary(BaseAddress, OutImageSize, BufferAddress, (DWORD)BufferSize);
+	status = MemoryLoadLibrary(BaseAddress, OutImageSize, BufferAddress, (DWORD)BufferSize, dwFlags);
 
 	if (!NT_SUCCESS(status) || status == STATUS_IMAGE_MACHINE_TYPE_MISMATCH)
 		return status;

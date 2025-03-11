@@ -69,7 +69,8 @@ extern "C" {
 		_Out_ HMEMORYMODULE* MemoryModuleHandle,
 		_Out_ ULONG* ImageSize,
 		_In_ LPCVOID data,
-		_In_ DWORD size
+		_In_ DWORD size,
+		_In_ DWORD dwFlags
 	);
 
 	NTSTATUS MemoryResolveImportTable(

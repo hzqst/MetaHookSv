@@ -243,7 +243,8 @@ NTSTATUS MemoryLoadLibrary(
 	_Out_ HMEMORYMODULE* MemoryModuleHandle,
 	_Out_opt_ DWORD* OutImageSize,
 	_In_ LPCVOID data,
-	_In_ DWORD size) {
+	_In_ DWORD size,
+	_In_ DWORD dwFlags) {
 
 	PIMAGE_DOS_HEADER dos_header = nullptr;
 	PIMAGE_NT_HEADERS old_header = nullptr;
@@ -413,79 +414,90 @@ NTSTATUS MemoryLoadLibrary(
 
 		__try {
 
-			//Can be rebased ?
-			if ((old_header->OptionalHeader.DllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) == IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) {
 
-				auto locationDelta = new_header->OptionalHeader.ImageBase - old_header->OptionalHeader.ImageBase;
-				if (locationDelta) {
-					typedef struct _REBASE_INFO {
-						USHORT Offset : 12;
-						USHORT Type : 4;
-					}REBASE_INFO, * PREBASE_INFO;
-					typedef struct _IMAGE_BASE_RELOCATION_HEADER {
-						DWORD VirtualAddress;
-						DWORD SizeOfBlock;
-						REBASE_INFO TypeOffset[ANYSIZE_ARRAY];
+			typedef struct _REBASE_INFO {
+				USHORT Offset : 12;
+				USHORT Type : 4;
+			}REBASE_INFO, * PREBASE_INFO;
+			typedef struct _IMAGE_BASE_RELOCATION_HEADER {
+				DWORD VirtualAddress;
+				DWORD SizeOfBlock;
+				REBASE_INFO TypeOffset[ANYSIZE_ARRAY];
 
-						DWORD TypeOffsetCount()const {
-							return (this->SizeOfBlock - 8) / sizeof(_REBASE_INFO);
+				DWORD TypeOffsetCount()const {
+					return (this->SizeOfBlock - 8) / sizeof(_REBASE_INFO);
+				}
+			}IMAGE_BASE_RELOCATION_HEADER, * PIMAGE_BASE_RELOCATION_HEADER;
+
+			if (((old_header->OptionalHeader.DllCharacteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) == IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) ||
+				(dwFlags & LOAD_FLAGS_FORCE_RELOCATION)) {
+				//Can be rebased ?
+
+				PIMAGE_DATA_DIRECTORY dir = GET_HEADER_DICTIONARY(new_header, IMAGE_DIRECTORY_ENTRY_BASERELOC);
+				
+				if(dir)
+				{
+					auto locationDelta = new_header->OptionalHeader.ImageBase - old_header->OptionalHeader.ImageBase;
+					if (locationDelta != 0) {
+
+						if (dir->VirtualAddress > old_header->OptionalHeader.SizeOfImage)
+						{
+							status = STATUS_INVALID_IMAGE_FORMAT;
+							break;
 						}
-					}IMAGE_BASE_RELOCATION_HEADER, * PIMAGE_BASE_RELOCATION_HEADER;
 
-					PIMAGE_DATA_DIRECTORY dir = GET_HEADER_DICTIONARY(new_header, IMAGE_DIRECTORY_ENTRY_BASERELOC);
+						if (dir->Size && dir->VirtualAddress) {
 
-					if (dir->VirtualAddress > old_header->OptionalHeader.SizeOfImage)
-					{
-						status = STATUS_INVALID_IMAGE_FORMAT;
-						break;
-					}
+							PIMAGE_BASE_RELOCATION_HEADER relocation = (PIMAGE_BASE_RELOCATION_HEADER)(LPBYTE(base) + dir->VirtualAddress);
+							DWORD maxSize = dir->Size;
 
-					if (dir->Size && dir->VirtualAddress) {
+							while (relocation->VirtualAddress && relocation->SizeOfBlock && maxSize) {
 
-						PIMAGE_BASE_RELOCATION_HEADER relocation = (PIMAGE_BASE_RELOCATION_HEADER)(LPBYTE(base) + dir->VirtualAddress);
-						DWORD maxSize = dir->Size;
-
-						while (relocation->VirtualAddress && relocation->SizeOfBlock && maxSize) {
-
-							if (relocation->VirtualAddress > old_header->OptionalHeader.SizeOfImage)
-							{
-								status = STATUS_INVALID_IMAGE_FORMAT;
-								break;
-							}
-
-							auto relInfo = (_REBASE_INFO*)&relocation->TypeOffset;
-							for (DWORD i = 0; i < relocation->TypeOffsetCount(); ++i, ++relInfo) {
-
-								if (relocation->VirtualAddress + relInfo->Offset > old_header->OptionalHeader.SizeOfImage)
+								if (relocation->VirtualAddress > old_header->OptionalHeader.SizeOfImage)
 								{
 									status = STATUS_INVALID_IMAGE_FORMAT;
 									break;
 								}
 
-								switch (relInfo->Type) {
-								case IMAGE_REL_BASED_HIGHLOW: *(DWORD*)(base + relocation->VirtualAddress + relInfo->Offset) += (DWORD)locationDelta; break;
-	#ifdef _WIN64
-								case IMAGE_REL_BASED_DIR64: *(ULONGLONG*)(base + relocation->VirtualAddress + relInfo->Offset) += (ULONGLONG)locationDelta; break;
-	#endif
-								case IMAGE_REL_BASED_ABSOLUTE:
-								default: break;
+								auto relInfo = (_REBASE_INFO*)&relocation->TypeOffset;
+								for (DWORD i = 0; i < relocation->TypeOffsetCount(); ++i, ++relInfo) {
+
+									if (relocation->VirtualAddress + relInfo->Offset > old_header->OptionalHeader.SizeOfImage)
+									{
+										status = STATUS_INVALID_IMAGE_FORMAT;
+										break;
+									}
+
+									switch (relInfo->Type) {
+									case IMAGE_REL_BASED_HIGHLOW: *(DWORD*)(base + relocation->VirtualAddress + relInfo->Offset) += (DWORD)locationDelta; break;
+#ifdef _WIN64
+									case IMAGE_REL_BASED_DIR64: *(ULONGLONG*)(base + relocation->VirtualAddress + relInfo->Offset) += (ULONGLONG)locationDelta; break;
+#endif
+									case IMAGE_REL_BASED_ABSOLUTE:
+									default: break;
+									}
 								}
-							}
 
-							// advance to next relocation block
-							//relocation->VirtualAddress += module->headers_align;
+								// advance to next relocation block
+								//relocation->VirtualAddress += module->headers_align;
 
-							if (maxSize > relocation->SizeOfBlock)
-							{
-								maxSize -= relocation->SizeOfBlock;
-								relocation = decltype(relocation)(OffsetPointer(relocation, relocation->SizeOfBlock));
-							}
-							else
-							{
-								break;
+								if (maxSize > relocation->SizeOfBlock)
+								{
+									maxSize -= relocation->SizeOfBlock;
+									relocation = decltype(relocation)(OffsetPointer(relocation, relocation->SizeOfBlock));
+								}
+								else
+								{
+									break;
+								}
 							}
 						}
 					}
+				}
+				else
+				{
+					//missing reloc directory?
+					status = STATUS_INVALID_IMAGE_FORMAT;
 				}
 			}
 
