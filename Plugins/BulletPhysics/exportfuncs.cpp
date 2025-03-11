@@ -138,6 +138,12 @@ bool AllowCheats()
 
 entity_state_t *R_GetPlayerState(int entindex)
 {
+	if (!(entindex >= 0 && entindex <= MAX_CLIENTS))
+	{
+		Sys_Error("R_GetPlayerState: Invalid index %d !", entindex);
+		return nullptr;
+	}
+
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * entindex));
 }
 
