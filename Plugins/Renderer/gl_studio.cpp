@@ -1885,7 +1885,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-	if (R_IsRenderingLowerBody())
+	if (R_IsRenderingClippedLowerBody())
 	{
 		auto pbones = (mstudiobone_t*)((byte*)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
@@ -2142,7 +2142,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
 	}
 
-	if (R_IsRenderingLowerBody())
+	if (R_IsRenderingClippedLowerBody())
 	{
 		StudioProgramState |= STUDIO_CLIP_BONE_ENABLED;
 	}
@@ -2985,7 +2985,7 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 		flSavedModelScale = (*pScale);
 
-		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+		auto model = IEngineStudio.SetupPlayerModel(playerindex);
 
 		if (g_bIsCounterStrike)
 		{

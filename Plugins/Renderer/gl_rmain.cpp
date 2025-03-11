@@ -416,6 +416,11 @@ bool R_IsRenderingPortal(void)
 
 bool R_IsRenderingLowerBody(void)
 {
+	return (*currententity) == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody;
+}
+
+bool R_IsRenderingClippedLowerBody(void)
+{
 	return (*currententity) == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
 }
 
@@ -2026,7 +2031,7 @@ void R_PreRenderView()
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0.3, 1);
+	glDepthRange(0, 1);
 }
 
 void R_PostRenderView()
@@ -2197,7 +2202,7 @@ void R_DrawViewModel(void)
 	}
 	}
 
-	glDepthRange(0.3, 1);
+	glDepthRange(0, 1);
 
 	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -4068,7 +4073,7 @@ void R_CreateLowerBodyModel()
 		return;
 
 	//TODO: move to studio renderer
-	auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+	auto model = IEngineStudio.SetupPlayerModel(playerindex);
 
 	if (!model)
 		return;

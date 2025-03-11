@@ -125,14 +125,11 @@ int HUD_Redraw(float time, int intermission)
 				if (g_WaterReflectCaches[1].refractmap)
 					R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
 				break;
-				//case 3:
-				//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
-				//	break;
 			default:
 				break;
 			}
 		}
-		else if (r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth_stencil)
+		else if (r_shadow_debug && r_shadow_debug->value > 0 && current_shadow_texture && current_shadow_texture->depth_stencil)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
