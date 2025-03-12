@@ -3969,14 +3969,16 @@ void R_DrawWorld(void)
 
 	R_BeginRenderGBuffer();
 
+	// 1:1 copy from R_DrawWorld, but with hw.dll!r_worldentity instead of stack entity.
+
 	VectorCopy((*r_refdef.vieworg), modelorg);
+
+	(*currententity) = r_worldentity;
+	(*currenttexture) = -1;
 
 	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
-
-	(*currententity) = r_worldentity;
-	(*currenttexture) = -1;
 
 	GL_DisableMultitexture();
 

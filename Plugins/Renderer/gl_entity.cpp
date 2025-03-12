@@ -156,16 +156,16 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 {
 	CEntityComponentContainer* pContainer = NULL;
 
+	if (ent == r_worldentity)
+	{
+		ent = gEngfuncs.GetEntityByIndex(0);
+	}
+
 	if (!pContainer)
 	{
 		int index = R_GetClientEntityIndex(ent);
 
-		if (index == 0)
-		{
-			//worldaround
-			ent = r_worldentity;
-		}
-		else if (index > 0)
+		if (index > 0)
 		{
 			if ((int)g_ClientEntityRenderComponents.size() < index + 1)
 			{

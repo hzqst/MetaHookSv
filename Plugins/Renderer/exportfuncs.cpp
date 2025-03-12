@@ -1913,7 +1913,7 @@ void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 	ClientStudio_FillAddress_StudioDrawModel(ppinterface, g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	ClientStudio_FillAddress_EngineStudioDrawPlayer(ppinterface, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
-	if(!g_pGameStudioRenderer && !gPrivateFuncs.R_StudioRenderModel)
+	if (!g_pGameStudioRenderer && !gPrivateFuncs.R_StudioRenderModel)
 	{
 		Sys_Error("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}

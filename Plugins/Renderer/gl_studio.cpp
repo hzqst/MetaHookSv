@@ -27,10 +27,8 @@ static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
 class CEnginePlayerInfoStorage
 {
 public:
-	struct player_info_s SavedPlayerInfo {};
-	struct player_info_s ChangedPlayerInfo {};
+	struct player_info_s SavedPlayerInfo{};
 	bool Filled{};
-	int FilledWithRenderFlags{ };
 };
 
 static CEnginePlayerInfoStorage g_PlayerInfoStorage[MAX_CLIENTS]{};
@@ -2952,7 +2950,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 	StudioRenderModel_Template(gPrivateFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
-void CopyPlayerInfoStudioRenderData(player_info_t* src, player_info_t* dst)
+void CopyPlayerInfoStudioRenderData(const player_info_t* src, player_info_t* dst)
 {
 	dst->renderframe = src->renderframe;
 	dst->gaitsequence = src->gaitsequence;
@@ -2972,92 +2970,96 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 {
 	int playerindex = pplayer->number - 1;
 
-	auto pPlayerInfo = IEngineStudio.PlayerInfo(playerindex);
-
-	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
-	{
-		//g_PlayerInfoStorage[playerindex].SavedPlayerInfo = (*pPlayerInfo);
-		CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].SavedPlayerInfo);
-	}
-
 	int result = 0;
 
-	if (R_IsRenderingLowerBody())
+	if (playerindex >= 0 && playerindex < gEngfuncs.GetMaxClients() && playerindex < MAX_CLIENTS)
 	{
-		//Sniber NMSL
-		vec3_t vecSavedModelOrigin = {0};
-		float flSavedModelScale = 0;
-		int iSavedViewEntityIndex_SCClient = 0;
+		auto pPlayerInfo = IEngineStudio.PlayerInfo(playerindex);
 
-		float* pScale = &(*currententity)->curstate.scale;
-		float* pModelPos = (*currententity)->origin;
-		VectorCopy(pModelPos, vecSavedModelOrigin);
-
-		flSavedModelScale = (*pScale);
-
-		auto model = IEngineStudio.SetupPlayerModel(playerindex);
-
-		if (g_bIsCounterStrike)
+		if (g_PlayerInfoStorage[playerindex].Filled)
 		{
-			//Counter-Strike redirects playermodel in a pretty tricky way
-			int modelindex = 0;
-			model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+			CopyPlayerInfoStudioRenderData(&g_PlayerInfoStorage[playerindex].SavedPlayerInfo, pPlayerInfo);
 		}
 
-		if (model)
+		CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].SavedPlayerInfo);
+		g_PlayerInfoStorage[playerindex].Filled = true;
+
+		if (R_IsRenderingLowerBody())
 		{
-			auto pRenderData = R_GetStudioRenderDataFromModel(model);
+			//Sniber NMSL
+			vec3_t vecSavedModelOrigin = { 0 };
+			float flSavedModelScale = 0;
+			int iSavedViewEntityIndex_SCClient = 0;
 
-			if (pRenderData)
+			float* pScale = &(*currententity)->curstate.scale;
+			float* pModelPos = (*currententity)->origin;
+			VectorCopy(pModelPos, vecSavedModelOrigin);
+
+			flSavedModelScale = (*pScale);
+
+			auto model = IEngineStudio.SetupPlayerModel(playerindex);
+
+			if (g_bIsCounterStrike)
 			{
-				vec3_t viewangles, forward, right, up;
-				gEngfuncs.GetViewAngles(viewangles);
-				viewangles[0] = 0;
-				AngleVectors(viewangles, forward, right, up);
+				//Counter-Strike redirects playermodel in a pretty tricky way
+				int modelindex = 0;
+				model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
+			}
 
-				float model_scale = pRenderData->LowerBodyControl.model_scale.GetValue();
-				if (model_scale > 0)
-				{
-					(*pScale) = model_scale;
-				}
+			if (model)
+			{
+				auto pRenderData = R_GetStudioRenderDataFromModel(model);
 
-				vec3_t model_origin = { 0 };
-				if (pRenderData->LowerBodyControl.model_origin.GetValues(model_origin))
+				if (pRenderData)
 				{
-					VectorMA(pModelPos, model_origin[0], forward, pModelPos);
-					VectorMA(pModelPos, model_origin[1], right, pModelPos);
-					VectorMA(pModelPos, model_origin[2], up, pModelPos);
+					vec3_t viewangles, forward, right, up;
+					gEngfuncs.GetViewAngles(viewangles);
+					viewangles[0] = 0;
+					AngleVectors(viewangles, forward, right, up);
+
+					float model_scale = pRenderData->LowerBodyControl.model_scale.GetValue();
+
+					if (model_scale > 0)
+					{
+						(*pScale) = model_scale;
+					}
+
+					vec3_t model_origin = { 0 };
+
+					if (pRenderData->LowerBodyControl.model_origin.GetValues(model_origin))
+					{
+						VectorMA(pModelPos, model_origin[0], forward, pModelPos);
+						VectorMA(pModelPos, model_origin[1], right, pModelPos);
+						VectorMA(pModelPos, model_origin[2], up, pModelPos);
+					}
 				}
 			}
-		}
 
-		if (g_ViewEntityIndex_SCClient)
+			if (g_ViewEntityIndex_SCClient)
+			{
+				iSavedViewEntityIndex_SCClient = (*g_ViewEntityIndex_SCClient);
+				(*g_ViewEntityIndex_SCClient) = 0;
+			}
+
+			result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
+
+			if (g_ViewEntityIndex_SCClient)
+			{
+				(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex_SCClient;
+			}
+
+			VectorCopy(vecSavedModelOrigin, pModelPos);
+			(*pScale) = flSavedModelScale;
+		}
+		else
 		{
-			iSavedViewEntityIndex_SCClient = (*g_ViewEntityIndex_SCClient);
-			(*g_ViewEntityIndex_SCClient) = 0;
+			result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
 		}
-
-		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
-
-		if (g_ViewEntityIndex_SCClient)
-		{
-			(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex_SCClient;
-		}
-
-		VectorCopy(vecSavedModelOrigin, pModelPos);
-		(*pScale) = flSavedModelScale;
-	}
-	else
-	{
-		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
-	}
-
-	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
-	{
+#if 0
 		if (!g_PlayerInfoStorage[playerindex].Filled)
 		{
-			CopyPlayerInfoStudioRenderData(pPlayerInfo , &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
-			//g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+			CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
+
 			g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
 			g_PlayerInfoStorage[playerindex].Filled = true;
 		}
@@ -3065,19 +3067,22 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		{
 			if ((g_PlayerInfoStorage[playerindex].FilledWithRenderFlags & STUDIO_RENDER) && !(flags & STUDIO_RENDER))
 			{
-				
+
 			}
 			else
 			{
-			//	g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
 				CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
+
 				g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
 				g_PlayerInfoStorage[playerindex].Filled = true;
 			}
 		}
 
-		//(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].SavedPlayerInfo;
-		CopyPlayerInfoStudioRenderData(&g_PlayerInfoStorage[playerindex].SavedPlayerInfo, pPlayerInfo);
+#endif
+	}
+	else
+	{
+		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
 	}
 
 	return result;
@@ -3728,7 +3733,6 @@ void R_StudioStartFrame(void)
 		auto playerindex = i;
 
 		g_PlayerInfoStorage[playerindex].Filled = false;
-		g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = 0;
 	}
 
 	R_StudioClearAllBoneCaches();
@@ -3736,65 +3740,11 @@ void R_StudioStartFrame(void)
 
 void R_StudioEndFrame(void)
 {
-	for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
-	{
-		auto state = R_GetPlayerState(i + 1);
 
-		if (state->messagenum != (*cl_parsecount))
-			continue;
-
-		if (!state->modelindex || (state->effects & EF_NODRAW))
-			continue;
-
-		auto entindex = state->number;
-		auto ent = gEngfuncs.GetEntityByIndex(entindex);
-
-		if (!ent)
-			continue;
-
-		auto playerindex = entindex - 1;
-
-		//Commit the playerinfo
-		if (g_PlayerInfoStorage[playerindex].Filled)
-		{
-			auto pPlayerInfo = IEngineStudio.PlayerInfo(playerindex);
-
-			(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].ChangedPlayerInfo;
-		}
-	}
 }
 
 void UpdatePlayerPitch(cl_entity_t *ent, float a2)
 {
 	//Sniber NMSL
-#if 1
 	return;
-#else
-	if (R_IsRenderingLowerBody())
-	{
-		float pitch; // xmm1_4
-
-		pitch = a2;
-		if (a2 <= 180.0)
-		{
-			if (a2 < -180.0)
-				pitch = a2 + 360.0;
-		}
-		else
-		{
-			pitch = a2 - 360.0;
-		}
-
-		pitch /= -3.0f;
-
-		ent->angles[0] = 30;
-		ent->curstate.angles[0] = 30;
-		ent->latched.prevangles[0] = 30;
-		ent->prevstate.angles[0] = 30;
-		return;
-	}
-
-#endif
-
-	return gPrivateFuncs.UpdatePlayerPitch(ent, a2);
 }

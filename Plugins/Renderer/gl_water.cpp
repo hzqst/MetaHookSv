@@ -890,7 +890,7 @@ void R_RenderWaterPass(void)
 		{
 			auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
-			g_VisibleWaterEntity.emplace_back(r_worldentity);
+			g_VisibleWaterEntity.emplace_back(gEngfuncs.GetEntityByIndex(0));
 			g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
 		}
 	}
