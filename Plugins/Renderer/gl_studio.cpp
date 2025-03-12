@@ -2952,6 +2952,15 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 	StudioRenderModel_Template(gPrivateFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
+void CopyPlayerInfoStudioRenderData(player_info_t* src, player_info_t* dst)
+{
+	dst->renderframe = src->renderframe;
+	dst->gaitsequence = src->gaitsequence;
+	dst->gaitframe = src->gaitframe;
+	dst->gaityaw = src->gaityaw;
+	VectorCopy(src->prevgaitorigin, dst->prevgaitorigin);
+}
+
 /*
 
 	Purpose : StudioDrawPlayer hook handler
@@ -2967,7 +2976,8 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
 	{
-		g_PlayerInfoStorage[playerindex].SavedPlayerInfo = (*pPlayerInfo);
+		//g_PlayerInfoStorage[playerindex].SavedPlayerInfo = (*pPlayerInfo);
+		CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].SavedPlayerInfo);
 	}
 
 	int result = 0;
@@ -3042,12 +3052,12 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
 	}
 
-
 	if (playerindex >= 0 && playerindex < MAX_CLIENTS)
 	{
 		if (!g_PlayerInfoStorage[playerindex].Filled)
 		{
-			g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+			CopyPlayerInfoStudioRenderData(pPlayerInfo , &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
+			//g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
 			g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
 			g_PlayerInfoStorage[playerindex].Filled = true;
 		}
@@ -3059,13 +3069,15 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 			}
 			else
 			{
-				g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+			//	g_PlayerInfoStorage[playerindex].ChangedPlayerInfo = (*pPlayerInfo);
+				CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
 				g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
 				g_PlayerInfoStorage[playerindex].Filled = true;
 			}
 		}
 
-		(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].SavedPlayerInfo;
+		//(*pPlayerInfo) = g_PlayerInfoStorage[playerindex].SavedPlayerInfo;
+		CopyPlayerInfoStudioRenderData(&g_PlayerInfoStorage[playerindex].SavedPlayerInfo, pPlayerInfo);
 	}
 
 	return result;
