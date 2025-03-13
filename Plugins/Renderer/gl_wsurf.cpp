@@ -54,6 +54,10 @@ CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 			delete vDrawBatch[k][l];
 		}
 	}
+	for (auto pWaterSurfaceModel : vWaterSurfaceModels)
+	{
+		delete pWaterSurfaceModel;
+	}
 }
 
 CWorldSurfaceWorldModel::~CWorldSurfaceWorldModel()
@@ -701,7 +705,7 @@ void R_GenerateWaterModels(model_t *mod, CWorldSurfaceWorldModel *pWorldModel, C
 {
 	for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
 	{
-		auto &pWaterModel = pLeaf->vWaterSurfaceModels[i];
+		auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
 		if (pWaterModel->vIndicesBuffer)
 		{
