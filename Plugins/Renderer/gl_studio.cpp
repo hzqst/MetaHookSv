@@ -12,7 +12,7 @@ static std::vector<CStudioModelRenderData*> g_StudioRenderDataCache;
 
 static std::unordered_map<int, CStudioSkinCache*> g_StudioSkinCache;
 
-static std::unordered_map<studio_bone_handle, CStudioBoneCache*, studio_bone_hasher> g_StudioBoneCacheManager;
+static std::unordered_map<CStudioBoneCacheHandle, CStudioBoneCache*, CStudioBoneCacheHasher> g_StudioBoneCacheManager;
 
 static std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
@@ -179,6 +179,12 @@ void R_StudioClearVanillaBonesCaches()
 	//TODO: draw a null model with no bone and no bodypart ?
 }
 
+void R_FreeStudioBoneCache(CStudioBoneCache* pTemp)
+{
+	pTemp->m_next = g_pStudioBoneFreeCaches;
+	g_pStudioBoneFreeCaches = pTemp;
+}
+
 void R_StudioClearAllBoneCaches()
 {
 	for (int i = 0; i < MAX_STUDIO_BONE_CACHES - 1; i++)
@@ -191,11 +197,11 @@ void R_StudioClearAllBoneCaches()
 	g_StudioBoneCacheManager.clear();
 }
 
-CStudioBoneCache* R_StudioBoneCacheAlloc()
+CStudioBoneCache* R_AllocStudioBoneCache()
 {
 	if (!g_pStudioBoneFreeCaches)
 	{
-		gEngfuncs.Con_DPrintf("Studio bone caches overflow!\n");
+		gEngfuncs.Con_DPrintf("R_AllocStudioBoneCache: Studio bone caches overflow!\n");
 		return NULL;
 	}
 
@@ -207,13 +213,7 @@ CStudioBoneCache* R_StudioBoneCacheAlloc()
 	return pTemp;
 }
 
-void R_StudioBoneCacheFree(CStudioBoneCache* pTemp)
-{
-	pTemp->m_next = g_pStudioBoneFreeCaches;
-	g_pStudioBoneFreeCaches = pTemp;
-}
-
-void R_PrepareStudioVBOSubmodel(
+void R_PrepareStudioRenderSubmodel(
 	studiohdr_t* studiohdr, mstudiomodel_t* submodel,
 	std::vector<CStudioModelRenderVertex>& vVertex,
 	std::vector<unsigned int>& vIndices,
@@ -435,7 +435,7 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 
 				auto pRenderSubmodel = new CStudioModelRenderSubModel;
 
-				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, pRenderSubmodel);
+				R_PrepareStudioRenderSubmodel(studiohdr, submodel, vVertex, vIndices, pRenderSubmodel);
 
 				pRenderData->vSubmodels.emplace_back(pRenderSubmodel);
 
@@ -3119,7 +3119,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 		return;
 	}
 
-	studio_bone_handle handle(
+	CStudioBoneCacheHandle handle(
 		(*pstudiohdr)->soundtable,
 		(*currententity)->curstate.sequence,
 		(*currententity)->curstate.gaitsequence,
@@ -3157,11 +3157,11 @@ __forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis =
 
 	pfnSaveBones(pthis, dummy);
 
-	auto cache = R_StudioBoneCacheAlloc();
+	auto cache = R_AllocStudioBoneCache();
 
 	if (cache)
 	{
-		studio_bone_handle handle(
+		CStudioBoneCacheHandle handle(
 			(*pstudiohdr)->soundtable,
 			(*currententity)->curstate.sequence,
 			(*currententity)->curstate.gaitsequence,
@@ -3192,7 +3192,7 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 		return;
 	}
 
-	studio_bone_handle handle(
+	CStudioBoneCacheHandle handle(
 		(*pstudiohdr)->soundtable,
 		(*currententity)->curstate.sequence,
 		(*currententity)->curstate.gaitsequence,

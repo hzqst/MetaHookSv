@@ -1594,7 +1594,8 @@ void ClientStudio_InstallHooks()
 	{
 		Install_InlineHook(GameStudioRenderer_StudioDrawModel);
 	}
-	/*
+
+/*
 	Engine studio implementation
 */
 

@@ -178,45 +178,18 @@ public:
 	CStudioLowerBodyControl LowerBodyControl;
 };
 
-#if 0
-class studio_skin_handle
-{
-public:
-	bool operator == (const studio_skin_handle& a) const
-	{
-		return m_keynum == a.m_keynum && m_index == a.m_index;
-	}
-
-	int m_keynum{};
-	int m_index{};
-};
-
-class studio_skin_hasher
-{
-public:
-	std::size_t operator()(const studio_skin_handle& key) const
-	{
-		auto base = (std::size_t)(key.m_keynum << 8);
-
-		base += ((std::size_t)key.m_index);
-
-		return base;
-	}
-};
-#endif
-
 class CStudioSkinCache
 {
 public:
 	skin_t skins[MAX_SKINS];
 };
 
-class studio_bone_handle
+class CStudioBoneCacheHandle
 {
 public:
-	studio_bone_handle(int vboindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
+	CStudioBoneCacheHandle(int modelindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
 	{
-		m_vboindex = vboindex;
+		m_modelindex = modelindex;
 		m_sequence = sequence;
 		m_gaitsequence = gaitsequence;
 		m_frame = frame;
@@ -224,10 +197,10 @@ public:
 		VectorCopy(angles, m_angles);
 	}
 
-	bool operator == (const studio_bone_handle& a) const
+	bool operator == (const CStudioBoneCacheHandle& a) const
 	{
 		return
-			m_vboindex == a.m_vboindex &&
+			m_modelindex == a.m_modelindex &&
 			m_sequence == a.m_sequence &&
 			m_gaitsequence == a.m_gaitsequence &&
 			m_frame == a.m_frame &&
@@ -235,7 +208,7 @@ public:
 			VectorCompare(m_angles, a.m_angles);
 	}
 
-	int m_vboindex;
+	int m_modelindex;
 	int m_sequence;
 	int m_gaitsequence;
 	float m_frame;
@@ -243,12 +216,12 @@ public:
 	vec3_t m_angles;
 };
 
-class studio_bone_hasher
+class CStudioBoneCacheHasher
 {
 public:
-	std::size_t operator()(const studio_bone_handle& key) const
+	std::size_t operator()(const CStudioBoneCacheHandle& key) const
 	{
-		auto base = (std::size_t)(key.m_vboindex << 24);
+		auto base = (std::size_t)(key.m_modelindex << 24);
 
 		base += ((std::size_t)key.m_sequence << 16);
 		base += ((std::size_t)key.m_gaitsequence << 8);

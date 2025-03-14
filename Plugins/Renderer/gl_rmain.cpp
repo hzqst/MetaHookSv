@@ -3499,7 +3499,7 @@ int EngineGetMaxClientModels(void)
 //const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
 //const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
 
-void R_LoadSky_PreCall(const char* name)
+void R_FreeSkyboxTextures()
 {
 	for (int i = 0; i < 12; ++i)
 	{
@@ -3578,7 +3578,7 @@ bool R_LoadDetailSkyTextures(const char* name)
 	return true;
 }
 
-void R_LoadSky_PostCall(const char *name)
+void R_LoadSkyInternal(const char *name)
 {
 	if (R_LoadLegacySkyTextures(name))
 	{
@@ -3598,16 +3598,16 @@ void R_LoadSky_PostCall(const char *name)
 
 void R_LoadSkyBox_SvEngine(const char *name)
 {
-	R_LoadSky_PreCall(name);
+	R_FreeSkyboxTextures();
 
-	R_LoadSky_PostCall(name);
+	R_LoadSkyInternal(name);
 }
 
 void R_LoadSkys(void)
 {
-	R_LoadSky_PreCall(pmovevars->skyName);
+	R_FreeSkyboxTextures();
 
-	R_LoadSky_PostCall(pmovevars->skyName);
+	R_LoadSkyInternal(pmovevars->skyName);
 }
 
 #if 0

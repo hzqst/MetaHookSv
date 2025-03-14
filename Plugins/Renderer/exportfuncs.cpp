@@ -1929,7 +1929,7 @@ void ClientStudio_InstallHooks()
 	Install_InlineHook(GameStudioRenderer_StudioMergeBones);
 
 	//TODO
-	//Install_InlineHook(R_StudioDrawPlayer);
+	Install_InlineHook(R_StudioDrawPlayer);
 	Install_InlineHook(R_StudioRenderModel);
 	Install_InlineHook(R_StudioRenderFinal);
 	Install_InlineHook(R_StudioSetupBones);
