@@ -1741,10 +1741,15 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto EngineStudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
+	auto EngineStudioDrawModelThunk = (PUCHAR)(*ppinterface)->StudioDrawModel;
 
 	if (EngineStudioDrawPlayerThunk)
 	{
 		EngineStudioDrawPlayerThunk = (decltype(EngineStudioDrawPlayerThunk))ConvertDllInfoSpace(EngineStudioDrawPlayerThunk, RealDllInfo, DllInfo);
+	}
+	if (EngineStudioDrawModelThunk)
+	{
+		EngineStudioDrawModelThunk = (decltype(EngineStudioDrawModelThunk))ConvertDllInfoSpace(EngineStudioDrawModelThunk, RealDllInfo, DllInfo);
 	}
 
 	if (EngineStudioDrawPlayerThunk)
@@ -1755,9 +1760,20 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 			EngineStudioDrawPlayerThunk = (PUCHAR)GetCallAddress(EngineStudioDrawPlayerThunk);
 		}
 	}
-
-	if (EngineStudioDrawPlayerThunk)
+	if (EngineStudioDrawModelThunk)
 	{
+		//There is a E9 jmp in Debug build and we need to skip it.
+		if (EngineStudioDrawModelThunk[0] == 0xE9)
+		{
+			EngineStudioDrawModelThunk = (PUCHAR)GetCallAddress(EngineStudioDrawModelThunk);
+		}
+	}
+
+	if (EngineStudioDrawPlayerThunk && EngineStudioDrawModelThunk)
+	{
+		gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))ConvertDllInfoSpace(EngineStudioDrawPlayerThunk, DllInfo, RealDllInfo);
+		gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))ConvertDllInfoSpace(EngineStudioDrawModelThunk, DllInfo, RealDllInfo);
+
 		{
 			/*
 .text:01D8A906 50                                                  push    eax
@@ -1787,7 +1803,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 			R_StudioRenderModel_SearchContext ctx = { DllInfo, RealDllInfo };
 
 			g_pMetaHookAPI->DisasmRanges(R_StudioRenderModel_VA, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-				
+
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (R_StudioRenderModel_SearchContext*)context;
 
@@ -1807,7 +1823,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 					return TRUE;
 
 				return FALSE;
-			}, 0, &ctx);
+				}, 0, &ctx);
 
 			Sig_FuncNotFound(R_StudioRenderFinal);
 		}
@@ -1856,7 +1872,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 
 		{
 			char pattern[] = "\x83\xB8\x08\x03\x00\x00\x0C";
-			auto addr = Search_Pattern(pattern, DllInfo);
+			auto addr = Search_Pattern_From_Size(EngineStudioDrawModelThunk, 0x250, pattern);
 			Sig_AddrNotFound(R_StudioMergeBones);
 
 			typedef struct R_StudioMergeBones_SearchContext_s
@@ -1899,7 +1915,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 					return TRUE;
 
 				return FALSE;
-			}, 0, &ctx);
+				}, 0, &ctx);
 
 			Sig_FuncNotFound(R_StudioSaveBones);
 			Sig_FuncNotFound(R_StudioMergeBones);
@@ -1921,20 +1937,55 @@ void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 
 void ClientStudio_InstallHooks()
 {
-	Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
-	Install_InlineHook(GameStudioRenderer_StudioRenderModel);
-	Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
-	Install_InlineHook(GameStudioRenderer_StudioSetupBones);
-	Install_InlineHook(GameStudioRenderer_StudioSaveBones);
-	Install_InlineHook(GameStudioRenderer_StudioMergeBones);
+	if (gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
+	}
+	if (gPrivateFuncs.GameStudioRenderer_StudioRenderModel)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
+	}
+	if (gPrivateFuncs.GameStudioRenderer_StudioRenderFinal)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
+	}
+	if (gPrivateFuncs.GameStudioRenderer_StudioSetupBones)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+	}
+	if (gPrivateFuncs.GameStudioRenderer_StudioSaveBones)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioSaveBones);
+	}
+	if (gPrivateFuncs.GameStudioRenderer_StudioMergeBones)
+	{
+		Install_InlineHook(GameStudioRenderer_StudioMergeBones);
+	}
 
-	//TODO
-	Install_InlineHook(R_StudioDrawPlayer);
-	Install_InlineHook(R_StudioRenderModel);
-	Install_InlineHook(R_StudioRenderFinal);
-	Install_InlineHook(R_StudioSetupBones);
-	Install_InlineHook(R_StudioSaveBones);
-	Install_InlineHook(R_StudioMergeBones);
+	if (gPrivateFuncs.R_StudioDrawPlayer)
+	{
+		Install_InlineHook(R_StudioDrawPlayer);
+	}
+	if (gPrivateFuncs.R_StudioRenderModel)
+	{
+		Install_InlineHook(R_StudioRenderModel);
+	}
+	if (gPrivateFuncs.R_StudioRenderFinal)
+	{
+		Install_InlineHook(R_StudioRenderFinal);
+	}
+	if (gPrivateFuncs.R_StudioSetupBones)
+	{
+		Install_InlineHook(R_StudioSetupBones);
+	}
+	if (gPrivateFuncs.R_StudioSaveBones)
+	{
+		Install_InlineHook(R_StudioSaveBones);
+	}
+	if (gPrivateFuncs.R_StudioMergeBones)
+	{
+		Install_InlineHook(R_StudioMergeBones);
+	}
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)

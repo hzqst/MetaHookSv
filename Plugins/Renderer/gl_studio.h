@@ -374,6 +374,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioSaveBones(void* pthis, int);
 void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *pSubModel);
 
+int R_StudioDrawPlayer(int flags, struct entity_state_s* pplayer);
 void R_StudioRenderModel(void);
 void R_StudioRenderFinal(void);
 void R_StudioSetupBones(void);

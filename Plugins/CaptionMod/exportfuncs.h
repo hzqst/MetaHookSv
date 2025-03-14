@@ -53,8 +53,6 @@ int pfnServerCmdUnreliable(const char* szCmdString);
 
 unsigned long GetVoiceBanMask();
 
-LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 //int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 
 void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);

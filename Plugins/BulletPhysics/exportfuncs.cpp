@@ -1396,10 +1396,15 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s** ppinterface, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto EngineStudioDrawPlayerThunk = (PUCHAR)(*ppinterface)->StudioDrawPlayer;
+	auto EngineStudioDrawModelThunk = (PUCHAR)(*ppinterface)->StudioDrawModel;
 
 	if (EngineStudioDrawPlayerThunk)
 	{
 		EngineStudioDrawPlayerThunk = (decltype(EngineStudioDrawPlayerThunk))ConvertDllInfoSpace(EngineStudioDrawPlayerThunk, RealDllInfo, DllInfo);
+	}
+	if (EngineStudioDrawModelThunk)
+	{
+		EngineStudioDrawModelThunk = (decltype(EngineStudioDrawModelThunk))ConvertDllInfoSpace(EngineStudioDrawModelThunk, RealDllInfo, DllInfo);
 	}
 
 	if (EngineStudioDrawPlayerThunk)
@@ -1410,9 +1415,20 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 			EngineStudioDrawPlayerThunk = (PUCHAR)GetCallAddress(EngineStudioDrawPlayerThunk);
 		}
 	}
-
-	if (EngineStudioDrawPlayerThunk)
+	if (EngineStudioDrawModelThunk)
 	{
+		//There is a E9 jmp in Debug build and we need to skip it.
+		if (EngineStudioDrawModelThunk[0] == 0xE9)
+		{
+			EngineStudioDrawModelThunk = (PUCHAR)GetCallAddress(EngineStudioDrawModelThunk);
+		}
+	}
+
+	if (EngineStudioDrawPlayerThunk && EngineStudioDrawModelThunk)
+	{
+		gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))ConvertDllInfoSpace(EngineStudioDrawPlayerThunk, DllInfo, RealDllInfo);
+		gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))ConvertDllInfoSpace(EngineStudioDrawModelThunk, DllInfo, RealDllInfo);
+
 		{
 			/*
 .text:01D8A906 50                                                  push    eax
@@ -1511,7 +1527,7 @@ void ClientStudio_FillAddress_EngineStudioDrawPlayer(struct r_studio_interface_s
 
 		{
 			char pattern[] = "\x83\xB8\x08\x03\x00\x00\x0C";
-			auto addr = Search_Pattern(pattern, DllInfo);
+			auto addr = Search_Pattern_From_Size(EngineStudioDrawModelThunk, 0x250, pattern);
 			Sig_AddrNotFound(R_StudioMergeBones);
 
 			typedef struct R_StudioMergeBones_SearchContext_s

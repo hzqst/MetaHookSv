@@ -287,7 +287,7 @@ void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const 
 			auto S_StartDynamicSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_StartDynamicSound_PushString)
 			{
-				gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartDynamicSound_PushString, 0x300, [](PUCHAR Candidate) {
+				PVOID S_StartDynamicSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartDynamicSound_PushString, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -304,6 +304,8 @@ void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const 
 
 					return FALSE;
 					});
+
+				gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
@@ -354,7 +356,7 @@ void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const m
 			auto S_StartStaticSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_StartStaticSound_PushString)
 			{
-				gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartStaticSound_PushString, 0x300, [](PUCHAR Candidate) {
+				PVOID S_StartStaticSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartStaticSound_PushString, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -370,7 +372,8 @@ void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const m
 					}
 
 					return FALSE;
-					});
+				});
+				gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
@@ -421,7 +424,7 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 			auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_LoadSound_PushString)
 			{
-				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
+				PVOID S_LoadSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -447,6 +450,7 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 
 					return FALSE;
 					});
+				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
 			}
 		}
 
@@ -1001,7 +1005,6 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_CL_ViewEntityVars(DllInfo, RealDllInfo);
 	Engine_FillAddress_ListenerOrigin(DllInfo, RealDllInfo);
 	Engine_FillAddress_VOX_LookupString(DllInfo, RealDllInfo);
-
 }
 
 void Client_FillAddress_SCClient_SoundEngine_PlayFMODSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
