@@ -14,11 +14,11 @@ CSCModelDownloaderDialog::CSCModelDownloaderDialog(vgui::Panel* parent, const ch
 	m_pTaskListPage = new CTaskListPage(this, "TaskListPage");
 	m_pTaskListPage->MakeReadyForUse();
 
-	SetMinimumSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
-	SetSize(vgui::scheme()->GetProportionalScaledValue(640), vgui::scheme()->GetProportionalScaledValue(384));
+	SetMinimumSize(640, 384);
+	SetSize(640, 384);
 
 	m_pTabPanel = new vgui::PropertySheet(this, "Tabs");
-	m_pTabPanel->SetTabWidth(vgui::scheme()->GetProportionalScaledValue(72));
+	m_pTabPanel->SetTabWidth(72);
 	m_pTabPanel->AddPage(m_pTaskListPage, "#GameUI_SCModelDownloader_TaskListPage");
 
 	m_pTabPanel->AddActionSignalTarget(this);

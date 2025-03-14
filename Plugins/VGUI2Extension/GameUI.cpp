@@ -3074,9 +3074,9 @@ void GameUI_PatchAddress_RichText_InsertChar(const mh_dll_info_t& DllInfo, const
 void GameUI_FillAddress_ConsoleEntry(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char sigs1[] = "ConsoleEntry\0";
-	auto ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
+	auto ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
 	if (!ConsoleEntry_String)
-		ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
+		ConsoleEntry_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
 	Sig_VarNotFound(ConsoleEntry_String);
 
 	char pattern[] = "\x68\x2A\x2A\x2A\x2A";
