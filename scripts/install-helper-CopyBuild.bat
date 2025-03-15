@@ -28,29 +28,19 @@ if "%LauncherMod%"=="svencoop" (
 
 ) else (
 
-    if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
-
         mkdir "%GameDir%\%LauncherMod%_hidpi\"
         xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
 
-    ) else (
-
-        mkdir "%GameDir%\%LauncherMod%_hidpi\"
-        xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
-
-    )
 
 	if "%LauncherMod%"=="cstrike" (
 
-		if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
+		if exist "%GameDir%\cstrike_hd" (
 
-			xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%_hd\" /y /e
-
-		) else (
-
-			xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%\" /y /e
+			xcopy "%SolutionDir%Build\%LauncherMod%_hd" "%GameDir%\%LauncherMod%_hd\" /y /e
 
 		)
+
+		xcopy "%SolutionDir%Build\cstrike" "%GameDir%\%LauncherMod%\" /y /e
 	)
 
 	if "%LauncherMod%"=="czero" (

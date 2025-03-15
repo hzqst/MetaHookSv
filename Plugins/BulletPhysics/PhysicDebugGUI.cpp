@@ -23,7 +23,7 @@ CPhysicDebugGUI::CPhysicDebugGUI(vgui::Panel* parent) : Frame(parent, "PhysicDeb
 	SetProportional(true);
 	SetTitleBarVisible(false);
 
-	SetScheme2("ClientScheme");
+	SetScheme2("BaseUI");
 	SetMouseInputEnabled(true);
 	SetKeyBoardInputEnabled(true);
 
