@@ -91,7 +91,7 @@ void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorA
 	if (bUseColorArrayAsDepth)
 	{
 		vec4_t borderColor = { -99999, -99999, -99999, 1};
-		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
+		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, true, borderColor);
 	}
 }
 

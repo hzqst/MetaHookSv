@@ -51,6 +51,8 @@ jobs:
         run: |
           mkdir "Build-Output\Build"
           xcopy "Build" "Build-Output\Build" /y /e
+          if exist "Build-Output\Build\svencoop\metahook\dlls\.placeholder" del "Build-Output\Build\svencoop\metahook\dlls\.placeholder"
+          if exist "Build-Output\Build\svencoop\metahook\plugins\.placeholder" del "Build-Output\Build\svencoop\metahook\plugins\.placeholder"
         shell: cmd
         
       - name: Copy SteamAppsLocation to Build-Output

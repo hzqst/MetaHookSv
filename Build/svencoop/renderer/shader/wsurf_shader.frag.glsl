@@ -221,7 +221,7 @@ float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
 {
 	vec4 newcoord = coord + vec4(off.x * SHADOW_TEXTURE_OFFSET, off.y * SHADOW_TEXTURE_OFFSET, 0.0, 0.0);
 
-	float depth0 = texture(shadowmapTexArray, vec3(newcoord.xy / newcoord.w, layer) ).a;
+	float depth0 = textureLod(shadowmapTexArray, vec3(newcoord.xy / newcoord.w, layer), 0 ).a;
 
 	float depth1 = newcoord.z / newcoord.w;
 
@@ -230,7 +230,7 @@ float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
 
 vec3 ShadowGetWorldPosition(vec4 coord, float layer)
 {
-	return texture(shadowmapTexArray, vec3(coord.xy / coord.w, layer) ).xyz;
+	return textureLod(shadowmapTexArray, vec3(coord.xy / coord.w, layer), 0 ).xyz;
 }
 
 float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float shadow_high, float shadow_medium, float shadow_low)
@@ -280,10 +280,10 @@ float CalcShadowIntensity(vec3 worldpos, vec3 norm, vec3 lightdir)
 		#ifdef SHADOWMAP_MEDIUM_ENABLED
 			shadow_medium = 0.0;
 			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.035,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(-0.035,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.035), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,-0.035), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.35,0.0), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(-0.35,0.0), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.35), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,-0.35), 1.0);
 			shadow_medium *= 0.2;
 		#endif
 
@@ -292,10 +292,10 @@ float CalcShadowIntensity(vec3 worldpos, vec3 norm, vec3 lightdir)
 		#ifdef SHADOWMAP_LOW_ENABLED
 			shadow_low = 0.0;
 			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.035,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(-0.035,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.035), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,-0.035), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.35,0.0), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(-0.35,0.0), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.35), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,-0.35), 2.0);
 			shadow_low *= 0.2;
 		#endif
 

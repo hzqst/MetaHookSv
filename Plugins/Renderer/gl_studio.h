@@ -54,7 +54,7 @@ typedef struct
 class CStudioModelRenderVertex
 {
 public:
-	CStudioModelRenderVertex(float *a, float *b, float s, float t, int d, int e)
+	CStudioModelRenderVertex(const float *a, const float *b, float s, float t, int d, int e)
 	{
 		memcpy(pos, a, sizeof(vec3_t));
 		memcpy(normal, b, sizeof(vec3_t));
@@ -187,7 +187,7 @@ public:
 class CStudioBoneCacheHandle
 {
 public:
-	CStudioBoneCacheHandle(int modelindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
+	CStudioBoneCacheHandle(int modelindex, int sequence, int gaitsequence, float frame, const float *origin, const float* angles)
 	{
 		m_modelindex = modelindex;
 		m_sequence = sequence;
@@ -343,8 +343,10 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData * pRenderData);
 void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
-void R_StudioFreeAllUnreferencedRenderData(void);
-void R_StudioReloadAllRenderData(void);
+void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
+bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
+void R_FreeAllUnreferencedStudioRenderData(void);
+void R_StudioReloadAllStudioRenderData(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);

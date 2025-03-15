@@ -2597,7 +2597,7 @@ void R_NewMap(void)
 	R_StudioFlushAllSkins();
 
 	//Free GPU resources...
-	R_StudioFreeAllUnreferencedRenderData();
+	R_FreeAllUnreferencedStudioRenderData();
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;

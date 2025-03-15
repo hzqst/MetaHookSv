@@ -179,10 +179,10 @@ void R_StudioClearVanillaBonesCaches()
 	//TODO: draw a null model with no bone and no bodypart ?
 }
 
-void R_FreeStudioBoneCache(CStudioBoneCache* pTemp)
+void R_FreeStudioBoneCache(CStudioBoneCache* pStudioBoneCache)
 {
-	pTemp->m_next = g_pStudioBoneFreeCaches;
-	g_pStudioBoneFreeCaches = pTemp;
+	pStudioBoneCache->m_next = g_pStudioBoneFreeCaches;
+	g_pStudioBoneFreeCaches = pStudioBoneCache;
 }
 
 void R_StudioClearAllBoneCaches()
@@ -205,12 +205,55 @@ CStudioBoneCache* R_AllocStudioBoneCache()
 		return NULL;
 	}
 
-	auto pTemp = g_pStudioBoneFreeCaches;
-	g_pStudioBoneFreeCaches = pTemp->m_next;
+	auto pStudioBoneCache = g_pStudioBoneFreeCaches;
+	g_pStudioBoneFreeCaches = pStudioBoneCache->m_next;
 
-	pTemp->m_next = NULL;
+	pStudioBoneCache->m_next = NULL;
 
-	return pTemp;
+	return pStudioBoneCache;
+}
+
+void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles)
+{
+	auto cache = R_AllocStudioBoneCache();
+
+	if (cache)
+	{
+		CStudioBoneCacheHandle handle(
+			modelindex,
+			sequence,
+			gaitsequence,
+			frame,
+			origin,
+			angles);
+
+		memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
+		memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
+
+		g_StudioBoneCacheManager[handle] = cache;
+	}
+}
+
+bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles)
+{
+	CStudioBoneCacheHandle handle(
+		modelindex,
+		sequence,
+		gaitsequence,
+		frame,
+		origin,
+		angles);
+
+	const auto& itor = g_StudioBoneCacheManager.find(handle);
+
+	if (itor != g_StudioBoneCacheManager.end())
+	{
+		memcpy((*pbonetransform), itor->second->m_bonetransform, sizeof(itor->second->m_bonetransform));
+		memcpy((*plighttransform), itor->second->m_lighttransform, sizeof(itor->second->m_lighttransform));
+		return true;
+	}
+
+	return false;
 }
 
 void R_PrepareStudioRenderSubmodel(
@@ -219,8 +262,8 @@ void R_PrepareStudioRenderSubmodel(
 	std::vector<unsigned int>& vIndices,
 	CStudioModelRenderSubModel* vboSubmodel)
 {
-	auto pstudioverts = (vec3_t*)((byte*)studiohdr + submodel->vertindex);
-	auto pstudionorms = (vec3_t*)((byte*)studiohdr + submodel->normindex);
+	auto pstudioverts = (const vec3_t*)((byte*)studiohdr + submodel->vertindex);
+	auto pstudionorms = (const vec3_t*)((byte*)studiohdr + submodel->normindex);
 	auto pvertbone = ((byte*)studiohdr + submodel->vertinfoindex);
 	auto pnormbone = ((byte*)studiohdr + submodel->norminfoindex);
 
@@ -521,7 +564,7 @@ void R_FreeStudioRenderData(CStudioModelRenderData *pRenderData)
 	gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
 }
 
-void R_StudioFreeAllUnreferencedRenderData(void)
+void R_FreeAllUnreferencedStudioRenderData(void)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -542,7 +585,19 @@ void R_StudioFreeAllUnreferencedRenderData(void)
 	}
 }
 
-void R_StudioReloadAllRenderData(void)
+void R_FreeAllStudioRenderData(void)
+{
+	for (size_t i = 0; i < g_StudioRenderDataCache.size(); ++i)
+	{
+		if (g_StudioRenderDataCache[i])
+		{
+			delete g_StudioRenderDataCache[i];
+			g_StudioRenderDataCache[i] = nullptr;
+		}
+	}
+}
+
+void R_StudioReloadAllStudioRenderData(void)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -1173,7 +1228,7 @@ void R_ShutdownStudio(void)
 	g_StudioProgramTable.clear();
 
 	R_StudioFlushAllSkins();
-	R_StudioFreeAllUnreferencedRenderData();
+	R_FreeAllStudioRenderData();
 
 	if (g_hStudioUBO)
 	{
