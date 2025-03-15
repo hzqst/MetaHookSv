@@ -81,6 +81,7 @@
 #define R_SETUPFRAME_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
 #define R_SETUPFRAME_SIG_BLOB2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x18\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
 #define R_SETUPFRAME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x18\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
+#define R_SETUPFRAME_SIG_NEW2 R_SETUPFRAME_SIG_BLOB2
 #define R_SETUPFRAME_SIG_HL25 ""     //inlined
 #define R_SETUPFRAME_SIG_SVENGINE "" //inlined
 
@@ -1318,11 +1319,15 @@ void Engine_FillAddress_R_SetupFrame(const mh_dll_info_t& DllInfo, const mh_dll_
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		R_SetupFrame_VA = Search_Pattern(R_SETUPFRAME_SIG_NEW, DllInfo);
+		if (!R_SetupFrame_VA)
+			R_SetupFrame_VA = Search_Pattern(R_SETUPFRAME_SIG_NEW2, DllInfo);
 		gPrivateFuncs.R_SetupFrame = (decltype(gPrivateFuncs.R_SetupFrame))ConvertDllInfoSpace(R_SetupFrame_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		R_SetupFrame_VA = Search_Pattern(R_SETUPFRAME_SIG_BLOB, DllInfo);
+		if(!R_SetupFrame_VA)
+			R_SetupFrame_VA = Search_Pattern(R_SETUPFRAME_SIG_BLOB2, DllInfo);
 		gPrivateFuncs.R_SetupFrame = (decltype(gPrivateFuncs.R_SetupFrame))ConvertDllInfoSpace(R_SetupFrame_VA, DllInfo, RealDllInfo);
 	}
 
@@ -8126,13 +8131,15 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 				Candidate[4] == 0xEC)
 				return TRUE;
 
+			//.text:01D5AC7C 83 EC 6C                                            sub     esp, 6Ch
+			//.text:01D5AC7F A1 D8 33 38 02                                      mov     eax, dword_23833D8
 			if (Candidate[0] == 0x83 &&
 				Candidate[1] == 0xEC &&
 				Candidate[3] == 0xA1)
 				return TRUE;
 
 			return FALSE;
-			});
+		});
 
 		if (g_bHasOfficialGLTexAllocSupport)
 		{
@@ -8224,7 +8231,11 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))ConvertDllInfoSpace(R_LoadSkys_VA, DllInfo, RealDllInfo);
 		Sig_FuncNotFound(R_LoadSkys);
 	}
-	Sig_VarNotFound(gSkyTexNumber);
+
+	if (g_bHasOfficialGLTexAllocSupport)
+	{
+		Sig_VarNotFound(gSkyTexNumber);
+	}
 
 	/*
   //Global pointers that link into engine vars.
@@ -11094,8 +11105,10 @@ void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const
 	if (g_bHasOfficialGLTexAllocSupport)
 		return;
 
+	auto allocated_textures_VA = ConvertDllInfoSpace(allocated_textures, RealDllInfo, DllInfo);
+
 	const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
-	*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures;
+	*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures_VA;
 
 	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
 	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
@@ -11122,6 +11135,12 @@ void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize &&
+
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
 				{
@@ -11158,10 +11177,10 @@ void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const
 
 			if (ctx.bFoundWriteBack || ctx.bFoundGL_Bind)
 			{
-				auto pFound_RealDllBase = ConvertDllInfoSpace(pFound, ctx.DllInfo, ctx.RealDllInfo);
+				auto pFound_RealDllBase = (PUCHAR)ConvertDllInfoSpace(pFound, ctx.DllInfo, ctx.RealDllInfo);
 
 				char redirectCode[] = "\xE8\x2A\x2A\x2A\x2A";
-				*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound + 5);
+				*(int*)(redirectCode + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound_RealDllBase + 5);
 				g_pMetaHookAPI->WriteMemory(pFound_RealDllBase, redirectCode, sizeof(redirectCode) - 1);
 			}
 
