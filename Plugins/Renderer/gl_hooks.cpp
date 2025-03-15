@@ -782,6 +782,9 @@ void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		GL_SelectTexture_VA = Search_Pattern(GL_SELECTTEXTURE_SIG_NEW, DllInfo);
+		if(!GL_SelectTexture_VA)
+			GL_SelectTexture_VA = Search_Pattern(GL_SELECTTEXTURE_SIG_NEW2, DllInfo);
+
 		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))ConvertDllInfoSpace((PVOID)GL_SelectTexture_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
