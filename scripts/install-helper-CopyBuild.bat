@@ -1,10 +1,7 @@
 @echo off
 
-if exist "%SolutionDir%Build\MetaHook.exe" ( 
-    copy "%SolutionDir%Build\MetaHook.exe" "%GameDir%\%LauncherExe%" /y
-) else (
-    if exist "%SolutionDir%Build\MetaHook_blob.exe" copy "%SolutionDir%Build\MetaHook_blob.exe" "%GameDir%\%LauncherExe%" /y
-)
+if exist "%SolutionDir%Build\MetaHook.exe" copy "%SolutionDir%Build\MetaHook.exe" "%GameDir%\%LauncherExe%" /y
+if exist "%SolutionDir%Build\MetaHook_blob.exe" copy "%SolutionDir%Build\MetaHook_blob.exe" "%GameDir%\%LauncherExe%" /y
 
 mkdir "%GameDir%\%LauncherMod%\"
 xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
