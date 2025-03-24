@@ -762,9 +762,6 @@
     <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl">
       <Filter>GLSL</Filter>
     </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\depthclear.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
     <None Include="..\..\Build\svencoop\renderer\shader\depthlinearize.frag.glsl">
       <Filter>GLSL</Filter>
     </None>
@@ -820,21 +817,6 @@
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawcolormask.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.vert.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl">

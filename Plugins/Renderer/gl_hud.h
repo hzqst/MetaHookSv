@@ -84,11 +84,6 @@ typedef struct
 typedef struct
 {
 	int program;
-}depth_clear_program_t;
-
-typedef struct
-{
-	int program;
 }oitbuffer_clear_program_t;
 
 typedef struct
@@ -157,7 +152,6 @@ extern cvar_t *r_fxaa;
 
 extern int last_luminance;
 
-extern SHADER_DEFINE(depth_clear);
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 

@@ -51,7 +51,7 @@ transObjRef **transObjects = NULL;
 mleaf_t **r_viewleaf = NULL;
 mleaf_t **r_oldviewleaf = NULL;
 
-GLint r_viewport[4] = {0};
+float r_viewport[4] = {0};
 
 vec_t *vup = NULL;
 vec_t *vpn = NULL;
@@ -3231,7 +3231,7 @@ void R_SetupFog(void)
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];
 
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, cl_time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
 
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, r_fog_mode);

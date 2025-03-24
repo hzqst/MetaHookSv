@@ -3791,10 +3791,10 @@ void R_SetupSceneUBO(void)
 	SceneUBO.viewport[1] = glheight;
 	SceneUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
 	SceneUBO.viewport[3] = 0;
-	memcpy(SceneUBO.frustumpos[0], r_frustum_origin[0], sizeof(vec3_t));
-	memcpy(SceneUBO.frustumpos[1], r_frustum_origin[1], sizeof(vec3_t));
-	memcpy(SceneUBO.frustumpos[2], r_frustum_origin[2], sizeof(vec3_t));
-	memcpy(SceneUBO.frustumpos[3], r_frustum_origin[3], sizeof(vec3_t));
+	memcpy(SceneUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
+	memcpy(SceneUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
+	memcpy(SceneUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
+	memcpy(SceneUBO.frustum[3], r_frustum_origin[3], sizeof(vec3_t));
 	memcpy(SceneUBO.viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
 	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
@@ -3831,7 +3831,7 @@ void R_SetupSceneUBO(void)
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];
-	SceneUBO.time = (*cl_time);
+	SceneUBO.cl_time = (*cl_time);
 
 	float r_g = 1.0f / v_gamma->value;
 
@@ -3852,7 +3852,7 @@ void R_SetupSceneUBO(void)
 	SceneUBO.v_texgamma = v_texgamma->value;
 	SceneUBO.z_near = r_znear;
 	SceneUBO.z_far = r_zfar;
-	SceneUBO.alphamin = gl_alphamin->value;
+	SceneUBO.r_alphamin = gl_alphamin->value;
 	SceneUBO.r_additive_shift = r_additive_shift->value;
 
 	if (gl_overbright->value)

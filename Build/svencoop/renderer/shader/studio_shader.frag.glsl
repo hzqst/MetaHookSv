@@ -555,7 +555,7 @@ vec3 R_GenerateSimplifiedNormal()
 
 vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 {
-#if defined(NORMALTEXTURE_ENABLED) | defined(PACKED_NORMALTEXTURE_ENABLED)
+#if defined(NORMALTEXTURE_ENABLED) || defined(PACKED_NORMALTEXTURE_ENABLED)
 
 	mat3 TBN = GenerateTBNMatrix();
 	vec3 vNormal = NormalMapping(TBN, v_texcoord);
@@ -596,7 +596,7 @@ vec4 SampleDiffuseTexture(vec2 baseTexcoord)
 {
 	#if defined(ANIMATED_TEXTURE_ENABLED)
 
-		float layer = mod(floor(SceneUBO.time * r_framerate_numframes.x), r_framerate_numframes.y);
+		float layer = mod(floor(SceneUBO.cl_time * r_framerate_numframes.x), r_framerate_numframes.y);
 
 		vec4 diffuseColor = texture(animatedTexArray, vec3(baseTexcoord.x, baseTexcoord.y, layer ));
 

@@ -380,7 +380,7 @@ void main()
 
 	#if defined(ALPHA_SOLID_ENABLED)
 		
-		if(diffuseColor.a <= SceneUBO.alphamin)
+		if(diffuseColor.a <= SceneUBO.r_alphamin)
 			discard;
 
 	#endif

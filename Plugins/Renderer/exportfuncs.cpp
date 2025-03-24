@@ -2009,7 +2009,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
-	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
+	cl_sprite_shell = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
 

@@ -330,7 +330,7 @@ extern skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS];
 extern int* r_remapindex;
 #endif
 extern model_t *cl_sprite_white;
-extern model_t *cl_shellchrome;
+extern model_t *cl_sprite_shell;
 
 //renderer
 extern int r_studio_drawcall;

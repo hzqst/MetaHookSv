@@ -85,10 +85,10 @@ void main() {
 
     vec4 screenColor = texture2D(screenTex, texCoord);
 
-    uint x = uint(gl_FragCoord.x);
-    uint y = uint(gl_FragCoord.y);
-    uint viewportW = SceneUBO.viewport.x;
-    uint pixelIndex = viewportW*y + x;
+    float x = gl_FragCoord.x;
+    float y = gl_FragCoord.y;
+    float viewportW = SceneUBO.viewport.x;
+    uint pixelIndex = uint(viewportW*y + x);
 
     // Get start offset from array
     uint fragOffset = numFragments[pixelIndex];

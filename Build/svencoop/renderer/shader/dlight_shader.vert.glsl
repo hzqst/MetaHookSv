@@ -8,10 +8,6 @@ layout(location = 0) in vec3 in_vertex;
 
 uniform mat4 u_modelmatrix;
 
-#else
-
-
-
 #endif
 
 out vec3 v_fragpos;
@@ -40,7 +36,7 @@ void main(void)
 
 	gl_Position = vec4(vertices[idx], 0, 1);
 
-	v_fragpos = SceneUBO.frustumpos[idx].xyz;
+	v_fragpos = SceneUBO.frustum[idx].xyz;
 
 	v_projpos = gl_Position;
 

@@ -593,7 +593,7 @@ void R_CreateLowerBodyModel();
 
 //void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
-extern GLint r_viewport[4];
+extern float r_viewport[4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 

@@ -36,7 +36,7 @@ static CEnginePlayerInfoStorage g_PlayerInfoStorage[MAX_CLIENTS]{};
 //Engine private vars
 
 model_t* cl_sprite_white = NULL;
-model_t* cl_shellchrome = NULL;
+model_t* cl_sprite_shell = NULL;
 mstudiomodel_t** psubmodel = NULL;
 mstudiobodyparts_t** pbodypart = NULL;
 studiohdr_t** pstudiohdr = NULL;
@@ -2221,7 +2221,7 @@ void R_StudioDrawMesh_DrawPass(
 
 		if (StudioProgramState & STUDIO_GLOW_SHELL_ENABLED)
 		{
-			gEngfuncs.pTriAPI->SpriteTexture(cl_shellchrome, 0);
+			gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_shell, 0);
 		}
 		else
 		{

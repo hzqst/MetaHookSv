@@ -128,8 +128,8 @@ struct scene_ubo_t{
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	uvec4 viewport;
-	vec4 frustumpos[4];
+	vec4 viewport;
+	vec4 frustum[4];
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
@@ -142,7 +142,7 @@ struct scene_ubo_t{
 	float fogStart;
 	float fogEnd;
 	float fogDensity;
-	float time;
+	float cl_time;
 	float r_g;
 	float r_g3;
 	float v_brightness;
@@ -152,7 +152,7 @@ struct scene_ubo_t{
 	float v_texgamma;
 	float z_near;
 	float z_far;
-	float alphamin;
+	float r_alphamin;
 	float r_additive_shift;
 	float r_lightscale;
 	vec4 r_filtercolor;
@@ -267,12 +267,12 @@ layout(binding = BINDING_POINT_OIT_COUNTER_SSBO, offset = 0) uniform atomic_uint
 
 	void GatherFragment(inout vec4 color)
 	{
-		uint x = uint(gl_FragCoord.x);
-		uint y = uint(gl_FragCoord.y);
-		uint viewportW = SceneUBO.viewport.x;
-		uint linkedListSize = SceneUBO.viewport.z;
+		float x = gl_FragCoord.x;
+		float y = gl_FragCoord.y;
+		float viewportW = SceneUBO.viewport.x;
+		uint linkedListSize = uint(SceneUBO.viewport.z);
 
-		uint pixelIndex = viewportW*y + x;
+		uint pixelIndex = uint(viewportW*y + x);
 
 		FragmentNode frag;
 		frag.color = packUnorm4x8(color);

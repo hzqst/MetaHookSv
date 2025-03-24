@@ -77,10 +77,10 @@ void main()
 	#endif
 
 	//calculate the normal texcoord and sample the normal vector from texture
-	vec2 vNormTexCoord1 = vec2(0.2, 0.15) * SceneUBO.time + v_diffusetexcoord.xy; 
-	vec2 vNormTexCoord2 = vec2(-0.13, 0.11) * SceneUBO.time + v_diffusetexcoord.xy;
-	vec2 vNormTexCoord3 = vec2(-0.14, -0.16) * SceneUBO.time + v_diffusetexcoord.xy;
-	vec2 vNormTexCoord4 = vec2(0.17, 0.15) * SceneUBO.time + v_diffusetexcoord.xy;
+	vec2 vNormTexCoord1 = vec2(0.2, 0.15) * SceneUBO.cl_time + v_diffusetexcoord.xy; 
+	vec2 vNormTexCoord2 = vec2(-0.13, 0.11) * SceneUBO.cl_time + v_diffusetexcoord.xy;
+	vec2 vNormTexCoord3 = vec2(-0.14, -0.16) * SceneUBO.cl_time + v_diffusetexcoord.xy;
+	vec2 vNormTexCoord4 = vec2(0.17, 0.15) * SceneUBO.cl_time + v_diffusetexcoord.xy;
 	vec4 vNorm1 = texture(normalTex, vNormTexCoord1);
 	vec4 vNorm2 = texture(normalTex, vNormTexCoord2);
 	vec4 vNorm3 = texture(normalTex, vNormTexCoord3);

@@ -202,8 +202,8 @@ typedef struct scene_ubo_s
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	uvec4 viewport;
-	vec4 frustumpos[4];
+	vec4 viewport;
+	vec4 frustum[4];
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
@@ -216,7 +216,7 @@ typedef struct scene_ubo_s
 	float fogStart;
 	float fogEnd;
 	float fogDensity;
-	float time;
+	float cl_time;
 	float r_g;
 	float r_g3;
 	float v_brightness;
@@ -226,7 +226,7 @@ typedef struct scene_ubo_s
 	float v_texgamma;
 	float z_near;
 	float z_far;
-	float alphamin;
+	float r_alphamin;
 	float r_additive_shift;
 	float r_lightscale;
 	vec4 r_filtercolor;

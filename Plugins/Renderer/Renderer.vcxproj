@@ -437,7 +437,6 @@ $(SDL2CheckRequirements)</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\depthclear.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\depthlinearize.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl" />
@@ -457,11 +456,6 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\hdr_tonemap.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawcolormask.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawhudmask.vert.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\hud_drawroundrect.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl" />

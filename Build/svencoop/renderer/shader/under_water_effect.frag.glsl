@@ -15,8 +15,8 @@ layout(location=0) out vec4 out_Color;
 void main() {
 
   vec2 uv = texCoord;
-  uv.x += cos(uv.y * wave_amount + SceneUBO.time * wave_speed) * wave_size;
-  uv.y += sin(uv.x * wave_amount + SceneUBO.time * wave_speed) * wave_size;
+  uv.x += cos(uv.y * wave_amount + SceneUBO.cl_time * wave_speed) * wave_size;
+  uv.y += sin(uv.x * wave_amount + SceneUBO.cl_time * wave_speed) * wave_size;
 
   vec4 baseColor = texture(baseTex, uv);
   

@@ -43,7 +43,6 @@ SHADER_DEFINE(hbao_calc_blur_fog);
 SHADER_DEFINE(hbao_blur);
 SHADER_DEFINE(hbao_blur2);
 
-SHADER_DEFINE(depth_clear);
 SHADER_DEFINE(oitbuffer_clear);
 SHADER_DEFINE(blit_oitblend);
 
@@ -227,8 +226,6 @@ void R_InitPostProcess(void)
 		SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
 		SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
 	}
-
-	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
 
 	//OIT Blend
 	if (g_bUseOITBlend)

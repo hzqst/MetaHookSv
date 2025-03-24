@@ -8,11 +8,11 @@ in vec2 texCoord;
 
 void main() {
 
-    uint x = uint(gl_FragCoord.x);
-    uint y = uint(gl_FragCoord.y);
-    uint viewportW = SceneUBO.viewport.x;
+    float x = gl_FragCoord.x;
+    float y = gl_FragCoord.y;
+    float viewportW = SceneUBO.viewport.x;
 
-    uint index = viewportW*y + x;
+    uint index = uint(viewportW*y + x);
     
     numFragments[index] = -1;
 }
