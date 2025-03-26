@@ -706,6 +706,19 @@ void main(void)
 	#elif defined(GLOW_SHELL_ENABLED)
 
 		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
+		
+	#elif defined(STUDIO_NF_FULLBRIGHT)
+
+		vec4 fullbrightColor = vec4(1.0, 1.0, 1.0, 1.0);
+		vec4 lightmapColor = ProcessOtherGammaColor(fullbrightColor);
+
+		vec3 lightColorLinear = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
+
+		#if defined(GAMMA_BLEND_ENABLED)
+			lightmapColor.rgb *= LinearToGamma3(lightColorLinear);
+		#else
+			lightmapColor.rgb *= lightColorLinear;
+		#endif
 
 	#else
 
