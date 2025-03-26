@@ -3049,6 +3049,9 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 			float* pScale = &(*currententity)->curstate.scale;
 			float* pModelPos = (*currententity)->origin;
 			VectorCopy(pModelPos, vecSavedModelOrigin);
+			
+			//Don't emit event (muzzleflash or sound)
+			flags &= ~STUDIO_EVENTS;
 
 			flSavedModelScale = (*pScale);
 
