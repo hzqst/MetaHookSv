@@ -302,6 +302,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	// see https://github.com/libsdl-org/sdl2-compat/issues/400
 	SetEnvironmentVariableA("SDL_HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE", "0");
+	SetEnvironmentVariableA("SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE", "0");
 
 	if (registry->ReadInt("CrashInitializingVideoMode", FALSE))
 	{
