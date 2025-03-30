@@ -195,25 +195,31 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
 
-贴图列表会自动从文件 `/maps/[mapname]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
+贴图列表会自动从文件 `/maps/{MapName}_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
 
 贴图会按顺序从以下位置尝试加载 (如果文件存在的话)：
 
-1. `/(game_directory)/maps/[texturename]` (贴图名必须以 "maps/" 或 "maps\" 开头)
+1. `{GameDirectory}_addon/maps/{TextureName}` (贴图名必须以 "maps/" 或 "maps\" 开头，并且文件系统支持"{GameDirectory}_addon"目录)
 
-2. `/(game_directory)/gfx/detail/[texturename]`
+2. `{GameDirectory}_downloads/maps/{TextureName}` (贴图名必须以 "maps/" 或 "maps\" 开头，并且文件系统支持"{GameDirectory}_downloads"目录)
 
-3. `/(game_directory)/renderer/texture/[texturename]`
+3. `{GameDirectory}/maps/{TextureName}` (贴图名必须以 "maps/" 或 "maps\" 开头)
 
-* 当路径不包含扩展名时，将默认添加`.tga`扩展名。
+4. `{GameDirectory}/gfx/detail/{TextureName}`
+
+5. `{GameDirectory}/renderer/texture/{TextureName}`
+
+* 当题图路径不包含扩展名时，将默认添加`.tga`扩展名。
 
 ### BSP法线贴图
 
 法线贴图是一种使用外部贴图作用于特定固定表面，以改变其法线朝向的一种效果。
 
-贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_NORMAL` 为后缀的贴图会被视为该基础贴图的法线贴图。
+对于固体表面：贴图列表会自动从文件 `{GameDirectory}/maps/{MapName}_detail.txt` 中加载, 以 `_NORMAL` 为后缀的贴图会被视为该基础贴图的法线贴图。
 
-列表中指定的法线贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+对于印花：贴图列表会自动从文件 `{GameDirectory}/renderer/decal_textures.txt` 中加载, 以 `_NORMAL` 为后缀的贴图会被视为该基础贴图的法线贴图。
+
+列表中指定的法线贴图文件加载位置和加载顺序参考 "BSP细节贴图" 中的相关说明。
 
 * BSP法线贴图只会改变固体表面的法线朝向, 因此只在被动态光源和手电筒照亮的表面起作用。
 
@@ -223,9 +229,11 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 视差贴图是一种使用外部贴图作用于特定固定表面，改变其视觉深度以营造一种凹陷突起的视觉效果。
 
-贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_PARALLAX` 为后缀的贴图会被视为该基础贴图的视差贴图。
+对于固体表面：贴图列表会自动从文件 `/maps/{MapName}_detail.txt` 中加载, 以 `_PARALLAX` 为后缀的贴图会被视为该基础贴图的视差贴图。
 
-列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+对于印花：贴图列表会自动从文件 `{GameDirectory}/renderer/decal_textures.txt` 中加载, 以 `_PARALLAX` 为后缀的贴图会被视为该基础贴图的视差贴图。
+
+列表中指定的视差贴图文件加载位置和加载顺序参考 "BSP细节贴图" 中的相关说明。
 
 * 控制台参数 `r_wsurf_parallax_scale` 可以用于控制视差(凹陷/突起)效果的最大强度（果为负则改变凹陷/突起的方向）。
 
@@ -235,9 +243,11 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 高光贴图是一种使用外部贴图作用于特定固定表面，以增强其高光反射强度的效果。
 
-贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_SPECULAR` 为后缀的贴图会被视为该基础贴图的高光贴图。
+对于固体表面：贴图列表会自动从文件 `/maps/{MapName}_detail.txt` 中加载, 以 `_SPECULAR` 为后缀的贴图会被视为该基础贴图的高光贴图。
 
-列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+对于印花：贴图列表会自动从文件 `{GameDirectory}/renderer/decal_textures.txt` 中加载, 以 `_SPECULAR` 为后缀的贴图会被视为该基础贴图的高光贴图。
+
+列表中指定的视差贴图文件加载位置和加载顺序参考 "BSP细节贴图" 中的相关说明。
 
 * BSP高光贴图的红色分量（RGB的R）控制高光反射强度, 绿色分量（RGB的G）控制SSR（屏幕空间反射）的强度。
 
@@ -247,7 +257,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 ## 模型贴图替换
 
-你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+你需要在`{ModelName}.mdl`模型的同目录下创建 `{ModelName}_external.txt`文件，文件应包含以下内容：
 
 ### 如果"replacetexture"的贴图名以 "models/" 或 "models\" 开头：
 
@@ -262,17 +272,17 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 那么以下位置的文件会被用来替换模型中自带的BMP贴图:
 
-`(game_directory)\models\mymodel\base_texture.dds`
+`{GameDirectory}\models\mymodel\base_texture.dds`
 
 ### 否则
 
 以下位置的文件会被用来替换模型中自带的BMP贴图:
 
-`(game_directory)\gfx\base_texture.dds`
+`{GameDirectory}\gfx\base_texture.dds`
 
-`(game_directory)\renderer\texture\base_texture.dds`
+`{GameDirectory}\renderer\texture\base_texture.dds`
 
-* 当路径不包含扩展名时，将默认添加`.tga`扩展名。
+* 当贴图路径不包含扩展名时，将默认添加`.tga`扩展名。
 
 ### UV 控制
 

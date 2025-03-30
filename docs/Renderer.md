@@ -193,11 +193,15 @@ Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` 
 
 Detail textures will be loaded from the following path (if exists):
 
-`{GameDirectory}/maps/[texturename]` (only if texture name starts with "maps/" or "maps\")
+1. `{GameDirectory}_addon/maps/{TextureName}` (only if texture name starts with "maps/" or "maps\", and only if your FileSystem supports "{GameDirectory}_adddon")
 
-`{GameDirectory}/gfx/detail/[texturename]`
+2. `{GameDirectory}_downloads/maps/{TextureName}` (only if texture name starts with "maps/" or "maps\", and only if your FileSystem supports "{GameDirectory}_downloads" )
 
-`{GameDirectory}/renderer/texture/[texturename]`
+3. `{GameDirectory}/maps/{TextureName}` (only if texture name starts with "maps/" or "maps\")
+
+4. `{GameDirectory}/gfx/detail/{TextureName}`
+
+5. `{GameDirectory}/renderer/texture/{TextureName}`
 
 * `.tga` will be added to the filename by default, if no file extension is given.
 
