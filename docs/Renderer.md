@@ -187,25 +187,27 @@ For example :
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
-`r_detailtextures` set to 1 to enable BSP detail brush textures, normal textures, parallax textures and specular textures.
+`r_detailtextures 1` to enable BSP detail brush textures, texture replacement, normal textures, parallax textures and specular textures.
 
 Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` as suffix in basetexture name. names with no suffix will be treated as detailtexture.
 
 Detail textures will be loaded from the following path (if exists):
 
-`/(game_directory)/maps/[texturename]` (only if texture name starts with "maps/" or "maps\")
+`{GameDirectory}/maps/[texturename]` (only if texture name starts with "maps/" or "maps\")
 
-`/(game_directory)/gfx/detail/[texturename]`
+`{GameDirectory}/gfx/detail/[texturename]`
 
-`/(game_directory)/renderer/texture/[texturename]`
+`{GameDirectory}/renderer/texture/[texturename]`
 
-* `.tga` will be added to the filename if no file extension is given.
+* `.tga` will be added to the filename by default, if no file extension is given.
 
-### BSP texture replacer
+### BSP texture replacement
 
-You can replace wad textures with external images.
+You can replace WAD textures (that used by brush surfaces or decals) with external images.
 
-Replace list is parsed from `/maps/[map name]_detail.txt`, with `_REPLACE` as suffix in basetexture name.
+For brush surfaces: replace list is parsed from `{GameDirectory}/maps/{MapName}_detail.txt`, with `_REPLACE` as suffix in basetexture name.
+
+For decals: replace list is parsed from `{GameDirectory}/renderer/decal_textures.txt`, with `_REPLACE` as suffix in basetexture name.
 
 The rules of texture searching follow the same way as "BSP detail textures"
 
@@ -215,7 +217,9 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 Normal textures are external images applied to specified brush surfaces and change the direction of surface normal.
 
-Normal texture list is parsed from `/maps/[map name]_detail.txt`, with `_NORMAL` as suffix in basetexture name.
+For brush surfaces: texture list is parsed from `{GameDirectory}/maps/{MapName}_detail.txt`, with `_NORMAL` as suffix in basetexture name.
+
+For decals: texture list is parsed from `{GameDirectory}/renderer/decal_textures.txt`, with `_NORMAL` as suffix in basetexture name.
 
 The rules of texture searching follow the same way as "BSP detail textures"
 
@@ -227,7 +231,9 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
 
-Parallax texture list is parsed from `/maps/[map name]_detail.txt`, with `_PARALLAX` as suffix in basetexture name.
+For brush surfaces: texture list is parsed from `{GameDirectory}/maps/{MapName}_detail.txt`, with `_PARALLAX` as suffix in basetexture name.
+
+For decals: texture list is parsed from `{GameDirectory}/renderer/decal_textures.txt`, with `_PARALLAX` as suffix in basetexture name.
 
 The rules of texture searching follow the same way as "BSP detail textures"
 
@@ -239,7 +245,9 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 Specular textures are external images applied to specified brush surfaces which will increase the intensity of specularity of surfaces.
 
-Specular texture list is parsed from `/maps/[map name]_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
+For brush surfaces: texture list is parsed from `{GameDirectory}/maps/{MapName}_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
+
+For decals: texture list is parsed from `{GameDirectory}/renderer/decal_textures.txt`, with `_SPECULAR` as suffix in basetexture name.
 
 The rules of texture searching follow the same way as "BSP detail textures"
 
@@ -249,7 +257,7 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * BSP specular textures only work when `r_detailtextures` set to 1.
 
-## StudioModel texture replacer
+## StudioModel texture replacement
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
 
@@ -266,7 +274,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 
 The following file will be used to replace basetexture if exists:
 
-`(game_directory)\models\mymodel\base_texture.dds`
+`{GameDirectory}/models/mymodel/base_texture.dds`
 
 ### Otherwise
 
@@ -281,9 +289,9 @@ The following file will be used to replace basetexture if exists:
 
 The following files will be used to replace basetexture if exists:
 
-`(game_directory)\gfx\base_texture.dds`
+`{GameDirectory}/gfx/base_texture.dds`
 
-`(game_directory)\renderer\texture\base_texture.dds`
+`{GameDirectory}/renderer/texture/base_texture.dds`
 
 * `.tga` will be added to the filename if no file extension is given.
 
