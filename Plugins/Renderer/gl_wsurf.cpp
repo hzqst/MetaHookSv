@@ -53,11 +53,13 @@ CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 		{
 			delete vDrawBatch[k][l];
 		}
+		vDrawBatch[k].clear();
 	}
 	for (auto pWaterSurfaceModel : vWaterSurfaceModels)
 	{
 		delete pWaterSurfaceModel;
 	}
+	vWaterSurfaceModels.clear();
 }
 
 CWorldSurfaceWorldModel::~CWorldSurfaceWorldModel()
@@ -664,7 +666,7 @@ void R_GenerateDrawBatch(CWorldSurfaceLeaf* pLeaf, int iTexchainId, int iDrawBat
 
 	for (size_t i = 0; i < pLeaf->vTextureChain[iTexchainId].size(); ++i)
 	{
-		auto &texchain = pLeaf->vTextureChain[iTexchainId][i];
+		const auto &texchain = pLeaf->vTextureChain[iTexchainId][i];
 
 		if (texchain.iDetailTextureFlags != iDetailTextureFlags)
 		{

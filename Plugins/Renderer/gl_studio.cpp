@@ -3008,7 +3008,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 void CopyPlayerInfoStudioRenderData(const player_info_t* src, player_info_t* dst)
 {
 	dst->renderframe = src->renderframe;
-	//dst->gaitsequence = src->gaitsequence;
+	dst->gaitsequence = src->gaitsequence;
 	dst->gaitframe = src->gaitframe;
 	dst->gaityaw = src->gaityaw;
 	VectorCopy(src->prevgaitorigin, dst->prevgaitorigin);
