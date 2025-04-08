@@ -159,16 +159,6 @@ Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if t
 
 This plugin exposes an interface to communicate with Sven Co-op server.
 
-### DontFlushSoundCache (Sven Co-op only) (Experimental)
-
-* NOT READY FOR NON-DEVs
-
-This plugin prevents client from flushing soundcache at `retry` (engine issues `retry` command everytime when HTTP download progress is finished), make it possible to preserve soundcache txt downloaded from fastdl resource server (sv_downloadurl).
-
-The fastdl procedure only works when game server uploads current map's soundcache txt to the fastdl resource server. (I am using AliyunOSS)
-
-The reason why I made this plugin is because transfering soundcache txt via UDP netchannel is really not a good idea as server bandwidth and file IO resource is expensive.
-
 ### PrecacheManager
 
 This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[ModDirectory]\maps\[mapname].dump.res`.
@@ -213,7 +203,9 @@ https://github.com/DrAbcrealone/ABCEnchance
 
 Changing HUD colors in game.
 
-https://github.com/DrAbcrealone/HUDColor
+Also as a good template for you to build your own plugin.
+
+https://github.com/hzqst/HUDColor
 
 ### MetaAudio (third-party) (GoldSrc only)
 

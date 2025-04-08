@@ -168,14 +168,6 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 该插件开放了一个接口用于进行客户端-服务端双向通信。
 
-### DontFlushSoundCache (只支持Sven Co-op) (实验性)
-
-该插件阻止客户端在 `retry` 时清理 soundcache 缓存 (引擎在HTTP完成下载时会触发 `retry` 命令), 让客户端得以保留HTTP下载得到的 soundcache txt
-
-服务端必须上传自己的soundcache到资源服务器来支持soundcache的HTTP下载
-
-该插件的目的是节约服务器的带宽资源和磁盘IO资源（频繁读写文件不是什么好事，用UDP挂服下载更不是什么好事）
-
 ### PrecacheManager
 
 该插件提供了一个命令 `fs_dump_precaches` 用于dump预缓存的游戏资源列表到 `[ModDirectory]\maps\[mapname].dump.res` 文件中。
@@ -220,7 +212,10 @@ https://github.com/DrAbcrealone/ABCEnchance
 
 该插件可以修改游戏中HUD的颜色。
 
-https://github.com/DrAbcrealone/HUDColor
+也可以作为参考模板在该插件的基础上构建你自己的插件。
+
+https://github.com/hzqst/HUDColor
+
 
 ### MetaAudio (第三方) (只支持GoldSrc)
 
