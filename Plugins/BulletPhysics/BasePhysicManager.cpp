@@ -2417,6 +2417,8 @@ static bool SavePhysicObjectConfigToNewFile(const std::string& filename, const C
 
 	SCOPE_EXIT{ delete pKeyValues; };
 
+	FILESYSTEM_ANY_CREATEDIR(filename.c_str(), "GAMEDOWNLOAD");
+
 	bool bSaved = false;
 
 	if(g_pFileSystem_HL25)
@@ -2426,6 +2428,8 @@ static bool SavePhysicObjectConfigToNewFile(const std::string& filename, const C
 
 	if (!bSaved)
 	{
+		FILESYSTEM_ANY_CREATEDIR(filename.c_str());
+
 		if (g_pFileSystem_HL25)
 			bSaved = pKeyValues->SaveToFile((IFileSystem*)g_pFileSystem_HL25, filename.c_str());
 		else
