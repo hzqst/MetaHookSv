@@ -6,11 +6,11 @@ metahook主启动器
 
 * 使用 MetaHook_blob.exe 而不是 MetaHook.exe 来加载旧版的加密引擎（如3248或3266版本的引擎）。
 
-### SDL.dll (可选)
+### SDL2.dll 与 SDL3.dll (可选)
 
-`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
+* `Build`目录中的 `SDL3.dll` 用于支持输入法候选词功能，因为原生的 SDL2 不会将输入法候选事件传递给引擎。
 
-* Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll
+* `SDL3.dll` 通过 [SDL3-over-SDL2](https://github.com/libsdl-org/sdl2-compat) 兼容层进行加载，这意味着您需要用 `Build/SDL2.dll` 替换游戏自带的SDL2，以使 SDL3 正常工作。
 
 ### svencoop/captionmod/* (可选)
 
