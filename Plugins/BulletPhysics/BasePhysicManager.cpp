@@ -2417,18 +2417,24 @@ static bool SavePhysicObjectConfigToNewFile(const std::string& filename, const C
 
 	SCOPE_EXIT{ delete pKeyValues; };
 
-	FILESYSTEM_ANY_CREATEDIR(filename.c_str(), "GAMEDOWNLOAD");
+	char filepath[MAX_PATH] = { 0 };
+	V_ExtractFilePath(filename.c_str(), filepath, sizeof(filepath));
 
 	bool bSaved = false;
 
-	if(g_pFileSystem_HL25)
-		bSaved = pKeyValues->SaveToFile((IFileSystem *)g_pFileSystem_HL25, filename.c_str(), "GAMEDOWNLOAD");
-	else
-		bSaved = pKeyValues->SaveToFile(g_pFileSystem, filename.c_str(), "GAMEDOWNLOAD");
+	if (!bSaved)
+	{
+		FILESYSTEM_ANY_CREATEDIR(filepath, "GAMEDOWNLOAD");
+
+		if (g_pFileSystem_HL25)
+			bSaved = pKeyValues->SaveToFile((IFileSystem*)g_pFileSystem_HL25, filename.c_str(), "GAMEDOWNLOAD");
+		else
+			bSaved = pKeyValues->SaveToFile(g_pFileSystem, filename.c_str(), "GAMEDOWNLOAD");
+	}
 
 	if (!bSaved)
 	{
-		FILESYSTEM_ANY_CREATEDIR(filename.c_str());
+		FILESYSTEM_ANY_CREATEDIR(filepath);
 
 		if (g_pFileSystem_HL25)
 			bSaved = pKeyValues->SaveToFile((IFileSystem*)g_pFileSystem_HL25, filename.c_str());
