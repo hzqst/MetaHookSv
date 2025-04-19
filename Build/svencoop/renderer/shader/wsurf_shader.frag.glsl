@@ -513,7 +513,7 @@ void main()
 
 		#if defined(DECAL_ENABLED)
 
-			out_Diffuse = diffuseColor * detailColor;
+			out_Diffuse = diffuseColor * detailColor * EntityUBO.color;
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
 			out_Specular = specularColor;
 
@@ -527,6 +527,8 @@ void main()
 		#endif
 
 	#else
+
+	//non-deferred path
 
 	#ifdef SHADOWMAP_ENABLED
 
