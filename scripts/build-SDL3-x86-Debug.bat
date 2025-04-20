@@ -11,6 +11,18 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
+:: Check if SDL3 directory has been initialized
+if not exist "%SolutionDir%thirdparty\SDL3\.git" (
+    echo Initializing SDL3 submodule only...
+    :: Initialize only the SDL3 submodule without recursive initialization
+    call git submodule update --init "%SolutionDir%thirdparty\SDL3"
+    if errorlevel 1 (
+        echo Error: git submodule initialization failed!
+        exit /b 1
+    )
+    echo submodule initialization completed.
+)
+
 call cmake -S "%SolutionDir%thirdparty\SDL3" -B "%SolutionDir%thirdparty\build\SDL3\x86\Debug" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL3\x86\Debug" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" 
 
 call cmake --build "%SolutionDir%thirdparty\build\SDL3\x86\Debug" --config Debug --target install

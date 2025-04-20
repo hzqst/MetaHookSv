@@ -15,6 +15,18 @@ for /f "usebackq tokens=*" %%i in (`tools\vswhere -latest -products * -requires 
   set InstallDir=%%i
 )
 
+:: Check if FreeImage_clone directory has been initialized
+if not exist "%SolutionDir%thirdparty\FreeImage_clone\.git" (
+    echo Initializing FreeImage_clone submodule only...
+    :: Initialize only the FreeImage_clone submodule without recursive initialization
+    call git submodule update --init "%SolutionDir%thirdparty\FreeImage_clone"
+    if errorlevel 1 (
+        echo Error: git submodule initialization failed!
+        exit /b 1
+    )
+    echo submodule initialization completed.
+)
+
 cd /d "%SolutionDir%thirdparty\FreeImage_clone\"
 
 if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
