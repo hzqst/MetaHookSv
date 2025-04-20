@@ -439,4 +439,10 @@ typedef struct player_info_s
 	customization_t customdata;
 } player_info_t;
 
+typedef struct player_info_sc_s : public player_info_t
+{
+	char hashedcdkey[16];
+	uint64 m_nSteamID;
+}player_info_sc_t;
+
 #endif // #define COM_MODEL_H
