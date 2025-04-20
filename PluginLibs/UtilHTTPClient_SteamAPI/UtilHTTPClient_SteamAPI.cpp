@@ -440,6 +440,11 @@ public:
 	{
 		SteamHTTP()->SetHTTPRequestRequiresVerifiedCertificate(m_RequestHandle, b);
 	}
+
+	void SetFollowLocation(bool b) override
+	{
+		//not supported
+	}
 };
 
 class CUtilHTTPSyncRequest : public CUtilHTTPRequest

@@ -411,10 +411,7 @@ public:
 		m_pResponse->FinalizeHeaders();
 		m_pResponse->FinalizePayload();
 
-		int httpStatusCode = 0;
-		auto code = curl_easy_getinfo(m_CurlEasyHandle, CURLINFO_RESPONSE_CODE, &httpStatusCode);
-
-		if (code != CURLE_OK || httpStatusCode >= 400 || !httpStatusCode)
+		if (m_pResponse->IsResponseError())
 		{
 
 		}
@@ -552,6 +549,11 @@ public:
 		}
 
 		curl_multi_add_handle(m_CurlMultiHandle, m_CurlEasyHandle);
+	}
+
+	void SetFollowLocation(bool b) override
+	{
+		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_FOLLOWLOCATION, 1);
 	}
 };
 

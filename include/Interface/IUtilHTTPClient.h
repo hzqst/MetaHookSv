@@ -77,6 +77,8 @@ public:
 	virtual void WaitForComplete() = 0;
 	virtual bool WaitForCompleteTimeout(int timeout_ms) = 0;
 	virtual IUtilHTTPResponse* GetResponse() = 0;
+
+	virtual void SetFollowLocation(bool b) = 0;
 };
 
 class IUtilHTTPCallbacks : public IBaseInterface

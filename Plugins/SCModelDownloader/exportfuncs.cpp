@@ -104,7 +104,7 @@ void HUD_Shutdown(void)
 
 	gExportfuncs.HUD_Shutdown();
 
-	UtilAssetsIntegrity_Init();
+	UtilAssetsIntegrity_Shutdown();
 	UtilHTTPClient_Shutdown();
 }
 

@@ -9,9 +9,9 @@
 
 //Error when can't find sig
 
-cl_enginefunc_t gEngfuncs;
-engine_studio_api_t IEngineStudio;
-r_studio_interface_t **gpStudioInterface;
+cl_enginefunc_t gEngfuncs = {0};
+engine_studio_api_t IEngineStudio = { 0 };
+r_studio_interface_t **gpStudioInterface = NULL;
 void *g_pGameStudioRenderer = NULL;
 
 bool g_bIsSvenCoop = false;
