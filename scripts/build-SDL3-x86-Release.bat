@@ -23,6 +23,6 @@ if not exist "%SolutionDir%thirdparty\SDL3\.git" (
     echo submodule initialization completed.
 )
 
-call cmake -S "%SolutionDir%thirdparty\SDL3" -B "%SolutionDir%thirdparty\build\SDL3\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL3\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" 
+call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\SDL3" -B "%SolutionDir%thirdparty\build\SDL3\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL3\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" 
 
 call cmake --build "%SolutionDir%thirdparty\build\SDL3\x86\Release" --config Release --target install
