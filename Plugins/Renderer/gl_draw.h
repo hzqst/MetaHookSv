@@ -45,53 +45,34 @@ typedef struct gl_mipmap_texture_data_s
 
 	}
 
-	int level;
-	const void* data;
-	int size;
-	int width;
-	int height;
-	void* data_ctx;
+	int level{};
+	const void* data{};
+	int size{};
+	int width{};
+	int height{};
+	void* data_ctx{};
 }gl_mipmap_texture_data_t;
 
 typedef struct gl_loadtexture_context_s
 {
-	struct gl_loadtexture_context_s()
-	{
-		width = 0;
-		height = 0;
-		numframes = 0;
-		frameduration = 0;
-
-		internalformat = 0;
-		wrap = 0;
-		cubemap = 0;
-		filter = 0;
-
-		mipmap = false;
-		compressed = false;
-		ignore_direction_LoadTGA = false;
-	}
-
-	int width;
-	int height;
-	int numframes;
+	int width{};
+	int height{};
+	int numframes{};
 
 	// duration of the frame (in milliseconds).
-	int frameduration;
+	int frameduration{};
 
 	//OpenGL field
-	GLuint internalformat;
-	GLuint wrap;
-	GLuint cubemap;
-	int filter;
+	GLuint internalformat{};
+	GLuint wrap{};
+	GLuint cubemap{};
+	int filter{};
 
-	bool mipmap;
-	bool compressed;
+	bool mipmap{};
+	bool compressed{ false };
 
 	//Valve's LoadTGA ignores the direction bits
-	bool ignore_direction_LoadTGA;
-
-	//Loader field
+	bool ignore_direction_LoadTGA{};
 
 	//necessary
 	std::vector<gl_mipmap_texture_data_t> mipmaps;
@@ -104,20 +85,11 @@ typedef struct gl_loadtexture_context_s
 
 typedef struct gl_loadtexture_result_s
 {
-	struct gl_loadtexture_result_s()
-	{
-		gltexturenum = 0;
-		width = 0;
-		height = 0;
-		numframes = 0;
-		frameduration = 0;
-	}
-
-	int gltexturenum;
-	int width;
-	int height;
-	int numframes;
-	int frameduration;
+	int gltexturenum{};
+	int width{};
+	int height{};
+	int numframes{};
+	int frameduration{};
 }gl_loadtexture_result_t;
 
 //DXT

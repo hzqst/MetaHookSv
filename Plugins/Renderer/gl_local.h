@@ -427,6 +427,8 @@ void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelI
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
+void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
+void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
 qboolean R_ParseStringAsColor1(const char *string, float *vec);
 qboolean R_ParseStringAsColor2(const char *string, float *vec);
@@ -482,7 +484,8 @@ bool R_LoadTextureFromFile(const char* filename, const char* identifier, GL_TEXT
 int R_LoadRGBA8TextureFromMemory(const char* identifier, const void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
 bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t* context);
-bool LoadImageGeneric(const char* filename, const char* pathId, gl_loadtexture_context_t* context);
+bool LoadImageGenericMemoryIO(const char* identifier, byte *data, size_t dataSize, gl_loadtexture_context_t* context);
+bool LoadImageGenericFileIO(const char* filename, const char* pathId, gl_loadtexture_context_t* context);
 bool SaveImageGenericRGB8(const char *filename, const char* pathId, int width, int height, const void *data);
 bool SaveImageGenericRGBA8(const char* filename, const char* pathId, int width, int height, const void *data);
 

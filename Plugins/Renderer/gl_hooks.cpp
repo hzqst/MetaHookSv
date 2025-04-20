@@ -6021,11 +6021,13 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
+			int pushCount{};
+			int pushAddrCount{};
 		} Draw_DecalTexture_SearchContext;
 
 		Draw_DecalTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges((void*)Draw_DecalTexture_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(Draw_DecalTexture_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (Draw_DecalTexture_SearchContext*)context;
@@ -6051,7 +6053,50 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 			{
 				decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			if (decal_wad)
+
+			if (pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1)
+			{
+				ctx->pushCount ++;
+				ctx->pushAddrCount = instCount;
+			}
+
+			if (address[0] == 0xE8 && instLen == 5)
+			{
+/*
+.text:01D2F8D6 52                                                  push    edx
+.text:01D2F8D7 50                                                  push    eax
+.text:01D2F8D8 56                                                  push    esi
+.text:01D2F8D9 57                                                  push    edi
+.text:01D2F8DA E8 D1 07 00 00                                      call    Draw_CustomCacheGet
+.text:01D2F8DF 83 C4 10                                            add     esp, 10h
+*/
+
+				if (!gPrivateFuncs.Draw_CustomCacheGet && ctx->pushCount == 4 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x10", 3))
+				{
+					PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+
+					gPrivateFuncs.Draw_CustomCacheGet = (decltype(gPrivateFuncs.Draw_CustomCacheGet))
+						ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+				}
+				/*
+.text:01D2F8EC 50                                                  push    eax
+.text:01D2F8ED 51                                                  push    ecx
+.text:01D2F8EE E8 AD 06 00 00                                      call    Draw_CacheGet
+.text:01D2F8F3 83 C4 08                                            add     esp, 8
+				*/
+				if (!gPrivateFuncs.Draw_CacheGet && ctx->pushCount == 2 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x08", 3))
+				{
+					PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
+
+					gPrivateFuncs.Draw_CacheGet = (decltype(gPrivateFuncs.Draw_CacheGet))
+						ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+				}
+				ctx->pushCount = 0;
+				ctx->pushAddrCount = 0;
+			}
+
+			if (decal_wad && gPrivateFuncs.Draw_CustomCacheGet && gPrivateFuncs.Draw_CacheGet)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -6065,6 +6110,8 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 	}
 
 	Sig_VarNotFound(decal_wad);
+	Sig_FuncNotFound(Draw_CustomCacheGet);
+	Sig_FuncNotFound(Draw_CacheGet);
 }
 
 void Engine_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -10969,6 +11016,8 @@ static hook_t* g_phook_triapi_Fog = NULL;
 static hook_t* g_phook_triapi_GetMatrix = NULL;
 //static hook_t *g_phook_triapi_Color4f = NULL;
 static hook_t* g_phook_Draw_MiptexTexture = NULL;
+//static hook_t* g_phook_Draw_CustomCacheGet = NULL;
+//static hook_t* g_phook_Draw_CacheGet = NULL;
 static hook_t* g_phook_BuildGammaTable = NULL;
 static hook_t* g_phook_DLL_SetModKey = NULL;
 static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
@@ -11027,6 +11076,8 @@ void Engine_InstallHooks(void)
 	//Install_InlineHook(triapi_Fog);
 	Install_InlineHook(triapi_GetMatrix);
 	Install_InlineHook(Draw_MiptexTexture);
+	//Install_InlineHook(Draw_CustomCacheGet);
+	//Install_InlineHook(Draw_CacheGet);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);
 
@@ -11082,6 +11133,8 @@ void Engine_UninstallHooks(void)
 	//Uninstall_Hook(triapi_Fog);
 	Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
+	//Uninstall_Hook(Draw_CustomCacheGet);
+	//Uninstall_Hook(Draw_CacheGet);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
 

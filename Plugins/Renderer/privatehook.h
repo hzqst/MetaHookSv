@@ -55,6 +55,8 @@ typedef struct
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
 	texture_t *(*Draw_DecalTexture)(int index);
+	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
+	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void(*R_AddDynamicLights)(msurface_t *psurf);
 	int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
