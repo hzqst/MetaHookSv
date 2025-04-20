@@ -50,7 +50,7 @@ exit
 echo -----------------------------------------------------
 echo Writing MSVC Properties...
 
-cd /d "%SolutionDir%tools\"
+cd /d "%SolutionDir%tools"
 
 copy global_template.props global.props /y
 
@@ -64,11 +64,23 @@ echo Done
 
 @echo off
 
+cd /d "%SolutionDir%"
+
 tasklist | find /i "devenv.exe"
 
 if "%errorlevel%"=="1" (goto ok1) else (goto ok2)
 
 :ok1
+
+for /f "usebackq tokens=*" %%i in (`tools\vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property productPath`) do (
+  set productPath=%%i
+)
+
+if exist "%productPath%" (
+    "%productPath%" MetaHook.sln
+    exit
+)
+
 @echo You can open MetaHook.sln with Visual Studio IDE now
 pause
 exit
