@@ -513,6 +513,7 @@ bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
 bool R_IsRenderingViewModel(void);
 bool R_IsRenderingFlippedViewModel(void);
+bool R_IsLowerBodyEntity(cl_entity_t* ent);
 bool R_IsRenderingLowerBody(void);
 bool R_IsRenderingClippedLowerBody(void);
 bool R_IsRenderingPortal(void);

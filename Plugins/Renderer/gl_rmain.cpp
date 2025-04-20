@@ -328,6 +328,8 @@ cvar_t* r_sprite_lerping = NULL;
 
 cvar_t* r_drawlowerbody = NULL;
 
+cvar_t* r_drawlowerbodyattachments = NULL;
+
 /*
 	Purpose : Check if we can render fog
 */
@@ -414,14 +416,19 @@ bool R_IsRenderingPortal(void)
 	Purpose: Check if we are rendering lowerbody entity
 */
 
+bool R_IsLowerBodyEntity(cl_entity_t *ent)
+{
+	return ent == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody;
+}
+
 bool R_IsRenderingLowerBody(void)
 {
-	return (*currententity) == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody;
+	return R_IsLowerBodyEntity((*currententity));
 }
 
 bool R_IsRenderingClippedLowerBody(void)
 {
-	return (*currententity) == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
+	return R_IsLowerBodyEntity((*currententity)) && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
 }
 
 /*
@@ -1282,9 +1289,7 @@ void R_DrawSpriteEntity(bool bTransparent)
 {
 	if ((*currententity)->curstate.body)
 	{
-		float* pAttachment;
-
-		pAttachment = R_GetAttachmentPoint((*currententity)->curstate.skin, (*currententity)->curstate.body);
+		float* pAttachment = R_GetAttachmentPoint((*currententity)->curstate.skin, (*currententity)->curstate.body);
 		VectorCopy(pAttachment, r_entorigin);
 	}
 	else
@@ -1345,6 +1350,11 @@ void R_DrawStudioEntity(bool bTransparent)
 
 			//The aiment is invisible ?
 			if (!EngineIsEntityInVisibleList(aiment))
+			{
+				return;
+			}
+
+			if (R_IsLowerBodyEntity(aiment) && r_drawlowerbodyattachments->value < 1)
 			{
 				return;
 			}
@@ -2531,6 +2541,8 @@ void R_InitCvars(void)
 	r_sprite_lerping = gEngfuncs.pfnRegisterVariable("r_sprite_lerping", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	r_drawlowerbodyattachments = gEngfuncs.pfnRegisterVariable("r_drawlowerbodyattachments", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
