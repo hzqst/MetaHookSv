@@ -59,7 +59,7 @@ typedef struct
 	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void(*R_AddDynamicLights)(msurface_t *psurf);
-	int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
+	//int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
 	int(*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal, int filter);
 	int(*GL_Upload16)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);

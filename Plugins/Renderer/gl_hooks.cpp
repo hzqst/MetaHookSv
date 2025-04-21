@@ -11075,7 +11075,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(triapi_BoxInPVS);
 	//Install_InlineHook(triapi_Fog);
 	Install_InlineHook(triapi_GetMatrix);
-	Install_InlineHook(Draw_MiptexTexture);
+	//Install_InlineHook(Draw_MiptexTexture);
 	//Install_InlineHook(Draw_CustomCacheGet);
 	//Install_InlineHook(Draw_CacheGet);
 	Install_InlineHook(BuildGammaTable);

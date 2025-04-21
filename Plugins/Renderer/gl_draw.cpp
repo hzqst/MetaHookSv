@@ -1692,7 +1692,7 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 	for (i = 0; i < MIPLEVELS; i++)
 		tex->offsets[i] = LittleLong(mip->offsets[i]) + wad->cacheExtra;
-
+#if 0
 	if (tex->name[0] == '$') {
 
 		auto rgbaBytes = (byte*)(data + tex->offsets[0]);
@@ -1750,6 +1750,7 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 			return;
 		}
 	}
+#endif
 
 	pix = tex->width * tex->height;
 	paloffset = 0;
