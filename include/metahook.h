@@ -125,6 +125,12 @@ typedef void* BlobHandle_t;
 
 typedef HMODULE HMEMORYMODULE;
 
+typedef void* ThreadPoolHandle_t;
+
+typedef void* ThreadWorkItemHandle_t;
+
+typedef void(*fnThreadWorkItemCallback)(void* ctx);
+
 typedef struct mh_load_dll_notification_context_s
 {
 	HMODULE hModule;
@@ -592,6 +598,19 @@ typedef struct metahook_api_s
 
 	ULONG (*GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
 
+	ThreadPoolHandle_t(*GetGlobalThreadPool)(void);
+
+	ThreadPoolHandle_t(*CreateThreadPool)(ULONG minThreads, ULONG maxThreads);
+
+	ThreadWorkItemHandle_t (*CreateWorkItem)(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void *ctx, HANDLE hEvent);
+
+	void (*QueueWorkItem)(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
+
+	void (*WaitForWorkItemToComplete)(ThreadWorkItemHandle_t hWorkItem);
+
+	void (*DeleteThreadPool)(ThreadWorkItemHandle_t hThreadPool);
+
+	void (*DeleteWorkItem)(ThreadWorkItemHandle_t hWorkItem);
 	//Always terminate with a NULL
 	PVOID Terminator;
 
@@ -607,7 +626,7 @@ typedef struct mh_enginesave_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 105
+#define METAHOOK_API_VERSION 106
 
 class ICommandLine;
 class IFileSystem;

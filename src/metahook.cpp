@@ -134,6 +134,8 @@ char g_szGameDirectory[32] = { 0 };
 HMEMORYMODULE g_hMirrorEngine = NULL;
 HMEMORYMODULE g_hMirrorClient = NULL;
 
+ThreadPoolHandle_t g_ThreadPool = NULL;
+
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 BOOL MH_UnHook(hook_t *pHook);
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCall);
@@ -170,6 +172,13 @@ HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char* szFileName);
 void MH_FreeMirrorDLL(HMEMORYMODULE hMemoryModule);
 PVOID MH_GetMirrorDLLBase(HMEMORYMODULE hMemoryModule);
 ULONG MH_GetMirrorDLLSize(HMEMORYMODULE hMemoryModule);
+ThreadPoolHandle_t MH_GetGlobalThreadPool(void);
+ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads);
+ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx, HANDLE hEvent);
+void MH_QueueWorkItem(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
+void MH_WaitForWorkItemToComplete(ThreadWorkItemHandle_t hWorkItem);
+void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool);
+void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem);
 
 typedef struct plugin_s
 {
@@ -1154,6 +1163,7 @@ void MH_ResetAllVars(void)
 	g_pExportFuncs = NULL;
 	g_bSaveVideo = false;
 	g_iEngineType = ENGINE_UNKNOWN;
+	g_ThreadPool = NULL;
 	memset(g_szGameDirectory, 0, sizeof(g_szGameDirectory));
 }
 
@@ -2209,6 +2219,8 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	gInterface.FileSystem_HL25 = g_pFileSystem_HL25;
 	gInterface.MetaHookAPIVersion = METAHOOK_API_VERSION;
 
+	g_ThreadPool = MH_CreateThreadPool(1, 8);
+
 	if (hEngineModule)
 	{
 		g_dwEngineBase = MH_GetModuleBase(hEngineModule);
@@ -2634,6 +2646,11 @@ void MH_Shutdown(void)
 	MH_ResetAllVars();
 	MH_RemoveDllPaths();
 	MH_ClearDllLoaderNotificationCallback();
+
+	if (g_ThreadPool) {
+		MH_DeleteThreadPool(g_ThreadPool);
+		g_ThreadPool = nullptr;
+	}
 }
 
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall)
@@ -4371,6 +4388,126 @@ ULONG MH_GetMirrorDLLSize(HMEMORYMODULE hMemoryModule)
 	return GetMemoryModuleSize(hMemoryModule);
 }
 
+ThreadPoolHandle_t MH_GetGlobalThreadPool(void)
+{
+	return g_ThreadPool;
+}
+
+typedef struct MH_ThreadPool_s
+{
+	PTP_POOL m_pTp{};
+	PTP_CLEANUP_GROUP m_pCleanupGroup{};
+	TP_CALLBACK_ENVIRON m_env{ };
+}MH_ThreadPool_t;
+
+typedef struct MH_TpWorkContext_s
+{
+	PTP_WORK m_pTpWork{};
+	fnThreadWorkItemCallback m_callback{};
+	void* m_ctx{};
+	HANDLE m_hEvent{};
+}MH_TpWorkContext_t;
+
+ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads)
+{
+	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)malloc(sizeof(MH_ThreadPool_t));
+	if (!pThreadPool)
+		return nullptr;
+
+	InitializeThreadpoolEnvironment(&pThreadPool->m_env);
+
+	pThreadPool->m_pTp = CreateThreadpool(NULL);
+
+	SetThreadpoolThreadMinimum(pThreadPool->m_pTp, minThreads);
+	SetThreadpoolThreadMaximum(pThreadPool->m_pTp, maxThreads);
+
+	pThreadPool->m_pCleanupGroup = CreateThreadpoolCleanupGroup();
+
+	SetThreadpoolCallbackPool(&pThreadPool->m_env, pThreadPool->m_pTp);
+	SetThreadpoolCallbackCleanupGroup(&pThreadPool->m_env, pThreadPool->m_pCleanupGroup, NULL);
+
+	return (ThreadPoolHandle_t)pThreadPool;
+}
+
+static VOID NTAPI MH_ThreadPoolWorkItem(
+	_Inout_     PTP_CALLBACK_INSTANCE Instance,
+	_Inout_opt_ PVOID                 Context,
+	_Inout_     PTP_WORK              Work
+)
+{
+	MH_TpWorkContext_t* pTpWorkContext = (MH_TpWorkContext_t*)Context;
+
+	if (pTpWorkContext) {
+
+		pTpWorkContext->m_callback(pTpWorkContext->m_ctx);
+
+		if (pTpWorkContext->m_hEvent) {
+			SetEventWhenCallbackReturns(Instance, pTpWorkContext->m_hEvent);
+		}
+
+		free(pTpWorkContext);
+	}
+}
+
+ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx, HANDLE hEvent)
+{
+	MH_TpWorkContext_t *pTpWorkContext = (MH_TpWorkContext_t*)malloc(sizeof(MH_TpWorkContext_t));
+	if (!pTpWorkContext)
+		return nullptr;
+
+	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)hThreadPool;
+
+	pTpWorkContext->m_callback = callback;
+	pTpWorkContext->m_ctx = ctx;
+
+	pTpWorkContext->m_pTpWork = CreateThreadpoolWork(MH_ThreadPoolWorkItem, pTpWorkContext, &pThreadPool->m_env);
+
+	return (ThreadWorkItemHandle_t)pTpWorkContext;
+}
+
+void MH_QueueWorkItem(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem)
+{
+	MH_TpWorkContext_t* pTpWorkContext = (MH_TpWorkContext_t*)hWorkItem;
+
+	SubmitThreadpoolWork(pTpWorkContext->m_pTpWork);
+}
+
+void MH_WaitForWorkItemToComplete(ThreadWorkItemHandle_t hWorkItem)
+{
+	MH_TpWorkContext_t* pTpWorkContext = (MH_TpWorkContext_t*)hWorkItem;
+
+	WaitForThreadpoolWorkCallbacks(pTpWorkContext->m_pTpWork, FALSE);
+}
+
+void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool)
+{
+	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)hThreadPool;
+
+	if (pThreadPool->m_pCleanupGroup) {
+		CloseThreadpoolCleanupGroupMembers(pThreadPool->m_pCleanupGroup, true, NULL);
+		CloseThreadpoolCleanupGroup(pThreadPool->m_pCleanupGroup);
+		pThreadPool->m_pCleanupGroup = nullptr;
+	}
+
+	DestroyThreadpoolEnvironment(&pThreadPool->m_env);
+	if (pThreadPool->m_pTp) {
+		CloseThreadpool(pThreadPool->m_pTp);
+		pThreadPool->m_pTp = nullptr;
+	}
+
+	free(pThreadPool);
+}
+
+void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
+{
+	MH_TpWorkContext_t* pTpWorkContext = (MH_TpWorkContext_t*)hWorkItem;
+	if (!pTpWorkContext)
+		return;
+
+	CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
+	free(pTpWorkContext);
+}
+
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
 	MH_UnHook,
@@ -4455,6 +4592,13 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_FreeMirrorDLL,
 	MH_GetMirrorDLLBase,
 	MH_GetMirrorDLLSize,
+	MH_GetGlobalThreadPool,
+	MH_CreateThreadPool,
+	MH_CreateWorkItem,
+	MH_QueueWorkItem,
+	MH_WaitForWorkItemToComplete,
+	MH_DeleteThreadPool,
+	MH_DeleteWorkItem,
 	NULL
 };
 
@@ -4542,5 +4686,12 @@ metahook_api_t gMetaHookAPI =
 	MH_FreeMirrorDLL,
 	MH_GetMirrorDLLBase,
 	MH_GetMirrorDLLSize,
+	MH_GetGlobalThreadPool,
+	MH_CreateThreadPool,
+	MH_CreateWorkItem,
+	MH_QueueWorkItem,
+	MH_WaitForWorkItemToComplete,
+	MH_DeleteThreadPool,
+	MH_DeleteWorkItem,
 	NULL
 };
