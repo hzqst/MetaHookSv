@@ -300,6 +300,18 @@ typedef struct decal_drawbatch_s
 	int BatchCount;
 }decal_drawbatch_t;
 
+//for decal drawing
+typedef struct cached_decal_s
+{
+	vec3_t origin{};
+	GLuint gltexturenum{};
+	GLuint gltexturewidth{};
+	GLuint gltextureheight{};
+	detail_texture_cache_t* pDetailTextures{};
+	GLint startIndex{};
+	GLsizei vertexCount{};
+}cached_decal_t;
+
 class CWorldSurfaceRenderer
 {
 public:
@@ -326,12 +338,9 @@ public:
 	int					iNumLightmapTextures{};
 	int					iLightmapTextureArray{};
 
-	int vSkyboxTextureId[12]{};
+	int					vSkyboxTextureId[12]{};
 
-	GLuint vDecalGLTextures[MAX_DECALS]{};
-	detail_texture_cache_t *vDecalDetailTextures[MAX_DECALS]{};
-	GLint vDecalStartIndex[MAX_DECALS]{};
-	GLsizei vDecalVertexCount[MAX_DECALS]{};
+	cached_decal_t		vCachedDecals[MAX_DECALS]{};
 
 	std::vector<model_t *> vWorldModels;
 };

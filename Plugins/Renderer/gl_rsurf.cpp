@@ -831,21 +831,13 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 	return vlist;
 }
 
-void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_cache_t *pcache)
+void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_cache_t * pcache)
 {
-	if (g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
-	{
-		g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = ptexture->gl_texturenum;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth = ptexture->width;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight = ptexture->height;
 
-		if (pcache)
-		{
-			g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = pcache;
-		}
-		else
-		{
-			g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = NULL;
-		}
-	}
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures = pcache;
 }
 
 void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *surf, detail_texture_cache_t *pcache)
@@ -957,8 +949,21 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 	GL_UploadSubDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
 
-	g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
-	g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] = vertCount;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALVERTS * decalIndex;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount = vertCount;
+}
+
+bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, detail_texture_cache_t *pDetailTextureCache)
+{
+	if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum != texture->gl_texturenum ||
+		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth != texture->width ||
+		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight != texture->height ||
+		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures != pDetailTextureCache)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void R_DrawDecals(cl_entity_t *ent)
@@ -994,17 +999,17 @@ void R_DrawDecals(cl_entity_t *ent)
 		{
 			int decalIndex = R_DecalIndex(plist);
 
+			auto ptexture = Draw_DecalTexture(plist->texture);
+
+			auto pcache = R_FindDecalTextureCache(ptexture->name);
+
 			//Build VBO data for this decal if not built yet
-			if (!(plist->flags & FDECAL_VBO))
+			if (!(plist->flags & FDECAL_VBO) || R_IsDecalCacheInvalidated(decalIndex, ptexture, pcache))
 			{
 				int vertCount = 0;
 				float *v = nullptr;
 
-				auto ptexture = Draw_DecalTexture(plist->texture);
-
 				auto psurf = plist->psurface;
-
-				auto pcache = R_FindDecalTextureCache(ptexture->name);
 
 				if (plist->flags & FDECAL_NOCLIP)
 				{
@@ -1028,32 +1033,31 @@ void R_DrawDecals(cl_entity_t *ent)
 				}
 				else
 				{
-					g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex] = 0;
-					g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] = NULL;
-					g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex] = 0;
-					g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] = 0;
+					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = 0;
+					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = 0;
+					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount = 0;
 				}
 
 				//Mark this decal as ready
 				plist->flags |= FDECAL_VBO;
 			}
 
-			if (g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex] > 0)
+			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount > 0)
 			{
-				if (!g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
+				if (!g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex];
+					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
 					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = nullptr;
-					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex];
-					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex];
+					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
+					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount;
 					++g_DecalBaseDrawBatch.BatchCount;
 				}
-				else if (g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex] && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
+				else if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalGLTextures[decalIndex];
-					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalDetailTextures[decalIndex];
-					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalStartIndex[decalIndex];
-					g_DecalDetailDrawBatch.VertexCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vDecalVertexCount[decalIndex];
+					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
+					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures;
+					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
+					g_DecalDetailDrawBatch.VertexCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount;
 					++g_DecalDetailDrawBatch.BatchCount;
 				}
 			}
@@ -1192,6 +1196,7 @@ void R_DrawDecals(cl_entity_t *ent)
 
 	GL_BindVAO(g_WorldSurfaceRenderer.hDecalVAO);
 
+	//Draw decals with no detail textures
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
 		program_state_t WSurfProgramStateBase = WSurfProgramState;
@@ -1204,10 +1209,12 @@ void R_DrawDecals(cl_entity_t *ent)
 			GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
 			glDrawArrays(GL_POLYGON, g_DecalBaseDrawBatch.StartIndex[i], g_DecalBaseDrawBatch.VertexCount[i]);
 		}
+
 		r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
 		r_wsurf_drawcall += g_DecalBaseDrawBatch.BatchCount;
 	}
 
+	//Draw decals with detail textures
 	if (g_DecalDetailDrawBatch.BatchCount > 0)
 	{
 		for (int i = 0; i < g_DecalDetailDrawBatch.BatchCount; ++i)

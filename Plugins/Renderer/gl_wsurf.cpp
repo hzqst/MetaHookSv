@@ -1715,10 +1715,7 @@ void R_ClearDetailTextureCache(void)
 
 void R_ClearDecalCache(void)
 {
-	memset(g_WorldSurfaceRenderer.vDecalGLTextures, 0, sizeof(g_WorldSurfaceRenderer.vDecalGLTextures));
-	memset(g_WorldSurfaceRenderer.vDecalDetailTextures, 0, sizeof(g_WorldSurfaceRenderer.vDecalDetailTextures));
-	memset(g_WorldSurfaceRenderer.vDecalStartIndex, 0, sizeof(g_WorldSurfaceRenderer.vDecalStartIndex));
-	memset(g_WorldSurfaceRenderer.vDecalVertexCount, 0, sizeof(g_WorldSurfaceRenderer.vDecalVertexCount));
+	memset(g_WorldSurfaceRenderer.vCachedDecals, 0, sizeof(g_WorldSurfaceRenderer.vCachedDecals));
 }
 
 void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceLeaf* pLeaf)
