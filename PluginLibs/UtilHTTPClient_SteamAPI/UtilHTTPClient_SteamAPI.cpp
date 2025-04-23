@@ -558,7 +558,7 @@ private:
 	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestHeadersReceived_t> m_HeaderReceivedCallResult{};
 	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestDataReceived_t> m_DataReceivedCallResult{};
 
-	IUtilHTTPStreamCallbacks* m_StreamCallbacks{};
+	//IUtilHTTPCallbacks* m_StreamCallbacks{};
 
 public:
 	CUtilHTTPAsyncStreamRequest(
@@ -567,9 +567,9 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPStreamCallbacks* StreamCallbacks,
+		IUtilHTTPCallbacks* StreamCallbacks,
 		HTTPCookieContainerHandle hCookieHandle) :
-		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle), m_StreamCallbacks(StreamCallbacks)
+		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle)//, m_StreamCallbacks(StreamCallbacks)
 	{
 		m_pResponse->SetStreamPayload(true);
 	}
@@ -588,11 +588,6 @@ public:
 		{
 			m_DataReceivedCallResult.Cancel();
 		}
-		if (m_StreamCallbacks)
-		{
-			m_StreamCallbacks->Destroy();
-			m_StreamCallbacks = nullptr;
-		}
 	}
 
 	bool IsStream() const override
@@ -610,9 +605,9 @@ public:
 		std::string buf;
 		m_pResponse->OnSteamHTTPDataReceived(pResult, bHasError, buf);
 
-		if (m_StreamCallbacks)
+		if (m_Callbacks)
 		{
-			m_StreamCallbacks->OnReceiveData(
+			m_Callbacks->OnReceiveData(
 				this,
 				m_pResponse, 
 				buf.data(),
@@ -627,9 +622,9 @@ public:
 
 		m_pResponse->OnSteamHTTPCompleted(pResult, bHasError);
 
-		if (m_StreamCallbacks)
+		if (m_Callbacks)
 		{
-			m_StreamCallbacks->OnResponseComplete(this, m_pResponse);
+			m_Callbacks->OnResponseComplete(this, m_pResponse);
 		}
 
 		OnRespondFinish();
@@ -642,9 +637,9 @@ public:
 			m_bRequesting = false;
 			m_bResponding = true;
 
-			if (m_StreamCallbacks)
+			if (m_Callbacks)
 			{
-				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
 			}
 		}
 	}
@@ -656,9 +651,9 @@ public:
 			m_bFinished = true;
 			m_bResponding = false;
 
-			if (m_StreamCallbacks)
+			if (m_Callbacks)
 			{
-				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
 			}
 		}
 	}
@@ -675,9 +670,9 @@ public:
 
 		m_bRequesting = true;
 
-		if (m_StreamCallbacks)
+		if (m_Callbacks)
 		{
-			m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
 		}
 	}
 };
@@ -842,12 +837,12 @@ public:
 	}
 
 
-	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callback)
+	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
 		return new CUtilHTTPAsyncStreamRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
 	}
 
-	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) override
+	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
 		auto result = ParseUrl(url);
 

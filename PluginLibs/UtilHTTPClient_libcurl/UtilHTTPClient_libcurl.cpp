@@ -684,10 +684,8 @@ public:
 		CURLSH* CurlCookieHandle) :
 		CUtilHTTPAsyncRequest(method, host, port, secure, target, callbacks, CurlMultiHandle, CurlCookieHandle)
 	{
-
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_WRITEFUNCTION, WritePayloadStreamCallback);
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_WRITEDATA, this);
-
 	}
 
 	bool IsStream() const override
@@ -951,12 +949,12 @@ public:
 		return CreateAsyncRequestEx(result->GetHost(), result->GetPort(), result->GetTarget(), result->IsSecure(), method, callbacks);
 	}
 
-	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callback)
+	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
 		return new CUtilHTTPAsyncStreamRequest(method, host, port_us, secure, target, callback, m_CurlMultiHandle, m_CurlCookieHandle);
 	}
 
-	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) override
+	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
 		auto result = ParseUrl(url);
 
