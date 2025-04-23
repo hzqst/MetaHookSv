@@ -4410,7 +4410,7 @@ typedef struct MH_TpWorkContext_s
 
 ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads)
 {
-	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)malloc(sizeof(MH_ThreadPool_t));
+	MH_ThreadPool_t* pThreadPool = new MH_ThreadPool_t;
 	if (!pThreadPool)
 		return nullptr;
 
@@ -4445,13 +4445,13 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 			SetEventWhenCallbackReturns(Instance, pTpWorkContext->m_hEvent);
 		}
 
-		free(pTpWorkContext);
+		delete pTpWorkContext;
 	}
 }
 
 ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx, HANDLE hEvent)
 {
-	MH_TpWorkContext_t *pTpWorkContext = (MH_TpWorkContext_t*)malloc(sizeof(MH_TpWorkContext_t));
+	MH_TpWorkContext_t *pTpWorkContext = new MH_TpWorkContext_t;
 	if (!pTpWorkContext)
 		return nullptr;
 
@@ -4495,7 +4495,7 @@ void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool)
 		pThreadPool->m_pTp = nullptr;
 	}
 
-	free(pThreadPool);
+	delete pThreadPool;
 }
 
 void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
@@ -4505,7 +4505,8 @@ void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
 		return;
 
 	CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
-	free(pTpWorkContext);
+
+	delete pTpWorkContext;
 }
 
 metahook_api_t gMetaHookAPI_LegacyV2 =
