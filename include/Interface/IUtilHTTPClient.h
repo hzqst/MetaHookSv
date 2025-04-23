@@ -96,12 +96,6 @@ public:
 	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* pData, size_t cbSize) = 0;
 };
 
-class IUtilHTTPStreamCallbacks : public IUtilHTTPCallbacks
-{
-public:
-
-};
-
 class IURLParsedResult : public IBaseInterface
 {
 public:
@@ -142,7 +136,7 @@ public:
 	//You should never keep IUtilHTTPRequest* pointer between frames, instead you should use the request id to retrieve the request instance
 	virtual IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) = 0;
 	
-	virtual IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) = 0;
+	virtual IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) = 0;
 
 	//You will have to either add async request instance to the request pool, or manage the request instance by yourself (e.g. Destroy after finish).
 	virtual void AddToRequestPool(IUtilHTTPRequest* RequestInstance) = 0;
