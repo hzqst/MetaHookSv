@@ -4459,7 +4459,7 @@ ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThrea
 
 	pTpWorkContext->m_callback = callback;
 	pTpWorkContext->m_ctx = ctx;
-
+	pTpWorkContext->m_hEvent = hEvent;
 	pTpWorkContext->m_pTpWork = CreateThreadpoolWork(MH_ThreadPoolWorkItem, pTpWorkContext, &pThreadPool->m_env);
 
 	return (ThreadWorkItemHandle_t)pTpWorkContext;
