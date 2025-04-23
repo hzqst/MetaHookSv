@@ -602,7 +602,7 @@ typedef struct metahook_api_s
 
 	ThreadPoolHandle_t(*CreateThreadPool)(ULONG minThreads, ULONG maxThreads);
 
-	ThreadWorkItemHandle_t (*CreateWorkItem)(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void *ctx, HANDLE hEvent);
+	ThreadWorkItemHandle_t (*CreateWorkItem)(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void *ctx);
 
 	void (*QueueWorkItem)(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
 

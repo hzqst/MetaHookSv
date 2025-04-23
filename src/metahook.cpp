@@ -174,7 +174,7 @@ PVOID MH_GetMirrorDLLBase(HMEMORYMODULE hMemoryModule);
 ULONG MH_GetMirrorDLLSize(HMEMORYMODULE hMemoryModule);
 ThreadPoolHandle_t MH_GetGlobalThreadPool(void);
 ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads);
-ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx, HANDLE hEvent);
+ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx);
 void MH_QueueWorkItem(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
 void MH_WaitForWorkItemToComplete(ThreadWorkItemHandle_t hWorkItem);
 void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool);
@@ -4449,7 +4449,7 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 	}
 }
 
-ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx, HANDLE hEvent)
+ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx)
 {
 	MH_TpWorkContext_t *pTpWorkContext = new MH_TpWorkContext_t;
 	if (!pTpWorkContext)
@@ -4459,8 +4459,8 @@ ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThrea
 
 	pTpWorkContext->m_callback = callback;
 	pTpWorkContext->m_ctx = ctx;
-	pTpWorkContext->m_hEvent = hEvent;
 	pTpWorkContext->m_pTpWork = CreateThreadpoolWork(MH_ThreadPoolWorkItem, pTpWorkContext, &pThreadPool->m_env);
+	pTpWorkContext->m_hEvent = NULL;
 
 	return (ThreadWorkItemHandle_t)pTpWorkContext;
 }
