@@ -4439,13 +4439,15 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 
 	if (pTpWorkContext) {
 
-		pTpWorkContext->m_callback(pTpWorkContext->m_ctx);
+		auto bDeleteWorkItem = pTpWorkContext->m_callback(pTpWorkContext->m_ctx);
 
 		if (pTpWorkContext->m_hEvent) {
 			SetEventWhenCallbackReturns(Instance, pTpWorkContext->m_hEvent);
 		}
 
-		delete pTpWorkContext;
+		if (bDeleteWorkItem) {
+			delete pTpWorkContext;
+		}
 	}
 }
 

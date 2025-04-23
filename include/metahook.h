@@ -129,7 +129,8 @@ typedef void* ThreadPoolHandle_t;
 
 typedef void* ThreadWorkItemHandle_t;
 
-typedef void(*fnThreadWorkItemCallback)(void* ctx);
+//return true to free the WorkItem immediately
+typedef bool(*fnThreadWorkItemCallback)(void* ctx);
 
 typedef struct mh_load_dll_notification_context_s
 {
