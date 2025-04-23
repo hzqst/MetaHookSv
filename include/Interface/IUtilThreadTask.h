@@ -8,9 +8,9 @@ class IThreadedTask : public IBaseInterface
 public:
 	virtual void Destroy() = 0;
 
-	virtual bool ShouldRun() = 0;
+	virtual bool ShouldRun(float time) = 0;
 
-	virtual void Run() = 0;
+	virtual void Run(float time) = 0;
 };
 
 class IThreadedTaskScheduler : public IBaseInterface
@@ -30,13 +30,13 @@ public:
 		Run one task, return true if any task was executed, otherwise false.
 	*/
 
-	virtual bool RunTask() = 0;
+	virtual bool RunTask(float time) = 0;
 
 	/*
 		Run all tasks in the queue
 	*/
 
-	virtual void RunTasks() = 0;
+	virtual void RunTasks(float time, int maxTasks) = 0;
 };
 
 class IUtilThreadTaskFactory : public IBaseInterface
