@@ -1,8 +1,8 @@
 #include "SCModelDownloaderDialog.h"
+#include "SCModelDownloaderSettingsPage.h"
 #include "TaskListPage.h"
-#include "exportfuncs.h"
 
-#include <format>
+#include "exportfuncs.h"
 
 CSCModelDownloaderDialog::CSCModelDownloaderDialog(vgui::Panel* parent, const char *name) :
 	BaseClass(parent, name)
@@ -14,12 +14,16 @@ CSCModelDownloaderDialog::CSCModelDownloaderDialog(vgui::Panel* parent, const ch
 	m_pTaskListPage = new CTaskListPage(this, "TaskListPage");
 	m_pTaskListPage->MakeReadyForUse();
 
+	m_pSCModelDownloaderSettingsPage = new CSCModelDownloaderSettingsPage(this, "SCModelDownloaderSettingsPage");
+	m_pSCModelDownloaderSettingsPage->MakeReadyForUse();
+
 	SetMinimumSize(640, 384);
 	SetSize(640, 384);
 
 	m_pTabPanel = new vgui::PropertySheet(this, "Tabs");
 	m_pTabPanel->SetTabWidth(72);
 	m_pTabPanel->AddPage(m_pTaskListPage, "#GameUI_SCModelDownloader_TaskListPage");
+	m_pTabPanel->AddPage(m_pSCModelDownloaderSettingsPage, "#GameUI_SCModelDownloader_SettingsPage");
 
 	m_pTabPanel->AddActionSignalTarget(this);
 

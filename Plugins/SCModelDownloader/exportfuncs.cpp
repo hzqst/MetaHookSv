@@ -34,7 +34,7 @@ bool SCModel_ShouldDownloadLatest()
 	return scmodel_downloadlatest->value >= 1 ? true : false;
 }
 
-int SCModel_UseCDN()
+int SCModel_CDN()
 {
 	return (int)scmodel_cdn->value;
 }

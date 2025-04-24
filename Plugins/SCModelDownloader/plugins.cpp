@@ -43,7 +43,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		return;
 	}
 
-
 	g_pFileSystem = g_pInterface->FileSystem;
 	if (!g_pFileSystem)//backward compatibility
 		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;

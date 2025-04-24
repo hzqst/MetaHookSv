@@ -386,6 +386,9 @@
     <ClCompile Include="TaskListPanel.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="SCModelDownloaderSettingsPage.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -758,6 +761,9 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="TaskListPanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="SCModelDownloaderSettingsPage.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,7 +14,7 @@
 #include <ScopeExit/ScopeExit.h>
 
 bool SCModel_ShouldDownloadLatest();
-int SCModel_UseCDN();
+int SCModel_CDN();
 void SCModel_ReloadModel(const char* name);
 
 static unsigned int g_uiAllocatedTaskId = 0;
@@ -439,7 +439,7 @@ public:
 
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_repoId, m_networkFileNameBase, m_networkFileName);
 
-		if (SCModel_UseCDN() == 1)
+		if (SCModel_CDN() == 1)
 		{
 			m_Url = std::format("https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_{0}@master/models/player/{1}/{2}", m_repoId, m_networkFileNameBase, m_networkFileName);
 		}
@@ -652,7 +652,7 @@ public:
 
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{1}.json", m_repoId, m_lowerName);
 
-		if (SCModel_UseCDN() == 1)
+		if (SCModel_CDN() == 1)
 		{
 			//https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_12@master/models/player/gfl_m14-c2_v2/gfl_m14-c2_v2.json
 			m_Url = std::format("https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_{0}@master/models/player/{1}/{1}.json", m_repoId, m_lowerName); 
@@ -783,7 +783,7 @@ public:
 
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
 
-		if (SCModel_UseCDN() == 1)
+		if (SCModel_CDN() == 1)
 		{
 			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json";
 		}
@@ -988,7 +988,13 @@ public:
 
 	void QueryModel(const char* name) override
 	{
-		gEngfuncs.Con_Printf("[SCModelDownloader] Querying model \"%s\"...\n", name);
+		if (IsAllRequiredFilesForModelAvailable(name, false))
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Model \"%s\" already available, query ignored.\n", name);
+			return;
+		}
+
+		gEngfuncs.Con_Printf("[SCModelDownloader] Querying model json for \"%s\"...\n", name);
 
 		//What if database isn't available yet ?
 

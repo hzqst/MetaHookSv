@@ -269,6 +269,7 @@ if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Buil
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp20</LanguageStandard>
     </ClCompile>
     <ClCompile Include="SCModelDownloaderDialog.cpp" />
+    <ClCompile Include="SCModelDownloaderSettingsPage.cpp" />
     <ClCompile Include="TaskListPage.cpp" />
     <ClCompile Include="TaskListPanel.cpp" />
     <ClCompile Include="UtilAssetsIntegrity.cpp" />
@@ -395,6 +396,7 @@ if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Buil
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="SCModelDatabase.h" />
     <ClInclude Include="SCModelDownloaderDialog.h" />
+    <ClInclude Include="SCModelDownloaderSettingsPage.h" />
     <ClInclude Include="TaskListPage.h" />
     <ClInclude Include="TaskListPanel.h" />
     <ClInclude Include="UtilAssetsIntegrity.h" />

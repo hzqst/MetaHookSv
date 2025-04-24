@@ -11,6 +11,7 @@
 #include <vgui_controls/Menu.h>
 
 class CTaskListPage;
+class CSCModelDownloaderSettingsPage;
 
 class CSCModelDownloaderDialog : public vgui::Frame
 {
@@ -27,5 +28,6 @@ private:
 	typedef vgui::Frame BaseClass;
 
 	CTaskListPage* m_pTaskListPage{};
+	CSCModelDownloaderSettingsPage* m_pSCModelDownloaderSettingsPage{};
 	vgui::PropertySheet* m_pTabPanel{};
 };
