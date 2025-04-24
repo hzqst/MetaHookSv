@@ -18,6 +18,7 @@
 
 cvar_t *scmodel_autodownload = NULL;
 cvar_t *scmodel_downloadlatest = NULL;
+cvar_t* scmodel_cdn = NULL;
 
 cl_enginefunc_t gEngfuncs = {0};
 engine_studio_api_t IEngineStudio = { 0 };
@@ -33,6 +34,11 @@ bool SCModel_ShouldDownloadLatest()
 	return scmodel_downloadlatest->value >= 1 ? true : false;
 }
 
+int SCModel_UseCDN()
+{
+	return (int)scmodel_cdn->value;
+}
+
 /*
 	Purpose: Reload model for players that are using the specified model
 */
@@ -42,7 +48,7 @@ void SCModel_ReloadModel(const char *name)
 	//Reload models for those players
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
-		if (!strcmp((*DM_PlayerState)[i].name, name))
+		if (!stricmp((*DM_PlayerState)[i].name, name))
 		{
 			(*DM_PlayerState)[i].name[0] = 0;
 			(*DM_PlayerState)[i].model = nullptr;
@@ -104,6 +110,8 @@ void HUD_Init(void)
 	scmodel_autodownload = gEngfuncs.pfnRegisterVariable("scmodel_autodownload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	scmodel_downloadlatest = gEngfuncs.pfnRegisterVariable("scmodel_downloadlatest", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	scmodel_cdn = gEngfuncs.pfnRegisterVariable("scmodel_cdn", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("scmodel_reload", SCModel_Reload_f);
 

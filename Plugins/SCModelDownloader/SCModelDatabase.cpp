@@ -14,6 +14,7 @@
 #include <ScopeExit/ScopeExit.h>
 
 bool SCModel_ShouldDownloadLatest();
+int SCModel_UseCDN();
 void SCModel_ReloadModel(const char* name);
 
 static unsigned int g_uiAllocatedTaskId = 0;
@@ -26,6 +27,7 @@ public:
 
 	virtual void OnResponding(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
 	virtual void OnFinish(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
+	virtual bool OnStreamComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
 	virtual bool OnProcessPayload(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) = 0;
 	virtual void OnReceiveChunk(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) = 0;
 	virtual void OnFailure() = 0;
@@ -197,12 +199,23 @@ public:
 			return;
 		}
 
-		auto pPayload = ResponseInstance->GetPayload();
-
-		if (!m_pQueryTask->OnProcessPayload(RequestInstance, ResponseInstance, (const void*)pPayload->GetBytes(), pPayload->GetLength()))
+		if (!RequestInstance->IsStream())
 		{
-			m_pQueryTask->OnFailure();
-			return;
+			auto pPayload = ResponseInstance->GetPayload();
+
+			if (!m_pQueryTask->OnProcessPayload(RequestInstance, ResponseInstance, (const void*)pPayload->GetBytes(), pPayload->GetLength()))
+			{
+				m_pQueryTask->OnFailure();
+				return;
+			}
+		}
+		else
+		{
+			if (!m_pQueryTask->OnStreamComplete(RequestInstance, ResponseInstance))
+			{
+				m_pQueryTask->OnFailure();
+				return;
+			}
 		}
 	}
 
@@ -284,6 +297,11 @@ public:
 		return m_bFailed;
 	}
 
+	bool NeedRetry() const override
+	{
+		return m_flNextRetryTime > 0;
+	}
+
 	SCModelQueryState GetState() const override
 	{
 		if (m_bResponding)
@@ -327,6 +345,11 @@ public:
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
+	bool OnStreamComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
+	{
+		return true;
+	}
+
 	bool OnProcessPayload(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) override
 	{
 		auto nContentLength = UTIL_GetContentLength(ResponseInstance);
@@ -362,6 +385,7 @@ public:
 			m_RequestId = UTILHTTP_REQUEST_INVALID_ID;
 		}
 
+		m_flNextRetryTime = 0;
 		m_bFailed = false;
 		m_bFinished = false;
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
@@ -415,6 +439,11 @@ public:
 
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_repoId, m_networkFileNameBase, m_networkFileName);
 
+		if (SCModel_UseCDN() == 1)
+		{
+			m_Url = std::format("https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_{0}@master/models/player/{1}/{2}", m_repoId, m_networkFileNameBase, m_networkFileName);
+		}
+
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncStreamRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
 
 		if (!pRequestInstance)
@@ -454,9 +483,9 @@ public:
 		}
 	}
 
-	void OnFinish(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
+	bool OnStreamComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
 	{
-		CSCModelQueryBase::OnFinish(RequestInstance, ResponseInstance);
+		bool bSuccess = false;
 
 		auto nContentLength = UTIL_GetContentLength(ResponseInstance);
 
@@ -487,7 +516,7 @@ public:
 					if (nContentLength >= 0 && fileSize < nContentLength)
 					{
 						gEngfuncs.Con_Printf("[SCModelDownloader] Temp file \"%s\" size mismatch ! expect %d, got %d. The downloading progress might be interrupted.\n", filePathTmp.c_str(), nContentLength, fileSize);
-						return;
+						return false;
 					}
 
 					auto fileBuf = malloc(fileSize);
@@ -505,7 +534,7 @@ public:
 								{
 									gEngfuncs.Con_Printf("[SCModelDownloader] File \"%s\" failed the integrity check!\n", filePathTmp.c_str());
 									gEngfuncs.Con_Printf("[SCModelDownloader] Integrity check result: %s.\n", checkResult.ReasonStr);
-									return;
+									return false;
 								}
 							}
 							else if (m_localFileName.ends_with(".bmp"))
@@ -525,7 +554,7 @@ public:
 								{
 									gEngfuncs.Con_Printf("[SCModelDownloader] File \"%s\" failed the integrity check!\n", filePathTmp.c_str());
 									gEngfuncs.Con_Printf("[SCModelDownloader] Integrity check result: %s.\n", checkResult.ReasonStr);
-									return;
+									return false;
 								}
 							}
 							std::string filePath = std::format("models/player/{0}/{1}", m_localFileNameBase, m_localFileName);
@@ -537,6 +566,8 @@ public:
 								SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandleWrite); };
 
 								FILESYSTEM_ANY_WRITE(fileBuf, fileSize, hFileHandleWrite);
+
+								bSuccess = true;
 							}
 							else
 							{
@@ -573,6 +604,8 @@ public:
 		{
 			SCModelDatabaseInternal()->OnModelFileWriteFinished(m_localFileNameBase, m_bHasTModel);
 		}
+
+		return bSuccess;
 	}
 
 	void OnReceiveChunk(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) override
@@ -603,8 +636,6 @@ public:
 	std::string m_networkFileNameBase;
 	bool m_bHasTModel{};
 
-	std::vector<std::shared_ptr<ISCModelQuery>> m_SubQueryList;
-
 public:
 	CSCModelQueryTaskList(const std::string& lowerName, const std::string& localFileNameBase) :
 		CSCModelQueryBase(),
@@ -615,25 +646,17 @@ public:
 
 	}
 
-	bool IsFinished() const override
-	{
-		if (!CSCModelQueryBase::IsFinished())
-			return false;
-
-		for (auto& itor : m_SubQueryList)
-		{
-			if (!itor->IsFinished())
-				return false;
-		}
-
-		return true;
-	}
-
 	void StartQuery() override
 	{
 		CSCModelQueryBase::StartQuery();
 
 		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{1}.json", m_repoId, m_lowerName);
+
+		if (SCModel_UseCDN() == 1)
+		{
+			//https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_12@master/models/player/gfl_m14-c2_v2/gfl_m14-c2_v2.json
+			m_Url = std::format("https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_{0}@master/models/player/{1}/{1}.json", m_repoId, m_lowerName); 
+		}
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
 
@@ -751,7 +774,7 @@ public:
 
 	const char* GetIdentifier() const override
 	{
-		return "";
+		return "models.json";
 	}
 
 	void StartQuery() override
@@ -759,6 +782,11 @@ public:
 		CSCModelQueryBase::StartQuery();
 
 		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
+
+		if (SCModel_UseCDN() == 1)
+		{
+			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json";
+		}
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
 
@@ -816,7 +844,7 @@ public:
 
 			p->RunFrame(flCurrentAbsTime);
 
-			if (p->IsFinished())
+			if (p->IsFinished() && !p->NeedRetry())
 			{
 				itor = m_QueryList.erase(itor);
 				continue;

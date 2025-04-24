@@ -19,6 +19,7 @@ public:
 	virtual const char* GetUrl() const = 0;
 	virtual bool IsFailed() const = 0;
 	virtual bool IsFinished() const = 0;
+	virtual bool NeedRetry() const = 0;
 	virtual SCModelQueryState GetState() const = 0; 
 	virtual unsigned int GetTaskId() const = 0;
 };

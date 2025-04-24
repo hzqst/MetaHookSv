@@ -38,8 +38,17 @@ void CTaskListPage::OnKeyCodeTyped(vgui::KeyCode code)
 
 const char * UTIL_GetQueryStateName(SCModelQueryState state)
 {
+	/*
+	SCModelQueryState_Unknown = 0,
+	SCModelQueryState_Querying,
+	SCModelQueryState_Receiving,
+	SCModelQueryState_Failed,
+	SCModelQueryState_Finished,
+	*/
 	const char* s_QueryStateName[] = {
+		"Unknown",
 		"Querying",
+		"Receiving",
 		"Failed",
 		"Finished"
 	};
