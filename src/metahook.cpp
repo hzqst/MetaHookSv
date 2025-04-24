@@ -4446,6 +4446,7 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 		}
 
 		if (bDeleteWorkItem) {
+			CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
 			delete pTpWorkContext;
 		}
 	}
