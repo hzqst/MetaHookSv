@@ -4,8 +4,9 @@
 
 enum SCModelQueryState
 {
-	SCModelQueryState_Querying = 0,
-	SCModelQueryState_Receiving = 0,
+	SCModelQueryState_Unknown = 0,
+	SCModelQueryState_Querying,
+	SCModelQueryState_Receiving,
 	SCModelQueryState_Failed,
 	SCModelQueryState_Finished,
 };
@@ -44,7 +45,6 @@ public:
 	virtual void EnumQueries(IEnumSCModelQueryHandler *handler) = 0;
 	virtual void RegisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;
 	virtual void UnregisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;
-	virtual void DispatchQueryStateChangeCallback(ISCModelQuery* pQuery, SCModelQueryState newState) = 0;
 };
 
 ISCModelDatabase* SCModelDatabase();
