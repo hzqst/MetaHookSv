@@ -4397,14 +4397,14 @@ typedef struct MH_ThreadPool_s
 {
 	PTP_POOL m_pTp{};
 	PTP_CLEANUP_GROUP m_pCleanupGroup{};
-	TP_CALLBACK_ENVIRON m_env{ };
+	TP_CALLBACK_ENVIRON m_CallbackEnv{ };
 }MH_ThreadPool_t;
 
 typedef struct MH_TpWorkContext_s
 {
 	PTP_WORK m_pTpWork{};
-	fnThreadWorkItemCallback m_callback{};
-	void* m_ctx{};
+	fnThreadWorkItemCallback m_UserCallback{};
+	void* m_pUserContext{};
 	HANDLE m_hEvent{};
 }MH_TpWorkContext_t;
 
@@ -4414,7 +4414,7 @@ ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads)
 	if (!pThreadPool)
 		return nullptr;
 
-	InitializeThreadpoolEnvironment(&pThreadPool->m_env);
+	InitializeThreadpoolEnvironment(&pThreadPool->m_CallbackEnv);
 
 	pThreadPool->m_pTp = CreateThreadpool(NULL);
 
@@ -4423,8 +4423,8 @@ ThreadPoolHandle_t MH_CreateThreadPool(ULONG minThreads, ULONG maxThreads)
 
 	pThreadPool->m_pCleanupGroup = CreateThreadpoolCleanupGroup();
 
-	SetThreadpoolCallbackPool(&pThreadPool->m_env, pThreadPool->m_pTp);
-	SetThreadpoolCallbackCleanupGroup(&pThreadPool->m_env, pThreadPool->m_pCleanupGroup, NULL);
+	SetThreadpoolCallbackPool(&pThreadPool->m_CallbackEnv, pThreadPool->m_pTp);
+	SetThreadpoolCallbackCleanupGroup(&pThreadPool->m_CallbackEnv, pThreadPool->m_pCleanupGroup, NULL);
 
 	return (ThreadPoolHandle_t)pThreadPool;
 }
@@ -4439,14 +4439,19 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 
 	if (pTpWorkContext) {
 
-		auto bDeleteWorkItem = pTpWorkContext->m_callback(pTpWorkContext->m_ctx);
+		auto bDeleteWorkItem = pTpWorkContext->m_UserCallback(pTpWorkContext->m_pUserContext);
 
 		if (pTpWorkContext->m_hEvent) {
 			SetEventWhenCallbackReturns(Instance, pTpWorkContext->m_hEvent);
 		}
 
 		if (bDeleteWorkItem) {
-			CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
+
+			if (pTpWorkContext->m_pTpWork) {
+				CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
+				pTpWorkContext->m_pTpWork = nullptr;
+			}
+
 			delete pTpWorkContext;
 		}
 	}
@@ -4460,9 +4465,9 @@ ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThrea
 
 	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)hThreadPool;
 
-	pTpWorkContext->m_callback = callback;
-	pTpWorkContext->m_ctx = ctx;
-	pTpWorkContext->m_pTpWork = CreateThreadpoolWork(MH_ThreadPoolWorkItem, pTpWorkContext, &pThreadPool->m_env);
+	pTpWorkContext->m_UserCallback = callback;
+	pTpWorkContext->m_pUserContext = ctx;
+	pTpWorkContext->m_pTpWork = CreateThreadpoolWork(MH_ThreadPoolWorkItem, pTpWorkContext, &pThreadPool->m_CallbackEnv);
 	pTpWorkContext->m_hEvent = NULL;
 
 	return (ThreadWorkItemHandle_t)pTpWorkContext;
@@ -4487,12 +4492,13 @@ void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool)
 	MH_ThreadPool_t* pThreadPool = (MH_ThreadPool_t*)hThreadPool;
 
 	if (pThreadPool->m_pCleanupGroup) {
-		CloseThreadpoolCleanupGroupMembers(pThreadPool->m_pCleanupGroup, true, NULL);
+		CloseThreadpoolCleanupGroupMembers(pThreadPool->m_pCleanupGroup, TRUE, NULL);
 		CloseThreadpoolCleanupGroup(pThreadPool->m_pCleanupGroup);
 		pThreadPool->m_pCleanupGroup = nullptr;
 	}
 
-	DestroyThreadpoolEnvironment(&pThreadPool->m_env);
+	DestroyThreadpoolEnvironment(&pThreadPool->m_CallbackEnv);
+
 	if (pThreadPool->m_pTp) {
 		CloseThreadpool(pThreadPool->m_pTp);
 		pThreadPool->m_pTp = nullptr;
@@ -4507,7 +4513,10 @@ void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
 	if (!pTpWorkContext)
 		return;
 
-	CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
+	if (pTpWorkContext->m_pTpWork) {
+		CloseThreadpoolWork(pTpWorkContext->m_pTpWork);
+		pTpWorkContext->m_pTpWork = nullptr;
+	}
 
 	delete pTpWorkContext;
 }
