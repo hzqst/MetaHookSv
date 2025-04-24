@@ -387,7 +387,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Responding);
 			}
 		}
 	}
@@ -401,7 +401,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Finished);
 			}
 		}
 	}
@@ -545,7 +545,7 @@ public:
 		m_bRequesting = true;
 
 		if (m_Callbacks) {
-			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+			m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Requesting);
 		}
 
 		curl_multi_add_handle(m_CurlMultiHandle, m_CurlEasyHandle);

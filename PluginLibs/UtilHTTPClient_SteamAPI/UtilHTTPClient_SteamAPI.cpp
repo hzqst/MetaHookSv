@@ -301,7 +301,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Responding);
 			}
 		}
 	}
@@ -315,7 +315,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Finished);
 			}
 		}
 	}
@@ -360,7 +360,7 @@ public:
 
 		if (m_Callbacks)
 		{
-			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+			m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Requesting);
 		}
 	}
 
@@ -639,7 +639,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Responding);
 			}
 		}
 	}
@@ -653,7 +653,7 @@ public:
 
 			if (m_Callbacks)
 			{
-				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+				m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Finished);
 			}
 		}
 	}
@@ -672,7 +672,7 @@ public:
 
 		if (m_Callbacks)
 		{
-			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+			m_Callbacks->OnUpdateState(this, m_pResponse, UtilHTTPRequestState::Requesting);
 		}
 	}
 };

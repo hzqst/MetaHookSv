@@ -2,6 +2,7 @@
 
 #include <metahook.h>
 #include <memory>
+#include <format>
 #include <stdint.h>
 
 #include <studio.h>
@@ -1084,8 +1085,12 @@ public:
 			return CheckStudioModel_IDST(buf, bufSize, checkResult);
 		}
 
-		auto pbuf = (const char*)buf;
-		if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has bogus header, expect IDST/IDSQ, got %c%c%c%c.", pbuf[0], pbuf[1], pbuf[2], pbuf[3]);
+		if (checkResult)
+		{
+			auto pbuf = (const char*)buf;
+			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has bogus header, expect IDST/IDSQ, got %c%c%c%c.", pbuf[0], pbuf[1], pbuf[2], pbuf[3]);
+		}
+
 		return UtilAssetsIntegrityCheckReason::BogusHeader;
 	}
 

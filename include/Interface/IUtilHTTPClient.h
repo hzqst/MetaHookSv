@@ -89,8 +89,8 @@ public:
 	//Called when response complete
 	virtual void OnResponseComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
 
-	//Called when request state change
-	virtual void OnUpdateState(UtilHTTPRequestState NewState) = 0;
+	//Called when request state change, updated since 2025-04-24 ,API Version 006 -> 007
+	virtual void OnUpdateState(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, UtilHTTPRequestState NewState) = 0;
 
 	//Called when receive chunked payload data
 	virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* pData, size_t cbSize) = 0;
@@ -149,5 +149,5 @@ public:
 	
 };
 
-#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_006"
-#define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_006"
+#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_007"
+#define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_007"

@@ -17,17 +17,11 @@ IFileSystem* g_pFileSystem = NULL;
 IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
-PVOID g_dwEngineBase = 0;
-DWORD g_dwEngineSize = 0;
-PVOID g_dwEngineTextBase = 0;
-DWORD g_dwEngineTextSize = 0;
-PVOID g_dwEngineDataBase = 0;
-DWORD g_dwEngineDataSize = 0;
-PVOID g_dwEngineRdataBase = 0;
-DWORD g_dwEngineRdataSize = 0;
 DWORD g_dwEngineBuildnum = 0;
-
-void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
+mh_dll_info_t g_EngineDLLInfo = { 0 };
+mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
+mh_dll_info_t g_ClientDLLInfo = { 0 };
+mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -49,21 +43,34 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		return;
 	}
 
+
 	g_pFileSystem = g_pInterface->FileSystem;
+	if (!g_pFileSystem)//backward compatibility
+		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
-	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
-	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
-	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
-	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
-	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
-	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
+	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
+	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
+	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
+	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
+	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
 
-#define R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE "\x2A\x33\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x0B"
+	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
+	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
 
-	gPrivateFuncs.R_StudioChangePlayerModel = (decltype(gPrivateFuncs.R_StudioChangePlayerModel))Search_Pattern(R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE);
-	Sig_FuncNotFound(R_StudioChangePlayerModel);
+	if (g_MirrorEngineDLLInfo.ImageBase)
+	{
+		g_MirrorEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirrorEngineDLLInfo.TextSize);
+		g_MirrorEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirrorEngineDLLInfo.DataSize);
+		g_MirrorEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirrorEngineDLLInfo.RdataSize);
+	}
+
+	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));	
+	
+	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_InstallHook();
 
 	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 

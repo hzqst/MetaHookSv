@@ -5,6 +5,7 @@
 enum SCModelQueryState
 {
 	SCModelQueryState_Querying = 0,
+	SCModelQueryState_Receiving = 0,
 	SCModelQueryState_Failed,
 	SCModelQueryState_Finished,
 };
@@ -19,13 +20,6 @@ public:
 	virtual bool IsFinished() const = 0;
 	virtual SCModelQueryState GetState() const = 0; 
 	virtual unsigned int GetTaskId() const = 0;
-
-	virtual void OnFinish() = 0;
-	virtual void OnFailure() = 0;
-	virtual bool OnProcessPayload(const char* data, size_t size) = 0;
-
-	virtual void RunFrame(float flCurrentAbsTime) = 0;
-	virtual void StartQuery() = 0;
 };
 
 class IEnumSCModelQueryHandler : public IBaseInterface
@@ -46,7 +40,7 @@ public:
 	virtual void Init() = 0;
 	virtual void Shutdown() = 0;
 	virtual void RunFrame() = 0;
-	virtual void OnMissingModel(const char* modelname) = 0;
+	virtual void QueryModel(const char* modelname) = 0;
 	virtual void EnumQueries(IEnumSCModelQueryHandler *handler) = 0;
 	virtual void RegisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;
 	virtual void UnregisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;

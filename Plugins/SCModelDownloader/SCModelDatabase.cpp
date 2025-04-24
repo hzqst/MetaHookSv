@@ -11,11 +11,128 @@
 #include <format>
 
 #include <rapidjson/document.h>
+#include <ScopeExit/ScopeExit.h>
 
 bool SCModel_ShouldDownloadLatest();
 void SCModel_ReloadModel(const char* name);
 
 static unsigned int g_uiAllocatedTaskId = 0;
+
+class ISCModelQueryInternal : public ISCModelQuery
+{
+public:	
+	virtual void AddRef() = 0;
+	virtual void Release() = 0;
+
+	virtual void OnResponding() = 0;
+	virtual void OnFinish() = 0;
+	virtual void OnFailure() = 0;
+	virtual bool OnProcessPayload(const char* data, size_t size) = 0;
+	virtual void OnReceiveChunk(const void* data, size_t size) = 0;
+
+	virtual void RunFrame(float flCurrentAbsTime) = 0;
+	virtual void StartQuery() = 0;
+};
+
+class ISCModelDatabaseInternal : public ISCModelDatabase
+{
+public:
+	virtual bool IsModelResourceFileAvailable(const std::string& localFileNameBase, const std::string& localFileName) = 0;
+
+	virtual bool IsAllRequiredFilesForModelAvailable(const std::string& localFileNameBase, bool bHasTModel) = 0;
+
+	virtual void BuildQueryModelResource(
+		int repoId,
+		const std::string& localFileNameBase,
+		const std::string& localFileName,
+		const std::string& networkFileNameBase,
+		const std::string& networkFileName,
+		bool bHasTModel
+	) = 0;
+
+	virtual void OnModelFileWriteFinished(const std::string& localFileNameBase, bool bHasTModel) = 0;
+
+	virtual bool OnDatabaseJSONAcquired(const char *data, size_t size) = 0;
+};
+
+ISCModelDatabaseInternal* SCModelDatabaseInternal();
+
+template<typename T>
+class AutoPtr {
+private:
+	T* m_ptr;
+
+public:
+	AutoPtr() : m_ptr(nullptr) {}
+
+	explicit AutoPtr(T* ptr) : m_ptr(ptr) {
+		if (m_ptr) {
+			m_ptr->AddRef();
+		}
+	}
+
+	AutoPtr(const AutoPtr& other) : m_ptr(other.m_ptr) {
+		if (m_ptr) {
+			m_ptr->AddRef();
+		}
+	}
+
+	AutoPtr(AutoPtr&& other) noexcept : m_ptr(other.m_ptr) {
+		other.m_ptr = nullptr;
+	}
+
+	~AutoPtr() {
+		if (m_ptr) {
+			m_ptr->Release();
+		}
+	}
+
+	AutoPtr& operator=(const AutoPtr& other) {
+		if (this != &other) {
+			if (m_ptr) {
+				m_ptr->Release();
+			}
+			m_ptr = other.m_ptr;
+			if (m_ptr) {
+				m_ptr->AddRef();
+			}
+		}
+		return *this;
+	}
+
+	AutoPtr& operator=(AutoPtr&& other) noexcept {
+		if (this != &other) {
+			if (m_ptr) {
+				m_ptr->Release();
+			}
+			m_ptr = other.m_ptr;
+			other.m_ptr = nullptr;
+		}
+		return *this;
+	}
+
+	T* operator->() const { return m_ptr; }
+	T& operator*() const { return *m_ptr; }
+	operator T* () const { return m_ptr; }
+
+	T* Get() const { return m_ptr; }
+
+	void Reset(T* ptr = nullptr) {
+		if (m_ptr) {
+			m_ptr->Release();
+		}
+		m_ptr = ptr;
+		if (m_ptr) {
+			m_ptr->AddRef();
+		}
+	}
+
+	T* Detach() {
+		T* ptr = m_ptr;
+		m_ptr = nullptr;
+		return ptr;
+	}
+};
 
 typedef struct scmodel_s
 {
@@ -24,9 +141,7 @@ typedef struct scmodel_s
 	int polys;
 }scmodel_t;
 
-static std::unordered_map<std::string, scmodel_t> g_Database;
-
-int SCModel_Hash(const std::string& name)
+static int SCModel_Hash(const std::string& name)
 {
 	int hash = 0;
 
@@ -41,10 +156,11 @@ int SCModel_Hash(const std::string& name)
 class CUtilHTTPCallbacks : public IUtilHTTPCallbacks
 {
 private:
-	ISCModelQuery* m_pQueryTask{};
+	//No AutoPtr, because each ISCModelQueryInternal has their own IUtilHTTPCallbacks
+	ISCModelQueryInternal* m_pQueryTask{};
 
 public:
-	CUtilHTTPCallbacks(ISCModelQuery* p) : m_pQueryTask(p)
+	CUtilHTTPCallbacks(ISCModelQueryInternal* p) : m_pQueryTask(p)
 	{
 
 	}
@@ -77,8 +193,12 @@ public:
 		}
 	}
 
-	void OnUpdateState(UtilHTTPRequestState NewState) override
+	void OnUpdateState(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, UtilHTTPRequestState NewState) override
 	{
+		if (NewState == UtilHTTPRequestState::Responding)
+		{
+			m_pQueryTask->OnResponding();
+		}
 		if (NewState == UtilHTTPRequestState::Finished)
 		{
 			m_pQueryTask->OnFinish();
@@ -88,12 +208,15 @@ public:
 	void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* pData, size_t cbSize) override
 	{
 		//Only stream request has OnReceiveData
+		m_pQueryTask->OnReceiveChunk(pData, cbSize);
 	}
 };
 
-class CSCModelQueryBase : public ISCModelQuery
+class CSCModelQueryBase : public ISCModelQueryInternal
 {
 private:
+	volatile long m_RefCount{};
+	bool m_bResponding{};
 	bool m_bFinished{};
 	bool m_bFailed{};
 	float m_flNextRetryTime{};
@@ -106,16 +229,30 @@ protected:
 public:
 	CSCModelQueryBase()
 	{
+		m_RefCount = 1;
 		m_uiTaskId = g_uiAllocatedTaskId;
 		g_uiAllocatedTaskId++;
 	}
 
 	~CSCModelQueryBase()
 	{
+#ifdef _DEBUG
+		gEngfuncs.Con_DPrintf("SCModelQuery: deleting query \"%s\"\n", m_Url.c_str());
+#endif
 		if (m_RequestId != UTILHTTP_REQUEST_INVALID_ID)
 		{
 			UtilHTTPClient()->DestroyRequestById(m_RequestId);
 			m_RequestId = UTILHTTP_REQUEST_INVALID_ID;
+		}
+	}
+
+	void AddRef() override {
+		InterlockedIncrement(&m_RefCount);
+	}
+
+	void Release() override {
+		if (InterlockedDecrement(&m_RefCount) == 0) {
+			delete this;
 		}
 	}
 
@@ -136,6 +273,9 @@ public:
 
 	SCModelQueryState GetState() const override
 	{
+		if (m_bResponding)
+			return SCModelQueryState_Receiving;
+
 		if (m_bFailed)
 			return SCModelQueryState_Failed;
 
@@ -150,8 +290,16 @@ public:
 		return m_uiTaskId;
 	}
 
+	void OnResponding() override
+	{
+		m_bResponding = true;
+
+		SCModelDatabase()->DispatchQueryStateChangeCallback(this, GetState());
+	}
+
 	void OnFailure() override
 	{
+		m_bResponding = false;
 		m_bFailed = true;
 		m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
 
@@ -160,9 +308,15 @@ public:
 
 	void OnFinish() override
 	{
+		m_bResponding = false;
 		m_bFinished = true;
 
 		SCModelDatabase()->DispatchQueryStateChangeCallback(this, GetState());
+	}
+
+	void OnReceiveChunk(const void* data, size_t size)
+	{
+		//do nothing
 	}
 
 	void RunFrame(float flCurrentAbsTime) override
@@ -187,37 +341,221 @@ public:
 	}
 };
 
-class CSCModelQueryTaskList;
-
-class CSCModelQueryModelFileTask : public CSCModelQueryBase
+class CSCModelQueryModelResourceTask : public CSCModelQueryBase
 {
 public:
+	int m_repoId{};
+	std::string m_localFileNameBase;
 	std::string m_localFileName;
+	std::string m_networkFileNameBase;
 	std::string m_networkFileName;
-	CSCModelQueryTaskList* m_pQueryTaskList;
+	bool m_bHasTModel{};
+	std::string m_identifier;
+	FileHandle_t m_hFileHandle{};
 
 public:
-	CSCModelQueryModelFileTask(CSCModelQueryTaskList* parent, const std::string& localFileName, const std::string& networkFileName) :
+	CSCModelQueryModelResourceTask(
+		int repoId, 
+		const std::string& localFileNameBase,
+		const std::string& localFileName, 
+		const std::string& networkFileNameBase, 
+		const std::string& networkFileName,
+		bool bHasTModel) :
 		CSCModelQueryBase(),
-		m_pQueryTaskList(parent),
-		m_localFileName(localFileName),
-		m_networkFileName(networkFileName)
-	{
 
+		m_repoId(repoId),
+		m_localFileNameBase(localFileNameBase),
+		m_localFileName(localFileName),
+		m_networkFileNameBase(networkFileNameBase),
+		m_networkFileName(networkFileName),
+		m_bHasTModel(bHasTModel)
+	{
+		m_identifier = std::format("/{0}/{1}", m_networkFileNameBase, m_networkFileName);
 	}
 
-	void StartQuery() override;
+	~CSCModelQueryModelResourceTask()
+	{
+		if (m_hFileHandle)
+		{
+			FILESYSTEM_ANY_CLOSE(m_hFileHandle);
+			m_hFileHandle = nullptr;
+		}
+	}
 
-	bool OnProcessPayload(const char* data, size_t size) override;
+	void StartQuery() override
+	{
+		CSCModelQueryBase::StartQuery();
+
+		m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_repoId, m_networkFileNameBase, m_networkFileName);
+
+		auto pRequestInstance = UtilHTTPClient()->CreateAsyncStreamRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+
+		if (!pRequestInstance)
+		{
+			CSCModelQueryBase::OnFailure();
+			return;
+		}
+
+		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
+
+		m_RequestId = pRequestInstance->GetRequestId();
+
+		pRequestInstance->Send();
+	}
+
+	void OnResponding() override
+	{
+		CSCModelQueryBase::OnResponding();
+
+		FILESYSTEM_ANY_CREATEDIR("models", "GAMEDOWNLOAD");
+		FILESYSTEM_ANY_CREATEDIR("models/player", "GAMEDOWNLOAD");
+
+		std::string filePathDir = std::format("models/player/{0}", m_localFileNameBase);
+		FILESYSTEM_ANY_CREATEDIR(filePathDir.c_str(), "GAMEDOWNLOAD");
+
+		std::string filePathTmp = std::format("models/player/{0}/{1}.tmp", m_localFileNameBase, m_localFileName);
+		m_hFileHandle = FILESYSTEM_ANY_OPEN(filePathTmp.c_str(), "wb", "GAMEDOWNLOAD");
+
+		if (m_hFileHandle)
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Start writing \"%s\" ...\n", filePathTmp.c_str());
+		}
+		else
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to open temp file \"%s\" for writing!\n", filePathTmp.c_str());
+			return;
+		}
+	}
+
+	void OnFinish() override
+	{
+		CSCModelQueryBase::OnFinish();
+
+		std::string fileToDetele;
+
+		if (m_hFileHandle)
+		{
+			FILESYSTEM_ANY_CLOSE(m_hFileHandle);
+
+			m_hFileHandle = nullptr;
+
+			std::string filePathTmp = std::format("models/player/{0}/{1}.tmp", m_localFileNameBase, m_localFileName);
+
+			fileToDetele = filePathTmp;
+
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Temp file \"%s\" acquired!\n", filePathTmp.c_str());
+
+			auto hFileHandleRead = FILESYSTEM_ANY_OPEN(filePathTmp.c_str(), "rb", "GAMEDOWNLOAD");
+
+			if (hFileHandleRead)
+			{
+				SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandleRead); };
+
+				auto fileSize = FILESYSTEM_ANY_SIZE(hFileHandleRead);
+
+				if (fileSize > 0)
+				{
+					auto fileBuf = malloc(fileSize);
+					if (fileBuf)
+					{
+						SCOPE_EXIT{ free(fileBuf); };
+
+						if (FILESYSTEM_ANY_READ(fileBuf, fileSize, hFileHandleRead) == fileSize)
+						{
+							if (m_localFileName.ends_with(".mdl"))
+							{
+								UtilAssetsIntegrityCheckResult_StudioModel checkResult{};
+								if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->CheckStudioModel(fileBuf, fileSize, &checkResult))
+								{
+									gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" failed the integrity check!\n", filePathTmp.c_str());
+									gEngfuncs.Con_DPrintf("[SCModelDownloader] Integrity check result: %s.\n", checkResult.ReasonStr);
+									return;
+								}
+							}
+							else if (m_localFileName.ends_with(".bmp"))
+							{
+								/*
+								void EngineSurface::drawSetTextureFile(int id,const char* filename,int hardwareFilter,bool forceReload)
+								//....
+										unsigned char buf[256*256*4];//Cannot excceed 256x256
+
+								*/
+
+								UtilAssetsIntegrityCheckResult_BMP checkResult{};
+								checkResult.MaxWidth = 256;
+								checkResult.MaxHeight = 256;
+
+								if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->Check8bitBMP(fileBuf, fileSize, &checkResult))
+								{
+									gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" failed the integrity check!\n", filePathTmp.c_str());
+									gEngfuncs.Con_DPrintf("[SCModelDownloader] Integrity check result: %s.\n", checkResult.ReasonStr);
+									return;
+								}
+							}
+							std::string filePath = std::format("models/player/{0}/{1}", m_localFileNameBase, m_localFileName);
+
+							auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
+
+							if (hFileHandleWrite)
+							{
+								SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandleWrite); };
+
+								FILESYSTEM_ANY_WRITE(fileBuf, fileSize, hFileHandleWrite);
+							}
+							else
+							{
+								gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to open file \"%s\" for writing!\n", filePath.c_str());
+							}
+						}
+						else
+						{
+							gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to read content from \"%s\" !\n", filePathTmp.c_str());
+						}
+					}					
+				}
+				else
+				{
+					gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is empty !\n", filePathTmp.c_str());
+				}
+			}
+			else
+			{
+				gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to open file \"%s\" for reading!\n", filePathTmp.c_str());
+			}
+		}
+
+		if (!fileToDetele.empty())
+		{
+			FILESYSTEM_ANY_REMOVEFILE(fileToDetele.c_str(), "GAMEDOWNLOAD");
+		}
+
+		if (m_localFileName.ends_with(".mdl"))
+		{
+			SCModelDatabaseInternal()->OnModelFileWriteFinished(m_localFileNameBase, m_bHasTModel);
+		}
+	}
+
+	void OnReceiveChunk(const void* data, size_t size) override
+	{
+		if (m_hFileHandle)
+		{
+			FILESYSTEM_ANY_WRITE(data, size, m_hFileHandle);
+		}
+	}
+
+	bool OnProcessPayload(const char* data, size_t size) override
+	{
+		return true;
+	}
 
 	const char* GetName() const override
 	{
-		return "QueryModelFileTask";
+		return "QueryModelResource";
 	}
 
 	const char* GetIdentifier() const override
 	{
-		return m_localFileName.c_str();
+		return m_identifier.c_str();
 	}
 };
 
@@ -229,7 +567,6 @@ public:
 	std::string m_localFileNameBase;
 	std::string m_networkFileNameBase;
 	bool m_bHasTModel{};
-	bool m_bReloaded{};
 
 	std::vector<std::shared_ptr<ISCModelQuery>> m_SubQueryList;
 
@@ -257,26 +594,6 @@ public:
 		return true;
 	}
 
-	bool IsAllRequiredFilesPresent()
-	{
-		std::string mdl = std::format("models/player/{0}/{0}.mdl", m_localFileNameBase);
-
-		if (!FILESYSTEM_ANY_FILEEXISTS(mdl.c_str()))
-			return false;
-
-		if (m_bHasTModel)
-		{
-			std::string Tmdl = std::format("models/player/{0}/{0}T.mdl", m_localFileNameBase);
-			std::string tmdl = std::format("models/player/{0}/{0}t.mdl", m_localFileNameBase);
-
-			//Linux is unhappy with t.mdl
-			if (!FILESYSTEM_ANY_FILEEXISTS(Tmdl.c_str()) && !FILESYSTEM_ANY_FILEEXISTS(tmdl.c_str()))
-				return false;
-		}
-
-		return true;
-	}
-
 	void StartQuery() override
 	{
 		CSCModelQueryBase::StartQuery();
@@ -298,29 +615,6 @@ public:
 		pRequestInstance->Send();
 	}
 
-	void BuildQueryInternal(const std::string& localFileName, const std::string& networkFileName)
-	{
-		if (std::find_if(m_SubQueryList.begin(), m_SubQueryList.end(), [&networkFileName](const std::shared_ptr<ISCModelQuery>& p) {
-
-			std::string url = p->GetUrl();
-
-			if (url.ends_with(networkFileName))
-			{
-				return true;
-			}
-
-			return false;
-
-		}) == m_SubQueryList.end())
-		{
-			auto QueryInstance = std::make_shared<CSCModelQueryModelFileTask>(this, localFileName, networkFileName);
-
-			QueryInstance->StartQuery();
-
-			m_SubQueryList.emplace_back(QueryInstance);
-		}
-	}
-
 	bool OnProcessPayload(const char* data, size_t size) override
 	{
 		rapidjson::Document doc;
@@ -332,6 +626,8 @@ public:
 			gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to parse model json response!\n");
 			return false;
 		}
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Json for model \"%s\" acquired!\n", m_localFileNameBase.c_str());
 
 		auto obj = doc.GetObj();
 
@@ -368,33 +664,27 @@ public:
 		m_networkFileNameBase = networkFileNameBase;
 		m_bHasTModel = bHasTModel;
 
-		gEngfuncs.Con_DPrintf("[SCModelDownloader] Json for model \"%s\" acquired!\n", m_localFileNameBase.c_str());
-
-		if (!m_networkFileNameBase.empty())
+		if (!m_networkFileNameBase.empty() &&
+			!SCModelDatabaseInternal()->IsModelResourceFileAvailable(m_localFileNameBase, m_localFileNameBase + ".mdl"))
 		{
-			BuildQueryInternal(m_localFileNameBase + ".mdl", m_networkFileNameBase + ".mdl");
+			SCModelDatabaseInternal()->BuildQueryModelResource(m_repoId, m_localFileNameBase, m_localFileNameBase + ".mdl", m_networkFileNameBase, m_networkFileNameBase + ".mdl", bHasTModel);
 		}
 
-		if (!m_networkFileNameBase.empty() && m_bHasTModel)
+		if (!m_networkFileNameBase.empty() && bHasTModel &&
+			!SCModelDatabaseInternal()->IsModelResourceFileAvailable(m_localFileNameBase, m_localFileNameBase + "T.mdl") &&
+			!SCModelDatabaseInternal()->IsModelResourceFileAvailable(m_localFileNameBase, m_localFileNameBase + "t.mdl"))
 		{
-			BuildQueryInternal(m_localFileNameBase + "T.mdl", m_networkFileNameBase + "t.mdl");
-			BuildQueryInternal(m_localFileNameBase + "T.mdl", m_networkFileNameBase + "T.mdl");
+			SCModelDatabaseInternal()->BuildQueryModelResource(m_repoId, m_localFileNameBase, m_localFileNameBase + "T.mdl", m_networkFileNameBase, m_networkFileNameBase + "t.mdl", bHasTModel);
+			SCModelDatabaseInternal()->BuildQueryModelResource(m_repoId, m_localFileNameBase, m_localFileNameBase + "T.mdl", m_networkFileNameBase, m_networkFileNameBase + "T.mdl", bHasTModel);
 		}
 
-		if (!m_networkFileNameBase.empty())
+		if (!m_networkFileNameBase.empty() &&
+			!SCModelDatabaseInternal()->IsModelResourceFileAvailable(m_localFileNameBase, m_localFileNameBase + ".bmp"))
 		{
-			BuildQueryInternal(m_localFileNameBase + ".bmp", m_networkFileNameBase + ".bmp");
+			SCModelDatabaseInternal()->BuildQueryModelResource(m_repoId, m_localFileNameBase, m_localFileNameBase + ".bmp", m_networkFileNameBase, m_networkFileNameBase + ".bmp", bHasTModel);
 		}
 
 		return true;
-	}
-
-	void OnModelFileWriteFinished()
-	{
-		if (!m_bReloaded && IsAllRequiredFilesPresent())
-		{
-			SCModel_ReloadModel(m_localFileNameBase.c_str());
-		}
 	}
 
 	const char* GetName() const override
@@ -407,69 +697,6 @@ public:
 		return m_lowerName.c_str();
 	}
 };
-
-void CSCModelQueryModelFileTask::StartQuery()
-{
-	CSCModelQueryBase::StartQuery();
-
-	m_Url = std::format("https://wootdata.github.io/scmodels_data_{0}/models/player/{1}/{2}", m_pQueryTaskList->m_repoId, m_pQueryTaskList->m_networkFileNameBase, m_networkFileName);
-
-	auto pRequestInstance = UtilHTTPClient()->CreateAsyncRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
-
-	if (!pRequestInstance)
-	{
-		CSCModelQueryBase::OnFailure();
-		return;
-	}
-
-	UtilHTTPClient()->AddToRequestPool(pRequestInstance);
-
-	m_RequestId = pRequestInstance->GetRequestId();
-
-	pRequestInstance->Send();
-
-}
-
-bool CSCModelQueryModelFileTask::OnProcessPayload(const char* data, size_t size)
-{
-	gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" acquired!\n", m_localFileName.c_str());
-
-	if (m_localFileName.ends_with(".mdl"))
-	{
-		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->CheckStudioModel(data, size, NULL))
-		{
-			gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is corrupted!\n", m_localFileName.c_str());
-			return false;
-		}
-	}
-	else if (m_localFileName.ends_with(".bmp"))
-	{
-		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->Check8bitBMP(data, size, NULL))
-		{
-			gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is corrupted!\n", m_localFileName.c_str());
-			return false;
-		}
-	}
-
-	FILESYSTEM_ANY_CREATEDIR("models", "GAMEDOWNLOAD");
-	FILESYSTEM_ANY_CREATEDIR("models/player", "GAMEDOWNLOAD");
-
-	std::string filePathDir = std::format("models/player/{0}", m_pQueryTaskList->m_localFileNameBase);
-	FILESYSTEM_ANY_CREATEDIR(filePathDir.c_str(), "GAMEDOWNLOAD");
-
-	std::string filePath = std::format("models/player/{0}/{1}", m_pQueryTaskList->m_localFileNameBase, m_localFileName);
-	auto FileHandle = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
-
-	if (FileHandle)
-	{
-		FILESYSTEM_ANY_WRITE(data, size, FileHandle);
-		FILESYSTEM_ANY_CLOSE(FileHandle);
-	}
-
-	m_pQueryTaskList->OnModelFileWriteFinished();
-
-	return true;
-}
 
 class CSCModelQueryDatabase : public CSCModelQueryBase
 {
@@ -512,92 +739,36 @@ public:
 
 	bool OnProcessPayload(const char* data, size_t size) override
 	{
-		if (g_Database.size() > 0)
-		{
-			gEngfuncs.Con_DPrintf("[SCModelDownloader] Database already filled!\n");
-			return true;
-		}
-
-		rapidjson::Document doc;
-
-		doc.Parse(data, size);
-
-		if (doc.HasParseError())
-		{
-			gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to parse database response!\n");
-			return false;
-		}
-
-		for (auto itor = doc.MemberBegin(); itor != doc.MemberEnd(); ++itor)
-		{
-			std::string name = itor->name.GetString();
-
-			const auto &obj = itor->value.GetObj();
-
-			scmodel_t m = { 0 };
-
-			const auto &m_size = obj.FindMember("size");
-			if (m_size != obj.MemberEnd() && m_size->value.IsInt())
-			{
-				m.size = m_size->value.GetInt();
-			}
-
-			const auto& m_flags = obj.FindMember("flags");
-			if (m_flags != obj.MemberEnd() && m_flags->value.IsInt())
-			{
-				m.flags = m_flags->value.GetInt();
-			}
-
-			const auto& m_polys = obj.FindMember("polys");
-			if (m_polys != obj.MemberEnd() && m_polys->value.IsInt())
-			{
-				m.polys = m_polys->value.GetInt();
-			}
-
-			g_Database[name] = m;
-		}
-
-		return true;
+		return SCModelDatabaseInternal()->OnDatabaseJSONAcquired(data, size);
 	}
 };
 
-class CSCModelDatabase : public ISCModelDatabase
+class CSCModelDatabase : public ISCModelDatabaseInternal
 {
 private:
-	std::vector<std::shared_ptr<ISCModelQuery>> m_QueryTaskList;
+	std::vector<AutoPtr<ISCModelQueryInternal>> m_QueryList;
 	std::vector<ISCModelQueryStateChangeHandler*> m_StateChangeCallbacks;
+	std::unordered_map<std::string, scmodel_t> m_Database;
 
 public:
 
 	void Init() override
 	{
-		if (!g_Database.empty())
-			return;
-
-		if (!m_QueryTaskList.empty())
-			return;
-
-		auto pDatabaseQuery = std::make_shared<CSCModelQueryDatabase>();
-
-		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying database...\n");
-
-		m_QueryTaskList.emplace_back(pDatabaseQuery);
-
-		pDatabaseQuery->StartQuery();
+		BuildQueryDatabase();
 	}
 
 	void Shutdown() override
 	{
-		m_QueryTaskList.clear();
+		m_QueryList.clear();
 		m_StateChangeCallbacks.clear();
-		g_Database.clear();
+		m_Database.clear();
 	}
 
 	void RunFrame() override
 	{
 		auto flCurrentAbsTime = (float)gEngfuncs.GetAbsoluteTime();
 
-		for (auto itor = m_QueryTaskList.begin(); itor != m_QueryTaskList.end();)
+		for (auto itor = m_QueryList.begin(); itor != m_QueryList.end();)
 		{
 			const auto& p = (*itor);
 
@@ -605,7 +776,7 @@ public:
 
 			if (p->IsFinished())
 			{
-				itor = m_QueryTaskList.erase(itor);
+				itor = m_QueryList.erase(itor);
 				continue;
 			}
 
@@ -613,13 +784,43 @@ public:
 		}
 	}
 
+	void BuildQueryModelResource(
+		int repoId,
+		const std::string& localFileNameBase,
+		const std::string& localFileName,
+		const std::string& networkFileNameBase,
+		const std::string& networkFileName,
+		bool bHasTModel) override
+	{
+		auto identifier = std::format("{0}/{1}", networkFileNameBase, networkFileName);
+
+		for (const auto& p : m_QueryList)
+		{
+			if (!strcmp(p->GetName(), "QueryModelResource") &&
+				!strcmp(p->GetIdentifier(), identifier.c_str()))
+			{
+				return;
+			}
+		}
+
+		auto pQuery = new CSCModelQueryModelResourceTask(repoId, localFileNameBase, localFileName, networkFileNameBase, networkFileName, bHasTModel);
+
+		m_QueryList.emplace_back(pQuery);
+
+		pQuery->StartQuery();
+
+		pQuery->Release();
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Downloading \"%s\"...\n", identifier.c_str());
+	}
+
 	/*
-		Purpose: Build network query instance
+		Purpose: Build query instance, to get detailed information about model with name as "lowerName", in json.
 	*/
 
 	bool BuildQueryListInternal(const std::string& lowerName, const std::string& localFileNameBase)
 	{
-		for (const auto& p : m_QueryTaskList)
+		for (const auto& p : m_QueryList)
 		{
 			if (!strcmp(p->GetName(), "QueryTaskList") &&
 				!strcmp(p->GetIdentifier(), lowerName.c_str()) )
@@ -628,17 +829,20 @@ public:
 			}
 		}
 
-		auto QueryList = std::make_shared<CSCModelQueryTaskList>(lowerName, localFileNameBase);
+		auto pQuery = new CSCModelQueryTaskList(lowerName, localFileNameBase);
 
-		m_QueryTaskList.emplace_back(QueryList);
+		m_QueryList.emplace_back(pQuery);
 
-		QueryList->StartQuery();
+		pQuery->StartQuery();
 
+		pQuery->Release();
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying file list for \"%s\"...\n", lowerName.c_str());
 		return true;
 	}
 
 	/*
-		Purpose: Build network query instance based on modelName
+		Purpose: Build query based on modelName, to get file list about this model.
 		lowerName is always lower-case, while modelName is not
 	*/
 
@@ -656,8 +860,8 @@ public:
 			lowerName[lowerName.length() - 1] <= '9')
 		{
 			//has version?
-			auto itor = g_Database.find(lowerName);
-			if (itor != g_Database.end())
+			auto itor = m_Database.find(lowerName);
+			if (itor != m_Database.end())
 			{
 				return BuildQueryListInternal(lowerName, modelName);
 			}
@@ -677,9 +881,9 @@ public:
 				lowerName2 += "_v";
 				lowerName2 += ('0' + i);
 
-				auto itor = g_Database.find(lowerName2);
+				auto itor = m_Database.find(lowerName2);
 
-				if (itor != g_Database.end())
+				if (itor != m_Database.end())
 				{
 					return BuildQueryListInternal(lowerName2, modelName);
 				}
@@ -689,18 +893,46 @@ public:
 		return BuildQueryListInternal(lowerName, modelName);;
 	}
 
-	void OnMissingModel(const char* name) override
+	bool BuildQueryDatabase()
 	{
-		gEngfuncs.Con_DPrintf("[SCModelDownloader] Missing model \"%s\"...\n", name);
+		if (!m_Database.empty())
+			return false;
+
+		for (const auto& p : m_QueryList)
+		{
+			if (!strcmp(p->GetName(), "QueryDatabase"))
+			{
+				return false;
+			}
+		}
+
+		auto pQuery = new CSCModelQueryDatabase();
+
+		m_QueryList.emplace_back(pQuery);
+
+		pQuery->StartQuery();
+
+		pQuery->Release();
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying database...\n");
+
+		return true;
+	}
+
+	void QueryModel(const char* name) override
+	{
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying model \"%s\"...\n", name);
+
+		//What if database isn't available yet ?
 
 		BuildQueryList(name);
 	}
 
 	void EnumQueries(IEnumSCModelQueryHandler* handler) override
 	{
-		for (const auto& p : m_QueryTaskList)
+		for (const auto& p : m_QueryList)
 		{
-			handler->OnEnumQuery(p.get());
+			handler->OnEnumQuery(p);
 		}
 	}
 
@@ -735,11 +967,102 @@ public:
 			callback->OnQueryStateChanged(pQuery, newState);
 		}
 	}
+
+	bool IsModelResourceFileAvailable(const std::string& localFileNameBase, const std::string& localFileName) override
+	{
+		std::string filePath = std::format("models/player/{0}/{1}", localFileNameBase, localFileName);
+
+		if (!FILESYSTEM_ANY_FILEEXISTS(filePath.c_str()))
+			return false;
+
+		return true;
+	}
+
+	bool IsAllRequiredFilesForModelAvailable(const std::string & localFileNameBase, bool bHasTModel) override
+	{
+		if (!IsModelResourceFileAvailable(localFileNameBase, localFileNameBase + ".mdl"))
+			return false;
+
+		if (bHasTModel)
+		{
+			//Linux is unhappy with t.mdl
+			if (!IsModelResourceFileAvailable(localFileNameBase, localFileNameBase + "T.mdl") &&
+				!IsModelResourceFileAvailable(localFileNameBase, localFileNameBase + "t.mdl"))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	void OnModelFileWriteFinished(const std::string& localFileNameBase, bool bHasTModel) override
+	{
+		if (IsAllRequiredFilesForModelAvailable(localFileNameBase, bHasTModel))
+		{
+			SCModel_ReloadModel(localFileNameBase.c_str());
+		}
+	}
+
+	bool OnDatabaseJSONAcquired(const char* data, size_t size) override
+	{
+		if (m_Database.size() > 0)
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Database already filled!\n");
+			return true;
+		}
+
+		rapidjson::Document doc;
+
+		doc.Parse(data, size);
+
+		if (doc.HasParseError())
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Failed to parse database response!\n");
+			return false;
+		}
+
+		for (auto itor = doc.MemberBegin(); itor != doc.MemberEnd(); ++itor)
+		{
+			std::string name = itor->name.GetString();
+
+			const auto& obj = itor->value.GetObj();
+
+			scmodel_t m = { 0 };
+
+			const auto& m_size = obj.FindMember("size");
+			if (m_size != obj.MemberEnd() && m_size->value.IsInt())
+			{
+				m.size = m_size->value.GetInt();
+			}
+
+			const auto& m_flags = obj.FindMember("flags");
+			if (m_flags != obj.MemberEnd() && m_flags->value.IsInt())
+			{
+				m.flags = m_flags->value.GetInt();
+			}
+
+			const auto& m_polys = obj.FindMember("polys");
+			if (m_polys != obj.MemberEnd() && m_polys->value.IsInt())
+			{
+				m.polys = m_polys->value.GetInt();
+			}
+
+			m_Database[name] = m;
+		}
+
+		return true;
+	}
 };
 
 static CSCModelDatabase s_SCModelDatabase;
 
 ISCModelDatabase* SCModelDatabase()
+{
+	return &s_SCModelDatabase;
+}
+
+ISCModelDatabaseInternal* SCModelDatabaseInternal()
 {
 	return &s_SCModelDatabase;
 }
