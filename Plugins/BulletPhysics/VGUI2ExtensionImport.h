@@ -14,3 +14,5 @@ void GameUI_UninstallHooks(void);
 
 void ClientVGUI_InstallHooks(void);
 void ClientVGUI_UninstallHooks(void);
+
+void KeyValuesSystem_Init(HMODULE hVGUI2);

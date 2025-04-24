@@ -1776,6 +1776,9 @@ static std::shared_ptr<CClientPhysicObjectConfig> LoadPhysicObjectConfigFromNewF
 {
 	auto pKeyValues = new KeyValues("PhysicObjectConfig");
 
+	if (!pKeyValues)
+		return nullptr;
+
 	SCOPE_EXIT{ delete pKeyValues; };
 
 	bool bLoaded = false;

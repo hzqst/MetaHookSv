@@ -1811,7 +1811,9 @@ void HUD_Init(void)
 		Install_InlineHook(efxapi_R_TempModel);
 	}
 
-	g_pViewPort->Init();
+	if (g_pViewPort) {
+		g_pViewPort->Init();
+	}
 }
 
 void R_NewMap(void)
@@ -1819,7 +1821,10 @@ void R_NewMap(void)
 	gPrivateFuncs.R_NewMap();
 	ClientPhysicManager()->NewMap();
 	ClientEntityManager()->NewMap();
-	g_pViewPort->NewMap();
+
+	if (g_pViewPort) {
+		g_pViewPort->NewMap();
+	}
 }
 
 void HUD_Frame(double frametime)
@@ -1836,7 +1841,9 @@ int HUD_AddEntity(int type, cl_entity_t* ent, const char* model)
 
 void HUD_CreateEntities(void)
 {
-	g_pViewPort->UpdateInspectStuffs();
+	if (g_pViewPort) {
+		g_pViewPort->UpdateInspectStuffs();
+	}
 
 	gExportfuncs.HUD_CreateEntities();
 

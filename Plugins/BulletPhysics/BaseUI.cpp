@@ -35,8 +35,11 @@ public:
 			CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory(hVGUI2);
 
 			g_pKeyValuesSystem = (IKeyValuesSystem*)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
-		}
 
+			if (g_pKeyValuesSystem) {
+				g_pKeyValuesSystem->RegisterSizeofKeyValues(sizeof(KeyValues));
+			}
+		}
 	}
 
 	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion) override
@@ -95,7 +98,9 @@ static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks;
 void BaseUI_InstallHooks(void)
 {
 	if (!VGUI2Extension())
+	{
 		return;
+	}
 
 	CreateInterfaceFn fnCreateInterface = g_pMetaHookAPI->GetEngineFactory();
 

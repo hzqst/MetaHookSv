@@ -92,10 +92,16 @@ static CVGUI2Extension_ClientVGUICallbacks s_ClientVGUICallbacks;
 
 void ClientVGUI_InstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	VGUI2Extension()->RegisterClientVGUICallbacks(&s_ClientVGUICallbacks);
 }
 
 void ClientVGUI_UninstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	VGUI2Extension()->UnregisterClientVGUICallbacks(&s_ClientVGUICallbacks);
 }

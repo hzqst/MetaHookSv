@@ -86,3 +86,21 @@ IDpiManager* DpiManager()
 {
 	return g_pDpiManager;
 }
+
+#include <IKeyValuesSystem.h>
+
+extern IKeyValuesSystem* g_pKeyValuesSystem;
+
+void KeyValuesSystem_Init(HMODULE hVGUI2)
+{
+	if (g_pKeyValuesSystem)
+		return;
+
+	CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory((HINTERFACEMODULE)hVGUI2);
+
+	g_pKeyValuesSystem = (IKeyValuesSystem*)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
+
+	if (g_pKeyValuesSystem) {
+		g_pKeyValuesSystem->RegisterSizeofKeyValues(sizeof(KeyValues));
+	}
+}

@@ -28,6 +28,31 @@ mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
 mh_dll_info_t g_ClientDLLInfo = { 0 };
 mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
+static HMODULE g_hVGUI2 = NULL;
+
+//Just in case KeyValuesSystem == nullptr, or sizeof(KeyValues) too small.
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
+{
+	if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_LOAD)
+	{
+		if (ctx->BaseDllName && ctx->hModule && !g_hVGUI2 && !_wcsicmp(ctx->BaseDllName, L"vgui2.dll"))
+		{
+			g_hVGUI2 = ctx->hModule;
+		}
+		if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"GameUI.dll"))
+		{
+			KeyValuesSystem_Init(g_hVGUI2);
+		}
+	}
+	if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
+	{
+		if (g_hVGUI2 == ctx->hModule)
+		{
+			g_hVGUI2 = NULL;
+		}
+	}
+}
+
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
@@ -37,7 +62,7 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
-
+	g_pMetaHookAPI->UnregisterLoadDllNotificationCallback(DllLoadNotification);
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
@@ -65,6 +90,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	}
 
 	g_dwVideoMode = g_pMetaHookAPI->GetVideoMode(nullptr, nullptr, nullptr, nullptr);
+
+	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
