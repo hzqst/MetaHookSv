@@ -128,8 +128,10 @@ void MemoryBitmap::Paint()
 	surface()->DrawSetTexture(_id);
 	surface()->DrawSetColor(_color[0], _color[1], _color[2], _color[3]);
 
-	int wide, tall;
-	GetSize(wide, tall);
+	int wide = _w, tall = _h;
+	if(wide == 0 && tall == 0)
+		GetSize(wide, tall);
+
 	surface()->DrawTexturedRect(_pos[0], _pos[1], _pos[0] + wide, _pos[1] + tall);
 }
 
