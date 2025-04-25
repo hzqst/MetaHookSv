@@ -103,7 +103,7 @@ if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDire
 if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls"
 if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage"
 
-copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(GLEWCheckRequirements)
