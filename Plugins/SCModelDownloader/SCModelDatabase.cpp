@@ -394,7 +394,6 @@ public:
 		m_flNextRetryTime = 0;
 		m_bFailed = false;
 		m_bFinished = false;
-		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 };
 
@@ -475,6 +474,8 @@ public:
 		m_RequestId = pRequestInstance->GetRequestId();
 
 		pRequestInstance->Send();
+
+		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
 	void OnResponding(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
@@ -701,6 +702,8 @@ public:
 		m_RequestId = pRequestInstance->GetRequestId();
 
 		pRequestInstance->Send();
+
+		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
 	bool OnProcessPayload(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) override
@@ -845,6 +848,8 @@ public:
 		m_RequestId = pRequestInstance->GetRequestId();
 
 		pRequestInstance->Send();
+
+		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
 
 	float GetProgress() const override
