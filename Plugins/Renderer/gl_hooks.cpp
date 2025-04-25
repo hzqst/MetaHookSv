@@ -6020,98 +6020,148 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 		typedef struct Draw_DecalTexture_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
+			const mh_dll_info_t& RealDllInfo; 
+			
+			PVOID base{};
+			size_t max_insts{};
+			int max_depth{};
+			std::set<PVOID> code{};
+			std::set<PVOID> branches{};
+			std::vector<walk_context_t> walks{};
+
 			int pushCount{};
 			int pushAddrCount{};
 		} Draw_DecalTexture_SearchContext;
 
 		Draw_DecalTexture_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		g_pMetaHookAPI->DisasmRanges(Draw_DecalTexture_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		ctx.base = Draw_DecalTexture_VA;
+		ctx.max_insts = 300;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x3000, 0);
 
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (Draw_DecalTexture_SearchContext*)context;
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
 
-			if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-			else if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (Draw_DecalTexture_SearchContext*)context;
 
-			if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1)
-			{
-				ctx->pushCount ++;
-				ctx->pushAddrCount = instCount;
-			}
+				if (decal_wad && gPrivateFuncs.Draw_CustomCacheGet && gPrivateFuncs.Draw_CacheGet)
+					return TRUE;
 
-			if (address[0] == 0xE8 && instLen == 5)
-			{
-/*
-.text:01D2F8D6 52                                                  push    edx
-.text:01D2F8D7 50                                                  push    eax
-.text:01D2F8D8 56                                                  push    esi
-.text:01D2F8D9 57                                                  push    edi
-.text:01D2F8DA E8 D1 07 00 00                                      call    Draw_CustomCacheGet
-.text:01D2F8DF 83 C4 10                                            add     esp, 10h
-*/
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
 
-				if (!gPrivateFuncs.Draw_CustomCacheGet && ctx->pushCount == 4 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x10", 3))
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (!decal_wad)
 				{
-					PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
-
-					gPrivateFuncs.Draw_CustomCacheGet = (decltype(gPrivateFuncs.Draw_CustomCacheGet))
-						ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+					{
+						decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					}
+					else if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base == 0 &&
+						pinst->detail->x86.operands[1].mem.index == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+					{
+						decal_wad = (decltype(decal_wad))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					}
 				}
-				/*
-.text:01D2F8EC 50                                                  push    eax
-.text:01D2F8ED 51                                                  push    ecx
-.text:01D2F8EE E8 AD 06 00 00                                      call    Draw_CacheGet
-.text:01D2F8F3 83 C4 08                                            add     esp, 8
-				*/
-				if (!gPrivateFuncs.Draw_CacheGet && ctx->pushCount == 2 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x08", 3))
+
+				if (pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1)
 				{
-					PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
-
-					gPrivateFuncs.Draw_CacheGet = (decltype(gPrivateFuncs.Draw_CacheGet))
-						ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+					ctx->pushCount++;
+					ctx->pushAddrCount = instCount;
 				}
-				ctx->pushCount = 0;
-				ctx->pushAddrCount = 0;
-			}
 
-			if (decal_wad && gPrivateFuncs.Draw_CustomCacheGet && gPrivateFuncs.Draw_CacheGet)
-				return TRUE;
+				if (address[0] == 0xE8 && instLen == 5)
+				{
+					/*
+					.text:01D2F8D6 52                                                  push    edx
+					.text:01D2F8D7 50                                                  push    eax
+					.text:01D2F8D8 56                                                  push    esi
+					.text:01D2F8D9 57                                                  push    edi
+					.text:01D2F8DA E8 D1 07 00 00                                      call    Draw_CustomCacheGet
+					.text:01D2F8DF 83 C4 10                                            add     esp, 10h
+					*/
 
-			if (address[0] == 0xCC)
-				return TRUE;
+					if (!gPrivateFuncs.Draw_CustomCacheGet && ctx->pushCount == 4 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x10", 3))
+					{
+						PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+						gPrivateFuncs.Draw_CustomCacheGet = (decltype(gPrivateFuncs.Draw_CustomCacheGet))
+							ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+					}
+					/*
+	.text:01D2F8EC 50                                                  push    eax
+	.text:01D2F8ED 51                                                  push    ecx
+	.text:01D2F8EE E8 AD 06 00 00                                      call    Draw_CacheGet
+	.text:01D2F8F3 83 C4 08                                            add     esp, 8
+					*/
+					if (!gPrivateFuncs.Draw_CacheGet && ctx->pushCount == 2 && instCount == ctx->pushAddrCount + 1 && !memcmp(address + instLen, "\x83\xC4\x08", 3))
+					{
+						PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
 
-			return FALSE;
-			}, 0, &ctx);
+						gPrivateFuncs.Draw_CacheGet = (decltype(gPrivateFuncs.Draw_CacheGet))
+							ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
+					}
+					ctx->pushCount = 0;
+					ctx->pushAddrCount = 0;
+				}
+
+				if (decal_wad && gPrivateFuncs.Draw_CustomCacheGet && gPrivateFuncs.Draw_CacheGet)
+					return TRUE;
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+					}
+
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, walk.depth, &ctx);
+		}
 	}
 
 	Sig_VarNotFound(decal_wad);
-	Sig_FuncNotFound(Draw_CustomCacheGet);
-	Sig_FuncNotFound(Draw_CacheGet);
+	//Sig_FuncNotFound(Draw_CustomCacheGet);
+	//Sig_FuncNotFound(Draw_CacheGet);
 }
 
 void Engine_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
