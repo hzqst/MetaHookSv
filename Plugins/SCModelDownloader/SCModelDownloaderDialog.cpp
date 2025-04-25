@@ -29,7 +29,7 @@ CSCModelDownloaderDialog::CSCModelDownloaderDialog(vgui::Panel* parent, const ch
 
 	LoadControlSettings("scmodeldownloader/SCModelDownloaderDialog.res", "GAME");
 
-	m_pTabPanel->SetActivePage(m_pTaskListPage);
+	m_pTabPanel->SetActivePage(m_pSCModelDownloaderSettingsPage);
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
 }
