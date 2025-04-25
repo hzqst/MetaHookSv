@@ -22,8 +22,8 @@ CSCModelDownloaderDialog::CSCModelDownloaderDialog(vgui::Panel* parent, const ch
 
 	m_pTabPanel = new vgui::PropertySheet(this, "Tabs");
 	m_pTabPanel->SetTabWidth(72);
-	m_pTabPanel->AddPage(m_pTaskListPage, "#GameUI_SCModelDownloader_TaskListPage");
 	m_pTabPanel->AddPage(m_pSCModelDownloaderSettingsPage, "#GameUI_SCModelDownloader_SettingsPage");
+	m_pTabPanel->AddPage(m_pTaskListPage, "#GameUI_SCModelDownloader_TaskListPage");
 
 	m_pTabPanel->AddActionSignalTarget(this);
 

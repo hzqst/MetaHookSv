@@ -3,6 +3,8 @@
 
 #include "exportfuncs.h"
 
+#include <format>
+
 CTaskListPage::CTaskListPage(vgui::Panel* parent, const char* name) :
 	BaseClass(parent, name)
 {
@@ -69,7 +71,16 @@ void CTaskListPage::AddQueryItem(ISCModelQuery* pQuery)
 	kv->SetString("name", pQuery->GetName());
 	kv->SetString("identifier", pQuery->GetIdentifier());
 	kv->SetString("url", pQuery->GetUrl());
-	kv->SetString("state", UTIL_GetQueryStateName(pQuery->GetState()));
+
+	if (pQuery->GetState() == SCModelQueryState_Receiving && pQuery->GetProgress() >= 0)
+	{
+		auto progress = std::format("{0:.2f}%", pQuery->GetProgress() * 100.0f);
+		kv->SetString("state", progress.c_str());
+	}
+	else
+	{
+		kv->SetString("state", UTIL_GetQueryStateName(pQuery->GetState()));
+	}
 
 	m_pTaskListPanel->AddItem(kv, pQuery->GetTaskId(), false, true);
 

@@ -17,6 +17,7 @@ public:
 	virtual const char* GetName() const = 0;
 	virtual const char* GetIdentifier() const = 0;
 	virtual const char* GetUrl() const = 0;
+	virtual float GetProgress() const = 0;
 	virtual bool IsFailed() const = 0;
 	virtual bool IsFinished() const = 0;
 	virtual bool NeedRetry() const = 0;

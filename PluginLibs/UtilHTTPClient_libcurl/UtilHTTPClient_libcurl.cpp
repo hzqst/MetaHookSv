@@ -112,6 +112,7 @@ private:
 	bool m_bResponseCompleted{};
 	bool m_bResponseError{};
 	bool m_bIsStream{};
+	bool m_bIsHeaderProcessed{};
 	int m_iResponseStatusCode{};
 	CUtilHTTPPayload* m_pResponsePayload{};
 	CUtilHTTPPayload* m_pResponseHeaderPayload{};
@@ -186,6 +187,9 @@ public:
 
 	void FinalizeHeaders()
 	{
+		if (m_bIsHeaderProcessed)
+			return;
+
 		m_pResponseHeaderPayload->Finalize();
 
 		const auto& headersSv = std::string_view(m_pResponseHeaderPayload->GetBytes(), m_pResponseHeaderPayload->GetLength());
@@ -233,6 +237,8 @@ public:
 			}
 			start = end + 2; // Move past "\r\n"
 		}
+
+		m_bIsHeaderProcessed = true;
 	}
 
 	void FinalizePayload()
@@ -697,6 +703,8 @@ public:
 
 	void WritePayloadStream(const void* data, size_t size)
 	{
+		FinalizeHeaders();
+
 		if (m_Callbacks)
 		{
 			m_Callbacks->OnReceiveData(this, m_pResponse, data, size);
