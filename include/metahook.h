@@ -36,6 +36,10 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 #undef GetCurrentTime
 #endif
 
+#ifdef GetCurrentDirectory
+#undef GetCurrentDirectory
+#endif
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__
