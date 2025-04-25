@@ -1,5 +1,7 @@
 @echo off
 
+setlocal
+
 :: Check if SolutionDir is already set and non-empty
 if not defined SolutionDir (
     :: Only set SolutionDir if it's not already set
@@ -19,15 +21,7 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat"
 
-    MSBuild.exe MetaHook.sln "/target:MetaHook" /p:Configuration="Release_blob" /p:Platform="Win32" || goto builderror
-
-    goto endbuild
-
-:builderror
-    echo Build failed with error %errorlevel%
-    exit /b %errorlevel%
-
+    MSBuild.exe MetaHook.sln "/target:MetaHook" /p:Configuration="Release_blob" /p:Platform="Win32"
 )
 
-:endbuild
-echo Build OK
+endlocal

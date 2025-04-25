@@ -1,5 +1,7 @@
 @echo off
 
+setlocal
+
 :: Check if SolutionDir is already set and non-empty
 if not defined SolutionDir (
     :: Only set SolutionDir if it's not already set
@@ -27,11 +29,11 @@ if not exist "%SolutionDir%thirdparty\FreeImage_clone\.git" (
     echo submodule initialization completed.
 )
 
-cd /d "%SolutionDir%thirdparty\FreeImage_clone\"
-
 if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat"
+
+    cd /d "%SolutionDir%thirdparty\FreeImage_clone\"
 
     MSBuild.exe FreeImage.2017.sln "/target:FreeImage" /p:Configuration="Release" /p:Platform="Win32"
 
@@ -47,3 +49,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     copy "Dist\x32\FreeImage.dll" "%SolutionDir%thirdparty\install\FreeImage\x86\Release\bin\FreeImage.dll" /y
     copy "Dist\x32\FreeImage.lib" "%SolutionDir%thirdparty\install\FreeImage\x86\Release\lib\FreeImage.lib" /y
 )
+
+endlocal
