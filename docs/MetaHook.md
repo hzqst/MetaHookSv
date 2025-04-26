@@ -131,6 +131,62 @@ Since modules loaded in Blob format do not support relocation, Blob Engine and B
 - `g_pMetaHookAPI->GetMirrorDLLBase`: Obtains the base address of the module loaded in Mirror-DLL form.
 - `g_pMetaHookAPI->GetMirrorDLLSize`: Obtains the size of the module loaded in Mirror-DLL form.
 
+
+### API: Thread Pool Related Operations
+
+#### `g_pMetaHookAPI->GetGlobalThreadPool`
+
+Get the handle of the global thread pool. The global thread pool is created automatically during MetaHook initialization and is suitable for most general asynchronous tasks. Returns a thread pool handle (`ThreadPoolHandle_t`).
+
+#### `g_pMetaHookAPI->CreateThreadPool`
+
+Create a new thread pool. Parameters are the minimum and maximum number of threads. Returns a new thread pool handle. Suitable for scenarios that require an independent thread pool.
+
+```cpp
+ThreadPoolHandle_t hPool = g_pMetaHookAPI->CreateThreadPool(2, 8);
+```
+
+#### `g_pMetaHookAPI->CreateWorkItem`
+
+Create a work item in the specified thread pool. Parameters are the thread pool handle, callback function, and context pointer. The callback function signature is `bool (*fnThreadWorkItemCallback)(void* ctx)`, returning `true` means the work item will be freed immediately after completion. so you don't have to call DeleteWorkItem on the workitem.
+
+```cpp
+ThreadWorkItemHandle_t hWorkItem = g_pMetaHookAPI->CreateWorkItem(hPool, MyCallback, myContext);
+```
+
+#### `g_pMetaHookAPI->QueueWorkItem`
+
+Queue the work item into the thread pool, waiting for a thread in the pool to execute it.
+
+```cpp
+g_pMetaHookAPI->QueueWorkItem(hPool, hWorkItem);
+```
+
+#### `g_pMetaHookAPI->WaitForWorkItemToComplete`
+
+Block the current thread until the specified work item is completed.
+
+```cpp
+g_pMetaHookAPI->WaitForWorkItemToComplete(hWorkItem);
+```
+
+#### `g_pMetaHookAPI->DeleteThreadPool`
+
+Destroy the specified thread pool and all its resources. Note: The parameter is the thread pool handle. After destruction, the thread pool cannot be used again.
+
+```cpp
+g_pMetaHookAPI->DeleteThreadPool(hPool);
+```
+
+#### `g_pMetaHookAPI->DeleteWorkItem`
+
+Destroy the specified work item. Usually called after the work item is completed to free resources.
+
+```cpp
+g_pMetaHookAPI->DeleteWorkItem(hWorkItem);
+```
+
+
 ### Automatic Detection and Loading of SSE / SSE2 / AVX / AVX2 Versions of Plugins
 
 1. The MetaHook launcher will always load the plugins listed in `\(ModDirectory)\metahook\configs\plugins.lst` in order from top to bottom. Lines with a semicolon ";" before the plugin name will be ignored.

@@ -10,7 +10,7 @@ MetaHookSv (V4) 导出的 `g_pMetaHookAPI` 接口从ABI层面完全兼容 MetaHo
 
 SvEngine：Sven Co-op团队自己魔改的GoldSrc分支
 
-GoldSrc_HL25：“Half-Life 25周年更新”后的最新GoldSrc，引擎buildnum大于等于9884
+GoldSrc_HL25："Half-Life 25周年更新"后的最新GoldSrc，引擎buildnum大于等于9884
 
 GoldSrc_Blob：引擎buildnum小于4554，使用非标准PE格式加密的引擎
 
@@ -179,6 +179,60 @@ Mirror-DLL 用于给插件提供一个干净的搜索特征码的环境。当插
 `g_pMetaHookAPI->GetMirrorDLLBase` : 获得以Mirror-DLL形式加载的模块的基地址。
 
 `g_pMetaHookAPI->GetMirrorDLLSize` : 获得以Mirror-DLL形式加载的模块的大小。
+
+### API：线程池相关操作
+
+#### `g_pMetaHookAPI->GetGlobalThreadPool`
+
+获取全局线程池的句柄。全局线程池在MetaHook初始化时自动创建，适合大多数通用异步任务使用。返回值为线程池句柄（`ThreadPoolHandle_t`）。
+
+#### `g_pMetaHookAPI->CreateThreadPool`
+
+创建一个新的线程池。参数为最小线程数和最大线程数，返回新线程池的句柄。适合需要独立线程池的场景。
+
+```cpp
+ThreadPoolHandle_t hPool = g_pMetaHookAPI->CreateThreadPool(2, 8);
+```
+
+#### `g_pMetaHookAPI->CreateWorkItem`
+
+在指定线程池下创建一个工作任务。参数为线程池句柄、回调函数和上下文指针。回调函数签名为 `bool (*fnThreadWorkItemCallback)(void* ctx)`，返回 `true` 表示任务完成后立即释放该工作任务。在这种情况下，你无需调用DeleteWorkItem删除该工作任务。如果返回`false`则需要你手动调用DeleteWorkItem删除该工作任务。
+
+```cpp
+ThreadWorkItemHandle_t hWorkItem = g_pMetaHookAPI->CreateWorkItem(hPool, MyCallback, myContext);
+```
+
+#### `g_pMetaHookAPI->QueueWorkItem`
+
+将工作任务加入线程池队列，等待线程池中的线程调度执行。
+
+```cpp
+g_pMetaHookAPI->QueueWorkItem(hPool, hWorkItem);
+```
+
+#### `g_pMetaHookAPI->WaitForWorkItemToComplete`
+
+阻塞当前线程，直到指定的工作任务执行完成。
+
+```cpp
+g_pMetaHookAPI->WaitForWorkItemToComplete(hWorkItem);
+```
+
+#### `g_pMetaHookAPI->DeleteThreadPool`
+
+销毁指定的线程池及其所有资源。注意：参数为线程池句柄，销毁后该线程池不可再用。
+
+```cpp
+g_pMetaHookAPI->DeleteThreadPool(hPool);
+```
+
+#### `g_pMetaHookAPI->DeleteWorkItem`
+
+销毁指定的工作任务。通常在工作任务完成后调用以释放资源。
+
+```cpp
+g_pMetaHookAPI->DeleteWorkItem(hWorkItem);
+```
 
 ### 自动检测并加载 SSE / SSE2 / AVX / AVX2 版本的插件
 
