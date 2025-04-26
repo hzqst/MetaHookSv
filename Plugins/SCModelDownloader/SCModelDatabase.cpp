@@ -310,14 +310,14 @@ public:
 
 	SCModelQueryState GetState() const override
 	{
+		if (m_bFinished)
+			return SCModelQueryState_Finished;
+
 		if (m_bResponding)
 			return SCModelQueryState_Receiving;
 
 		if (m_bFailed)
 			return SCModelQueryState_Failed;
-
-		if (m_bFinished)
-			return SCModelQueryState_Finished;
 
 		return SCModelQueryState_Querying;
 	}
