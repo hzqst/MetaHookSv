@@ -232,3 +232,11 @@ Client-Side part of the mod it´s introduced as a metahook plugin.
 Server-Side part of the mod it´s done with a modifidied reGame dll.
 
 https://github.com/ollerjoaco/Trinity-EngineSv
+
+### Better Spray
+
+BetterSpray is a plugin that enhances Sven Co-op and GoldSrc’s spray system.
+
+https://github.com/hzqst/BetterSpray
+
+https://github.com/KazamiiSC/BetterSpray-Sven-Coop
