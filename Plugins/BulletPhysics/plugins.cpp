@@ -30,6 +30,9 @@ mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 static HMODULE g_hVGUI2 = NULL;
 
+class IKeyValuesSystem;
+extern IKeyValuesSystem* g_pKeyValuesSystem;
+
 //Just in case KeyValuesSystem == nullptr, or sizeof(KeyValues) too small.
 void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 {
@@ -39,7 +42,7 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			g_hVGUI2 = ctx->hModule;
 		}
-		if (ctx->BaseDllName && ctx->hModule && g_hVGUI2 && !_wcsicmp(ctx->BaseDllName, L"GameUI.dll"))
+		else if (ctx->BaseDllName && ctx->hModule && g_hVGUI2 && !g_pKeyValuesSystem)
 		{
 			KeyValuesSystem_Init(g_hVGUI2);
 		}

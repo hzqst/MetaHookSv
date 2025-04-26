@@ -98,6 +98,9 @@ void KeyValuesSystem_Init(HMODULE hVGUI2)
 
 	CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory((HINTERFACEMODULE)hVGUI2);
 
+	if (!fnVGUI2CreateInterface)
+		return;
+
 	g_pKeyValuesSystem = (IKeyValuesSystem*)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
 
 	if (g_pKeyValuesSystem) {
