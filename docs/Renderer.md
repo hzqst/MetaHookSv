@@ -21,7 +21,7 @@
 |      Minimum      | Intel Haswell series with HD4600 |      Geforce GTX 400 series       |  AMD Radeon HD 5000 series |
 |     Recommend     |           ----                   |      Geforce GTX 1060 or better     |   AMD Radeon RX 560 or better        |
 
-* OpenGL 4.3 is required to run this plugin.
+* OpenGL 4.3 compatibility profile is required to run this plugin.
 
 * It's recommended to run this plugin with at least 4GB of dedicated video memory. otherwise you might have bottleneck with VRAM bandwidth or get game crash due to out-of-VRAM.
 

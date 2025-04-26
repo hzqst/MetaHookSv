@@ -12,13 +12,9 @@
 | SvEngine       (8832 ~)     | √    |
 | GoldSrc_HL25   (>= 9884)    | √    |
 
+* Since this plugin heavily relies on modifying the VGUI2 subsystem, it must be used together with `VGUI2Extension.dll`.
+
 ## Features
-
-### Language Enforcement
-
-You can force the engine and VGUI2-subsystem to use language settings from either Steam or launch parameters.
-
-Check **Launch Parameters**
 
 ### VGUI2-based Subtitle System
 
@@ -62,22 +58,6 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 ![](/img/1.png)
 
-### HiDpi Support
-
-All VGUI2 elements will be proportional (scaling up base on your game resolution)
-
-The HiDpi Support is enabled by defalut if your system's dpi scaling > 100% and you are running on a non-HL25th engine
-
-When HiDpi Support is enabled, the following paths will be added to the FileSystem's search paths with "SKIN" tag. VGUI2 control settings will be loaded from those sources.
-
-1. `(GameDirectory)\(ModDirectory)_dpi(DpiScalingPercentage)`
-
-e.g. `\Sven Co-op\svencoop_dpi150` or `\Half-Life\valve_dpi200`
-
-2. `(GameDirectory)\(ModDirectory)_hidpi`
-
-e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
-
 #### Console Vars
 
 `cap_hudmessage` : To enable or disable CaptionMod's HUD TextMessage translation.
@@ -115,13 +95,3 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 `cap_subtitle_htimescale` : Scaling factor for "HoldTime".
 
 `cap_subtitle_extraholdtime` : Extra holdtime added to the last line of subtitles. (unit: sec.)
-
-#### Launch Parameters
-
-`-steamlang` : use Steam language as engine and VGUI2-subsystem language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and VGUI2-subsystem language no matter if `-steamlang` is added or not.
-
-`-forcelang [language]` : force engine and VGUI2-subsystem to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
-
-`-high_dpi` : Enable HiDpi Support
-
-`-no_high_dpi` : Disable HiDpi Support
