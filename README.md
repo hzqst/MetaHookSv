@@ -117,6 +117,12 @@ Let's assume that you have all requirements installed correctly.
 
 ## Plugins
 
+### VGUI2Extension
+
+VGUI2Extension acts as a VGUI2 modding framework, providing capability for other plugins to install hooks / patches on VGUI2 components.
+
+[DOC](docs/VGUI2Extension.md) [中文文档](docs/VGUI2ExtensionCN.md)
+
 ### CaptionMod
 
 A plugin that adds closing-captioning, HUD text translatation, HiDpi support and Source2007-style chat dialog to game.
