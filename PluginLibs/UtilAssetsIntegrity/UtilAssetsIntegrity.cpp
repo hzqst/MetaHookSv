@@ -291,7 +291,7 @@ public:
 			{
 				if (panim->offset[j + 3])
 				{
-					mstudioanimvalue_t* panimvalue = (mstudioanimvalue_t*)((byte*)panim + panim->offset[i + 3]);
+					mstudioanimvalue_t* panimvalue = (mstudioanimvalue_t*)((byte*)panim + panim->offset[j + 3]);
 
 					if ((byte*)(panimvalue + 255)> (byte*)buf + bufSize)
 					{

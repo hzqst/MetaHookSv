@@ -148,6 +148,7 @@ void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstud
 		std::set<PVOID> branches;
 		std::vector<walk_context_t> walks;
 		int StudioSetRemapColors_instcount{};
+		std::set<PVOID> addr_call;
 		std::set<PVOID> addr_call_R_StudioChangePlayerModel;
 	}SetupPlayerModel_SearchContext;
 
@@ -186,16 +187,35 @@ void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstud
 				PVOID calltarget_pfn = (PVOID)pinst->detail->x86.operands[0].imm;
 				PVOID calltarget_RealDllBased = ConvertDllInfoSpace(calltarget_pfn, ctx->DllInfo, ctx->RealDllInfo);
 
+				auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
 				if (calltarget_RealDllBased == gPrivateFuncs.R_StudioChangePlayerModel)
 				{
-					auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
 					ctx->addr_call_R_StudioChangePlayerModel.emplace(address_RealDllBased);
 				}
+
+				ctx->addr_call.emplace(address_RealDllBased);
 			}
 
-			if (!DM_PlayerState)
+			if (!DM_PlayerState && ctx->addr_call.empty())
 			{
+				/*
+.text:101F3A90 ; int __cdecl SetupPlayerModel(int)
+.text:101F3A90 SetupPlayerModel proc near              ; DATA XREF: .data:1031C25C¡ýo
+.text:101F3A90
+.text:101F3A90 arg_0           = dword ptr  8
+.text:101F3A90
+.text:101F3A90                 push    ebp
+.text:101F3A91                 mov     ebp, esp
+.text:101F3A93                 movss   xmm0, dword_1031B54C
+.text:101F3A9B                 push    ebx
+.text:101F3A9C                 mov     ebx, [ebp+arg_0]
+.text:101F3A9F                 push    esi
+.text:101F3AA0                 push    edi
+.text:101F3AA1                 imul    edi, ebx, 20Ch
+.text:101F3AA7                 ucomiss xmm0, ds:dword_102B3730
+.text:101F3AAE                 lea     esi, DM_PlayerState[edi]				
+				*/
 				if (pinst->id == X86_INS_LEA &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG &&
@@ -206,6 +226,31 @@ void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstud
 					pinst->detail->x86.operands[1].mem.scale == 1 || pinst->detail->x86.operands[1].mem.scale == 4)
 				{
 					DM_PlayerState = (decltype(DM_PlayerState))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				}
+
+				/*
+.text:01D92A00 SetupPlayerModel proc near              ; DATA XREF: .data:01EE2914¡ýo
+.text:01D92A00
+.text:01D92A00 arg_0           = dword ptr  4
+.text:01D92A00
+.text:01D92A00                 fld     developer_value
+.text:01D92A06                 fldz
+.text:01D92A08                 push    esi
+.text:01D92A09                 fucompp
+.text:01D92A0B                 fnstsw  ax
+.text:01D92A0D                 push    edi
+.text:01D92A0E                 mov     edi, [esp+8+arg_0]
+.text:01D92A12                 imul    esi, edi, 20Ch
+.text:01D92A18                 add     esi, offset DM_PlayerState
+				*/
+				if (pinst->id == X86_INS_ADD &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{
+					DM_PlayerState = (decltype(DM_PlayerState))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 				}
 			}
 

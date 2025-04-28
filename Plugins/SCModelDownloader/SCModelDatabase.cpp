@@ -588,6 +588,7 @@ public:
 								UtilAssetsIntegrityCheckResult_BMP checkResult{};
 								checkResult.MaxWidth = 256;
 								checkResult.MaxHeight = 256;
+								checkResult.MaxSize = 256 * 256;
 
 								if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->Check8bitBMP(fileBuf, fileSize, &checkResult))
 								{

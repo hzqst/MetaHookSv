@@ -1683,17 +1683,17 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 					)
 				{
-					typedef struct
+					typedef struct FindRet_SearchContext_s
 					{
 						bool bFindRet{};
-					}FindRet_Ctx;
+					}FindRet_SearchContext;
 
-					FindRet_Ctx ctx2 = { };
+					FindRet_SearchContext ctx2 = { };
 
 					MH_DisasmRanges(address, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 							auto pinst = (cs_insn*)inst;
-							auto ctx = (FindRet_Ctx*)context;
+							auto ctx = (FindRet_SearchContext*)context;
 
 							if (!ctx->bFindRet && pinst->id == X86_INS_RET)
 							{
