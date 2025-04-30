@@ -25,14 +25,11 @@ jobs:
 
     steps:
       - uses: hzqst/checkout@v2.3.4
+        with:
+          submodules: true
   
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
-
-      - name: Init dependencies
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: git submodule update --init --recursive
-        shell: cmd
 
       - name: Build MetaHook
         working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -45,10 +42,11 @@ jobs:
         shell: cmd
 
       - name: Checkout BetterSpray
-        uses: hzqst/checkout@main
+        uses: hzqst/checkout@v2.3.4
         with:
           repository: hzqst/BetterSpray
           path: BetterSpray
+          submodules: true
 
       - name: Build BetterSpray
         working-directory: BetterSpray
