@@ -58,8 +58,8 @@ jobs:
       - name: Build and Publish MetahookInstaller
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          dotnet publish toolsrc/MetahookInstaller/MetahookInstaller.csproj -c Release -r win-x86 --self-contained false
-          xcopy "toolsrc\MetahookInstaller\bin\Release\net6.0-windows\publish\*" "Build-Output\" /y /e
+          dotnet publish toolsrc/MetahookInstaller/MetahookInstaller.csproj -c Release --self-contained false
+          xcopy "toolsrc\MetahookInstaller\bin\Release\net8.0-windows\publish\*" "Build-Output\" /y /e
         shell: cmd
 
       - name: Zipping All
