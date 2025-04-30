@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Threading;
 using MetahookInstaller.Models;
 using MetahookInstaller.Services;
 using MetahookInstaller.Resources;
@@ -20,6 +21,9 @@ namespace MetahookInstaller.ViewModels
         private string _gamePath = string.Empty;
         private string _modName = string.Empty;
         private uint _appId;
+
+        // 添加一个事件来通知主窗口关闭
+        public event EventHandler? RequestClose;
 
         public ObservableCollection<GameInfo> AvailableGames { get; } = new ObservableCollection<GameInfo>();
 
@@ -90,7 +94,16 @@ namespace MetahookInstaller.ViewModels
             var buildPath = FindBuildPath();
             if (string.IsNullOrEmpty(buildPath))
             {
-                throw new Exception(LocalizationService.GetString("BuildDirectoryNotFound"));
+                MessageBox.Show(LocalizationService.GetString("BuildDirectoryNotFound"), 
+                              LocalizationService.GetString("Error"), 
+                              MessageBoxButton.OK, 
+                              MessageBoxImage.Error);
+                // 使用Dispatcher来确保在MessageBox关闭后触发事件
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    RequestClose?.Invoke(this, EventArgs.Empty);
+                }), DispatcherPriority.Background);
+                return;
             }
             var sdl2Path = Path.Combine(buildPath, "SDL2.dll");
             var sdl3Path = Path.Combine(buildPath, "SDL3.dll");
@@ -113,10 +126,10 @@ namespace MetahookInstaller.ViewModels
                 Path.Combine(baseDir, "..", "..", "..", "..", "..", "Build")
             };
 #else
-            // Release模式下只搜索当前目录
             var possiblePaths = new[]
             {
-                Path.Combine(baseDir, "Build")
+                Path.Combine(baseDir, "Build"),
+                Path.Combine(baseDir, "..", "Build"),
             };
 #endif
 

@@ -36,6 +36,7 @@ namespace MetahookInstaller.Views
             LocalizationService.Initialize();
             InitializeComponent();
             _viewModel = new MainViewModel();
+            _viewModel.RequestClose += (s, e) => Close();
             DataContext = _viewModel;
         }
 
