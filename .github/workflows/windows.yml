@@ -41,6 +41,22 @@ jobs:
         run: scripts\build-Plugins.bat
         shell: cmd
 
+      - name: Checkout BetterSpray
+        uses: hzqst/checkout@main
+        with:
+          repository: hzqst/BetterSpray
+          path: BetterSpray
+
+      - name: Build BetterSpray
+        working-directory: BetterSpray
+        run: msbuild /m /p:Configuration=Release /t:BetterSpray
+        shell: cmd
+
+      - name: Merge BetterSpray Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: xcopy "BetterSpray\Build\*" "Build\" /y /e
+        shell: cmd
+
       - name: Create Build-Output directory
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: mkdir Build-Output

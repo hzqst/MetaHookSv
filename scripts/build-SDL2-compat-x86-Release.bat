@@ -23,6 +23,6 @@ if not exist "%SolutionDir%thirdparty\SDL2-compat-fork\.git" (
     echo submodule initialization completed.
 )
 
-call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\SDL2-compat-fork" -B "%SolutionDir%thirdparty\build\SDL2-compat-fork\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL2-compat-fork\x86\Release" -DCMAKE_PREFIX_PATH="%SolutionDir%thirdparty\install\SDL3\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DSDL2COMPAT_TESTS=FALSE -DSDL2COMPAT_INSTALL_SDL3=TRUE
+call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\SDL2-compat-fork" -B "%SolutionDir%thirdparty\build\SDL2-compat-fork\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL2-compat-fork\x86\Release" -DCMAKE_PREFIX_PATH="%SolutionDir%thirdparty\install\SDL3\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DSDL2COMPAT_TESTS=FALSE -DSDL2COMPAT_INSTALL_SDL3=TRUE -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 call cmake --build "%SolutionDir%thirdparty\build\SDL2-compat-fork\x86\Release" --config Release --target install

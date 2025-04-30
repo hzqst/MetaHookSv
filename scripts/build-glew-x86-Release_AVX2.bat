@@ -23,6 +23,6 @@ if not exist "%SolutionDir%thirdparty\glew_fork\.git" (
     echo submodule initialization completed.
 )
 
-call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\glew_fork" -B "%SolutionDir%thirdparty\build\glew\x86\Release_AVX2" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\glew\x86\Release_AVX2" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DONLY_LIBS=TRUE -Dglew-cmake_BUILD_SHARED=FALSE -DGLEW_MSVC_LTCG=TRUE
+call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\glew_fork" -B "%SolutionDir%thirdparty\build\glew\x86\Release_AVX2" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\glew\x86\Release_AVX2" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DONLY_LIBS=TRUE -Dglew-cmake_BUILD_SHARED=FALSE -DGLEW_MSVC_LTCG=TRUE -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 call cmake --build "%SolutionDir%thirdparty\build\glew\x86\Release_AVX2" --config Release --target install
