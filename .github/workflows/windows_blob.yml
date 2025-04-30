@@ -55,12 +55,11 @@ jobs:
           if exist "Build-Output\Build\svencoop\metahook\plugins\.placeholder" del "Build-Output\Build\svencoop\metahook\plugins\.placeholder"
         shell: cmd
 
-      - name: Copy install bat to Build-Output
+      - name: Build and Publish MetahookInstaller
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir "Build-Output\scripts"
-          copy "scripts\install-helper-*.bat" "Build-Output\scripts" /y
-          copy "scripts\install-to-CustomGame.bat" "Build-Output\scripts" /y
+          dotnet publish toolsrc/MetahookInstaller/MetahookInstaller.csproj -c Release -r win-x86 --self-contained false
+          xcopy "toolsrc\MetahookInstaller\bin\Release\net6.0-windows\publish\*" "Build-Output\" /y /e
         shell: cmd
 
       - name: Zipping All
