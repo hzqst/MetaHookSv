@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <data name="SelectGame" xml:space="preserve">
+    <value>Select Game:</value>
+  </data>
+  <data name="ModDirectory" xml:space="preserve">
+    <value>Mod Directory:</value>
+  </data>
+  <data name="SteamAppId" xml:space="preserve">
+    <value>Steam AppId:</value>
+  </data>
+  <data name="GamePath" xml:space="preserve">
+    <value>Game Path:</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="EditPluginList" xml:space="preserve">
+    <value>Edit Plugin List</value>
+  </data>
+  <data name="SelectGameDirectory" xml:space="preserve">
+    <value>Please select game installation directory.</value>
+  </data>
+  <data name="InvalidGameDirectory" xml:space="preserve">
+    <value>Invalid game directory: missing hw.dll</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="PleaseSelectGame" xml:space="preserve">
+    <value>Please select a game first</value>
+  </data>
+  <data name="InvalidModDirectory" xml:space="preserve">
+    <value>Invalid mod directory: missing liblist.gam</value>
+  </data>
+  <data name="ModInstallSuccess" xml:space="preserve">
+    <value>Metahook installed successfully</value>
+  </data>
+  <data name="ModInstallFailed" xml:space="preserve">
+    <value>Metahook installation failed: {0}</value>
+  </data>
+  <data name="BuildDirectoryNotFound" xml:space="preserve">
+    <value>Could not find valid Build directory</value>
+  </data>
+  <data name="PluginEditorTitle" xml:space="preserve">
+    <value>Edit Plugin List</value>
+  </data>
+  <data name="EnabledPlugins" xml:space="preserve">
+    <value>Enabled Plugins:</value>
+  </data>
+  <data name="AvailablePlugins" xml:space="preserve">
+    <value>Available Plugins:</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="MetahookNotInstalled" xml:space="preserve">
+    <value>Metahook is not installed, plugin list editing is not available</value>
+  </data>
+</root> 
