@@ -28,11 +28,9 @@ jobs:
         with:
           submodules: true
 
-      - name: Init dependencies
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: git submodule update --init --recursive
-        shell: cmd
-
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+  
       - name: Build MetaHook
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: scripts\build-MetaHook.bat
