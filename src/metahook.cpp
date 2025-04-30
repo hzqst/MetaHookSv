@@ -10,6 +10,7 @@
 #include <sstream>
 #include <set>
 #include <vector>
+#include <functional>
 
 #include "LoadBlob.h"
 #include "LoadDllNotification.h"
@@ -787,14 +788,14 @@ void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 		GameFullPath += "\\";
 	}
 
-	std::stringstream NewEnvPath;
+	std::stringstream NewEnvPathStream;
 
-	NewEnvPath << g_szEnvPath;
-	NewEnvPath << ";";
-	NewEnvPath << GameFullPath;
-	NewEnvPath << GameName;
-	NewEnvPath << "\\metahook\\dlls";
-
+	NewEnvPathStream << g_szEnvPath;
+	NewEnvPathStream << ";";
+	NewEnvPathStream << GameFullPath;
+	NewEnvPathStream << GameName;
+	NewEnvPathStream << "\\metahook\\dlls";
+#if 0
 	std::string aConfigFile = GameName;
 	aConfigFile += "\\metahook\\configs\\dllpaths.lst";
 
@@ -836,10 +837,35 @@ void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 		}
 	}
 	infile.close();
+#else
 
-	auto szNewEnvPath = NewEnvPath.str();
+	std::string dllsPath = GameFullPath + GameName + "\\metahook\\dlls";
+	std::function<void(const std::string&)> traverseDirectory = [&](const std::string& path) {
+		WIN32_FIND_DATAA findData;
+		HANDLE hFind = FindFirstFileA((path + "\\*").c_str(), &findData);
+		
+		if (hFind != INVALID_HANDLE_VALUE) {
+			do {
+				if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
+					continue;
+				
+				if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+					std::string subDirPath = path + "\\" + findData.cFileName;
+					NewEnvPathStream << ";" << subDirPath;
+					traverseDirectory(subDirPath);
+				}
+			} while (FindNextFileA(hFind, &findData));
+			
+			FindClose(hFind);
+		}
+	};
+	
+	traverseDirectory(dllsPath);
+#endif
 
-	SetEnvironmentVariableA("PATH", szNewEnvPath.c_str());
+	auto newEnvPath = NewEnvPathStream.str();
+
+	SetEnvironmentVariableA("PATH", newEnvPath.c_str());
 
 }
 
