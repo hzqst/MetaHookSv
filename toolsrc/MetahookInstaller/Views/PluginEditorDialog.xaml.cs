@@ -113,6 +113,30 @@ namespace MetahookInstaller.Views
             DialogResult = false;
             Close();
         }
+
+        private void MoveUpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedIndex = EnabledPluginsListView.SelectedIndex;
+            if (selectedIndex > 0)
+            {
+                var item = _enabledPlugins[selectedIndex];
+                _enabledPlugins.RemoveAt(selectedIndex);
+                _enabledPlugins.Insert(selectedIndex - 1, item);
+                EnabledPluginsListView.SelectedIndex = selectedIndex - 1;
+            }
+        }
+
+        private void MoveDownButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedIndex = EnabledPluginsListView.SelectedIndex;
+            if (selectedIndex >= 0 && selectedIndex < _enabledPlugins.Count - 1)
+            {
+                var item = _enabledPlugins[selectedIndex];
+                _enabledPlugins.RemoveAt(selectedIndex);
+                _enabledPlugins.Insert(selectedIndex + 1, item);
+                EnabledPluginsListView.SelectedIndex = selectedIndex + 1;
+            }
+        }
     }
 
     public class PluginItem

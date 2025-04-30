@@ -46,7 +46,7 @@ namespace MetahookInstaller.Services
             // 如果系统语言是简体中文，则使用中文资源
             if (CultureInfo.CurrentUICulture.Name == "zh-CN")
             {
-              // defaultCulture = new CultureInfo("zh-CN");
+               defaultCulture = new CultureInfo("zh-CN");
             }
             
             CultureInfo.CurrentUICulture = defaultCulture;

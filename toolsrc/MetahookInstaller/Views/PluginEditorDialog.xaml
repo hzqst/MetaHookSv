@@ -21,13 +21,23 @@
         <!-- 已启用的插件列表 -->
         <StackPanel Grid.Row="0" Grid.Column="0">
             <TextBlock Text="{x:Static res:Strings.EnabledPlugins}" Margin="0,0,0,5"/>
-            <ListView x:Name="EnabledPluginsListView" SelectionMode="Single">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsEnabled}"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ListView x:Name="EnabledPluginsListView" SelectionMode="Single" Grid.Column="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsEnabled}"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                    <Button x:Name="MoveUpButton" Content="↑" Width="30" Height="30" Margin="0,0,0,5" Click="MoveUpButton_Click"/>
+                    <Button x:Name="MoveDownButton" Content="↓" Width="30" Height="30" Click="MoveDownButton_Click"/>
+                </StackPanel>
+            </Grid>
         </StackPanel>
 
         <!-- 分隔线 -->

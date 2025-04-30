@@ -11,16 +11,12 @@ namespace MetahookInstaller.Services
         private readonly string _buildPath;
         private readonly string _gamePath;
         private readonly string _modName;
-        private readonly string _sdl2Path;
-        private readonly string _sdl3Path;
 
-        public ModService(string buildPath, string gamePath, string modName, string sdl2Path, string sdl3Path)
+        public ModService(string buildPath, string gamePath, string modName)
         {
             _buildPath = buildPath ?? throw new ArgumentNullException(nameof(buildPath));
             _gamePath = gamePath ?? throw new ArgumentNullException(nameof(gamePath));
             _modName = modName ?? throw new ArgumentNullException(nameof(modName));
-            _sdl2Path = sdl2Path;
-            _sdl3Path = sdl3Path;
         }
 
         public void InstallMod(string gamePath, string modName, uint appId)
@@ -84,13 +80,16 @@ namespace MetahookInstaller.Services
             {
                 if (IsSDL2Imported(hwDllPath))
                 {
-                    if (File.Exists(_sdl2Path))
+                    var sdl2Path = Path.Combine(_buildPath, "SDL2.dll");
+                    var sdl3Path = Path.Combine(_buildPath, "SDL3.dll");
+
+                    if (File.Exists(sdl2Path))
                     {
-                        File.Copy(_sdl2Path, Path.Combine(gamePath, "SDL2.dll"), true);
+                        File.Copy(sdl2Path, Path.Combine(gamePath, "SDL2.dll"), true);
                     }
-                    if (File.Exists(_sdl3Path))
+                    if (File.Exists(sdl3Path))
                     {
-                        File.Copy(_sdl3Path, Path.Combine(gamePath, "SDL3.dll"), true);
+                        File.Copy(sdl3Path, Path.Combine(gamePath, "SDL3.dll"), true);
                     }
                 }
             }

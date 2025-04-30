@@ -92,22 +92,25 @@ namespace MetahookInstaller.ViewModels
         {
             _steamService = new SteamService();
             var buildPath = FindBuildPath();
+
             if (string.IsNullOrEmpty(buildPath))
             {
-                MessageBox.Show(LocalizationService.GetString("BuildDirectoryNotFound"), 
-                              LocalizationService.GetString("Error"), 
-                              MessageBoxButton.OK, 
+                MessageBox.Show(LocalizationService.GetString("BuildDirectoryNotFound"),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
                               MessageBoxImage.Error);
                 // 使用Dispatcher来确保在MessageBox关闭后触发事件
                 Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     RequestClose?.Invoke(this, EventArgs.Empty);
                 }), DispatcherPriority.Background);
-                return;
+
+                _modService = new ModService(string.Empty, string.Empty, string.Empty);
             }
-            var sdl2Path = Path.Combine(buildPath, "SDL2.dll");
-            var sdl3Path = Path.Combine(buildPath, "SDL3.dll");
-            _modService = new ModService(buildPath, string.Empty, string.Empty, sdl2Path, sdl3Path);
+            else
+            {
+                _modService = new ModService(buildPath, string.Empty, string.Empty);
+            }
             LoadAvailableGames();
         }
 
