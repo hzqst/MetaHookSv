@@ -1590,7 +1590,7 @@ CWorldSurfaceWorldModel* R_GetWorldSurfaceWorldModel(model_t* mod)
 		return g_WorldSurfaceWorldModels[modelindex];
 	}
 
-	if (modelindex > (int)g_WorldSurfaceWorldModels.size())
+	if (modelindex >= (int)g_WorldSurfaceWorldModels.size())
 	{
 		g_WorldSurfaceWorldModels.resize(modelindex + 1);
 	}
