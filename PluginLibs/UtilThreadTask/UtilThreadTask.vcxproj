@@ -86,7 +86,8 @@ if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDire
 copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(FreeImageCheckRequirements)</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -115,7 +116,8 @@ copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)
       <Command>$(PluginLibsPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(FreeImageCheckRequirements)</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
