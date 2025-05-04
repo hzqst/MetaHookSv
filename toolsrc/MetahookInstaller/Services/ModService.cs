@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using PeNet;
-using IWshRuntimeLibrary;
+using DK.WshRuntime;
 using File = System.IO.File;
 
 namespace MetahookInstaller.Services
@@ -138,27 +135,19 @@ namespace MetahookInstaller.Services
 
             // 8. 为 targetMetaHookPath 创建快捷方式至当前MetahookInstaller.exe所在目录
             var installerPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
             if (installerPath == null)
             {
                 throw new InvalidOperationException("Fatal Error: Could not found installer path");
             }
-
             var shortcutPath = Path.Combine(installerPath, $"MetaHook for {Path.GetFileName(gamePath)}.lnk");
             
-            var shortcut = new WshShell();
-            try
-            {
-                var shortcutLink = (IWshShortcut)shortcut.CreateShortcut(shortcutPath);
-                shortcutLink.TargetPath = targetMetaHookPath;
-                shortcutLink.WorkingDirectory = gamePath;
-                shortcutLink.Arguments = $"-insecure -game {modName}";
-                shortcutLink.Save();
-            }
-            finally
-            {
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
-            }
+            WshInterop.CreateShortcut(
+                shortcutPath,
+                $"MetaHook for {Path.GetFileName(gamePath)}",
+                targetMetaHookPath,
+                $"-insecure -game {modName}",
+                targetMetaHookPath
+            );
         }
         private void CopyDirectory(string sourceDir, string targetDir)
         {
