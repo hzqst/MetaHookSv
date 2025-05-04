@@ -34,7 +34,7 @@ namespace MetahookInstaller.Services
             {
                 _steamPath = GetSteamPath();
                 if (_steamPath == null)
-                    throw new Exception("无法找到Steam安装路径");
+                    throw new Exception("Could not found Steam path");
             }
 
             var libraryFolders = GetLibraryFolders();
@@ -58,7 +58,7 @@ namespace MetahookInstaller.Services
                     return fullPath;
             }
 
-            throw new Exception($"找不到AppId为{appId}的游戏");
+            throw new Exception($"Could not found game with AppId {appId}");
         }
 
         private string? GetSteamPath()

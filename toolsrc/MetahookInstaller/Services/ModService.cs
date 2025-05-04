@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using PeNet;
+using IWshRuntimeLibrary;
+using File = System.IO.File;
 
 namespace MetahookInstaller.Services
 {
@@ -52,31 +54,38 @@ namespace MetahookInstaller.Services
 
             // 4. 检查并复制MetaHook.exe或MetaHook_blob.exe
             var hwDllPath = Path.Combine(gamePath, "hw.dll");
-            bool isLegitimatePE = IsLegitimatePE(hwDllPath);
+            var sourceMetaHookPath = Path.Combine(_buildPath, "MetaHook.exe");
+            var targetMetaHookPath = Path.Combine(gamePath, "MetaHook.exe");
+            bool isNonBlobEngine = IsLegitimatePE(hwDllPath);
 
-            if (isLegitimatePE)
+            if (isNonBlobEngine)
             {
-                var metaHookPath = Path.Combine(_buildPath, "MetaHook.exe");
-                if (File.Exists(metaHookPath))
+                if (modName.Equals("svencoop", StringComparison.OrdinalIgnoreCase))
                 {
-                    File.Copy(metaHookPath, Path.Combine(gamePath, "MetaHook.exe"), true);
+                    targetMetaHookPath = Path.Combine(gamePath, "svencoop.exe");
+                }
+                else
+                {
+                    targetMetaHookPath = Path.Combine(gamePath, "MetaHook.exe");
                 }
             }
             else
             {
-                var metaHookBlobPath = Path.Combine(_buildPath, "MetaHook_blob.exe");
-                if (File.Exists(metaHookBlobPath))
-                {
-                    File.Copy(metaHookBlobPath, Path.Combine(gamePath, "MetaHook.exe"), true);
-                }
-                else
-                {
-                    throw new Exception("找不到MetaHook_blob.exe，无法安装到非PE文件");
-                }
+                sourceMetaHookPath = Path.Combine(_buildPath, "MetaHook_blob.exe");
+                targetMetaHookPath = Path.Combine(gamePath, "MetaHook_blob.exe");
+            }
+
+            if (File.Exists(sourceMetaHookPath))
+            {
+                File.Copy(sourceMetaHookPath, targetMetaHookPath, true);
+            }
+            else
+            {
+                throw new Exception("Fatal Error: Could not found " + sourceMetaHookPath);
             }
 
             // 5. 检查并复制SDL2.dll和SDL3.dll
-            if (isLegitimatePE)
+            if (isNonBlobEngine)
             {
                 if (IsSDL2Imported(hwDllPath))
                 {
@@ -100,16 +109,13 @@ namespace MetahookInstaller.Services
             
             if (!File.Exists(pluginsLstPath) && Directory.Exists(configsPath))
             {
-                string sourcePluginsFile;
+                var sourcePluginsFile = Path.Combine(configsPath, "plugins_goldsrc.lst");
+
                 if (modName.Equals("svencoop", StringComparison.OrdinalIgnoreCase))
                 {
                     sourcePluginsFile = Path.Combine(configsPath, "plugins_svencoop.lst");
                 }
-                else
-                {
-                    sourcePluginsFile = Path.Combine(configsPath, "plugins_goldsrc.lst");
-                }
-                
+
                 if (File.Exists(sourcePluginsFile))
                 {
                     File.Copy(sourcePluginsFile, pluginsLstPath, true);
@@ -129,49 +135,31 @@ namespace MetahookInstaller.Services
             {
                 File.Delete(pluginsGoldsrcPath);
             }
-        }
 
-        public void UninstallMod(string gamePath, string modName)
-        {
-            var modPath = Path.Combine(gamePath, modName);
-            if (Directory.Exists(modPath))
-                Directory.Delete(modPath, true);
+            // 8. 为 targetMetaHookPath 创建快捷方式至当前MetahookInstaller.exe所在目录
+            var installerPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-            var pluginsFile = Path.Combine(gamePath, "plugins.lst");
-            if (File.Exists(pluginsFile))
+            if (installerPath == null)
             {
-                var plugins = File.ReadAllLines(pluginsFile);
-                var newPlugins = plugins.Where(p => p != modName).ToArray();
-                File.WriteAllLines(pluginsFile, newPlugins);
+                throw new InvalidOperationException("Fatal Error: Could not found installer path");
+            }
+
+            var shortcutPath = Path.Combine(installerPath, $"MetaHook for {Path.GetFileName(gamePath)}.lnk");
+            
+            var shortcut = new WshShell();
+            try
+            {
+                var shortcutLink = (IWshShortcut)shortcut.CreateShortcut(shortcutPath);
+                shortcutLink.TargetPath = targetMetaHookPath;
+                shortcutLink.WorkingDirectory = gamePath;
+                shortcutLink.Arguments = $"-insecure -game {modName}";
+                shortcutLink.Save();
+            }
+            finally
+            {
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
             }
         }
-
-        public void EnableMod(string gamePath, string modName)
-        {
-            var pluginsFile = Path.Combine(gamePath, "plugins.lst");
-            var plugins = new List<string>();
-
-            if (File.Exists(pluginsFile))
-                plugins.AddRange(File.ReadAllLines(pluginsFile));
-
-            if (!plugins.Contains(modName))
-            {
-                plugins.Add(modName);
-                File.WriteAllLines(pluginsFile, plugins);
-            }
-        }
-
-        public void DisableMod(string gamePath, string modName)
-        {
-            var pluginsFile = Path.Combine(gamePath, "plugins.lst");
-            if (!File.Exists(pluginsFile))
-                return;
-
-            var plugins = File.ReadAllLines(pluginsFile);
-            var newPlugins = plugins.Where(p => p != modName).ToArray();
-            File.WriteAllLines(pluginsFile, newPlugins);
-        }
-
         private void CopyDirectory(string sourceDir, string targetDir)
         {
             Directory.CreateDirectory(targetDir);
