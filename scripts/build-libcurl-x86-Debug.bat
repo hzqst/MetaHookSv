@@ -12,7 +12,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 cd /d "%SolutionDir%"
 
 :: Check if curl directory has been initialized
-if not exist "%SolutionDir%thirdparty\curl\.git" (
+if not exist "%SolutionDir%thirdparty\curl\CMakeLists.txt" if not exist "%SolutionDir%thirdparty\curl\.git" (
     echo Initializing curl submodule only...
     :: Initialize only the curl submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\curl"

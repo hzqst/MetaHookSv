@@ -12,7 +12,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 cd /d "%SolutionDir%"
 
 :: Check if bullet3_fork directory has been initialized
-if not exist "%SolutionDir%thirdparty\bullet3_fork\.git" (
+if not exist "%SolutionDir%thirdparty\bullet3_fork\CMakeLists.txt" if not exist "%SolutionDir%thirdparty\bullet3_fork\.git"  (
     echo Initializing bullet3_fork submodule only...
     :: Initialize only the bullet3_fork submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\bullet3_fork"

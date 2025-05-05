@@ -18,7 +18,7 @@ for /f "usebackq tokens=*" %%i in (`tools\vswhere -latest -products * -requires 
 )
 
 :: Check if FreeImage_clone directory has been initialized
-if not exist "%SolutionDir%thirdparty\FreeImage_clone\.git" (
+if not exist "%SolutionDir%thirdparty\FreeImage_clone\FreeImage.2017.sln" if not exist "%SolutionDir%thirdparty\FreeImage_clone\.git" (
     echo Initializing FreeImage_clone submodule only...
     :: Initialize only the FreeImage_clone submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\FreeImage_clone"

@@ -12,7 +12,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 cd /d "%SolutionDir%"
 
 :: Check if capstone_fork directory has been initialized
-if not exist "%SolutionDir%thirdparty\capstone_fork\.git" (
+if not exist "%SolutionDir%thirdparty\capstone_fork\CMakeLists.txt" if not exist "%SolutionDir%thirdparty\capstone_fork\.git" (
     echo Initializing capstone_fork submodule only...
     :: Initialize only the capstone_fork submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\capstone_fork"

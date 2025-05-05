@@ -12,7 +12,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 cd /d "%SolutionDir%"
 
 :: Check if SDL3 directory has been initialized
-if not exist "%SolutionDir%thirdparty\SDL3\.git" (
+if not exist "%SolutionDir%thirdparty\SDL3\CMakeLists.txt" if not exist "%SolutionDir%thirdparty\SDL3\.git" (
     echo Initializing SDL3 submodule only...
     :: Initialize only the SDL3 submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\SDL3"

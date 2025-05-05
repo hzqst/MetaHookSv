@@ -12,7 +12,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 cd /d "%SolutionDir%"
 
 :: Check if glew_fork directory has been initialized
-if not exist "%SolutionDir%thirdparty\glew_fork\.git" (
+if not exist "%SolutionDir%thirdparty\glew_fork\CMakeLists.txt" if not exist "%SolutionDir%thirdparty\glew_fork\.git" (
     echo Initializing glew_fork submodule only...
     :: Initialize only the glew_fork submodule without recursive initialization
     call git submodule update --init "%SolutionDir%thirdparty\glew_fork"
