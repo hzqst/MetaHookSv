@@ -123,9 +123,40 @@ void R_InitPortal(void)
 	
 }
 
+bool ClientPortal_GetPortalTransform(void* ClientPortal, float *outOrigin, float *outAngles)
+{
+	if (g_dwEngineBuildnum >= 10000)//5.26
+	{
+		const auto origin = (const float*)((ULONG_PTR)ClientPortal + 0);
+		const auto angles = (const float*)((ULONG_PTR)ClientPortal + 12);
+
+		VectorCopy(origin, outOrigin);
+		VectorCopy(angles, outAngles);
+		return true;
+	}
+	if (g_dwEngineBuildnum >= 8948)//5.25
+	{
+		auto ent = *(cl_entity_t**)((ULONG_PTR)ClientPortal + 0x70);
+		VectorCopy(ent->origin, outOrigin);
+		VectorCopy(ent->angles, outAngles);
+		return true;
+	}
+
+	return false;
+}
+
 int ClientPortal_GetPortalMode(void *ClientPortal)
 {
-	return *(int *)((ULONG_PTR)ClientPortal + 0x28);
+	if (g_dwEngineBuildnum >= 10000 )//5.26
+	{
+		return *(int*)((ULONG_PTR)ClientPortal + 0x40);
+	}
+	if (g_dwEngineBuildnum >= 8948)//5.25
+	{
+		return *(int*)((ULONG_PTR)ClientPortal + 0x28);
+	}
+
+	return -1;
 }
 
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
@@ -264,8 +295,6 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 
 void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
-	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
-
 	program_state_t programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
 	if (pPortalModel->texinfo->texture->name[0] == '{')
@@ -278,7 +307,13 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
-	R_RotateForEntity(ent);
+	vec3_t origin{};
+	vec3_t angles{};
+
+	if (!ClientPortal_GetPortalTransform(ClientPortal, origin, angles))
+		return;
+
+	R_RotateForTransform(origin, angles);
 
 	portal_program_t prog = { 0 };
 
@@ -302,8 +337,6 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
-	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
-
 	program_state_t programState = 0;
 
 	if (pPortalModel->texinfo->texture->name[0] == '{')
@@ -316,7 +349,13 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
-	R_RotateForEntity(ent);
+	vec3_t origin{};
+	vec3_t angles{};
+
+	if (!ClientPortal_GetPortalTransform(ClientPortal, origin, angles))
+		return;
+
+	R_RotateForTransform(origin, angles);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(programState, &prog);
@@ -352,21 +391,26 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 	if (pPortalModel)
 	{
-		GL_BindVAO(pPortalModel->hVAO);
+		auto mode = ClientPortal_GetPortalMode(ClientPortal);
 
-		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-		if (ClientPortal_GetPortalMode(ClientPortal) == 1)
+		if (mode != -1)
 		{
-			R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
-		}
-		else
-		{
-			R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
-		}
+			GL_BindVAO(pPortalModel->hVAO);
 
-		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+			glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-		GL_BindVAO(0);
+			if (mode == 1)
+			{
+				R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+			}
+			else
+			{
+				R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+			}
+
+			glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+			GL_BindVAO(0);
+		}
 	}
 }

@@ -482,6 +482,29 @@ void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset)
 	}
 }
 
+void R_RotateForTransform(const float *in_origin, const float* in_angles)
+{
+	int i;
+	vec3_t angles;
+	vec3_t modelpos;
+
+	VectorCopy(in_origin, modelpos);
+	VectorCopy(in_angles, angles);
+
+	float entity_matrix[4][4];
+
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
+	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
+}
+
 /*
 	Purpose : Setup world matrix for this entity
 */
