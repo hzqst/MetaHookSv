@@ -25,7 +25,7 @@ void main()
 	vec4 normal4 = vec4(in_normal, 0.0);
 	v_normal = normalize((u_entityMatrix * normal4).xyz);
 
-	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
+	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * worldpos4;
 
 	v_projpos = gl_Position;
 }

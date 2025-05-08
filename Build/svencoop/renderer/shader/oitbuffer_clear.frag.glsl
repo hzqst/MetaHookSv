@@ -10,7 +10,7 @@ void main() {
 
     float x = gl_FragCoord.x;
     float y = gl_FragCoord.y;
-    float viewportW = SceneUBO.viewport.x;
+    float viewportW = CameraUBO.viewport.x;
 
     uint index = uint(viewportW*y + x);
     

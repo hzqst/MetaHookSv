@@ -368,7 +368,7 @@ void main()
 
 	#if defined(PARALLAXTEXTURE_ENABLED)
 
-		vec3 viewDir = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
+		vec3 viewDir = normalize(v_worldpos.xyz - CameraUBO.viewpos.xyz);
 
 		vec4 diffuseColor = texture(diffuseTex, ParallaxMapping(v_tangent, v_bitangent, v_normal, viewDir, baseTexcoord));
 
@@ -494,7 +494,7 @@ void main()
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-		float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+		float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 		#if defined(SPECULARTEXTURE_ENABLED)
 		

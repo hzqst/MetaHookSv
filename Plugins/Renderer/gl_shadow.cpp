@@ -318,8 +318,8 @@ void R_RenderShadowScene(void)
 
 			GL_ClearColorDepthStencil(vecClearColor, 0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
 
 			cl_entity_t *backup_curentity = (*currententity);
 

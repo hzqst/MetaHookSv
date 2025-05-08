@@ -350,7 +350,6 @@ void R_NewMap(void);
 void GL_BuildLightmaps(void);
 
 void R_Init(void);
-void R_VidInit(void);
 void R_Shutdown(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
@@ -363,6 +362,7 @@ void R_AnimateLight(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
 void R_SetupSceneUBO(void);
+void R_SetupCameraUBO(void);
 void R_GameFrameStart();
 void R_RenderFrameStart();
 void R_RenderEndFrame();

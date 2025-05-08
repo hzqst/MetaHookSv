@@ -23,7 +23,7 @@ void R_GetSpriteAxes_ParallelUpright(vec3 angles, inout vec3 forward, inout vec3
 {
 	up = vec3(0.0, 0.0, 1.0);
 
-	right = vec3(SceneUBO.vpn.y, -SceneUBO.vpn.x, 0.0);
+	right = vec3(CameraUBO.vpn.y, -CameraUBO.vpn.x, 0.0);
 
 	right = normalize(right);
 
@@ -32,7 +32,7 @@ void R_GetSpriteAxes_ParallelUpright(vec3 angles, inout vec3 forward, inout vec3
 
 void R_GetSpriteAxes_FacingUpright(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
 {
-	vec3 tvec = -SceneUBO.viewpos.xyz;
+	vec3 tvec = -CameraUBO.viewpos.xyz;
 
 	tvec = normalize(tvec);
 
@@ -50,16 +50,16 @@ void R_GetSpriteAxes_ParallelOriented(vec3 angles, inout vec3 forward, inout vec
 	float sr = sin(angle);
 	float cr = cos(angle);
 
-	forward = SceneUBO.vpn.xyz;
-	right = vec3(SceneUBO.vright.x * cr + SceneUBO.vup.x * sr, SceneUBO.vright.y * cr + SceneUBO.vup.y * sr, SceneUBO.vright.z * cr + SceneUBO.vup.z * sr);
-	up = vec3(SceneUBO.vright.x * -sr + SceneUBO.vup.x * cr, SceneUBO.vright.y * -sr + SceneUBO.vup.y * cr, SceneUBO.vright.z * -sr + SceneUBO.vup.z * cr);
+	forward = CameraUBO.vpn.xyz;
+	right = vec3(CameraUBO.vright.x * cr + CameraUBO.vup.x * sr, CameraUBO.vright.y * cr + CameraUBO.vup.y * sr, CameraUBO.vright.z * cr + CameraUBO.vup.z * sr);
+	up = vec3(CameraUBO.vright.x * -sr + CameraUBO.vup.x * cr, CameraUBO.vright.y * -sr + CameraUBO.vup.y * cr, CameraUBO.vright.z * -sr + CameraUBO.vup.z * cr);
 }
 
 void R_GetSpriteAxes_Parallel(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
 {
-	up = SceneUBO.vup.xyz;
-	right = SceneUBO.vright.xyz;
-	forward = SceneUBO.vpn.xyz;
+	up = CameraUBO.vup.xyz;
+	right = CameraUBO.vright.xyz;
+	forward = CameraUBO.vpn.xyz;
 }
 
 void AngleVectors(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
@@ -138,7 +138,7 @@ void main()
 
 	vec3 outvert = vertexArray[idx];
 
-	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
+	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
 	v_worldpos = outvert;
 	v_normal = normalize(vForward);
 	v_color = in_color;

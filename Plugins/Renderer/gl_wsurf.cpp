@@ -344,6 +344,12 @@ void R_FreeSceneUBO(void)
 		g_WorldSurfaceRenderer.hSceneUBO = 0;
 	}
 
+	if (g_WorldSurfaceRenderer.hCameraUBO)
+	{
+		GL_DeleteBuffer(g_WorldSurfaceRenderer.hCameraUBO);
+		g_WorldSurfaceRenderer.hCameraUBO = 0;
+	}
+
 	if (g_WorldSurfaceRenderer.hEntityUBO)
 	{
 		GL_DeleteBuffer(g_WorldSurfaceRenderer.hEntityUBO);
@@ -1611,6 +1617,12 @@ void R_GenerateSceneUBO(void)
 	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hSceneUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, g_WorldSurfaceRenderer.hSceneUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	g_WorldSurfaceRenderer.hCameraUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hCameraUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(camera_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_CAMERA_UBO, g_WorldSurfaceRenderer.hCameraUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	g_WorldSurfaceRenderer.hDLightUBO = GL_GenBuffer();
@@ -3775,35 +3787,46 @@ void R_DrawBrushModel(cl_entity_t *e)
 	glDisable(GL_BLEND);
 }
 
+void R_SetupCameraUBO(void)
+{
+	camera_ubo_t CameraUBO;
+
+	memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+	CameraUBO.viewport[0] = glwidth;
+	CameraUBO.viewport[1] = glheight;
+	CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
+	CameraUBO.viewport[3] = 0;
+	memcpy(CameraUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
+	memcpy(CameraUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
+	memcpy(CameraUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
+	memcpy(CameraUBO.frustum[3], r_frustum_origin[3], sizeof(vec3_t));
+	memcpy(CameraUBO.viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
+	memcpy(CameraUBO.vpn, vpn, sizeof(vec3_t));
+	memcpy(CameraUBO.vright, vright, sizeof(vec3_t));
+	memcpy(CameraUBO.vup, vup, sizeof(vec3_t));
+	memcpy(CameraUBO.r_origin, r_origin, sizeof(vec3_t));
+
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+}
+
 void R_SetupSceneUBO(void)
 {
 	scene_ubo_t SceneUBO;
 
-	memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
-	SceneUBO.viewport[0] = glwidth;
-	SceneUBO.viewport[1] = glheight;
-	SceneUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
-	SceneUBO.viewport[3] = 0;
-	memcpy(SceneUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
-	memcpy(SceneUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
-	memcpy(SceneUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
-	memcpy(SceneUBO.frustum[3], r_frustum_origin[3], sizeof(vec3_t));
-	memcpy(SceneUBO.viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
-	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
-	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
-	memcpy(SceneUBO.vup, vup, sizeof(vec3_t));
 
 	vec3_t vforward;
 	gEngfuncs.pfnAngleVectors(r_shadow_angles->GetValues(), vforward, NULL, NULL);
 	memcpy(SceneUBO.shadowDirection, vforward, sizeof(vec3_t));
 	memcpy(SceneUBO.shadowColor, r_shadow_color->GetValues(), sizeof(vec3_t));
+	
 	SceneUBO.shadowColor[3] = r_shadow_intensity->GetValue();
+	
 	memcpy(SceneUBO.shadowFade, r_shadow_distfade->GetValues(), sizeof(vec2_t));
 	memcpy(&SceneUBO.shadowFade[2], r_shadow_lumfade->GetValues(), sizeof(vec2_t));
 
@@ -3825,7 +3848,7 @@ void R_SetupSceneUBO(void)
 
 	//Fog colors are converted to linear space before use.
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
-	GammaToLinear(SceneUBO.fogColor);
+	//GammaToLinear(SceneUBO.fogColor);
 
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
@@ -3949,6 +3972,7 @@ void R_PrepareDrawWorld(void)
 	}
 
 	R_SetupSceneUBO();
+	R_SetupCameraUBO();
 	R_SetupDLightUBO();
 }
 

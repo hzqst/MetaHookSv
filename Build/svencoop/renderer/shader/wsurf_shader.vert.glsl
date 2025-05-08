@@ -85,7 +85,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 
 	float width = zFar * flScale;
 	vec3 b = vec3(s * width, t * width, width);
-	vec3 v = SceneUBO.viewpos.xyz;
+	vec3 v = CameraUBO.viewpos.xyz;
 
 	for (int j = 0; j < 3; j++)
 	{
@@ -217,7 +217,7 @@ void main(void)
 		v_styles = in_styles;
 	#endif	
 
-	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
+	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * worldpos4;
 
 	v_projpos = gl_Position;
 }

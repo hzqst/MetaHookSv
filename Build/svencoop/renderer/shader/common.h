@@ -74,18 +74,19 @@
 #define TEXTURE_SSBO_WATER_DEPTH 4
 
 #define BINDING_POINT_SCENE_UBO 0
-#define BINDING_POINT_DLIGHT_UBO 1
+#define BINDING_POINT_CAMERA_UBO 1
+#define BINDING_POINT_DLIGHT_UBO 2
 
-#define BINDING_POINT_SKYBOX_SSBO 2
-#define BINDING_POINT_DECAL_SSBO 2
-#define BINDING_POINT_TEXTURE_SSBO 2
+#define BINDING_POINT_SKYBOX_SSBO 3
+#define BINDING_POINT_DECAL_SSBO 3
+#define BINDING_POINT_TEXTURE_SSBO 3
 
-#define BINDING_POINT_ENTITY_UBO 3
-#define BINDING_POINT_STUDIO_UBO 3
+#define BINDING_POINT_ENTITY_UBO 4
+#define BINDING_POINT_STUDIO_UBO 4
 
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
-#define BINDING_POINT_OIT_COUNTER_SSBO 6
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 5
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 6
+#define BINDING_POINT_OIT_COUNTER_SSBO 7
 
 #define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_REPLACE_TEXTURE		1
@@ -122,18 +123,23 @@
 #define SPR_ORIENTED 3
 #define SPR_VP_PARALLEL_ORIENTED 4
 
-struct scene_ubo_t{
+struct camera_ubo_t {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
-	mat4 shadowMatrix[3];
 	vec4 viewport;
 	vec4 frustum[4];
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
 	vec4 vup;
+	vec4 r_origin;
+};
+
+struct scene_ubo_t{
+
+	mat4 shadowMatrix[3];
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
@@ -192,6 +198,11 @@ struct studio_ubo_t{
 layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
 {
    scene_ubo_t SceneUBO;
+};
+
+layout(std140, binding = BINDING_POINT_CAMERA_UBO) uniform CameraBlock
+{
+	camera_ubo_t CameraUBO;
 };
 
 layout (std140, binding = BINDING_POINT_DLIGHT_UBO) uniform DLightBlock
@@ -269,8 +280,8 @@ layout(binding = BINDING_POINT_OIT_COUNTER_SSBO, offset = 0) uniform atomic_uint
 	{
 		float x = gl_FragCoord.x;
 		float y = gl_FragCoord.y;
-		float viewportW = SceneUBO.viewport.x;
-		uint linkedListSize = uint(SceneUBO.viewport.z);
+		float viewportW = CameraUBO.viewport.x;
+		uint linkedListSize = uint(CameraUBO.viewport.z);
 
 		uint pixelIndex = uint(viewportW*y + x);
 
@@ -356,76 +367,6 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 	return normalize(vec3(coord.x, y + 0.0001, coord.y));
 
 }
-
-#if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
-
-	vec4 CalcFogWithDistance(vec4 color, float z)
-	{
-		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
-
-		fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
-
-		return color;
-	}
-
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
-
-#elif defined(EXP_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
-
-	vec4 CalcFogWithDistance(vec4 color, float z)
-	{
-		float f = SceneUBO.fogDensity * z;
-
-		float fogFactor = exp( -f );
-
-		fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
-
-		return color;
-	}
-
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
-
-#elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
-
-	vec4 CalcFogWithDistance(vec4 color, float z)
-	{
-		float f = SceneUBO.fogDensity * z / 1.8;
-		float fogFactor = exp(-f*f);
-		fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
-
-		return color;
-	}
-
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
-
-#else
-
-	vec4 CalcFog(vec4 color)
-	{
-		return color;
-	}
-
-	vec4 CalcFogWithDistance(vec4 color, float z)
-	{
-		return color;
-	}
-
-#endif
 
 //Color Space Conversion
 
@@ -666,6 +607,88 @@ vec4 ProcessOtherLinearColor(vec4 color)
 	void ClipPlaneTest(vec3 worldpos, vec3 normal)
 	{
 
+	}
+
+#endif
+
+#if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+		vec3 fogColor = SceneUBO.fogColor.xyz;
+
+		fogColor = ProcessOtherGammaColor3(fogColor);
+
+		color.xyz = mix(fogColor, color.xyz, fogFactor );
+
+		return color;
+	}
+
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
+
+#elif defined(EXP_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float f = SceneUBO.fogDensity * z;
+
+		float fogFactor = exp( -f );
+
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+		vec3 fogColor = SceneUBO.fogColor.xyz;
+
+		fogColor = ProcessOtherGammaColor3(fogColor);
+
+		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
+
+		return color;
+	}
+
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
+
+#elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float f = SceneUBO.fogDensity * z / 1.8;
+		float fogFactor = exp(-f*f);
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+		vec3 fogColor = SceneUBO.fogColor.xyz;
+
+		fogColor = ProcessOtherGammaColor3(fogColor);
+
+		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
+
+		return color;
+	}
+
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
+
+#else
+
+	vec4 CalcFog(vec4 color)
+	{
+		return color;
+	}
+
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		return color;
 	}
 
 #endif

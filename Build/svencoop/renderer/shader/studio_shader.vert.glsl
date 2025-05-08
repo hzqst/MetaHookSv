@@ -84,7 +84,7 @@ void main(void)
 		);
 		tmp = normalize(tmp);
 
-		vec3 chromeupvec = cross(tmp, SceneUBO.vright.xyz);
+		vec3 chromeupvec = cross(tmp, CameraUBO.vright.xyz);
 		chromeupvec = normalize(chromeupvec);
 
 		vec3 chromerightvec = cross(tmp, chromeupvec);
@@ -151,13 +151,13 @@ void main(void)
 
 		#if defined(STUDIO_DEBUG_ENABLED)
 
-			v_headorigin_proj = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(v_headorigin, 1.0);
+			v_headorigin_proj = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(v_headorigin, 1.0);
 
 		#endif
 
 	#endif
 
-	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
+	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
 	v_projpos = gl_Position;
 	v_texcoord = v_texcoord * r_uvscale;
 }

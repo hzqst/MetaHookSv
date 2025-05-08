@@ -13,7 +13,7 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main()
 {
-	ClipPlaneTest(v_worldpos.xyz, -SceneUBO.vpn.xyz);
+	ClipPlaneTest(v_worldpos.xyz, -CameraUBO.vpn.xyz);
 
 	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
 

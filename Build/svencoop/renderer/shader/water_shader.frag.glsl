@@ -41,7 +41,7 @@ vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 	clipSpaceLocation.xy = texCoord * 2.0-1.0;
 	clipSpaceLocation.z  = texture(depthTex, texCoord).x * 2.0-1.0;
 	clipSpaceLocation.w  = 1.0;
-	vec4 homogenousLocation = SceneUBO.invViewMatrix * SceneUBO.invProjMatrix * clipSpaceLocation;
+	vec4 homogenousLocation = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * clipSpaceLocation;
 	return homogenousLocation.xyz / homogenousLocation.w;
 }
 
@@ -91,7 +91,7 @@ void main()
 	//calculate texcoord
 	vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
-	vec3 vEyeVect = SceneUBO.viewpos.xyz - v_worldpos.xyz;
+	vec3 vEyeVect = CameraUBO.viewpos.xyz - v_worldpos.xyz;
 	float flHeight = abs(vEyeVect.z);
 	float dist = length(vEyeVect);
 	float sinX = flHeight / (dist + 0.001);
@@ -136,7 +136,7 @@ void main()
 
 			worldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
 
-			float flDiffDistance = distance(worldScene.xyz, SceneUBO.viewpos.xyz) - distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+			float flDiffDistance = distance(worldScene.xyz, CameraUBO.viewpos.xyz) - distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 			float flEdgeFeathering = clamp(flDiffDistance / u_depthfactor.z, 0.0, 1.0);
 			vOffsetTexCoord *= (flEdgeFeathering * flEdgeFeathering);
 
@@ -181,7 +181,7 @@ void main()
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-	float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 	out_Diffuse = vFinalColor;
 	out_Lightmap = vec4(1.0, 1.0, 1.0, 1.0);

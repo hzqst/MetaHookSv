@@ -138,7 +138,7 @@ float R_StudioBaseLight_PhongSpecular(vec3 vWorldPos, vec3 vNormal, float specul
 {
 	float illum = 0.0;
 
-	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecVertexToEye = normalize(CameraUBO.viewpos.xyz - vWorldPos.xyz);
 	vec3 vecAdjustedLight = R_GetAdjustedLightDirection(StudioUBO.r_plightvec.xyz);
 	vec3 vecLightReflect = normalize(reflect(vecAdjustedLight, vNormal.xyz));
 	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
@@ -159,7 +159,7 @@ float R_StudioBaseLight_CelShadeSpecular(vec3 vWorldPos, vec3 vNormal, float spe
 {
 	float illum = 0.0;
 
-	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecVertexToEye = normalize(CameraUBO.viewpos.xyz - vWorldPos.xyz);
 	vec3 vecAdjustedLight = R_GetAdjustedLightDirection(StudioUBO.r_plightvec.xyz);
 	vec3 vecLightReflect = normalize(reflect(vecAdjustedLight, vNormal.xyz));
 	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
@@ -228,7 +228,7 @@ vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorld
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
-	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecVertexToEye = normalize(CameraUBO.viewpos.xyz - vWorldPos.xyz);
 	vec3 vecLightReflect = normalize(reflect(vElightDirection, vNormal.xyz));
 	
 	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
@@ -379,7 +379,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	vec3 N = normalWS;
 
     vec3 L = lightdirWS;
-	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
+	vec3 V = normalize(v_worldpos.xyz - CameraUBO.viewpos.xyz);
 	vec3 UP = vec3(0.0, 0.0, -1.0);
 	vec3 BiT = cross(N, UP);
 	vec3 T = cross(N, BiT);
@@ -462,7 +462,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
     vec3 shiftedTangent1 = ShiftTangent(T, N, v_texcoord.x, r_hair_specular_noise);
     vec3 shiftedTangent2 = ShiftTangent(T, N, v_texcoord.x, r_hair_specular_noise2);
 	
-	vec3 V2 = SceneUBO.vpn.xyz;
+	vec3 V2 = CameraUBO.vpn.xyz;
 
     vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
     kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
@@ -488,7 +488,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
     vec3 shiftedTangent1 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise);
     vec3 shiftedTangent2 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise2);
 
-	vec3 V2 = SceneUBO.vpn.xyz;
+	vec3 V2 = CameraUBO.vpn.xyz;
 
     vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
     kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
@@ -523,8 +523,8 @@ vec4 R_RenderDebugPoint(vec4 baseColor)
     vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
     vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
 
-	point_ndc.x = point_ndc.x * SceneUBO.viewport.x / SceneUBO.viewport.y;
-	vertex_ndc.x = vertex_ndc.x * SceneUBO.viewport.x / SceneUBO.viewport.y;
+	point_ndc.x = point_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
+	vertex_ndc.x = vertex_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
 
 	if(distance(point_ndc.xy, vertex_ndc.xy) < 0.01)
 	{
@@ -771,7 +771,7 @@ void main(void)
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-		float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+		float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 		out_Diffuse = diffuseColor;
 		out_Lightmap = lightmapColor;

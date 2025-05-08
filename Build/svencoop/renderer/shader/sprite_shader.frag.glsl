@@ -63,7 +63,7 @@ void main(void)
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-	float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 	out_Diffuse = baseColor;
 	out_Lightmap = lightmapColor;

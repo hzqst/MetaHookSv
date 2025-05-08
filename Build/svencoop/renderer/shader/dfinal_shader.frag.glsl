@@ -57,7 +57,7 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
     {
         for(int j = -3; j <= 3;j++)
         {
-            vec2 new_texcoord = texcoord + vec2((offset * i) / SceneUBO.viewport.x, (offset * j) / SceneUBO.viewport.y);
+            vec2 new_texcoord = texcoord + vec2((offset * i) / CameraUBO.viewport.x, (offset * j) / CameraUBO.viewport.y);
             vec4 color = GenerateBasicColor(new_texcoord);
             float weight = gauss[idx++];
             finalColor = finalColor + weight * color;
@@ -70,13 +70,13 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
 vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
     vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = SceneUBO.invProjMatrix * ndc;// going back from projected
+	vec4 inversed = CameraUBO.invProjMatrix * ndc;// going back from projected
 	inversed /= inversed.w;
 	return inversed.xyz;
 }
 
 vec2 GenerateProjectedPosition(vec3 pos){
-	vec4 samplePosition = SceneUBO.projMatrix * vec4(pos, 1.0);
+	vec4 samplePosition = CameraUBO.projMatrix * vec4(pos, 1.0);
 	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
 	return samplePosition.xy;
 }
@@ -91,7 +91,7 @@ vec3 GenerateWorldNormal(vec2 texcoord)
 
 vec3 GenerateViewNormal(vec2 texcoord)
 {
-    return normalize((SceneUBO.viewMatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
+    return normalize((CameraUBO.viewMatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
 }
 
 vec4 VignetteColor(vec4 c, vec2 win_bias)

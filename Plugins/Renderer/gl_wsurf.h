@@ -6,18 +6,19 @@
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
-#define BINDING_POINT_DLIGHT_UBO 1
+#define BINDING_POINT_CAMERA_UBO 1
+#define BINDING_POINT_DLIGHT_UBO 2
 
-#define BINDING_POINT_SKYBOX_SSBO 2
-#define BINDING_POINT_DECAL_SSBO 2
-#define BINDING_POINT_TEXTURE_SSBO 2
+#define BINDING_POINT_SKYBOX_SSBO 3
+#define BINDING_POINT_DECAL_SSBO 3
+#define BINDING_POINT_TEXTURE_SSBO 3
 
-#define BINDING_POINT_ENTITY_UBO 3
-#define BINDING_POINT_STUDIO_UBO 3
+#define BINDING_POINT_ENTITY_UBO 4
+#define BINDING_POINT_STUDIO_UBO 4
 
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
-#define BINDING_POINT_OIT_COUNTER_SSBO 6
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 5
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 6
+#define BINDING_POINT_OIT_COUNTER_SSBO 7
 
 #define VERTEX_ATTRIBUTE_INDEX_POSITION 0
 #define VERTEX_ATTRIBUTE_INDEX_NORMAL 1
@@ -194,20 +195,25 @@ public:
 
 #pragma pack(push, 16)
 
+typedef struct camera_ubo_s
+{
+	mat4 viewMatrix{};
+	mat4 projMatrix{};
+	mat4 invViewMatrix{};
+	mat4 invProjMatrix{};
+	vec4_t viewport{};
+	vec4_t frustum[4]{};
+	vec4_t viewpos{};
+	vec4_t vpn{};
+	vec4_t vright{};
+	vec4_t vup{};
+	vec4_t r_origin{};
+}camera_ubo_t;
+
 //viewport.z=linkListSize
 typedef struct scene_ubo_s
 {
-	mat4 viewMatrix;
-	mat4 projMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	vec4 viewport;
-	vec4 frustum[4];
-	vec4 viewpos;
-	vec4 vpn;
-	vec4 vright;
-	vec4 vup;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
@@ -316,6 +322,7 @@ class CWorldSurfaceRenderer
 {
 public:
 	GLuint				hSceneUBO{};
+	GLuint				hCameraUBO{};
 	GLuint				hDLightUBO{};
 	GLuint				hEntityUBO{};
 	GLuint				hDecalVBO{};

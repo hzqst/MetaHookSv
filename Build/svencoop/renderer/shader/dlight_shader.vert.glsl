@@ -20,7 +20,7 @@ void main(void)
 
 	vec4 worldpos4 = u_modelmatrix * vec4(in_vertex, 1.0);
 
-	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
+	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * worldpos4;
 
 	v_fragpos = worldpos4.xyz;
 
@@ -36,7 +36,7 @@ void main(void)
 
 	gl_Position = vec4(vertices[idx], 0, 1);
 
-	v_fragpos = SceneUBO.frustum[idx].xyz;
+	v_fragpos = CameraUBO.frustum[idx].xyz;
 
 	v_projpos = gl_Position;
 

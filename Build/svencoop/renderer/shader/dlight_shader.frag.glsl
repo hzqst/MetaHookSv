@@ -57,7 +57,7 @@ layout(location = 0) out vec4 out_FragColor;
 vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
     vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = SceneUBO.invProjMatrix * ndc;// going back from projected
+	vec4 inversed = CameraUBO.invProjMatrix * ndc;// going back from projected
 	inversed /= inversed.w;
 	return inversed.xyz;
 }
@@ -65,7 +65,7 @@ vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
 vec3 GenerateWorldPositionFromDepth(vec2 texcoord, float depth) {
    vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = SceneUBO.invViewMatrix * SceneUBO.invProjMatrix * ndc;// going back from projected
+	vec4 inversed = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * ndc;// going back from projected
 	inversed /= inversed.w;
 	return inversed.xyz;
 }
@@ -201,7 +201,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
     
         if (DiffuseFactor > 0.0) {
             DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * DiffuseFactor, 1.0);
-            vec3 VertexToEye = normalize(SceneUBO.viewpos.xyz - World);
+            vec3 VertexToEye = normalize(CameraUBO.viewpos.xyz - World);
             vec3 LightReflect = normalize(reflect(LightDirection, Normal));
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
@@ -289,7 +289,7 @@ void main()
 
     vec3 normal = OctahedronToUnitVector(worldnormColor.xy);
 
-    vec3 worldpos = SceneUBO.viewpos.xyz + normalize(v_fragpos.xyz - SceneUBO.viewpos.xyz) * worldnormColor.z;
+    vec3 worldpos = CameraUBO.viewpos.xyz + normalize(v_fragpos.xyz - CameraUBO.viewpos.xyz) * worldnormColor.z;
 
 //#ifndef VOLUME_ENABLED
     //out_FragColor = vec4(vBaseTexCoord.x, vBaseTexCoord.y, 0.0, 0.0); 

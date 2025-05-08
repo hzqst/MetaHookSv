@@ -2869,22 +2869,22 @@ void R_LoadLegacyOpenGLMatrixForWorld()
 
 void R_UploadProjMatrixForViewModel(void)
 {
-	scene_ubo_t SceneUBO;
-	memcpy(SceneUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
-	memcpy(SceneUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
+	camera_ubo_t CameraUBO;
+	memcpy(CameraUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
+	memcpy(CameraUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
 
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), &CameraUBO.projMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, invProjMatrix), sizeof(mat4), &CameraUBO.invProjMatrix);
 }
 
 void R_LoadProjMatrixForWorld(void)
 {
-	scene_ubo_t SceneUBO;
-	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+	camera_ubo_t CameraUBO;
+	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), &CameraUBO.projMatrix);
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, invProjMatrix), sizeof(mat4), &CameraUBO.invProjMatrix);
 }
 
 void R_SetupGLForViewModel(void)
