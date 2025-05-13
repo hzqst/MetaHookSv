@@ -8,17 +8,13 @@ namespace MetahookInstaller.Services
     public class ModService
     {
         private readonly string _buildPath;
-        private readonly string _gamePath;
-        private readonly string _modName;
 
         public ModService(string buildPath, string gamePath, string modName)
         {
             _buildPath = buildPath ?? throw new ArgumentNullException(nameof(buildPath));
-            _gamePath = gamePath ?? throw new ArgumentNullException(nameof(gamePath));
-            _modName = modName ?? throw new ArgumentNullException(nameof(modName));
         }
 
-        public void InstallMod(string gamePath, string modName, uint appId)
+        public void InstallMod(string gamePath, string modName, uint appId, string modFullName)
         {
             // 1. 复制svencoop文件夹
             var svencoopPath = Path.Combine(_buildPath, "svencoop");
@@ -139,11 +135,11 @@ namespace MetahookInstaller.Services
             {
                 throw new InvalidOperationException("Fatal Error: Could not found installer path");
             }
-            var shortcutPath = Path.Combine(installerPath, $"MetaHook for {Path.GetFileName(gamePath)}.lnk");
+            var shortcutPath = Path.Combine(installerPath, $"MetaHook for {modFullName}.lnk");
             
             WshInterop.CreateShortcut(
                 shortcutPath,
-                $"MetaHook for {Path.GetFileName(gamePath)}",
+                $"MetaHook for {modFullName}",
                 targetMetaHookPath,
                 $"-insecure -game {modName}",
                 targetMetaHookPath
@@ -164,23 +160,6 @@ namespace MetahookInstaller.Services
                 var targetSubDir = Path.Combine(targetDir, Path.GetFileName(dir));
                 CopyDirectory(dir, targetSubDir);
             }
-        }
-
-        public List<string> LoadModList()
-        {
-            var pluginsFile = Path.Combine(_gamePath, _modName, "metahook", "configs", "plugins.lst");
-            if (!File.Exists(pluginsFile))
-                return new List<string>();
-
-            return File.ReadAllLines(pluginsFile)
-                .Where(line => !string.IsNullOrWhiteSpace(line) && !line.StartsWith("//"))
-                .ToList();
-        }
-
-        public void SaveModList(List<string> mods)
-        {
-            var pluginsFile = Path.Combine(_gamePath, _modName, "metahook", "configs", "plugins.lst");
-            File.WriteAllLines(pluginsFile, mods);
         }
 
         private bool IsLegitimatePE(string filePath)

@@ -242,7 +242,7 @@ namespace MetahookInstaller.ViewModels
 
             try
             {
-                _modService.InstallMod(GamePath, SelectedGame.ModName, SelectedGame.AppId);
+                _modService.InstallMod(GamePath, SelectedGame.ModName, SelectedGame.AppId, SelectedGame.Name);
                 MessageBox.Show(LocalizationService.GetString("ModInstallSuccess"), 
                               LocalizationService.GetString("Success"), 
                               MessageBoxButton.OK, 
