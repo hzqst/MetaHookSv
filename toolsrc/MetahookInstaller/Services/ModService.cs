@@ -1,7 +1,7 @@
 using System.IO;
 using PeNet;
-using DK.WshRuntime;
 using File = System.IO.File;
+using ShellLink;
 
 namespace MetahookInstaller.Services
 {
@@ -136,14 +136,15 @@ namespace MetahookInstaller.Services
                 throw new InvalidOperationException("Fatal Error: Could not found installer path");
             }
             var shortcutPath = Path.Combine(installerPath, $"MetaHook for {modFullName}.lnk");
-            
-            WshInterop.CreateShortcut(
-                shortcutPath,
-                $"MetaHook for {modFullName}",
-                targetMetaHookPath,
+
+            Shortcut lnk = Shortcut.CreateShortcut(
+              targetMetaHookPath,
                 $"-insecure -game {modName}",
-                targetMetaHookPath
-            );
+                gamePath,
+                targetMetaHookPath,                
+                0);
+
+            lnk.WriteToFile(shortcutPath);
         }
         private void CopyDirectory(string sourceDir, string targetDir)
         {

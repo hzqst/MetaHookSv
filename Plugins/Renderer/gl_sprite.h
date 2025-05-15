@@ -58,6 +58,3 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pS
 #define SPRITE_PARALLEL_ORIENTED_ENABLED	0x4000ull
 #define SPRITE_PARALLEL_ENABLED				0x8000ull
 #define SPRITE_ORIENTED_ENABLED				0x10000ull
-
-#define MAX_SPRITE_FRAMES 4096
-#define MAX_SPRITE_ENTRIES 512

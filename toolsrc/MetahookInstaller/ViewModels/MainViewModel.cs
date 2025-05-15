@@ -157,7 +157,7 @@ namespace MetahookInstaller.ViewModels
             // 根据安装脚本更新游戏列表
             var games = new[]
             {
-                new GameInfo("Sven Co-Op", "svencoop", 225840, "svencoop"),
+                new GameInfo("Sven Co-op", "svencoop", 225840, "svencoop"),
                 new GameInfo("Half-Life", "valve", 70, "valve"),
                 new GameInfo("Half-Life Updated", "halflife_updated", 70, "halflife_updated"),
                 new GameInfo("Half-Life: Opposing Force", "gearbox", 50, "gearbox"),

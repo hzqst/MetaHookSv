@@ -541,8 +541,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 			break;
 		}
 
-
-
 		default:
 		{
 			glDepthMask(GL_FALSE);
