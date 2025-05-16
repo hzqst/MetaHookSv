@@ -259,9 +259,9 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
 
 	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
 
-	color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
-	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
-	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+	color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
+	color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
+	color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
@@ -288,9 +288,9 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 
 	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
 
-	color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
-	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
-	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+	color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
+	color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
+	color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
