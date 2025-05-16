@@ -224,7 +224,7 @@ float R_StudioBaseLight_PhongShading(vec3 vWorldPos, vec3 vNormal, float specula
 	return illum;
 }
 
-vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask)
+vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask, float ElightAttenuation)
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
@@ -235,9 +235,9 @@ vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorld
 	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
 	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
 
-	color.x += StudioUBO.r_elight_color[i].x * flSpecularFactor * specularMask;
-	color.y += StudioUBO.r_elight_color[i].y * flSpecularFactor * specularMask;
-	color.z += StudioUBO.r_elight_color[i].z * flSpecularFactor * specularMask;
+	color.x += StudioUBO.r_elight_color[i].x * flSpecularFactor * ElightAttenuation * specularMask;
+	color.y += StudioUBO.r_elight_color[i].y * flSpecularFactor * ElightAttenuation * specularMask;
+	color.z += StudioUBO.r_elight_color[i].z * flSpecularFactor * ElightAttenuation * specularMask;
 
 	return color;
 }
@@ -265,7 +265,7 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
+		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
 	#endif
 
@@ -294,7 +294,7 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
+		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
 	#endif
 
