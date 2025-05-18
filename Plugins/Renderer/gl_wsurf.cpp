@@ -1869,22 +1869,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 			}
 		}
 
-		if (!R_IsRenderingGBuffer())
-		{
-			if (r_fog_mode == GL_LINEAR)
-			{
-				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP)
-			{
-				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP2)
-			{
-				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
-			}
-		}
-
 		if (R_IsRenderingShadowView())
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
@@ -1906,6 +1890,37 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
+		}
+
+
+		if (!R_IsRenderingGBuffer())
+		{
+			if (WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED)
+			{
+
+			}
+			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
+				{
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+					}
+				}
+			}
 		}
 
 		if (r_draw_gammablend)
@@ -2087,22 +2102,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 			}
 		}
 
-		if (!R_IsRenderingGBuffer())
-		{
-			if (r_fog_mode == GL_LINEAR)
-			{
-				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP)
-			{
-				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP2)
-			{
-				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
-			}
-		}
-
 		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
@@ -2114,6 +2113,36 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 			else
 				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+		}
+
+		if (!R_IsRenderingGBuffer())
+		{
+			if (WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED)
+			{
+
+			}
+			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
+				{
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+					}
+				}
+			}
 		}
 
 		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)

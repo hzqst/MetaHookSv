@@ -327,6 +327,8 @@ extern cvar_t *r_alpha_shift;
 
 extern cvar_t *r_additive_shift;
 
+extern cvar_t * r_fog_trans;
+
 extern cvar_t* r_drawlowerbody;
 
 extern cvar_t* r_sprite_lerping;

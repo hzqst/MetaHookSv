@@ -322,6 +322,8 @@ cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
 
+cvar_t* r_fog_trans = NULL;
+
 cvar_t* r_detailskytextures = NULL;
 
 cvar_t* r_sprite_lerping = NULL;
@@ -706,19 +708,22 @@ void R_DrawParticles(void)
 
 	program_state_t LegacySpriteProgramState = 0;
 
-	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+	if (!R_IsRenderingGBuffer())
 	{
-		if (r_fog_mode == GL_LINEAR)
+		if (R_IsRenderingFog())
 		{
-			LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP)
-		{
-			LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP2)
-		{
-			LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			if (r_fog_mode == GL_LINEAR)
+			{
+				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			}
 		}
 	}
 
@@ -2558,6 +2563,8 @@ void R_InitCvars(void)
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
 	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	r_fog_trans = gEngfuncs.pfnRegisterVariable("r_fog_trans", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 

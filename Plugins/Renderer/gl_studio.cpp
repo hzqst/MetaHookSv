@@ -2159,19 +2159,30 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+	if (!R_IsRenderingGBuffer())
 	{
-		if (r_fog_mode == GL_LINEAR)
+		if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
-			StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+
 		}
-		else if (r_fog_mode == GL_EXP)
+		else if ((StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
 		{
-			StudioProgramState |= STUDIO_EXP_FOG_ENABLED;
+
 		}
-		else if (r_fog_mode == GL_EXP2)
+		else if(R_IsRenderingFog())
 		{
-			StudioProgramState |= STUDIO_EXP2_FOG_ENABLED;
+			if (r_fog_mode == GL_LINEAR)
+			{
+				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				StudioProgramState |= STUDIO_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				StudioProgramState |= STUDIO_EXP2_FOG_ENABLED;
+			}
 		}
 	}
 

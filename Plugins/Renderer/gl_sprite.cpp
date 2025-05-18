@@ -566,25 +566,36 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		SpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
-	{
-		if (r_fog_mode == GL_LINEAR)
-		{
-			SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP)
-		{
-			SpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP2)
-		{
-			SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
-		}
-	}
-
 	if (R_IsRenderingGBuffer())
 	{
 		SpriteProgramState |= SPRITE_GBUFFER_ENABLED;
+	}
+
+	if (!R_IsRenderingGBuffer())
+	{
+		if (SpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED)
+		{
+
+		}
+		else if ((SpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+		{
+
+		}
+		else if (R_IsRenderingFog())
+		{
+			if (r_fog_mode == GL_LINEAR)
+			{
+				SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				SpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			}
+		}
 	}
 
 	if (r_draw_gammablend)

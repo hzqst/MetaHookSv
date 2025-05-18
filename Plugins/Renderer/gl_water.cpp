@@ -1080,17 +1080,28 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
 				{
-					WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((WaterProgramState & WATER_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
-					WaterProgramState |= WATER_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else
 				{
-					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WaterProgramState |= WATER_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					}
 				}
 			}
 		}
@@ -1196,17 +1207,28 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
 				{
-					WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((WaterProgramState & WATER_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
-					WaterProgramState |= WATER_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else
 				{
-					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WaterProgramState |= WATER_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					}
 				}
 			}
 		}
@@ -1285,17 +1307,28 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
 				{
-					WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((WaterProgramState & WATER_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
-					WaterProgramState |= WATER_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else if(R_IsRenderingFog())
 				{
-					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WaterProgramState |= WATER_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WaterProgramState |= WATER_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+					}
 				}
 			}
 		}
