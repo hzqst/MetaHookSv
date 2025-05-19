@@ -573,7 +573,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	if (!R_IsRenderingGBuffer())
 	{
-		if (SpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED)
+		if ((SpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
 		{
 
 		}

@@ -2161,7 +2161,7 @@ void R_StudioDrawMesh_DrawPass(
 
 	if (!R_IsRenderingGBuffer())
 	{
-		if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
+		if ((StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
 		{
 
 		}

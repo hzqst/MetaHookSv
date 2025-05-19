@@ -623,6 +623,10 @@ vec4 ProcessOtherLinearColor(vec4 color)
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
 
+#if defined(ADDITIVE_BLEND_ENABLED)
+		fogColor = vec3(0, 0, 0);
+#endif
+
 		color.xyz = mix(fogColor, color.xyz, fogFactor );
 
 		return color;
@@ -647,6 +651,10 @@ vec4 ProcessOtherLinearColor(vec4 color)
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
 
+#if defined(ADDITIVE_BLEND_ENABLED)
+		fogColor = vec3(0, 0, 0);
+#endif
+
 		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
 
 		return color;
@@ -668,6 +676,10 @@ vec4 ProcessOtherLinearColor(vec4 color)
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
+
+#if defined(ADDITIVE_BLEND_ENABLED)
+		fogColor = vec3(0, 0, 0);
+#endif
 
 		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
 

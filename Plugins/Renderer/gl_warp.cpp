@@ -41,19 +41,22 @@ void R_DrawSkyBox(void)
 
 	if (r_wsurf_sky_fog->value)
 	{
-		if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+		if (!R_IsRenderingGBuffer())
 		{
-			if (r_fog_mode == GL_LINEAR)
+			if (R_IsRenderingFog())
 			{
-				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP)
-			{
-				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP2)
-			{
-				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+				}
 			}
 		}
 	}

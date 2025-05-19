@@ -1080,7 +1080,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
+				if ((WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
 
 				}
@@ -1207,7 +1207,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
+				if ((WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
 
 				}
@@ -1307,7 +1307,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (!R_IsRenderingGBuffer())
 			{
-				if (WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED)
+				if ((WaterProgramState & WATER_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
 				{
 
 				}

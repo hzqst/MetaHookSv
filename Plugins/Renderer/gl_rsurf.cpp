@@ -1155,27 +1155,6 @@ void R_DrawDecals(cl_entity_t *ent)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
-	{
-		if (r_fog_mode == GL_LINEAR)
-		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP)
-		{
-			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-		}
-		else if (r_fog_mode == GL_EXP2)
-		{
-			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
-		}
-	}
-
-	if (R_IsRenderingGBuffer())
-	{
-		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-	}
-	
 	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 	{
 		if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
@@ -1192,6 +1171,38 @@ void R_DrawDecals(cl_entity_t *ent)
 		{
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
+	}
+
+	if (!R_IsRenderingGBuffer())
+	{
+		if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
+		{
+
+		}
+		else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+		{
+
+		}
+		else if (R_IsRenderingFog())
+		{
+			if (r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			}
+		}
+	}
+
+	if (R_IsRenderingGBuffer())
+	{
+		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
 	GL_BindVAO(g_WorldSurfaceRenderer.hDecalVAO);
