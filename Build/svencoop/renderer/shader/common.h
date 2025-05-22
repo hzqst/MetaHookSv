@@ -669,7 +669,7 @@ vec4 ProcessOtherLinearColor(vec4 color)
 
 	vec4 CalcFogWithDistance(vec4 color, float z)
 	{
-		float f = SceneUBO.fogDensity * z / 1.8;
+		float f = SceneUBO.fogDensity * z;
 		float fogFactor = exp(-f*f);
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
 
