@@ -2721,13 +2721,13 @@ qboolean studioapi_StudioCheckBBox(void)
 
 void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 {
+	float dies[256];
+
 	//Disable legacy dlight for studio models?
 	if (r_light_dynamic->value && !r_studio_legacy_dlight->value)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			float dies[256];
-
 			dlight_t* dl = cl_dlights;
 			for (int i = 0; i < 256; i++, dl++)
 			{
@@ -2745,8 +2745,6 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 		}
 		else
 		{
-			float dies[32];
-
 			dlight_t* dl = cl_dlights;
 			for (int i = 0; i < 32; i++, dl++)
 			{

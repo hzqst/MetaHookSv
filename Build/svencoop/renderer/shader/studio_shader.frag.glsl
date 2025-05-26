@@ -301,7 +301,67 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	return color;
 }
 
+vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+	
+	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
+
+	float DlightCosine = 0.8;
+
+	float DlightDistance = length(DlightDirection);
+	float DlightDot = dot(DlightDirection, DlightDirection);
+
+	float r2 = DLightUBO.origin_radius[i].a;
+
+	r2 = r2 * r2;
+
+	float DlightAttenuation = clamp(r2 / (DlightDot * DlightDistance), 0.0, 1.0);
+
+	color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
+	color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
+	color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
+
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+		color += R_StudioEntityLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		
+	#endif
+
+	return color;
+}
+
+vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+
+	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
+		
+	float DlightCosine = clamp(dot(vNormal, normalize(DlightDirection)), 0.0, 1.0);
+	float DlightDistance = length(DlightDirection);
+	float DlightDot = dot(DlightDirection, DlightDirection);
+
+	float r2 = DLightUBO.origin_radius[i].a;
+	
+	r2 = r2 * r2;
+
+	float DlightAttenuation = clamp(r2 / (DlightDot * DlightDistance), 0.0, 1.0);
+
+	color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
+	color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
+	color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
+
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+		color += R_StudioEntityLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		
+	#endif
+
+	return color;
+}
+
 //The output is in linear space
+
 vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 {	
 	float illum = StudioUBO.r_ambientlight;
@@ -347,6 +407,19 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	#endif
 
+	}
+	
+	for(int i = 0; i < DLightUBO.active_dlights; ++i)
+	{
+	#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+
+		color += R_StudioDynamicLight_FlatShading(i, vWorldPos, vNormal, specularMask);
+
+	#else
+
+		color += R_StudioDynamicLight_PhongShading(i, vWorldPos, vNormal, specularMask);
+
+	#endif
 	}
 
 	return color;

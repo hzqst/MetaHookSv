@@ -3391,12 +3391,15 @@ void R_EndRenderOpaque(void)
 	{
 		R_EndRenderGBuffer(GL_GetCurrentSceneFBO());
 	}
-	else if (R_IsAmbientOcclusionEnabled())
+	else
 	{
-		GL_BeginFullScreenQuad(false);
-		R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
-		R_AmbientOcclusion(&s_DepthLinearFBO, GL_GetCurrentSceneFBO());
-		GL_EndFullScreenQuad();
+		if (R_IsAmbientOcclusionEnabled() && !R_IsGammaBlendEnabled())
+		{
+			GL_BeginFullScreenQuad(false);
+			R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
+			R_AmbientOcclusion(&s_DepthLinearFBO, GL_GetCurrentSceneFBO());
+			GL_EndFullScreenQuad();
+		}
 	}
 
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
