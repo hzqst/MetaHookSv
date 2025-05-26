@@ -1005,7 +1005,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
 				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
-				if (r_draw_gammablend)
+				if (R_IsRenderingGammaBlending())
 				{
 					//The SceneFBO is in gamma space
 					GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
@@ -1111,7 +1111,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 			WaterProgramState |= WATER_GBUFFER_ENABLED;
 		}
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WaterProgramState |= WATER_GAMMA_BLEND_ENABLED;
 		}
@@ -1243,7 +1243,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 			WaterProgramState |= WATER_GBUFFER_ENABLED;
 		}
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WaterProgramState |= WATER_GAMMA_BLEND_ENABLED;
 		}
@@ -1343,7 +1343,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 			WaterProgramState |= WATER_GBUFFER_ENABLED;
 		}
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WaterProgramState |= WATER_GAMMA_BLEND_ENABLED;
 		}

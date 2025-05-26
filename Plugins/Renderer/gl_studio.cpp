@@ -2191,7 +2191,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
 	}
 
-	if (r_draw_gammablend)
+	if (R_IsRenderingGammaBlending())
 	{
 		StudioProgramState |= STUDIO_GAMMA_BLEND_ENABLED;
 	}

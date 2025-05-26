@@ -369,6 +369,15 @@ bool R_IsRenderingGBuffer()
 }
 
 /*
+	Purpose : Check if we are rendering into a gamma space buffer
+*/
+
+bool R_IsRenderingGammaBlending()
+{
+	return r_draw_gammablend;
+}
+
+/*
 	Purpose : Check if we are rendering Shadow Pass
 */
 
@@ -737,7 +746,7 @@ void R_DrawParticles(void)
 		LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
 	}
 
-	if (r_draw_gammablend)
+	if (R_IsRenderingGammaBlending())
 	{
 		LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 	}
@@ -1014,7 +1023,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
 
-			if (r_draw_gammablend)
+			if (R_IsRenderingGammaBlending())
 			{
 				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 			}
@@ -1059,7 +1068,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
 
-			if (r_draw_gammablend)
+			if (R_IsRenderingGammaBlending())
 			{
 				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 			}
@@ -1088,6 +1097,7 @@ void triapi_RenderMode(int mode)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
+
 			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 			{
 				if (r_fog_mode == GL_LINEAR)
@@ -1104,7 +1114,7 @@ void triapi_RenderMode(int mode)
 				}
 			}
 
-			if (r_draw_gammablend)
+			if (R_IsRenderingGammaBlending())
 			{
 				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 			}
@@ -1667,7 +1677,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BackBufferFBO3.iWidth = glwidth;
 	s_BackBufferFBO3.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO3);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA16F);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA8);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2039,7 +2049,7 @@ void R_PreRenderView()
 	r_sprite_drawcall = 0;
 	r_sprite_polys = 0;
 
-	//Always force GammaBlend to be disabled when rendering opaques.
+	//Always force GammaBlend to be disabled at very beginning.
 	r_draw_gammablend = false;
 
 	//Currently unused
@@ -2049,9 +2059,19 @@ void R_PreRenderView()
 
 	R_RenderWaterPass();
 
-	//Restore s_BackBufferFBO states because it might be corrupted by R_RenderWaterPass.
-	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
-	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
+	//Restore states because it might be corrupted by R_RenderWaterPass.
+	if (R_IsGammaBlendEnabled())
+	{
+		GL_BindFrameBufferWithTextures(&s_BackBufferFBO3, s_BackBufferFBO3.s_hBackBufferTex, 0, s_BackBufferFBO3.s_hBackBufferDepthTex, glwidth, glheight);
+		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
+		r_draw_gammablend = true;
+	}
+	else
+	{
+		GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+		GL_SetCurrentSceneFBO(&s_BackBufferFBO);
+		r_draw_gammablend = false;
+	}
 
 	vec4_t vecClearColor = {0};
 
@@ -2074,9 +2094,9 @@ void R_PreRenderView()
 
 void R_PostRenderView()
 {
-	if (R_IsHDREnabled())
+	if (R_IsHDREnabled() && !R_IsRenderingGammaBlending())
 	{
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 		}
@@ -2094,7 +2114,7 @@ void R_PostRenderView()
 	}
 	else
 	{
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
 		}
@@ -3377,14 +3397,6 @@ void R_EndRenderOpaque(void)
 		R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
 		R_AmbientOcclusion(&s_DepthLinearFBO, GL_GetCurrentSceneFBO());
 		GL_EndFullScreenQuad();
-	}
-
-	if (R_IsGammaBlendEnabled())
-	{
-		R_GammaCorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
-		GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
-		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
-		r_draw_gammablend = true;
 	}
 
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix

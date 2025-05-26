@@ -57,7 +57,7 @@ typedef struct portal_texture_s
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int);
 mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pthis, int dummy, msurface_t *surf);
 void __fastcall ClientPortalManager_DrawPortalSurface(void * pthis, int dummy, void * ClientPortal, msurface_t *surf, GLuint texture);
-void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
+void __fastcall ClientPortalManager_EnableClipPlane(void* pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane);
 
 void R_LoadPortalProgramStates(void);
 void R_SavePortalProgramStates(void);
@@ -66,6 +66,6 @@ void R_ShutdownPortal(void);
 void R_InitPortal(void);
 
 #define PORTAL_OVERLAY_TEXTURE_ENABLED				0x1ull
-#define PORTAL_TEXCOORD_ENABLED				0x2ull
-#define REVERSE_PORTAL_TEXCOORD_ENABLED		0x4ull
-#define PORTAL_GAMMA_BLEND_ENABLED				0x8ull
+#define PORTAL_TEXCOORD_ENABLED						0x2ull
+#define REVERSE_PORTAL_TEXCOORD_ENABLED				0x4ull
+#define PORTAL_GAMMA_BLEND_ENABLED					0x8ull

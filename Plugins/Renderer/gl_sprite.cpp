@@ -598,7 +598,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		}
 	}
 
-	if (r_draw_gammablend)
+	if (R_IsRenderingGammaBlending())
 	{
 		SpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 	}

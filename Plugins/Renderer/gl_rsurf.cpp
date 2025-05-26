@@ -1162,7 +1162,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		else
 			WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 		}

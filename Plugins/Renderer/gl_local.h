@@ -509,6 +509,7 @@ void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
+bool R_IsRenderingGammaBlending();
 bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
 bool R_IsRenderingViewModel(void);

@@ -302,7 +302,7 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
 
-	if (r_draw_gammablend)
+	if (R_IsRenderingGammaBlending())
 	{
 		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
@@ -344,7 +344,7 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
 
-	if (r_draw_gammablend)
+	if (R_IsRenderingGammaBlending())
 	{
 		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}

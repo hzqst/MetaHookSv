@@ -1923,7 +1923,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 			}
 		}
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 		}
@@ -2150,7 +2150,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
-		if (r_draw_gammablend)
+		if (R_IsRenderingGammaBlending())
 		{
 			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 		}
