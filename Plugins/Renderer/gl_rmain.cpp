@@ -2094,7 +2094,7 @@ void R_PreRenderView()
 
 void R_PostRenderView()
 {
-	if (R_IsHDREnabled() && !R_IsRenderingGammaBlending())
+	if (R_IsHDREnabled())
 	{
 		if (R_IsRenderingGammaBlending())
 		{

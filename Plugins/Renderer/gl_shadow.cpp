@@ -351,114 +351,109 @@ void R_RenderShadowDynamicLights(void)
 
 	if (R_ShouldRenderShadow())
 	{
-		R_IterateDynamicLights([](
-			float radius, vec3_t origin, vec3_t color,
-			float ambient, float diffuse, float specular, float specularpow,
-			shadow_texture_t *shadowtex, bool bVolume)
+		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-				shadowtex->ready = false;
-		},
-		[](
-			float distance, float radius,
-			float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
-			vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
-			vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer)
+			args->shadowtex->ready = false;
+		};
+
+		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
+		{
+			args->shadowtex->ready = false;
+
+			if (args->bIsFromLocalPlayer)
 			{
-				shadowtex->ready = false;
+				r_draw_shadowcaster = true;
 
-				if (bIsFromLocalPlayer)
+				if (!args->shadowtex->depth_stencil)
 				{
-					r_draw_shadowcaster = true;
-
-					if (!shadowtex->depth_stencil)
-					{
-						R_AllocShadowTexture(shadowtex, 1024, false);
-					}
-
-					//Just for test
-					//if (!shadowtex->color && shadowtex->size)
-					//{
-					//	shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
-					//}
-
-					shadowtex->distance = distance;
-					shadowtex->cone_angle = coneAngle;
-					current_shadow_texture = shadowtex;
-
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, shadowtex->color, 0, shadowtex->depth_stencil, shadowtex->size, shadowtex->size);
-					glDrawBuffer(GL_NONE);
-
-					glDisable(GL_BLEND);
-					glDisable(GL_ALPHA_TEST);
-					glEnable(GL_DEPTH_TEST);
-					glDepthFunc(GL_LEQUAL);
-					glDepthMask(GL_TRUE);
-
-					glEnable(GL_POLYGON_OFFSET_FILL);
-					glPolygonOffset(10, 10);
-
-					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-					R_PushRefDef();
-
-					(*r_refdef.vieworg)[0] = origin[0];
-					(*r_refdef.vieworg)[1] = origin[1];
-					(*r_refdef.vieworg)[2] = origin[2];
-
-					(*r_refdef.viewangles)[0] = angle[0];
-					(*r_refdef.viewangles)[1] = angle[1];
-					(*r_refdef.viewangles)[2] = angle[2];
-
-					auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-					if (pLocalPlayer->model)
-					{
-						auto save_localplayer_model = pLocalPlayer->model;
-
-						//This stops local player from being rendered
-						pLocalPlayer->model = NULL;
-
-						R_RenderScene();
-
-						pLocalPlayer->model = save_localplayer_model;
-					}
-					else
-					{
-						R_RenderScene();
-					}
-
-					const float bias[16] = {
-						0.5f, 0.0f, 0.0f, 0.0f,
-						0.0f, 0.5f, 0.0f, 0.0f,
-						0.0f, 0.0f, 0.5f, 0.0f,
-						0.5f, 0.5f, 0.5f, 1.0f
-					};
-
-					glMatrixMode(GL_TEXTURE);
-					glPushMatrix();
-					glLoadIdentity();
-					glLoadMatrixf(bias);
-					glMultMatrixf(r_projection_matrix);
-					glMultMatrixf(r_world_matrix);
-					glGetFloatv(GL_TEXTURE_MATRIX, shadowtex->matrix);
-					glPopMatrix();
-					glMatrixMode(GL_MODELVIEW);
-
-					glDisable(GL_POLYGON_OFFSET_FILL);
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-					glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-					R_PopRefDef();
-
-					shadowtex->ready = true;
-
-					r_draw_shadowcaster = false;
-
+					R_AllocShadowTexture(args->shadowtex, 1024, false);
 				}
-			});
 
+				//Just for test
+				//if (!shadowtex->color && shadowtex->size)
+				//{
+				//	shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
+				//}
+
+				args->shadowtex->distance = args->distance;
+				args->shadowtex->cone_angle = args->coneAngle;
+				current_shadow_texture = args->shadowtex;
+
+				GL_BindFrameBufferWithTextures(&s_ShadowFBO, args->shadowtex->color, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
+				glDrawBuffer(GL_NONE);
+
+				glDisable(GL_BLEND);
+				glDisable(GL_ALPHA_TEST);
+				glEnable(GL_DEPTH_TEST);
+				glDepthFunc(GL_LEQUAL);
+				glDepthMask(GL_TRUE);
+
+				glEnable(GL_POLYGON_OFFSET_FILL);
+				glPolygonOffset(10, 10);
+
+				GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+				R_PushRefDef();
+
+				(*r_refdef.vieworg)[0] = args->origin[0];
+				(*r_refdef.vieworg)[1] = args->origin[1];
+				(*r_refdef.vieworg)[2] = args->origin[2];
+
+				(*r_refdef.viewangles)[0] = args->angle[0];
+				(*r_refdef.viewangles)[1] = args->angle[1];
+				(*r_refdef.viewangles)[2] = args->angle[2];
+
+				auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+				if (pLocalPlayer->model)
+				{
+					auto save_localplayer_model = pLocalPlayer->model;
+
+					//This stops local player from being rendered
+					pLocalPlayer->model = NULL;
+
+					R_RenderScene();
+
+					pLocalPlayer->model = save_localplayer_model;
+				}
+				else
+				{
+					R_RenderScene();
+				}
+
+				const float bias[16] = {
+					0.5f, 0.0f, 0.0f, 0.0f,
+					0.0f, 0.5f, 0.0f, 0.0f,
+					0.0f, 0.0f, 0.5f, 0.0f,
+					0.5f, 0.5f, 0.5f, 1.0f
+				};
+
+				glMatrixMode(GL_TEXTURE);
+				glPushMatrix();
+				glLoadIdentity();
+				glLoadMatrixf(bias);
+				glMultMatrixf(r_projection_matrix);
+				glMultMatrixf(r_world_matrix);
+				glGetFloatv(GL_TEXTURE_MATRIX, args->shadowtex->matrix);
+				glPopMatrix();
+				glMatrixMode(GL_MODELVIEW);
+
+				glDisable(GL_POLYGON_OFFSET_FILL);
+				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+				R_PopRefDef();
+
+				args->shadowtex->ready = true;
+
+				r_draw_shadowcaster = false;
+
+			}
+		};
+
+		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
 	}
 }
 

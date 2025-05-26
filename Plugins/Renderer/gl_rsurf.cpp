@@ -1104,7 +1104,7 @@ void R_DrawDecals(cl_entity_t *ent)
 			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 		}
 
-		if (!r_light_dynamic->value && g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+		if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
 		{
 			WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 		}
@@ -1155,6 +1155,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	//Transparency
 	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 	{
 		if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
@@ -1162,15 +1163,15 @@ void R_DrawDecals(cl_entity_t *ent)
 		else
 			WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
 
-		if (R_IsRenderingGammaBlending())
-		{
-			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
-		}
-
 		if (r_draw_oitblend)
 		{
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
+	}
+
+	if (R_IsRenderingGammaBlending())
+	{
+		WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 	}
 
 	if (!R_IsRenderingGBuffer())

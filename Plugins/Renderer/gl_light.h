@@ -33,7 +33,6 @@ extern MapConVar *r_dynlight_ambient;
 extern MapConVar *r_dynlight_diffuse;
 extern MapConVar *r_dynlight_specular;
 extern MapConVar *r_dynlight_specularpow;
-extern MapConVar *r_dynlight_radius_scale;
 
 extern cvar_t *r_ssr;
 extern MapConVar *r_ssr_ray_step;
@@ -46,13 +45,48 @@ extern MapConVar *r_ssr_fade;
 
 extern bool r_draw_gbuffer;
 
-typedef void(*fnPointLightCallback)(float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume);
-typedef void(*fnSpotLightCallback)(float distance, float radius,
-	float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
-	vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
-	vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer);
+typedef struct PointLightCallbackArgs_s
+{
+	float radius;
+	vec3_t origin;
+	vec3_t color;//linear space color
+	float ambient;
+	float diffuse;
+	float specular;
+	float specularpow; 
+	shadow_texture_t* shadowtex;
+	bool bVolume;
+}PointLightCallbackArgs;
 
-void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback);
+typedef void(*fnPointLightCallback)(PointLightCallbackArgs *args, void *context);
+
+
+typedef struct SpotLightCallbackArgs_s
+{
+	float distance;
+	float radius;
+	float coneAngle;
+	float coneCosAngle;
+	float coneSinAngle;
+	float coneTanAngle;
+	vec3_t origin;
+	vec3_t angle;
+	vec3_t vforward;
+	vec3_t vright;
+	vec3_t vup;
+	vec3_t color;//linear space color
+	float ambient;
+	float diffuse;
+	float specular;
+	float specularpow;
+	shadow_texture_t *shadowtex;
+	bool bVolume;
+	bool bIsFromLocalPlayer;
+}SpotLightCallbackArgs;
+
+typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
+
+void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback, void *context);
 
 typedef struct
 {

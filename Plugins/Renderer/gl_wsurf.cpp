@@ -1816,7 +1816,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 			}
 
-			if (!r_light_dynamic->value && g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+			if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
@@ -2044,12 +2044,12 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
 
-			if (*filterMode != 0)
+			if ((*filterMode) != 0)
 			{
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 			}
 
-			if (!r_light_dynamic->value && g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+			if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
@@ -3612,7 +3612,6 @@ void R_ParseBSPEntity_Env_DynamicLight_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_dynlight_diffuse, ValueForKey(ent, "diffuse"));
 	R_ParseMapCvarSetMapValue(r_dynlight_specular, ValueForKey(ent, "specular"));
 	R_ParseMapCvarSetMapValue(r_dynlight_specularpow, ValueForKey(ent, "specularpow"));
-	R_ParseMapCvarSetMapValue(r_dynlight_radius_scale, ValueForKey(ent, "radius_scale"));
 }
 
 void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)
@@ -3931,30 +3930,32 @@ void R_SetupDLightUBO(void)
 
 	g_WorldSurfaceRenderer.iLightmapLegacyDLights = 0;
 
-	if (!r_light_dynamic->value)
+	const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 	{
-		int max_dlight = EngineGetMaxDLights();
-		dlight_t *dl = cl_dlights;
-		float curtime = (*cl_time);
+		auto DLightUBO = (dlight_ubo_t*)(context);
 
-		for (int i = 0; i < max_dlight; i++, dl++)
+		if (!R_IsRenderingGBuffer())
 		{
-			if (dl->die < curtime || !dl->radius)
-				continue;
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = args->origin[0];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = args->origin[1];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = args->origin[2];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = args->radius;
 
-			DLightUBO.origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = dl->origin[0];
-			DLightUBO.origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = dl->origin[1];
-			DLightUBO.origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = dl->origin[2];
-			DLightUBO.origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = dl->radius;
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = args->color[0];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = args->color[1];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = args->color[2];
 
-			DLightUBO.color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = (float)dl->color.r / 255.0f;
-			DLightUBO.color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = (float)dl->color.g / 255.0f;
-			DLightUBO.color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = (float)dl->color.b / 255.0f;
-
-			DLightUBO.color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = dl->minlight;
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = 0;
 			g_WorldSurfaceRenderer.iLightmapLegacyDLights++;
 		}
-	}
+	};
+
+	const auto SpotlightCallback = [](SpotLightCallbackArgs *args, void *context)
+	{
+		auto DLightUBO = (dlight_ubo_t*)(context);
+	};
+
+	R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
 
 	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iLightmapLegacyDLights;
 

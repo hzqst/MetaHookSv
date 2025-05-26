@@ -131,7 +131,6 @@ cvar_t* r_studio_hair_shadow_offset = NULL;
 
 cvar_t* r_studio_legacy_dlight = NULL;
 cvar_t* r_studio_legacy_elight = NULL;
-cvar_t* r_studio_legacy_elight_radius_scale = NULL;
 
 cvar_t* r_studio_bone_caches = NULL;
 
@@ -1283,7 +1282,6 @@ void R_InitStudio(void)
 
 	//Does legacy entity light affects studio models?
 	r_studio_legacy_elight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_legacy_elight_radius_scale = gEngfuncs.pfnRegisterVariable("r_studio_legacy_elight_radius_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	//Cache bones to save CPU resources?
 	r_studio_bone_caches = gEngfuncs.pfnRegisterVariable("r_studio_bone_caches", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1932,7 +1930,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 			StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
 			StudioUBO.r_elight_origin[i][3] = 0;
 
-			StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius * math_clamp(r_studio_legacy_elight_radius_scale->value, 0.001f, 1000.0f);
+			StudioUBO.r_elight_radius[i] = math_clamp((*locallight)[i]->radius, 0, 999999);
 		}
 	}
 

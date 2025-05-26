@@ -519,6 +519,8 @@ bool R_IsRenderingLowerBody(void);
 bool R_IsRenderingClippedLowerBody(void);
 bool R_IsRenderingPortal(void);
 
+bool R_IsDeferredRenderingEnabled(void);
+
 //Fog
 bool R_IsRenderingFog();
 void R_DisableRenderingFog();
