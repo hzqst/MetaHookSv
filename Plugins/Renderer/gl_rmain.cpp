@@ -2062,13 +2062,13 @@ void R_PreRenderView()
 	//Restore states because it might be corrupted by R_RenderWaterPass.
 	if (R_IsGammaBlendEnabled())
 	{
-		GL_BindFrameBufferWithTextures(&s_BackBufferFBO3, s_BackBufferFBO3.s_hBackBufferTex, 0, s_BackBufferFBO3.s_hBackBufferDepthTex, glwidth, glheight);
+		GL_BindFrameBuffer(&s_BackBufferFBO3);
 		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
 		r_draw_gammablend = true;
 	}
 	else
 	{
-		GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+		GL_BindFrameBuffer(&s_BackBufferFBO);
 		GL_SetCurrentSceneFBO(&s_BackBufferFBO);
 		r_draw_gammablend = false;
 	}

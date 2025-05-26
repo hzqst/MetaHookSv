@@ -694,8 +694,8 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	r_draw_reflectview = true;
 	g_CurrentReflectCache = ReflectCache;
 
-	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
-	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
+	GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
+	GL_SetCurrentSceneFBO(&s_WaterSurfaceFBO);
 
 	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
 
@@ -986,10 +986,6 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				//The output is in linear space
 				R_BlitGBufferToFrameBuffer(&s_WaterSurfaceFBO, true, true, true);
 
-				//Restore BackBufferFBO2 to it's original states.
-				// -- use s_WaterSurfaceFBO instead now
-				//GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
-
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(&s_GBufferFBO);
 
@@ -1018,10 +1014,6 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 					//The SceneFBO is already in linear space
 					GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
 				}
-
-				//Restore BackBufferFBO2 to it's original states.
-				// -- use s_WaterSurfaceFBO instead now
-				//GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
 
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(GL_GetCurrentSceneFBO());

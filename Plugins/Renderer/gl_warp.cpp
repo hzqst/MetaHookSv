@@ -61,6 +61,11 @@ void R_DrawSkyBox(void)
 		}
 	}
 
+	if (R_IsRenderingGammaBlending())
+	{
+		WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+	}
+
 	if (R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
