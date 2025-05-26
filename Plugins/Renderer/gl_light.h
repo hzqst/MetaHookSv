@@ -60,7 +60,6 @@ typedef struct PointLightCallbackArgs_s
 
 typedef void(*fnPointLightCallback)(PointLightCallbackArgs *args, void *context);
 
-
 typedef struct SpotLightCallbackArgs_s
 {
 	float distance;
