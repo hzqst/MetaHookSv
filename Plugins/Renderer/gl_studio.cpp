@@ -1929,7 +1929,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	StudioUBO.r_numelight = 0;
 
-	if (r_studio_legacy_elight->value > 0)
+	if ((int)r_studio_legacy_elight->value >= 1)
 	{
 		StudioUBO.r_numelight = (*numlights);
 

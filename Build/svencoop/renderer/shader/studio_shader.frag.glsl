@@ -301,6 +301,24 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	return color;
 }
 
+vec3 R_StudioDynamicLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask, float ElightAttenuation)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+
+	vec3 vecVertexToEye = normalize(CameraUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecLightReflect = normalize(reflect(vElightDirection, vNormal.xyz));
+	
+	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
+	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
+	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
+
+	color.x += DLightUBO.color_minlight[i].x * flSpecularFactor * ElightAttenuation * specularMask;
+	color.y += DLightUBO.color_minlight[i].y * flSpecularFactor * ElightAttenuation * specularMask;
+	color.z += DLightUBO.color_minlight[i].z * flSpecularFactor * ElightAttenuation * specularMask;
+
+	return color;
+}
+
 vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float specularMask)
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
@@ -324,7 +342,7 @@ vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		color += R_StudioEntityLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
 	#endif
 
@@ -353,7 +371,7 @@ vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, floa
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		color += R_StudioEntityLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
 	#endif
 
