@@ -655,7 +655,7 @@ vec4 ProcessOtherLinearColor(vec4 color)
 		fogColor = vec3(0, 0, 0);
 #endif
 
-		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
+		color.xyz = mix(fogColor, color.xyz, fogFactor );
 
 		return color;
 	}
@@ -681,7 +681,7 @@ vec4 ProcessOtherLinearColor(vec4 color)
 		fogColor = vec3(0, 0, 0);
 #endif
 
-		color.xyz = mix(fogColor.xyz, color.xyz, fogFactor );
+		color.xyz = mix(fogColor, color.xyz, fogFactor);
 
 		return color;
 	}

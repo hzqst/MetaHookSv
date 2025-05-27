@@ -394,33 +394,36 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	vec3 color = vec3(lv, lv, lv);		
 
-	for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
-	{
+	#if defined(LEGACY_ELIGHT_ENABLED)
+		for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
+		{
 		
-	#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-		color += R_StudioEntityLight_FlatShading(i, vWorldPos, vNormal, specularMask);
+			color += R_StudioEntityLight_FlatShading(i, vWorldPos, vNormal, specularMask);
 
-	#else
+		#else
 
-		color += R_StudioEntityLight_PhongShading(i, vWorldPos, vNormal, specularMask);
+			color += R_StudioEntityLight_PhongShading(i, vWorldPos, vNormal, specularMask);
 
+		#endif
+		}
 	#endif
-
-	}
 	
-	for(int i = 0; i < DLightUBO.active_dlights; ++i)
-	{
-	#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+	#if defined(LEGACY_DLIGHT_ENABLED)
+		for(int i = 0; i < DLightUBO.active_dlights; ++i)
+		{
+		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-		color += R_StudioDynamicLight_FlatShading(i, vWorldPos, vNormal, specularMask);
+			color += R_StudioDynamicLight_FlatShading(i, vWorldPos, vNormal, specularMask);
 
-	#else
+		#else
 
-		color += R_StudioDynamicLight_PhongShading(i, vWorldPos, vNormal, specularMask);
+			color += R_StudioDynamicLight_PhongShading(i, vWorldPos, vNormal, specularMask);
 
+		#endif
+		}
 	#endif
-	}
 
 	return color;
 }

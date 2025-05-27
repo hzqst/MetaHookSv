@@ -1894,11 +1894,11 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 
 		if (!R_IsRenderingGBuffer())
 		{
-			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
 
 			}
-			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 			{
 
 			}
@@ -2121,11 +2121,11 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 
 		if (!R_IsRenderingGBuffer())
 		{
-			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
 
 			}
-			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 			{
 
 			}

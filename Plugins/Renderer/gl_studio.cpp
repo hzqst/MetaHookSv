@@ -757,6 +757,12 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_CLIP_BONE_ENABLED)
 			defs << "#define CLIP_BONE_ENABLED\n";
 
+		if (state & STUDIO_LEGACY_DLIGHT_ENABLED)
+			defs << "#define LEGACY_DLIGHT_ENABLED\n";
+
+		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
+			defs << "#define LEGACY_ELIGHT_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -1186,6 +1192,8 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"				},
 { STUDIO_STENCIL_TEXTURE_ENABLED		,"STUDIO_STENCIL_TEXTURE_ENABLED"			},
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
+{ STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
+{ STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -1277,10 +1285,19 @@ void R_InitStudio(void)
 	r_studio_hair_shadow = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_shadow_offset = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow_offset", "0.3 -0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
-	//Does legacy dynamic light affects studio models?
-	r_studio_legacy_dlight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_dlight", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	/*
+	r_studio_legacy_dlight 0: Completely disable legacy dlight
+	r_studio_legacy_dlight 1: Setup studio's internal lighting structure with legacy dlight (Vanilla behavior)
+	r_studio_legacy_dlight 2: Use shader to add up all dynamic lights
+	*/
 
-	//Does legacy entity light affects studio models?
+	r_studio_legacy_dlight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_dlight", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	/*
+	r_studio_legacy_elight 0: Completely disable entity dlight
+	r_studio_legacy_elight 1: Enable entity dlight (Vanilla behavior)
+	*/
+
 	r_studio_legacy_elight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	//Cache bones to save CPU resources?
@@ -2148,6 +2165,16 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
 	}
 
+	if ((int)r_studio_legacy_dlight->value >= 2)
+	{
+		StudioProgramState |= STUDIO_LEGACY_DLIGHT_ENABLED;
+	}
+
+	if ((int)r_studio_legacy_elight->value >= 1)
+	{
+		StudioProgramState |= STUDIO_LEGACY_ELIGHT_ENABLED;
+	}
+
 	if (r_draw_reflectview)
 	{
 		StudioProgramState |= STUDIO_CLIP_WATER_ENABLED;
@@ -2159,11 +2186,11 @@ void R_StudioDrawMesh_DrawPass(
 
 	if (!R_IsRenderingGBuffer())
 	{
-		if ((StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED) && r_fog_trans->value <= 0)
+		if ((StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 		{
 
 		}
-		else if ((StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED) && r_fog_trans->value <= 0)
+		else if ((StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 		{
 
 		}
@@ -2723,8 +2750,7 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 {
 	float dies[256];
 
-	//Disable legacy dlight for studio models?
-	if (r_light_dynamic->value && !r_studio_legacy_dlight->value)
+	if ((int)r_studio_legacy_dlight->value != 1)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{

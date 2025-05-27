@@ -530,7 +530,7 @@ void main()
 
 	//non-deferred path
 
-	#ifdef SHADOWMAP_ENABLED
+	#if defined(SHADOWMAP_ENABLED)
 
 		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
 

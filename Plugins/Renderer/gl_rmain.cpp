@@ -1002,19 +1002,33 @@ void triapi_RenderMode(int mode)
 		{
 			program_state_t LegacySpriteProgramState = 0;
 
-			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 				{
-					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 				{
-					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else
 				{
-					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+					}
 				}
 			}
 
@@ -1047,19 +1061,33 @@ void triapi_RenderMode(int mode)
 		{
 			program_state_t LegacySpriteProgramState = SPRITE_ADDITIVE_BLEND_ENABLED;
 
-			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 				{
-					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 				{
-					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else
 				{
-					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+					}
 				}
 			}
 
@@ -1098,19 +1126,33 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
 
-			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
+			if (!R_IsRenderingGBuffer())
 			{
-				if (r_fog_mode == GL_LINEAR)
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 				{
-					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP)
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
 				{
-					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+
 				}
-				else if (r_fog_mode == GL_EXP2)
+				else
 				{
-					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+					}
 				}
 			}
 
@@ -1146,18 +1188,11 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void ClientDLL_DrawTransparentTriangles(void)
 {
-	if((*g_bUserFogOn))
-		R_InhibitRenderingFog();
-
-	//gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
 
 	//Call ClientDLL_DrawTransparentTriangles() instead of HUD_DrawTransparentTriangles
 	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
-
-	if ((*g_bUserFogOn))
-		R_RestoreRenderingFog();
 }
 
 void R_DrawTransEntities(int onlyClientDraw)
@@ -1187,7 +1222,11 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+			R_InhibitRenderingFog();
+
 			ClientDLL_DrawTransparentTriangles();
+
+			R_RestoreRenderingFog();
 
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
@@ -1226,7 +1265,11 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+			R_InhibitRenderingFog();
+
 			ClientDLL_DrawTransparentTriangles();
+
+			R_RestoreRenderingFog();
 
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
@@ -1435,8 +1478,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 {
 	if (bTransparent)
 	{
-		R_InhibitRenderingFog();
-
 		(*r_blend) = CL_FxBlend((*currententity));
 
 		if ((*r_blend) <= 0)
@@ -1499,6 +1540,7 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 	}
 
 	case kRenderTransAdd:
+	case kRenderGlow:
 	{
 		r_entity_color[0] = (*r_blend);
 		r_entity_color[1] = (*r_blend);
@@ -2584,7 +2626,12 @@ void R_InitCvars(void)
 	
 	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	r_fog_trans = gEngfuncs.pfnRegisterVariable("r_fog_trans", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	/*
+		r_fog_trans 0: Fog don't affect any transparent objects
+		r_fog_trans 1: Fog affects alpha blending objects, but not additive blending objects
+		r_fog_trans 2: Fog affects both alpha blending objects and additive blending objects
+	*/
+	r_fog_trans = gEngfuncs.pfnRegisterVariable("r_fog_trans", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
@@ -3391,9 +3438,11 @@ void R_EndRenderOpaque(void)
 	{
 		R_EndRenderGBuffer(GL_GetCurrentSceneFBO());
 	}
+
+#if 0 //AO is post-process, it should not be done here
 	else
 	{
-		if (R_IsAmbientOcclusionEnabled() && !R_IsGammaBlendEnabled())
+		if (R_IsAmbientOcclusionEnabled())
 		{
 			GL_BeginFullScreenQuad(false);
 			R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
@@ -3401,6 +3450,7 @@ void R_EndRenderOpaque(void)
 			GL_EndFullScreenQuad();
 		}
 	}
+#endif
 
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
 	R_LoadLegacyOpenGLMatrixForWorld();
@@ -3467,6 +3517,8 @@ void R_RenderScene(void)
 	ClientDLL_DrawNormalTriangles();
 	R_RestoreRenderingFog();
 
+	R_DrawTransEntities((*r_refdef.onlyClientDraws));
+
 	if ((*cl_waterlevel) > 2 && (*r_refdef.onlyClientDraws))
 	{
 		R_InhibitRenderingFog();
@@ -3478,8 +3530,6 @@ void R_RenderScene(void)
 			R_InhibitRenderingFog();
 		}
 	}
-
-	R_DrawTransEntities((*r_refdef.onlyClientDraws));
 
 	S_ExtraUpdate();
 
