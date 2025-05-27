@@ -95,6 +95,8 @@ SSAO or Screen-Space Ambient Occlusion is the type of post-processing effect tha
 
 The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://github.com/nvpro-samples/gl_ssao).
 
+* Note that Ambient Occlusion only works when deferred shading pipeline available and enabled.
+
 ### Console vars
 
 `r_ssao` Set to 1 to enable SSAO
@@ -145,7 +147,7 @@ Only brush surfaces marked with specular textures (`_SPECULAR` suffix) in `/maps
 
 Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 = no reflection, 1 = full reflection.
 
-* Screen Space Reflection only works when `r_light_dynamic` set to 1.
+* Screen Space Reflection only works when deferred shading pipeline available and enabled.
 
 ### Console vars
 
@@ -229,7 +231,7 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * Normal textures change nothing but the direction of surface normal, thus only work with surfaces that illuminated by dynamic lights or flashlights.
 
-* BSP normal textures only work when `r_detailtextures` and `r_light_dynamic` both set to 1.
+* BSP normal textures only work when `r_detailtextures` set to 1, and deferred shading pipeline available and enabled.
 
 ### BSP parallax textures
 
@@ -259,7 +261,7 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * Blue channel is not used yet.
 
-* BSP specular textures only work when `r_detailtextures` set to 1.
+* BSP specular textures only work when `r_detailtextures` set to 1, and deferred shading pipeline available and enabled.
 
 ## StudioModel texture replacement
 
@@ -612,10 +614,6 @@ Unlike vanilla GoldSrc, the gamma correction is applied on the fly (no restart r
 
 All textures are converted from texgamma color space to linear color space, and dynamic lights are calculated in linear color space to get correct lighting result.
 
-* Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
-
-* Use cvar `r_gamma_blend 1` to enable the transparent blending path used by vanilla engine. This will keep the transparent blending result as what it was in vanilla engine but there might be artifacts due to the implementation issue of graphic drivers.
-
 ### Console vars
 
 `gamma` is to control the final output gamma, convert colors from linear space to screen gamma space.
@@ -626,7 +624,11 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `brightness` is to shift up the lightgamma and make lightmaps brighter.
 
-`r_blend_gamma 0 / 1` set 1 to blend transparent objects in gamma space instead of linear space. `r_blend_gamma 1` is the default policy used by vanilla GoldSrc and the transparent blending result is limited to 1.0 in case of overbright.
+`r_blend_gamma 0` blend transparent objects in linear space. This is may lead to brighter or darker blending result than vanilla GoldSrc.
+
+`r_blend_gamma 1` blend transparent objects in gamma space instead of linear space. This is the default behavior from vanilla GoldSrc. Note that deferred shading pipeline will not be availabel if `r_blend_gamma` enabled. and some buggy graphic drivers may not work well with `r_blend_gamma 1`.
+
+* Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
 
 ## FOV (Field of View)
 
@@ -671,6 +673,20 @@ This controls how engine calculate the vertical FOV from horizontal FOV:
 ## Misc
 
 `r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
+
+`r_wsurf_sky_fog 0` : fog don't affect skybox
+`r_wsurf_sky_fog 1` : fog affects skybox
+
+`r_studio_legacy_dlight 0`: Completely disable legacy dlight
+`r_studio_legacy_dlight 1`: Setup studio's internal lighting structure with legacy dlight (Vanilla behavior)
+`r_studio_legacy_dlight 2`: Use shader to add up all dynamic lights
+
+`r_studio_legacy_elight 0`: Completely disable entity dlight
+`r_studio_legacy_elight 1`: Enable entity dlight (Vanilla behavior)
+
+`r_fog_trans 0`: Fog don't affect any transparent objects
+`r_fog_trans 1`: Fog affects alpha blending objects, but not additive blending objects
+`r_fog_trans 2`: Fog affects both alpha blending objects and additive blending objects
 
 # New Entities
 
@@ -793,7 +809,7 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `light_dynamic` is a point entity as an invisible point light source. 
 
-Dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting. dynamic lights works only if `r_light_dynamic` is set to 1.
+Dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting.
 
 ### Keyvalues
 
