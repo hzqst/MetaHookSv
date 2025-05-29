@@ -537,7 +537,7 @@ void R_SetGBufferMask(int mask)
 
 bool R_IsDeferredRenderingEnabled(void)
 {
-	if (!r_light_deferred->value)
+	if (!r_deferred_lighting->value)
 		return false;
 
 	if ((*r_refdef.onlyClientDraws))
