@@ -80,15 +80,24 @@ jobs:
         shell: cmd
 
       - name: Zipping All
-        uses: vimtor/action-zip@v1
-        with:
-          files: Build-Output/
-          dest: MetaHookSv-windows-x86.zip
-
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          7z a MetaHookSv-windows-x86.7z "Build-Output/*" -r
+        shell: cmd
+        
+      - name: Zipping PDB
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          7z a MetaHookSv-windows-x86-debug-info.7z "output/x86/*" -r ^
+          -x!*.lib ^
+          -x!*.exp
+        shell: cmd
+        
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: MetaHookSv-${{ github.ref }}
           files: |
-            MetaHookSv-windows-x86.zip
+            MetaHookSv-windows-x86.7z
+            MetaHookSv-windows-x86-debug-info.7z
