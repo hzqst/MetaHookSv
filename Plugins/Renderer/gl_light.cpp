@@ -634,7 +634,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dynlight.origin, args.origin);
 				VectorCopy(dynlight.color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = dynlight.ambient;
 				args.diffuse = dynlight.diffuse;
@@ -652,7 +652,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dynlight.origin, args.origin);
 				VectorCopy(dynlight.color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = dynlight.ambient;
 				args.diffuse = dynlight.diffuse;
@@ -819,7 +819,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
@@ -847,7 +847,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
@@ -894,7 +894,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
@@ -912,7 +912,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
 
-				GammaToLinear(args.color);
+				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
