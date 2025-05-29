@@ -340,7 +340,7 @@ public:
 	bool				bShadowmapTexture{};
 
 	int					iLightmapUsedBits{};
-	int					iLightmapLegacyDLights{};
+	int					iNumLegacyDLights{};
 
 	int					iNumLightmapTextures{};
 	int					iLightmapTextureArray{};

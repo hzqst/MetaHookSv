@@ -1816,7 +1816,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 			}
 
-			if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+			if (g_WorldSurfaceRenderer.iNumLegacyDLights)
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
@@ -1877,6 +1877,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			WSurfProgramState &= ~(WSURF_LEGACY_DLIGHT_ENABLED);
 		}
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
@@ -2048,7 +2049,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 			}
 
-			if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+			if (g_WorldSurfaceRenderer.iNumLegacyDLights)
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
@@ -2104,6 +2105,8 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+
+			WSurfProgramState &= ~(WSURF_LEGACY_DLIGHT_ENABLED);
 		}
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
@@ -3927,7 +3930,7 @@ void R_SetupDLightUBO(void)
 {
 	dlight_ubo_t DLightUBO = { 0 };
 
-	g_WorldSurfaceRenderer.iLightmapLegacyDLights = 0;
+	g_WorldSurfaceRenderer.iNumLegacyDLights = 0;
 
 	const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 	{
@@ -3935,17 +3938,17 @@ void R_SetupDLightUBO(void)
 
 		if (!R_IsRenderingGBuffer())
 		{
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = args->origin[0];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = args->origin[1];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = args->origin[2];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = args->radius;
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
 
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][0] = args->color[0];
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][1] = args->color[1];
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][2] = args->color[2];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
 
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iLightmapLegacyDLights][3] = 0;
-			g_WorldSurfaceRenderer.iLightmapLegacyDLights++;
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = 0;
+			g_WorldSurfaceRenderer.iNumLegacyDLights++;
 		}
 	};
 
@@ -3956,7 +3959,7 @@ void R_SetupDLightUBO(void)
 
 	R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
 
-	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iLightmapLegacyDLights;
+	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iNumLegacyDLights;
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
 }

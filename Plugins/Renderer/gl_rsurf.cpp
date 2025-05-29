@@ -1090,7 +1090,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	program_state_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
-	if (g_WorldSurfaceRenderer.bLightmapTexture && !R_IsRenderingGBuffer())
+	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
@@ -1104,7 +1104,7 @@ void R_DrawDecals(cl_entity_t *ent)
 			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 		}
 
-		if (g_WorldSurfaceRenderer.iLightmapLegacyDLights)
+		if (g_WorldSurfaceRenderer.iNumLegacyDLights)
 		{
 			WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 		}
@@ -1204,6 +1204,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	if (R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		WSurfProgramState &= ~(WSURF_LEGACY_DLIGHT_ENABLED);
 	}
 
 	GL_BindVAO(g_WorldSurfaceRenderer.hDecalVAO);

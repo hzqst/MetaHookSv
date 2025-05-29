@@ -2214,6 +2214,8 @@ void R_StudioDrawMesh_DrawPass(
 	if (R_IsRenderingGBuffer())
 	{
 		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+
+		StudioProgramState &= ~STUDIO_LEGACY_DLIGHT_ENABLED;
 	}
 
 	if (R_IsRenderingGammaBlending())

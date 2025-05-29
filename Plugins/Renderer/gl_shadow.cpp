@@ -346,7 +346,7 @@ void R_RenderShadowScene(void)
 
 void R_RenderShadowDynamicLights(void)
 {
-	if (!r_light_dynamic->value)
+	if (!r_deferred_lighting->value)
 		return;
 
 	if (R_ShouldRenderShadow())

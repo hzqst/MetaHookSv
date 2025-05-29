@@ -15,7 +15,7 @@ typedef struct light_dynamic_s
 
 extern std::vector<light_dynamic_t> g_DynamicLights;
 
-extern cvar_t *r_light_dynamic;
+extern cvar_t * r_deferred_lighting;
 extern cvar_t *r_light_debug;
 
 extern MapConVar* r_flashlight_enable;

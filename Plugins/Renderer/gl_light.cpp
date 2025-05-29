@@ -2,7 +2,7 @@
 #include "pm_defs.h"
 #include <sstream>
 
-cvar_t *r_light_dynamic = NULL;
+cvar_t * r_deferred_lighting = NULL;
 cvar_t *r_light_debug = NULL;
 
 MapConVar* r_flashlight_enable = NULL;
@@ -283,7 +283,7 @@ void R_ShutdownLight(void)
 
 void R_InitLight(void)
 {
-	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
 	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -537,7 +537,7 @@ void R_SetGBufferMask(int mask)
 
 bool R_IsDeferredRenderingEnabled(void)
 {
-	if (!r_light_dynamic->value)
+	if (!r_light_deferred->value)
 		return false;
 
 	if ((*r_refdef.onlyClientDraws))
