@@ -674,7 +674,7 @@ This controls how engine calculate the vertical FOV from horizontal FOV:
 
 `r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
 
-`r_wsurf_sky_fog 0` : fog don't affect skybox
+`r_wsurf_sky_fog 0` : fog don't affect skybox (Vanilla behavior)
 `r_wsurf_sky_fog 1` : fog affects skybox
 
 `r_studio_legacy_dlight 0`: Completely disable legacy dlight
@@ -685,8 +685,12 @@ This controls how engine calculate the vertical FOV from horizontal FOV:
 `r_studio_legacy_elight 1`: Enable entity dlight (Vanilla behavior)
 
 `r_fog_trans 0`: Fog don't affect any transparent objects
-`r_fog_trans 1`: Fog affects alpha blending objects, but not additive blending objects
+`r_fog_trans 1`: Fog affects alpha blending objects, but not additive blending objects (Vanilla behavior)
 `r_fog_trans 2`: Fog affects both alpha blending objects and additive blending objects
+
+`r_leaf_lazy_load 0`: Load all GPU resouces into VRAM at once when loading a new map. *May consume more VRAM
+`r_leaf_lazy_load 1`: Load only necessary vertices and indices into VRAM when loading a new map. Generate and load indirect draw commands into VRAM in next few frames. *May consume more VRAM
+`r_leaf_lazy_load 2`: Load only necessary vertices and indices into VRAM when loading a new map. Generate and load indirect draw commands into VRAM when player enter a new leaf. * May affect 1% low fps
 
 # New Entities
 

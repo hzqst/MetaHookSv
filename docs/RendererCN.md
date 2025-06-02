@@ -119,9 +119,9 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 ### 控制台参数
 
-`r_light_dynamic` 设为1启用 延迟着色渲染管线 和 动态灯光
+`r_deferred_lighting` 设为1启用延迟着色渲染管线
 
-`r_flashlight_enable` 用于启用基于探照灯的手电。 (只在 `r_light_dynamic` 为1时可用)
+`r_flashlight_enable` 用于启用基于探照灯的手电。 (只在延迟着色渲染管线下可用)
 
 `r_flashlight_cone` 控制手电筒圆锥光束的圆锥夹角cosine值，越接近1则夹角越小，越接近0则夹角越大
 
@@ -151,7 +151,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `_SPECULAR`高光贴图的GREEN（绿色）通道代表了反射强度. 0 = 没有反射, 1 = 完全反射.
 
-* 屏幕空间反射只有在 `r_light_dynamic` 为 1 时生效.
+* 屏幕空间反射只有在延迟着色管线下生效.
 
 ### 控制台参数
 
@@ -609,7 +609,7 @@ WEBP (RGB8 / RGBA8)
 
 `r_blend_gamma 0` 在线性色彩空间做透明混合（这是等现代渲染管线普遍使用的透明混合策略）。
 
-`r_blend_gamma 1` 在伽马色彩空间做透明混合（这是原版GoldSrc使用的透明混合策略）。这将使得半透明的混合结果与原版引擎保持一致。但是由于某些显卡驱动的实现存在问题，该功能可能会导致出现画面出现显示异常，请自行斟酌是否开启该功能。需要注意在启用`r_blend_gamma`之后，延迟渲染管线将不可用，即使开启`r_light_dynamic`也会强制回退至前向渲染管线。
+`r_blend_gamma 1` 在伽马色彩空间做透明混合（这是原版GoldSrc使用的透明混合策略）。这将使得半透明的混合结果与原版引擎保持一致。但是由于某些显卡驱动的实现存在问题，该功能可能会导致出现画面出现显示异常，请自行斟酌是否开启该功能。需要注意在启用`r_blend_gamma`之后，延迟渲染管线将不可用，即使开启`r_deferred_light`也会强制回退至前向渲染管线。
 
 * 对伽马矫正后的颜色进行任何数学运算（如透明混合）得到的结果都是物理错误的，也就是说Valve默认的混合策略是物理错误的，只有在线性空间对颜色进行数学运算才是物理上正确的！具体请参考：https://zhuanlan.zhihu.com/p/510697986
 
@@ -651,4 +651,23 @@ WEBP (RGB8 / RGBA8)
 
 ## 其他
 
-`r_wsurf_zprepass` 1 / 0 : 设为1时启用Z-Prepass优化。
+`r_wsurf_zprepass 0` : 禁用Z-Prepass优化。
+`r_wsurf_zprepass 1` : 启用Z-Prepass优化。
+
+`r_wsurf_sky_fog 0` : 雾不会影响skybox（维持原版行为）
+`r_wsurf_sky_fog 1` : 雾会影响skybox
+
+`r_studio_legacy_dlight 0`: 彻底禁止dlight作用于模型
+`r_studio_legacy_dlight 1`: dlight将会被在StudioDynamicLight API中被混合进光照参数中 （维持原版行为）
+`r_studio_legacy_dlight 2`: 使用着色器实时计算dlight对模型光照的贡献
+
+`r_studio_legacy_elight 0`: 彻底禁止elight作用于模型
+`r_studio_legacy_elight 1`: elight可以作用于模型（维持原版行为）
+
+`r_fog_trans 0`: 雾不会作用于任何透明物体
+`r_fog_trans 1`: 雾只会作用于使用alpha模式混合的透明物体，不会影响使用additive模式混合的透明物体（维持原版行为）
+`r_fog_trans 2`: 雾会同时作用于所有透明物体
+
+`r_leaf_lazy_load 0`: 在加载地图时将bsp所需全部资源一次性加载至显存。*注：可能会增加整体显存占用量
+`r_leaf_lazy_load 1`: 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每一帧加载一个bsp叶子节点所需的绘制指令至显存，直至所有绘制指令全部加载至显存。（某些地图可能需要数十秒才会全部加载完毕）*注：可能会增加整体显存占用量
+`r_leaf_lazy_load 2` (默认): 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每次进入一个新的bsp叶子节点时，才加载该节点所需的绘制指令至显存。*注：可能会降低1%low帧
