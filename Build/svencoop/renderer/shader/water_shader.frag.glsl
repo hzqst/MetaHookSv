@@ -9,14 +9,11 @@ uniform float u_normfactor;
 uniform float u_scale;
 uniform float u_speed;
 
-//Don't conflict with WSurfShader
-#ifndef BINDLESS_ENABLED
 layout(binding = 0) uniform sampler2D baseTex;
-layout(binding = 2) uniform sampler2D normalTex;
-layout(binding = 3) uniform sampler2D reflectTex;
-layout(binding = 4) uniform sampler2D refractTex;
-layout(binding = 5) uniform sampler2D depthTex;
-#endif
+layout(binding = 1) uniform sampler2D normalTex;
+layout(binding = 2) uniform sampler2D reflectTex;
+layout(binding = 3) uniform sampler2D refractTex;
+layout(binding = 4) uniform sampler2D depthTex;
 
 in vec4 v_projpos;
 in vec3 v_worldpos;

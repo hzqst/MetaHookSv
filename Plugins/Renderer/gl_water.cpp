@@ -878,13 +878,16 @@ void R_RenderWaterPass(void)
 	{
 		auto pLeaf = pModel->vLeaves[leafIndex];
 
-		//TODO Frustum Culling for world water?
-		for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+		if (pLeaf)
 		{
-			auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+			//TODO Frustum Culling for world water?
+			for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+			{
+				auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
-			g_VisibleWaterEntity.emplace_back(gEngfuncs.GetEntityByIndex(0));
-			g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+				g_VisibleWaterEntity.emplace_back(gEngfuncs.GetEntityByIndex(0));
+				g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+			}
 		}
 	}
 	
@@ -1131,16 +1134,18 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glActiveTexture(GL_TEXTURE2);
+		GL_Bind(pWaterModel->texture->gl_texturenum);
+
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, pWaterModel->normalmap);
 
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflectmap);
 
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->refractmap);
 
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_DEPTH_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->depthrefrmap);
 
 		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
@@ -1148,19 +1153,19 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 		r_wsurf_drawcall++;
 		r_wsurf_polys += pWaterModel->polyCount;
 
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_BASE_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_DEPTH_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(*oldtarget);
+		glActiveTexture(GL_TEXTURE0);
 
 		glDisable(GL_BLEND);
 

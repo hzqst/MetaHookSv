@@ -11,22 +11,16 @@
 
 uniform float u_parallaxScale;
 
-#ifndef BINDLESS_ENABLED
-
 layout(binding = 0) uniform sampler2D diffuseTex;
-layout(binding = 1) uniform sampler2DArray lightmapTexArray;
-layout(binding = 2) uniform sampler2D detailTex;
-layout(binding = 3) uniform sampler2D normalTex;
-layout(binding = 4) uniform sampler2D parallaxTex;
-layout(binding = 5) uniform sampler2D specularTex;
-layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
-
-#else
-
-layout(binding = 1) uniform sampler2DArray lightmapTexArray;
-layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
-
-#endif
+layout(binding = 1) uniform sampler2D detailTex;
+layout(binding = 2) uniform sampler2D normalTex;
+layout(binding = 3) uniform sampler2D parallaxTex;
+layout(binding = 4) uniform sampler2D specularTex;
+layout(binding = 5) uniform sampler2DArray shadowmapTexArray;
+layout(binding = 6) uniform sampler2DArray lightmapTexArray_0;
+layout(binding = 7) uniform sampler2DArray lightmapTexArray_1;
+layout(binding = 8) uniform sampler2DArray lightmapTexArray_2;
+layout(binding = 9) uniform sampler2DArray lightmapTexArray_3;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -398,19 +392,19 @@ void main()
 	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 0.0);
 
 #if defined(LIGHTMAP_INDEX_0_ENABLED)
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 0.0) ) * ConvertStyleToLightStyle(v_styles.x);
+	lightmapColor += texture(lightmapTexArray_0, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.x);
 #endif
 
 #if defined(LIGHTMAP_INDEX_1_ENABLED)
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 1.0) ) * ConvertStyleToLightStyle(v_styles.y);
+	lightmapColor += texture(lightmapTexArray_1, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.y);
 #endif
 
 #if defined(LIGHTMAP_INDEX_2_ENABLED)
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 2.0) ) * ConvertStyleToLightStyle(v_styles.z);
+	lightmapColor += texture(lightmapTexArray_2, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.z);
 #endif
 
 #if defined(LIGHTMAP_INDEX_3_ENABLED)
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 3.0) ) * ConvertStyleToLightStyle(v_styles.w);
+	lightmapColor += texture(lightmapTexArray_3, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.w);
 #endif
 
 	lightmapColor *= SceneUBO.r_lightscale;

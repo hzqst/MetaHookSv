@@ -163,3 +163,15 @@ void R_DrawWatersForLeaf(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, c
 #define WATER_ADDITIVE_BLEND_ENABLED		0x200ull
 #define WATER_OIT_BLEND_ENABLED				0x400ull
 #define WATER_GAMMA_BLEND_ENABLED			0x800ull
+/*
+layout(binding = 0) uniform sampler2D baseTex;
+layout(binding = 1) uniform sampler2D normalTex;
+layout(binding = 2) uniform sampler2D reflectTex;
+layout(binding = 3) uniform sampler2D refractTex;
+layout(binding = 4) uniform sampler2D depthTex;
+*/
+#define WATER_BIND_BASE_TEXTURE				0
+#define WATER_BIND_NORMAL_TEXTURE			1
+#define WATER_BIND_REFLECT_TEXTURE			2
+#define WATER_BIND_REFRACT_TEXTURE			3
+#define WATER_BIND_DEPTH_TEXTURE			4

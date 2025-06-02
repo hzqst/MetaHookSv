@@ -1364,7 +1364,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 			{
 				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_ANIMATED);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
-				glActiveTexture((*oldtarget));
+				glActiveTexture(GL_TEXTURE0);
 
 				context->numframes = ReplaceTexture.numframes;
 				context->framerate = ReplaceTexture.framerate;
@@ -1396,21 +1396,23 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 		}
 
 		const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE - 1];
+
 		if (NormalTexture.gltexturenum)
 		{
 			glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
 			glBindTexture(GL_TEXTURE_2D, NormalTexture.gltexturenum);
-			glActiveTexture((*oldtarget));
+			glActiveTexture(GL_TEXTURE0);
 
 			(*context->StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
 		}
 
 		const auto& SpecularTexture = pStudioMaterial->textures[STUDIO_SPECULAR_TEXTURE - 1];
+
 		if (SpecularTexture.gltexturenum)
 		{
 			glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
 			glBindTexture(GL_TEXTURE_2D, SpecularTexture.gltexturenum);
-			glActiveTexture((*oldtarget));
+			glActiveTexture(GL_TEXTURE0);
 
 			(*context->StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
 		}
@@ -2463,7 +2465,7 @@ void R_StudioDrawMesh_DrawPass(
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	glActiveTexture((*oldtarget));
+	glActiveTexture(GL_TEXTURE0);
 
 	//Restore states
 	glDepthMask(GL_TRUE);

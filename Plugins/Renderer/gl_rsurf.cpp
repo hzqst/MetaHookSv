@@ -354,19 +354,23 @@ void GL_BuildLightmaps(void)
 		}
 	}
 
+	GLint maxLayers;
+	glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayers);
+
 	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
-	g_WorldSurfaceRenderer.iLightmapTextureArray = GL_GenTexture();
-
-	glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//Can this be GL_RGB8 to save VRAM? idk
-
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures * MAXLIGHTMAPS, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 	{
+		g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx] = GL_GenTexture();
+
+		glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		//Can this be GL_RGB8 to save VRAM? idk
+
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
 		memset(lightmaps, 0, sizeof(BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES) * g_WorldSurfaceRenderer.iNumLightmapTextures);
 
 		for (auto mod : g_WorldSurfaceRenderer.vWorldModels)
@@ -384,8 +388,7 @@ void GL_BuildLightmaps(void)
 		//Upload bytes to GPU
 		for (int i = 0; i < g_WorldSurfaceRenderer.iNumLightmapTextures; ++i)
 		{
-			int real_idx = (i * MAXLIGHTMAPS + lightmap_idx);
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, real_idx, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
 		}
 	}
 	

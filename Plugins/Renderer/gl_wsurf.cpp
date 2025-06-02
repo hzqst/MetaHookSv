@@ -397,11 +397,14 @@ void R_FreeSceneUBO(void)
 
 void R_FreeLightmapTextures()
 {
-	if (g_WorldSurfaceRenderer.iLightmapTextureArray)
+	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 	{
-		//gEngfuncs.Con_DPrintf("R_FreeLightmapTextures: delete texid [%d].\n", g_WorldSurfaceRenderer.iLightmapTextureArray);
-		GL_DeleteTexture(g_WorldSurfaceRenderer.iLightmapTextureArray);
-		g_WorldSurfaceRenderer.iLightmapTextureArray = 0;
+		if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
+		{
+			gEngfuncs.Con_DPrintf("R_FreeLightmapTextures: delete texid [%d].\n", g_WorldSurfaceRenderer.iLightmapTextureArray);
+			GL_DeleteTexture(g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
+			g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx] = 0;
+		}
 	}
 }
 
@@ -2233,16 +2236,22 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE6);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
 		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray);
-		glActiveTexture(GL_TEXTURE0);
+		for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
+		{
+			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
+			{
+				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE + lightmap_idx);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
+				glActiveTexture(GL_TEXTURE0);
+			}
+		}
 	}
 
 	bool bUseZPrePass = false;
@@ -2336,15 +2345,21 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE6);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
+		{
+			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
+			{
+				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE + lightmap_idx);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+			}
+		}
 		glActiveTexture(GL_TEXTURE0);
 	}
 
@@ -2906,7 +2921,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, pro
 
 	if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum);
 
@@ -2916,7 +2931,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, pro
 
 	if (cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum);
 
@@ -2926,7 +2941,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, pro
 
 	if (cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
 
@@ -2936,7 +2951,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, pro
 
 	if (cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
 
@@ -2968,7 +2983,7 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -2977,7 +2992,7 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -2986,7 +3001,7 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -2995,14 +3010,14 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE5);
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
 
 	if (bRestore)
 	{
-		glActiveTexture(*oldtarget);
+		glActiveTexture(GL_TEXTURE0);
 	}
 }
 

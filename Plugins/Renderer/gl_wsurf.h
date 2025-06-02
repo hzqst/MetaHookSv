@@ -45,6 +45,26 @@
 #define WSURF_SPECULAR_TEXTURE		5
 #define WSURF_MAX_TEXTURE			6
 
+/*
+
+layout(binding = 0) uniform sampler2D diffuseTex;
+layout(binding = 1) uniform sampler2D detailTex;
+layout(binding = 2) uniform sampler2D normalTex;
+layout(binding = 3) uniform sampler2D parallaxTex;
+layout(binding = 4) uniform sampler2D specularTex;
+layout(binding = 5) uniform sampler2DArray shadowmapTexArray;
+layout(binding = 6) uniform sampler2DArray lightmapTexArray;
+
+*/
+
+#define WSURF_BIND_DIFFUSE_TEXTURE 0
+#define WSURF_BIND_DETAIL_TEXTURE 1
+#define WSURF_BIND_NORMAL_TEXTURE 2
+#define WSURF_BIND_PARALLAX_TEXTURE 3
+#define WSURF_BIND_SPECULAR_TEXTURE 4
+#define WSURF_BIND_SHADOWMAP_TEXTURE 5
+#define WSURF_BIND_LIGHTMAP_TEXTURE 6
+
 #define WSURF_TEXCHAIN_STATIC		0
 #define WSURF_TEXCHAIN_ANIM			1
 #define WSURF_TEXCHAIN_MAX			2
@@ -336,7 +356,7 @@ public:
 	int					iNumLegacyDLights{};
 
 	int					iNumLightmapTextures{};
-	int					iLightmapTextureArray{};
+	int					iLightmapTextureArray[MAXLIGHTMAPS]{};
 
 	int					vSkyboxTextureId[12]{};
 
