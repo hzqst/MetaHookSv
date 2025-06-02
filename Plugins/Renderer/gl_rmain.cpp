@@ -332,6 +332,8 @@ cvar_t* r_drawlowerbody = NULL;
 
 cvar_t* r_drawlowerbodyattachments = NULL;
 
+cvar_t* r_leaf_lazy_load = NULL;
+
 /*
 	Purpose : Check if we can render fog
 */
@@ -2640,6 +2642,13 @@ void R_InitCvars(void)
 	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_drawlowerbodyattachments = gEngfuncs.pfnRegisterVariable("r_drawlowerbodyattachments", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	/*
+	r_leaf_lazy_load 0: Load all GPU resouces into VRAM at once when loading map
+	r_leaf_lazy_load 1: Load only necessary vertices and indices into VRAM when loading map, generate and load indirect draw command into VRAM in next few frames
+	r_leaf_lazy_load 2: Load only necessary vertices and indices into VRAM when loading map, generate and load indirect draw command into VRAM when player enter leaf.
+	*/
+	r_leaf_lazy_load = gEngfuncs.pfnRegisterVariable("r_leaf_lazy_load", "2", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);

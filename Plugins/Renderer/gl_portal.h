@@ -32,12 +32,14 @@ class CWorldPortalModel
 public:
 	~CWorldPortalModel();
 
-	GLuint hEBO{};
-	GLuint hVAO{};
+	GLuint hABO{};
+
+	CWorldSurfaceWorldModel* pWorldModel{};
 	mtexinfo_t* texinfo{};
-	std::vector<GLuint> vIndicesBuffer;
 	std::set<int> SurfaceSet;
-	int iPolyCount{};
+	uint32_t drawCount{};
+	uint32_t polyCount{};
+	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
 };
 
 typedef struct

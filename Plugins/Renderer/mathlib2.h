@@ -120,3 +120,4 @@ inline float anglemod(float a)
 	) \
 	: \
 		BoxOnPlaneSide((emins), (emaxs), (p)))
+

@@ -49,10 +49,6 @@
 #define WSURF_TEXCHAIN_ANIM			1
 #define WSURF_TEXCHAIN_MAX			2
 
-#define WSURF_DRAWBATCH_STATIC		0
-#define WSURF_DRAWBATCH_SOLID		1
-#define WSURF_DRAWBATCH_MAX			2
-
 typedef struct detail_texture_s
 {
 	detail_texture_s()
@@ -94,6 +90,12 @@ typedef struct decalvertex_s
 }decalvertex_t;
 
 //GPU Resource
+
+typedef struct brushvertexpos_s
+{
+	vec3_t	pos;
+}brushvertexpos_t;
+
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
@@ -116,15 +118,18 @@ typedef struct brushvertex_s
 class CWorldSurfaceBrushFace
 {
 public:
-	int index;
-	int flags;
-	std::vector<int> start_vertex;
-	std::vector<int> num_vertexes;
-	int num_polys;
+	int index{};
+	int flags{};
 
-	vec3_t	normal;
-	vec3_t	s_tangent;
-	vec3_t	t_tangent;
+	vec3_t	normal{};
+	vec3_t	s_tangent{};
+	vec3_t	t_tangent{};
+
+	uint32_t poly_count{};
+	uint32_t start_index{};
+	uint32_t index_count{};
+	uint32_t reverse_start_index{};
+	uint32_t reverse_index_count{};
 };
 
 //CPU Resource
@@ -136,25 +141,13 @@ public:
 class CWorldSurfaceBrushTexChain
 {
 public:
-	int iStartIndex{};
-	int iIndiceCount{};
-	int iPolyCount{};
-	texture_t* pTexture{};
-	detail_texture_cache_t* pDetailTextureCache{};
-	int iDetailTextureFlags{};
-	int iType{};
-};
+	int type{};
+	texture_t* texture{};
+	uint32_t startDrawOffset{};
+	uint32_t drawCount{};
+	uint32_t polyCount{};
 
-//CPU Resource
-class CWorldSurfaceDrawBatch
-{
-public:
-	int iDetailTextureFlags{};
-	int iBaseDrawId{};
-	int iDrawCount{};
-	int iPolyCount{};
-	std::vector<void *> vStartIndex;
-	std::vector<GLsizei> vIndiceCount;
+	detail_texture_cache_t* detailTextureCache{};
 };
 
 class CWorldSurfaceModel;
@@ -164,10 +157,8 @@ class CWorldSurfaceLeaf
 public:
 	~CWorldSurfaceLeaf();
 
-	GLuint hVAO{};
-	GLuint hEBO{};
+	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChain[WSURF_TEXCHAIN_MAX];
-	std::vector<CWorldSurfaceDrawBatch*> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
 	CWorldSurfaceBrushTexChain TextureChainSky;
 	CWorldSurfaceModel* pModel{};
@@ -178,7 +169,9 @@ class CWorldSurfaceWorldModel
 public:
 	~CWorldSurfaceWorldModel();
 
+	GLuint hVAO{};
 	GLuint hVBO{};
+	GLuint hEBO{};
 	model_t* mod{};
 	std::vector<CWorldSurfaceBrushFace> vFaceBuffer;
 };
@@ -410,6 +403,7 @@ extern cvar_t *r_wsurf_parallax_scale;
 extern cvar_t *r_wsurf_sky_fog;
 extern cvar_t *r_wsurf_zprepass;
 
+mleaf_t* R_GetWorldLeafByIndex(model_t* mod, int index);
 int R_GetWorldLeafIndex(model_t* mod, mleaf_t* leaf);
 int R_GetWorldSurfaceIndex(model_t* mod, msurface_t* surf);
 msurface_t* R_GetWorldSurfaceByIndex(model_t* mod, int index);

@@ -16,3 +16,29 @@ typedef struct FBO_Container_s
 	int iTextureColorFormat;
 	int iTextureDepthFormat;
 }FBO_Container_t;
+
+class CDrawArrayAttrib
+{
+public:
+	uint32_t NumVertices{};
+	uint32_t NumInstances{ 1 };
+	uint32_t StartVertexLocation{};
+	uint32_t FirstInstanceLocation{};
+};
+
+class CDrawIndexAttrib
+{
+public:
+	uint32_t NumIndices{};
+	uint32_t NumInstances{ 1 };
+	uint32_t FirstIndexLocation{};
+	uint32_t BaseVertex{};
+	uint32_t FirstInstanceLocation{};
+};
+
+class CIndirectDrawAttrib
+{
+public:
+	uint64_t DrawArgsOffset{};
+	uint32_t DrawCount{ 1 };
+};

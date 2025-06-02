@@ -1,22 +1,15 @@
 #include "gl_local.h"
 #include <sstream>
 
-//int g_LastPortalTextureId = 0;
-
 std::unordered_map<program_state_t, portal_program_t> g_PortalProgramTable;
 
 std::unordered_map<portal_vbo_hash_t, CWorldPortalModel*, portal_vbo_hasher> g_PortalSurfaceModels;
 
 CWorldPortalModel::~CWorldPortalModel()
 {
-	if (hVAO)
+	if (hABO)
 	{
-		GL_DeleteVAO(hVAO);
-	}
-
-	if (hEBO)
-	{
-		GL_DeleteBuffer(hEBO);
+		GL_DeleteVAO(hABO);
 	}
 }
 
@@ -231,37 +224,21 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		
 		pPortalModel->SurfaceSet.emplace(surfIndex);
 
-		for (int j = 0; j < pBrushFace->num_polys; ++j)
-		{
-			for (int k = 0; k < pBrushFace->num_vertexes[j]; ++k)
-			{
-				pPortalModel->vIndicesBuffer.emplace_back(pBrushFace->start_vertex[j] + k);
-			}
-			pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
-		}
+		CDrawIndexAttrib drawAttrib;
+		drawAttrib.FirstIndexLocation = pBrushFace->start_index;
+		drawAttrib.NumIndices = pBrushFace->index_count;
 
-		pPortalModel->hEBO = GL_GenBuffer();
+		pPortalModel->vDrawAttribBuffer.emplace_back(drawAttrib);
 
-		GL_UploadDataToEBODynamicDraw(pPortalModel->hEBO, sizeof(GLuint) * pPortalModel->vIndicesBuffer.size(), pPortalModel->vIndicesBuffer.data());
+		pPortalModel->hABO = GL_GenBuffer();
 
-		pPortalModel->hVAO = GL_GenVAO();
+		GL_UploadDataToABODynamicDraw(pPortalModel->hABO, sizeof(CDrawIndexAttrib) * pPortalModel->vDrawAttribBuffer.size(), pPortalModel->vDrawAttribBuffer.data());
 
-		GL_BindStatesForVAO(pPortalModel->hVAO, pWorldModel->hVBO, pPortalModel->hEBO,
-		[]() {
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-		},
-		[]() {
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-		});
+		pPortalModel->drawCount = (uint32_t)pPortalModel->vDrawAttribBuffer.size();
 
-		pPortalModel->iPolyCount += pBrushFace->num_polys;
+		pPortalModel->polyCount += pBrushFace->poly_count;
+
+		pPortalModel->pWorldModel = pWorldModel;
 
 		portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 
@@ -275,18 +252,17 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		{
 			pPortalModel->SurfaceSet.emplace(surfIndex);
 
-			for (int j = 0; j < pBrushFace->num_polys; ++j)
-			{
-				for (int k = 0; k < pBrushFace->num_vertexes[j]; ++k)
-				{
-					pPortalModel->vIndicesBuffer.emplace_back(pBrushFace->start_vertex[j] + k);
-				}
-				pPortalModel->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
-			}
+			CDrawIndexAttrib drawAttrib;
+			drawAttrib.FirstIndexLocation = pBrushFace->start_index;
+			drawAttrib.NumIndices = pBrushFace->index_count;
 
-			GL_UploadDataToEBODynamicDraw(pPortalModel->hEBO, sizeof(unsigned int) * pPortalModel->vIndicesBuffer.size(), pPortalModel->vIndicesBuffer.data());
+			pPortalModel->vDrawAttribBuffer.emplace_back(drawAttrib);
 
-			pPortalModel->iPolyCount += pBrushFace->num_polys;
+			GL_UploadDataToABODynamicDraw(pPortalModel->hABO, sizeof(CDrawIndexAttrib) * pPortalModel->vDrawAttribBuffer.size(), pPortalModel->vDrawAttribBuffer.data());
+
+			pPortalModel->drawCount = (uint32_t)pPortalModel->vDrawAttribBuffer.size();
+
+			pPortalModel->polyCount += pBrushFace->poly_count;
 		}
 	}
 
@@ -325,14 +301,16 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
 
-	glDrawElements(GL_POLYGON, pPortalModel->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void *)(0), pPortalModel->drawCount, 0);
 
 	GL_DisableMultitexture();
+
+	GL_Bind(0);
 
 	GL_UseProgram(0);
 
 	r_wsurf_drawcall++;
-	r_wsurf_polys += pPortalModel->iPolyCount;
+	r_wsurf_polys += pPortalModel->polyCount;
 }
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
@@ -366,14 +344,16 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
 
-	glDrawElements(GL_POLYGON, pPortalModel->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pPortalModel->drawCount, 0);
 
 	GL_DisableMultitexture();
+
+	GL_Bind(0);
 
 	GL_UseProgram(0);
 
 	r_wsurf_drawcall++;
-	r_wsurf_polys += pPortalModel->iPolyCount;
+	r_wsurf_polys += pPortalModel->polyCount;
 }
 
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)
@@ -383,6 +363,20 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 	g_PortalClipPlane[index][2] = plane[2];
 	g_PortalClipPlane[index][3] = plane[3];
 	g_bPortalClipPlaneEnabled[index] = true;
+}
+
+void R_DrawPortalSurfaceModelBegin(CWorldSurfaceWorldModel* pWorldModel, CWorldPortalModel* pPortalModel)
+{
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+	GL_BindVAO(pWorldModel->hVAO);
+	GL_BindABO(pPortalModel->hABO);
+}
+
+void R_DrawPortalSurfaceModelEnd(CWorldSurfaceWorldModel* pWorldModel, CWorldPortalModel* pPortalModel)
+{
+	GL_BindABO(0);
+	GL_BindVAO(0);
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
@@ -395,7 +389,7 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 		if (mode != -1)
 		{
-			GL_BindVAO(pPortalModel->hVAO);
+			R_DrawPortalSurfaceModelBegin(pPortalModel->pWorldModel, pPortalModel);
 
 			glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 

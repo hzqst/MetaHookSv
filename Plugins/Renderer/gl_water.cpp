@@ -30,16 +30,10 @@ CWaterSurfaceModel::~CWaterSurfaceModel()
 		ripplemap = 0;
 	}
 
-	if (hVAO)
+	if (hABO)
 	{
-		GL_DeleteVAO(hVAO);
-		hVAO = 0;
-	}
-
-	if (hEBO)
-	{
-		GL_DeleteBuffer(hEBO);
-		hEBO = 0;
+		GL_DeleteVAO(hABO);
+		hABO = 0;
 	}
 
 	if (ripple_data)
@@ -595,7 +589,7 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 		pWaterModel->speedrate = 1;
 		pWaterModel->level = WATER_LEVEL_LEGACY;
 
-		pWaterModel->vIndicesBuffer = new std::vector<GLuint>();
+		pWaterModel->vDrawAttribBuffer.clear();
 
 		auto pWaterControl = R_FindWaterControl(surf);
 
@@ -665,26 +659,25 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 		}
 	}
 
-	for (int j = 0; j < brushface->num_polys; ++j)
+	if (direction)
 	{
-		if (direction)
-		{
-			for (int k = brushface->num_vertexes[j] - 1; k >= 0; --k)
-			{
-				pWaterModel->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
-			}
-		}
-		else
-		{
-			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
-			{
-				pWaterModel->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
-			}
-		}
-		pWaterModel->vIndicesBuffer->emplace_back((GLuint)0xFFFFFFFF);
+		CDrawIndexAttrib drawAttrib;
+		drawAttrib.FirstIndexLocation = brushface->reverse_index_count;
+		drawAttrib.NumIndices = brushface->reverse_index_count;
+
+		pWaterModel->vDrawAttribBuffer.emplace_back(drawAttrib);
+	}
+	else
+	{
+		CDrawIndexAttrib drawAttrib;
+		drawAttrib.FirstIndexLocation = brushface->start_index;
+		drawAttrib.NumIndices = brushface->index_count;
+
+		pWaterModel->vDrawAttribBuffer.emplace_back(drawAttrib);
 	}
 
-	pWaterModel->iPolyCount += brushface->num_polys;
+	pWaterModel->drawCount = (uint32_t)pWaterModel->vDrawAttribBuffer.size();
+	pWaterModel->polyCount += brushface->poly_count;
 
 	return pWaterModel;
 }
@@ -942,23 +935,23 @@ void R_RenderWaterPass(void)
 	}
 }
 
-void R_DrawWaterSurfaceModelBegin(CWaterSurfaceModel * pWaterModel)
+void R_DrawWaterSurfaceModelBegin(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel * pWaterModel)
 {
-	GL_BindVAO(pWaterModel->hVAO);
-
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+	GL_BindVAO(pModel->pWorldModel->hVAO);
+	GL_BindABO(pWaterModel->hABO);
 }
 
-void R_DrawWaterSurfaceModelEnd()
+void R_DrawWaterSurfaceModelEnd(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel)
 {
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
+	GL_BindABO(0);
 	GL_BindVAO(0);
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
-void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
+void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel *pWaterModel, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
 {
-	R_DrawWaterSurfaceModelBegin(pWaterModel);
+	R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 
 	bool bIsAboveWater = (pWaterModel->normal[2] > 0) && R_IsAboveWater(pWaterModel) ? true : false;
 
@@ -977,7 +970,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		{
 			if (r_draw_gbuffer)
 			{
-				R_DrawWaterSurfaceModelEnd();
+				R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 
 				//We are going to write into refractmap and depthrefrmap
 				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
@@ -992,11 +985,11 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				//Restore Legacy OpenGL matrix that manipulated by R_BlitGBufferToFrameBuffer
 				R_LoadLegacyOpenGLMatrixForWorld();
 
-				R_DrawWaterSurfaceModelBegin(pWaterModel);
+				R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 			}
 			else
 			{
-				R_DrawWaterSurfaceModelEnd();
+				R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 
 				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
 				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
@@ -1021,7 +1014,7 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 				//Restore Legacy OpenGL matrix that manipulated by R_GammaUncorrection
 				R_LoadLegacyOpenGLMatrixForWorld();
 
-				R_DrawWaterSurfaceModelBegin(pWaterModel);
+				R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 			}
 
 			ReflectCache->refractmap_ready = true;
@@ -1150,10 +1143,10 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->depthrefrmap);
 
-		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += pWaterModel->iPolyCount;
+		r_wsurf_polys += pWaterModel->polyCount;
 
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -1259,10 +1252,10 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 
 		GL_Bind(pWaterModel->ripplemap);
 
-		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += pWaterModel->iPolyCount;
+		r_wsurf_polys += pWaterModel->polyCount;
 
 		GL_UseProgram(0);
 
@@ -1359,20 +1352,20 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel *pWaterModel, water_reflect_cach
 
 		GL_Bind(pWaterModel->texture->gl_texturenum);
 
-		glDrawElements(GL_POLYGON, pWaterModel->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += pWaterModel->iPolyCount;
+		r_wsurf_polys += pWaterModel->polyCount;
 
 		GL_UseProgram(0);
 
 		GL_EndStencil();
 	}
 
-	R_DrawWaterSurfaceModelEnd();
+	R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 }
 
-void R_DrawWatersForLeaf(CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
+void R_DrawWatersForLeaf(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 {
 	if (R_IsRenderingWaterView())
 		return;
@@ -1390,6 +1383,6 @@ void R_DrawWatersForLeaf(CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 
 	for (size_t i = 0; i < pEntityComponentContainer->WaterVBOs.size(); ++i)
 	{
-		R_DrawWaterSurfaceModel(pEntityComponentContainer->WaterVBOs[i], pEntityComponentContainer->ReflectCaches[i], ent);
+		R_DrawWaterSurfaceModel(pModel, pLeaf, pEntityComponentContainer->WaterVBOs[i], pEntityComponentContainer->ReflectCaches[i], ent);
 	}
 }

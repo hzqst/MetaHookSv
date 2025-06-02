@@ -37,28 +37,16 @@ std::vector<CWorldSurfaceWorldModel*> g_WorldSurfaceWorldModels;
 
 CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 {
-	if (hVAO)
+	if (hABO)
 	{
-		GL_DeleteVAO(hVAO);
+		GL_DeleteBuffer(hABO);
 	}
 
-	if (hEBO)
-	{
-		GL_DeleteBuffer(hEBO);
-	}
-
-	for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
-	{
-		for (size_t l = 0; l < vDrawBatch[k].size(); ++l)
-		{
-			delete vDrawBatch[k][l];
-		}
-		vDrawBatch[k].clear();
-	}
 	for (auto pWaterSurfaceModel : vWaterSurfaceModels)
 	{
 		delete pWaterSurfaceModel;
 	}
+
 	vWaterSurfaceModels.clear();
 }
 
@@ -67,6 +55,14 @@ CWorldSurfaceWorldModel::~CWorldSurfaceWorldModel()
 	if (hVBO)
 	{
 		GL_DeleteBuffer(hVBO);
+	}
+	if (hEBO)
+	{
+		GL_DeleteVAO(hEBO);
+	}
+	if (hVAO)
+	{
+		GL_DeleteVAO(hVAO);
 	}
 }
 
@@ -562,7 +558,7 @@ void R_BrushModelLinkTextureChain(model_t *mod, CWorldSurfaceWorldModel *pWorldM
 	}
 }
 
-void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceBrushTexChain *texchain, CWorldSurfaceWorldModel* pWorldModel, std::vector<GLuint> &vIndicesBuffer)
+void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceBrushTexChain *texchain, CWorldSurfaceWorldModel* pWorldModel, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
 	auto surfIndex = R_GetWorldSurfaceIndex(pWorldModel->mod, surf);
 
@@ -576,19 +572,17 @@ void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceB
 
 	if (surf->flags & SURF_DRAWSKY)
 	{
-		if (texchain->iType == TEXCHAIN_SKY)
+		if (texchain->type == TEXCHAIN_SKY)
 		{
-			for (int i = 0; i < brushface.num_polys; ++i)
-			{
-				for (int j = 0; j < brushface.num_vertexes[i]; ++j)
-				{
-					vIndicesBuffer.emplace_back(brushface.start_vertex[i] + j);
-					texchain->iIndiceCount++;
-				}
-				vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
-				texchain->iIndiceCount++;
-				texchain->iPolyCount++;
-			}
+			CDrawIndexAttrib drawAttrib;
+
+			drawAttrib.FirstIndexLocation = brushface.start_index;
+			drawAttrib.NumIndices = brushface.index_count;
+
+			vDrawAttribBuffer.emplace_back(drawAttrib);
+
+			texchain->drawCount++;
+			texchain->polyCount += brushface.poly_count;
 		}
 	}
 	else if (surf->flags & SURF_DRAWTURB)
@@ -601,111 +595,33 @@ void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceB
 	}
 	else if (surf->flags & SURF_DRAWTILED)
 	{
-		if (texchain->iType == TEXCHAIN_SCROLL)
+		if (texchain->type == TEXCHAIN_SCROLL)
 		{
-			for (int i = 0; i < brushface.num_polys; ++i)
-			{
-				for (int j = 0; j < brushface.num_vertexes[i]; ++j)
-				{
-					vIndicesBuffer.emplace_back(brushface.start_vertex[i] + j);
-					texchain->iIndiceCount++;
-				}
-				vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
-				texchain->iIndiceCount++;
-				texchain->iPolyCount++;
-			}
+			CDrawIndexAttrib drawAttrib;
+
+			drawAttrib.FirstIndexLocation = brushface.start_index;
+			drawAttrib.NumIndices = brushface.index_count;
+
+			vDrawAttribBuffer.emplace_back(drawAttrib);
+
+			texchain->drawCount++;
+			texchain->polyCount += brushface.poly_count;
 		}
 	}
 	else
 	{
-		if (texchain->iType == TEXCHAIN_STATIC)
+		if (texchain->type == TEXCHAIN_STATIC)
 		{
-			for (int i = 0; i < brushface.num_polys; ++i)
-			{
-				for (int j = 0; j < brushface.num_vertexes[i]; ++j)
-				{
-					vIndicesBuffer.emplace_back(brushface.start_vertex[i] + j);
-					texchain->iIndiceCount++;
-				}
-				vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
-				texchain->iIndiceCount++;
-				texchain->iPolyCount++;
-			}
+			CDrawIndexAttrib drawAttrib;
+
+			drawAttrib.FirstIndexLocation = brushface.start_index;
+			drawAttrib.NumIndices = brushface.index_count;
+
+			vDrawAttribBuffer.emplace_back(drawAttrib);
+
+			texchain->drawCount++;
+			texchain->polyCount += brushface.poly_count;
 		}
-	}
-}
-
-void R_SortTextureChain(CWorldSurfaceLeaf *pLeaf, int iTexchainId)
-{
-	pLeaf->vTextureChain[iTexchainId].shrink_to_fit();
-
-	for (size_t i = 0; i < pLeaf->vTextureChain[iTexchainId].size(); ++i)
-	{
-		auto &texchain = pLeaf->vTextureChain[iTexchainId][i];
-
-		auto pcache = texchain.pDetailTextureCache;
-		if (pcache)
-		{
-			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
-			{
-				if (pcache->tex[j].gltexturenum)
-				{
-					texchain.iDetailTextureFlags |= (1 << j);
-				}
-			}
-		}
-		else
-		{
-			texchain.iDetailTextureFlags = 0;
-		}
-	}
-
-	std::sort(pLeaf->vTextureChain[iTexchainId].begin(), pLeaf->vTextureChain[iTexchainId].end(), [](const CWorldSurfaceBrushTexChain &a, const CWorldSurfaceBrushTexChain &b) {
-		return b.iDetailTextureFlags > a.iDetailTextureFlags;
-	});
-}
-
-void R_GenerateDrawBatch(CWorldSurfaceLeaf* pLeaf, int iTexchainId, int iDrawBatchId)
-{
-	int iDetailTextureFlags = -1;
-	CWorldSurfaceDrawBatch *pDrawBatch = NULL;
-
-	for (size_t i = 0; i < pLeaf->vTextureChain[iTexchainId].size(); ++i)
-	{
-		const auto &texchain = pLeaf->vTextureChain[iTexchainId][i];
-
-		if (texchain.iDetailTextureFlags != iDetailTextureFlags)
-		{
-			if (pDrawBatch)
-			{
-				pDrawBatch->vStartIndex.shrink_to_fit();
-				pDrawBatch->vIndiceCount.shrink_to_fit();
-				pLeaf->vDrawBatch[iDrawBatchId].emplace_back(pDrawBatch);
-				pDrawBatch = NULL;
-			}
-
-			iDetailTextureFlags = texchain.iDetailTextureFlags;
-		}
-
-		if (!pDrawBatch)
-		{
-			pDrawBatch = new CWorldSurfaceDrawBatch;
-			pDrawBatch->iBaseDrawId = i * 5;
-		}
-
-		pDrawBatch->vStartIndex.emplace_back(BUFFER_OFFSET(texchain.iStartIndex));
-		pDrawBatch->vIndiceCount.emplace_back(texchain.iIndiceCount);
-		pDrawBatch->iDrawCount++;
-		pDrawBatch->iPolyCount += texchain.iPolyCount;
-		pDrawBatch->iDetailTextureFlags = texchain.iDetailTextureFlags;
-	}
-
-	if (pDrawBatch)
-	{
-		pDrawBatch->vStartIndex.shrink_to_fit();
-		pDrawBatch->vIndiceCount.shrink_to_fit();
-		pLeaf->vDrawBatch[iDrawBatchId].emplace_back(pDrawBatch);
-		pDrawBatch = NULL;
 	}
 }
 
@@ -715,45 +631,18 @@ void R_GenerateWaterModels(model_t *mod, CWorldSurfaceWorldModel *pWorldModel, C
 	{
 		auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
 
-		if (pWaterModel->vIndicesBuffer)
+		if (pWaterModel->vDrawAttribBuffer.size() > 0)
 		{
-			pWaterModel->hEBO = GL_GenBuffer();
+			pWaterModel->hABO = GL_GenBuffer();
 
-			GL_UploadDataToEBOStaticDraw(pWaterModel->hEBO, sizeof(unsigned int) * pWaterModel->vIndicesBuffer->size(), pWaterModel->vIndicesBuffer->data());
+			GL_UploadDataToABOStaticDraw(pWaterModel->hABO, sizeof(CDrawIndexAttrib) * pWaterModel->vDrawAttribBuffer.size(), pWaterModel->vDrawAttribBuffer.data());
 
-			pWaterModel->hVAO = GL_GenVAO();
-
-			GL_BindVAO(pWaterModel->hVAO);
-			GL_BindStatesForVAO(pWaterModel->hVAO, pWorldModel->hVBO, pWaterModel->hEBO,
-			[]() {
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-			},
-			[]() {
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			});
-
-			pWaterModel->iIndicesCount = pWaterModel->vIndicesBuffer->size();
-
-			delete pWaterModel->vIndicesBuffer;
-			pWaterModel->vIndicesBuffer = NULL;
+			pWaterModel->drawCount = pWaterModel->vDrawAttribBuffer.size();
 		}
 	}
 }
 
-void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, std::vector<GLuint> &vIndicesBuffer)
+void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
 	for (int i = 0; i < mod->numtextures; i++)
 	{
@@ -778,19 +667,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 			{
 				CWorldSurfaceBrushTexChain texchain;
 
-				texchain.pTexture = t;
-				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
-				texchain.iIndiceCount = 0;
-				texchain.iPolyCount = 0;
-				texchain.iStartIndex = vIndicesBuffer.size();
-				texchain.iType = TEXCHAIN_SKY;
+				texchain.type = TEXCHAIN_SKY;
+				texchain.texture = t;
+				texchain.detailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
+				texchain.drawCount = 0;
+				texchain.polyCount = 0;
+				texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
 
 				for (; s; s = s->texturechain)
 				{
-					R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vIndicesBuffer);
+					R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vDrawAttribBuffer);
 				}
 
-				if (texchain.iIndiceCount > 0)
+				if (texchain.drawCount > 0)
 					pLeaf->TextureChainSky = texchain;
 			}
 		}
@@ -817,8 +706,6 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							continue;
 						}
 
-						//CWorldSurfaceBrushTexChain *texchainArray = new CWorldSurfaceBrushTexChain[t->anim_total];
-
 						int numtexturechain = 0;
 						for (msurface_t *s2 = s; s2; s2 = s2->texturechain)
 						{
@@ -828,7 +715,6 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 						//rtable not initialized?
 						if ((*rtable)[0][0] == 0)
 						{
-							//gPrivateFuncs.R_TextureAnimation(s);
 							for (auto tu = 0; tu < 20; tu++)
 							{
 								for (auto tv = 0; tv < 20; tv++)
@@ -861,20 +747,20 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							for (; k < t->anim_total && t2; t2 = t2->anim_next, ++k)
 							{
 								CWorldSurfaceBrushTexChain texchain;
-								texchain.pTexture = t2;
-								texchain.pDetailTextureCache = R_FindDetailTextureCache(t2->gl_texturenum);
-								texchain.iIndiceCount = 0;
-								texchain.iPolyCount = 0;
-								texchain.iStartIndex = vIndicesBuffer.size();
-								texchain.iType = TEXCHAIN_STATIC;
+								texchain.type = TEXCHAIN_STATIC;
+								texchain.texture = t2;
+								texchain.detailTextureCache = R_FindDetailTextureCache(t2->gl_texturenum);
+								texchain.drawCount = 0;
+								texchain.polyCount = 0;
+								texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
 
 								for (int n = 0; n < numtexturechain; ++n)
 								{
 									if (texchainMapper[n] == k)
-										R_GenerateIndicesForTexChain(mod, texchainSurface[n], &texchain, pWorldModel, vIndicesBuffer);
+										R_GenerateIndicesForTexChain(mod, texchainSurface[n], &texchain, pWorldModel, vDrawAttribBuffer);
 								}
 
-								if (texchain.iIndiceCount > 0)
+								if (texchain.drawCount > 0)
 									pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
 							}
 						}
@@ -908,19 +794,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 						CWorldSurfaceBrushTexChain texchain;
 
-						texchain.pTexture = t;
-						texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
-						texchain.iIndiceCount = 0;
-						texchain.iPolyCount = 0;
-						texchain.iStartIndex = vIndicesBuffer.size();
-						texchain.iType = TEXCHAIN_STATIC;
+						texchain.type = TEXCHAIN_STATIC;
+						texchain.texture = t;
+						texchain.detailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
+						texchain.drawCount = 0;
+						texchain.polyCount = 0;
+						texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
 
 						for (; s; s = s->texturechain)
 						{
-							R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vIndicesBuffer);
+							R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vDrawAttribBuffer);
 						}
 
-						if (texchain.iIndiceCount > 0)
+						if (texchain.drawCount > 0)
 							pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM].emplace_back(texchain);
 					}
 				}
@@ -949,19 +835,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 					CWorldSurfaceBrushTexChain texchain;
 
-					texchain.pTexture = t;
-					texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
-					texchain.iIndiceCount = 0;
-					texchain.iPolyCount = 0;
-					texchain.iStartIndex = vIndicesBuffer.size();
-					texchain.iType = TEXCHAIN_STATIC;
+					texchain.type = TEXCHAIN_STATIC;
+					texchain.texture = t;
+					texchain.detailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
+					texchain.drawCount = 0;
+					texchain.polyCount = 0;
+					texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
 
 					for (; s; s = s->texturechain)
 					{
-						R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vIndicesBuffer);
+						R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vDrawAttribBuffer);
 					}
 
-					if (texchain.iIndiceCount > 0)
+					if (texchain.drawCount > 0)
 						pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
 				}
 			}
@@ -985,19 +871,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 				CWorldSurfaceBrushTexChain texchain;
 
-				texchain.pTexture = t;
-				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
-				texchain.iIndiceCount = 0;
-				texchain.iPolyCount = 0;
-				texchain.iStartIndex = vIndicesBuffer.size();
-				texchain.iType = TEXCHAIN_SCROLL;
+				texchain.type = TEXCHAIN_SCROLL;
+				texchain.texture = t;
+				texchain.detailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
+				texchain.drawCount = 0;
+				texchain.polyCount = 0;
+				texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
 
 				for (; s; s = s->texturechain)
 				{
-					R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vIndicesBuffer);
+					R_GenerateIndicesForTexChain(mod, s, &texchain, pWorldModel, vDrawAttribBuffer);
 				}
 
-				if (texchain.iIndiceCount > 0)
+				if (texchain.drawCount > 0)
 					pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
 			}
 		}
@@ -1008,15 +894,69 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 	}
 }
 
+void R_GenerateWorldSurfaceModelLeafInternal(
+	CWorldSurfaceModel* pModel,
+	model_t* mod,
+	mleaf_t* leaf,
+	int leafIndex,
+	int framecount,
+	int visframecount,
+	std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
+{
+	R_MarkPVSForLeaf(leaf, visframecount);
+
+	auto pLeaf = new CWorldSurfaceLeaf();
+
+	R_RecursiveMarkSurfaces(mod->nodes, visframecount, framecount);
+
+	R_RecursiveLinkTextureChain(mod, mod->nodes, visframecount, framecount, pModel->pWorldModel, pLeaf);
+
+	R_GenerateTexChain(mod, pModel->pWorldModel, pLeaf, vDrawAttribBuffer);
+
+	if (vDrawAttribBuffer.size() > 0)
+	{
+		pLeaf->hABO = GL_GenBuffer();
+
+		GL_UploadDataToABOStaticDraw(pLeaf->hABO, sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size(), vDrawAttribBuffer.data());
+	}
+
+	pModel->vLeaves[leafIndex] = pLeaf;
+}
+
+void R_GenerateWorldSurfaceModelLeaf(CWorldSurfaceModel* pModel, int leafIndex)
+{
+	if (leafIndex < pModel->vLeaves.size() && pModel->vLeaves[leafIndex])
+	{
+		gEngfuncs.Con_DPrintf(__FUNCTION__": leafIndex %d already has a pLeaf!\n", leafIndex);
+		return;
+	}
+
+	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
+
+	vDrawAttribBuffer.reserve(4096);
+
+	auto mod = pModel->mod;
+
+	auto leaf = R_GetWorldLeafByIndex(mod, leafIndex);
+
+	int visframecount = 0;
+	int framecount = 0;
+
+	framecount++;
+	visframecount++;
+
+	R_GenerateWorldSurfaceModelLeafInternal(pModel, mod, leaf, leafIndex, framecount, visframecount, vDrawAttribBuffer);
+}
+
 /*
 	Generate leaf array for brush model
 */
 
 CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 {
-	std::vector<GLuint> vIndicesBuffer;
+	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
 
-	vIndicesBuffer.reserve(65536 * 4);
+	vDrawAttribBuffer.reserve(4096);
 
 	auto pModel = new CWorldSurfaceModel();
 
@@ -1036,93 +976,25 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 		int visframecount = 0;
 		int framecount = 0;
 
-		for (auto leaf : vPossibleLeafs)
+		if ((int)r_leaf_lazy_load->value <= 0)
 		{
-			int leafIndex = R_GetWorldLeafIndex(mod, leaf);
-
-			framecount++;
-			visframecount++;
-
-			R_MarkPVSForLeaf(leaf, visframecount);
-
-			auto pLeaf = new CWorldSurfaceLeaf;
-
-			pLeaf->pModel = pModel;
-
-			R_RecursiveMarkSurfaces(mod->nodes, visframecount, framecount);
-
-			R_RecursiveLinkTextureChain(mod, mod->nodes, visframecount, framecount, pWorldModel, pLeaf);
-
-			R_GenerateWaterModels(mod, pWorldModel, pLeaf);
-
-			R_GenerateTexChain(mod, pWorldModel, pLeaf, vIndicesBuffer);
-
-			if (vIndicesBuffer.size() > 0)
+			for (auto leaf : vPossibleLeafs)
 			{
-				pLeaf->hEBO = GL_GenBuffer();
-				GL_UploadDataToEBOStaticDraw(pLeaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
+				vDrawAttribBuffer.clear();
 
-				pLeaf->hVAO = GL_GenVAO();
-				GL_BindStatesForVAO(pLeaf->hVAO, pWorldModel->hVBO, pLeaf->hEBO,
-					[]() {
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
-						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-						glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
-						glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
-					},
-					[]() {
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-					});
+				int leafIndex = R_GetWorldLeafIndex(mod, leaf);
 
-				vIndicesBuffer.clear();
+				framecount++;
+				visframecount++;
 
-				R_SortTextureChain(pLeaf, WSURF_TEXCHAIN_STATIC);
-				R_SortTextureChain(pLeaf, WSURF_TEXCHAIN_ANIM);
-
-				R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-				R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-				R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+				R_GenerateWorldSurfaceModelLeafInternal(pModel, mod, leaf, leafIndex, framecount, visframecount, vDrawAttribBuffer);
 			}
-
-			pModel->vLeaves[leafIndex] = pLeaf;
 		}
  	}
 	else
 	{
+		vDrawAttribBuffer.clear();
+
 		auto worldmodel = R_FindWorldModelByModel(mod);
 
 		auto pWorldModel = R_GetWorldSurfaceWorldModel(worldmodel);
@@ -1137,65 +1009,14 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 		R_GenerateWaterModels(mod, pWorldModel, pLeaf);
 
-		R_GenerateTexChain(mod, pWorldModel, pLeaf, vIndicesBuffer);
+		R_GenerateTexChain(mod, pWorldModel, pLeaf, vDrawAttribBuffer);
 
-		pLeaf->hEBO = GL_GenBuffer();
-		GL_UploadDataToEBOStaticDraw(pLeaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
+		if (vDrawAttribBuffer.size() > 0)
+		{
+			pLeaf->hABO = GL_GenBuffer();
 
-		pLeaf->hVAO = GL_GenVAO();
-		GL_BindStatesForVAO(pLeaf->hVAO, pWorldModel->hVBO, pLeaf->hEBO,
-			[]() {
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
-			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
-		},
-			[]() {
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-		});
-
-		vIndicesBuffer.clear();
-
-		R_SortTextureChain(pLeaf, WSURF_TEXCHAIN_STATIC);
-		R_SortTextureChain(pLeaf, WSURF_TEXCHAIN_ANIM);
-
-		R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-		R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-		R_GenerateDrawBatch(pLeaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+			GL_UploadDataToABOStaticDraw(pLeaf->hABO, sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size(), vDrawAttribBuffer.data());
+		}
 
 		pModel->vLeaves.emplace_back(pLeaf);
 	}
@@ -1284,6 +1105,11 @@ int R_GetWorldSurfaceIndex(model_t* mod, msurface_t*surf)
 	return -1;
 }
 
+mleaf_t* R_GetWorldLeafByIndex(model_t* mod, int index)
+{
+	return mod->leafs + index;
+}
+
 int R_GetWorldLeafIndex(model_t* mod, mleaf_t* leaf)
 {
 	return leaf - mod->leafs;
@@ -1347,11 +1173,13 @@ model_t* R_FindWorldModelByNode(mnode_t* pnode)
 
 CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 {
-	std::vector<brushvertex_t> vVertexBuffer;
+	std::vector<brushvertex_t> vVerticeBuffer;
+	std::vector<uint32_t> vIndiceBuffer;
+
+	vVerticeBuffer.reserve(0x10000);
+	vIndiceBuffer.reserve(0x10000);
 
 	brushvertex_t Vertexes[3];
-	int iNumFaces = 0;
-	int iNumVerts = 0;
 
 	auto pWorldModel = new CWorldSurfaceWorldModel;
 
@@ -1422,64 +1250,156 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 		if (pFace->flags & SURF_DRAWTURB)
 		{
-			for (poly = surf->polys; poly; poly = poly->next)
+			if (1)
 			{
-				int iStartVert = iNumVerts;
+				uint32_t nBrushStartIndex = (uint32_t)vIndiceBuffer.size();
 
-				pFace->start_vertex.emplace_back(iStartVert);
-
-				float *v = poly->verts[0];
-
-				for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
+				for (poly = surf->polys; poly; poly = poly->next)
 				{
-					Vertexes[0].pos[0] = v[0];
-					Vertexes[0].pos[1] = v[1];
-					Vertexes[0].pos[2] = v[2];
-					Vertexes[0].normal[0] = pFace->normal[0];
-					Vertexes[0].normal[1] = pFace->normal[1];
-					Vertexes[0].normal[2] = pFace->normal[2];
-					Vertexes[0].s_tangent[0] = pFace->s_tangent[0];
-					Vertexes[0].s_tangent[1] = pFace->s_tangent[1];
-					Vertexes[0].s_tangent[2] = pFace->s_tangent[2];
-					Vertexes[0].t_tangent[0] = pFace->t_tangent[0];
-					Vertexes[0].t_tangent[1] = pFace->t_tangent[1];
-					Vertexes[0].t_tangent[2] = pFace->t_tangent[2];
+					uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
 
-					Vertexes[0].texcoord[0] = v[3];
-					Vertexes[0].texcoord[1] = v[4];
-					Vertexes[0].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
-					Vertexes[0].lightmaptexcoord[0] = v[5];
-					Vertexes[0].lightmaptexcoord[1] = v[6];
-					Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
-					Vertexes[0].replacetexcoord[0] = replaceScale[0];
-					Vertexes[0].replacetexcoord[1] = replaceScale[1];
-					Vertexes[0].detailtexcoord[0] = detailScale[0];
-					Vertexes[0].detailtexcoord[1] = detailScale[1];
-					Vertexes[0].normaltexcoord[0] = normalScale[0];
-					Vertexes[0].normaltexcoord[1] = normalScale[1];
-					Vertexes[0].parallaxtexcoord[0] = parallaxScale[0];
-					Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
-					Vertexes[0].speculartexcoord[0] = specularScale[0];
-					Vertexes[0].speculartexcoord[1] = specularScale[1];
-					//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
-					memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
+					std::vector<brushvertexpos_t> vPolyVertices;
 
-					vVertexBuffer.emplace_back(Vertexes[0]);
-					iNumVerts++;
+					float* v = poly->verts[0];
+
+					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
+					{
+						Vertexes[0].pos[0] = v[0];
+						Vertexes[0].pos[1] = v[1];
+						Vertexes[0].pos[2] = v[2];
+						Vertexes[0].normal[0] = pFace->normal[0];
+						Vertexes[0].normal[1] = pFace->normal[1];
+						Vertexes[0].normal[2] = pFace->normal[2];
+						Vertexes[0].s_tangent[0] = pFace->s_tangent[0];
+						Vertexes[0].s_tangent[1] = pFace->s_tangent[1];
+						Vertexes[0].s_tangent[2] = pFace->s_tangent[2];
+						Vertexes[0].t_tangent[0] = pFace->t_tangent[0];
+						Vertexes[0].t_tangent[1] = pFace->t_tangent[1];
+						Vertexes[0].t_tangent[2] = pFace->t_tangent[2];
+
+						Vertexes[0].texcoord[0] = v[3];
+						Vertexes[0].texcoord[1] = v[4];
+						Vertexes[0].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+						Vertexes[0].lightmaptexcoord[0] = v[5];
+						Vertexes[0].lightmaptexcoord[1] = v[6];
+						Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
+						Vertexes[0].replacetexcoord[0] = replaceScale[0];
+						Vertexes[0].replacetexcoord[1] = replaceScale[1];
+						Vertexes[0].detailtexcoord[0] = detailScale[0];
+						Vertexes[0].detailtexcoord[1] = detailScale[1];
+						Vertexes[0].normaltexcoord[0] = normalScale[0];
+						Vertexes[0].normaltexcoord[1] = normalScale[1];
+						Vertexes[0].parallaxtexcoord[0] = parallaxScale[0];
+						Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
+						Vertexes[0].speculartexcoord[0] = specularScale[0];
+						Vertexes[0].speculartexcoord[1] = specularScale[1];
+						//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
+						memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
+
+						vVerticeBuffer.emplace_back(Vertexes[0]);
+
+						brushvertexpos_t pos;
+						pos.pos[0] = v[0];
+						pos.pos[1] = v[1];
+						pos.pos[2] = v[2];
+
+						vPolyVertices.emplace_back(pos);
+					}
+
+					for (size_t k = 0; k < vPolyVertices.size(); ++k)
+					{
+						vIndiceBuffer.emplace_back(nPolyStartIndex + k);
+					}
+					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
+
+					pFace->poly_count++;
 				}
+				uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
+				pFace->start_index = nBrushStartIndex;
+				pFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
+			}
+			if (1)
+			{
+				uint32_t nBrushStartIndex = (uint32_t)vIndiceBuffer.size();
 
-				pFace->num_vertexes.emplace_back(iNumVerts - iStartVert);
-				pFace->num_polys++;
+				for (poly = surf->polys; poly; poly = poly->next)
+				{
+					uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
+
+					std::vector<brushvertexpos_t> vPolyVertices;
+
+					float* v = poly->verts[0];
+
+					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
+					{
+						Vertexes[0].pos[0] = v[0];
+						Vertexes[0].pos[1] = v[1];
+						Vertexes[0].pos[2] = v[2];
+						Vertexes[0].normal[0] = pFace->normal[0];
+						Vertexes[0].normal[1] = pFace->normal[1];
+						Vertexes[0].normal[2] = pFace->normal[2];
+						Vertexes[0].s_tangent[0] = pFace->s_tangent[0];
+						Vertexes[0].s_tangent[1] = pFace->s_tangent[1];
+						Vertexes[0].s_tangent[2] = pFace->s_tangent[2];
+						Vertexes[0].t_tangent[0] = pFace->t_tangent[0];
+						Vertexes[0].t_tangent[1] = pFace->t_tangent[1];
+						Vertexes[0].t_tangent[2] = pFace->t_tangent[2];
+
+						VectorInverse(Vertexes[0].normal);
+						VectorInverse(Vertexes[0].s_tangent);
+						VectorInverse(Vertexes[0].t_tangent);
+
+						Vertexes[0].texcoord[0] = v[3];
+						Vertexes[0].texcoord[1] = v[4];
+						Vertexes[0].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+						Vertexes[0].lightmaptexcoord[0] = v[5];
+						Vertexes[0].lightmaptexcoord[1] = v[6];
+						Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
+						Vertexes[0].replacetexcoord[0] = replaceScale[0];
+						Vertexes[0].replacetexcoord[1] = replaceScale[1];
+						Vertexes[0].detailtexcoord[0] = detailScale[0];
+						Vertexes[0].detailtexcoord[1] = detailScale[1];
+						Vertexes[0].normaltexcoord[0] = normalScale[0];
+						Vertexes[0].normaltexcoord[1] = normalScale[1];
+						Vertexes[0].parallaxtexcoord[0] = parallaxScale[0];
+						Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
+						Vertexes[0].speculartexcoord[0] = specularScale[0];
+						Vertexes[0].speculartexcoord[1] = specularScale[1];
+						//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
+						memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
+
+						vVerticeBuffer.emplace_back(Vertexes[0]);
+
+						brushvertexpos_t pos;
+						pos.pos[0] = v[0];
+						pos.pos[1] = v[1];
+						pos.pos[2] = v[2];
+
+						vPolyVertices.emplace_back(pos);
+					}
+
+					for (size_t k = 0; k < vPolyVertices.size(); ++k)
+					{
+						vIndiceBuffer.emplace_back(nPolyStartIndex + (vPolyVertices.size() - 1 - k));
+					}
+					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
+
+				}
+				uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
+				pFace->reverse_start_index = nBrushStartIndex;
+				pFace->reverse_index_count = nBrushCurrentIndex - nBrushStartIndex;
 			}
 		}
 		else
 		{
-			int iStartVert = iNumVerts;
-
-			pFace->start_vertex.emplace_back(iStartVert);
+			uint32_t nBrushStartIndex = (uint32_t)vIndiceBuffer.size();
 
 			for (poly = surf->polys; poly; poly = poly->next)
 			{
+				uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
+
+				std::vector<brushvertexpos_t> vPolyVertices;
+
 				float *v = poly->verts[0];
 
 				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
@@ -1516,10 +1436,30 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					//Vertexes[j].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[j].styles, surf->styles, sizeof(surf->styles));
 				}
-				vVertexBuffer.emplace_back(Vertexes[0]);
-				vVertexBuffer.emplace_back(Vertexes[1]);
-				vVertexBuffer.emplace_back(Vertexes[2]);
-				iNumVerts += 3;
+				vVerticeBuffer.emplace_back(Vertexes[0]);
+				vVerticeBuffer.emplace_back(Vertexes[1]);
+				vVerticeBuffer.emplace_back(Vertexes[2]);
+
+				{
+					brushvertexpos_t pos;
+					pos.pos[0] = Vertexes[0].pos[0];
+					pos.pos[1] = Vertexes[0].pos[1];
+					pos.pos[2] = Vertexes[0].pos[2];
+
+					vPolyVertices.emplace_back(pos);
+
+					pos.pos[0] = Vertexes[1].pos[0];
+					pos.pos[1] = Vertexes[1].pos[1];
+					pos.pos[2] = Vertexes[1].pos[2];
+
+					vPolyVertices.emplace_back(pos);
+
+					pos.pos[0] = Vertexes[2].pos[0];
+					pos.pos[1] = Vertexes[2].pos[1];
+					pos.pos[2] = Vertexes[2].pos[2];
+
+					vPolyVertices.emplace_back(pos);
+				}
 
 				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
 				{
@@ -1555,22 +1495,100 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					//Vertexes[2].texindex = R_FindTextureIdByTexture(mod, ptexture);
 					memcpy(&Vertexes[2].styles, surf->styles, sizeof(surf->styles));
 
-					vVertexBuffer.emplace_back(Vertexes[0]);
-					vVertexBuffer.emplace_back(Vertexes[1]);
-					vVertexBuffer.emplace_back(Vertexes[2]);
-					iNumVerts += 3;
+					vVerticeBuffer.emplace_back(Vertexes[0]);
+					vVerticeBuffer.emplace_back(Vertexes[1]);
+					vVerticeBuffer.emplace_back(Vertexes[2]);
+
+
+					{
+						brushvertexpos_t pos;
+						pos.pos[0] = Vertexes[0].pos[0];
+						pos.pos[1] = Vertexes[0].pos[1];
+						pos.pos[2] = Vertexes[0].pos[2];
+
+						vPolyVertices.emplace_back(pos);
+
+						pos.pos[0] = Vertexes[1].pos[0];
+						pos.pos[1] = Vertexes[1].pos[1];
+						pos.pos[2] = Vertexes[1].pos[2];
+
+						vPolyVertices.emplace_back(pos);
+
+						pos.pos[0] = Vertexes[2].pos[0];
+						pos.pos[1] = Vertexes[2].pos[1];
+						pos.pos[2] = Vertexes[2].pos[2];
+
+						vPolyVertices.emplace_back(pos);
+					}
 				}
+
+				for (size_t k = 0; k < vPolyVertices.size(); ++k)
+				{
+					vIndiceBuffer.emplace_back(nPolyStartIndex + k);
+				}
+				vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
+
+				pFace->poly_count ++;
 			}
 
-			pFace->num_vertexes.emplace_back(iNumVerts - iStartVert);
-			pFace->num_polys++;
+			uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
+			pFace->start_index = nBrushStartIndex;
+			pFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
 		}
-
-		iNumFaces++;
 	}
 
 	pWorldModel->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data());
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO, sizeof(brushvertex_t) * vVerticeBuffer.size(), vVerticeBuffer.data());
+
+	pWorldModel->hEBO = GL_GenBuffer();
+	GL_UploadDataToEBOStaticDraw(pWorldModel->hEBO, sizeof(uint32_t) * vIndiceBuffer.size(), vIndiceBuffer.data());
+
+	pWorldModel->hVAO = GL_GenVAO();
+	GL_BindStatesForVAO(pWorldModel->hVAO, pWorldModel->hVBO, pWorldModel->hEBO,
+		[]() {
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
+			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
+			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
+		},
+		[]() {
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+		});
+
 
 	return pWorldModel;
 }
@@ -1730,18 +1748,18 @@ void R_ClearDecalCache(void)
 	memset(g_WorldSurfaceRenderer.vCachedDecals, 0, sizeof(g_WorldSurfaceRenderer.vCachedDecals));
 }
 
-void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceLeaf* pLeaf)
+void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceModel *pModel ,CWorldSurfaceLeaf* pLeaf)
 {
-	GL_BindVAO(pLeaf->hVAO);
-
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+	GL_BindVAO(pModel->pWorldModel->hVAO);
+	GL_BindABO(pLeaf->hABO);
 }
 
 void R_DrawWorldSurfaceLeafEnd()
 {
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
+	GL_BindABO(0);
 	GL_BindVAO(0);
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
 void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
@@ -1770,26 +1788,28 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	auto &drawBatches = pLeaf->vDrawBatch[WSURF_DRAWBATCH_SOLID];
-
-	for (size_t i = 0; i < drawBatches.size(); ++i)
+	for(auto iTexChain = 0; iTexChain < 2; ++iTexChain)
 	{
-		auto &batch = drawBatches[i];
+		const auto& texChains = pLeaf->vTextureChain[iTexChain];
+		for (size_t i = 0; i < texChains.size(); ++i)
+		{
+			const auto& texchain = texChains[i];
 
-		glMultiDrawElements(GL_POLYGON, batch->vIndiceCount.data(), GL_UNSIGNED_INT, (const void **)batch->vStartIndex.data(), batch->iDrawCount);
+			glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void *)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-		r_wsurf_drawcall++;
-		r_wsurf_polys += batch->iPolyCount;
+			r_wsurf_drawcall++;
+			r_wsurf_polys += texchain.polyCount;
+		}
 	}
 }
 
-void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
 	for (size_t i = 0; i < pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].size(); ++i)
 	{
 		auto &texchain = pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC][i];
 
-		auto base = texchain.pTexture;
+		auto base = texchain.texture;
 
 		program_state_t WSurfProgramState = 0;
 
@@ -1799,7 +1819,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 
 			GL_Bind(base->gl_texturenum);
 
-			R_BeginDetailTextureByDetailTextureCache(texchain.pDetailTextureCache, &WSurfProgramState);
+			R_BeginDetailTextureByDetailTextureCache(texchain.detailTextureCache, &WSurfProgramState);
 		}
 
 		if (g_WorldSurfaceRenderer.bLightmapTexture)
@@ -1936,12 +1956,12 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		glDrawElements(GL_POLYGON, texchain.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 		R_EndDetailTexture(WSurfProgramState);
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.iPolyCount;
+		r_wsurf_polys += texchain.polyCount;
 	}
 }
 
@@ -2016,13 +2036,13 @@ texture_t *R_GetAnimatedTexture(texture_t *base)
 	return base;
 }
 
-void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
 	for (size_t i = 0; i < pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM].size(); ++i)
 	{
 		auto &texchain = pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM][i];
 
-		auto texture = R_GetAnimatedTexture(texchain.pTexture);
+		auto texture = R_GetAnimatedTexture(texchain.texture);
 
 		program_state_t WSurfProgramState = 0;
 
@@ -2170,12 +2190,12 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		glDrawElements(GL_POLYGON, texchain.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 		R_EndDetailTexture(WSurfProgramState);
 
 		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.iPolyCount;
+		r_wsurf_polys += texchain.polyCount;
 	}
 }
 
@@ -2246,9 +2266,16 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 		{
 			pLeaf = pModel->vLeaves[leafIndex];
 
-			if (pLeaf->hVAO)
+			if (!pLeaf && (int)r_leaf_lazy_load->value >= 1)
 			{
-				R_DrawWorldSurfaceLeafBegin(pLeaf);
+				R_GenerateWorldSurfaceModelLeaf(pModel, leafIndex);
+
+				pLeaf = pModel->vLeaves[leafIndex];
+			}
+
+			if (pLeaf && pLeaf->hABO)
+			{
+				R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
 
 				if (R_ShouldDrawZPrePass())
 				{
@@ -2263,8 +2290,8 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 					bUseZPrePass = true;
 				}
 
-				R_DrawWorldSurfaceLeafStatic(pLeaf, bUseZPrePass);
-				R_DrawWorldSurfaceLeafAnim(pLeaf, bUseZPrePass);
+				R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
+				R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
 
 				R_DrawWorldSurfaceLeafEnd();
 			}
@@ -2280,12 +2307,12 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 		{
 			pLeaf = pModel->vLeaves[0];
 
-			if (pLeaf->hVAO)
+			if (pLeaf && pLeaf->hABO)
 			{
-				R_DrawWorldSurfaceLeafBegin(pLeaf);
+				R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
 
-				R_DrawWorldSurfaceLeafStatic(pLeaf, bUseZPrePass);
-				R_DrawWorldSurfaceLeafAnim(pLeaf, bUseZPrePass);
+				R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
+				R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
 
 				R_DrawWorldSurfaceLeafEnd();
 			}
@@ -2323,7 +2350,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	if (pLeaf)
 	{
-		R_DrawWatersForLeaf(pLeaf, ent);
+		R_DrawWatersForLeaf(pModel, pLeaf, ent);
 	}
 }
 

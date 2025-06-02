@@ -335,6 +335,8 @@ extern cvar_t* r_sprite_lerping;
 
 extern cvar_t* r_detailskytextures;
 
+extern cvar_t* r_leaf_lazy_load;
+
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -398,12 +400,15 @@ void GL_DeleteTexture(GLuint texid);
 void GL_DeleteBuffer(GLuint buf);
 void GL_DeleteVAO(GLuint VAO);
 void GL_BindVAO(GLuint VAO);
+void GL_BindABO(GLuint ABO);
 void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data);
+void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
+void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)());
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
@@ -414,7 +419,7 @@ int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn);
 //void triapi_Color4f(float x, float y, float z, float w);
-void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
+void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);

@@ -82,8 +82,7 @@ class CWaterSurfaceModel
 public:
 	~CWaterSurfaceModel();
 
-	GLuint hEBO{};
-	GLuint hVAO{};
+	GLuint hABO{};
 
 	texture_t* texture{};
 
@@ -111,9 +110,9 @@ public:
 	vec3_t normal{};
 	mplane_t *plane{};
 	colorVec color{};
-	int iPolyCount{};
-	int iIndicesCount{};
-	std::vector<GLuint> *vIndicesBuffer{};
+	uint32_t polyCount{};
+	uint32_t drawCount{};
+	std::vector<CDrawIndexAttrib> vDrawAttribBuffer{};
 };
 
 //renderer
@@ -148,8 +147,9 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
 
+class CWorldSurfaceModel;
 class CWorldSurfaceLeaf;
-void R_DrawWatersForLeaf(CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
+void R_DrawWatersForLeaf(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
 
 #define WATER_LEGACY_ENABLED				0x1ull
 #define WATER_UNDERWATER_ENABLED			0x2ull

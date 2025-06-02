@@ -371,6 +371,11 @@ void GL_BindVAO(GLuint VAO)
 	glBindVertexArray(VAO);
 }
 
+void GL_BindABO(GLuint ABO)
+{
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, ABO);
+}
+
 void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
@@ -420,10 +425,12 @@ void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, co
 	}
 }
 
+/*
+	EBO: Index Buffer Object
+*/
+
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data)
 {
-	//TODO: what if size == 0 ?
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	if (glBufferStorage)
 	{
@@ -441,6 +448,31 @@ void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+/*
+	ABO: Indirect Draw Attribute Buffer Object
+*/
+
+void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data)
+{
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, ABO);
+	//if (glBufferStorage)
+	//{
+	//	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, size, data, 0);
+	//}
+	//else
+	{
+		glBufferData(GL_DRAW_INDIRECT_BUFFER, size, data, GL_STATIC_DRAW);
+	}
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+}
+
+void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data)
+{
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, ABO);
+	glBufferData(GL_DRAW_INDIRECT_BUFFER, size, data, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)())
