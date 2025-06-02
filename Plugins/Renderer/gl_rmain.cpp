@@ -206,6 +206,8 @@ bool r_draw_portalview = false;
 
 int r_renderview_pass = 0;
 
+std::list<IDeferredFrameTask*> g_DeferredFrameTasks;
+
 int glx = 0;
 int gly = 0;
 int glwidth = 0;
@@ -333,6 +335,10 @@ cvar_t* r_drawlowerbody = NULL;
 cvar_t* r_drawlowerbodyattachments = NULL;
 
 cvar_t* r_leaf_lazy_load = NULL;
+
+cvar_t* r_wsurf_parallax_scale = NULL;
+cvar_t* r_wsurf_sky_fog = NULL;
+cvar_t* r_wsurf_zprepass = NULL;
 
 /*
 	Purpose : Check if we can render fog
@@ -2039,6 +2045,8 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
+	R_RunDeferredFrameTasks();
+
 	//Window resized?
 #if 1
 	if ((*width) != glwidth || (*height) != glheight)
@@ -2675,6 +2683,7 @@ void R_Init(void)
 
 void R_Shutdown(void)
 {
+	R_ClearDeferredFrameTasks();
 	R_ShutdownWater();
 	R_ShutdownStudio();
 	R_ShutdownShadow();
@@ -2703,6 +2712,7 @@ void R_NewMap(void)
 {
 	memset(&r_params, 0, sizeof(r_params));
 
+	R_ClearDeferredFrameTasksWithFlags(DEFERRED_FRAME_TASK_DESTROY_ON_CHANGE_LEVEL);
 	R_GenerateSceneUBO();
 	R_FreeWorldResources();
 	R_FreePortalResouces();
@@ -4252,6 +4262,62 @@ void R_DumpTextures_f(void)
 		if (pgltextures[j].texnum)
 		{
 			gEngfuncs.Con_Printf("[%s] texid[%d], servercount[%d]\n", pgltextures[j].identifier, pgltextures[j].texnum, pgltextures[j].servercount);
+		}
+	}
+}
+
+void R_AddDeferredFrameTask(IDeferredFrameTask* pTask)
+{
+	g_DeferredFrameTasks.emplace_back(pTask);
+}
+
+void R_ClearDeferredFrameTasks()
+{
+	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
+	{
+		auto pTask = (*it);
+
+		pTask->Destroy();
+
+		it = g_DeferredFrameTasks.erase(it);
+	}
+}
+
+void R_ClearDeferredFrameTasksWithFlags(int flags)
+{
+	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
+	{
+		auto pTask = (*it);
+
+		if (pTask->GetFlags() & flags)
+		{
+			pTask->Destroy();
+
+			it = g_DeferredFrameTasks.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+}
+
+void R_RunDeferredFrameTasks()
+{
+	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
+	{
+		auto pTask = (*it);
+
+		if (pTask->Run())
+		{
+			pTask->Destroy();
+
+			it = g_DeferredFrameTasks.erase(it);
+		}
+		else
+		{
+			// Task is not finished yet, we will run it again next frame
+			++it;
 		}
 	}
 }

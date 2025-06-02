@@ -6,10 +6,6 @@
 
 CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
-cvar_t *r_wsurf_parallax_scale;
-cvar_t *r_wsurf_sky_fog;
-cvar_t *r_wsurf_zprepass;
-
 float r_shadow_matrix[3][16] = { 0 };
 float r_world_matrix_inv[16] = { 0 };
 float r_projection_matrix_inv[16] = { 0 };
@@ -24,6 +20,8 @@ float r_zfar = 0;
 bool r_ortho = false;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
+
+int g_iCurrentFrameLeafLoadCount = 0;
 
 std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 
@@ -664,6 +662,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 		if (!strcmp(t->name, "sky"))
 		{
+#if 0
 			auto s = t->texturechain;
 
 			if (s)
@@ -685,6 +684,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				if (texchain.drawCount > 0)
 					pLeaf->TextureChainSky = texchain;
 			}
+#endif
 		}
 		else if (t->anim_total)
 		{
@@ -764,13 +764,12 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 								}
 
 								if (texchain.drawCount > 0)
-									pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
+									pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
 							}
 						}
 
 						delete[]texchainSurface;
 						delete[]texchainMapper;
-						//delete[]texchainArray;
 					}
 				}
 			}
@@ -810,7 +809,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 						}
 
 						if (texchain.drawCount > 0)
-							pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM].emplace_back(texchain);
+							pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM].emplace_back(texchain);
 					}
 				}
 			}
@@ -851,7 +850,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					}
 
 					if (texchain.drawCount > 0)
-						pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
+						pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
 				}
 			}
 
@@ -887,7 +886,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				}
 
 				if (texchain.drawCount > 0)
-					pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].emplace_back(texchain);
+					pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
 			}
 		}
 
@@ -895,6 +894,17 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 		t->texturechain = NULL;
 	}
+
+	CWorldSurfaceBrushTexChain texchain;
+
+	texchain.type = TEXCHAIN_STATIC;
+	texchain.texture = nullptr;
+	texchain.detailTextureCache = nullptr;
+	texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
+	texchain.polyCount = 0;
+	texchain.startDrawOffset = 0;
+
+	pLeaf->TextureChainSolid = texchain;
 }
 
 void R_GenerateWorldSurfaceModelLeafInternal(
@@ -951,6 +961,48 @@ void R_GenerateWorldSurfaceModelLeaf(CWorldSurfaceModel* pModel, int leafIndex)
 	R_GenerateWorldSurfaceModelLeafInternal(pModel, mod, leaf, leafIndex, framecount, visframecount, vDrawAttribBuffer);
 }
 
+IDeferredFrameTask* R_CreateDeferredFrameLoadLeafTask(CWorldSurfaceModel* pModel, int leafIndex)
+{
+	class CDeferredFrameLoadLeafTask : public IDeferredFrameTask
+	{
+	private:
+		CWorldSurfaceModel* m_pModel{};
+		int m_leafIndex{};
+	public:
+		CDeferredFrameLoadLeafTask(CWorldSurfaceModel* pModel, int leafIndex)
+		{
+			m_pModel = pModel;
+			m_leafIndex = leafIndex;
+		}
+
+		void Destroy() override
+		{
+			delete this;
+		}
+
+		bool Run() override
+		{
+			if (g_iCurrentFrameLeafLoadCount > 1)
+				return false;
+
+			gEngfuncs.Con_DPrintf(__FUNCTION__": Generating leaf for leaf index %d.\n", m_leafIndex);
+
+			R_GenerateWorldSurfaceModelLeaf(m_pModel, m_leafIndex);
+
+			g_iCurrentFrameLeafLoadCount++;
+
+			return true;
+		}
+
+		int GetFlags() const override
+		{
+			return DEFERRED_FRAME_TASK_DESTROY_ON_CHANGE_LEVEL;
+		}
+	};
+
+	return new CDeferredFrameLoadLeafTask(pModel, leafIndex);
+}
+
 /*
 	Generate leaf array for brush model
 */
@@ -991,6 +1043,15 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 				visframecount++;
 
 				R_GenerateWorldSurfaceModelLeafInternal(pModel, mod, leaf, leafIndex, framecount, visframecount, vDrawAttribBuffer);
+			}
+		}
+		else if ((int)r_leaf_lazy_load->value == 1)
+		{
+			for (auto leaf : vPossibleLeafs)
+			{
+				int leafIndex = R_GetWorldLeafIndex(mod, leaf);
+
+				R_AddDeferredFrameTask(R_CreateDeferredFrameLoadLeafTask(pModel, leafIndex));
 			}
 		}
  	}
@@ -1791,26 +1852,24 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	for(auto iTexChain = 0; iTexChain < 2; ++iTexChain)
+	const auto& texchain = pLeaf->TextureChainSolid;
+
+	if (texchain.drawCount > 0)
 	{
-		const auto& texChains = pLeaf->vTextureChain[iTexChain];
-		for (size_t i = 0; i < texChains.size(); ++i)
-		{
-			const auto& texchain = texChains[i];
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-			glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void *)(texchain.startDrawOffset), texchain.drawCount, 0);
-
-			r_wsurf_drawcall++;
-			r_wsurf_polys += texchain.polyCount;
-		}
+		r_wsurf_drawcall++;
+		r_wsurf_polys += texchain.polyCount;
 	}
 }
 
 void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
-	for (size_t i = 0; i < pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC].size(); ++i)
+	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC];
+
+	for (size_t i = 0; i < vTexChainList.size(); ++i)
 	{
-		auto &texchain = pLeaf->vTextureChain[WSURF_TEXCHAIN_STATIC][i];
+		const auto &texchain = vTexChainList[i];
 
 		auto base = texchain.texture;
 
@@ -2041,9 +2100,11 @@ texture_t *R_GetAnimatedTexture(texture_t *base)
 
 void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
-	for (size_t i = 0; i < pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM].size(); ++i)
+	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM];
+
+	for (size_t i = 0; i < vTexChainList.size(); ++i)
 	{
-		auto &texchain = pLeaf->vTextureChain[WSURF_TEXCHAIN_ANIM][i];
+		auto &texchain = vTexChainList[i];
 
 		auto texture = R_GetAnimatedTexture(texchain.texture);
 
