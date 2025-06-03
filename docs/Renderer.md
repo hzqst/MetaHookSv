@@ -115,7 +115,7 @@ The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://
 
 ### Console vars
 
-`r_light_dynamic` set to 1 to enable Deferred Shading and Dynamic Lights.
+`r_deferred_lighting` set to 1 to enable deferred shading pipeline.
 
 `r_flashlight_enable` is to enable or disable spotlight-based flashlights. (only available when `r_light_dynamic` set to 1)
 
@@ -626,7 +626,7 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `r_blend_gamma 0` blend transparent objects in linear space. This is may lead to brighter or darker blending result than vanilla GoldSrc.
 
-`r_blend_gamma 1` blend transparent objects in gamma space instead of linear space. This is the default behavior from vanilla GoldSrc. Note that deferred shading pipeline will not be availabel if `r_blend_gamma` enabled. and some buggy graphic drivers may not work well with `r_blend_gamma 1`.
+`r_blend_gamma 1` blend transparent objects in gamma space instead of linear space. This is the default behavior from vanilla GoldSrc. Note that deferred shading pipeline will not be available when `r_blend_gamma` enabled. and some buggy graphic drivers may not work well with `r_blend_gamma 1`.
 
 * Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
 
