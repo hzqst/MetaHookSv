@@ -658,8 +658,8 @@ WEBP (RGB8 / RGBA8)
 `r_wsurf_sky_fog 1` : 雾会影响skybox
 
 `r_studio_legacy_dlight 0`: 彻底禁止dlight作用于模型
-`r_studio_legacy_dlight 1`: dlight将会被在StudioDynamicLight API中被混合进光照参数中 （维持原版行为）
-`r_studio_legacy_dlight 2`: 使用着色器实时计算dlight对模型光照的贡献
+`r_studio_legacy_dlight 1`: dlight对模型光照的贡献将在CPU端计算与累加（维持原版行为）
+`r_studio_legacy_dlight 2`: 使用着色器实时计算每个dlight对模型光照的贡献（精度更高，但是可能增加GPU着色开销）
 
 `r_studio_legacy_elight 0`: 彻底禁止elight作用于模型
 `r_studio_legacy_elight 1`: elight可以作用于模型（维持原版行为）
