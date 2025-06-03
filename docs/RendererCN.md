@@ -654,6 +654,10 @@ WEBP (RGB8 / RGBA8)
 `r_wsurf_zprepass 0` : 禁用Z-Prepass优化。
 `r_wsurf_zprepass 1` : 启用Z-Prepass优化。
 
+* 当Z-Prepass优化启用时，每一帧会绘制两次世界。第一次绘制只有深度写入，第二次绘制会在第一次写入的深度的位置重新写入实际像素颜色。
+
+* 该优化会大幅减少在绘制世界时GPU上发生的无用像素着色计算（比如对被遮挡的像素计算阴影）
+
 `r_wsurf_sky_fog 0` : 雾不会影响skybox（维持原版行为）
 `r_wsurf_sky_fog 1` : 雾会影响skybox
 
