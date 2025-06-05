@@ -1316,8 +1316,8 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflect_texture);
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_STENCIL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflect_stencil_view_texture);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_DEPTH_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflect_depth_texture);
 
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, ReflectCache->refract_texture);
@@ -1336,7 +1336,7 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_STENCIL_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_DEPTH_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);

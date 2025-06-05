@@ -12,7 +12,7 @@ uniform float u_speed;
 layout(binding = WATER_BIND_BASE_TEXTURE) uniform sampler2D baseTex;
 layout(binding = WATER_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
 layout(binding = WATER_BIND_REFLECT_TEXTURE) uniform sampler2D reflectTex;
-//layout(binding = WATER_BIND_REFLECT_STENCIL_TEXTURE) uniform usampler2D reflectStencilTex;
+layout(binding = WATER_BIND_REFLECT_DEPTH_TEXTURE) uniform sampler2D reflectDepthTex;
 layout(binding = WATER_BIND_REFRACT_TEXTURE) uniform sampler2D refractTex;
 layout(binding = WATER_BIND_REFRACT_DEPTH_TEXTURE) uniform sampler2D refractDepthTex;
 
@@ -28,16 +28,6 @@ layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
 #endif
-
-vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
-{
-	vec4 clipSpaceLocation;	
-	clipSpaceLocation.xy = texCoord * 2.0-1.0;
-	clipSpaceLocation.z  = texture(refractDepthTex, texCoord).x * 2.0-1.0;
-	clipSpaceLocation.w  = 1.0;
-	vec4 homogenousLocation = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * clipSpaceLocation;
-	return homogenousLocation.xyz / homogenousLocation.w;
-}
 
 void main()
 {
@@ -113,14 +103,13 @@ void main()
 
 	#else
 
-		vec3 worldScene = vec3(0.0);
-
 		#if defined(DEPTH_ENABLED)
 
-			worldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
+			float sceneDepthValue = texture(refractDepthTex, vBaseTexCoord).x;
+			vec3 sceneWorldPos = GenerateWorldPositionFromDepth(vBaseTexCoord, sceneDepthValue);
 
-			float flDiffDistance = distance(worldScene.xyz, CameraUBO.viewpos.xyz) - distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
-			float flEdgeFeathering = clamp(flDiffDistance / u_depthfactor.z, 0.0, 1.0);
+			float flDistanceBetweenWaterSurfaceAndScene = distance(sceneWorldPos.xyz, CameraUBO.viewpos.xyz) - distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+			float flEdgeFeathering = clamp(flDistanceBetweenWaterSurfaceAndScene / u_depthfactor.z, 0.0, 1.0);
 			vOffsetTexCoord *= (flEdgeFeathering * flEdgeFeathering);
 
 		#endif
@@ -129,7 +118,7 @@ void main()
 
 		#if defined(DEPTH_ENABLED) && defined(REFRACT_ENABLED)
 
-			float flDiffZ = v_worldpos.z - worldScene.z;
+			float flDiffZ = v_worldpos.z - sceneWorldPos.z;
 
 			flWaterBlendAlpha = clamp( clamp( u_depthfactor.x * flDiffZ, 0.0, 1.0 ) + u_depthfactor.y, 0.0, 1.0 );
 
@@ -144,12 +133,17 @@ void main()
 		vReflectColor = ProcessOtherLinearColor(vReflectColor);
 
 		float flReflectFactor = clamp(pow(flFresnel, u_fresnelfactor.z), 0.0, u_fresnelfactor.w);
+		
+		#if defined(DEPTH_ENABLED)
 
-		//uint stencilValue = texture(reflectStencilTex, vReflectTexCoord).r;
-		//if((stencilValue & STENCIL_MASK_WATER) == 0)
-		//{
-		//	flReflectFactor = 0;
-		//}
+			float reflectSceneDepthValue = texture(reflectDepthTex, vReflectTexCoord).x;
+
+			vec3 reflectSceneWorldPos = GenerateWorldPositionFromDepth(vReflectTexCoord, reflectSceneDepthValue);
+
+			if(flEdgeFeathering < 0.1 && distance(reflectSceneWorldPos.xyz, v_worldpos.xyz) > 400)
+				flReflectFactor = 0;
+
+		#endif
 
 		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 

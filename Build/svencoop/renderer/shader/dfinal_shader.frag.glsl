@@ -67,7 +67,7 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
     return finalColor;
 }
 
-vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
+/*vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
     vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
 	vec4 inversed = CameraUBO.invProjMatrix * ndc;// going back from projected
@@ -79,7 +79,7 @@ vec2 GenerateProjectedPosition(vec3 pos){
 	vec4 samplePosition = CameraUBO.projMatrix * vec4(pos, 1.0);
 	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
 	return samplePosition.xy;
-}
+}*/
 
 vec3 GenerateWorldNormal(vec2 texcoord)
 {

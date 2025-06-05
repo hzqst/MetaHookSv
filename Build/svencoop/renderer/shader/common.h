@@ -127,7 +127,7 @@
 #define WATER_BIND_BASE_TEXTURE				0
 #define WATER_BIND_NORMAL_TEXTURE			1
 #define WATER_BIND_REFLECT_TEXTURE			2
-#define WATER_BIND_REFLECT_STENCIL_TEXTURE	3
+#define WATER_BIND_REFLECT_DEPTH_TEXTURE	3
 #define WATER_BIND_REFRACT_TEXTURE			4
 #define WATER_BIND_REFRACT_DEPTH_TEXTURE	5
 
@@ -374,6 +374,28 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 
 	return normalize(vec3(coord.x, y + 0.0001, coord.y));
 
+}
+
+vec3 GenerateViewPositionFromDepth(vec2 texCoord, float depth) {
+	vec4 ndc = vec4(texCoord * 2.0 - 1.0, depth, 1.0);
+	vec4 inversed = CameraUBO.invProjMatrix * ndc;
+	return inversed.xyz / inversed.w;
+}
+
+vec3 GenerateWorldPositionFromDepth(vec2 texCoord, float depth)
+{
+	vec4 clipSpaceLocation;
+	clipSpaceLocation.xy = texCoord * 2.0 - 1.0;
+	clipSpaceLocation.z = depth * 2.0 - 1.0;
+	clipSpaceLocation.w = 1.0;
+	vec4 inversed = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * clipSpaceLocation;
+	return inversed.xyz / inversed.w;
+}
+
+vec2 GenerateProjectedPosition(vec3 pos) {
+	vec4 samplePosition = CameraUBO.projMatrix * vec4(pos, 1.0);
+	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
+	return samplePosition.xy;
 }
 
 //Color Space Conversion
