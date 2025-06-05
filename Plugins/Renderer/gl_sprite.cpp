@@ -561,7 +561,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	glEnable(GL_ALPHA_TEST);
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		SpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}

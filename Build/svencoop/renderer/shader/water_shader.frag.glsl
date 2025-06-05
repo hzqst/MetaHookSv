@@ -9,11 +9,12 @@ uniform float u_normfactor;
 uniform float u_scale;
 uniform float u_speed;
 
-layout(binding = 0) uniform sampler2D baseTex;
-layout(binding = 1) uniform sampler2D normalTex;
-layout(binding = 2) uniform sampler2D reflectTex;
-layout(binding = 3) uniform sampler2D refractTex;
-layout(binding = 4) uniform sampler2D depthTex;
+layout(binding = WATER_BIND_BASE_TEXTURE) uniform sampler2D baseTex;
+layout(binding = WATER_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
+layout(binding = WATER_BIND_REFLECT_TEXTURE) uniform sampler2D reflectTex;
+//layout(binding = WATER_BIND_REFLECT_STENCIL_TEXTURE) uniform usampler2D reflectStencilTex;
+layout(binding = WATER_BIND_REFRACT_TEXTURE) uniform sampler2D refractTex;
+layout(binding = WATER_BIND_REFRACT_DEPTH_TEXTURE) uniform sampler2D refractDepthTex;
 
 in vec4 v_projpos;
 in vec3 v_worldpos;
@@ -30,13 +31,9 @@ layout(location = 3) out vec4 out_Specular;
 
 vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 {
-	#ifdef BINDLESS_ENABLED
-		sampler2D depthTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_DEPTH]);
-	#endif
-
 	vec4 clipSpaceLocation;	
 	clipSpaceLocation.xy = texCoord * 2.0-1.0;
-	clipSpaceLocation.z  = texture(depthTex, texCoord).x * 2.0-1.0;
+	clipSpaceLocation.z  = texture(refractDepthTex, texCoord).x * 2.0-1.0;
 	clipSpaceLocation.w  = 1.0;
 	vec4 homogenousLocation = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * clipSpaceLocation;
 	return homogenousLocation.xyz / homogenousLocation.w;
@@ -57,21 +54,14 @@ void main()
 
 #if defined(LEGACY_ENABLED)
 
-	#if defined(BINDLESS_ENABLED)
-		sampler2D baseTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_BASE]);
-	#endif
-
 	vFinalColor.xyz = texture(baseTex, v_diffusetexcoord.xy).xyz;
+	//vFinalColor.xyz = vec3(1, 1, 1);//test
 	vFinalColor.a = flWaterColorAlpha;
 
 	//The basetexture of water is in TexGamme Space and will need to convert to Linear Space
 	vFinalColor = ProcessDiffuseColor(vFinalColor);
 
 #else
-
-	#if defined(BINDLESS_ENABLED)
-		sampler2D normalTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_NORMAL]);
-	#endif
 
 	//calculate the normal texcoord and sample the normal vector from texture
 	vec2 vNormTexCoord1 = vec2(0.2, 0.15) * SceneUBO.cl_time + v_diffusetexcoord.xy; 
@@ -103,10 +93,6 @@ void main()
 	vec2 vOffsetTexCoord = normalize(vNormal).xy * flOffsetFactor;
 
 	#if defined(REFRACT_ENABLED)
-
-		#if defined(BINDLESS_ENABLED)
-			sampler2D refractTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_REFRACT]);
-		#endif
 
 		vec2 vRefractTexCoord = vBaseTexCoord + vOffsetTexCoord;
 		vec4 vRefractColor = texture(refractTex, vRefractTexCoord);
@@ -152,16 +138,18 @@ void main()
 		//Sample the reflect color (texcoord inverted)
 		vec2 vBaseTexCoord2 = vec2(v_projpos.x, -v_projpos.y) / v_projpos.w * 0.5 + 0.5;
 
-		#ifdef BINDLESS_ENABLED
-			sampler2D reflectTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_REFLECT]);
-		#endif
-
 		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;
 		vec4 vReflectColor = texture(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
 		vReflectColor = ProcessOtherLinearColor(vReflectColor);
 
 		float flReflectFactor = clamp(pow(flFresnel, u_fresnelfactor.z), 0.0, u_fresnelfactor.w);
+
+		//uint stencilValue = texture(reflectStencilTex, vReflectTexCoord).r;
+		//if((stencilValue & STENCIL_MASK_WATER) == 0)
+		//{
+		//	flReflectFactor = 0;
+		//}
 
 		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 

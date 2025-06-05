@@ -37,13 +37,13 @@ public:
 	void Reset()
 	{
 		Decals.clear();
-		WaterVBOs.clear();
+		RenderWaterModels.clear();
 		ReflectCaches.clear();
 		DeferredStudioPasses.clear();
 	}
 
 	std::vector<decal_t *> Decals;
-	std::vector<CWaterSurfaceModel *> WaterVBOs;
+	std::vector<CWaterSurfaceModel *> RenderWaterModels;
 	std::vector<water_reflect_cache_t *> ReflectCaches;
 	std::vector<int> DeferredStudioPasses;
 };

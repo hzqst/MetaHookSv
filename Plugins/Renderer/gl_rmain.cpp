@@ -403,6 +403,16 @@ bool R_IsRenderingWaterView(void)
 	return r_draw_reflectview || r_draw_refractview;
 }
 
+bool R_IsRenderingReflectView(void)
+{
+	return r_draw_reflectview;
+}
+
+bool R_IsRenderingRefractView(void)
+{
+	return r_draw_refractview;
+}
+
 /*
 	Purpose: Check if we are rendering viewmodel
 */
@@ -744,7 +754,7 @@ void R_DrawParticles(void)
 		}
 	}
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
@@ -1040,7 +1050,7 @@ void triapi_RenderMode(int mode)
 				}
 			}
 
-			if (r_draw_reflectview)
+			if (R_IsRenderingReflectView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -1099,7 +1109,7 @@ void triapi_RenderMode(int mode)
 				}
 			}
 
-			if (r_draw_reflectview)
+			if (R_IsRenderingReflectView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -1129,7 +1139,7 @@ void triapi_RenderMode(int mode)
 		{
 			program_state_t LegacySpriteProgramState = SPRITE_ALPHA_BLEND_ENABLED;
 
-			if (r_draw_reflectview)
+			if (R_IsRenderingReflectView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -3062,17 +3072,41 @@ void R_SetupGL(void)
 
 	if (R_IsRenderingShadowView())
 	{
-		r_viewport[0] = 0;
-		r_viewport[1] = 0;
-		r_viewport[2] = current_shadow_texture->size;
-		r_viewport[3] = current_shadow_texture->size;
+		auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
+
+		if (CurrentSceneFBO)
+		{
+			r_viewport[0] = 0;
+			r_viewport[1] = 0;
+			r_viewport[2] = CurrentSceneFBO->iWidth;
+			r_viewport[3] = CurrentSceneFBO->iHeight;
+		}
+		else
+		{
+			r_viewport[0] = 0;
+			r_viewport[1] = 0;
+			r_viewport[2] = current_shadow_texture->size;
+			r_viewport[3] = current_shadow_texture->size;
+		}
 	}
 	else if (R_IsRenderingWaterView())
 	{
-		r_viewport[0] = 0;
-		r_viewport[1] = 0;
-		r_viewport[2] = glwidth;
-		r_viewport[3] = glheight;
+		auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
+
+		if (CurrentSceneFBO)
+		{
+			r_viewport[0] = 0;
+			r_viewport[1] = 0;
+			r_viewport[2] = CurrentSceneFBO->iWidth;
+			r_viewport[3] = CurrentSceneFBO->iHeight;
+		}
+		else
+		{
+			r_viewport[0] = 0;
+			r_viewport[1] = 0;
+			r_viewport[2] = glwidth;
+			r_viewport[3] = glheight;
+		}
 	}
 	else
 	{

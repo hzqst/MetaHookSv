@@ -426,6 +426,7 @@ void R_RecursiveFindLeaves(mbasenode_t *basenode, std::set<mleaf_t *> &vLeafs)
 void R_MarkPVSForLeaf(mleaf_t *leaf, int visframecount)
 {
 	//Decompress vis bytes from world model.
+
 	auto vis = Mod_LeafPVS(leaf, (*cl_worldmodel));
 
 	for (int i = 0; i < (*cl_worldmodel)->numleafs; i++)
@@ -626,7 +627,7 @@ void R_GenerateIndicesForTexChain(model_t *mod, msurface_t *surf, CWorldSurfaceB
 	}
 }
 
-void R_GenerateWaterModels(model_t *mod, CWorldSurfaceWorldModel *pWorldModel, CWorldSurfaceLeaf* pLeaf)
+void R_GenerateResourceForWaterModels(model_t *mod, CWorldSurfaceWorldModel *pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
 	for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
 	{
@@ -924,6 +925,8 @@ void R_GenerateWorldSurfaceModelLeafInternal(
 
 	R_RecursiveLinkTextureChain(mod, mod->nodes, visframecount, framecount, pModel->pWorldModel, pLeaf);
 
+	R_GenerateResourceForWaterModels(mod, pModel->pWorldModel, pLeaf);
+
 	R_GenerateTexChain(mod, pModel->pWorldModel, pLeaf, vDrawAttribBuffer);
 
 	if (vDrawAttribBuffer.size() > 0)
@@ -938,7 +941,7 @@ void R_GenerateWorldSurfaceModelLeafInternal(
 
 void R_GenerateWorldSurfaceModelLeaf(CWorldSurfaceModel* pModel, int leafIndex)
 {
-	if (leafIndex < pModel->vLeaves.size() && pModel->vLeaves[leafIndex])
+	if (leafIndex != -1 && leafIndex < pModel->vLeaves.size() && pModel->vLeaves[leafIndex])
 	{
 		gEngfuncs.Con_DPrintf(__FUNCTION__": leafIndex %d already has a pLeaf!\n", leafIndex);
 		return;
@@ -1071,7 +1074,7 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 		R_BrushModelLinkTextureChain(mod, pWorldModel, pLeaf);
 
-		R_GenerateWaterModels(mod, pWorldModel, pLeaf);
+		R_GenerateResourceForWaterModels(mod, pWorldModel, pLeaf);
 
 		R_GenerateTexChain(mod, pWorldModel, pLeaf, vDrawAttribBuffer);
 
@@ -1840,7 +1843,7 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 	}
@@ -1852,6 +1855,15 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
+	if (r_draw_opaque)
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+	}
+	else
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+	}
+
 	const auto& texchain = pLeaf->TextureChainSolid;
 
 	if (texchain.drawCount > 0)
@@ -1861,6 +1873,10 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 		r_wsurf_drawcall++;
 		r_wsurf_polys += texchain.polyCount;
 	}
+
+	GL_EndStencil();
+
+	GL_UseProgram(0);
 }
 
 void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
@@ -1939,16 +1955,14 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 			}
 		}
 
-		if (!bUseZPrePass)
+		if (R_IsRenderingReflectView())
 		{
-			if (r_draw_reflectview)
-			{
-				WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
-			}
-			else if (g_bPortalClipPlaneEnabled[0])
-			{
-				WSurfProgramState |= WSURF_CLIP_ENABLED;
-			}
+			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+		}
+
+		if (g_bPortalClipPlaneEnabled[0])
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
 
 		if (R_IsRenderingShadowView())
@@ -2015,6 +2029,15 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
 
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		}
+
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -2024,6 +2047,10 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += texchain.polyCount;
+
+		GL_EndStencil();
+
+		GL_UseProgram(0);
 	}
 }
 
@@ -2174,16 +2201,14 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 			}
 		}
 
-		if (!bUseZPrePass)
+		if (R_IsRenderingReflectView())
 		{
-			if (r_draw_reflectview)
-			{
-				WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
-			}
-			else if (g_bPortalClipPlaneEnabled[0])
-			{
-				WSurfProgramState |= WSURF_CLIP_ENABLED;
-			}
+			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+		}
+
+		if (g_bPortalClipPlaneEnabled[0])
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
 
 		if (R_IsRenderingGBuffer())
@@ -2251,6 +2276,15 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		}
+
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -2260,6 +2294,10 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += texchain.polyCount;
+
+		GL_EndStencil();
+
+		GL_UseProgram(0);
 	}
 }
 
@@ -2317,15 +2355,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	bool bUseZPrePass = false;
 
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
-	}
-
 	CWorldSurfaceLeaf* pLeaf = NULL;
 
 	if (pModel->mod == (*cl_worldmodel))
@@ -2345,25 +2374,72 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 			if (pLeaf && pLeaf->hABO)
 			{
-				R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
-
-				if (R_ShouldDrawZPrePass())
+				if (R_IsRenderingWaterView())
 				{
-					glColorMask(0, 0, 0, 0);
+					auto pNoVisLeaf = pModel->vLeaves[0];
 
-					R_DrawWorldSurfaceLeafSolid(pLeaf);
+					if (!pNoVisLeaf && (int)r_leaf_lazy_load->value >= 1)
+					{
+						R_GenerateWorldSurfaceModelLeaf(pModel, 0);
 
-					glColorMask(1, 1, 1, 1);
+						pNoVisLeaf = pModel->vLeaves[0];
+					}
 
-					glDepthFunc(GL_EQUAL);
+					if (pNoVisLeaf && pNoVisLeaf->hABO)
+					{
+						R_DrawWorldSurfaceLeafBegin(pModel, pNoVisLeaf);
 
-					bUseZPrePass = true;
+						if (R_ShouldDrawZPrePass())
+						{
+							glColorMask(0, 0, 0, 0);
+
+							R_DrawWorldSurfaceLeafSolid(pNoVisLeaf);
+
+							glColorMask(1, 1, 1, 1);
+
+							glDepthFunc(GL_EQUAL);
+
+							bUseZPrePass = true;
+						}
+
+						R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf, false);
+						R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf, false);
+
+						R_DrawWorldSurfaceLeafEnd();
+
+						if (bUseZPrePass)
+						{
+							glDepthFunc(GL_LEQUAL);
+						}
+					}
 				}
+				else
+				{
+					R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
 
-				R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
-				R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
+					if (R_ShouldDrawZPrePass())
+					{
+						glColorMask(0, 0, 0, 0);
 
-				R_DrawWorldSurfaceLeafEnd();
+						R_DrawWorldSurfaceLeafSolid(pLeaf);
+
+						glColorMask(1, 1, 1, 1);
+
+						glDepthFunc(GL_EQUAL);
+
+						bUseZPrePass = true;
+					}
+
+					R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
+					R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
+
+					R_DrawWorldSurfaceLeafEnd();
+
+					if (bUseZPrePass)
+					{
+						glDepthFunc(GL_LEQUAL);
+					}
+				}
 			}
 		}
 		else
@@ -2392,13 +2468,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 			Sys_Error("R_DrawWSurfVBO: Invalid leaf index");
 		}
 	}
-	
-	if (bUseZPrePass)
-	{
-		glDepthFunc(GL_LEQUAL);
-	}
-
-	GL_EndStencil();
 
 	R_DrawDecals(ent);
 
@@ -2426,7 +2495,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 	if (pLeaf)
 	{
-		R_DrawWatersForLeaf(pModel, pLeaf, ent);
+		R_DrawWaters(pModel, pLeaf, ent);
 	}
 }
 
@@ -3570,6 +3639,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	}
 
 	auto normalmap_string = ValueForKey(ent, "normalmap");
+
 	if (normalmap_string)
 	{
 		pWaterControl->normalmap = normalmap_string;
@@ -3928,10 +3998,23 @@ void R_SetupCameraUBO(void)
 	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
 	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
 	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
-	CameraUBO.viewport[0] = glwidth;
-	CameraUBO.viewport[1] = glheight;
-	CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
-	CameraUBO.viewport[3] = 0;
+
+	auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
+
+	if (CurrentSceneFBO)
+	{
+		CameraUBO.viewport[0] = CurrentSceneFBO->iWidth;
+		CameraUBO.viewport[1] = CurrentSceneFBO->iHeight;
+		CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
+		CameraUBO.viewport[3] = 0;
+	}
+	else
+	{
+		CameraUBO.viewport[0] = glwidth;
+		CameraUBO.viewport[1] = glheight;
+		CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
+		CameraUBO.viewport[3] = 0;
+	}
 	memcpy(CameraUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
 	memcpy(CameraUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
 	memcpy(CameraUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
@@ -3965,7 +4048,7 @@ void R_SetupSceneUBO(void)
 
 	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], -g_CurrentReflectCache->planedist };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
@@ -4151,7 +4234,7 @@ void R_DrawWorld(void)
 	R_DrawSkyBox();
 
 	//Skip world meshes if we are drawing reflect texture for skybox.
-	if (r_draw_reflectview && g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	if (R_IsRenderingReflectView() && g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
 	{
 		
 	}

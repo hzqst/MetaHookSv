@@ -108,23 +108,17 @@ int HUD_Redraw(float time, int intermission)
 			glColor4f(1, 1, 1, 1);
 
 			glEnable(GL_TEXTURE_2D);
-			switch ((int)r_water_debug->value)
+			int texIndex = ((int)r_water_debug->value - 1) % 2;
+			int cacheIndex = ((int)r_water_debug->value - 1) / 2;
+			switch (texIndex)
 			{
+			case 0:
+				if (g_WaterReflectCaches[cacheIndex].reflect_texture)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_texture, glwidth / 2, glheight / 2);
+				break;
 			case 1:
-				if (g_WaterReflectCaches[0].reflectmap)
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].reflectmap, glwidth / 2, glheight / 2);
-				break;
-			case 2:
-				if (g_WaterReflectCaches[0].refractmap)
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].refractmap, glwidth / 2, glheight / 2);
-				break;
-			case 3:
-				if (g_WaterReflectCaches[1].reflectmap)
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].reflectmap, glwidth / 2, glheight / 2);
-				break;
-			case 4:
-				if (g_WaterReflectCaches[1].refractmap)
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
+				if (g_WaterReflectCaches[cacheIndex].refract_texture)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
 				break;
 			default:
 				break;

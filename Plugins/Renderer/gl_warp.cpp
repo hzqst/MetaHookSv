@@ -30,7 +30,7 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 	}
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 	}

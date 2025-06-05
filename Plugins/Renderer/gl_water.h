@@ -63,10 +63,11 @@ typedef struct
 
 typedef struct water_reflect_cache_s
 {
-	GLuint refractmap{};
-	GLuint depthrefrmap{};
-	GLuint reflectmap{};
-	GLuint depthreflmap{};
+	GLuint refract_texture{};
+	GLuint refract_depth_texture{};
+	GLuint reflect_texture{};
+	GLuint reflect_depth_texture{};
+	GLuint reflect_stencil_view_texture{};
 	GLsizei texwidth{};
 	GLsizei texheight{};
 	vec3_t normal{};
@@ -142,14 +143,13 @@ bool R_IsAboveWater(CWaterSurfaceModel *pWaterModel);
 void R_InitWater(void);
 void R_ShutdownWater(void);
 void R_RenderWaterPass(void);
-void R_NewMapWater(void);
 void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
 
 class CWorldSurfaceModel;
 class CWorldSurfaceLeaf;
-void R_DrawWatersForLeaf(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
+void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
 
 #define WATER_LEGACY_ENABLED				0x1ull
 #define WATER_UNDERWATER_ENABLED			0x2ull
@@ -173,5 +173,7 @@ layout(binding = 4) uniform sampler2D depthTex;
 #define WATER_BIND_BASE_TEXTURE				0
 #define WATER_BIND_NORMAL_TEXTURE			1
 #define WATER_BIND_REFLECT_TEXTURE			2
-#define WATER_BIND_REFRACT_TEXTURE			3
-#define WATER_BIND_DEPTH_TEXTURE			4
+#define WATER_BIND_REFLECT_STENCIL_TEXTURE	3
+#define WATER_BIND_REFRACT_TEXTURE			4
+#define WATER_BIND_REFRACT_DEPTH_TEXTURE	5
+

@@ -1149,7 +1149,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingReflectView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 	}

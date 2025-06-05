@@ -471,6 +471,8 @@ GLuint GL_GenDepthTexture(int w, int h);
 void GL_UploadDepthStencilTexture(int texid, int w, int h);
 GLuint GL_GenDepthStencilTexture(int w, int h);
 
+GLuint GL_CreateStencilViewForDepthTexture(int texId);
+
 GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor);
 void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor);
 
@@ -527,6 +529,8 @@ bool R_IsRenderingGBuffer();
 bool R_IsRenderingGammaBlending();
 bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
+bool R_IsRenderingReflectView(void);
+bool R_IsRenderingRefractView(void);
 bool R_IsRenderingViewModel(void);
 bool R_IsRenderingFlippedViewModel(void);
 bool R_IsLowerBodyEntity(cl_entity_t* ent);
@@ -650,6 +654,7 @@ extern bool g_bIsAoMDC;
 #define STENCIL_MASK_ALL						0xFF
 #define STENCIL_MASK_NONE						0
 #define STENCIL_MASK_WORLD						1
+#define STENCIL_MASK_WATER						2
 #define STENCIL_MASK_NO_BLOOM					8
 #define STENCIL_MASK_HAS_OUTLINE				0x10
 #define STENCIL_MASK_HAS_SHADOW					0x20

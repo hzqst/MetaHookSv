@@ -180,15 +180,34 @@ void R_FreeWaterVBO(CWaterSurfaceModel *WaterVBO)
 
 void R_FreeWaterReflectCache(water_reflect_cache_t *ReflectCache)
 {
-	if (ReflectCache->reflectmap)
+	if (ReflectCache->reflect_texture)
 	{
-		GL_DeleteTexture(ReflectCache->reflectmap);
-		ReflectCache->reflectmap = 0;
+		GL_DeleteTexture(ReflectCache->reflect_texture);
+		ReflectCache->reflect_texture = 0;
 	}
-	if (ReflectCache->depthreflmap)
+
+	if (ReflectCache->reflect_depth_texture)
 	{
-		GL_DeleteTexture(ReflectCache->depthreflmap);
-		ReflectCache->depthreflmap = 0;
+		GL_DeleteTexture(ReflectCache->reflect_depth_texture);
+		ReflectCache->reflect_depth_texture = 0;
+	}
+
+	if (ReflectCache->reflect_stencil_view_texture)
+	{
+		GL_DeleteTexture(ReflectCache->reflect_stencil_view_texture);
+		ReflectCache->reflect_stencil_view_texture = 0;
+	}
+
+	if (ReflectCache->refract_texture)
+	{
+		GL_DeleteTexture(ReflectCache->refract_texture);
+		ReflectCache->refract_texture = 0;
+	}
+
+	if (ReflectCache->refract_depth_texture)
+	{
+		GL_DeleteTexture(ReflectCache->refract_depth_texture);
+		ReflectCache->refract_depth_texture = 0;
 	}
 
 	ReflectCache->normal[0] = 0;
@@ -229,7 +248,7 @@ water_reflect_cache_t *R_FindReflectCache(int level, vec3_t normal, float planed
 {
 	for (int i = 0; i < g_iNumWaterReflectCaches; ++i)
 	{
-		if (g_WaterReflectCaches[i].reflectmap &&
+		if (g_WaterReflectCaches[i].reflect_texture &&
 			g_WaterReflectCaches[i].used &&
 
 			g_WaterReflectCaches[i].level == level &&
@@ -247,7 +266,7 @@ water_reflect_cache_t *R_FindEmptyReflectCache()
 {
 	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
 	{
-		if (!g_WaterReflectCaches[i].used || !g_WaterReflectCaches[i].reflectmap)
+		if (!g_WaterReflectCaches[i].used || !g_WaterReflectCaches[i].reflect_texture)
 		{
 			return &g_WaterReflectCaches[i];
 		}
@@ -272,37 +291,49 @@ water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, CWaterSurfaceMode
 		ReflectCache = R_FindEmptyReflectCache();
 		if (ReflectCache)
 		{
-			int texwidth = glwidth;
-			int texheight = glheight;
+			int texwidth = glwidth * 0.5f;
+			int texheight = glheight * 0.5f;
 
-			if (ReflectCache->refractmap && ReflectCache->texwidth != texwidth)
+			if (ReflectCache->refract_texture && ReflectCache->texwidth != texwidth)
 			{
-				GL_DeleteTexture(ReflectCache->refractmap);
-				GL_DeleteTexture(ReflectCache->depthrefrmap);
+				GL_DeleteTexture(ReflectCache->refract_texture);
+				GL_DeleteTexture(ReflectCache->refract_depth_texture);
 
-				ReflectCache->refractmap = 0;
-				ReflectCache->depthrefrmap = 0;
+				ReflectCache->refract_texture = 0;
+				ReflectCache->refract_depth_texture = 0;
 			}
 
-			if (ReflectCache->reflectmap && ReflectCache->texwidth != texwidth)
+			if (ReflectCache->reflect_texture && ReflectCache->texwidth != texwidth)
 			{
-				GL_DeleteTexture(ReflectCache->reflectmap);
-				GL_DeleteTexture(ReflectCache->depthreflmap);
+				GL_DeleteTexture(ReflectCache->reflect_texture);
+				GL_DeleteTexture(ReflectCache->reflect_depth_texture);
+				GL_DeleteTexture(ReflectCache->reflect_stencil_view_texture);
 
-				ReflectCache->reflectmap = 0;
-				ReflectCache->depthreflmap = 0;
+				ReflectCache->reflect_texture = 0;
+				ReflectCache->reflect_depth_texture = 0;
+				ReflectCache->reflect_stencil_view_texture = 0;
 			}
 
-			if (!ReflectCache->refractmap)
+			if (ReflectCache->refract_texture && ReflectCache->texwidth != texwidth)
 			{
-				ReflectCache->refractmap = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
-				ReflectCache->depthrefrmap = GL_GenDepthStencilTexture(texwidth, texheight);
+				GL_DeleteTexture(ReflectCache->refract_texture);
+				GL_DeleteTexture(ReflectCache->refract_depth_texture);
+
+				ReflectCache->refract_texture = 0;
+				ReflectCache->refract_depth_texture = 0;
 			}
 
-			if (!ReflectCache->reflectmap)
+			if (!ReflectCache->refract_texture)
 			{
-				ReflectCache->reflectmap = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
-				ReflectCache->depthreflmap = GL_GenDepthStencilTexture(texwidth, texheight);
+				ReflectCache->refract_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
+				ReflectCache->refract_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight);
+			}
+
+			if (!ReflectCache->reflect_texture)
+			{
+				ReflectCache->reflect_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
+				ReflectCache->reflect_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight);
+				ReflectCache->reflect_stencil_view_texture = GL_CreateStencilViewForDepthTexture(ReflectCache->reflect_depth_texture);
 			}
 
 			ReflectCache->texwidth = texwidth;
@@ -662,7 +693,7 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 	if (direction)
 	{
 		CDrawIndexAttrib drawAttrib;
-		drawAttrib.FirstIndexLocation = brushface->reverse_index_count;
+		drawAttrib.FirstIndexLocation = brushface->reverse_start_index;
 		drawAttrib.NumIndices = brushface->reverse_index_count;
 
 		pWaterModel->vDrawAttribBuffer.emplace_back(drawAttrib);
@@ -682,12 +713,59 @@ CWaterSurfaceModel *R_GetWaterSurfaceModel(model_t *mod, msurface_t *surf, int d
 	return pWaterModel;
 }
 
-void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
+void R_RenderWaterRefractView(water_reflect_cache_t* ReflectCache)
+{
+	r_draw_refractview = true;
+	g_CurrentReflectCache = ReflectCache;
+
+	GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refract_texture, 0, ReflectCache->refract_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
+	GL_SetCurrentSceneFBO(&s_WaterSurfaceFBO);
+
+	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
+
+	GammaToLinear(vecClearColor);
+
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+	R_PushRefDef();
+
+	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
+
+	auto saved_cl_waterlevel = *cl_waterlevel;
+	*cl_waterlevel = 0;
+
+	auto saved_r_drawentities = r_drawentities->value;
+	
+	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
+	{
+		r_drawentities->value = 1;
+	}
+	else
+	{
+		r_drawentities->value = 0;
+	}
+
+	R_RenderScene();
+
+	r_drawentities->value = saved_r_drawentities;
+	*cl_waterlevel = saved_cl_waterlevel;
+
+	R_PopRefDef();
+
+	r_draw_refractview = false;
+	g_CurrentReflectCache = NULL;
+
+	GL_SetCurrentSceneFBO(NULL);
+
+	ReflectCache->refractmap_ready = true;
+}
+
+void R_RenderWaterReflectView(water_reflect_cache_t *ReflectCache)
 {
 	r_draw_reflectview = true;
 	g_CurrentReflectCache = ReflectCache;
 
-	GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
+	GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->reflect_texture, 0, ReflectCache->reflect_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
 	GL_SetCurrentSceneFBO(&s_WaterSurfaceFBO);
 
 	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
@@ -722,9 +800,6 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 
-	auto saved_r_novis = r_novis->value;
-	r_novis->value = 1;
-
 	auto saved_r_drawentities = r_drawentities->value;
 
 	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
@@ -739,7 +814,6 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
-	r_novis->value = saved_r_novis;
 	*cl_waterlevel = saved_cl_waterlevel;
 
 	R_PopRefDef();
@@ -750,7 +824,44 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	GL_SetCurrentSceneFBO(NULL);
 }
 
-void R_RenderWaterPass_CollectWater(cl_entity_t *e)
+void R_RenderWaterPass_CollectWorldWater(CWaterSurfaceModel *pWaterModel)
+{
+	vec3_t origin = { 0, 0, 0 };
+
+	VectorSubtract((*r_refdef.vieworg), origin, modelorg);
+
+	auto pplane = pWaterModel->plane;
+
+	auto dot = DotProduct(modelorg, pWaterModel->normal) - pWaterModel->planedist;
+
+	if (dot > 0)
+	{
+		g_VisibleWaterEntity.emplace_back(gEngfuncs.GetEntityByIndex(0));
+		g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+
+		if ((*cl_waterlevel) >= 2)
+		{
+			auto pSourcePalette = pWaterModel->texture->pPal;
+
+			gWaterColor->r = pSourcePalette[9];
+			gWaterColor->g = pSourcePalette[10];
+			gWaterColor->b = pSourcePalette[11];
+			cshift_water->destcolor[0] = pSourcePalette[9];
+			cshift_water->destcolor[1] = pSourcePalette[10];
+			cshift_water->destcolor[2] = pSourcePalette[11];
+			cshift_water->percent = pSourcePalette[12];
+
+			if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+			{
+				gWaterColor->r = pSourcePalette[0];
+				gWaterColor->g = pSourcePalette[1];
+				gWaterColor->b = pSourcePalette[2];
+			}
+		}
+	}
+}
+
+void R_RenderWaterPass_CollectEntityWater(cl_entity_t *e)
 {
 	vec3_t entity_mins, entity_maxs;
 
@@ -867,6 +978,7 @@ void R_RenderWaterPass(void)
 	{
 		viewleaf = Mod_PointInLeaf(r_origin, (*cl_worldmodel));
 	}
+
 	R_SetupGL();
 	R_SetFrustum();
 
@@ -880,13 +992,9 @@ void R_RenderWaterPass(void)
 
 		if (pLeaf)
 		{
-			//TODO Frustum Culling for world water?
 			for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
 			{
-				auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
-
-				g_VisibleWaterEntity.emplace_back(gEngfuncs.GetEntityByIndex(0));
-				g_VisibleWaterSurfaceModels.emplace_back(pWaterModel);
+				R_RenderWaterPass_CollectWorldWater(pLeaf->vWaterSurfaceModels[i]);
 			}
 		}
 	}
@@ -897,7 +1005,7 @@ void R_RenderWaterPass(void)
 
 		if (e->model && e->model->type == mod_brush)
 		{
-			R_RenderWaterPass_CollectWater(e);
+			R_RenderWaterPass_CollectEntityWater(e);
 		}
 	}
 
@@ -921,7 +1029,7 @@ void R_RenderWaterPass(void)
 
 		if (pEntityComponent)
 		{
-			pEntityComponent->WaterVBOs.emplace_back(pWaterModel);
+			pEntityComponent->RenderWaterModels.emplace_back(pWaterModel);
 			pEntityComponent->ReflectCaches.emplace_back(pReflectCache);
 		}
 	}
@@ -932,7 +1040,8 @@ void R_RenderWaterPass(void)
 		{
 			if (g_WaterReflectCaches[i].used)
 			{
-				R_RenderReflectView(&g_WaterReflectCaches[i]);
+				R_RenderWaterRefractView(&g_WaterReflectCaches[i]);
+				R_RenderWaterReflectView(&g_WaterReflectCaches[i]);
 			}
 		}
 	}
@@ -967,18 +1076,83 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		color[3] = (*r_blend);
 
-	if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
+	if (R_IsRenderingReflectView())
 	{
+#if 0
+		//Mark water surface as STENCIL_MASK_WATER
+		glColorMask(0, 0, 0, 0);
+
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_WATER, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_WATER);
+		}
+
+		float scale;
+
+		if (bIsAboveWater)
+			scale = (*currententity)->curstate.scale;
+		else
+			scale = -(*currententity)->curstate.scale;
+
+		program_state_t WaterProgramState = WATER_LEGACY_ENABLED;
+
+		if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			WaterProgramState |= WATER_ADDITIVE_BLEND_ENABLED;
+		else if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+			WaterProgramState |= WATER_ALPHA_BLEND_ENABLED;
+
+		if (R_IsRenderingGammaBlending())
+		{
+			WaterProgramState |= WATER_GAMMA_BLEND_ENABLED;
+		}
+
+		glDisable(GL_CULL_FACE);
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(WaterProgramState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
+
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, scale);
+
+		if (prog.u_speed != -1)
+			glUniform1f(prog.u_speed, pWaterModel->speedrate);
+
+		GL_Bind(pWaterModel->texture->gl_texturenum);
+
+		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += pWaterModel->polyCount;
+
+		glEnable(GL_CULL_FACE);
+
+		GL_UseProgram(0);
+
+		GL_EndStencil();
+
+		glColorMask(1, 1, 1, 1);
+#endif
+	}
+	else if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
+	{
+#if 0
 		if (!ReflectCache->refractmap_ready)
 		{
 			if (r_draw_gbuffer)
 			{
 				R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 
-				//We are going to write into refractmap and depthrefrmap
-				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				//We are going to write into refract_texture and refract_depth_texture
+				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refract_texture, 0, ReflectCache->refract_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
 				
-				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
+				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refract_texture and ReflectCache->refract_depth_texture
 				//The output is in linear space
 				R_BlitGBufferToFrameBuffer(&s_WaterSurfaceFBO, true, true, true);
 
@@ -994,8 +1168,8 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 			{
 				R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 
-				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
-				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refract_texture and ReflectCache->refract_depth_texture
+				GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refract_texture, 0, ReflectCache->refract_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
 				
 				if (R_IsRenderingGammaBlending())
 				{
@@ -1022,7 +1196,7 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 
 			ReflectCache->refractmap_ready = true;
 		}
-
+#endif
 		if (r_draw_opaque)
 		{
 			GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
@@ -1140,32 +1314,39 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 		glBindTexture(GL_TEXTURE_2D, pWaterModel->normalmap);
 
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflectmap);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflect_texture);
+
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_STENCIL_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflect_stencil_view_texture);
 
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, ReflectCache->refractmap);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->refract_texture);
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_DEPTH_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, ReflectCache->depthrefrmap);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_DEPTH_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->refract_depth_texture);
 
 		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += pWaterModel->polyCount;
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_BASE_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_DEPTH_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_DEPTH_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_STENCIL_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		glActiveTexture(GL_TEXTURE0);
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE0 + WATER_BIND_BASE_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glDisable(GL_BLEND);
 
@@ -1370,9 +1551,9 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 	R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
 }
 
-void R_DrawWatersForLeaf(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
+void R_DrawWaters(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf *pLeaf, cl_entity_t *ent)
 {
-	if (R_IsRenderingWaterView())
+	if (R_IsRenderingRefractView())
 		return;
 
 	if (R_IsRenderingShadowView())
@@ -1381,13 +1562,23 @@ void R_DrawWatersForLeaf(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf *pLeaf, c
 	if (!pLeaf->vWaterSurfaceModels.size())
 		return;
 
-	auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, false);
-
-	if (!pEntityComponentContainer)
-		return;
-
-	for (size_t i = 0; i < pEntityComponentContainer->WaterVBOs.size(); ++i)
+	if (R_IsRenderingReflectView())
 	{
-		R_DrawWaterSurfaceModel(pModel, pLeaf, pEntityComponentContainer->WaterVBOs[i], pEntityComponentContainer->ReflectCaches[i], ent);
+		for (auto pWaterModel : pLeaf->vWaterSurfaceModels)
+		{
+			R_DrawWaterSurfaceModel(pModel, pLeaf, pWaterModel, nullptr, ent);
+		}
+	}
+	else
+	{
+		auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, false);
+
+		if (!pEntityComponentContainer)
+			return;
+
+		for (size_t i = 0; i < pEntityComponentContainer->RenderWaterModels.size(); ++i)
+		{
+			R_DrawWaterSurfaceModel(pModel, pLeaf, pEntityComponentContainer->RenderWaterModels[i], pEntityComponentContainer->ReflectCaches[i], ent);
+		}
 	}
 }

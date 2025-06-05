@@ -355,6 +355,20 @@ GLuint GL_GenDepthStencilTexture(int w, int h)
 	return texid;
 }
 
+GLuint GL_CreateStencilViewForDepthTexture(int texId)
+{
+	GLuint stencilviewtexid = GL_GenTexture();
+	glTextureView(stencilviewtexid, GL_TEXTURE_2D, texId, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
+
+	glBindTexture(GL_TEXTURE_2D, stencilviewtexid);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return stencilviewtexid;
+}
+
 void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
 {
 	glBindTexture(GL_TEXTURE_2D, texid);
