@@ -140,8 +140,10 @@ void main()
 
 			vec3 reflectSceneWorldPos = GenerateWorldPositionFromDepth(vReflectTexCoord, reflectSceneDepthValue);
 
-			if(flEdgeFeathering < 0.1 && distance(reflectSceneWorldPos.xyz, v_worldpos.xyz) > 400)
-				flReflectFactor = 0;
+			float flDistanceBetweenWaterSurfaceAndReflectScene = distance(reflectSceneWorldPos.xyz, v_worldpos.xyz);
+
+			if(flDistanceBetweenWaterSurfaceAndReflectScene > 400.0)
+				flReflectFactor *= (400.0 / flDistanceBetweenWaterSurfaceAndReflectScene);
 
 		#endif
 
