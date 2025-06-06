@@ -241,10 +241,15 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(SHADOW_TEXTURE_ENABLED)
 
+    uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
+
+    if((stencilValue & STENCIL_MASK_WATER) == 0)
+    {
         float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
         Color.r *= flShadowIntensity;
         Color.g *= flShadowIntensity;
         Color.b *= flShadowIntensity;
+    }
 
 #endif
 

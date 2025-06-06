@@ -2459,7 +2459,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE + lightmap_idx);
+				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
 				glActiveTexture(GL_TEXTURE0);
 			}
@@ -2605,7 +2605,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE + lightmap_idx);
+				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 			}
 		}

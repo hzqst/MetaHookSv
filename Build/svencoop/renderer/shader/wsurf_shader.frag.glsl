@@ -13,10 +13,10 @@ layout(binding = WSURF_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
 layout(binding = WSURF_BIND_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
 layout(binding = WSURF_BIND_SPECULAR_TEXTURE) uniform sampler2D specularTex;
 layout(binding = WSURF_BIND_SHADOWMAP_TEXTURE) uniform sampler2DArray shadowmapTexArray;
-layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE) uniform sampler2DArray lightmapTexArray_0;
-layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 1)) uniform sampler2DArray lightmapTexArray_1;
-layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 2)) uniform sampler2DArray lightmapTexArray_2;
-layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 3)) uniform sampler2DArray lightmapTexArray_3;
+layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_0) uniform sampler2DArray lightmapTexArray_0;
+layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_1) uniform sampler2DArray lightmapTexArray_1;
+layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_2) uniform sampler2DArray lightmapTexArray_2;
+layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapTexArray_3;
 
 in vec3 v_worldpos;
 in vec3 v_normal;

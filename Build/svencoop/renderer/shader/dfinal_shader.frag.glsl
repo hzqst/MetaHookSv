@@ -67,20 +67,6 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
     return finalColor;
 }
 
-/*vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
-    vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
-	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = CameraUBO.invProjMatrix * ndc;// going back from projected
-	inversed /= inversed.w;
-	return inversed.xyz;
-}
-
-vec2 GenerateProjectedPosition(vec3 pos){
-	vec4 samplePosition = CameraUBO.projMatrix * vec4(pos, 1.0);
-	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
-	return samplePosition.xy;
-}*/
-
 vec3 GenerateWorldNormal(vec2 texcoord)
 {
     vec4 worldnormColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_WORLDNORM));
@@ -179,8 +165,11 @@ vec4 ScreenSpaceReflection()
     return ScreenSpaceReflectionInternal(position, reflectionDirection);
 }
 
-float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
+float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity, uint stencilValue)
 {
+	if((stencilValue & STENCIL_MASK_WATER) == STENCIL_MASK_WATER)
+		return 0;
+
 	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
 	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w + 0.001);
 	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
@@ -195,8 +184,9 @@ void main()
     vec4 lightmapColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
 	vec4 worldnormColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_WORLDNORM));
     vec4 specularColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
+	uint stencilValue = texture(stencilTex, texCoord).r;
 
-	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z);
+	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z, stencilValue);
 	lightmapColor.xyz *= (1.0 - shadowIntensity);
 
 #if defined(SSR_ENABLED)
@@ -211,8 +201,6 @@ void main()
     vec4 finalColor = diffuseColor * lightmapColor;
 
 #if !defined(SKY_FOG_ENABLED)
-
-	uint stencilValue = texture(stencilTex, texCoord).r;
 
 	if((stencilValue & STENCIL_MASK_HAS_FOG) == 0)
 		out_FragColor = finalColor;
