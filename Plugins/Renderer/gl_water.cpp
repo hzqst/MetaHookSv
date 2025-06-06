@@ -6,7 +6,6 @@ vec3_t g_CurrentCameraView;
 
 //cvar
 cvar_t *r_water = NULL;
-cvar_t *r_water_forcetrans = NULL;
 cvar_t *r_water_debug = NULL;
 
 water_reflect_cache_t *g_CurrentReflectCache = NULL;
@@ -378,7 +377,6 @@ void R_ShutdownWater(void)
 void R_InitWater(void)
 {
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_forcetrans = gEngfuncs.pfnRegisterVariable("r_water_forcetrans", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 }
 
@@ -1214,24 +1212,13 @@ void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLea
 		if (bIsAboveWater)
 			WaterProgramState |= WATER_DEPTH_ENABLED;
 
-		if (r_water_forcetrans->value)
+		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
 		{
 			WaterProgramState |= WATER_REFRACT_ENABLED;
 			WaterProgramState |= WATER_ALPHA_BLEND_ENABLED;
 
 			if (color[3] > pWaterModel->maxtrans)
 				color[3] = pWaterModel->maxtrans;
-		}
-		else
-		{
-			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				WaterProgramState |= WATER_REFRACT_ENABLED;
-				WaterProgramState |= WATER_ALPHA_BLEND_ENABLED;
-
-				if (color[3] > pWaterModel->maxtrans)
-					color[3] = pWaterModel->maxtrans;
-			}
 		}
 
 		if (!bIsAboveWater)

@@ -109,8 +109,8 @@ void main()
 			vec3 sceneWorldPos = GenerateWorldPositionFromDepth(vBaseTexCoord, sceneDepthValue);
 
 			float flDistanceBetweenWaterSurfaceAndScene = distance(sceneWorldPos.xyz, CameraUBO.viewpos.xyz) - distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
-			float flEdgeFeathering = clamp(flDistanceBetweenWaterSurfaceAndScene / u_depthfactor.z, 0.0, 1.0);
-			vOffsetTexCoord *= (flEdgeFeathering * flEdgeFeathering);
+			float flRefractEdgeFeathering = clamp(flDistanceBetweenWaterSurfaceAndScene / u_depthfactor.z, 0.0, 1.0);
+			vOffsetTexCoord *= (flRefractEdgeFeathering * flRefractEdgeFeathering);
 
 		#endif
 
@@ -138,12 +138,8 @@ void main()
 
 			float reflectSceneDepthValue = texture(reflectDepthTex, vReflectTexCoord).x;
 
-			vec3 reflectSceneWorldPos = GenerateWorldPositionFromDepth(vReflectTexCoord, reflectSceneDepthValue);
-
-			float flDistanceBetweenWaterSurfaceAndReflectScene = distance(reflectSceneWorldPos.xyz, v_worldpos.xyz);
-
-			if(flDistanceBetweenWaterSurfaceAndReflectScene > 400.0)
-				flReflectFactor *= (400.0 / flDistanceBetweenWaterSurfaceAndReflectScene);
+			if(reflectSceneDepthValue == 1)
+				flReflectFactor = 0;
 
 		#endif
 
@@ -152,7 +148,6 @@ void main()
 		vFinalColor.a = flWaterBlendAlpha;
 
 		//The incoming vRefractColor and vReflectColor are always in linear space
-
 
 	#endif
 

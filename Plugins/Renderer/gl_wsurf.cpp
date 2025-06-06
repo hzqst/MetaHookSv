@@ -512,10 +512,10 @@ void R_RecursiveLinkTextureChain(model_t *mod, mbasenode_t *basenode, int visfra
 			continue;
 		}
 
-		if (surf->flags & SURF_DRAWSKY)
-		{
-			continue;
-		}
+		//if (surf->flags & SURF_DRAWSKY)
+		//{
+		//	continue;
+		//}
 
 		if (surf->flags & SURF_DRAWTURB)
 		{
@@ -538,10 +538,10 @@ void R_BrushModelLinkTextureChain(model_t *mod, CWorldSurfaceWorldModel *pWorldM
 
 		auto pplane = surf->plane;
 
-		if (surf->flags & SURF_DRAWSKY)
-		{
-			continue;
-		}
+		//if (surf->flags & SURF_DRAWSKY)
+		//{
+		//	continue;
+		//}
 
 		if (surf->flags & SURF_DRAWTURB)
 		{
@@ -663,7 +663,6 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 		if (!strcmp(t->name, "sky"))
 		{
-#if 0
 			auto s = t->texturechain;
 
 			if (s)
@@ -685,7 +684,6 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				if (texchain.drawCount > 0)
 					pLeaf->TextureChainSky = texchain;
 			}
-#endif
 		}
 		else if (t->anim_total)
 		{
@@ -2301,6 +2299,121 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 	}
 }
 
+void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+{
+	const auto& texchain = pLeaf->TextureChainSky;
+
+	if (!texchain.drawCount)
+		return;
+
+	auto texture = texchain.texture;
+
+	program_state_t WSurfProgramState = 0;
+
+	if (texture)
+	{
+		WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+
+		GL_Bind(texture->gl_texturenum);
+	}
+
+	if (R_IsRenderingReflectView())
+	{
+		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+	}
+
+	if (g_bPortalClipPlaneEnabled[0])
+	{
+		WSurfProgramState |= WSURF_CLIP_ENABLED;
+	}
+
+	if (R_IsRenderingGBuffer())
+	{
+		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+
+		WSurfProgramState &= ~(WSURF_LEGACY_DLIGHT_ENABLED);
+	}
+
+	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+	{
+		if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+			WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+		else
+			WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+	}
+
+	if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+	{
+		WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
+	}
+
+	if (!R_IsRenderingGBuffer())
+	{
+		if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+		{
+
+		}
+		else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+		{
+
+		}
+		else
+		{
+			if (R_IsRenderingFog())
+			{
+				if (r_fog_mode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+				}
+			}
+		}
+	}
+
+	if (R_IsRenderingGammaBlending())
+	{
+		WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+	}
+
+	if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
+	{
+		WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
+	}
+
+	if (R_IsRenderingShadowView())
+	{
+		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+	}
+
+	if (r_draw_opaque)
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+	}
+	else
+	{
+		GL_BeginStencilWrite(0, STENCIL_MASK_HAS_DECAL);
+	}
+
+	wsurf_program_t prog = { 0 };
+	R_UseWSurfProgram(WSurfProgramState, &prog);
+
+	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+
+	r_wsurf_drawcall++;
+	r_wsurf_polys += texchain.polyCount;
+
+	GL_EndStencil();
+
+	GL_UseProgram(0);
+}
+
 float R_ScrollSpeed(void)
 {
 	float scrollSpeed = ((*currententity)->curstate.rendercolor.b + ((*currententity)->curstate.rendercolor.g << 8)) / 16.0;
@@ -2404,6 +2517,12 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 						R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf, false);
 						R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf, false);
+
+						glColorMask(0, 0, 0, 0);
+
+						R_DrawWorldSurfaceLeafSky(pModel, pNoVisLeaf, false);
+
+						glColorMask(1, 1, 1, 1);
 
 						R_DrawWorldSurfaceLeafEnd();
 

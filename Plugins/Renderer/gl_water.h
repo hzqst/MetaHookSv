@@ -127,7 +127,6 @@ extern int g_iNumWaterReflectCaches;
 
 //cvar
 extern cvar_t *r_water;
-extern cvar_t *r_water_forcetrans;
 extern cvar_t *r_water_debug;
 
 typedef struct

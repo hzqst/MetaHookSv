@@ -180,7 +180,7 @@ public:
 	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChainList[WSURF_TEXCHAIN_LIST_MAX];
 	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
-	//CWorldSurfaceBrushTexChain TextureChainSky;
+	CWorldSurfaceBrushTexChain TextureChainSky;
 	CWorldSurfaceBrushTexChain TextureChainSolid;
 	CWorldSurfaceModel* pModel{};
 };
@@ -487,7 +487,6 @@ void R_DrawWaterSurfaceModel(CWaterSurfaceModel* pWaterModel, water_reflect_cach
 #define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
 #define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000ull
 #define WSURF_SHADOWMAP_LOW_ENABLED			0x10000ull
-//#define WSURF_BINDLESS_ENABLED				0x20000ull
 #define WSURF_SKYBOX_ENABLED				0x40000ull
 #define WSURF_DECAL_ENABLED					0x80000ull
 #define WSURF_CLIP_ENABLED					0x100000ull

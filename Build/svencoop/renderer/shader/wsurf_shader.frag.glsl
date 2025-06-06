@@ -3,24 +3,20 @@
 #extension GL_EXT_texture_array : require
 #extension GL_EXT_gpu_shader4 : require
 
-#ifdef BINDLESS_ENABLED
-#extension GL_ARB_shader_draw_parameters : require
-#endif
-
 #include "common.h"
 
 uniform float u_parallaxScale;
 
-layout(binding = 0) uniform sampler2D diffuseTex;
-layout(binding = 1) uniform sampler2D detailTex;
-layout(binding = 2) uniform sampler2D normalTex;
-layout(binding = 3) uniform sampler2D parallaxTex;
-layout(binding = 4) uniform sampler2D specularTex;
-layout(binding = 5) uniform sampler2DArray shadowmapTexArray;
-layout(binding = 6) uniform sampler2DArray lightmapTexArray_0;
-layout(binding = 7) uniform sampler2DArray lightmapTexArray_1;
-layout(binding = 8) uniform sampler2DArray lightmapTexArray_2;
-layout(binding = 9) uniform sampler2DArray lightmapTexArray_3;
+layout(binding = WSURF_BIND_DIFFUSE_TEXTURE) uniform sampler2D diffuseTex;
+layout(binding = WSURF_BIND_DETAIL_TEXTURE) uniform sampler2D detailTex;
+layout(binding = WSURF_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
+layout(binding = WSURF_BIND_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
+layout(binding = WSURF_BIND_SPECULAR_TEXTURE) uniform sampler2D specularTex;
+layout(binding = WSURF_BIND_SHADOWMAP_TEXTURE) uniform sampler2DArray shadowmapTexArray;
+layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE) uniform sampler2DArray lightmapTexArray_0;
+layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 1)) uniform sampler2DArray lightmapTexArray_1;
+layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 2)) uniform sampler2DArray lightmapTexArray_2;
+layout(binding = (WSURF_BIND_LIGHTMAP_TEXTURE + 3)) uniform sampler2DArray lightmapTexArray_3;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -35,18 +31,6 @@ in vec2 v_parallaxtexcoord;
 in vec2 v_speculartexcoord;
 in vec4 v_shadowcoord[3];
 in vec4 v_projpos;
-
-#if defined(BINDLESS_ENABLED)
-
-	#if defined(SKYBOX_ENABLED)
-		flat in int v_drawid;
-	#elif defined(DECAL_ENABLED)
-		flat in int v_decalindex;
-	#else
-		flat in int v_texindex;
-	#endif
-
-#endif
 
 #if defined(SKYBOX_ENABLED)
 
@@ -108,35 +92,10 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 
 #endif
 
-#if defined(BINDLESS_ENABLED)
-
-	sampler_handle_t GetCurrentTextureHandle(int type)
-	{
-		#if defined(SKYBOX_ENABLED)
-			texture_handle_t handle = SkyboxSSBO[v_drawid];
-		#elif defined(DECAL_ENABLED)
-			texture_handle_t handle = DecalSSBO[v_decalindex * TEXTURE_SSBO_MAX + type];
-		#else
-			texture_handle_t handle = TextureSSBO[v_texindex * TEXTURE_SSBO_MAX + type];
-		#endif
-
-		#if defined(INT64_BINDLESS_ENABLED)
-			return uvec2(uint(handle), uint(handle >> 32));
-		#else
-			return handle;
-		#endif
-	}
-
-#endif
-
 #if defined(NORMALTEXTURE_ENABLED)
 
 vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 {
-#if defined(BINDLESS_ENABLED)
-	sampler2D normalTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_NORMAL));
-#endif
-
     // Create TBN matrix. from tangent to world space
     mat3 TBN = mat3(normalize(T), normalize(B), normalize(N));
 
@@ -158,10 +117,6 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 
 vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld, vec2 baseTexcoord)
 {
-#if defined(BINDLESS_ENABLED)
-	sampler2D parallaxTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_PARALLAX));
-#endif
-
     // Create TBN matrix.
     mat3 TBN = mat3(normalize(T), normalize(B), normalize(N));
 
@@ -344,17 +299,9 @@ void main()
 
 	#if defined(REPLACETEXTURE_ENABLED)
 
-		#if defined(BINDLESS_ENABLED)
-			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_REPLACE));
-		#endif
-
 		baseTexcoord = vec2(v_diffusetexcoord.x * v_replacetexcoord.x, v_diffusetexcoord.y * v_replacetexcoord.y);
 
 	#else
-
-		#if defined(BINDLESS_ENABLED)
-			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
-		#endif
 
 		baseTexcoord = v_diffusetexcoord.xy;
 
@@ -452,10 +399,6 @@ void main()
 
 #if defined(DETAILTEXTURE_ENABLED)
 
-	#if defined(BINDLESS_ENABLED)
-		sampler2D detailTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DETAIL));
-	#endif
-
 	vec2 detailTexCoord = vec2(baseTexcoord.x * v_detailtexcoord.x, baseTexcoord.y * v_detailtexcoord.y);
 	vec4 detailColor = texture(detailTex, detailTexCoord);
     detailColor.xyz *= 2.0;
@@ -492,10 +435,6 @@ void main()
 
 		#if defined(SPECULARTEXTURE_ENABLED)
 		
-			#if defined(BINDLESS_ENABLED)
-				sampler2D specularTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_SPECULAR));
-			#endif
-
 			vec2 specularTexCoord = vec2(baseTexcoord.x * v_speculartexcoord.x, baseTexcoord.y * v_speculartexcoord.y);
 			specularColor.xy = texture(specularTex, specularTexCoord).xy;
 
