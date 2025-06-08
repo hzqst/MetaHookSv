@@ -624,9 +624,9 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `brightness` is to shift up the lightgamma and make lightmaps brighter.
 
-`r_blend_gamma 0` blend transparent objects in linear space. This is may lead to brighter or darker blending result than vanilla GoldSrc.
+`r_gamma_blend 0` blend transparent objects in linear space. This is may lead to brighter or darker blending result than vanilla GoldSrc.
 
-`r_blend_gamma 1` blend transparent objects in gamma space instead of linear space. This is the default behavior from vanilla GoldSrc. Note that deferred shading pipeline will not be available when `r_blend_gamma` enabled. and some buggy graphic drivers may not work well with `r_blend_gamma 1`.
+`r_gamma_blend 1` blend transparent objects in gamma space instead of linear space. This is the default behavior from vanilla GoldSrc. Note that deferred shading pipeline will not be available when `r_gamma_blend` enabled. and some buggy graphic drivers may not work well with `r_gamma_blend 1`.
 
 * Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
 

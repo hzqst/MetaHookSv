@@ -38,13 +38,14 @@ public:
 		m_pWaterShader = new CCvarToggleCheckButton(this, "WaterShader", "#GameUI_WaterShader", "r_water");
 		m_pDynamicShadow = new CCvarToggleCheckButton(this, "DynamicShadow", "#GameUI_DynamicShadow", "r_shadow");
 		m_pAmbientOcclusion = new CCvarToggleCheckButton(this, "AmbientOcclusion", "#GameUI_AmbientOcclusion", "r_ssao");
-		m_pDynamicLights = new CCvarToggleCheckButton(this, "DynamicLights", "#GameUI_DynamicLights", "r_deferred_lighting");
+		m_pDeferredShading = new CCvarToggleCheckButton(this, "DeferredShading", "#GameUI_DeferredShading", "r_deferred_lighting");
 		m_pScreenSpaceReflection = new CCvarToggleCheckButton(this, "ScreenSpaceReflection", "#GameUI_ScreenSpaceReflection", "r_ssr");
 		m_pCelShade = new CCvarToggleCheckButton(this, "CelShade", "#GameUI_CelShade", "r_studio_celshade");
 		m_pAntiAliasing = new CCvarToggleCheckButton(this, "AntiAliasing", "#GameUI_AntiAliasing", "r_fxaa");
 		m_pSkyFog = new CCvarToggleCheckButton(this, "SkyFog", "#GameUI_SkyFog", "r_wsurf_sky_fog");
 		m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
 		m_pHDR = new CCvarToggleCheckButton(this, "HDR", "#GameUI_HDR", "r_hdr");
+		m_pGammaBlending = new CCvarToggleCheckButton(this, "GammaBlending", "#GameUI_GammaBlending", "r_gamma_blend");
 
 		m_pHDRExposure = new CCvarSlider(this, "HDRExposure", "#GameUI_HDRExposure", 0.1f, 2.0f, "r_hdr_exposure", false);
 		m_pHDRDarkness = new CCvarSlider(this, "HDRDarkness", "#GameUI_HDRDarkness", 0.1f, 2.0f, "r_hdr_darkness", false);
@@ -80,6 +81,7 @@ public:
 		ApplyChangesToConVar(m_pDetailTexture->GetCvarName(), m_pDetailTexture->IsSelected());
 		ApplyChangesToConVar(m_pWaterShader->GetCvarName(), m_pWaterShader->IsSelected());
 		ApplyChangesToConVar(m_pDynamicShadow->GetCvarName(), m_pDynamicShadow->IsSelected());
+		ApplyChangesToConVar(m_pDeferredShading->GetCvarName(), m_pDeferredShading->IsSelected());
 		ApplyChangesToConVar(m_pAmbientOcclusion->GetCvarName(), m_pAmbientOcclusion->IsSelected());
 		ApplyChangesToConVar(m_pScreenSpaceReflection->GetCvarName(), m_pScreenSpaceReflection->IsSelected());
 		ApplyChangesToConVar(m_pCelShade->GetCvarName(), m_pCelShade->IsSelected());
@@ -87,6 +89,7 @@ public:
 		ApplyChangesToConVar(m_pSkyFog->GetCvarName(), m_pSkyFog->IsSelected());
 		ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
 		ApplyChangesToConVar(m_pHDR->GetCvarName(), m_pHDR->IsSelected());
+		ApplyChangesToConVar(m_pGammaBlending->GetCvarName(), m_pGammaBlending->IsSelected());
 
 		m_pHDRExposure->ApplyChanges();
 		m_pHDRDarkness->ApplyChanges();
@@ -94,6 +97,32 @@ public:
 		m_pShadowIntensity->ApplyChanges();
 		m_pTexGamma->ApplyChanges();
 		m_pLightGamma->ApplyChanges();
+
+		if (m_pGammaBlending->IsEnabled() && m_pDeferredShading->IsEnabled())
+		{
+			if (m_pGammaBlending->IsSelected() && m_pDeferredShading->IsSelected())
+			{
+				auto box = new vgui::MessageBox("#GameUI_Renderer_ConflictTitle", "#GameUI_Renderer_GammaBlendingDeferredLightingConflict", this);
+				box->SetOKButtonText("#GameUI_OK");
+				box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
+				box->AddActionSignalTarget(this);
+				box->DoModal();
+				return;
+			}
+		}
+
+		if (m_pAmbientOcclusion->IsEnabled() && m_pDeferredShading->IsEnabled())
+		{
+			if (m_pAmbientOcclusion->IsSelected() && !m_pDeferredShading->IsSelected())
+			{
+				auto box = new vgui::MessageBox("#GameUI_Renderer_WarningTitle", "#GameUI_Renderer_AmbientOcclusionRelyOnDeferredShading", this);
+				box->SetOKButtonText("#GameUI_OK");
+				box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
+				box->AddActionSignalTarget(this);
+				box->DoModal();
+				return;
+			}
+		}
 	}
 
 	void OnApplyChanges(void) override
@@ -106,7 +135,7 @@ public:
 		m_pDetailTexture->Reset();
 		m_pWaterShader->Reset();
 		m_pDynamicShadow->Reset();
-		m_pDynamicLights->Reset();
+		m_pDeferredShading->Reset();
 		m_pAmbientOcclusion->Reset();
 		m_pScreenSpaceReflection->Reset();
 		m_pCelShade->Reset();
@@ -114,6 +143,7 @@ public:
 		m_pSkyFog->Reset();
 		m_pZPrepass->Reset();
 		m_pHDR->Reset();
+		m_pGammaBlending->Reset();
 
 		m_pHDRExposure->Reset();
 		m_pHDRDarkness->Reset();
@@ -169,13 +199,14 @@ private:
 	CCvarToggleCheckButton *m_pWaterShader;
 	CCvarToggleCheckButton *m_pDynamicShadow;
 	CCvarToggleCheckButton *m_pAmbientOcclusion;
-	CCvarToggleCheckButton *m_pDynamicLights;
+	CCvarToggleCheckButton *m_pDeferredShading;
 	CCvarToggleCheckButton *m_pScreenSpaceReflection;
 	CCvarToggleCheckButton *m_pCelShade;
 	CCvarToggleCheckButton *m_pAntiAliasing;
 	CCvarToggleCheckButton * m_pSkyFog;
 	CCvarToggleCheckButton *m_pZPrepass;
 	CCvarToggleCheckButton *m_pHDR;
+	CCvarToggleCheckButton* m_pGammaBlending;
 
 	CCvarSlider *m_pHDRExposure;
 	CCvarSlider *m_pHDRDarkness;

@@ -71,6 +71,7 @@ void CCvarToggleCheckButton::Reset(void)
 		return;
 
 	auto cvar = gEngfuncs.pfnGetCvarPointer(m_szCvarName);
+
 	if (!cvar)
 	{
 		SetEnabled(false);
