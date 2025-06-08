@@ -2394,11 +2394,11 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	if (r_draw_opaque)
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
 	}
 	else
 	{
-		GL_BeginStencilWrite(0, STENCIL_MASK_HAS_DECAL);
+		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
 	}
 
 	wsurf_program_t prog = { 0 };

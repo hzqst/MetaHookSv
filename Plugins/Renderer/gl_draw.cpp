@@ -3494,7 +3494,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 		}
 	}
 #endif
-	if (1)
+	if (!bLoaded)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
 
@@ -3509,7 +3509,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 		}
 	}
 
-	if (1)
+	if (!bLoaded)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
 

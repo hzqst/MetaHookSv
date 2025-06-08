@@ -71,6 +71,15 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
+	if (r_draw_opaque)
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
+	}
+	else
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
+	}
+
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -92,6 +101,8 @@ void R_DrawSkyBox(void)
 	}
 
 	GL_UseProgram(0);
+
+	GL_EndStencil();
 
 	glDepthMask(GL_TRUE);
 }

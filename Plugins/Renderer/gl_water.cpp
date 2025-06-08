@@ -1129,11 +1129,11 @@ void R_DrawWaterSurfaceModelReflective(
 
 	if (r_draw_opaque)
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_WATER, STENCIL_MASK_ALL);
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
 	}
 	else
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_WATER);
+		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
 	}
 
 	program_state_t WaterProgramState = 0;
@@ -1288,11 +1288,11 @@ void R_DrawWaterSurfaceModelRipple(
 
 	if (r_draw_opaque)
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_WATER, STENCIL_MASK_ALL);
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
 	}
 	else
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_WATER);
+		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
 	}
 
 	program_state_t WaterProgramState = WATER_LEGACY_ENABLED;
@@ -1393,11 +1393,11 @@ void R_DrawWaterSurfaceModelLegacy(
 
 	if (r_draw_opaque)
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_WATER, STENCIL_MASK_ALL);
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
 	}
 	else
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_WATER);
+		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
 	}
 
 	float scale;
