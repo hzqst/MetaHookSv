@@ -3528,11 +3528,7 @@ void ClientDLL_DrawNormalTriangles(void)
 	//Call ClientDLL_DrawNormalTriangles instead of HUD_DrawNormalTriangles
 	gPrivateFuncs.ClientDLL_DrawNormalTriangles();
 
-	//gExportfuncs.HUD_DrawNormalTriangles();
-
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
-
-	auto BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 
 	r_draw_legacysprite = false;
 
