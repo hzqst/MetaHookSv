@@ -2781,6 +2781,11 @@ float *R_GetAttachmentPoint(int entity, int attachment)
 	return pEntity->origin;
 }
 
+/*
+	input: fov_y (aka vertical fov)
+	output: fov_x (aka horizontal fov)
+*/
+
 double V_CalcFovV(float fov, float width, float height)
 {
 	if (fov < 1.0 || fov > 179.0)
@@ -2788,6 +2793,11 @@ double V_CalcFovV(float fov, float width, float height)
 
 	return atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
+
+/*
+	input: fov_x (aka horizontal fov)
+	output: fov_y (aka vertical fov)
+*/
 
 double V_CalcFovH(float fov, float width, float height)
 {
@@ -2817,16 +2827,16 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);
 		y = *fov_y;
+		*fov_y = V_CalcFovV(x, height, width);
 
-		*fov_x = V_CalcFovV(y, height, width);
-
-		if (*fov_x < x)
-			*fov_x = x;
-		else
+		if (*fov_y < y)
 			*fov_y = y;
+		else
+			*fov_x = x;
 	}
 	else if (gl_widescreen_yfov->value == 2)
 	{
+		//fov_y is the input fov, recalculate fov_x from 4:3 aspect ratio
 		x = V_CalcFovV(*fov_y, 640, 480);
 		y = *fov_y;
 
@@ -2865,6 +2875,7 @@ void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
 	}
 	else if (gl_widescreen_yfov->value == 2)
 	{
+		//fov_x is the input fov, recalculate fov_y from 4:3 aspect ratio
 		y = V_CalcFovH(*fov_x, 640, 480);
 		x = *fov_x;
 

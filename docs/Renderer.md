@@ -638,9 +638,11 @@ Viewmodel's FOV can be individually adjusted by using cvar `viewmodel_fov [FOV v
 
 ### Vertical FOV
 
-Vertical FOV can be enabled by using cvar `r_vertical_fov 1`.
+`r_vertical_fov 1` Enable Vertical FOV. The input screen FOV will be treated as Vertical FOV.
 
-This is the default FOV policy used by Sven Co-op.
+`r_vertical_fov 0` Disable Vertical FOV. The input screen FOV will be treated as Horizontal FOV just like what it was in vanilla GoldSrc.
+
+`r_vertical_fov 1` is the default FOV policy used by Sven Co-op.
 
 ### WideScreen-Adapted FOV
 

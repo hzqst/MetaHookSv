@@ -621,15 +621,23 @@ WEBP (RGB8 / RGBA8)
 
 ### 垂直FOV
 
-金源默认使用水平FOV策略，你可以通过控制台参数 `r_vertical_fov 1` 启用垂直FOV策略。注：Sven Co-op默认使用垂直FOV策略，也就是说你输入的default_fov参数在Sven Co-op中会被当成屏幕垂直方向上的FOV而非金源的水平方向FOV。
+你可以通过控制台参数 `r_vertical_fov` 来决定屏幕FOV被视为垂直方向的FOV还是水平方向的FOV
+
+* 屏幕FOV一般由控制台参数`default_fov`决定，在某些mod中由服务端消息控制，无法在客户端自行更改。
+
+`r_vertical_fov 1` 启用垂直FOV（Sven Co-op默认使用的FOV策略）
+
+`r_vertical_fov 0` 禁用垂直FOV（GoldSrc默认使用的FOV策略）
 
 ### 宽屏自适应FOV
 
 你可以通过控制台参数 `gl_widescreen_yfov 1` 或 `gl_widescreen_yfov 2` 启用宽屏自适应FOV。该策略控制在金源默认的水平FOV策略下如何从水平FOV计算垂直FOV：
 
-`gl_widescreen_yfov 1` 是 Xash3D-fwgs 和 Counter-Strike : Online 以及 Half-Life 25周年更新版本中 默认使用的宽屏FOV策略，该策略下会维持垂直FOV为非宽屏即4:3长宽比的分辨率下的FOV值，并在水平方向上扩展FOV。 
+`gl_widescreen_yfov 1` 是 Xash3D-fwgs 和 Counter-Strike : Online 以及 Half-Life 25周年更新版本中 默认使用的宽屏FOV策略，该策略下会维持垂直FOV为4:3长宽比的分辨率下的FOV值，并在水平方向上扩展FOV。 
 
 `gl_widescreen_yfov 2` 则是拉伸4：3长宽比的分辨率的画面并拉伸至宽屏。
+
+* 注：在开启`r_vertical_fov 1`之后，`gl_widescreen_yfov 1`无效。因为在`r_vertical_fov 1`的情况下，垂直FOV直接就等于屏幕FOV，而不像`r_vertical_fov 0`的情况下那样需要从水平FOV转换而来。
 
 ## Sprite插值
 

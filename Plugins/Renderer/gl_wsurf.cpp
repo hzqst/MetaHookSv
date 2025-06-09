@@ -777,8 +777,12 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 						delete[]texchainMapper;
 					}
 				}
+
+				//End construction
+
+				t->texturechain = NULL;
 			}
-			else if (iTexChainPass == 0 && t->name[0] == '+' && !bIsSkyTexture)
+			else if (t->name[0] == '+')
 			{
 				//Construct texchain for anim textures
 
@@ -817,11 +821,12 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 							pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM].emplace_back(texchain);
 					}
 				}
+
+
+				//End construction
+
+				t->texturechain = NULL;
 			}
-
-			//End construction
-
-			t->texturechain = NULL;
 		}
 		else if(iTexChainPass == 0 && !bIsSkyTexture)
 		{
