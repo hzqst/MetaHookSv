@@ -355,6 +355,24 @@ GLuint GL_GenDepthStencilTexture(int w, int h)
 	return texid;
 }
 
+GLuint GL_CreateDepthViewForDepthTexture(int texId)
+{
+	GLuint depthviewtexid = GL_GenTexture();
+	glTextureView(depthviewtexid, GL_TEXTURE_2D, texId, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
+
+	glBindTexture(GL_TEXTURE_2D, depthviewtexid);
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+	return depthviewtexid;
+}
+
 GLuint GL_CreateStencilViewForDepthTexture(int texId)
 {
 	GLuint stencilviewtexid = GL_GenTexture();
@@ -392,7 +410,10 @@ void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	//glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 

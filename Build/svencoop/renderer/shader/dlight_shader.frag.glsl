@@ -54,22 +54,6 @@ in vec2 v_texcoord;
 
 layout(location = 0) out vec4 out_FragColor;
 
-/*vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
-    vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
-	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = CameraUBO.invProjMatrix * ndc;// going back from projected
-	inversed /= inversed.w;
-	return inversed.xyz;
-}
-
-vec3 GenerateWorldPositionFromDepth(vec2 texcoord, float depth) {
-   vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
-	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * ndc;// going back from projected
-	inversed /= inversed.w;
-	return inversed.xyz;
-}*/
-
 #if defined(SHADOW_TEXTURE_ENABLED)
 
 float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)

@@ -471,6 +471,7 @@ GLuint GL_GenDepthTexture(int w, int h);
 void GL_UploadDepthStencilTexture(int texid, int w, int h);
 GLuint GL_GenDepthStencilTexture(int w, int h);
 
+GLuint GL_CreateDepthViewForDepthTexture(int texId);
 GLuint GL_CreateStencilViewForDepthTexture(int texId);
 
 GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor);
