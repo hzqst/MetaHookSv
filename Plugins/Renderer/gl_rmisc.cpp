@@ -410,9 +410,9 @@ void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-	//glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+	//glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }

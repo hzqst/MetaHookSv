@@ -412,6 +412,8 @@ void main()
 
 #endif
 
+vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
+
 #if defined(SHADOW_CASTER_ENABLED)
 
 	out_Diffuse.xyz = v_worldpos.xyz;
@@ -446,13 +448,13 @@ void main()
 
 		#if defined(DECAL_ENABLED)
 
-			out_Diffuse = diffuseColor * detailColor * EntityUBO.color;
+			out_Diffuse = diffuseColor * detailColor * entityColor;
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
 			out_Specular = specularColor;
 
 		#else
 
-			out_Diffuse = diffuseColor * detailColor;
+			out_Diffuse = diffuseColor * detailColor * entityColor;
 			out_Lightmap = lightmapColor;
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
 			out_Specular = specularColor;
@@ -471,15 +473,7 @@ void main()
 
 	#endif
 
-		#if defined(ADDITIVE_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)
-
-			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
-
-		#else
-
-			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor);
-
-		#endif
+		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * entityColor);
 
 		GatherFragment(color);
 

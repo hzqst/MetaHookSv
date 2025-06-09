@@ -658,14 +658,14 @@ vec4 ProcessOtherLinearColor(vec4 color)
 	{
 		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 
-		fogFactor = clamp(fogFactor, 0.0, 1.0);
+		fogFactor = clamp(fogFactor, 0, 1);
 
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
 
 #if defined(ADDITIVE_BLEND_ENABLED)
-		fogColor = vec3(0, 0, 0);
+		//fogColor = vec3(0, 0, 0);
 #endif
 
 		color.xyz = mix(fogColor, color.xyz, fogFactor );

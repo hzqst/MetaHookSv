@@ -28,11 +28,7 @@ void main()
 	
 	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
-	#if !defined(ADDITIVE_BLEND_ENABLED)
-		vec4 finalColor = CalcFog(baseColor * lightmapColor);
-	#else
-		vec4 finalColor = baseColor * lightmapColor;
-	#endif
+	vec4 finalColor = CalcFog(baseColor * lightmapColor);
 
 	#if defined(OIT_BLEND_ENABLED)
 		

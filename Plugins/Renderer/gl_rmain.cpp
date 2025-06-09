@@ -1410,7 +1410,6 @@ void R_DrawSpriteEntity(bool bTransparent)
 	{
 		R_DrawSpriteModel((*currententity));
 	}
-
 }
 
 void R_DrawBrushEntity(bool bTransparent)

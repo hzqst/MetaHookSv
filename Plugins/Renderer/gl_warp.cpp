@@ -23,6 +23,17 @@ void R_DrawSkyBox(void)
 	glDisable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 
+	entity_ubo_t EntityUBO;
+
+	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
+	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
+	EntityUBO.scrollSpeed = 0;
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
+
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
+
+
 	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
 	if ((*filterMode) != 0)
