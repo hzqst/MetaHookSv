@@ -631,13 +631,13 @@ WEBP (RGB8 / RGBA8)
 
 ### 宽屏自适应FOV
 
-你可以通过控制台参数 `gl_widescreen_yfov 1` 或 `gl_widescreen_yfov 2` 启用宽屏自适应FOV。该策略控制在金源默认的水平FOV策略下如何从水平FOV计算垂直FOV：
+该策略控制如何从水平FOV计算垂直FOV：
 
 `gl_widescreen_yfov 1` 是 Xash3D-fwgs 和 Counter-Strike : Online 以及 Half-Life 25周年更新版本中 默认使用的宽屏FOV策略，该策略下会维持垂直FOV为4:3长宽比的分辨率下的FOV值，并在水平方向上扩展FOV。 
 
-`gl_widescreen_yfov 2` 则是拉伸4：3长宽比的分辨率的画面并拉伸至宽屏。
+`gl_widescreen_yfov 2` 则是将4：3长宽比的分辨率的画面拉伸至宽屏。
 
-* 注：在开启`r_vertical_fov 1`之后，`gl_widescreen_yfov 1`无效。因为在`r_vertical_fov 1`的情况下，垂直FOV直接就等于屏幕FOV，而不像`r_vertical_fov 0`的情况下那样需要从水平FOV转换而来。
+* 注：在开启`r_vertical_fov 1`之后，`gl_widescreen_yfov 1`无效。因为在`r_vertical_fov 1`的情况下，垂直FOV直接就等于屏幕FOV，而不像`r_vertical_fov 0`的情况下那样需要从水平FOV计算而来。
 
 ## Sprite插值
 

@@ -638,21 +638,23 @@ Viewmodel's FOV can be individually adjusted by using cvar `viewmodel_fov [FOV v
 
 ### Vertical FOV
 
-`r_vertical_fov 1` Enable Vertical FOV. The input screen FOV will be treated as Vertical FOV.
+This controls what we treat the input screen FOV as:
 
-`r_vertical_fov 0` Disable Vertical FOV. The input screen FOV will be treated as Horizontal FOV just like what it was in vanilla GoldSrc.
+* The input screen FOV is typically defined by `default_fov`, and is locked to 90 in certain games (cstrike and czero).
 
-`r_vertical_fov 1` is the default FOV policy used by Sven Co-op.
+`r_vertical_fov 1` Enable Vertical FOV. The input screen FOV will be treated as Vertical FOV. This is the default FOV policy used by Sven Co-op.
+
+`r_vertical_fov 0` Disable Vertical FOV. The input screen FOV will be treated as Horizontal FOV just like what it was in vanilla GoldSrc.  This is the default FOV policy used by vanilla GoldSrc.
 
 ### WideScreen-Adapted FOV
 
-WideScreen-Adapted FOV can be enabled by using cvar `gl_widescreen_yfov 1` or `gl_widescreen_yfov 2`.
-
-This controls how engine calculate the vertical FOV from horizontal FOV:
+This controls how to convert horizontal FOV to vertical FOV :
 
 `gl_widescreen_yfov 1` is the default policy used by Xash3D-fwgs, Nexon's Counter-Strike : Online and Half-Life 25th anniversary update that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3
 
 `gl_widescreen_yfov 2` is to stretch the original 4:3 FOV image to fit the current rendering resolution.
+
+* Note: `gl_widescreen_yfov 1` will be overrided by `r_vertical_fov 1` .
 
 ## Sprite Interpolation
 
