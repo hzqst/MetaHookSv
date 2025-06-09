@@ -644,7 +644,7 @@ void R_GenerateResourceForWaterModels(model_t *mod, CWorldSurfaceWorldModel *pWo
 	}
 }
 
-void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
+void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, int iTexChainPass, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
 	for (int i = 0; i < mod->numtextures; i++)
 	{
@@ -661,7 +661,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		if (!t)
 			continue;
 
-		if (!strcmp(t->name, "sky"))
+		if (iTexChainPass == 1 && !strcmp(t->name, "sky"))
 		{
 			auto s = t->texturechain;
 
@@ -685,7 +685,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					pLeaf->TextureChainSky = texchain;
 			}
 		}
-		else if (t->anim_total)
+		else if (iTexChainPass == 0 && t->anim_total)
 		{
 			if (t->name[0] == '-')
 			{
@@ -813,7 +813,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				}
 			}
 		}
-		else
+		else if(iTexChainPass == 0)
 		{
 			//Construct texchain for static textures
 
@@ -894,16 +894,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		t->texturechain = NULL;
 	}
 
-	CWorldSurfaceBrushTexChain texchain;
+	if (iTexChainPass == 0)
+	{
+		CWorldSurfaceBrushTexChain texchain;
 
-	texchain.type = TEXCHAIN_STATIC;
-	texchain.texture = nullptr;
-	texchain.detailTextureCache = nullptr;
-	texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
-	texchain.polyCount = 0;
-	texchain.startDrawOffset = 0;
+		texchain.type = TEXCHAIN_STATIC;
+		texchain.texture = nullptr;
+		texchain.detailTextureCache = nullptr;
+		texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
+		texchain.polyCount = 0;
+		texchain.startDrawOffset = 0;
 
-	pLeaf->TextureChainSolid = texchain;
+		pLeaf->TextureChainSolid = texchain;
+	}
 }
 
 void R_GenerateWorldSurfaceModelLeafInternal(
@@ -925,7 +928,8 @@ void R_GenerateWorldSurfaceModelLeafInternal(
 
 	R_GenerateResourceForWaterModels(mod, pModel->pWorldModel, pLeaf);
 
-	R_GenerateTexChain(mod, pModel->pWorldModel, pLeaf, vDrawAttribBuffer);
+	R_GenerateTexChain(mod, pModel->pWorldModel, pLeaf, 0, vDrawAttribBuffer);
+	R_GenerateTexChain(mod, pModel->pWorldModel, pLeaf, 1, vDrawAttribBuffer);
 
 	if (vDrawAttribBuffer.size() > 0)
 	{
@@ -1074,7 +1078,8 @@ CWorldSurfaceModel* R_GenerateWorldSurfaceModel(model_t *mod)
 
 		R_GenerateResourceForWaterModels(mod, pWorldModel, pLeaf);
 
-		R_GenerateTexChain(mod, pWorldModel, pLeaf, vDrawAttribBuffer);
+		R_GenerateTexChain(mod, pWorldModel, pLeaf, 0, vDrawAttribBuffer);
+		R_GenerateTexChain(mod, pWorldModel, pLeaf, 1, vDrawAttribBuffer);
 
 		if (vDrawAttribBuffer.size() > 0)
 		{

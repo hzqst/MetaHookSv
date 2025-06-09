@@ -437,6 +437,7 @@ void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
+mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
 void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);

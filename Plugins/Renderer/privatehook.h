@@ -81,6 +81,7 @@ typedef struct
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	void(*DT_Initialize)(void);
+	mnode_t* (*PVSNode)(mnode_t* node, vec3_t emins, vec3_t emaxs);
 	void(*R_LoadSkys)(void);
 	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
 	void(*R_LoadSkyBox_SvEngine)(const char *name);

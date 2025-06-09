@@ -10838,6 +10838,44 @@ void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(detTexSupported);
 }
 
+void Engine_FillAddress_PVSNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+#define PVSNODE_COMMON_GOLDSRC "\x8B\x2A\xA4\x00\x00\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C"
+#define PVSNODE_COMMON "\xFF\xB0\xA4\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C"
+
+	PVOID PVSNodeVA = 0;
+	{
+		/*
+	.text:01D4780A 68 73 85 00 00                                      push    8573h           ; pname
+	.text:01D4780F 68 00 23 00 00                                      push    2300h           ; target
+	.text:01D47814 FF D6                                               call    esi ; glTexEnvf
+			*/
+		auto addr = Search_Pattern(PVSNODE_COMMON, DllInfo);
+		if (addr)
+		{
+			PVSNodeVA = GetCallAddress((PUCHAR)addr + 6);
+		}
+		else
+		{
+			addr = Search_Pattern(PVSNODE_COMMON_GOLDSRC, DllInfo);
+			if (addr)
+			{
+				PVSNodeVA = GetCallAddress((PUCHAR)addr + 8);
+			}
+		}
+
+		if (!addr)
+		{
+			Sig_NotFound(PVSNodeVA);
+		}
+		
+		gPrivateFuncs.PVSNode = (decltype(gPrivateFuncs.PVSNode))ConvertDllInfoSpace(PVSNodeVA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(PVSNode);
+
+}
+
 void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
@@ -11034,6 +11072,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_NoTexture(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_DT_Initialize(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_PVSNode(DllInfo, RealDllInfo);
 }
 
 static hook_t* g_phook_GL_Init = NULL;
@@ -11061,7 +11101,7 @@ static hook_t* g_phook_Mod_LoadBrushModel = NULL;
 static hook_t* g_phook_Mod_LoadSpriteModel = NULL;
 static hook_t* g_phook_Mod_UnloadSpriteTextures = NULL;
 static hook_t* g_phook_triapi_RenderMode = NULL;
-static hook_t* g_phook_triapi_BoxInPVS = NULL;
+//static hook_t* g_phook_triapi_BoxInPVS = NULL;
 static hook_t* g_phook_triapi_Fog = NULL;
 static hook_t* g_phook_triapi_GetMatrix = NULL;
 //static hook_t *g_phook_triapi_Color4f = NULL;
@@ -11071,6 +11111,7 @@ static hook_t* g_phook_Draw_MiptexTexture = NULL;
 static hook_t* g_phook_BuildGammaTable = NULL;
 static hook_t* g_phook_DLL_SetModKey = NULL;
 static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
+static hook_t* g_phook_PVSNode = NULL;
 
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
@@ -11122,7 +11163,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
-	Install_InlineHook(triapi_BoxInPVS);
+	//Install_InlineHook(triapi_BoxInPVS);
 	//Install_InlineHook(triapi_Fog);
 	Install_InlineHook(triapi_GetMatrix);
 	//Install_InlineHook(Draw_MiptexTexture);
@@ -11130,6 +11171,7 @@ void Engine_InstallHooks(void)
 	//Install_InlineHook(Draw_CacheGet);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);
+	Install_InlineHook(PVSNode);
 
 	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
@@ -11179,7 +11221,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
-	Uninstall_Hook(triapi_BoxInPVS);
+	//Uninstall_Hook(triapi_BoxInPVS);
 	//Uninstall_Hook(triapi_Fog);
 	Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
@@ -11187,6 +11229,7 @@ void Engine_UninstallHooks(void)
 	//Uninstall_Hook(Draw_CacheGet);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
+	Uninstall_Hook(PVSNode);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{

@@ -944,8 +944,8 @@ mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 	int			sides;
 	mbasenode_t* splitNode;
 
-	if (basenode->visframe != (*r_visframecount))
-		return NULL;
+	//if (basenode->visframe != (*r_visframecount))
+	//	return NULL;
 
 	// add an efrag if the node is a leaf
 
@@ -980,6 +980,11 @@ mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 	}
 
 	return NULL;
+}
+
+mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
+{
+	return R_PVSNode(basenode, emins, emaxs);
 }
 
 void triapi_GetMatrix(const int pname, float* matrix)
@@ -1206,7 +1211,6 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void ClientDLL_DrawTransparentTriangles(void)
 {
-
 	//Call ClientDLL_DrawTransparentTriangles() instead of HUD_DrawTransparentTriangles
 	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
 
@@ -3527,6 +3531,8 @@ void ClientDLL_DrawNormalTriangles(void)
 	//gExportfuncs.HUD_DrawNormalTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+
+	auto BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 
 	r_draw_legacysprite = false;
 
