@@ -72,6 +72,11 @@ layout(binding = 6) uniform sampler2DArray lightmapTexArray;
 #define WSURF_TEXCHAIN_LIST_ANIM		1
 #define WSURF_TEXCHAIN_LIST_MAX			2
 
+#define WSURF_TEXCHAIN_SPECIAL_SKY				0
+#define WSURF_TEXCHAIN_SPECIAL_SOLID			1
+#define WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY	2
+#define WSURF_TEXCHAIN_SPECIAL_MAX				3
+
 typedef struct detail_texture_s
 {
 	detail_texture_s()
@@ -183,9 +188,7 @@ public:
 	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChainList[WSURF_TEXCHAIN_LIST_MAX];
 	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
-	CWorldSurfaceBrushTexChain TextureChainSky;
-	CWorldSurfaceBrushTexChain TextureChainSolid;
-	CWorldSurfaceBrushTexChain TextureChainSolidWithSky;
+	CWorldSurfaceBrushTexChain TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_MAX];
 	CWorldSurfaceModel* pModel{};
 };
 

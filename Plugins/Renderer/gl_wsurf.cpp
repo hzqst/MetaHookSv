@@ -661,7 +661,9 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		if (!t)
 			continue;
 
-		if (iTexChainPass == 1 && !strcmp(t->name, "sky"))
+		bool bIsSkyTexture = (0 == strcmp(t->name, "sky")) ? true : false;
+
+		if (iTexChainPass == 1 && bIsSkyTexture)
 		{
 			auto s = t->texturechain;
 
@@ -682,14 +684,14 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				}
 
 				if (texchain.drawCount > 0)
-					pLeaf->TextureChainSky = texchain;
+					pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SKY] = texchain;
 			}
 
 			//End construction
 
 			t->texturechain = NULL;
 		}
-		else if (iTexChainPass == 0 && t->anim_total && 0 != strcmp(t->name, "sky"))
+		else if (iTexChainPass == 0 && t->anim_total && !bIsSkyTexture)
 		{
 			if (t->name[0] == '-')
 			{
@@ -776,7 +778,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					}
 				}
 			}
-			else if (iTexChainPass == 0 && t->name[0] == '+' && 0 != strcmp(t->name, "sky"))
+			else if (iTexChainPass == 0 && t->name[0] == '+' && !bIsSkyTexture)
 			{
 				//Construct texchain for anim textures
 
@@ -821,7 +823,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 
 			t->texturechain = NULL;
 		}
-		else if(iTexChainPass == 0 && 0 != strcmp(t->name, "sky"))
+		else if(iTexChainPass == 0 && !bIsSkyTexture)
 		{
 			//Construct texchain for static textures
 
@@ -913,7 +915,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		texchain.polyCount = 0;
 		texchain.startDrawOffset = 0;
 
-		pLeaf->TextureChainSolid = texchain;
+		pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID] = texchain;
 	}
 	else if (iTexChainPass == 1)
 	{
@@ -926,7 +928,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		texchain.polyCount = 0;
 		texchain.startDrawOffset = 0;
 
-		pLeaf->TextureChainSolidWithSky = texchain;
+		pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] = texchain;
 	}
 }
 
@@ -1855,7 +1857,7 @@ void R_DrawWorldSurfaceLeafEnd()
 
 void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 {
-	const auto& texchain = bWithSky ? pLeaf->TextureChainSolidWithSky : pLeaf->TextureChainSolid;
+	const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
 
 	if (!texchain.drawCount)
 		return;
@@ -2327,7 +2329,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 
 void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
-	const auto& texchain = pLeaf->TextureChainSky;
+	const auto& texchain = pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SKY];
 
 	if (!texchain.drawCount)
 		return;
