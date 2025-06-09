@@ -185,6 +185,7 @@ public:
 	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
 	CWorldSurfaceBrushTexChain TextureChainSky;
 	CWorldSurfaceBrushTexChain TextureChainSolid;
+	CWorldSurfaceBrushTexChain TextureChainSolidWithSky;
 	CWorldSurfaceModel* pModel{};
 };
 

@@ -684,8 +684,12 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				if (texchain.drawCount > 0)
 					pLeaf->TextureChainSky = texchain;
 			}
+
+			//End construction
+
+			t->texturechain = NULL;
 		}
-		else if (iTexChainPass == 0 && t->anim_total)
+		else if (iTexChainPass == 0 && t->anim_total && 0 != strcmp(t->name, "sky"))
 		{
 			if (t->name[0] == '-')
 			{
@@ -772,7 +776,7 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					}
 				}
 			}
-			else if (t->name[0] == '+')
+			else if (iTexChainPass == 0 && t->name[0] == '+' && 0 != strcmp(t->name, "sky"))
 			{
 				//Construct texchain for anim textures
 
@@ -812,8 +816,12 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 					}
 				}
 			}
+
+			//End construction
+
+			t->texturechain = NULL;
 		}
-		else if(iTexChainPass == 0)
+		else if(iTexChainPass == 0 && 0 != strcmp(t->name, "sky"))
 		{
 			//Construct texchain for static textures
 
@@ -887,11 +895,11 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 				if (texchain.drawCount > 0)
 					pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
 			}
+
+			//End construction
+
+			t->texturechain = NULL;
 		}
-
-		//End construction
-
-		t->texturechain = NULL;
 	}
 
 	if (iTexChainPass == 0)
@@ -906,6 +914,19 @@ void R_GenerateTexChain(model_t *mod, CWorldSurfaceWorldModel* pWorldModel, CWor
 		texchain.startDrawOffset = 0;
 
 		pLeaf->TextureChainSolid = texchain;
+	}
+	else if (iTexChainPass == 1)
+	{
+		CWorldSurfaceBrushTexChain texchain;
+
+		texchain.type = TEXCHAIN_STATIC;
+		texchain.texture = nullptr;
+		texchain.detailTextureCache = nullptr;
+		texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
+		texchain.polyCount = 0;
+		texchain.startDrawOffset = 0;
+
+		pLeaf->TextureChainSolidWithSky = texchain;
 	}
 }
 
@@ -1832,8 +1853,13 @@ void R_DrawWorldSurfaceLeafEnd()
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
-void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
+void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 {
+	const auto& texchain = bWithSky ? pLeaf->TextureChainSolidWithSky : pLeaf->TextureChainSolid;
+
+	if (!texchain.drawCount)
+		return;
+
 	program_state_t WSurfProgramState = 0;
 
 	if (R_IsRenderingGBuffer())
@@ -1867,15 +1893,10 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf)
 		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 	}
 
-	const auto& texchain = pLeaf->TextureChainSolid;
+	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-	if (texchain.drawCount > 0)
-	{
-		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.polyCount;
-	}
+	r_wsurf_drawcall++;
+	r_wsurf_polys += texchain.polyCount;
 
 	GL_EndStencil();
 
@@ -2352,31 +2373,34 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 		WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer())
+	if ((int)r_wsurf_sky_fog->value >= 1)
 	{
-		if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+		if (!R_IsRenderingGBuffer())
 		{
-
-		}
-		else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
-		{
-
-		}
-		else
-		{
-			if (R_IsRenderingFog())
+			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
-				if (r_fog_mode == GL_LINEAR)
+
+			}
+			else if ((WSurfProgramState & WSURF_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
 				{
-					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-				}
-				else if (r_fog_mode == GL_EXP)
-				{
-					WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-				}
-				else if (r_fog_mode == GL_EXP2)
-				{
-					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+					if (r_fog_mode == GL_LINEAR)
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+					}
 				}
 			}
 		}
@@ -2511,7 +2535,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 						{
 							glColorMask(0, 0, 0, 0);
 
-							R_DrawWorldSurfaceLeafSolid(pNoVisLeaf);
+							R_DrawWorldSurfaceLeafSolid(pNoVisLeaf, true);
 
 							glColorMask(1, 1, 1, 1);
 
@@ -2545,7 +2569,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 					{
 						glColorMask(0, 0, 0, 0);
 
-						R_DrawWorldSurfaceLeafSolid(pLeaf);
+						R_DrawWorldSurfaceLeafSolid(pLeaf, false);
 
 						glColorMask(1, 1, 1, 1);
 

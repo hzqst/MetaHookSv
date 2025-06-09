@@ -352,8 +352,8 @@ bool R_CanRenderFog()
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	if (R_IsRenderingWaterView())
-		return false;
+	//if (R_IsRenderingWaterView())
+	//	return false;
 
 	return true;
 }

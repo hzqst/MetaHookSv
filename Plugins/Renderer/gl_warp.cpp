@@ -33,7 +33,6 @@ void R_DrawSkyBox(void)
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
-
 	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
 	if ((*filterMode) != 0)
