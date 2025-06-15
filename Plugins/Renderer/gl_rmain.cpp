@@ -1436,6 +1436,11 @@ void R_DrawStudioEntity(bool bTransparent)
 {
 	if ((*currententity)->player)
 	{
+		if (R_IsLowerBodyEntity((*currententity)) && R_IsRenderingPortal())
+		{
+			return;
+		}
+
 		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 	}
 	else
