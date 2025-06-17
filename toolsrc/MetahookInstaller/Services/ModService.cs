@@ -14,6 +14,27 @@ namespace MetahookInstaller.Services
             _buildPath = buildPath ?? throw new ArgumentNullException(nameof(buildPath));
         }
 
+        public string GetGameNameFromLiblist(string liblistFilePath)
+        {
+            if (string.IsNullOrEmpty(liblistFilePath) || !File.Exists(liblistFilePath))
+                throw new FileNotFoundException("liblist.gam 文件未找到", liblistFilePath);
+
+            foreach (var line in File.ReadLines(liblistFilePath))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("game", StringComparison.OrdinalIgnoreCase))
+                {
+                    int firstQuote = trimmed.IndexOf('\"');
+                    int lastQuote = trimmed.LastIndexOf('\"');
+                    if (firstQuote >= 0 && lastQuote > firstQuote)
+                    {
+                        return trimmed.Substring(firstQuote + 1, lastQuote - firstQuote - 1);
+                    }
+                }
+            }
+            return string.Empty;
+        }
+
         public void InstallMod(string gamePath, string modName, uint appId, string modFullName)
         {
             // 1. 复制svencoop文件夹

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
 using MetahookInstaller.Models;
@@ -240,9 +238,21 @@ namespace MetahookInstaller.ViewModels
                 return;
             }
 
+            string GameName = SelectedGame.Name;
+
+            if (AppId == 0)
+            {
+                string newGameName = _modService.GetGameNameFromLiblist(liblistGamPath);
+
+                if (!string.IsNullOrEmpty(newGameName))
+                {
+                    GameName = newGameName;
+                }
+            }
+
             try
             {
-                _modService.InstallMod(GamePath, SelectedGame.ModName, SelectedGame.AppId, SelectedGame.Name);
+                _modService.InstallMod(GamePath, ModName, AppId, GameName);
                 MessageBox.Show(LocalizationService.GetString("ModInstallSuccess"), 
                               LocalizationService.GetString("Success"), 
                               MessageBoxButton.OK, 
