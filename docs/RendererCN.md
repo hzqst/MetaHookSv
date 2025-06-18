@@ -667,19 +667,27 @@ WEBP (RGB8 / RGBA8)
 * 该优化会大幅减少在绘制世界时GPU上发生的无用像素着色计算（比如对被遮挡的像素计算阴影）
 
 `r_wsurf_sky_fog 0` : 雾不会影响skybox（维持原版行为）
+
 `r_wsurf_sky_fog 1` : 雾会影响skybox
 
 `r_studio_legacy_dlight 0`: 彻底禁止dlight作用于模型
+
 `r_studio_legacy_dlight 1`: dlight对模型光照的贡献将在CPU端计算与累加（维持原版行为）
+
 `r_studio_legacy_dlight 2`: 使用着色器实时计算每个dlight对模型光照的贡献（精度更高，但是可能增加GPU着色开销）
 
 `r_studio_legacy_elight 0`: 彻底禁止elight作用于模型
+
 `r_studio_legacy_elight 1`: elight可以作用于模型（维持原版行为）
 
 `r_fog_trans 0`: 雾不会作用于任何透明物体
+
 `r_fog_trans 1`: 雾只会作用于使用alpha模式混合的透明物体，不会影响使用additive模式混合的透明物体（维持原版行为）
+
 `r_fog_trans 2`: 雾会同时作用于所有透明物体
 
 `r_leaf_lazy_load 0`: 在加载地图时将bsp所需全部资源一次性加载至显存。*注：可能会增加整体显存占用量
+
 `r_leaf_lazy_load 1`: 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每一帧加载一个bsp叶子节点所需的绘制指令至显存，直至所有绘制指令全部加载至显存。（某些地图可能需要数十秒才会全部加载完毕）*注：可能会增加整体显存占用量
+
 `r_leaf_lazy_load 2` (默认): 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每次进入一个新的bsp叶子节点时，才加载该节点所需的绘制指令至显存。*注：可能会降低1%low帧
