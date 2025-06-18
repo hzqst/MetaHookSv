@@ -276,18 +276,27 @@ water_reflect_cache_t* R_FindEmptyReflectCache()
 
 water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceModel* pWaterModel)
 {
-	vec3_t vert;
+	vec3_t vert{};
+	vec3_t normal{};
 
+	//Calculate r_entity_matrix from ent->origin and ent->angles
 	R_RotateForEntity(ent);
 
 	VectorTransform(pWaterModel->vert, r_entity_matrix, vert);
+	VectorRotate(pWaterModel->normal, r_entity_matrix, normal);
 
-	float planedist = DotProduct(pWaterModel->normal, vert);
+	//almost vertical?
+	if (fabs(normal[2]) < 0.3)
+		return nullptr;
 
-	auto ReflectCache = R_FindReflectCache(pWaterModel->level, pWaterModel->normal, planedist);
+	float planedist = DotProduct(normal, vert);
+
+	auto ReflectCache = R_FindReflectCache(pWaterModel->level, normal, planedist);
+
 	if (!ReflectCache)
 	{
 		ReflectCache = R_FindEmptyReflectCache();
+
 		if (ReflectCache)
 		{
 			int texwidth = glwidth * 0.5f;
@@ -338,7 +347,7 @@ water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceMode
 			ReflectCache->texwidth = texwidth;
 			ReflectCache->texheight = texheight;
 
-			VectorCopy(pWaterModel->normal, ReflectCache->normal);
+			VectorCopy(normal, ReflectCache->normal);
 			ReflectCache->planedist = planedist;
 
 			ReflectCache->color.r = pWaterModel->color.r;

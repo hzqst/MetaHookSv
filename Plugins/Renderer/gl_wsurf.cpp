@@ -2551,14 +2551,14 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 							bUseZPrePass = true;
 						}
 
-						R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf, false);
-						R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf, false);
-
 						glColorMask(0, 0, 0, 0);
 
 						R_DrawWorldSurfaceLeafSky(pModel, pNoVisLeaf, false);
 
 						glColorMask(1, 1, 1, 1);
+
+						R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf, false);
+						R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf, false);
 
 						R_DrawWorldSurfaceLeafEnd();
 
@@ -2576,7 +2576,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 					{
 						glColorMask(0, 0, 0, 0);
 
-						R_DrawWorldSurfaceLeafSolid(pLeaf, false);
+						R_DrawWorldSurfaceLeafSolid(pLeaf, true);
 
 						glColorMask(1, 1, 1, 1);
 
@@ -2584,6 +2584,12 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 						bUseZPrePass = true;
 					}
+
+					glColorMask(0, 0, 0, 0);
+
+					R_DrawWorldSurfaceLeafSky(pModel, pLeaf, bUseZPrePass);
+
+					glColorMask(1, 1, 1, 1);
 
 					R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
 					R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
