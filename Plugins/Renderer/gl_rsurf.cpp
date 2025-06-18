@@ -509,8 +509,8 @@ colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
 			c.g >>= 8;
 			c.b >>= 8;
 
-			if (c.r == 0)
-				c.r = 1;
+			//if (c.r == 0)
+			//	c.r = 1;
 		}
 
 		return c;
