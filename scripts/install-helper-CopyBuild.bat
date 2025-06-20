@@ -75,9 +75,4 @@ echo Make sure that all plugins you want has been added into the plugins.lst
 notepad "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst"
 
 echo -----------------------------------------------------
-echo Make sure that all library directories required by plugins has been added into the dllpaths.lst
-
-notepad "%GameDir%\%LauncherMod%\metahook\configs\dllpaths.lst"
-
-echo -----------------------------------------------------
 echo Done
