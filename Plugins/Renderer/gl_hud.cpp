@@ -1013,7 +1013,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	//Write to main framebuffer or GBuffer lightmap channel
 	GL_BindFrameBuffer(dst);
 
-	//TODO: wrapper?
+	//write to GBuffer lightmap channel
 	if (dst == &s_GBufferFBO)
 	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);

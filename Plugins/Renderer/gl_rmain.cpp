@@ -1757,7 +1757,13 @@ void GL_GenerateFrameBuffers(void)
 	s_GBufferFBO.iWidth = glwidth;
 	s_GBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_GBufferFBO);
-	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, GL_RGB16F);
+	
+	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, 
+		GBUFFER_INTERNAL_FORMAT_DIFFUSE,
+		GBUFFER_INTERNAL_FORMAT_LIGHTMAP,
+		GBUFFER_INTERNAL_FORMAT_WORLDNORM,
+		GBUFFER_INTERNAL_FORMAT_SPECULAR);
+
 	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

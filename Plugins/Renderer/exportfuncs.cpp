@@ -152,22 +152,26 @@ int HUD_Redraw(float time, int intermission)
 			glEnable(GL_BLEND);
 			GL_UseProgram(0);
 		}
-		else if (r_light_debug && r_light_debug->value)
+		else if (r_light_debug && (int)r_light_debug->value >= 1 && (int)r_light_debug->value <= 4)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
 			glColor4f(1, 1, 1, 1);
 
-			glDisable(GL_TEXTURE_2D);
-			glEnable(GL_TEXTURE_2D_ARRAY);
-
 			hud_debug_program_t prog = { 0 };
-			R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
+			R_UseHudDebugProgram(0, &prog);
 
-			glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+			if((int)r_light_debug->value == 1)
+				GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+			else if((int)r_light_debug->value == 2)
+				GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+			else if((int)r_light_debug->value == 3)
+				GL_Bind(s_GBufferFBO.s_hBackBufferTex3);
+			else if((int)r_light_debug->value == 4)
+				GL_Bind(s_GBufferFBO.s_hBackBufferTex4);
 
-			if (prog.layer != -1)
-				glUniform1f(prog.layer, r_light_debug->value - 1);
+			//if (prog.layer != -1)
+			//	glUniform1f(prog.layer, r_light_debug->value - 1);
 
 			glBegin(GL_QUADS);
 			glTexCoord2f(0, 1);
@@ -179,9 +183,6 @@ int HUD_Redraw(float time, int intermission)
 			glTexCoord2f(0, 0);
 			glVertex3f(0, glheight / 2, 0);
 			glEnd();
-
-			glEnable(GL_TEXTURE_2D);
-			glDisable(GL_TEXTURE_2D_ARRAY);
 
 			glEnable(GL_ALPHA_TEST);
 

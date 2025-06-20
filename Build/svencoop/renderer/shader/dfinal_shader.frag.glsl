@@ -1,19 +1,14 @@
 #version 430
 
-#extension GL_EXT_texture_array : require
-#extension GL_EXT_gpu_shader4 : require
-
 #include "common.h"
 
-#define GBUFFER_INDEX_DIFFUSE		0.0 
-#define GBUFFER_INDEX_LIGHTMAP		1.0
-#define GBUFFER_INDEX_WORLDNORM		2.0
-#define GBUFFER_INDEX_SPECULAR		3.0
-
-layout(binding = 0) uniform sampler2DArray gbufferTex;
-layout(binding = 1) uniform sampler2D depthTex;
-layout(binding = 2) uniform usampler2D stencilTex;
-layout(binding = 3) uniform sampler2D linearDepthTex;
+layout(binding = DFINAL_BINDING_POINT_DIFFUSE) uniform sampler2D gbufferDiffuse;
+layout(binding = DFINAL_BINDING_POINT_LIGHTMAP) uniform sampler2D gbufferLightmap;
+layout(binding = DFINAL_BINDING_POINT_WORLDNORM) uniform sampler2D gbufferWorldNorm;
+layout(binding = DFINAL_BINDING_POINT_SPECULAR) uniform sampler2D gbufferSpecular;
+layout(binding = DFINAL_BINDING_POINT_DEPTH) uniform sampler2D depthTex;
+layout(binding = DFINAL_BINDING_POINT_STENCIL) uniform usampler2D stencilTex;
+layout(binding = DFINAL_BINDING_POINT_LINEARIZED_DEPTH) uniform sampler2D linearDepthTex;
 
 uniform float u_ssrRayStep;
 uniform int u_ssrIterCount;
@@ -30,7 +25,7 @@ float random(vec2 uv) {
 
 vec4 GenerateBasicColor(vec2 texcoord)
 {
-    vec4 diffuseColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
+    vec4 diffuseColor = texture(gbufferDiffuse, texcoord);
 
     vec4 resultColor = diffuseColor;
     resultColor.a = 1.0;
@@ -69,7 +64,7 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
 
 vec3 GenerateWorldNormal(vec2 texcoord)
 {
-    vec4 worldnormColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_WORLDNORM));
+    vec4 worldnormColor = texture(gbufferWorldNorm, texcoord);
     vec3 normalworld = OctahedronToUnitVector(worldnormColor.xy);
 
     return normalworld;
@@ -180,10 +175,10 @@ float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity, uint st
 
 void main()
 {
-    vec4 diffuseColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_DIFFUSE));
-    vec4 lightmapColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
-	vec4 worldnormColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_WORLDNORM));
-    vec4 specularColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
+    vec4 diffuseColor = texture(gbufferDiffuse, texCoord);
+    vec4 lightmapColor = texture(gbufferLightmap, texCoord);
+	vec4 worldnormColor = texture(gbufferWorldNorm, texCoord);
+    vec4 specularColor = texture(gbufferSpecular, texCoord);
 	uint stencilValue = texture(stencilTex, texCoord).r;
 
 	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z, stencilValue);

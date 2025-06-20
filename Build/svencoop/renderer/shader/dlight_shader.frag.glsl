@@ -1,26 +1,20 @@
 #version 430
 
-#extension GL_EXT_texture_array : require
-#extension GL_EXT_gpu_shader4 : require
-
 #include "common.h"
 
-#define GBUFFER_INDEX_DIFFUSE		0.0
-#define GBUFFER_INDEX_LIGHTMAP		1.0
-#define GBUFFER_INDEX_WORLDNORM		2.0
-#define GBUFFER_INDEX_SPECULAR		3.0
-#define GBUFFER_INDEX_ADDITIVE		4.0
-
-layout(binding = 0) uniform sampler2DArray gbufferTex;
-layout(binding = 1) uniform sampler2D depthTex;
-layout(binding = 2) uniform usampler2D stencilTex;
+layout(binding = DSHADE_BINDING_POINT_DIFFUSE) uniform sampler2D gbufferDiffuse;
+layout(binding = DSHADE_BINDING_POINT_LIGHTMAP) uniform sampler2D gbufferLightmap;
+layout(binding = DSHADE_BINDING_POINT_WORLDNORM) uniform sampler2D gbufferWorldNorm;
+layout(binding = DSHADE_BINDING_POINT_SPECULAR) uniform sampler2D gbufferSpecular;
+layout(binding = DSHADE_BINDING_POINT_DEPTH) uniform sampler2D depthTex;
+layout(binding = DSHADE_BINDING_POINT_STENCIL) uniform usampler2D stencilTex;
 
 #ifdef CONE_TEXTURE_ENABLED
-layout(binding = 3) uniform sampler2D coneTex;
+layout(binding = DSHADE_BINDING_POINT_CONE) uniform sampler2D coneTex;
 #endif
 
 #ifdef SHADOW_TEXTURE_ENABLED
-layout(binding = 4) uniform sampler2DShadow shadowTex;
+layout(binding = DSHADE_BINDING_POINT_SHADOWMAP) uniform sampler2DShadow shadowTex;
 #endif
 
 #ifdef SHADOW_TEXTURE_ENABLED
@@ -190,7 +184,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
 
-                float specularValue = texture(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR)).r;
+                float specularValue = texture(gbufferSpecular, vBaseTexCoord).r;
 
                 SpecularFactor = pow(SpecularFactor, u_lightspecularpow);
                 SpecularColor = vec4(u_lightcolor * u_lightspecular * SpecularFactor * specularValue, 1.0);
@@ -270,7 +264,7 @@ void main()
     vec2 vBaseTexCoord = v_texcoord.xy;
 #endif
 
-    vec4 worldnormColor = texture(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLDNORM));
+    vec4 worldnormColor = texture(gbufferWorldNorm, vBaseTexCoord);
 
     float depth = texture(depthTex, vBaseTexCoord).r;
 
@@ -279,10 +273,6 @@ void main()
     vec3 normal = OctahedronToUnitVector(worldnormColor.xy);
 
     vec3 worldpos = CameraUBO.viewpos.xyz + normalize(v_fragpos.xyz - CameraUBO.viewpos.xyz) * worldnormColor.z;
-
-//#ifndef VOLUME_ENABLED
-    //out_FragColor = vec4(vBaseTexCoord.x, vBaseTexCoord.y, 0.0, 0.0); 
-//#else
 
 #if defined(SPOT_ENABLED)
     out_FragColor = CalcSpotLight(worldpos, normal, vBaseTexCoord);

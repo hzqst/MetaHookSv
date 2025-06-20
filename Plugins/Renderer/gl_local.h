@@ -495,7 +495,12 @@ void GL_GenFrameBuffer(FBO_Container_t *s);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
-void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
+void GL_FrameBufferColorTextureDeferred(
+	FBO_Container_t *s, 
+	GLuint iInternalColorFormat, 
+	GLuint iInternalColorFormat2,
+	GLuint iInternalColorFormat3,
+	GLuint iInternalColorFormat4);
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 
 gltexture_t *GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t* context);
