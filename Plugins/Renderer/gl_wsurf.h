@@ -489,7 +489,14 @@ void R_LoadWSurfProgramStates(void);
 void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 
 CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t *surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf);
-void R_DrawWaterSurfaceModel(CWaterSurfaceModel* pWaterModel, water_reflect_cache_t* ReflectCache, cl_entity_t* ent);
+
+void R_DrawWaterSurfaceModel(
+	CWorldSurfaceModel* pModel,
+	CWorldSurfaceLeaf* pLeaf,
+	CWaterSurfaceModel* pWaterModel,
+	water_refract_cache_t* pRefractCache,
+	water_reflect_cache_t* pReflectCache,
+	cl_entity_t* ent);
 
 GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);
 

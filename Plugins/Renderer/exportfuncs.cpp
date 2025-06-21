@@ -101,7 +101,7 @@ int HUD_Redraw(float time, int intermission)
 	//TODO
 	if (AllowCheats())
 	{
-		if (r_water_debug && r_water_debug->value > 0)
+		if (r_water_debug && (int)r_water_debug->value > 0)
 		{
 			glDisable(GL_BLEND);
 			glDisable(GL_ALPHA_TEST);
@@ -114,11 +114,19 @@ int HUD_Redraw(float time, int intermission)
 			{
 			case 0:
 				if (g_WaterReflectCaches[cacheIndex].reflect_texture)
+				{
 					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_texture, glwidth / 2, glheight / 2);
+				}
 				break;
 			case 1:
-				if (g_WaterReflectCaches[cacheIndex].refract_texture)
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
+				if (g_WaterReflectCaches[cacheIndex].reflect_depth_texture)
+				{
+					hud_debug_program_t prog = { 0 };
+					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
+
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_depth_texture, glwidth / 2, glheight / 2);
+					GL_UseProgram(0);
+				}
 				break;
 			default:
 				break;

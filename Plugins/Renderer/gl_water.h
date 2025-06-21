@@ -5,7 +5,7 @@
 
 #define MAX_WATERS 16
 
-#define MAX_REFLECT_WATERS 16
+#define MAX_REFLECT_WATERS 4
 
 #define WATER_LEVEL_LEGACY						0
 #define WATER_LEVEL_REFLECT_SKYBOX				1
@@ -61,13 +61,20 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-typedef struct water_reflect_cache_s
+typedef struct water_refract_cache_s
 {
 	GLuint refract_texture{};
 	GLuint refract_depth_texture{};
+	GLsizei texwidth{};
+	GLsizei texheight{};
+	bool used{};
+	bool refractmap_ready{};
+}water_refract_cache_t;
+
+typedef struct water_reflect_cache_s
+{
 	GLuint reflect_texture{};
 	GLuint reflect_depth_texture{};
-	GLuint reflect_stencil_view_texture{};
 	GLsizei texwidth{};
 	GLsizei texheight{};
 	vec3_t normal{};
@@ -75,7 +82,7 @@ typedef struct water_reflect_cache_s
 	colorVec color{};
 	int level{};
 	bool used{};
-	bool refractmap_ready{};
+	bool reflectmap_ready{};
 }water_reflect_cache_t;
 
 class CWaterSurfaceModel
@@ -122,7 +129,6 @@ extern vec3_t g_CurrentCameraView;
 //water
 extern water_reflect_cache_t *g_CurrentReflectCache;
 extern water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
-extern int g_iNumWaterReflectCaches;
 //shader
 
 //cvar
@@ -162,17 +168,11 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 #define WATER_ADDITIVE_BLEND_ENABLED		0x200ull
 #define WATER_OIT_BLEND_ENABLED				0x400ull
 #define WATER_GAMMA_BLEND_ENABLED			0x800ull
-/*
-layout(binding = 0) uniform sampler2D baseTex;
-layout(binding = 1) uniform sampler2D normalTex;
-layout(binding = 2) uniform sampler2D reflectTex;
-layout(binding = 3) uniform sampler2D refractTex;
-layout(binding = 4) uniform sampler2D depthTex;
-*/
+
 #define WATER_BIND_BASE_TEXTURE				0
 #define WATER_BIND_NORMAL_TEXTURE			1
-#define WATER_BIND_REFLECT_TEXTURE			2
-#define WATER_BIND_REFLECT_DEPTH_TEXTURE	3
-#define WATER_BIND_REFRACT_TEXTURE			4
-#define WATER_BIND_REFRACT_DEPTH_TEXTURE	5
+#define WATER_BIND_REFRACT_TEXTURE			2
+#define WATER_BIND_REFRACT_DEPTH_TEXTURE	3
+#define WATER_BIND_REFLECT_TEXTURE			4
+#define WATER_BIND_REFLECT_DEPTH_TEXTURE	5
 
