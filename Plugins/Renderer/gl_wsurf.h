@@ -125,6 +125,7 @@ typedef struct decalvertex_s
 typedef struct brushvertexpos_s
 {
 	vec3_t	pos;
+	vec3_t	normal;
 }brushvertexpos_t;
 
 typedef struct brushvertexdiffuse_s
@@ -140,7 +141,6 @@ typedef struct brushvertexlightmap_s
 
 typedef struct brushvertexnormal_s
 {
-	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
 	float	normaltexcoord[2];

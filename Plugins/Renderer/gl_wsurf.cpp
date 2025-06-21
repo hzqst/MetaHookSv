@@ -1294,11 +1294,14 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 	GL_BindStatesForVAO(hVAO, [pWorldModel, VBOStates]() {
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pWorldModel->hEBO);
+
 		if (VBOStates & (1 << WSURF_VBO_POSITION))
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_POSITION]);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertexpos_t), OFFSET(brushvertexpos_t, pos));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertexpos_t), OFFSET(brushvertexpos_t, normal));
 		}
 		if (VBOStates & (1 << WSURF_VBO_DIFFUSE))
 		{
@@ -1317,11 +1320,9 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 		if (VBOStates & (1 << WSURF_VBO_NORMAL))
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_NORMAL]);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, normal));
 			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, s_tangent));
 			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, t_tangent));
 			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, normaltexcoord));
@@ -1465,6 +1466,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
 						tempVertexPos.pos[2] = v[2];
+						tempVertexPos.normal[0] = pFace->normal[0];
+						tempVertexPos.normal[1] = pFace->normal[1];
+						tempVertexPos.normal[2] = pFace->normal[2];
 
 						brushvertexdiffuse_t tempVertexDiffuse;
 						tempVertexDiffuse.texcoord[0] = v[3];
@@ -1478,9 +1482,6 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
 						brushvertexnormal_t tempVertexNormal;
-						tempVertexNormal.normal[0] = pFace->normal[0];
-						tempVertexNormal.normal[1] = pFace->normal[1];
-						tempVertexNormal.normal[2] = pFace->normal[2];
 						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
 						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
 						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
@@ -1539,6 +1540,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
 						tempVertexPos.pos[2] = v[2];
+						tempVertexPos.normal[0] = pFace->normal[0];
+						tempVertexPos.normal[1] = pFace->normal[1];
+						tempVertexPos.normal[2] = pFace->normal[2];
 
 						brushvertexdiffuse_t tempVertexDiffuse;
 						tempVertexDiffuse.texcoord[0] = v[3];
@@ -1552,9 +1556,6 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
 						brushvertexnormal_t tempVertexNormal;
-						tempVertexNormal.normal[0] = pFace->normal[0];
-						tempVertexNormal.normal[1] = pFace->normal[1];
-						tempVertexNormal.normal[2] = pFace->normal[2];
 						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
 						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
 						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
@@ -1564,7 +1565,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexNormal.normaltexcoord[0] = normalScale[0];
 						tempVertexNormal.normaltexcoord[1] = normalScale[1];
 
-						VectorInverse(tempVertexNormal.normal);
+						VectorInverse(tempVertexPos.normal);
 						VectorInverse(tempVertexNormal.s_tangent);
 						VectorInverse(tempVertexNormal.t_tangent);
 
@@ -1622,6 +1623,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexPos[j].pos[0] = v[0];
 					tempVertexPos[j].pos[1] = v[1];
 					tempVertexPos[j].pos[2] = v[2];
+					tempVertexPos[j].normal[0] = pFace->normal[0];
+					tempVertexPos[j].normal[1] = pFace->normal[1];
+					tempVertexPos[j].normal[2] = pFace->normal[2];
 
 					tempVertexDiffuse[j].texcoord[0] = v[3];
 					tempVertexDiffuse[j].texcoord[1] = v[4];
@@ -1632,9 +1636,6 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexLightmap[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					memcpy(&tempVertexLightmap[j].styles, surf->styles, sizeof(surf->styles));
 
-					tempVertexNormal[j].normal[0] = pFace->normal[0];
-					tempVertexNormal[j].normal[1] = pFace->normal[1];
-					tempVertexNormal[j].normal[2] = pFace->normal[2];
 					tempVertexNormal[j].s_tangent[0] = pFace->s_tangent[0];
 					tempVertexNormal[j].s_tangent[1] = pFace->s_tangent[1];
 					tempVertexNormal[j].s_tangent[2] = pFace->s_tangent[2];
@@ -1683,6 +1684,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexPos[2].pos[0] = v[0];
 					tempVertexPos[2].pos[1] = v[1];
 					tempVertexPos[2].pos[2] = v[2];
+					tempVertexPos[2].normal[0] = pFace->normal[0];
+					tempVertexPos[2].normal[1] = pFace->normal[1];
+					tempVertexPos[2].normal[2] = pFace->normal[2];
 
 					tempVertexDiffuse[2].texcoord[0] = v[3];
 					tempVertexDiffuse[2].texcoord[1] = v[4];
@@ -1693,9 +1697,6 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexLightmap[2].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					memcpy(&tempVertexLightmap[2].styles, surf->styles, sizeof(surf->styles));
 
-					tempVertexNormal[2].normal[0] = pFace->normal[0];
-					tempVertexNormal[2].normal[1] = pFace->normal[1];
-					tempVertexNormal[2].normal[2] = pFace->normal[2];
 					tempVertexNormal[2].s_tangent[0] = pFace->s_tangent[0];
 					tempVertexNormal[2].s_tangent[1] = pFace->s_tangent[1];
 					tempVertexNormal[2].s_tangent[2] = pFace->s_tangent[2];
