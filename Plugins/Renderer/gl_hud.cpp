@@ -945,7 +945,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	vec2_t InvQuarterResolution;
 	InvQuarterResolution[0] = 1.0f / float(quarterWidth);
 	InvQuarterResolution[1] = 1.0f / float(quarterHeight);
-		
+
 	vec2_t InvFullResolution;
 	InvFullResolution[0] = 1.0f / float(glwidth);
 	InvFullResolution[1] = 1.0f / float(glheight);
@@ -1016,7 +1016,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	//write to GBuffer lightmap channel
 	if (dst == &s_GBufferFBO)
 	{
-		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP);
 	}
 	else
 	{

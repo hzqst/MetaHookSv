@@ -108,8 +108,8 @@ int HUD_Redraw(float time, int intermission)
 			glColor4f(1, 1, 1, 1);
 
 			glEnable(GL_TEXTURE_2D);
-			int texIndex = ((int)r_water_debug->value - 1) % 2;
-			int cacheIndex = ((int)r_water_debug->value - 1) / 2;
+			int texIndex = ((int)r_water_debug->value - 1) % 4;
+			int cacheIndex = ((int)r_water_debug->value - 1) / 4;
 			switch (texIndex)
 			{
 			case 0:
@@ -125,6 +125,22 @@ int HUD_Redraw(float time, int intermission)
 					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
 					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_depth_texture, glwidth / 2, glheight / 2);
+					GL_UseProgram(0);
+				}
+				break;
+			case 2:
+				if (g_WaterReflectCaches[cacheIndex].refract_texture)
+				{
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
+				}
+				break;
+			case 3:
+				if (g_WaterReflectCaches[cacheIndex].refract_depth_texture)
+				{
+					hud_debug_program_t prog = { 0 };
+					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
+
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_depth_texture, glwidth / 2, glheight / 2);
 					GL_UseProgram(0);
 				}
 				break;

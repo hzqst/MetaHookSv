@@ -2177,7 +2177,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_LEGACY_ELIGHT_ENABLED;
 	}
 
-	if (R_IsRenderingReflectView())
+	if (R_IsRenderingWaterView())
 	{
 		StudioProgramState |= STUDIO_CLIP_WATER_ENABLED;
 	}

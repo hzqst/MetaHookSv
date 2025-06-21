@@ -754,7 +754,7 @@ void R_DrawParticles(void)
 		}
 	}
 
-	if (R_IsRenderingReflectView())
+	if (R_IsRenderingWaterView())
 	{
 		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
@@ -1055,7 +1055,7 @@ void triapi_RenderMode(int mode)
 				}
 			}
 
-			if (R_IsRenderingReflectView())
+			if (R_IsRenderingWaterView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -1114,7 +1114,7 @@ void triapi_RenderMode(int mode)
 				}
 			}
 
-			if (R_IsRenderingReflectView())
+			if (R_IsRenderingWaterView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -1144,7 +1144,7 @@ void triapi_RenderMode(int mode)
 		{
 			program_state_t LegacySpriteProgramState = SPRITE_ALPHA_BLEND_ENABLED;
 
-			if (R_IsRenderingReflectView())
+			if (R_IsRenderingWaterView())
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}

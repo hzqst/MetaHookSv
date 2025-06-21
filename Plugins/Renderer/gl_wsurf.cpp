@@ -1389,18 +1389,18 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 	{
 		auto surf = R_GetWorldSurfaceByIndex(mod, i);
 		auto poly = surf->polys;
-		auto pFace = &pWorldModel->vFaceBuffer[i];
+		auto pBrushFace = &pWorldModel->vFaceBuffer[i];
 
-		VectorCopy(surf->texinfo->vecs[0], pFace->s_tangent);
-		VectorCopy(surf->texinfo->vecs[1], pFace->t_tangent);
-		VectorNormalize(pFace->s_tangent);
-		VectorNormalize(pFace->t_tangent);
-		VectorCopy(surf->plane->normal, pFace->normal);
-		pFace->index = i;
-		pFace->flags = surf->flags;
+		VectorCopy(surf->texinfo->vecs[0], pBrushFace->s_tangent);
+		VectorCopy(surf->texinfo->vecs[1], pBrushFace->t_tangent);
+		VectorNormalize(pBrushFace->s_tangent);
+		VectorNormalize(pBrushFace->t_tangent);
+		VectorCopy(surf->plane->normal, pBrushFace->normal);
+		pBrushFace->index = i;
+		pBrushFace->flags = surf->flags;
 
 		if (surf->flags & SURF_PLANEBACK)
-			VectorInverse(pFace->normal);
+			VectorInverse(pBrushFace->normal);
 
 		if (surf->lightmaptexturenum + 1 > g_WorldSurfaceRenderer.iNumLightmapTextures)
 			g_WorldSurfaceRenderer.iNumLightmapTextures = surf->lightmaptexturenum + 1;
@@ -1446,7 +1446,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 			}
 		}
 
-		if (pFace->flags & SURF_DRAWTURB)
+		if (pBrushFace->flags & SURF_DRAWTURB)
 		{
 			if (1)
 			{
@@ -1466,14 +1466,14 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
 						tempVertexPos.pos[2] = v[2];
-						tempVertexPos.normal[0] = pFace->normal[0];
-						tempVertexPos.normal[1] = pFace->normal[1];
-						tempVertexPos.normal[2] = pFace->normal[2];
+						tempVertexPos.normal[0] = pBrushFace->normal[0];
+						tempVertexPos.normal[1] = pBrushFace->normal[1];
+						tempVertexPos.normal[2] = pBrushFace->normal[2];
 
 						brushvertexdiffuse_t tempVertexDiffuse;
 						tempVertexDiffuse.texcoord[0] = v[3];
 						tempVertexDiffuse.texcoord[1] = v[4];
-						tempVertexDiffuse.texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+						tempVertexDiffuse.texcoord[2] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
 						brushvertexlightmap_t tempVertexLightmap;						
 						tempVertexLightmap.lightmaptexcoord[0] = v[5];
@@ -1482,12 +1482,12 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
 						brushvertexnormal_t tempVertexNormal;
-						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
-						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
-						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
-						tempVertexNormal.t_tangent[0] = pFace->t_tangent[0];
-						tempVertexNormal.t_tangent[1] = pFace->t_tangent[1];
-						tempVertexNormal.t_tangent[2] = pFace->t_tangent[2];
+						tempVertexNormal.s_tangent[0] = pBrushFace->s_tangent[0];
+						tempVertexNormal.s_tangent[1] = pBrushFace->s_tangent[1];
+						tempVertexNormal.s_tangent[2] = pBrushFace->s_tangent[2];
+						tempVertexNormal.t_tangent[0] = pBrushFace->t_tangent[0];
+						tempVertexNormal.t_tangent[1] = pBrushFace->t_tangent[1];
+						tempVertexNormal.t_tangent[2] = pBrushFace->t_tangent[2];
 						tempVertexNormal.normaltexcoord[0] = normalScale[0];
 						tempVertexNormal.normaltexcoord[1] = normalScale[1];
 
@@ -1516,11 +1516,11 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
-					pFace->poly_count++;
+					pBrushFace->poly_count++;
 				}
 				uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
-				pFace->start_index = nBrushStartIndex;
-				pFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
+				pBrushFace->start_index = nBrushStartIndex;
+				pBrushFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
 			}
 			if (1)
 			{
@@ -1540,14 +1540,14 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
 						tempVertexPos.pos[2] = v[2];
-						tempVertexPos.normal[0] = pFace->normal[0];
-						tempVertexPos.normal[1] = pFace->normal[1];
-						tempVertexPos.normal[2] = pFace->normal[2];
+						tempVertexPos.normal[0] = pBrushFace->normal[0];
+						tempVertexPos.normal[1] = pBrushFace->normal[1];
+						tempVertexPos.normal[2] = pBrushFace->normal[2];
 
 						brushvertexdiffuse_t tempVertexDiffuse;
 						tempVertexDiffuse.texcoord[0] = v[3];
 						tempVertexDiffuse.texcoord[1] = v[4];
-						tempVertexDiffuse.texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+						tempVertexDiffuse.texcoord[2] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
 						brushvertexlightmap_t tempVertexLightmap;
 						tempVertexLightmap.lightmaptexcoord[0] = v[5];
@@ -1556,12 +1556,12 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
 						brushvertexnormal_t tempVertexNormal;
-						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
-						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
-						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
-						tempVertexNormal.t_tangent[0] = pFace->t_tangent[0];
-						tempVertexNormal.t_tangent[1] = pFace->t_tangent[1];
-						tempVertexNormal.t_tangent[2] = pFace->t_tangent[2];
+						tempVertexNormal.s_tangent[0] = pBrushFace->s_tangent[0];
+						tempVertexNormal.s_tangent[1] = pBrushFace->s_tangent[1];
+						tempVertexNormal.s_tangent[2] = pBrushFace->s_tangent[2];
+						tempVertexNormal.t_tangent[0] = pBrushFace->t_tangent[0];
+						tempVertexNormal.t_tangent[1] = pBrushFace->t_tangent[1];
+						tempVertexNormal.t_tangent[2] = pBrushFace->t_tangent[2];
 						tempVertexNormal.normaltexcoord[0] = normalScale[0];
 						tempVertexNormal.normaltexcoord[1] = normalScale[1];
 
@@ -1593,11 +1593,11 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					}
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
-					pFace->poly_count++;
+					pBrushFace->poly_count++;
 				}
 				uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
-				pFace->reverse_start_index = nBrushStartIndex;
-				pFace->reverse_index_count = nBrushCurrentIndex - nBrushStartIndex;
+				pBrushFace->reverse_start_index = nBrushStartIndex;
+				pBrushFace->reverse_index_count = nBrushCurrentIndex - nBrushStartIndex;
 			}
 		}
 		else
@@ -1623,25 +1623,25 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexPos[j].pos[0] = v[0];
 					tempVertexPos[j].pos[1] = v[1];
 					tempVertexPos[j].pos[2] = v[2];
-					tempVertexPos[j].normal[0] = pFace->normal[0];
-					tempVertexPos[j].normal[1] = pFace->normal[1];
-					tempVertexPos[j].normal[2] = pFace->normal[2];
+					tempVertexPos[j].normal[0] = pBrushFace->normal[0];
+					tempVertexPos[j].normal[1] = pBrushFace->normal[1];
+					tempVertexPos[j].normal[2] = pBrushFace->normal[2];
 
 					tempVertexDiffuse[j].texcoord[0] = v[3];
 					tempVertexDiffuse[j].texcoord[1] = v[4];
-					tempVertexDiffuse[j].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+					tempVertexDiffuse[j].texcoord[2] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
 					tempVertexLightmap[j].lightmaptexcoord[0] = v[5];
 					tempVertexLightmap[j].lightmaptexcoord[1] = v[6];
 					tempVertexLightmap[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					memcpy(&tempVertexLightmap[j].styles, surf->styles, sizeof(surf->styles));
 
-					tempVertexNormal[j].s_tangent[0] = pFace->s_tangent[0];
-					tempVertexNormal[j].s_tangent[1] = pFace->s_tangent[1];
-					tempVertexNormal[j].s_tangent[2] = pFace->s_tangent[2];
-					tempVertexNormal[j].t_tangent[0] = pFace->t_tangent[0];
-					tempVertexNormal[j].t_tangent[1] = pFace->t_tangent[1];
-					tempVertexNormal[j].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexNormal[j].s_tangent[0] = pBrushFace->s_tangent[0];
+					tempVertexNormal[j].s_tangent[1] = pBrushFace->s_tangent[1];
+					tempVertexNormal[j].s_tangent[2] = pBrushFace->s_tangent[2];
+					tempVertexNormal[j].t_tangent[0] = pBrushFace->t_tangent[0];
+					tempVertexNormal[j].t_tangent[1] = pBrushFace->t_tangent[1];
+					tempVertexNormal[j].t_tangent[2] = pBrushFace->t_tangent[2];
 					tempVertexNormal[j].normaltexcoord[0] = normalScale[0];
 					tempVertexNormal[j].normaltexcoord[1] = normalScale[1];
 
@@ -1684,25 +1684,25 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					tempVertexPos[2].pos[0] = v[0];
 					tempVertexPos[2].pos[1] = v[1];
 					tempVertexPos[2].pos[2] = v[2];
-					tempVertexPos[2].normal[0] = pFace->normal[0];
-					tempVertexPos[2].normal[1] = pFace->normal[1];
-					tempVertexPos[2].normal[2] = pFace->normal[2];
+					tempVertexPos[2].normal[0] = pBrushFace->normal[0];
+					tempVertexPos[2].normal[1] = pBrushFace->normal[1];
+					tempVertexPos[2].normal[2] = pBrushFace->normal[2];
 
 					tempVertexDiffuse[2].texcoord[0] = v[3];
 					tempVertexDiffuse[2].texcoord[1] = v[4];
-					tempVertexDiffuse[2].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+					tempVertexDiffuse[2].texcoord[2] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
 					tempVertexLightmap[2].lightmaptexcoord[0] = v[5];
 					tempVertexLightmap[2].lightmaptexcoord[1] = v[6];
 					tempVertexLightmap[2].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					memcpy(&tempVertexLightmap[2].styles, surf->styles, sizeof(surf->styles));
 
-					tempVertexNormal[2].s_tangent[0] = pFace->s_tangent[0];
-					tempVertexNormal[2].s_tangent[1] = pFace->s_tangent[1];
-					tempVertexNormal[2].s_tangent[2] = pFace->s_tangent[2];
-					tempVertexNormal[2].t_tangent[0] = pFace->t_tangent[0];
-					tempVertexNormal[2].t_tangent[1] = pFace->t_tangent[1];
-					tempVertexNormal[2].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexNormal[2].s_tangent[0] = pBrushFace->s_tangent[0];
+					tempVertexNormal[2].s_tangent[1] = pBrushFace->s_tangent[1];
+					tempVertexNormal[2].s_tangent[2] = pBrushFace->s_tangent[2];
+					tempVertexNormal[2].t_tangent[0] = pBrushFace->t_tangent[0];
+					tempVertexNormal[2].t_tangent[1] = pBrushFace->t_tangent[1];
+					tempVertexNormal[2].t_tangent[2] = pBrushFace->t_tangent[2];
 					tempVertexNormal[2].normaltexcoord[0] = normalScale[0];
 					tempVertexNormal[2].normaltexcoord[1] = normalScale[1];
 
@@ -1741,12 +1741,12 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 				}
 				vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
-				pFace->poly_count ++;
+				pBrushFace->poly_count ++;
 			}
 
 			uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
-			pFace->start_index = nBrushStartIndex;
-			pFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
+			pBrushFace->start_index = nBrushStartIndex;
+			pBrushFace->index_count = nBrushCurrentIndex - nBrushStartIndex;
 		}
 	}
 
@@ -1959,7 +1959,7 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
-	if (R_IsRenderingReflectView())
+	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 	}
@@ -2071,7 +2071,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 			}
 		}
 
-		if (R_IsRenderingReflectView())
+		if (R_IsRenderingWaterView())
 		{
 			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 		}
@@ -2340,7 +2340,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 			}
 		}
 
-		if (R_IsRenderingReflectView())
+		if (R_IsRenderingWaterView())
 		{
 			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 		}
@@ -2481,7 +2481,7 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 		GL_Bind(texture->gl_texturenum);
 	}
 
-	if (R_IsRenderingReflectView())
+	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
 	}
@@ -4355,6 +4355,11 @@ void R_SetupSceneUBO(void)
 	if (R_IsRenderingReflectView())
 	{
 		float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], -g_CurrentReflectCache->planedist };
+		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+	}
+	else if (R_IsRenderingRefractView())
+	{
+		float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 	}
 	else if (g_bPortalClipPlaneEnabled[0])

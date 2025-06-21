@@ -171,6 +171,7 @@ public:
 	uint32_t index_count{};
 	uint32_t reverse_start_index{};
 	uint32_t reverse_index_count{};
+	float totalSquare{};
 };
 
 //CPU Resource
@@ -494,7 +495,6 @@ void R_DrawWaterSurfaceModel(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_refract_cache_t* pRefractCache,
 	water_reflect_cache_t* pReflectCache,
 	cl_entity_t* ent);
 

@@ -1217,7 +1217,7 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 	GL_BindFrameBuffer(dst);
 
 	//Only draw color0 channel
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_DIFFUSE);
 
 	//No blend for final shading pass
 	glDisable(GL_BLEND);

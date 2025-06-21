@@ -61,18 +61,10 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-typedef struct water_refract_cache_s
+typedef struct water_reflect_cache_s
 {
 	GLuint refract_texture{};
 	GLuint refract_depth_texture{};
-	GLsizei texwidth{};
-	GLsizei texheight{};
-	bool used{};
-	bool refractmap_ready{};
-}water_refract_cache_t;
-
-typedef struct water_reflect_cache_s
-{
 	GLuint reflect_texture{};
 	GLuint reflect_depth_texture{};
 	GLsizei texwidth{};
@@ -82,6 +74,7 @@ typedef struct water_reflect_cache_s
 	colorVec color{};
 	int level{};
 	bool used{};
+	bool refractmap_ready{};
 	bool reflectmap_ready{};
 }water_reflect_cache_t;
 
@@ -120,6 +113,7 @@ public:
 	colorVec color{};
 	uint32_t polyCount{};
 	uint32_t drawCount{};
+	float totalSquare{};
 	std::vector<CDrawIndexAttrib> vDrawAttribBuffer{};
 };
 
