@@ -743,7 +743,7 @@ void R_RenderWaterRefractView(water_refract_cache_t* RefractCache)
 
 	auto saved_r_drawentities = r_drawentities->value;
 
-	r_drawentities->value = 0;
+	//r_drawentities->value = 1;
 
 	//if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
 	//{

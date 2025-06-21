@@ -11,10 +11,10 @@ uniform float u_speed;
 
 layout(binding = WATER_BIND_BASE_TEXTURE) uniform sampler2D baseTex;
 layout(binding = WATER_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
-layout(binding = WATER_BIND_REFLECT_TEXTURE) uniform sampler2D reflectTex;
-layout(binding = WATER_BIND_REFLECT_DEPTH_TEXTURE) uniform sampler2D reflectDepthTex;
 layout(binding = WATER_BIND_REFRACT_TEXTURE) uniform sampler2D refractTex;
 layout(binding = WATER_BIND_REFRACT_DEPTH_TEXTURE) uniform sampler2D refractDepthTex;
+layout(binding = WATER_BIND_REFLECT_TEXTURE) uniform sampler2D reflectTex;
+layout(binding = WATER_BIND_REFLECT_DEPTH_TEXTURE) uniform sampler2D reflectDepthTex;
 
 in vec4 v_projpos;
 in vec3 v_worldpos;
@@ -78,7 +78,7 @@ void main()
 
 	flFresnel = 1.0 - flFresnel;
 
-	flFresnel = clamp(flFresnel + smoothstep(u_fresnelfactor.x, u_fresnelfactor.y, flHeight), 0.0, 1.0);
+	//flFresnel = clamp(flFresnel + smoothstep(u_fresnelfactor.x, u_fresnelfactor.y, flHeight), 0.0, 1.0);
 
 	vec2 vOffsetTexCoord = normalize(vNormal).xy * flOffsetFactor;
 
@@ -143,11 +143,9 @@ void main()
 
 		#endif
 
-		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
+		vFinalColor = mix(vRefractColor, vReflectColor, flReflectFactor);
 
 		vFinalColor.a = flWaterBlendAlpha;
-
-		//The incoming vRefractColor and vReflectColor are always in linear space
 
 	#endif
 
