@@ -873,7 +873,10 @@ void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 {
 	GL_BindFrameBuffer(dst);
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	GL_BeginFullScreenQuad(false);
 
 	glDisable(GL_BLEND);
 
@@ -884,6 +887,10 @@ void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 	GL_Bind(src->s_hBackBufferDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
 }
 
 bool R_IsAmbientOcclusionEnabled(void)
@@ -911,8 +918,7 @@ bool R_IsAmbientOcclusionEnabled(void)
 
 void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	if (!hbao_randomview[0])
-		return;
+	GL_BeginFullScreenQuad(false);
 
 	//Prepare parameters
 	const float *ProjMatrix = r_projection_matrix;
@@ -1005,7 +1011,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 1.0f / float(glwidth), 0);
 
-	//Texture unit 0 = calc
+	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -1035,7 +1041,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 0, 1.0f / float(glheight));
 
-	//Texture unit 0 = calc2
+	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
 	//fullscreen triangle.
@@ -1046,6 +1052,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_EndStencil();
 
 	glDisable(GL_BLEND);
+
+	GL_EndFullScreenQuad();
 }
 
 void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)

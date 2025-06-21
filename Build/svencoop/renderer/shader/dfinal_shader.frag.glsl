@@ -2,13 +2,12 @@
 
 #include "common.h"
 
-layout(binding = DFINAL_BINDING_POINT_DIFFUSE) uniform sampler2D gbufferDiffuse;
-layout(binding = DFINAL_BINDING_POINT_LIGHTMAP) uniform sampler2D gbufferLightmap;
-layout(binding = DFINAL_BINDING_POINT_WORLDNORM) uniform sampler2D gbufferWorldNorm;
-layout(binding = DFINAL_BINDING_POINT_SPECULAR) uniform sampler2D gbufferSpecular;
-layout(binding = DFINAL_BINDING_POINT_DEPTH) uniform sampler2D depthTex;
-layout(binding = DFINAL_BINDING_POINT_STENCIL) uniform usampler2D stencilTex;
-layout(binding = DFINAL_BINDING_POINT_LINEARIZED_DEPTH) uniform sampler2D linearDepthTex;
+layout(binding = DFINAL_BIND_DIFFUSE_TEXTURE) uniform sampler2D gbufferDiffuse;
+layout(binding = DFINAL_BIND_LIGHTMAP_TEXTURE) uniform sampler2D gbufferLightmap;
+layout(binding = DFINAL_BIND_WORLDNORM_TEXTURE) uniform sampler2D gbufferWorldNorm;
+layout(binding = DFINAL_BIND_SPECULAR_TEXTURE) uniform sampler2D gbufferSpecular;
+layout(binding = DFINAL_BIND_DEPTH_TEXTURE) uniform sampler2D depthTex;
+layout(binding = DFINAL_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 
 uniform float u_ssrRayStep;
 uniform int u_ssrIterCount;

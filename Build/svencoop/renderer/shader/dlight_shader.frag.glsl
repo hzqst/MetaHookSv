@@ -2,29 +2,29 @@
 
 #include "common.h"
 
-layout(binding = DSHADE_BINDING_POINT_DIFFUSE) uniform sampler2D gbufferDiffuse;
-layout(binding = DSHADE_BINDING_POINT_LIGHTMAP) uniform sampler2D gbufferLightmap;
-layout(binding = DSHADE_BINDING_POINT_WORLDNORM) uniform sampler2D gbufferWorldNorm;
-layout(binding = DSHADE_BINDING_POINT_SPECULAR) uniform sampler2D gbufferSpecular;
-layout(binding = DSHADE_BINDING_POINT_DEPTH) uniform sampler2D depthTex;
-layout(binding = DSHADE_BINDING_POINT_STENCIL) uniform usampler2D stencilTex;
+layout(binding = DSHADE_BIND_DIFFUSE_TEXTURE) uniform sampler2D gbufferDiffuse;
+layout(binding = DSHADE_BIND_LIGHTMAP_TEXTURE) uniform sampler2D gbufferLightmap;
+layout(binding = DSHADE_BIND_WORLDNORM_TEXTURE) uniform sampler2D gbufferWorldNorm;
+layout(binding = DSHADE_BIND_SPECULAR_TEXTURE) uniform sampler2D gbufferSpecular;
+layout(binding = DSHADE_BIND_DEPTH_TEXTURE) uniform sampler2D depthTex;
+layout(binding = DSHADE_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 
-#ifdef CONE_TEXTURE_ENABLED
-layout(binding = DSHADE_BINDING_POINT_CONE) uniform sampler2D coneTex;
+#if defined(CONE_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_CONE_TEXTURE) uniform sampler2D coneTex;
 #endif
 
-#ifdef SHADOW_TEXTURE_ENABLED
-layout(binding = DSHADE_BINDING_POINT_SHADOWMAP) uniform sampler2DShadow shadowTex;
+#if defined(SHADOW_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTex;
 #endif
 
-#ifdef SHADOW_TEXTURE_ENABLED
+#if defined(SHADOW_TEXTURE_ENABLED)
 
 uniform mat4 u_shadowmatrix;
 uniform vec2 u_shadowtexel;
 
 #endif
 
-#ifdef VOLUME_ENABLED
+#if defined(VOLUME_ENABLED)
 
 uniform mat4 u_modelmatrix;
 

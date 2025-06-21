@@ -3517,19 +3517,6 @@ void R_EndRenderOpaque(void)
 		R_EndRenderGBuffer(GL_GetCurrentSceneFBO());
 	}
 
-#if 0 //AO is post-process, it should not be done here
-	else
-	{
-		if (R_IsAmbientOcclusionEnabled())
-		{
-			GL_BeginFullScreenQuad(false);
-			R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
-			R_AmbientOcclusion(&s_DepthLinearFBO, GL_GetCurrentSceneFBO());
-			GL_EndFullScreenQuad();
-		}
-	}
-#endif
-
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
 	R_LoadLegacyOpenGLMatrixForWorld();
 }
