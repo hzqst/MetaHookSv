@@ -475,6 +475,17 @@ void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind, const std::function<void()>& unbind)
+{
+	GL_BindVAO(VAO);
+
+	bind();
+
+	GL_BindVAO(0);
+
+	unbind();
+}
+
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)())
 {
 	GL_BindVAO(VAO);

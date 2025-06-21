@@ -1054,14 +1054,17 @@ void R_RenderWaterPass(void)
 	}
 }
 
-void R_DrawWaterSurfaceModelBegin(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel)
+void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel, int VBOStates)
 {
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-	GL_BindVAO(pModel->pWorldModel->hVAO);
+
+	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pLeaf->pModel->pWorldModel, VBOStates);
+
+	GL_BindVAO(hVAO);
 	GL_BindABO(pWaterModel->hABO);
 }
 
-void R_DrawWaterSurfaceModelEnd(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel)
+void R_DrawWaterSurfaceModelEnd()
 {
 	GL_BindABO(0);
 	GL_BindVAO(0);
@@ -1077,62 +1080,6 @@ void R_DrawWaterSurfaceModelReflective(
 	bool bIsAboveWater,
 	float color[4])
 {
-#if 0
-	if (!ReflectCache->refractmap_ready)
-	{
-		if (r_draw_gbuffer)
-		{
-			R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
-
-			//We are going to write into refract_texture and refract_depth_texture
-			GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refract_texture, 0, ReflectCache->refract_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
-
-			//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refract_texture and ReflectCache->refract_depth_texture
-			//The output is in linear space
-			R_BlitGBufferToFrameBuffer(&s_WaterSurfaceFBO, true, true, true);
-
-			//Restore previous framebuffer
-			GL_BindFrameBuffer(&s_GBufferFBO);
-
-			//Restore Legacy OpenGL matrix that manipulated by R_BlitGBufferToFrameBuffer
-			R_LoadLegacyOpenGLMatrixForWorld();
-
-			R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
-		}
-		else
-		{
-			R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
-
-			//Purpose : Blit color and depth of SceneFBO into ReflectCache->refract_texture and ReflectCache->refract_depth_texture
-			GL_BindFrameBufferWithTextures(&s_WaterSurfaceFBO, ReflectCache->refract_texture, 0, ReflectCache->refract_depth_texture, ReflectCache->texwidth, ReflectCache->texheight);
-
-			if (R_IsRenderingGammaBlending())
-			{
-				//The SceneFBO is in gamma space
-				GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
-
-				//Convert back to linear space for color buffer
-				R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
-			}
-			else
-			{
-				//The SceneFBO is already in linear space
-				GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_WaterSurfaceFBO);
-			}
-
-			//Restore previous framebuffer
-			GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
-
-			//Restore Legacy OpenGL matrix that manipulated by R_GammaUncorrection
-			R_LoadLegacyOpenGLMatrixForWorld();
-
-			R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
-		}
-
-		ReflectCache->refractmap_ready = true;
-	}
-#endif
-	R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1208,6 +1155,10 @@ void R_DrawWaterSurfaceModelReflective(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
+	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP) | (1 << WSURF_VBO_NORMAL);
+
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
 
@@ -1279,7 +1230,7 @@ void R_DrawWaterSurfaceModelReflective(
 
 	GL_EndStencil();
 
-	R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
+	R_DrawWaterSurfaceModelEnd();
 }
 
 void R_DrawWaterSurfaceModelRipple(
@@ -1291,7 +1242,6 @@ void R_DrawWaterSurfaceModelRipple(
 	bool bIsAboveWater,
 	float color[4])
 {
-	R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1360,6 +1310,10 @@ void R_DrawWaterSurfaceModelRipple(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
+	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE);
+
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
 
@@ -1384,7 +1338,7 @@ void R_DrawWaterSurfaceModelRipple(
 	GL_UseProgram(0);
 
 	GL_EndStencil();
-	R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
+	R_DrawWaterSurfaceModelEnd();
 }
 
 void R_DrawWaterSurfaceModelLegacy(
@@ -1396,7 +1350,6 @@ void R_DrawWaterSurfaceModelLegacy(
 	bool bIsAboveWater,
 	float color[4])
 {
-	R_DrawWaterSurfaceModelBegin(pModel, pLeaf, pWaterModel);
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1472,6 +1425,10 @@ void R_DrawWaterSurfaceModelLegacy(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
+	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE);
+
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
 
@@ -1491,12 +1448,11 @@ void R_DrawWaterSurfaceModelLegacy(
 	r_wsurf_drawcall++;
 	r_wsurf_polys += pWaterModel->polyCount;
 
-	glDisable(GL_BLEND);
-
 	GL_UseProgram(0);
 
 	GL_EndStencil();
-	R_DrawWaterSurfaceModelEnd(pModel, pLeaf, pWaterModel);
+
+	R_DrawWaterSurfaceModelEnd();
 }
 
 void R_DrawWaterSurfaceModel(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel, water_reflect_cache_t* pReflectCache, cl_entity_t* ent)

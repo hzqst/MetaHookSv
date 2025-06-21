@@ -269,18 +269,35 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 	return pPortalModel;
 }
 
+void R_DrawPortalSurfaceModelBegin(CWorldPortalModel* pPortalModel, int VBOStates)
+{
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pPortalModel->pWorldModel, VBOStates);
+
+	GL_BindVAO(hVAO);
+	GL_BindABO(pPortalModel->hABO);
+}
+
+void R_DrawPortalSurfaceModelEnd()
+{
+	GL_BindABO(0);
+	GL_BindVAO(0);
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+}
+
 void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
-	program_state_t programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
+	program_state_t PortalProgramState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
 	if (pPortalModel->texinfo->texture->name[0] == '{')
 	{
-		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
+		PortalProgramState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
 
 	if (R_IsRenderingGammaBlending())
 	{
-		programState |= PORTAL_GAMMA_BLEND_ENABLED;
+		PortalProgramState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
 	vec3_t origin{};
@@ -291,9 +308,13 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	R_RotateForTransform(origin, angles);
 
+	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP);
+
+	R_DrawPortalSurfaceModelBegin(pPortalModel, VBOStates);
+
 	portal_program_t prog = { 0 };
 
-	R_UsePortalProgram(programState, &prog);
+	R_UsePortalProgram(PortalProgramState, &prog);
 
 	GL_Bind(textureId);
 
@@ -309,22 +330,24 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	GL_UseProgram(0);
 
+	R_DrawPortalSurfaceModelEnd();
+
 	r_wsurf_drawcall++;
 	r_wsurf_polys += pPortalModel->polyCount;
 }
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
-	program_state_t programState = 0;
+	program_state_t PortalProgramState = 0;
 
 	if (pPortalModel->texinfo->texture->name[0] == '{')
 	{
-		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
+		PortalProgramState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
 	}
 
 	if (R_IsRenderingGammaBlending())
 	{
-		programState |= PORTAL_GAMMA_BLEND_ENABLED;
+		PortalProgramState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
 	vec3_t origin{};
@@ -335,8 +358,12 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	R_RotateForTransform(origin, angles);
 
+	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP);
+
+	R_DrawPortalSurfaceModelBegin(pPortalModel, VBOStates);
+
 	portal_program_t prog = { 0 };
-	R_UsePortalProgram(programState, &prog);
+	R_UsePortalProgram(PortalProgramState, &prog);
 
 	GL_Bind(textureId);
 
@@ -352,6 +379,8 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	GL_UseProgram(0);
 
+	R_DrawPortalSurfaceModelEnd();
+
 	r_wsurf_drawcall++;
 	r_wsurf_polys += pPortalModel->polyCount;
 }
@@ -365,20 +394,6 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 	g_bPortalClipPlaneEnabled[index] = true;
 }
 
-void R_DrawPortalSurfaceModelBegin(CWorldSurfaceWorldModel* pWorldModel, CWorldPortalModel* pPortalModel)
-{
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-	GL_BindVAO(pWorldModel->hVAO);
-	GL_BindABO(pPortalModel->hABO);
-}
-
-void R_DrawPortalSurfaceModelEnd(CWorldSurfaceWorldModel* pWorldModel, CWorldPortalModel* pPortalModel)
-{
-	GL_BindABO(0);
-	GL_BindVAO(0);
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-}
-
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
 {
 	auto pPortalModel = R_GetPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
@@ -389,10 +404,6 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 		if (mode != -1)
 		{
-			R_DrawPortalSurfaceModelBegin(pPortalModel->pWorldModel, pPortalModel);
-
-			glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
 			if (mode == 1)
 			{
 				R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
@@ -401,10 +412,6 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 			{
 				R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
 			}
-
-			glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-			GL_BindVAO(0);
 		}
 	}
 }

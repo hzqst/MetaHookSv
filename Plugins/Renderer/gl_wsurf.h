@@ -31,11 +31,7 @@
 #define VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD 8
 #define VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD 9
 #define VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD 10
-
-#define VERTEX_ATTRIBUTE_INDEX_DECALINDEX 11
-#define VERTEX_ATTRIBUTE_INDEX_TEXINDEX 11
-
-#define VERTEX_ATTRIBUTE_INDEX_STYLES 12
+#define VERTEX_ATTRIBUTE_INDEX_STYLES 11
 
 #define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_REPLACE_TEXTURE		1
@@ -76,6 +72,13 @@ layout(binding = 6) uniform sampler2DArray lightmapTexArray;
 #define WSURF_TEXCHAIN_SPECIAL_SOLID			1
 #define WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY	2
 #define WSURF_TEXCHAIN_SPECIAL_MAX				3
+
+#define WSURF_VBO_POSITION		0
+#define WSURF_VBO_DIFFUSE		1
+#define WSURF_VBO_LIGHTMAP		2
+#define WSURF_VBO_NORMAL		3
+#define WSURF_VBO_DETAIL		4
+#define WSURF_VBO_MAX			5
 
 typedef struct detail_texture_s
 {
@@ -124,23 +127,33 @@ typedef struct brushvertexpos_s
 	vec3_t	pos;
 }brushvertexpos_t;
 
-typedef struct brushvertex_s
+typedef struct brushvertexdiffuse_s
 {
-	vec3_t	pos;
+	float	texcoord[3];//texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
+}brushvertexdiffuse_t;
+
+typedef struct brushvertexlightmap_s
+{
+	float	lightmaptexcoord[3]; //lightmaptexcoord[2]=lightmaptexnum
+	byte	styles[4];
+}brushvertexlightmap_t;
+
+typedef struct brushvertexnormal_s
+{
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
+	float	normaltexcoord[2];
+}brushvertexnormal_t;
 
-	float	texcoord[3];//texcoord[2]=1/texwidth
-	float	lightmaptexcoord[3];//lightmaptexcoord[2]=lightmaptexturenum
+typedef struct brushvertexdetail_s
+{
 	float	replacetexcoord[2];
 	float	detailtexcoord[2];
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
-	int		texindex;//This is useless since we don't have bindless mode anymo
-	byte	styles[4];
-}brushvertex_t;
+}brushvertexdetail_t;
 
 //CPU Resource that is for generating EBO
 class CWorldSurfaceBrushFace
@@ -197,8 +210,8 @@ class CWorldSurfaceWorldModel
 public:
 	~CWorldSurfaceWorldModel();
 
-	GLuint hVAO{};
-	GLuint hVBO{};
+	std::unordered_map<int, GLuint > VAOMap;
+	GLuint hVBO[WSURF_VBO_MAX]{};
 	GLuint hEBO{};
 	model_t* mod{};
 	std::vector<CWorldSurfaceBrushFace> vFaceBuffer;
@@ -477,6 +490,8 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 
 CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t *surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf);
 void R_DrawWaterSurfaceModel(CWaterSurfaceModel* pWaterModel, water_reflect_cache_t* ReflectCache, cl_entity_t* ent);
+
+GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);
 
 #define WSURF_DIFFUSE_ENABLED				0x1ull
 #define WSURF_LIGHTMAP_ENABLED				0x2ull

@@ -2,34 +2,28 @@
 
 #extension GL_EXT_texture_array : require
 
-#ifdef BINDLESS_ENABLED
-#extension GL_ARB_shader_draw_parameters : require
-#endif
-
 #include "common.h"
 
 uniform float u_parallaxScale;
 
-layout(location = 0) in vec3 in_vertex;
-layout(location = 1) in vec3 in_normal;
-layout(location = 2) in vec3 in_tangent;
-layout(location = 3) in vec3 in_bitangent;
-layout(location = 4) in vec3 in_diffusetexcoord;
-layout(location = 5) in vec3 in_lightmaptexcoord;
-layout(location = 6) in vec2 in_replacetexcoord;
-layout(location = 7) in vec2 in_detailtexcoord;
-layout(location = 8) in vec2 in_normaltexcoord;
-layout(location = 9) in vec2 in_parallaxtexcoord;
-layout(location = 10) in vec2 in_speculartexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_POSITION) in vec3 in_vertex;
+layout(location = VERTEX_ATTRIBUTE_INDEX_NORMAL) in vec3 in_normal;
+layout(location = VERTEX_ATTRIBUTE_INDEX_S_TANGENT) in vec3 in_tangent;
+layout(location = VERTEX_ATTRIBUTE_INDEX_T_TANGENT) in vec3 in_bitangent;
+layout(location = VERTEX_ATTRIBUTE_INDEX_TEXCOORD) in vec3 in_diffusetexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD) in vec3 in_lightmaptexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD) in vec2 in_replacetexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD) in vec2 in_detailtexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD) in vec2 in_normaltexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD) in vec2 in_parallaxtexcoord;
+layout(location = VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord;
 
 #if defined(SKYBOX_ENABLED)
 
 #elif defined(DECAL_ENABLED)
-	layout(location = 11) in int in_decalindex;
-	layout(location = 12) in uvec4 in_styles;
+	layout(location = VERTEX_ATTRIBUTE_INDEX_STYLES) in uvec4 in_styles;
 #else
-	layout(location = 11) in int in_texindex;
-	layout(location = 12) in uvec4 in_styles;
+	layout(location = VERTEX_ATTRIBUTE_INDEX_STYLES) in uvec4 in_styles;
 #endif
 
 out vec3 v_worldpos;
@@ -45,18 +39,6 @@ out vec2 v_parallaxtexcoord;
 out vec2 v_speculartexcoord;
 out vec4 v_shadowcoord[3];
 out vec4 v_projpos;
-
-#ifdef BINDLESS_ENABLED
-
-	#if defined(SKYBOX_ENABLED)
-		flat out int v_drawid;
-	#elif defined(DECAL_ENABLED)
-		flat out int v_decalindex;
-	#else
-		flat out int v_texindex;
-	#endif
-
-#endif
 
 #if defined(SKYBOX_ENABLED)
 	
@@ -116,7 +98,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 
 void main(void)
 {
-#ifdef SKYBOX_ENABLED
+#if defined(SKYBOX_ENABLED)
 
 	int vertidx = gl_VertexID % 4;
 	int quadidx = gl_VertexID / 4;
@@ -150,15 +132,15 @@ void main(void)
 
 #endif
 
-#ifdef LIGHTMAP_ENABLED
+#if defined(LIGHTMAP_ENABLED)
 	v_lightmaptexcoord = in_lightmaptexcoord;
 #endif
 
-#ifdef REPLACETEXTURE_ENABLED
+#if defined(REPLACETEXTURE_ENABLED)
 	v_replacetexcoord = in_replacetexcoord;
 #endif
 
-#ifdef DETAILTEXTURE_ENABLED
+#if defined(DETAILTEXTURE_ENABLED)
 	v_detailtexcoord = in_detailtexcoord;
 #endif
 
@@ -169,43 +151,31 @@ void main(void)
     v_bitangent = normalize((EntityUBO.entityMatrix * bitangent4).xyz);
 #endif
 
-#ifdef NORMALTEXTURE_ENABLED
+#if defined(NORMALTEXTURE_ENABLED)
 	v_normaltexcoord = in_normaltexcoord;
 #endif
 
-#ifdef PARALLAXTEXTURE_ENABLED
+#if defined(PARALLAXTEXTURE_ENABLED)
 	v_parallaxtexcoord = in_parallaxtexcoord;
 #endif
 
-#ifdef SPECULARTEXTURE_ENABLED
+#if defined(SPECULARTEXTURE_ENABLED)
 	v_speculartexcoord = in_speculartexcoord;
 #endif
 
-#ifdef SHADOWMAP_ENABLED
+#if defined(SHADOWMAP_ENABLED)
 
-	#ifdef SHADOWMAP_HIGH_ENABLED
+	#if defined(SHADOWMAP_HIGH_ENABLED)
         v_shadowcoord[0] = SceneUBO.shadowMatrix[0] * vec4(v_worldpos, 1.0);
     #endif
 
-    #ifdef SHADOWMAP_MEDIUM_ENABLED
+    #if defined(SHADOWMAP_MEDIUM_ENABLED)
         v_shadowcoord[1] = SceneUBO.shadowMatrix[1] * vec4(v_worldpos, 1.0);
     #endif
 
-    #ifdef SHADOWMAP_LOW_ENABLED
+    #if defined(SHADOWMAP_LOW_ENABLED)
         v_shadowcoord[2] = SceneUBO.shadowMatrix[2] * vec4(v_worldpos, 1.0);
     #endif
-
-#endif
-
-#ifdef BINDLESS_ENABLED
-
-	#if defined(SKYBOX_ENABLED)
-		v_drawid = quadidx;
-	#elif defined(DECAL_ENABLED)
-		v_decalindex = in_decalindex;
-	#else
-		v_texindex = in_texindex;
-	#endif
 
 #endif
 

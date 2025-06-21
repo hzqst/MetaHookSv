@@ -50,18 +50,27 @@ CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 
 CWorldSurfaceWorldModel::~CWorldSurfaceWorldModel()
 {
-	if (hVBO)
-	{
-		GL_DeleteBuffer(hVBO);
-	}
 	if (hEBO)
 	{
-		GL_DeleteVAO(hEBO);
+		GL_DeleteBuffer(hEBO);
 	}
-	if (hVAO)
+
+	for (int i = WSURF_VBO_POSITION; i < WSURF_VBO_MAX; ++i)
 	{
+		if (hVBO[i])
+		{
+			GL_DeleteBuffer(hVBO[i]);
+			hVBO[i] = 0;
+		}
+	}
+
+	for (const auto &it : VAOMap)
+	{
+		auto hVAO = it.second;
+
 		GL_DeleteVAO(hVAO);
 	}
+	VAOMap.clear();
 }
 
 CWorldSurfaceModel::~CWorldSurfaceModel()
@@ -950,6 +959,8 @@ void R_GenerateWorldSurfaceModelLeafInternal(
 
 	auto pLeaf = new CWorldSurfaceLeaf();
 
+	pLeaf->pModel = pModel;
+
 	R_RecursiveMarkSurfaces(mod->nodes, visframecount, framecount);
 
 	R_RecursiveLinkTextureChain(mod, mod->nodes, visframecount, framecount, pModel->pWorldModel, pLeaf);
@@ -1269,15 +1280,103 @@ model_t* R_FindWorldModelByNode(mnode_t* pnode)
 	return nullptr;
 }
 
+GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates)
+{
+	auto it = pWorldModel->VAOMap.find(VBOStates);
+
+	if (it != pWorldModel->VAOMap.end())
+	{
+		return it->second;
+	}
+
+	auto hVAO = GL_GenVAO();
+
+	GL_BindStatesForVAO(hVAO, [pWorldModel, VBOStates]() {
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pWorldModel->hEBO);
+		if (VBOStates & (1 << WSURF_VBO_POSITION))
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_POSITION]);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertexpos_t), OFFSET(brushvertexpos_t, pos));
+		}
+		if (VBOStates & (1 << WSURF_VBO_DIFFUSE))
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_DIFFUSE]);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertexdiffuse_t), OFFSET(brushvertexdiffuse_t, texcoord));
+		}
+		if (VBOStates & (1 << WSURF_VBO_LIGHTMAP))
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_LIGHTMAP]);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertexlightmap_t), OFFSET(brushvertexlightmap_t, lightmaptexcoord));
+			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertexlightmap_t), OFFSET(brushvertexlightmap_t, styles));
+		}
+		if (VBOStates & (1 << WSURF_VBO_NORMAL))
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_NORMAL]);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, normal));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, s_tangent));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, t_tangent));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexnormal_t), OFFSET(brushvertexnormal_t, normaltexcoord));
+		}
+		if (VBOStates & (1 << WSURF_VBO_DETAIL))
+		{
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, replacetexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, detailtexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, parallaxtexcoord));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, speculartexcoord));
+		}
+	},
+	[]()
+	{
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	});
+
+	pWorldModel->VAOMap[VBOStates] = hVAO;
+
+	return hVAO;
+}
+
 CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 {
-	std::vector<brushvertex_t> vVerticeBuffer;
+	std::vector<brushvertexpos_t> vVertexPosBuffer;
+	std::vector<brushvertexdiffuse_t> vVertexDiffuseBuffer;
+	std::vector<brushvertexlightmap_t> vVertexLightmapBuffer;
+	std::vector<brushvertexnormal_t> vVertexNormalBuffer;
+	std::vector<brushvertexdetail_t> vVertexDetailBuffer;
 	std::vector<uint32_t> vIndiceBuffer;
 
-	vVerticeBuffer.reserve(0x10000);
+	vVertexPosBuffer.reserve(0x10000);
+	vVertexDiffuseBuffer.reserve(0x10000);
+	vVertexLightmapBuffer.reserve(0x10000);
+	vVertexNormalBuffer.reserve(0x10000);
+	vVertexDetailBuffer.reserve(0x10000);
 	vIndiceBuffer.reserve(0x10000);
-
-	brushvertex_t Vertexes[3];
 
 	auto pWorldModel = new CWorldSurfaceWorldModel;
 
@@ -1354,7 +1453,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 				for (poly = surf->polys; poly; poly = poly->next)
 				{
-					uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
+					uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
 					std::vector<brushvertexpos_t> vPolyVertices;
 
@@ -1362,52 +1461,58 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
-						Vertexes[0].pos[0] = v[0];
-						Vertexes[0].pos[1] = v[1];
-						Vertexes[0].pos[2] = v[2];
-						Vertexes[0].normal[0] = pFace->normal[0];
-						Vertexes[0].normal[1] = pFace->normal[1];
-						Vertexes[0].normal[2] = pFace->normal[2];
-						Vertexes[0].s_tangent[0] = pFace->s_tangent[0];
-						Vertexes[0].s_tangent[1] = pFace->s_tangent[1];
-						Vertexes[0].s_tangent[2] = pFace->s_tangent[2];
-						Vertexes[0].t_tangent[0] = pFace->t_tangent[0];
-						Vertexes[0].t_tangent[1] = pFace->t_tangent[1];
-						Vertexes[0].t_tangent[2] = pFace->t_tangent[2];
+						brushvertexpos_t tempVertexPos;
+						tempVertexPos.pos[0] = v[0];
+						tempVertexPos.pos[1] = v[1];
+						tempVertexPos.pos[2] = v[2];
 
-						Vertexes[0].texcoord[0] = v[3];
-						Vertexes[0].texcoord[1] = v[4];
-						Vertexes[0].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
-						Vertexes[0].lightmaptexcoord[0] = v[5];
-						Vertexes[0].lightmaptexcoord[1] = v[6];
-						Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
-						Vertexes[0].replacetexcoord[0] = replaceScale[0];
-						Vertexes[0].replacetexcoord[1] = replaceScale[1];
-						Vertexes[0].detailtexcoord[0] = detailScale[0];
-						Vertexes[0].detailtexcoord[1] = detailScale[1];
-						Vertexes[0].normaltexcoord[0] = normalScale[0];
-						Vertexes[0].normaltexcoord[1] = normalScale[1];
-						Vertexes[0].parallaxtexcoord[0] = parallaxScale[0];
-						Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
-						Vertexes[0].speculartexcoord[0] = specularScale[0];
-						Vertexes[0].speculartexcoord[1] = specularScale[1];
-						//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
-						memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
+						brushvertexdiffuse_t tempVertexDiffuse;
+						tempVertexDiffuse.texcoord[0] = v[3];
+						tempVertexDiffuse.texcoord[1] = v[4];
+						tempVertexDiffuse.texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
-						vVerticeBuffer.emplace_back(Vertexes[0]);
+						brushvertexlightmap_t tempVertexLightmap;						
+						tempVertexLightmap.lightmaptexcoord[0] = v[5];
+						tempVertexLightmap.lightmaptexcoord[1] = v[6];
+						tempVertexLightmap.lightmaptexcoord[2] = surf->lightmaptexturenum;
+						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
-						brushvertexpos_t pos;
-						pos.pos[0] = v[0];
-						pos.pos[1] = v[1];
-						pos.pos[2] = v[2];
+						brushvertexnormal_t tempVertexNormal;
+						tempVertexNormal.normal[0] = pFace->normal[0];
+						tempVertexNormal.normal[1] = pFace->normal[1];
+						tempVertexNormal.normal[2] = pFace->normal[2];
+						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
+						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
+						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
+						tempVertexNormal.t_tangent[0] = pFace->t_tangent[0];
+						tempVertexNormal.t_tangent[1] = pFace->t_tangent[1];
+						tempVertexNormal.t_tangent[2] = pFace->t_tangent[2];
+						tempVertexNormal.normaltexcoord[0] = normalScale[0];
+						tempVertexNormal.normaltexcoord[1] = normalScale[1];
 
-						vPolyVertices.emplace_back(pos);
+						brushvertexdetail_t tempVertexDetail;
+						tempVertexDetail.replacetexcoord[0] = replaceScale[0];
+						tempVertexDetail.replacetexcoord[1] = replaceScale[1];
+						tempVertexDetail.detailtexcoord[0] = detailScale[0];
+						tempVertexDetail.detailtexcoord[1] = detailScale[1];
+						tempVertexDetail.parallaxtexcoord[0] = parallaxScale[0];
+						tempVertexDetail.parallaxtexcoord[1] = parallaxScale[1];
+						tempVertexDetail.speculartexcoord[0] = specularScale[0];
+						tempVertexDetail.speculartexcoord[1] = specularScale[1];
+
+						vVertexPosBuffer.emplace_back(tempVertexPos);
+						vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse);
+						vVertexLightmapBuffer.emplace_back(tempVertexLightmap);
+						vVertexNormalBuffer.emplace_back(tempVertexNormal);
+						vVertexDetailBuffer.emplace_back(tempVertexDetail);
+						vPolyVertices.emplace_back(tempVertexPos);
 					}
 
 					for (size_t k = 0; k < vPolyVertices.size(); ++k)
 					{
 						vIndiceBuffer.emplace_back(nPolyStartIndex + k);
 					}
+
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 					pFace->poly_count++;
@@ -1422,7 +1527,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 				for (poly = surf->polys; poly; poly = poly->next)
 				{
-					uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
+					uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
 					std::vector<brushvertexpos_t> vPolyVertices;
 
@@ -1430,50 +1535,55 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
-						Vertexes[0].pos[0] = v[0];
-						Vertexes[0].pos[1] = v[1];
-						Vertexes[0].pos[2] = v[2];
-						Vertexes[0].normal[0] = pFace->normal[0];
-						Vertexes[0].normal[1] = pFace->normal[1];
-						Vertexes[0].normal[2] = pFace->normal[2];
-						Vertexes[0].s_tangent[0] = pFace->s_tangent[0];
-						Vertexes[0].s_tangent[1] = pFace->s_tangent[1];
-						Vertexes[0].s_tangent[2] = pFace->s_tangent[2];
-						Vertexes[0].t_tangent[0] = pFace->t_tangent[0];
-						Vertexes[0].t_tangent[1] = pFace->t_tangent[1];
-						Vertexes[0].t_tangent[2] = pFace->t_tangent[2];
+						brushvertexpos_t tempVertexPos;
+						tempVertexPos.pos[0] = v[0];
+						tempVertexPos.pos[1] = v[1];
+						tempVertexPos.pos[2] = v[2];
 
-						VectorInverse(Vertexes[0].normal);
-						VectorInverse(Vertexes[0].s_tangent);
-						VectorInverse(Vertexes[0].t_tangent);
+						brushvertexdiffuse_t tempVertexDiffuse;
+						tempVertexDiffuse.texcoord[0] = v[3];
+						tempVertexDiffuse.texcoord[1] = v[4];
+						tempVertexDiffuse.texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
-						Vertexes[0].texcoord[0] = v[3];
-						Vertexes[0].texcoord[1] = v[4];
-						Vertexes[0].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
-						Vertexes[0].lightmaptexcoord[0] = v[5];
-						Vertexes[0].lightmaptexcoord[1] = v[6];
-						Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
-						Vertexes[0].replacetexcoord[0] = replaceScale[0];
-						Vertexes[0].replacetexcoord[1] = replaceScale[1];
-						Vertexes[0].detailtexcoord[0] = detailScale[0];
-						Vertexes[0].detailtexcoord[1] = detailScale[1];
-						Vertexes[0].normaltexcoord[0] = normalScale[0];
-						Vertexes[0].normaltexcoord[1] = normalScale[1];
-						Vertexes[0].parallaxtexcoord[0] = parallaxScale[0];
-						Vertexes[0].parallaxtexcoord[1] = parallaxScale[1];
-						Vertexes[0].speculartexcoord[0] = specularScale[0];
-						Vertexes[0].speculartexcoord[1] = specularScale[1];
-						//Vertexes[0].texindex = R_FindTextureIdByTexture(mod, ptexture);
-						memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
+						brushvertexlightmap_t tempVertexLightmap;
+						tempVertexLightmap.lightmaptexcoord[0] = v[5];
+						tempVertexLightmap.lightmaptexcoord[1] = v[6];
+						tempVertexLightmap.lightmaptexcoord[2] = surf->lightmaptexturenum;
+						memcpy(&tempVertexLightmap.styles, surf->styles, sizeof(surf->styles));
 
-						vVerticeBuffer.emplace_back(Vertexes[0]);
+						brushvertexnormal_t tempVertexNormal;
+						tempVertexNormal.normal[0] = pFace->normal[0];
+						tempVertexNormal.normal[1] = pFace->normal[1];
+						tempVertexNormal.normal[2] = pFace->normal[2];
+						tempVertexNormal.s_tangent[0] = pFace->s_tangent[0];
+						tempVertexNormal.s_tangent[1] = pFace->s_tangent[1];
+						tempVertexNormal.s_tangent[2] = pFace->s_tangent[2];
+						tempVertexNormal.t_tangent[0] = pFace->t_tangent[0];
+						tempVertexNormal.t_tangent[1] = pFace->t_tangent[1];
+						tempVertexNormal.t_tangent[2] = pFace->t_tangent[2];
+						tempVertexNormal.normaltexcoord[0] = normalScale[0];
+						tempVertexNormal.normaltexcoord[1] = normalScale[1];
 
-						brushvertexpos_t pos;
-						pos.pos[0] = v[0];
-						pos.pos[1] = v[1];
-						pos.pos[2] = v[2];
+						VectorInverse(tempVertexNormal.normal);
+						VectorInverse(tempVertexNormal.s_tangent);
+						VectorInverse(tempVertexNormal.t_tangent);
 
-						vPolyVertices.emplace_back(pos);
+						brushvertexdetail_t tempVertexDetail;
+						tempVertexDetail.replacetexcoord[0] = replaceScale[0];
+						tempVertexDetail.replacetexcoord[1] = replaceScale[1];
+						tempVertexDetail.detailtexcoord[0] = detailScale[0];
+						tempVertexDetail.detailtexcoord[1] = detailScale[1];
+						tempVertexDetail.parallaxtexcoord[0] = parallaxScale[0];
+						tempVertexDetail.parallaxtexcoord[1] = parallaxScale[1];
+						tempVertexDetail.speculartexcoord[0] = specularScale[0];
+						tempVertexDetail.speculartexcoord[1] = specularScale[1];
+
+						vVertexPosBuffer.emplace_back(tempVertexPos);
+						vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse);
+						vVertexLightmapBuffer.emplace_back(tempVertexLightmap);
+						vVertexNormalBuffer.emplace_back(tempVertexNormal);
+						vVertexDetailBuffer.emplace_back(tempVertexDetail);
+						vPolyVertices.emplace_back(tempVertexPos);
 					}
 
 					for (size_t k = 0; k < vPolyVertices.size(); ++k)
@@ -1482,6 +1592,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					}
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
+					pFace->poly_count++;
 				}
 				uint32_t nBrushCurrentIndex = (uint32_t)vIndiceBuffer.size();
 				pFace->reverse_start_index = nBrushStartIndex;
@@ -1494,130 +1605,133 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 			for (poly = surf->polys; poly; poly = poly->next)
 			{
-				uint32_t nPolyStartIndex = (uint32_t)vVerticeBuffer.size();
+				uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
 				std::vector<brushvertexpos_t> vPolyVertices;
 
 				float *v = poly->verts[0];
 
+				brushvertexpos_t tempVertexPos[3];
+				brushvertexdiffuse_t tempVertexDiffuse[3];
+				brushvertexlightmap_t tempVertexLightmap[3];
+				brushvertexnormal_t tempVertexNormal[3];
+				brushvertexdetail_t tempVertexDetail[3];
+
 				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
 				{
-					Vertexes[j].pos[0] = v[0];
-					Vertexes[j].pos[1] = v[1];
-					Vertexes[j].pos[2] = v[2];
-					Vertexes[j].normal[0] = pFace->normal[0];
-					Vertexes[j].normal[1] = pFace->normal[1];
-					Vertexes[j].normal[2] = pFace->normal[2];
-					Vertexes[j].s_tangent[0] = pFace->s_tangent[0];
-					Vertexes[j].s_tangent[1] = pFace->s_tangent[1];
-					Vertexes[j].s_tangent[2] = pFace->s_tangent[2];
-					Vertexes[j].t_tangent[0] = pFace->t_tangent[0];
-					Vertexes[j].t_tangent[1] = pFace->t_tangent[1];
-					Vertexes[j].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexPos[j].pos[0] = v[0];
+					tempVertexPos[j].pos[1] = v[1];
+					tempVertexPos[j].pos[2] = v[2];
 
-					Vertexes[j].texcoord[0] = v[3];
-					Vertexes[j].texcoord[1] = v[4];
-					Vertexes[j].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
-					Vertexes[j].lightmaptexcoord[0] = v[5];
-					Vertexes[j].lightmaptexcoord[1] = v[6];
-					Vertexes[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
-					Vertexes[j].replacetexcoord[0] = replaceScale[0];
-					Vertexes[j].replacetexcoord[1] = replaceScale[1];
-					Vertexes[j].detailtexcoord[0] = detailScale[0];
-					Vertexes[j].detailtexcoord[1] = detailScale[1];
-					Vertexes[j].normaltexcoord[0] = normalScale[0];
-					Vertexes[j].normaltexcoord[1] = normalScale[1];
-					Vertexes[j].parallaxtexcoord[0] = parallaxScale[0];
-					Vertexes[j].parallaxtexcoord[1] = parallaxScale[1];
-					Vertexes[j].speculartexcoord[0] = specularScale[0];
-					Vertexes[j].speculartexcoord[1] = specularScale[1];
-					//Vertexes[j].texindex = R_FindTextureIdByTexture(mod, ptexture);
-					memcpy(&Vertexes[j].styles, surf->styles, sizeof(surf->styles));
+					tempVertexDiffuse[j].texcoord[0] = v[3];
+					tempVertexDiffuse[j].texcoord[1] = v[4];
+					tempVertexDiffuse[j].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+
+					tempVertexLightmap[j].lightmaptexcoord[0] = v[5];
+					tempVertexLightmap[j].lightmaptexcoord[1] = v[6];
+					tempVertexLightmap[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
+					memcpy(&tempVertexLightmap[j].styles, surf->styles, sizeof(surf->styles));
+
+					tempVertexNormal[j].normal[0] = pFace->normal[0];
+					tempVertexNormal[j].normal[1] = pFace->normal[1];
+					tempVertexNormal[j].normal[2] = pFace->normal[2];
+					tempVertexNormal[j].s_tangent[0] = pFace->s_tangent[0];
+					tempVertexNormal[j].s_tangent[1] = pFace->s_tangent[1];
+					tempVertexNormal[j].s_tangent[2] = pFace->s_tangent[2];
+					tempVertexNormal[j].t_tangent[0] = pFace->t_tangent[0];
+					tempVertexNormal[j].t_tangent[1] = pFace->t_tangent[1];
+					tempVertexNormal[j].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexNormal[j].normaltexcoord[0] = normalScale[0];
+					tempVertexNormal[j].normaltexcoord[1] = normalScale[1];
+
+					tempVertexDetail[j].replacetexcoord[0] = replaceScale[0];
+					tempVertexDetail[j].replacetexcoord[1] = replaceScale[1];
+					tempVertexDetail[j].detailtexcoord[0] = detailScale[0];
+					tempVertexDetail[j].detailtexcoord[1] = detailScale[1];
+					tempVertexDetail[j].parallaxtexcoord[0] = parallaxScale[0];
+					tempVertexDetail[j].parallaxtexcoord[1] = parallaxScale[1];
+					tempVertexDetail[j].speculartexcoord[0] = specularScale[0];
+					tempVertexDetail[j].speculartexcoord[1] = specularScale[1];
 				}
-				vVerticeBuffer.emplace_back(Vertexes[0]);
-				vVerticeBuffer.emplace_back(Vertexes[1]);
-				vVerticeBuffer.emplace_back(Vertexes[2]);
-
-				{
-					brushvertexpos_t pos;
-					pos.pos[0] = Vertexes[0].pos[0];
-					pos.pos[1] = Vertexes[0].pos[1];
-					pos.pos[2] = Vertexes[0].pos[2];
-
-					vPolyVertices.emplace_back(pos);
-
-					pos.pos[0] = Vertexes[1].pos[0];
-					pos.pos[1] = Vertexes[1].pos[1];
-					pos.pos[2] = Vertexes[1].pos[2];
-
-					vPolyVertices.emplace_back(pos);
-
-					pos.pos[0] = Vertexes[2].pos[0];
-					pos.pos[1] = Vertexes[2].pos[1];
-					pos.pos[2] = Vertexes[2].pos[2];
-
-					vPolyVertices.emplace_back(pos);
-				}
+				vVertexPosBuffer.emplace_back(tempVertexPos[0]);
+				vVertexPosBuffer.emplace_back(tempVertexPos[1]);
+				vVertexPosBuffer.emplace_back(tempVertexPos[2]);
+				vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[0]);
+				vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[1]);
+				vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[2]);
+				vVertexLightmapBuffer.emplace_back(tempVertexLightmap[0]);
+				vVertexLightmapBuffer.emplace_back(tempVertexLightmap[1]);
+				vVertexLightmapBuffer.emplace_back(tempVertexLightmap[2]);
+				vVertexNormalBuffer.emplace_back(tempVertexNormal[0]);
+				vVertexNormalBuffer.emplace_back(tempVertexNormal[1]);
+				vVertexNormalBuffer.emplace_back(tempVertexNormal[2]);
+				vVertexDetailBuffer.emplace_back(tempVertexDetail[0]);
+				vVertexDetailBuffer.emplace_back(tempVertexDetail[1]);
+				vVertexDetailBuffer.emplace_back(tempVertexDetail[2]);
+				vPolyVertices.emplace_back(tempVertexPos[0]);
+				vPolyVertices.emplace_back(tempVertexPos[1]);
+				vPolyVertices.emplace_back(tempVertexPos[2]);
 
 				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
 				{
-					memcpy(&Vertexes[1], &Vertexes[2], sizeof(brushvertex_t));
+					memcpy(&tempVertexPos[1], &tempVertexPos[2], sizeof(brushvertexpos_t));
+					memcpy(&tempVertexDiffuse[1], &tempVertexDiffuse[2], sizeof(brushvertexdiffuse_t));
+					memcpy(&tempVertexLightmap[1], &tempVertexLightmap[2], sizeof(brushvertexlightmap_t));
+					memcpy(&tempVertexNormal[1], &tempVertexNormal[2], sizeof(brushvertexnormal_t));
+					memcpy(&tempVertexDetail[1], &tempVertexDetail[2], sizeof(brushvertexdetail_t));
 
-					Vertexes[2].pos[0] = v[0];
-					Vertexes[2].pos[1] = v[1];
-					Vertexes[2].pos[2] = v[2];
-					Vertexes[2].normal[0] = pFace->normal[0];
-					Vertexes[2].normal[1] = pFace->normal[1];
-					Vertexes[2].normal[2] = pFace->normal[2];
-					Vertexes[2].s_tangent[0] = pFace->s_tangent[0];
-					Vertexes[2].s_tangent[1] = pFace->s_tangent[1];
-					Vertexes[2].s_tangent[2] = pFace->s_tangent[2];
-					Vertexes[2].t_tangent[0] = pFace->t_tangent[0];
-					Vertexes[2].t_tangent[1] = pFace->t_tangent[1];
-					Vertexes[2].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexPos[2].pos[0] = v[0];
+					tempVertexPos[2].pos[1] = v[1];
+					tempVertexPos[2].pos[2] = v[2];
 
-					Vertexes[2].texcoord[0] = v[3];
-					Vertexes[2].texcoord[1] = v[4];
-					Vertexes[2].texcoord[2] = (ptexture && (surf->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
-					Vertexes[2].lightmaptexcoord[0] = v[5];
-					Vertexes[2].lightmaptexcoord[1] = v[6];
-					Vertexes[2].lightmaptexcoord[2] = surf->lightmaptexturenum;
-					Vertexes[2].detailtexcoord[0] = detailScale[0];
-					Vertexes[2].detailtexcoord[1] = detailScale[1];
-					Vertexes[2].normaltexcoord[0] = normalScale[0];
-					Vertexes[2].normaltexcoord[1] = normalScale[1];
-					Vertexes[2].parallaxtexcoord[0] = parallaxScale[0];
-					Vertexes[2].parallaxtexcoord[1] = parallaxScale[1];
-					Vertexes[2].speculartexcoord[0] = specularScale[0];
-					Vertexes[2].speculartexcoord[1] = specularScale[1];
-					//Vertexes[2].texindex = R_FindTextureIdByTexture(mod, ptexture);
-					memcpy(&Vertexes[2].styles, surf->styles, sizeof(surf->styles));
+					tempVertexDiffuse[2].texcoord[0] = v[3];
+					tempVertexDiffuse[2].texcoord[1] = v[4];
+					tempVertexDiffuse[2].texcoord[2] = (ptexture && (pFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
-					vVerticeBuffer.emplace_back(Vertexes[0]);
-					vVerticeBuffer.emplace_back(Vertexes[1]);
-					vVerticeBuffer.emplace_back(Vertexes[2]);
+					tempVertexLightmap[2].lightmaptexcoord[0] = v[5];
+					tempVertexLightmap[2].lightmaptexcoord[1] = v[6];
+					tempVertexLightmap[2].lightmaptexcoord[2] = surf->lightmaptexturenum;
+					memcpy(&tempVertexLightmap[2].styles, surf->styles, sizeof(surf->styles));
 
+					tempVertexNormal[2].normal[0] = pFace->normal[0];
+					tempVertexNormal[2].normal[1] = pFace->normal[1];
+					tempVertexNormal[2].normal[2] = pFace->normal[2];
+					tempVertexNormal[2].s_tangent[0] = pFace->s_tangent[0];
+					tempVertexNormal[2].s_tangent[1] = pFace->s_tangent[1];
+					tempVertexNormal[2].s_tangent[2] = pFace->s_tangent[2];
+					tempVertexNormal[2].t_tangent[0] = pFace->t_tangent[0];
+					tempVertexNormal[2].t_tangent[1] = pFace->t_tangent[1];
+					tempVertexNormal[2].t_tangent[2] = pFace->t_tangent[2];
+					tempVertexNormal[2].normaltexcoord[0] = normalScale[0];
+					tempVertexNormal[2].normaltexcoord[1] = normalScale[1];
 
-					{
-						brushvertexpos_t pos;
-						pos.pos[0] = Vertexes[0].pos[0];
-						pos.pos[1] = Vertexes[0].pos[1];
-						pos.pos[2] = Vertexes[0].pos[2];
+					tempVertexDetail[2].replacetexcoord[0] = replaceScale[0];
+					tempVertexDetail[2].replacetexcoord[1] = replaceScale[1];
+					tempVertexDetail[2].detailtexcoord[0] = detailScale[0];
+					tempVertexDetail[2].detailtexcoord[1] = detailScale[1];
+					tempVertexDetail[2].parallaxtexcoord[0] = parallaxScale[0];
+					tempVertexDetail[2].parallaxtexcoord[1] = parallaxScale[1];
+					tempVertexDetail[2].speculartexcoord[0] = specularScale[0];
+					tempVertexDetail[2].speculartexcoord[1] = specularScale[1];
 
-						vPolyVertices.emplace_back(pos);
-
-						pos.pos[0] = Vertexes[1].pos[0];
-						pos.pos[1] = Vertexes[1].pos[1];
-						pos.pos[2] = Vertexes[1].pos[2];
-
-						vPolyVertices.emplace_back(pos);
-
-						pos.pos[0] = Vertexes[2].pos[0];
-						pos.pos[1] = Vertexes[2].pos[1];
-						pos.pos[2] = Vertexes[2].pos[2];
-
-						vPolyVertices.emplace_back(pos);
-					}
+					vVertexPosBuffer.emplace_back(tempVertexPos[0]);
+					vVertexPosBuffer.emplace_back(tempVertexPos[1]);
+					vVertexPosBuffer.emplace_back(tempVertexPos[2]);
+					vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[0]);
+					vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[1]);
+					vVertexDiffuseBuffer.emplace_back(tempVertexDiffuse[2]);
+					vVertexLightmapBuffer.emplace_back(tempVertexLightmap[0]);
+					vVertexLightmapBuffer.emplace_back(tempVertexLightmap[1]);
+					vVertexLightmapBuffer.emplace_back(tempVertexLightmap[2]);
+					vVertexNormalBuffer.emplace_back(tempVertexNormal[0]);
+					vVertexNormalBuffer.emplace_back(tempVertexNormal[1]);
+					vVertexNormalBuffer.emplace_back(tempVertexNormal[2]);
+					vVertexDetailBuffer.emplace_back(tempVertexDetail[0]);
+					vVertexDetailBuffer.emplace_back(tempVertexDetail[1]);
+					vVertexDetailBuffer.emplace_back(tempVertexDetail[2]);
+					vPolyVertices.emplace_back(tempVertexPos[0]);
+					vPolyVertices.emplace_back(tempVertexPos[1]);
+					vPolyVertices.emplace_back(tempVertexPos[2]);
 				}
 
 				for (size_t k = 0; k < vPolyVertices.size(); ++k)
@@ -1635,58 +1749,23 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 		}
 	}
 
-	pWorldModel->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO, sizeof(brushvertex_t) * vVerticeBuffer.size(), vVerticeBuffer.data());
-
 	pWorldModel->hEBO = GL_GenBuffer();
 	GL_UploadDataToEBOStaticDraw(pWorldModel->hEBO, sizeof(uint32_t) * vIndiceBuffer.size(), vIndiceBuffer.data());
 
-	pWorldModel->hVAO = GL_GenVAO();
-	GL_BindStatesForVAO(pWorldModel->hVAO, pWorldModel->hVBO, pWorldModel->hEBO,
-		[]() {
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
-			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
-			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
-		},
-		[]() {
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-		});
+	pWorldModel->hVBO[WSURF_VBO_POSITION] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_POSITION], sizeof(brushvertexpos_t) * vVertexPosBuffer.size(), vVertexPosBuffer.data());
 
+	pWorldModel->hVBO[WSURF_VBO_DIFFUSE] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_DIFFUSE], sizeof(brushvertexdiffuse_t) * vVertexDiffuseBuffer.size(), vVertexDiffuseBuffer.data());
+
+	pWorldModel->hVBO[WSURF_VBO_LIGHTMAP] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_LIGHTMAP], sizeof(brushvertexlightmap_t) * vVertexLightmapBuffer.size(), vVertexLightmapBuffer.data());
+
+	pWorldModel->hVBO[WSURF_VBO_NORMAL] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_NORMAL], sizeof(brushvertexnormal_t) * vVertexNormalBuffer.size(), vVertexNormalBuffer.data());
+
+	pWorldModel->hVBO[WSURF_VBO_DETAIL] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_DETAIL], sizeof(brushvertexdetail_t) * vVertexDetailBuffer.size(), vVertexDetailBuffer.data());
 
 	return pWorldModel;
 }
@@ -1770,7 +1849,6 @@ void R_GenerateSceneUBO(void)
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
 		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
@@ -1783,7 +1861,6 @@ void R_GenerateSceneUBO(void)
 		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normaltexcoord));
 		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
 		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
-		glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_DECALINDEX, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
 		glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
 	},
 	[]() {
@@ -1798,7 +1875,6 @@ void R_GenerateSceneUBO(void)
 		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
 		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 	});
 	
@@ -1846,10 +1922,13 @@ void R_ClearDecalCache(void)
 	memset(g_WorldSurfaceRenderer.vCachedDecals, 0, sizeof(g_WorldSurfaceRenderer.vCachedDecals));
 }
 
-void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceModel *pModel ,CWorldSurfaceLeaf* pLeaf)
+void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceLeaf* pLeaf, int VBOStates)
 {
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-	GL_BindVAO(pModel->pWorldModel->hVAO);
+
+	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pLeaf->pModel->pWorldModel, VBOStates);
+
+	GL_BindVAO(hVAO);
 	GL_BindABO(pLeaf->hABO);
 }
 
@@ -1888,6 +1967,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	R_DrawWorldSurfaceLeafBegin(pLeaf, (1 << WSURF_VBO_POSITION));
+
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -1908,7 +1989,10 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 	GL_EndStencil();
 
 	GL_UseProgram(0);
-}
+
+	R_DrawWorldSurfaceLeafEnd();
+
+}//R_DrawWorldSurfaceLeafSolid
 
 void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
@@ -2060,6 +2144,27 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
 
+		int VBOStates = (1 << WSURF_VBO_POSITION);
+
+		if (WSurfProgramState & (WSURF_DIFFUSE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_DIFFUSE);
+		}
+		if (WSurfProgramState & (WSURF_LIGHTMAP_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_LIGHTMAP);
+		}
+		if (WSurfProgramState & (WSURF_NORMALTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_NORMAL);
+		}
+		if (WSurfProgramState & (WSURF_REPLACETEXTURE_ENABLED | WSURF_DETAILTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED | WSURF_SPECULARTEXTURE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_DETAIL);
+		}
+
+		R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
+
 		if (r_draw_opaque)
 		{
 			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
@@ -2079,11 +2184,13 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 		r_wsurf_drawcall++;
 		r_wsurf_polys += texchain.polyCount;
 
+		GL_UseProgram(0);
+
 		GL_EndStencil();
 
-		GL_UseProgram(0);
+		R_DrawWorldSurfaceLeafEnd();
 	}
-}
+}//R_DrawWorldSurfaceLeafStatic
 
 texture_t *R_GetAnimatedTexture(texture_t *base)
 {
@@ -2307,6 +2414,27 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
+		int VBOStates = (1 << WSURF_VBO_POSITION);
+
+		if (WSurfProgramState & (WSURF_DIFFUSE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_DIFFUSE);
+		}
+		if (WSurfProgramState & (WSURF_LIGHTMAP_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_LIGHTMAP);
+		}
+		if (WSurfProgramState & (WSURF_NORMALTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_NORMAL);
+		}
+		if (WSurfProgramState & (WSURF_REPLACETEXTURE_ENABLED | WSURF_DETAILTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED | WSURF_SPECULARTEXTURE_ENABLED))
+		{
+			VBOStates |= (1 << WSURF_VBO_DETAIL);
+		}
+
+		R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
+
 		if (r_draw_opaque)
 		{
 			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
@@ -2326,11 +2454,13 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 		r_wsurf_drawcall++;
 		r_wsurf_polys += texchain.polyCount;
 
+		GL_UseProgram(0);
+
 		GL_EndStencil();
 
-		GL_UseProgram(0);
+		R_DrawWorldSurfaceLeafEnd();
 	}
-}
+}//R_DrawWorldSurfaceLeafAnim
 
 void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
 {
@@ -2428,6 +2558,27 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
+	int VBOStates = (1 << WSURF_VBO_POSITION);
+
+	if (WSurfProgramState & (WSURF_DIFFUSE_ENABLED))
+	{
+		VBOStates |= (1 << WSURF_VBO_DIFFUSE);
+	}
+	if (WSurfProgramState & (WSURF_LIGHTMAP_ENABLED))
+	{
+		VBOStates |= (1 << WSURF_VBO_LIGHTMAP);
+	}
+	if (WSurfProgramState & (WSURF_NORMALTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED))
+	{
+		VBOStates |= (1 << WSURF_VBO_NORMAL);
+	}
+	if (WSurfProgramState & (WSURF_REPLACETEXTURE_ENABLED | WSURF_DETAILTEXTURE_ENABLED | WSURF_PARALLAXTEXTURE_ENABLED | WSURF_SPECULARTEXTURE_ENABLED))
+	{
+		VBOStates |= (1 << WSURF_VBO_DETAIL);
+	}
+
+	R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
+
 	if (r_draw_opaque)
 	{
 		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
@@ -2445,10 +2596,13 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	r_wsurf_drawcall++;
 	r_wsurf_polys += texchain.polyCount;
 
+	GL_UseProgram(0);
+
 	GL_EndStencil();
 
-	GL_UseProgram(0);
-}
+	R_DrawWorldSurfaceLeafEnd();
+
+}//R_DrawWorldSurfaceLeafSky
 
 float R_ScrollSpeed(void)
 {
@@ -2536,8 +2690,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 					if (pNoVisLeaf && pNoVisLeaf->hABO)
 					{
-						R_DrawWorldSurfaceLeafBegin(pModel, pNoVisLeaf);
-
 						if (R_ShouldDrawZPrePass())
 						{
 							glColorMask(0, 0, 0, 0);
@@ -2560,8 +2712,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 						R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf, false);
 						R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf, false);
 
-						R_DrawWorldSurfaceLeafEnd();
-
 						if (bUseZPrePass)
 						{
 							glDepthFunc(GL_LEQUAL);
@@ -2570,8 +2720,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 				}
 				else
 				{
-					R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
-
 					if (R_ShouldDrawZPrePass())
 					{
 						glColorMask(0, 0, 0, 0);
@@ -2594,8 +2742,6 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 					R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
 					R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
 
-					R_DrawWorldSurfaceLeafEnd();
-
 					if (bUseZPrePass)
 					{
 						glDepthFunc(GL_LEQUAL);
@@ -2616,12 +2762,8 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel *pModel, cl_entity_t *ent)
 
 			if (pLeaf && pLeaf->hABO)
 			{
-				R_DrawWorldSurfaceLeafBegin(pModel, pLeaf);
-
 				R_DrawWorldSurfaceLeafStatic(pModel, pLeaf, bUseZPrePass);
 				R_DrawWorldSurfaceLeafAnim(pModel, pLeaf, bUseZPrePass);
-
-				R_DrawWorldSurfaceLeafEnd();
 			}
 		}
 		else

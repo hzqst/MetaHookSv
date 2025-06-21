@@ -419,6 +419,7 @@ void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
 void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind, const std::function<void()>& unbind);
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)());
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
