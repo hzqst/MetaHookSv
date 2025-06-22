@@ -719,6 +719,8 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		glDrawArrays(GL_QUADS, 0, 4);
 	}
 
+	GL_Bind(0);
+
 	r_sprite_drawcall++;
 	r_sprite_polys++;
 

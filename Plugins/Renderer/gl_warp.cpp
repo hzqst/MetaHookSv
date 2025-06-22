@@ -89,7 +89,7 @@ void R_DrawSkyBox(void)
 		for (int i = 0; i < 6; ++i)
 		{
 			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[6 + i]);
-			glDrawArrays(GL_QUADS, 4 * i, 4);
+			glDrawArrays(GL_TRIANGLES, 6 * i, 6);
 		}
 	}
 	else
@@ -97,7 +97,7 @@ void R_DrawSkyBox(void)
 		for (int i = 0; i < 6; ++i)
 		{
 			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[i]);
-			glDrawArrays(GL_QUADS, 4 * i, 4);
+			glDrawArrays(GL_TRIANGLES, 6 * i, 6);
 		}
 	}
 

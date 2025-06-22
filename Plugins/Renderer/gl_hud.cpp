@@ -485,7 +485,6 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 
 	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(src->s_hBackBufferTex);
 
 	GL_EnableMultitexture();
@@ -493,7 +492,9 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	GL_Bind(0);
 	GL_DisableMultitexture();
+	GL_Bind(0);
 }
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
@@ -509,7 +510,6 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 
 	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(src->s_hBackBufferTex);
 
 	GL_EnableMultitexture();
@@ -517,7 +517,9 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	GL_Bind(0);
 	GL_DisableMultitexture();
+	GL_Bind(0);
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
@@ -603,7 +605,10 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glDisable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE1);
+
+	GL_Bind(0);
 	GL_DisableMultitexture();
+	GL_Bind(0);
 }
 
 bool R_IsHDREnabled(void)
@@ -986,7 +991,11 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	//Disable texture unit 1
+	GL_Bind(0);
 	GL_DisableMultitexture();
+
+	//Disable texture unit 0
+	GL_Bind(0);
 
 	//SSAO blur stage
 

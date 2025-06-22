@@ -48,9 +48,9 @@ out vec4 v_projpos;
 	flat out uvec4 v_styles;
 #endif
 
-#ifdef SKYBOX_ENABLED
+#if defined(SKYBOX_ENABLED)
 
-void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out vec2 texCoord)
+void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out vec3 normal, out vec2 texCoord)
 {
 	const float flScale = 0.57735;
 	const ivec3 st_to_vec[6] =
@@ -64,6 +64,17 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 		ivec3( -2, -1, 3 ),
 		ivec3( 2, -1, -3 )
 	};
+	const vec3 axis_to_normal[6] = 
+    {
+        vec3( -1, 0, 0 ),
+        vec3( 1, 0, 0 ),
+
+        vec3( 0, -1, 0 ),
+        vec3( 0, 1, 0 ),
+
+        vec3( 0, 0, -1 ),
+        vec3( 0, 0, 1 ),
+    };
 
 	float width = zFar * flScale;
 	vec3 b = vec3(s * width, t * width, width);
@@ -90,30 +101,37 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 	t = 1.0 - t;
 
 	position = v;
+	normal = axis_to_normal[axis];
 	texCoord = vec2(s, t);
 }
 
 #endif
 
-
 void main(void)
 {
 #if defined(SKYBOX_ENABLED)
 
-	int vertidx = gl_VertexID % 4;
-	int quadidx = gl_VertexID / 4;
+	int vertidx = gl_VertexID % 6;
+	int quadidx = gl_VertexID / 6;
+
+	const int indexedVertIds[] = {
+        0, 1, 2, 2, 3, 0
+    };
+
+	vertidx = indexedVertIds[vertidx];
 
 	const vec4 s_array = vec4(-1.0, -1.0, 1.0, 1.0);
 	const vec4 t_array = vec4(-1.0, 1.0, 1.0, -1.0);
 
-	vec3 vertex = vec3(0.0);
-	vec2 texcoord = vec2(0.0);
-	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, SceneUBO.z_far, vertex, texcoord);
+	vec3 vertex = vec3(0.0, 0.0, 0.0);
+    vec3 normal = vec3(0.0, 0.0, 0.0);
+	vec2 texcoord = vec2(0.0, 0.0);
+	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, SceneUBO.z_far, vertex, normal, texcoord);
 
 	vec4 worldpos4 = vec4(vertex, 1.0);
     v_worldpos = worldpos4.xyz;
 
-	vec4 normal4 = vec4(in_normal.xyz, 0.0);
+	vec4 normal4 = vec4(normal.xyz, 0.0);
 	v_normal = normalize((normal4).xyz);
 
 	v_diffusetexcoord = texcoord;

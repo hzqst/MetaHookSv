@@ -1193,7 +1193,10 @@ void R_LightShadingPass(void)
 	glDisable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_LIGHTMAP_TEXTURE);
+	GL_Bind(0);
+
 	GL_DisableMultitexture();
+	GL_Bind(0);
 }
 
 /*
@@ -1302,7 +1305,10 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 	//Disable texture unit 1 (lightmap)
 	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
+	GL_Bind(0);
+
 	GL_DisableMultitexture();
+	GL_Bind(0);
 
 	GL_UseProgram(0);
 
