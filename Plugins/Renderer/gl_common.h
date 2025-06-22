@@ -44,3 +44,7 @@ public:
 	uint64_t DrawArgsOffset{};
 	uint32_t DrawCount{ 1 };
 };
+typedef struct vertex3f_s
+{
+	vec3_t	pos;
+}vertex3f_t;

@@ -1456,12 +1456,17 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 				{
 					uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
-					std::vector<brushvertexpos_t> vPolyVertices;
+					std::vector<vertex3f_t> vPolyVertices;
 
 					float* v = poly->verts[0];
 
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
+						vertex3f_t tempVertex;
+						tempVertex.pos[0] = v[0];
+						tempVertex.pos[1] = v[1];
+						tempVertex.pos[2] = v[2];
+
 						brushvertexpos_t tempVertexPos;
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
@@ -1506,13 +1511,18 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						vVertexLightmapBuffer.emplace_back(tempVertexLightmap);
 						vVertexNormalBuffer.emplace_back(tempVertexNormal);
 						vVertexDetailBuffer.emplace_back(tempVertexDetail);
-						vPolyVertices.emplace_back(tempVertexPos);
+						vPolyVertices.emplace_back(tempVertex);
 					}
+
+					//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm
 
 					for (size_t k = 0; k < vPolyVertices.size(); ++k)
 					{
 						vIndiceBuffer.emplace_back(nPolyStartIndex + k);
 					}
+
+					//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
+
 
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
@@ -1530,12 +1540,17 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 				{
 					uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
-					std::vector<brushvertexpos_t> vPolyVertices;
+					std::vector<vertex3f_t> vPolyVertices;
 
 					float* v = poly->verts[0];
 
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
+						vertex3f_t tempVertex;
+						tempVertex.pos[0] = v[0];
+						tempVertex.pos[1] = v[1];
+						tempVertex.pos[2] = v[2];
+
 						brushvertexpos_t tempVertexPos;
 						tempVertexPos.pos[0] = v[0];
 						tempVertexPos.pos[1] = v[1];
@@ -1584,13 +1599,18 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						vVertexLightmapBuffer.emplace_back(tempVertexLightmap);
 						vVertexNormalBuffer.emplace_back(tempVertexNormal);
 						vVertexDetailBuffer.emplace_back(tempVertexDetail);
-						vPolyVertices.emplace_back(tempVertexPos);
+						vPolyVertices.emplace_back(tempVertex);
 					}
+
+					//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm, in reverse-order
 
 					for (size_t k = 0; k < vPolyVertices.size(); ++k)
 					{
 						vIndiceBuffer.emplace_back(nPolyStartIndex + (vPolyVertices.size() - 1 - k));
 					}
+
+					//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
+
 					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 					pBrushFace->poly_count++;
@@ -1608,10 +1628,11 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 			{
 				uint32_t nPolyStartIndex = (uint32_t)vVertexPosBuffer.size();
 
-				std::vector<brushvertexpos_t> vPolyVertices;
+				std::vector<vertex3f_t> vPolyVertices;
 
 				float *v = poly->verts[0];
 
+				vertex3f_t tempVertex[3];
 				brushvertexpos_t tempVertexPos[3];
 				brushvertexdiffuse_t tempVertexDiffuse[3];
 				brushvertexlightmap_t tempVertexLightmap[3];
@@ -1620,6 +1641,10 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
 				{
+					tempVertex[j].pos[0] = v[0];
+					tempVertex[j].pos[1] = v[1];
+					tempVertex[j].pos[2] = v[2];
+
 					tempVertexPos[j].pos[0] = v[0];
 					tempVertexPos[j].pos[1] = v[1];
 					tempVertexPos[j].pos[2] = v[2];
@@ -1669,17 +1694,22 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 				vVertexDetailBuffer.emplace_back(tempVertexDetail[0]);
 				vVertexDetailBuffer.emplace_back(tempVertexDetail[1]);
 				vVertexDetailBuffer.emplace_back(tempVertexDetail[2]);
-				vPolyVertices.emplace_back(tempVertexPos[0]);
-				vPolyVertices.emplace_back(tempVertexPos[1]);
-				vPolyVertices.emplace_back(tempVertexPos[2]);
+				vPolyVertices.emplace_back(tempVertex[0]);
+				vPolyVertices.emplace_back(tempVertex[1]);
+				vPolyVertices.emplace_back(tempVertex[2]);
 
 				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
 				{
+					memcpy(&tempVertex[1], &tempVertex[2], sizeof(vertex3f_t));
 					memcpy(&tempVertexPos[1], &tempVertexPos[2], sizeof(brushvertexpos_t));
 					memcpy(&tempVertexDiffuse[1], &tempVertexDiffuse[2], sizeof(brushvertexdiffuse_t));
 					memcpy(&tempVertexLightmap[1], &tempVertexLightmap[2], sizeof(brushvertexlightmap_t));
 					memcpy(&tempVertexNormal[1], &tempVertexNormal[2], sizeof(brushvertexnormal_t));
 					memcpy(&tempVertexDetail[1], &tempVertexDetail[2], sizeof(brushvertexdetail_t));
+
+					tempVertex[2].pos[0] = v[0];
+					tempVertex[2].pos[1] = v[1];
+					tempVertex[2].pos[2] = v[2];
 
 					tempVertexPos[2].pos[0] = v[0];
 					tempVertexPos[2].pos[1] = v[1];
@@ -1730,15 +1760,20 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					vVertexDetailBuffer.emplace_back(tempVertexDetail[0]);
 					vVertexDetailBuffer.emplace_back(tempVertexDetail[1]);
 					vVertexDetailBuffer.emplace_back(tempVertexDetail[2]);
-					vPolyVertices.emplace_back(tempVertexPos[0]);
-					vPolyVertices.emplace_back(tempVertexPos[1]);
-					vPolyVertices.emplace_back(tempVertexPos[2]);
+					vPolyVertices.emplace_back(tempVertex[0]);
+					vPolyVertices.emplace_back(tempVertex[1]);
+					vPolyVertices.emplace_back(tempVertex[2]);
 				}
+
+				//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm
 
 				for (size_t k = 0; k < vPolyVertices.size(); ++k)
 				{
 					vIndiceBuffer.emplace_back(nPolyStartIndex + k);
 				}
+
+				//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
+
 				vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 				pBrushFace->poly_count ++;
