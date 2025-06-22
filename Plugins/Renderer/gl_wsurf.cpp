@@ -341,6 +341,12 @@ void R_FreeSceneUBO(void)
 		g_WorldSurfaceRenderer.hDecalVBO = 0;
 	}
 
+	if (g_WorldSurfaceRenderer.hDecalEBO)
+	{
+		GL_DeleteBuffer(g_WorldSurfaceRenderer.hDecalEBO);
+		g_WorldSurfaceRenderer.hDecalEBO = 0;
+	}
+
 	if (g_WorldSurfaceRenderer.hSceneUBO)
 	{
 		GL_DeleteBuffer(g_WorldSurfaceRenderer.hSceneUBO);
@@ -1363,6 +1369,149 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 	return hVAO;
 }
 
+void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer)
+{
+	// 清空输出缓冲区
+	vOutIndiceBuffer.clear();
+	
+	// 需要至少3个顶点才能形成三角形
+	if (vPolyVertices.size() < 3)
+		return;
+	
+	// 如果只有3个顶点，直接形成一个三角形
+	if (vPolyVertices.size() == 3)
+	{
+		vOutIndiceBuffer.push_back(0);
+		vOutIndiceBuffer.push_back(1);
+		vOutIndiceBuffer.push_back(2);
+		return;
+	}
+	
+	// 对于更多顶点，使用ear-clipping算法
+	std::vector<uint32_t> indices;
+	indices.reserve(vPolyVertices.size());
+	for (size_t i = 0; i < vPolyVertices.size(); ++i)
+	{
+		indices.push_back(static_cast<uint32_t>(i));
+	}
+	
+	
+	// 检查三个顶点是否形成有效的三角形（非退化）
+	auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
+		const auto& v0 = vPolyVertices[i0].pos;
+		const auto& v1 = vPolyVertices[i1].pos;
+		const auto& v2 = vPolyVertices[i2].pos;
+		
+		vec3_t edge1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
+		vec3_t edge2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
+		
+		vec3_t cross;
+		CrossProduct(edge1, edge2, cross);
+		
+		float length = VectorLength(cross);
+		return length > 1e-6f; // 避免退化三角形
+	};
+	
+	// 检查点是否在三角形内（使用重心坐标）
+	auto isPointInTriangle = [&vPolyVertices](const vec3_t& p, uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
+		const auto& v0 = vPolyVertices[i0].pos;
+		const auto& v1 = vPolyVertices[i1].pos;
+		const auto& v2 = vPolyVertices[i2].pos;
+		
+		vec3_t v0v1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
+		vec3_t v0v2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
+		vec3_t v0p = { p[0] - v0[0], p[1] - v0[1], p[2] - v0[2] };
+		
+		float dot00 = DotProduct(v0v2, v0v2);
+		float dot01 = DotProduct(v0v2, v0v1);
+		float dot02 = DotProduct(v0v2, v0p);
+		float dot11 = DotProduct(v0v1, v0v1);
+		float dot12 = DotProduct(v0v1, v0p);
+		
+		float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+		float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+		float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+		
+		return (u >= 0) && (v >= 0) && (u + v <= 1);
+	};
+	
+	// 检查是否为耳朵（ear）
+	auto isEar = [&](size_t idx) -> bool {
+		if (indices.size() < 3) return false;
+		
+		size_t prev = (idx + indices.size() - 1) % indices.size();
+		size_t next = (idx + 1) % indices.size();
+		
+		uint32_t i0 = indices[prev];
+		uint32_t i1 = indices[idx];
+		uint32_t i2 = indices[next];
+		
+		// 检查是否形成有效三角形
+		if (!isValidTriangle(i0, i1, i2))
+			return false;
+		
+		// 检查是否有其他顶点在这个三角形内
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			if (i == prev || i == idx || i == next)
+				continue;
+				
+			if (isPointInTriangle(vPolyVertices[indices[i]].pos, i0, i1, i2))
+				return false;
+		}
+		
+		return true;
+	};
+	
+	// Ear-clipping主循环
+	while (indices.size() > 3)
+	{
+		bool earFound = false;
+		
+		for (size_t i = 0; i < indices.size(); ++i)
+		{
+			if (isEar(i))
+			{
+				// 找到耳朵，添加三角形
+				size_t prev = (i + indices.size() - 1) % indices.size();
+				size_t next = (i + 1) % indices.size();
+				
+				vOutIndiceBuffer.push_back(indices[prev]);
+				vOutIndiceBuffer.push_back(indices[i]);
+				vOutIndiceBuffer.push_back(indices[next]);
+				
+				// 移除当前顶点
+				indices.erase(indices.begin() + i);
+				earFound = true;
+				break;
+			}
+		}
+		
+		// 如果没有找到耳朵，说明多边形可能有问题，使用扇形三角化作为后备方案
+		if (!earFound)
+		{
+			gEngfuncs.Con_DPrintf("R_PolygonToTriangleList: No ear found, falling back to fan triangulation\n");
+			
+			vOutIndiceBuffer.clear();
+			for (size_t i = 1; i < vPolyVertices.size() - 1; ++i)
+			{
+				vOutIndiceBuffer.push_back(0);
+				vOutIndiceBuffer.push_back(static_cast<uint32_t>(i));
+				vOutIndiceBuffer.push_back(static_cast<uint32_t>(i + 1));
+			}
+			return;
+		}
+	}
+	
+	// 添加最后一个三角形
+	if (indices.size() == 3)
+	{
+		vOutIndiceBuffer.push_back(indices[0]);
+		vOutIndiceBuffer.push_back(indices[1]);
+		vOutIndiceBuffer.push_back(indices[2]);
+	}
+}
+
 CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 {
 	std::vector<brushvertexpos_t> vVertexPosBuffer;
@@ -1514,17 +1663,13 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						vPolyVertices.emplace_back(tempVertex);
 					}
 
-					//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm
+					std::vector<uint32_t> vTriangleListIndices;
+					R_PolygonToTriangleList(vPolyVertices, vTriangleListIndices);
 
-					for (size_t k = 0; k < vPolyVertices.size(); ++k)
+					for (size_t k = 0; k < vTriangleListIndices.size(); ++k)
 					{
-						vIndiceBuffer.emplace_back(nPolyStartIndex + k);
+						vIndiceBuffer.emplace_back(nPolyStartIndex + vTriangleListIndices[k]);
 					}
-
-					//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
-
-
-					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 					pBrushFace->poly_count++;
 				}
@@ -1602,16 +1747,13 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						vPolyVertices.emplace_back(tempVertex);
 					}
 
-					//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm, in reverse-order
+					std::vector<uint32_t> vTriangleListIndices;
+					R_PolygonToTriangleList(vPolyVertices, vTriangleListIndices);
 
-					for (size_t k = 0; k < vPolyVertices.size(); ++k)
+					for (size_t k = 0; k < vTriangleListIndices.size(); ++k)
 					{
-						vIndiceBuffer.emplace_back(nPolyStartIndex + (vPolyVertices.size() - 1 - k));
+						vIndiceBuffer.emplace_back(nPolyStartIndex + vTriangleListIndices[vTriangleListIndices.size() - 1 - k]);
 					}
-
-					//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
-
-					vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 					pBrushFace->poly_count++;
 				}
@@ -1765,16 +1907,13 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					vPolyVertices.emplace_back(tempVertex[2]);
 				}
 
-				//TODO: Convert vPolyVertices from polygon to triangle list indices using ear clipping algorithm
+				std::vector<uint32_t> vTriangleListIndices;
+				R_PolygonToTriangleList(vPolyVertices, vTriangleListIndices);
 
-				for (size_t k = 0; k < vPolyVertices.size(); ++k)
+				for (size_t k = 0; k < vTriangleListIndices.size(); ++k)
 				{
-					vIndiceBuffer.emplace_back(nPolyStartIndex + k);
+					vIndiceBuffer.emplace_back(nPolyStartIndex + vTriangleListIndices[k]);
 				}
-
-				//TODO: We don't need to add a terminator index to indicate a polygon termination when using triangle list
-
-				vIndiceBuffer.emplace_back((uint32_t)0xFFFFFFFF);
 
 				pBrushFace->poly_count ++;
 			}
@@ -1871,8 +2010,15 @@ void R_GenerateSceneUBO(void)
 	g_WorldSurfaceRenderer.hDecalVBO = GL_GenBuffer();
 	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL);
 
+	g_WorldSurfaceRenderer.hDecalEBO = GL_GenBuffer();
+	GL_UploadDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * MAX_DECALS, NULL);
+
 	g_WorldSurfaceRenderer.hDecalVAO = GL_GenVAO();
-	GL_BindStatesForVAO(g_WorldSurfaceRenderer.hDecalVAO, g_WorldSurfaceRenderer.hDecalVBO, 0,
+
+	GL_BindStatesForVAO(
+		g_WorldSurfaceRenderer.hDecalVAO, 
+		g_WorldSurfaceRenderer.hDecalVBO, 
+		g_WorldSurfaceRenderer.hDecalEBO,
 	[]() {
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
@@ -2017,7 +2163,7 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf *pLeaf, bool bWithSky)
 		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 	}
 
-	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 	r_wsurf_drawcall++;
 	r_wsurf_polys += texchain.polyCount;
@@ -2213,7 +2359,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 		R_EndDetailTexture(WSurfProgramState);
 
@@ -2483,7 +2629,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 		R_EndDetailTexture(WSurfProgramState);
 
@@ -2627,7 +2773,7 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 	r_wsurf_drawcall++;
 	r_wsurf_polys += texchain.polyCount;

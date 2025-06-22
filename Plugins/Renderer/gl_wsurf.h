@@ -337,7 +337,7 @@ typedef struct decal_drawbatch_s
 	GLuint GLTextureId[MAX_DECALS];
 	detail_texture_cache_t *DetailTextureCaches[MAX_DECALS];
 	GLint StartIndex[MAX_DECALS];
-	GLsizei VertexCount[MAX_DECALS];
+	GLuint IndiceCount[MAX_DECALS];
 	int BatchCount;
 }decal_drawbatch_t;
 
@@ -350,7 +350,7 @@ typedef struct cached_decal_s
 	GLuint gltextureheight{};
 	detail_texture_cache_t* pDetailTextures{};
 	GLint startIndex{};
-	GLsizei vertexCount{};
+	GLuint indiceCount{};
 }cached_decal_t;
 
 class CWorldSurfaceRenderer
@@ -361,6 +361,7 @@ public:
 	GLuint				hDLightUBO{};
 	GLuint				hEntityUBO{};
 	GLuint				hDecalVBO{};
+	GLuint				hDecalEBO{};
 	GLuint				hDecalVAO{};
 	GLuint				hDecalSSBO{};
 	GLuint				hSkyboxSSBO{};
@@ -499,6 +500,8 @@ void R_DrawWaterSurfaceModel(
 	cl_entity_t* ent);
 
 GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);
+
+void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer);
 
 #define WSURF_DIFFUSE_ENABLED				0x1ull
 #define WSURF_LIGHTMAP_ENABLED				0x2ull

@@ -257,7 +257,7 @@ bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence,
 
 void R_PrepareStudioRenderSubmodel(
 	studiohdr_t* studiohdr, mstudiomodel_t* submodel,
-	std::vector<CStudioModelRenderVertex>& vVertex,
+	std::vector<studiovert_t>& vVertex,
 	std::vector<unsigned int>& vIndices,
 	CStudioModelRenderSubModel* vboSubmodel)
 {
@@ -462,7 +462,7 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 
 	R_AllocSlotForStudioRenderData(mod, studiohdr, pRenderData);
 
-	std::vector<CStudioModelRenderVertex> vVertex;
+	std::vector<studiovert_t> vVertex;
 	std::vector<GLuint> vIndices;
 
 	for (int i = 0; i < studiohdr->numbodyparts; i++)
@@ -489,7 +489,7 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 	}
 
 	pRenderData->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO, vVertex.size() * sizeof(CStudioModelRenderVertex), vVertex.data());
+	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO, vVertex.size() * sizeof(studiovert_t), vVertex.data());
 
 	pRenderData->hEBO = GL_GenBuffer();
 	GL_UploadDataToEBOStaticDraw(pRenderData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
@@ -501,10 +501,10 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 			glEnableVertexAttribArray(1);
 			glEnableVertexAttribArray(2);
 			glEnableVertexAttribArray(3);
-			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, pos));
-			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, normal));
-			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, texcoord));
-			glVertexAttribIPointer(3, 2, GL_INT, sizeof(CStudioModelRenderVertex), OFFSET(CStudioModelRenderVertex, vertbone));
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, pos));
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, normal));
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, texcoord));
+			glVertexAttribIPointer(3, 2, GL_INT, sizeof(studiovert_t), OFFSET(studiovert_t, vertbone));
 		},
 		[]() {
 			glDisableVertexAttribArray(0);

@@ -871,21 +871,33 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
 
-	decalvertex_t vertexArray[MAX_DECALVERTS] = { 0 };
+	std::vector<vertex3f_t> vPolyVertices;
+	std::vector<decalvertex_t> vVertexBuffer;
+
+	vPolyVertices.reserve(MAX_DECALVERTS);
+	vVertexBuffer.reserve(MAX_DECALVERTS);
 
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
 	{
-		vertexArray[j].pos[0] = v[0];
-		vertexArray[j].pos[1] = v[1];
-		vertexArray[j].pos[2] = v[2];
+		vertex3f_t vert;
+		vert.pos[0] = v[0];
+		vert.pos[1] = v[1];
+		vert.pos[2] = v[2];
+		vPolyVertices.emplace_back(vert);
 
-		vertexArray[j].texcoord[0] = v[3];
-		vertexArray[j].texcoord[1] = v[4];
-		vertexArray[j].texcoord[2] = 0;
+		decalvertex_t vertexData;
 
-		vertexArray[j].lightmaptexcoord[0] = v[5];
-		vertexArray[j].lightmaptexcoord[1] = v[6];
-		vertexArray[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
+		vertexData.pos[0] = v[0];
+		vertexData.pos[1] = v[1];
+		vertexData.pos[2] = v[2];
+
+		vertexData.texcoord[0] = v[3];
+		vertexData.texcoord[1] = v[4];
+		vertexData.texcoord[2] = 0;
+
+		vertexData.lightmaptexcoord[0] = v[5];
+		vertexData.lightmaptexcoord[1] = v[6];
+		vertexData.lightmaptexcoord[2] = surf->lightmaptexturenum;
 
 		float replaceScale[2] = { 1,1 };
 		float detailScale[2] = { 1,1 };
@@ -922,38 +934,51 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 			}
 		}
 
-		vertexArray[j].replacetexcoord[0] = replaceScale[0];
-		vertexArray[j].replacetexcoord[1] = replaceScale[1];
-		vertexArray[j].detailtexcoord[0] = detailScale[0];
-		vertexArray[j].detailtexcoord[1] = detailScale[1];
-		vertexArray[j].normaltexcoord[0] = normalScale[0];
-		vertexArray[j].normaltexcoord[1] = normalScale[1];
-		vertexArray[j].parallaxtexcoord[0] = parallaxScale[0];
-		vertexArray[j].parallaxtexcoord[1] = parallaxScale[1];
-		vertexArray[j].speculartexcoord[0] = specularScale[0];
-		vertexArray[j].speculartexcoord[1] = specularScale[1];
+		vertexData.replacetexcoord[0] = replaceScale[0];
+		vertexData.replacetexcoord[1] = replaceScale[1];
+		vertexData.detailtexcoord[0] = detailScale[0];
+		vertexData.detailtexcoord[1] = detailScale[1];
+		vertexData.normaltexcoord[0] = normalScale[0];
+		vertexData.normaltexcoord[1] = normalScale[1];
+		vertexData.parallaxtexcoord[0] = parallaxScale[0];
+		vertexData.parallaxtexcoord[1] = parallaxScale[1];
+		vertexData.speculartexcoord[0] = specularScale[0];
+		vertexData.speculartexcoord[1] = specularScale[1];
 
-		vertexArray[j].normal[0] = brushface->normal[0];
-		vertexArray[j].normal[1] = brushface->normal[1];
-		vertexArray[j].normal[2] = brushface->normal[2];
-		vertexArray[j].s_tangent[0] = brushface->s_tangent[0];
-		vertexArray[j].s_tangent[1] = brushface->s_tangent[1];
-		vertexArray[j].s_tangent[2] = brushface->s_tangent[2];
-		vertexArray[j].t_tangent[0] = brushface->t_tangent[0];
-		vertexArray[j].t_tangent[1] = brushface->t_tangent[1];
-		vertexArray[j].t_tangent[2] = brushface->t_tangent[2];
+		vertexData.normal[0] = brushface->normal[0];
+		vertexData.normal[1] = brushface->normal[1];
+		vertexData.normal[2] = brushface->normal[2];
+		vertexData.s_tangent[0] = brushface->s_tangent[0];
+		vertexData.s_tangent[1] = brushface->s_tangent[1];
+		vertexData.s_tangent[2] = brushface->s_tangent[2];
+		vertexData.t_tangent[0] = brushface->t_tangent[0];
+		vertexData.t_tangent[1] = brushface->t_tangent[1];
+		vertexData.t_tangent[2] = brushface->t_tangent[2];
 
-		vertexArray[j].decalindex = decalIndex;
+		vertexData.decalindex = decalIndex;
 
-		memcpy(&vertexArray[j].styles, surf->styles, sizeof(surf->styles));
+		memcpy(&vertexData.styles, surf->styles, sizeof(surf->styles));
+
+		vVertexBuffer.emplace_back(vertexData);
 
 		v += VERTEXSIZE;
 	}
 
-	GL_UploadSubDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
+	std::vector<uint32_t> vTriangleListIndices;
+	vTriangleListIndices.reserve(MAX_DECALINDICES);
 
-	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALVERTS * decalIndex;
-	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount = vertCount;
+	R_PolygonToTriangleList(vPolyVertices, vTriangleListIndices);
+
+	for (size_t i = 0; i < vTriangleListIndices.size(); ++i)
+	{
+		vTriangleListIndices[i] += decalIndex * MAX_DECALVERTS;
+	}
+
+	GL_UploadSubDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexBuffer.size(), vVertexBuffer.data());
+	GL_UploadSubDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
+
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALINDICES * decalIndex;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = vTriangleListIndices.size();
 }
 
 bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, detail_texture_cache_t *pDetailTextureCache)
@@ -1038,21 +1063,21 @@ void R_DrawDecals(cl_entity_t *ent)
 				{
 					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = 0;
 					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = 0;
-					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount = 0;
+					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = 0;
 				}
 
 				//Mark this decal as ready
 				plist->flags |= FDECAL_VBO;
 			}
 
-			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount > 0)
+			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount > 0)
 			{
 				if (!g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
 				{
 					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
 					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = nullptr;
 					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
-					g_DecalBaseDrawBatch.VertexCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount;
+					g_DecalBaseDrawBatch.IndiceCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
 					++g_DecalBaseDrawBatch.BatchCount;
 				}
 				else if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
@@ -1060,7 +1085,7 @@ void R_DrawDecals(cl_entity_t *ent)
 					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
 					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures;
 					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
-					g_DecalDetailDrawBatch.VertexCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].vertexCount;
+					g_DecalDetailDrawBatch.IndiceCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
 					++g_DecalDetailDrawBatch.BatchCount;
 				}
 			}
@@ -1223,7 +1248,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
 		{
 			GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
-			glDrawArrays(GL_POLYGON, g_DecalBaseDrawBatch.StartIndex[i], g_DecalBaseDrawBatch.VertexCount[i]);
+			glDrawElements(GL_TRIANGLES, g_DecalBaseDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalBaseDrawBatch.StartIndex[i]));
 		}
 
 		r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
@@ -1245,7 +1270,7 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			R_UseWSurfProgram(WSurfProgramStateDetail, &prog);
 
-			glDrawArrays(GL_POLYGON, g_DecalDetailDrawBatch.StartIndex[i], g_DecalDetailDrawBatch.VertexCount[i]);
+			glDrawElements(GL_TRIANGLES, g_DecalDetailDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalDetailDrawBatch.StartIndex[i]));
 
 			R_EndDetailTexture(WSurfProgramStateDetail);
 		}

@@ -51,10 +51,10 @@ typedef struct
 	int r_framerate_numframes;
 }studio_program_t;
 
-class CStudioModelRenderVertex
+class studiovert_t
 {
 public:
-	CStudioModelRenderVertex(const float *a, const float *b, float s, float t, int d, int e)
+	studiovert_t(const float *a, const float *b, float s, float t, int d, int e)
 	{
 		memcpy(pos, a, sizeof(vec3_t));
 		memcpy(normal, b, sizeof(vec3_t));
@@ -63,19 +63,11 @@ public:
 		vertbone = d;
 		normbone = e;
 	}
-	CStudioModelRenderVertex()
-	{
-		memset(pos, 0, sizeof(vec3_t));
-		memset(normal, 0, sizeof(vec3_t));
-		memset(texcoord, 0, sizeof(vec2_t));
-		vertbone = 0;
-		normbone = 0;
-	}
-	vec3_t	pos;
-	vec3_t	normal;
-	vec2_t	texcoord;
-	int		vertbone;
-	int		normbone;
+	vec3_t	pos{};
+	vec3_t	normal{};
+	vec2_t	texcoord{};
+	int		vertbone{};
+	int		normbone{};
 };
 
 class CStudioModelRenderMesh

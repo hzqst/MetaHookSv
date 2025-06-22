@@ -322,7 +322,7 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
 
-	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void *)(0), pPortalModel->drawCount, 0);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)(0), pPortalModel->drawCount, 0);
 
 	GL_DisableMultitexture();
 
@@ -371,7 +371,7 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
 
-	glMultiDrawElementsIndirect(GL_POLYGON, GL_UNSIGNED_INT, (void*)(0), pPortalModel->drawCount, 0);
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pPortalModel->drawCount, 0);
 
 	GL_DisableMultitexture();
 

@@ -412,7 +412,7 @@ void R_RenderShadowDynamicLights(void)
 
 						auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
-						if (pLocalPlayer->model)
+						if (pLocalPlayer->model && args->bIsFromLocalPlayer)
 						{
 							auto save_localplayer_model = pLocalPlayer->model;
 

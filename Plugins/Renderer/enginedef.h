@@ -662,6 +662,7 @@ typedef enum
 #define COLINEAR_EPSILON 0.001
 
 #define MAX_DECALVERTS 32
+#define MAX_DECALINDICES ((MAX_DECALVERTS - 2) * 3)
 #define MAX_DECALS 4096
 
 

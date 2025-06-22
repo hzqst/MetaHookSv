@@ -98,7 +98,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 int HUD_Redraw(float time, int intermission)
 {
-	//TODO
 	if (AllowCheats())
 	{
 		if (r_water_debug && (int)r_water_debug->value > 0)
@@ -147,6 +146,8 @@ int HUD_Redraw(float time, int intermission)
 			default:
 				break;
 			}
+			glEnable(GL_ALPHA_TEST);
+			glEnable(GL_BLEND);
 		}
 		else if (r_shadow_debug && r_shadow_debug->value > 0 && current_shadow_texture && current_shadow_texture->depth_stencil)
 		{
@@ -156,25 +157,15 @@ int HUD_Redraw(float time, int intermission)
 
 			glEnable(GL_TEXTURE_2D);
 
-			GL_Bind(current_shadow_texture->depth_stencil);
-
 			hud_debug_program_t prog = { 0 };
 			R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-			glBegin(GL_QUADS);
-			glTexCoord2f(0, 1);
-			glVertex3f(0, 0, 0);
-			glTexCoord2f(1, 1);
-			glVertex3f(glwidth / 2, 0, 0);
-			glTexCoord2f(1, 0);
-			glVertex3f(glwidth / 2, glheight / 2, 0);
-			glTexCoord2f(0, 0);
-			glVertex3f(0, glheight / 2, 0);
-			glEnd();
+			R_DrawHUDQuad_Texture(current_shadow_texture->depth_stencil, glwidth / 2, glheight / 2);
+
+			GL_UseProgram(0);
 
 			glEnable(GL_ALPHA_TEST);
 			glEnable(GL_BLEND);
-			GL_UseProgram(0);
 		}
 		else if (r_light_debug && (int)r_light_debug->value >= 1 && (int)r_light_debug->value <= 4)
 		{
@@ -193,9 +184,9 @@ int HUD_Redraw(float time, int intermission)
 			else if((int)r_light_debug->value == 4)
 				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex4, glwidth / 2, glheight / 2);
 
-			glEnable(GL_ALPHA_TEST);
-
 			GL_UseProgram(0);
+			glEnable(GL_ALPHA_TEST);
+			glEnable(GL_BLEND);
 		}
 		else if (r_hdr_debug && r_hdr_debug->value)
 		{
@@ -249,18 +240,11 @@ int HUD_Redraw(float time, int intermission)
 
 			if (pFBO)
 			{
-				glBindTexture(GL_TEXTURE_2D, pFBO->s_hBackBufferTex);
-				glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex3f(0, 0, 0);
-				glTexCoord2f(1, 1);
-				glVertex3f(glwidth / 2, 0, 0);
-				glTexCoord2f(1, 0);
-				glVertex3f(glwidth / 2, glheight / 2, 0);
-				glTexCoord2f(0, 0);
-				glVertex3f(0, glheight / 2, 0);
-				glEnd();
+				R_DrawHUDQuad_Texture(pFBO->s_hBackBufferTex, glwidth / 2, glheight / 2);
 			}
+
+			glEnable(GL_ALPHA_TEST);
+			glEnable(GL_BLEND);
 		}
 		else if (r_ssao_debug && r_ssao_debug->value)
 		{
@@ -268,39 +252,39 @@ int HUD_Redraw(float time, int intermission)
 			glDisable(GL_ALPHA_TEST);
 			glColor4f(1, 1, 1, 1);
 
-			glEnable(GL_TEXTURE_2D);
-			int texId = 0;
 			switch ((int)r_ssao_debug->value)
 			{
 			case 1:
-				//GL_UseProgram(drawdepth.program);
-				texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
+			{
+				hud_debug_program_t prog = { 0 };
+				R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
+
+				R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth / 2, glheight / 2);
+
+				GL_UseProgram(0);
+				break;
+			}
 			case 2:
-				texId = s_DepthLinearFBO.s_hBackBufferTex; break;
+			{
+				R_DrawHUDQuad_Texture(s_DepthLinearFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+				break;
+			}
 			case 3:
-				texId = s_HBAOCalcFBO.s_hBackBufferTex; break;
+			{
+				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+				break;
+			}
 			case 4:
-				texId = s_HBAOCalcFBO.s_hBackBufferTex2; break;
+			{
+				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
+				break;
+			}
 			default:
 				break;
 			}
 
-			if (texId)
-			{
-				glBindTexture(GL_TEXTURE_2D, texId);
-				glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex3f(0, 0, 0);
-				glTexCoord2f(1, 1);
-				glVertex3f(glwidth / 2, 0, 0);
-				glTexCoord2f(1, 0);
-				glVertex3f(glwidth / 2, glheight / 2, 0);
-				glTexCoord2f(0, 0);
-				glVertex3f(0, glheight / 2, 0);
-				glEnd();
-
-				GL_UseProgram(0);
-			}
+			glEnable(GL_ALPHA_TEST);
+			glEnable(GL_BLEND);
 		}
 	}
 

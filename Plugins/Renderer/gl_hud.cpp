@@ -694,27 +694,20 @@ bool R_IsFXAAEnabled(void)
 
 void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_PushDrawState();
-	GL_PushMatrix();
-
 	GL_BindFrameBuffer(dst);
+
+	GL_Begin2D();
 
 	GL_UseProgram(pp_fxaa.program);
 	glUniform1i(pp_fxaa.tex0, 0);
 	glUniform1f(pp_fxaa.rt_w, glwidth);
 	glUniform1f(pp_fxaa.rt_h, glheight);
 
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
-
-	GL_PopMatrix();
-	GL_PopDrawState();
 }
 
 bool R_IsUnderWaterEffectEnabled(void)
@@ -745,27 +738,20 @@ bool R_IsUnderWaterEffectEnabled(void)
 
 void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_PushDrawState();
-	GL_PushMatrix();
-
 	GL_BindFrameBuffer(dst);
+
+	GL_Begin2D();
+
+	glDisable(GL_BLEND);
 
 	GL_UseProgram(under_water_effect.program);
 	glUniform1f(0, r_under_water_effect_wave_amount->value);
 	glUniform1f(1, r_under_water_effect_wave_speed->value);
 	glUniform1f(2, r_under_water_effect_wave_size->value);
 
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
-
-	GL_PopMatrix();
-	GL_PopDrawState();
 }
 
 bool R_IsGammaBlendEnabled()

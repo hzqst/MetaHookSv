@@ -450,6 +450,20 @@ void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void GL_UploadSubDataToEBODynamicDraw(GLuint EBO, size_t offset, size_t size, const void* data)
+{
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(EBO, offset, size, data);
+	}
+	else
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, size, data);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
+}
+
 /*
 	ABO: Indirect Draw Attribute Buffer Object
 */
@@ -486,7 +500,7 @@ void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind, const st
 	unbind();
 }
 
-void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)())
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind, const std::function<void()>& unbind)
 {
 	GL_BindVAO(VAO);
 
