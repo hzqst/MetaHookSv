@@ -1630,7 +1630,7 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 						tempVertexDiffuse.texcoord[1] = v[4];
 						tempVertexDiffuse.texcoord[2] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 
-						brushvertexlightmap_t tempVertexLightmap;						
+						brushvertexlightmap_t tempVertexLightmap;
 						tempVertexLightmap.lightmaptexcoord[0] = v[5];
 						tempVertexLightmap.lightmaptexcoord[1] = v[6];
 						tempVertexLightmap.lightmaptexcoord[2] = surf->lightmaptexturenum;

@@ -6,17 +6,17 @@
 
 uniform float u_parallaxScale;
 
-layout(location = VERTEX_ATTRIBUTE_INDEX_POSITION) in vec3 in_vertex;
-layout(location = VERTEX_ATTRIBUTE_INDEX_NORMAL) in vec3 in_normal;
-layout(location = VERTEX_ATTRIBUTE_INDEX_S_TANGENT) in vec3 in_tangent;
-layout(location = VERTEX_ATTRIBUTE_INDEX_T_TANGENT) in vec3 in_bitangent;
-layout(location = VERTEX_ATTRIBUTE_INDEX_TEXCOORD) in vec3 in_diffusetexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD) in vec3 in_lightmaptexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD) in vec2 in_replacetexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD) in vec2 in_detailtexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD) in vec2 in_normaltexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD) in vec2 in_parallaxtexcoord;
-layout(location = VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_POSITION) in vec3 in_vertex;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_NORMAL) in vec3 in_normal;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_S_TANGENT) in vec3 in_tangent;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_T_TANGENT) in vec3 in_bitangent;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_TEXCOORD) in vec3 in_diffusetexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD) in vec3 in_lightmaptexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD) in vec2 in_replacetexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD) in vec2 in_detailtexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD) in vec2 in_normaltexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD) in vec2 in_parallaxtexcoord;
+layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord;
 
 #if defined(SKYBOX_ENABLED)
 
