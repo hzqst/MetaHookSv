@@ -678,6 +678,9 @@ typedef enum
 #define MAX_DLIGHTS 32
 #define MAX_DLIGHTS_SVENGINE 256
 
+#define MAX_ELIGHTS 64
+#define MAX_ELIGHTS_SVENGINE 256
+
 //Don't use this, use cl.max_edicts instead
 //#define MAX_EDICTS 1800
 

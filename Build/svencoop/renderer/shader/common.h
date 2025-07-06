@@ -235,8 +235,7 @@ struct studio_ubo_t{
 	vec4 r_origin;
 	vec4 entity_origin;
 	vec4 r_elight_color[4];
-	vec4 r_elight_origin[4];
-	vec4 r_elight_radius;
+	vec4 r_elight_origin_radius[4];
 	mat3x4 bonematrix[128];
 	uvec4 r_clipbone;
 };

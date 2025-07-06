@@ -12,6 +12,7 @@ int *lightmap_modified = NULL;
 glpoly_t **lightmap_polys = NULL;
 int *d_lightstylevalue = NULL;
 dlight_t *cl_dlights = NULL;
+dlight_t* cl_elights = NULL;
 int *r_dlightactive = NULL;
 int *gDecalSurfCount = NULL;
 msurface_t **gDecalSurfs = NULL;

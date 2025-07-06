@@ -1917,15 +1917,6 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
 
-#if 0
-	if (R_IsRenderingViewModel() && r_studio_viewmodel_lightdir_adjust->value > 0)
-	{
-		StudioUBO.r_plightvec[2] = StudioUBO.r_plightvec[2] * math_clamp(r_studio_viewmodel_lightdir_adjust->value, 0, 1);
-
-		VectorNormalize(StudioUBO.r_plightvec);
-	}
-#endif
-
 	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 
@@ -1933,23 +1924,40 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 
 	if ((int)r_studio_legacy_elight->value >= 1)
 	{
-		StudioUBO.r_numelight = (*numlights);
+		auto el = cl_elights;
 
-		for (int i = 0; i < StudioUBO.r_numelight; ++i)
+		for (int i = 0; i < EngineGetMaxELights(); i++, el++)
 		{
-			StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
-			StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
-			StudioUBO.r_elight_color[i][2] = (float)((*locallight)[i]->color.b) / 255.0f;
-			StudioUBO.r_elight_color[i][3] = 1;
+			if (el->die < (*cl_time) || el->radius < 0)
+				continue;
 
-			GammaToLinear(StudioUBO.r_elight_color[i]);
+			if ((el->key & 0xFFF) == (*currententity)->index)
+			{
+				int att = (el->key >> 12) & 0xF;
 
-			StudioUBO.r_elight_origin[i][0] = (*locallight)[i]->origin[0];
-			StudioUBO.r_elight_origin[i][1] = (*locallight)[i]->origin[1];
-			StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
-			StudioUBO.r_elight_origin[i][3] = 0;
+				if (att >= 0 && att < _countof((*currententity)->attachment))
+				{
+					VectorCopy((*currententity)->attachment[att], el->origin);
+				}
+				else
+				{
+					VectorCopy((*currententity)->origin, el->origin)
+				}
+			}
 
-			StudioUBO.r_elight_radius[i] = math_clamp((*locallight)[i]->radius, 0, 999999);
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][0] = (float)(el->color.r) / 255.0f;
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][1] = (float)(el->color.g) / 255.0f;
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][2] = (float)(el->color.b) / 255.0f;
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][3] = 1;
+
+			GammaToLinear(StudioUBO.r_elight_color[StudioUBO.r_numelight]);
+
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][0] = el->origin[0];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][1] = el->origin[1];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][2] = el->origin[2];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][3] = el->radius;
+
+			StudioUBO.r_numelight++;
 		}
 	}
 

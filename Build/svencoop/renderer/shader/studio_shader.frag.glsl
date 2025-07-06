@@ -246,28 +246,37 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 	
-	vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
+	vec3 ElightDirection = StudioUBO.r_elight_origin_radius[i].xyz - vWorldPos.xyz;
 
-	float ElightCosine = 0.8;
-
-	float ElightDistance = length(ElightDirection);
 	float ElightDot = dot(ElightDirection, ElightDirection);
 
-	float r2 = StudioUBO.r_elight_radius[i];
+	float r2 = StudioUBO.r_elight_origin_radius[i].w;
 
 	r2 = r2 * r2;
 
-	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+    float MinStrength = 1.0;
 
-	color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
-	color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
-	color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
+    if (ElightDot > r2)
+    {
+        MinStrength = r2 / ElightDot;
+    }
+    
+	float ElightCosine = 0.8;
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+	if (MinStrength > 0.004 && ElightCosine > 0)
+	{
+		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0);
 
-		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
+		color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
+		color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
+		color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
+
+		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+			color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
-	#endif
+		#endif
+	}
 
 	return color;
 }
@@ -276,27 +285,37 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
-	vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
-		
-	float ElightCosine = clamp(dot(vNormal, normalize(ElightDirection)), 0.0, 1.0);
-	float ElightDistance = length(ElightDirection);
+	vec3 ElightDirection = StudioUBO.r_elight_origin_radius[i].xyz - vWorldPos.xyz;
+
 	float ElightDot = dot(ElightDirection, ElightDirection);
 
-	float r2 = StudioUBO.r_elight_radius[i];
+	float r2 = StudioUBO.r_elight_origin_radius[i].w;
 	
 	r2 = r2 * r2;
+	
+    float MinStrength = 1.0;
 
-	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+    if (ElightDot > r2)
+    {
+        MinStrength = r2 / ElightDot;
+    }
+    
+	float ElightCosine = -dot(vNormal, normalize(ElightDirection));
 
-	color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
-	color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
-	color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
+	if (MinStrength > 0.004 && ElightCosine > 0)
+	{
+		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0);
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+		color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
+		color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
+		color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
 
-		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
+		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+			color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
-	#endif
+		#endif
+	}
 
 	return color;
 }
@@ -324,27 +343,36 @@ vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	vec3 color = vec3(0.0, 0.0, 0.0);
 	
 	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
-
-	float DlightCosine = 0.8;
-
-	float DlightDistance = length(DlightDirection);
+	
 	float DlightDot = dot(DlightDirection, DlightDirection);
 
 	float r2 = DLightUBO.origin_radius[i].a;
 
 	r2 = r2 * r2;
 
-	float DlightAttenuation = clamp(r2 / (DlightDot * DlightDistance), 0.0, 1.0);
+    float MinStrength = 1.0;
 
-	color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
-	color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
-	color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
+    if (DlightDot > r2)
+    {
+        MinStrength = r2 / DlightDot;
+    }
+    
+	float DlightCosine = 0.8;
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+	if (MinStrength > 0.004 && DlightCosine > 0)
+	{
+		float DlightAttenuation = clamp(r2 / (DlightDot * sqrt(DlightDot)), 0.0, 1.0);
 
-		color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
+		color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
+		color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
+
+		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+			color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
-	#endif
+		#endif
+	}
 
 	return color;
 }
@@ -354,26 +382,36 @@ vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, floa
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
 	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
-		
-	float DlightCosine = clamp(dot(vNormal, normalize(DlightDirection)), 0.0, 1.0);
-	float DlightDistance = length(DlightDirection);
+
 	float DlightDot = dot(DlightDirection, DlightDirection);
 
 	float r2 = DLightUBO.origin_radius[i].a;
 	
 	r2 = r2 * r2;
+	
+    float MinStrength = 1.0;
 
-	float DlightAttenuation = clamp(r2 / (DlightDot * DlightDistance), 0.0, 1.0);
+    if (DlightDot > r2)
+    {
+        MinStrength = r2 / DlightDot;
+    }
+    
+	float DlightCosine = -dot(vNormal, normalize(DlightDirection));
 
-	color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
-	color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
-	color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
+	if (MinStrength > 0.004 && DlightCosine > 0)
+	{
+		float DlightAttenuation = clamp(r2 / (DlightDot * sqrt(DlightCosine)), 0.0, 1.0);
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+		color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
+		color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
+		color.z += DLightUBO.color_minlight[i].z * DlightAttenuation;
 
-		color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+			color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
-	#endif
+		#endif
+	}
 
 	return color;
 }

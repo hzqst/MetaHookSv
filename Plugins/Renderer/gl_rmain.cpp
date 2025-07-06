@@ -3650,6 +3650,16 @@ int EngineGetMaxDLights(void)
 	return MAX_DLIGHTS;
 }
 
+int EngineGetMaxELights(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		return MAX_ELIGHTS_SVENGINE;
+	}
+
+	return MAX_ELIGHTS;
+}
+
 int EngineGetMaxLightmapTextures(void)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)

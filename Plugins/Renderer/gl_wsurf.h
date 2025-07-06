@@ -308,8 +308,7 @@ typedef struct studio_ubo_s
 	vec4 r_origin;
 	vec4 entity_origin;
 	vec4 r_elight_color[4];
-	vec4 r_elight_origin[4];
-	vec4 r_elight_radius;
+	vec4 r_elight_origin_radius[4];
 	mat3x4 bonematrix[128];
 	uvec4 r_clipbone;
 }studio_ubo_t;
@@ -434,6 +433,7 @@ extern int *lightmap_modified;
 extern glpoly_t **lightmap_polys;
 extern int *d_lightstylevalue;
 extern dlight_t *cl_dlights;
+extern dlight_t* cl_elights;
 extern int *r_dlightactive;
 extern int *gDecalSurfCount;
 extern msurface_t **gDecalSurfs;
