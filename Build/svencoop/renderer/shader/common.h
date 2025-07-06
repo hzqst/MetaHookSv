@@ -476,6 +476,11 @@ float TexGammaToGamma1(float color)
 	return color;
 }
 
+float LinearToGamma1(float color)
+{
+	return pow(color, SceneUBO.r_g);
+}
+
 vec4 LinearToGamma(vec4 color)
 {
 	color.rgb = pow(color.rgb, vec3(SceneUBO.r_g));//r_g = 1.0 / v_gamma
@@ -488,53 +493,12 @@ vec3 LinearToGamma3(vec3 color)
 	return color;
 }
 
-float LightGammaToGammaOverBrightInternal(float color)
+float LightGammaToLinearInternal(float color)
 {
 	float fv = pow(color, SceneUBO.v_lightgamma);
 
 	if (SceneUBO.v_brightness > 1.0)
 		fv = fv * SceneUBO.v_brightness;
-
-	//if (fv > SceneUBO.r_g3)
-	float fv1 = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
-	//else 
-	float fv2 = (fv / SceneUBO.r_g3) * 0.125;
-
-	if (fv > SceneUBO.r_g3)
-		fv = fv1;
-	else
-		fv = fv2;
-
-	//fv = mix(fv1, fv2, step(fv, SceneUBO.r_g3));
-
-	fv = pow(fv, SceneUBO.r_g);
-
-	return fv;
-}
-
-//This was being applied for R_BuildLightMap and R_StudioLighting
-float LightGammaToGammaInternal(float color)
-{
-	return clamp(LightGammaToGammaOverBrightInternal(color), 0.0, 1.0);
-}
-
-vec4 LightGammaToGamma(vec4 color)
-{
-	return vec4(LightGammaToGammaInternal(color.r), LightGammaToGammaInternal(color.g), LightGammaToGammaInternal(color.b), color.a);
-}
-
-float LightGammaToLinearOverBrightInternal(float color)
-{
-	float fv = pow(color, SceneUBO.v_lightgamma);
-
-	fv = fv * max(SceneUBO.v_brightness, 1.0);
-
-	/*
-	fv = mix(
-		0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875,
-		(fv / SceneUBO.r_g3) * 0.125,
-		step(fv, SceneUBO.r_g3));
-	*/
 
 	if (fv > SceneUBO.r_g3)
 		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
@@ -544,14 +508,19 @@ float LightGammaToLinearOverBrightInternal(float color)
 	return fv;
 }
 
-float LightGammaToLinearInternal(float color)
-{
-	return clamp(LightGammaToLinearOverBrightInternal(color), 0.0, 1.0);
-}
-
 vec4 LightGammaToLinear(vec4 color)
 {
 	return vec4(LightGammaToLinearInternal(color.r), LightGammaToLinearInternal(color.g), LightGammaToLinearInternal(color.b), color.a);
+}
+
+float LightGammaToGammaInternal(float color)
+{
+	return LinearToGamma1(LightGammaToLinearInternal(color));
+}
+
+vec4 LightGammaToGamma(vec4 color)
+{
+	return vec4(LightGammaToGammaInternal(color.r), LightGammaToGammaInternal(color.g), LightGammaToGammaInternal(color.b), color.a);
 }
 
 //Input: TexGammaSpace
@@ -561,11 +530,6 @@ vec4 ProcessDiffuseColor(vec4 baseColor)
 	#if defined(GAMMA_BLEND_ENABLED)
 
 		baseColor = TexGammaToGamma(baseColor);
-
-		//Clamp this up to 1.0 just in case overflow
-		baseColor.r = clamp(baseColor.r, 0.0, 1.0);
-		baseColor.g = clamp(baseColor.g, 0.0, 1.0);
-		baseColor.b = clamp(baseColor.b, 0.0, 1.0);
 
 	#else
 
@@ -584,10 +548,6 @@ vec4 ProcessLightmapColor(vec4 lightmapColor)
 
 		lightmapColor = LightGammaToGamma(lightmapColor);
 
-		//Clamp this up to 1.0 just in case overflow
-		lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
-		lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
-		lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	#else
 
 		lightmapColor = LightGammaToLinear(lightmapColor);
