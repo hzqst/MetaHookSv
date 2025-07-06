@@ -300,7 +300,7 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
         MinStrength = r2 / ElightDot;
     }
     
-	float ElightCosine = -dot(vNormal, normalize(ElightDirection));
+	float ElightCosine = dot(vNormal, normalize(ElightDirection));
 
 	if (MinStrength > 0.004 && ElightCosine > 0)
 	{
@@ -320,7 +320,7 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	return color;
 }
 
-vec3 R_StudioDynamicLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask, float ElightAttenuation)
+vec3 R_StudioDynamicLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask, float DlightAttenuation)
 {
 	vec3 color = vec3(0.0, 0.0, 0.0);
 
@@ -331,9 +331,9 @@ vec3 R_StudioDynamicLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorl
 	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
 	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
 
-	color.x += DLightUBO.color_minlight[i].x * flSpecularFactor * ElightAttenuation * specularMask;
-	color.y += DLightUBO.color_minlight[i].y * flSpecularFactor * ElightAttenuation * specularMask;
-	color.z += DLightUBO.color_minlight[i].z * flSpecularFactor * ElightAttenuation * specularMask;
+	color.x += DLightUBO.color_minlight[i].x * flSpecularFactor * DlightAttenuation * specularMask;
+	color.y += DLightUBO.color_minlight[i].y * flSpecularFactor * DlightAttenuation * specularMask;
+	color.z += DLightUBO.color_minlight[i].z * flSpecularFactor * DlightAttenuation * specularMask;
 
 	return color;
 }
@@ -344,24 +344,17 @@ vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	
 	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
 	
+	float DlightDistance = length(DlightDirection);
+
 	float DlightDot = dot(DlightDirection, DlightDirection);
+	
+	float r = DLightUBO.origin_radius[i].w;
 
-	float r2 = DLightUBO.origin_radius[i].a;
-
-	r2 = r2 * r2;
-
-    float MinStrength = 1.0;
-
-    if (DlightDot > r2)
-    {
-        MinStrength = r2 / DlightDot;
-    }
-    
 	float DlightCosine = 0.8;
 
-	if (MinStrength > 0.004 && DlightCosine > 0)
+	if (DlightCosine > 0)
 	{
-		float DlightAttenuation = clamp(r2 / (DlightDot * sqrt(DlightDot)), 0.0, 1.0);
+		float DlightAttenuation = clamp(((r - DlightDistance) / r), 0.0, 1.0) * DlightCosine;
 
 		color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
 		color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
@@ -383,24 +376,15 @@ vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, floa
 
 	vec3 DlightDirection = DLightUBO.origin_radius[i].xyz - vWorldPos.xyz;
 
-	float DlightDot = dot(DlightDirection, DlightDirection);
+	float DlightDistance = length(DlightDirection);
 
-	float r2 = DLightUBO.origin_radius[i].a;
+	float r = DLightUBO.origin_radius[i].w;
+
+	float DlightCosine = dot(vNormal, normalize(DlightDirection));
 	
-	r2 = r2 * r2;
-	
-    float MinStrength = 1.0;
-
-    if (DlightDot > r2)
-    {
-        MinStrength = r2 / DlightDot;
-    }
-    
-	float DlightCosine = -dot(vNormal, normalize(DlightDirection));
-
-	if (MinStrength > 0.004 && DlightCosine > 0)
+	if (DlightCosine > 0)
 	{
-		float DlightAttenuation = clamp(r2 / (DlightDot * sqrt(DlightCosine)), 0.0, 1.0);
+		float DlightAttenuation = clamp(((r - DlightDistance) / r), 0.0, 1.0) * DlightCosine;
 
 		color.x += DLightUBO.color_minlight[i].x * DlightAttenuation;
 		color.y += DLightUBO.color_minlight[i].y * DlightAttenuation;
