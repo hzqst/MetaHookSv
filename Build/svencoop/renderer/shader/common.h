@@ -492,7 +492,8 @@ float LightGammaToGammaOverBrightInternal(float color)
 {
 	float fv = pow(color, SceneUBO.v_lightgamma);
 
-	fv = fv * max(SceneUBO.v_brightness, 1.0);
+	if (SceneUBO.v_brightness > 1.0)
+		fv = fv * SceneUBO.v_brightness;
 
 	//if (fv > SceneUBO.r_g3)
 	float fv1 = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
