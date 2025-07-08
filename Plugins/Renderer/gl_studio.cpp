@@ -670,8 +670,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_NF_DOUBLE_FACE)
 			defs << "#define STUDIO_NF_DOUBLE_FACE\n";
 
-		if (state & STUDIO_NF_OVERBRIGHT)
-			defs << "#define STUDIO_NF_OVERBRIGHT\n";
+		//if (state & STUDIO_NF_OVERBRIGHT)
+		//	defs << "#define STUDIO_NF_OVERBRIGHT\n";
 
 		if (state & STUDIO_NF_NOOUTLINE)
 			defs << "#define STUDIO_NF_NOOUTLINE\n";
@@ -1207,7 +1207,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_NF_CELSHADE_HAIR				,"STUDIO_NF_CELSHADE_HAIR"	},
 { STUDIO_NF_CELSHADE_HAIR_H				,"STUDIO_NF_CELSHADE_HAIR_H"},
 { STUDIO_NF_DOUBLE_FACE					,"STUDIO_NF_DOUBLE_FACE"	},
-{ STUDIO_NF_OVERBRIGHT					,"STUDIO_NF_OVERBRIGHT"		},
+//{ STUDIO_NF_OVERBRIGHT					,"STUDIO_NF_OVERBRIGHT"		},
 { STUDIO_NF_NOOUTLINE					,"STUDIO_NF_NOOUTLINE"		},
 };
 
@@ -2762,7 +2762,7 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 {
 	float dies[256];
 
-	if ((int)r_studio_legacy_dlight->value != 1)
+	if ((int)r_studio_legacy_dlight->value == 0)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
@@ -3541,7 +3541,7 @@ void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studio
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE_HAIR);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE_HAIR_H);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_DOUBLE_FACE);
-	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_OVERBRIGHT);
+	//REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_OVERBRIGHT);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_NOOUTLINE);
 
 #undef REGISTER_TEXTURE_FLAGS_KEY_VALUE

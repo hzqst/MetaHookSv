@@ -100,3 +100,21 @@ typedef struct voxword
 	sfx_t *sfx;
 }
 voxword_t;
+
+typedef struct ScClient_SentenceWord_s
+{
+	float unk;
+	float unk2;
+	float unk3;
+	float unk4;
+	float unk5;
+	char name[260];
+	struct ScClient_SentenceWord_s* next;
+} ScClient_SentenceWord_t;
+
+typedef struct ScClient_Sentence_s
+{
+	char name[32];
+	ScClient_SentenceWord_t* word;
+	int padding;
+} ScClient_Sentence_t;

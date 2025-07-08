@@ -64,6 +64,7 @@ static hook_t* g_phook_pfnServerCmdUnreliable = NULL;
 static hook_t *g_phook_TextMessageParse = NULL;
 static hook_t* g_phook_COM_ExplainDisconnection = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
+static hook_t* g_phook_ScClient_SoundEngine_LoadSoundList = NULL;
 static hook_t *g_phook_ScClient_SoundEngine_PlayFMODSound = NULL;
 static hook_t *g_phook_FMOD_System_playSound = NULL;
 
@@ -76,13 +77,13 @@ void FMOD_InstallHooks(HMODULE fmodex)
 
 	if (gPrivateFuncs.FMOD_System_playSound)
 	{
-		Install_InlineHook(FMOD_System_playSound);
+	//	Install_InlineHook(FMOD_System_playSound);
 	}
 }
 
 void FMOD_UninstallHooks(HMODULE fmodex)
 {
-	Uninstall_Hook(FMOD_System_playSound);
+	//Uninstall_Hook(FMOD_System_playSound);
 }
 
 bool SCR_IsLoadingVisible(void)
@@ -1007,6 +1008,138 @@ void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_VOX_LookupString(DllInfo, RealDllInfo);
 }
 
+void Client_FillAddress_SCClient_SoundEngine(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	auto pfnHUD_PlayerMoveTexture = (PUCHAR)GetProcAddress((HMODULE)RealDllInfo.ImageBase, "HUD_PlayerMoveTexture");
+
+	if (!pfnHUD_PlayerMoveTexture)
+		Sig_NotFound(pfnHUD_PlayerMoveTexture);
+
+	auto pfnHUD_PlayerMoveTexture_VA = (PUCHAR)ConvertDllInfoSpace(pfnHUD_PlayerMoveTexture, RealDllInfo, DllInfo);
+
+	if (!pfnHUD_PlayerMoveTexture_VA)
+		Sig_NotFound(pfnHUD_PlayerMoveTexture_VA);
+
+	while (1)
+	{
+		if (pfnHUD_PlayerMoveTexture_VA[0] == 0xE9)
+		{
+			pfnHUD_PlayerMoveTexture_VA = (PUCHAR)GetCallAddress(pfnHUD_PlayerMoveTexture_VA);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if(pfnHUD_PlayerMoveTexture_VA[0] == 0xE8)
+	{
+		PVOID soundengine_VA = GetCallAddress(pfnHUD_PlayerMoveTexture_VA);
+
+		gPrivateFuncs.ScClient_soundengine = (decltype(gPrivateFuncs.ScClient_soundengine))ConvertDllInfoSpace(soundengine_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(ScClient_soundengine);
+}
+
+void Client_FillAddress_SCClient_SoundEngine_maxsentences(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char sigs[] = "Sentence length too long! Greater than";
+
+	auto SentenceTooLong_String = (PVOID)nullptr;
+	if (!SentenceTooLong_String)
+		SentenceTooLong_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (SentenceTooLong_String)
+	{
+		char pattern[] = "\x68\x80\x01\x00\x00\x68\x2A\x2A\x2A\x2A\x6A\x04";
+		*(DWORD*)(pattern + 6) = (DWORD)SentenceTooLong_String;
+		auto SentenceTooLong_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(SentenceTooLong_PushString);
+
+		typedef struct SentenceTooLong_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+			int instCount_incReg{};
+		}SentenceTooLong_SearchContext;
+
+		SentenceTooLong_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(SentenceTooLong_PushString, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (SentenceTooLong_SearchContext*)context;
+
+			if (!gPrivateFuncs.ScClient_soundengine_maxsentences &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.disp > 0x100000)
+			{
+				gPrivateFuncs.ScClient_soundengine_maxsentences = pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (!gPrivateFuncs.ScClient_soundengine_maxsentences &&
+				pinst->id == X86_INS_INC &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.disp > 0x100000)
+			{
+				gPrivateFuncs.ScClient_soundengine_maxsentences = pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (gPrivateFuncs.ScClient_soundengine_maxsentences)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &ctx);
+
+
+		Sig_FuncNotFound(ScClient_soundengine_maxsentences);
+	}
+}
+
+void Client_FillAddress_SCClient_SoundEngine_LoadSoundList(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char sigs[] = "Deleting outdated sound list file '%s'. Scanned map name";
+
+	auto DeletingOutdated_String = (PVOID)nullptr;
+	if (!DeletingOutdated_String)
+		DeletingOutdated_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (DeletingOutdated_String)
+	{
+		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\x6A\x01";
+		*(DWORD*)(pattern + 2) = (DWORD)DeletingOutdated_String;
+		auto DeletingOutdated_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(DeletingOutdated_PushString);
+
+		auto LoadSoundList_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(DeletingOutdated_PushString, 0x350, [](PUCHAR Candidate) {
+
+			//.text:1000ECF0 81 EC A8 08 00 00                                   sub     esp, 8A8h
+			//.text:1000ECF6 A1 40 E2 1B 10                                      mov     eax, ___security_cookie
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[6] == 0xA1)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+			});
+
+		gPrivateFuncs.ScClient_SoundEngine_LoadSoundList = (decltype(gPrivateFuncs.ScClient_SoundEngine_LoadSoundList))ConvertDllInfoSpace(LoadSoundList_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(ScClient_SoundEngine_LoadSoundList);
+	}
+}
+
 void Client_FillAddress_SCClient_SoundEngine_PlayFMODSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (1)
@@ -1088,11 +1221,86 @@ void Client_FillAddress_SCClient_SoundEngine_PlayFMODSound(const mh_dll_info_t& 
 
 void Client_FillAddress_SCClient_SoundEngine_LookupSoundBySentenceIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
-	auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
+	const char sigs[] = "Tried to look up sound by sentence index out";
 
-	gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
+	auto TriedToLookUp_String = (PVOID)nullptr;
+	if (!TriedToLookUp_String)
+		TriedToLookUp_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (TriedToLookUp_String)
+	{
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x6A\x04\xE8";
+		*(DWORD*)(pattern + 1) = (DWORD)TriedToLookUp_String;
+		auto TriedToLookUp_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(TriedToLookUp_PushString);
+
+		auto LookupSoundBySentenceIndex_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(TriedToLookUp_PushString, 0x50, [](PUCHAR Candidate) {
+
+			//.text:1000CFE0 8B 54 24 04                                         mov     edx, [esp + index]
+			//.text : 1000CFE4 81 FA FF 0F 00 00                                   cmp     edx, 0FFFh
+			if (Candidate[-1] == 0xCC && 
+				Candidate[0] == 0x8B &&
+				Candidate[2] == 0x24 &&
+				Candidate[3] == 0x04)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+
+		gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))ConvertDllInfoSpace(LookupSoundBySentenceIndex_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(ScClient_SoundEngine_LookupSoundBySentenceIndex);
+	}
+
+	//char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
+	//auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
+	//Sig_AddrNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
+
+	//gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
+}
+
+void Client_FillAddress_SCClient_SoundEngine_LookupSoundBySample(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char sigs[] = "Tried to look up sound by sample";
+
+	auto TriedToLookUp_String = (PVOID)nullptr;
+	if (!TriedToLookUp_String)
+		TriedToLookUp_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (TriedToLookUp_String)
+	{
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x6A\x04\xE8";
+		*(DWORD*)(pattern + 1) = (DWORD)TriedToLookUp_String;
+		auto TriedToLookUp_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(TriedToLookUp_PushString);
+
+		auto LookupSoundBySample_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(TriedToLookUp_PushString, 0x350, [](PUCHAR Candidate) {
+
+	//		.text:1000D030; int __thiscall sub_1000D030(int this, const char* ArgList)
+	//			.text:1000D030                                     sub_1000D030    proc near; CODE XREF : sub_1000D9F0 + 190↓p
+	//			.text : 1000D030; sub_1000F750 + C1↓p
+	//			.text:1000D030
+	//			.text : 1000D030                                     var_4 = dword ptr - 4
+	//			.text : 1000D030                                     ArgList = dword ptr  4
+	//			.text : 1000D030
+	//			.text : 1000D030 51                                                  push    ecx
+	//			.text : 1000D031 55                                                  push    ebp; ArgList
+	//			.text:1000D032 8B 6C 24 0C                                         mov     ebp, [esp + 8 + ArgList]
+			if (Candidate[-1] == 0xCC &&
+				Candidate[0] >= 0x50 &&
+				Candidate[0] <= 0x57 &&
+				Candidate[1] >= 0x50 &&
+				Candidate[1] <= 0x57 &&
+				Candidate[2] == 0x8B)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+			});
+
+		gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySample = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySample))ConvertDllInfoSpace(LookupSoundBySample_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(ScClient_SoundEngine_LookupSoundBySample);
+	}
 }
 
 void Client_FillAddress_SCClient_GetClientColor(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1254,9 +1462,17 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 	{
 		g_bIsSvenCoop = true;
 
+		Client_FillAddress_SCClient_SoundEngine(DllInfo, RealDllInfo);
+
+		Client_FillAddress_SCClient_SoundEngine_maxsentences(DllInfo, RealDllInfo);
+
+		Client_FillAddress_SCClient_SoundEngine_LoadSoundList(DllInfo, RealDllInfo);
+
 		Client_FillAddress_SCClient_SoundEngine_PlayFMODSound(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_SoundEngine_LookupSoundBySentenceIndex(DllInfo, RealDllInfo);
+
+		Client_FillAddress_SCClient_SoundEngine_LookupSoundBySample(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_GetClientColor(DllInfo, RealDllInfo);
 
@@ -1560,6 +1776,11 @@ void Client_InstallHooks(void)
 		Install_InlineHook(ScClient_SoundEngine_PlayFMODSound);
 	}
 
+	if (gPrivateFuncs.ScClient_SoundEngine_LoadSoundList)
+	{
+		Install_InlineHook(ScClient_SoundEngine_LoadSoundList);
+	}
+
 	if (gPrivateFuncs.WeaponsResource_SelectSlot)
 	{
 		Install_InlineHook(WeaponsResource_SelectSlot);
@@ -1569,6 +1790,7 @@ void Client_InstallHooks(void)
 void Client_UninstallHooks(void)
 {
 	Uninstall_Hook(ScClient_SoundEngine_PlayFMODSound);
+	Uninstall_Hook(ScClient_SoundEngine_LoadSoundList);
 	Uninstall_Hook(WeaponsResource_SelectSlot);
 }
 

@@ -8,6 +8,7 @@
 #include <IVGUI2Extension.h>
 #include <VGUI/VGUI.h>
 #include "Viewport.h"
+#include "util.h"
 
 #include <functional>
 
@@ -742,20 +743,104 @@ sfx_t *S_FindName(const char *name, int *pfInCache)
 
 static bool g_bPlayingFMODSound = false;
 static bool g_bPlayedFMODSound = false;
-static int g_iCurrentPlayingFMODSoundLengthMs = 0;
-static void* g_pFMODSystem = NULL;
+//static int g_iCurrentPlayingFMODSoundLengthMs = 0;
+//static void* g_pFMODSystem = NULL;
 
-bool ScClient_StartSentence(const char* name, float distance, float avol)
+ScClient_Sentence_t* ScClient_SoundEngine_GetSentenceObjectByIndex(void* pSoundEngine, int sentenceIndex)
+{
+	if (sentenceIndex < 0 || sentenceIndex > 0xFFF)
+		return nullptr;
+
+	return *(ScClient_Sentence_t**)((PUCHAR)pSoundEngine + 4 * sentenceIndex);
+}
+
+int ScClient_SoundEngine_GetMaxSentences(void* pSoundEngine)
+{
+	return *(int*)((PUCHAR)pSoundEngine + gPrivateFuncs.ScClient_soundengine_maxsentences);
+}
+
+ScClient_Sentence_t* ScClient_SoundEngine_GetSentenceByName(void* pSoundEngine, const char* name)
+{
+	for (int i = 0; i < ScClient_SoundEngine_GetMaxSentences(pSoundEngine); ++i)
+	{
+		auto sentenceObject = ScClient_SoundEngine_GetSentenceObjectByIndex(pSoundEngine, i);
+		if (sentenceObject && sentenceObject->word && sentenceObject->name[0])
+		{
+			if (!strcmp(sentenceObject->name, name))
+				return sentenceObject;
+		}
+	}
+
+	return nullptr;
+}
+
+bool __fastcall ScClient_SoundEngine_LoadSoundList(void* pSoundEngine, int)
+{
+	auto r = gPrivateFuncs.ScClient_SoundEngine_LoadSoundList(pSoundEngine, 0);
+
+	if (r && g_pViewPort)
+	{
+		g_pViewPort->LoadBaseDictionary();
+		std::string name = gEngfuncs.pfnGetLevelName();
+		RemoveFileExtension(name);
+		name += "_dictionary.csv";
+
+		g_pViewPort->LoadCustomDictionary(name.c_str());
+
+		if (0 != strcmp(VGUI2Extension()->GetCurrentLanguage(), "english"))
+		{
+			name = gEngfuncs.pfnGetLevelName();
+			RemoveFileExtension(name);
+			name += "_dictionary_";
+			name += VGUI2Extension()->GetCurrentLanguage();
+			name += ".csv";
+
+			g_pViewPort->LoadCustomDictionary(name.c_str());
+		}
+
+		g_pViewPort->LinkDictionary();
+	}
+
+	return r;
+}
+
+void ScClient_LoadSentence(ScClient_Sentence_t*sentenceObject, const std::function<void(ScClient_SentenceWord_t*)>& callback)
+{
+	for (auto pWord = sentenceObject->word; pWord; pWord = pWord->next)
+	{
+		callback(pWord);
+	}
+}
+
+float ScClient_GetSoundDuration(const char *sample)
+{
+	auto FMOD_Sound = gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySample(gPrivateFuncs.ScClient_soundengine(), 0, sample);
+
+	if (FMOD_Sound)
+	{
+		int duration_ms = 0;
+		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration_ms, 1);
+
+		return duration_ms / 1000.0f;
+	}
+
+	return 0;
+}
+
+bool ScClient_StartSentence(ScClient_Sentence_t* sentenceObject, float distance, float avol)
 {
 	if (!g_pViewPort)
 		return false;
+
+	auto name = sentenceObject->name;
 
 	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
 
 	if (!pDict)
 	{
 		//skip "!" and "#"
-		pDict = g_pViewPort->FindDictionary(name + 1);
+		if (name[0] == '!' || name[0] == '#')
+			pDict = g_pViewPort->FindDictionary(name + 1);
 	}
 
 	if (cap_debug && cap_debug->value)
@@ -793,13 +878,14 @@ bool ScClient_StartSentence(const char* name, float distance, float avol)
 	}
 	else
 	{
-#if 0//TODO...
-		ScClient_LoadSentence(name + 1, [&duration](sfx_t* sfx) {
+		ScClient_LoadSentence(sentenceObject, [&duration](ScClient_SentenceWord_t* pWord) {
 
-			duration += S_GetDuration(sfx);
+			if (pWord->name[0])
+			{
+				duration += ScClient_GetSoundDuration(pWord->name);
+			}
 
 		});
-#endif
 	}
 
 	CStartSubtitleContext StartSubtitleContext;
@@ -809,17 +895,19 @@ bool ScClient_StartSentence(const char* name, float distance, float avol)
 	return true;
 }
 
-void ScClient_StartWave(const char* name, float distance, float avol, int ms_duration)
+void ScClient_StartWave(const char* name, float distance, float avol)
 {
 	if (!g_pViewPort)
 		return;
 
-	if (!Q_strnicmp(name, "sound/", 6))
-		name += 6;
-	else if (!Q_strnicmp(name + 1, "sound/", 6))
-		name += 7;
+	const char* dictName = name;
 
-	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+	if (!Q_strnicmp(dictName, "sound/", 6))
+		dictName += 6;
+	else if (!Q_strnicmp(dictName + 1, "sound/", 6))
+		dictName += 7;
+
+	auto pDict = g_pViewPort->FindDictionary(dictName, DICT_SOUND);
 
 	if (cap_debug && cap_debug->value)
 	{
@@ -856,7 +944,7 @@ void ScClient_StartWave(const char* name, float distance, float avol, int ms_dur
 	}
 	else
 	{
-		duration = ms_duration / 1000.0f;
+		duration = ScClient_GetSoundDuration(name);
 	}
 
 	CStartSubtitleContext StartSubtitleContext;
@@ -866,13 +954,15 @@ void ScClient_StartWave(const char* name, float distance, float avol, int ms_dur
 
 void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength)
 {
-	g_bPlayingFMODSound = true;
-	g_iCurrentPlayingFMODSoundLengthMs = 0;
-	g_pFMODSystem = *(void **)((PUCHAR)pSoundEngine + 0x2004);
+	g_bPlayingFMODSound = false;
+	//g_iCurrentPlayingFMODSoundLengthMs = 0;
+	//g_pFMODSystem = *(void **)((PUCHAR)pSoundEngine + 0x2004);
 
 	gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound(pSoundEngine, 0, flags, entindex, origin, channel, name, fvol, attenuation, extraflags, pitch, sentenceIndex, soundLength);
 
-	if (g_bPlayedFMODSound)
+	//gEngfuncs.Con_DPrintf("ScClient_SoundEngine_PlayFMODSound: %s, %d, %d\n", name ? name : "(null)", sentenceIndex, g_bPlayedFMODSound ? 1 : 0);
+
+	//if (g_bPlayedFMODSound)
 	{
 		bool ignore = false;
 		float distance = 0;
@@ -906,13 +996,23 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 			}
 		}
 
-		if (!ignore && !name && sentenceIndex >= 0)
+		if (!ignore && (flags & 0x100) && sentenceIndex >= 0)
 		{
-			auto sentenceName = gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex(pSoundEngine, sentenceIndex);
+			auto sentenceObject = ScClient_SoundEngine_GetSentenceObjectByIndex(pSoundEngine, sentenceIndex);
 
-			if (sentenceName)
+			if (sentenceObject)
 			{
-				ScClient_StartWave(sentenceName, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+				if (!ScClient_StartSentence(sentenceObject, distance, avol))
+				{
+					ScClient_LoadSentence(sentenceObject, [distance, avol](ScClient_SentenceWord_t* pWord) {
+
+						if (pWord->name[0])
+						{
+							ScClient_StartWave(pWord->name, distance, avol);
+						}
+
+					});
+				}
 
 				ignore = true;
 			}
@@ -920,18 +1020,18 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 
 		if (!ignore && name)
 		{
-			ScClient_StartWave(name, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+			ScClient_StartWave(name, distance, avol);
 		}
 	}
 
 	g_bPlayingFMODSound = false;
 	g_bPlayedFMODSound = false;
-	g_iCurrentPlayingFMODSoundLengthMs = 0;
+	//g_iCurrentPlayingFMODSoundLengthMs = 0;
 }
-
+#if 0
 int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel)
 {
-	if (g_bPlayingFMODSound && g_pFMODSystem == FMOD_System)
+	if (!g_bPlayingFMODSound && g_pFMODSystem == FMOD_System)
 	{
 		int duration = 0;
 		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration, 1);
@@ -941,7 +1041,7 @@ int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD
 
 	return gPrivateFuncs.FMOD_System_playSound(FMOD_System, channelid, FMOD_Sound, paused, FMOD_Channel);
 }
-
+#endif
 void TextMessageParse(byte* pMemFile, int fileSize)
 {
 	if (fileSize > 2 && pMemFile[0] == 0xFF && pMemFile[1] == 0xFE)

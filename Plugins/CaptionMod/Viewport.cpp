@@ -19,6 +19,8 @@
 
 using namespace vgui;
 
+ScClient_Sentence_t* ScClient_SoundEngine_GetSentenceByName(void* pSoundEngine, const char* name);
+
 CViewport *g_pViewPort = NULL;
 
 //Dictionary hashtable
@@ -389,7 +391,7 @@ void StringReplaceA(std::string &strBase, const std::string &strSrc, const std::
 	}
 }
 
-void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, IScheme *ischeme)
+void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defaultColor, IScheme *ischeme)
 {
 	m_Color = defaultColor;
 	m_bDefaultColor = true;
@@ -432,6 +434,16 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	else if (m_szTitle[0] == '!' || m_szTitle[0] == '#')
 	{
 		m_Type = DICT_SENTENCE;
+	}
+
+	if (g_bIsSvenCoop)
+	{
+		auto sentenseObject = ScClient_SoundEngine_GetSentenceByName(gPrivateFuncs.ScClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+
+		if (sentenseObject)
+		{
+			m_Type = DICT_SENTENCE;
+		}
 	}
 
 	//2015-11-26 added to support NETMESSAGE:
@@ -688,6 +700,7 @@ void CViewport::LinkDictionary(void)
 	for (int i = 0; i < m_Dictionary.Count(); ++i)
 	{
 		CDictionary *Dict = m_Dictionary[i];
+
 		if (Dict->m_szNext[0])
 		{
 			Dict->m_pNext = FindDictionary(Dict->m_szNext.c_str());
@@ -881,8 +894,12 @@ void CViewport::Think(void)
 void CViewport::VidInit(void)
 {
 	m_szLevelName[0] = 0;
-	LoadBaseDictionary();
-	LinkDictionary();
+
+	if (!g_bIsSvenCoop)
+	{
+		LoadBaseDictionary();
+		LinkDictionary();
+	}
 
 	m_pChatDialog->VidInit();
 	m_pSubtitlePanel->VidInit();
@@ -919,24 +936,27 @@ void CViewport::ConnectToServer(const char* game, int IP, int port)
 
 	if (0 != strcmp(szLevelName, m_szLevelName))
 	{
-		std::string name = szLevelName;
-		RemoveFileExtension(name);
-		name += "_dictionary.csv";
-
-		LoadCustomDictionary(name.c_str());
-
-		if (0 != strcmp(VGUI2Extension()->GetCurrentLanguage(), "english"))
+		if (!g_bIsSvenCoop)
 		{
-			name = szLevelName;
+			std::string name = szLevelName;
 			RemoveFileExtension(name);
-			name += "_dictionary_";
-			name += VGUI2Extension()->GetCurrentLanguage();
-			name += ".csv";
+			name += "_dictionary.csv";
 
 			LoadCustomDictionary(name.c_str());
-		}
 
-		LinkDictionary();
+			if (0 != strcmp(VGUI2Extension()->GetCurrentLanguage(), "english"))
+			{
+				name = szLevelName;
+				RemoveFileExtension(name);
+				name += "_dictionary_";
+				name += VGUI2Extension()->GetCurrentLanguage();
+				name += ".csv";
+
+				LoadCustomDictionary(name.c_str());
+			}
+
+			LinkDictionary();
+		}
 
 		strncpy(m_szLevelName, szLevelName, sizeof(m_szLevelName) - 1);
 		m_szLevelName[sizeof(m_szLevelName) - 1] = 0;
@@ -944,7 +964,6 @@ void CViewport::ConnectToServer(const char* game, int IP, int port)
 
 	if(m_pSubtitlePanel)
 		m_pSubtitlePanel->ConnectToServer(game, IP, port);
-
 }
 
 void CViewport::ActivateClientUI(void)

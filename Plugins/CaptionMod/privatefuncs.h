@@ -38,7 +38,11 @@ typedef struct
 
 	//SC ClientDLL
 	void (__fastcall*ScClient_SoundEngine_PlayFMODSound)(void *pSoundEngine, int, int flags, int entindex, float *origin, int channel, const char *name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);
-	const char *(__thiscall* ScClient_SoundEngine_LookupSoundBySentenceIndex)(void* pSoundEngine, int sentenceIndex);
+	const char *(__fastcall* ScClient_SoundEngine_LookupSoundBySentenceIndex)(void* pSoundEngine, int, int sentenceIndex);
+	void* (__fastcall* ScClient_SoundEngine_LookupSoundBySample)(void* pSoundEngine, int, const char *sampleName);
+	bool (__fastcall* ScClient_SoundEngine_LoadSoundList)(void* pSoundEngine, int);
+	void* (*ScClient_soundengine)();
+	int ScClient_soundengine_maxsentences;
 
 	//FMOD
 

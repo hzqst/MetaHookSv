@@ -420,17 +420,9 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	#endif
 
-	
 		float lv = illum / 255.0;
 
-	#if defined(STUDIO_NF_OVERBRIGHT)
-
-		lv = LightGammaToLinearOverBrightInternal(lv);
-	#else
-
 		lv = LightGammaToLinearInternal(lv);
-
-	#endif
 
 	vec3 color = vec3(lv, lv, lv);		
 

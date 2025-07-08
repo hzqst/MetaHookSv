@@ -77,7 +77,7 @@ public:
 	CDictionary();
 	virtual ~CDictionary();
 
-	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
+	void Load(const CSV::CSVDocument::row_type &row, const Color &defaultColor, vgui::IScheme *ischeme);
 	void ProcessString(const std::wstring& input, const CStartSubtitleContext* pStartSubtitleContext, std::wstring& output);
 
 	dict_t					m_Type;

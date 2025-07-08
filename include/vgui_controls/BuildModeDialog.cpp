@@ -885,7 +885,6 @@ void BuildModeDialog::OnCommand(const char *command)
 	}
 }
 
-
 //-----------------------------------------------------------------------------
 // Purpose: Deletes a panel from the buildgroup
 //-----------------------------------------------------------------------------
