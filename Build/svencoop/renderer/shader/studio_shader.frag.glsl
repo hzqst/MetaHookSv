@@ -235,9 +235,9 @@ vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorld
 	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
 	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
 
-	color.x += StudioUBO.r_elight_color[i].x * flSpecularFactor * ElightAttenuation * specularMask;
-	color.y += StudioUBO.r_elight_color[i].y * flSpecularFactor * ElightAttenuation * specularMask;
-	color.z += StudioUBO.r_elight_color[i].z * flSpecularFactor * ElightAttenuation * specularMask;
+	vec3 ElightColor = ProcessOtherGammaColor3(StudioUBO.r_elight_color[i].xyz);
+	
+	color += ElightColor * flSpecularFactor * ElightAttenuation * specularMask;
 
 	return color;
 }
@@ -265,15 +265,15 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
 
 	if (MinStrength > 0.004 && ElightCosine > 0)
 	{
-		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0);
+		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0) * ElightCosine;
 
-		color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
-		color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
-		color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
+		vec3 ElightColor = ProcessOtherGammaColor3(StudioUBO.r_elight_color[i].xyz);
+		
+		color += ElightColor * ElightAttenuation;
 
 		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-			color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
+			color += R_StudioEntityLight_PhongSpecular(i, normalize(ElightDirection), vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
 		#endif
 	}
@@ -302,17 +302,18 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
     
 	float ElightCosine = dot(vNormal, normalize(ElightDirection));
 
-	if (MinStrength > 0.004 && ElightCosine > 0)
+	//if (MinStrength > 0.004 && ElightCosine > 0)
+	if (ElightCosine > 0)
 	{
-		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0);
+		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0) * ElightCosine;
 
-		color.x += StudioUBO.r_elight_color[i].x * ElightAttenuation;
-		color.y += StudioUBO.r_elight_color[i].y * ElightAttenuation;
-		color.z += StudioUBO.r_elight_color[i].z * ElightAttenuation;
+		vec3 ElightColor = ProcessOtherGammaColor3(StudioUBO.r_elight_color[i].xyz);
+		
+		color += ElightColor * ElightAttenuation;
 
 		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-			color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask, ElightAttenuation);
+			color += R_StudioEntityLight_PhongSpecular(i, normalize(ElightDirection), vWorldPos, vNormal, specularMask, ElightAttenuation);
 		
 		#endif
 	}
@@ -362,7 +363,7 @@ vec3 R_StudioDynamicLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float
 
 		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-			color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+			color += R_StudioDynamicLight_PhongSpecular(i, normalize(DlightDirection), vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
 		#endif
 	}
@@ -392,7 +393,7 @@ vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, floa
 
 		#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-			color += R_StudioDynamicLight_PhongSpecular(i, DlightDirection, vWorldPos, vNormal, specularMask, DlightAttenuation);
+			color += R_StudioDynamicLight_PhongSpecular(i, normalize(DlightDirection), vWorldPos, vNormal, specularMask, DlightAttenuation);
 		
 		#endif
 	}
@@ -400,7 +401,7 @@ vec3 R_StudioDynamicLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, floa
 	return color;
 }
 
-//The output is in linear space
+//The output is always in linear space
 
 vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 {	
@@ -420,23 +421,25 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	#endif
 
-		float lv = illum / 255.0;
+	float lv = illum / 255.0;
 
-		lv = LightGammaToLinearInternal(lv);
+	float linearLv = LightGammaToLinearInternal(lv);
 
-	vec3 color = vec3(lv, lv, lv);		
+	vec3 linearColor = vec3(linearLv, linearLv, linearLv);
+
+	linearColor *= StudioUBO.r_color.xyz;
 
 	#if defined(LEGACY_ELIGHT_ENABLED)
-		for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
+		for(int i = 0; i < StudioUBO.r_numelight; ++i)
 		{
 		
 		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-			color += R_StudioEntityLight_FlatShading(i, vWorldPos, vNormal, specularMask);
+			linearColor += R_StudioEntityLight_FlatShading(i, vWorldPos, vNormal, specularMask);
 
 		#else
 
-			color += R_StudioEntityLight_PhongShading(i, vWorldPos, vNormal, specularMask);
+			linearColor += R_StudioEntityLight_PhongShading(i, vWorldPos, vNormal, specularMask);
 
 		#endif
 		}
@@ -447,17 +450,17 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 		{
 		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-			color += R_StudioDynamicLight_FlatShading(i, vWorldPos, vNormal, specularMask);
+			linearColor += R_StudioDynamicLight_FlatShading(i, vWorldPos, vNormal, specularMask);
 
 		#else
 
-			color += R_StudioDynamicLight_PhongShading(i, vWorldPos, vNormal, specularMask);
+			linearColor += R_StudioDynamicLight_PhongShading(i, vWorldPos, vNormal, specularMask);
 
 		#endif
 		}
 	#endif
 
-	return color;
+	return linearColor;
 }
 
 vec3 ProjectVectorOntoPlane(vec3 v, vec3 normal) {
@@ -820,28 +823,28 @@ void main(void)
 		vec4 fullbrightColor = vec4(1.0, 1.0, 1.0, 1.0);
 		vec4 lightmapColor = ProcessOtherGammaColor(fullbrightColor);
 
-		vec3 lightColorLinear = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
+		vec3 linearLightColor = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
 
 		#if defined(GAMMA_BLEND_ENABLED)
-			lightmapColor.rgb *= LinearToGamma3(lightColorLinear);
+			lightmapColor.rgb *= LinearToGamma3(linearLightColor);
 		#else
-			lightmapColor.rgb *= lightColorLinear;
+			lightmapColor.rgb *= linearLightColor;
 		#endif
 
 	#else
 
 		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 
-		vec3 lightColorLinear = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
+		vec3 linearLightColor = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
 
 		#if defined(STUDIO_NF_CELSHADE)
-			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x);
+			linearLightColor = R_StudioCelShade(linearLightColor, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x);
 		#endif
 
 		#if defined(GAMMA_BLEND_ENABLED)
-			lightmapColor.rgb *= LinearToGamma3(lightColorLinear);
+			lightmapColor.rgb *= LinearToGamma3(linearLightColor);
 		#else
-			lightmapColor.rgb *= lightColorLinear;
+			lightmapColor.rgb *= linearLightColor;
 		#endif
 
 	#endif
@@ -872,8 +875,6 @@ void main(void)
 	out_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
 
 #else
-
-	//Normal color output
 
 	#if defined(GBUFFER_ENABLED)
 

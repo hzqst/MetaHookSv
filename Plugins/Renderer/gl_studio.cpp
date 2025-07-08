@@ -1901,6 +1901,8 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 		StudioUBO.r_color[3] = (*r_blend);
 	}
 
+	//GammaToLinear(StudioUBO.r_color);
+
 	StudioUBO.r_ambientlight = (float)(*r_ambientlight);
 	StudioUBO.r_shadelight = (*r_shadelight);
 
@@ -1926,16 +1928,31 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 	{
 		auto el = cl_elights;
 
+		vec3_t vecZero = { 0 };
+
+		typedef struct
+		{
+			vec3_t origin;
+			vec3_t color;
+			float radius;
+			float attenuation;
+		}temp_elight_t;
+
+		temp_elight_t temp_elight[MAX_ELIGHTS_SVENGINE];
+		int temp_numelight{};
+
 		for (int i = 0; i < EngineGetMaxELights(); i++, el++)
 		{
 			if (el->die < (*cl_time) || el->radius < 0)
 				continue;
 
-			if ((el->key & 0xFFF) == (*currententity)->index)
+			if ((*currententity)->index != 0 &&
+				(el->key & 0xFFF) == (*currententity)->index)
 			{
 				int att = (el->key >> 12) & 0xF;
 
-				if (att >= 0 && att < _countof((*currententity)->attachment))
+				if (att >= 0 && att < _countof((*currententity)->attachment) && 
+					0 == VectorCompare((*currententity)->attachment[att], vecZero))
 				{
 					VectorCopy((*currententity)->attachment[att], el->origin);
 				}
@@ -1945,17 +1962,56 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 				}
 			}
 
-			StudioUBO.r_elight_color[StudioUBO.r_numelight][0] = (float)(el->color.r) / 255.0f;
-			StudioUBO.r_elight_color[StudioUBO.r_numelight][1] = (float)(el->color.g) / 255.0f;
-			StudioUBO.r_elight_color[StudioUBO.r_numelight][2] = (float)(el->color.b) / 255.0f;
+			vec3_t ElightDirection;
+
+			VectorSubtract(el->origin, entity_origin, ElightDirection);
+
+			float ElightDot = DotProduct(ElightDirection, ElightDirection);
+
+			float r2 = el->radius;
+
+			r2 = r2 * r2;
+
+			float attenuation = math_clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0);
+
+			if (attenuation < 0.001f)
+				continue;
+
+			temp_elight[temp_numelight].attenuation = attenuation;
+
+			temp_elight[temp_numelight].origin[0] = el->origin[0];
+			temp_elight[temp_numelight].origin[1] = el->origin[1];
+			temp_elight[temp_numelight].origin[2] = el->origin[2];
+			temp_elight[temp_numelight].radius = el->radius;
+
+			temp_elight[temp_numelight].color[0] = (float)(el->color.r) / 255.0f;
+			temp_elight[temp_numelight].color[1] = (float)(el->color.g) / 255.0f;
+			temp_elight[temp_numelight].color[2] = (float)(el->color.b) / 255.0f;
+
+			temp_numelight++;
+		}
+
+		qsort(temp_elight, temp_numelight, sizeof(temp_elight_t), [](const void* a, const void* b) -> int {
+
+			auto elight_a = (const temp_elight_t*)a;
+			auto elight_b = (const temp_elight_t*)b;
+
+			return elight_a->attenuation < elight_b->attenuation ? 1 : -1;
+		});
+
+		for (int i = 0; i < temp_numelight && i < _countof(StudioUBO.r_elight_color); ++i)
+		{
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][0] = temp_elight[i].color[0];
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][1] = temp_elight[i].color[1];
+			StudioUBO.r_elight_color[StudioUBO.r_numelight][2] = temp_elight[i].color[2];
 			StudioUBO.r_elight_color[StudioUBO.r_numelight][3] = 1;
 
-			GammaToLinear(StudioUBO.r_elight_color[StudioUBO.r_numelight]);
+			//GammaToLinear(StudioUBO.r_elight_color[StudioUBO.r_numelight]);
 
-			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][0] = el->origin[0];
-			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][1] = el->origin[1];
-			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][2] = el->origin[2];
-			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][3] = el->radius;
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][0] = temp_elight[i].origin[0];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][1] = temp_elight[i].origin[1];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][2] = temp_elight[i].origin[2];
+			StudioUBO.r_elight_origin_radius[StudioUBO.r_numelight][3] = temp_elight[i].radius;
 
 			StudioUBO.r_numelight++;
 		}
