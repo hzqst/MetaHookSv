@@ -4665,7 +4665,7 @@ void Engine_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dl
 
 	PVOID CL_AllocDlight_VA = 0;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		auto EfxAPI_CL_AllocDlight = gEngfuncs.pEfxAPI->CL_AllocDlight;
 
@@ -4676,7 +4676,8 @@ void Engine_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dl
 			CL_AllocDlight_VA = GetCallAddress(CL_AllocDlight_VA);
 		}
 	}
-	else
+	//else
+	if(0)
 	{
 		/*
 			.text:01D18AD4 39 5E 20                                            cmp     [esi+20h], ebx
@@ -4862,7 +4863,7 @@ void Engine_FillAddress_CL_AllocElight(const mh_dll_info_t& DllInfo, const mh_dl
 
 	PVOID CL_AllocElight_VA = 0;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		auto EfxAPI_CL_AllocElight = gEngfuncs.pEfxAPI->CL_AllocElight;
 
@@ -4873,7 +4874,8 @@ void Engine_FillAddress_CL_AllocElight(const mh_dll_info_t& DllInfo, const mh_dl
 			CL_AllocElight_VA = GetCallAddress(CL_AllocElight_VA);
 		}
 	}
-	else
+	//else
+	if(0)
 	{
 		/*
 .text:101A10EE 40                                                  inc     eax
