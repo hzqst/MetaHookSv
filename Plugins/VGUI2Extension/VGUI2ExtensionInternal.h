@@ -90,6 +90,9 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_COptionsDialog_ctor, IGameUIOptionsDialogCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_COptionsSubVideo_ApplyVidSettings, void*& pPanel, bool& bForceRestart);
 
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_COptionsDialogSubPage_ctor, IGameUIOptionsDialogSubPageCtorCallbackContext* CallbackContext);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_COptionsSubPage_OnApplyChanges, void*& pPanel, const char *name);
+
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_CTaskBar_ctor, IGameUITaskBarCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_CTaskBar_OnCommand, void*& pPanel, const char*& command);
 

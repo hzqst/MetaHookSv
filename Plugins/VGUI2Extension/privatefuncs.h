@@ -116,8 +116,16 @@ typedef struct
 	void *(__fastcall*CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
 	void *(__fastcall*CGameConsoleDialog_ctor)(void* pthis, int dummy);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
+
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
+	void(__fastcall* COptionsSubVideo_OnApplyChanges)(void* pthis, int dummy);
+
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
+	void(__fastcall* COptionsSubAudio_OnApplyChanges)(void* pthis, int dummy);
+
+	void* (__fastcall*COptionsSubMultiplayer_ctor)(void* pthis, int dummy, void* parent);
+	void (__fastcall* COptionsSubMultiplayer_OnApplyChanges)(void* pthis, int dummy);
+
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 

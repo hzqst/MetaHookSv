@@ -57,6 +57,8 @@ public:
 
 	virtual bool OnDatabaseJSONAcquired(const char* data, size_t size, const char* sourceFile) = 0;
 
+	virtual bool OnVersionsJSONAcquired(const char* data, size_t size, const char* sourceFile) = 0;
+
 	virtual void DispatchQueryStateChangeCallback(ISCModelQuery* pQuery, SCModelQueryState newState) = 0;
 };
 
@@ -800,6 +802,136 @@ public:
 	}
 };
 
+class CSCModelQueryVersions : public CSCModelQueryBase
+{
+private:
+	std::stringstream m_payloadstream;
+	size_t m_receivedFileSize{};
+	size_t m_expectedFileSize{};
+
+public:
+	CSCModelQueryVersions() : CSCModelQueryBase()
+	{
+
+	}
+
+	const char* GetName() const override
+	{
+		return "QueryVersions";
+	}
+
+	const char* GetIdentifier() const override
+	{
+		return "versions.json";
+	}
+
+	void StartQuery() override
+	{
+		CSCModelQueryBase::StartQuery();
+
+		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/sc/versions.json";
+
+		if (SCModel_CDN() == 1)
+		{
+			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/sc/versions.json";
+		}
+
+		auto pRequestInstance = UtilHTTPClient()->CreateAsyncStreamRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
+
+		if (!pRequestInstance)
+		{
+			CSCModelQueryBase::OnFailure();
+			return;
+		}
+
+		m_receivedFileSize = 0;
+
+		UtilHTTPClient()->AddToRequestPool(pRequestInstance);
+
+		m_RequestId = pRequestInstance->GetRequestId();
+
+		pRequestInstance->Send();
+
+		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
+	}
+
+	float GetProgress() const override
+	{
+		if (m_expectedFileSize > 0)
+			return (float)m_receivedFileSize / (float)m_expectedFileSize;
+
+		return -1;
+	}
+
+	void OnResponding(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
+	{
+		CSCModelQueryBase::OnResponding(RequestInstance, ResponseInstance);
+
+		m_receivedFileSize = 0;
+
+		m_payloadstream = std::stringstream();
+	}
+
+	bool OnStreamComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
+	{
+		bool bSuccess = false;
+
+		if (1)
+		{
+			auto payload = m_payloadstream.str();
+
+			gEngfuncs.Con_Printf("[SCModelDownloader] versions.json downloaded.\n");
+
+			auto fileSize = payload.size();
+
+			if (m_expectedFileSize >= 0 && fileSize < m_expectedFileSize)
+			{
+				gEngfuncs.Con_Printf("[SCModelDownloader] versions.json size mismatch ! expect %d, got %d. The downloading progress might be interrupted.\n", m_expectedFileSize, fileSize);
+				return false;
+			}
+
+			bSuccess = SCModelDatabaseInternal()->OnVersionsJSONAcquired(payload.c_str(), payload.size(), "versions.json.tmp");
+
+			if (bSuccess)
+			{
+				std::string filePath = "scmodeldownloader/versions.json";
+
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
+
+				if (hFileHandleWrite)
+				{
+					SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandleWrite); };
+
+					FILESYSTEM_ANY_WRITE(payload.c_str(), payload.size(), hFileHandleWrite);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("[SCModelDownloader] Failed to open file \"%s\" for writing!\n", filePath.c_str());
+				}
+			}
+		}
+
+		return bSuccess;
+	}
+
+	void OnReceiveChunk(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance, const void* data, size_t size) override
+	{
+		if (!m_expectedFileSize)
+		{
+			auto nContentLength = UTIL_GetContentLength(ResponseInstance);
+
+			if (nContentLength > 0)
+				m_expectedFileSize = nContentLength;
+		}
+
+		m_payloadstream.write((const char*)data, size);
+
+		m_receivedFileSize += size;
+
+		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, SCModelQueryState_Receiving);
+	}
+};
+
 class CSCModelQueryDatabase : public CSCModelQueryBase
 {
 private:
@@ -827,11 +959,11 @@ public:
 	{
 		CSCModelQueryBase::StartQuery();
 
-		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json";
+		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/sc/models.json";
 
 		if (SCModel_CDN() == 1)
 		{
-			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json";
+			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/sc/models.json";
 		}
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncStreamRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
@@ -928,7 +1060,6 @@ public:
 
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, SCModelQueryState_Receiving);
 	}
-
 };
 
 class CSCModelDatabase : public ISCModelDatabaseInternal
@@ -936,7 +1067,10 @@ class CSCModelDatabase : public ISCModelDatabaseInternal
 private:
 	std::vector<AutoPtr<ISCModelQueryInternal>> m_QueryList;
 	std::vector<ISCModelQueryStateChangeHandler*> m_StateChangeCallbacks;
+	std::vector<ISCModelLocalPlayerModelChangeHandler*> m_LocalPlayerChangeModelCallbacks;
 	std::unordered_map<std::string, scmodel_t> m_Database;
+	std::unordered_map<std::string, std::string> m_VersionMapping;
+	std::string m_localPlayerModelName;
 
 public:
 
@@ -946,13 +1080,19 @@ public:
 		{
 			BuildQueryDatabase();
 		}
+		if (!LoadLocalVersions("scmodeldownloader/versions.json"))
+		{
+			BuildQueryVersions();
+		}
 	}
 
 	void Shutdown() override
 	{
 		m_QueryList.clear();
 		m_StateChangeCallbacks.clear();
+		m_LocalPlayerChangeModelCallbacks.clear();
 		m_Database.clear();
+		m_VersionMapping.clear();
 	}
 
 	void RunFrame() override
@@ -972,6 +1112,19 @@ public:
 			}
 
 			itor++;
+		}
+
+		auto model = gEngfuncs.LocalPlayerInfo_ValueForKey("model");
+		if (model)
+		{
+			if (0 != stricmp(m_localPlayerModelName.c_str(), model))
+			{
+				std::string previousModelName = m_localPlayerModelName;
+				m_localPlayerModelName = model;
+				std::transform(m_localPlayerModelName.begin(), m_localPlayerModelName.end(), m_localPlayerModelName.begin(), ::tolower);
+
+				DispatchLocalPlayerChangeModelCallback(previousModelName, m_localPlayerModelName);
+			}
 		}
 	}
 
@@ -1066,6 +1219,21 @@ public:
 		//Try latest if no version was found
 		if (SCModel_ShouldDownloadLatest())
 		{
+#if 1
+			// Check if there is a version mapping for this model name
+			auto versionMappingItor = m_VersionMapping.find(lowerName);
+			if (versionMappingItor != m_VersionMapping.end())
+			{
+				const std::string& latestVersion = versionMappingItor->second;
+
+				// Check if the latest version exists in the database
+				auto databaseItor = m_Database.find(latestVersion);
+				if (databaseItor != m_Database.end())
+				{
+					return BuildQueryListInternal(latestVersion, modelName);
+				}
+			}
+#else
 			for (int i = 9; i >= 1; --i)
 			{
 				auto lowerName2 = lowerName;
@@ -1079,9 +1247,33 @@ public:
 					return BuildQueryListInternal(lowerName2, modelName);
 				}
 			}
+#endif
 		}
 
-		return BuildQueryListInternal(lowerName, modelName);;
+		return BuildQueryListInternal(lowerName, modelName);
+	}
+
+	bool BuildQueryVersions()
+	{
+		for (const auto& p : m_QueryList)
+		{
+			if (!strcmp(p->GetName(), "QueryVersions"))
+			{
+				return false;
+			}
+		}
+
+		auto pQuery = new CSCModelQueryVersions();
+
+		m_QueryList.emplace_back(pQuery);
+
+		pQuery->StartQuery();
+
+		pQuery->Release();
+
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying versions.json ...\n");
+
+		return true;
 	}
 
 	bool BuildQueryDatabase()
@@ -1102,7 +1294,7 @@ public:
 
 		pQuery->Release();
 
-		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying database...\n");
+		gEngfuncs.Con_DPrintf("[SCModelDownloader] Querying models.json ...\n");
 
 		return true;
 	}
@@ -1154,11 +1346,43 @@ public:
 		}
 	}
 
+	void RegisterLocalPlayerChangeModelCallback(ISCModelLocalPlayerModelChangeHandler* handler) override
+	{
+		auto itor = std::find_if(m_LocalPlayerChangeModelCallbacks.begin(), m_LocalPlayerChangeModelCallbacks.end(), [handler](ISCModelLocalPlayerModelChangeHandler* it) {
+			return it == handler;
+			});
+
+		if (itor == m_LocalPlayerChangeModelCallbacks.end())
+		{
+			m_LocalPlayerChangeModelCallbacks.emplace_back(handler);
+		}
+	}
+
+	void UnregisterLocalPlayerChangeModelCallback(ISCModelLocalPlayerModelChangeHandler* handler) override
+	{
+		auto itor = std::find_if(m_LocalPlayerChangeModelCallbacks.begin(), m_LocalPlayerChangeModelCallbacks.end(), [handler](ISCModelLocalPlayerModelChangeHandler* it) {
+			return it == handler;
+			});
+
+		if (itor != m_LocalPlayerChangeModelCallbacks.end())
+		{
+			m_LocalPlayerChangeModelCallbacks.erase(itor);
+		}
+	}
+
 	void DispatchQueryStateChangeCallback(ISCModelQuery* pQuery, SCModelQueryState newState) override
 	{
 		for (auto callback : m_StateChangeCallbacks)
 		{
 			callback->OnQueryStateChanged(pQuery, newState);
+		}
+	}
+
+	void DispatchLocalPlayerChangeModelCallback(const std::string& previousModelName, const std::string& newModelName)
+	{
+		for (auto callback : m_LocalPlayerChangeModelCallbacks)
+		{
+			callback->OnLocalPlayerChangeModel(previousModelName.c_str(), newModelName.c_str());
 		}
 	}
 
@@ -1190,12 +1414,118 @@ public:
 		return true;
 	}
 
+	bool IsAllRequiredFilesForModelAvailableCABI(const char * localFileNameBase, bool bHasTModel) override
+	{
+		return IsAllRequiredFilesForModelAvailable(std::string(localFileNameBase), bHasTModel);
+	}
+
 	void OnModelFileWriteFinished(const std::string& localFileNameBase, bool bHasTModel) override
 	{
 		if (IsAllRequiredFilesForModelAvailable(localFileNameBase, bHasTModel))
 		{
 			SCModel_ReloadModel(localFileNameBase.c_str());
 		}
+	}
+
+	bool LoadLocalVersions(const char* filePath)
+	{
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "rb");
+
+		if (hFileHandle)
+		{
+			SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandle); };
+
+			auto fileSize = FILESYSTEM_ANY_SIZE(hFileHandle);
+
+			if (fileSize > 0)
+			{
+				auto fileBuf = malloc(fileSize);
+
+				if (fileBuf)
+				{
+					SCOPE_EXIT{ free(fileBuf); };
+
+					if (FILESYSTEM_ANY_READ(fileBuf, fileSize, hFileHandle) == fileSize)
+					{
+						return OnVersionsJSONAcquired((const char*)fileBuf, fileSize, filePath);
+					}
+					else
+					{
+						gEngfuncs.Con_Printf("[SCModelDownloader] Failed to read content from local \"scmodeldownloader/versions.json\".\n");
+					}
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("[SCModelDownloader] Failed to allocate %d bytes for \"scmodeldownloader/versions.json\".\n", fileSize);
+				}
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("[SCModelDownloader] Local database \"scmodeldownloader/versions.json\" is empty.\n");
+			}
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Local database \"scmodeldownloader/versions.json\" is not available.\n");
+		}
+
+		return false;
+	}
+
+	bool OnVersionsJSONAcquired(const char* data, size_t size, const char* sourceFile) override
+	{
+		if (size == 0)
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Empty versions acquired!\n");
+			return false;
+		}
+
+		rapidjson::Document doc;
+
+		doc.Parse(data, size);
+
+		if (doc.HasParseError())
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Failed to parse versions json! errorcode = %d, error_offset = %d, payload_size = %d.\n", doc.GetParseError(), doc.GetErrorOffset(), size);
+			return false;
+		}
+
+		gEngfuncs.Con_Printf("[SCModelDownloader] versions.json acquired!\n");
+
+		m_VersionMapping.clear();
+
+		// Parse the JSON array structure as described in the comments
+		// The JSON structure is an array of arrays, where:
+		// - The first string element is always the latest version name
+		// - The later string elements are the source model names that should map to the latest version
+		if (doc.IsArray())
+		{
+			for (auto& versionArray : doc.GetArray())
+			{
+				if (versionArray.IsArray())
+				{
+					const auto& versionEntries = versionArray.GetArray();
+					
+					if (versionEntries.Size() >= 2)
+					{
+						// The first element is the latest version name
+						std::string latestVersion = versionEntries[0].GetString();
+						
+						// Map all the source model names to the latest version
+						for (rapidjson::SizeType i = 1; i < versionEntries.Size(); ++i)
+						{
+							if (versionEntries[i].IsString())
+							{
+								std::string sourceModelName = versionEntries[i].GetString();
+								m_VersionMapping[sourceModelName] = latestVersion;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 
 	bool LoadLocalDatabase(const char *filePath)
@@ -1296,7 +1626,29 @@ public:
 
 		return true;
 	}
+
+	const char* GetNewerVersionModel(const char* modelname) override
+	{
+		std::string lowerModelName = modelname;
+		std::transform(lowerModelName.begin(), lowerModelName.end(), lowerModelName.begin(), ::tolower);
+
+		// Check if there is a version mapping for this model name
+		auto versionMappingItor = m_VersionMapping.find(lowerModelName);
+		if (versionMappingItor != m_VersionMapping.end())
+		{
+			const std::string& latestVersion = versionMappingItor->second;
+
+			// Check if the latest version exists in the database
+			auto databaseItor = m_Database.find(latestVersion);
+			if (databaseItor != m_Database.end())
+			{
+				return latestVersion.c_str();
+			}
+		}
+		return nullptr;
+	}
 };
+
 
 static CSCModelDatabase s_SCModelDatabase;
 

@@ -37,6 +37,12 @@ public:
 	virtual void OnQueryStateChanged(ISCModelQuery* pQuery, SCModelQueryState newState) = 0;
 };
 
+class ISCModelLocalPlayerModelChangeHandler : public IBaseInterface
+{
+public:
+	virtual void OnLocalPlayerChangeModel(const char * previousModelName, const char *newModelName) = 0;
+};
+
 class ISCModelDatabase : public IBaseInterface
 {
 public:
@@ -47,6 +53,10 @@ public:
 	virtual void EnumQueries(IEnumSCModelQueryHandler *handler) = 0;
 	virtual void RegisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;
 	virtual void UnregisterQueryStateChangeCallback(ISCModelQueryStateChangeHandler* handler) = 0;
+	virtual void RegisterLocalPlayerChangeModelCallback(ISCModelLocalPlayerModelChangeHandler* handler) = 0;
+	virtual void UnregisterLocalPlayerChangeModelCallback(ISCModelLocalPlayerModelChangeHandler* handler) = 0;
+	virtual const char* GetNewerVersionModel(const char* modelname) = 0;
+	virtual bool IsAllRequiredFilesForModelAvailableCABI(const char* localFileNameBase, bool bHasTModel) = 0;
 };
 
 ISCModelDatabase* SCModelDatabase();

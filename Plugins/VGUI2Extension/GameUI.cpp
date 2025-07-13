@@ -24,6 +24,12 @@ static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
+static hook_t* g_phook_COptionsSubVideo_ctor = NULL;
+static hook_t* g_phook_COptionsSubVideo_OnApplyChanges = NULL;
+static hook_t* g_phook_COptionsSubAudio_ctor = NULL;
+static hook_t* g_phook_COptionsSubAudio_OnApplyChanges = NULL;
+static hook_t* g_phook_COptionsSubMultiplayer_ctor = NULL;
+static hook_t* g_phook_COptionsSubMultiplayer_OnApplyChanges = NULL;
 static hook_t* g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 static hook_t* g_phook_CBasePanel_ctor = NULL;
 static hook_t* g_phook_CBasePanel_ApplySchemeSettings = NULL;
@@ -1239,6 +1245,207 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 
 	//Load res to make it proportional
 	LOAD_CONTROL_SETTINGS_FALLBACK(GameUI, pthis, "OptionsDialog.res");
+
+	return result;
+}
+
+void __fastcall COptionsSubVideo_OnApplyChanges(void* pthis, int dummy)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubVideo", &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_OnApplyChanges(_this, dummy);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+
+		VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubVideo", &CallbackContext);
+	}
+}
+
+class CGameUIOptionsDialogSubVideoCtorCallbackContext : public IGameUIOptionsDialogSubPageCtorCallbackContext
+{
+public:
+	CGameUIOptionsDialogSubVideoCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent)
+	{
+		m_pPage = pthis;
+	}
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.COptionsSubVideo_OnApplyChanges)
+		{
+			PVOID* COptionsSubVideo_vftable = *(PVOID**)m_pPage;
+
+			gPrivateFuncs.COptionsSubVideo_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubVideo_OnApplyChanges))COptionsSubVideo_vftable[636 / 4];
+			Install_InlineHook(COptionsSubVideo_OnApplyChanges);
+		}
+	}
+	void* GetPage() const override
+	{
+		return m_pPage;
+	}
+	const char* GetName() const override
+	{
+		return "COptionsSubVideo";
+	}
+
+	void* m_pPage;
+};
+
+void* __fastcall COptionsSubVideo_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.COptionsSubVideo_ctor(pthis, dummy, parent);
+
+	CGameUIOptionsDialogSubVideoCtorCallbackContext CallbackContext(pthis, parent);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_COptionsDialogSubPage_ctor(&CallbackContext);
+
+	return result;
+}
+
+void __fastcall COptionsSubAudio_OnApplyChanges(void* pthis, int dummy)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubAudio", &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubAudio_OnApplyChanges(_this, dummy);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+
+		VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubAudio", &CallbackContext);
+	}
+}
+
+class CGameUIOptionsDialogSubAudioCtorCallbackContext : public IGameUIOptionsDialogSubPageCtorCallbackContext
+{
+public:
+	CGameUIOptionsDialogSubAudioCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent)
+	{
+		m_pPage = pthis;
+	}
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.COptionsSubAudio_OnApplyChanges)
+		{
+			PVOID* COptionsSubAudio_vftable = *(PVOID**)m_pPage;
+
+			gPrivateFuncs.COptionsSubAudio_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubAudio_OnApplyChanges))COptionsSubAudio_vftable[636 / 4];
+			Install_InlineHook(COptionsSubAudio_OnApplyChanges);
+		}
+	}
+	void* GetPage() const override
+	{
+		return m_pPage;
+	}
+	const char* GetName() const override
+	{
+		return "COptionsSubAudio";
+	}
+
+	void* m_pPage;
+};
+
+void* __fastcall COptionsSubAudio_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.COptionsSubAudio_ctor(pthis, dummy, parent);
+
+	CGameUIOptionsDialogSubAudioCtorCallbackContext CallbackContext(pthis, parent);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_COptionsDialogSubPage_ctor(&CallbackContext);
+
+	return result;
+}
+
+void __fastcall COptionsSubMultiplayer_OnApplyChanges(void* pthis, int dummy)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubMultiplayer", &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges(_this, dummy);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+
+		VGUI2ExtensionInternal()->GameUI_COptionsSubPage_OnApplyChanges(_this, "COptionsSubMultiplayer", &CallbackContext);
+	}
+}
+
+class CGameUIOptionsDialogSubMultiplayerCtorCallbackContext : public IGameUIOptionsDialogSubPageCtorCallbackContext
+{
+public:
+	CGameUIOptionsDialogSubMultiplayerCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent)
+	{
+		m_pPage = pthis;
+	}
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges)
+		{
+			PVOID* COptionsSubMultiplayer_vftable = *(PVOID**)m_pPage;
+
+			gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges = (decltype(gPrivateFuncs.COptionsSubMultiplayer_OnApplyChanges))COptionsSubMultiplayer_vftable[636 / 4];
+			Install_InlineHook(COptionsSubMultiplayer_OnApplyChanges);
+		}
+	}
+	void* GetPage() const override
+	{
+		return m_pPage;
+	}
+	const char* GetName() const override
+	{
+		return "COptionsSubMultiplayer";
+	}
+
+	void* m_pPage;
+};
+
+void* __fastcall COptionsSubMultiplayer_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.COptionsSubMultiplayer_ctor(pthis, dummy, parent);
+
+	CGameUIOptionsDialogSubMultiplayerCtorCallbackContext CallbackContext(pthis, parent);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_COptionsDialogSubPage_ctor(&CallbackContext);
 
 	return result;
 }
@@ -2688,20 +2895,55 @@ void GameUI_FillAddress_COptionsSubVideo(const mh_dll_info_t& DllInfo, const mh_
 	}
 	{
 		const char sigs1[] = "#GameUI_Video";
-		auto GameUI_Video_String = g_pMetaHookAPI->SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
+		auto GameUI_Video_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
 		if (!GameUI_Video_String)
-			GameUI_Video_String = g_pMetaHookAPI->SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
+			GameUI_Video_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
 		Sig_VarNotFound(GameUI_Video_String);
 
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 10) = (DWORD)GameUI_Video_String;
-		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
+		auto GameUI_Video_Call = Search_Pattern_From_Size(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern);
 		Sig_VarNotFound(GameUI_Video_Call);
 
 		PVOID COptionsSubVideo_ctor = GetCallAddress(GameUI_Video_Call);
 		gPrivateFuncs.COptionsSubVideo_ctor = (decltype(gPrivateFuncs.COptionsSubVideo_ctor))ConvertDllInfoSpace(COptionsSubVideo_ctor, DllInfo, RealDllInfo);
 		Sig_FuncNotFound(COptionsSubVideo_ctor);
 	}
+}
+
+void GameUI_FillAddress_COptionsSubMultiplayer_ctor(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char sigs1[] = "SpraypaintList\0";
+	auto SpraypaintList_String = Search_Pattern_From_Size(DllInfo.RdataBase, DllInfo.RdataSize, sigs1);
+	if (!SpraypaintList_String)
+		SpraypaintList_String = Search_Pattern_From_Size(DllInfo.DataBase, DllInfo.DataSize, sigs1);
+	Sig_VarNotFound(SpraypaintList_String);
+
+	char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\x8B\x2A\xE8";
+	*(DWORD*)(pattern + 1) = (DWORD)SpraypaintList_String;
+	auto SpraypaintList_PushString = Search_Pattern(pattern, DllInfo);
+	Sig_VarNotFound(SpraypaintList_PushString);
+
+	PVOID COptionsSubMultiplayer_ctor_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SpraypaintList_PushString, 0x800, [](PUCHAR Candidate) {
+
+	//	.text:1001A680 53                                                  push    ebx
+	//		.text : 1001A681 8B DC                                               mov     ebx, esp
+	//		.text : 1001A683 83 EC 08                                            sub     esp, 8
+		if (Candidate[-1] == 0xCC &&
+			Candidate[0] >= 0x50 &&
+			Candidate[0] <= 0x57 &&
+			Candidate[1] == 0x8B &&
+			Candidate[3] == 0x83 &&
+			Candidate[4] == 0xEC)
+		{
+			return TRUE;
+		}
+
+		return FALSE;
+		});
+
+	gPrivateFuncs.COptionsSubMultiplayer_ctor = (decltype(gPrivateFuncs.COptionsSubMultiplayer_ctor))ConvertDllInfoSpace(COptionsSubMultiplayer_ctor_VA, DllInfo, RealDllInfo);
+	Sig_FuncNotFound(COptionsSubMultiplayer_ctor);
 }
 
 void GameUI_FillAddress_ConsoleHistory(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -3834,6 +4076,8 @@ void GameUI_FillAddress(void)
 
 	GameUI_FillAddress_COptionsSubVideo(g_GameUIDllInfo, g_GameUIDllInfo);
 
+	GameUI_FillAddress_COptionsSubMultiplayer_ctor(g_GameUIDllInfo, g_GameUIDllInfo);
+
 	GameUI_FillAddress_ConsoleHistory(g_GameUIDllInfo, g_GameUIDllInfo);
 
 	GameUI_FillAddress_RichText(g_GameUIDllInfo, g_GameUIDllInfo);
@@ -3986,6 +4230,9 @@ void GameUI_InstallHooks(void)
 	}
 
 	Install_InlineHook(COptionsDialog_ctor);
+	Install_InlineHook(COptionsSubVideo_ctor);
+	Install_InlineHook(COptionsSubAudio_ctor);
+	Install_InlineHook(COptionsSubMultiplayer_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 
 	if (gPrivateFuncs.GameUI_RichText_InsertChar)
@@ -4052,6 +4299,9 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_KeyValues_LoadFromFile);
 
 	Uninstall_Hook(COptionsDialog_ctor);
+	Uninstall_Hook(COptionsSubVideo_ctor);
+	Uninstall_Hook(COptionsSubAudio_ctor);
+	Uninstall_Hook(COptionsSubMultiplayer_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 
 	Uninstall_Hook(GameUI_RichText_InsertChar);

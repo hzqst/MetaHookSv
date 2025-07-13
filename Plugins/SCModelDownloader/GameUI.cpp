@@ -15,11 +15,15 @@
 #include <vgui_controls/CvarToggleCheckButton.h>
 #include <vgui_controls/CvarTextEntry.h>
 
+#include <vgui_controls/QueryBox.h>
+
 #include <IVGUI2Extension.h>
 
 #include "plugins.h"
 
 #include "SCModelDownloaderDialog.h"
+
+#include "SCModelDatabase.h"
 
 static vgui::DHANDLE<CSCModelDownloaderDialog> s_hSCModelDownloaderDialog;
 
@@ -197,6 +201,16 @@ public:
 	{
 
 	}
+
+	void COptionsDialogSubPage_ctor(IGameUIOptionsDialogSubPageCtorCallbackContext* CallbackContext) override
+	{
+		
+	}
+
+	void COptionsSubPage_OnApplyChanges(void*& pPanel, const char* name, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+	
+	}
 };
 
 static CVGUI2Extension_GameUIOptionDialogCallbacks s_GameUIOptionDialogCallbacks;
@@ -250,6 +264,65 @@ public:
 
 static CVGUI2Extension_KeyValuesCallbacks s_KeyValuesCallbacks;
 
+class CSCModelLocalPlayerModelChangeHandler : public ISCModelLocalPlayerModelChangeHandler
+{
+public:
+	void OnLocalPlayerChangeModel(const char* previousModelName, const char* newModelName) override
+	{
+		const char* newerVersionModel = SCModelDatabase()->GetNewerVersionModel(newModelName);
+
+		if (newerVersionModel)
+		{
+			auto title = vgui::localize()->Find("#GameUI_SCModelDownloader_SwitchtoNewerVersionTitle");
+
+			wchar_t szNewModelName[64] = { 0 };
+			wchar_t szNewerVersionModelName[64] = { 0 };
+			vgui::localize()->ConvertANSIToUnicode(newModelName, szNewModelName, sizeof(szNewModelName));
+			vgui::localize()->ConvertANSIToUnicode(newerVersionModel, szNewerVersionModelName, sizeof(szNewerVersionModelName));
+
+			wchar_t szBuf[256] = { 0 };
+			if (SCModelDatabase()->IsAllRequiredFilesForModelAvailableCABI(newerVersionModel, false))
+			{
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#GameUI_SCModelDownloader_SwitchtoNewerVersionContentNetwork"), 2, szNewModelName, szNewerVersionModelName);
+			}
+			else
+			{
+				vgui::localize()->ConstructString(szBuf, sizeof(szBuf), vgui::localize()->Find("#GameUI_SCModelDownloader_SwitchtoNewerVersionContent"), 2, szNewModelName, szNewerVersionModelName);
+			}
+
+			auto box = new vgui::QueryBox(title, szBuf, m_pBasePanel);
+
+			box->SetOKButtonText("#GameUI_OK");
+
+			char szNewCommandName[256]{};
+			snprintf(szNewCommandName, sizeof(szNewCommandName), "SwitchtoNewerVersionModelConfirm_%s", newerVersionModel);
+			box->SetOKCommand(new KeyValues("Command", "command", szNewCommandName));
+
+			box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
+			box->AddActionSignalTarget(m_pBasePanel);
+			box->DoModal();
+		}
+	}
+
+	void OnSwitchtoNewerVersionModelConfirm(const char * newerVersionModel)
+	{
+		char cmd[256]{};
+		snprintf(cmd, sizeof(cmd), "model %s\n", newerVersionModel);
+		gEngfuncs.pfnClientCmd(cmd);
+
+		SCModelDatabase()->QueryModel(newerVersionModel);
+	}
+
+	vgui::Panel*m_pBasePanel{};
+
+	void SetBasePanel(vgui::Panel* pBasePanel)
+	{
+		m_pBasePanel = pBasePanel;
+	}
+};
+
+static CSCModelLocalPlayerModelChangeHandler s_LocalPlayerModelChangeHandler;
+
 class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCallbacks
 {
 	int GetAltitude() const override
@@ -259,7 +332,9 @@ class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCal
 
 	void CTaskBar_ctor(IGameUITaskBarCtorCallbackContext* CallbackContext) override
 	{
-		
+		s_LocalPlayerModelChangeHandler.SetBasePanel((vgui::Panel *)CallbackContext->GetTaskBar());
+
+		SCModelDatabase()->RegisterLocalPlayerChangeModelCallback(&s_LocalPlayerModelChangeHandler);
 	}
 
 	void CTaskBar_OnCommand(void*& pPanel, const char*& command, VGUI2Extension_CallbackContext* CallbackContext) override
@@ -275,11 +350,38 @@ class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCal
 			{
 				s_hSCModelDownloaderDialog->Activate();
 			}
-			
+			return;
+		}
+
+		if (!strncmp(command, "SwitchtoNewerVersionModelConfirm_", sizeof("SwitchtoNewerVersionModelConfirm_") - 1)) {
+			s_LocalPlayerModelChangeHandler.OnSwitchtoNewerVersionModelConfirm(command + sizeof("SwitchtoNewerVersionModelConfirm_") - 1);
+			return;
 		}
 	}
 };
+
 static CVGUI2Extension_TaskBarCallbacks s_TaskBarCallbacks;
+
+#if 0
+class CVGUI2Extension_BasePanelCallbacks : public IVGUI2Extension_GameUIBasePanelCallbacks
+{
+public:
+	int GetAltitude() const override
+	{
+		return 0;
+	}
+	void CBasePanel_ctor(IGameUIBasePanelCtorCallbackContext* CallbackContext) override
+	{
+		s_pBasePanel = (decltype(s_pBasePanel))CallbackContext->GetBasePanel();
+	}
+	void CBasePanel_ApplySchemeSettings(void*& pPanel, void*& pScheme, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+};
+
+static CVGUI2Extension_BasePanelCallbacks s_BasePanelCallbacks;
+#endif
 
 /*
 =================================================================================================================
@@ -295,6 +397,8 @@ void GameUI_InstallHooks(void)
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->RegisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 	VGUI2Extension()->RegisterGameUITaskBarCallbacks(&s_TaskBarCallbacks);
+	//VGUI2Extension()->RegisterGameUIBasePanelCallbacks(&s_BasePanelCallbacks);
+	VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
 }
 
 void GameUI_UninstallHooks(void)
@@ -305,4 +409,6 @@ void GameUI_UninstallHooks(void)
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->UnregisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 	VGUI2Extension()->UnregisterGameUITaskBarCallbacks(&s_TaskBarCallbacks);
+	//VGUI2Extension()->UnregisterGameUIBasePanelCallbacks(&s_BasePanelCallbacks);
+	VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
 }

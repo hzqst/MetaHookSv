@@ -618,6 +618,27 @@ public:
 		}
 	}
 
+	void GameUI_COptionsDialogSubPage_ctor(IGameUIOptionsDialogSubPageCtorCallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUIOptionDialogCallbacks.begin(); it != m_GameUIOptionDialogCallbacks.end(); ++it)
+		{
+			(*it)->COptionsDialogSubPage_ctor(CallbackContext);
+		}
+	}
+
+	void GameUI_COptionsSubPage_OnApplyChanges(void*& pPanel, const char *name, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUIOptionDialogCallbacks.begin(); it != m_GameUIOptionDialogCallbacks.end(); ++it)
+		{
+			(*it)->COptionsSubPage_OnApplyChanges(pPanel, name, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
 	void GameUI_CTaskBar_ctor(IGameUITaskBarCtorCallbackContext* CallbackContext) override
 	{
 		for (auto it = m_GameUITaskBarCallbacks.begin(); it != m_GameUITaskBarCallbacks.end(); ++it)

@@ -94,8 +94,15 @@ public:
     virtual int GetNumPages() = 0;
     virtual void DisablePage(const char* title) = 0;
     virtual void EnablePage(const char* title) = 0;
-    virtual  void ChangeActiveTab(int index) = 0;
+    virtual void ChangeActiveTab(int index) = 0;
 
+};
+
+class IGameUIOptionsDialogSubPageCtorCallbackContext : public IBaseInterface
+{
+public:
+    virtual const char* GetName() const = 0;
+    virtual void* GetPage() const = 0;
 };
 
 class IVGUI2Extension_GameUIOptionDialogCallbacks : public IVGUI2Extension_BaseCallbacks
@@ -103,6 +110,9 @@ class IVGUI2Extension_GameUIOptionDialogCallbacks : public IVGUI2Extension_BaseC
 public:
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(COptionsDialog_ctor, IGameUIOptionsDialogCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_CALLBACK(COptionsSubVideo_ApplyVidSettings, void*& pPanel, bool& bForceRestart);
+
+    DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(COptionsDialogSubPage_ctor, IGameUIOptionsDialogSubPageCtorCallbackContext* CallbackContext);
+    DEFINE_VGUI2EXTENSION_CALLBACK(COptionsSubPage_OnApplyChanges, void*& pPanel, const char *name);
 };
 
 class IGameUITaskBarCtorCallbackContext : public IBaseInterface
@@ -229,4 +239,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_009"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_010"
