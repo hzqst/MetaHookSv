@@ -192,7 +192,10 @@ namespace MetahookInstaller.ViewModels
                         GamePath = string.Empty;
                         return;
                     }
-                    GamePath = _steamService.GetGameInstallPath(SelectedGame.AppId);
+                    var path = _steamService.GetGameInstallPath(SelectedGame.AppId);
+                    // Normalize the path to ensure consistent directory separators
+                    // This fixes the issue where mixed forward and backward slashes break shortcuts
+                    GamePath = Path.GetFullPath(path);
                 }
                 catch (Exception ex)
                 {

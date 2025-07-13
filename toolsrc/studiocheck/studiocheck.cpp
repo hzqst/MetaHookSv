@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-#include <IUtilAssetsIntegrity.h>
+#include "UtilAssetsIntegrity.h"
 
 void UtilAssetsIntegrity_Init();
 void UtilAssetsIntegrity_Shutdown();

@@ -17,13 +17,13 @@
     <ClCompile Include="SteamAppsLocation.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours\src\detours.cpp">
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\detours.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours\src\disasm.cpp">
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\disasm.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours\src\modules.cpp">
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\modules.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
   </ItemGroup>

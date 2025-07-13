@@ -62,7 +62,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\Detours\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\Detours_fork\src</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -85,7 +85,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\Detours\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\Detours_fork\src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -96,9 +96,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\thirdparty\Detours\src\detours.cpp" />
-    <ClCompile Include="..\..\thirdparty\Detours\src\disasm.cpp" />
-    <ClCompile Include="..\..\thirdparty\Detours\src\modules.cpp" />
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\detours.cpp" />
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\disasm.cpp" />
+    <ClCompile Include="..\..\thirdparty\Detours_fork\src\modules.cpp" />
     <ClCompile Include="SteamAppsLocation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
