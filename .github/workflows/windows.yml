@@ -79,6 +79,22 @@ jobs:
           xcopy "toolsrc\MetahookInstaller\bin\Release\net8.0-windows\publish\*" "Build-Output\" /y /e
         shell: cmd
 
+      - name: Copy SteamAppsLocation to Build-Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir "Build-Output\tools"
+          copy "tools\SteamAppsLocation.exe" "Build-Output\tools" /y
+          copy "tools\steam_appid.txt" "Build-Output\tools" /y
+          copy "tools\steam_api.dll" "Build-Output\tools" /y
+        shell: cmd
+
+      - name: Copy install bat to Build-Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir "Build-Output\scripts"
+          copy "scripts\install-*.bat" "Build-Output\scripts" /y
+        shell: cmd
+
       - name: Zipping All
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
