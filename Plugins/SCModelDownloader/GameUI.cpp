@@ -15,8 +15,6 @@
 #include <vgui_controls/CvarToggleCheckButton.h>
 #include <vgui_controls/CvarTextEntry.h>
 
-#include <vgui_controls/QueryBox.h>
-
 #include <IVGUI2Extension.h>
 
 #include "plugins.h"

@@ -59,7 +59,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_CDN"
-		"xpos"		"20"
+		"xpos"		"24"
 		"ypos"		"84"
 		"wide"		"40"
 		"tall"		"24"
@@ -93,5 +93,23 @@
 		"maxchars"		"-1"
 		"NumericInputOnly"		"0"
 		"unicode"		"0"
+	}
+
+	"ForceUpdateDatabases"
+	{
+		"ControlName"		"Button"
+		"fieldName"		"ForceUpdateDatabases"
+		"xpos"		"24"
+		"ypos"		"112"
+		"wide"		"180"
+		"tall"		"24"
+		"autoResize"	"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"4"
+		"labelText"			"#GameUI_SCModelDownloader_ForceUpdateDatabases"
+		"textAlignment"		"center"
+		"command"			"ForceUpdateDatabases"
 	}
 }

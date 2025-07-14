@@ -21,6 +21,8 @@ private:
 	void OnCommand(const char* command) override;
 	void ApplyChanges(void);
 	void ApplyChangesToConVar(const char* pConVarName, int value);
+	void ForceUpdateDatabases();
+
 
 	MESSAGE_FUNC(OnApplyChanges, "ApplyChanges");
 	MESSAGE_FUNC(OnResetData, "ResetData");

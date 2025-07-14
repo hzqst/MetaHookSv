@@ -1078,12 +1078,15 @@ public:
 	{
 		if (!LoadLocalDatabase("scmodeldownloader/models.json"))
 		{
-			BuildQueryDatabase();
+			
 		}
+		BuildQueryDatabase();
+
 		if (!LoadLocalVersions("scmodeldownloader/versions.json"))
 		{
-			BuildQueryVersions();
+			
 		}
+		BuildQueryVersions();
 	}
 
 	void Shutdown() override
@@ -1253,7 +1256,7 @@ public:
 		return BuildQueryListInternal(lowerName, modelName);
 	}
 
-	bool BuildQueryVersions()
+	bool BuildQueryVersions() override
 	{
 		for (const auto& p : m_QueryList)
 		{
@@ -1276,7 +1279,7 @@ public:
 		return true;
 	}
 
-	bool BuildQueryDatabase()
+	bool BuildQueryDatabase() override
 	{
 		for (const auto& p : m_QueryList)
 		{

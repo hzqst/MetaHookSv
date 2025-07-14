@@ -2,6 +2,8 @@
 
 #include "exportfuncs.h"
 
+#include "SCModelDatabase.h"
+
 #include <cvardef.h>
 
 CSCModelDownloaderSettingsPage::CSCModelDownloaderSettingsPage(vgui::Panel* parent, const char* name) :
@@ -83,6 +85,10 @@ void CSCModelDownloaderSettingsPage::OnCommand(const char* command)
 	{
 		ApplyChanges();
 	}
+	else if (!stricmp(command, "ForceUpdateDatabases"))
+	{
+		ForceUpdateDatabases();
+	}
 	else
 	{
 		BaseClass::OnCommand(command);
@@ -92,4 +98,10 @@ void CSCModelDownloaderSettingsPage::OnCommand(const char* command)
 void CSCModelDownloaderSettingsPage::OnDataChanged()
 {
 	PostActionSignal(new KeyValues("ApplyButtonEnable"));
+}
+
+void CSCModelDownloaderSettingsPage::ForceUpdateDatabases()
+{
+	SCModelDatabase()->BuildQueryDatabase();
+	SCModelDatabase()->BuildQueryVersions();
 }
