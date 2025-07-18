@@ -2939,8 +2939,15 @@ void GameUI_FillAddress_COptionsSubMultiplayer_ctor(const mh_dll_info_t& DllInfo
 			return TRUE;
 		}
 
+		if (Candidate[0] == 0x55 &&
+			Candidate[1] == 0x8B &&
+			Candidate[2] == 0xEC)
+		{
+			return TRUE;
+		}
+
 		return FALSE;
-		});
+	});
 
 	gPrivateFuncs.COptionsSubMultiplayer_ctor = (decltype(gPrivateFuncs.COptionsSubMultiplayer_ctor))ConvertDllInfoSpace(COptionsSubMultiplayer_ctor_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(COptionsSubMultiplayer_ctor);
