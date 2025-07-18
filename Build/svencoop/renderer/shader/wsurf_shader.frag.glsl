@@ -53,7 +53,7 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 	{
 		vec3 origin = DLightUBO.origin_radius[i].xyz;
 		float radius = DLightUBO.origin_radius[i].w;
-		vec3 delta = origin - v_worldpos;
+		vec3 delta = origin - v_worldpos.xyz;
 		float dist = length(delta);
 
 		vec3 lightcolor = DLightUBO.color_minlight[i].xyz;
@@ -354,18 +354,13 @@ void main()
 	lightmapColor += texture(lightmapTexArray_3, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.w);
 #endif
 
-	lightmapColor *= SceneUBO.r_lightscale;
-
-	//clamp 0~1544 to 0~1023
-	//lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
-	//lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
-	//lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
-
 #if defined(LEGACY_DLIGHT_ENABLED)
 
 	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
 
 #endif
+
+	lightmapColor *= SceneUBO.r_lightscale;
 
 	lightmapColor.a = 1.0;
 
