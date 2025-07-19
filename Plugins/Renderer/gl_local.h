@@ -546,6 +546,7 @@ bool R_IsLowerBodyEntity(cl_entity_t* ent);
 bool R_IsRenderingLowerBody(void);
 bool R_IsRenderingClippedLowerBody(void);
 bool R_IsRenderingPortal(void);
+bool R_IsRenderingFirstPersonView();
 
 bool R_IsDeferredRenderingEnabled(void);
 

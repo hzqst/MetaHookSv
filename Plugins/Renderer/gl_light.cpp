@@ -537,13 +537,13 @@ void R_SetGBufferMask(int mask)
 
 bool R_IsDeferredRenderingEnabled(void)
 {
-	if (!r_deferred_lighting->value)
+	if ((int)r_deferred_lighting->value < 1)
+		return false;
+
+	if ((int)r_gamma_blend->value >= 1)
 		return false;
 
 	if ((*r_refdef.onlyClientDraws))
-		return false;
-
-	if (R_IsRenderingGammaBlending())
 		return false;
 
 	if (CL_IsDevOverviewMode())
@@ -557,7 +557,7 @@ bool R_IsDeferredRenderingEnabled(void)
 	Purpose : Switch to s_GBufferFBO
 */
 
-bool R_BeginRenderGBuffer(void)
+bool R_CanRenderGBuffer(void)
 {
 	if (!R_IsDeferredRenderingEnabled())
 		return false;
@@ -569,6 +569,14 @@ bool R_BeginRenderGBuffer(void)
 		return false;
 
 	if (R_IsRenderingPortal())
+		return false;
+
+	return true;
+}
+
+bool R_BeginRenderGBuffer(void)
+{
+	if (!R_CanRenderGBuffer())
 		return false;
 
 	r_draw_gbuffer = true;
@@ -697,8 +705,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			float max_distance = r_flashlight_distance->GetValue();
 			float min_distance = r_flashlight_min_distance->GetValue();
 
-			//first person mode
-			if (bIsFromLocalPlayer && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
+			if (bIsFromLocalPlayer && R_IsRenderingFirstPersonView())
 			{
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
@@ -729,7 +736,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 					}
 				}
 
-				if(!bUsingAttachment)
+				if (!bUsingAttachment)
 				{
 					VectorCopy((*r_refdef.vieworg), org);
 					VectorMA(org, 2, dlight_vup, org);
@@ -749,7 +756,8 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			else
 			{
 				VectorCopy(ent->angles, dlight_angle);
-				dlight_angle[0] = -dlight_angle[0];
+				dlight_angle[0] = dlight_angle[0] * -3.0f;
+
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
 				VectorCopy(ent->origin, org);

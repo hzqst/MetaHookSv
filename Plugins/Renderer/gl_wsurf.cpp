@@ -4609,31 +4609,31 @@ void R_SetupDLightUBO(void)
 
 	g_WorldSurfaceRenderer.iNumLegacyDLights = 0;
 
-	const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
+	if (!R_CanRenderGBuffer())
 	{
-		auto DLightUBO = (dlight_ubo_t*)(context);
-
-		if (!R_IsRenderingGBuffer())
+		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
-			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
+			auto DLightUBO = (dlight_ubo_t*)(context);
 
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
+				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
+				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
+				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
+				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
 
-			g_WorldSurfaceRenderer.iNumLegacyDLights++;
-		}
-	};
+				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
+				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
+				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
 
-	const auto SpotlightCallback = [](SpotLightCallbackArgs *args, void *context)
-	{
-		auto DLightUBO = (dlight_ubo_t*)(context);
-	};
+				g_WorldSurfaceRenderer.iNumLegacyDLights++;
+		};
 
-	R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
+		const auto SpotlightCallback = [](SpotLightCallbackArgs *args, void *context)
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
+		};
+
+		R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
+	}
 
 	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iNumLegacyDLights;
 

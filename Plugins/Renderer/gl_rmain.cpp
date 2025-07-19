@@ -460,6 +460,29 @@ bool R_IsRenderingClippedLowerBody(void)
 	return R_IsLowerBodyEntity((*currententity)) && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
 }
 
+bool R_IsRenderingFirstPersonView()
+{
+	return !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && !(*envmap) && (*cl_viewentity) <= r_params.maxclients;
+}
+
+bool R_ShouldDrawViewModel()
+{
+	if (!r_drawviewmodel->value ||
+		gExportfuncs.CL_IsThirdPerson() ||
+		chase_active->value ||
+		(*envmap) ||
+		!r_drawentities->value ||
+		cl_stats[0] <= 0 ||
+		!cl_viewent->model ||
+		(*cl_viewentity) > r_params.maxclients)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
 /*
 	Purpose : Check if we are in SinglePlayer game
 */
@@ -2222,23 +2245,6 @@ void R_PostRenderView()
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);
-}
-
-bool R_ShouldDrawViewModel()
-{
-	if (!r_drawviewmodel->value ||
-		gExportfuncs.CL_IsThirdPerson() ||
-		chase_active->value ||
-		(*envmap) ||
-		!r_drawentities->value ||
-		cl_stats[0] <= 0 ||
-		!cl_viewent->model ||
-		(*cl_viewentity) > r_params.maxclients)
-	{
-		return false;
-	}
-
-	return true;
 }
 
 void R_PreDrawViewModel(void)
@@ -4036,7 +4042,19 @@ void CL_EmitPlayerFlashlight(int entindex)
 			float		falloff;
 			vec3_t		vecForward, vecRight, vecUp;
 
-			AngleVectors(r_playerViewportAngles, vecForward, vecRight, vecUp);
+			vec3_t viewAngles;
+
+			if (R_IsRenderingFirstPersonView())
+			{
+				VectorCopy(r_playerViewportAngles, viewAngles);
+			}
+			else
+			{
+				VectorCopy(ent->angles, viewAngles);
+				viewAngles[0] = viewAngles[0] * -3.0f;
+			}
+
+			AngleVectors(viewAngles, vecForward, vecRight, vecUp);
 
 			VectorCopy(ent->origin, dl->origin);
 
