@@ -161,6 +161,7 @@ void Cap_Reload_f(void)
 {
 	if (g_pViewPort)
 	{
+		g_pViewPort->ClearDictionary();
 		g_pViewPort->LoadBaseDictionary();
 
 		auto levelname = gEngfuncs.pfnGetLevelName();
@@ -277,11 +278,11 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 	else if(!Q_strnicmp(name + 1, "sound/", 6))
 		name += 7;
 
-	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+	const auto& dict = g_pViewPort->FindDictionaryCABI(name, DICT_SOUND);
 
 	if(cap_debug && cap_debug->value)
 	{
-		if (pDict)
+		if (dict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -291,26 +292,26 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 		}
 	}
 
-	if (!pDict)
+	if (!dict)
 	{
 		return;
 	}
 
-	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (!dict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
 	{
 		return;
 	}
 
-	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	if (!dict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
 	{
  		return;
 	}
 
-	float duration;
+	float duration = 0;
 
-	if(pDict->m_bOverrideDuration)
+	if (dict->m_bOverrideDuration)
 	{
-		duration = pDict->m_flDuration;
+		duration = dict->m_flDuration;
 	}
 	else
 	{
@@ -318,8 +319,7 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 	}
 
 	CStartSubtitleContext StartSubtitleContext;
-
-	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
+	g_pViewPort->StartSubtitle(dict, duration, &StartSubtitleContext);
 }
 
 static char szsentences[] = "sound/sentences.txt";
@@ -606,17 +606,17 @@ bool S_StartSentence(const char *name, float distance, float avol)
 	if (!g_pViewPort)
 		return false;
 
-	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
+	auto dict = g_pViewPort->FindDictionaryCABI(name, DICT_SENTENCE);
 
-	if(!pDict)
+	if (!dict)
 	{
 		//skip "!" and "#"
-		pDict = g_pViewPort->FindDictionary(name + 1);
+		dict = g_pViewPort->FindDictionaryCABI(name + 1);
 	}
 
-	if(cap_debug && cap_debug->value)
+	if (cap_debug && cap_debug->value)
 	{
-		if (pDict)
+		if (dict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -626,26 +626,26 @@ bool S_StartSentence(const char *name, float distance, float avol)
 		}
 	}
 
-	if (!pDict)
+	if (!dict)
 	{
 		return false;
 	}
 
-	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (!dict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
 	{
 		return false;
 	}
 
-	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	if (!dict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
 	{
 		return false;
 	}
 
 	float duration = 0;
 
-	if (pDict->m_bOverrideDuration)
+	if (dict->m_bOverrideDuration)
 	{
-		duration = pDict->m_flDuration;
+		duration = dict->m_flDuration;
 	}
 	else
 	{
@@ -658,7 +658,7 @@ bool S_StartSentence(const char *name, float distance, float avol)
 
 	CStartSubtitleContext StartSubtitleContext;
 
-	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
+	g_pViewPort->StartSubtitle(dict, duration, &StartSubtitleContext);
 
 	return true;
 }
@@ -780,16 +780,20 @@ bool __fastcall ScClient_SoundEngine_LoadSoundList(void* pSoundEngine, int)
 
 	if (r && g_pViewPort)
 	{
+		g_pViewPort->ClearDictionary();
 		g_pViewPort->LoadBaseDictionary();
-		std::string name = gEngfuncs.pfnGetLevelName();
-		RemoveFileExtension(name);
-		name += "_dictionary.csv";
 
-		g_pViewPort->LoadCustomDictionary(name.c_str());
+		{
+			std::string name = gEngfuncs.pfnGetLevelName();
+			RemoveFileExtension(name);
+			name += "_dictionary.csv";
+
+			g_pViewPort->LoadCustomDictionary(name.c_str());
+		}
 
 		if (0 != strcmp(VGUI2Extension()->GetCurrentLanguage(), "english"))
 		{
-			name = gEngfuncs.pfnGetLevelName();
+			std::string name = gEngfuncs.pfnGetLevelName();
 			RemoveFileExtension(name);
 			name += "_dictionary_";
 			name += VGUI2Extension()->GetCurrentLanguage();
@@ -834,18 +838,18 @@ bool ScClient_StartSentence(ScClient_Sentence_t* sentenceObject, float distance,
 
 	auto name = sentenceObject->name;
 
-	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
+	auto dict = g_pViewPort->FindDictionaryCABI(name, DICT_SENTENCE);
 
-	if (!pDict)
+	if (!dict)
 	{
 		//skip "!" and "#"
 		if (name[0] == '!' || name[0] == '#')
-			pDict = g_pViewPort->FindDictionary(name + 1);
+			dict = g_pViewPort->FindDictionaryCABI(name + 1);
 	}
 
 	if (cap_debug && cap_debug->value)
 	{
-		if (pDict)
+		if (dict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -855,26 +859,26 @@ bool ScClient_StartSentence(ScClient_Sentence_t* sentenceObject, float distance,
 		}
 	}
 
-	if (!pDict)
+	if (!dict)
 	{
 		return false;
 	}
 
-	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (!dict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
 	{
 		return false;
 	}
 
-	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	if (!dict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
 	{
 		return false;
 	}
 
 	float duration = 0;
 
-	if (pDict->m_bOverrideDuration)
+	if (dict->m_bOverrideDuration)
 	{
-		duration = pDict->m_flDuration;
+		duration = dict->m_flDuration;
 	}
 	else
 	{
@@ -890,7 +894,7 @@ bool ScClient_StartSentence(ScClient_Sentence_t* sentenceObject, float distance,
 
 	CStartSubtitleContext StartSubtitleContext;
 
-	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
+	g_pViewPort->StartSubtitle(dict, duration, &StartSubtitleContext);
 
 	return true;
 }
@@ -907,11 +911,11 @@ void ScClient_StartWave(const char* name, float distance, float avol)
 	else if (!Q_strnicmp(dictName + 1, "sound/", 6))
 		dictName += 7;
 
-	auto pDict = g_pViewPort->FindDictionary(dictName, DICT_SOUND);
+	auto dict = g_pViewPort->FindDictionaryCABI(dictName, DICT_SOUND);
 
 	if (cap_debug && cap_debug->value)
 	{
-		if (pDict)
+		if (dict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -921,26 +925,26 @@ void ScClient_StartWave(const char* name, float distance, float avol)
 		}
 	}
 
-	if (!pDict)
+	if (!dict)
 	{
 		return;
 	}
 
-	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (!dict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
 	{
 		return;
 	}
 
-	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	if (!dict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
 	{
 		return;
 	}
 
 	float duration;
 
-	if (pDict->m_bOverrideDuration)
+	if (dict->m_bOverrideDuration)
 	{
-		duration = pDict->m_flDuration;
+		duration = dict->m_flDuration;
 	}
 	else
 	{
@@ -949,20 +953,15 @@ void ScClient_StartWave(const char* name, float distance, float avol)
 
 	CStartSubtitleContext StartSubtitleContext;
 
-	g_pViewPort->StartSubtitle(pDict, duration, &StartSubtitleContext);
+	g_pViewPort->StartSubtitle(dict, duration, &StartSubtitleContext);
 }
 
 void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength)
 {
 	g_bPlayingFMODSound = false;
-	//g_iCurrentPlayingFMODSoundLengthMs = 0;
-	//g_pFMODSystem = *(void **)((PUCHAR)pSoundEngine + 0x2004);
 
 	gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound(pSoundEngine, 0, flags, entindex, origin, channel, name, fvol, attenuation, extraflags, pitch, sentenceIndex, soundLength);
 
-	//gEngfuncs.Con_DPrintf("ScClient_SoundEngine_PlayFMODSound: %s, %d, %d\n", name ? name : "(null)", sentenceIndex, g_bPlayedFMODSound ? 1 : 0);
-
-	//if (g_bPlayedFMODSound)
 	{
 		bool ignore = false;
 		float distance = 0;
@@ -1026,22 +1025,8 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 
 	g_bPlayingFMODSound = false;
 	g_bPlayedFMODSound = false;
-	//g_iCurrentPlayingFMODSoundLengthMs = 0;
 }
-#if 0
-int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel)
-{
-	if (!g_bPlayingFMODSound && g_pFMODSystem == FMOD_System)
-	{
-		int duration = 0;
-		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration, 1);
-		g_iCurrentPlayingFMODSoundLengthMs = duration;
-		g_bPlayedFMODSound = true;
-	}
 
-	return gPrivateFuncs.FMOD_System_playSound(FMOD_System, channelid, FMOD_Sound, paused, FMOD_Channel);
-}
-#endif
 void TextMessageParse(byte* pMemFile, int fileSize)
 {
 	if (fileSize > 2 && pMemFile[0] == 0xFF && pMemFile[1] == 0xFE)
@@ -1235,7 +1220,7 @@ client_textmessage_t* pfnTextMessageGet(const char* pName)
 {
 	if (g_pViewPort)
 	{
-		CDictionary* dict = g_pViewPort->FindDictionary(pName);
+		auto dict = g_pViewPort->FindDictionaryCABI(pName);
 
 		if (dict)
 		{

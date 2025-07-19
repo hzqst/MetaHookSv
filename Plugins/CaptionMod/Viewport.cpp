@@ -17,14 +17,13 @@
 #include "exportfuncs.h"
 #include "util.h"
 
+#include <libcsv/csv_document.h>
+
 using namespace vgui;
 
 ScClient_Sentence_t* ScClient_SoundEngine_GetSentenceByName(void* pSoundEngine, const char* name);
 
-CViewport *g_pViewPort = NULL;
-
-//Dictionary hashtable
-CMemoryPool m_HashItemMemPool(sizeof(hash_item_t), 64);
+CViewport* g_pViewPort = NULL;
 
 extern CHudMessage m_HudMessage;
 extern CHudMenu m_HudMenu;
@@ -53,87 +52,78 @@ CViewport::CViewport() : BaseClass(NULL, "CaptionViewport")
 
 CViewport::~CViewport(void)
 {
-	for (int i = 0; i < m_Dictionary.Count(); ++i)
-	{
-		delete m_Dictionary[i];
-	}
-
-	m_Dictionary.RemoveAll();
+	ClearDictionary();
 
 	delete m_pSubtitlePanel;
 	delete m_pChatDialog;
 }
 
-CDictionary *CViewport::FindDictionary(const char *szValue)
+std::shared_ptr<CDictionary> CViewport::FindDictionaryCABI(const char* title)
 {
-	if (!m_Dictionary.Count())
-		return NULL;
+	if (!m_Dictionary.size())
+		return nullptr;
 
-	int hash = 0;
-	hash_item_t *item;
-	int count;
+	std::string key(title);
 
-	hash = CaseInsensitiveHash(szValue, m_StringsHashTable.Count());
-	count = m_StringsHashTable.Count();
-	item = &m_StringsHashTable[hash];
-
-	while (item->dict)
+	auto it = m_NamedDictionaryMap.find(key);
+	if (it != m_NamedDictionaryMap.end())
 	{
-		if (!Q_strcmp(item->dict->m_szTitle.c_str(), szValue))
-			break;
-
-		hash = (hash + 1) % count;
-		item = &m_StringsHashTable[hash];
+		return it->second;
 	}
 
-	if (!item->dict)
-	{
-		item->lastHash = NULL;
-		return NULL;
-	}
-
-	m_StringsHashTable[hash].lastHash = item;
-	return item->dict;
+	return nullptr;
 }
 
-CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
+std::shared_ptr<CDictionary>CViewport::FindDictionaryCABI(const char* title, dict_t Type)
 {
-	if (!m_Dictionary.Count())
-		return NULL;
+	if (!m_Dictionary.size())
+		return nullptr;
 
-	int hash = 0;
-	hash_item_t *item;
-	int count;
-
-	hash = CaseInsensitiveHash(szValue, m_StringsHashTable.Count());
-	count = m_StringsHashTable.Count();
-	item = &m_StringsHashTable[hash];
-
-	while (item->dict)
+	CTypedDictionaryHandle handle(title, Type);
+	auto it = m_TypedDictionaryMap.find(handle);
+	if (it != m_TypedDictionaryMap.end())
 	{
-		if (!Q_stricmp(item->dict->m_szTitle.c_str(), szValue) && item->dict->m_Type == Type)
-			break;
-
-		hash = (hash + 1) % count;
-		item = &m_StringsHashTable[hash];
+		return it->second;
 	}
 
-	if (!item->dict)
-	{
-		item->lastHash = NULL;
-		return NULL;
-	}
-
-	m_StringsHashTable[hash].lastHash = item;
-	return item->dict;
+	return nullptr;
 }
 
-CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type, std::smatch &result)
+std::shared_ptr<CDictionary> CViewport::FindDictionaryCXX(const std::string& title)
 {
-	if (!m_Dictionary.Count())
-		return NULL;
+	if (!m_Dictionary.size())
+		return nullptr;
 
-	for(int i = 0; i < m_Dictionary.Count(); ++i)
+	auto it = m_NamedDictionaryMap.find(title);
+	if (it != m_NamedDictionaryMap.end())
+	{
+		return it->second;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<CDictionary>CViewport::FindDictionaryCXX(const std::string& title, dict_t Type)
+{
+	if (!m_Dictionary.size())
+		return nullptr;
+
+	CTypedDictionaryHandle handle(title, Type);
+	auto it = m_TypedDictionaryMap.find(handle);
+	if (it != m_TypedDictionaryMap.end())
+	{
+		return it->second;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<CDictionary>CViewport::FindDictionaryRegex(const std::string& str, dict_t Type, std::smatch& result)
+{
+	if (!m_Dictionary.size())
+		return nullptr;
+
+	for (size_t i = 0; i < m_Dictionary.size(); ++i)
 	{
 		if (m_Dictionary[i]->m_Type == Type && m_Dictionary[i]->m_pRegex)
 		{
@@ -147,264 +137,26 @@ CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type,
 	return NULL;
 }
 
-int CViewport::CaseInsensitiveHash(const char *string, int iBounds)
-{
-	unsigned int hash = 0;
-
-	if (!*string)
-		return 0;
-
-	while (*string)
-	{
-		if (*string < 'A' || *string > 'Z')
-			hash = *string + 2 * hash;
-		else
-			hash = *string + 2 * hash + ' ';
-
-		string++;
-	}
-
-	return (hash % iBounds);
-}
-
-void CViewport::EmptyDictionaryHash(void)
-{
-	int i;
-	hash_item_t *item;
-	hash_item_t *temp;
-	hash_item_t *free;
-
-	for (i = 0; i < m_StringsHashTable.Count(); i++)
-	{
-		item = &m_StringsHashTable[i];
-		temp = item->next;
-		item->dict = NULL;
-		item->dictIndex = 0;
-		item->lastHash = NULL;
-		item->next = NULL;
-
-		while (temp)
-		{
-			free = temp;
-			temp = temp->next;
-			m_HashItemMemPool.Free(free);
-		}
-	}
-}
-
-void CViewport::AddDictionaryHash(CDictionary *dict, const char *value)
-{
-	int count;
-	hash_item_t *item;
-	hash_item_t *next;
-	hash_item_t *temp;
-	hash_item_t *newp;
-	unsigned int hash = 0;
-	int dictIndex;
-	CDictionary *dictTemp;
-
-	if (!dict->m_szTitle[0])
-		return;
-
-	count = m_StringsHashTable.Count();
-	hash = CaseInsensitiveHash(value, count);
-	dictIndex = dict - m_Dictionary[0];
-
-	item = &m_StringsHashTable[hash];
-
-	while (item->dict)
-	{
-		if (!Q_strcmp(item->dict->m_szTitle.c_str(), dict->m_szTitle.c_str()))
-			break;
-
-		hash = (hash + 1) % count;
-		item = &m_StringsHashTable[hash];
-	}
-
-	if (item->dict)
-	{
-		next = item->next;
-
-		while (next)
-		{
-			if (item->dict == dict)
-				break;
-
-			if (item->dictIndex >= dictIndex)
-				break;
-
-			item = next;
-			next = next->next;
-		}
-
-		if (dictIndex < item->dictIndex)
-		{
-			dictTemp = item->dict;
-			item->dict = dict;
-			item->lastHash = NULL;
-			item->dictIndex = dictIndex;
-			dictIndex = dictTemp - m_Dictionary[0];
-		}
-		else
-			dictTemp = dict;
-
-		if (item->dict != dictTemp)
-		{
-			temp = item->next;
-			newp = (hash_item_t *)m_HashItemMemPool.Alloc(sizeof(hash_item_t));
-			item->next = newp;
-			newp->dict = dictTemp;
-			newp->lastHash = NULL;
-			newp->dictIndex = dictIndex;
-
-			if (temp)
-				newp->next = temp;
-			else
-				newp->next = NULL;
-		}
-	}
-	else
-	{
-		item->dict = dict;
-		item->lastHash = NULL;
-		item->dictIndex = dict - m_Dictionary[0];
-	}
-}
-
-void CViewport::RemoveDictionaryHash(CDictionary *dict, const char *value)
-{
-	int hash = 0;
-	hash_item_t *item;
-	hash_item_t *last;
-	int dictIndex;
-	int count;
-
-	count = m_StringsHashTable.Count();
-	hash = CaseInsensitiveHash(value, count);
-	dictIndex = dict - m_Dictionary[0];
-
-
-	hash = hash % count;
-	item = &m_StringsHashTable[hash];
-
-	while (item->dict)
-	{
-		if (!Q_strcmp(item->dict->m_szTitle.c_str(), dict->m_szTitle.c_str()))
-			break;
-
-		hash = (hash + 1) % count;
-		item = &m_StringsHashTable[hash];
-	}
-
-	if (item->dict)
-	{
-		last = item;
-
-		while (item->next)
-		{
-			if (item->dict == dict)
-				break;
-
-			last = item;
-			item = item->next;
-		}
-
-		if (item->dict == dict)
-		{
-			if (last == item)
-			{
-				if (item->next)
-				{
-					item->dict = item->next->dict;
-					item->dictIndex = item->next->dictIndex;
-					item->lastHash = NULL;
-					item->next = item->next->next;
-				}
-				else
-				{
-					item->dict = NULL;
-					item->lastHash = NULL;
-					item->dictIndex = 0;
-				}
-			}
-			else
-			{
-				if (m_StringsHashTable[hash].lastHash == item)
-					m_StringsHashTable[hash].lastHash = NULL;
-
-				last->next = item->next;
-				m_HashItemMemPool.Free(item);
-			}
-		}
-	}
-}
-
-CDictionary::CDictionary()
-{
-	m_Type = DICT_CUSTOM;
-	m_Color = Color(255, 255, 255, 255);
-	m_flDuration = 0;
-	m_flNextDelay = 0;
-	m_pNext = NULL;
-	m_iTextAlign = ALIGN_DEFAULT;
-	m_bIgnoreDistanceLimit = false;
-	m_bIgnoreVolumeLimit = false;
-	m_bRegex = false;
-	m_bOverrideColor = false;
-	m_bOverrideDuration = false;
-	m_bDefaultColor = true;
-	m_pRegex = NULL;
-}
-
-CDictionary::~CDictionary()
-{
-	if (m_pRegex)
-	{
-		delete m_pRegex;
-		m_pRegex = NULL;
-	}
-}
-
-void StringReplaceW(std::wstring &strBase, const std::wstring &strSrc, const std::wstring &strDst)
-{
-	size_t pos = 0;
-	auto srcLen = strSrc.size();
-	auto desLen = strDst.size();
-	pos = strBase.find(strSrc, pos);
-	while ((pos != std::wstring::npos))
-	{
-		strBase.replace(pos, srcLen, strDst);
-		pos = strBase.find(strSrc, (pos + desLen));
-	}
-}
-
-void StringReplaceA(std::string &strBase, const std::string &strSrc, const std::string &strDst)
-{
-	size_t pos = 0;
-	auto srcLen = strSrc.size();
-	auto desLen = strDst.size();
-	pos = strBase.find(strSrc, pos);
-	while ((pos != std::string::npos))
-	{
-		strBase.replace(pos, srcLen, strDst);
-		pos = strBase.find(strSrc, (pos + desLen));
-	}
-}
-
-void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defaultColor, IScheme *ischeme)
+void CDictionary::LoadFromRow(
+	const char* szTitle,
+	const char* szSentence,
+	const char* szColor,
+	const char* szDuration,
+	const char* szSpeaker,
+	const char* szNext,
+	const char* szNextDelay,
+	const char* szStyle,
+	const Color& defaultColor,
+	vgui::IScheme* ischeme)
 {
 	m_Color = defaultColor;
 	m_bDefaultColor = true;
 
-	m_szTitle = row[0];
+	m_szTitle = szTitle;
 
 	//If title ended with .wav
 
-	if(m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".wav"))
-	{
-		m_Type = DICT_SOUND;
-	}
-	else if (m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".ogg"))
+	if (m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".wav"))
 	{
 		m_Type = DICT_SOUND;
 	}
@@ -422,7 +174,7 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 	}
 
 	//If it's a textmessage found in engine (gamedir/titles.txt)
-	client_textmessage_t *textmsg = gPrivateFuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+	client_textmessage_t* textmsg = gPrivateFuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
 	if (textmsg)
 	{
 		m_Type = DICT_MESSAGE;
@@ -438,9 +190,9 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 
 	if (g_bIsSvenCoop)
 	{
-		auto sentenseObject = ScClient_SoundEngine_GetSentenceByName(gPrivateFuncs.ScClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+		auto sentenceObject = ScClient_SoundEngine_GetSentenceByName(gPrivateFuncs.ScClient_soundengine(), m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
 
-		if (sentenseObject)
+		if (sentenceObject)
 		{
 			m_Type = DICT_SENTENCE;
 		}
@@ -479,53 +231,54 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 	}
 
 	//Translated text
-	const char *sentence = row[1].c_str();
-	wchar_t* pLocalized = NULL;
-	if (sentence[0] == '#')
+	if (szSentence && szSentence[0])
 	{
-		pLocalized = localize()->Find(sentence);
-		if (pLocalized)
+		wchar_t* pwszLocalized = nullptr;
+		if (szSentence[0] == '#')
 		{
-			int localizedLength = Q_wcslen(pLocalized);
-			m_szSentence.resize(localizedLength);
-			memcpy(&m_szSentence[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
+			pwszLocalized = localize()->Find(szSentence);
+
+			if (pwszLocalized)
+			{
+				m_szSentence = pwszLocalized;
+			}
 		}
-	}
-	if (!pLocalized)
-	{
-		int localizedLength = MultiByteToWideChar(CP_ACP, 0, sentence, -1, NULL, 0);
-		m_szSentence.resize(localizedLength - 1);
-		MultiByteToWideChar(CP_ACP, 0, sentence, -1, &m_szSentence[0], localizedLength);
-	}
 
-	if (m_Type == DICT_NETMESSAGE && !m_bRegex)
-	{
-		StringReplaceA(m_szTitle, "\\n", "\n");
-		StringReplaceA(m_szTitle, "\\r", "\r");
-	}
+		if (!pwszLocalized)
+		{
+			wchar_t wszSentence[1024] = { 0 };
+			localize()->ConvertANSIToUnicode(szSentence, wszSentence, sizeof(wszSentence));
 
-	StringReplaceW(m_szSentence, L"\\n", L"\n");
-	StringReplaceW(m_szSentence, L"\\r", L"\r");
+			m_szSentence = wszSentence;
+		}
+
+		if (m_Type == DICT_NETMESSAGE && !m_bRegex)
+		{
+			StringReplaceA(m_szTitle, "\\n", "\n");
+			StringReplaceA(m_szTitle, "\\r", "\r");
+		}
+
+		StringReplaceW(m_szSentence, L"\\n", L"\n");
+		StringReplaceW(m_szSentence, L"\\r", L"\r");
+	}
 
 	if (m_Type == DICT_NETMESSAGE && m_bRegex)
 	{
-		m_pRegex = new std::regex(m_szTitle);
+		m_pRegex = std::make_unique<std::regex>(m_szTitle);
 	}
 
-	const char *color = row[2].c_str();
-
-	if(color[0])
+	if (szColor && szColor[0])
 	{
-		CUtlVector<char *> splitColor;
-		V_SplitString(color, " ", splitColor);
+		CUtlVector<char*> splitColor;
+		V_SplitString(szColor, " ", splitColor);
 
-		if(splitColor.Size() >= 2)
+		if (splitColor.Size() >= 2)
 		{
-			if(splitColor[0][0])
+			if (splitColor[0][0])
 			{
 				m_Color1 = ischeme->GetColor(splitColor[0], defaultColor);
 			}
-			if(splitColor[1][0])
+			if (splitColor[1][0])
 			{
 				m_Color2 = ischeme->GetColor(splitColor[1], defaultColor);
 			}
@@ -536,7 +289,7 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 		}
 		else
 		{
-			m_Color = ischeme->GetColor(color, defaultColor);
+			m_Color = ischeme->GetColor(szColor, defaultColor);
 
 			m_bDefaultColor = false;
 		}
@@ -544,57 +297,54 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 		splitColor.PurgeAndDeleteElements();
 	}
 
-	const char *duration = row[3].c_str();
-	if(duration[0])
+	if (szDuration && szDuration[0])
 	{
-		m_flDuration = Q_atof(duration);
+		m_flDuration = Q_atof(szDuration);
 
-		if(m_flDuration > 0)
+		if (m_flDuration > 0)
 			m_bOverrideDuration = true;
 	}
 
-	const char *speaker = row[4].c_str();
-	if(speaker[0])
+	if (szSpeaker && szSpeaker[0])
 	{
-		if(speaker[0] == '#')
+		wchar_t* pwszLocalized = nullptr;
+		if (szSpeaker[0] == '#')
 		{
-			pLocalized = localize()->Find(speaker);
-			if (pLocalized)
+			pwszLocalized = localize()->Find(szSpeaker);
+
+			if (pwszLocalized)
 			{
-				int localizedLength = Q_wcslen(pLocalized);
-				m_szSpeaker.resize(localizedLength);
-				memcpy(&m_szSpeaker[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
+				m_szSpeaker = pwszLocalized;
 			}
 		}
-		if (!pLocalized)
+		if (!pwszLocalized)
 		{
-			int localizedLength = MultiByteToWideChar(CP_ACP, 0, speaker, -1, NULL, 0);
-			m_szSpeaker.resize(localizedLength - 1);
-			MultiByteToWideChar(CP_ACP, 0, speaker, -1, &m_szSpeaker[0], localizedLength);
+			wchar_t wszSpeaker[1024] = { 0 };
+			localize()->ConvertANSIToUnicode(szSpeaker, wszSpeaker, sizeof(wszSpeaker));
+			m_szSpeaker = wszSpeaker;
 		}
 	}
 
 	//Next dictionary
-	if(row.size() >= 7)
+	if (szNext && szNext[0])
 	{
-		m_szNext = row[5];
+		m_szNext = szNext;
 
-		const char* nextdelay = row[6].c_str();
-
-		if (nextdelay[0])
+		if (szNextDelay && szNextDelay[0])
 		{
-			m_flNextDelay = Q_atof(nextdelay);
+			m_flNextDelay = Q_atof(szNextDelay);
 		}
 	}
 
 	//Style
-	if(row.size() >= 8)
+	if (szStyle && szStyle[0])
 	{
-		auto &style = row[7];
+		std::string style = szStyle;
+
 		std::regex reg(" ");
 		std::vector<std::string> elems(std::sregex_token_iterator(style.begin(), style.end(), reg, -1), std::sregex_token_iterator());
 
-		for (auto &e : elems)
+		for (auto& e : elems)
 		{
 			if (e.size() > 0)
 			{
@@ -638,7 +388,7 @@ void CDictionary::Load(const CSV::CSVDocument::row_type &row, const Color &defau
 	}
 }
 
-void CViewport::LoadCustomDictionary(const char *dict_name)
+void CViewport::LoadCustomDictionary(const char* dict_name)
 {
 	CSV::CSVDocument doc;
 	CSV::CSVDocument::row_index_type row_count = 0;
@@ -649,7 +399,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 	{
 		row_count = doc.load_file(dict_name);
 	}
-	catch (std::exception &err)
+	catch (const std::exception& err)
 	{
 		gEngfuncs.Con_DPrintf("LoadCustomDictionary: %s\n", err.what());
 		return;
@@ -661,7 +411,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 		return;
 	}
 
-	IScheme *ischeme = scheme()->GetIScheme(GetScheme());
+	IScheme* ischeme = scheme()->GetIScheme(GetScheme());
 
 	if (!ischeme)
 		return;
@@ -678,32 +428,50 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 		if (row.size() < 1)
 			continue;
 
-		const char *title = row[0].c_str();
+		std::string title = row[0];
 
-		if (!title || !title[0])
+		if (title.empty())
 			continue;
 
-		CDictionary *Dict = new CDictionary;
+		auto Dict = std::make_shared<CDictionary>();
 
-		Dict->Load(row, defaultColor, ischeme);
+		std::string sentence = (row.size() >= 2) ? row[1] : "";
+		std::string color = (row.size() >= 3) ? row[2] : "";
+		std::string duration = (row.size() >= 4) ? row[3] : "";
+		std::string speaker = (row.size() >= 5) ? row[4] : "";
+		std::string next = (row.size() >= 6) ? row[5] : "";
+		std::string nextDelay = (row.size() >= 7) ? row[6] : "";
+		std::string style = (row.size() >= 8) ? row[7] : "";
 
-		m_Dictionary.AddToTail(Dict);
+		Dict->LoadFromRow(title.c_str(), sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme);
 
-		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
+		m_Dictionary.push_back(Dict);
+
+		m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
+
+		CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
+		m_TypedDictionaryMap[handle] = Dict;
 	}
 
-	gEngfuncs.Con_Printf("LoadCustomDictionary: %d lines are loaded.\n", nRowCount-1);
+	gEngfuncs.Con_Printf("LoadCustomDictionary: %d lines are loaded.\n", nRowCount - 1);
+}
+
+void CViewport::ClearDictionary(void)
+{
+	m_Dictionary.clear();
+	m_NamedDictionaryMap.clear();
+	m_TypedDictionaryMap.clear();
 }
 
 void CViewport::LinkDictionary(void)
 {
-	for (int i = 0; i < m_Dictionary.Count(); ++i)
+	for (size_t i = 0; i < m_Dictionary.size(); ++i)
 	{
-		CDictionary *Dict = m_Dictionary[i];
+		const auto& Dict = m_Dictionary[i];
 
-		if (Dict->m_szNext[0])
+		if (Dict->m_szNext.size() > 0)
 		{
-			Dict->m_pNext = FindDictionary(Dict->m_szNext.c_str());
+			Dict->m_pNext = FindDictionaryCXX(Dict->m_szNext);
 		}
 	}
 }
@@ -719,7 +487,7 @@ void CViewport::LoadBaseDictionary(void)
 	{
 		row_count = doc.load_file("captionmod/dictionary.csv");
 	}
-	catch(std::exception &err)
+	catch (const std::exception& err)
 	{
 		g_pMetaHookAPI->SysError("LoadBaseDictionary: %s\n", err.what());
 	}
@@ -730,43 +498,46 @@ void CViewport::LoadBaseDictionary(void)
 		return;
 	}
 
-	IScheme *ischeme = scheme()->GetIScheme(GetScheme());
+	IScheme* ischeme = scheme()->GetIScheme(GetScheme());
 
-	if(!ischeme)
+	if (!ischeme)
 		return;
 
 	Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
-	
-	//Initialize the dictionary hashtable
-	m_StringsHashTable.SetSize(2048);
-
-	for (int i = 0; i < m_StringsHashTable.Count(); i++)
-		m_StringsHashTable[i].next = NULL;
-
-	EmptyDictionaryHash();
 
 	int nRowCount = row_count;
-	
+
 	//parse the dictionary line by line...
-	for (int i = 1;i < nRowCount; ++i)
+	for (int i = 1; i < nRowCount; ++i)
 	{
 		CSV::CSVDocument::row_type row = doc.get_row(i);
 
-		if(row.size() < 1)
+		if (row.size() < 1)
 			continue;
 
-		const char *title = row[0].c_str();
+		const char* title = row[0].c_str();
 
-		if(!title || !title[0])
+		if (!title || !title[0])
 			continue;
 
-		CDictionary *Dict = new CDictionary;
+		auto Dict = std::make_shared<CDictionary>();
 
-		Dict->Load(row, defaultColor, ischeme);
+		std::string sentence = (row.size() >= 2) ? row[1] : "";
+		std::string color = (row.size() >= 3) ? row[2] : "";
+		std::string duration = (row.size() >= 4) ? row[3] : "";
+		std::string speaker = (row.size() >= 5) ? row[4] : "";
+		std::string next = (row.size() >= 6) ? row[5] : "";
+		std::string nextDelay = (row.size() >= 7) ? row[6] : "";
+		std::string style = (row.size() >= 8) ? row[7] : "";
 
-		m_Dictionary.AddToTail(Dict);
+		Dict->LoadFromRow(title, sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme);
 
-		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
+		m_Dictionary.push_back(Dict);
+
+		m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
+
+		CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
+		m_TypedDictionaryMap[handle] = Dict;
 	}
 
 	gEngfuncs.Con_Printf("LoadBaseDictionary: %d lines are loaded.\n", nRowCount - 1);
@@ -775,28 +546,28 @@ void CViewport::LoadBaseDictionary(void)
 //const char* GetSenderName();
 
 //KeyBinding Name(jump) -> Key Name(SPACE)
-const char *PrimaryKey_ForBinding(const CStartSubtitleContext* pStartSubtitleContext, const char *binding)
+const char* PrimaryKey_ForBinding(const CStartSubtitleContext* pStartSubtitleContext, const char* binding)
 {
 	if (!strcmp(binding, "sender") && pStartSubtitleContext->m_pszSenderName)
 	{
 		return pStartSubtitleContext->m_pszSenderName;
 	}
 
-	if(binding[0] == '+')
-		binding ++;
+	if (binding[0] == '+')
+		binding++;
 
 	for (int i = 255; i >= 0; --i)
 	{
-		const char *found = gameuifuncs->Key_BindingForKey(i);
+		const char* found = gameuifuncs->Key_BindingForKey(i);
 
-		if(found && found[0])
+		if (found && found[0])
 		{
-			if(found[0] == '+')
-				found ++;
-			if(!Q_stricmp(found, binding))
+			if (found[0] == '+')
+				found++;
+			if (!Q_stricmp(found, binding))
 			{
-				const char *key = gameuifuncs->Key_NameForKey(i);
-				if(key && key[0])
+				const char* key = gameuifuncs->Key_NameForKey(i);
+				if (key && key[0])
 				{
 					return key;
 				}
@@ -825,13 +596,13 @@ void CDictionary::ProcessString(const std::wstring& input, const CStartSubtitleC
 
 		auto wkeybind = result[2].str();
 
-		char akeybind[256] = {0};
+		char akeybind[256] = { 0 };
 		localize()->ConvertUnicodeToANSI(wkeybind.c_str(), akeybind, sizeof(akeybind) - 1);
-		const char *pszBinding = PrimaryKey_ForBinding(pStartSubtitleContext, akeybind);
+		const char* pszBinding = PrimaryKey_ForBinding(pStartSubtitleContext, akeybind);
 
 		if (pszBinding)
 		{
-			wchar_t wbinding[256] = {0};
+			wchar_t wbinding[256] = { 0 };
 			Q_UTF8ToUnicode(pszBinding, wbinding, sizeof(wbinding));
 
 			if (searchStart != finalize.cbegin())
@@ -913,14 +684,14 @@ void CViewport::Init(void)
 	m_HudMenu.Init();
 }
 
-void CViewport::StartSubtitle(CDictionary *dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext)
+void CViewport::StartSubtitle(const std::shared_ptr<CDictionary>& dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	if (cap_enabled && cap_enabled->value) {
 		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetCurTime(), pStartSubtitleContext);
 	}
 }
 
-void CViewport::StartNextSubtitle(CDictionary* dict, const CStartSubtitleContext* pStartSubtitleContext)
+void CViewport::StartNextSubtitle(const std::shared_ptr<CDictionary>& dict, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	if (cap_enabled && cap_enabled->value) {
 		m_pSubtitlePanel->StartNextSubtitle(dict, pStartSubtitleContext);
@@ -962,7 +733,7 @@ void CViewport::ConnectToServer(const char* game, int IP, int port)
 		m_szLevelName[sizeof(m_szLevelName) - 1] = 0;
 	}
 
-	if(m_pSubtitlePanel)
+	if (m_pSubtitlePanel)
 		m_pSubtitlePanel->ConnectToServer(game, IP, port);
 }
 
@@ -1041,19 +812,7 @@ void CViewport::StartMessageMode2(void)
 	m_pChatDialog->StartMessageMode(MM_SAY_TEAM);
 }
 
-void CViewport::ChatPrintf(int iPlayerIndex, const wchar_t *buffer)
+void CViewport::ChatPrintf(int iPlayerIndex, const wchar_t* buffer)
 {
 	m_pChatDialog->ChatPrintf(iPlayerIndex, buffer);
 }
-
-#if 0
-void CViewport::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
-{
-	m_pSubtitlePanel->QuerySubtitlePanelVars(vars);
-}
-
-void CViewport::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
-{
-	m_pSubtitlePanel->UpdateSubtitlePanelVars(vars);
-}
-#endif

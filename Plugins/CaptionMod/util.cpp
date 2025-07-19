@@ -36,3 +36,30 @@ void COM_FixSlashes(char* pname)
 	}
 #endif
 }
+
+
+void StringReplaceW(std::wstring& strBase, const std::wstring& strSrc, const std::wstring& strDst)
+{
+	size_t pos = 0;
+	auto srcLen = strSrc.size();
+	auto desLen = strDst.size();
+	pos = strBase.find(strSrc, pos);
+	while ((pos != std::wstring::npos))
+	{
+		strBase.replace(pos, srcLen, strDst);
+		pos = strBase.find(strSrc, (pos + desLen));
+	}
+}
+
+void StringReplaceA(std::string& strBase, const std::string& strSrc, const std::string& strDst)
+{
+	size_t pos = 0;
+	auto srcLen = strSrc.size();
+	auto desLen = strDst.size();
+	pos = strBase.find(strSrc, pos);
+	while ((pos != std::string::npos))
+	{
+		strBase.replace(pos, srcLen, strDst);
+		pos = strBase.find(strSrc, (pos + desLen));
+	}
+}

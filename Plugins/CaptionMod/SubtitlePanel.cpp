@@ -73,17 +73,7 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 
 SubtitlePanel::~SubtitlePanel()
 {
-	for (int i = 0; i < m_Lines.Count(); ++i)
-	{
-		delete m_Lines[i];
-	}
-	m_Lines.RemoveAll();
-
-	for (int i = 0; i < m_BackLines.Count(); ++i)
-	{
-		delete m_BackLines[i];
-	}
-	m_BackLines.RemoveAll();
+	ClearSubtitle();
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -159,9 +149,9 @@ void SubtitlePanel::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 bool CAnimMovement::Update(void)
 {
-	if(IsDonePlay())
+	if (IsDonePlay())
 	{
-		m_Line->m_YPos = m_EndValue;
+		m_pLine->m_YPos = m_EndValue;
 		return false;
 	}
 	else if(IsPlaying())
@@ -169,19 +159,19 @@ bool CAnimMovement::Update(void)
 		if(!m_Started)
 		{
 			m_Started = true;
-			m_StartValue = m_Line->m_YPos;
+			m_StartValue = m_pLine->m_YPos;
 		}
 		float frac = min((g_pViewPort->GetCurTime() - m_StartTime) / m_AnimTime, 1);
-		m_Line->m_YPos = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
+		m_pLine->m_YPos = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
 }
 
 bool CAnimAlphaFade::Update(void)
 {
-	if(IsDonePlay())
+	if (IsDonePlay())
 	{
-		m_Line->m_Alpha = m_EndValue;
+		m_pLine->m_Alpha = m_EndValue;
 		return false;
 	}
 	else if(IsPlaying())
@@ -189,10 +179,10 @@ bool CAnimAlphaFade::Update(void)
 		if(!m_Started)
 		{
 			m_Started = true;
-			m_StartValue = m_Line->m_Alpha;
+			m_StartValue = m_pLine->m_Alpha;
 		}
 		float frac = min((g_pViewPort->GetCurTime() - m_StartTime) / m_AnimTime, 1);
-		m_Line->m_Alpha = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
+		m_pLine->m_Alpha = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
 }
@@ -219,48 +209,58 @@ bool CSubLine::ShouldRetire(void)
 
 bool CSubLine::Update(void)
 {
-	for(int i = 0; i < m_AnimList.Count(); ++i)
+	for (auto it = m_AnimList.begin(); it != m_AnimList.end(); )
 	{
-		if(!m_AnimList[i]->Update())
+		const auto& Temp = (*it);
+
+		if(false == Temp->Update())
 		{
-			delete m_AnimList[i];
-			m_AnimList.Remove(i);
-			i --;
+			it = m_AnimList.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
 
-	if(!m_Retired && ShouldRetire())
-	{//Retire route
+	if (!m_Retired && ShouldRetire())
+	{
 		m_Retired = true;
 		AlphaFade(0, m_FadeOut);
 	}
-	else if(m_Retired && !m_Alpha)
-	{//It dies when it goes 0 alpha 
-		return false;
+	
+	if (m_Retired && 0 == m_Alpha)
+	{
+		return false;//It dies when it goes 0 alpha 
 	}
+
 	return true;
 }
 
 void CSubLine::MoveTo(int ToPos, float Time)
 {
-	//remove any movement before add a new one
-	for(int i = 0;i < m_AnimList.Count(); ++i)
+	//Remove any movement animation before add a new one
+	for(auto it = m_AnimList.begin(); it != m_AnimList.end(); )
 	{
-		if(m_AnimList[i]->GetType() == ANIM_MOVEMENT)
+		const auto& Temp = (*it);
+
+		if(Temp->GetType() == ANIM_MOVEMENT)
 		{
-			delete m_AnimList[i];
-			m_AnimList.Remove(i);
-			i --;
+			it = m_AnimList.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement(g_pViewPort->GetCurTime(), Time, ToPos, this);
-	m_AnimList[m_AnimList.AddToTail()] = Anim;
+	auto NewAnim = std::make_shared<CAnimMovement>(g_pViewPort->GetCurTime(), Time, ToPos, this);
+	m_AnimList.push_back(NewAnim);
 }
 
 void CSubLine::AlphaFade(int Alpha, float Time)
 {
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade(g_pViewPort->GetCurTime(), Time, Alpha, this);
-	m_AnimList[m_AnimList.AddToTail()] = Anim;
+	auto NewAnim = std::make_shared<CAnimAlphaFade>(g_pViewPort->GetCurTime(), Time, Alpha, this);
+	m_AnimList.push_back(NewAnim);
 }
 
 int CSubLine::CalcYPos(void)
@@ -302,35 +302,46 @@ void CSubLine::Draw(int x, int w, int align)
 	surface()->DrawFlushText();
 }
 
-void SubtitlePanel::StartNextSubtitle(CDictionary *pDict, const CStartSubtitleContext* pStartSubtitleContext)
+void SubtitlePanel::StartNextSubtitle(const std::shared_ptr<CDictionary>& dict, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	//Check if there is a next dict to be played
-	auto pNextDict = pDict->m_pNext;
+	auto pNextDict = dict->m_pNext.lock();
 
 	if (pNextDict)
 	{
-		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetCurTime() + pDict->m_flNextDelay, pStartSubtitleContext);
+		StartSubtitle(pNextDict, dict->m_flDuration, g_pViewPort->GetCurTime() + dict->m_flNextDelay, pStartSubtitleContext);
 	}
 }
 
 void SubtitlePanel::OnTick( void )
 {
-	for(int i = 0; i < m_BackLines.Count(); ++i)
+	//Start backed lines if they are ready to start
+	for(auto it = m_BackLines.begin(); it != m_BackLines.end(); )
 	{
-		if(m_BackLines[i]->ShouldStart())
+		auto& Temp = (*it);
+
+		if(Temp->ShouldStart())
 		{
-			StartLine(m_BackLines[i]);
-			m_BackLines.Remove(i);
-			i --;
+			StartLine(Temp);
+			it = m_BackLines.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
-	for(int i = 0; i < m_Lines.Count(); ++i)
+
+	for(auto it = m_Lines.begin(); it != m_Lines.end(); )
 	{
-		if(!m_Lines[i]->Update())
+		const auto& Temp = (*it);
+
+		if (false == Temp->Update())
 		{
-			delete m_Lines[i];
-			m_Lines.Remove(i);
-			i --;
+			it = m_Lines.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
 
@@ -349,25 +360,26 @@ void SubtitlePanel::OnTick( void )
 	}
 }
 
-void SubtitlePanel::StartLine(CSubLine *Line)
+void SubtitlePanel::StartLine(const std::shared_ptr<CSubLine> &Line)
 {
 	//Notice that the current line must disappear after any other existing lines
 	//So we need the latest endtime of the current playing lines.
 
 	float latestEndTime = 0;
-	for(int i = 0;i < m_Lines.Count(); ++i)
+	for(auto it = m_Lines.begin(); it != m_Lines.end(); it++)
 	{
-		CSubLine *Temp = m_Lines[i];
+		const auto& Temp = (*it);
+
 		//Move all existing lines up
 		Temp->m_LineIndex ++;
 		Temp->MoveTo(Temp->CalcYPos(), cap_subtitle_fadein->value);
 
-		if(m_Lines[i]->m_EndTime > latestEndTime)
-			latestEndTime = m_Lines[i]->m_EndTime;
+		if(Temp->m_EndTime > latestEndTime)
+			latestEndTime = Temp->m_EndTime;
 	}
 
 	//Add to the current playing line
-	m_Lines[m_Lines.AddToTail()] = Line;
+	m_Lines.push_back(Line);
 
 	if (Line->m_StartTime == 0)
 	{
@@ -391,20 +403,16 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 	StartNextSubtitle(Line->m_Dict, &StartSubtitleContext);
 }
 
-CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, const CStartSubtitleContext* pStartSubtitleContext, const wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
+std::shared_ptr<CSubLine> SubtitlePanel::AddLine(const std::shared_ptr<CDictionary>& dict, const CStartSubtitleContext* pStartSubtitleContext, const wchar_t * wszSentence, int nLength, float flStartTime, float flDuration, int nTextWide)
 {
-	CSubLine *Line = new CSubLine(this, Dict);
-	m_BackLines[m_BackLines.AddToTail()] = Line;
+	std::shared_ptr<CSubLine> Line = std::make_shared<CSubLine>(this, dict, wszSentence, nLength);
 
-	Line->m_Sentence.SetSize(nLength + 1);
-	Q_wcsncpy(&Line->m_Sentence[0], wszSentence, (nLength + 1) * sizeof(wchar_t));
-	Line->m_Length = nLength;
 	Line->m_TextWide = nTextWide;
 	Line->m_StartTime = flStartTime;
 	Line->m_Duration = flDuration;
-	Line->m_Color = Dict->m_Color;
+	Line->m_Color = dict->m_Color;
 
-	if (Dict->m_bDefaultColor && pStartSubtitleContext->m_pCurrentTextMessage)
+	if (dict->m_bDefaultColor && pStartSubtitleContext->m_pCurrentTextMessage)
 	{
 		Line->m_Color = Color(
 			pStartSubtitleContext->m_pCurrentTextMessage->r1, 
@@ -417,13 +425,15 @@ CSubLine* SubtitlePanel::AddLine(CDictionary *Dict, const CStartSubtitleContext*
 	Line->m_LineIndex = 0;
 	Line->m_YPos = Line->CalcYPos();
 	Line->m_FadeOut = cap_subtitle_fadeout->value;
-	Line->m_TextAlign = Dict->m_iTextAlign ? Dict->m_iTextAlign : m_iTextAlign;
+	Line->m_TextAlign = dict->m_iTextAlign ? dict->m_iTextAlign : m_iTextAlign;
 
 	if (pStartSubtitleContext->m_pszSenderName)
 	{
 		Line->m_bHasSenderName = true;
 		Line->m_SenderName = pStartSubtitleContext->m_pszSenderName;
 	}
+
+	m_BackLines.push_back(Line);
 
 	return Line;
 }
@@ -434,33 +444,37 @@ static bool IsNonBreakableCharacter(wchar_t ch)
 }
 
 //2015-11-26 added htimescale for SubtitlePanel
-void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime, const CStartSubtitleContext* pStartSubtitleContext)
+void SubtitlePanel::StartSubtitle(const std::shared_ptr<CDictionary>& dict, float flDurationTime, float flStartTime, const CStartSubtitleContext* pStartSubtitleContext)
 {
 	//Delay the current line till the last backline plays
 	float flLatestStart = 0;
-	for(int i = 0; i < m_BackLines.Count(); ++i)
+	for(auto it = m_BackLines.begin(); it != m_BackLines.end(); it++)
 	{
+		const auto& Temp = (*it);
+
 		if (cap_subtitle_waitplay->value >= 1.0f)
 		{
-			m_BackLines[i]->m_StartTime = 0;
+			Temp->m_StartTime = 0;
 		}
 		else
 		{
-			if (m_BackLines[i]->m_StartTime > flLatestStart)
-				flLatestStart = m_BackLines[i]->m_StartTime;
+			if (Temp->m_StartTime > flLatestStart)
+				flLatestStart = Temp->m_StartTime;
 		}
 
 		//Already in list, do not start one subtitle for twice at the same time.
-		if(m_BackLines[i]->m_Dict == pDict)
+		if(Temp->m_Dict == dict)
 			return;
 	}
 
 	if (cap_subtitle_antispam->value >= 1.0f)
 	{
-		for (int i = 0; i < m_Lines.Count(); ++i)
+		for (auto it = m_Lines.begin(); it != m_Lines.end(); it++)
 		{
+			const auto& Temp = (*it);
+
 			//Already in display, ignore
-			if (m_Lines[i]->m_Dict == pDict)
+			if (Temp->m_Dict == dict)
 				return;
 		}
 	}
@@ -468,11 +482,11 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 	std::wstring speakerName;
 	std::wstring fullSentence;
 
-	pDict->ProcessString(pDict->m_szSentence, pStartSubtitleContext, fullSentence);
+	dict->ProcessString(dict->m_szSentence, pStartSubtitleContext, fullSentence);
 
 	if (cap_subtitle_prefix->value >= 1.0f)
 	{
-		pDict->ProcessString(pDict->m_szSpeaker, pStartSubtitleContext, speakerName);
+		dict->ProcessString(dict->m_szSpeaker, pStartSubtitleContext, speakerName);
 
 		fullSentence = speakerName + fullSentence;
 	}
@@ -515,7 +529,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 	if(flDuration <= 0)
 		flDuration = 4.0f;
 
-	if (!pDict->m_bOverrideDuration && pStartSubtitleContext->m_pCurrentTextMessage)
+	if (!dict->m_bOverrideDuration && pStartSubtitleContext->m_pCurrentTextMessage)
 	{
 		if (pStartSubtitleContext->m_pCurrentTextMessage->effect == 2 &&
 			pStartSubtitleContext->m_pCurrentTextMessage->pMessage)
@@ -536,7 +550,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 
 	p = pStart;
 
-	CSubLine* pAddedLine = NULL;
+	std::shared_ptr<CSubLine> pAddedLine;
 
 	while(*pStart)
 	{
@@ -544,9 +558,9 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		nCharNum = 0;
 		nWide = 0;
 
-		int nLastWide;
-		wchar_t *LastP;
-		int nLastCharNum;
+		int nLastWide = 0;
+		wchar_t *LastP = nullptr;
+		int nLastCharNum = 0;
 
 		while(1)
 		{
@@ -628,7 +642,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		else//real duration = original starttime - real starttime + original duration
 			flRealDuration = max(flStartTime + flCalcStartTime - flRealStartTime, 0) + flCalcDuration;
 
-		pAddedLine = AddLine(pDict, pStartSubtitleContext, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
+		pAddedLine = AddLine(dict, pStartSubtitleContext, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
 
 		//Skip CRLF
 		while (*p == L'\r' || *p == L'\n')
@@ -646,51 +660,9 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 
 void SubtitlePanel::ClearSubtitle(void)
 {
-	for(int i = 0;i < m_Lines.Count(); ++i)
-		delete m_Lines[i];
-	m_Lines.RemoveAll();
-	for(int i = 0;i < m_BackLines.Count(); ++i)
-		delete m_BackLines[i];
-	m_BackLines.RemoveAll();
+	m_Lines.clear();
+	m_BackLines.clear();
 }
-
-#if 0
-void SubtitlePanel::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
-{
-	GetSize(vars->m_iWidth, vars->m_iHeight);
-
-	int x, y;
-	GetPos(x, y);
-	vars->m_iYPos = y;
-
-	vars->m_flFadeIn = m_flFadeIn;
-	vars->m_flFadeOut = m_flFadeOut;
-	vars->m_flHoldTime = m_flHoldTime;
-	vars->m_flHoldTimeScale = m_flHoldTimeScale;
-	vars->m_flStartTimeScale = m_flStartTimeScale;
-	vars->m_iAntiSpam = m_iAntiSpam;
-	vars->m_iPrefix = m_iPrefix;
-	vars->m_iWaitPlay = m_iWaitPlay;
-}
-
-void SubtitlePanel::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
-{
-	SetSize(vars->m_iWidth, vars->m_iHeight);
-
-	int x, y;
-	GetPos(x, y);
-	SetPos(x, vars->m_iYPos);
-
-	m_flFadeIn = vars->m_flFadeIn;
-	m_flFadeOut = vars->m_flFadeOut;
-	m_flHoldTime = vars->m_flHoldTime;
-	m_flHoldTimeScale = vars->m_flHoldTimeScale;
-	m_flStartTimeScale = vars->m_flStartTimeScale;
-	m_iAntiSpam = vars->m_iAntiSpam;
-	m_iPrefix = vars->m_iPrefix;
-	m_iWaitPlay = vars->m_iWaitPlay;
-}
-#endif
 
 void SubtitlePanel::VidInit(void)
 {
@@ -707,19 +679,20 @@ void SubtitlePanel::ConnectToServer(const char* game, int IP, int port)
 
 void SubtitlePanel::AdjustClock(double flAdjustment)
 {
-	for (int i = 0; i < m_Lines.Count(); ++i)
+	for (auto it = m_Lines.begin(); it != m_Lines.end(); it++)
 	{
-		auto pLine = m_Lines[i];
+		const auto& Temp = (*it);
 
-		pLine->m_EndTime += flAdjustment;
-		pLine->m_StartTime += flAdjustment;
+		Temp->m_EndTime += flAdjustment;
+		Temp->m_StartTime += flAdjustment;
 	}
-	for (int i = 0; i < m_BackLines.Count(); ++i)
-	{
-		auto pLine = m_BackLines[i];
 
-		pLine->m_EndTime += flAdjustment;
-		pLine->m_StartTime += flAdjustment;
+	for (auto it = m_BackLines.begin(); it != m_BackLines.end(); it++)
+	{
+		const auto& Temp = (*it);
+
+		Temp->m_EndTime += flAdjustment;
+		Temp->m_StartTime += flAdjustment;
 
 	}
 }
@@ -740,9 +713,9 @@ void SubtitlePanel::Paint(void)
 
 	surface()->DrawSetTextFont(m_hTextFont);
 
-	for(int i = 0; i < m_Lines.Count(); ++i)
+	for (auto it = m_Lines.begin(); it != m_Lines.end(); it++)
 	{
-		auto Line = m_Lines[i];
+		const auto& Line = (*it);
 
 		Line->Draw(x, iPanelWidth, m_iTextAlign);
 

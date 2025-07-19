@@ -157,7 +157,6 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\mathlib\3dnow.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp" />
-    <ClCompile Include="..\..\include\SourceSDK\VPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp" />
@@ -167,6 +166,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="libcsv\csv_document.cpp" />
+    <ClCompile Include="MurmurHash2.cpp" />
     <ClCompile Include="privatefuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="GameUI.cpp" />

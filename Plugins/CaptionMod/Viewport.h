@@ -13,9 +13,10 @@
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
 #include <VGUI_controls/Frame.h>
-#include "libcsv/csv_document.h"
 #include <sequence.h>
 #include <regex>
+#include <unordered_map>
+#include "MurmurHash2.h"
 
 #define HUDMESSAGE_MAXLENGTH 2048
 
@@ -65,51 +66,87 @@ public:
 		m_pszSenderName = nullptr;
 		m_pCurrentTextMessage = nullptr;
 	}
-
-
 	const char* m_pszSenderName;
 	client_textmessage_t* m_pCurrentTextMessage;
 };
 
-class CDictionary
+class CDictionary : public IBaseInterface
 {
 public:
-	CDictionary();
-	virtual ~CDictionary();
+	void LoadFromRow(
+		const char* szTitle,
+		const char* szSentense,
+		const char* szColor,
+		const char* szDuration,
+		const char* szSpeaker,
+		const char* szNext,
+		const char* szNextDelay,
+		const char* szStyle,
+		const Color& defaultColor,
+		vgui::IScheme* ischeme);
 
-	void Load(const CSV::CSVDocument::row_type &row, const Color &defaultColor, vgui::IScheme *ischeme);
 	void ProcessString(const std::wstring& input, const CStartSubtitleContext* pStartSubtitleContext, std::wstring& output);
 
-	dict_t					m_Type;
+	dict_t					m_Type{ DICT_CUSTOM };
 	std::string				m_szTitle;
 	std::wstring			m_szSentence;
-	Color					m_Color;
-	float					m_flDuration;
+	Color					m_Color{ Color(255, 255, 255, 255) };
+	float					m_flDuration{};
 	std::wstring			m_szSpeaker;
-	float					m_flNextDelay;
+	float					m_flNextDelay{};
 	std::string				m_szNext;
-	CDictionary				*m_pNext;
-	textalign_t				m_iTextAlign;
-	bool					m_bIgnoreDistanceLimit;
-	bool					m_bIgnoreVolumeLimit;
-	bool					m_bRegex;
+	std::weak_ptr<CDictionary> m_pNext;
+	textalign_t				m_iTextAlign{ ALIGN_DEFAULT };
+	bool					m_bIgnoreDistanceLimit{};
+	bool					m_bIgnoreVolumeLimit{};
+	bool					m_bRegex{};
 
-	bool					m_bOverrideColor;
-	bool					m_bOverrideDuration;
-	Color					m_Color1;
-	Color					m_Color2;
+	bool					m_bOverrideColor{};
+	bool					m_bOverrideDuration{};
+	Color					m_Color1{ Color(255, 255, 255, 255) };
+	Color					m_Color2{ Color(255, 255, 255, 255) };
 
-	bool					m_bDefaultColor;
-	std::regex				*m_pRegex;
+	bool					m_bDefaultColor{};
+	std::unique_ptr<std::regex>	m_pRegex{};
 };
 
-typedef struct hash_item_s
+class CTypedDictionaryHandle
 {
-	CDictionary *dict;
-	struct hash_item_s *next;
-	struct hash_item_s *lastHash;
-	int dictIndex;
-}hash_item_t;
+public:
+	CTypedDictionaryHandle(const std::string& title, dict_t type) :
+		m_title(title), m_type(type)
+	{
+		
+	}
+
+	CTypedDictionaryHandle(const char* title, dict_t type) :
+		m_title(title), m_type(type)
+	{
+
+	}
+
+	bool operator == (const CTypedDictionaryHandle& a) const
+	{
+		return m_title == a.m_title && m_type == a.m_type;
+	}
+
+	std::string m_title;
+	dict_t m_type{ DICT_CUSTOM };
+};
+
+class CTypedDictionaryHasher
+{
+public:
+	std::size_t operator()(const CTypedDictionaryHandle& key) const
+	{
+		size_t seed = 0;
+
+		seed ^= MurmurHash2(&key.m_type, sizeof(key.m_type), seed);
+		seed ^= MurmurHash2(key.m_title.c_str(), key.m_title.size(), seed);
+
+		return seed;
+	}
+};
 
 class CViewport : public vgui::Panel
 {
@@ -133,19 +170,18 @@ public:
 	void LoadBaseDictionary(void);
 	void LoadCustomDictionary(const char *dict_name);
 	void LinkDictionary(void);
+	void ClearDictionary(void);
 
 	//Subtitle Interface
-	void StartSubtitle(CDictionary *dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext);
-	void StartNextSubtitle(CDictionary *dict, const CStartSubtitleContext* pStartSubtitleContext);
+	void StartSubtitle(const std::shared_ptr<CDictionary>& dict, float flDurationTime, const CStartSubtitleContext* pStartSubtitleContext);
+	void StartNextSubtitle(const std::shared_ptr<CDictionary>& dict, const CStartSubtitleContext* pStartSubtitleContext);
 
-	//Dictionary Hashtable
-	CDictionary *FindDictionary(const char *szValue);
-	CDictionary *FindDictionary(const char *szValue, dict_t Type);
-	CDictionary *FindDictionaryRegex(const std::string &str, dict_t Type, std::smatch &result);
-	int CaseInsensitiveHash(const char *string, int iBounds);
-	void EmptyDictionaryHash(void);
-	void AddDictionaryHash(CDictionary *dict, const char *value);
-	void RemoveDictionaryHash(CDictionary *dict, const char *value);
+	//Dictionary Interface
+	std::shared_ptr<CDictionary> FindDictionaryCABI(const char * title);
+	std::shared_ptr<CDictionary> FindDictionaryCABI(const char * title, dict_t Type);
+	std::shared_ptr<CDictionary> FindDictionaryCXX(const std::string& title);
+	std::shared_ptr<CDictionary> FindDictionaryCXX(const std::string& title, dict_t Type);
+	std::shared_ptr<CDictionary> FindDictionaryRegex(const std::string & title, dict_t Type, std::smatch &result);
 
 	bool IsChatBlocked(int clientIndex);
 	bool AllowedToPrintText(void);
@@ -160,12 +196,14 @@ public:
 	double GetCurTime(void) const;
 	double GetFrameTime(void) const;
 private:
-	SubtitlePanel *m_pSubtitlePanel;
-	CCSChatDialog *m_pChatDialog;
-	CUtlVector<CDictionary *> m_Dictionary;	
-	CUtlVector<hash_item_t> m_StringsHashTable;
-	char m_szLevelName[256];
-	double m_CurTime;
+	std::vector<std::shared_ptr<CDictionary>> m_Dictionary;
+	std::unordered_map<std::string, std::shared_ptr<CDictionary>> m_NamedDictionaryMap;
+	std::unordered_map<CTypedDictionaryHandle, std::shared_ptr<CDictionary>, CTypedDictionaryHasher> m_TypedDictionaryMap;
+
+	SubtitlePanel* m_pSubtitlePanel{};
+	CCSChatDialog* m_pChatDialog{};
+	char m_szLevelName[256]{};
+	double m_CurTime{};
 };
 
 extern CViewport *g_pViewPort;

@@ -686,13 +686,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
 
-	char *pString = READ_STRING();
+	const char *pString = READ_STRING();
 	int hintMessage = READ_BYTE();
 
 	if (!READ_OK())
 		hintMessage = 0;
 
-	CDictionary *dict = NULL;
+	std::shared_ptr<CDictionary> dict;
 
 	// Trim off a leading # if it's there
 
@@ -710,19 +710,21 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			if (pTextMessage)
 			{
 				int useSlot = -1;
-				char *slotString = &pString[sizeof("__NETMESSAGE__") - 1];
-				if (isdigit(*slotString))
+				const char *pSlotString = &pString[sizeof("__NETMESSAGE__") - 1];
+				if (isdigit(*pSlotString))
 				{
-					useSlot = atoi(slotString);
+					useSlot = atoi(pSlotString);
 				}
 
 				std::smatch result;
 				std::string str = pTextMessage->pMessage;
 
-				dict = g_pViewPort->FindDictionary(str.c_str(), DICT_NETMESSAGE);
+				dict = g_pViewPort->FindDictionaryCXX(str, DICT_NETMESSAGE);
 
 				if (!dict)
+				{
 					dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
+				}
 
 				if (cap_debug && cap_debug->value)
 				{
@@ -823,24 +825,19 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 						pMsg->holdtime = dict->m_flDuration;
 					}
 
-					char sentence[HUDMESSAGE_MAXLENGTH];
+					char szSentence[HUDMESSAGE_MAXLENGTH]{};
+					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), szSentence, HUDMESSAGE_MAXLENGTH);
+					szSentence[finalLength] = 0;
 
-					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
-
-					sentence[finalLength] = 0;
-
-					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+					V_strncpy((char *)pMsg->pMessage, szSentence, HUDMESSAGE_MAXLENGTH - 1);
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 
-					//g_pCurrentTextMessage = pMsg;
 					CStartSubtitleContext StartSubtitleContext;
 					StartSubtitleContext.m_pCurrentTextMessage = pMsg;
 
 					g_pViewPort->StartNextSubtitle(dict, &StartSubtitleContext);
-
-					//g_pCurrentTextMessage = NULL;
 
 					if (slotNum == -1)
 					{
@@ -867,7 +864,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 	{
 		if (cap_hudmessage && cap_hudmessage->value)
 		{
-			dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
+			dict = g_pViewPort->FindDictionaryCABI(pString, DICT_MESSAGE);
 
 			if (cap_debug && cap_debug->value)
 			{
@@ -908,13 +905,11 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 
-					char sentence[HUDMESSAGE_MAXLENGTH];
+					char szSentence[HUDMESSAGE_MAXLENGTH]{};
+					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), szSentence, HUDMESSAGE_MAXLENGTH);
+					szSentence[finalLength] = 0;
 
-					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
-
-					sentence[finalLength] = 0;
-
-					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+					V_strncpy((char *)pMsg->pMessage, szSentence, HUDMESSAGE_MAXLENGTH - 1);
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
@@ -947,12 +942,12 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
 
-	char *pString = READ_STRING();
+	const char *pString = READ_STRING();
 	int hintMessage = READ_BYTE();
 
 	if (cap_hudmessage && cap_hudmessage->value)
 	{
-		CDictionary *dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
+		const auto& dict = g_pViewPort->FindDictionaryCABI(pString, DICT_MESSAGE);
 
 		if (cap_debug && cap_debug->value)
 		{
@@ -993,13 +988,11 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 
 				pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 
-				char sentence[HUDMESSAGE_MAXLENGTH];
+				char szSentence[HUDMESSAGE_MAXLENGTH]{};
+				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), szSentence, HUDMESSAGE_MAXLENGTH);
+				szSentence[finalLength] = 0;
 
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
-
-				sentence[finalLength] = 0;
-
-				V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+				V_strncpy((char *)pMsg->pMessage, szSentence, HUDMESSAGE_MAXLENGTH - 1);
 				((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
  				int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
@@ -1047,7 +1040,7 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	BEGIN_READ(pbuf, iSize);
 
 	int entIndex = READ_BYTE();
-	char* pString = READ_STRING();
+	const char* pString = READ_STRING();
 	int pitch = READ_SHORT();
 
 	if (!READ_OK())
@@ -1056,20 +1049,20 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	hud_player_info_t info = {0};
 	gEngfuncs.pfnGetPlayerInfo(entIndex, &info);
 
-	auto pDict = g_pViewPort->FindDictionary(pString, DICT_SENDAUDIO);
+	auto dict = g_pViewPort->FindDictionaryCABI(pString, DICT_SENDAUDIO);
 
 	if (cap_debug && cap_debug->value)
 	{
-		gEngfuncs.Con_Printf(pDict ? "CaptionMod: SendAudio [%s] found.\n" : "CaptionMod: SendAudio [%s] not found.\n", pString);
+		gEngfuncs.Con_Printf(dict ? "CaptionMod: SendAudio [%s] found.\n" : "CaptionMod: SendAudio [%s] not found.\n", pString);
 	}
 
-	if (pDict)
+	if (dict)
 	{
 		CStartSubtitleContext StartSubtitleContext;
 
 		StartSubtitleContext.m_pszSenderName = info.name;
 
-		g_pViewPort->StartSubtitle(pDict, pDict->m_flDuration, &StartSubtitleContext);
+		g_pViewPort->StartSubtitle(dict, dict->m_flDuration, &StartSubtitleContext);
 	}
 
 	return 0;

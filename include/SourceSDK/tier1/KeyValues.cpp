@@ -1154,7 +1154,6 @@ const wchar_t *KeyValues::GetWString(const char *keyName, const wchar_t *default
 
 			case TYPE_STRING:
 			{
-
 				static wchar_t wbuftemp[512];
 				int result = ::MultiByteToWideChar(CP_UTF8, 0, dat->m_sValue, -1, wbuftemp, 512);
 

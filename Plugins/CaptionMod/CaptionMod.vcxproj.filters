@@ -413,9 +413,6 @@
     <ClCompile Include="BaseUI.cpp">
       <Filter>BaseUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\VPanel.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
     <ClCompile Include="util.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -424,6 +421,9 @@
     </ClCompile>
     <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp">
       <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="MurmurHash2.cpp">
+      <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
