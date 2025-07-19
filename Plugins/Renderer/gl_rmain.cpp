@@ -1459,12 +1459,19 @@ void R_DrawStudioEntity(bool bTransparent)
 {
 	if ((*currententity)->player)
 	{
-		if (R_IsLowerBodyEntity((*currententity)) && R_IsRenderingPortal())
+		if (R_IsLowerBodyEntity((*currententity)))
 		{
-			return;
-		}
+			if (R_IsRenderingPortal())
+			{
+				return;
+			}
 
-		(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetPlayerState((*currententity)->index));
+		}
+		else
+		{
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+		}
 	}
 	else
 	{
@@ -1484,7 +1491,7 @@ void R_DrawStudioEntity(bool bTransparent)
 				return;
 			}
 
-			if (R_IsLowerBodyEntity(aiment) && r_drawlowerbodyattachments->value < 1)
+			if (R_IsLowerBodyEntity(aiment) && (int)r_drawlowerbodyattachments->value < 1)
 			{
 				return;
 			}
