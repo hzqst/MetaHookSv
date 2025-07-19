@@ -4624,7 +4624,6 @@ void R_SetupDLightUBO(void)
 			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
 			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
 
-			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = 0;
 			g_WorldSurfaceRenderer.iNumLegacyDLights++;
 		}
 	};
