@@ -312,14 +312,14 @@ public:
 
 	SCModelQueryState GetState() const override
 	{
+		if (m_bFailed)
+			return SCModelQueryState_Failed;
+
 		if (m_bFinished)
 			return SCModelQueryState_Finished;
 
 		if (m_bResponding)
 			return SCModelQueryState_Receiving;
-
-		if (m_bFailed)
-			return SCModelQueryState_Failed;
 
 		return SCModelQueryState_Querying;
 	}
@@ -430,7 +430,10 @@ public:
 		m_networkFileName(networkFileName),
 		m_bHasTModel(bHasTModel)
 	{
-		m_identifier = std::format("/{0}", m_networkFileName);
+		std::transform(m_networkFileNameBase.begin(), m_networkFileNameBase.end(), m_networkFileNameBase.begin(), ::tolower);
+		std::transform(m_networkFileName.begin(), m_networkFileName.end(), m_networkFileName.begin(), ::tolower);
+
+		m_identifier = std::format("/models/player/{0}", m_networkFileName);
 	}
 
 	~CSCModelQueryModelResourceTask()

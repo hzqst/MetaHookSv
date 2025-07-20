@@ -426,12 +426,12 @@ public:
 			m_bRequestSuccessful = true;
 		}
 
+		OnRespondFinish();
+
 		if (m_Callbacks)
 		{
 			m_Callbacks->OnResponseComplete(this, m_pResponse);
 		}
-
-		OnRespondFinish();
 	}
 
 	void WriteHeader(const void* data, size_t size)
