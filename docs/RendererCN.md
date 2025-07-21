@@ -456,6 +456,39 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 2. 其表面会产生Kajiya-Kay Shading算法计算出的高光，具体参数见`r_studio_hair_specular_[...]`。该高光在头发加载了高光贴图的情况下，仅会在高光贴图的红色通道上有颜色的区域上显示头发高光，并且强度按红色通道强度进行插值。如果头发没有加载高光贴图则无显示区域限制。
 
+### 眉毛穿透
+
+1. 包含眉毛的贴图必须拥有标记 `"flags" "STUDIO_NF_CELSHADE_FACE"`
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_face_C.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.png"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.png"
+}
+```
+
+2. 包含头发的贴图必须拥有标记 `"flags" "STUDIO_NF_CELSHADE_HAIR"`
+
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_hair_C.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+```
+
+3. 眉毛部分的像素的alpha通道必须小于255, 可以利用 `replacetexture` 替换一张PNG图片来完成：
+
+![](/img/10.png)
+
+当以上条件全部满足时，你就可以透过头发看见眉毛：
+
+![](/img/9.png)
+
 ### 下半身模型
 
 使用控制台参数 `r_drawlowerbody 1` 来启用渲染下半身模型的功能。

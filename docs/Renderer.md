@@ -471,6 +471,39 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 }
 ```
 
+### Eyebrow-Passthrough
+
+1. Textures that contain eyebrow must be marked with `"flags" "STUDIO_NF_CELSHADE_FACE"`:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_face_C.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.png"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.png"
+}
+```
+
+2. Textures that contain hair must be marked with `"flags" "STUDIO_NF_CELSHADE_HAIR"`:
+
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_hair_C.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+```
+
+3. Eyebrow pixels must be marked with alpha < 255, which can be done by taking advantage of `replacetexture` with a PNG texture:
+
+![](/img/10.png)
+
+You will be able to see eyebrow through hair if both 1, 2 and 3 are matched:
+
+![](/img/9.png)
+
 ### Draw lower body
 
 Use cvar `r_drawlowerbody 1` to enable lower body rendering.
