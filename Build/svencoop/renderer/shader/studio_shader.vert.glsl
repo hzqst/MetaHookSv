@@ -120,7 +120,7 @@ void main(void)
 #endif
 
 	//Offset the shadow a little bit
-#if defined(HAIR_SHADOW_ENABLED) && defined(STUDIO_NF_CELSHADE_HAIR)
+#if defined(HAIR_SHADOW_ENABLED) && (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H))
 	vec3 vecLight = StudioUBO.r_plightvec.xyz;
 	vecLight.z *= 0.0001;
 	vecLight = normalize(vecLight);

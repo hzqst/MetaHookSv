@@ -899,7 +899,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/versions.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
 
 				if (hFileHandleWrite)
 				{
@@ -1029,7 +1029,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/models.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
 
 				if (hFileHandleWrite)
 				{
@@ -1081,15 +1081,13 @@ public:
 	{
 		if (!LoadLocalDatabase("scmodeldownloader/models.json"))
 		{
-			
+			BuildQueryDatabase();			
 		}
-		BuildQueryDatabase();
 
 		if (!LoadLocalVersions("scmodeldownloader/versions.json"))
 		{
-			
+			BuildQueryVersions();			
 		}
-		BuildQueryVersions();
 	}
 
 	void Shutdown() override

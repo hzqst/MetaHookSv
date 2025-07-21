@@ -8,6 +8,7 @@ layout(binding = STUDIO_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
 layout(binding = STUDIO_SPECULAR_TEXTURE) uniform sampler2D specularTex;
 layout(binding = STUDIO_RESERVED_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_RESERVED_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
+layout(binding = STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
 
 /* celshade */
 
@@ -758,6 +759,21 @@ bool IsBoneClipped(int boneindex)
 
 #endif
 
+vec4 R_CelshadeShadowDiffuseColor(vec4 diffuseColor)
+{
+	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
+	vec4 shadowDiffuseColor = texture(shadowDiffuseTex, screenTexCoord);
+
+	uint stencilValue = texture(stencilTex, screenTexCoord).r;
+
+	if((stencilValue & STENCIL_MASK_HAS_FACE) == STENCIL_MASK_HAS_FACE)
+	{
+		diffuseColor = mix(shadowDiffuseColor, diffuseColor, shadowDiffuseColor.a);
+	}
+
+	return diffuseColor;
+}
+
 void main(void)
 {
 	#if defined(CLIP_BONE_ENABLED)
@@ -790,10 +806,18 @@ void main(void)
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
+	#if (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H)) && defined(SHADOW_DIFFUSE_TEXTURE_ENABLED)
+
+		diffuseColor = R_CelshadeShadowDiffuseColor(diffuseColor);
+
+	#endif
+
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
-		specularColor.xy = rawSpecularColor.xy;
+		specularColor = rawSpecularColor;
+		specularColor.z = 0.0;//Don't write to GBuffer
+		
 		flNormalMask = rawSpecularColor.z;
 
 	#endif
@@ -860,9 +884,9 @@ void main(void)
 	//Position output
 
 	#if defined(STUDIO_NF_MASKED)
-		vec4 diffuseColorMask = SampleDiffuseTexture(v_texcoord);
+		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 
-		if(diffuseColorMask.a < 0.5)
+		if(diffuseColor.a < 0.5)
 			discard;
 	#endif
 
@@ -870,14 +894,34 @@ void main(void)
 
 #elif defined(HAIR_SHADOW_ENABLED)
 
-	//No color output
+	#if defined(STUDIO_NF_CELSHADE_FACE)
 
-	out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+		#if defined(STUDIO_NF_MASKED)
+			if(diffuseColor.a < 0.5)
+				discard;
+		#endif
 
-		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
-		out_Diffuse.xyz = rawSpecularColor.xyz;
+		//当flDepthModifier>0时，将当前像素深度修改为离屏幕更近一些，flDepthModifier越接近1，当前像素越接近屏幕
+		{
+			float flDepthModifier = 1.0 - diffuseColor.a;
+
+			float currentDepth = gl_FragCoord.z;
+			
+			// 计算新的深度值：flDepthModifier越大，深度值越小（越接近屏幕）
+			// 使用线性插值，flDepthModifier=0时保持原深度，flDepthModifier=1时深度为0
+			float newDepth = mix(currentDepth, 0.0, flDepthModifier);
+			
+			// 设置新的深度值
+			gl_FragDepth = newDepth;
+		}
+
+		out_Diffuse = diffuseColor;
+
+	#else
+
+		out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
 
 	#endif
 
