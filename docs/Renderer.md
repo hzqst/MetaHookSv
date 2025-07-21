@@ -510,6 +510,8 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 
 * `model_scale` is for adjusting the curstate.scale of lowerbod model (Sven Co-op only).
 
+* You may use `r_drawlowerbodyattachments 0` to hide attachment entites attached to local player with MOVETYPE_FOLLOW.
+
 ### Console vars
 
 `r_studio_debug` set to 1 to display debug draw for the studio models.

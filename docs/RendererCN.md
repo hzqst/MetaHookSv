@@ -495,6 +495,8 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * `model_scale` 用于下半身模型的缩放 (仅支持Sven Co-op)。
 
+* 你可以使用 `r_drawlowerbodyattachments 0` 隐藏使用MOVETYPE_FOLLOW附加到LocalPlayer实体上的实体.
+
 ### 控制台参数
 
 `r_studio_celshade` 设为 1 启用卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光。
