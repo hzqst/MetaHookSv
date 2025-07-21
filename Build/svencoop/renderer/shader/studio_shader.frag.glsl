@@ -872,7 +872,14 @@ void main(void)
 
 	//No color output
 
-	out_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
+	out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
+		out_Diffuse.xyz = rawSpecularColor.xyz;
+
+	#endif
 
 #else
 

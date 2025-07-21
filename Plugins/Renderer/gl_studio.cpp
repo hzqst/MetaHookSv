@@ -2954,8 +2954,6 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	{
 		GL_BindFrameBuffer(&s_BackBufferFBO2);
 
-		glDrawBuffer(GL_NONE);
-
 		GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 		int saved_renderfx = (*currententity)->curstate.renderfx;
@@ -2968,8 +2966,6 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
-
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		if (r_draw_gbuffer)
 			GL_BindFrameBuffer(&s_GBufferFBO);

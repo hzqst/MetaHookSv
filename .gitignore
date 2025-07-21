@@ -4,6 +4,17 @@ Debug/
 Release/
 Release_AVX2/
 intermediate/
+Build/svencoop/metahook/dlls/
+Build/svencoop/metahook/plugins/
+Build/MetaHook.exe
+Build/MetaHook_blob.exe
+Build/SDL2.dll
+Build/SDL3.dll
+
+toolsrc/MetahookInstaller/bin/
+toolsrc/MetahookInstaller/obj/
+
+.vs/
 
 # Prerequisites
 *.d

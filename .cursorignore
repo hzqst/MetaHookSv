@@ -1,9 +1,22 @@
 # Build outputs
+output/
 Debug/
 Release/
 Release_AVX2/
 intermediate/
-output/
+
+Build/svencoop/metahook/dlls/
+Build/svencoop/metahook/plugins/
+Build/MetaHook.exe
+Build/MetaHook_blob.exe
+Build/SDL2.dll
+Build/SDL3.dll
+
+toolsrc/MetahookInstaller/bin/
+toolsrc/MetahookInstaller/obj/
+
+.vs/
+
 thirdparty/
 
 *.pdb
