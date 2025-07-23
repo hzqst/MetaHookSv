@@ -10,22 +10,68 @@
 }
 {
     "classname" "studio_texture"
+    "basetexture" "face_mouth.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "face_eyeline.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "face_brow.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "eyes_hl.bmp"
+    "speculartexture" "models/player/GFL_M14/darkred.png"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "eyes_iris.bmp"
+    "speculartexture" "models/player/GFL_M14/darkred.png"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "eyes_white.bmp"
+    "speculartexture" "models/player/GFL_M14/darkred.png"
+}
+{
+    "classname" "studio_texture"
     "basetexture" "fhair1.bmp"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
 }
 {
     "classname" "studio_texture"
     "basetexture" "fhair2.bmp"
+    "replacetexture" "models/player/GFL_M14/fhair2.png"
+    "speculartexture" "models/player/GFL_M14/fhair2_specular.png"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
 }
 {
     "classname" "studio_texture"
     "basetexture" "fhair3.bmp"
+    "speculartexture" "models/player/GFL_M14/black.png"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
 }
 {
     "classname" "studio_texture"
     "basetexture" "hairb.bmp"
+    "speculartexture" "models/player/GFL_M14/black.png"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairs1.bmp"
+    "speculartexture" "models/player/GFL_M14/black.png"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairs2.bmp"
+    "speculartexture" "models/player/GFL_M14/black.png"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
 }
 {
@@ -157,6 +203,8 @@
     "celshade_midpoint" "-0.1"
     "celshade_softness" "0.05"
     "celshade_shadow_color" "160 150 150"
+    "celshade_head_offset" "1.5 -2 0"
+    "celshade_light_adjust" "0.01 0.001"
     "outline_size" "3.0"
     "outline_dark" "0.5"
     "rimlight_power" "5.0"
@@ -167,13 +215,13 @@
     "rimdark_smooth" "0.1"
     "rimdark_smooth2" "0.0 0.3"
     "rimdark_color" "50 50 50"
-    "hair_specular_exp" "1024"
-    "hair_specular_exp2" "128"
-    "hair_specular_intensity" "2.0 2.0 2.0"
-    "hair_specular_intensity2" "1.0 1.0 1.0"
+    "hair_specular_exp" "1"
+    "hair_specular_exp2" "1"
+    "hair_specular_intensity" "1.5 1.5 1.5"
+    "hair_specular_intensity2" "0 0 0"
     "hair_specular_noise" "100 108 0.05 0.05"
     "hair_specular_noise2" "100 120 0.006 0.0.005"
-    "hair_specular_smooth" "0.0 0.3"
+    "hair_specular_smooth" "0.0 0.5"
     "hair_shadow_offset" "0.3 -0.3"
 }
 {
