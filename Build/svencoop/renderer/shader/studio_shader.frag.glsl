@@ -264,7 +264,8 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
     
 	float ElightCosine = 0.8;
 
-	if (MinStrength > 0.004 && ElightCosine > 0)
+	//if (MinStrength > 0.004 && ElightCosine > 0)
+	if (ElightCosine > 0)
 	{
 		float ElightAttenuation = clamp(r2 / (ElightDot * sqrt(ElightDot)), 0.0, 1.0) * ElightCosine;
 
