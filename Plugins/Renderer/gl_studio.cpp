@@ -2125,7 +2125,7 @@ void R_StudioDrawMesh_DrawPass(
 		}
 
 		StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-		StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ALPHA | STUDIO_NF_ADDITIVE | STUDIO_NF_MASKED | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H | STUDIO_NF_FULLBRIGHT);
+		StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ALPHA | STUDIO_NF_ADDITIVE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H | STUDIO_NF_FULLBRIGHT);
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAlphaMeshes)
 	{
@@ -2196,48 +2196,48 @@ void R_StudioDrawMesh_DrawPass(
 				return;
 			}
 		}
+	}
 
-		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+	{
+		//Texture unit 6 = Stencil texture
+		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
 		{
-			//Texture unit 6 = Stencil texture
-			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+			if (s_BackBufferFBO2.s_hBackBufferStencilView)
 			{
-				if (s_BackBufferFBO2.s_hBackBufferStencilView)
-				{
-					glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
-					glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
-					glActiveTexture(GL_TEXTURE0);
+				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+				glActiveTexture(GL_TEXTURE0);
 
-					StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
-				}
+				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
 			}
 		}
+	}
 
-		if (StudioProgramState & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
+	if (StudioProgramState & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
+	{
+		//Texture unit 6 = Stencil texture
+		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
 		{
-			//Texture unit 6 = Stencil texture
-			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+			if (s_BackBufferFBO2.s_hBackBufferStencilView)
 			{
-				if (s_BackBufferFBO2.s_hBackBufferStencilView)
-				{
-					glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
-					glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
-					glActiveTexture(GL_TEXTURE0);
+				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+				glActiveTexture(GL_TEXTURE0);
 
-					StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
-				}
+				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
 			}
-			if (!(StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED))
+		}
+		if (!(StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED))
+		{
+			//Texture unit 8 = Shadow diffuse texture
+			if (s_BackBufferFBO2.s_hBackBufferTex)
 			{
-				//Texture unit 8 = Shadow diffuse texture
-				if (s_BackBufferFBO2.s_hBackBufferTex)
-				{
-					glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE);
-					glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
-					glActiveTexture(GL_TEXTURE0);
+				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
+				glActiveTexture(GL_TEXTURE0);
 
-					StudioProgramState |= STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED;
-				}
+				StudioProgramState |= STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED;
 			}
 		}
 	}
