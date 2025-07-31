@@ -667,6 +667,22 @@ All textures are converted from texgamma color space to linear color space, and 
 
 * Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
 
+`r_linear_blend_shift 0`: Don't shift color/alpha for transparent object at all in linear space.
+
+`r_linear_blend_shift 1`: Shift color/alpha for transparent object to how it looks like in vanilla engine.
+
+* `r_linear_blend_shift` can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted blend factor. (Only works when r_gamma_blend off)
+
+`r_linear_fog_shift 0` : Shift the fog factor to lower value.
+
+`r_linear_fog_shift 1` Don't shift the fog factor to lower value.
+
+`r_linear_fog_shiftpow` : Shift the fog factor to lower value with `pow(fogFactor, r_linear_fog_shiftpow)`.
+
+* `r_linear_fog_shiftpow` Default value: 0.3 means fogFactor = fogFactor ^ 0.3
+
+* `r_linear_fog_shiftpow` Allowed value: 0.001 to 1000.0
+
 ## FOV (Field of View)
 
 ### Dedicated viewmodel FOV

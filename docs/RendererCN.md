@@ -650,6 +650,22 @@ WEBP (RGB8 / RGBA8)
 
 * 对伽马矫正后的颜色进行任何数学运算（如透明混合）得到的结果都是物理错误的，也就是说Valve默认的混合策略是物理错误的，只有在线性空间对颜色进行数学运算才是物理上正确的！具体请参考：https://zhuanlan.zhihu.com/p/510697986
 
+`r_linear_blend_shift 0`: 不要强制偏移透明度
+
+`r_linear_blend_shift 1`: 强制偏移透明度，过低的透明度或过高的透明度会往0.5进行修正
+
+* `r_linear_blend_shift` 可以在 0 ~ 1 之间对强制偏移透明度进行线性插值，该控制台参数的值越高，最终的透明度越接近强制偏移透明度 (该控制台参数仅在`r_gamma_blend 0`下可用)
+
+`r_linear_fog_shift 0`: 不要强制偏移雾比例
+
+`r_linear_fog_shift 1`: 强制偏移雾比例
+
+`r_linear_fog_shiftpow` : 强制偏移雾比例至更低的值，公式为 `pow(fogFactor, r_linear_fog_shiftpow)`。(该控制台参数仅在`r_gamma_blend 0`下可用)
+
+* `r_linear_fog_shiftpow` 默认值：0.3， 对应公式为 fogFactor = fogFactor ^ 0.3
+
+* `r_linear_fog_shiftpow` 允许范围: 0.001 ~ 1000.0
+
 ## FOV (视场角度)
 
 ### 第一人称武器模型独立FOV
@@ -728,3 +744,142 @@ WEBP (RGB8 / RGBA8)
 `r_leaf_lazy_load 1`: 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每一帧加载一个bsp叶子节点所需的绘制指令至显存，直至所有绘制指令全部加载至显存。（某些地图可能需要数十秒才会全部加载完毕）*注：可能会增加整体显存占用量
 
 `r_leaf_lazy_load 2` (默认): 在加载地图时只将绘制地图所需的顶点和索引加载至显存。后续每次进入一个新的bsp叶子节点时，才加载该节点所需的绘制指令至显存。*注：可能会降低1%low帧
+
+# 新的实体
+
+实体从两个来源加载：内部和外部。当前地图的BSP实体块作为内部加载，`/maps/(CurrentMapName)_entity.txt`作为外部加载。
+
+如果找不到`/maps/(CurrentMapName)_entity.txt`，则将加载`/renderer/default_entity.txt`。
+
+实体块应遵循以下格式：
+
+```
+{
+"origin" "123 456 789"
+"angles" "0 0 0"
+"classname" "info_player_start"
+}
+```
+
+你可以使用控制台命令`r_reload`从两个来源重新加载实体。
+
+你可以使用[bspguy](https://github.com/wootguy/bspguy)向BSP文件添加实体或将实体写入`/maps/(MapName)_entity.txt`。
+
+## env_shadow_control
+
+`env_shadow_control`是一个点实体，用于控制整个地图的动态阴影投射，包括最大投射距离、投射方向和阴影颜色。
+
+### 键值
+
+`angles`是阴影的方向，以PitchYawRoll格式。例如`"angles" "90 0 0"`
+
+`distfade`是阴影开始淡出的距离，以及阴影允许投射的最大距离，以英寸为单位。例如`"distfade" "64 128"`
+
+`lumfade`是阴影开始淡出的亮度，以及阴影允许投射的最小亮度，必须在0到255之间。例如`"lumfade" "64 32"`
+
+`color`是阴影的颜色，以RGBA8格式。例如`"color" "0 0 0 128"`
+
+`high_distance`是实体在高质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"high_distance" "400"`
+
+`high_scale`是缩放高质量阴影贴图中实体模型大小的缩放因子。例如`"high_scale" "4"`
+
+`medium_distance`是实体在中等质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"medium_distance" "800"`
+
+`medium_scale`是缩放中等质量阴影贴图中实体模型大小的缩放因子。例如`"medium_scale" "2"`
+
+`low_distance`是实体在低质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"low_distance" "1200"`
+
+`low_scale`是缩放低质量阴影贴图中实体模型大小的缩放因子。例如`"low_scale" "0.5"`
+
+## env_ssr_control
+
+`env_ssr_control`是一个点实体，用于控制SSR效果的屏幕空间反射。
+
+### 键值
+
+`ray_step`控制光线步进迭代的步长。例如`"ray_step" "5.0"`
+
+`iter_count`控制光线步进的最大迭代次数。例如`"distance_bias" "0.2"`
+
+`adaptive_step`启用或禁用自适应步进以加速光线步进过程。例如`"adaptive_step" "1"`或`"adaptive_step" "0"`
+
+`exponential_step`启用或禁用指数步进以加速光线步进过程。例如`"exponential_step" "1"`或`"exponential_step" "0"`
+
+`binary_search`启用或禁用二分搜索以加速光线步进过程。例如`"binary_search" "1"`或`"binary_search" "0"`
+
+`fade`控制反射光线击中接近屏幕边缘像素时的淡出效果。例如`"fade" "0.8 1.0"`
+
+## env_hdr_control
+
+`env_hdr_control`是一个点实体，用于控制HDR效果。
+
+### 键值
+
+`blurwidth`是HDR的辉光强度。例如`"blurwidth" "0.1"`
+
+`exposure`是HDR的曝光强度。例如`"exposure" "0.8"`
+
+`darkness`是HDR的暗度强度。例如`"darkness" "1.4"`
+
+`adaptation`是HDR的亮度适应速度。例如`"adaptation" "50"`
+
+## env_water_control
+
+`env_water_control`是一个点实体，用于控制水面着色器。
+
+### 键值
+
+`basetexture`是要控制的水面基础纹理的名称，`*`用于通配符（仅支持后缀通配符）。例如`"basetexture" "!radio"`或`"basetexture" "!toxi*"`
+
+`normalmap`是用于湍流效果的法线贴图路径。例如`"normalmap" "renderer/texture/water_normalmap.tga"`
+
+`fresnelfactor`控制反射强度。例如`"fresnelfactor" "0.4"`
+
+`depthfactor`控制水面边缘羽化的强度。例如`"depthfactor" "0.02 0.01"`
+
+`normfactor`控制基于法线贴图的湍流强度。例如`"normfactor" "1.0"`
+
+`minheight`高度小于此值的水面实体将不会用着色器程序渲染。例如`"minheight" "7.5"`
+
+`maxtrans`控制水的最大透明度，必须在0到255之间。例如`"maxtrans" "128"`
+
+`speedrate`控制WATER_LEVEL_LEGACY模式下水湍流的速度，或WATER_LEVEL_LEGACY_RIPPLE模式下波纹效果的速度。例如`"speedrate" "1.0"`。对于WATER_LEVEL_LEGACY_RIPPLE模式的水，500到1000之间的值是合理的。
+
+`level`控制渲染等级。
+
+|  可能的值                      | 结果                                                                      |
+|        ----                          | ----                                                                        |
+| "level" "0"                          | 渲染为传统水面                                                      |
+| "level" "WATER_LEVEL_LEGACY"         | 渲染为传统水面                                                      |
+| "level" "1"                          | 仅反射天空盒                                                    |
+| "level" "WATER_LEVEL_REFLECT_SKYBOX" | 仅反射天空盒                                                    |
+| "level" "2"                          | 反射天空盒和世界                                              |
+| "level" "WATER_LEVEL_REFLECT_WORLD"  | 反射天空盒和世界                                              |
+| "level" "3"                          | 反射天空盒、世界、实体和粒子                         |
+| "level" "WATER_LEVEL_REFLECT_ENTITY" | 反射天空盒、世界、实体和粒子                         |
+| "level" "4"                          | 使用SSR反射，仅反射屏幕空间中的像素              |
+| "level" "WATER_LEVEL_REFLECT_SSR"    | 使用SSR反射，仅反射屏幕空间中的像素              |
+| "level" "5"                          | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果  |
+| "level" "WATER_LEVEL_LEGACY_RIPPLE"  | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果  |
+
+## light_dynamic
+
+`light_dynamic`是一个作为隐形点光源的点实体。
+
+动态光源在游戏中实时计算，这意味着它们具有更高的处理成本，但比静态照明更加灵活。
+
+### 键值
+
+`origin`是此实体在世界中的中心位置。例如`"origin" "123 456 789"`
+
+`_light`是动态光源的RGB渲染颜色，必须在0到255之间。例如`"_light" "192 192 192"`
+
+`_distance`是光源允许投射的距离，以英寸为单位。例如`"_distance" "300"`
+
+`_ambient`是动态光源的环境光强度。例如`"_ambient" "0.0"`
+
+`_diffuse`是动态光源的漫反射强度。例如`"_diffuse" "0.1"`
+
+`_specular`是动态光源的高光反射强度。例如`"_specular" "0.1"`
+
+`_specularpow`是动态光源的高光反射强度。例如`"_specularpow" "10.0"`
