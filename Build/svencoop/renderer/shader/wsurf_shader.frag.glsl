@@ -320,10 +320,16 @@ void main()
 		vec4 diffuseColor = texture(diffuseTex, baseTexcoord);
 
 	#endif
-
-	#if defined(ALPHA_SOLID_ENABLED)
+	
+	#if defined(DECAL_ENABLED)
 		
-		if(diffuseColor.a <= SceneUBO.r_alphamin)
+		//always
+		if (diffuseColor.a < 0.001)
+		   discard;
+
+	#elif defined(ALPHA_SOLID_ENABLED)
+		
+		if(diffuseColor.a < SceneUBO.r_alphamin)
 			discard;
 
 	#endif

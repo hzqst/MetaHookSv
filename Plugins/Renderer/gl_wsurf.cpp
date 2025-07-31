@@ -1396,7 +1396,6 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		indices.push_back(static_cast<uint32_t>(i));
 	}
 	
-	
 	// 检查三个顶点是否形成有效的三角形（非退化）
 	auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
 		const auto& v0 = vPolyVertices[i0].pos;
@@ -1409,8 +1408,8 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		vec3_t cross;
 		CrossProduct(edge1, edge2, cross);
 		
-		float length = VectorLength(cross);
-		return length > 1e-6f; // 避免退化三角形
+		float length = VectorLength(cross); //避免退化三角形
+		return length > 0.001f; // Fix #648 1e-6f; 
 	};
 	
 	// 检查点是否在三角形内（使用重心坐标）

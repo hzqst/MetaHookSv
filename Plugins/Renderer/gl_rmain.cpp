@@ -4274,39 +4274,11 @@ void R_CreateLowerBodyModel()
 	if (!state->modelindex || (state->effects & EF_NODRAW))
 		return;
 
-#if 0
-
-	if (cl_stats[0] <= 0)
-		return;
-
-	//TODO: move to studio renderer
-	auto model = IEngineStudio.SetupPlayerModel(playerindex);
-
-	if (!model)
-		return;
-
-	if (g_bIsCounterStrike)
-	{
-		//Counter-Strike redirects playermodel in a pretty tricky way
-		int modelindex = 0;
-		model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
-	}
-
-	if (!model)
-		return;
-
-	StudioAnimActivityType ActivityType{};
-	int iAnimControlFlags{};
-	StudioGetActivityType(model, R_GetPlayerState(playerindex), &ActivityType, &iAnimControlFlags);
-
-	if (ActivityType == StudioAnimActivityType_Death)
-		return;
-
-#endif
-
 	memcpy(&LocalPlayer->curstate, state, sizeof(*state));
 	VectorCopy(cl_simorg, LocalPlayer->origin);
 	VectorCopy(cl_simorg, LocalPlayer->curstate.origin);
+
+	gEngfuncs.Con_DPrintf("(%.2f %.2f %.2f)\n", cl_simorg[0], cl_simorg[1], cl_simorg[2]);
 
 	//Just like the VoiceStatus icons.
 	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, LocalPlayer);
