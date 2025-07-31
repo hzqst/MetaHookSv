@@ -1409,7 +1409,7 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		CrossProduct(edge1, edge2, cross);
 		
 		float length = VectorLength(cross); //避免退化三角形
-		return length > 0.001f; // Fix #648 1e-6f; 
+		return length > 0.01f; // Fix #648 1e-6f; 
 	};
 	
 	// 检查点是否在三角形内（使用重心坐标）
