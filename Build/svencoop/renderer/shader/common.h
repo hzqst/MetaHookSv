@@ -209,10 +209,12 @@ struct scene_ubo_t{
 	float z_near;
 	float z_far;
 	float r_alphamin;
-	float r_additive_shift;
+	float r_linear_blend_shift;
 	float r_lightscale;
 	vec4 r_filtercolor;
 	vec4 r_lightstylevalue[64];
+	float r_linear_fog_shift;
+	float r_linear_fog_shiftpow;
 };
 
 struct dlight_ubo_t{
@@ -607,6 +609,48 @@ vec4 ProcessOtherLinearColor(vec4 color)
 	return color;
 }
 
+float ProcessLinearFogShift(float fogFactor)
+{
+	float shifted = pow(fogFactor, SceneUBO.r_linear_fog_shiftpow);
+
+	return mix(fogFactor, shifted, SceneUBO.r_linear_fog_shift);
+
+}
+
+float ProcessLinearBlendShift(float color)
+{
+	float shifted = pow((color - 0.5), 3.0) * 4.0 + 0.5;
+
+	return mix(color, shifted, SceneUBO.r_linear_blend_shift);
+}
+
+vec4 ProcessLinearBlendShift(vec4 color)
+{
+	#if defined(GAMMA_BLEND_ENABLED)
+
+		
+
+	#else
+
+		#if defined(ADDITIVE_BLEND_ENABLED)
+
+			color.r = ProcessLinearBlendShift(color.r);
+			color.g = ProcessLinearBlendShift(color.g);
+			color.b = ProcessLinearBlendShift(color.b);
+
+		#endif
+
+		#if defined(ALPHA_BLEND_ENABLED)
+
+			color.a = ProcessLinearBlendShift(color.a);
+			
+		#endif
+
+	#endif
+
+	return color;
+}
+
 #if defined(IS_FRAGMENT_SHADER)
 
 	void ClipPlaneTest(vec3 worldpos, vec3 normal)
@@ -651,6 +695,10 @@ vec4 ProcessOtherLinearColor(vec4 color)
 
 		fogFactor = clamp(fogFactor, 0, 1);
 
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			fogFactor = ProcessLinearFogShift(fogFactor);
+		#endif
+
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
@@ -679,6 +727,10 @@ vec4 ProcessOtherLinearColor(vec4 color)
 
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
 
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			fogFactor = ProcessLinearFogShift(fogFactor);
+		#endif
+
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
 		fogColor = ProcessOtherGammaColor3(fogColor);
@@ -702,8 +754,14 @@ vec4 ProcessOtherLinearColor(vec4 color)
 	vec4 CalcFogWithDistance(vec4 color, float z)
 	{
 		float f = SceneUBO.fogDensity * z;
+
 		float fogFactor = exp(-f*f);
+
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
+		
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			fogFactor = ProcessLinearFogShift(fogFactor);
+		#endif
 
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 

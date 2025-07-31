@@ -24,7 +24,7 @@
 "speedrate" "1.0"
 "origin" "0 0 0"
 "angles" "0 0 0"
-"level" "WATER_LEVEL_REFLECT_WORLD"
+"level" "WATER_LEVEL_REFLECT_ENTITY"
 }
 {
 "classname" "env_flashlight_control"

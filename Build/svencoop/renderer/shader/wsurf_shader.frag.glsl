@@ -451,7 +451,7 @@ vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
 		#if defined(DECAL_ENABLED)
 
-			out_Diffuse = diffuseColor * detailColor * entityColor;
+			out_Diffuse = ProcessLinearBlendShift(diffuseColor * detailColor * entityColor);
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, out_Diffuse.a);
 			out_Specular = specularColor;
 
@@ -476,7 +476,7 @@ vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
 	#endif
 
-		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * entityColor);
+		vec4 color = CalcFog(ProcessLinearBlendShift(diffuseColor * lightmapColor * detailColor * entityColor));
 
 		GatherFragment(color);
 

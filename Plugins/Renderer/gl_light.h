@@ -177,6 +177,7 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DFINAL_SSR_ADAPTIVE_STEP_ENABLED		0x20ull
 #define DFINAL_SSR_EXPONENTIAL_STEP_ENABLED		0x40ull
 #define DFINAL_SSR_BINARY_SEARCH_ENABLED		0x80ull
+#define DFINAL_LINEAR_FOG_SHIFT_ENABLED			0x100ull
 
 #define DLIGHT_POINT					0
 #define DLIGHT_SPOT						1

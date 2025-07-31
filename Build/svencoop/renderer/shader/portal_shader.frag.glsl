@@ -51,7 +51,7 @@ void main()
 
 #endif
 
-	vec4 color = CalcFog(vFinalColor);
+	vec4 color = CalcFog(ProcessLinearBlendShift(vFinalColor));
 
 	out_Diffuse = color;
 }

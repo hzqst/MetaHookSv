@@ -83,6 +83,9 @@ void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 		if (state & DFINAL_SSR_BINARY_SEARCH_ENABLED)
 			defs << "#define SSR_BINARY_SEARCH_ENABLED\n";
 
+		if (state & DFINAL_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\dfinal_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -143,6 +146,7 @@ const program_state_mapping_t s_DFinalProgramStateName[] = {
 { DFINAL_SSR_ADAPTIVE_STEP_ENABLED		,"DFINAL_SSR_ADAPTIVE_STEP_ENABLED"		},
 { DFINAL_SSR_EXPONENTIAL_STEP_ENABLED	,"DFINAL_SSR_EXPONENTIAL_STEP_ENABLED"	},
 { DFINAL_SSR_BINARY_SEARCH_ENABLED		,"DFINAL_SSR_BINARY_SEARCH_ENABLED"		},
+{ DFINAL_LINEAR_FOG_SHIFT_ENABLED		,"DFINAL_LINEAR_FOG_SHIFT_ENABLED"		},
 };
 
 void R_SaveDFinalProgramStates(void)
@@ -1258,6 +1262,11 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 		if (r_ssr_binary_search->GetValue())
 			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
+	}
+
+	if (r_linear_fog_shift->value > 0)
+	{
+		FinalProgramState |= DFINAL_LINEAR_FOG_SHIFT_ENABLED;
 	}
 
 	R_UseDFinalProgram(FinalProgramState, NULL);

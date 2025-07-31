@@ -941,7 +941,7 @@ void main(void)
 
 	#else
 
-		vec4 finalColor = CalcFog(diffuseColor * lightmapColor);
+		vec4 finalColor = CalcFog(ProcessLinearBlendShift(diffuseColor * lightmapColor));
 
 		GatherFragment(finalColor);
 

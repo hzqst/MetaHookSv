@@ -333,9 +333,11 @@ extern cvar_t *dev_overview_color;
 
 extern cvar_t *r_gamma_blend;
 
-extern cvar_t *r_alpha_shift;
+extern cvar_t *r_linear_blend_shift;
 
-extern cvar_t *r_additive_shift;
+extern cvar_t *r_linear_fog_shift;
+
+extern cvar_t *r_linear_fog_shiftpow;
 
 extern cvar_t * r_fog_trans;
 

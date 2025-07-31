@@ -4578,7 +4578,9 @@ void R_SetupSceneUBO(void)
 	SceneUBO.z_near = r_znear;
 	SceneUBO.z_far = r_zfar;
 	SceneUBO.r_alphamin = gl_alphamin->value;
-	SceneUBO.r_additive_shift = r_additive_shift->value;
+	SceneUBO.r_linear_blend_shift = math_clamp(r_linear_blend_shift->value, 0, 1);
+	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
+	SceneUBO.r_linear_fog_shiftpow = math_clamp(r_linear_fog_shiftpow->value, 0.001, 1000);
 
 	if (gl_overbright->value)
 		SceneUBO.r_lightscale = 1;

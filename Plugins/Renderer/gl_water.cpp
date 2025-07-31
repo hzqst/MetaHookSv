@@ -1458,7 +1458,7 @@ void R_DrawWaterSurfaceModel(
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		color[3] = (*r_blend);
 
-	if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY)
+	if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && (int)r_water->value > 0)
 	{
 		R_DrawWaterSurfaceModelReflective(
 			pModel,
@@ -1470,7 +1470,7 @@ void R_DrawWaterSurfaceModel(
 			color
 		);
 	}
-	else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value > 0)
+	else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE && (int)r_water->value > 0)
 	{
 		R_DrawWaterSurfaceModelRipple(
 			pModel,

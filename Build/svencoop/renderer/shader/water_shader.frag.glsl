@@ -164,7 +164,7 @@ void main()
 
 #else
 
-	vec4 color = CalcFog(vFinalColor);
+	vec4 color = CalcFog(ProcessLinearBlendShift(vFinalColor));
 
 	GatherFragment(color);
 

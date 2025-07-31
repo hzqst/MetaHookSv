@@ -28,7 +28,7 @@ void main()
 	
 	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
-	vec4 finalColor = CalcFog(baseColor * lightmapColor);
+	vec4 finalColor = CalcFog(ProcessLinearBlendShift(baseColor * lightmapColor));
 
 	#if defined(OIT_BLEND_ENABLED)
 		

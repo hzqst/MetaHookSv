@@ -320,9 +320,11 @@ cvar_t *dev_overview_color = NULL;
 
 cvar_t* r_gamma_blend = NULL;
 
-cvar_t *r_alpha_shift = NULL;
+cvar_t *r_linear_blend_shift = NULL;
 
-cvar_t *r_additive_shift = NULL;
+cvar_t *r_linear_fog_shift = NULL;
+
+cvar_t *r_linear_fog_shiftpow = NULL;
 
 cvar_t* r_fog_trans = NULL;
 
@@ -2671,9 +2673,28 @@ void R_InitCvars(void)
 
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	
-	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	/*
+		r_linear_blend_shift 0: Don't shift color/alpha for transparent object at all in linear space
+		r_linear_blend_shift 1: Shift color/alpha for transparent object to how it looks like in vanilla engine.
+		r_linear_blend_shift can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted blend factor.
+		Only works when r_gamma_blend off
+	*/
+	r_linear_blend_shift = gEngfuncs.pfnRegisterVariable("r_linear_blend_shift", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	/*
+		r_linear_fog_shift 0: Don't shift fog factor at all in linear space
+		r_linear_fog_shift 1: Shift color/alpha for to how it looks like in vanilla engine, in linear space.
+		r_linear_fog_shift can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted fog factor.
+		Only works when r_gamma_blend off
+	*/
+	r_linear_fog_shift = gEngfuncs.pfnRegisterVariable("r_linear_fog_shift", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	/*
+		r_linear_fog_shiftpow : Shift the fog factor to lower value with pow(fogFactor, r_linear_fog_shiftpow). 
+		Default value: 0.3 means fogFactor = fogFactor ^ 0.3
+		Allowed value: 0.001 to 1000.0
+	*/
+	r_linear_fog_shiftpow = gEngfuncs.pfnRegisterVariable("r_linear_fog_shiftpow", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		r_fog_trans 0: Fog don't affect any transparent objects
