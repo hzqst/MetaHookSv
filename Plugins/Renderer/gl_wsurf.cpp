@@ -1372,9 +1372,6 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer)
 {
-	// 清空输出缓冲区
-	vOutIndiceBuffer.clear();
-	
 	// 需要至少3个顶点才能形成三角形
 	if (vPolyVertices.size() < 3)
 		return;

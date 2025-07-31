@@ -341,6 +341,8 @@ extern cvar_t * r_fog_trans;
 
 extern cvar_t* r_drawlowerbody;
 
+extern cvar_t* r_drawlowerbodypitch;
+
 extern cvar_t* r_sprite_lerping;
 
 extern cvar_t* r_detailskytextures;

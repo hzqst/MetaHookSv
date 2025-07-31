@@ -334,6 +334,8 @@ cvar_t* r_drawlowerbody = NULL;
 
 cvar_t* r_drawlowerbodyattachments = NULL;
 
+cvar_t* r_drawlowerbodypitch = NULL;
+
 cvar_t* r_leaf_lazy_load = NULL;
 
 cvar_t* r_wsurf_parallax_scale = NULL;
@@ -2688,6 +2690,8 @@ void R_InitCvars(void)
 
 	r_drawlowerbodyattachments = gEngfuncs.pfnRegisterVariable("r_drawlowerbodyattachments", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	r_drawlowerbodypitch = gEngfuncs.pfnRegisterVariable("r_drawlowerbodypitch", "45", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	/*
 	r_leaf_lazy_load 0: Load all GPU resouces into VRAM at once when loading map
 	r_leaf_lazy_load 1: Load only necessary vertices and indices into VRAM when loading map, generate and load indirect draw command into VRAM in next few frames
@@ -4272,6 +4276,11 @@ void R_CreateLowerBodyModel()
 	auto state = R_GetPlayerState(LocalPlayer->index);
 
 	if (!state->modelindex || (state->effects & EF_NODRAW))
+		return;
+
+	auto pitch = (*r_refdef.viewangles)[0] * -1;
+
+	if (pitch > r_drawlowerbodypitch->value)
 		return;
 
 	memcpy(&LocalPlayer->curstate, state, sizeof(*state));
