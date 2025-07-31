@@ -4278,8 +4278,6 @@ void R_CreateLowerBodyModel()
 	VectorCopy(cl_simorg, LocalPlayer->origin);
 	VectorCopy(cl_simorg, LocalPlayer->curstate.origin);
 
-	gEngfuncs.Con_DPrintf("(%.2f %.2f %.2f)\n", cl_simorg[0], cl_simorg[1], cl_simorg[2]);
-
 	//Just like the VoiceStatus icons.
 	gEngfuncs.CL_CreateVisibleEntity(ET_NORMAL, LocalPlayer);
 
