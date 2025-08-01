@@ -2691,10 +2691,10 @@ void R_InitCvars(void)
 
 	/*
 		r_linear_fog_shiftpow : Shift the fog factor to lower value with pow(fogFactor, r_linear_fog_shiftpow). 
-		Default value: 0.3 means fogFactor = fogFactor ^ 0.3
+		Default value: 0.98 means fogFactor = fogFactor ^ 0.98
 		Allowed value: 0.001 to 1000.0
 	*/
-	r_linear_fog_shiftpow = gEngfuncs.pfnRegisterVariable("r_linear_fog_shiftpow", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_linear_fog_shiftpow = gEngfuncs.pfnRegisterVariable("r_linear_fog_shiftpow", "0.98", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		r_fog_trans 0: Fog don't affect any transparent objects
