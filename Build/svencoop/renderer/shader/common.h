@@ -214,7 +214,9 @@ struct scene_ubo_t{
 	vec4 r_filtercolor;
 	vec4 r_lightstylevalue[64];
 	float r_linear_fog_shift;
-	float r_linear_fog_shiftpow;
+	float r_linear_fog_shiftz;
+	float padding2;
+	float padding3;
 };
 
 struct dlight_ubo_t{
@@ -609,17 +611,20 @@ vec4 ProcessOtherLinearColor(vec4 color)
 	return color;
 }
 
-float ProcessLinearFogShift(float fogFactor)
+float ProcessLinearFogShift(float z)
 {
-	float shifted = pow(fogFactor, SceneUBO.r_linear_fog_shiftpow);
+	float shifted = z * SceneUBO.r_linear_fog_shiftz;
 
-	return mix(fogFactor, shifted, SceneUBO.r_linear_fog_shift);
-
+	return mix(z, shifted, SceneUBO.r_linear_fog_shift);
 }
 
 float ProcessLinearBlendShift(float color)
 {
-	float shifted = pow((color - 0.5), 3.0) * 4.0 + 0.5;
+	//float shifted = color;//4.0 * pow(color, 3.0) - 5.2 * pow(color, 2.0) + 2.2 * color;
+	
+	//float shifted = pow((color - 0.5), 3.0) * 4.0 + 0.5;
+
+	float shifted = pow(color, 2.0);
 
 	return mix(color, shifted, SceneUBO.r_linear_blend_shift);
 }
@@ -689,13 +694,13 @@ vec4 ProcessLinearBlendShift(vec4 color)
 
 #if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-	vec4 CalcFogWithDistance(vec4 color, float z)
+	vec4 CalcFog(vec4 color, float distance)
 	{
-		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			z = ProcessLinearFogShift(z);
-		#endif
+#if defined(LINEAR_FOG_SHIFT_ENABLED)
+		distance = ProcessLinearFogShift(distance);
+#endif
 
-		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+		float fogFactor = ( SceneUBO.fogEnd - distance ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 
 		fogFactor = clamp(fogFactor, 0, 1);
 
@@ -712,20 +717,15 @@ vec4 ProcessLinearBlendShift(vec4 color)
 		return color;
 	}
 
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
-
 #elif defined(EXP_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-	vec4 CalcFogWithDistance(vec4 color, float z)
+	vec4 CalcFog(vec4 color, float distance)
 	{
 		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			z = ProcessLinearFogShift(z);
+			distance = ProcessLinearFogShift(distance);
 		#endif
 
-		float f = SceneUBO.fogDensity * z;
+		float f = SceneUBO.fogDensity * distance;
 
 		float fogFactor = exp( -f );
 
@@ -744,21 +744,16 @@ vec4 ProcessLinearBlendShift(vec4 color)
 		return color;
 	}
 
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
 
 #elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-	vec4 CalcFogWithDistance(vec4 color, float z)
+	vec4 CalcFog(vec4 color, float distance)
 	{
-
 		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			z = ProcessLinearFogShift(z);
+			distance = ProcessLinearFogShift(distance);
 		#endif
 
-		float f = SceneUBO.fogDensity * z;
+		float f = SceneUBO.fogDensity * distance;
 
 		float fogFactor = exp(-f*f);
 
@@ -777,19 +772,9 @@ vec4 ProcessLinearBlendShift(vec4 color)
 		return color;
 	}
 
-	vec4 CalcFog(vec4 color)
-	{
-		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-	}
-
 #else
 
-	vec4 CalcFog(vec4 color)
-	{
-		return color;
-	}
-
-	vec4 CalcFogWithDistance(vec4 color, float z)
+	vec4 CalcFog(vec4 color, float distance)
 	{
 		return color;
 	}

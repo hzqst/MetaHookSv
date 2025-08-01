@@ -1245,12 +1245,12 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 			FinalProgramState |= DFINAL_EXP2_FOG_ENABLED;
 	}
 
-	if (r_wsurf_sky_fog->value)
+	if ((int)r_wsurf_sky_fog->value > 0)
 	{
 		FinalProgramState |= DFINAL_SKY_FOG_ENABLED;
 	}
 
-	if (r_ssr->value)
+	if ((int)r_ssr->value > 0)
 	{
 		FinalProgramState |= DFINAL_SSR_ENABLED;
 

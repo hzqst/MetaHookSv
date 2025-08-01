@@ -151,11 +151,11 @@ void main()
 
 #endif
 
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+
 #if defined(GBUFFER_ENABLED)
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
-
-	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 	out_Diffuse = vFinalColor;
 	out_Lightmap = vec4(1.0, 1.0, 1.0, 1.0);
@@ -164,7 +164,10 @@ void main()
 
 #else
 
-	vec4 color = CalcFog(ProcessLinearBlendShift(vFinalColor));
+	vec4 color = CalcFog(
+		ProcessLinearBlendShift(vFinalColor),
+		flDistanceToFragment
+	);
 
 	GatherFragment(color);
 

@@ -763,6 +763,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
 			defs << "#define LEGACY_ELIGHT_ENABLED\n";
 
+		if (state & STUDIO_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -1195,6 +1198,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
+{ STUDIO_LINEAR_FOG_SHIFT_ENABLED		,"STUDIO_LINEAR_FOG_SHIFT_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2295,6 +2299,11 @@ void R_StudioDrawMesh_DrawPass(
 			else if (r_fog_mode == GL_EXP2)
 			{
 				StudioProgramState |= STUDIO_EXP2_FOG_ENABLED;
+			}
+
+			if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+			{
+				StudioProgramState |= STUDIO_LINEAR_FOG_SHIFT_ENABLED;
 			}
 		}
 	}

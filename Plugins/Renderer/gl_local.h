@@ -337,7 +337,7 @@ extern cvar_t *r_linear_blend_shift;
 
 extern cvar_t *r_linear_fog_shift;
 
-extern cvar_t *r_linear_fog_shiftpow;
+extern cvar_t *r_linear_fog_shiftz;
 
 extern cvar_t * r_fog_trans;
 

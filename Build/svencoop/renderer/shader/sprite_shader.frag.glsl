@@ -58,12 +58,12 @@ void main(void)
 	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
 
 	vec3 vNormal = normalize(v_normal.xyz);
+	
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 #if defined(GBUFFER_ENABLED)
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
-
-	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 	out_Diffuse = baseColor;
 	out_Lightmap = lightmapColor;
@@ -72,7 +72,10 @@ void main(void)
 
 #else
 
-	vec4 finalColor = CalcFog(ProcessLinearBlendShift(baseColor * lightmapColor));
+	vec4 finalColor = CalcFog(
+		ProcessLinearBlendShift(baseColor * lightmapColor),
+		flDistanceToFragment
+		);
 
 	#if defined(OIT_BLEND_ENABLED)
 		

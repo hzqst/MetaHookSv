@@ -103,6 +103,9 @@ void R_UseWaterProgram(program_state_t state, water_program_t* progOutput)
 		if (state & WATER_GAMMA_BLEND_ENABLED)
 			defs << "#define GAMMA_BLEND_ENABLED\n";
 
+		if (state & WATER_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
 		if ((state & WATER_OIT_BLEND_ENABLED) && g_bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
@@ -152,6 +155,7 @@ const program_state_mapping_t s_WaterProgramStateName[] = {
 { WATER_ADDITIVE_BLEND_ENABLED			, "WATER_ADDITIVE_BLEND_ENABLED"	 },
 { WATER_OIT_BLEND_ENABLED				, "WATER_OIT_BLEND_ENABLED"			 },
 { WATER_GAMMA_BLEND_ENABLED				, "WATER_GAMMA_BLEND_ENABLED"		 },
+{ WATER_LINEAR_FOG_SHIFT_ENABLED		, "WATER_LINEAR_FOG_SHIFT_ENABLED"	 },
 };
 
 void R_SaveWaterProgramStates(void)
@@ -1113,6 +1117,11 @@ void R_DrawWaterSurfaceModelReflective(
 				{
 					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
 				}
+
+				if (!R_IsRenderingGammaBlending() && (int)r_linear_fog_shift->value > 0)
+				{
+					WaterProgramState |= WATER_LINEAR_FOG_SHIFT_ENABLED;
+				}
 			}
 		}
 	}
@@ -1268,6 +1277,11 @@ void R_DrawWaterSurfaceModelRipple(
 				{
 					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
 				}
+
+				if (!R_IsRenderingGammaBlending() && (int)r_linear_fog_shift->value > 0)
+				{
+					WaterProgramState |= WATER_LINEAR_FOG_SHIFT_ENABLED;
+				}
 			}
 		}
 	}
@@ -1382,6 +1396,11 @@ void R_DrawWaterSurfaceModelLegacy(
 				else if (r_fog_mode == GL_EXP2)
 				{
 					WaterProgramState |= WATER_EXP2_FOG_ENABLED;
+				}
+
+				if (!R_IsRenderingGammaBlending() && (int)r_linear_fog_shift->value > 0)
+				{
+					WaterProgramState |= WATER_LINEAR_FOG_SHIFT_ENABLED;
 				}
 			}
 		}

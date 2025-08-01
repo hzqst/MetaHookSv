@@ -52,6 +52,7 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pS
 #define SPRITE_EXP2_FOG_ENABLED				0x100ull
 #define SPRITE_CLIP_ENABLED					0x200ull
 #define SPRITE_LERP_ENABLED					0x400ull
+#define SPRITE_LINEAR_FOG_SHIFT_ENABLED		0x800ull
 
 #define SPRITE_PARALLEL_UPRIGHT_ENABLED		0x1000ull
 #define SPRITE_FACING_UPRIGHT_ENABLED		0x2000ull

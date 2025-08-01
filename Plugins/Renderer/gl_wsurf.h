@@ -273,7 +273,7 @@ typedef struct scene_ubo_s
 	vec4 r_filtercolor;
 	vec4 r_lightstylevalue[256 / 4];
 	float r_linear_fog_shift;
-	float r_linear_fog_shiftpow;
+	float r_linear_fog_shiftz;
 	float padding2;
 	float padding3;
 }scene_ubo_t;

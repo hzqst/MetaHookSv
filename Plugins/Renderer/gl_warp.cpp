@@ -49,7 +49,7 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (r_wsurf_sky_fog->value)
+	if ((int)r_wsurf_sky_fog->value > 0)
 	{
 		if (!R_IsRenderingGBuffer())
 		{
@@ -67,7 +67,8 @@ void R_DrawSkyBox(void)
 				{
 					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 				}
-				if (!R_IsRenderingGammaBlending())
+
+				if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
 				{
 					WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
 				}

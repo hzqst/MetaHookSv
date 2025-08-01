@@ -1227,6 +1227,11 @@ void R_DrawDecals(cl_entity_t *ent)
 			{
 				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 			}
+
+			if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
+			}
 		}
 	}
 

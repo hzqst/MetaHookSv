@@ -417,6 +417,8 @@ void main()
 
 vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
+float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+
 #if defined(SHADOW_CASTER_ENABLED)
 
 	out_Diffuse.xyz = v_worldpos.xyz;
@@ -436,7 +438,7 @@ vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-		float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+		flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 		#if defined(SPECULARTEXTURE_ENABLED)
 		
@@ -476,7 +478,10 @@ vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
 	#endif
 
-		vec4 color = CalcFog(ProcessLinearBlendShift(diffuseColor * lightmapColor * detailColor * entityColor));
+		vec4 color = CalcFog(
+			ProcessLinearBlendShift(diffuseColor * lightmapColor * detailColor * entityColor), 
+			flDistanceToFragment
+		);
 
 		GatherFragment(color);
 

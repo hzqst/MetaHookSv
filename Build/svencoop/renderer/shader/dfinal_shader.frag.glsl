@@ -194,16 +194,18 @@ void main()
 
     vec4 finalColor = diffuseColor * lightmapColor;
 
+    float flDistanceToFragment = worldnormColor.z;
+
 #if !defined(SKY_FOG_ENABLED)
 
 	if((stencilValue & STENCIL_MASK_HAS_FOG) == 0)
 		out_FragColor = finalColor;
 	else
-		out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);
+		out_FragColor = CalcFog(finalColor, flDistanceToFragment);
 
 #else
 
-    out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);
+    out_FragColor = CalcFog(finalColor, flDistanceToFragment);
 
 #endif
 }

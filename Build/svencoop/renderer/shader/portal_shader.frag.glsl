@@ -39,6 +39,8 @@ void main()
 
 	vFinalColor = vPortalColor;
 
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+
 #if defined(PORTAL_OVERLAY_TEXTURE_ENABLED)
 
 	vec2 vOverlayTexCoord = vec2(v_diffusetexcoord.x, v_diffusetexcoord.y);
@@ -51,7 +53,10 @@ void main()
 
 #endif
 
-	vec4 color = CalcFog(ProcessLinearBlendShift(vFinalColor));
+	vec4 finalColor = CalcFog(
+		ProcessLinearBlendShift(vFinalColor),
+		flDistanceToFragment
+	);
 
-	out_Diffuse = color;
+	out_Diffuse = finalColor;
 }

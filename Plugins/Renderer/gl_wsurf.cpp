@@ -2309,7 +2309,8 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 					}
-					if (!R_IsRenderingGammaBlending())
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
 					{
 						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
 					}
@@ -2578,7 +2579,8 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 					}
-					if (!R_IsRenderingGammaBlending())
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
 					{
 						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
 					}
@@ -2725,7 +2727,8 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 					}
-					if (!R_IsRenderingGammaBlending())
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
 					{
 						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
 					}
@@ -4592,7 +4595,7 @@ void R_SetupSceneUBO(void)
 	SceneUBO.r_alphamin = gl_alphamin->value;
 	SceneUBO.r_linear_blend_shift = math_clamp(r_linear_blend_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
-	SceneUBO.r_linear_fog_shiftpow = math_clamp(r_linear_fog_shiftpow->value, 0.001, 1000);
+	SceneUBO.r_linear_fog_shiftz = math_clamp(r_linear_fog_shiftz->value, 0, 1);
 
 	if (gl_overbright->value)
 		SceneUBO.r_lightscale = 1;

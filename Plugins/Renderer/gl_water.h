@@ -162,6 +162,7 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 #define WATER_ADDITIVE_BLEND_ENABLED		0x200ull
 #define WATER_OIT_BLEND_ENABLED				0x400ull
 #define WATER_GAMMA_BLEND_ENABLED			0x800ull
+#define WATER_LINEAR_FOG_SHIFT_ENABLED		0x1000ull
 
 #define WATER_BIND_BASE_TEXTURE				0
 #define WATER_BIND_NORMAL_TEXTURE			1

@@ -28,7 +28,12 @@ void main()
 	
 	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
-	vec4 finalColor = CalcFog(ProcessLinearBlendShift(baseColor * lightmapColor));
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+
+	vec4 finalColor = CalcFog(
+		ProcessLinearBlendShift(baseColor * lightmapColor),
+		flDistanceToFragment
+	);
 
 	#if defined(OIT_BLEND_ENABLED)
 		

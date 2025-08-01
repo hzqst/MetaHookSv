@@ -880,6 +880,8 @@ void main(void)
 
 #endif
 
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+
 #if defined(SHADOW_CASTER_ENABLED)
 
 	//Position output
@@ -932,8 +934,6 @@ void main(void)
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-		float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
-
 		out_Diffuse = diffuseColor;
 		out_Lightmap = lightmapColor;
 		out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
@@ -941,7 +941,10 @@ void main(void)
 
 	#else
 
-		vec4 finalColor = CalcFog(ProcessLinearBlendShift(diffuseColor * lightmapColor));
+		vec4 finalColor = CalcFog(
+			ProcessLinearBlendShift(diffuseColor * lightmapColor), 
+			flDistanceToFragment
+			);
 
 		GatherFragment(finalColor);
 

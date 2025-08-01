@@ -51,6 +51,9 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		if (state & SPRITE_LERP_ENABLED)
 			defs << "#define LERP_ENABLED\n";
 
+		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
 		//...
 
 		if (state & SPRITE_PARALLEL_UPRIGHT_ENABLED)
@@ -107,6 +110,7 @@ const program_state_mapping_t s_SpriteProgramStateName[] = {
 { SPRITE_EXP2_FOG_ENABLED			  ,"SPRITE_EXP2_FOG_ENABLED"			},
 { SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
 { SPRITE_LERP_ENABLED				  ,"SPRITE_LERP_ENABLED"				},
+{ SPRITE_LINEAR_FOG_SHIFT_ENABLED	,"SPRITE_LINEAR_FOG_SHIFT_ENABLED"	},
 
 { SPRITE_PARALLEL_UPRIGHT_ENABLED	  ,"SPRITE_PARALLEL_UPRIGHT_ENABLED"	},
 { SPRITE_FACING_UPRIGHT_ENABLED		  ,"SPRITE_FACING_UPRIGHT_ENABLED"		},
@@ -169,6 +173,9 @@ void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *pro
 
 		if (state & SPRITE_LERP_ENABLED)
 			defs << "#define LERP_ENABLED\n";
+
+		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -594,6 +601,11 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 			else if (r_fog_mode == GL_EXP2)
 			{
 				SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			}
+
+			if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+			{
+				SpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
 			}
 		}
 	}

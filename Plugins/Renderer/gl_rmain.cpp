@@ -324,7 +324,7 @@ cvar_t *r_linear_blend_shift = NULL;
 
 cvar_t *r_linear_fog_shift = NULL;
 
-cvar_t *r_linear_fog_shiftpow = NULL;
+cvar_t *r_linear_fog_shiftz = NULL;
 
 cvar_t* r_fog_trans = NULL;
 
@@ -778,6 +778,11 @@ void R_DrawParticles(void)
 			{
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
+
+			if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+			{
+				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+			}
 		}
 	}
 
@@ -1078,6 +1083,11 @@ void triapi_RenderMode(int mode)
 						{
 							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+						}
 					}
 				}
 			}
@@ -1136,6 +1146,11 @@ void triapi_RenderMode(int mode)
 						else if (r_fog_mode == GL_EXP2)
 						{
 							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
 						}
 					}
 				}
@@ -1201,6 +1216,11 @@ void triapi_RenderMode(int mode)
 						else if (r_fog_mode == GL_EXP2)
 						{
 							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
 						}
 					}
 				}
@@ -2674,27 +2694,22 @@ void R_InitCvars(void)
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-		r_linear_blend_shift 0: Don't shift color/alpha for transparent object at all in linear space
-		r_linear_blend_shift 1: Shift color/alpha for transparent object to how it looks like in vanilla engine.
+		r_linear_blend_shift 0: Don't shift color/alpha for transparent object at all in linear space.
+		r_linear_blend_shift 1: Shift color/alpha for transparent object to how it looks like in vanilla engine. (Only works when r_gamma_blend off)
 		r_linear_blend_shift can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted blend factor.
-		Only works when r_gamma_blend off
 	*/
-	r_linear_blend_shift = gEngfuncs.pfnRegisterVariable("r_linear_blend_shift", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_linear_blend_shift = gEngfuncs.pfnRegisterVariable("r_linear_blend_shift", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-		r_linear_fog_shift 0: Don't shift fog factor at all in linear space
-		r_linear_fog_shift 1: Shift color/alpha for to how it looks like in vanilla engine, in linear space.
-		r_linear_fog_shift can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted fog factor.
-		Only works when r_gamma_blend off
+		r_linear_fog_shift 0: Shift fog intensity to how it looks like in vanilla engine, in linear space.
+		r_linear_fog_shift 1: Don't shift fog intensity at all in linear space. (Only works when r_gamma_blend off)
 	*/
 	r_linear_fog_shift = gEngfuncs.pfnRegisterVariable("r_linear_fog_shift", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-		r_linear_fog_shiftpow : Shift the fog factor to lower value with pow(fogFactor, r_linear_fog_shiftpow). 
-		Default value: 0.98 means fogFactor = fogFactor ^ 0.98
-		Allowed value: 0.001 to 1000.0
+		r_linear_fog_shiftz : Shift the fog intensity to lower value to make it looks more like what it was in vanilla engine in linear space.
 	*/
-	r_linear_fog_shiftpow = gEngfuncs.pfnRegisterVariable("r_linear_fog_shiftpow", "0.98", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_linear_fog_shiftz = gEngfuncs.pfnRegisterVariable("r_linear_fog_shiftz", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		r_fog_trans 0: Fog don't affect any transparent objects
