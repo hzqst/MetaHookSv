@@ -15,6 +15,18 @@
 #define STUDIO_SPECULAR_TEXTURE			4
 #define STUDIO_MAX_TEXTURE				5
 
+#define STUDIO_VBO_BASE		0
+#define STUDIO_VBO_TBN		1
+#define STUDIO_VBO_MAX		2
+
+#define STUDIO_VA_POSITION		0
+#define STUDIO_VA_NORMAL		1
+#define STUDIO_VA_TEXCOORD		2
+#define STUDIO_VA_PACKEDBONE	3
+#define STUDIO_VA_TANGENT		4
+#define STUDIO_VA_BITANGENT		5
+#define STUDIO_VA_SMOOTHNORMAL	6
+
 #define STUDIO_RESERVED_TEXTURE_STENCIL				6
 #define STUDIO_RESERVED_TEXTURE_ANIMATED			7
 #define STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE		8
@@ -52,23 +64,31 @@ typedef struct
 	int r_framerate_numframes;
 }studio_program_t;
 
-class studiovert_t
+class studiovertexbase_t
 {
 public:
-	studiovert_t(const float *a, const float *b, float s, float t, int d, int e)
+	studiovertexbase_t()
 	{
-		memcpy(pos, a, sizeof(vec3_t));
-		memcpy(normal, b, sizeof(vec3_t));
-		texcoord[0] = s;
-		texcoord[1] = t;
-		vertbone = d;
-		normbone = e;
+
 	}
+
 	vec3_t	pos{};
 	vec3_t	normal{};
 	vec2_t	texcoord{};
-	int		vertbone{};
-	int		normbone{};
+	byte	packedbone[4]{};
+};
+
+class studiovertextbn_t
+{
+public:
+	studiovertextbn_t()
+	{
+
+	}
+
+	vec3_t	tangent{};
+	vec3_t	bitangent{};
+	vec3_t	smoothnormal{};
 };
 
 class CStudioModelRenderMesh
@@ -76,14 +96,20 @@ class CStudioModelRenderMesh
 public:
 	int iMeshIndex{-1};
 	int iStartIndex{ -1 };
-	int iIndiceCount{  };
-	int iPolyCount{  };
+	int iIndiceCount{ 0 };
+	int iPolyCount{ 0 };
+	size_t nMeshOffset{ 0 };
 };
 
 class CStudioModelRenderSubModel
 {
 public:
-	//int iSubmodelIndex{-1};
+	CStudioModelRenderSubModel(studiohdr_t* studiohdr, mstudiomodel_t* submodel) : m_SubmodelOffset((byte*)submodel - (byte*)studiohdr)
+	{
+
+	}
+	
+	size_t m_SubmodelOffset{};
 	std::vector<CStudioModelRenderMesh> vMesh;
 };
 
@@ -150,7 +176,7 @@ public:
 
 	~CStudioModelRenderData();
 
-	GLuint				hVBO{};
+	GLuint				hVBO[STUDIO_VBO_MAX]{};
 	GLuint				hEBO{};
 	GLuint				hVAO{};
 
@@ -348,7 +374,6 @@ void R_StudioEndFrame(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
-studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
 void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
 

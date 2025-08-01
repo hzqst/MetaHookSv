@@ -6,16 +6,22 @@ uniform vec3 r_celshade_head_offset;
 uniform vec2 r_hair_shadow_offset;
 uniform vec2 r_uvscale;
 
-layout(location = 0) in vec3 in_vertex;
-layout(location = 1) in vec3 in_normal;
-layout(location = 2) in vec2 in_texcoord;
-layout(location = 3) in ivec2 in_vertnormbone;
+layout(location = STUDIO_VA_POSITION) in vec3 in_vertex;
+layout(location = STUDIO_VA_NORMAL) in vec3 in_normal;
+layout(location = STUDIO_VA_TEXCOORD) in vec2 in_texcoord;
+layout(location = STUDIO_VA_PACKEDBONE) in uint in_packedbone;
+layout(location = STUDIO_VA_TANGENT) in vec3 in_tangent;
+layout(location = STUDIO_VA_BITANGENT) in vec3 in_bitangent;
+layout(location = STUDIO_VA_SMOOTHNORMAL) in vec3 in_smoothnormal;
 
 out vec3 v_worldpos;
 out vec3 v_normal;
 out vec2 v_texcoord;
 out vec4 v_projpos;
-flat out ivec2 v_vertnormbone;
+flat out uint v_packedbone;
+out vec3 v_tangent;
+out vec3 v_bitangent;
+out vec3 v_smoothnormal;
 
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
@@ -36,8 +42,8 @@ void main(void)
 	vec3 vert = in_vertex;
 	vec3 norm = in_normal;
 
-	int vertbone = in_vertnormbone.x;
-	int normbone = in_vertnormbone.y;
+	uint vertbone = UnpackStudioBoneAsVertBone(in_packedbone);
+	uint normbone = UnpackStudioBoneAsNormBone(in_packedbone);
 
 	mat3x4 vertbone_matrix = StudioUBO.bonematrix[vertbone];
     vec3 vertbone_matrix_0 = vec3(vertbone_matrix[0][0], vertbone_matrix[0][1], vertbone_matrix[0][2]);
@@ -53,28 +59,40 @@ void main(void)
 	vec3 normbone_matrix_0 = vec3(normbone_matrix[0][0], normbone_matrix[0][1], normbone_matrix[0][2]);
     vec3 normbone_matrix_1 = vec3(normbone_matrix[1][0], normbone_matrix[1][1], normbone_matrix[1][2]);
     vec3 normbone_matrix_2 = vec3(normbone_matrix[2][0], normbone_matrix[2][1], normbone_matrix[2][2]);
-	vec3 outnorm = vec3(
+
+	v_worldpos = outvert;
+	v_normal = normalize(vec3(
 		dot(norm, normbone_matrix_0),
 		dot(norm, normbone_matrix_1),
 		dot(norm, normbone_matrix_2)
-	);
-
-	outnorm = normalize(outnorm);
-
-	v_worldpos = outvert;
-	v_normal = outnorm;
-	v_vertnormbone = in_vertnormbone;
+	));
+	v_packedbone = in_packedbone;
+	v_tangent = normalize(vec3(
+		dot(in_tangent, normbone_matrix_0),
+		dot(in_tangent, normbone_matrix_1),
+		dot(in_tangent, normbone_matrix_2)
+	));
+	v_bitangent = normalize(vec3(
+		dot(in_bitangent, normbone_matrix_0),
+		dot(in_bitangent, normbone_matrix_1),
+		dot(in_bitangent, normbone_matrix_2)
+	));
+	v_smoothnormal = normalize(vec3(
+		dot(in_smoothnormal, normbone_matrix_0),
+		dot(in_smoothnormal, normbone_matrix_1),
+		dot(in_smoothnormal, normbone_matrix_2)
+	));
 
 #if !defined(SHADOW_CASTER_ENABLED)
 
 	#if defined(OUTLINE_ENABLED)
 
-		outvert = outvert + outnorm * StudioUBO.r_scale;
+		outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
 		v_worldpos = outvert;
 
 	#elif defined(STUDIO_NF_CHROME)
 
-		outvert = outvert + outnorm * StudioUBO.r_scale;
+		outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
 		v_worldpos = outvert;
 
 		vec3 tmp = vec3(

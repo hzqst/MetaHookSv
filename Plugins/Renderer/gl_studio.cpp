@@ -144,15 +144,24 @@ CStudioModelRenderData::~CStudioModelRenderData()
 	if (hVAO)
 	{
 		GL_DeleteVAO(hVAO);
+		hVAO = 0;
 	}
-	if (hVBO)
-	{
-		GL_DeleteBuffer(hVBO);
-	}
+
 	if (hEBO)
 	{
 		GL_DeleteBuffer(hEBO);
+		hEBO = 0;
 	}
+
+	for (int i = 0; i < STUDIO_VBO_MAX; ++i)
+	{
+		if (hVBO[i])
+		{
+			GL_DeleteBuffer(hVBO[i]);
+			hVBO[i] = 0;
+		}
+	}
+
 	for (auto pSubmodel : vSubmodels)
 	{
 		delete pSubmodel;
@@ -255,18 +264,643 @@ bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence,
 	return false;
 }
 
+studiohdr_t* R_GetStudioTextureHeader(studiohdr_t* studiohdr, model_t* texturemod)
+{
+	if (studiohdr->textureindex == 0 && texturemod)
+	{
+		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texturemod);
+
+		//Fix: could be nullptr ?
+		if (ptexturehdr)
+			return ptexturehdr;
+
+		return NULL;
+	}
+
+	return studiohdr;
+}
+
+studiohdr_t* R_GetStudioTextureHeader(studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
+{
+	return R_GetStudioTextureHeader(studiohdr, pRenderData->TextureModel);
+}
+
+void R_StudioGetTextureHeaderSkinref(
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	cl_entity_t* e,
+	studiohdr_t** ptexturehdr,
+	mstudiotexture_t** ptexture,
+	short** pskinref)
+{
+	(*ptexturehdr) = R_GetStudioTextureHeader(studiohdr, pRenderData);
+	(*ptexture) = nullptr;
+	(*pskinref) = nullptr;
+
+	if ((*ptexturehdr) && (*ptexturehdr)->textureindex)
+	{
+		(*ptexture) = (mstudiotexture_t*)((byte*)(*ptexturehdr) + (*ptexturehdr)->textureindex);
+
+		(*pskinref) = (short*)((byte*)(*ptexturehdr) + (*ptexturehdr)->skinindex);
+
+		if (e && e->curstate.skin > 0 && e->curstate.skin < (*ptexturehdr)->numskinfamilies)
+			(*pskinref) += (e->curstate.skin * (*ptexturehdr)->numskinref);
+	}
+}
+
+inline float vec2_length(const vec2_t v)
+{
+	return sqrt(v[0] * v[0] + v[1] * v[1]);
+}
+
+inline void vec3_normalize(const vec3_t in, vec3_t out)
+{
+	float length = VectorLength(in);
+	if (length > 0.0001f)
+	{
+		out[0] = in[0] / length;
+		out[1] = in[1] / length;
+		out[2] = in[2] / length;
+	}
+	else
+	{
+		VectorClear(out);
+	}
+}
+
+inline void vec2_normalize(const vec2_t in, vec2_t out)
+{
+	float length = vec2_length(in);
+	if (length > 0.0001f)
+	{
+		out[0] = in[0] / length;
+		out[1] = in[1] / length;
+	}
+	else
+	{
+		out[0] = out[1] = 0.0f;
+	}
+}
+
+inline void vec3_lerp(const vec3_t a, const vec3_t b, float t, vec3_t out)
+{
+	out[0] = a[0] + t * (b[0] - a[0]);
+	out[1] = a[1] + t * (b[1] - a[1]);
+	out[2] = a[2] + t * (b[2] - a[2]);
+}
+
+// Hash combination function
+inline void hash_combine(size_t& seed, size_t value)
+{
+	seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+class CQuantizedVector
+{
+public:
+	CQuantizedVector(const vec3_t v)
+	{
+		m_x = (int64_t)(v[0] * 1000.0f);
+		m_y = (int64_t)(v[1] * 1000.0f);
+		m_z = (int64_t)(v[2] * 1000.0f);
+	}
+	CQuantizedVector(const vec3_t v, int boneindex)
+	{
+		m_x = (int64_t)(v[0] * 1000.0f);
+		m_y = (int64_t)(v[1] * 1000.0f);
+		m_z = (int64_t)(v[2] * 1000.0f);
+		m_boneindex = boneindex;
+	}
+	int64_t m_x{};
+	int64_t m_y{};
+	int64_t m_z{};
+	int m_boneindex{ -1 };
+
+	bool operator == (const CQuantizedVector& other) const
+	{
+		return m_x == other.m_x && m_y == other.m_y && m_z == other.m_z && m_boneindex == other.m_boneindex;
+	}
+};
+
+class CQuantizedVectorHasher
+{
+public:
+	size_t operator()(const CQuantizedVector& v) const
+	{
+		size_t seed = 0;
+		hash_combine(seed, v.m_x);
+		hash_combine(seed, v.m_y);
+		hash_combine(seed, v.m_z);
+		hash_combine(seed, v.m_boneindex);
+		return seed;
+	}
+};
+
+using CVector3List = std::vector<vertex3f_t>;
+
+class CFaceNormalStorage
+{
+public:
+	CVector3List weightedNormals;
+	float normalTotalFactor{ 0 };
+	vec3_t averageNormal{};
+
+	CVector3List edges;
+	vec3_t averageEdge{};
+	bool bHasAverageEdge{ false };
+};
+
+using CFaceNormalHashMap = std::unordered_map<CQuantizedVector, std::shared_ptr<CFaceNormalStorage>, CQuantizedVectorHasher>;
+
+void R_PrepareTBNForRenderMesh(
+	model_t* mod,
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	CStudioModelRenderSubModel* pRenderSubmodel,
+	const CStudioModelRenderMesh* pRenderMesh,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref,
+	const std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	const std::vector<GLuint>& vIndicesBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer
+)
+{
+	auto pmesh = (mstudiomesh_t*)((byte*)studiohdr + pRenderMesh->nMeshOffset);
+
+	int width = ptexture[pskinref[pmesh->skinref]].width;
+	int height = ptexture[pskinref[pmesh->skinref]].height;
+
+	vec2_t uvscale = { 1.0f / width, 1.0f / height };
+
+	int iStartIndex = pRenderMesh->iStartIndex;
+	int iIndiceCount = pRenderMesh->iIndiceCount;
+
+	for (int i = 0; i < iIndiceCount; i += 3)
+	{
+		// CCW
+		int idx0 = vIndicesBuffer[iStartIndex + i + 2];
+		int idx1 = vIndicesBuffer[iStartIndex + i + 1];
+		int idx2 = vIndicesBuffer[iStartIndex + i + 0];
+
+		// 获取三角形的三个顶点位置、法线、纹理坐标(0~1)、骨骼序号
+		vec3_t vTrianglePos[3];
+		VectorCopy(vVertexBaseBuffer[idx0].pos, vTrianglePos[0]);
+		VectorCopy(vVertexBaseBuffer[idx1].pos, vTrianglePos[1]);
+		VectorCopy(vVertexBaseBuffer[idx2].pos, vTrianglePos[2]);
+
+		vec3_t vTriangleNorm[3];
+		VectorCopy(vVertexBaseBuffer[idx0].normal, vTriangleNorm[0]);
+		VectorCopy(vVertexBaseBuffer[idx1].normal, vTriangleNorm[1]);
+		VectorCopy(vVertexBaseBuffer[idx2].normal, vTriangleNorm[2]);
+
+		vec2_t vTriangleTexCoord[3];
+		vTriangleTexCoord[0][0] = vVertexBaseBuffer[idx0].texcoord[0] * uvscale[0];
+		vTriangleTexCoord[0][1] = vVertexBaseBuffer[idx0].texcoord[1] * uvscale[1];
+
+		vTriangleTexCoord[1][0] = vVertexBaseBuffer[idx1].texcoord[0] * uvscale[0];
+		vTriangleTexCoord[1][1] = vVertexBaseBuffer[idx1].texcoord[1] * uvscale[1];
+
+		vTriangleTexCoord[2][0] = vVertexBaseBuffer[idx2].texcoord[0] * uvscale[0];
+		vTriangleTexCoord[2][1] = vVertexBaseBuffer[idx2].texcoord[1] * uvscale[1];
+
+		int vTriangleBones[3]{
+			vVertexBaseBuffer[idx0].packedbone[0],
+			vVertexBaseBuffer[idx1].packedbone[0],
+			vVertexBaseBuffer[idx2].packedbone[0],
+		};
+
+		// 计算边向量
+		vec3_t edge1, edge2;
+		VectorSubtract(vTrianglePos[1], vTrianglePos[0], edge1);
+		VectorSubtract(vTrianglePos[2], vTrianglePos[0], edge2);
+
+		// 计算UV差值
+		vec2_t deltaUV1, deltaUV2;
+		deltaUV1[0] = vTriangleTexCoord[1][0] - vTriangleTexCoord[0][0];
+		deltaUV1[1] = vTriangleTexCoord[1][1] - vTriangleTexCoord[0][1];
+
+		deltaUV2[0] = vTriangleTexCoord[2][0] - vTriangleTexCoord[0][0];
+		deltaUV2[1] = vTriangleTexCoord[2][1] - vTriangleTexCoord[0][1];
+
+		// 计算切线和副切线
+		float denominator = deltaUV1[0] * deltaUV2[1] - deltaUV2[0] * deltaUV1[1];
+		if (std::abs(denominator) < 0.0001f)
+		{
+			// UV坐标退化的情况，跳过这个三角形
+			continue;
+		}
+		float f = 1.0f / denominator;
+
+		vec3_t tangent = {
+			f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0]),
+			f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1]),
+			f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
+		};
+
+		vec3_t bitangent = {
+			f * (-deltaUV2[0] * edge1[0] + deltaUV1[0] * edge2[0]),
+			f * (-deltaUV2[0] * edge1[1] + deltaUV1[0] * edge2[1]),
+			f * (-deltaUV2[0] * edge1[2] + deltaUV1[0] * edge2[2])
+		};
+
+		// 归一化切线和副切线
+		float tangentLength = VectorLength(tangent);
+		float bitangentLength = VectorLength(bitangent);
+
+		if (tangentLength < 0.0001f || bitangentLength < 0.0001f)
+		{
+			// 切线或副切线长度太小，跳过这个三角形
+			continue;
+		}
+
+		VectorScale(tangent, 1.0f / tangentLength, tangent);
+		VectorScale(bitangent, 1.0f / bitangentLength, bitangent);
+
+		// 对于每个顶点，使用Gram-Schmidt正交化过程确保切线与法线垂直
+		for (int j = 0; j < 3; j++)
+		{
+			int vertIdx = (j == 0) ? idx0 : (j == 1) ? idx1 : idx2;
+
+			// Gram-Schmidt正交化：T' = T - (N·T)N
+			vec3_t normal;
+			VectorCopy(vTriangleNorm[j], normal);
+			float normalLength = VectorLength(normal);
+			if (normalLength < 0.0001f)
+			{
+				// 法线长度太小，跳过这个顶点
+				continue;
+			}
+			VectorScale(normal, 1.0f / normalLength, normal);
+
+			vec3_t orthogonalTangent;
+			float dot_normal_tangent = DotProduct(normal, tangent);
+			vec3_t temp;
+			VectorScale(normal, dot_normal_tangent, temp);
+			VectorSubtract(tangent, temp, orthogonalTangent);
+
+			float orthogonalTangentLength = VectorLength(orthogonalTangent);
+			if (orthogonalTangentLength < 0.0001f)
+			{
+				// 正交化后的切线长度太小，跳过这个顶点
+				continue;
+			}
+			VectorScale(orthogonalTangent, 1.0f / orthogonalTangentLength, orthogonalTangent);
+
+			// 计算副切线的方向（确保右手坐标系）
+			vec3_t crossProduct;
+			CrossProduct(normal, orthogonalTangent, crossProduct);
+			float handedness = (DotProduct(crossProduct, bitangent) < 0.0f) ? -1.0f : 1.0f;
+			vec3_t orthogonalBitangent;
+			VectorScale(crossProduct, handedness, orthogonalBitangent);
+
+			// 累加到顶点的切线和副切线（用于平滑）
+			VectorAdd(vVertexTBNBuffer[vertIdx].tangent, orthogonalTangent, vVertexTBNBuffer[vertIdx].tangent);
+			VectorAdd(vVertexTBNBuffer[vertIdx].bitangent, orthogonalBitangent, vVertexTBNBuffer[vertIdx].bitangent);
+		}
+	}
+
+	// 最终归一化所有顶点的切线和副切线
+	int iStartVertex = pRenderMesh->iStartIndex; // 这里需要根据实际的顶点起始索引调整
+	int iVertexCount = pRenderMesh->iIndiceCount; // 这里需要根据实际的顶点数量调整
+
+	// 由于我们只处理了当前mesh涉及的顶点，需要遍历所有相关的顶点索引
+	std::set<int> processedVertices;
+	for (int i = 0; i < iIndiceCount; i++)
+	{
+		int vertIdx = vIndicesBuffer[iStartIndex + i];
+		if (processedVertices.find(vertIdx) == processedVertices.end())
+		{
+			processedVertices.insert(vertIdx);
+
+			// 归一化切线和副切线
+			float tangentLength = VectorLength(vVertexTBNBuffer[vertIdx].tangent);
+			if (tangentLength > 0.0001f)
+			{
+				VectorScale(vVertexTBNBuffer[vertIdx].tangent, 1.0f / tangentLength, vVertexTBNBuffer[vertIdx].tangent);
+			}
+
+			float bitangentLength = VectorLength(vVertexTBNBuffer[vertIdx].bitangent);
+			if (bitangentLength > 0.0001f)
+			{
+				VectorScale(vVertexTBNBuffer[vertIdx].bitangent, 1.0f / bitangentLength, vVertexTBNBuffer[vertIdx].bitangent);
+			}
+		}
+	}
+}
+
+void CalculateFaceNormalHashMap(
+	const std::vector<studiovertexbase_t>& vVertexPosBuffer,
+	const std::vector<studiovertextbn_t>& vVertexTBNBuffer,
+	const std::vector<unsigned int>& vIndicesBuffer,
+	CFaceNormalHashMap& FaceNormalHashMap
+)
+{
+	// 定义下一个顶点索引的映射，用于计算角度
+	int nextId[4] = { 1, 2, 0, 1 };
+
+	for (int i = 0; i < vIndicesBuffer.size(); i += 3)
+	{
+		// CCW
+		int idx0 = vIndicesBuffer[i + 2];
+		int idx1 = vIndicesBuffer[i + 1];
+		int idx2 = vIndicesBuffer[i + 0];
+
+		// 获取三角形的三个顶点位置
+		vec3_t vTrianglePos[3];
+		VectorCopy(vVertexPosBuffer[idx0].pos, vTrianglePos[0]);
+		VectorCopy(vVertexPosBuffer[idx1].pos, vTrianglePos[1]);
+		VectorCopy(vVertexPosBuffer[idx2].pos, vTrianglePos[2]);
+
+		vec3_t vTriangleNorm[3];
+		VectorCopy(vVertexPosBuffer[idx0].normal, vTriangleNorm[0]);
+		VectorCopy(vVertexPosBuffer[idx1].normal, vTriangleNorm[1]);
+		VectorCopy(vVertexPosBuffer[idx2].normal, vTriangleNorm[2]);
+
+		int vertbones[3]{
+			vVertexPosBuffer[idx0].packedbone[0],
+			vVertexPosBuffer[idx1].packedbone[0],
+			vVertexPosBuffer[idx2].packedbone[0],
+		};
+
+		// 计算面法线（保留面积信息用于加权）
+		vec3_t edge1, edge2;
+		VectorSubtract(vTrianglePos[1], vTrianglePos[0], edge1);
+		VectorSubtract(vTrianglePos[2], vTrianglePos[0], edge2);
+
+		// 叉积的长度代表三角形面积的两倍
+		vec3_t faceNormalWeighted;
+		CrossProduct(edge1, edge2, faceNormalWeighted);
+		float triangleArea = VectorLength(faceNormalWeighted);
+
+		if (triangleArea < 0.0001f)
+		{
+			// 退化三角形，跳过
+			continue;
+		}
+
+		vec3_t faceNormal;
+		VectorScale(faceNormalWeighted, 1.0f / triangleArea, faceNormal);
+
+		// 为三角形的每个顶点计算加权法线
+		for (int j = 0; j < 3; j++)
+		{
+			// 计算当前顶点的两条边
+			vec3_t edgeA, edgeB;
+			VectorSubtract(vTrianglePos[nextId[j]], vTrianglePos[j], edgeA);
+			VectorSubtract(vTrianglePos[nextId[j + 1]], vTrianglePos[j], edgeB);
+
+			float edgeALength = VectorLength(edgeA);
+			float edgeBLength = VectorLength(edgeB);
+
+			if (edgeALength < 0.0001f || edgeBLength < 0.0001f)
+			{
+				// 退化边，跳过这个顶点
+				continue;
+			}
+
+			// 归一化边向量用于计算角度
+			vec3_t edgeANorm, edgeBNorm;
+			VectorScale(edgeA, 1.0f / edgeALength, edgeANorm);
+			VectorScale(edgeB, 1.0f / edgeBLength, edgeBNorm);
+
+			// 计算角度作为权重因子
+			float dotProduct = DotProduct(edgeANorm, edgeBNorm);
+			// 限制点积值在有效范围内，避免数值误差
+			dotProduct = math_clamp(dotProduct, -1.0f, 1.0f);
+			float angle = std::acos(dotProduct);
+
+			// 使用角度和面积的组合权重：角度权重 * 面积权重
+			float combinedWeight = angle * triangleArea;
+
+			// 计算加权法线
+			vertex3f_t vWeightedNormal{};
+			vertex3f_t negEdgeA{}, negEdgeB{};
+
+			VectorScale(faceNormal, combinedWeight, vWeightedNormal.v);
+
+			// 将加权法线添加到对应顶点位置的列表中
+			CQuantizedVector quantizedVertexPos(vTrianglePos[j], vertbones[j]);
+
+			auto it = FaceNormalHashMap.find(quantizedVertexPos);
+
+			std::shared_ptr<CFaceNormalStorage> faceNormalStorage;
+
+			if (it == FaceNormalHashMap.end())
+			{
+				faceNormalStorage = std::make_shared<CFaceNormalStorage>();
+				vertex3f_t negEdgeA{}, negEdgeB{};
+				VectorScale(edgeANorm, -1.0f, negEdgeA.v);
+				VectorScale(edgeBNorm, -1.0f, negEdgeB.v);
+				faceNormalStorage->weightedNormals.emplace_back(vWeightedNormal);
+				faceNormalStorage->normalTotalFactor += combinedWeight;
+				faceNormalStorage->edges.emplace_back(negEdgeA);
+				faceNormalStorage->edges.emplace_back(negEdgeB);
+				FaceNormalHashMap[quantizedVertexPos] = faceNormalStorage;
+			}
+			else
+			{
+				faceNormalStorage = it->second;
+				VectorScale(edgeANorm, -1.0f, negEdgeA.v);
+				VectorScale(edgeBNorm, -1.0f, negEdgeB.v);
+				faceNormalStorage->weightedNormals.emplace_back(vWeightedNormal);
+				faceNormalStorage->normalTotalFactor += combinedWeight;
+				faceNormalStorage->edges.emplace_back(negEdgeA);
+				faceNormalStorage->edges.emplace_back(negEdgeB);
+			}
+		}
+	}
+}
+
+void CalculateAverageNormal(CFaceNormalHashMap& FaceNormalHashMap)
+{
+	for (auto it = FaceNormalHashMap.begin(); it != FaceNormalHashMap.end(); it++)
+	{
+		const auto& FaceNormalStorage = it->second;
+
+		vec3_t averageNormal = { 0, 0, 0 };
+
+		// 直接累加加权法线
+		for (const auto& weightedNormal : FaceNormalStorage->weightedNormals)
+		{
+			VectorAdd(averageNormal, weightedNormal.v, averageNormal);
+		}
+
+		// 归一化得到最终的平均法线
+		float averageNormalLength = VectorLength(averageNormal);
+
+		if (averageNormalLength < 0.001f)
+		{
+			//无厚度的面片或退化情况，使用averageEdge作为法线
+
+			vec3_t averageEdge = { 0, 0, 0 };
+
+			for (const auto& edge : FaceNormalStorage->edges)
+			{
+				VectorAdd(averageEdge, edge.v, averageEdge);
+			}
+
+			if (FaceNormalStorage->edges.size() > 0)
+			{
+				VectorScale(averageEdge, 1.0f / (float)FaceNormalStorage->edges.size(), averageEdge);
+			}
+
+			float averageEdgeLength = VectorLength(averageEdge);
+			if (averageEdgeLength > 0.001f)
+			{
+				VectorScale(averageEdge, 1.0f / averageEdgeLength, FaceNormalStorage->averageEdge);
+				FaceNormalStorage->bHasAverageEdge = true;
+			}
+			else
+			{
+				// 连边向量也退化了，使用零向量
+				VectorClear(FaceNormalStorage->averageEdge);
+				FaceNormalStorage->bHasAverageEdge = true;
+			}
+		}
+
+		if (averageNormalLength > 0.001f)
+		{
+			VectorScale(averageNormal, (1.0f / averageNormalLength), FaceNormalStorage->averageNormal);
+		}
+		else
+		{
+			VectorClear(FaceNormalStorage->averageNormal);
+		}
+	}
+}
+
+void GetSmoothNormal(
+	const vec3_t VertexPos,
+	const vec3_t VertexNorm,
+	int vertbone,
+	const CFaceNormalHashMap& FaceNormalHashMap,
+	vec3_t outNormal)
+{
+	CQuantizedVector quantizedVertexPos(VertexPos, vertbone);
+
+	auto it = FaceNormalHashMap.find(quantizedVertexPos);
+
+	if (it != FaceNormalHashMap.end())
+	{
+		const auto& FaceNormalStorage = it->second;
+
+		if (FaceNormalStorage->bHasAverageEdge)
+		{
+			// 对于无厚度面片，使用边向量作为法线
+			VectorCopy(FaceNormalStorage->averageEdge, outNormal);
+			return;
+		}
+
+		// 检查计算出的平均法线是否与原始法线差异过大
+		float dotProduct = DotProduct(FaceNormalStorage->averageNormal, VertexNorm);
+
+		// 如果两个法线的夹角超过60度（cos(60°) = 0.5），则认为差异过大
+		if (dotProduct < 0.5f)
+		{
+			// 差异过大，使用原始法线
+			VectorCopy(VertexNorm, outNormal);
+			return;
+		}
+
+		// 使用插值来平滑过渡，避免突变
+		float blendFactor = math_clamp((dotProduct - 0.5f) / 0.5f, 0.0f, 1.0f);
+		vec3_t lerpResult;
+		vec3_lerp(VertexNorm, FaceNormalStorage->averageNormal, blendFactor, lerpResult);
+		VectorNormalize(lerpResult);
+		VectorCopy(lerpResult, outNormal);
+		return;
+	}
+
+	// 找不到对应的平均法线，使用原始法线
+	VectorCopy(VertexNorm, outNormal);
+}
+
+void R_PrepareSmoothNormalForRenderMesh(
+	model_t* mod,
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	CStudioModelRenderSubModel* pRenderSubmodel,
+	const CStudioModelRenderMesh* pRenderMesh,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref,
+	const std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	const std::vector<GLuint>& vIndicesBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer
+)
+{
+	CFaceNormalHashMap FaceNormalHashMap;
+
+	CalculateFaceNormalHashMap(vVertexBaseBuffer, vVertexTBNBuffer, vIndicesBuffer, FaceNormalHashMap);
+
+	CalculateAverageNormal(FaceNormalHashMap);
+
+	for (size_t i = 0; i < vVertexTBNBuffer.size(); ++i)
+	{
+		GetSmoothNormal(vVertexBaseBuffer[i].pos, vVertexBaseBuffer[i].normal, vVertexBaseBuffer[i].packedbone[0], FaceNormalHashMap, vVertexTBNBuffer[i].smoothnormal);
+	}
+}
+
+void R_PrepareTBNForRenderSubmodel(
+	model_t* mod,
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	CStudioModelRenderSubModel* pRenderSubmodel,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref,
+	const std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	const std::vector<GLuint>& vIndicesBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer
+)
+{
+	for (int k = 0; k < pRenderSubmodel->vMesh.size(); k++)
+	{
+		const auto pRenderMesh = &pRenderSubmodel->vMesh[k];
+
+		R_PrepareTBNForRenderMesh(mod, studiohdr, pRenderData, pRenderSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
+
+		R_PrepareSmoothNormalForRenderMesh(mod, studiohdr, pRenderData, pRenderSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
+	}
+}
+
+void R_PrepareTBNForRenderData(
+	model_t* mod,
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	const std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	const std::vector<GLuint>& vIndicesBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer
+)
+{
+	studiohdr_t* ptexturehdr = nullptr;
+	mstudiotexture_t* ptexture = nullptr;
+	short* pskinref = nullptr;
+
+	R_StudioGetTextureHeaderSkinref(studiohdr, pRenderData, nullptr, &ptexturehdr, &ptexture, &pskinref);
+
+	for (int i = 0; i < pRenderData->vSubmodels.size(); i++)
+	{
+		R_PrepareTBNForRenderSubmodel(mod, studiohdr, pRenderData, pRenderData->vSubmodels[i], ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
+	}
+}
+
 void R_PrepareStudioRenderSubmodel(
-	studiohdr_t* studiohdr, mstudiomodel_t* submodel,
-	std::vector<studiovert_t>& vVertex,
-	std::vector<unsigned int>& vIndices,
-	CStudioModelRenderSubModel* vboSubmodel)
+	model_t* mod,
+	studiohdr_t* studiohdr, 
+	mstudiomodel_t* submodel,
+	std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer,
+	std::vector<GLuint>& vIndices,
+	CStudioModelRenderSubModel* pRenderSubmodel)
 {
 	auto pstudioverts = (const vec3_t*)((byte*)studiohdr + submodel->vertindex);
 	auto pstudionorms = (const vec3_t*)((byte*)studiohdr + submodel->normindex);
 	auto pvertbone = ((byte*)studiohdr + submodel->vertinfoindex);
 	auto pnormbone = ((byte*)studiohdr + submodel->norminfoindex);
 
-	vboSubmodel->vMesh.reserve(submodel->nummesh);
+	pRenderSubmodel->vMesh.reserve(submodel->nummesh);
 
 	for (int k = 0; k < submodel->nummesh; k++)
 	{
@@ -274,11 +908,12 @@ void R_PrepareStudioRenderSubmodel(
 
 		auto ptricmds = (short*)((byte*)studiohdr + pmesh->triindex);
 
-		int iStartVertex = vVertex.size();
+		int iStartVertex = vVertexBaseBuffer.size();
 		int iNumVertex = 0;
 
-		CStudioModelRenderMesh VBOMesh;
-		VBOMesh.iStartIndex = vIndices.size();
+		CStudioModelRenderMesh RenderMesh;
+		RenderMesh.nMeshOffset = (byte*)pmesh - (byte*)studiohdr;
+		RenderMesh.iStartIndex = vIndices.size();
 
 		int t;
 		while (t = *(ptricmds++))
@@ -297,13 +932,13 @@ void R_PrepareStudioRenderSubmodel(
 					{
 						vIndices.emplace_back(iStartVertex + first);
 						vIndices.emplace_back(iStartVertex + prv2);
-						VBOMesh.iIndiceCount += 2;
+						RenderMesh.iIndiceCount += 2;
 					}
 
 					vIndices.emplace_back(iStartVertex + iNumVertex);
-					VBOMesh.iIndiceCount++;
-					VBOMesh.iPolyCount++;
-					VBOMesh.iMeshIndex = k;
+					RenderMesh.iIndiceCount++;
+					RenderMesh.iPolyCount++;
+					RenderMesh.iMeshIndex = k;
 
 					if (first == -1)
 						first = iNumVertex;
@@ -312,7 +947,19 @@ void R_PrepareStudioRenderSubmodel(
 					prv1 = prv2;
 					prv2 = iNumVertex;
 
-					vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], (float)ptricmds[2], (float)ptricmds[3], (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
+					studiovertexbase_t vVertexBase;
+					VectorCopy(pstudioverts[ptricmds[0]], vVertexBase.pos);
+					VectorCopy(pstudionorms[ptricmds[1]], vVertexBase.normal);
+					vVertexBase.texcoord[0] = (float)ptricmds[2];
+					vVertexBase.texcoord[1] = (float)ptricmds[3];
+					vVertexBase.packedbone[0] = pvertbone[ptricmds[0]];
+					vVertexBase.packedbone[1] = pnormbone[ptricmds[1]];
+
+					vVertexBaseBuffer.emplace_back(vVertexBase);
+
+					studiovertextbn_t vVertexTBN;
+					vVertexTBNBuffer.emplace_back(vVertexTBN);
+
 					iNumVertex++;
 				}
 			}
@@ -337,13 +984,13 @@ void R_PrepareStudioRenderSubmodel(
 							vIndices.emplace_back(iStartVertex + prv1);
 							vIndices.emplace_back(iStartVertex + prv2);
 						}
-						VBOMesh.iIndiceCount += 2;
+						RenderMesh.iIndiceCount += 2;
 					}
 
 					vIndices.emplace_back(iStartVertex + iNumVertex);
-					VBOMesh.iIndiceCount++;
-					VBOMesh.iPolyCount++;
-					VBOMesh.iMeshIndex = k;
+					RenderMesh.iIndiceCount++;
+					RenderMesh.iPolyCount++;
+					RenderMesh.iMeshIndex = k;
 
 					iNumTri++;
 
@@ -351,13 +998,62 @@ void R_PrepareStudioRenderSubmodel(
 					prv1 = prv2;
 					prv2 = iNumVertex;
 
-					vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], (float)ptricmds[2], (float)ptricmds[3], (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
+					studiovertexbase_t vVertexBase;
+					VectorCopy(pstudioverts[ptricmds[0]], vVertexBase.pos);
+					VectorCopy(pstudionorms[ptricmds[1]], vVertexBase.normal);
+					vVertexBase.texcoord[0] = (float)ptricmds[2];
+					vVertexBase.texcoord[1] = (float)ptricmds[3];
+					vVertexBase.packedbone[0] = pvertbone[ptricmds[0]];
+					vVertexBase.packedbone[1] = pnormbone[ptricmds[1]];
+
+					vVertexBaseBuffer.emplace_back(vVertexBase);
+
+					studiovertextbn_t vVertexTBN;
+					vVertexTBNBuffer.emplace_back(vVertexTBN);
+
 					iNumVertex++;
 				}
 			}
 		}
 
-		vboSubmodel->vMesh.emplace_back(VBOMesh);
+		pRenderSubmodel->vMesh.emplace_back(RenderMesh);
+	}
+}
+
+void R_PrepareStudioRenderData(
+	model_t* mod,
+	studiohdr_t* studiohdr,
+	CStudioModelRenderData* pRenderData,
+	std::vector<studiovertexbase_t>& vVertexBaseBuffer,
+	std::vector<studiovertextbn_t>& vVertexTBNBuffer,
+	std::vector<GLuint>& vIndicesBuffer
+)
+{
+	for (int i = 0; i < studiohdr->numbodyparts; i++)
+	{
+		auto bodypart = (mstudiobodyparts_t*)((byte*)studiohdr + studiohdr->bodypartindex) + i;
+
+		if (bodypart->modelindex && bodypart->nummodels)
+		{
+			for (int j = 0; j < bodypart->nummodels; ++j)
+			{
+				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
+
+				auto pRenderSubmodel = new CStudioModelRenderSubModel(studiohdr, submodel);
+
+				R_PrepareStudioRenderSubmodel(
+					mod,
+					studiohdr,
+					submodel,
+					vVertexBaseBuffer,
+					vVertexTBNBuffer,
+					vIndicesBuffer,
+					pRenderSubmodel);
+
+				pRenderData->vSubmodels.emplace_back(pRenderSubmodel);
+				pRenderData->mSubmodels[pRenderSubmodel->m_SubmodelOffset] = pRenderSubmodel;
+			}
+		}
 	}
 }
 
@@ -403,9 +1099,6 @@ CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderSlow(studiohdr_t* s
 
 					if (pRenderData)
 					{
-						R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
-						R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
-
 						return pRenderData;
 					}
 				}
@@ -462,55 +1155,57 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 
 	R_AllocSlotForStudioRenderData(mod, studiohdr, pRenderData);
 
-	std::vector<studiovert_t> vVertex;
-	std::vector<GLuint> vIndices;
+	std::vector<studiovertexbase_t> vVertexBaseBuffer;
+	std::vector<studiovertextbn_t> vVertexTBNBuffer;
+	std::vector<GLuint> vIndicesBuffer;
 
-	for (int i = 0; i < studiohdr->numbodyparts; i++)
-	{
-		auto bodypart = (mstudiobodyparts_t*)((byte*)studiohdr + studiohdr->bodypartindex) + i;
+	R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
+	R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
+	R_PrepareStudioRenderData(mod, studiohdr, pRenderData, vVertexBaseBuffer, vVertexTBNBuffer, vIndicesBuffer);
+	R_PrepareTBNForRenderData(mod, studiohdr, pRenderData, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 
-		if (bodypart->modelindex && bodypart->nummodels)
-		{
-			for (int j = 0; j < bodypart->nummodels; ++j)
-			{
-				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
+	pRenderData->hVBO[STUDIO_VBO_BASE] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO[STUDIO_VBO_BASE], vVertexBaseBuffer.size() * sizeof(studiovertexbase_t), vVertexBaseBuffer.data());
 
-				auto pRenderSubmodel = new CStudioModelRenderSubModel;
-
-				R_PrepareStudioRenderSubmodel(studiohdr, submodel, vVertex, vIndices, pRenderSubmodel);
-
-				pRenderData->vSubmodels.emplace_back(pRenderSubmodel);
-
-				auto submodel_byteoffset = (byte*)submodel - (byte*)studiohdr;
-
-				pRenderData->mSubmodels[submodel_byteoffset] = pRenderSubmodel;
-			}
-		}
-	}
-
-	pRenderData->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO, vVertex.size() * sizeof(studiovert_t), vVertex.data());
+	pRenderData->hVBO[STUDIO_VBO_TBN] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO[STUDIO_VBO_TBN], vVertexTBNBuffer.size() * sizeof(studiovertextbn_t), vVertexTBNBuffer.data());
 
 	pRenderData->hEBO = GL_GenBuffer();
-	GL_UploadDataToEBOStaticDraw(pRenderData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
+	GL_UploadDataToEBOStaticDraw(pRenderData->hEBO, vIndicesBuffer.size() * sizeof(GLuint), vIndicesBuffer.data());
 
 	pRenderData->hVAO = GL_GenVAO();
-	GL_BindStatesForVAO(pRenderData->hVAO, pRenderData->hVBO, pRenderData->hEBO,
-		[]() {
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glEnableVertexAttribArray(2);
-			glEnableVertexAttribArray(3);
-			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, pos));
-			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, normal));
-			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studiovert_t), OFFSET(studiovert_t, texcoord));
-			glVertexAttribIPointer(3, 2, GL_INT, sizeof(studiovert_t), OFFSET(studiovert_t, vertbone));
+	GL_BindStatesForVAO(pRenderData->hVAO, 
+		[pRenderData]() {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pRenderData->hEBO);
+
+			glBindBuffer(GL_ARRAY_BUFFER, pRenderData->hVBO[STUDIO_VBO_BASE]);
+			glEnableVertexAttribArray(STUDIO_VA_POSITION);
+			glEnableVertexAttribArray(STUDIO_VA_NORMAL);
+			glEnableVertexAttribArray(STUDIO_VA_TEXCOORD);
+			glEnableVertexAttribArray(STUDIO_VA_PACKEDBONE);
+			glVertexAttribPointer(STUDIO_VA_POSITION, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, pos));
+			glVertexAttribPointer(STUDIO_VA_NORMAL, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, normal));
+			glVertexAttribPointer(STUDIO_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, texcoord));
+			glVertexAttribIPointer(STUDIO_VA_PACKEDBONE, 1, GL_UNSIGNED_INT, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, packedbone));
+
+			glBindBuffer(GL_ARRAY_BUFFER, pRenderData->hVBO[STUDIO_VBO_TBN]);
+			glEnableVertexAttribArray(STUDIO_VA_TANGENT);
+			glEnableVertexAttribArray(STUDIO_VA_BITANGENT);
+			glEnableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
+			glVertexAttribPointer(STUDIO_VA_TANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, tangent));
+			glVertexAttribPointer(STUDIO_VA_BITANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, bitangent));
+			glVertexAttribPointer(STUDIO_VA_SMOOTHNORMAL, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, smoothnormal));
 		},
 		[]() {
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
-			glDisableVertexAttribArray(2);
-			glDisableVertexAttribArray(3);
+			glDisableVertexAttribArray(STUDIO_VA_POSITION);
+			glDisableVertexAttribArray(STUDIO_VA_NORMAL);
+			glDisableVertexAttribArray(STUDIO_VA_TEXCOORD);
+			glDisableVertexAttribArray(STUDIO_VA_PACKEDBONE);
+			glDisableVertexAttribArray(STUDIO_VA_TANGENT);
+			glDisableVertexAttribArray(STUDIO_VA_BITANGENT);
+			glDisableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		});
 
 	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
@@ -613,8 +1308,7 @@ void R_StudioReloadAllStudioRenderData(void)
 
 					if (pRenderData)
 					{
-						R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
-						R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
+						
 					}
 				}
 			}
@@ -1314,22 +2008,6 @@ void R_InitStudio(void)
 
 	r_lowerbody_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_lowerbody_model_scale = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-}
-
-studiohdr_t* R_StudioGetTextureHeader(CStudioModelRenderData* pRenderData)
-{
-	if ((*pstudiohdr)->textureindex == 0 && pRenderData->TextureModel)
-	{
-		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(pRenderData->TextureModel);
-
-		//Fix: could be nullptr ?
-		if (ptexturehdr)
-			return ptexturehdr;
-
-		return NULL;
-	}
-
-	return (*pstudiohdr);
 }
 
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
@@ -2588,12 +3266,18 @@ void R_StudioDrawMesh(
 	CStudioModelRenderData* pRenderData,
 	CStudioModelRenderSubModel* pRenderSubmodel,
 	CStudioModelRenderMesh* pRenderMesh,
-	mstudiomesh_t*pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref)
 {
-	int flags = ptexture[pskinref[pmesh->skinref]].flags;
+	auto pmesh = (mstudiomesh_t*)((byte*)(*pstudiohdr) + (*psubmodel)->meshindex) + pRenderMesh->iMeshIndex;
+
+	auto uskinref = pskinref[pmesh->skinref];
+
+	if (uskinref > ptexturehdr->numtextures)
+		return;
+
+	int flags = ptexture[uskinref].flags;
 
 	//Lighting related flags are ignored when r_fullbright >= 2
 	if (r_fullbright->value >= 2)
@@ -2660,39 +3344,28 @@ void R_StudioDrawSubmodel(
 	{
 		auto pRenderMesh = &VBOSubmodel->vMesh[i];
 
-		auto pmesh = (mstudiomesh_t*)((byte*)(*pstudiohdr) + (*psubmodel)->meshindex) + pRenderMesh->iMeshIndex;
-
-		R_StudioDrawMesh(pRenderData, VBOSubmodel, pRenderMesh, pmesh, ptexturehdr, ptexture, pskinref);
+		R_StudioDrawMesh(pRenderData, VBOSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref);
 	}
 }
 
-void R_StudioDrawRenderData(CStudioModelRenderData* pRenderData)
+void R_StudioDrawSubmodel(studiohdr_t* studiohdr, mstudiomodel_t* submodel, CStudioModelRenderData* pRenderData)
 {
-	auto submodel_byteoffset = (byte*)(*psubmodel) - (byte*)(*pstudiohdr);
+	auto submodel_byteoffset = (byte*)submodel - (byte*)studiohdr;
 	auto found_VBOSubmodel = pRenderData->mSubmodels.find(submodel_byteoffset);
 
-	if (found_VBOSubmodel == pRenderData->mSubmodels.end()) {
-		Sys_Error("R_StudioDrawRenderData: invalid submodel!\n submodel_byteoffset = %d\n  psubmodel->name = %s\n  pstudiohdr->name = %s", submodel_byteoffset, (*psubmodel)->name, (*pstudiohdr)->name);
+	if (found_VBOSubmodel == pRenderData->mSubmodels.end())
+	{
+		Sys_Error("R_StudioDrawSubmodel: invalid submodel!\n submodel_byteoffset = %d\n  psubmodel->name = %s\n  pstudiohdr->name = %s", submodel_byteoffset, (*psubmodel)->name, (*pstudiohdr)->name);
 		return;
 	}
 
 	auto pRenderSubmodel = found_VBOSubmodel->second;
 
-	auto ptexturehdr = R_StudioGetTextureHeader(pRenderData);
+	studiohdr_t* ptexturehdr = nullptr;
+	mstudiotexture_t* ptexture = nullptr;
+	short* pskinref = nullptr;
 
-	mstudiotexture_t* ptexture = NULL;
-
-	short* pskinref = NULL;
-
-	if (ptexturehdr)
-	{
-		ptexture = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
-
-		pskinref = (short*)((byte*)ptexturehdr + ptexturehdr->skinindex);
-
-		if ((*currententity)->curstate.skin > 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
-			pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
-	}
+	R_StudioGetTextureHeaderSkinref(studiohdr, pRenderData, (*currententity), &ptexturehdr, &ptexture, &pskinref);
 
 	R_StudioDrawSubmodel(pRenderData, pRenderSubmodel, ptexturehdr, ptexture, pskinref);
 }
@@ -2723,7 +3396,7 @@ void R_GLStudioDrawPoints(void)
 
 	R_StudioDrawRenderDataBegin(pRenderData);
 
-	R_StudioDrawRenderData(pRenderData);
+	R_StudioDrawSubmodel((*pstudiohdr),(*psubmodel), pRenderData);
 
 	R_StudioDrawRenderDataEnd();
 }

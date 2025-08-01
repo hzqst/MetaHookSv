@@ -105,8 +105,7 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 
 		if (pRenderData)
 		{
-			R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
-			R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
+			
 		}
 		else
 		{

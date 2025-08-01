@@ -881,9 +881,9 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
 	{
 		vertex3f_t vert;
-		vert.pos[0] = v[0];
-		vert.pos[1] = v[1];
-		vert.pos[2] = v[2];
+		vert.v[0] = v[0];
+		vert.v[1] = v[1];
+		vert.v[2] = v[2];
 		vPolyVertices.emplace_back(vert);
 
 		decalvertex_t vertexData;

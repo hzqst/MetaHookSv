@@ -103,6 +103,14 @@
 #define STUDIO_SPECULAR_TEXTURE			4
 #define STUDIO_MAX_TEXTURE				5
 
+#define STUDIO_VA_POSITION		0
+#define STUDIO_VA_NORMAL		1
+#define STUDIO_VA_TEXCOORD		2
+#define STUDIO_VA_PACKEDBONE	3
+#define STUDIO_VA_TANGENT		4
+#define STUDIO_VA_BITANGENT		5
+#define STUDIO_VA_SMOOTHNORMAL	6
+
 #define STUDIO_RESERVED_TEXTURE_STENCIL				6
 #define STUDIO_RESERVED_TEXTURE_ANIMATED			7
 #define STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE		8
@@ -780,3 +788,13 @@ vec4 ProcessLinearBlendShift(vec4 color)
 	}
 
 #endif
+
+uint UnpackStudioBoneAsVertBone(uint packedBone)
+{
+    return (packedBone & 0xFF);
+}
+
+uint UnpackStudioBoneAsNormBone(uint packedBone)
+{
+    return ((packedBone >> 8) & 0xFF);
+}

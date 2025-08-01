@@ -44,7 +44,10 @@ in vec3 v_worldpos;
 in vec3 v_normal;
 in vec2 v_texcoord;
 in vec4 v_projpos;
-flat in ivec2 v_vertnormbone;
+flat in uint v_packedbone;
+in vec3 v_tangent;
+in vec3 v_bitangent;
+in vec3 v_smoothnormal;
 
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
@@ -70,22 +73,10 @@ layout(location = 3) out vec4 out_Specular;
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PACKED_DIFFUSETEXTURE_ENABLED)
 
-mat3 GenerateTBNMatrix()
+mat3 GenerateTBNMatrix(vec3 tangent, vec3 bitangent, vec3 normal)
 {
-  // Calculate the TBN matrix
-    vec3 dp1 = dFdx(v_worldpos);
-    vec3 dp2 = dFdy(v_worldpos);
-    vec2 duv1 = dFdx(v_texcoord);
-    vec2 duv2 = dFdy(v_texcoord);
-
-    // Solve the linear system
-    vec3 dp2perp = cross(dp2, v_normal);
-    vec3 dp1perp = cross(v_normal, dp1);
-    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
-
-    // Construct a tangent-bitangent-normal matrix
-    return mat3(normalize(T), normalize(B), v_normal);
+   // Construct a tangent-bitangent-normal matrix
+    return mat3(tangent, bitangent, normal);
 }
 
 vec4 SampleNormalTexture(vec2 baseTexcoord)
@@ -668,14 +659,14 @@ vec3 R_GenerateSimplifiedNormal()
 
 vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 {
+	vec3 vNormal = normalize(v_normal);
+
 #if defined(NORMALTEXTURE_ENABLED) || defined(PACKED_NORMALTEXTURE_ENABLED)
 
-	mat3 TBN = GenerateTBNMatrix();
-	vec3 vNormal = NormalMapping(TBN, v_texcoord);
-
-#else
-
-	vec3 vNormal = normalize(v_normal.xyz);
+	vec3 vTangent = normalize(v_tangent);
+	vec3 vBitangent = normalize(v_bitangent);
+	mat3 TBN = GenerateTBNMatrix(vTangent, vBitangent, vNormal);
+	vNormal = NormalMapping(TBN, v_texcoord);
 
 #endif
 
@@ -694,6 +685,7 @@ vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 		#if defined(STUDIO_NF_CELSHADE_FACE)
 
 			vec3 vSphereizedNormal = vWorldPos - v_headorigin;
+
 			vSphereizedNormal = normalize(vSphereizedNormal);
 
 			vNormal = mix(vNormal, vSphereizedNormal, flNormalMask);
@@ -747,10 +739,10 @@ vec4 SampleRawSpecularTexture(vec2 baseTexcoord)
 
 #if defined(CLIP_BONE_ENABLED)
 
-bool IsBoneClipped(int boneindex)
+bool IsBoneClipped(uint boneindex)
 {
-	int slot = boneindex / 32;
-	int index = boneindex - slot * 4;
+	uint slot = boneindex / 32;
+	uint index = boneindex - slot * 4;
 	
 	if((StudioUBO.r_clipbone[slot] & (1 << index)) != 0)
 		return true;
@@ -779,9 +771,9 @@ void main(void)
 {
 	#if defined(CLIP_BONE_ENABLED)
 
-		int vertbone = v_vertnormbone.x;
+		uint vertbone = UnpackStudioBoneAsVertBone(v_packedbone);
 
-		if(IsBoneClipped(vertbone))
+		if (IsBoneClipped(vertbone))
 			discard;
 
 	#endif

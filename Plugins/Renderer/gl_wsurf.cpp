@@ -1395,9 +1395,9 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 	
 	// 检查三个顶点是否形成有效的三角形（非退化）
 	auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
-		const auto& v0 = vPolyVertices[i0].pos;
-		const auto& v1 = vPolyVertices[i1].pos;
-		const auto& v2 = vPolyVertices[i2].pos;
+		const auto& v0 = vPolyVertices[i0].v;
+		const auto& v1 = vPolyVertices[i1].v;
+		const auto& v2 = vPolyVertices[i2].v;
 		
 		vec3_t edge1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
 		vec3_t edge2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
@@ -1411,9 +1411,9 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 	
 	// 检查点是否在三角形内（使用重心坐标）
 	auto isPointInTriangle = [&vPolyVertices](const vec3_t& p, uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
-		const auto& v0 = vPolyVertices[i0].pos;
-		const auto& v1 = vPolyVertices[i1].pos;
-		const auto& v2 = vPolyVertices[i2].pos;
+		const auto& v0 = vPolyVertices[i0].v;
+		const auto& v1 = vPolyVertices[i1].v;
+		const auto& v2 = vPolyVertices[i2].v;
 		
 		vec3_t v0v1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
 		vec3_t v0v2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
@@ -1453,7 +1453,7 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 			if (i == prev || i == idx || i == next)
 				continue;
 				
-			if (isPointInTriangle(vPolyVertices[indices[i]].pos, i0, i1, i2))
+			if (isPointInTriangle(vPolyVertices[indices[i]].v, i0, i1, i2))
 				return false;
 		}
 		
@@ -1609,9 +1609,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
 						vertex3f_t tempVertex;
-						tempVertex.pos[0] = v[0];
-						tempVertex.pos[1] = v[1];
-						tempVertex.pos[2] = v[2];
+						tempVertex.v[0] = v[0];
+						tempVertex.v[1] = v[1];
+						tempVertex.v[2] = v[2];
 
 						brushvertexpos_t tempVertexPos;
 						tempVertexPos.pos[0] = v[0];
@@ -1689,9 +1689,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
 						vertex3f_t tempVertex;
-						tempVertex.pos[0] = v[0];
-						tempVertex.pos[1] = v[1];
-						tempVertex.pos[2] = v[2];
+						tempVertex.v[0] = v[0];
+						tempVertex.v[1] = v[1];
+						tempVertex.v[2] = v[2];
 
 						brushvertexpos_t tempVertexPos;
 						tempVertexPos.pos[0] = v[0];
@@ -1780,9 +1780,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 
 				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
 				{
-					tempVertex[j].pos[0] = v[0];
-					tempVertex[j].pos[1] = v[1];
-					tempVertex[j].pos[2] = v[2];
+					tempVertex[j].v[0] = v[0];
+					tempVertex[j].v[1] = v[1];
+					tempVertex[j].v[2] = v[2];
 
 					tempVertexPos[j].pos[0] = v[0];
 					tempVertexPos[j].pos[1] = v[1];
@@ -1846,9 +1846,9 @@ CWorldSurfaceWorldModel* R_GenerateWorldSurfaceWorldModel(model_t *mod)
 					memcpy(&tempVertexNormal[1], &tempVertexNormal[2], sizeof(brushvertexnormal_t));
 					memcpy(&tempVertexDetail[1], &tempVertexDetail[2], sizeof(brushvertexdetail_t));
 
-					tempVertex[2].pos[0] = v[0];
-					tempVertex[2].pos[1] = v[1];
-					tempVertex[2].pos[2] = v[2];
+					tempVertex[2].v[0] = v[0];
+					tempVertex[2].v[1] = v[1];
+					tempVertex[2].v[2] = v[2];
 
 					tempVertexPos[2].pos[0] = v[0];
 					tempVertexPos[2].pos[1] = v[1];
