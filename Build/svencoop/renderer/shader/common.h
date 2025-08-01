@@ -691,13 +691,13 @@ vec4 ProcessLinearBlendShift(vec4 color)
 
 	vec4 CalcFogWithDistance(vec4 color, float z)
 	{
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			z = ProcessLinearFogShift(z);
+		#endif
+
 		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 
 		fogFactor = clamp(fogFactor, 0, 1);
-
-		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			fogFactor = ProcessLinearFogShift(fogFactor);
-		#endif
 
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
@@ -721,15 +721,15 @@ vec4 ProcessLinearBlendShift(vec4 color)
 
 	vec4 CalcFogWithDistance(vec4 color, float z)
 	{
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			z = ProcessLinearFogShift(z);
+		#endif
+
 		float f = SceneUBO.fogDensity * z;
 
 		float fogFactor = exp( -f );
 
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			fogFactor = ProcessLinearFogShift(fogFactor);
-		#endif
 
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
@@ -753,16 +753,17 @@ vec4 ProcessLinearBlendShift(vec4 color)
 
 	vec4 CalcFogWithDistance(vec4 color, float z)
 	{
+
+		#if defined(LINEAR_FOG_SHIFT_ENABLED)
+			z = ProcessLinearFogShift(z);
+		#endif
+
 		float f = SceneUBO.fogDensity * z;
 
 		float fogFactor = exp(-f*f);
 
 		fogFactor = clamp(fogFactor, 0.0, 1.0);
 		
-		#if defined(LINEAR_FOG_SHIFT_ENABLED)
-			fogFactor = ProcessLinearFogShift(fogFactor);
-		#endif
-
 		vec3 fogColor = SceneUBO.fogColor.xyz;
 
 		fogColor = ProcessOtherGammaColor3(fogColor);

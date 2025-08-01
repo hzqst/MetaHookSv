@@ -67,6 +67,10 @@ void R_DrawSkyBox(void)
 				{
 					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 				}
+				if (!R_IsRenderingGammaBlending())
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
+				}
 			}
 		}
 	}

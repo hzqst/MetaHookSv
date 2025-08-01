@@ -2309,6 +2309,10 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf*
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 					}
+					if (!R_IsRenderingGammaBlending())
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
+					}
 				}
 			}
 		}
@@ -2574,6 +2578,10 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel *pModel, CWorldSurfaceLeaf* p
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 					}
+					if (!R_IsRenderingGammaBlending())
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
+					}
 				}
 			}
 		}
@@ -2716,6 +2724,10 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 					else if (r_fog_mode == GL_EXP2)
 					{
 						WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+					}
+					if (!R_IsRenderingGammaBlending())
+					{
+						WSurfProgramState |= WSURF_LINEAR_FOG_SHIFT_ENABLED;
 					}
 				}
 			}
