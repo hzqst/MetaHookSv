@@ -77,6 +77,21 @@ mat3 GenerateTBNMatrix(vec3 tangent, vec3 bitangent, vec3 normal)
 {
    // Construct a tangent-bitangent-normal matrix
     return mat3(tangent, bitangent, normal);
+
+     // Calculate the TBN matrix
+   // vec3 dp1 = dFdx(v_worldpos);
+   // vec3 dp2 = dFdy(v_worldpos);
+   // vec2 duv1 = dFdx(v_texcoord);
+   // vec2 duv2 = dFdy(v_texcoord);
+
+    // Solve the linear system
+   // vec3 dp2perp = cross(dp2, v_normal);
+   // vec3 dp1perp = cross(v_normal, dp1);
+   // vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+   // vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // Construct a tangent-bitangent-normal matrix
+    //return mat3(normalize(T), normalize(B), v_normal);
 }
 
 vec4 SampleNormalTexture(vec2 baseTexcoord)
@@ -586,36 +601,11 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #endif
 
-#elif defined(STUDIO_NF_CELSHADE_HAIR_H)
-	
-	vec3 kajiyaSpecular = vec3(0.0);
-    vec3 shiftedTangent1 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise);
-    vec3 shiftedTangent2 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise2);
-
-	vec3 V2 = CameraUBO.vpn.xyz;
-
-    vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
-    kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
-    kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
-
-	kajiyaSpecular.x = kajiyaSpecular.x * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.x);
-	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
-	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
-
-#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
-
-	specularColor += kajiyaSpecular * litOrShadowColor * specularMask;
-
-#else
-
-	specularColor += kajiyaSpecular * litOrShadowColor;
-
-#endif
-
 #endif    //defined(STUDIO_NF_CELSHADE_HAIR)
 
 	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor + specularColor;
-}         //R_StudioCelShade
+
+}	//R_StudioCelShade
 
 #endif  //defined(STUDIO_NF_CELSHADE)
 
@@ -642,7 +632,7 @@ vec4 R_RenderDebugPoint(vec4 baseColor)
 
 vec3 R_GenerateSimplifiedNormal()
 {
-	vec3 vNormal = normalize(v_normal.xyz);
+	vec3 vNormal = normalize(v_normal);
 
 	#if defined(STUDIO_NF_DOUBLE_FACE)
 		if (gl_FrontFacing) {
