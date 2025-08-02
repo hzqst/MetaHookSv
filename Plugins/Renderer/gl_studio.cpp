@@ -4562,6 +4562,7 @@ void R_StudioLoadExternalFile_LowerBody(bspentity_t* ent, studiohdr_t* studiohdr
 		}\
 	}
 
+	REGISTER_LOWERBODY_KEY_VALUE(duck_model_origin, UTIL_ParseStringAsVector3);
 	REGISTER_LOWERBODY_KEY_VALUE(model_origin, UTIL_ParseStringAsVector3);
 	REGISTER_LOWERBODY_KEY_VALUE(model_scale, UTIL_ParseStringAsVector1);
 }
