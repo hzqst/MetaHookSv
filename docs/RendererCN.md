@@ -652,19 +652,15 @@ WEBP (RGB8 / RGBA8)
 
 `r_linear_blend_shift 0`: 不要强制偏移透明度
 
-`r_linear_blend_shift 1`: 强制偏移透明度，过低的透明度或过高的透明度会往0.5进行修正。(该控制台参数仅在`r_gamma_blend 0`下可用)
+`r_linear_blend_shift 1`: 强制偏移透明度，过低的透明度或过高的透明度会往0.5进行修正。(仅在`r_gamma_blend 0`下可用)
 
-* `r_linear_blend_shift` 可以在 0 ~ 1 之间对强制偏移透明度进行线性插值，该控制台参数的值越高，最终的透明度越接近强制偏移透明度 
+`r_linear_blend_shift` 可以在 0 ~ 1 之间对强制偏移透明度进行线性插值，该控制台参数的值越高，最终的透明度越接近强制偏移透明度。
 
-`r_linear_fog_shift 0`: 不要强制偏移雾比例
+`r_linear_fog_shift 0`: 不要强制拉低雾浓度
 
-`r_linear_fog_shift 1`: 强制偏移雾比例 (该控制台参数仅在`r_gamma_blend 0`下可用)
+`r_linear_fog_shift 1`: 强制拉低雾浓度 (仅在`r_gamma_blend 0`下可用)
 
-`r_linear_fog_shiftpow` : 强制偏移雾比例至更低的值，公式为 `pow(fogFactor, r_linear_fog_shiftpow)`。
-
-* `r_linear_fog_shiftpow` 默认值：0.3， 对应公式为 fogFactor = fogFactor ^ 0.3
-
-* `r_linear_fog_shiftpow` 允许范围: 0.001 ~ 1000.0
+`r_linear_fog_shiftz` : 强制拉低雾比例的影响因子，公式为 `distanceToPixel = distanceToPixel * r_linear_fog_shiftz`，将像素到摄像机的距离拉近来间接降低雾的实际生效浓度。
 
 ## FOV (视场角度)
 

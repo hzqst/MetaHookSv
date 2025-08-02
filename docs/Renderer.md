@@ -671,17 +671,15 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `r_linear_blend_shift 1`: Shift color/alpha for transparent object to how it looks like in vanilla engine. (Only works when r_gamma_blend off)
 
-* `r_linear_blend_shift` can be ranged from 0.0 to 1.0 and the shifted result will interpolated between 0% to 100% of the shifted blend factor.
+`r_linear_blend_shift 0.5`: Mix with 50% of result from `r_linear_blend_shift 1` and 50% of result from `r_linear_blend_shift 0`.
 
-`r_linear_fog_shift 0` : Don't shift the fog factor to lower value.
+`r_linear_fog_shift 0` : Don't shift the fog density to lower value.
 
-`r_linear_fog_shift 1` : Shift the fog factor to lower value. (Only works when r_gamma_blend off)
+`r_linear_fog_shift 1` : Shift the fog density to lower value. (Only works when r_gamma_blend off)
 
-`r_linear_fog_shiftpow` : Shift the fog factor to lower value with `pow(fogFactor, r_linear_fog_shiftpow)`.
+`r_linear_fog_shift 0.5`: Mix with 50% of result from `r_linear_fog_shift 1` and 50% of result from `r_linear_fog_shift 0`.
 
-* `r_linear_fog_shiftpow` Default value: 0.3 means fogFactor = fogFactor ^ 0.3
-
-* `r_linear_fog_shiftpow` Allowed value: 0.001 to 1000.0
+`r_linear_fog_shiftz` : Shift the fog density to lower value with formula `distanceToPixel = distanceToPixel * r_linear_fog_shiftz` to mimic that the pixel is closer to camera.
 
 ## FOV (Field of View)
 
