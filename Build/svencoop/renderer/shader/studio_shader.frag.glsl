@@ -79,16 +79,16 @@ mat3 GenerateTBNMatrix(vec3 tangent, vec3 bitangent, vec3 normal)
     return mat3(tangent, bitangent, normal);
 
      // Calculate the TBN matrix
-   // vec3 dp1 = dFdx(v_worldpos);
-   // vec3 dp2 = dFdy(v_worldpos);
-   // vec2 duv1 = dFdx(v_texcoord);
-   // vec2 duv2 = dFdy(v_texcoord);
+    //vec3 dp1 = dFdx(v_worldpos);
+    //vec3 dp2 = dFdy(v_worldpos);
+    //vec2 duv1 = dFdx(v_texcoord);
+    //vec2 duv2 = dFdy(v_texcoord);
 
     // Solve the linear system
-   // vec3 dp2perp = cross(dp2, v_normal);
-   // vec3 dp1perp = cross(v_normal, dp1);
-   // vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-   // vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+    //vec3 dp2perp = cross(dp2, v_normal);
+    //vec3 dp1perp = cross(v_normal, dp1);
+    //vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    //vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
 
     // Construct a tangent-bitangent-normal matrix
     //return mat3(normalize(T), normalize(B), v_normal);

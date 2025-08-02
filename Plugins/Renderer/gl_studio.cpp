@@ -136,8 +136,9 @@ cvar_t* r_studio_bone_caches = NULL;
 
 cvar_t* r_studio_external_textures = NULL;
 
-cvar_t* r_lowerbody_model_offset = NULL;
 cvar_t* r_lowerbody_model_scale = NULL;
+cvar_t* r_lowerbody_model_offset = NULL;
+cvar_t* r_lowerbody_duck_model_offset = NULL;
 
 CStudioModelRenderData::~CStudioModelRenderData()
 {
@@ -550,7 +551,7 @@ void R_PrepareTBNForRenderMesh(
 			// 计算副切线的方向（确保右手坐标系）
 			vec3_t crossProduct;
 			CrossProduct(normal, orthogonalTangent, crossProduct);
-			float handedness = (DotProduct(crossProduct, bitangent) < 0.0f) ? -1.0f : 1.0f;
+			float handedness = (DotProduct(crossProduct, bitangent) < 0.0f) ? 1.0f : -1.0f;
 			vec3_t orthogonalBitangent;
 			VectorScale(crossProduct, handedness, orthogonalBitangent);
 
@@ -1146,12 +1147,50 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 
 		gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
 
+		R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
+		R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
+
 		return pRenderData;
 	}
 
 	gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
 
 	pRenderData = new CStudioModelRenderData(mod);
+
+	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
+	pRenderData->CelshadeControl.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
+
+	pRenderData->CelshadeControl.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+	pRenderData->CelshadeControl.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
+	pRenderData->CelshadeControl.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
+
+	pRenderData->CelshadeControl.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
+	pRenderData->CelshadeControl.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
+
+	pRenderData->CelshadeControl.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
+
+	pRenderData->CelshadeControl.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
+
+	pRenderData->CelshadeControl.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
+	pRenderData->CelshadeControl.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
+
+	pRenderData->LowerBodyControl.model_scale.Init(r_lowerbody_model_scale, 1, ConVar_None);
+	pRenderData->LowerBodyControl.model_origin.Init(r_lowerbody_model_offset, 3, ConVar_None);
+	pRenderData->LowerBodyControl.duck_model_origin.Init(r_lowerbody_duck_model_offset, 3, ConVar_None);
 
 	R_AllocSlotForStudioRenderData(mod, studiohdr, pRenderData);
 
@@ -1207,40 +1246,6 @@ CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* stud
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		});
-
-	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
-	pRenderData->CelshadeControl.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
-
-	pRenderData->CelshadeControl.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
-	pRenderData->CelshadeControl.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
-	pRenderData->CelshadeControl.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
-	pRenderData->CelshadeControl.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
-	pRenderData->CelshadeControl.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
-
-	pRenderData->CelshadeControl.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
-	pRenderData->CelshadeControl.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
-
-	pRenderData->CelshadeControl.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
-
-	pRenderData->CelshadeControl.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
-
-	pRenderData->CelshadeControl.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
-	pRenderData->CelshadeControl.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
-
-	pRenderData->LowerBodyControl.model_origin.Init(r_lowerbody_model_offset, 3, ConVar_None);
-	pRenderData->LowerBodyControl.model_scale.Init(r_lowerbody_model_scale, 1, ConVar_None);
 
 	return pRenderData;
 }
@@ -2006,8 +2011,9 @@ void R_InitStudio(void)
 	r_studio_base_specular = R_RegisterMapCvar("r_studio_base_specular", "1.0 2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2, ConVar_None);
 	r_studio_celshade_specular = R_RegisterMapCvar("r_studio_celshade_specular", "1.0  36.0  0.4  0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 4, ConVar_None);
 
-	r_lowerbody_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_lowerbody_model_scale = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_lowerbody_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_lowerbody_duck_model_offset = gEngfuncs.pfnRegisterVariable("r_lowerbody_duck_model_offset", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
@@ -3901,13 +3907,27 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 						(*pScale) = model_scale;
 					}
 
-					vec3_t model_origin = { 0 };
-
-					if (pRenderData->LowerBodyControl.model_origin.GetValues(model_origin))
+					if ((*currententity)->curstate.usehull)
 					{
-						VectorMA(pModelPos, model_origin[0], forward, pModelPos);
-						VectorMA(pModelPos, model_origin[1], right, pModelPos);
-						VectorMA(pModelPos, model_origin[2], up, pModelPos);
+						vec3_t duck_model_origin = { 0 };
+
+						if (pRenderData->LowerBodyControl.duck_model_origin.GetValues(duck_model_origin))
+						{
+							VectorMA(pModelPos, duck_model_origin[0], forward, pModelPos);
+							VectorMA(pModelPos, duck_model_origin[1], right, pModelPos);
+							VectorMA(pModelPos, duck_model_origin[2], up, pModelPos);
+						}
+					}
+					else
+					{
+						vec3_t model_origin = { 0 };
+
+						if (pRenderData->LowerBodyControl.model_origin.GetValues(model_origin))
+						{
+							VectorMA(pModelPos, model_origin[0], forward, pModelPos);
+							VectorMA(pModelPos, model_origin[1], right, pModelPos);
+							VectorMA(pModelPos, model_origin[2], up, pModelPos);
+						}
 					}
 				}
 			}

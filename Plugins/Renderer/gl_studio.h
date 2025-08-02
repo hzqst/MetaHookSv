@@ -162,8 +162,9 @@ public:
 class CStudioLowerBodyControl
 {
 public:
-	StudioConVar model_origin;
 	StudioConVar model_scale;
+	StudioConVar model_origin;
+	StudioConVar duck_model_origin;
 };
 
 class CStudioModelRenderData
