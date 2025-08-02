@@ -531,6 +531,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 {
     "classname" "studio_lowerbody_control"
     "model_origin" "0 0 0"
+    "duck_model_origin" "0 0 0"
     "model_scale" "1"
 }
 ```
@@ -543,9 +544,13 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 
 * `model_origin` is for adjusting the position of lowerbody model with a given offset.
 
+* `duck_model_origin` is for adjusting the position of lowerbody model with a given offset (when player is crouching).
+
 * `model_scale` is for adjusting the curstate.scale of lowerbod model (Sven Co-op only).
 
-* You may use `r_drawlowerbodyattachments 0` to hide attachment entites attached to local player with MOVETYPE_FOLLOW.
+* Use `r_drawlowerbodyattachments 0` to hide attachment entites attached to local player with MOVETYPE_FOLLOW.
+
+* Use `r_drawlowerbodypitch 45` to hide lowerbody model when your viewangles.pitch > 45 degree.
 
 ### Console vars
 

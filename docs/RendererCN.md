@@ -516,6 +516,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 {
     "classname" "studio_lowerbody_control"
     "model_origin" "0 0 0"
+    "duck_model_origin" "0 0 0"
     "model_scale" "1"
 }
 ```
@@ -528,9 +529,12 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * `model_origin` 用于调整下半身模型的位置偏移。
 
+* `duck_model_origin` 用于调整下半身模型的位置偏移 (当玩家蹲下时)。
+
 * `model_scale` 用于下半身模型的缩放 (仅支持Sven Co-op)。
 
-* 你可以使用 `r_drawlowerbodyattachments 0` 隐藏使用MOVETYPE_FOLLOW附加到LocalPlayer实体上的实体.
+* 你可以使用 `r_drawlowerbodyattachments 0` 隐藏使用 MOVETYPE_FOLLOW 附加到 LocalPlayer 上的实体。
+* 你可以使用 `r_drawlowerbodypitch 45` 在当前第一人称视角pitch大于45度时隐藏下半身模型。
 
 ### 控制台参数
 
