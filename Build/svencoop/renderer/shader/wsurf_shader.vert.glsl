@@ -21,9 +21,9 @@ layout(location = WSURF_VA_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord
 #if defined(SKYBOX_ENABLED)
 
 #elif defined(DECAL_ENABLED)
-	layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_STYLES) in uvec4 in_styles;
+	layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 #else
-	layout(location = WSURF_VERTEX_ATTRIBUTE_INDEX_STYLES) in uvec4 in_styles;
+	layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 #endif
 
 out vec3 v_worldpos;
