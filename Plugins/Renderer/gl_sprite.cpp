@@ -55,6 +55,9 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
 			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
 
+		if (state & SPRITE_ALPHA_TEST_ENABLED)
+			defs << "#define ALPHA_TEST_ENABLED\n";
+
 		//...
 
 		if (state & SPRITE_PARALLEL_UPRIGHT_ENABLED)
@@ -111,7 +114,8 @@ const program_state_mapping_t s_SpriteProgramStateName[] = {
 { SPRITE_EXP2_FOG_ENABLED			  ,"SPRITE_EXP2_FOG_ENABLED"			},
 { SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
 { SPRITE_LERP_ENABLED				  ,"SPRITE_LERP_ENABLED"				},
-{ SPRITE_LINEAR_FOG_SHIFT_ENABLED	,"SPRITE_LINEAR_FOG_SHIFT_ENABLED"	},
+{ SPRITE_LINEAR_FOG_SHIFT_ENABLED		,"SPRITE_LINEAR_FOG_SHIFT_ENABLED"	},
+{ SPRITE_ALPHA_TEST_ENABLED				,"SPRITE_ALPHA_TEST_ENABLED"		},
 
 { SPRITE_PARALLEL_UPRIGHT_ENABLED	  ,"SPRITE_PARALLEL_UPRIGHT_ENABLED"	},
 { SPRITE_FACING_UPRIGHT_ENABLED		  ,"SPRITE_FACING_UPRIGHT_ENABLED"		},
@@ -177,6 +181,9 @@ void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *pro
 
 		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
 			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
+		if (state & SPRITE_ALPHA_TEST_ENABLED)
+			defs << "#define ALPHA_TEST_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -264,6 +271,9 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 
 		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
 			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
+		if (state & SPRITE_ALPHA_TEST_ENABLED)
+			defs << "#define ALPHA_TEST_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -654,7 +664,10 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		}
 	}
 
-	glEnable(GL_ALPHA_TEST);
+	//TODO: do in shader?
+	//glEnable(GL_ALPHA_TEST);
+
+	SpriteProgramState |= SPRITE_ALPHA_TEST_ENABLED;
 
 	if (R_IsRenderingWaterView())
 	{
@@ -826,7 +839,9 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	GL_UseProgram(0);
 
-	glDisable(GL_ALPHA_TEST);
+	//TODO: do in shader??
+	//glDisable(GL_ALPHA_TEST);
+
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);

@@ -446,7 +446,11 @@ void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode
 int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn);
-//void triapi_Color4f(float x, float y, float z, float w);
+
+void __stdcall SCClient_glBegin(int GLPrimitiveCode);
+void __stdcall SCClient_glEnd();
+void __stdcall SCClient_glColor4f(float r, float g, float b, float a);
+
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);

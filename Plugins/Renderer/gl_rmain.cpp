@@ -756,6 +756,8 @@ void R_DrawParticles(void)
 	float			scale;
 
 	GL_Bind((*particletexture));
+
+#if 0
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -803,12 +805,10 @@ void R_DrawParticles(void)
 	}
 
 	R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
-
-#if 1
-	gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
-#else
-	//glBegin(GL_TRIANGLES);
 #endif
+
+	gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
+	gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
 
 	VectorScale(vup, 1.5, up);
 	VectorScale(vright, 1.5, right);
@@ -840,7 +840,6 @@ void R_DrawParticles(void)
 			rgba[2] = pb[0];
 			rgba[3] = 255;
 
-#if 1
 			gEngfuncs.pTriAPI->Color4ub(rgba[0], rgba[1], rgba[2], rgba[3]);
 			gEngfuncs.pTriAPI->TexCoord2f(0, 0);
 			gEngfuncs.pTriAPI->Vertex3fv(p->org);
@@ -848,15 +847,6 @@ void R_DrawParticles(void)
 			gEngfuncs.pTriAPI->Vertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 			gEngfuncs.pTriAPI->TexCoord2f(0, 1);
 			gEngfuncs.pTriAPI->Vertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
-#else
-			glColor3ubv(rgba);
-			glTexCoord2f(0, 0);
-			glVertex3fv(p->org);
-			glTexCoord2f(1, 0);
-			glVertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
-			glTexCoord2f(0, 1);
-			glVertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
-#endif
 		}
 
 		if (p->type != pt_clientcustom)
@@ -951,17 +941,13 @@ void R_DrawParticles(void)
 		}
 	}
 
-#if 1
 	gEngfuncs.pTriAPI->End();
-#else
-	//glEnd();
-#endif
 
 	gPrivateFuncs.R_TracerDraw();
 	gPrivateFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
+	//glDisable(GL_ALPHA_TEST);//TODO: do in shader
 }
 
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
@@ -1020,8 +1006,10 @@ public:
 	vec2_t TexCoord{};
 	vec4_t DrawColor{};
 	vec4_t GLColor{};
+	std::vector<vertex3f_t> Positions{};
 	std::vector<triapivertex_t> Vertices{};
-	int RenderMode{};
+	int RenderMode{ };
+	int DrawRenderMode{ };
 	GLuint hVBO{};
 	GLuint hEBO{};
 	GLuint hVAO{};
@@ -1073,6 +1061,13 @@ void triapi_Begin(int primitiveCode)
 	};
 
 	gTriAPICommand.GLPrimitiveCode = tri_GL_Modes[primitiveCode];
+	gTriAPICommand.DrawRenderMode = gTriAPICommand.RenderMode;
+}
+
+void triapi_EndClear()
+{
+	gTriAPICommand.Positions.clear();
+	gTriAPICommand.Vertices.clear();
 }
 
 void triapi_End()
@@ -1084,7 +1079,7 @@ void triapi_End()
 	// 如果没有顶点数据，直接返回
 	if (n == 0)
 	{
-		gTriAPICommand.Vertices.clear();
+		triapi_EndClear();
 		return;
 	}
 
@@ -1093,7 +1088,7 @@ void triapi_End()
 		// 三角形列表 - 直接使用索引
 		if (n < 3) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
@@ -1112,7 +1107,7 @@ void triapi_End()
 		// 三角形扇形 - 转换为三角形列表索引
 		if (n < 3) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
@@ -1128,7 +1123,7 @@ void triapi_End()
 		// 四边形 - 转换为三角形列表索引
 		if (n < 4) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
@@ -1151,19 +1146,13 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_POLYGON)
 	{
-		// 多边形 - 简单的扇形三角化索引
 		if (n < 3) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
-		for (size_t i = 1; i < n - 1; ++i)
-		{
-			Indices.push_back(0);           // 多边形第一个顶点
-			Indices.push_back((GLuint)i);
-			Indices.push_back((GLuint)i + 1);
-		}
+		R_PolygonToTriangleList(gTriAPICommand.Positions, Indices);
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
@@ -1178,7 +1167,7 @@ void triapi_End()
 		// 三角形带 - 转换为三角形列表索引
 		if (n < 3) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
@@ -1206,7 +1195,7 @@ void triapi_End()
 		// 四边形带 - 转换为三角形列表索引
 		if (n < 4) 
 		{
-			gTriAPICommand.Vertices.clear();
+			triapi_EndClear();
 			return;
 		}
 
@@ -1234,7 +1223,7 @@ void triapi_End()
 	// 如果没有生成索引，直接返回
 	if (Indices.size() == 0)
 	{
-		gTriAPICommand.Vertices.clear();
+		triapi_EndClear();
 		return;
 	}
 
@@ -1276,10 +1265,12 @@ void triapi_End()
 	
 	uint64_t ProgramState = 0;
 
-	switch (gTriAPICommand.RenderMode)
+	switch (gTriAPICommand.DrawRenderMode)
 	{
 	case kRenderNormal:
 	{
+		glDisable(GL_BLEND);
+
 		if (!R_IsRenderingGBuffer())
 		{
 			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
@@ -1334,6 +1325,9 @@ void triapi_End()
 
 	case kRenderTransAdd:
 	{
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
 
 		ProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
@@ -1394,6 +1388,9 @@ void triapi_End()
 	case kRenderTransColor:
 	case kRenderTransTexture:
 	{
+		glDepthMask(GL_FALSE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		
 		ProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
@@ -1451,6 +1448,8 @@ void triapi_End()
 	}
 	}
 
+	ProgramState |= SPRITE_ALPHA_TEST_ENABLED;
+
 	triapi_program_t prog{};
 	R_UseTriAPIProgram(ProgramState, &prog);
 
@@ -1466,10 +1465,12 @@ void triapi_End()
 
 	GL_UseProgram(0);
 
+	glDisable(GL_BLEND);
+	glDepthMask(GL_TRUE);
+
 	GL_BindVAO(0);
 	
-	// 清理顶点数据，为下次调用做准备
-	gTriAPICommand.Vertices.clear();
+	triapi_EndClear();
 }
 
 void triapi_Color4f(float r, float g, float b, float a)
@@ -1510,6 +1511,13 @@ void triapi_Color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned
 
 void triapi_Vertex3fv(float* v)
 {
+	vertex3f_t pos{};
+	pos.v[0] = v[0];
+	pos.v[1] = v[1];
+	pos.v[2] = v[2];
+
+	gTriAPICommand.Positions.emplace_back(pos);
+
 	triapivertex_t vertex{};
 	vertex.pos[0] = v[0];
 	vertex.pos[1] = v[1];
@@ -1526,6 +1534,13 @@ void triapi_Vertex3fv(float* v)
 
 void triapi_Vertex3f(float x, float y, float z)
 {
+	vertex3f_t pos{};
+	pos.v[0] = x;
+	pos.v[1] = y;
+	pos.v[2] = z;
+
+	gTriAPICommand.Positions.emplace_back(pos);
+
 	triapivertex_t vertex{};
 	vertex.pos[0] = x;
 	vertex.pos[1] = y;
@@ -1548,9 +1563,9 @@ void triapi_TexCoord2f(float s, float t)
 
 void triapi_Brightness(float brightness)
 {
-	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0] * gTriAPICommand.DrawColor[3] * brightness;
-	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1] * gTriAPICommand.DrawColor[3] * brightness;
-	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2] * gTriAPICommand.DrawColor[3] * brightness;
+	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0] * gTriAPICommand.GLColor[3] * brightness;
+	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1] * gTriAPICommand.GLColor[3] * brightness;
+	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2] * gTriAPICommand.GLColor[3] * brightness;
 	gTriAPICommand.DrawColor[3] = 1;
 }
 
@@ -1601,6 +1616,25 @@ int triapi_BoxInPVS(float* mins, float* maxs)
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn)
 {
 	gPrivateFuncs.triapi_Fog(flFogColor, flStart, flEnd, bOn);
+}
+
+void __stdcall SCClient_glBegin(int GLPrimitiveCode)
+{
+	gTriAPICommand.GLPrimitiveCode = GLPrimitiveCode;
+	gTriAPICommand.DrawRenderMode = gTriAPICommand.RenderMode;
+}
+
+void __stdcall SCClient_glEnd()
+{
+	triapi_End();
+}
+
+void __stdcall SCClient_glColor4f(float r, float g, float b, float a)
+{
+	gTriAPICommand.DrawColor[0] = r;
+	gTriAPICommand.DrawColor[1] = g;
+	gTriAPICommand.DrawColor[2] = b;
+	gTriAPICommand.DrawColor[3] = a;
 }
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)

@@ -17,6 +17,12 @@ void main()
 
 	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
 
+	#if defined(ALPHA_TEST_ENABLED)
+        float alpha = baseColor.a;
+        if (alpha < 0.001)
+            discard;
+	#endif
+
 	baseColor = ProcessDiffuseColor(baseColor);
 
 	vec4 lightmapColor = v_color;

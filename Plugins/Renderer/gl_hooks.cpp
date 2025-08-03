@@ -11351,17 +11351,32 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
-	Install_InlineHook(triapi_RenderMode);
-	Install_InlineHook(triapi_Begin);
-	Install_InlineHook(triapi_End);
-	Install_InlineHook(triapi_Color4f);
-	Install_InlineHook(triapi_Color4ub);
-	Install_InlineHook(triapi_TexCoord2f);
-	Install_InlineHook(triapi_Vertex3fv);
-	Install_InlineHook(triapi_Vertex3f);
-	Install_InlineHook(triapi_Brightness);
-	Install_InlineHook(triapi_Color4fRendermode);
-	Install_InlineHook(triapi_GetMatrix);
+
+	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
+	gEngfuncs.pTriAPI->Begin = triapi_Begin;
+	gEngfuncs.pTriAPI->End = triapi_End;
+	gEngfuncs.pTriAPI->Color4f = triapi_Color4f;
+	gEngfuncs.pTriAPI->Color4ub = triapi_Color4ub;
+	gEngfuncs.pTriAPI->TexCoord2f = triapi_TexCoord2f;
+	gEngfuncs.pTriAPI->Vertex3fv = triapi_Vertex3fv;
+	gEngfuncs.pTriAPI->Vertex3f = triapi_Vertex3f;
+	gEngfuncs.pTriAPI->Brightness = triapi_Brightness;
+	gEngfuncs.pTriAPI->Color4fRendermode = triapi_Color4fRendermode;
+	gEngfuncs.pTriAPI->GetMatrix = triapi_GetMatrix;
+	gEngfuncs.pTriAPI->BoxInPVS = triapi_BoxInPVS;
+	gEngfuncs.pTriAPI->Fog = triapi_Fog;
+
+	//Install_InlineHook(triapi_RenderMode);
+	//Install_InlineHook(triapi_Begin);
+	//Install_InlineHook(triapi_End);
+	//Install_InlineHook(triapi_Color4f);
+	//Install_InlineHook(triapi_Color4ub);
+	//Install_InlineHook(triapi_TexCoord2f);
+	//Install_InlineHook(triapi_Vertex3fv);
+	//Install_InlineHook(triapi_Vertex3f);
+	//Install_InlineHook(triapi_Brightness);
+	//Install_InlineHook(triapi_Color4fRendermode);
+	//Install_InlineHook(triapi_GetMatrix);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(PVSNode);
@@ -12391,6 +12406,14 @@ void Client_InstallHooks()
 	if (gPrivateFuncs.UpdatePlayerPitch)
 	{
 		Install_InlineHook(UpdatePlayerPitch);
+	}
+
+	if (g_bIsSvenCoop)
+	{
+		//Sniber NMSL
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glBegin", SCClient_glBegin, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glEnd", SCClient_glEnd, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glColor4f", SCClient_glColor4f, NULL);
 	}
 }
 

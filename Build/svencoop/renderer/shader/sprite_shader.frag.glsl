@@ -35,6 +35,12 @@ void main(void)
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 
 	vec4 baseColor = texture(baseTex, v_texcoord);
+	
+	#if defined(ALPHA_TEST_ENABLED)
+        float alpha = baseColor.a;
+        if (alpha < 0.001)
+            discard;
+	#endif
 
 	baseColor = ProcessDiffuseColor(baseColor);
 
