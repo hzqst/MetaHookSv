@@ -1448,8 +1448,6 @@ void triapi_End()
 	}
 	}
 
-	ProgramState |= SPRITE_ALPHA_TEST_ENABLED;
-
 	triapi_program_t prog{};
 	R_UseTriAPIProgram(ProgramState, &prog);
 
