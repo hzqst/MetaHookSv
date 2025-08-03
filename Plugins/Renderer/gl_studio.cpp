@@ -2046,11 +2046,12 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 	if (r_studio_external_textures->value > 0)
 	{
 		const auto& ReplaceTexture = pStudioMaterial->textures[STUDIO_REPLACE_TEXTURE - 1];
+		
 		if (ReplaceTexture.gltexturenum)
 		{
 			if (ReplaceTexture.numframes)
 			{
-				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_ANIMATED);
+				glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
 				glBindTexture(GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
 				glActiveTexture(GL_TEXTURE0);
 
@@ -2087,7 +2088,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 
 		if (NormalTexture.gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
+			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
 			glBindTexture(GL_TEXTURE_2D, NormalTexture.gltexturenum);
 			glActiveTexture(GL_TEXTURE0);
 
@@ -2098,7 +2099,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 
 		if (SpecularTexture.gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
+			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
 			glBindTexture(GL_TEXTURE_2D, SpecularTexture.gltexturenum);
 			glActiveTexture(GL_TEXTURE0);
 
@@ -3219,42 +3220,42 @@ void R_StudioDrawMesh_DrawPass(
 	if (StudioProgramState & STUDIO_NORMALTEXTURE_ENABLED)
 	{
 		//Texture unit 2 = Normal texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_PARALLAXTEXTURE_ENABLED)
 	{
 		//Texture unit 3 = Parallax texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_PARALLAX_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_PARALLAX);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_SPECULARTEXTURE_ENABLED)
 	{
 		//Texture unit 4 = Specular texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED)
 	{
-		//Texture unit 6 = Stencil texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
+		//Texture unit 5 = Stencil texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_STENCIL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
 	{
-		//Texture unit 7 = Animated texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_ANIMATED);
+		//Texture unit 6 = Animated texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
 
 	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
 	{
-		//Texture unit 8 = Shadow Diffuse texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE);
+		//Texture unit 7 = Shadow Diffuse texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 

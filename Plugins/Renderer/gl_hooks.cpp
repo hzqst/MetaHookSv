@@ -11062,10 +11062,18 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_EngineSurface(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
+	gPrivateFuncs.triapi_Begin = gEngfuncs.pTriAPI->Begin;
+	gPrivateFuncs.triapi_End = gEngfuncs.pTriAPI->End;
+	gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
+	gPrivateFuncs.triapi_Color4ub = gEngfuncs.pTriAPI->Color4ub;
+	gPrivateFuncs.triapi_TexCoord2f = gEngfuncs.pTriAPI->TexCoord2f;
+	gPrivateFuncs.triapi_Vertex3fv = gEngfuncs.pTriAPI->Vertex3fv;
+	gPrivateFuncs.triapi_Vertex3f = gEngfuncs.pTriAPI->Vertex3f;
+	gPrivateFuncs.triapi_Brightness = gEngfuncs.pTriAPI->Brightness;
+	gPrivateFuncs.triapi_Color4fRendermode = gEngfuncs.pTriAPI->Color4fRendermode;
 	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
 	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
-	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 	Engine_FillAddress_HasOfficialFBOSupport(DllInfo, RealDllInfo);
 
@@ -11277,13 +11285,18 @@ static hook_t* g_phook_Mod_LoadBrushModel = NULL;
 static hook_t* g_phook_Mod_LoadSpriteModel = NULL;
 static hook_t* g_phook_Mod_UnloadSpriteTextures = NULL;
 static hook_t* g_phook_triapi_RenderMode = NULL;
-//static hook_t* g_phook_triapi_BoxInPVS = NULL;
+static hook_t* g_phook_triapi_Begin = NULL;
+static hook_t* g_phook_triapi_End = NULL;
+static hook_t* g_phook_triapi_Color4f = NULL;
+static hook_t* g_phook_triapi_Color4ub = NULL;
+static hook_t* g_phook_triapi_TexCoord2f = NULL;
+static hook_t* g_phook_triapi_Vertex3fv = NULL;
+static hook_t* g_phook_triapi_Vertex3f = NULL;
+static hook_t* g_phook_triapi_Brightness = NULL;
+static hook_t* g_phook_triapi_Color4fRendermode = NULL;
 static hook_t* g_phook_triapi_Fog = NULL;
 static hook_t* g_phook_triapi_GetMatrix = NULL;
-//static hook_t *g_phook_triapi_Color4f = NULL;
 static hook_t* g_phook_Draw_MiptexTexture = NULL;
-//static hook_t* g_phook_Draw_CustomCacheGet = NULL;
-//static hook_t* g_phook_Draw_CacheGet = NULL;
 static hook_t* g_phook_BuildGammaTable = NULL;
 static hook_t* g_phook_DLL_SetModKey = NULL;
 static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
@@ -11339,12 +11352,16 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
-	//Install_InlineHook(triapi_BoxInPVS);
-	//Install_InlineHook(triapi_Fog);
+	Install_InlineHook(triapi_Begin);
+	Install_InlineHook(triapi_End);
+	Install_InlineHook(triapi_Color4f);
+	Install_InlineHook(triapi_Color4ub);
+	Install_InlineHook(triapi_TexCoord2f);
+	Install_InlineHook(triapi_Vertex3fv);
+	Install_InlineHook(triapi_Vertex3f);
+	Install_InlineHook(triapi_Brightness);
+	Install_InlineHook(triapi_Color4fRendermode);
 	Install_InlineHook(triapi_GetMatrix);
-	//Install_InlineHook(Draw_MiptexTexture);
-	//Install_InlineHook(Draw_CustomCacheGet);
-	//Install_InlineHook(Draw_CacheGet);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(PVSNode);
@@ -11354,11 +11371,6 @@ void Engine_InstallHooks(void)
 	{
 		Install_InlineHook(SDL_GL_SetAttribute);
 	}
-#if 0
-	gPrivateFuncs.glDeleteTextures = glDeleteTextures;
-
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.glDeleteTextures, NewglDeleteTextures, (void**)&gPrivateFuncs.glDeleteTextures);
-#endif
 }
 
 void Engine_UninstallHooks(void)
@@ -11397,12 +11409,17 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
-	//Uninstall_Hook(triapi_BoxInPVS);
-	//Uninstall_Hook(triapi_Fog);
+	Uninstall_Hook(triapi_Begin);
+	Uninstall_Hook(triapi_End);
+	Uninstall_Hook(triapi_Color4f);
+	Uninstall_Hook(triapi_Color4ub);
+	Uninstall_Hook(triapi_TexCoord2f);
+	Uninstall_Hook(triapi_Vertex3fv);
+	Uninstall_Hook(triapi_Vertex3f);
+	Uninstall_Hook(triapi_Brightness);
+	Uninstall_Hook(triapi_Color4fRendermode);
 	Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
-	//Uninstall_Hook(Draw_CustomCacheGet);
-	//Uninstall_Hook(Draw_CacheGet);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(PVSNode);

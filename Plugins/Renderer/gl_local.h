@@ -225,6 +225,8 @@ extern int* allow_cheats;
 
 extern int* allocated_textures;
 
+extern int *gRenderMode;
+
 extern int glx;
 extern int gly;
 extern int glwidth;
@@ -430,7 +432,17 @@ void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
+void triapi_Shutdown();
 void triapi_RenderMode(int mode);
+void triapi_Begin(int primitiveCode);
+void triapi_End();
+void triapi_Color4f(float r, float g, float b, float a);
+void triapi_Color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+void triapi_Vertex3fv(float* v);
+void triapi_Vertex3f(float x, float y, float z);
+void triapi_TexCoord2f(float s, float t);
+void triapi_Brightness(float brightness);
+void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode);
 int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn);
@@ -665,16 +677,3 @@ extern bool g_bIsCounterStrike;
 extern bool g_bIsAoMDC;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
-
-#define STENCIL_MASK_ALL						0xFF
-#define STENCIL_MASK_NONE						0
-#define STENCIL_MASK_WORLD						1
-#define STENCIL_MASK_NO_SHADOW					2
-#define STENCIL_MASK_NO_BLOOM					4
-#define STENCIL_MASK_HAS_OUTLINE				0x8
-#define STENCIL_MASK_HAS_SHADOW					0x10
-#define STENCIL_MASK_HAS_FACE					0x20
-#define STENCIL_MASK_HAS_DECAL					0x40
-#define STENCIL_MASK_HAS_FLATSHADE				0x80
-
-#define STENCIL_MASK_HAS_FOG					STENCIL_MASK_WORLD

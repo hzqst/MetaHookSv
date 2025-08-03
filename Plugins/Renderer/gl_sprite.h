@@ -12,6 +12,11 @@ typedef struct legacysprite_program_s
 	int program;
 }legacysprite_program_t;
 
+typedef struct triapi_program_s
+{
+	int program;
+}triapi_program_t;
+
 extern int r_sprite_drawcall;
 extern int r_sprite_polys;
 
@@ -32,12 +37,15 @@ typedef struct sprite_vbo_s
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
 void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *progOutput);
+void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput);
 void R_InitSprite(void);
 void R_ShutdownSprite(void);
 void R_SaveLegacySpriteProgramStates(void);
 void R_LoadLegacySpriteProgramStates(void);
 void R_LoadSpriteProgramStates(void);
 void R_SaveSpriteProgramStates(void);
+void R_LoadTriAPIProgramStates(void);
+void R_SaveTriAPIProgramStates(void);
 void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures);
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData);
 

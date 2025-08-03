@@ -6,7 +6,7 @@
 
 #include "enginedef.h"
 
-typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
+typedef void(*ExtraShaderStageCallback)(GLuint* objs, int* used);
 
 typedef struct
 {
@@ -28,122 +28,130 @@ typedef struct
 	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
 	void (*R_BeamDrawList)(void);
-	void (*R_FreeDeadParticles)(particle_t **);
+	void (*R_FreeDeadParticles)(particle_t**);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
 	void (*ClientDLL_DrawTransparentTriangles)(void);
 	ULONG_PTR pfnDrawTransparentTriangles;
-	void (*R_AddTEntity)(cl_entity_t *pEnt);
+	void (*R_AddTEntity)(cl_entity_t* pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);
 	void (*R_SetupGL)(void);
-	qboolean (*R_CullBox)(vec3_t mins, vec3_t maxs);
+	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 	void (*GL_Bind)(int texnum);
 	void (*GL_SelectTexture)(GLenum target);
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
-	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
+	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
-	void (*EmitWaterPolys)(msurface_t *fa, int direction);
-	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
-	void (*R_RecursiveWorldNode)(mnode_t *node);
-	texture_t *(*R_TextureAnimation)(msurface_t *fa);
-	void (*R_RenderDynamicLightmaps)(msurface_t *fa);
-	void(*R_RotateForEntity)(float *origin, cl_entity_t *ent);
+	void (*EmitWaterPolys)(msurface_t* fa, int direction);
+	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
+	void (*R_RecursiveWorldNode)(mnode_t* node);
+	texture_t* (*R_TextureAnimation)(msurface_t* fa);
+	void (*R_RenderDynamicLightmaps)(msurface_t* fa);
+	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);
 	void (*R_DrawDecals)(qboolean bMultitexture);
-	void (*Draw_MiptexTexture)(cachewad_t *wad, byte *data);
+	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
-	texture_t *(*Draw_DecalTexture)(int index);
+	texture_t* (*Draw_DecalTexture)(int index);
 	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
 	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
-	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
-	void(*R_AddDynamicLights)(msurface_t *psurf);
+	void (*R_BuildLightMap)(msurface_t* psurf, byte* dest, int stride);
+	void(*R_AddDynamicLights)(msurface_t* psurf);
 	//int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal);
-	int(*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal, int filter);
-	int(*GL_Upload16)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8);
+	int(*GL_LoadTexture2)(char* identifier, int textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter);
+	int(*GL_Upload16)(byte* data, int width, int height, int iType, byte* pPal, int a6, int a7, int a8);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
-	void *(*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
-	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
+	void* (*Mod_LoadSpriteFrame)(void* pin, mspriteframe_t** ppframe, int framenum);
+	void (*R_DecalMPoly)(float* v, texture_t* ptexture, msurface_t* psurf, int vertCount);
 	void (*R_MarkLeaves)(void);
-	void (*R_DrawBrushModel)(cl_entity_t *e);
-	void (*R_DrawSpriteModel)(cl_entity_t *ent);
-	int (*CL_FxBlend)(cl_entity_t *ent);
-	float(*R_GlowBlend)(cl_entity_t *ent);
-	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
-	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
-	void *(*realloc_SvEngine)(void *, size_t);
-	dlight_t *(*CL_AllocDlight)(int key);
+	void (*R_DrawBrushModel)(cl_entity_t* e);
+	void (*R_DrawSpriteModel)(cl_entity_t* ent);
+	int (*CL_FxBlend)(cl_entity_t* ent);
+	float(*R_GlowBlend)(cl_entity_t* ent);
+	void (*VID_UpdateWindowVars)(RECT* prc, int x, int y);
+	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
+	void* (*realloc_SvEngine)(void*, size_t);
+	dlight_t* (*CL_AllocDlight)(int key);
 	dlight_t* (*CL_AllocElight)(int key);
 	void(*S_ExtraUpdate)(void);
 	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
-	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+	void(*R_DecalShootInternal)(texture_t* ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	void(*DT_Initialize)(void);
 	mnode_t* (*PVSNode)(mnode_t* node, vec3_t emins, vec3_t emaxs);
 	void(*R_LoadSkys)(void);
-	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
-	void(*R_LoadSkyBox_SvEngine)(const char *name);
+	void(*R_LoadSkyboxInt_SvEngine)(const char* name);
+	void(*R_LoadSkyBox_SvEngine)(const char* name);
 	int(*CL_IsDevOverviewMode)(void);
-	void(*CL_SetDevOverView)(void *a1);
-	void(*Mod_LoadStudioModel)(model_t *mod, void *buffer);
-	void(*Mod_LoadBrushModel)(model_t *mod, void *buffer);
-	model_t *(*Mod_LoadModel)(model_t *mod, qboolean crash, qboolean trackCRC);
+	void(*CL_SetDevOverView)(void* a1);
+	void(*Mod_LoadStudioModel)(model_t* mod, void* buffer);
+	void(*Mod_LoadBrushModel)(model_t* mod, void* buffer);
+	model_t* (*Mod_LoadModel)(model_t* mod, qboolean crash, qboolean trackCRC);
 	void(*triapi_RenderMode)(int mode);
+	void(*triapi_Begin)(int primitiveCode);
+	void(*triapi_End)();
+	void(*triapi_Color4f)(float r, float g, float b, float a);
+	void(*triapi_Color4ub)(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+	void(*triapi_TexCoord2f)(float s, float t);
+	void(*triapi_Vertex3fv)(float* v);
+	void(*triapi_Vertex3f)(float x, float y, float z);
+	void(*triapi_Brightness)(float brightness);
+	void(*triapi_Color4fRendermode)(float r, float g, float b, float a, int rendermode);
 	void(*triapi_GetMatrix) (const int pname, float* matrix);
 	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, BOOL bOn);
-	//void(*triapi_Color4f) (float r, float g, float b, float a);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
 	int(__fastcall* enginesurface_createNewTextureID)(void* pthis, int);
-	void(__fastcall *enginesurface_drawSetTextureFile)(void *pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
+	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int);
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
 	//void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
-	void *(*Hunk_AllocName)(int size, const char *name);
-	void *(*Cache_Alloc)(cache_user_t* c, int size, const char* name);
+	void* (*Hunk_AllocName)(int size, const char* name);
+	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 
 	//Sven Co-op Client DLL
-	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
-	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
-	void(__fastcall *ClientPortalManager_DrawPortalSurface)(void * pthis, int dummy, void *ClientPortal, msurface_t *surf, GLuint texture);
-	void(__fastcall *ClientPortalManager_EnableClipPlane)(void * pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
-	void(__cdecl* UpdatePlayerPitch)(cl_entity_t *a1, float a2);
+	void(__fastcall* ClientPortalManager_ResetAll)(void* pthis, int dummy);
+	mtexinfo_t* (__fastcall* ClientPortalManager_GetOriginalSurfaceTexture)(void* pthis, int dummy, msurface_t* surf);
+	void(__fastcall* ClientPortalManager_DrawPortalSurface)(void* pthis, int dummy, void* ClientPortal, msurface_t* surf, GLuint texture);
+	void(__fastcall* ClientPortalManager_EnableClipPlane)(void* pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
+	void(__cdecl* UpdatePlayerPitch)(cl_entity_t* a1, float a2);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
-	void (*R_LightStrength)(int bone, float *vert, float (*light)[4]);
-	void (*R_StudioLighting)(float *lv, int bone, int flags, vec3_t normal);
-	void (*R_StudioSetupSkin)(studiohdr_t *ptexturehdr, int index);
+	void (*R_LightStrength)(int bone, float* vert, float (*light)[4]);
+	void (*R_StudioLighting)(float* lv, int bone, int flags, vec3_t normal);
+	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
-	void (*R_LightLambert)(float (*light)[4], float *normal, float *src, float *lambert);
+	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
 #if 0
 	void (*BuildNormalIndexTable)(void);
 #endif
-	void (*BuildGlowShellVerts)(vec3_t *pstudioverts, auxvert_t *pauxverts);
-	void (*R_StudioChrome)(int *pchrome, int bone, vec3_t normal);
+	void (*BuildGlowShellVerts)(vec3_t* pstudioverts, auxvert_t* pauxverts);
+	void (*R_StudioChrome)(int* pchrome, int bone, vec3_t normal);
 
 	//Engine Studio Exported API
-	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
-	qboolean (*studioapi_StudioCheckBBox)(void);
+	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);
+	qboolean(*studioapi_StudioCheckBBox)(void);
 	void(*studioapi_RestoreRenderer)(void);
 
 	//Client Studio
-	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
-	void(__fastcall *GameStudioRenderer_StudioMergeBones)(void *pthis, int, model_t *pSubModel);
+	void(__fastcall* GameStudioRenderer_StudioSetupBones)(void* pthis, int);
+	void(__fastcall* GameStudioRenderer_StudioMergeBones)(void* pthis, int, model_t* pSubModel);
 	void(__fastcall* GameStudioRenderer_StudioSaveBones)(void* pthis, int);
-	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
-	int(__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
-	int(__fastcall *GameStudioRenderer__StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
-	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
-	void (__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
+	int(__fastcall* GameStudioRenderer_StudioDrawModel)(void* pthis, int, int flags);
+	int(__fastcall* GameStudioRenderer_StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
+	int(__fastcall* GameStudioRenderer__StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
+	void(__fastcall* GameStudioRenderer_StudioRenderModel)(void* pthis, int);
+	void(__fastcall* GameStudioRenderer_StudioRenderFinal)(void* pthis, int);
 
 	int GameStudioRenderer_StudioCalcAttachments_vftable_index;
 	int GameStudioRenderer_StudioSetupBones_vftable_index;
@@ -164,11 +172,11 @@ typedef struct
 	void(*R_StudioRenderModel)(void);
 	void(*R_StudioRenderFinal)(void);
 	void(*R_StudioSetupBones)(void);
-	void(*R_StudioMergeBones)(model_t *pSubModel);
+	void(*R_StudioMergeBones)(model_t* pSubModel);
 	void(*R_StudioSaveBones)(void);
 
 	//SDL2
-	int (__cdecl * SDL_GL_SetAttribute)(int attr, int value);
+	int(__cdecl* SDL_GL_SetAttribute)(int attr, int value);
 
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;

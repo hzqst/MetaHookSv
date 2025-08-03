@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "gl_common.h"
 #include "pm_defs.h"
 #include "CounterStrike.h"
 #include <event_api.h>
@@ -963,13 +964,6 @@ void R_DrawParticles(void)
 	glDisable(GL_ALPHA_TEST);
 }
 
-#if 0
-void triapi_Color4f(float x, float y, float z, float w)
-{
-	gPrivateFuncs.triapi_Color4f(x, y, z, w);
-}
-#endif
-
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 {
 	mplane_t* splitplane;
@@ -1019,6 +1013,570 @@ mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 	return R_PVSNode(basenode, emins, emaxs);
 }
 
+class CTriAPICommand
+{
+public:
+	int GLPrimitiveCode{};
+	vec2_t TexCoord{};
+	vec4_t DrawColor{};
+	vec4_t GLColor{};
+	std::vector<triapivertex_t> Vertices{};
+	int RenderMode{};
+	GLuint hVBO{};
+	GLuint hEBO{};
+	GLuint hVAO{};
+};
+
+CTriAPICommand gTriAPICommand;
+
+void triapi_Shutdown()
+{
+	if(gTriAPICommand.hVBO)
+	{
+		GL_DeleteBuffer(gTriAPICommand.hVBO);
+		gTriAPICommand.hVBO = 0;
+	}
+	if(gTriAPICommand.hEBO)
+	{
+		GL_DeleteBuffer(gTriAPICommand.hEBO);
+		gTriAPICommand.hEBO = 0;
+	}
+	if(gTriAPICommand.hVAO)
+	{
+		GL_DeleteVAO(gTriAPICommand.hVAO);
+		gTriAPICommand.hVAO = 0;
+	}
+}
+
+void triapi_RenderMode(int mode)
+{
+	gTriAPICommand.RenderMode = mode;
+}
+
+void triapi_Begin(int primitiveCode)
+{
+	if (!(primitiveCode >= TRI_TRIANGLES && primitiveCode <= TRI_QUAD_STRIP))
+	{
+		Sys_Error(__FUNCTION__": invalid primitive %d !", primitiveCode);
+		return;
+	}
+
+	const int tri_GL_Modes[7] =
+	{
+		GL_TRIANGLES,
+		GL_TRIANGLE_FAN,
+		GL_QUADS,
+		GL_POLYGON,
+		GL_LINES,
+		GL_TRIANGLE_STRIP,
+		GL_QUAD_STRIP
+	};
+
+	gTriAPICommand.GLPrimitiveCode = tri_GL_Modes[primitiveCode];
+}
+
+void triapi_End()
+{
+	std::vector<GLuint> Indices;	
+
+	size_t n = gTriAPICommand.Vertices.size();
+	
+	// 如果没有顶点数据，直接返回
+	if (n == 0)
+	{
+		gTriAPICommand.Vertices.clear();
+		return;
+	}
+
+	if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES)
+	{
+		// 三角形列表 - 直接使用索引
+		if (n < 3) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 0; i < n; i += 3)
+		{
+			if (i + 2 < n)
+			{
+				Indices.push_back((GLuint)i);
+				Indices.push_back((GLuint)i + 1);
+				Indices.push_back((GLuint)i + 2);
+			}
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_FAN)
+	{
+		// 三角形扇形 - 转换为三角形列表索引
+		if (n < 3) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 1; i < n - 1; ++i)
+		{
+			Indices.push_back(0);           // 扇形中心
+			Indices.push_back((GLuint)i);
+			Indices.push_back((GLuint)i + 1);
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_QUADS)
+	{
+		// 四边形 - 转换为三角形列表索引
+		if (n < 4) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 0; i < n; i += 4)
+		{
+			if (i + 3 < n)
+			{
+				// 将四边形分解为两个三角形 (0,1,2) 和 (2,3,0)
+				// 第一个三角形
+				Indices.push_back((GLuint)i + 0);
+				Indices.push_back((GLuint)i + 1);
+				Indices.push_back((GLuint)i + 2);
+				
+				// 第二个三角形
+				Indices.push_back((GLuint)i + 2);
+				Indices.push_back((GLuint)i + 3);
+				Indices.push_back((GLuint)i + 0);
+			}
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_POLYGON)
+	{
+		// 多边形 - 简单的扇形三角化索引
+		if (n < 3) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 1; i < n - 1; ++i)
+		{
+			Indices.push_back(0);           // 多边形第一个顶点
+			Indices.push_back((GLuint)i);
+			Indices.push_back((GLuint)i + 1);
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
+	{
+		// 线段 - 直接使用线段索引
+		for (size_t i = 0; i < n; i++)
+		{
+			Indices.push_back((GLuint)i);
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_STRIP)
+	{
+		// 三角形带 - 转换为三角形列表索引
+		if (n < 3) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 0; i < n - 2; ++i)
+		{
+			// 三角形带中每个三角形的顶点顺序需要交替
+			if (i % 2 == 0)
+			{
+				// 偶数索引：正常顺序 (i, i+1, i+2)
+				Indices.push_back((GLuint)i);
+				Indices.push_back((GLuint)i + 1);
+				Indices.push_back((GLuint)i + 2);
+			}
+			else
+			{
+				// 奇数索引：反向顺序 (i+1, i, i+2)
+				Indices.push_back((GLuint)i + 1);
+				Indices.push_back((GLuint)i);
+				Indices.push_back((GLuint)i + 2);
+			}
+		}
+	}
+	else if (gTriAPICommand.GLPrimitiveCode == GL_QUAD_STRIP)
+	{
+		// 四边形带 - 转换为三角形列表索引
+		if (n < 4) 
+		{
+			gTriAPICommand.Vertices.clear();
+			return;
+		}
+
+		for (size_t i = 0; i + 3 < n; i += 2)
+		{
+			// 四边形带中每个四边形的四个顶点索引
+			GLuint v0 = (GLuint)i;
+			GLuint v1 = (GLuint)i + 1;
+			GLuint v2 = (GLuint)i + 2;
+			GLuint v3 = (GLuint)i + 3;
+
+			// 将四边形分解为两个三角形 (v0,v1,v2) 和 (v2,v3,v0)
+			// 第一个三角形
+			Indices.push_back(v0);
+			Indices.push_back(v1);
+			Indices.push_back(v2);
+
+			// 第二个三角形
+			Indices.push_back(v2);
+			Indices.push_back(v3);
+			Indices.push_back(v0);
+		}
+	}
+
+	// 如果没有生成索引，直接返回
+	if (Indices.size() == 0)
+	{
+		gTriAPICommand.Vertices.clear();
+		return;
+	}
+
+	if(!gTriAPICommand.hVBO){
+		gTriAPICommand.hVBO = GL_GenBuffer();
+	}
+	
+	size_t VBODataSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.size();
+	GL_UploadDataToVBODynamicDraw(gTriAPICommand.hVBO, VBODataSize, nullptr);
+	GL_UploadSubDataToVBODynamicDraw(gTriAPICommand.hVBO, 0, VBODataSize, gTriAPICommand.Vertices.data());
+
+	if(!gTriAPICommand.hEBO){
+		gTriAPICommand.hEBO = GL_GenBuffer();
+	}
+	
+	size_t EBODataSize = sizeof(GLuint) * Indices.size();
+	GL_UploadDataToEBODynamicDraw(gTriAPICommand.hEBO, EBODataSize, nullptr);
+	GL_UploadSubDataToEBODynamicDraw(gTriAPICommand.hEBO, 0, EBODataSize, Indices.data());
+
+	if(!gTriAPICommand.hVAO){
+		gTriAPICommand.hVAO = GL_GenVAO();
+		GL_BindStatesForVAO(gTriAPICommand.hVAO, gTriAPICommand.hVBO, gTriAPICommand.hEBO, 
+			[]() {
+				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
+				glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+				glEnableVertexAttribArray(TRIAPI_VA_COLOR);
+				glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
+				glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
+				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
+			}, 
+			[]() {
+				glDisableVertexAttribArray(TRIAPI_VA_POSITION);
+				glDisableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+				glDisableVertexAttribArray(TRIAPI_VA_COLOR);
+			});
+	}
+
+	GL_BindVAO(gTriAPICommand.hVAO);
+	
+	uint64_t ProgramState = 0;
+
+	switch (gTriAPICommand.RenderMode)
+	{
+	case kRenderNormal:
+	{
+		if (!R_IsRenderingGBuffer())
+		{
+			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+			{
+
+			}
+			else if ((ProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
+				{
+					if (r_fog_mode == GL_LINEAR)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						ProgramState |= SPRITE_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						ProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					}
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+					}
+				}
+			}
+		}
+
+		if (R_IsRenderingWaterView())
+		{
+			ProgramState |= SPRITE_CLIP_ENABLED;
+		}
+
+		if (R_IsRenderingGammaBlending())
+		{
+			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+		}
+
+		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		{
+			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
+		}
+		break;
+	}
+
+	case kRenderTransAdd:
+	{
+		R_SetGBufferBlend(GL_ONE, GL_ONE);
+
+		ProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
+
+		if (!R_IsRenderingGBuffer())
+		{
+			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+			{
+
+			}
+			else if ((ProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
+				{
+					if (r_fog_mode == GL_LINEAR)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						ProgramState |= SPRITE_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						ProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					}
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+					}
+				}
+			}
+		}
+
+		if (R_IsRenderingWaterView())
+		{
+			ProgramState |= SPRITE_CLIP_ENABLED;
+		}
+
+		if (R_IsRenderingGammaBlending())
+		{
+			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+		}
+
+		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		{
+			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
+		}
+		break;
+	}
+
+	case kRenderTransAlpha:
+	case kRenderTransColor:
+	case kRenderTransTexture:
+	{
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+		ProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
+
+		if (R_IsRenderingWaterView())
+		{
+			ProgramState |= SPRITE_CLIP_ENABLED;
+		}
+
+		if (!R_IsRenderingGBuffer())
+		{
+			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+			{
+
+			}
+			else if ((ProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+			{
+
+			}
+			else
+			{
+				if (R_IsRenderingFog())
+				{
+					if (r_fog_mode == GL_LINEAR)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP)
+					{
+						ProgramState |= SPRITE_EXP_FOG_ENABLED;
+					}
+					else if (r_fog_mode == GL_EXP2)
+					{
+						ProgramState |= SPRITE_EXP2_FOG_ENABLED;
+					}
+
+					if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+					{
+						ProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+					}
+				}
+			}
+		}
+
+		if (R_IsRenderingGammaBlending())
+		{
+			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+		}
+
+		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		{
+			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
+		}
+		break;
+	}
+	}
+
+	triapi_program_t prog{};
+	R_UseTriAPIProgram(ProgramState, &prog);
+
+	// 根据图元类型选择正确的绘制模式
+	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
+	{
+		glDrawElements(GL_LINES, Indices.size(), GL_UNSIGNED_INT, 0);
+	}
+	else 
+	{
+		glDrawElements(GL_TRIANGLES, Indices.size(), GL_UNSIGNED_INT, 0);
+	}
+
+	GL_UseProgram(0);
+
+	GL_BindVAO(0);
+	
+	// 清理顶点数据，为下次调用做准备
+	gTriAPICommand.Vertices.clear();
+}
+
+void triapi_Color4f(float r, float g, float b, float a)
+{
+	gTriAPICommand.GLColor[0] = r;
+	gTriAPICommand.GLColor[1] = g;
+	gTriAPICommand.GLColor[2] = b;
+	gTriAPICommand.GLColor[3] = a;
+
+	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
+	{
+		gTriAPICommand.DrawColor[0] = r;
+		gTriAPICommand.DrawColor[1] = g;
+		gTriAPICommand.DrawColor[2] = b;
+		gTriAPICommand.DrawColor[3] = a;
+	}
+	else
+	{
+		gTriAPICommand.DrawColor[0] = r * a;
+		gTriAPICommand.DrawColor[1] = g * a;
+		gTriAPICommand.DrawColor[2] = b * a;
+		gTriAPICommand.DrawColor[3] = 1;
+	}
+}
+
+void triapi_Color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+	gTriAPICommand.GLColor[0] = r / 255.0;
+	gTriAPICommand.GLColor[1] = g / 255.0;
+	gTriAPICommand.GLColor[2] = b / 255.0;
+	gTriAPICommand.GLColor[3] = a / 255.0;
+
+	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0];
+	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1];
+	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2];
+	gTriAPICommand.DrawColor[3] = 1;
+}
+
+void triapi_Vertex3fv(float* v)
+{
+	triapivertex_t vertex{};
+	vertex.pos[0] = v[0];
+	vertex.pos[1] = v[1];
+	vertex.pos[2] = v[2];
+	vertex.texcoord[0] = gTriAPICommand.TexCoord[0];
+	vertex.texcoord[1] = gTriAPICommand.TexCoord[1];
+	vertex.color[0] = gTriAPICommand.DrawColor[0];
+	vertex.color[1] = gTriAPICommand.DrawColor[1];
+	vertex.color[2] = gTriAPICommand.DrawColor[2];
+	vertex.color[3] = gTriAPICommand.DrawColor[3];
+
+	gTriAPICommand.Vertices.push_back(vertex);
+}
+
+void triapi_Vertex3f(float x, float y, float z)
+{
+	triapivertex_t vertex{};
+	vertex.pos[0] = x;
+	vertex.pos[1] = y;
+	vertex.pos[2] = z;
+	vertex.texcoord[0] = gTriAPICommand.TexCoord[0];
+	vertex.texcoord[1] = gTriAPICommand.TexCoord[1];
+	vertex.color[0] = gTriAPICommand.DrawColor[0];
+	vertex.color[1] = gTriAPICommand.DrawColor[1];
+	vertex.color[2] = gTriAPICommand.DrawColor[2];
+	vertex.color[3] = gTriAPICommand.DrawColor[3];
+	
+	gTriAPICommand.Vertices.push_back(vertex);
+}
+
+void triapi_TexCoord2f(float s, float t)
+{
+	gTriAPICommand.TexCoord[0] = s;
+	gTriAPICommand.TexCoord[1] = t;
+}
+
+void triapi_Brightness(float brightness)
+{
+	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0] * gTriAPICommand.DrawColor[3] * brightness;
+	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1] * gTriAPICommand.DrawColor[3] * brightness;
+	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2] * gTriAPICommand.DrawColor[3] * brightness;
+	gTriAPICommand.DrawColor[3] = 1;
+}
+
+void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode)
+{
+	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
+	{
+		gTriAPICommand.GLColor[3] = a / 255;
+	}
+
+	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
+	{
+		gTriAPICommand.DrawColor[0] = r;
+		gTriAPICommand.DrawColor[1] = g;
+		gTriAPICommand.DrawColor[2] = b;
+		gTriAPICommand.DrawColor[3] = a;
+	}
+	else
+	{
+		gTriAPICommand.DrawColor[0] = r * a;
+		gTriAPICommand.DrawColor[1] = g * a;
+		gTriAPICommand.DrawColor[2] = b * a;
+		gTriAPICommand.DrawColor[3] = 1;
+	}
+}
+
 void triapi_GetMatrix(const int pname, float* matrix)
 {
 	if (pname == GL_MODELVIEW_MATRIX)
@@ -1031,8 +1589,8 @@ void triapi_GetMatrix(const int pname, float* matrix)
 		memcpy(matrix, r_projection_matrix, sizeof(float[16]));
 		return;
 	}
-
-	return gPrivateFuncs.triapi_GetMatrix(pname, matrix);
+	Sys_Error("triapi_GetMatrix: Invalid matrix type %d !", pname);
+	//return gPrivateFuncs.triapi_GetMatrix(pname, matrix);
 }
 
 int triapi_BoxInPVS(float* mins, float* maxs)
@@ -1043,204 +1601,6 @@ int triapi_BoxInPVS(float* mins, float* maxs)
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn)
 {
 	gPrivateFuncs.triapi_Fog(flFogColor, flStart, flEnd, bOn);
-}
-
-void triapi_RenderMode(int mode)
-{
-	gPrivateFuncs.triapi_RenderMode(mode);
-
-	switch (mode)
-	{
-	case kRenderNormal:
-	{
-		if (r_draw_legacysprite)
-		{
-			program_state_t LegacySpriteProgramState = 0;
-
-			if (!R_IsRenderingGBuffer())
-			{
-				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
-				{
-
-				}
-				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
-				{
-
-				}
-				else
-				{
-					if (R_IsRenderingFog())
-					{
-						if (r_fog_mode == GL_LINEAR)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP2)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
-						}
-
-						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
-						}
-					}
-				}
-			}
-
-			if (R_IsRenderingWaterView())
-			{
-				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
-			}
-
-			if (R_IsRenderingGammaBlending())
-			{
-				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
-			}
-
-			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
-			{
-				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
-			}
-
-
-			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
-		}
-		break;
-	}
-
-	case kRenderTransAdd:
-	{
-		R_SetGBufferBlend(GL_ONE, GL_ONE);
-
-		if (r_draw_legacysprite)
-		{
-			program_state_t LegacySpriteProgramState = SPRITE_ADDITIVE_BLEND_ENABLED;
-
-			if (!R_IsRenderingGBuffer())
-			{
-				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
-				{
-
-				}
-				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
-				{
-
-				}
-				else
-				{
-					if (R_IsRenderingFog())
-					{
-						if (r_fog_mode == GL_LINEAR)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP2)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
-						}
-
-						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
-						}
-					}
-				}
-			}
-
-			if (R_IsRenderingWaterView())
-			{
-				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
-			}
-
-			if (R_IsRenderingGammaBlending())
-			{
-				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
-			}
-
-			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
-			{
-				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
-			}
-
-			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
-		}
-		break;
-	}
-
-	case kRenderTransAlpha:
-	case kRenderTransColor:
-	case kRenderTransTexture:
-	{
-		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
-		if (r_draw_legacysprite)
-		{
-			program_state_t LegacySpriteProgramState = SPRITE_ALPHA_BLEND_ENABLED;
-
-			if (R_IsRenderingWaterView())
-			{
-				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
-			}
-
-			if (!R_IsRenderingGBuffer())
-			{
-				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
-				{
-
-				}
-				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
-				{
-
-				}
-				else
-				{
-					if (R_IsRenderingFog())
-					{
-						if (r_fog_mode == GL_LINEAR)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-						}
-						else if (r_fog_mode == GL_EXP2)
-						{
-							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
-						}
-
-						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
-						{
-							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
-						}
-					}
-				}
-			}
-
-			if (R_IsRenderingGammaBlending())
-			{
-				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
-			}
-
-			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
-			{
-				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
-			}
-
-			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
-		}
-		break;
-	}
-	}
 }
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)
@@ -2004,19 +2364,19 @@ void GL_Init(void)
 
 	if (GLEW_OK != err)
 	{
-		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
+		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
 		return;
 	}
 
 	if (!(*gl_mtexable))
 	{
-		g_pMetaHookAPI->SysError("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
+		Sys_Error("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
 		return;
 	}
 
 	if (!GLEW_VERSION_4_3)
 	{
-		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\n");
+		Sys_Error("OpenGL 4.3 is not supported!\n");
 		return;
 	}
 
@@ -2770,6 +3130,7 @@ void R_Shutdown(void)
 	R_ShutdownPostProcess();
 	R_ShutdownPortal();
 	R_ShutdownEntityComponents();
+	triapi_Shutdown();
 
 	R_FreeMapCvars();
 }
@@ -4005,6 +4366,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveDFinalProgramStates();
 	R_SaveStudioProgramStates();
 	R_SaveSpriteProgramStates();
+	R_SaveTriAPIProgramStates();
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 
@@ -4019,6 +4381,7 @@ void R_LoadProgramStates_f(void)
 	R_LoadDFinalProgramStates();
 	R_LoadStudioProgramStates();
 	R_LoadSpriteProgramStates();
+	R_LoadTriAPIProgramStates();
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
 	GL_UseProgram(0);

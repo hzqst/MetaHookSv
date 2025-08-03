@@ -2,13 +2,13 @@
 
 #include "common.h"
 
-layout(binding = STUDIO_DIFFUSE_TEXTURE) uniform sampler2D diffuseTex;
-layout(binding = STUDIO_NORMAL_TEXTURE) uniform sampler2D normalTex;
-layout(binding = STUDIO_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
-layout(binding = STUDIO_SPECULAR_TEXTURE) uniform sampler2D specularTex;
-layout(binding = STUDIO_RESERVED_TEXTURE_STENCIL) uniform usampler2D stencilTex;
-layout(binding = STUDIO_RESERVED_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
-layout(binding = STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
+layout(binding = STUDIO_BIND_TEXTURE_DIFFUSE) uniform sampler2D diffuseTex;
+layout(binding = STUDIO_BIND_TEXTURE_NORMAL) uniform sampler2D normalTex;
+layout(binding = STUDIO_BIND_TEXTURE_PARALLAX) uniform sampler2D parallaxTex;
+layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
+layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
+layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
+layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
 
 /* celshade */
 
