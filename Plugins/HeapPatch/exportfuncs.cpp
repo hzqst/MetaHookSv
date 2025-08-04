@@ -9,7 +9,6 @@ r_studio_interface_t **gpStudioInterface;
 
 int HUD_VidInit(void)
 {
-
 	return gExportfuncs.HUD_VidInit();
 }
 
