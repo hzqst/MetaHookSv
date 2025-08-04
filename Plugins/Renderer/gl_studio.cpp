@@ -1190,6 +1190,7 @@ void R_FreeAllStudioRenderData(void)
 	}
 }
 
+#if 0
 void R_StudioReloadAllStudioRenderData(void)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
@@ -1215,6 +1216,7 @@ void R_StudioReloadAllStudioRenderData(void)
 		}
 	}
 }
+#endif
 
 void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 {
@@ -3290,7 +3292,7 @@ void R_GLStudioDrawPoints(void)
 
 	if (!pRenderData)
 	{
-		Sys_Error("R_GLStudioDrawPoints: no available pRenderData for \"%s\"!", (*pstudiohdr)->name);
+		//Sys_Error("R_GLStudioDrawPoints: no available pRenderData for \"%s\"!", (*pstudiohdr)->name);
 		return;
 	}
 

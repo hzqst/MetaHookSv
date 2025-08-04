@@ -353,6 +353,8 @@ extern cvar_t* r_detailskytextures;
 
 extern cvar_t* r_leaf_lazy_load;
 
+extern cvar_t* r_studio_lazy_load;
+
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);

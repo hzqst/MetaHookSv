@@ -125,24 +125,27 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 
 	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
 
-	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
-
-	if (studiohdr)
+	if ((int)r_studio_lazy_load->value == 0)
 	{
-		auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
+		auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 
-		if (pRenderData)
+		if (studiohdr)
 		{
-			
+			auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
+
+			if (pRenderData)
+			{
+
+			}
+			else
+			{
+				gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: pRenderData not available for \"%s\".\n", mod->name);
+			}
 		}
 		else
 		{
-			gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: pRenderData not available for \"%s\".\n", mod->name);
+			gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: studiohdr not available for \"%s\".\n", mod->name);
 		}
-	}
-	else
-	{
-		gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: studiohdr not available for \"%s\".\n", mod->name);
 	}
 }
 

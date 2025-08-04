@@ -341,6 +341,8 @@ cvar_t* r_drawlowerbodypitch = NULL;
 
 cvar_t* r_leaf_lazy_load = NULL;
 
+cvar_t* r_studio_lazy_load = NULL;
+
 cvar_t* r_wsurf_parallax_scale = NULL;
 cvar_t* r_wsurf_sky_fog = NULL;
 cvar_t* r_wsurf_zprepass = NULL;
@@ -3126,6 +3128,12 @@ void R_InitCvars(void)
 	r_leaf_lazy_load 2: Load only necessary vertices and indices into VRAM when loading map, generate and load indirect draw command into VRAM when player enter leaf.
 	*/
 	r_leaf_lazy_load = gEngfuncs.pfnRegisterVariable("r_leaf_lazy_load", "2", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	/*
+	r_studio_lazy_load 0: Load GPU resouces for all studio models at once when loading map.
+	r_studio_lazy_load 1: Load GPU resources for studio models only when they are being rendered.
+	*/
+	r_studio_lazy_load = gEngfuncs.pfnRegisterVariable("r_studio_lazy_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
