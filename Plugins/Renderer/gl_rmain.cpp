@@ -1010,6 +1010,7 @@ public:
 	vec4_t GLColor{};
 	std::vector<vertex3f_t> Positions{};
 	std::vector<triapivertex_t> Vertices{};
+	std::vector<uint32_t> Indices{};
 	int RenderMode{ };
 	int DrawRenderMode{ };
 	GLuint hVBO{};
@@ -1070,12 +1071,11 @@ void triapi_EndClear()
 {
 	gTriAPICommand.Positions.clear();
 	gTriAPICommand.Vertices.clear();
+	gTriAPICommand.Indices.clear();
 }
 
 void triapi_End()
 {
-	std::vector<GLuint> Indices;	
-
 	size_t n = gTriAPICommand.Vertices.size();
 	
 	// 如果没有顶点数据，直接返回
@@ -1098,9 +1098,9 @@ void triapi_End()
 		{
 			if (i + 2 < n)
 			{
-				Indices.push_back((GLuint)i);
-				Indices.push_back((GLuint)i + 1);
-				Indices.push_back((GLuint)i + 2);
+				gTriAPICommand.Indices.push_back((GLuint)i);
+				gTriAPICommand.Indices.push_back((GLuint)i + 1);
+				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 			}
 		}
 	}
@@ -1115,9 +1115,9 @@ void triapi_End()
 
 		for (size_t i = 1; i < n - 1; ++i)
 		{
-			Indices.push_back(0);           // 扇形中心
-			Indices.push_back((GLuint)i);
-			Indices.push_back((GLuint)i + 1);
+			gTriAPICommand.Indices.push_back(0);           // 扇形中心
+			gTriAPICommand.Indices.push_back((GLuint)i);
+			gTriAPICommand.Indices.push_back((GLuint)i + 1);
 		}
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_QUADS)
@@ -1135,14 +1135,14 @@ void triapi_End()
 			{
 				// 将四边形分解为两个三角形 (0,1,2) 和 (2,3,0)
 				// 第一个三角形
-				Indices.push_back((GLuint)i + 0);
-				Indices.push_back((GLuint)i + 1);
-				Indices.push_back((GLuint)i + 2);
+				gTriAPICommand.Indices.push_back((GLuint)i + 0);
+				gTriAPICommand.Indices.push_back((GLuint)i + 1);
+				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 				
 				// 第二个三角形
-				Indices.push_back((GLuint)i + 2);
-				Indices.push_back((GLuint)i + 3);
-				Indices.push_back((GLuint)i + 0);
+				gTriAPICommand.Indices.push_back((GLuint)i + 2);
+				gTriAPICommand.Indices.push_back((GLuint)i + 3);
+				gTriAPICommand.Indices.push_back((GLuint)i + 0);
 			}
 		}
 	}
@@ -1154,14 +1154,14 @@ void triapi_End()
 			return;
 		}
 
-		R_PolygonToTriangleList(gTriAPICommand.Positions, Indices);
+		R_PolygonToTriangleList(gTriAPICommand.Positions, gTriAPICommand.Indices);
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
 		// 线段 - 直接使用线段索引
 		for (size_t i = 0; i < n; i++)
 		{
-			Indices.push_back((GLuint)i);
+			gTriAPICommand.Indices.push_back((GLuint)i);
 		}
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_STRIP)
@@ -1179,16 +1179,16 @@ void triapi_End()
 			if (i % 2 == 0)
 			{
 				// 偶数索引：正常顺序 (i, i+1, i+2)
-				Indices.push_back((GLuint)i);
-				Indices.push_back((GLuint)i + 1);
-				Indices.push_back((GLuint)i + 2);
+				gTriAPICommand.Indices.push_back((GLuint)i);
+				gTriAPICommand.Indices.push_back((GLuint)i + 1);
+				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 			}
 			else
 			{
 				// 奇数索引：反向顺序 (i+1, i, i+2)
-				Indices.push_back((GLuint)i + 1);
-				Indices.push_back((GLuint)i);
-				Indices.push_back((GLuint)i + 2);
+				gTriAPICommand.Indices.push_back((GLuint)i + 1);
+				gTriAPICommand.Indices.push_back((GLuint)i);
+				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 			}
 		}
 	}
@@ -1211,19 +1211,19 @@ void triapi_End()
 
 			// 将四边形分解为两个三角形 (v0,v1,v2) 和 (v2,v3,v0)
 			// 第一个三角形
-			Indices.push_back(v0);
-			Indices.push_back(v1);
-			Indices.push_back(v2);
+			gTriAPICommand.Indices.push_back(v0);
+			gTriAPICommand.Indices.push_back(v1);
+			gTriAPICommand.Indices.push_back(v2);
 
 			// 第二个三角形
-			Indices.push_back(v2);
-			Indices.push_back(v3);
-			Indices.push_back(v0);
+			gTriAPICommand.Indices.push_back(v2);
+			gTriAPICommand.Indices.push_back(v3);
+			gTriAPICommand.Indices.push_back(v0);
 		}
 	}
 
 	// 如果没有生成索引，直接返回
-	if (Indices.size() == 0)
+	if (gTriAPICommand.Indices.size() == 0)
 	{
 		triapi_EndClear();
 		return;
@@ -1242,10 +1242,10 @@ void triapi_End()
 		gTriAPICommand.hEBO = GL_GenBuffer();
 	}
 	
-	size_t EBOSize = sizeof(GLuint) * Indices.capacity();
-	size_t EBODataSize = sizeof(GLuint) * Indices.size();
+	size_t EBOSize = sizeof(GLuint) * gTriAPICommand.Indices.capacity();
+	size_t EBODataSize = sizeof(GLuint) * gTriAPICommand.Indices.size();
 	GL_UploadDataToEBOStreamDraw(gTriAPICommand.hEBO, EBOSize, nullptr);
-	GL_UploadSubDataToEBO(gTriAPICommand.hEBO, 0, EBODataSize, Indices.data());
+	GL_UploadSubDataToEBO(gTriAPICommand.hEBO, 0, EBODataSize, gTriAPICommand.Indices.data());
 
 	if(!gTriAPICommand.hVAO){
 		gTriAPICommand.hVAO = GL_GenVAO();
@@ -1458,11 +1458,11 @@ void triapi_End()
 	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElements(GL_LINES, Indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, 0);
 	}
 	else 
 	{
-		glDrawElements(GL_TRIANGLES, Indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, 0);
 	}
 
 	GL_UseProgram(0);
