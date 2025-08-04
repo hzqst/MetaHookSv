@@ -411,7 +411,14 @@ void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, const void* data)
+void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadSubDataToVBO(GLuint VBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
 	{
@@ -450,7 +457,14 @@ void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void GL_UploadSubDataToEBODynamicDraw(GLuint EBO, size_t offset, size_t size, const void* data)
+void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
 	{
@@ -463,6 +477,7 @@ void GL_UploadSubDataToEBODynamicDraw(GLuint EBO, size_t offset, size_t size, co
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 }
+
 
 /*
 	ABO: Indirect Draw Attribute Buffer Object

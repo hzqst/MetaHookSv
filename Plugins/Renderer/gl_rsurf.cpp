@@ -976,8 +976,8 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		vTriangleListIndices[i] += decalIndex * MAX_DECALVERTS;
 	}
 
-	GL_UploadSubDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexBuffer.size(), vVertexBuffer.data());
-	GL_UploadSubDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
+	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexBuffer.size(), vVertexBuffer.data());
+	GL_UploadSubDataToEBO(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
 
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALINDICES * decalIndex;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = vTriangleListIndices.size();

@@ -1232,18 +1232,20 @@ void triapi_End()
 	if(!gTriAPICommand.hVBO){
 		gTriAPICommand.hVBO = GL_GenBuffer();
 	}
-	
+
+	size_t VBOSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.capacity();
 	size_t VBODataSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.size();
-	GL_UploadDataToVBODynamicDraw(gTriAPICommand.hVBO, VBODataSize, nullptr);
-	GL_UploadSubDataToVBODynamicDraw(gTriAPICommand.hVBO, 0, VBODataSize, gTriAPICommand.Vertices.data());
+	GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, VBOSize, nullptr);
+	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, VBODataSize, gTriAPICommand.Vertices.data());
 
 	if(!gTriAPICommand.hEBO){
 		gTriAPICommand.hEBO = GL_GenBuffer();
 	}
 	
+	size_t EBOSize = sizeof(GLuint) * Indices.capacity();
 	size_t EBODataSize = sizeof(GLuint) * Indices.size();
-	GL_UploadDataToEBODynamicDraw(gTriAPICommand.hEBO, EBODataSize, nullptr);
-	GL_UploadSubDataToEBODynamicDraw(gTriAPICommand.hEBO, 0, EBODataSize, Indices.data());
+	GL_UploadDataToEBOStreamDraw(gTriAPICommand.hEBO, EBOSize, nullptr);
+	GL_UploadSubDataToEBO(gTriAPICommand.hEBO, 0, EBODataSize, Indices.data());
 
 	if(!gTriAPICommand.hVAO){
 		gTriAPICommand.hVAO = GL_GenVAO();
