@@ -471,11 +471,11 @@ void GL_UploadSubDataToEBODynamicDraw(GLuint EBO, size_t offset, size_t size, co
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data)
 {
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, ABO);
-	//if (glBufferStorage)
-	//{
-	//	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, size, data, 0);
-	//}
-	//else
+	if (glBufferStorage)
+	{
+		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, size, data, 0);
+	}
+	else
 	{
 		glBufferData(GL_DRAW_INDIRECT_BUFFER, size, data, GL_STATIC_DRAW);
 	}
