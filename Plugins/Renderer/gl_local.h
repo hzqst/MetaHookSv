@@ -500,8 +500,8 @@ GLuint GL_CreateStencilViewForDepthTexture(int texId);
 GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor);
 void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor);
 
-GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor);
-void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor);
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor);
+void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor);
 
 GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
 void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);

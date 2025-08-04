@@ -370,7 +370,8 @@ void GL_BuildLightmaps(void)
 
 		//Can this be GL_RGB8 to save VRAM? idk
 
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures);
+		//glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, g_WorldSurfaceRenderer.iNumLightmapTextures, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 		memset(lightmaps, 0, sizeof(BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES) * g_WorldSurfaceRenderer.iNumLightmapTextures);
 

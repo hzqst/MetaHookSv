@@ -265,8 +265,10 @@ void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, b
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 
 	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
-	glTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA,
-		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	//glTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA, 
+	//	(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, w, h);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -296,15 +298,19 @@ void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int i
 
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalFormat, w, h, levels, 0, GL_RGBA, 
-		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, NULL);
+	
+	//glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalFormat, w, h, levels, 0, GL_RGBA, 
+	//	(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, NULL);
+	
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iInternalFormat, w, h, levels);
+
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor)
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadTextureArrayColorFormat(texid, w, h, levels, iInternalFormat, filter, borderColor);
+	GL_UploadTextureArrayColorFormat(texid, w, h, depth, iInternalFormat, filter, borderColor);
 	return texid;
 }
 
@@ -406,7 +412,7 @@ void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
 
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
 
-	//glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+	// glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
