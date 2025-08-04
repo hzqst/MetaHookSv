@@ -3,6 +3,7 @@
 #include "gl_local.h"
 #include "exportfuncs.h"
 #include "VGUI2ExtensionImport.h"
+#include "UtilThreadTask.h"
 
 #include <FreeImage.h>
 
@@ -135,6 +136,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();
+	UtilThreadTask_Init();
 }
 
 void IPluginsV4::ExitGame(int iResult)

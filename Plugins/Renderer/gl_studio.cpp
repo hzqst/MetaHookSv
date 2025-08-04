@@ -2,13 +2,14 @@
 #include "triangleapi.h"
 #include "mathlib2.h"
 #include "CounterStrike.h"
+#include "UtilThreadTask.h"
 
 #include <sstream>
 #include <algorithm>
 
 static GLuint g_hStudioUBO{};
 
-static std::vector<CStudioModelRenderData*> g_StudioRenderDataCache;
+static std::vector<std::shared_ptr<CStudioModelRenderData>> g_StudioRenderDataCache;
 
 static std::unordered_map<int, CStudioSkinCache*> g_StudioSkinCache;
 
@@ -18,9 +19,9 @@ static std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTabl
 
 static CStudioBoneCache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
-static CStudioBoneCache* g_pStudioBoneFreeCaches = NULL;
+static CStudioBoneCache* g_pStudioBoneFreeCaches{};
 
-static CStudioModelRenderData* g_CurrentRenderData = NULL;
+static std::shared_ptr<CStudioModelRenderData> g_CurrentRenderData{};
 
 static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
 
@@ -170,6 +171,13 @@ CStudioModelRenderData::~CStudioModelRenderData()
 	for (const auto &itor : mStudioMaterials)
 	{
 		delete itor.second;
+	}
+
+	if (hThreadWorkItem)
+	{
+		g_pMetaHookAPI->WaitForWorkItemToComplete(hThreadWorkItem);
+		g_pMetaHookAPI->DeleteWorkItem(hThreadWorkItem);
+		hThreadWorkItem = nullptr;
 	}
 }
 
@@ -1058,12 +1066,12 @@ void R_PrepareStudioRenderData(
 	}
 }
 
-CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderFast(studiohdr_t* studiohdr)
+std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromStudioHeaderFast(studiohdr_t* studiohdr)
 {
 	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= (int)g_StudioRenderDataCache.size())
 		return nullptr;
 
-	auto pRenderData = g_StudioRenderDataCache[studiohdr->soundtable];
+	const auto& pRenderData = g_StudioRenderDataCache[studiohdr->soundtable];
 
 	if (pRenderData)
 	{
@@ -1084,7 +1092,7 @@ CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderFast(studiohdr_t* s
 	return nullptr;
 }
 
-CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderSlow(studiohdr_t* studiohdr)
+std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromStudioHeaderSlow(studiohdr_t* studiohdr)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -1110,17 +1118,17 @@ CStudioModelRenderData* R_GetStudioRenderDataFromStudioHeaderSlow(studiohdr_t* s
 	return nullptr;
 }
 
-CStudioModelRenderData* R_GetStudioRenderDataFromModel(model_t* mod)
+std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromModel(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex >= (int)g_StudioRenderDataCache.size())
-		return NULL;
+		return nullptr;
 
 	return g_StudioRenderDataCache[modelindex];
 }
 
-void R_AllocSlotForStudioRenderData(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData)
+void R_AllocSlotForStudioRenderData(model_t* mod, studiohdr_t *studiohdr, const std::shared_ptr<CStudioModelRenderData>& pRenderData)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -1134,133 +1142,20 @@ void R_AllocSlotForStudioRenderData(model_t* mod, studiohdr_t *studiohdr, CStudi
 	studiohdr->soundtable = modelindex;
 }
 
-CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr)
+void R_FreeStudioRenderData(model_t* mod)
 {
-	if (!studiohdr->numbodyparts)
-		return NULL;
-
-	auto pRenderData = R_GetStudioRenderDataFromModel(mod);
-
-	if (pRenderData)
-	{
-		studiohdr->soundtable = EngineGetModelIndex(mod);
-
-		gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
-
-		R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
-		R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
-
-		return pRenderData;
-	}
-
-	gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
-
-	pRenderData = new CStudioModelRenderData(mod);
-
-	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
-	pRenderData->CelshadeControl.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
-
-	pRenderData->CelshadeControl.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
-	pRenderData->CelshadeControl.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
-	pRenderData->CelshadeControl.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
-	pRenderData->CelshadeControl.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
-	pRenderData->CelshadeControl.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
-
-	pRenderData->CelshadeControl.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
-	pRenderData->CelshadeControl.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
-
-	pRenderData->CelshadeControl.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
-	pRenderData->CelshadeControl.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
-
-	pRenderData->CelshadeControl.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
-	pRenderData->CelshadeControl.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
-
-	pRenderData->CelshadeControl.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
-	pRenderData->CelshadeControl.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
-	pRenderData->CelshadeControl.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
-
-	pRenderData->LowerBodyControl.model_scale.Init(r_lowerbody_model_scale, 1, ConVar_None);
-	pRenderData->LowerBodyControl.model_origin.Init(r_lowerbody_model_offset, 3, ConVar_None);
-	pRenderData->LowerBodyControl.duck_model_origin.Init(r_lowerbody_duck_model_offset, 3, ConVar_None);
-
-	R_AllocSlotForStudioRenderData(mod, studiohdr, pRenderData);
-
-	std::vector<studiovertexbase_t> vVertexBaseBuffer;
-	std::vector<studiovertextbn_t> vVertexTBNBuffer;
-	std::vector<GLuint> vIndicesBuffer;
-
-	R_StudioLoadTextureModel(mod, studiohdr, pRenderData);
-	R_StudioLoadExternalFile(mod, studiohdr, pRenderData);
-	R_PrepareStudioRenderData(mod, studiohdr, pRenderData, vVertexBaseBuffer, vVertexTBNBuffer, vIndicesBuffer);
-	R_PrepareTBNForRenderData(mod, studiohdr, pRenderData, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
-
-	pRenderData->hVBO[STUDIO_VBO_BASE] = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO[STUDIO_VBO_BASE], vVertexBaseBuffer.size() * sizeof(studiovertexbase_t), vVertexBaseBuffer.data());
-
-	pRenderData->hVBO[STUDIO_VBO_TBN] = GL_GenBuffer();
-	GL_UploadDataToVBOStaticDraw(pRenderData->hVBO[STUDIO_VBO_TBN], vVertexTBNBuffer.size() * sizeof(studiovertextbn_t), vVertexTBNBuffer.data());
-
-	pRenderData->hEBO = GL_GenBuffer();
-	GL_UploadDataToEBOStaticDraw(pRenderData->hEBO, vIndicesBuffer.size() * sizeof(GLuint), vIndicesBuffer.data());
-
-	pRenderData->hVAO = GL_GenVAO();
-	GL_BindStatesForVAO(pRenderData->hVAO, 
-		[pRenderData]() {
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pRenderData->hEBO);
-
-			glBindBuffer(GL_ARRAY_BUFFER, pRenderData->hVBO[STUDIO_VBO_BASE]);
-			glEnableVertexAttribArray(STUDIO_VA_POSITION);
-			glEnableVertexAttribArray(STUDIO_VA_NORMAL);
-			glEnableVertexAttribArray(STUDIO_VA_TEXCOORD);
-			glEnableVertexAttribArray(STUDIO_VA_PACKEDBONE);
-			glVertexAttribPointer(STUDIO_VA_POSITION, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, pos));
-			glVertexAttribPointer(STUDIO_VA_NORMAL, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, normal));
-			glVertexAttribPointer(STUDIO_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, texcoord));
-			glVertexAttribIPointer(STUDIO_VA_PACKEDBONE, 1, GL_UNSIGNED_INT, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, packedbone));
-
-			glBindBuffer(GL_ARRAY_BUFFER, pRenderData->hVBO[STUDIO_VBO_TBN]);
-			glEnableVertexAttribArray(STUDIO_VA_TANGENT);
-			glEnableVertexAttribArray(STUDIO_VA_BITANGENT);
-			glEnableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
-			glVertexAttribPointer(STUDIO_VA_TANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, tangent));
-			glVertexAttribPointer(STUDIO_VA_BITANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, bitangent));
-			glVertexAttribPointer(STUDIO_VA_SMOOTHNORMAL, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, smoothnormal));
-		},
-		[]() {
-			glDisableVertexAttribArray(STUDIO_VA_POSITION);
-			glDisableVertexAttribArray(STUDIO_VA_NORMAL);
-			glDisableVertexAttribArray(STUDIO_VA_TEXCOORD);
-			glDisableVertexAttribArray(STUDIO_VA_PACKEDBONE);
-			glDisableVertexAttribArray(STUDIO_VA_TANGENT);
-			glDisableVertexAttribArray(STUDIO_VA_BITANGENT);
-			glDisableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-		});
-
-	return pRenderData;
-}
-
-void R_FreeStudioRenderData(CStudioModelRenderData *pRenderData)
-{
-	auto mod = pRenderData->BodyModel;
+	gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
 
 	auto modelindex = EngineGetModelIndex(mod);
 
-	g_StudioRenderDataCache[modelindex] = NULL;
+	g_StudioRenderDataCache[modelindex].reset();
+}
 
-	delete pRenderData;
+void R_FreeStudioRenderData(const std::shared_ptr<CStudioModelRenderData> &pRenderData)
+{
+	auto mod = pRenderData->BodyModel;
 
-	gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
+	R_FreeStudioRenderData(mod);
 }
 
 void R_FreeAllUnreferencedStudioRenderData(void)
@@ -1290,8 +1185,7 @@ void R_FreeAllStudioRenderData(void)
 	{
 		if (g_StudioRenderDataCache[i])
 		{
-			delete g_StudioRenderDataCache[i];
-			g_StudioRenderDataCache[i] = nullptr;
+			g_StudioRenderDataCache[i].reset();
 		}
 	}
 }
@@ -1301,6 +1195,7 @@ void R_StudioReloadAllStudioRenderData(void)
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
+
 		if (mod->type == mod_studio)
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
@@ -2547,7 +2442,7 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 	}
 }
 
-void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
+void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& pRenderData)
 {
 	studio_ubo_t StudioUBO = {0};
 
@@ -2594,7 +2489,7 @@ void R_StudioDrawRenderDataBegin(CStudioModelRenderData* pRenderData)
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		StudioUBO.r_scale = g_CurrentRenderData->CelshadeControl.outline_size.GetValue() * 0.05f;
+		StudioUBO.r_scale = pRenderData->CelshadeControl.outline_size.GetValue() * 0.05f;
 	}
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
@@ -3381,7 +3276,7 @@ void R_StudioDrawRenderDataEnd()
 {
 	GL_BindVAO(0);
 
-	g_CurrentRenderData = NULL;
+	g_CurrentRenderData = nullptr;
 }
 
 //Engine exported StudioAPI
@@ -3401,9 +3296,15 @@ void R_GLStudioDrawPoints(void)
 		return;
 	}
 
+	if (!pRenderData->hVAO)
+	{
+		//GPU resources not ready yet.
+		return;
+	}
+
 	R_StudioDrawRenderDataBegin(pRenderData);
 
-	R_StudioDrawSubmodel((*pstudiohdr),(*psubmodel), pRenderData);
+	R_StudioDrawSubmodel((*pstudiohdr),(*psubmodel), pRenderData.get());
 
 	R_StudioDrawRenderDataEnd();
 }
@@ -4623,6 +4524,196 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 		gEngfuncs.COM_FreeFile((void*)pFile);
 	}
 }
+
+
+class CStudioRenderDataAsyncLoadContext : public IThreadedTask
+{
+public:
+	CStudioRenderDataAsyncLoadContext(const std::shared_ptr<CStudioModelRenderData>& pRenderData, studiohdr_t* studiohdr) : m_pRenderData(pRenderData)
+	{
+		int total = 0;
+
+		if (studiohdr->textureindex)
+			total = studiohdr->texturedataindex;
+		else
+			total = studiohdr->length;
+
+		m_pStudioHeader = (decltype(m_pStudioHeader))malloc(total);
+		memcpy(m_pStudioHeader, studiohdr, total);
+	}
+
+	~CStudioRenderDataAsyncLoadContext()
+	{
+		if (m_pStudioHeader)
+		{
+			free(m_pStudioHeader);
+			m_pStudioHeader = nullptr;
+		}
+	}
+
+	void Destroy() override
+	{
+		delete this;
+	}
+
+	bool ShouldRun(float time) override
+	{
+		return m_IsVBReady.load();
+	}
+
+	void RunThreadedWorkItem()
+	{
+		auto mod = m_pRenderData->BodyModel;
+
+		R_PrepareStudioRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vVertexTBNBuffer, m_vIndicesBuffer);
+
+		m_vVertexBaseBuffer.shrink_to_fit();
+		m_vVertexTBNBuffer.shrink_to_fit();
+		m_vIndicesBuffer.shrink_to_fit();
+
+		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
+
+		m_IsVBReady.store(true);
+	}
+
+	void Run(float time) override
+	{
+		m_pRenderData->hVBO[STUDIO_VBO_BASE] = GL_GenBuffer();
+		GL_UploadDataToVBOStaticDraw(m_pRenderData->hVBO[STUDIO_VBO_BASE], m_vVertexBaseBuffer.size() * sizeof(studiovertexbase_t), m_vVertexBaseBuffer.data());
+
+		m_pRenderData->hVBO[STUDIO_VBO_TBN] = GL_GenBuffer();
+		GL_UploadDataToVBOStaticDraw(m_pRenderData->hVBO[STUDIO_VBO_TBN], m_vVertexTBNBuffer.size() * sizeof(studiovertextbn_t), m_vVertexTBNBuffer.data());
+
+		m_pRenderData->hEBO = GL_GenBuffer();
+		GL_UploadDataToEBOStaticDraw(m_pRenderData->hEBO, m_vIndicesBuffer.size() * sizeof(GLuint), m_vIndicesBuffer.data());
+
+		m_pRenderData->hVAO = GL_GenVAO();
+		GL_BindStatesForVAO(m_pRenderData->hVAO,
+			[this]() {
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_pRenderData->hEBO);
+
+				glBindBuffer(GL_ARRAY_BUFFER, m_pRenderData->hVBO[STUDIO_VBO_BASE]);
+				glEnableVertexAttribArray(STUDIO_VA_POSITION);
+				glEnableVertexAttribArray(STUDIO_VA_NORMAL);
+				glEnableVertexAttribArray(STUDIO_VA_TEXCOORD);
+				glEnableVertexAttribArray(STUDIO_VA_PACKEDBONE);
+				glVertexAttribPointer(STUDIO_VA_POSITION, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, pos));
+				glVertexAttribPointer(STUDIO_VA_NORMAL, 3, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, normal));
+				glVertexAttribPointer(STUDIO_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, texcoord));
+				glVertexAttribIPointer(STUDIO_VA_PACKEDBONE, 1, GL_UNSIGNED_INT, sizeof(studiovertexbase_t), OFFSET(studiovertexbase_t, packedbone));
+
+				glBindBuffer(GL_ARRAY_BUFFER, m_pRenderData->hVBO[STUDIO_VBO_TBN]);
+				glEnableVertexAttribArray(STUDIO_VA_TANGENT);
+				glEnableVertexAttribArray(STUDIO_VA_BITANGENT);
+				glEnableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
+				glVertexAttribPointer(STUDIO_VA_TANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, tangent));
+				glVertexAttribPointer(STUDIO_VA_BITANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, bitangent));
+				glVertexAttribPointer(STUDIO_VA_SMOOTHNORMAL, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, smoothnormal));
+			},
+			[]() {
+				glDisableVertexAttribArray(STUDIO_VA_POSITION);
+				glDisableVertexAttribArray(STUDIO_VA_NORMAL);
+				glDisableVertexAttribArray(STUDIO_VA_TEXCOORD);
+				glDisableVertexAttribArray(STUDIO_VA_PACKEDBONE);
+				glDisableVertexAttribArray(STUDIO_VA_TANGENT);
+				glDisableVertexAttribArray(STUDIO_VA_BITANGENT);
+				glDisableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			});
+	}
+
+	std::shared_ptr<CStudioModelRenderData> m_pRenderData;
+	studiohdr_t* m_pStudioHeader{};
+
+	std::vector<studiovertexbase_t> m_vVertexBaseBuffer;
+	std::vector<studiovertextbn_t> m_vVertexTBNBuffer;
+	std::vector<GLuint> m_vIndicesBuffer;
+	std::atomic<bool> m_IsVBReady{};
+};
+
+std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr)
+{
+	if (!studiohdr->numbodyparts)
+		return nullptr;
+
+	auto pRenderData = R_GetStudioRenderDataFromModel(mod);
+
+	if (pRenderData)
+	{
+		studiohdr->soundtable = EngineGetModelIndex(mod);
+
+		gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
+		R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
+		R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
+
+		return pRenderData;
+	}
+
+	gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
+	pRenderData = std::make_shared<CStudioModelRenderData>(mod);
+
+	pRenderData->CelshadeControl.base_specular.Init(r_studio_base_specular, 2, ConVar_None);
+	pRenderData->CelshadeControl.celshade_specular.Init(r_studio_celshade_specular, 4, ConVar_None);
+
+	pRenderData->CelshadeControl.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
+	pRenderData->CelshadeControl.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+	pRenderData->CelshadeControl.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
+	pRenderData->CelshadeControl.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
+
+	pRenderData->CelshadeControl.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
+	pRenderData->CelshadeControl.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
+
+	pRenderData->CelshadeControl.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
+
+	pRenderData->CelshadeControl.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
+	pRenderData->CelshadeControl.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
+
+	pRenderData->CelshadeControl.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
+	pRenderData->CelshadeControl.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
+	pRenderData->CelshadeControl.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
+
+	pRenderData->LowerBodyControl.model_scale.Init(r_lowerbody_model_scale, 1, ConVar_None);
+	pRenderData->LowerBodyControl.model_origin.Init(r_lowerbody_model_offset, 3, ConVar_None);
+	pRenderData->LowerBodyControl.duck_model_origin.Init(r_lowerbody_duck_model_offset, 3, ConVar_None);
+
+	R_AllocSlotForStudioRenderData(mod, studiohdr, pRenderData);
+
+	R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
+	R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
+
+	auto ctx = new CStudioRenderDataAsyncLoadContext(pRenderData, studiohdr);
+
+	pRenderData->hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
+
+		auto ctx = (CStudioRenderDataAsyncLoadContext*)context;
+
+		ctx->RunThreadedWorkItem();
+
+		return false;
+
+	}, ctx);
+
+	GameThreadTaskScheduler()->QueueTask(ctx);
+
+	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pRenderData->hThreadWorkItem);
+
+	return pRenderData;
+}
+
 
 void R_StudioStartFrame(void)
 {

@@ -437,6 +437,9 @@
     <ClCompile Include="CounterStrike.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="UtilThreadTask.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -755,6 +758,9 @@
       <Filter>GLSL</Filter>
     </ClInclude>
     <ClInclude Include="CounterStrike.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="UtilThreadTask.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

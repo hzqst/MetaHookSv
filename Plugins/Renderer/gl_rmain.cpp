@@ -4810,3 +4810,27 @@ void R_RunDeferredFrameTasks()
 		}
 	}
 }
+
+void Mod_ClearStudioModel(void)
+{
+	for (int i = 0;i < EngineGetMaxKnownModel(); i++)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type != mod_alias && mod->needload != NL_CLIENT)
+		{
+			mod->needload = NL_UNREFERENCED;
+
+			if (mod->type == mod_sprite)
+				mod->cache.data = NULL;
+
+			R_FreeStudioRenderData(mod);
+		}
+	}
+}
+
+void Host_ClearMemory(qboolean bQuite)
+{
+
+
+	gPrivateFuncs.Host_ClearMemory(bQuite);
+}

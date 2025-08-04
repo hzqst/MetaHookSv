@@ -14,6 +14,8 @@
 #define	INSET_IN_EYE			2
 #define	INSET_MAP_FREE			3
 
+#define STUDIO_VERSION 10
+
 //wad
 
 #pragma pack(1)

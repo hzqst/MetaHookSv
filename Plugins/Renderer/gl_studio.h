@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
+#include <memory>
 
 #define MAX_STUDIO_BONE_CACHES 1024
 
@@ -196,6 +197,8 @@ public:
 	CStudioCelshadeControl CelshadeControl;
 
 	CStudioLowerBodyControl LowerBodyControl;
+
+	ThreadWorkItemHandle_t hThreadWorkItem{};
 };
 
 class CStudioSkinCache
@@ -359,12 +362,12 @@ extern int r_studio_polys;
 extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
-CStudioModelRenderData* R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
-void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, CStudioModelRenderData * pRenderData);
+std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
 void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
 void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
 bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
+void R_FreeStudioRenderData(model_t* mod);
 void R_FreeAllUnreferencedStudioRenderData(void);
 void R_StudioReloadAllStudioRenderData(void);
 void R_StudioFlushAllSkins();
@@ -376,11 +379,7 @@ void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
-void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
 
-void R_StudioFreeAllTexturesInMaterial(CStudioModelRenderMaterial* pStudioMaterial);
-bool R_StudioFreeTextureInMaterial(CStudioModelRenderMaterial* pStudioMaterial, int gltexturenum);
-bool R_StudioFreeMaterialByTextureId(int gltexturenum);
 CStudioModelRenderMaterial* R_StudioGetMaterialFromTextureId(const CStudioModelRenderData* pRenderData, int gltexturenum);
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);

@@ -5,6 +5,8 @@
 #include "parsemsg.h"
 #include "qgl.h"
 
+#include "UtilThreadTask.h"
+
 #include <set>
 
 //Error when can't find sig
@@ -2041,11 +2043,15 @@ void HUD_PlayerMoveInit(struct playermove_s* ppmove)
 	}
 }
 
-void HUD_Frame(double time)
+void HUD_Frame(double frametime)
 {
 	R_GameFrameStart();
 
-	gExportfuncs.HUD_Frame(time);
+	gExportfuncs.HUD_Frame(frametime);
+
+	float time = gEngfuncs.GetAbsoluteTime();
+
+	GameThreadTaskScheduler()->RunTasks(time, 0);
 }
 
 void HUD_CreateEntities(void)
@@ -2072,6 +2078,7 @@ void HUD_Shutdown(void)
 
 	ClientStudio_UninstallHooks();
 	EngineStudio_UninstallHooks();
+	UtilThreadTask_Shutdown();
 }
 
 void HUD_OnClientDisconnect(void)

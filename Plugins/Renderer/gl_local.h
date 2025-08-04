@@ -368,7 +368,7 @@ bool AllowCheats();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
-
+void Host_ClearMemory(qboolean bQuite);
 void R_Init(void);
 void R_Shutdown(void);
 void R_SetupGL(void);

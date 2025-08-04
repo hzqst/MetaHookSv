@@ -324,6 +324,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="util.cpp" />
+    <ClCompile Include="UtilThreadTask.cpp" />
     <ClCompile Include="VGUI2ExtensionImport.cpp" />
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
@@ -432,6 +433,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="qgl.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="spritegn.h" />
+    <ClInclude Include="UtilThreadTask.h" />
     <ClInclude Include="VGUI2ExtensionImport.h" />
     <ClInclude Include="zone.h" />
   </ItemGroup>

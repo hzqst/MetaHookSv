@@ -95,6 +95,34 @@ void Mod_UnloadSpriteTextures(model_t* mod)
 
 void Mod_LoadStudioModel(model_t* mod, void* buffer)
 {
+#if 0
+	auto pin = (byte*)buffer;
+
+	auto phdr = (studiohdr_t*)pin;
+
+	auto version = LittleLong(phdr->version);
+	if (version != STUDIO_VERSION)
+	{
+		memset(phdr, 0, sizeof(studiohdr_t));
+		strcpy(phdr->name, "bogus");
+
+		phdr->length = sizeof(studiohdr_t);
+		phdr->texturedataindex = sizeof(studiohdr_t);
+	}
+
+	mod->type = mod_studio;
+	mod->flags = phdr->flags;
+
+	int total = 0;
+
+	if (phdr->textureindex)
+		total = phdr->texturedataindex;
+	else
+		total = phdr->length;
+
+	mod->cache.data = IEngineStudio.Mem_Calloc(1, total);
+#endif
+
 	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
 
 	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);

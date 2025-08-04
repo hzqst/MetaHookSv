@@ -5858,6 +5858,47 @@ void Engine_FillAddress_R_StudioSetupSkin(const mh_dll_info_t& DllInfo, const mh
 	Sig_VarNotFound(tmp_palette);
 }
 
+void Engine_FillAddress_Host_ClearMemory(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.Host_ClearMemory)
+		return;
+
+	PVOID Host_ClearMemory_VA = 0;
+
+	if (1)
+	{
+		const char sigs[] = "Clearing memory\n";
+		auto Host_ClearMemory_String = Search_Pattern_Data(sigs, DllInfo);
+		if (!Host_ClearMemory_String)
+			Host_ClearMemory_String = Search_Pattern_Rdata(sigs, DllInfo);
+		Sig_VarNotFound(Host_ClearMemory_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+		*(DWORD*)(pattern + 1) = (DWORD)Host_ClearMemory_String;
+		auto Host_ClearMemory_Call = Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(Host_ClearMemory_Call);
+
+		Host_ClearMemory_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Host_ClearMemory_Call, 0x80, [](PUCHAR Candidate) {
+
+			if (Candidate[-1] == 0xCC &&
+				Candidate[0] == 0xE8 &&
+				Candidate[5] == 0xE8)
+				return TRUE;
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+			});
+
+		gPrivateFuncs.Host_ClearMemory = (decltype(gPrivateFuncs.Host_ClearMemory))ConvertDllInfoSpace(Host_ClearMemory_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(Host_ClearMemory);
+}
+
 void Engine_FillAddress_Cache_Alloc(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Cache_Alloc)
@@ -11301,7 +11342,7 @@ static hook_t* g_phook_BuildGammaTable = NULL;
 static hook_t* g_phook_DLL_SetModKey = NULL;
 static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
 static hook_t* g_phook_PVSNode = NULL;
-
+static hook_t* g_phook_Host_ClearMemory = NULL;
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
@@ -11380,6 +11421,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(PVSNode);
+	Install_InlineHook(Host_ClearMemory);
 
 	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 	if (gPrivateFuncs.SDL_GL_SetAttribute)

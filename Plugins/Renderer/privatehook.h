@@ -117,6 +117,7 @@ typedef struct
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
+	void (*Host_ClearMemory)(qboolean bQuite);
 
 	//Sven Co-op Client DLL
 	void(__fastcall* ClientPortalManager_ResetAll)(void* pthis, int dummy);
