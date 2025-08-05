@@ -11394,15 +11394,15 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 
 	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
-	gEngfuncs.pTriAPI->Begin = triapi_Begin;
-	gEngfuncs.pTriAPI->End = triapi_End;
-	gEngfuncs.pTriAPI->Color4f = triapi_Color4f;
-	gEngfuncs.pTriAPI->Color4ub = triapi_Color4ub;
-	gEngfuncs.pTriAPI->TexCoord2f = triapi_TexCoord2f;
-	gEngfuncs.pTriAPI->Vertex3fv = triapi_Vertex3fv;
-	gEngfuncs.pTriAPI->Vertex3f = triapi_Vertex3f;
-	gEngfuncs.pTriAPI->Brightness = triapi_Brightness;
-	gEngfuncs.pTriAPI->Color4fRendermode = triapi_Color4fRendermode;
+	//gEngfuncs.pTriAPI->Begin = triapi_Begin;
+	//gEngfuncs.pTriAPI->End = triapi_End;
+	//gEngfuncs.pTriAPI->Color4f = triapi_Color4f;
+	//gEngfuncs.pTriAPI->Color4ub = triapi_Color4ub;
+	//gEngfuncs.pTriAPI->TexCoord2f = triapi_TexCoord2f;
+	//gEngfuncs.pTriAPI->Vertex3fv = triapi_Vertex3fv;
+	//gEngfuncs.pTriAPI->Vertex3f = triapi_Vertex3f;
+	//gEngfuncs.pTriAPI->Brightness = triapi_Brightness;
+	//gEngfuncs.pTriAPI->Color4fRendermode = triapi_Color4fRendermode;
 	gEngfuncs.pTriAPI->GetMatrix = triapi_GetMatrix;
 	gEngfuncs.pTriAPI->BoxInPVS = triapi_BoxInPVS;
 	gEngfuncs.pTriAPI->Fog = triapi_Fog;

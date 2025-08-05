@@ -1039,10 +1039,211 @@ void triapi_Shutdown()
 	}
 }
 
+#if 0
 void triapi_RenderMode(int mode)
 {
 	gTriAPICommand.RenderMode = mode;
 }
+#else
+
+void triapi_RenderMode(int mode)
+{
+	gPrivateFuncs.triapi_RenderMode(mode);
+
+	switch (mode)
+	{
+	case kRenderNormal:
+	{
+		if (r_draw_legacysprite)
+		{
+			program_state_t LegacySpriteProgramState = 0;
+
+			if (!R_IsRenderingGBuffer())
+			{
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+				{
+
+				}
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+				{
+
+				}
+				else
+				{
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+						}
+					}
+				}
+			}
+
+			if (R_IsRenderingWaterView())
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			if (R_IsRenderingGammaBlending())
+			{
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+			{
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
+			}
+
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
+		break;
+	}
+
+	case kRenderTransAdd:
+	{
+		R_SetGBufferBlend(GL_ONE, GL_ONE);
+
+		if (r_draw_legacysprite)
+		{
+			program_state_t LegacySpriteProgramState = SPRITE_ADDITIVE_BLEND_ENABLED;
+
+			if (!R_IsRenderingGBuffer())
+			{
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+				{
+
+				}
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+				{
+
+				}
+				else
+				{
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+						}
+					}
+				}
+			}
+
+			if (R_IsRenderingWaterView())
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			if (R_IsRenderingGammaBlending())
+			{
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+			{
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
+			}
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
+		break;
+	}
+
+	case kRenderTransAlpha:
+	case kRenderTransColor:
+	case kRenderTransTexture:
+	{
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		if (r_draw_legacysprite)
+		{
+			program_state_t LegacySpriteProgramState = SPRITE_ALPHA_BLEND_ENABLED;
+
+			if (R_IsRenderingWaterView())
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			if (!R_IsRenderingGBuffer())
+			{
+				if ((LegacySpriteProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
+				{
+
+				}
+				else if ((LegacySpriteProgramState & SPRITE_ALPHA_BLEND_ENABLED) && (int)r_fog_trans->value <= 0)
+				{
+
+				}
+				else
+				{
+					if (R_IsRenderingFog())
+					{
+						if (r_fog_mode == GL_LINEAR)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+						}
+						else if (r_fog_mode == GL_EXP2)
+						{
+							LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+						}
+
+						if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
+						{
+							LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
+						}
+					}
+				}
+			}
+
+			if (R_IsRenderingGammaBlending())
+			{
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+			{
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
+			}
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
+		break;
+	}
+	}
+}
+#endif
 
 void triapi_Begin(int primitiveCode)
 {
@@ -1235,6 +1436,16 @@ void triapi_End()
 
 	size_t VBOSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.capacity();
 	size_t VBODataSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.size();
+
+	//{
+	//	glBindBuffer(GL_ARRAY_BUFFER, gTriAPICommand.hVBO);
+	//	glBufferData(GL_ARRAY_BUFFER, VBOSize, nullptr, GL_STREAM_DRAW);
+	//	auto pMapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, VBODataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	//	memcpy(pMapped, gTriAPICommand.Vertices.data(), VBODataSize);
+	//	glUnmapBuffer(GL_ARRAY_BUFFER);
+	//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//}
+
 	GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, VBOSize, nullptr);
 	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, VBODataSize, gTriAPICommand.Vertices.data());
 
@@ -1244,6 +1455,16 @@ void triapi_End()
 	
 	size_t EBOSize = sizeof(GLuint) * gTriAPICommand.Indices.capacity();
 	size_t EBODataSize = sizeof(GLuint) * gTriAPICommand.Indices.size();
+
+	//{
+	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTriAPICommand.hEBO);
+	//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, EBOSize, nullptr, GL_STREAM_DRAW);
+	//	auto pMapped = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, EBODataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	//	memcpy(pMapped, gTriAPICommand.Indices.data(), EBODataSize);
+	//	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	//}
+
 	GL_UploadDataToEBOStreamDraw(gTriAPICommand.hEBO, EBOSize, nullptr);
 	GL_UploadSubDataToEBO(gTriAPICommand.hEBO, 0, EBODataSize, gTriAPICommand.Indices.data());
 
