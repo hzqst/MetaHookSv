@@ -1013,37 +1013,39 @@ public:
 	std::vector<uint32_t> Indices{};
 	int RenderMode{ };
 	int DrawRenderMode{ };
-	GLuint hVBO{};
-	GLuint hEBO{};
-	GLuint hVAO{};
+	//GLuint hVBO{};
+	//GLuint hEBO{};
+	//GLuint hVAO{};
 };
 
 CTriAPICommand gTriAPICommand;
 
 void triapi_Shutdown()
 {
-	if(gTriAPICommand.hVBO)
-	{
-		GL_DeleteBuffer(gTriAPICommand.hVBO);
-		gTriAPICommand.hVBO = 0;
-	}
-	if(gTriAPICommand.hEBO)
-	{
-		GL_DeleteBuffer(gTriAPICommand.hEBO);
-		gTriAPICommand.hEBO = 0;
-	}
-	if(gTriAPICommand.hVAO)
-	{
-		GL_DeleteVAO(gTriAPICommand.hVAO);
-		gTriAPICommand.hVAO = 0;
-	}
+	//if(gTriAPICommand.hVBO)
+	//{
+	//	GL_DeleteBuffer(gTriAPICommand.hVBO);
+	//	gTriAPICommand.hVBO = 0;
+	//}
+	//if(gTriAPICommand.hEBO)
+	//{
+	//	GL_DeleteBuffer(gTriAPICommand.hEBO);
+	//	gTriAPICommand.hEBO = 0;
+	//}
+	//if(gTriAPICommand.hVAO)
+	//{
+	//	GL_DeleteVAO(gTriAPICommand.hVAO);
+	//	gTriAPICommand.hVAO = 0;
+	//}
 }
 
-#if 0
+#if 1
+
 void triapi_RenderMode(int mode)
 {
 	gTriAPICommand.RenderMode = mode;
 }
+
 #else
 
 void triapi_RenderMode(int mode)
@@ -1429,22 +1431,13 @@ void triapi_End()
 		triapi_EndClear();
 		return;
 	}
-
+#if 0
 	if(!gTriAPICommand.hVBO){
 		gTriAPICommand.hVBO = GL_GenBuffer();
 	}
 
 	size_t VBOSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.capacity();
 	size_t VBODataSize = sizeof(triapivertex_t) * gTriAPICommand.Vertices.size();
-
-	//{
-	//	glBindBuffer(GL_ARRAY_BUFFER, gTriAPICommand.hVBO);
-	//	glBufferData(GL_ARRAY_BUFFER, VBOSize, nullptr, GL_STREAM_DRAW);
-	//	auto pMapped = glMapBufferRange(GL_ARRAY_BUFFER, 0, VBODataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-	//	memcpy(pMapped, gTriAPICommand.Vertices.data(), VBODataSize);
-	//	glUnmapBuffer(GL_ARRAY_BUFFER);
-	//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//}
 
 	GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, VBOSize, nullptr);
 	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, VBODataSize, gTriAPICommand.Vertices.data());
@@ -1455,15 +1448,6 @@ void triapi_End()
 	
 	size_t EBOSize = sizeof(GLuint) * gTriAPICommand.Indices.capacity();
 	size_t EBODataSize = sizeof(GLuint) * gTriAPICommand.Indices.size();
-
-	//{
-	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTriAPICommand.hEBO);
-	//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, EBOSize, nullptr, GL_STREAM_DRAW);
-	//	auto pMapped = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, EBODataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-	//	memcpy(pMapped, gTriAPICommand.Indices.data(), EBODataSize);
-	//	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	//}
 
 	GL_UploadDataToEBOStreamDraw(gTriAPICommand.hEBO, EBOSize, nullptr);
 	GL_UploadSubDataToEBO(gTriAPICommand.hEBO, 0, EBODataSize, gTriAPICommand.Indices.data());
@@ -1487,7 +1471,16 @@ void triapi_End()
 	}
 
 	GL_BindVAO(gTriAPICommand.hVAO);
+#else
+	glEnableVertexAttribArray(TRIAPI_VA_POSITION);
+	glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+	glEnableVertexAttribArray(TRIAPI_VA_COLOR);
 	
+	glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].pos);
+	glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].texcoord);
+	glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].color);
+#endif
+
 	uint64_t ProgramState = 0;
 
 	switch (gTriAPICommand.DrawRenderMode)
@@ -1679,14 +1672,18 @@ void triapi_End()
 	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElements(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
 	}
 	else 
 	{
-		glDrawElements(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
 	}
 
 	GL_UseProgram(0);
+	
+	glDisableVertexAttribArray(TRIAPI_VA_POSITION);
+	glDisableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+	glDisableVertexAttribArray(TRIAPI_VA_COLOR);
 
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
