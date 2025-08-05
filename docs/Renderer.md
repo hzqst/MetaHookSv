@@ -769,7 +769,7 @@ This controls how to convert horizontal FOV to vertical FOV :
 
 `r_studio_lazy_load 1` (default): Load GPU resources for studio models only when they are being rendered.
 
-Resources for studiomodels are streamed in worker thread instead of main thread in asynchronous, so we can utilize more CPU cores now.
+resources for studiomodels are streamed in worker thread instead of main thread in asynchronous & in parallel, that said, we can utilize more CPU cores now.
 
 * Note that `r_studio_lazy_load 1` makes studiomodels invisible at first few frames until all necessary GPU resources arrive.
 
