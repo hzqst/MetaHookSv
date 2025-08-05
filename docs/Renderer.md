@@ -765,6 +765,16 @@ This controls how to convert horizontal FOV to vertical FOV :
 
 `r_leaf_lazy_load 2`: Load only necessary vertices and indices into VRAM when loading a new map. Generate and load indirect draw commands into VRAM when player enter a new leaf. (May affect 1% low framerate)
 
+`r_studio_lazy_load 0`: Load GPU resouces for all studio models at once when loading map.
+
+`r_studio_lazy_load 1` (default): Load GPU resources for studio models only when they are being rendered.
+
+Resources for studiomodels are streamed in worker thread instead of main thread in asynchronous, so we can utilize more CPU cores now.
+
+* Note that `r_studio_lazy_load 1` makes studiomodels invisible at first few frames until all necessary GPU resources arrive.
+
+* Note that with `r_studio_lazy_load 0`, VRAM and system memory comsumption can be very crazy if server precaches too many studiomodels even without actually using them.
+
 # New Entities
 
 Entities are loaded from two sources : internal and external. BSP entity chunk of current map is loaded as internal, `/maps/(CurrentMapName)_entity.txt` is loaded as external.
