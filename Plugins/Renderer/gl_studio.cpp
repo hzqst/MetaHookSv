@@ -4703,17 +4703,16 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 
 		ctx->RunThreadedWorkItem();
 
+		GameThreadTaskScheduler()->QueueTask(ctx);
+
 		return false;
 
 	}, ctx);
-
-	GameThreadTaskScheduler()->QueueTask(ctx);
 
 	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pRenderData->hThreadWorkItem);
 
 	return pRenderData;
 }
-
 
 void R_StudioStartFrame(void)
 {
