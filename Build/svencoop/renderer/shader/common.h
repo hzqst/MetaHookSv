@@ -621,11 +621,11 @@ float ProcessLinearFogShift(float z)
 
 float ProcessLinearBlendShift(float color)
 {
-	//float shifted = color;//4.0 * pow(color, 3.0) - 5.2 * pow(color, 2.0) + 2.2 * color;
+	float shifted = 4.0 * pow(color, 3.0) - 5.2 * pow(color, 2.0) + 2.2 * color;
 	
 	//float shifted = pow((color - 0.5), 3.0) * 4.0 + 0.5;
 
-	float shifted = pow(color, 2.0);
+	//float shifted = pow(color, 2.0);
 
 	return mix(color, shifted, SceneUBO.r_linear_blend_shift);
 }

@@ -6650,7 +6650,7 @@ void Engine_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, co
 			auto setpause_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (setpause_PushString)
 			{
-				auto setpause_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(setpause_PushString, 0x50);
+				auto setpause_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchPattern(setpause_PushString, 0x50, "\x55\x8B\xEC\xE8", Sig_Length("\x55\x8B\xEC\xE8"));
 				if (setpause_Function)
 				{
 					typedef struct Host_IsSinglePlayerGame_SearchContext_s
@@ -11456,17 +11456,17 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
-	Uninstall_Hook(triapi_RenderMode);
-	Uninstall_Hook(triapi_Begin);
-	Uninstall_Hook(triapi_End);
-	Uninstall_Hook(triapi_Color4f);
-	Uninstall_Hook(triapi_Color4ub);
-	Uninstall_Hook(triapi_TexCoord2f);
-	Uninstall_Hook(triapi_Vertex3fv);
-	Uninstall_Hook(triapi_Vertex3f);
-	Uninstall_Hook(triapi_Brightness);
-	Uninstall_Hook(triapi_Color4fRendermode);
-	Uninstall_Hook(triapi_GetMatrix);
+	//Uninstall_Hook(triapi_RenderMode);
+	//Uninstall_Hook(triapi_Begin);
+	//Uninstall_Hook(triapi_End);
+	//Uninstall_Hook(triapi_Color4f);
+	//Uninstall_Hook(triapi_Color4ub);
+	//Uninstall_Hook(triapi_TexCoord2f);
+	//Uninstall_Hook(triapi_Vertex3fv);
+	//Uninstall_Hook(triapi_Vertex3f);
+	//Uninstall_Hook(triapi_Brightness);
+	//Uninstall_Hook(triapi_Color4fRendermode);
+	//Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
