@@ -114,7 +114,7 @@ public:
 	uint32_t polyCount{};
 	uint32_t drawCount{};
 	float totalSquare{};
-	std::vector<CDrawIndexAttrib> vDrawAttribBuffer{};
+	std::vector<CDrawIndexAttrib> m_vDrawAttribBuffer{};
 };
 
 //renderer

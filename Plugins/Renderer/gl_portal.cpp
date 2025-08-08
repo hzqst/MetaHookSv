@@ -212,7 +212,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		return nullptr;
 	}
 
-	auto pBrushFace = &pWorldModel->vFaceBuffer[surfIndex];
+	auto pBrushFace = &pWorldModel->m_vFaceBuffer[surfIndex];
 
 	auto pPortalModel = R_FindPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
 
@@ -238,7 +238,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 
 		pPortalModel->polyCount += pBrushFace->poly_count;
 
-		pPortalModel->pWorldModel = pWorldModel;
+		pPortalModel->m_pWorldModel = pWorldModel;
 
 		portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 
@@ -273,7 +273,9 @@ void R_DrawPortalSurfaceModelBegin(CWorldPortalModel* pPortalModel, int VBOState
 {
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pPortalModel->pWorldModel, VBOStates);
+	auto pWorldModel = pPortalModel->m_pWorldModel.lock();
+
+	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pWorldModel.get(), VBOStates);
 
 	GL_BindVAO(hVAO);
 	GL_BindABO(pPortalModel->hABO);

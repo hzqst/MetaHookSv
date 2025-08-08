@@ -73,6 +73,9 @@ public:
 #define TEXCHAIN_SCROLL 2
 #define TEXCHAIN_SKY 3
 
+#define TEXCHAIN_PASS_SOLID 0
+#define TEXCHAIN_PASS_SOLID_WITH_SKY 1
+
 class CWorldSurfaceBrushTexChain
 {
 public:
@@ -94,31 +97,54 @@ public:
 
 	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChainList[WSURF_TEXCHAIN_LIST_MAX];
-	std::vector<CWaterSurfaceModel *> vWaterSurfaceModels;
+	std::vector<std::shared_ptr<CWaterSurfaceModel>> m_vWaterSurfaceModels;
 	CWorldSurfaceBrushTexChain TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_MAX];
-	CWorldSurfaceModel* pModel{};
+	std::weak_ptr<CWorldSurfaceModel> m_pModel{};
+
+	ThreadWorkItemHandle_t m_hThreadWorkItem{};
 };
 
 class CWorldSurfaceWorldModel
 {
 public:
+	CWorldSurfaceWorldModel(model_t* mod) : m_model(mod)
+	{
+
+	}
+
 	~CWorldSurfaceWorldModel();
 
-	std::unordered_map<int, GLuint > VAOMap;
+	model_t* m_model{};
 	GLuint hVBO[WSURF_VBO_MAX]{};
 	GLuint hEBO{};
-	model_t* mod{};
-	std::vector<CWorldSurfaceBrushFace> vFaceBuffer;
+	std::unordered_map<int, GLuint> VAOMap;
+	std::vector<CWorldSurfaceBrushFace> m_vFaceBuffer;
 };
 
 class CWorldSurfaceModel
 {
 public:
-	~CWorldSurfaceModel();
+	CWorldSurfaceModel(model_t* mod) : m_model(mod)
+	{
 
-	model_t* mod{};
-	CWorldSurfaceWorldModel* pWorldModel{};
-	std::vector<CWorldSurfaceLeaf *> vLeaves;
+	}
+
+	~CWorldSurfaceModel()
+	{
+
+	}
+
+	std::shared_ptr<CWorldSurfaceLeaf> GetLeafByIndex(int index) const
+	{
+		if (index < 0 || index >= m_vLeaves.size())
+			return nullptr;
+
+		return m_vLeaves[index];
+	}
+
+	model_t* m_model{};
+	std::weak_ptr<CWorldSurfaceWorldModel> m_pWorldModel{};
+	std::vector<std::shared_ptr<CWorldSurfaceLeaf>> m_vLeaves;
 };
 
 //for decal drawing
@@ -244,6 +270,7 @@ msurface_t* R_GetWorldSurfaceByIndex(model_t* mod, int index);
 model_t* R_FindWorldModelBySurface(msurface_t* psurf);
 model_t* R_FindWorldModelByNode(mnode_t* pnode);
 model_t* R_FindWorldModelByModel(model_t* m);
+int R_FindTextureIdByTexture(model_t* mod, texture_t* ptex);
 
 class bspentity_t;
 
@@ -267,8 +294,8 @@ void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_DrawDecals(cl_entity_t *ent);
 void R_PrepareDecals(void);
 
-CWorldSurfaceWorldModel* R_GetWorldSurfaceWorldModel(model_t* mod);
-CWorldSurfaceModel* R_GetWorldSurfaceModel(model_t* mod);
+std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
+std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);
 
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
@@ -281,7 +308,7 @@ void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
 void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 
-CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t *surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf);
+std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurface_t *surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf);
 
 void R_DrawWaterSurfaceModel(
 	CWorldSurfaceModel* pModel,

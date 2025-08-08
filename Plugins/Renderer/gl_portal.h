@@ -34,7 +34,7 @@ public:
 
 	GLuint hABO{};
 
-	CWorldSurfaceWorldModel* pWorldModel{};
+	std::weak_ptr<CWorldSurfaceWorldModel> m_pWorldModel{};
 	mtexinfo_t* texinfo{};
 	std::set<int> SurfaceSet;
 	uint32_t drawCount{};

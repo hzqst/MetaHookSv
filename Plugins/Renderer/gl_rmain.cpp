@@ -5039,11 +5039,12 @@ void R_RunDeferredFrameTasks()
 	}
 }
 
-void Mod_ClearStudioModel(void)
+void Mod_ClearModel(void)
 {
 	for (int i = 0;i < EngineGetMaxKnownModel(); i++)
 	{
 		auto mod = EngineGetModelByIndex(i);
+
 		if (mod->type != mod_alias && mod->needload != NL_CLIENT)
 		{
 			mod->needload = NL_UNREFERENCED;
@@ -5051,14 +5052,22 @@ void Mod_ClearStudioModel(void)
 			if (mod->type == mod_sprite)
 				mod->cache.data = NULL;
 
-			R_FreeStudioRenderData(mod);
+			if (mod->type == mod_studio)
+			{
+				R_FreeStudioRenderData(mod);
+			}
+			else if (mod->type == mod_brush)//TODO: free brush
+			{
+				R_FreeWorldSurfaceModels(mod);
+				R_FreeWorldSurfaceWorldModels(mod);
+			}
 		}
 	}
 }
 
 void Host_ClearMemory(qboolean bQuite)
 {
-
+	Mod_ClearModel();
 
 	gPrivateFuncs.Host_ClearMemory(bQuite);
 }

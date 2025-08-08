@@ -871,7 +871,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		return;
 	}
 
-	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+	auto brushface = &pWorldModel->m_vFaceBuffer[surfIndex];
 
 	std::vector<vertex3f_t> vPolyVertices;
 	std::vector<decalvertex_t> vVertexBuffer;

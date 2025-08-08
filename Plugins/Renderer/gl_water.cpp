@@ -14,7 +14,7 @@ water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
 int g_iNumWaterReflectCaches = 0;
 
 std::vector<cl_entity_t*> g_VisibleWaterEntity;
-std::vector<CWaterSurfaceModel*> g_VisibleWaterSurfaceModels;
+std::vector<std::shared_ptr<CWaterSurfaceModel>> g_VisibleWaterSurfaceModels;
 
 std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
@@ -342,9 +342,7 @@ water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceMode
 		}
 		else
 		{
-			//Really?
-			//g_pMetaHookAPI->SysError("R_PrepareReflectCache: no empty reflect cache!");
-			return NULL;
+			return nullptr;
 		}
 	}
 
@@ -513,7 +511,7 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 	glBindTexture(GL_TEXTURE_2D, *currenttexture);
 }
 
-CWaterSurfaceModel* R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
+std::shared_ptr<CWaterSurfaceModel> R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
 	auto surfIndex = R_GetWorldSurfaceIndex(mod, surf);
 
@@ -523,7 +521,7 @@ CWaterSurfaceModel* R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, 
 		return nullptr;
 	}
 
-	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+	auto brushface = &pWorldModel->m_vFaceBuffer[surfIndex];
 
 	vec3_t normal;
 	VectorCopy(brushface->normal, normal);
@@ -533,9 +531,9 @@ CWaterSurfaceModel* R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, 
 		VectorInverse(normal);
 	}
 
-	for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+	for (size_t i = 0; i < pLeaf->m_vWaterSurfaceModels.size(); ++i)
 	{
-		auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+		auto pWaterModel = pLeaf->m_vWaterSurfaceModels[i];
 
 		if (surf->texinfo->texture == pWaterModel->texture &&
 			surf->plane == pWaterModel->plane &&
@@ -548,9 +546,9 @@ CWaterSurfaceModel* R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, 
 	return NULL;
 }
 
-CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
+std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
-	auto worldmodel = pWorldModel->mod;
+	auto worldmodel = pWorldModel->m_model;
 	auto surfIndex = R_GetWorldSurfaceIndex(worldmodel, surf);
 
 	if (surfIndex == -1)
@@ -559,13 +557,13 @@ CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int d
 		return nullptr;
 	}
 
-	auto brushface = &pWorldModel->vFaceBuffer[surfIndex];
+	auto brushface = &pWorldModel->m_vFaceBuffer[surfIndex];
 
-	auto pWaterModel = R_FindFlatWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
+	std::shared_ptr<CWaterSurfaceModel> pWaterModel = R_FindFlatWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
 
 	if (!pWaterModel)
 	{
-		pWaterModel = new CWaterSurfaceModel;
+		pWaterModel = std::make_shared<CWaterSurfaceModel>();
 		pWaterModel->texture = surf->texinfo->texture;
 
 		VectorCopy(brushface->normal, pWaterModel->normal);
@@ -602,7 +600,7 @@ CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int d
 		pWaterModel->speedrate = 1;
 		pWaterModel->level = WATER_LEVEL_LEGACY;
 
-		pWaterModel->vDrawAttribBuffer.clear();
+		pWaterModel->m_vDrawAttribBuffer.clear();
 
 		auto pWaterControl = R_FindWaterControl(surf);
 
@@ -678,7 +676,7 @@ CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int d
 		drawAttrib.FirstIndexLocation = brushface->reverse_start_index;
 		drawAttrib.NumIndices = brushface->reverse_index_count;
 
-		pWaterModel->vDrawAttribBuffer.emplace_back(drawAttrib);
+		pWaterModel->m_vDrawAttribBuffer.emplace_back(drawAttrib);
 	}
 	else
 	{
@@ -686,10 +684,10 @@ CWaterSurfaceModel* R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int d
 		drawAttrib.FirstIndexLocation = brushface->start_index;
 		drawAttrib.NumIndices = brushface->index_count;
 
-		pWaterModel->vDrawAttribBuffer.emplace_back(drawAttrib);
+		pWaterModel->m_vDrawAttribBuffer.emplace_back(drawAttrib);
 	}
 
-	pWaterModel->drawCount = (uint32_t)pWaterModel->vDrawAttribBuffer.size();
+	pWaterModel->drawCount = (uint32_t)pWaterModel->m_vDrawAttribBuffer.size();
 	pWaterModel->polyCount += brushface->poly_count;
 
 	return pWaterModel;
@@ -811,7 +809,7 @@ void R_RenderWaterReflectView(water_reflect_cache_t* ReflectCache)
 	ReflectCache->reflectmap_ready = true;
 }
 
-void R_RenderWaterPass_CollectWorldWater(CWaterSurfaceModel* pWaterModel)
+void R_RenderWaterPass_CollectWorldWater(const std::shared_ptr<CWaterSurfaceModel>& pWaterModel)
 {
 	vec3_t origin = { 0, 0, 0 };
 
@@ -891,13 +889,13 @@ void R_RenderWaterPass_CollectEntityWater(cl_entity_t* e)
 
 	auto pModel = R_GetWorldSurfaceModel(e->model);
 
-	if (pModel->vLeaves.size() >= 1)
-	{
-		auto pLeaf = pModel->vLeaves[0];
+	auto pLeaf = pModel->GetLeafByIndex(0);
 
-		for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
+	if (pLeaf)
+	{
+		for (size_t i = 0; i < pLeaf->m_vWaterSurfaceModels.size(); ++i)
 		{
-			auto pWaterModel = pLeaf->vWaterSurfaceModels[i];
+			const auto& pWaterModel = pLeaf->m_vWaterSurfaceModels[i];
 
 			auto pplane = pWaterModel->plane;
 
@@ -969,20 +967,19 @@ void R_RenderWaterPass(void)
 	R_SetupGL();
 	R_SetFrustum();
 
-	auto pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
+	const auto& pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
 	int leafIndex = R_GetWorldLeafIndex((*cl_worldmodel), viewleaf);
 
-	if (leafIndex >= 0 && leafIndex < (int)pModel->vLeaves.size())
-	{
-		auto pLeaf = pModel->vLeaves[leafIndex];
+	const auto& pLeaf = pModel->GetLeafByIndex(leafIndex);
 
-		if (pLeaf)
+	if (pLeaf)
+	{
+		for (size_t i = 0; i < pLeaf->m_vWaterSurfaceModels.size(); ++i)
 		{
-			for (size_t i = 0; i < pLeaf->vWaterSurfaceModels.size(); ++i)
-			{
-				R_RenderWaterPass_CollectWorldWater(pLeaf->vWaterSurfaceModels[i]);
-			}
+			const auto& pWaterModel = pLeaf->m_vWaterSurfaceModels[i];
+
+			R_RenderWaterPass_CollectWorldWater(pWaterModel);
 		}
 	}
 
@@ -999,17 +996,18 @@ void R_RenderWaterPass(void)
 	for (size_t i = 0; i < g_VisibleWaterSurfaceModels.size(); ++i)
 	{
 		auto pWaterModel = g_VisibleWaterSurfaceModels[i];
+
 		auto ent = g_VisibleWaterEntity[i];
 
 		water_reflect_cache_t* pReflectCache = NULL;
 
 		if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value > 0)
 		{
-			pReflectCache = R_PrepareReflectCache(ent, pWaterModel);
+			pReflectCache = R_PrepareReflectCache(ent, pWaterModel.get());
 		}
 		else if (pWaterModel->level == WATER_LEVEL_LEGACY_RIPPLE)
 		{
-			R_UpdateRippleTexture(pWaterModel, (*r_framecount));
+			R_UpdateRippleTexture(pWaterModel.get(), (*r_framecount));
 		}
 
 		auto pEntityComponent = R_GetEntityComponentContainer(ent, true);
@@ -1039,7 +1037,11 @@ void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* 
 {
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pLeaf->pModel->pWorldModel, VBOStates);
+	auto pModel = pLeaf->m_pModel.lock();
+
+	auto pWorldModel = pModel->m_pWorldModel.lock();
+	
+	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pWorldModel.get(), VBOStates);
 
 	GL_BindVAO(hVAO);
 	GL_BindABO(pWaterModel->hABO);
@@ -1523,7 +1525,7 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 	if (R_IsRenderingShadowView())
 		return;
 
-	if (!pLeaf->vWaterSurfaceModels.size())
+	if (!pLeaf->m_vWaterSurfaceModels.size())
 		return;
 
 	auto pEntityComponentContainer = R_GetEntityComponentContainer(ent, false);
@@ -1533,11 +1535,14 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 
 	for (size_t i = 0; i < pEntityComponentContainer->RenderWaterModels.size(); ++i)
 	{
+		const auto& pWaterModel = pEntityComponentContainer->RenderWaterModels[i];
+		auto ReflectCache = pEntityComponentContainer->ReflectCaches[i];
+
 		R_DrawWaterSurfaceModel(
 			pModel,
 			pLeaf, 
-			pEntityComponentContainer->RenderWaterModels[i], 
-			pEntityComponentContainer->ReflectCaches[i],
+			pWaterModel.get(),
+			ReflectCache,
 			ent);
 	}
 }

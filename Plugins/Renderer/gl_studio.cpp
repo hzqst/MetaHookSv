@@ -1148,7 +1148,10 @@ void R_FreeStudioRenderData(model_t* mod)
 
 	auto modelindex = EngineGetModelIndex(mod);
 
-	g_StudioRenderDataCache[modelindex].reset();
+	if (modelindex >= 0 && modelindex < (int)g_StudioRenderDataCache.size())
+	{
+		g_StudioRenderDataCache[modelindex].reset();
+	}
 }
 
 void R_FreeStudioRenderData(const std::shared_ptr<CStudioModelRenderData> &pRenderData)
@@ -4525,9 +4528,17 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 	}
 }
 
-
 class CStudioRenderDataAsyncLoadContext : public IThreadedTask
 {
+private:
+	std::shared_ptr<CStudioModelRenderData> m_pRenderData;
+	studiohdr_t* m_pStudioHeader{};
+
+	std::vector<studiovertexbase_t> m_vVertexBaseBuffer;
+	std::vector<studiovertextbn_t> m_vVertexTBNBuffer;
+	std::vector<GLuint> m_vIndicesBuffer;
+	std::atomic<bool> m_IsVBDataReady{};
+
 public:
 	CStudioRenderDataAsyncLoadContext(const std::shared_ptr<CStudioModelRenderData>& pRenderData, studiohdr_t* studiohdr) : m_pRenderData(pRenderData)
 	{
@@ -4558,7 +4569,7 @@ public:
 
 	bool ShouldRun(float time) override
 	{
-		return m_IsVBReady.load();
+		return m_IsVBDataReady.load();
 	}
 
 	void RunThreadedWorkItem()
@@ -4573,7 +4584,7 @@ public:
 
 		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
 
-		m_IsVBReady.store(true);
+		m_IsVBDataReady.store(true);
 	}
 
 	void Run(float time) override
@@ -4622,14 +4633,6 @@ public:
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
 			});
 	}
-
-	std::shared_ptr<CStudioModelRenderData> m_pRenderData;
-	studiohdr_t* m_pStudioHeader{};
-
-	std::vector<studiovertexbase_t> m_vVertexBaseBuffer;
-	std::vector<studiovertextbn_t> m_vVertexTBNBuffer;
-	std::vector<GLuint> m_vIndicesBuffer;
-	std::atomic<bool> m_IsVBReady{};
 };
 
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr)
