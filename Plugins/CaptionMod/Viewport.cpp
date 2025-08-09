@@ -447,8 +447,7 @@ void CViewport::LoadCustomDictionary(const char* fileName)
     try
     {
         std::istringstream in(content);
-        auto format = csv::CSVFormat().header_row(0);
-        csv::CSVReader reader(in, format);
+        csv::CSVReader reader(in);
 		
         for (auto& row : reader)
         {
@@ -555,8 +554,7 @@ void CViewport::LoadBaseDictionary(void)
     try
     {
         std::istringstream in(content);
-        auto format = csv::CSVFormat().header_row(0);
-        csv::CSVReader reader(in, format);
+        csv::CSVReader reader(in);
 
         for (auto& row : reader)
         {
