@@ -1368,177 +1368,245 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer)
 {
-	// 需要至少3个顶点才能形成三角形
-	if (vPolyVertices.size() < 3)
-		return;
+    // 严格遵循 AdvancedMath.hpp 中 Polygon3DTriangulator 的流程：
+    // 1) 计算平均法线并确定投影平面
+    // 2) 将 3D 多边形投影到 2D 平面
+    // 3) 使用 2D 耳切三角化（与 Polygon2DTriangulator 一致）
 
-	// 如果只有3个顶点，直接形成一个三角形
-	if (vPolyVertices.size() == 3)
-	{
-		vOutIndiceBuffer.push_back(0);
-		vOutIndiceBuffer.push_back(1);
-		vOutIndiceBuffer.push_back(2);
-		return;
-	}
-
-    // 对于更多顶点，使用ear-clipping算法
-	std::vector<uint32_t> indices;
-	indices.reserve(vPolyVertices.size());
-	for (size_t i = 0; i < vPolyVertices.size(); ++i)
-	{
-		indices.push_back(static_cast<uint32_t>(i));
-	}
-
-    // 计算多边形整体法线（Newell 方法），用于确定耳朵的凸性和绕序一致性
-    vec3_t polyNormal = { 0.0f, 0.0f, 0.0f };
+    const size_t VertCount = vPolyVertices.size();
+    if (VertCount <= 2)
+        return;
+    if (VertCount == 3)
     {
-        const size_t n = vPolyVertices.size();
-        for (size_t a = 0; a < n; ++a)
+        vOutIndiceBuffer.push_back(0);
+        vOutIndiceBuffer.push_back(1);
+        vOutIndiceBuffer.push_back(2);
+        return;
+    }
+
+    // 计算平均法线（与 Polygon3DTriangulator 相同的方式：累积对齐后的逐顶点法线）
+    float Normal[3] = {0, 0, 0};
+    auto addScaled = [](float out[3], const float in[3], float s) {
+        out[0] += in[0] * s;
+        out[1] += in[1] * s;
+        out[2] += in[2] * s;
+    };
+
+    for (size_t i = 0; i < VertCount; ++i)
+    {
+        const vec3_t& V0 = vPolyVertices[(i + 0) % VertCount].v;
+        const vec3_t& V1 = vPolyVertices[(i + 1) % VertCount].v;
+        const vec3_t& V2 = vPolyVertices[(i + 2) % VertCount].v;
+        vec3_t V0_V1 = { V1[0] - V0[0], V1[1] - V0[1], V1[2] - V0[2] };
+        vec3_t V1_V2 = { V2[0] - V1[0], V2[1] - V1[1], V2[2] - V1[2] };
+        vec3_t VertexNormal{};
+        CrossProduct(V0_V1, V1_V2, VertexNormal);
+        float sign = (Normal[0]*VertexNormal[0] + Normal[1]*VertexNormal[1] + Normal[2]*VertexNormal[2]) >= 0.0f ? 1.0f : -1.0f;
+        addScaled(Normal, VertexNormal, sign);
+    }
+
+    if (Normal[0] == 0.0f && Normal[1] == 0.0f && Normal[2] == 0.0f)
+    {
+        // 与 Polygon3DTriangulator 一致：点共线，返回空结果
+        return;
+    }
+
+    // 选择切线向量（按最大分量规则），并归一化 Tangent/Bitangent
+    float AbsNormal[3] = { fabsf(Normal[0]), fabsf(Normal[1]), fabsf(Normal[2]) };
+    vec3_t Tangent{};
+    if (AbsNormal[2] > (AbsNormal[0] > AbsNormal[1] ? AbsNormal[0] : AbsNormal[1]))
+    {
+        // cross({0,1,0}, Normal)
+        vec3_t Y = {0,1,0};
+        CrossProduct(Y, Normal, Tangent);
+    }
+    else if (AbsNormal[1] > (AbsNormal[0] > AbsNormal[2] ? AbsNormal[0] : AbsNormal[2]))
+    {
+        // cross({1,0,0}, Normal)
+        vec3_t X = {1,0,0};
+        CrossProduct(X, Normal, Tangent);
+    }
+    else
+    {
+        // cross({0,0,1}, Normal)
+        vec3_t Z = {0,0,1};
+        CrossProduct(Z, Normal, Tangent);
+    }
+
+    if (VectorLength(Tangent) == 0.0f)
+        return;
+    VectorNormalize(Tangent);
+
+    vec3_t Bitangent{};
+    CrossProduct(Normal, Tangent, Bitangent);
+    if (VectorLength(Bitangent) == 0.0f)
+        return;
+    VectorNormalize(Bitangent);
+
+    auto dot3 = [](const vec3_t& a, const vec3_t& b) -> float {
+        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    };
+
+    struct Vec2 { float x, y; };
+    std::vector<Vec2> Poly2D;
+    Poly2D.reserve(VertCount);
+    for (size_t i = 0; i < VertCount; ++i)
+    {
+        const vec3_t& P = vPolyVertices[i].v;
+        Poly2D.push_back({ dot3(Tangent, P), dot3(Bitangent, P) });
+    }
+
+    // 以下为 2D 耳切三角化流程（等价于 Polygon2DTriangulator::Triangulate）：
+    const int N = static_cast<int>(Poly2D.size());
+    const int TriangleCount = N - 2;
+    if (TriangleCount == 1)
+    {
+        vOutIndiceBuffer.push_back(0);
+        vOutIndiceBuffer.push_back(1);
+        vOutIndiceBuffer.push_back(2);
+        return;
+    }
+
+    // 找到最左顶点以确定多边形绕序
+    int LeftmostVertIdx = 0;
+    for (int i = 1; i < N; ++i)
+    {
+        if (Poly2D[i].x < Poly2D[LeftmostVertIdx].x)
+            LeftmostVertIdx = i;
+    }
+
+    auto WrapIndex = [](int idx, int Count) {
+        return ((idx % Count) + Count) % Count;
+    };
+
+    auto GetWinding = [](const Vec2& V0, const Vec2& V1, const Vec2& V2) -> float {
+        return (V1.x - V0.x) * (V2.y - V1.y) - (V2.x - V1.x) * (V1.y - V0.y);
+    };
+
+    float PolygonWinding = 0.0f;
+    for (int i = 0; i < N && PolygonWinding == 0.0f; ++i)
+    {
+        const Vec2& V0 = Poly2D[WrapIndex(LeftmostVertIdx + i - 1, N)];
+        const Vec2& V1 = Poly2D[WrapIndex(LeftmostVertIdx + i + 0, N)];
+        const Vec2& V2 = Poly2D[WrapIndex(LeftmostVertIdx + i + 1, N)];
+        PolygonWinding = GetWinding(V0, V1, V2);
+    }
+    if (PolygonWinding == 0.0f)
+    {
+        // 顶点共线
+        return;
+    }
+    PolygonWinding = PolygonWinding > 0.0f ? 1.0f : -1.0f;
+
+    enum VertexType { Convexx = 0, Reflex = 1, Ear = 2 };
+    std::vector<int> RemainingIds(N);
+    std::vector<VertexType> VertTypes(N, Convexx);
+    for (int i = 0; i < N; ++i)
+        RemainingIds[i] = i;
+
+    auto CheckConvex = [&](int vert_id) -> VertexType {
+        const int R = static_cast<int>(RemainingIds.size());
+        const int Idx0 = RemainingIds[WrapIndex(vert_id - 1, R)];
+        const int Idx1 = RemainingIds[WrapIndex(vert_id + 0, R)];
+        const int Idx2 = RemainingIds[WrapIndex(vert_id + 1, R)];
+        const auto& V0 = Poly2D[Idx0];
+        const auto& V1 = Poly2D[Idx1];
+        const auto& V2 = Poly2D[Idx2];
+        return GetWinding(V0, V1, V2) * PolygonWinding < 0.0f ? Reflex : Convexx;
+    };
+
+    auto IsPointInsideTriangle2D = [](const Vec2& V0, const Vec2& V1, const Vec2& V2, const Vec2& P) -> bool {
+        // AllowEdges = false（严格与 AdvancedMath 行为一致）
+        auto crossZ = [](const Vec2& A, const Vec2& B) { return A.x * B.y - A.y * B.x; };
+        Vec2 E0{V1.x - V0.x, V1.y - V0.y};
+        Vec2 E1{V2.x - V1.x, V2.y - V1.y};
+        Vec2 E2{V0.x - V2.x, V0.y - V2.y};
+        Vec2 P0{P.x - V0.x, P.y - V0.y};
+        Vec2 P1{P.x - V1.x, P.y - V1.y};
+        Vec2 P2{P.x - V2.x, P.y - V2.y};
+        float z0 = crossZ(E0, P0);
+        float z1 = crossZ(E1, P1);
+        float z2 = crossZ(E2, P2);
+        return (z0 > 0 && z1 > 0 && z2 > 0) || (z0 < 0 && z1 < 0 && z2 < 0);
+    };
+
+    auto CheckEar = [&](int vert_id) -> VertexType {
+        const int R = static_cast<int>(RemainingIds.size());
+        const int Idx0 = RemainingIds[WrapIndex(vert_id - 1, R)];
+        const int Idx1 = RemainingIds[WrapIndex(vert_id + 0, R)];
+        const int Idx2 = RemainingIds[WrapIndex(vert_id + 1, R)];
+        const auto& V0 = Poly2D[Idx0];
+        const auto& V1 = Poly2D[Idx1];
+        const auto& V2 = Poly2D[Idx2];
+
+        // 检查所有剩余点是否在三角形内部（不含边）
+        for (int k : RemainingIds)
         {
-            const vec3_t& cur = vPolyVertices[a].v;
-            const vec3_t& nxt = vPolyVertices[(a + 1) % n].v;
-            polyNormal[0] += (cur[1] - nxt[1]) * (cur[2] + nxt[2]);
-            polyNormal[1] += (cur[2] - nxt[2]) * (cur[0] + nxt[0]);
-            polyNormal[2] += (cur[0] - nxt[0]) * (cur[1] + nxt[1]);
+            if (k == Idx0 || k == Idx1 || k == Idx2)
+                continue;
+            // 只对非凸/非耳的点做严格测试（与 AdvancedMath 开发版逻辑一致的近似实现）
+            if (VertTypes[k] == Convexx || VertTypes[k] == Ear)
+                continue;
+            if (IsPointInsideTriangle2D(V0, V1, V2, Poly2D[k]))
+                return Convexx; // 非耳
+        }
+        return Ear;
+    };
+
+    // 初始标记凸/凹
+    for (int vid = 0; vid < N; ++vid)
+        VertTypes[vid] = CheckConvex(vid);
+    // 标记耳朵
+    for (int vid = 0; vid < N; ++vid)
+        if (VertTypes[vid] == Convexx)
+            VertTypes[vid] = CheckEar(vid);
+
+    // 开始剪耳
+    while (RemainingIds.size() > 3)
+    {
+        int R = static_cast<int>(RemainingIds.size());
+        int ear_vert_id = 0;
+        for (; ear_vert_id < R; ++ear_vert_id)
+        {
+            const int Idx = RemainingIds[ear_vert_id];
+            if (VertTypes[Idx] == Ear)
+                break;
+        }
+        if (ear_vert_id == R)
+        {
+            // 与 AdvancedMath 一致：没有耳朵则强制选择 0 位置
+            ear_vert_id = 0;
+        }
+
+        const int Idx0 = RemainingIds[WrapIndex(ear_vert_id - 1, R)];
+        const int Idx1 = RemainingIds[ear_vert_id];
+        const int Idx2 = RemainingIds[WrapIndex(ear_vert_id + 1, R)];
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(Idx0));
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(Idx1));
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(Idx2));
+
+        RemainingIds.erase(RemainingIds.begin() + ear_vert_id);
+        --R;
+        if (R > 3)
+        {
+            const int IdxL = RemainingIds[WrapIndex(ear_vert_id - 1, R)];
+            const int IdxR = RemainingIds[WrapIndex(ear_vert_id + 0, R)];
+            VertTypes[IdxL] = CheckConvex(ear_vert_id - 1);
+            VertTypes[IdxR] = CheckConvex(ear_vert_id + 0);
+            if (VertTypes[IdxL] == Convexx)
+                VertTypes[IdxL] = CheckEar(ear_vert_id - 1);
+            if (VertTypes[IdxR] == Convexx)
+                VertTypes[IdxR] = CheckEar(ear_vert_id + 0);
         }
     }
 
-    // 允许的数值误差
-    const float kEpsInside = 1e-5f;
-    const float kEpsOrientation = 1e-6f;
-
-    // 检查三个顶点是否形成有效的三角形（非退化）
-    auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
-		const auto& v0 = vPolyVertices[i0].v;
-		const auto& v1 = vPolyVertices[i1].v;
-		const auto& v2 = vPolyVertices[i2].v;
-
-		vec3_t edge1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
-		vec3_t edge2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
-
-		vec3_t cross;
-		CrossProduct(edge1, edge2, cross);
-
-		float length = VectorLength(cross); //避免退化三角形
-		return length > 0.01f; // Fix #648 1e-6f; 
-		};
-
-    // 检查三角形绕序是否与多边形一致且为“凸”
-    auto isConvexAndOriented = [&](uint32_t iPrev, uint32_t iCur, uint32_t iNext) -> bool {
-        const auto& v0 = vPolyVertices[iPrev].v;
-        const auto& v1 = vPolyVertices[iCur].v;
-        const auto& v2 = vPolyVertices[iNext].v;
-
-        vec3_t e0 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
-        vec3_t e1 = { v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2] };
-        vec3_t cross;
-        CrossProduct(e0, e1, cross);
-        float dot = DotProduct(cross, polyNormal);
-        return dot > kEpsOrientation;
-    };
-
-    // 检查点是否在三角形内（使用重心坐标，带容差）
-    auto isPointInTriangle = [&vPolyVertices, kEpsInside](const vec3_t& p, uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
-		const auto& v0 = vPolyVertices[i0].v;
-		const auto& v1 = vPolyVertices[i1].v;
-		const auto& v2 = vPolyVertices[i2].v;
-
-		vec3_t v0v1 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
-		vec3_t v0v2 = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
-		vec3_t v0p = { p[0] - v0[0], p[1] - v0[1], p[2] - v0[2] };
-
-		float dot00 = DotProduct(v0v2, v0v2);
-		float dot01 = DotProduct(v0v2, v0v1);
-		float dot02 = DotProduct(v0v2, v0p);
-		float dot11 = DotProduct(v0v1, v0v1);
-		float dot12 = DotProduct(v0v1, v0p);
-
-        float denom = (dot00 * dot11 - dot01 * dot01);
-        if (fabsf(denom) <= kEpsInside)
-            return false;
-        float invDenom = 1.0f / denom;
-		float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-		float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-        // 将边界点视为“外侧”，加入容差，避免因浮点误差把对角点判到三角形内
-        return (u > kEpsInside) && (v > kEpsInside) && (u + v < 1.0f - kEpsInside);
-		};
-
-	// 检查是否为耳朵（ear）
-	auto isEar = [&](size_t idx) -> bool {
-		if (indices.size() < 3) return false;
-
-		size_t prev = (idx + indices.size() - 1) % indices.size();
-		size_t next = (idx + 1) % indices.size();
-
-		uint32_t i0 = indices[prev];
-		uint32_t i1 = indices[idx];
-		uint32_t i2 = indices[next];
-
-        // 检查是否形成有效三角形 + 凸性与绕序一致
-        if (!isValidTriangle(i0, i1, i2) || !isConvexAndOriented(i0, i1, i2))
-			return false;
-
-		// 检查是否有其他顶点在这个三角形内
-		for (size_t i = 0; i < indices.size(); ++i)
-		{
-			if (i == prev || i == idx || i == next)
-				continue;
-
-			if (isPointInTriangle(vPolyVertices[indices[i]].v, i0, i1, i2))
-				return false;
-		}
-
-		return true;
-		};
-
-	// Ear-clipping主循环
-	while (indices.size() > 3)
-	{
-		bool earFound = false;
-
-		for (size_t i = 0; i < indices.size(); ++i)
-		{
-			if (isEar(i))
-			{
-				// 找到耳朵，添加三角形
-				size_t prev = (i + indices.size() - 1) % indices.size();
-				size_t next = (i + 1) % indices.size();
-
-				vOutIndiceBuffer.push_back(indices[prev]);
-				vOutIndiceBuffer.push_back(indices[i]);
-				vOutIndiceBuffer.push_back(indices[next]);
-
-				// 移除当前顶点
-				indices.erase(indices.begin() + i);
-				earFound = true;
-				break;
-			}
-		}
-
-		// 如果没有找到耳朵，说明多边形可能有问题，使用扇形三角化作为后备方案
-		if (!earFound)
-		{
-			gEngfuncs.Con_DPrintf("R_PolygonToTriangleList: No ear found, falling back to fan triangulation\n");
-
-			vOutIndiceBuffer.clear();
-			for (size_t i = 1; i < vPolyVertices.size() - 1; ++i)
-			{
-				vOutIndiceBuffer.push_back(0);
-				vOutIndiceBuffer.push_back(static_cast<uint32_t>(i));
-				vOutIndiceBuffer.push_back(static_cast<uint32_t>(i + 1));
-			}
-			return;
-		}
-	}
-
-	// 添加最后一个三角形
-	if (indices.size() == 3)
-	{
-		vOutIndiceBuffer.push_back(indices[0]);
-		vOutIndiceBuffer.push_back(indices[1]);
-		vOutIndiceBuffer.push_back(indices[2]);
-	}
+    // 输出最后一个三角形
+    if (RemainingIds.size() == 3)
+    {
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(RemainingIds[0]));
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(RemainingIds[1]));
+        vOutIndiceBuffer.emplace_back(static_cast<uint32_t>(RemainingIds[2]));
+    }
 }
 
 std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_t* mod)
