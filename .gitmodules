@@ -40,3 +40,6 @@
 [submodule "thirdparty/curl"]
 	path = thirdparty/curl
 	url = https://github.com/curl/curl
+[submodule "thirdparty/csv-parser"]
+	path = thirdparty/csv-parser
+	url = https://github.com/vincentlaucsb/csv-parser
