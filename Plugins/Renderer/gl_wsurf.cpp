@@ -1381,7 +1381,7 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		return;
 	}
 
-	// 对于更多顶点，使用ear-clipping算法
+    // 对于更多顶点，使用ear-clipping算法
 	std::vector<uint32_t> indices;
 	indices.reserve(vPolyVertices.size());
 	for (size_t i = 0; i < vPolyVertices.size(); ++i)
@@ -1389,8 +1389,26 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		indices.push_back(static_cast<uint32_t>(i));
 	}
 
-	// 检查三个顶点是否形成有效的三角形（非退化）
-	auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
+    // 计算多边形整体法线（Newell 方法），用于确定耳朵的凸性和绕序一致性
+    vec3_t polyNormal = { 0.0f, 0.0f, 0.0f };
+    {
+        const size_t n = vPolyVertices.size();
+        for (size_t a = 0; a < n; ++a)
+        {
+            const vec3_t& cur = vPolyVertices[a].v;
+            const vec3_t& nxt = vPolyVertices[(a + 1) % n].v;
+            polyNormal[0] += (cur[1] - nxt[1]) * (cur[2] + nxt[2]);
+            polyNormal[1] += (cur[2] - nxt[2]) * (cur[0] + nxt[0]);
+            polyNormal[2] += (cur[0] - nxt[0]) * (cur[1] + nxt[1]);
+        }
+    }
+
+    // 允许的数值误差
+    const float kEpsInside = 1e-5f;
+    const float kEpsOrientation = 1e-6f;
+
+    // 检查三个顶点是否形成有效的三角形（非退化）
+    auto isValidTriangle = [&vPolyVertices](uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
 		const auto& v0 = vPolyVertices[i0].v;
 		const auto& v1 = vPolyVertices[i1].v;
 		const auto& v2 = vPolyVertices[i2].v;
@@ -1405,8 +1423,22 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		return length > 0.01f; // Fix #648 1e-6f; 
 		};
 
-	// 检查点是否在三角形内（使用重心坐标）
-	auto isPointInTriangle = [&vPolyVertices](const vec3_t& p, uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
+    // 检查三角形绕序是否与多边形一致且为“凸”
+    auto isConvexAndOriented = [&](uint32_t iPrev, uint32_t iCur, uint32_t iNext) -> bool {
+        const auto& v0 = vPolyVertices[iPrev].v;
+        const auto& v1 = vPolyVertices[iCur].v;
+        const auto& v2 = vPolyVertices[iNext].v;
+
+        vec3_t e0 = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
+        vec3_t e1 = { v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2] };
+        vec3_t cross;
+        CrossProduct(e0, e1, cross);
+        float dot = DotProduct(cross, polyNormal);
+        return dot > kEpsOrientation;
+    };
+
+    // 检查点是否在三角形内（使用重心坐标，带容差）
+    auto isPointInTriangle = [&vPolyVertices, kEpsInside](const vec3_t& p, uint32_t i0, uint32_t i1, uint32_t i2) -> bool {
 		const auto& v0 = vPolyVertices[i0].v;
 		const auto& v1 = vPolyVertices[i1].v;
 		const auto& v2 = vPolyVertices[i2].v;
@@ -1421,11 +1453,15 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		float dot11 = DotProduct(v0v1, v0v1);
 		float dot12 = DotProduct(v0v1, v0p);
 
-		float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+        float denom = (dot00 * dot11 - dot01 * dot01);
+        if (fabsf(denom) <= kEpsInside)
+            return false;
+        float invDenom = 1.0f / denom;
 		float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
 		float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-		return (u >= 0) && (v >= 0) && (u + v <= 1);
+        // 将边界点视为“外侧”，加入容差，避免因浮点误差把对角点判到三角形内
+        return (u > kEpsInside) && (v > kEpsInside) && (u + v < 1.0f - kEpsInside);
 		};
 
 	// 检查是否为耳朵（ear）
@@ -1439,8 +1475,8 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 		uint32_t i1 = indices[idx];
 		uint32_t i2 = indices[next];
 
-		// 检查是否形成有效三角形
-		if (!isValidTriangle(i0, i1, i2))
+        // 检查是否形成有效三角形 + 凸性与绕序一致
+        if (!isValidTriangle(i0, i1, i2) || !isConvexAndOriented(i0, i1, i2))
 			return false;
 
 		// 检查是否有其他顶点在这个三角形内
