@@ -44,26 +44,19 @@ void CM_DecompressPVS(byte* in, byte* decompressed, int byteCount)
 	} while (out < decompressed + byteCount);
 }
 
-byte* Mod_DecompressVis(byte* in, model_t* model)
+void Mod_DecompressVis(byte* in, model_t* model, byte* decompressed)
 {
-	static byte	decompressed[MAX_MAP_LEAFS_SVENGINE / 8];
-	int		row;
-
-	row = (model->numleafs + 7) >> 3;
-
-	if (!in)
-		return mod_novis;
+	int row = (model->numleafs + 7) >> 3;
 
 	CM_DecompressPVS(in, decompressed, row);
-	return decompressed;
 }
 
-byte* Mod_LeafPVS(mleaf_t* leaf, model_t* model)
+void Mod_LeafPVS(mleaf_t* leaf, model_t* model, byte *decompressed)
 {
-	if (leaf == model->leafs)
-		return mod_novis;
+	if (leaf == model->leafs || !leaf->compressed_vis)
+		memcpy(decompressed, mod_novis, MAX_MAP_LEAFS_SVENGINE / 8);
 
-	return Mod_DecompressVis(leaf->compressed_vis, model);
+	Mod_DecompressVis(leaf->compressed_vis, model, decompressed);
 }
 
 void Mod_Init(void)

@@ -86,11 +86,21 @@ void R_FreeWorldSurfaceModels(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex >= 0 && modelindex < g_WorldSurfaceModels.size() && g_WorldSurfaceModels[modelindex])
+	if (modelindex >= 0 && modelindex < g_WorldSurfaceModels.size())
 	{
-		gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceModels: [%s] freed.\n", mod->name);
+		auto pWorldSurfaceModel = g_WorldSurfaceModels[modelindex];
 
-		g_WorldSurfaceModels[modelindex].reset();
+		if (pWorldSurfaceModel)
+		{
+			gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceModels: [%s] freed.\n", mod->name);
+
+			for (auto pLeaf : pWorldSurfaceModel->m_vLeaves)
+			{
+				pLeaf->m_bIsClosing.store(true);
+			}
+
+			g_WorldSurfaceModels[modelindex].reset();
+		}
 	}
 }
 
@@ -98,11 +108,16 @@ void R_FreeWorldSurfaceWorldModels(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex >= 0 && modelindex < g_WorldSurfaceWorldModels.size() && g_WorldSurfaceWorldModels[modelindex])
+	if (modelindex >= 0 && modelindex < g_WorldSurfaceWorldModels.size())
 	{
-		gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceWorldModels: [%s] freed.\n", mod->name);
+		auto pWorldSurfaceWorldModel = g_WorldSurfaceWorldModels[modelindex];
 
-		g_WorldSurfaceWorldModels[modelindex].reset();
+		if (pWorldSurfaceWorldModel)
+		{
+			gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceWorldModels: [%s] freed.\n", mod->name);
+
+			g_WorldSurfaceWorldModels[modelindex].reset();
+		}
 	}
 }
 
@@ -110,8 +125,15 @@ void R_ClearWorldSurfaceModels(void)
 {
 	for (size_t i = 0; i < g_WorldSurfaceModels.size(); ++i)
 	{
-		if (g_WorldSurfaceModels[i])
+		auto pWorldSurfaceModel = g_WorldSurfaceModels[i];
+
+		if (pWorldSurfaceModel)
 		{
+			for (auto pLeaf : pWorldSurfaceModel->m_vLeaves)
+			{
+				pLeaf->m_bIsClosing.store(true);
+			}
+
 			g_WorldSurfaceModels[i].reset();
 		}
 	}
@@ -433,18 +455,20 @@ void R_RecursiveFindLeaves(mbasenode_t* basenode, std::set<mleaf_t*>& vLeafs)
 	R_RecursiveFindLeaves(node->children[1], vLeafs);
 }
 
-void R_MarkPVSForLeaf(mleaf_t* leaf, visnodes_t &visnodes)
+void R_MarkPVSForLeaf(model_t * worldmodel, mleaf_t* leaf, visnodes_t &visnodes)
 {
 	//Decompress vis bytes from world model.
 
-	auto vis = Mod_LeafPVS(leaf, (*cl_worldmodel));
+	byte vis[MAX_MAP_LEAFS_SVENGINE / 8];
+
+	Mod_LeafPVS(leaf, worldmodel, vis);
 
 	//Mark node as visnode, from leaf to root
-	for (int i = 0; i < (*cl_worldmodel)->numleafs; i++)
+	for (int i = 0; i < worldmodel->numleafs; i++)
 	{
 		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
-			auto basenode = (mbasenode_t*)&(*cl_worldmodel)->leafs[i + 1];
+			auto basenode = (mbasenode_t*)&worldmodel->leafs[i + 1];
 
 			do
 			{
@@ -568,8 +592,11 @@ void R_BrushModelLinkTextureChain(model_t* mod, vissurfaces_t& watersurfaces, vi
 	}
 }
 
-void R_GenerateIndicesForTexChain(model_t* mod, msurface_t* surf, CWorldSurfaceBrushTexChain* texchain, CWorldSurfaceWorldModel* pWorldModel, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
+void R_GenerateIndicesForTexChain(model_t* mod, msurface_t* surf, CWorldSurfaceBrushTexChain* texchain, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
+	if (pLeaf->m_bIsClosing.load())
+		return; //Leaf is closing, stop generating texchain
+
 	auto surfIndex = R_GetWorldSurfaceIndex(pWorldModel->m_model, surf);
 
 	if (surfIndex == -1)
@@ -669,6 +696,9 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 		if (!t)
 			continue;
 
+		if (pLeaf->m_bIsClosing.load())
+			return; //Leaf is closing, stop generating texchain
+
 		bool bIsSkyTexture = (0 == strcmp(t->name, "sky")) ? true : false;
 
 		if (iTexChainPass == TEXCHAIN_PASS_SOLID_WITH_SKY && bIsSkyTexture)
@@ -688,7 +718,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				for (const auto& surf : surfaces)
 				{
-					R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, vDrawAttribBuffer);
+					R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, pLeaf, vDrawAttribBuffer);
 				}
 
 				if (texchain.drawCount > 0)
@@ -757,7 +787,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 									if (!(surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB)))
 									{
-										R_GenerateIndicesForTexChain(mod, texchainSurface[n], &texchain, pWorldModel, vDrawAttribBuffer);
+										R_GenerateIndicesForTexChain(mod, texchainSurface[n], &texchain, pWorldModel, pLeaf, vDrawAttribBuffer);
 									}
 								}
 							}
@@ -794,7 +824,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 					{
 						if (!(surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB)))
 						{
-							R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, vDrawAttribBuffer);
+							R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, pLeaf, vDrawAttribBuffer);
 						}
 					}
 
@@ -826,7 +856,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 				{
 					if (!(surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB)))
 					{
-						R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, vDrawAttribBuffer);
+						R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, pLeaf, vDrawAttribBuffer);
 					}
 				}
 
@@ -851,7 +881,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 				{
 					if (!(surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB)))
 					{
-						R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, vDrawAttribBuffer);
+						R_GenerateIndicesForTexChain(mod, surf, &texchain, pWorldModel, pLeaf, vDrawAttribBuffer);
 					}
 				}
 
@@ -895,8 +925,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 class CWorldSurfaceLeafAsyncLoadContext : public IThreadedTask
 {
 private:
-	std::shared_ptr<CWorldSurfaceWorldModel> m_pWorldModel;
 	std::shared_ptr<CWorldSurfaceLeaf> m_pLeaf;
+	std::shared_ptr<CWorldSurfaceWorldModel> m_pWorldModel;
 	model_t* m_model{};
 	mleaf_t* m_leaf{};
 
@@ -942,17 +972,24 @@ public:
 		return m_IsABDataReady.load();
 	}
 
-	void RunThreadedWorkItem()
+	bool RunThreadedWorkItem()
 	{
+		if (m_pLeaf->m_bIsClosing.load())
+			return false;
+
 		if (m_leaf)
 		{
-			R_MarkPVSForLeaf(m_leaf, m_visnodes);
+			R_MarkPVSForLeaf(m_pWorldModel->m_model, m_leaf, m_visnodes);
 
 			R_RecursiveMarkSurfaces(m_model->nodes, m_visnodes, m_vissurfaces);
 
 			R_RecursiveLinkTextureChain(m_model, m_model->nodes, m_visnodes, m_vissurfaces, m_watersurfaces, m_texsurfaces);
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID, m_vDrawAttribBuffer);
+
+			if (m_pLeaf->m_bIsClosing.load())
+				return false;
+
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID_WITH_SKY, m_vDrawAttribBuffer);
 		}
 		else
@@ -960,14 +997,28 @@ public:
 			R_BrushModelLinkTextureChain(m_model, m_watersurfaces, m_reversedwatersurfaces, m_texsurfaces);
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID, m_vDrawAttribBuffer);
+
+			if (m_pLeaf->m_bIsClosing.load())
+				return false;
+
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID_WITH_SKY, m_vDrawAttribBuffer);
 		}
 
+		if (m_pLeaf->m_bIsClosing.load())
+			return false;
+
 		m_IsABDataReady.store(true);
+		return true;
 	}
 
 	void Run(float time) override
 	{
+		if (m_pLeaf->m_bIsClosing.load())
+			return;
+
+		if (!m_vDrawAttribBuffer.size())
+			return;
+
 		for (auto surf : m_watersurfaces)
 		{
 			R_CollectWaters(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
@@ -1012,10 +1063,16 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 
 		auto ctx = (CWorldSurfaceLeafAsyncLoadContext*)context;
 
-		ctx->RunThreadedWorkItem();
+		if (ctx->RunThreadedWorkItem())
+		{
+			GameThreadTaskScheduler()->QueueTask(ctx);
+		}
+		else
+		{
+			ctx->Destroy();
+		}
 
-		GameThreadTaskScheduler()->QueueTask(ctx);
-
+		//Don't free current workitem now as we will free it in the pRenderData dtor
 		return false;
 
 	}, ctx);

@@ -143,6 +143,13 @@ cvar_t* r_lowerbody_duck_model_offset = NULL;
 
 CStudioModelRenderData::~CStudioModelRenderData()
 {
+	if (m_hThreadWorkItem)
+	{
+		g_pMetaHookAPI->WaitForWorkItemToComplete(m_hThreadWorkItem);
+		g_pMetaHookAPI->DeleteWorkItem(m_hThreadWorkItem);
+		m_hThreadWorkItem = nullptr;
+	}
+
 	if (hVAO)
 	{
 		GL_DeleteVAO(hVAO);
@@ -171,13 +178,6 @@ CStudioModelRenderData::~CStudioModelRenderData()
 	for (const auto &itor : mStudioMaterials)
 	{
 		delete itor.second;
-	}
-
-	if (hThreadWorkItem)
-	{
-		g_pMetaHookAPI->WaitForWorkItemToComplete(hThreadWorkItem);
-		g_pMetaHookAPI->DeleteWorkItem(hThreadWorkItem);
-		hThreadWorkItem = nullptr;
 	}
 }
 
@@ -447,6 +447,11 @@ void R_PrepareTBNForRenderMesh(
 
 	for (int i = 0; i < iIndiceCount; i += 3)
 	{
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		// CCW
 		int idx0 = vIndicesBuffer[iStartIndex + i + 2];
 		int idx1 = vIndicesBuffer[iStartIndex + i + 1];
@@ -577,6 +582,11 @@ void R_PrepareTBNForRenderMesh(
 	std::set<int> processedVertices;
 	for (int i = 0; i < iIndiceCount; i++)
 	{
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		int vertIdx = vIndicesBuffer[iStartIndex + i];
 		if (processedVertices.find(vertIdx) == processedVertices.end())
 		{
@@ -599,6 +609,7 @@ void R_PrepareTBNForRenderMesh(
 }
 
 void CalculateFaceNormalHashMap(
+	CStudioModelRenderData* pRenderData,
 	const std::vector<studiovertexbase_t>& vVertexPosBuffer,
 	const std::vector<studiovertextbn_t>& vVertexTBNBuffer,
 	const std::vector<unsigned int>& vIndicesBuffer,
@@ -610,6 +621,11 @@ void CalculateFaceNormalHashMap(
 
 	for (int i = 0; i < vIndicesBuffer.size(); i += 3)
 	{
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		// CCW
 		int idx0 = vIndicesBuffer[i + 2];
 		int idx1 = vIndicesBuffer[i + 1];
@@ -721,7 +737,7 @@ void CalculateFaceNormalHashMap(
 	}
 }
 
-void CalculateAverageNormal(CFaceNormalHashMap& FaceNormalHashMap)
+void CalculateAverageNormal(CStudioModelRenderData* pRenderData, CFaceNormalHashMap& FaceNormalHashMap)
 {
 	for (auto it = FaceNormalHashMap.begin(); it != FaceNormalHashMap.end(); it++)
 	{
@@ -780,6 +796,7 @@ void CalculateAverageNormal(CFaceNormalHashMap& FaceNormalHashMap)
 }
 
 void GetSmoothNormal(
+	CStudioModelRenderData* pRenderData,
 	const vec3_t VertexPos,
 	const vec3_t VertexNorm,
 	int vertbone,
@@ -841,13 +858,18 @@ void R_PrepareSmoothNormalForRenderMesh(
 {
 	CFaceNormalHashMap FaceNormalHashMap;
 
-	CalculateFaceNormalHashMap(vVertexBaseBuffer, vVertexTBNBuffer, vIndicesBuffer, FaceNormalHashMap);
+	CalculateFaceNormalHashMap(pRenderData, vVertexBaseBuffer, vVertexTBNBuffer, vIndicesBuffer, FaceNormalHashMap);
 
-	CalculateAverageNormal(FaceNormalHashMap);
+	CalculateAverageNormal(pRenderData, FaceNormalHashMap);
 
 	for (size_t i = 0; i < vVertexTBNBuffer.size(); ++i)
 	{
-		GetSmoothNormal(vVertexBaseBuffer[i].pos, vVertexBaseBuffer[i].normal, vVertexBaseBuffer[i].packedbone[0], FaceNormalHashMap, vVertexTBNBuffer[i].smoothnormal);
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
+		GetSmoothNormal(pRenderData, vVertexBaseBuffer[i].pos, vVertexBaseBuffer[i].normal, vVertexBaseBuffer[i].packedbone[0], FaceNormalHashMap, vVertexTBNBuffer[i].smoothnormal);
 	}
 }
 
@@ -867,6 +889,11 @@ void R_PrepareTBNForRenderSubmodel(
 	for (int k = 0; k < pRenderSubmodel->vMesh.size(); k++)
 	{
 		const auto pRenderMesh = &pRenderSubmodel->vMesh[k];
+
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
 
 		R_PrepareTBNForRenderMesh(mod, studiohdr, pRenderData, pRenderSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 
@@ -891,6 +918,11 @@ void R_PrepareTBNForRenderData(
 
 	for (int i = 0; i < pRenderData->vSubmodels.size(); i++)
 	{
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		R_PrepareTBNForRenderSubmodel(mod, studiohdr, pRenderData, pRenderData->vSubmodels[i], ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 	}
 }
@@ -899,6 +931,7 @@ void R_PrepareStudioRenderSubmodel(
 	model_t* mod,
 	studiohdr_t* studiohdr, 
 	mstudiomodel_t* submodel,
+	CStudioModelRenderData* pRenderData,
 	std::vector<studiovertexbase_t>& vVertexBaseBuffer,
 	std::vector<studiovertextbn_t>& vVertexTBNBuffer,
 	std::vector<GLuint>& vIndices,
@@ -1023,6 +1056,11 @@ void R_PrepareStudioRenderSubmodel(
 					iNumVertex++;
 				}
 			}
+
+			if (pRenderData->bIsClosing.load())
+			{
+				break;
+			}
 		}
 
 		pRenderSubmodel->vMesh.emplace_back(RenderMesh);
@@ -1054,6 +1092,7 @@ void R_PrepareStudioRenderData(
 					mod,
 					studiohdr,
 					submodel,
+					pRenderData,
 					vVertexBaseBuffer,
 					vVertexTBNBuffer,
 					vIndicesBuffer,
@@ -1061,6 +1100,11 @@ void R_PrepareStudioRenderData(
 
 				pRenderData->vSubmodels.emplace_back(pRenderSubmodel);
 				pRenderData->mSubmodels[pRenderSubmodel->m_SubmodelOffset] = pRenderSubmodel;
+
+				if (pRenderData->bIsClosing.load())
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -1150,7 +1194,14 @@ void R_FreeStudioRenderData(model_t* mod)
 
 	if (modelindex >= 0 && modelindex < (int)g_StudioRenderDataCache.size())
 	{
-		g_StudioRenderDataCache[modelindex].reset();
+		auto pRenderData = g_StudioRenderDataCache[modelindex];
+
+		if (pRenderData)
+		{
+			pRenderData->bIsClosing.store(true);
+
+			g_StudioRenderDataCache[modelindex].reset();
+		}
 	}
 }
 
@@ -1186,40 +1237,16 @@ void R_FreeAllStudioRenderData(void)
 {
 	for (size_t i = 0; i < g_StudioRenderDataCache.size(); ++i)
 	{
-		if (g_StudioRenderDataCache[i])
+		auto pRenderData = g_StudioRenderDataCache[i];
+
+		if (pRenderData)
 		{
+			pRenderData->bIsClosing.store(true);
+
 			g_StudioRenderDataCache[i].reset();
 		}
 	}
 }
-
-#if 0
-void R_StudioReloadAllStudioRenderData(void)
-{
-	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
-
-		if (mod->type == mod_studio)
-		{
-			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
-			{
-				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
-
-				if (studiohdr)
-				{
-					auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
-
-					if (pRenderData)
-					{
-						
-					}
-				}
-			}
-		}
-	}
-}
-#endif
 
 void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 {
@@ -4550,7 +4577,11 @@ public:
 			total = studiohdr->length;
 
 		m_pStudioHeader = (decltype(m_pStudioHeader))malloc(total);
-		memcpy(m_pStudioHeader, studiohdr, total);
+
+		if (m_pStudioHeader)
+		{
+			memcpy(m_pStudioHeader, studiohdr, total);
+		}
 	}
 
 	~CStudioRenderDataAsyncLoadContext()
@@ -4572,11 +4603,17 @@ public:
 		return m_IsVBDataReady.load();
 	}
 
-	void RunThreadedWorkItem()
+	bool RunThreadedWorkItem()
 	{
+		if (!m_pStudioHeader)
+			return false;
+
 		auto mod = m_pRenderData->BodyModel;
 
 		R_PrepareStudioRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vVertexTBNBuffer, m_vIndicesBuffer);
+
+		if (m_pRenderData->bIsClosing.load())
+			return false;
 
 		m_vVertexBaseBuffer.shrink_to_fit();
 		m_vVertexTBNBuffer.shrink_to_fit();
@@ -4584,11 +4621,27 @@ public:
 
 		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
 
+		if (m_pRenderData->bIsClosing.load())
+			return false;
+
 		m_IsVBDataReady.store(true);
+		return true;
 	}
 
 	void Run(float time) override
 	{
+		if (m_pRenderData->bIsClosing.load())
+			return;
+
+		if (!m_vVertexBaseBuffer.size())
+			return;
+
+		if (!m_vVertexTBNBuffer.size())
+			return;
+
+		if (!m_vIndicesBuffer.size())
+			return;
+
 		m_pRenderData->hVBO[STUDIO_VBO_BASE] = GL_GenBuffer();
 		GL_UploadDataToVBOStaticDraw(m_pRenderData->hVBO[STUDIO_VBO_BASE], m_vVertexBaseBuffer.size() * sizeof(studiovertexbase_t), m_vVertexBaseBuffer.data());
 
@@ -4700,19 +4753,25 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 
 	auto ctx = new CStudioRenderDataAsyncLoadContext(pRenderData, studiohdr);
 
-	pRenderData->hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
+	pRenderData->m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
 
 		auto ctx = (CStudioRenderDataAsyncLoadContext*)context;
 
-		ctx->RunThreadedWorkItem();
+		if (ctx->RunThreadedWorkItem())
+		{
+			GameThreadTaskScheduler()->QueueTask(ctx);
+		}
+		else
+		{
+			ctx->Destroy();
+		}
 
-		GameThreadTaskScheduler()->QueueTask(ctx);
-
+		//Don't free current workitem now as we will free it in the pRenderData dtor
 		return false;
 
 	}, ctx);
 
-	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pRenderData->hThreadWorkItem);
+	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pRenderData->m_hThreadWorkItem);
 
 	return pRenderData;
 }

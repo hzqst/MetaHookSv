@@ -198,7 +198,9 @@ public:
 
 	CStudioLowerBodyControl LowerBodyControl;
 
-	ThreadWorkItemHandle_t hThreadWorkItem{};
+	std::atomic_bool bIsClosing{ false };
+
+	ThreadWorkItemHandle_t m_hThreadWorkItem{};
 };
 
 class CStudioSkinCache

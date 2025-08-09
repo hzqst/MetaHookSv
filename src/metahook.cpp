@@ -11,6 +11,7 @@
 #include <set>
 #include <vector>
 #include <functional>
+#include <thread>
 
 #include "LoadBlob.h"
 #include "LoadDllNotification.h"
@@ -2245,7 +2246,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	gInterface.FileSystem_HL25 = g_pFileSystem_HL25;
 	gInterface.MetaHookAPIVersion = METAHOOK_API_VERSION;
 
-	g_ThreadPool = MH_CreateThreadPool(1, 8);
+	g_ThreadPool = MH_CreateThreadPool(1, std::thread::hardware_concurrency());
 
 	if (hEngineModule)
 	{
@@ -4510,7 +4511,7 @@ void MH_WaitForWorkItemToComplete(ThreadWorkItemHandle_t hWorkItem)
 {
 	MH_TpWorkContext_t* pTpWorkContext = (MH_TpWorkContext_t*)hWorkItem;
 
-	WaitForThreadpoolWorkCallbacks(pTpWorkContext->m_pTpWork, FALSE);
+	WaitForThreadpoolWorkCallbacks(pTpWorkContext->m_pTpWork, TRUE);
 }
 
 void MH_DeleteThreadPool(ThreadWorkItemHandle_t hThreadPool)

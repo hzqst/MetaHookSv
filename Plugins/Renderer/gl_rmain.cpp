@@ -4007,21 +4007,21 @@ void R_SetupFrame(void)
 
 void R_MarkLeaves(void)
 {
-	byte *vis;
-
 	if ((*r_oldviewleaf) == (*r_viewleaf) && !r_novis->value)
 		return;
 
 	(*r_visframecount)++;
 	(*r_oldviewleaf) = (*r_viewleaf);
 
-	if (r_novis->value)
+	byte vis[MAX_MAP_LEAFS_SVENGINE / 8];
+
+	if ((int)r_novis->value > 0)
 	{
-		vis = mod_novis;
+		memcpy(vis, mod_novis, sizeof(mod_novis));
 	}
 	else
 	{
-		vis = Mod_LeafPVS((*r_viewleaf), (*cl_worldmodel));
+		Mod_LeafPVS((*r_viewleaf), (*cl_worldmodel), vis);
 	}
 
 	for (int i = 0; i < (*cl_worldmodel)->numleafs; i++)
@@ -5056,7 +5056,7 @@ void Mod_ClearModel(void)
 			{
 				R_FreeStudioRenderData(mod);
 			}
-			else if (mod->type == mod_brush)//TODO: free brush
+			else if (mod->type == mod_brush)
 			{
 				R_FreeWorldSurfaceModels(mod);
 				R_FreeWorldSurfaceWorldModels(mod);

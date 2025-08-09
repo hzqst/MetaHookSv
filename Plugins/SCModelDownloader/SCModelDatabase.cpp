@@ -3,6 +3,7 @@
 
 #include "UtilHTTPClient.h"
 #include "UtilAssetsIntegrity.h"
+#include "UtilAutoPtr.h"
 #include "SCModelDatabase.h"
 
 #include <string>
@@ -63,83 +64,6 @@ public:
 };
 
 ISCModelDatabaseInternal* SCModelDatabaseInternal();
-
-template<typename T>
-class AutoPtr {
-private:
-	T* m_ptr;
-
-public:
-	AutoPtr() : m_ptr(nullptr) {}
-
-	explicit AutoPtr(T* ptr) : m_ptr(ptr) {
-		if (m_ptr) {
-			m_ptr->AddRef();
-		}
-	}
-
-	AutoPtr(const AutoPtr& other) : m_ptr(other.m_ptr) {
-		if (m_ptr) {
-			m_ptr->AddRef();
-		}
-	}
-
-	AutoPtr(AutoPtr&& other) noexcept : m_ptr(other.m_ptr) {
-		other.m_ptr = nullptr;
-	}
-
-	~AutoPtr() {
-		if (m_ptr) {
-			m_ptr->Release();
-		}
-	}
-
-	AutoPtr& operator=(const AutoPtr& other) {
-		if (this != &other) {
-			if (m_ptr) {
-				m_ptr->Release();
-			}
-			m_ptr = other.m_ptr;
-			if (m_ptr) {
-				m_ptr->AddRef();
-			}
-		}
-		return *this;
-	}
-
-	AutoPtr& operator=(AutoPtr&& other) noexcept {
-		if (this != &other) {
-			if (m_ptr) {
-				m_ptr->Release();
-			}
-			m_ptr = other.m_ptr;
-			other.m_ptr = nullptr;
-		}
-		return *this;
-	}
-
-	T* operator->() const { return m_ptr; }
-	T& operator*() const { return *m_ptr; }
-	operator T* () const { return m_ptr; }
-
-	T* Get() const { return m_ptr; }
-
-	void Reset(T* ptr = nullptr) {
-		if (m_ptr) {
-			m_ptr->Release();
-		}
-		m_ptr = ptr;
-		if (m_ptr) {
-			m_ptr->AddRef();
-		}
-	}
-
-	T* Detach() {
-		T* ptr = m_ptr;
-		m_ptr = nullptr;
-		return ptr;
-	}
-};
 
 typedef struct scmodel_s
 {
@@ -275,12 +199,15 @@ public:
 		}
 	}
 
-	void AddRef() override {
+	void AddRef() override
+	{
 		InterlockedIncrement(&m_RefCount);
 	}
 
-	void Release() override {
-		if (InterlockedDecrement(&m_RefCount) == 0) {
+	void Release() override
+	{
+		if (InterlockedDecrement(&m_RefCount) == 0)
+		{
 			delete this;
 		}
 	}
@@ -1068,7 +995,7 @@ public:
 class CSCModelDatabase : public ISCModelDatabaseInternal
 {
 private:
-	std::vector<AutoPtr<ISCModelQueryInternal>> m_QueryList;
+	std::vector<UtilAutoPtr<ISCModelQueryInternal>> m_QueryList;
 	std::vector<ISCModelQueryStateChangeHandler*> m_StateChangeCallbacks;
 	std::vector<ISCModelLocalPlayerModelChangeHandler*> m_LocalPlayerChangeModelCallbacks;
 	std::unordered_map<std::string, scmodel_t> m_Database;

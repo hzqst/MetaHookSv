@@ -101,6 +101,7 @@ public:
 	CWorldSurfaceBrushTexChain TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_MAX];
 	std::weak_ptr<CWorldSurfaceModel> m_pModel{};
 
+	std::atomic_bool m_bIsClosing{ false };
 	ThreadWorkItemHandle_t m_hThreadWorkItem{};
 };
 
