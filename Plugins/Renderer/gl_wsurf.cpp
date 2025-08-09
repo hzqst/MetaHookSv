@@ -96,7 +96,10 @@ void R_FreeWorldSurfaceModels(model_t* mod)
 
 			for (auto pLeaf : pWorldSurfaceModel->m_vLeaves)
 			{
-				pLeaf->m_bIsClosing.store(true);
+				if (pLeaf)
+				{
+					pLeaf->m_bIsClosing.store(true);
+				}
 			}
 
 			g_WorldSurfaceModels[modelindex].reset();
@@ -131,7 +134,10 @@ void R_ClearWorldSurfaceModels(void)
 		{
 			for (auto pLeaf : pWorldSurfaceModel->m_vLeaves)
 			{
-				pLeaf->m_bIsClosing.store(true);
+				if (pLeaf)
+				{
+					pLeaf->m_bIsClosing.store(true);
+				}
 			}
 
 			g_WorldSurfaceModels[i].reset();
@@ -1040,25 +1046,10 @@ public:
 	}
 };
 
-void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf)
+void R_WorldSurfaceModelLeafQueueAsyncLoading(const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf, const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel, model_t* mod, mleaf_t* leaf)
 {
-	int leafIndex = leaf ? R_GetWorldLeafIndex(mod, leaf) : 0;
-
-	if (pModel->GetLeafByIndex(leafIndex))
+	if (pLeaf->m_hThreadWorkItem)
 		return;
-
-	auto pWorldModel = pModel->m_pWorldModel.lock();
-
-	auto pLeaf = std::make_shared<CWorldSurfaceLeaf>();
-
-	pLeaf->m_pModel = pModel;
-
-	if (pModel->m_vLeaves.size() < leafIndex + 1)
-	{
-		pModel->m_vLeaves.resize(leafIndex + 1);
-	}
-
-	pModel->m_vLeaves[leafIndex] = pLeaf;
 
 	auto ctx = new CWorldSurfaceLeafAsyncLoadContext(pLeaf, pWorldModel, mod, leaf);
 
@@ -1078,9 +1069,32 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 		//Don't free current workitem now as we will free it in the pRenderData dtor
 		return false;
 
-	}, ctx);
+		}, ctx);
 
 	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pLeaf->m_hThreadWorkItem);
+}
+
+void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf)
+{
+	int leafIndex = leaf ? R_GetWorldLeafIndex(mod, leaf) : 0;
+
+	if (pModel->GetLeafByIndex(leafIndex))
+		return;
+
+	auto pWorldModel = pModel->m_pWorldModel.lock();
+
+	auto pLeaf = std::make_shared<CWorldSurfaceLeaf>(leaf);
+
+	pLeaf->m_pModel = pModel;
+
+	if (pModel->m_vLeaves.size() < leafIndex + 1)
+	{
+		pModel->m_vLeaves.resize(leafIndex + 1);
+	}
+
+	pModel->m_vLeaves[leafIndex] = pLeaf;
+
+	R_WorldSurfaceModelLeafQueueAsyncLoading(pLeaf, pWorldModel, mod, leaf);
 }
 
 /*
@@ -1100,6 +1114,7 @@ std::shared_ptr<CWorldSurfaceModel> R_GenerateWorldSurfaceModel(model_t* mod)
 		if ((int)r_leaf_lazy_load->value == 0)
 		{
 			std::set<mleaf_t*> vPossibleLeafs;
+
 			R_RecursiveFindLeaves(mod->nodes, vPossibleLeafs);
 
 			pModel->m_vLeaves.resize(vPossibleLeafs.size());
@@ -2931,7 +2946,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 		if (!pLeaf)
 		{
-			R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), nullptr);
+			R_GenerateWorldSurfaceModelLeaf(pModel, pModel->m_model, nullptr);
 
 			pLeaf = pModel->GetLeafByIndex(0);
 		}

@@ -93,8 +93,14 @@ class CWorldSurfaceModel;
 class CWorldSurfaceLeaf
 {
 public:
+	CWorldSurfaceLeaf(mleaf_t*leaf) : m_leaf(leaf)
+	{
+
+	}
+
 	~CWorldSurfaceLeaf();
 
+	mleaf_t *m_leaf{};
 	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChainList[WSURF_TEXCHAIN_LIST_MAX];
 	std::vector<std::shared_ptr<CWaterSurfaceModel>> m_vWaterSurfaceModels;
