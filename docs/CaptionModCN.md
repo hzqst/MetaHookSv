@@ -40,6 +40,8 @@
 
 每张地图支持单独的自定义翻译字典, 字典文件需要命名为`/maps/[地图名]_dictionary.csv`，如只为中文设定字典则需要命名为`/maps/[地图名]_dictionary_schinese.csv`（如果要支持其他语言就把_schinese换成对应的语言即可）。
 
+* 为了在 [启用了全局UTF8支持的Windows 11](https://learn.microsoft.com/zh-cn/windows/apps/design/globalizing/use-utf8-code-page) 上正常显示中文, 你应当将 `_dictionary.csv` 保存为 `UTF8-BOM`。
+
 ### VGUI1、原版HUD的多字节字符支持
 
 1、修改原版客户端的菜单消息，为其添加多字节字符支持，用于解决中文乱码问题。

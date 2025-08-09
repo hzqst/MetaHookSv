@@ -36,6 +36,8 @@ You can translate HUDText message into other language dynamically (regex support
 
 There is a example file demostrates how to translate static HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
 
+* To support [Windows 11 with system-wide UTF-8 enabled](https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page), you should always save `_dictionary.csv` as `UTF8-BOM`.
+
 There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
 ### Mutli-byte character support for legacy VGUI1 and HUD elements

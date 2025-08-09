@@ -759,17 +759,23 @@ This controls how to convert horizontal FOV to vertical FOV :
 
 `r_fog_trans 2`: Fog affects both alpha blending objects and additive blending objects
 
-`r_leaf_lazy_load 0`: Load all GPU resouces into VRAM at once when loading a new map. (May consume more VRAM)
+GPU resources for brushmodels and world are streamed in worker thread instead of main thread in asynchronous & in parallel too.
 
-`r_leaf_lazy_load 1`: Load only necessary vertices and indices into VRAM when loading a new map. Generate and load indirect draw commands into VRAM in next few frames. (May consume more VRAM)
+`r_leaf_lazy_load 0`: All GPU resources for brushmodels and world are queued to worker thread and loaded asynchronously at level loading. (May comsume more VRAM and system memory)
 
-`r_leaf_lazy_load 2`: Load only necessary vertices and indices into VRAM when loading a new map. Generate and load indirect draw commands into VRAM when player enter a new leaf. (May affect 1% low framerate)
+`r_leaf_lazy_load 1` (default) : GPU resources for world leaf are loaded only at the time you enter a new leaf. GPU resources for brushmodel are loaded only when it's being rendered.  (Comsume less VRAM and system memory)
 
-`r_studio_lazy_load 0`: Load GPU resouces for all studio models at once when loading map.
+* Note that `r_leaf_lazy_load 1` makes lead to flickering at the first time you enter a new leaf.
 
-`r_studio_lazy_load 1` (default): Load GPU resources for studio models only when they are being rendered.
+* Note that the corresponding BSP model (including world) will be invisible until necessary GPU resouces arrive.
 
-resources for studiomodels are streamed in worker thread instead of main thread in asynchronous & in parallel, that said, we can utilize more CPU cores now.
+* Note that more CPU cores you have, faster the GPU resouces loading will be.
+
+`r_studio_lazy_load 0`: Load GPU resouces for all studio models at once when loading map. (May comsume more VRAM and system memory)
+
+`r_studio_lazy_load 1` (default): Load GPU resources for studio models only when they are being rendered. (Comsume less VRAM and system memory)
+
+Resources for studiomodels are streamed in worker thread instead of main thread in asynchronous & in parallel, that said, we can utilize more CPU cores now.
 
 * Note that `r_studio_lazy_load 1` makes studiomodels invisible at first few frames until all necessary GPU resources arrive.
 
