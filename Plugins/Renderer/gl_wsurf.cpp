@@ -516,7 +516,7 @@ void R_RecursiveMarkSurfaces(mbasenode_t* basenode, const visnodes_t& visnodes, 
 	R_RecursiveMarkSurfaces(node->children[1], visnodes, vissurfaces);
 }
 
-void R_CollectWaters(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
+void R_CollectWaterSurface(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
 	auto pWaterModel = R_GetWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
 
@@ -1022,17 +1022,14 @@ public:
 		if (m_pLeaf->m_bIsClosing.load())
 			return;
 
-		if (!m_vDrawAttribBuffer.size())
-			return;
-
 		for (auto surf : m_watersurfaces)
 		{
-			R_CollectWaters(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
+			R_CollectWaterSurface(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
 		}
 
 		for (auto surf : m_reversedwatersurfaces)
 		{
-			R_CollectWaters(m_model, surf, 1, m_pWorldModel.get(), m_pLeaf.get());
+			R_CollectWaterSurface(m_model, surf, 1, m_pWorldModel.get(), m_pLeaf.get());
 		}
 
 		if (m_vDrawAttribBuffer.size() > 0)
