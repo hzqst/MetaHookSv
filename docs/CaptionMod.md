@@ -40,6 +40,8 @@ There is a example file demostrates how to translate static HUD TextMessage to `
 
 There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
+* To support non-ASCII charachers in localization file, you should always save `_%language.txt%` (`_schinese.txt` / `_korean.txt`) as `UTF16-LE`.
+
 ### Mutli-byte character support for legacy VGUI1 and HUD elements
 
 1. Client's HudText are overhauled with multi-byte character support. (Sven Co-op and Half-Life)

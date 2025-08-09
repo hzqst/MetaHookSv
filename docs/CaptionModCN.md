@@ -36,11 +36,13 @@
 
 你可以动态翻译原版客户端的英文HUD文字消息（如友军敌人血量显示以及game_text实体显示的文本）到其他语言（如中文）
 
-"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息至简体中文。
-
 每张地图支持单独的自定义翻译字典, 字典文件需要命名为`/maps/[地图名]_dictionary.csv`，如只为中文设定字典则需要命名为`/maps/[地图名]_dictionary_schinese.csv`（如果要支持其他语言就把_schinese换成对应的语言即可）。
 
-* 为了在 [启用了全局UTF8支持的Windows 11](https://learn.microsoft.com/zh-cn/windows/apps/design/globalizing/use-utf8-code-page) 上正常显示中文, 你应当将 `_dictionary.csv` 保存为 `UTF8-BOM`。
+* 为了在 [启用了全局UTF8支持的Windows 11](https://learn.microsoft.com/zh-cn/windows/apps/design/globalizing/use-utf8-code-page) 上正常显示中文, 你应当将 `_dictionary.csv` 文件保存为 `UTF8-BOM` 编码。
+
+"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息至简体中文。
+
+* 为了在本地化文件中支持非ASCII字符, 你应当将 `_%language.txt%` (`_schinese.txt` / `_korean.txt`) 文件保存为 `UTF16-LE` 编码.
 
 ### VGUI1、原版HUD的多字节字符支持
 
