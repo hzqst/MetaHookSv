@@ -1399,6 +1399,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, r_base_specular, "r_base_specular");
+			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
 			SHADER_UNIFORM(prog, r_celshade_specular, "r_celshade_specular");
 			SHADER_UNIFORM(prog, r_celshade_softness, "r_celshade_softness");
 			SHADER_UNIFORM(prog, r_celshade_shadow_color, "r_celshade_shadow_color");

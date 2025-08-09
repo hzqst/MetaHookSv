@@ -53,8 +53,10 @@ void Mod_DecompressVis(byte* in, model_t* model, byte* decompressed)
 
 void Mod_LeafPVS(mleaf_t* leaf, model_t* model, byte *decompressed)
 {
-	if (leaf == model->leafs || !leaf->compressed_vis)
+	if (!leaf || leaf == model->leafs || !leaf->compressed_vis) {
 		memcpy(decompressed, mod_novis, MAX_MAP_LEAFS_SVENGINE / 8);
+		return;
+	}
 
 	Mod_DecompressVis(leaf->compressed_vis, model, decompressed);
 }

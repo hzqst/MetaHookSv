@@ -4097,7 +4097,7 @@ void R_SetupFog(void)
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, r_fog_mode);
 	glFogf(GL_FOG_DENSITY, r_fog_control[2]);
-	glHint(GL_FOG_HINT, GL_NICEST);
+	//glHint(GL_FOG_HINT, GL_NICEST);
 	glFogfv(GL_FOG_COLOR, r_fog_color);
 	glFogf(GL_FOG_START, r_fog_control[0]);
 	glFogf(GL_FOG_END, r_fog_control[1]);

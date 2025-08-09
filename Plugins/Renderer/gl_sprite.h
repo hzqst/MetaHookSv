@@ -5,6 +5,13 @@
 typedef struct sprite_program_s
 {
 	int program;
+	int width_height;
+	int up_down_left_right;
+	int in_color;
+	int in_origin;
+	int in_angles;
+	int in_scale;
+	int in_lerp;
 }sprite_program_t;
 
 typedef struct legacysprite_program_s

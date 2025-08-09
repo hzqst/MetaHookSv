@@ -80,7 +80,13 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\sprite_shader.vert.glsl", "renderer\\shader\\sprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			
+			SHADER_UNIFORM(prog, width_height, "width_height");
+			SHADER_UNIFORM(prog, up_down_left_right, "up_down_left_right");
+			SHADER_UNIFORM(prog, in_color, "in_color");
+			SHADER_UNIFORM(prog, in_origin, "in_origin");
+			SHADER_UNIFORM(prog, in_angles, "in_angles");
+			SHADER_UNIFORM(prog, in_scale, "in_scale");
+			SHADER_UNIFORM(prog, in_lerp, "in_lerp");
 		}
 
 		g_SpriteProgramTable[state] = prog;
@@ -807,13 +813,27 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	sprite_program_t prog = { 0 };
 	R_UseSpriteProgram(SpriteProgramState, &prog);
 
-	glUniform2i(0, frame->width, frame->height);
-	glUniform4f(1, frame->up, frame->down, frame->left, frame->right);
-	glUniform4f(2, u_color[0], u_color[1], u_color[2], u_color[3]);
-	glUniform3f(3, r_entorigin[0], r_entorigin[1], r_entorigin[2]);
-	glUniform3f(4, ent->angles[0], ent->angles[1], ent->angles[2]);
-	glUniform1f(5, scale);
-	glUniform1f(6, math_clamp(lerp, 0.0f, 1.0f));
+	if (prog.width_height != -1) {
+		glUniform2i(0, frame->width, frame->height);
+	}
+	if (prog.up_down_left_right != -1){
+		glUniform4f(1, frame->up, frame->down, frame->left, frame->right);
+	}
+	if (prog.in_color != -1){
+		glUniform4f(2, u_color[0], u_color[1], u_color[2], u_color[3]);
+	}
+	if (prog.in_origin != -1){
+		glUniform3f(3, r_entorigin[0], r_entorigin[1], r_entorigin[2]);
+	}
+	if (prog.in_angles != -1){
+		glUniform3f(4, ent->angles[0], ent->angles[1], ent->angles[2]);
+	}
+	if (prog.in_scale != -1){
+		glUniform1f(5, scale);
+	}
+	if (prog.in_lerp != -1){
+		glUniform1f(6, math_clamp(lerp, 0.0f, 1.0f));
+	}
 
 	GL_Bind(frame->gl_texturenum);
 

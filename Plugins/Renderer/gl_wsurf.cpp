@@ -518,15 +518,7 @@ void R_RecursiveMarkSurfaces(mbasenode_t* basenode, const visnodes_t& visnodes, 
 
 void R_CollectWaterSurface(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
 {
-	auto pWaterModel = R_GetWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
-
-	for (const auto& it : pLeaf->m_vWaterSurfaceModels)
-	{
-		if (it == pWaterModel)
-			return; //Already collected
-	}
-
-	pLeaf->m_vWaterSurfaceModels.emplace_back(pWaterModel);
+	R_GetWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
 }
 
 void R_RecursiveLinkTextureChain(model_t* mod, mbasenode_t* basenode, const visnodes_t& visnodes, const vissurfaces_t& vissurfaces, vissurfaces_t& watersurfaces, texsurfaces_t *texsurfaces)
@@ -935,6 +927,7 @@ private:
 	std::shared_ptr<CWorldSurfaceWorldModel> m_pWorldModel;
 	model_t* m_model{};
 	mleaf_t* m_leaf{};
+	bool m_bIsWorldLeaf{};
 
 	visnodes_t m_visnodes;
 	vissurfaces_t m_vissurfaces;
@@ -949,12 +942,14 @@ public:
 		const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf,
 		const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel,
 		model_t* mod,
-		mleaf_t *leaf)
+		mleaf_t *leaf,
+		bool bIsWorldLeaf)
 		:
 		m_pLeaf(pLeaf),
 		m_pWorldModel(pWorldModel),
 		m_model(mod),
-		m_leaf(leaf)
+		m_leaf(leaf),
+		m_bIsWorldLeaf(bIsWorldLeaf)
 	{
 		m_texsurfaces = new texsurfaces_t[m_model->numtextures];
 	}
@@ -983,7 +978,7 @@ public:
 		if (m_pLeaf->m_bIsClosing.load())
 			return false;
 
-		if (m_leaf)
+		if (m_bIsWorldLeaf)
 		{
 			R_MarkPVSForLeaf(m_pWorldModel->m_model, m_leaf, m_visnodes);
 
@@ -1022,6 +1017,13 @@ public:
 		if (m_pLeaf->m_bIsClosing.load())
 			return;
 
+		if (m_vDrawAttribBuffer.size() > 0)
+		{
+			m_pLeaf->hABO = GL_GenBuffer();
+
+			GL_UploadDataToABOStaticDraw(m_pLeaf->hABO, sizeof(CDrawIndexAttrib) * m_vDrawAttribBuffer.size(), m_vDrawAttribBuffer.data());
+		}
+
 		for (auto surf : m_watersurfaces)
 		{
 			R_CollectWaterSurface(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
@@ -1032,23 +1034,16 @@ public:
 			R_CollectWaterSurface(m_model, surf, 1, m_pWorldModel.get(), m_pLeaf.get());
 		}
 
-		if (m_vDrawAttribBuffer.size() > 0)
-		{
-			m_pLeaf->hABO = GL_GenBuffer();
-
-			GL_UploadDataToABOStaticDraw(m_pLeaf->hABO, sizeof(CDrawIndexAttrib) * m_vDrawAttribBuffer.size(), m_vDrawAttribBuffer.data());
-		}
-
 		R_GenerateResourceForWaterModels(m_model, m_pWorldModel.get(), m_pLeaf.get());
 	}
 };
 
-void R_WorldSurfaceModelLeafQueueAsyncLoading(const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf, const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel, model_t* mod, mleaf_t* leaf)
+void R_WorldSurfaceModelLeafQueueAsyncLoading(const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf, const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel, model_t* mod, mleaf_t* leaf, bool bIsWorldLeaf)
 {
 	if (pLeaf->m_hThreadWorkItem)
 		return;
 
-	auto ctx = new CWorldSurfaceLeafAsyncLoadContext(pLeaf, pWorldModel, mod, leaf);
+	auto ctx = new CWorldSurfaceLeafAsyncLoadContext(pLeaf, pWorldModel, mod, leaf, bIsWorldLeaf);
 
 	pLeaf->m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
 
@@ -1071,9 +1066,9 @@ void R_WorldSurfaceModelLeafQueueAsyncLoading(const std::shared_ptr<CWorldSurfac
 	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pLeaf->m_hThreadWorkItem);
 }
 
-void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf)
+void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf, bool bIsWorldLeaf)
 {
-	int leafIndex = leaf ? R_GetWorldLeafIndex(mod, leaf) : 0;
+	int leafIndex = (bIsWorldLeaf && leaf) ? R_GetWorldLeafIndex(mod, leaf) : 0;
 
 	if (pModel->GetLeafByIndex(leafIndex))
 		return;
@@ -1091,7 +1086,7 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 
 	pModel->m_vLeaves[leafIndex] = pLeaf;
 
-	R_WorldSurfaceModelLeafQueueAsyncLoading(pLeaf, pWorldModel, mod, leaf);
+	R_WorldSurfaceModelLeafQueueAsyncLoading(pLeaf, pWorldModel, mod, leaf, bIsWorldLeaf);
 }
 
 /*
@@ -1118,7 +1113,7 @@ std::shared_ptr<CWorldSurfaceModel> R_GenerateWorldSurfaceModel(model_t* mod)
 
 			for (auto leaf : vPossibleLeafs)
 			{
-				R_GenerateWorldSurfaceModelLeaf(pModel, mod, leaf);
+				R_GenerateWorldSurfaceModelLeaf(pModel, mod, leaf, true);
 			}
 		}
 	}
@@ -1134,7 +1129,7 @@ std::shared_ptr<CWorldSurfaceModel> R_GenerateWorldSurfaceModel(model_t* mod)
 
 		if ((int)r_leaf_lazy_load->value == 0)
 		{
-			R_GenerateWorldSurfaceModelLeaf(pModel, mod, nullptr);
+			R_GenerateWorldSurfaceModelLeaf(pModel, mod, nullptr, false);
 		}
 	}
 
@@ -2865,7 +2860,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 		if (!pLeaf)
 		{
-			R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), (*r_viewleaf));
+			R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), (*r_viewleaf), true);
 
 			pLeaf = pModel->GetLeafByIndex(leafIndex);
 		}
@@ -2874,7 +2869,14 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			if (R_IsRenderingWaterView())
 			{
-				auto pNoVisLeaf = pModel->m_vLeaves[0];
+				auto pNoVisLeaf = pModel->GetLeafByIndex(0);
+
+				if (!pNoVisLeaf)
+				{
+					R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), nullptr, true);
+
+					pNoVisLeaf = pModel->GetLeafByIndex(0);
+				}
 
 				if (pNoVisLeaf && pNoVisLeaf->hABO)
 				{
@@ -2943,7 +2945,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 		if (!pLeaf)
 		{
-			R_GenerateWorldSurfaceModelLeaf(pModel, pModel->m_model, nullptr);
+			R_GenerateWorldSurfaceModelLeaf(pModel, pModel->m_model, nullptr, false);
 
 			pLeaf = pModel->GetLeafByIndex(0);
 		}

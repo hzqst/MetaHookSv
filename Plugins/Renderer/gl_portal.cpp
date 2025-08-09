@@ -271,8 +271,6 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 
 void R_DrawPortalSurfaceModelBegin(CWorldPortalModel* pPortalModel, int VBOStates)
 {
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
 	auto pWorldModel = pPortalModel->m_pWorldModel.lock();
 
 	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pWorldModel.get(), VBOStates);
@@ -285,7 +283,6 @@ void R_DrawPortalSurfaceModelEnd()
 {
 	GL_BindABO(0);
 	GL_BindVAO(0);
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
 void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)

@@ -543,7 +543,7 @@ std::shared_ptr<CWaterSurfaceModel> R_FindFlatWaterSurfaceModel(model_t* mod, ms
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
@@ -668,6 +668,8 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 			pWaterModel->speedrate = pWaterControl->speedrate;
 			pWaterModel->level = pWaterControl->level;
 		}
+
+		pLeaf->m_vWaterSurfaceModels.emplace_back(pWaterModel);
 	}
 
 	if (direction)
@@ -1035,8 +1037,6 @@ void R_RenderWaterPass(void)
 
 void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel, int VBOStates)
 {
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
 	auto pModel = pLeaf->m_pModel.lock();
 
 	auto pWorldModel = pModel->m_pWorldModel.lock();
@@ -1051,7 +1051,6 @@ void R_DrawWaterSurfaceModelEnd()
 {
 	GL_BindABO(0);
 	GL_BindVAO(0);
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
 void R_DrawWaterSurfaceModelReflective(
