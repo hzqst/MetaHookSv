@@ -765,7 +765,7 @@ GPU resources for brushmodels and world are streamed in worker thread instead of
 
 `r_leaf_lazy_load 1` (default) : GPU resources for world leaf are loaded only at the time you enter a new leaf. GPU resources for brushmodel are loaded only when it's being rendered.  (Comsume less VRAM and system memory)
 
-* Note that `r_leaf_lazy_load 1` makes lead to flickering at the first time you enter a new leaf.
+* Note that `r_leaf_lazy_load 1` may lead to flickering at the first time you enter a new leaf.
 
 * Note that the corresponding BSP model (including world) will be invisible until necessary GPU resouces arrive.
 
