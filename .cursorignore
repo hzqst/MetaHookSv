@@ -17,7 +17,8 @@ toolsrc/MetahookInstaller/obj/
 
 .vs/
 
-thirdparty/
+thirdparty/build/
+thirdparty/install/
 
 *.pdb
 *.exp

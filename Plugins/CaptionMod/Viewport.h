@@ -83,7 +83,8 @@ public:
 		const char* szNextDelay,
 		const char* szStyle,
 		const Color& defaultColor,
-		vgui::IScheme* ischeme);
+		vgui::IScheme* ischeme,
+		bool bUTF8BOM);
 
 	void ProcessString(const std::wstring& input, const CStartSubtitleContext* pStartSubtitleContext, std::wstring& output);
 
@@ -168,7 +169,7 @@ public:
 	void ActivateClientUI(void);
 	void HideClientUI(void);
 	void LoadBaseDictionary(void);
-	void LoadCustomDictionary(const char *dict_name);
+	void LoadCustomDictionary(const char * fileName);
 	void LinkDictionary(void);
 	void ClearDictionary(void);
 

@@ -39,9 +39,6 @@
     <Filter Include="vgui_controls">
       <UniqueIdentifier>{27da8815-49cc-4df4-85c2-1393164c30e5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libcsv">
-      <UniqueIdentifier>{7c335b3e-5266-4100-a6d5-d540438ab320}</UniqueIdentifier>
-    </Filter>
     <Filter Include="VGUI2">
       <UniqueIdentifier>{7ca0e99c-9048-4b3a-85eb-af09ac2cf41b}</UniqueIdentifier>
     </Filter>
@@ -374,9 +371,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="libcsv\csv_document.cpp">
-      <Filter>libcsv</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\Controls.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
@@ -543,9 +537,6 @@
     </ClInclude>
     <ClInclude Include="privatefuncs.h">
       <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="libcsv\csv_document.h">
-      <Filter>libcsv</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)\include\vgui_controls\AnalogBar.h">
       <Filter>vgui_controls</Filter>

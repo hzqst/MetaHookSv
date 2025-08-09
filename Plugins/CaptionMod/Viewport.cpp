@@ -17,7 +17,8 @@
 #include "exportfuncs.h"
 #include "util.h"
 
-#include <libcsv/csv_document.h>
+#include <single_include/csv.hpp>
+#include <sstream>
 
 using namespace vgui;
 
@@ -147,7 +148,8 @@ void CDictionary::LoadFromRow(
 	const char* szNextDelay,
 	const char* szStyle,
 	const Color& defaultColor,
-	vgui::IScheme* ischeme)
+	vgui::IScheme* ischeme,
+	bool bUTF8BOM)
 {
 	m_Color = defaultColor;
 	m_bDefaultColor = true;
@@ -247,8 +249,15 @@ void CDictionary::LoadFromRow(
 		if (!pwszLocalized)
 		{
 			wchar_t wszSentence[1024] = { 0 };
-			localize()->ConvertANSIToUnicode(szSentence, wszSentence, sizeof(wszSentence));
 
+			if (bUTF8BOM)
+			{
+				V_UTF8ToUnicode(szSentence, wszSentence, sizeof(wszSentence));
+			}
+			else
+			{
+				localize()->ConvertANSIToUnicode(szSentence, wszSentence, sizeof(wszSentence));
+			}
 			m_szSentence = wszSentence;
 		}
 
@@ -320,7 +329,16 @@ void CDictionary::LoadFromRow(
 		if (!pwszLocalized)
 		{
 			wchar_t wszSpeaker[1024] = { 0 };
-			localize()->ConvertANSIToUnicode(szSpeaker, wszSpeaker, sizeof(wszSpeaker));
+
+			if (bUTF8BOM)
+			{
+				V_UTF8ToUnicode(szSpeaker, wszSpeaker, sizeof(wszSpeaker));
+			}
+			else
+			{
+				localize()->ConvertANSIToUnicode(szSpeaker, wszSpeaker, sizeof(wszSpeaker));
+			}
+
 			m_szSpeaker = wszSpeaker;
 		}
 	}
@@ -336,7 +354,7 @@ void CDictionary::LoadFromRow(
 		}
 	}
 
-	//Style
+    //Style
 	if (szStyle && szStyle[0])
 	{
 		std::string style = szStyle;
@@ -344,12 +362,12 @@ void CDictionary::LoadFromRow(
 		std::regex reg(" ");
 		std::vector<std::string> elems(std::sregex_token_iterator(style.begin(), style.end(), reg, -1), std::sregex_token_iterator());
 
-		for (auto& e : elems)
+        for (auto& e : elems)
 		{
 			if (e.size() > 0)
 			{
-				e.erase(0, e.find_first_not_of(_T(" \n\r\t")));
-				e.erase(e.find_last_not_of(_T(" \n\r\t")) + 1);
+                e.erase(0, e.find_first_not_of(" \n\r\t"));
+                e.erase(e.find_last_not_of(" \n\r\t") + 1);
 
 				if (e.size() == 1 && (e[0] == 'R' || e[0] == 'r'))
 				{
@@ -388,72 +406,92 @@ void CDictionary::LoadFromRow(
 	}
 }
 
-void CViewport::LoadCustomDictionary(const char* dict_name)
+void CViewport::LoadCustomDictionary(const char* fileName)
 {
-	CSV::CSVDocument doc;
-	CSV::CSVDocument::row_index_type row_count = 0;
+    // 使用 IFileSystem 打开并读入内存，手动处理 UTF-8 BOM，然后交给 csv::CSVReader 解析
+    auto hFile = FILESYSTEM_ANY_OPEN(fileName, "rb");
 
-	//Parse from the document
+    if (hFile == FILESYSTEM_INVALID_HANDLE)
+    {
+        gEngfuncs.Con_DPrintf("LoadCustomDictionary: failed to open \"%s\".\n", fileName);
+        return;
+    }
 
-	try
-	{
-		row_count = doc.load_file(dict_name);
-	}
-	catch (const std::exception& err)
-	{
-		gEngfuncs.Con_DPrintf("LoadCustomDictionary: %s\n", err.what());
-		return;
-	}
+    unsigned int fileSize = FILESYSTEM_ANY_SIZE(hFile);
+    if (fileSize == 0)
+    {
+        FILESYSTEM_ANY_CLOSE(hFile);
+        gEngfuncs.Con_Printf("LoadCustomDictionary: too few lines in the dictionary file.\n");
+        return;
+    }
 
-	if (row_count < 2)
-	{
-		gEngfuncs.Con_Printf("LoadCustomDictionary: too few lines in the dictionary file.\n");
-		return;
-	}
+    std::string content;
+    content.resize(fileSize);
+    int nRead = FILESYSTEM_ANY_READ((void *)content.data(), static_cast<int>(fileSize), hFile);
+    FILESYSTEM_ANY_CLOSE(hFile);
 
-	IScheme* ischeme = scheme()->GetIScheme(GetScheme());
+    if (nRead <= 0)
+    {
+        gEngfuncs.Con_Printf("LoadCustomDictionary: failed to read \"%s\".\n", fileName);
+        return;
+    }
 
-	if (!ischeme)
-		return;
+    IScheme* ischeme = scheme()->GetIScheme(GetScheme());
+    if (!ischeme)
+        return;
 
-	Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
+    Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
 
-	int nRowCount = row_count;
+    int loaded_count = 0;
 
-	//parse the dictionary line by line...
-	for (int i = 1; i < nRowCount; ++i)
-	{
-		CSV::CSVDocument::row_type row = doc.get_row(i);
+    try
+    {
+        std::istringstream in(content);
+        auto format = csv::CSVFormat().header_row(0);
+        csv::CSVReader reader(in, format);
+		
+        for (auto& row : reader)
+        {
+            if (row.size() < 1)
+                continue;
 
-		if (row.size() < 1)
-			continue;
+            std::string title = row[0].get<>();
+            if (title.empty())
+                continue;
 
-		std::string title = row[0];
+            auto Dict = std::make_shared<CDictionary>();
 
-		if (title.empty())
-			continue;
+            std::string sentence = (row.size() >= 2) ? row[1].get<>() : "";
+            std::string color = (row.size() >= 3) ? row[2].get<>() : "";
+            std::string duration = (row.size() >= 4) ? row[3].get<>() : "";
+            std::string speaker = (row.size() >= 5) ? row[4].get<>() : "";
+            std::string next = (row.size() >= 6) ? row[5].get<>() : "";
+            std::string nextDelay = (row.size() >= 7) ? row[6].get<>() : "";
+            std::string style = (row.size() >= 8) ? row[7].get<>() : "";
 
-		auto Dict = std::make_shared<CDictionary>();
+            Dict->LoadFromRow(title.c_str(), sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme, reader.utf8_bom());
 
-		std::string sentence = (row.size() >= 2) ? row[1] : "";
-		std::string color = (row.size() >= 3) ? row[2] : "";
-		std::string duration = (row.size() >= 4) ? row[3] : "";
-		std::string speaker = (row.size() >= 5) ? row[4] : "";
-		std::string next = (row.size() >= 6) ? row[5] : "";
-		std::string nextDelay = (row.size() >= 7) ? row[6] : "";
-		std::string style = (row.size() >= 8) ? row[7] : "";
+            m_Dictionary.push_back(Dict);
+            m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
+            CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
+            m_TypedDictionaryMap[handle] = Dict;
 
-		Dict->LoadFromRow(title.c_str(), sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme);
+            ++loaded_count;
+        }
+    }
+    catch (const std::exception& err)
+    {
+        gEngfuncs.Con_DPrintf("LoadCustomDictionary: %s\n", err.what());
+        return;
+    }
 
-		m_Dictionary.push_back(Dict);
+    if (loaded_count <= 0)
+    {
+        gEngfuncs.Con_Printf("LoadCustomDictionary: too few lines in the dictionary file.\n");
+        return;
+    }
 
-		m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
-
-		CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
-		m_TypedDictionaryMap[handle] = Dict;
-	}
-
-	gEngfuncs.Con_Printf("LoadCustomDictionary: %d lines are loaded.\n", nRowCount - 1);
+    gEngfuncs.Con_Printf("LoadCustomDictionary: %d lines are loaded.\n", loaded_count);
 }
 
 void CViewport::ClearDictionary(void)
@@ -478,69 +516,90 @@ void CViewport::LinkDictionary(void)
 
 void CViewport::LoadBaseDictionary(void)
 {
-	CSV::CSVDocument doc;
-	CSV::CSVDocument::row_index_type row_count = 0;
+    const char* kBaseDictPath = "captionmod/dictionary.csv";
 
-	//Parse from the document
+    auto hFile = FILESYSTEM_ANY_OPEN(kBaseDictPath, "rb", "GAME");
+    if (hFile == FILESYSTEM_INVALID_HANDLE)
+    {
+        g_pMetaHookAPI->SysError("LoadBaseDictionary: failed to open %s\n", kBaseDictPath);
+        return;
+    }
 
-	try
-	{
-		row_count = doc.load_file("captionmod/dictionary.csv");
-	}
-	catch (const std::exception& err)
-	{
-		g_pMetaHookAPI->SysError("LoadBaseDictionary: %s\n", err.what());
-	}
+    unsigned int fileSize = FILESYSTEM_ANY_SIZE(hFile);
+    if (fileSize == 0)
+    {
+        FILESYSTEM_ANY_CLOSE(hFile);
+        gEngfuncs.Con_Printf("LoadBaseDictionary: too few lines in the dictionary file.\n");
+        return;
+    }
 
-	if (row_count < 2)
-	{
-		gEngfuncs.Con_Printf("LoadBaseDictionary: too few lines in the dictionary file.\n");
-		return;
-	}
+    std::string content;
+    content.resize(fileSize);
+    int nRead = FILESYSTEM_ANY_READ((void *)content.data(), static_cast<int>(fileSize), hFile);
+    FILESYSTEM_ANY_CLOSE(hFile);
 
-	IScheme* ischeme = scheme()->GetIScheme(GetScheme());
+    if (nRead <= 0)
+    {
+        g_pMetaHookAPI->SysError("LoadBaseDictionary: failed to read %s\n", kBaseDictPath);
+        return;
+    }
 
-	if (!ischeme)
-		return;
+    IScheme* ischeme = scheme()->GetIScheme(GetScheme());
+    if (!ischeme)
+        return;
 
-	Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
+    Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
 
-	int nRowCount = row_count;
+    int loaded_count = 0;
 
-	//parse the dictionary line by line...
-	for (int i = 1; i < nRowCount; ++i)
-	{
-		CSV::CSVDocument::row_type row = doc.get_row(i);
+    try
+    {
+        std::istringstream in(content);
+        auto format = csv::CSVFormat().header_row(0);
+        csv::CSVReader reader(in, format);
 
-		if (row.size() < 1)
-			continue;
+        for (auto& row : reader)
+        {
+            if (row.size() < 1)
+                continue;
 
-		const char* title = row[0].c_str();
+            std::string title = row[0].get<>();
+            if (title.empty())
+                continue;
 
-		if (!title || !title[0])
-			continue;
+            auto Dict = std::make_shared<CDictionary>();
 
-		auto Dict = std::make_shared<CDictionary>();
+            std::string sentence = (row.size() >= 2) ? row[1].get<>() : "";
+            std::string color = (row.size() >= 3) ? row[2].get<>() : "";
+            std::string duration = (row.size() >= 4) ? row[3].get<>() : "";
+            std::string speaker = (row.size() >= 5) ? row[4].get<>() : "";
+            std::string next = (row.size() >= 6) ? row[5].get<>() : "";
+            std::string nextDelay = (row.size() >= 7) ? row[6].get<>() : "";
+            std::string style = (row.size() >= 8) ? row[7].get<>() : "";
 
-		std::string sentence = (row.size() >= 2) ? row[1] : "";
-		std::string color = (row.size() >= 3) ? row[2] : "";
-		std::string duration = (row.size() >= 4) ? row[3] : "";
-		std::string speaker = (row.size() >= 5) ? row[4] : "";
-		std::string next = (row.size() >= 6) ? row[5] : "";
-		std::string nextDelay = (row.size() >= 7) ? row[6] : "";
-		std::string style = (row.size() >= 8) ? row[7] : "";
+            Dict->LoadFromRow(title.c_str(), sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme, reader.utf8_bom());
 
-		Dict->LoadFromRow(title, sentence.c_str(), color.c_str(), duration.c_str(), speaker.c_str(), next.c_str(), nextDelay.c_str(), style.c_str(), defaultColor, ischeme);
+            m_Dictionary.push_back(Dict);
+            m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
+            CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
+            m_TypedDictionaryMap[handle] = Dict;
 
-		m_Dictionary.push_back(Dict);
+            ++loaded_count;
+        }
+    }
+    catch (const std::exception& err)
+    {
+        g_pMetaHookAPI->SysError("LoadBaseDictionary: %s\n", err.what());
+        return;
+    }
 
-		m_NamedDictionaryMap[Dict->m_szTitle] = Dict;
+    if (loaded_count <= 0)
+    {
+        gEngfuncs.Con_Printf("LoadBaseDictionary: too few lines in the dictionary file.\n");
+        return;
+    }
 
-		CTypedDictionaryHandle handle(Dict->m_szTitle, Dict->m_Type);
-		m_TypedDictionaryMap[handle] = Dict;
-	}
-
-	gEngfuncs.Con_Printf("LoadBaseDictionary: %d lines are loaded.\n", nRowCount - 1);
+    gEngfuncs.Con_Printf("LoadBaseDictionary: %d lines are loaded.\n", loaded_count);
 }
 
 //const char* GetSenderName();
