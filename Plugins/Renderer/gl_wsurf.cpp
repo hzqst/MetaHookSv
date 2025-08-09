@@ -1042,13 +1042,16 @@ public:
 
 void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf)
 {
+	int leafIndex = leaf ? R_GetWorldLeafIndex(mod, leaf) : 0;
+
+	if (pModel->GetLeafByIndex(leafIndex))
+		return;
+
 	auto pWorldModel = pModel->m_pWorldModel.lock();
 
 	auto pLeaf = std::make_shared<CWorldSurfaceLeaf>();
 
 	pLeaf->m_pModel = pModel;
-
-	int leafIndex = leaf ? R_GetWorldLeafIndex(mod, leaf) : 0;
 
 	if (pModel->m_vLeaves.size() < leafIndex + 1)
 	{
@@ -2806,7 +2809,7 @@ bool R_ShouldDrawZPrePass(void)
 	return (r_wsurf_zprepass->value > 0) ? true : false;
 }
 
-void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
+void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, cl_entity_t* ent)
 {
 	entity_ubo_t EntityUBO;
 
@@ -2848,6 +2851,13 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
 
 		pLeaf = pModel->GetLeafByIndex(leafIndex);
 
+		if (!pLeaf)
+		{
+			R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), (*r_viewleaf));
+
+			pLeaf = pModel->GetLeafByIndex(leafIndex);
+		}
+
 		if (pLeaf && pLeaf->hABO)
 		{
 			if (R_IsRenderingWaterView())
@@ -2871,12 +2881,12 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
 
 					glColorMask(0, 0, 0, 0);
 
-					R_DrawWorldSurfaceLeafSky(pModel, pNoVisLeaf.get(), false);
+					R_DrawWorldSurfaceLeafSky(pModel.get(), pNoVisLeaf.get(), false);
 
 					glColorMask(1, 1, 1, 1);
 
-					R_DrawWorldSurfaceLeafStatic(pModel, pNoVisLeaf.get(), false);
-					R_DrawWorldSurfaceLeafAnim(pModel, pNoVisLeaf.get(), false);
+					R_DrawWorldSurfaceLeafStatic(pModel.get(), pNoVisLeaf.get(), false);
+					R_DrawWorldSurfaceLeafAnim(pModel.get(), pNoVisLeaf.get(), false);
 
 					if (bUseZPrePass)
 					{
@@ -2901,12 +2911,12 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
 
 				glColorMask(0, 0, 0, 0);
 
-				R_DrawWorldSurfaceLeafSky(pModel, pLeaf.get(), bUseZPrePass);
+				R_DrawWorldSurfaceLeafSky(pModel.get(), pLeaf.get(), bUseZPrePass);
 
 				glColorMask(1, 1, 1, 1);
 
-				R_DrawWorldSurfaceLeafStatic(pModel, pLeaf.get(), bUseZPrePass);
-				R_DrawWorldSurfaceLeafAnim(pModel, pLeaf.get(), bUseZPrePass);
+				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get(), bUseZPrePass);
+				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get(), bUseZPrePass);
 
 				if (bUseZPrePass)
 				{
@@ -2919,10 +2929,17 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
 	{
 		pLeaf = pModel->GetLeafByIndex(0);
 
+		if (!pLeaf)
+		{
+			R_GenerateWorldSurfaceModelLeaf(pModel, (*cl_worldmodel), nullptr);
+
+			pLeaf = pModel->GetLeafByIndex(0);
+		}
+
 		if (pLeaf && pLeaf->hABO)
 		{
-			R_DrawWorldSurfaceLeafStatic(pModel, pLeaf.get(), bUseZPrePass);
-			R_DrawWorldSurfaceLeafAnim(pModel, pLeaf.get(), bUseZPrePass);
+			R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get(), bUseZPrePass);
+			R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get(), bUseZPrePass);
 		}
 	}
 
@@ -2952,7 +2969,7 @@ void R_DrawWorldSurfaceModel(CWorldSurfaceModel* pModel, cl_entity_t* ent)
 
 	if (pLeaf)
 	{
-		R_DrawWaters(pModel, pLeaf.get(), ent);
+		R_DrawWaters(pModel.get(), pLeaf.get(), ent);
 	}
 }
 
@@ -4437,7 +4454,7 @@ void R_DrawBrushModel(cl_entity_t* e)
 
 	if (pModel)
 	{
-		R_DrawWorldSurfaceModel(pModel.get(), e);
+		R_DrawWorldSurfaceModel(pModel, e);
 	}
 
 	glDepthMask(GL_TRUE);
@@ -4710,7 +4727,7 @@ void R_DrawWorld(void)
 
 		if (pModel)
 		{
-			R_DrawWorldSurfaceModel(pModel.get(), (*currententity));
+			R_DrawWorldSurfaceModel(pModel, (*currententity));
 		}
 	}
 
