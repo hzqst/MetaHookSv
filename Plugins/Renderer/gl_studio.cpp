@@ -897,6 +897,11 @@ void R_PrepareTBNForRenderSubmodel(
 
 		R_PrepareTBNForRenderMesh(mod, studiohdr, pRenderData, pRenderSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		R_PrepareSmoothNormalForRenderMesh(mod, studiohdr, pRenderData, pRenderSubmodel, pRenderMesh, ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 	}
 }
@@ -1063,6 +1068,11 @@ void R_PrepareStudioRenderSubmodel(
 			}
 		}
 
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
+		}
+
 		pRenderSubmodel->vMesh.emplace_back(RenderMesh);
 	}
 }
@@ -1106,6 +1116,11 @@ void R_PrepareStudioRenderData(
 					break;
 				}
 			}
+		}
+
+		if (pRenderData->bIsClosing.load())
+		{
+			break;
 		}
 	}
 }
