@@ -305,3 +305,13 @@ typedef struct studio_ubo_s
 static_assert((sizeof(studio_ubo_t) % 16) == 0, "Size check");
 
 #pragma pack(pop)
+
+class CGameResourceAsyncLoadTask : public IBaseInterface
+{
+public:
+	ThreadWorkItemHandle_t m_hThreadWorkItem{};
+	std::atomic<bool> m_IsDataReady{};
+
+	virtual void StartAsyncTask() {};
+	virtual void UploadResource() {};
+};

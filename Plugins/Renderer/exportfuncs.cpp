@@ -2086,5 +2086,5 @@ void HUD_OnClientDisconnect(void)
 	//The engine have done Mod_Clear before...
 	
 	//TODO: free bsp VBO?
-	//R_FreeAllUnreferencedStudioRenderData();
+	//R_FreeUnreferencedStudioRenderData();
 }

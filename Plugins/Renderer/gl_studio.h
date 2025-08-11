@@ -178,6 +178,29 @@ public:
 
 	~CStudioModelRenderData();
 
+	void AsyncUploadResouce()
+	{
+		if (m_pGameResourceAsyncLoadTask)
+		{
+			m_pGameResourceAsyncLoadTask->UploadResource();
+			m_pGameResourceAsyncLoadTask.reset();
+		}
+	}
+
+	void ReleaseAsyncLoadTask()
+	{
+		if (m_pGameResourceAsyncLoadTask)
+		{
+			if (m_pGameResourceAsyncLoadTask->m_hThreadWorkItem)
+			{
+				g_pMetaHookAPI->WaitForWorkItemToComplete(m_pGameResourceAsyncLoadTask->m_hThreadWorkItem);
+				g_pMetaHookAPI->DeleteWorkItem(m_pGameResourceAsyncLoadTask->m_hThreadWorkItem);
+				m_pGameResourceAsyncLoadTask->m_hThreadWorkItem = nullptr;
+			}
+			m_pGameResourceAsyncLoadTask.reset();
+		}
+	}
+
 	GLuint				hVBO[STUDIO_VBO_MAX]{};
 	GLuint				hEBO{};
 	GLuint				hVAO{};
@@ -200,7 +223,7 @@ public:
 
 	std::atomic_bool bIsClosing{ false };
 
-	ThreadWorkItemHandle_t m_hThreadWorkItem{};
+	std::shared_ptr<CGameResourceAsyncLoadTask> m_pGameResourceAsyncLoadTask;
 };
 
 class CStudioSkinCache
@@ -370,8 +393,7 @@ void R_StudioClearAllBoneCaches();
 void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
 bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
 void R_FreeStudioRenderData(model_t* mod);
-void R_FreeAllUnreferencedStudioRenderData(void);
-void R_StudioReloadAllStudioRenderData(void);
+void R_FreeUnreferencedStudioRenderData(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);

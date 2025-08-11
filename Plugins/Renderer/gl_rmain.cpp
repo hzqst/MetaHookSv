@@ -207,8 +207,6 @@ bool r_draw_portalview = false;
 
 int r_renderview_pass = 0;
 
-std::list<IDeferredFrameTask*> g_DeferredFrameTasks;
-
 int glx = 0;
 int gly = 0;
 int glwidth = 0;
@@ -2737,8 +2735,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
-	R_RunDeferredFrameTasks();
-
 	//Window resized?
 #if 1
 	if ((*width) != glwidth || (*height) != glheight)
@@ -3379,7 +3375,6 @@ void R_Init(void)
 
 void R_Shutdown(void)
 {
-	R_ClearDeferredFrameTasks();
 	R_ShutdownWater();
 	R_ShutdownStudio();
 	R_ShutdownShadow();
@@ -3409,7 +3404,6 @@ void R_NewMap(void)
 {
 	memset(&r_params, 0, sizeof(r_params));
 
-	R_ClearDeferredFrameTasksWithFlags(DEFERRED_FRAME_TASK_DESTROY_ON_CHANGE_LEVEL);
 	R_GenerateSceneUBO();
 	R_FreeWorldResources();
 	R_FreePortalResouces();
@@ -3422,7 +3416,7 @@ void R_NewMap(void)
 	R_StudioFlushAllSkins();
 
 	//Free GPU resources...
-	R_FreeAllUnreferencedStudioRenderData();
+	R_FreeUnreferencedStudioRenderData();
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;
@@ -4982,62 +4976,6 @@ void R_DumpTextures_f(void)
 	}
 }
 
-void R_AddDeferredFrameTask(IDeferredFrameTask* pTask)
-{
-	g_DeferredFrameTasks.emplace_back(pTask);
-}
-
-void R_ClearDeferredFrameTasks()
-{
-	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
-	{
-		auto pTask = (*it);
-
-		pTask->Destroy();
-
-		it = g_DeferredFrameTasks.erase(it);
-	}
-}
-
-void R_ClearDeferredFrameTasksWithFlags(int flags)
-{
-	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
-	{
-		auto pTask = (*it);
-
-		if (pTask->GetFlags() & flags)
-		{
-			pTask->Destroy();
-
-			it = g_DeferredFrameTasks.erase(it);
-		}
-		else
-		{
-			it++;
-		}
-	}
-}
-
-void R_RunDeferredFrameTasks()
-{
-	for (auto it = g_DeferredFrameTasks.begin(); it != g_DeferredFrameTasks.end();)
-	{
-		auto pTask = (*it);
-
-		if (pTask->Run())
-		{
-			pTask->Destroy();
-
-			it = g_DeferredFrameTasks.erase(it);
-		}
-		else
-		{
-			// Task is not finished yet, we will run it again next frame
-			++it;
-		}
-	}
-}
-
 void Mod_ClearModel(void)
 {
 	for (int i = 0;i < EngineGetMaxKnownModel(); i++)
@@ -5053,7 +4991,7 @@ void Mod_ClearModel(void)
 
 			if (mod->type == mod_studio)
 			{
-				R_FreeStudioRenderData(mod);
+			//	R_FreeStudioRenderData(mod);
 			}
 			else if (mod->type == mod_brush)
 			{

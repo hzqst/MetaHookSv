@@ -440,6 +440,9 @@
     <ClCompile Include="UtilThreadTask.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="LambdaThreadedTask.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -761,6 +764,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="UtilThreadTask.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="LambdaThreadedTask.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

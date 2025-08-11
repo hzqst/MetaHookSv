@@ -319,6 +319,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="gl_warp.cpp" />
     <ClCompile Include="gl_water.cpp" />
     <ClCompile Include="gl_wsurf.cpp" />
+    <ClCompile Include="LambdaThreadedTask.cpp" />
     <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="MurmurHash2.cpp" />
     <ClCompile Include="parsemsg.cpp" />
@@ -427,6 +428,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="gl_studio.h" />
     <ClInclude Include="gl_water.h" />
     <ClInclude Include="gl_wsurf.h" />
+    <ClInclude Include="LambdaThreadedTask.h" />
     <ClInclude Include="mathlib2.h" />
     <ClInclude Include="MurmurHash2.h" />
     <ClInclude Include="plugins.h" />

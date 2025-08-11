@@ -19,6 +19,7 @@
 
 #include <set>
 #include <map>
+#include <atomic>
 
 #include "qgl.h"
 #include "mathlib2.h"
@@ -43,16 +44,6 @@
 #include "gl_cvar.h"
 #include "gl_portal.h"
 #include "gl_entity.h"
-
-#define DEFERRED_FRAME_TASK_DESTROY_ON_CHANGE_LEVEL 1
-
-class IDeferredFrameTask : public IBaseInterface
-{
-public:
-	virtual void Destroy() = 0;
-	virtual bool Run() = 0;
-	virtual int GetFlags() const = 0;
-};
 
 typedef struct walk_context_s
 {
@@ -651,11 +642,6 @@ int _cdecl SDL_GL_SetAttribute(int attr, int value);
 
 void R_EmitFlashlights();
 void R_CreateLowerBodyModel();
-
-void R_AddDeferredFrameTask(IDeferredFrameTask* pTask);
-void R_ClearDeferredFrameTasks();
-void R_ClearDeferredFrameTasksWithFlags(int flags);
-void R_RunDeferredFrameTasks();
 
 extern float r_viewport[4];
 extern float r_entity_matrix[4][4];

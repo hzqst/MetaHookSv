@@ -5,6 +5,7 @@
 #include <set>
 
 #include "UtilThreadTask.h"
+#include "LambdaThreadedTask.h"
 
 CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
@@ -37,12 +38,7 @@ std::vector<std::shared_ptr<CWorldSurfaceWorldModel>> g_WorldSurfaceWorldModels;
 
 CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 {
-	if (m_hThreadWorkItem)
-	{
-		g_pMetaHookAPI->WaitForWorkItemToComplete(m_hThreadWorkItem);
-		g_pMetaHookAPI->DeleteWorkItem(m_hThreadWorkItem);
-		m_hThreadWorkItem = nullptr;
-	}
+	ReleaseAsyncLoadTask();
 
 	if (hABO)
 	{
@@ -910,7 +906,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 	}
 }
 
-class CWorldSurfaceLeafAsyncLoadContext : public IThreadedTask
+class CWorldSurfaceLeafAsyncLoadTask : public CGameResourceAsyncLoadTask
 {
 private:
 	std::shared_ptr<CWorldSurfaceLeaf> m_pLeaf;
@@ -926,9 +922,8 @@ private:
 	texsurfaces_t* m_texsurfaces{};
 
 	std::vector<CDrawIndexAttrib> m_vDrawAttribBuffer;
-	std::atomic<bool> m_IsABDataReady{};
 public:
-	CWorldSurfaceLeafAsyncLoadContext(
+	CWorldSurfaceLeafAsyncLoadTask(
 		const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf,
 		const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel,
 		model_t* mod,
@@ -942,9 +937,36 @@ public:
 		m_bIsWorldLeaf(bIsWorldLeaf)
 	{
 		m_texsurfaces = new texsurfaces_t[m_model->numtextures];
+
+		m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
+
+			auto ctx = (CWorldSurfaceLeafAsyncLoadTask*)context;
+
+			std::shared_ptr<CWorldSurfaceLeaf> pLeaf = ctx->m_pLeaf;
+
+			if (ctx->RunTask())
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pLeaf]() {
+
+					pLeaf->AsyncUploadResouce();
+
+					}));
+			}
+			else
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pLeaf]() {
+
+					pLeaf->ReleaseAsyncLoadTask();
+
+					}));
+			}
+
+			return false;
+
+			}, this);
 	}
 
-	~CWorldSurfaceLeafAsyncLoadContext()
+	~CWorldSurfaceLeafAsyncLoadTask()
 	{
 		if (m_texsurfaces)
 		{
@@ -953,17 +975,12 @@ public:
 		}
 	}
 
-	void Destroy() override
+	void StartAsyncTask() override
 	{
-		delete this;
+		g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), m_hThreadWorkItem);
 	}
 
-	bool ShouldRun(float time) override
-	{
-		return m_IsABDataReady.load();
-	}
-
-	bool RunThreadedWorkItem()
+	bool RunTask()
 	{
 		if (m_pWorldModel->m_bIsClosing.load())
 			return false;
@@ -998,11 +1015,11 @@ public:
 		if (m_pWorldModel->m_bIsClosing.load())
 			return false;
 
-		m_IsABDataReady.store(true);
+		m_IsDataReady.store(true);
 		return true;
 	}
 
-	void Run(float time) override
+	void UploadResource() override
 	{
 		if (m_pWorldModel->m_bIsClosing.load())
 			return;
@@ -1028,34 +1045,6 @@ public:
 	}
 };
 
-void R_WorldSurfaceModelLeafQueueAsyncLoading(const std::shared_ptr<CWorldSurfaceLeaf>& pLeaf, const std::shared_ptr<CWorldSurfaceWorldModel>& pWorldModel, model_t* mod, mleaf_t* leaf, bool bIsWorldLeaf)
-{
-	if (pLeaf->m_hThreadWorkItem)
-		return;
-
-	auto ctx = new CWorldSurfaceLeafAsyncLoadContext(pLeaf, pWorldModel, mod, leaf, bIsWorldLeaf);
-
-	pLeaf->m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
-
-		auto ctx = (CWorldSurfaceLeafAsyncLoadContext*)context;
-
-		if (ctx->RunThreadedWorkItem())
-		{
-			GameThreadTaskScheduler()->QueueTask(ctx);
-		}
-		else
-		{
-			ctx->Destroy();
-		}
-
-		//Don't free current workitem now as we will free it in the pRenderData dtor
-		return false;
-
-		}, ctx);
-
-	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pLeaf->m_hThreadWorkItem);
-}
-
 void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& pModel,	model_t* mod, mleaf_t* leaf, bool bIsWorldLeaf)
 {
 	int leafIndex = (bIsWorldLeaf && leaf) ? R_GetWorldLeafIndex(mod, leaf) : 0;
@@ -1076,7 +1065,9 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 
 	pModel->m_vLeaves[leafIndex] = pLeaf;
 
-	R_WorldSurfaceModelLeafQueueAsyncLoading(pLeaf, pWorldModel, mod, leaf, bIsWorldLeaf);
+	pLeaf->m_pGameResourceAsyncLoadTask = std::make_shared<CWorldSurfaceLeafAsyncLoadTask>(pLeaf, pWorldModel, mod, leaf, bIsWorldLeaf);
+
+	pLeaf->m_pGameResourceAsyncLoadTask->StartAsyncTask();
 }
 
 /*

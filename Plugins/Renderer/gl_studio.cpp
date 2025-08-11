@@ -3,6 +3,7 @@
 #include "mathlib2.h"
 #include "CounterStrike.h"
 #include "UtilThreadTask.h"
+#include "LambdaThreadedTask.h"
 
 #include <sstream>
 #include <algorithm>
@@ -143,12 +144,7 @@ cvar_t* r_lowerbody_duck_model_offset = NULL;
 
 CStudioModelRenderData::~CStudioModelRenderData()
 {
-	if (m_hThreadWorkItem)
-	{
-		g_pMetaHookAPI->WaitForWorkItemToComplete(m_hThreadWorkItem);
-		g_pMetaHookAPI->DeleteWorkItem(m_hThreadWorkItem);
-		m_hThreadWorkItem = nullptr;
-	}
+	ReleaseAsyncLoadTask();
 
 	if (hVAO)
 	{
@@ -296,6 +292,25 @@ studiohdr_t* R_GetStudioTextureHeader(studiohdr_t* studiohdr, CStudioModelRender
 
 void R_StudioGetTextureHeaderSkinref(
 	studiohdr_t* studiohdr,
+	studiohdr_t* ptexturehdr,
+	CStudioModelRenderData* pRenderData,
+	cl_entity_t* e,
+	mstudiotexture_t** ptexture,
+	short** pskinref)
+{
+	if (ptexturehdr && ptexturehdr->textureindex)
+	{
+		(*ptexture) = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
+
+		(*pskinref) = (short*)((byte*)ptexturehdr + ptexturehdr->skinindex);
+
+		if (e && e->curstate.skin > 0 && e->curstate.skin < ptexturehdr->numskinfamilies)
+			(*pskinref) += (e->curstate.skin * ptexturehdr->numskinref);
+	}
+}
+
+void R_StudioGetTextureHeaderSkinref(
+	studiohdr_t* studiohdr,
 	CStudioModelRenderData* pRenderData,
 	cl_entity_t* e,
 	studiohdr_t** ptexturehdr,
@@ -306,15 +321,7 @@ void R_StudioGetTextureHeaderSkinref(
 	(*ptexture) = nullptr;
 	(*pskinref) = nullptr;
 
-	if ((*ptexturehdr) && (*ptexturehdr)->textureindex)
-	{
-		(*ptexture) = (mstudiotexture_t*)((byte*)(*ptexturehdr) + (*ptexturehdr)->textureindex);
-
-		(*pskinref) = (short*)((byte*)(*ptexturehdr) + (*ptexturehdr)->skinindex);
-
-		if (e && e->curstate.skin > 0 && e->curstate.skin < (*ptexturehdr)->numskinfamilies)
-			(*pskinref) += (e->curstate.skin * (*ptexturehdr)->numskinref);
-	}
+	R_StudioGetTextureHeaderSkinref(studiohdr, (*ptexturehdr), pRenderData, e, ptexture, pskinref);
 }
 
 inline float vec2_length(const vec2_t v)
@@ -909,17 +916,17 @@ void R_PrepareTBNForRenderSubmodel(
 void R_PrepareTBNForRenderData(
 	model_t* mod,
 	studiohdr_t* studiohdr,
+	studiohdr_t* ptexturehdr,
 	CStudioModelRenderData* pRenderData,
 	const std::vector<studiovertexbase_t>& vVertexBaseBuffer,
 	const std::vector<GLuint>& vIndicesBuffer,
 	std::vector<studiovertextbn_t>& vVertexTBNBuffer
 )
 {
-	studiohdr_t* ptexturehdr = nullptr;
 	mstudiotexture_t* ptexture = nullptr;
 	short* pskinref = nullptr;
 
-	R_StudioGetTextureHeaderSkinref(studiohdr, pRenderData, nullptr, &ptexturehdr, &ptexture, &pskinref);
+	R_StudioGetTextureHeaderSkinref(studiohdr, ptexturehdr, pRenderData, nullptr, &ptexture, &pskinref);
 
 	for (int i = 0; i < pRenderData->vSubmodels.size(); i++)
 	{
@@ -1203,8 +1210,6 @@ void R_AllocSlotForStudioRenderData(model_t* mod, studiohdr_t *studiohdr, const 
 
 void R_FreeStudioRenderData(model_t* mod)
 {
-	gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
-
 	auto modelindex = EngineGetModelIndex(mod);
 
 	if (modelindex >= 0 && modelindex < (int)g_StudioRenderDataCache.size())
@@ -1214,6 +1219,8 @@ void R_FreeStudioRenderData(model_t* mod)
 		if (pRenderData)
 		{
 			pRenderData->bIsClosing.store(true);
+
+			gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
 
 			g_StudioRenderDataCache[modelindex].reset();
 		}
@@ -1227,7 +1234,7 @@ void R_FreeStudioRenderData(const std::shared_ptr<CStudioModelRenderData> &pRend
 	R_FreeStudioRenderData(mod);
 }
 
-void R_FreeAllUnreferencedStudioRenderData(void)
+void R_FreeUnreferencedStudioRenderData(void)
 {
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -4571,19 +4578,21 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 	}
 }
 
-class CStudioRenderDataAsyncLoadContext : public IThreadedTask
+class CStudioRenderDataAsyncLoadTask : public CGameResourceAsyncLoadTask
 {
 private:
 	std::shared_ptr<CStudioModelRenderData> m_pRenderData;
+	model_t* m_model{};
 	studiohdr_t* m_pStudioHeader{};
+	studiohdr_t* m_pTextureHeader{};
 
 	std::vector<studiovertexbase_t> m_vVertexBaseBuffer;
 	std::vector<studiovertextbn_t> m_vVertexTBNBuffer;
 	std::vector<GLuint> m_vIndicesBuffer;
-	std::atomic<bool> m_IsVBDataReady{};
 
 public:
-	CStudioRenderDataAsyncLoadContext(const std::shared_ptr<CStudioModelRenderData>& pRenderData, studiohdr_t* studiohdr) : m_pRenderData(pRenderData)
+	CStudioRenderDataAsyncLoadTask(const std::shared_ptr<CStudioModelRenderData>& pRenderData, model_t *mod, studiohdr_t* studiohdr, studiohdr_t* ptexturehdr) :
+		m_pRenderData(pRenderData), m_model(mod)
 	{
 		int total = 0;
 
@@ -4598,28 +4607,73 @@ public:
 		{
 			memcpy(m_pStudioHeader, studiohdr, total);
 		}
+
+		if (ptexturehdr)
+		{
+			int totaltex = 0;
+
+			if (ptexturehdr->textureindex)
+				totaltex = ptexturehdr->texturedataindex;
+			else
+				totaltex = ptexturehdr->length;
+			
+			m_pTextureHeader = (decltype(m_pTextureHeader))malloc(totaltex);
+
+			if (m_pTextureHeader)
+			{
+				memcpy(m_pTextureHeader, ptexturehdr, totaltex);
+			}
+		}
+
+		m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
+
+			auto ctx = (CStudioRenderDataAsyncLoadTask*)context;
+
+			std::shared_ptr<CStudioModelRenderData> pRenderData = ctx->m_pRenderData;
+
+			if (ctx->RunTask())
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
+
+					pRenderData->AsyncUploadResouce();
+
+					}));
+			}
+			else
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
+
+					pRenderData->ReleaseAsyncLoadTask();
+
+				}));
+			}
+
+			//Don't free current workitem now as we will free it in the pRenderData dtor
+			return false;
+
+		}, this);
 	}
 
-	~CStudioRenderDataAsyncLoadContext()
+	~CStudioRenderDataAsyncLoadTask()
 	{
 		if (m_pStudioHeader)
 		{
 			free(m_pStudioHeader);
 			m_pStudioHeader = nullptr;
 		}
+		if (m_pTextureHeader)
+		{
+			free(m_pTextureHeader);
+			m_pTextureHeader = nullptr;
+		}
 	}
 
-	void Destroy() override
+	void StartAsyncTask() override
 	{
-		delete this;
+		g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), m_hThreadWorkItem);
 	}
 
-	bool ShouldRun(float time) override
-	{
-		return m_IsVBDataReady.load();
-	}
-
-	bool RunThreadedWorkItem()
+	bool RunTask()
 	{
 		if (!m_pStudioHeader)
 			return false;
@@ -4635,16 +4689,16 @@ public:
 		m_vVertexTBNBuffer.shrink_to_fit();
 		m_vIndicesBuffer.shrink_to_fit();
 
-		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
+		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pTextureHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
 
 		if (m_pRenderData->bIsClosing.load())
 			return false;
 
-		m_IsVBDataReady.store(true);
+		m_IsDataReady.store(true);
 		return true;
 	}
 
-	void Run(float time) override
+	void UploadResource() override
 	{
 		if (m_pRenderData->bIsClosing.load())
 			return;
@@ -4767,27 +4821,14 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 	R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
 	R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
 
-	auto ctx = new CStudioRenderDataAsyncLoadContext(pRenderData, studiohdr);
+	pRenderData->m_pGameResourceAsyncLoadTask = std::make_shared<CStudioRenderDataAsyncLoadTask>(
+		pRenderData,
+		mod, 
+		studiohdr, 
+		pRenderData->TextureModel ? (studiohdr_t *)IEngineStudio.Mod_Extradata(pRenderData->TextureModel) : nullptr
+	);
 
-	pRenderData->m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
-
-		auto ctx = (CStudioRenderDataAsyncLoadContext*)context;
-
-		if (ctx->RunThreadedWorkItem())
-		{
-			GameThreadTaskScheduler()->QueueTask(ctx);
-		}
-		else
-		{
-			ctx->Destroy();
-		}
-
-		//Don't free current workitem now as we will free it in the pRenderData dtor
-		return false;
-
-	}, ctx);
-
-	g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), pRenderData->m_hThreadWorkItem);
+	pRenderData->m_pGameResourceAsyncLoadTask->StartAsyncTask();
 
 	return pRenderData;
 }

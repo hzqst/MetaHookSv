@@ -100,6 +100,29 @@ public:
 
 	~CWorldSurfaceLeaf();
 
+	void AsyncUploadResouce()
+	{
+		if (m_pGameResourceAsyncLoadTask)
+		{
+			m_pGameResourceAsyncLoadTask->UploadResource();
+			m_pGameResourceAsyncLoadTask.reset();
+		}
+	}
+
+	void ReleaseAsyncLoadTask()
+	{
+		if (m_pGameResourceAsyncLoadTask)
+		{
+			if (m_pGameResourceAsyncLoadTask->m_hThreadWorkItem)
+			{
+				g_pMetaHookAPI->WaitForWorkItemToComplete(m_pGameResourceAsyncLoadTask->m_hThreadWorkItem);
+				g_pMetaHookAPI->DeleteWorkItem(m_pGameResourceAsyncLoadTask->m_hThreadWorkItem);
+				m_pGameResourceAsyncLoadTask->m_hThreadWorkItem = nullptr;
+			}
+			m_pGameResourceAsyncLoadTask.reset();
+		}
+	}
+
 	mleaf_t *m_leaf{};
 	GLuint hABO{};
 	std::vector<CWorldSurfaceBrushTexChain> vTextureChainList[WSURF_TEXCHAIN_LIST_MAX];
@@ -107,7 +130,7 @@ public:
 	CWorldSurfaceBrushTexChain TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_MAX];
 	std::weak_ptr<CWorldSurfaceModel> m_pModel{};
 
-	ThreadWorkItemHandle_t m_hThreadWorkItem{};
+	std::shared_ptr<CGameResourceAsyncLoadTask> m_pGameResourceAsyncLoadTask;
 };
 
 class CWorldSurfaceWorldModel
