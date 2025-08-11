@@ -926,9 +926,7 @@ void R_PrepareTBNForRenderData(
 	mstudiotexture_t* ptexture = nullptr;
 	short* pskinref = nullptr;
 
-	auto ptexturehdr2 = ptexturehdr ? ptexturehdr : studiohdr;
-
-	R_StudioGetTextureHeaderSkinref(studiohdr, ptexturehdr2, pRenderData, nullptr, &ptexture, &pskinref);
+	R_StudioGetTextureHeaderSkinref(studiohdr, ptexturehdr, pRenderData, nullptr, &ptexture, &pskinref);
 
 	for (int i = 0; i < pRenderData->vSubmodels.size(); i++)
 	{
@@ -937,7 +935,7 @@ void R_PrepareTBNForRenderData(
 			break;
 		}
 
-		R_PrepareTBNForRenderSubmodel(mod, studiohdr, pRenderData, pRenderData->vSubmodels[i], ptexturehdr2, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
+		R_PrepareTBNForRenderSubmodel(mod, studiohdr, pRenderData, pRenderData->vSubmodels[i], ptexturehdr, ptexture, pskinref, vVertexBaseBuffer, vIndicesBuffer, vVertexTBNBuffer);
 	}
 }
 
@@ -4691,7 +4689,7 @@ public:
 		m_vVertexTBNBuffer.shrink_to_fit();
 		m_vIndicesBuffer.shrink_to_fit();
 
-		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pTextureHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
+		R_PrepareTBNForRenderData(mod, m_pStudioHeader, m_pTextureHeader ? m_pTextureHeader : m_pStudioHeader, m_pRenderData.get(), m_vVertexBaseBuffer, m_vIndicesBuffer, m_vVertexTBNBuffer);
 
 		if (m_pRenderData->bIsClosing.load())
 			return false;
