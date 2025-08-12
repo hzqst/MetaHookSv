@@ -1333,6 +1333,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
+		if (state & STUDIO_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
 		if (state & STUDIO_SHADOW_CASTER_ENABLED)
 			defs << "#define SHADOW_CASTER_ENABLED\n";
 
@@ -1410,9 +1413,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
 			defs << "#define LEGACY_ELIGHT_ENABLED\n";
-
-		if (state & STUDIO_LINEAR_FOG_SHIFT_ENABLED)
-			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -1821,6 +1821,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_LINEAR_FOG_ENABLED				,"STUDIO_LINEAR_FOG_ENABLED"				},
 { STUDIO_EXP_FOG_ENABLED				,"STUDIO_EXP_FOG_ENABLED"					},
 { STUDIO_EXP2_FOG_ENABLED				,"STUDIO_EXP2_FOG_ENABLED"					},
+{ STUDIO_LINEAR_FOG_SHIFT_ENABLED		,"STUDIO_LINEAR_FOG_SHIFT_ENABLED"			},
 { STUDIO_SHADOW_CASTER_ENABLED			,"STUDIO_SHADOW_CASTER_ENABLED"				},
 { STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
 { STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
@@ -1847,7 +1848,6 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
-{ STUDIO_LINEAR_FOG_SHIFT_ENABLED		,"STUDIO_LINEAR_FOG_SHIFT_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2515,6 +2515,13 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
 		StudioUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
 		StudioUBO.r_color[3] = 1;
+	}
+	else if ((*currententity)->curstate.rendermode == kRenderTransColor)
+	{
+		StudioUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+		StudioUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		StudioUBO.r_color[3] = (*r_blend);
 	}
 	else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 	{
