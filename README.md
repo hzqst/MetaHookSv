@@ -48,8 +48,25 @@ A: This is because ThreadGuard.dll is waiting for Valve's network threads or sim
 
 A. The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-compat) is not working well with software-rendering mode. please switch to OpenGL mode by adding `-gl` in the launch parameter.
 
+4. What if game crashes due to out of memory ?
 
-## One Click Installation
+Try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB system memory)
+
+Try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
+
+## One Click Installation (GUI Installer)
+
+1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
+
+2. Run `Build-Output\MetahookInstaller.exe`, and click `install` (or choose the desired game before installing)
+
+3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk` or Steam game library.
+
+* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.
+
+* Other games follow the same instruction, don't forget to choose the desired game before installing.
+
+## One Click Installation (Windows batch script)
 
 1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
 
@@ -61,7 +78,7 @@ A. The [SDL3-over-SDL2 compatibility layer](https://github.com/libsdl-org/sdl2-c
 
 * Other games follow the same instruction.
 
-* You should have your Steam running otherwise the [SteamAppsLocation](toolsrc/README.md) will probably not going to find GameInstallDir.
+* You should have your Steam running and own the game in your game library otherwise the [SteamAppsLocation](toolsrc/README.md) will probably not going to find GameInstallDir.
 
 ## Manual Installation
 
