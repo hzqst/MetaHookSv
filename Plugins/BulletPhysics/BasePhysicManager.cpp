@@ -1063,6 +1063,11 @@ static void LoadPhysicObjectFlagsFromKeyValues(KeyValues* pKeyValues, int &flags
 	{
 		flags |= PhysicObjectFlag_Gargantua;
 	}
+
+	if (pKeyValues->GetBool("overrideStudioCheckBBOX"))
+	{
+		flags |= PhysicObjectFlag_OverrideStudioCheckBBox;
+	}
 }
 
 static CClientCollisionShapeConfigSharedPtr LoadCollisionShapeFromKeyValues(KeyValues* pCollisionShapeKey, bool bIsChild)
@@ -1824,6 +1829,10 @@ static void AddBaseConfigToKeyValues(KeyValues* pKeyValues, const CClientPhysicO
 
 	if (pPhysicObjectConfig->flags & PhysicObjectFlag_Gargantua)
 		pKeyValues->SetInt("gargantua", 1);
+
+	if (pPhysicObjectConfig->flags & PhysicObjectFlag_OverrideStudioCheckBBox)
+		pKeyValues->SetInt("overrideStudioCheckBBOX", 1);
+
 }
 
 static void AddCollisionShapeToKeyValues(KeyValues * pCollisionShapeSubKey, const CClientCollisionShapeConfig *pCollisionShapeConfig)
