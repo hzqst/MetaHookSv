@@ -86,12 +86,12 @@ void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorA
 
 	vec4_t depthBorderColor = { 1, 1, 1, 1 };
 	
-	shadowtex->depth_stencil = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
+	shadowtex->depth_stencil = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor, true);
 
 	if (bUseColorArrayAsDepth)
 	{
 		vec4_t borderColor = { -99999, -99999, -99999, 1};
-		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, true, borderColor);
+		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, true, borderColor, true);
 	}
 }
 
@@ -373,12 +373,6 @@ void R_RenderShadowDynamicLights(void)
 						{
 							R_AllocShadowTexture(args->shadowtex, 1024, false);
 						}
-
-						//Just for test
-						//if (!shadowtex->color && shadowtex->size)
-						//{
-						//	shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
-						//}
 
 						args->shadowtex->distance = args->distance;
 						args->shadowtex->cone_angle = args->coneAngle;

@@ -481,25 +481,25 @@ qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec);
 qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);
-GLuint GL_GenTextureRGBA8(int w, int h);
+GLuint GL_GenTextureRGBA8(int w, int h, bool immutable);
 
-void GL_UploadDepthTexture(int texid, int w, int h);
-GLuint GL_GenDepthTexture(int w, int h);
+void GL_CreateDepthTexture(int texid, int w, int h, bool immutable);
+GLuint GL_GenDepthTexture(int w, int h, bool immutable);
 
-void GL_UploadDepthStencilTexture(int texid, int w, int h);
-GLuint GL_GenDepthStencilTexture(int w, int h);
+void GL_CreateDepthStencilTexture(int texid, int w, int h, bool immutable);
+GLuint GL_GenDepthStencilTexture(int w, int h, bool immutable);
 
 GLuint GL_CreateDepthViewForDepthTexture(int texId);
 GLuint GL_CreateStencilViewForDepthTexture(int texId);
 
-GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor);
-void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor);
+GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor, bool immutable);
+void GL_CreateTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 
-GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor);
-void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor);
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
+void GL_CreateTextureArrayColorFormat(int texid, int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 
-GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
-void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);
+GLuint GL_GenShadowTexture(int w, int h, float *borderColor, bool immutable);
+void GL_CreateShadowTexture(int texid, int w, int h, float *borderColor, bool immutable);
 
 void GL_SetCurrentSceneFBO(FBO_Container_t* src);
 FBO_Container_t* GL_GetCurrentSceneFBO();

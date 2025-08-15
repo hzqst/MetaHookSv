@@ -245,7 +245,7 @@ void R_PopRefDef(void)
 	VectorCopy(save_viewang[save_refdef_stack], (*r_refdef.viewangles));
 }
 
-void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor)
+void GL_CreateTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor, bool immutable)
 {
 	glBindTexture(GL_TEXTURE_2D, texid);
 
@@ -264,23 +264,27 @@ void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, b
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 
-	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
-	//glTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA, 
-	//	(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
-
-	glTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, w, h);
+	if (immutable)
+	{
+		glTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, w, h);
+	}
+	else
+	{
+		//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
+		glTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA, (iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor)
+GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadTextureColorFormat(texid, w, h, iInternalFormat, filter, borderColor);
+	GL_CreateTextureColorFormat(texid, w, h, iInternalFormat, filter, borderColor, immutable);
 	return texid;
 }
 
-void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor)
+void GL_CreateTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor, bool immutable)
 {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, texid);
 
@@ -299,59 +303,79 @@ void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int i
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 	
-	//glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalFormat, w, h, levels, 0, GL_RGBA, 
-	//	(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, NULL);
-	
-	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iInternalFormat, w, h, levels);
+	if (immutable)
+	{
+		glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iInternalFormat, w, h, levels);
+	}
+	else
+	{
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalFormat, w, h, levels, 0, GL_RGBA, (iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, NULL);
+	}
 
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor)
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadTextureArrayColorFormat(texid, w, h, depth, iInternalFormat, filter, borderColor);
+	GL_CreateTextureArrayColorFormat(texid, w, h, depth, iInternalFormat, filter, borderColor, immutable);
 	return texid;
 }
 
-GLuint GL_GenTextureRGBA8(int w, int h)
+GLuint GL_GenTextureRGBA8(int w, int h, bool immutable)
 {
-	return GL_GenTextureColorFormat(w, h, GL_RGBA8, true, NULL);
+	return GL_GenTextureColorFormat(w, h, GL_RGBA8, true, nullptr, immutable);
 }
 
-void GL_UploadDepthTexture(int texId, int w, int h)
+void GL_CreateDepthTexture(int texId, int w, int h, bool immutable)
 {
 	glBindTexture(GL_TEXTURE_2D, texId);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	if (immutable)
+	{
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, w, h);
+	}
+	else
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	}
+
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint GL_GenDepthTexture(int w, int h)
+GLuint GL_GenDepthTexture(int w, int h, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadDepthTexture(texid, w, h);
+	GL_CreateDepthTexture(texid, w, h, immutable);
 	return texid;
 }
 
-void GL_UploadDepthStencilTexture(int texId, int w, int h)
+void GL_CreateDepthStencilTexture(int texId, int w, int h, bool immutable)
 {
 	glBindTexture(GL_TEXTURE_2D, texId);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	if (immutable)
+	{
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	}
+	else
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, GL_DEPTH_STENCIL, GL_FLOAT, 0);
+	}
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint GL_GenDepthStencilTexture(int w, int h)
+GLuint GL_GenDepthStencilTexture(int w, int h, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadDepthStencilTexture(texid, w, h);
+	GL_CreateDepthStencilTexture(texid, w, h, immutable);
 	return texid;
 }
 
@@ -387,7 +411,7 @@ GLuint GL_CreateStencilViewForDepthTexture(int texId)
 	return stencilviewtexid;
 }
 
-void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
+void GL_CreateShadowTexture(int texid, int w, int h, float *borderColor, bool immutable)
 {
 	glBindTexture(GL_TEXTURE_2D, texid);
 
@@ -410,17 +434,23 @@ void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
-
-	// glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+	if (immutable)
+	{
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+		//glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	}
+	else
+	{
+		
+	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint GL_GenShadowTexture(int w, int h, float *borderColor)
+GLuint GL_GenShadowTexture(int w, int h, float *borderColor, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_UploadShadowTexture(texid, w, h, borderColor);
+	GL_CreateShadowTexture(texid, w, h, borderColor, immutable);
 	return texid;
 }
 
