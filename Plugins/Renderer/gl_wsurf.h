@@ -182,6 +182,7 @@ public:
 				pLeaf->ReleaseAsyncLoadTask();
 			}
 		}
+		m_vLeaves.clear();
 	}
 
 	model_t* m_model{};
