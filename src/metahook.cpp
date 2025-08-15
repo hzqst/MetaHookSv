@@ -1114,6 +1114,21 @@ int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_st
 
 	MH_TransactionHookCommit();
 
+	if (CommandLine()->CheckParm("-metahook_early_unload_mirrored_dll"))
+	{
+		if (g_hMirrorClient)
+		{
+			MH_FreeMirrorDLL(g_hMirrorClient);
+			g_hMirrorClient = NULL;
+		}
+
+		if (g_hMirrorEngine)
+		{
+			MH_FreeMirrorDLL(g_hMirrorEngine);
+			g_hMirrorEngine = NULL;
+		}
+	}
+
 	return r;
 }
 

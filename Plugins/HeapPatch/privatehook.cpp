@@ -159,7 +159,7 @@ void Engine_InstallHooks()
 			return;
 		}
 
-		auto HeapLimitOverride = (g_iEngineType == ENGINE_SVENGINE) ? 512 : 256;
+		auto HeapLimitOverride = (g_iEngineType == ENGINE_SVENGINE) ? 256 : 256;
 		DWORD HeapLimitOverrideInBytes = (DWORD)HeapLimitOverride * 1024 * 1024;
 
 		const char* pszHeapLimitOverride = NULL;

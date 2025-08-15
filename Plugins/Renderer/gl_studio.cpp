@@ -4765,6 +4765,21 @@ public:
 	}
 };
 
+void R_CreateStudioRenderDataAsyncLoadTask(model_t* mod, studiohdr_t* studiohdr, const std::shared_ptr<CStudioModelRenderData>& pRenderData)
+{
+	if (!pRenderData->m_pGameResourceAsyncLoadTask && !pRenderData->hVAO)
+	{
+		pRenderData->m_pGameResourceAsyncLoadTask = std::make_shared<CStudioRenderDataAsyncLoadTask>(
+			pRenderData,
+			mod,
+			studiohdr,
+			pRenderData->TextureModel ? (studiohdr_t*)IEngineStudio.Mod_Extradata(pRenderData->TextureModel) : nullptr
+		);
+
+		pRenderData->m_pGameResourceAsyncLoadTask->StartAsyncTask();
+	}
+}
+
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (!studiohdr->numbodyparts)
@@ -4780,6 +4795,8 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 
 		R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
 		R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
+
+		R_CreateStudioRenderDataAsyncLoadTask(mod, studiohdr, pRenderData);
 
 		return pRenderData;
 	}
@@ -4828,14 +4845,7 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 	R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
 	R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
 
-	pRenderData->m_pGameResourceAsyncLoadTask = std::make_shared<CStudioRenderDataAsyncLoadTask>(
-		pRenderData,
-		mod, 
-		studiohdr, 
-		pRenderData->TextureModel ? (studiohdr_t *)IEngineStudio.Mod_Extradata(pRenderData->TextureModel) : nullptr
-	);
-
-	pRenderData->m_pGameResourceAsyncLoadTask->StartAsyncTask();
+	R_CreateStudioRenderDataAsyncLoadTask(mod, studiohdr, pRenderData);
 
 	return pRenderData;
 }

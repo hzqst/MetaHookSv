@@ -300,8 +300,8 @@ water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceMode
 
 			if (!ReflectCache->refract_texture)
 			{
-				ReflectCache->refract_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
-				ReflectCache->refract_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight);
+				ReflectCache->refract_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, nullptr, true);
+				ReflectCache->refract_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight, true);
 			}
 
 			if (ReflectCache->reflect_texture && ReflectCache->texwidth != texwidth)
@@ -315,8 +315,8 @@ water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceMode
 
 			if (!ReflectCache->reflect_texture)
 			{
-				ReflectCache->reflect_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
-				ReflectCache->reflect_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight);
+				ReflectCache->reflect_texture = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, nullptr, true);
+				ReflectCache->reflect_depth_texture = GL_GenDepthStencilTexture(texwidth, texheight, true);
 			}
 
 			ReflectCache->texwidth = texwidth;

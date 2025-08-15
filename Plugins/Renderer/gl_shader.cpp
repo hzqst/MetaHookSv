@@ -4,7 +4,7 @@
 #include <sstream>
 #include <regex>
 
-std::vector<glshader_t> g_ShaderTable;
+std::vector<GLuint> g_ShaderTable;
 
 void GL_InitShaders(void)
 {
@@ -15,13 +15,8 @@ void GL_FreeShaders(void)
 {
 	for(size_t i = 0;i < g_ShaderTable.size(); ++i)
 	{
-		auto &objs = g_ShaderTable[i].shader_objects;
-		for (size_t j = 0; j < objs.size(); ++j)
-		{
-			glDetachShader(g_ShaderTable[i].program, objs[j]);
-			glDeleteShader(objs[j]);
-		}
-		glDeleteProgram(g_ShaderTable[i].program);
+		auto prog = g_ShaderTable[i];
+		glDeleteProgram(prog);
 	}
 
 	g_ShaderTable.clear();
@@ -102,7 +97,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 		glAttachShader(program, shader_objects[i]);
 	glLinkProgram(program);
 
-	int iStatus;
+	GLint iStatus = GL_FALSE;
 	glGetProgramiv(program, GL_LINK_STATUS, &iStatus);
 
 	if (GL_FALSE == iStatus)
@@ -114,7 +109,13 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 		Sys_Error("Shader linked with error:\n%s\n", szCompilerLog);
 	}
 
-	g_ShaderTable.emplace_back(program, shader_objects, shader_object_used);
+	for (int i = 0; i < shader_object_used; ++i)
+	{
+		glDetachShader(program, shader_objects[i]);
+		glDeleteShader(shader_objects[i]);
+	}
+
+	g_ShaderTable.emplace_back(program);
 
 	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] vs:%s, fs:%s...\n", program, vsfile, fsfile);
 
@@ -138,7 +139,7 @@ void R_CompileShaderAppendInclude(std::string &str, const char *filename)
 
 		auto includeFileName = result[1].str();
 
-		char slash;
+		char slash = '/';
 
 		std::string includePath = filename;
 		for (size_t j = includePath.length() - 1; j > 0; --j)

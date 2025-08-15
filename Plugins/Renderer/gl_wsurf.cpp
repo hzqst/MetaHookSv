@@ -3000,7 +3000,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 				{
 					glColorMask(0, 0, 0, 0);
 
-					R_DrawWorldSurfaceLeafSolid(pLeaf.get(), true);
+					R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
 
 					glColorMask(1, 1, 1, 1);
 
@@ -3009,11 +3009,11 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 					bUseZPrePass = true;
 				}
 
-				glColorMask(0, 0, 0, 0);
+				//glColorMask(0, 0, 0, 0);
 
-				R_DrawWorldSurfaceLeafSky(pModel.get(), pLeaf.get(), bUseZPrePass);
+				//R_DrawWorldSurfaceLeafSky(pModel.get(), pLeaf.get(), bUseZPrePass);
 
-				glColorMask(1, 1, 1, 1);
+				//glColorMask(1, 1, 1, 1);
 
 				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get(), bUseZPrePass);
 				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get(), bUseZPrePass);

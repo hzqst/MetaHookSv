@@ -54,7 +54,27 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 在软件渲染模式下无法正常工作。请切换至 OpenGL 模式以解决问题（在游戏启动项中添加 `-gl` 即可）。
 
-## 一键安装方式 (推荐)
+4. 如果游戏占用内存过多(超过2.7GB)导致崩溃怎么办？
+
+尝试添加以下启动项：`-metahook_early_unload_mirrored_dll` （该选项可节约大约120MB内存）
+
+尝试启用以下控制台参数：`r_studio_lazy_load 1`， `r_leaf_lazy_load 1`
+
+## 一键安装方式 (GUI安装器)
+
+1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
+
+2. 运行 `Build-Output\MetahookInstaller.exe`, 然后点击 `安装` (或者在点击安装之前选择游戏)
+
+3. 从生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
+
+* 其他游戏也可以按照此种方式安装，只需在点击安装之前选择对应游戏即可。
+
+* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
+
+* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\install-to-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动安装。
+
+## 一键安装方式 (Windows批处理脚本)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
 

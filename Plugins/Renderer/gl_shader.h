@@ -3,18 +3,6 @@
 #include <vector>
 #include <unordered_map>
 
-typedef struct glshader_s
-{
-	struct glshader_s(GLuint prog, GLuint *objs, int used)
-	{
-		program = prog;
-		shader_objects.resize(used);
-		memcpy(shader_objects.data(), objs, used * sizeof(GLuint));
-	}
-	GLuint program;
-	std::vector<GLuint> shader_objects;
-}glshader_t;
-
 typedef uint64_t program_state_t;
 
 typedef struct program_state_mapping_s
