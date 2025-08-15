@@ -38,6 +38,11 @@ public:
 	*/
 
 	virtual void RunTasks(float time, int maxTasks) = 0;
+
+	/*
+		Wait for all tasks to complete
+	*/
+	virtual void WaitForAllTasksToComplete() = 0;
 };
 
 class IUtilThreadTaskFactory : public IBaseInterface

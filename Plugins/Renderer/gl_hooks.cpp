@@ -11393,8 +11393,8 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 
-	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 #if 1
+	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 	gEngfuncs.pTriAPI->Begin = triapi_Begin;
 	gEngfuncs.pTriAPI->End = triapi_End;
 	gEngfuncs.pTriAPI->Color4f = triapi_Color4f;

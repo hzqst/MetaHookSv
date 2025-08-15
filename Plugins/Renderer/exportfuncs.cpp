@@ -2072,12 +2072,13 @@ void HUD_Shutdown(void)
 
 	R_SaveProgramStates_f();
 
+	ClientStudio_UninstallHooks();
+	EngineStudio_UninstallHooks();
+
 	R_Shutdown();
 
 	GL_Shutdown();
 
-	ClientStudio_UninstallHooks();
-	EngineStudio_UninstallHooks();
 	UtilThreadTask_Shutdown();
 }
 

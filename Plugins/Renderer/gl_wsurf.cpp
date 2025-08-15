@@ -4805,7 +4805,7 @@ void R_DrawWorld(void)
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
 
-	GL_DisableMultitexture();
+//	GL_DisableMultitexture();
 
 	//Just for backward-compatibility
 	glColor3f(1.0f, 1.0f, 1.0f);
@@ -4831,5 +4831,5 @@ void R_DrawWorld(void)
 		}
 	}
 
-	GL_DisableMultitexture();
+//	GL_DisableMultitexture();
 }

@@ -144,8 +144,6 @@ cvar_t* r_lowerbody_duck_model_offset = NULL;
 
 CStudioModelRenderData::~CStudioModelRenderData()
 {
-	ReleaseAsyncLoadTask();
-
 	if (hVAO)
 	{
 		GL_DeleteVAO(hVAO);
@@ -1222,6 +1220,8 @@ void R_FreeStudioRenderData(model_t* mod)
 
 			gEngfuncs.Con_DPrintf("R_FreeStudioRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
 
+			pRenderData->ReleaseAsyncLoadTask();
+
 			g_StudioRenderDataCache[modelindex].reset();
 		}
 	}
@@ -1263,9 +1263,7 @@ void R_FreeAllStudioRenderData(void)
 
 		if (pRenderData)
 		{
-			pRenderData->bIsClosing.store(true);
-
-			g_StudioRenderDataCache[i].reset();
+			R_FreeStudioRenderData(pRenderData);
 		}
 	}
 }

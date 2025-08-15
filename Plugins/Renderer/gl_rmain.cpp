@@ -947,7 +947,8 @@ void R_DrawParticles(void)
 	gPrivateFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
-	//glDisable(GL_ALPHA_TEST);//TODO: do in shader
+	//TODO: do in shader. Warning: disabling this causes https://github.com/hzqst/MetaHookSv/issues/666
+	glDisable(GL_ALPHA_TEST);
 }
 
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
@@ -1897,10 +1898,10 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
 
-			GL_DisableMultitexture();
+			//GL_DisableMultitexture();
 
+			//TODO: Do in shader?
 			glEnable(GL_ALPHA_TEST);
-
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 			R_InhibitRenderingFog();
@@ -1915,7 +1916,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		if (!onlyClientDraw)
 		{
-			GL_DisableMultitexture();
+			//GL_DisableMultitexture();
 			R_DrawParticles();
 		}
 
@@ -1940,10 +1941,10 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
 
-			GL_DisableMultitexture();
+			//GL_DisableMultitexture();
 
+			//TODO: Do in shader?
 			glEnable(GL_ALPHA_TEST);
-
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 			R_InhibitRenderingFog();
@@ -1952,13 +1953,15 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 			R_RestoreRenderingFog();
 
+			glDisable(GL_ALPHA_TEST);
+
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
 		}
 
 		if (!onlyClientDraw)
 		{
-			GL_DisableMultitexture();
+			//GL_DisableMultitexture();
 			R_DrawParticles();
 		}
 
@@ -2882,7 +2885,7 @@ void R_PostRenderView()
 	}
 
 	//Restore OpenGL states to default
-	GL_DisableMultitexture();
+	//GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);

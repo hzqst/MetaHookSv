@@ -82,6 +82,15 @@ public:
 			nRunTask++;
 		}
 	}
+
+	void WaitForAllTasksToComplete() override
+	{
+		while (1)
+		{
+			if (!RunTask(FLT_MAX))
+				return;
+		}
+	}
 };
 
 IThreadedTaskScheduler* ThreadedTaskScheduler_CreateInstance()

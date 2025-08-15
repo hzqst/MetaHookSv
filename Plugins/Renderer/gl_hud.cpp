@@ -632,7 +632,7 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 {
 	GL_BeginFullScreenQuad(false);
 
-	GL_DisableMultitexture();
+	//GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);

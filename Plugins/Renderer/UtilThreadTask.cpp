@@ -49,6 +49,7 @@ void UtilThreadTask_Shutdown()
 {
 	if (g_pGameThreadTaskScheduler)
 	{
+		g_pGameThreadTaskScheduler->WaitForAllTasksToComplete();
 		g_pGameThreadTaskScheduler->Destroy();
 		g_pGameThreadTaskScheduler = nullptr;
 	}
