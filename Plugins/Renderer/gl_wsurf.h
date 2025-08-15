@@ -130,6 +130,7 @@ public:
 	CWorldSurfaceBrushTexChain TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_MAX];
 	std::weak_ptr<CWorldSurfaceModel> m_pModel{};
 
+	std::atomic_bool m_bIsClosing{ false };
 	std::shared_ptr<CGameResourceAsyncLoadTask> m_pGameResourceAsyncLoadTask;
 };
 
@@ -148,8 +149,6 @@ public:
 	GLuint hEBO{};
 	std::unordered_map<int, GLuint> VAOMap;
 	std::vector<CWorldSurfaceBrushFace> m_vFaceBuffer;
-
-	std::atomic_bool m_bIsClosing{ false };
 };
 
 class CWorldSurfaceModel
@@ -171,6 +170,18 @@ public:
 			return nullptr;
 
 		return m_vLeaves[index];
+	}
+
+	void FreeLeaves()
+	{
+		for (const auto& pLeaf : m_vLeaves)
+		{
+			if (pLeaf)
+			{
+				pLeaf->m_bIsClosing.store(true);
+				pLeaf->ReleaseAsyncLoadTask();
+			}
+		}
 	}
 
 	model_t* m_model{};

@@ -38,8 +38,6 @@ std::vector<std::shared_ptr<CWorldSurfaceWorldModel>> g_WorldSurfaceWorldModels;
 
 CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 {
-	ReleaseAsyncLoadTask();
-
 	if (hABO)
 	{
 		GL_DeleteBuffer(hABO);
@@ -90,6 +88,8 @@ void R_FreeWorldSurfaceModels(model_t* mod)
 		{
 			gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceModels: [%s] freed.\n", mod->name);
 
+			pWorldSurfaceModel->FreeLeaves();
+
 			g_WorldSurfaceModels[modelindex].reset();
 		}
 	}
@@ -107,8 +107,6 @@ void R_FreeWorldSurfaceWorldModels(model_t* mod)
 		{
 			gEngfuncs.Con_DPrintf("R_FreeWorldSurfaceWorldModels: [%s] freed.\n", mod->name);
 
-			pWorldSurfaceWorldModel->m_bIsClosing.store(true);
-
 			g_WorldSurfaceWorldModels[modelindex].reset();
 		}
 	}
@@ -122,6 +120,8 @@ void R_ClearWorldSurfaceModels(void)
 
 		if (pWorldSurfaceModel)
 		{
+			pWorldSurfaceModel->FreeLeaves();
+
 			g_WorldSurfaceModels[i].reset();
 		}
 	}
@@ -135,8 +135,6 @@ void R_ClearWorldSurfaceWorldModels(void)
 
 		if (pWorldSurfaceWorldModel)
 		{
-			pWorldSurfaceWorldModel->m_bIsClosing.store(true);
-
 			g_WorldSurfaceWorldModels[i].reset();
 		}
 	}
@@ -579,7 +577,7 @@ void R_BrushModelLinkTextureChain(model_t* mod, vissurfaces_t& watersurfaces, vi
 
 void R_GenerateIndicesForTexChain(model_t* mod, msurface_t* surf, CWorldSurfaceBrushTexChain* texchain, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf *pLeaf, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
-	if (pWorldModel->m_bIsClosing.load())
+	if (pLeaf->m_bIsClosing.load())
 		return; //Leaf is closing, stop generating texchain
 
 	auto surfIndex = R_GetWorldSurfaceIndex(pWorldModel->m_model, surf);
@@ -681,7 +679,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 		if (!t)
 			continue;
 
-		if (pWorldModel->m_bIsClosing.load())
+		if (pLeaf->m_bIsClosing.load())
 			return; //Leaf is closing, stop generating texchain
 
 		bool bIsSkyTexture = (0 == strcmp(t->name, "sky")) ? true : false;
@@ -983,7 +981,7 @@ public:
 
 	bool RunTask()
 	{
-		if (m_pWorldModel->m_bIsClosing.load())
+		if (m_pLeaf->m_bIsClosing.load())
 			return false;
 
 		if (m_bIsWorldLeaf)
@@ -996,7 +994,7 @@ public:
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID, m_vDrawAttribBuffer);
 
-			if (m_pWorldModel->m_bIsClosing.load())
+			if (m_pLeaf->m_bIsClosing.load())
 				return false;
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID_WITH_SKY, m_vDrawAttribBuffer);
@@ -1007,13 +1005,13 @@ public:
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID, m_vDrawAttribBuffer);
 
-			if (m_pWorldModel->m_bIsClosing.load())
+			if (m_pLeaf->m_bIsClosing.load())
 				return false;
 
 			R_GenerateTexChain(m_model, m_texsurfaces, m_pWorldModel.get(), m_pLeaf.get(), TEXCHAIN_PASS_SOLID_WITH_SKY, m_vDrawAttribBuffer);
 		}
 
-		if (m_pWorldModel->m_bIsClosing.load())
+		if (m_pLeaf->m_bIsClosing.load())
 			return false;
 
 		m_IsDataReady.store(true);
@@ -1022,7 +1020,7 @@ public:
 
 	void UploadResource() override
 	{
-		if (m_pWorldModel->m_bIsClosing.load())
+		if (m_pLeaf->m_bIsClosing.load())
 			return;
 
 		if (m_vDrawAttribBuffer.size() > 0)
@@ -3091,8 +3089,8 @@ void R_FreeWorldResources(void)
 
 	R_FreeLightmapTextures();
 
-	R_ClearWorldSurfaceModels();
 	R_ClearWorldSurfaceWorldModels();
+	R_ClearWorldSurfaceModels();
 }
 
 void R_LoadWorldResources(void)
@@ -3130,15 +3128,7 @@ void R_ShutdownWSurf(void)
 {
 	g_WSurfProgramTable.clear();
 
-	R_ClearDecalCache();
-	R_ClearDetailTextureCache();
-
-	R_ClearWorldSurfaceModels();
-	R_ClearWorldSurfaceWorldModels();
-
-	R_FreeLightmapTextures();
-
-	R_ClearBSPEntities();
+	R_FreeWorldResources();
 
 	R_FreeSceneUBO();
 }
