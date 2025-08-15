@@ -43,6 +43,11 @@ public:
 		Wait for all tasks to complete
 	*/
 	virtual void WaitForAllTasksToComplete() = 0;
+
+	/*
+		Check if we are the creator thread
+	*/
+	virtual bool IsCurrentThreadCreatorThread() const = 0;
 };
 
 class IUtilThreadTaskFactory : public IBaseInterface

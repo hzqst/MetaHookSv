@@ -1,6 +1,7 @@
 ﻿#include <list>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include "ThreadedTask.h"
 
 class CThreadedTaskScheduler : public IThreadedTaskScheduler
@@ -8,8 +9,14 @@ class CThreadedTaskScheduler : public IThreadedTaskScheduler
 private:
 	std::recursive_mutex m_mutex;
 	std::list<IThreadedTask*>m_tasks;
+	std::thread::id m_thread_id;
 
 public:
+
+	CThreadedTaskScheduler()
+	{
+		m_thread_id = std::this_thread::get_id();
+	}
 
 	~CThreadedTaskScheduler()
 	{
@@ -85,11 +92,20 @@ public:
 
 	void WaitForAllTasksToComplete() override
 	{
-		while (1)
+		std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
+		for (auto itor = m_tasks.begin(); itor != m_tasks.end(); )
 		{
-			if (!RunTask(FLT_MAX))
-				return;
+			auto pTask = (*itor);
+
+			pTask->Run(FLT_MAX);
 		}
+		m_tasks.clear();
+	}
+
+	bool IsCurrentThreadCreatorThread() const override
+	{
+		return std::this_thread::get_id() == m_thread_id;
 	}
 };
 
