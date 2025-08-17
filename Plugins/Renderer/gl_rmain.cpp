@@ -197,6 +197,9 @@ bool r_draw_hasoutline = false;
 bool r_draw_shadowcaster = false;
 bool r_draw_shadowscene = false;
 
+bool r_draw_previewmodel = false;
+bool r_draw_viewmodel = false;
+
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_gammablend = false;
@@ -228,6 +231,7 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterSurfaceFBO = { 0 };
+FBO_Container_t s_ViewModelFBO = { 0 };
 
 FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
@@ -341,6 +345,8 @@ cvar_t* r_leaf_lazy_load = NULL;
 
 cvar_t* r_studio_lazy_load = NULL;
 
+cvar_t* r_viewmodel_debug = NULL;
+
 cvar_t* r_wsurf_parallax_scale = NULL;
 cvar_t* r_wsurf_sky_fog = NULL;
 cvar_t* r_wsurf_zprepass = NULL;
@@ -419,25 +425,6 @@ bool R_IsRenderingRefractView(void)
 }
 
 /*
-	Purpose: Check if we are rendering viewmodel
-*/
-
-bool R_IsRenderingViewModel(void)
-{
-	return (*currententity) == cl_viewent;
-}
-
-bool R_IsRenderingFlippedViewModel(void)
-{
-	if (cl_righthand && cl_righthand->value > 0)
-	{
-		return R_IsRenderingViewModel();
-	}
-
-	return false;
-}
-
-/*
 	Purpose : Check if we are rendering Portal Pass
 */
 
@@ -468,6 +455,41 @@ bool R_IsRenderingClippedLowerBody(void)
 bool R_IsRenderingFirstPersonView()
 {
 	return !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && !(*envmap) && (*cl_viewentity) <= r_params.maxclients;
+}
+
+/*
+	Purpose: Check if we are rendering pre-viewmodel pass
+*/
+
+bool R_IsRenderingPreViewModel()
+{
+	return r_draw_previewmodel;
+}
+
+/*
+	Purpose: Check if we are rendering viewmodel pass
+*/
+
+bool R_IsRenderingViewModel()
+{
+	return r_draw_viewmodel;
+}
+
+/*
+	Purpose: Check if we are rendering viewmodel
+*/
+
+bool R_IsRenderingFlippedViewModel(void)
+{
+	if (R_IsRenderingPreViewModel() || R_IsRenderingViewModel())
+	{
+		if (cl_righthand && (int)cl_righthand->value > 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool R_ShouldDrawViewModel()
@@ -1994,7 +2016,7 @@ void R_AddTEntity(cl_entity_t *ent)
 
 	if ((*numTransObjs) >= (*maxTransObjs))
 	{
-		g_pMetaHookAPI->SysError("R_AddTEntity: Too many objects");
+		Sys_Error("R_AddTEntity: Too many objects");
 		return;
 	}
 
@@ -2368,6 +2390,7 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterSurfaceFBO);
+	GL_FreeFBO(&s_ViewModelFBO);
 }
 
 void GL_GenerateFrameBuffers(void)
@@ -2384,7 +2407,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_FinalBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize FinalBufferFBO!\n");
+		Sys_Error("Failed to initialize FinalBufferFBO!\n");
 	}
 
 	s_BackBufferFBO.iWidth = glwidth;
@@ -2396,7 +2419,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO!\n");
+		Sys_Error("Failed to initialize BackBufferFBO!\n");
 	}
 
 	s_BackBufferFBO2.iWidth = glwidth;
@@ -2408,7 +2431,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
-		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO2!\n");
+		Sys_Error("Failed to initialize BackBufferFBO2!\n");
 	}
 
 	s_BackBufferFBO3.iWidth = glwidth;
@@ -2420,7 +2443,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO3);
-		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO3!\n");
+		Sys_Error("Failed to initialize BackBufferFBO3!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -2438,7 +2461,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_GBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize GBuffer framebuffer.\n");
+		Sys_Error("Failed to initialize GBuffer framebuffer.\n");
 	}
 
 	s_DepthLinearFBO.iWidth = glwidth;
@@ -2449,7 +2472,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_DepthLinearFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize DepthLinear framebuffer!\n");
+		Sys_Error("Failed to initialize DepthLinear framebuffer!\n");
 	}
 
 	s_HBAOCalcFBO.iWidth = glwidth;
@@ -2460,7 +2483,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_HBAOCalcFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize HBAOCalc framebuffer.\n");
+		Sys_Error("Failed to initialize HBAOCalc framebuffer.\n");
 	}
 
 	//Framebuffers that bind no texture
@@ -2468,6 +2491,18 @@ void GL_GenerateFrameBuffers(void)
 
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_WaterSurfaceFBO);
+
+	s_ViewModelFBO.iWidth = glwidth;
+	s_ViewModelFBO.iHeight = glheight;
+	GL_GenFrameBuffer(&s_ViewModelFBO);
+	GL_FrameBufferColorTexture(&s_ViewModelFBO, GL_RGBA8);
+	GL_FrameBufferDepthTexture(&s_ViewModelFBO, GL_DEPTH24_STENCIL8);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		GL_FreeFBO(&s_ViewModelFBO);
+		Sys_Error("Failed to initialize ViewModel framebuffer.\n");
+	}
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -2487,7 +2522,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_DownSampleFBO[i]);
-			g_pMetaHookAPI->SysError("Failed to initialize DownSample #%d framebuffer.\n", i);
+			Sys_Error("Failed to initialize DownSample #%d framebuffer.\n", i);
 		}
 	}
 
@@ -2514,7 +2549,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_LuminFBO[i]);
-			g_pMetaHookAPI->SysError("Failed to initialize Luminance #%d framebuffer.\n", i);
+			Sys_Error("Failed to initialize Luminance #%d framebuffer.\n", i);
 		}
 
 		downW >>= 2;
@@ -2536,7 +2571,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_Lumin1x1FBO[i]);
-			g_pMetaHookAPI->SysError("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
+			Sys_Error("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
 		}
 	}
 
@@ -2550,7 +2585,7 @@ void GL_GenerateFrameBuffers(void)
 
 	{
 		GL_FreeFBO(&s_BrightPassFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize BrightPass framebuffer.\n");
+		Sys_Error("Failed to initialize BrightPass framebuffer.\n");
 	}
 
 	//Blur FBO
@@ -2570,7 +2605,7 @@ void GL_GenerateFrameBuffers(void)
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
 				GL_FreeFBO(&s_BlurPassFBO[i][j]);
-				g_pMetaHookAPI->SysError("Failed to initialize Blur #%d framebuffer.\n", i);
+				Sys_Error("Failed to initialize Blur #%d framebuffer.\n", i);
 			}
 		}
 		downW >>= 1;
@@ -2584,7 +2619,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightAccumFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize BrightAccumulate #%d framebuffer.\n");
+		Sys_Error("Failed to initialize BrightAccumulate #%d framebuffer.\n");
 	}
 
 	s_ToneMapFBO.iWidth = glwidth;
@@ -2893,10 +2928,19 @@ void R_PostRenderView()
 
 void R_PreDrawViewModel(void)
 {
-	(*currententity) = cl_viewent;
-
 	if (!R_ShouldDrawViewModel())
 		return;
+
+	(*currententity) = cl_viewent;
+
+	auto currentRenderingFBO = GL_GetCurrentRenderingFBO();
+	GL_BindFrameBuffer(&s_ViewModelFBO);
+
+	vec4_t clearcolor = { 0, 0, 0, 0 };
+	GL_ClearColor(clearcolor);
+	GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+	r_draw_previewmodel = true;
 
 	switch ((*currententity)->model->type)
 	{
@@ -2919,11 +2963,15 @@ void R_PreDrawViewModel(void)
 				VectorCopy(ent->origin, (*currententity)->attachment[i]);
 			}
 
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS);
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
+
 		}
 		break;
 	}
 	}
+	r_draw_previewmodel = false;
+
+	GL_BindFrameBuffer(currentRenderingFBO);
 }
 
 void R_DrawViewModel(void)
@@ -2943,7 +2991,9 @@ void R_DrawViewModel(void)
 		return;
 	}
 
-	glDepthRange(0, 0.3);
+	//glDepthRange(0, 0.3);
+
+	r_draw_viewmodel = true;
 
 	switch ((*currententity)->model->type)
 	{
@@ -2986,7 +3036,9 @@ void R_DrawViewModel(void)
 	}
 	}
 
-	glDepthRange(0, 1);
+	r_draw_viewmodel = false;
+
+	//glDepthRange(0, 1);
 
 	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -3033,7 +3085,7 @@ void R_RenderView_SvEngine(int viewIdx)
 	{
 		if (!r_worldentity->model || !(*cl_worldmodel))
 		{
-			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
+			Sys_Error("R_RenderView: NULL worldmodel");
 		}
 
 		R_PreRenderView();
@@ -3353,6 +3405,8 @@ void R_InitCvars(void)
 	*/
 	r_studio_lazy_load = gEngfuncs.pfnRegisterVariable("r_studio_lazy_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	r_viewmodel_debug = gEngfuncs.pfnRegisterVariable("r_viewmodel_debug", "0", FCVAR_CLIENTDLL );
+
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
 }
@@ -3428,7 +3482,7 @@ void R_NewMap(void)
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
 	if (!model || !model->nodes)
-		g_pMetaHookAPI->SysError("Mod_PointInLeaf: bad model");
+		Sys_Error("Mod_PointInLeaf: bad model");
 
 	auto basenode = (mbasenode_t *)model->nodes;
 

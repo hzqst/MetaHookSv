@@ -1412,6 +1412,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
 			defs << "#define LEGACY_ELIGHT_ENABLED\n";
 
+		if (state & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
+			defs << "#define CLIP_VIEW_MODEL_PIXEL_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -1846,6 +1849,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
+{ STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED	,"STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED"		},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2836,50 +2840,6 @@ void R_StudioDrawMesh_DrawPass(
 		}
 	}
 
-	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
-	{
-		//Texture unit 6 = Stencil texture
-		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
-		{
-			if (s_BackBufferFBO2.s_hBackBufferStencilView)
-			{
-				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
-				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
-				glActiveTexture(GL_TEXTURE0);
-
-				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
-			}
-		}
-	}
-
-	if (StudioProgramState & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
-	{
-		//Texture unit 6 = Stencil texture
-		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
-		{
-			if (s_BackBufferFBO2.s_hBackBufferStencilView)
-			{
-				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
-				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
-				glActiveTexture(GL_TEXTURE0);
-
-				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
-			}
-		}
-		if (!(StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED))
-		{
-			//Texture unit 8 = Shadow diffuse texture
-			if (s_BackBufferFBO2.s_hBackBufferTex)
-			{
-				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_SHADOW_DIFFUSE);
-				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
-				glActiveTexture(GL_TEXTURE0);
-
-				StudioProgramState |= STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED;
-			}
-		}
-	}
-
 	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode == kRenderTransAdd )
 	{
 		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
@@ -2893,6 +2853,16 @@ void R_StudioDrawMesh_DrawPass(
 	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.renderamt < 255)
 	{
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+	}
+
+	if (R_IsRenderingPreViewModel() && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
+	{
+		return;
+	}
+
+	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
+	{
+		StudioProgramState |= STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED;
 	}
 
 	if ((int)r_studio_legacy_dlight->value >= 2)
@@ -2978,6 +2948,63 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_DEBUG_ENABLED;
 	}
 
+	//Bind texture here
+
+	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+	{
+		//Texture unit 6 = Stencil texture
+		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+		{
+			if (s_BackBufferFBO2.s_hBackBufferStencilView)
+			{
+				glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_STENCIL);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+				glActiveTexture(GL_TEXTURE0);
+
+				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
+			}
+		}
+	}
+
+	if (StudioProgramState & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
+	{
+		//Texture unit 6 = Stencil texture
+		if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+		{
+			if (s_BackBufferFBO2.s_hBackBufferStencilView)
+			{
+				glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_STENCIL);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+				glActiveTexture(GL_TEXTURE0);
+
+				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
+			}
+		}
+		if (!(StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED))
+		{
+			//Texture unit 7 = Shadow diffuse texture
+			if (s_BackBufferFBO2.s_hBackBufferTex)
+			{
+				glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
+				glActiveTexture(GL_TEXTURE0);
+
+				StudioProgramState |= STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED;
+			}
+		}
+	}
+
+	if (StudioProgramState & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
+	{
+		if (s_ViewModelFBO.s_hBackBufferStencilView)
+		{
+			//Texture unit 8 = viewmodel stencil texture
+			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL);
+			glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
+			glActiveTexture(GL_TEXTURE0);
+		}
+	}
+
 	CStudioSetupSkinContext Context(&StudioProgramState);
 
 	if (r_fullbright->value >= 2)
@@ -3055,7 +3082,10 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		if (r_draw_opaque)
 		{
-			int iStencilRef = STENCIL_MASK_WORLD;
+			int iStencilRef =  STENCIL_MASK_WORLD;
+
+			if (R_IsRenderingPreViewModel())
+				iStencilRef |= STENCIL_MASK_VIEW_MODEL;
 
 			if (r_draw_hasoutline)
 				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
@@ -3069,13 +3099,16 @@ void R_StudioDrawMesh_DrawPass(
 		{
 			int iStencilRef = 0;
 
+			if (R_IsRenderingPreViewModel())
+				iStencilRef |= STENCIL_MASK_VIEW_MODEL;
+
 			if (r_draw_hasoutline)
 				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
 
 			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 
-			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_HAS_OUTLINE | STENCIL_MASK_HAS_FLATSHADE);
+			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_HAS_OUTLINE | STENCIL_MASK_HAS_FLATSHADE | STENCIL_MASK_VIEW_MODEL);
 		}
 	}
 
@@ -3170,24 +3203,28 @@ void R_StudioDrawMesh_DrawPass(
 
 	//Restore texture state
 
-	if (StudioProgramState & STUDIO_NORMALTEXTURE_ENABLED)
+	if (StudioProgramState & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
 	{
-		//Texture unit 2 = Normal texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
+		//Texture unit 8 = Texture stencil texture
+		if (s_ViewModelFBO.s_hBackBufferStencilView)
+		{
+			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL);
+			glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
+			glActiveTexture(GL_TEXTURE0);
+		}
+	}
+
+	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
+	{
+		//Texture unit 7 = Shadow Diffuse texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (StudioProgramState & STUDIO_PARALLAXTEXTURE_ENABLED)
+	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
 	{
-		//Texture unit 3 = Parallax texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_PARALLAX);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-
-	if (StudioProgramState & STUDIO_SPECULARTEXTURE_ENABLED)
-	{
-		//Texture unit 4 = Specular texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
+		//Texture unit 6 = Animated texture 
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
@@ -3198,17 +3235,24 @@ void R_StudioDrawMesh_DrawPass(
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
+	if (StudioProgramState & STUDIO_SPECULARTEXTURE_ENABLED)
 	{
-		//Texture unit 6 = Animated texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		//Texture unit 4 = Specular texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
+	if (StudioProgramState & STUDIO_PARALLAXTEXTURE_ENABLED)
 	{
-		//Texture unit 7 = Shadow Diffuse texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE);
+		//Texture unit 3 = Parallax texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_PARALLAX);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	if (StudioProgramState & STUDIO_NORMALTEXTURE_ENABLED)
+	{
+		//Texture unit 2 = Normal texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
@@ -3970,7 +4014,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingPreViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnSetupBones(pthis, dummy);
 		return;
@@ -4006,7 +4050,7 @@ __forceinline void StudioSaveBones_Template(CallType pfnSaveBones, void* pthis =
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingPreViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnSaveBones(pthis, dummy);
 		return;
@@ -4043,7 +4087,7 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 	}
 
 	//Never cache bones for viewmodel !
-	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingLowerBody())
+	if (!r_studio_bone_caches->value || R_IsRenderingViewModel() || R_IsRenderingPreViewModel() || R_IsRenderingLowerBody())
 	{
 		pfnMergeBones(pthis, dummy, pSubModel);
 		return;

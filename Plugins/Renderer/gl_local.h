@@ -247,6 +247,7 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterSurfaceFBO;
+extern FBO_Container_t s_ViewModelFBO;
 
 extern FBO_Container_t* g_CurrentSceneFBO;
 extern FBO_Container_t *g_CurrentRenderingFBO;
@@ -345,6 +346,8 @@ extern cvar_t* r_detailskytextures;
 extern cvar_t* r_leaf_lazy_load;
 
 extern cvar_t* r_studio_lazy_load;
+
+extern cvar_t* r_viewmodel_debug;
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
@@ -555,13 +558,14 @@ bool R_IsRenderingShadowView(void);
 bool R_IsRenderingWaterView(void);
 bool R_IsRenderingReflectView(void);
 bool R_IsRenderingRefractView(void);
-bool R_IsRenderingViewModel(void);
-bool R_IsRenderingFlippedViewModel(void);
 bool R_IsLowerBodyEntity(cl_entity_t* ent);
 bool R_IsRenderingLowerBody(void);
 bool R_IsRenderingClippedLowerBody(void);
 bool R_IsRenderingPortal(void);
 bool R_IsRenderingFirstPersonView();
+bool R_IsRenderingPreViewModel();
+bool R_IsRenderingViewModel();
+bool R_IsRenderingFlippedViewModel(void);
 
 bool R_IsDeferredRenderingEnabled(void);
 

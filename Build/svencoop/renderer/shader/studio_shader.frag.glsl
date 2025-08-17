@@ -9,6 +9,7 @@ layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
 layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
 layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
+layout(binding = STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL) uniform usampler2D viewmodelStencilTex;
 
 /* celshade */
 
@@ -478,7 +479,7 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
     return dirAtten * pow(sinTH, exponent);
 }
 
-vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask)
+vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask, vec2 screenTexCoord)
 {
 	vec3 N = normalWS;
 
@@ -519,8 +520,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 	litOrShadowArea = mix(0.5, 1.0, litOrShadowArea);
 
-	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
-	uint stencilValue = texture(stencilTex, screenTexCoord).r;
+	uint stencilValue = LoadStencilValueFromStencilTexture(stencilTex, screenTexCoord);
 
    	if((stencilValue & STENCIL_MASK_HAS_SHADOW) == STENCIL_MASK_HAS_SHADOW)
     {
@@ -727,12 +727,11 @@ bool IsBoneClipped(uint boneindex)
 
 #endif
 
-vec4 R_CelshadeShadowDiffuseColor(vec4 diffuseColor)
+vec4 R_CelshadeShadowDiffuseColor(vec4 diffuseColor, vec2 screenTexCoord)
 {
-	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 	vec4 shadowDiffuseColor = texture(shadowDiffuseTex, screenTexCoord);
 
-	uint stencilValue = texture(stencilTex, screenTexCoord).r;
+	uint stencilValue = LoadStencilValueFromStencilTexture(stencilTex, screenTexCoord);
 
 	if((stencilValue & STENCIL_MASK_HAS_FACE) == STENCIL_MASK_HAS_FACE)
 	{
@@ -764,6 +763,10 @@ void main(void)
 	float flNormalMask = 0.0;
 
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
+	
+	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
+
+	//ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
 
 	vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 
@@ -772,11 +775,21 @@ void main(void)
 			discard;
 	#endif
 
+	#if defined(CLIP_VIEW_MODEL_PIXEL_ENABLED)
+
+		uint stencilValue = LoadStencilValueFromStencilTexture(viewmodelStencilTex, screenTexCoord);
+
+		if ((stencilValue & STENCIL_MASK_VIEW_MODEL) == STENCIL_MASK_VIEW_MODEL)
+		{
+			diffuseColor.r = 1.0;
+		}
+	#endif
+
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
 	#if (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H)) && defined(SHADOW_DIFFUSE_TEXTURE_ENABLED)
 
-		diffuseColor = R_CelshadeShadowDiffuseColor(diffuseColor);
+		diffuseColor = R_CelshadeShadowDiffuseColor(diffuseColor, screenTexCoord);
 
 	#endif
 
@@ -826,7 +839,7 @@ void main(void)
 		vec3 linearLightColor = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
 
 		#if defined(STUDIO_NF_CELSHADE)
-			linearLightColor = R_StudioCelShade(linearLightColor, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x);
+			linearLightColor = R_StudioCelShade(linearLightColor, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x, screenTexCoord);
 		#endif
 
 		#if defined(GAMMA_BLEND_ENABLED)

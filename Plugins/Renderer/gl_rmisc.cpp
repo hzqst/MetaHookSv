@@ -605,7 +605,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 	glTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH32F_STENCIL8)
 	{
 		glTexStorage2D(tex2D, 1, iInternalFormat, s->iWidth, s->iHeight);
 	}
@@ -617,7 +617,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 			glTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	}
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH32F_STENCIL8)
 	{
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 	}
@@ -635,6 +635,17 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		s->s_hBackBufferStencilView = GL_GenTexture();
 		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
 		
+		glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
+		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	else if (iInternalFormat == GL_DEPTH32F_STENCIL8 && glTextureView)
+	{
+		s->s_hBackBufferStencilView = GL_GenTexture();
+		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
+
 		glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
 		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
