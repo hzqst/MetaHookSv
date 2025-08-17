@@ -2996,7 +2996,7 @@ void R_DrawViewModel(void)
 		return;
 	}
 
-	//glDepthRange(0, 0.3);
+	//glDepthRange(0, 0.3f);
 
 	r_draw_viewmodel = true;
 
