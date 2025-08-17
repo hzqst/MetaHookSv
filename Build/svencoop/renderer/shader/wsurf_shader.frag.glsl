@@ -293,6 +293,8 @@ float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
 void main()
 {
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+	
+	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
 	ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
 
