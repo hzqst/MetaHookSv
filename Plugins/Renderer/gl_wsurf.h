@@ -245,6 +245,8 @@ public:
 	cached_decal_t		vCachedDecals[MAX_DECALS]{};
 
 	std::vector<model_t *> vWorldModels;
+
+	std::shared_ptr<CWorldSurfaceLeaf> pCurrentWorldLeaf;
 };
 
 typedef struct

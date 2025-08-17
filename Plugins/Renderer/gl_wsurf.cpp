@@ -2949,6 +2949,12 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			pLeaf = pModel->GetLeafByIndex(leafIndex);
 		}
 
+		if (pLeaf && !pLeaf->hABO && g_WorldSurfaceRenderer.pCurrentWorldLeaf)
+		{
+			//Use previous leaf when current leaf not available
+			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf;
+		}
+
 		if (pLeaf && pLeaf->hABO)
 		{
 			if (R_IsRenderingWaterView())
@@ -3020,6 +3026,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 				{
 					glDepthFunc(GL_LEQUAL);
 				}
+
+				g_WorldSurfaceRenderer.pCurrentWorldLeaf = pLeaf;
 			}
 		}
 	}
@@ -3082,6 +3090,8 @@ void R_InitWSurf(void)
 
 void R_FreeWorldResources(void)
 {
+	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
+
 	R_ClearDecalCache();
 	R_ClearDetailTextureCache();
 

@@ -4981,6 +4981,8 @@ void R_DumpTextures_f(void)
 
 void Mod_ClearModel(void)
 {
+	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
+
 	for (int i = 0;i < EngineGetMaxKnownModel(); i++)
 	{
 		auto mod = EngineGetModelByIndex(i);
