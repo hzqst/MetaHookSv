@@ -2942,6 +2942,8 @@ void R_PreDrawViewModel(void)
 
 	glColorMask(0, 0, 0, 0);
 
+	glDepthRange(0, 0.3f);
+
 	r_draw_previewmodel = true;
 
 	switch ((*currententity)->model->type)
@@ -2974,6 +2976,8 @@ void R_PreDrawViewModel(void)
 	}
 	r_draw_previewmodel = false;
 
+	glDepthRange(0, 1);
+
 	glColorMask(1, 1, 1, 1);
 
 	GL_BindFrameBuffer(currentRenderingFBO);
@@ -2996,7 +3000,7 @@ void R_DrawViewModel(void)
 		return;
 	}
 
-	//glDepthRange(0, 0.3f);
+	glDepthRange(0, 0.3f);
 
 	r_draw_viewmodel = true;
 
@@ -3043,7 +3047,7 @@ void R_DrawViewModel(void)
 
 	r_draw_viewmodel = false;
 
-	//glDepthRange(0, 1);
+	glDepthRange(0, 1);
 
 	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

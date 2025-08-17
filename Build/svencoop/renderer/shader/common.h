@@ -142,6 +142,7 @@
 #define WSURF_BIND_LIGHTMAP_TEXTURE_1 7
 #define WSURF_BIND_LIGHTMAP_TEXTURE_2 8
 #define WSURF_BIND_LIGHTMAP_TEXTURE_3 9
+#define WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL 10
 
 #define DSHADE_BIND_DIFFUSE_TEXTURE			0
 #define DSHADE_BIND_LIGHTMAP_TEXTURE		1
@@ -668,6 +669,10 @@ vec4 ProcessLinearBlendShift(vec4 color)
 
 	void ClipPlaneTest(vec3 worldpos, vec3 normal)
 	{
+		#if defined(SKYBOX_ENABLED)
+		return;
+		#endif
+
 		#if defined(CLIP_WATER_ENABLED)
 
 			vec4 clipVec = vec4(worldpos.xyz, 1.0);

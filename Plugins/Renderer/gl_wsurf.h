@@ -399,3 +399,4 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 #define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
 #define WSURF_ALPHA_SOLID_ENABLED			0x200000000ull
 #define WSURF_LINEAR_FOG_SHIFT_ENABLED		0x400000000ull
+#define WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED	0x800000000ull

@@ -174,6 +174,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
 { WSURF_ALPHA_SOLID_ENABLED			,"WSURF_ALPHA_SOLID_ENABLED"},
 { WSURF_LINEAR_FOG_SHIFT_ENABLED	,"WSURF_LINEAR_FOG_SHIFT_ENABLED"},
+{ WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED	,"WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -299,6 +300,9 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_ALPHA_SOLID_ENABLED)
 			defs << "#define ALPHA_SOLID_ENABLED\n";
+
+		if (state & WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED)
+			defs << "#define CLIP_VIEW_MODEL_PIXEL_ENABLED\n";
 
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
@@ -2228,6 +2232,11 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
+	{
+		WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
+	}
+
 	R_DrawWorldSurfaceLeafBegin(pLeaf, (1 << WSURF_VBO_POSITION));
 
 	wsurf_program_t prog = { 0 };
@@ -2363,6 +2372,11 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
+		}
+
+		if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
+		{
+			WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
 		}
 
 		if (!R_IsRenderingGBuffer())
@@ -2635,6 +2649,11 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
+		if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
+		{
+			WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
+		}
+
 		if (!R_IsRenderingGBuffer())
 		{
 			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
@@ -2779,6 +2798,11 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
 	{
 		WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
+	}
+
+	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
+	{
+		WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
 	}
 
 	if ((int)r_wsurf_sky_fog->value >= 1)
@@ -2932,6 +2956,13 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		}
 	}
 
+	if (s_ViewModelFBO.s_hBackBufferStencilView)
+	{
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL);
+		glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
+		glActiveTexture(GL_TEXTURE0);
+	}
+
 	bool bUseZPrePass = false;
 
 	std::shared_ptr<CWorldSurfaceLeaf> pLeaf;
@@ -3052,6 +3083,13 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	R_DrawDecals(ent);
 
 	GL_ClearStencil(STENCIL_MASK_HAS_DECAL);
+
+	if (s_ViewModelFBO.s_hBackBufferStencilView)
+	{
+		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE0);
+	}
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
