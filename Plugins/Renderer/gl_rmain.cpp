@@ -2940,6 +2940,8 @@ void R_PreDrawViewModel(void)
 	GL_ClearColor(clearcolor);
 	GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
+	glColorMask(0, 0, 0, 0);
+
 	r_draw_previewmodel = true;
 
 	switch ((*currententity)->model->type)
@@ -2948,28 +2950,31 @@ void R_PreDrawViewModel(void)
 	{
 		if (!(*cl_weaponstarttime))
 			(*cl_weaponstarttime) = (*cl_time);
+		
+		hud_player_info_t hudPlayerInfo;
+		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
 
 		(*currententity)->curstate.sequence = (*cl_weaponsequence);
 		(*currententity)->curstate.frame = 0;
 		(*currententity)->curstate.framerate = 1;
 		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
+		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
 
-		if (!gExportfuncs.CL_IsThirdPerson() && !chase_active->value && !(*envmap) && cl_stats[0] > 0)
+		auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
+
+		for (int i = 0; i < 4; i++)
 		{
-			auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
-
-			for (int i = 0; i < 4; i++)
-			{
-				VectorCopy(ent->origin, (*currententity)->attachment[i]);
-			}
-
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
-
+			VectorCopy(ent->origin, (*currententity)->attachment[i]);
 		}
+
+		(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
+
 		break;
 	}
 	}
 	r_draw_previewmodel = false;
+
+	glColorMask(1, 1, 1, 1);
 
 	GL_BindFrameBuffer(currentRenderingFBO);
 }
@@ -3089,12 +3094,6 @@ void R_RenderView_SvEngine(int viewIdx)
 		}
 
 		R_PreRenderView();
-
-		if (!(*r_refdef.onlyClientDraws))
-		{
-			//Allocate TEMPENT here
-			R_PreDrawViewModel();
-		}
 
 		R_RenderScene();
 
@@ -4293,6 +4292,9 @@ void R_RenderScene(void)
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
+		//Allocate TEMPENT here
+		R_PreDrawViewModel();
+
 		R_DrawWorld();
 		S_ExtraUpdate();
 		R_DrawEntitiesOnList();

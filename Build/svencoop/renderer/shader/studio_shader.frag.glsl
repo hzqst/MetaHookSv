@@ -766,23 +766,13 @@ void main(void)
 	
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
-	//ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
+	ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
 
 	vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 
 	#if defined(STUDIO_NF_MASKED)
 		if(diffuseColor.a < 0.5)
 			discard;
-	#endif
-
-	#if defined(CLIP_VIEW_MODEL_PIXEL_ENABLED)
-
-		uint stencilValue = LoadStencilValueFromStencilTexture(viewmodelStencilTex, screenTexCoord);
-
-		if ((stencilValue & STENCIL_MASK_VIEW_MODEL) == STENCIL_MASK_VIEW_MODEL)
-		{
-			diffuseColor.r = 1.0;
-		}
 	#endif
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
