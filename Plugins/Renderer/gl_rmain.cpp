@@ -4920,7 +4920,7 @@ bool StudioGetActivityType(model_t* mod, entity_state_t* entstate, StudioAnimAct
 
 void R_CreateLowerBodyModel()
 {
-	if (r_drawlowerbody->value < 1)
+	if ((int)r_drawlowerbody->value < 1)
 		return;
 
 	auto LocalPlayer = gEngfuncs.GetLocalPlayer();
@@ -4936,6 +4936,10 @@ void R_CreateLowerBodyModel()
 	auto pitch = (*r_refdef.viewangles)[0] * -1;
 
 	if (pitch > r_drawlowerbodypitch->value)
+		return;
+
+	//Don't draw lowerbody on death
+	if (cl_stats[0] <= 0)
 		return;
 
 	memcpy(&LocalPlayer->curstate, state, sizeof(*state));
