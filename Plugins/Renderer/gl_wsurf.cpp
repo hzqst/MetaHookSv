@@ -2980,10 +2980,10 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			pLeaf = pModel->GetLeafByIndex(leafIndex);
 		}
 
-		if (pLeaf && !pLeaf->hABO && g_WorldSurfaceRenderer.pCurrentWorldLeaf)
+		if (pLeaf && !pLeaf->hABO)
 		{
 			//Use previous leaf when current leaf not available
-			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf;
+			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf.lock();
 		}
 
 		if (pLeaf && pLeaf->hABO)
