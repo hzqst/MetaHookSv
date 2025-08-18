@@ -2939,6 +2939,8 @@ void R_PreDrawViewModel(void)
 
 	if (R_ShouldDrawViewModel())
 	{
+		R_SetupGLForViewModel();
+
 		glColorMask(0, 0, 0, 0);
 
 		glDepthRange(0, 0.3f);
@@ -2996,6 +2998,8 @@ void R_DrawViewModel(void)
 
 	if (R_ShouldDrawViewModel())
 	{
+		R_SetupGLForViewModel();
+
 		glDepthRange(0, 0.3f);
 
 		r_draw_viewmodel = true;
@@ -3105,7 +3109,6 @@ void R_RenderView_SvEngine(int viewIdx)
 
 		if (!(*r_refdef.onlyClientDraws))
 		{
-			R_SetupGLForViewModel();
 			R_DrawViewModel();
 		}
 
@@ -3680,30 +3683,33 @@ float R_GetDefaultFOV()
 
 void R_AdjustScopeFOVForViewModel(float *fov)
 {
-	if (!g_bIsCounterStrike)
+	if (viewmodel_fov->value > 0)
 	{
-		if (default_fov && fabs(viewmodel_fov->value - default_fov->value) > 1)
+		if (!g_bIsCounterStrike)
 		{
-			*fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
+			if (default_fov && fabs(viewmodel_fov->value - default_fov->value) > 1)
+			{
+				*fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
 
-			if (*fov < 15.0f)
-				*fov = 15.0f;
+				if (*fov < 15.0f)
+					*fov = 15.0f;
 
-			if (*fov < 1.0f || *fov > 179.0f)
-				*fov = 90.0f;
+				if (*fov < 1.0f || *fov > 179.0f)
+					*fov = 90.0f;
+			}
 		}
-	}
-	else
-	{
-		if (fabs(viewmodel_fov->value - 90.0f) > 1)
+		else
 		{
-			*fov = (*scrfov) * viewmodel_fov->value / 90.0f;
+			if (fabs(viewmodel_fov->value - 90.0f) > 1)
+			{
+				*fov = (*scrfov) * viewmodel_fov->value / 90.0f;
 
-			if (*fov < 15.0f)
-				*fov = 15.0f;
+				if (*fov < 15.0f)
+					*fov = 15.0f;
 
-			if (*fov < 1.0f || *fov > 179.0f)
-				*fov = 90.0f;
+				if (*fov < 1.0f || *fov > 179.0f)
+					*fov = 90.0f;
+			}
 		}
 	}
 }
@@ -3734,7 +3740,7 @@ void R_UploadProjMatrixForViewModel(void)
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, invProjMatrix), sizeof(mat4), &CameraUBO.invProjMatrix);
 }
 
-void R_LoadProjMatrixForWorld(void)
+void R_UploadProjMatrixForWorld(void)
 {
 	camera_ubo_t CameraUBO;
 	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
@@ -3746,55 +3752,52 @@ void R_LoadProjMatrixForWorld(void)
 
 void R_SetupGLForViewModel(void)
 {
-	if (!CL_IsDevOverviewMode() && viewmodel_fov->value > 0)
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	if (r_vertical_fov->value > 0)
 	{
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-	
-		if (r_vertical_fov->value)
-		{
-			auto height = (double)(*r_refdef.vrect).height;
-			auto width = (double)(*r_refdef.vrect).width;
-			auto aspect = height / width;
+		auto height = (double)(*r_refdef.vrect).height;
+		auto width = (double)(*r_refdef.vrect).width;
+		auto aspect = height / width;
 
-			auto fov = viewmodel_fov->value;
-			if (fov < 1.0 || fov > 179.0)
-				fov = 90.0;
+		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
 
-			R_AdjustScopeFOVForViewModel(&fov);
+		R_AdjustScopeFOVForViewModel(&fov);
 
-			r_yfov_viewmodel = fov;
-			r_xfov_viewmodel = V_CalcFovV(fov, width, height);
+		r_yfov_viewmodel = fov;
+		r_xfov_viewmodel = V_CalcFovV(fov, width, height);
 
-			V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
-		}
-		else
-		{
-			auto width = (double)(*r_refdef.vrect).width;
-			auto height = (double)(*r_refdef.vrect).height;
-			auto aspect = width / height;
-
-			auto fov = viewmodel_fov->value;
-			if (fov < 1.0 || fov > 179.0)
-				fov = 90.0;
-
-			R_AdjustScopeFOVForViewModel(&fov);
-
-			r_xfov_viewmodel = fov;
-			r_yfov_viewmodel = V_CalcFovH(fov, width, height);
-
-			V_AdjustFovH(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
-		}
-
-		glGetFloatv(GL_PROJECTION_MATRIX, r_viewmodel_projection_matrix);
-		glMatrixMode(GL_MODELVIEW);
-
-		InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
-
-		R_UploadProjMatrixForViewModel();
+		V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 	}
+	else
+	{
+		auto width = (double)(*r_refdef.vrect).width;
+		auto height = (double)(*r_refdef.vrect).height;
+		auto aspect = width / height;
+
+		auto fov = (viewmodel_fov->value > 0) ? (viewmodel_fov->value) : (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
+
+		R_AdjustScopeFOVForViewModel(&fov);
+
+		r_xfov_viewmodel = fov;
+		r_yfov_viewmodel = V_CalcFovH(fov, width, height);
+
+		V_AdjustFovH(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
+	}
+
+	glGetFloatv(GL_PROJECTION_MATRIX, r_viewmodel_projection_matrix);
+	glMatrixMode(GL_MODELVIEW);
+
+	InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
+
+	R_UploadProjMatrixForViewModel();
 }
 
 void R_SetupGL(void)
@@ -4298,8 +4301,11 @@ void R_RenderScene(void)
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
-		//Allocate TEMPENT here
+		//draw stencil here, alloc TEMPENT
 		R_PreDrawViewModel();
+
+		//Restore matrix
+		R_UploadProjMatrixForWorld();
 
 		R_DrawWorld();
 		S_ExtraUpdate();
