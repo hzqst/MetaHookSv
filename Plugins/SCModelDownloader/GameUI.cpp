@@ -319,7 +319,7 @@ public:
 
 	void OnSkipModel(const char * newerVersionModel)
 	{
-
+		SCModelDatabase()->AddSkippedModel(newerVersionModel);
 	}
 
 	vgui::Panel*m_pBasePanel{};
