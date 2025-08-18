@@ -389,6 +389,15 @@ void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_s
 	}
 }
 
+/*
+	Purpose: parse file content like:
+
+	NONE
+	WATER_DEPTH_ENABLED WATER_REFRACT_ENABLED WATER_ALPHA_BLEND_ENABLED WATER_LINEAR_FOG_SHIFT_ENABLED 
+	WATER_UNDERWATER_ENABLED WATER_REFRACT_ENABLED WATER_ALPHA_BLEND_ENABLED 
+
+	into 3 instances of "uint64_t ProgramState", and call "callback" for each of them
+*/
 void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_t *mapping, size_t mapping_size, void(*callback)(program_state_t state))
 {
 	auto FileHandle = FILESYSTEM_ANY_OPEN("renderer/shader/studio_cache.txt", "rt");

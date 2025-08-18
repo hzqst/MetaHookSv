@@ -59,6 +59,8 @@ public:
 	virtual bool IsAllRequiredFilesForModelAvailableCABI(const char* localFileNameBase, bool bHasTModel) = 0;
 	virtual bool BuildQueryVersions() = 0;
 	virtual bool BuildQueryDatabase() = 0;
+	virtual bool IsModelSkipped(const char* modelname) = 0;
+	virtual void AddSkippedModel(const char* modelname) = 0;
 };
 
 ISCModelDatabase* SCModelDatabase();

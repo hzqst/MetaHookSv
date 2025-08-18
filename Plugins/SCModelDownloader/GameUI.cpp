@@ -271,6 +271,9 @@ public:
 
 		if (newerVersionModel)
 		{
+			if(SCModelDatabase()->IsModelSkipped(newerVersionModel))
+				return;
+
 			auto title = vgui::localize()->Find("#GameUI_SCModelDownloader_SwitchtoNewerVersionTitle");
 
 			wchar_t szNewModelName[64] = { 0 };
@@ -292,11 +295,14 @@ public:
 
 			box->SetOKButtonText("#GameUI_OK");
 
-			char szNewCommandName[256]{};
-			snprintf(szNewCommandName, sizeof(szNewCommandName), "SwitchtoNewerVersionModelConfirm_%s", newerVersionModel);
-			box->SetOKCommand(new KeyValues("Command", "command", szNewCommandName));
+			char szOKCommandName[256]{};
+			snprintf(szOKCommandName, sizeof(szOKCommandName), "SwitchtoNewerVersionModelConfirm_%s", newerVersionModel);
+			box->SetOKCommand(new KeyValues("Command", "command", szOKCommandName));
 
-			box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
+			char szCancelCommandName[256]{};
+			snprintf(szCancelCommandName, sizeof(szCancelCommandName), "SkipModel_%s", newerVersionModel);
+			box->SetCancelCommand(new KeyValues("Command", "command", szCancelCommandName));
+			//box->SetCancelCommand(new KeyValues("Command", "command", "ReleaseModalWindow"));
 			box->AddActionSignalTarget(m_pBasePanel);
 			box->DoModal();
 		}
@@ -309,6 +315,11 @@ public:
 		gEngfuncs.pfnClientCmd(cmd);
 
 		SCModelDatabase()->QueryModel(newerVersionModel);
+	}
+
+	void OnSkipModel(const char * newerVersionModel)
+	{
+
 	}
 
 	vgui::Panel*m_pBasePanel{};
@@ -353,6 +364,11 @@ class CVGUI2Extension_TaskBarCallbacks : public IVGUI2Extension_GameUITaskBarCal
 
 		if (!strncmp(command, "SwitchtoNewerVersionModelConfirm_", sizeof("SwitchtoNewerVersionModelConfirm_") - 1)) {
 			s_LocalPlayerModelChangeHandler.OnSwitchtoNewerVersionModelConfirm(command + sizeof("SwitchtoNewerVersionModelConfirm_") - 1);
+			return;
+		}
+
+		if(!strncmp(command, "SkipModel_", sizeof("SkipModel_") - 1)) {
+			s_LocalPlayerModelChangeHandler.OnSkipModel(command + sizeof("SkipModel_") - 1);
 			return;
 		}
 	}

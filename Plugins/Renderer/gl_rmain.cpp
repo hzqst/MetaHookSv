@@ -2928,9 +2928,6 @@ void R_PostRenderView()
 
 void R_PreDrawViewModel(void)
 {
-	if (!R_ShouldDrawViewModel())
-		return;
-
 	(*currententity) = cl_viewent;
 
 	auto currentRenderingFBO = GL_GetCurrentRenderingFBO();
@@ -2940,45 +2937,49 @@ void R_PreDrawViewModel(void)
 	GL_ClearColor(clearcolor);
 	GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-	glColorMask(0, 0, 0, 0);
-
-	glDepthRange(0, 0.3f);
-
-	r_draw_previewmodel = true;
-
-	switch ((*currententity)->model->type)
+	if (R_ShouldDrawViewModel())
 	{
-	case mod_studio:
-	{
-		if (!(*cl_weaponstarttime))
-			(*cl_weaponstarttime) = (*cl_time);
-		
-		hud_player_info_t hudPlayerInfo;
-		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
+		glColorMask(0, 0, 0, 0);
 
-		(*currententity)->curstate.sequence = (*cl_weaponsequence);
-		(*currententity)->curstate.frame = 0;
-		(*currententity)->curstate.framerate = 1;
-		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
-		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
+		glDepthRange(0, 0.3f);
 
-		auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
+		r_draw_previewmodel = true;
 
-		for (int i = 0; i < 4; i++)
+		switch ((*currententity)->model->type)
 		{
-			VectorCopy(ent->origin, (*currententity)->attachment[i]);
+		case mod_studio:
+		{
+			if (!(*cl_weaponstarttime))
+				(*cl_weaponstarttime) = (*cl_time);
+
+			hud_player_info_t hudPlayerInfo;
+			gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
+
+			(*currententity)->curstate.sequence = (*cl_weaponsequence);
+			(*currententity)->curstate.frame = 0;
+			(*currententity)->curstate.framerate = 1;
+			(*currententity)->curstate.animtime = (*cl_weaponstarttime);
+			(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
+
+			auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
+
+			for (int i = 0; i < 4; i++)
+			{
+				VectorCopy(ent->origin, (*currententity)->attachment[i]);
+			}
+
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
+
+			break;
 		}
+		}
+		r_draw_previewmodel = false;
 
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
+		glDepthRange(0, 1);
 
-		break;
+		glColorMask(1, 1, 1, 1);
+
 	}
-	}
-	r_draw_previewmodel = false;
-
-	glDepthRange(0, 1);
-
-	glColorMask(1, 1, 1, 1);
 
 	GL_BindFrameBuffer(currentRenderingFBO);
 }
@@ -2993,64 +2994,65 @@ void R_DrawViewModel(void)
 
 	(*currententity) = cl_viewent;
 
-	if (!R_ShouldDrawViewModel())
+	if (R_ShouldDrawViewModel())
+	{
+		glDepthRange(0, 0.3f);
+
+		r_draw_viewmodel = true;
+
+		switch ((*currententity)->model->type)
+		{
+		case mod_studio:
+		{
+			if (!(*cl_weaponstarttime))
+				(*cl_weaponstarttime) = (*cl_time);
+
+			hud_player_info_t hudPlayerInfo;
+			gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
+
+			(*currententity)->curstate.frame = 0;
+			(*currententity)->curstate.framerate = 1;
+			(*currententity)->curstate.sequence = (*cl_weaponsequence);
+			(*currententity)->curstate.animtime = (*cl_weaponstarttime);
+			(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
+
+			auto c = R_LightPoint((*currententity)->origin);
+
+			if (r_shadows)
+			{
+				auto oldShadows = r_shadows->value;
+				r_shadows->value = 0;
+				(*cl_light_level) = (c.r + c.g + c.b) / 3;
+				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+				r_shadows->value = oldShadows;
+			}
+			else
+			{
+				(*cl_light_level) = (c.r + c.g + c.b) / 3;
+				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+			}
+			break;
+		}
+
+		case mod_brush:
+		{
+			R_DrawBrushModel((*currententity));
+			break;
+		}
+		}
+
+		r_draw_viewmodel = false;
+
+		glDepthRange(0, 1);
+
+		//Valve add this for what? idk we gonna remove this shit when move to core profile
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	}
+	else
 	{
 		auto c = R_LightPoint((*currententity)->origin);
 		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
 	}
-
-	glDepthRange(0, 0.3f);
-
-	r_draw_viewmodel = true;
-
-	switch ((*currententity)->model->type)
-	{
-	case mod_studio:
-	{
-		if (!(*cl_weaponstarttime))
-			(*cl_weaponstarttime) = (*cl_time);
-
-		hud_player_info_t hudPlayerInfo;
-		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
-
-		(*currententity)->curstate.frame = 0;
-		(*currententity)->curstate.framerate = 1;
-		(*currententity)->curstate.sequence = (*cl_weaponsequence);
-		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
-		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
-
-		auto c = R_LightPoint((*currententity)->origin);
-
-		if (r_shadows)
-		{
-			auto oldShadows = r_shadows->value;
-			r_shadows->value = 0;
-			(*cl_light_level) = (c.r + c.g + c.b) / 3;
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-			r_shadows->value = oldShadows;
-		}
-		else
-		{
-			(*cl_light_level) = (c.r + c.g + c.b) / 3;
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-		}
-		break;
-	}
-
-	case mod_brush:
-	{
-		R_DrawBrushModel((*currententity));
-		break;
-	}
-	}
-
-	r_draw_viewmodel = false;
-
-	glDepthRange(0, 1);
-
-	//Valve add this shit for what? idk
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
 void R_ClearPortalClipPlanes(void)

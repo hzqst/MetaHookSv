@@ -995,11 +995,39 @@ public:
 class CSCModelDatabase : public ISCModelDatabaseInternal
 {
 private:
+	/*
+		Purpose: The container that keeps strong refs to all queries.
+	*/
 	std::vector<UtilAutoPtr<ISCModelQueryInternal>> m_QueryList;
+	
+	/*
+		Purpose: Dispatch callbacks when a query object has changed it's state.
+	*/
 	std::vector<ISCModelQueryStateChangeHandler*> m_StateChangeCallbacks;
+
+	/*
+		Purpose: Dispatch callbacks when local player has changed to a new model.
+	*/
 	std::vector<ISCModelLocalPlayerModelChangeHandler*> m_LocalPlayerChangeModelCallbacks;
+
+	/*
+		Purpose: Skippped model when player click cancel in OnLocalPlayerChangeModel->SwitchtoNewerVersionModel QueryBox.
+	*/
+	std::vector<std::string> m_SkippedModels;
+
+	/*
+		Purpose: Map model name to scmodel_t (always lower case)
+	*/
 	std::unordered_map<std::string, scmodel_t> m_Database;
+	
+	/*
+		Purpose: Map older version to it's latest version. i.e. "gfl_m14-c2" maps to "gfl_m14-c2_v2" (always lower case)
+	*/
 	std::unordered_map<std::string, std::string> m_VersionMapping;
+
+	/*
+		Purpose: Store last model name that local player was using. so we can emit a model change event by checking if local player's model name differs from m_localPlayerModelName
+	*/
 	std::string m_localPlayerModelName;
 
 public:
@@ -1015,6 +1043,9 @@ public:
 		{
 			BuildQueryVersions();			
 		}
+		
+		// Load skipped models list
+		LoadSkippedModels("scmodeldownloader/skippedmodels.txt");
 	}
 
 	void Shutdown() override
@@ -1577,6 +1608,108 @@ public:
 			}
 		}
 		return nullptr;
+	}
+
+	/*
+		Purpose: Check if modelname has been skipped by user
+	*/
+	bool IsModelSkipped(const char* modelname) override
+	{
+		std::string lowerModelName = modelname;
+		std::transform(lowerModelName.begin(), lowerModelName.end(), lowerModelName.begin(), ::tolower);
+		
+		auto itor = std::find(m_SkippedModels.begin(), m_SkippedModels.end(), lowerModelName);
+		return itor != m_SkippedModels.end();
+	}
+
+	/*
+		Purpose: Add modelname to skipped models and save to file "scmodeldatabase/skippedmodels.txt".
+	*/
+	void AddSkippedModel(const char* modelname) override
+	{
+		std::string lowerModelName = modelname;
+		std::transform(lowerModelName.begin(), lowerModelName.end(), lowerModelName.begin(), ::tolower);
+		
+		// Check if already exists
+		auto itor = std::find(m_SkippedModels.begin(), m_SkippedModels.end(), lowerModelName);
+		if (itor == m_SkippedModels.end())
+		{
+			m_SkippedModels.emplace_back(lowerModelName);
+			SaveSkippedModels("scmodeldownloader/skippedmodels.txt");
+		}
+	}
+
+	/*
+		Purpose: Load skipped models from filePath, one model name per line.
+	*/
+	void LoadSkippedModels(const char *filePath)
+	{
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "rt");
+		if (hFileHandle)
+		{
+			m_SkippedModels.clear();
+			
+			char szReadLine[256];
+			while (!FILESYSTEM_ANY_EOF(hFileHandle))
+			{
+				FILESYSTEM_ANY_READLINE(szReadLine, sizeof(szReadLine) - 1, hFileHandle);
+				szReadLine[sizeof(szReadLine) - 1] = 0;
+				
+				// Parse line and extract model name
+				bool quoted = false;
+				char token[256];
+				char *p = szReadLine;
+				
+				p = FILESYSTEM_ANY_PARSEFILE(p, token, &quoted);
+				if (token[0])
+				{
+					std::string modelName = token;
+					std::transform(modelName.begin(), modelName.end(), modelName.begin(), ::tolower);
+					
+					// Avoid duplicates
+					auto itor = std::find(m_SkippedModels.begin(), m_SkippedModels.end(), modelName);
+					if (itor == m_SkippedModels.end())
+					{
+						m_SkippedModels.emplace_back(modelName);
+					}
+				}
+			}
+			
+			FILESYSTEM_ANY_CLOSE(hFileHandle);
+			
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Loaded %d skipped models from \"%s\".\n", m_SkippedModels.size(), filePath);
+		}
+		else
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Skipped models file \"%s\" not found.\n", filePath);
+		}
+	}
+
+	/*
+		Purpose: Save skipped models to filePath, one model name per line.
+	*/
+	void SaveSkippedModels(const char *filePath)
+	{
+		// Create directory if not exists
+		FILESYSTEM_ANY_CREATEDIR("scmodeldownloader", "GAME");
+		
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "wt", "GAME");
+		if (hFileHandle)
+		{
+			for (const auto& modelName : m_SkippedModels)
+			{
+				FILESYSTEM_ANY_WRITE(modelName.c_str(), modelName.length(), hFileHandle);
+				FILESYSTEM_ANY_WRITE("\n", 1, hFileHandle);
+			}
+			
+			FILESYSTEM_ANY_CLOSE(hFileHandle);
+			
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Saved %d skipped models to \"%s\".\n", m_SkippedModels.size(), filePath);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Failed to open file \"%s\" for writing skipped models!\n", filePath);
+		}
 	}
 };
 
