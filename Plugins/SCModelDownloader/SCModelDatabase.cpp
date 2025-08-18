@@ -1691,9 +1691,9 @@ public:
 	void SaveSkippedModels(const char *filePath)
 	{
 		// Create directory if not exists
-		FILESYSTEM_ANY_CREATEDIR("scmodeldownloader", "GAME");
+		FILESYSTEM_ANY_CREATEDIR("scmodeldownloader");
 		
-		auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "wt", "GAME");
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "wt");
 		if (hFileHandle)
 		{
 			for (const auto& modelName : m_SkippedModels)
