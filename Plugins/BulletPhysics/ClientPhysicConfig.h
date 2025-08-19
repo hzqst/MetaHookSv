@@ -82,6 +82,9 @@ public:
 	float ccdThreshold{ BULLET_DEFAULT_CCD_THRESHOLD };
 	float linearSleepingThreshold{ BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD };
 	float angularSleepingThreshold{ BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD };
+	float additionalDampingFactor{ BULLET_DEFAULT_ADDITIONAL_DAMPING_FACTOR };
+	float additionalLinearDampingThresholdSqr{ BULLET_DEFAULT_ADDITIONAL_LINEAR_DAMPING_THRESHOLD_SQR };
+	float additionalAngularDampingThresholdSqr{ BULLET_DEFAULT_ADDITIONAL_ANGULAR_DAMPING_THRESHOLD_SQR };
 
 	//TODO?
 	//vec3_t centerOfMass{ 0 };

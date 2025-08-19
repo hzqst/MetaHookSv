@@ -45,6 +45,9 @@ CPhysicRigidBodyEditDialog::CPhysicRigidBodyEditDialog(vgui::Panel* parent, cons
 	m_pCCDThreshold = new vgui::TextEntry(this, "CCDThreshold");
 	m_pLinearSleepingThreshold = new vgui::TextEntry(this, "LinearSleepingThreshold");
 	m_pAngularSleepingThreshold = new vgui::TextEntry(this, "AngularSleepingThreshold");
+	m_pAdditionalDampingFactor = new vgui::TextEntry(this, "AdditionalDampingFactor");
+	m_pAdditionalLinearDampingThresholdSqr = new vgui::TextEntry(this, "AdditionalLinearDampingThresholdSqr");
+	m_pAdditionalAngularDampingThresholdSqr = new vgui::TextEntry(this, "AdditionalAngularDampingThresholdSqr");
 
 #define CREATE_CHECK_BUTTON(name) m_p##name = new vgui::CheckButton(this, #name, "#BulletPhysics_" #name);
 	CREATE_CHECK_BUTTON(AlwaysDynamic);
@@ -280,6 +283,9 @@ void CPhysicRigidBodyEditDialog::LoadConfigIntoControls()
 	LOAD_INTO_TEXT_ENTRY(ccdThreshold, CCDThreshold);
 	LOAD_INTO_TEXT_ENTRY(linearSleepingThreshold, LinearSleepingThreshold);
 	LOAD_INTO_TEXT_ENTRY(angularSleepingThreshold, AngularSleepingThreshold);
+	LOAD_INTO_TEXT_ENTRY(additionalDampingFactor, AdditionalDampingFactor);
+	LOAD_INTO_TEXT_ENTRY(additionalLinearDampingThresholdSqr, AdditionalLinearDampingThresholdSqr);
+	LOAD_INTO_TEXT_ENTRY(additionalAngularDampingThresholdSqr, AdditionalAngularDampingThresholdSqr);
 #undef LOAD_INTO_TEXT_ENTRY
 
 #define LOAD_INTO_CHECK_BUTTON(from, to) m_p##to->SetSelected((m_pRigidBodyConfig->from & PhysicRigidBodyFlag_##to) ? true : false);
@@ -324,6 +330,9 @@ void CPhysicRigidBodyEditDialog::SaveConfigFromControls()
 	SAVE_FROM_TEXT_ENTRY(ccdThreshold, CCDThreshold, atof);
 	SAVE_FROM_TEXT_ENTRY(linearSleepingThreshold, LinearSleepingThreshold, atof);
 	SAVE_FROM_TEXT_ENTRY(angularSleepingThreshold, AngularSleepingThreshold, atof);
+	SAVE_FROM_TEXT_ENTRY(additionalDampingFactor, AdditionalDampingFactor, atof);
+	SAVE_FROM_TEXT_ENTRY(additionalLinearDampingThresholdSqr, AdditionalLinearDampingThresholdSqr, atof);
+	SAVE_FROM_TEXT_ENTRY(additionalAngularDampingThresholdSqr, AdditionalAngularDampingThresholdSqr, atof);
 
 #undef SAVE_FROM_TEXT_ENTRY
 

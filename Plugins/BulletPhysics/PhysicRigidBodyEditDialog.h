@@ -55,6 +55,9 @@ private:
 	vgui::TextEntry* m_pCCDThreshold{};
 	vgui::TextEntry* m_pLinearSleepingThreshold{};
 	vgui::TextEntry* m_pAngularSleepingThreshold{};
+	vgui::TextEntry* m_pAdditionalDampingFactor{};
+	vgui::TextEntry* m_pAdditionalLinearDampingThresholdSqr{};
+	vgui::TextEntry* m_pAdditionalAngularDampingThresholdSqr{};
 
 #define DEFINE_CHECK_BUTTON(name) vgui::CheckButton* m_p##name{};
 	DEFINE_CHECK_BUTTON(AlwaysDynamic);

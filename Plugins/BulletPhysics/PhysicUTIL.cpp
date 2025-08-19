@@ -876,6 +876,9 @@ std::shared_ptr<CClientRigidBodyConfig> UTIL_CloneRigidBodyConfig(const CClientR
 	pNewConfig->ccdThreshold = pOldConfig->ccdThreshold;
 	pNewConfig->linearSleepingThreshold = pOldConfig->linearSleepingThreshold;
 	pNewConfig->angularSleepingThreshold = pOldConfig->angularSleepingThreshold;
+	pNewConfig->additionalDampingFactor = pOldConfig->additionalDampingFactor;
+	pNewConfig->additionalLinearDampingThresholdSqr = pOldConfig->additionalLinearDampingThresholdSqr;
+	pNewConfig->additionalAngularDampingThresholdSqr = pOldConfig->additionalAngularDampingThresholdSqr;
 
 	if (pOldConfig->collisionShape)
 	{

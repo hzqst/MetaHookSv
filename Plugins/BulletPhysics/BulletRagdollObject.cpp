@@ -206,9 +206,9 @@ IPhysicRigidBody* CBulletRagdollObject::CreateRigidBody(const CPhysicObjectCreat
 	cInfo.m_linearSleepingThreshold = pRigidConfig->linearSleepingThreshold;
 	cInfo.m_angularSleepingThreshold = pRigidConfig->angularSleepingThreshold;
 	cInfo.m_additionalDamping = true;
-	cInfo.m_additionalDampingFactor = 0.5f;
-	cInfo.m_additionalLinearDampingThresholdSqr = 1.0f * 1.0f;
-	cInfo.m_additionalAngularDampingThresholdSqr = 0.3f * 0.3f;
+	cInfo.m_additionalDampingFactor = pRigidConfig->additionalDampingFactor;
+	cInfo.m_additionalLinearDampingThresholdSqr = pRigidConfig->additionalLinearDampingThresholdSqr;
+	cInfo.m_additionalAngularDampingThresholdSqr = pRigidConfig->additionalAngularDampingThresholdSqr;
 
 	int group = btBroadphaseProxy::DefaultFilter | BulletPhysicCollisionFilterGroups::RagdollObjectFilter;
 

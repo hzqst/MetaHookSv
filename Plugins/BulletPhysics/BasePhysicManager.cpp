@@ -1195,6 +1195,9 @@ static std::shared_ptr<CClientRigidBodyConfig> LoadRigidBodyFromKeyValues(KeyVal
 	pRigidBodyConfig->ccdThreshold = pRigidBodySubKey->GetFloat("ccdThreshold", BULLET_DEFAULT_CCD_THRESHOLD);
 	pRigidBodyConfig->linearSleepingThreshold = pRigidBodySubKey->GetFloat("linearSleepingThreshold", BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD);
 	pRigidBodyConfig->angularSleepingThreshold = pRigidBodySubKey->GetFloat("angularSleepingThreshold", BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD);
+	pRigidBodyConfig->additionalDampingFactor = pRigidBodySubKey->GetFloat("additionalDampingFactor", BULLET_DEFAULT_ADDITIONAL_DAMPING_FACTOR);
+	pRigidBodyConfig->additionalLinearDampingThresholdSqr = pRigidBodySubKey->GetFloat("additionalLinearDampingThresholdSqr", BULLET_DEFAULT_ADDITIONAL_LINEAR_DAMPING_THRESHOLD_SQR);
+	pRigidBodyConfig->additionalAngularDampingThresholdSqr = pRigidBodySubKey->GetFloat("additionalAngularDampingThresholdSqr", BULLET_DEFAULT_ADDITIONAL_ANGULAR_DAMPING_THRESHOLD_SQR);
 
 	auto pCollisionShapeKey = pRigidBodySubKey->FindKey("collisionShape");
 
@@ -1943,6 +1946,9 @@ static void AddRigidBodiesToKeyValues(KeyValues* pKeyValues, const std::vector<s
 					pRigidBodySubKey->SetFloat("ccdThreshold", pRigidBodyConfig->ccdThreshold);
 					pRigidBodySubKey->SetFloat("linearSleepingThreshold", pRigidBodyConfig->linearSleepingThreshold);
 					pRigidBodySubKey->SetFloat("angularSleepingThreshold", pRigidBodyConfig->angularSleepingThreshold);
+					pRigidBodySubKey->SetFloat("additionalDampingFactor", pRigidBodyConfig->additionalDampingFactor);
+					pRigidBodySubKey->SetFloat("additionalLinearDampingThresholdSqr", pRigidBodyConfig->additionalLinearDampingThresholdSqr);
+					pRigidBodySubKey->SetFloat("additionalAngularDampingThresholdSqr", pRigidBodyConfig->additionalAngularDampingThresholdSqr);
 
 					if (pRigidBodyConfig->collisionShape)
 					{
