@@ -26,6 +26,8 @@ extern cl_entity_t** cl_visedicts;
 extern float* g_ChromeOrigin;
 extern float* r_origin;
 
+extern model_t* cl_sprite_white;
+
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 extern bool g_bIsDayOfDefeat;

@@ -53,9 +53,6 @@ cvar_t* bv_debug_draw_selected_color = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t* bv_force_updatebones = NULL;
-//cvar_t *bv_ragdoll_sleepaftertime = NULL;
-//cvar_t *bv_ragdoll_sleeplinearvel = NULL;
-//cvar_t *bv_ragdoll_sleepangularvel = NULL;
 
 cvar_t *chase_active = NULL;
 cvar_t* sv_cheats = NULL;
@@ -83,6 +80,8 @@ cl_entity_t** cl_visedicts = NULL;
 
 float* g_ChromeOrigin = NULL;
 float* r_origin = NULL;
+
+model_t* cl_sprite_white = nullptr;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
@@ -1704,6 +1703,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
+
+	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();

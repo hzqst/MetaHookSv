@@ -1440,13 +1440,12 @@ public:
 
 	void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1) override
 	{
-		//The texture must be reset to zero upon drawing.
-		vgui::surface()->DrawSetTexture(0);
-
 		if (IsDebugDrawWallHackEnabled())
 		{
 			glDisable(GL_DEPTH_TEST);
 		}
+
+		gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
 
 		gEngfuncs.pTriAPI->Color4fRendermode(color1.getX(), color1.getY(), color1.getZ(), 1, kRenderTransAlpha);
 
@@ -1462,6 +1461,7 @@ public:
 
 		gEngfuncs.pTriAPI->Vertex3fv(vecFromGoldSrc);
 		gEngfuncs.pTriAPI->Vertex3fv(vecToGoldSrc);
+
 		gEngfuncs.pTriAPI->End();
 
 		if (IsDebugDrawWallHackEnabled())
