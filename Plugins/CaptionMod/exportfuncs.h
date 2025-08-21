@@ -24,9 +24,6 @@ int HUD_VidInit(void);
 void HUD_Frame(double time);
 int HUD_Redraw(float time, int intermission);
 void HUD_Shutdown(void);
-void IN_MouseEvent(int mstate);
-void IN_Accumulate(void);
-void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active);
 
 client_textmessage_t *pfnTextMessageGet(const char *pName);
 void TextMessageParse(byte* pMemFile, int fileSize);

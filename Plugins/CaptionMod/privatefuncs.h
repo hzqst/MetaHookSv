@@ -78,7 +78,6 @@ typedef struct
 }private_funcs_t;
 
 extern void *GameViewport;
-extern int *g_iVisibleMouse;
 extern void *gHud;
 
 extern double *cl_time;

@@ -1411,36 +1411,6 @@ void Client_FillAddress_SCClient_WeaponsResource_SelectSlot(const mh_dll_info_t&
 	Sig_FuncNotFound(WeaponsResource_SelectSlot);
 }
 
-void Client_FillAddress_SCClient_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-.text:1006C550                                     sub_1006C550    proc near               ; CODE XREF: sub_10030310+6↑j
-.text:1006C550                                                                             ; .text:100324D2↑p ...
-.text:1006C550 56                                                  push    esi
-.text:1006C551 8B F1                                               mov     esi, ecx
-.text:1006C553 57                                                  push    edi
-.text:1006C554 8B 8E E4 15 00 00                                   mov     ecx, [esi+15E4h]
-.text:1006C55A 39 8E 1C 14 00 00                                   cmp     [esi+141Ch], ecx
-.text:1006C560 75 5A                                               jnz     short loc_1006C5BC
-.text:1006C562 85 C9                                               test    ecx, ecx
-.text:1006C564 74 56                                               jz      short loc_1006C5BC
-.text:1006C566 8B 01                                               mov     eax, [ecx]
-.text:1006C568 8B 40 28                                            mov     eax, [eax+28h]
-.text:1006C56B FF D0                                               call    eax
-.text:1006C56D 84 C0                                               test    al, al
-.text:1006C56F 74 4B                                               jz      short loc_1006C5BC
-.text:1006C571 C7 05 9C A9 63 10 01 00 00 00                       mov     g_iVisibleMouse, 1
-.text:1006C57B 8B 8E E4 15 00 00                                   mov     ecx, [esi+15E4h]
-	*/
-
-	char pattern[] = "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
-	auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound(g_iVisibleMouse);
-
-	PVOID g_iVisibleMouse_VA = *(PVOID*)(addr + 11);
-	g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace(g_iVisibleMouse_VA, DllInfo, RealDllInfo);
-}
-
 void Client_FillAddress_SCClient_CHud_GetBorderSize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	char pattern[] = "\xF6\x05\x2A\x2A\x2A\x2A\x20\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8";
@@ -1481,8 +1451,6 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 		Client_FillAddress_SCClient_GameViewport_IsScoreBoardVisible(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_WeaponsResource_SelectSlot(DllInfo, RealDllInfo);
-
-		Client_FillAddress_SCClient_VisibleMouse(DllInfo, RealDllInfo);
 
 		Client_FillAddress_SCClient_CHud_GetBorderSize(DllInfo, RealDllInfo);
 	}
@@ -1658,95 +1626,11 @@ void Client_FillAddress_CounterStrike(const mh_dll_info_t& DllInfo, const mh_dll
 	}
 }
 
-void Client_FillAddress_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_iVisibleMouse)
-		return;
-
-	PVOID IN_Accumulate = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->IN_Accumulate, RealDllInfo, DllInfo);
-
-	if (!IN_Accumulate)
-	{
-		if (g_pMetaHookAPI->GetClientModule())
-		{
-			IN_Accumulate = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "IN_Accumulate"), RealDllInfo, DllInfo);
-		}
-	}
-
-	if (IN_Accumulate)
-	{
-		typedef struct IN_Accumulate_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			DWORD candidate{};
-			int candidate_register{};
-		}IN_Accumulate_SearchContext;
-
-		IN_Accumulate_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(IN_Accumulate, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto ctx = (IN_Accumulate_SearchContext*)context;
-			auto pinst = (cs_insn*)inst;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.TextBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
-			{
-				ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
-				ctx->candidate_register = pinst->detail->x86.operands[0].reg;
-			}
-
-			if (ctx->candidate_register &&
-				pinst->id == X86_INS_TEST &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == ctx->candidate_register &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].reg == ctx->candidate_register)
-			{
-				g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)ctx->candidate, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.TextBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0)
-			{
-				g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (g_iVisibleMouse)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-	}
-}
-
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 
 	Client_FillAddress_CounterStrike(DllInfo, RealDllInfo);
-
-	Client_FillAddress_VisibleMouse(DllInfo, RealDllInfo);
 }
 
 void Engine_InstallHooks(void)

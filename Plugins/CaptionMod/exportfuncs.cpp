@@ -35,7 +35,6 @@ int m_iIntermission = 0;
 
 //client.dll
 void *GameViewport = NULL;
-int *g_iVisibleMouse = NULL;
 void *gHud = NULL;
 
 cvar_t* cap_subtitle_prefix = NULL;
@@ -104,57 +103,6 @@ void HUD_Frame(double time)
 		g_pViewPort->Think();
 
 	gExportfuncs.HUD_Frame(time);
-}
-
-void IN_MouseEvent(int mstate)
-{
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
-	{
-		int iVisibleMouse = *g_iVisibleMouse;
-		*g_iVisibleMouse = 1;
-
-		gExportfuncs.IN_MouseEvent(mstate);
-
-		*g_iVisibleMouse = iVisibleMouse;
-	}
-	else
-	{
-		gExportfuncs.IN_MouseEvent(mstate);
-	}
-}
-
-void IN_Accumulate(void)
-{
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
-	{
-		int iVisibleMouse = *g_iVisibleMouse;
-		*g_iVisibleMouse = 1;
-
-		gExportfuncs.IN_Accumulate();
-
-		*g_iVisibleMouse = iVisibleMouse;
-	}
-	else
-	{
-		gExportfuncs.IN_Accumulate();
-	}
-}
-
-void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
-{
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
-	{
-		int iVisibleMouse = *g_iVisibleMouse;
-		*g_iVisibleMouse = 1;
-
-		gExportfuncs.CL_CreateMove(frametime, cmd, active);
-
-		*g_iVisibleMouse = iVisibleMouse;
-	}
-	else
-	{
-		gExportfuncs.CL_CreateMove(frametime, cmd, active);
-	}
 }
 
 void Cap_Reload_f(void)
