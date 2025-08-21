@@ -1397,12 +1397,69 @@ void Client_FillAddress_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0 &&
 					pinst->detail->x86.operands[1].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.TextBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize)
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 				{
 					ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
 					ctx->candidate_register = pinst->detail->x86.operands[0].reg;
 				}
+
+				auto findVisibleMouseFillZero = [ctx](PVOID address, size_t oprandSize) -> bool{
+
+					typedef struct findVisibleMouseFillZero_SearchContext
+					{
+						bool FoundCall{};
+					}findVisibleMouseFillZero_SearchContext_t;
+
+					findVisibleMouseFillZero_SearchContext_t ctx2{};
+
+					const auto& DllInfo = ctx->DllInfo;
+					//C7 05 78 4D 9A 01 00 00 00 00                       mov     g_iVisibleMouse, 0
+					if (oprandSize == 4)
+					{
+						char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
+						*(PVOID*)(pattern + 2) = address;
+						auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
+
+						if (addr)
+						{
+							g_pMetaHookAPI->DisasmSingleInstruction(addr + Sig_Length(pattern), [](void* inst2, PUCHAR address2, size_t instLen2, PVOID context2) {
+								auto ctx2 = (findVisibleMouseFillZero_SearchContext_t*)context2;
+								auto pinst2 = (cs_insn*)inst2;
+
+								if (pinst2->id == X86_INS_CALL)
+								{
+									ctx2->FoundCall = true;
+								}
+
+							}, & ctx2);
+							return ctx2.FoundCall;
+						}
+					}
+					else if (oprandSize == 1)
+					{
+						char pattern[] = "\xC6\x05\x2A\x2A\x2A\x2A\x01";
+						*(PVOID*)(pattern + 2) = address;
+						auto addr = (PUCHAR)Search_Pattern(pattern, DllInfo);
+
+						if (addr)
+						{
+							g_pMetaHookAPI->DisasmSingleInstruction(addr + Sig_Length(pattern), [](void* inst2, PUCHAR address2, size_t instLen2, PVOID context2) {
+								auto ctx2 = (findVisibleMouseFillZero_SearchContext_t*)context2;
+								auto pinst2 = (cs_insn*)inst2;
+
+								if (pinst2->id == X86_INS_CALL)
+								{
+									ctx2->FoundCall = true;
+								}
+
+							}, &ctx2);
+							return ctx2.FoundCall;
+						}
+					}
+
+					return false;
+				};
 
 				if (ctx->candidate_register &&
 					pinst->id == X86_INS_TEST &&
@@ -1412,7 +1469,10 @@ void Client_FillAddress_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[1].reg == ctx->candidate_register)
 				{
-					g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)ctx->candidate, ctx->DllInfo, ctx->RealDllInfo);
+					if (findVisibleMouseFillZero((PVOID)ctx->candidate, pinst->detail->x86.operands[0].size))
+					{
+						g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)ctx->candidate, ctx->DllInfo, ctx->RealDllInfo);
+					}
 				}
 
 				if (pinst->id == X86_INS_CMP &&
@@ -1420,12 +1480,15 @@ void Client_FillAddress_VisibleMouse(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
 					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.TextBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.TextBase + ctx->DllInfo.TextSize &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 					pinst->detail->x86.operands[1].imm == 0)
 				{
-					g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					if (findVisibleMouseFillZero((PVOID)pinst->detail->x86.operands[0].mem.disp, pinst->detail->x86.operands[0].size))
+					{
+						g_iVisibleMouse = (decltype(g_iVisibleMouse))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					}
 				}
 
 				if (g_iVisibleMouse)

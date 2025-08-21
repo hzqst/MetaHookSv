@@ -105,9 +105,10 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
-	pExportFunc->IN_MouseEvent = IN_MouseEvent;
-	pExportFunc->IN_Accumulate = IN_Accumulate;
-	pExportFunc->CL_CreateMove = CL_CreateMove;
+	//Those have been moved to VGUI2Extension
+	//pExportFunc->IN_MouseEvent = IN_MouseEvent;
+	//pExportFunc->IN_Accumulate = IN_Accumulate;
+	//pExportFunc->CL_CreateMove = CL_CreateMove;
 
 	g_ClientDLLInfo.ImageBase = g_pMetaHookAPI->GetClientBase();
 	g_ClientDLLInfo.ImageSize = g_pMetaHookAPI->GetClientSize();
