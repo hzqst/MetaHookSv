@@ -5081,11 +5081,7 @@ void Mod_ClearModel(void)
 			if (mod->type == mod_sprite)
 				mod->cache.data = NULL;
 
-			if (mod->type == mod_studio)
-			{
-			//	R_FreeStudioRenderData(mod);
-			}
-			else if (mod->type == mod_brush)
+			if (mod->type == mod_brush)
 			{
 				R_FreeWorldSurfaceModels(mod);
 				R_FreeWorldSurfaceWorldModels(mod);
