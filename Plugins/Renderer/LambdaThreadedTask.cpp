@@ -4,9 +4,6 @@
 
 class CLambdaThreadedTask : public IThreadedTask
 {
-private:
-	float m_gametime{};
-
 public:
 	CLambdaThreadedTask(const std::function<void()>& callback) : m_callback(callback)
 	{
@@ -34,6 +31,7 @@ public:
 
 private:
 	std::function<void()> m_callback;
+	float m_gametime{};
 };
 
 IThreadedTask* LambdaThreadedTask_CreateInstance(const std::function<void()>& callback)
