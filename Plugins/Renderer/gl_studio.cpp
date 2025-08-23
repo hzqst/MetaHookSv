@@ -1147,6 +1147,9 @@ std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromStudioHeaderFas
 			{
 				if (mod->cache.data == studiohdr)
 				{
+					if (mod->needload == NL_UNREFERENCED)
+						mod->needload = NL_PRESENT;
+
 					return pRenderData;
 				}
 			}
@@ -1168,6 +1171,9 @@ std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromStudioHeaderSlo
 			{
 				if (mod->cache.data == studiohdr)
 				{
+					if (mod->needload == NL_UNREFERENCED)
+						mod->needload = NL_PRESENT;
+
 					auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
 
 					if (pRenderData)

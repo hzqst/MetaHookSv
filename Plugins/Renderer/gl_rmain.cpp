@@ -9,7 +9,8 @@
 #include <set>
 #include <SDL2/SDL_video.h>
 
-#define HAS_VIEWMODEL_PASS 1
+#include "UtilThreadTask.h"
+#include "LambdaThreadedTask.h"
 
 private_funcs_t gPrivateFuncs = { 0 };
 
@@ -3480,9 +3481,23 @@ void R_NewMap(void)
 
 	R_StudioFlushAllSkins();
 
-	//Free GPU resources...
-	R_FreeUnreferencedStudioRenderData();
+	//Free GPU resources after one seconds...
+	auto pWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
+	if (pWorldSurfaceWorldModel)
+	{
+		GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pWorldSurfaceWorldModel]() {
+
+			auto pCurrentWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
+
+			if (pWorldSurfaceWorldModel == pCurrentWorldSurfaceWorldModel)
+			{
+				R_FreeUnreferencedStudioRenderData();
+			}
+
+		}, gEngfuncs.GetAbsoluteTime() + 1.0f));
+	}
+	
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;
 }
