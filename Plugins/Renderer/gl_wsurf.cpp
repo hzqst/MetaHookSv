@@ -2204,6 +2204,16 @@ void R_DrawWorldSurfaceLeafEnd()
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
+bool R_WorldSurfaceLeafHasSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
+{
+	const auto& texchain = pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SKY];
+
+	if (!texchain.drawCount)
+		return false;
+
+	return true;
+}
+
 void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 {
 	const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
@@ -2998,6 +3008,12 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 					pNoVisLeaf = pModel->GetLeafByIndex(0);
 				}
 
+				if (pNoVisLeaf && !pNoVisLeaf->hABO)
+				{
+					//Use previous leaf when current leaf not available
+					pNoVisLeaf = g_WorldSurfaceRenderer.pCurrentWaterLeaf.lock();
+				}
+
 				if (pNoVisLeaf && pNoVisLeaf->hABO)
 				{
 					if (R_ShouldDrawZPrePass())
@@ -3026,6 +3042,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 					{
 						glDepthFunc(GL_LEQUAL);
 					}
+
+					g_WorldSurfaceRenderer.pCurrentWaterLeaf = pLeaf;
 				}
 			}
 			else
@@ -3058,6 +3076,14 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 				}
 
 				g_WorldSurfaceRenderer.pCurrentWorldLeaf = pLeaf;
+			}
+		}
+
+		if (pLeaf)
+		{
+			if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+			{
+				R_DrawSkyBox();
 			}
 		}
 	}
@@ -3128,6 +3154,7 @@ void R_InitWSurf(void)
 void R_FreeWorldResources(void)
 {
 	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
+	g_WorldSurfaceRenderer.pCurrentWaterLeaf.reset();
 
 	R_ClearDecalCache();
 	R_ClearDetailTextureCache();
@@ -4850,31 +4877,17 @@ void R_DrawWorld(void)
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
 
-//	GL_DisableMultitexture();
-
 	//Just for backward-compatibility
 	glColor3f(1.0f, 1.0f, 1.0f);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	R_DrawSkyBox();
+	g_WorldSurfaceRenderer.bDiffuseTexture = true;
+	g_WorldSurfaceRenderer.bLightmapTexture = true;
 
-	//Skip world meshes if we are drawing reflect texture for skybox.
-	if (R_IsRenderingReflectView() && g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	auto pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
+
+	if (pModel)
 	{
-
+		R_DrawWorldSurfaceModel(pModel, (*currententity));
 	}
-	else
-	{
-		g_WorldSurfaceRenderer.bDiffuseTexture = true;
-		g_WorldSurfaceRenderer.bLightmapTexture = true;
-
-		auto pModel = R_GetWorldSurfaceModel((*cl_worldmodel));
-
-		if (pModel)
-		{
-			R_DrawWorldSurfaceModel(pModel, (*currententity));
-		}
-	}
-
-//	GL_DisableMultitexture();
 }

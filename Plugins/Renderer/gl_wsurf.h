@@ -247,6 +247,7 @@ public:
 	std::vector<model_t *> vWorldModels;
 
 	std::weak_ptr<CWorldSurfaceLeaf> pCurrentWorldLeaf;
+	std::weak_ptr<CWorldSurfaceLeaf> pCurrentWaterLeaf;
 };
 
 typedef struct
