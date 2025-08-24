@@ -2927,8 +2927,7 @@ bool R_ShouldDrawZPrePass(void)
 void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, cl_entity_t* ent)
 {
 	entity_ubo_t EntityUBO;
-
-	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
+	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = R_ScrollSpeed();
 
@@ -4561,7 +4560,7 @@ void R_DrawBrushModel(cl_entity_t* e)
 		modelorg[2] = DotProduct(temp, up);
 	}
 
-	R_RotateForEntity(e);
+	R_RotateForEntity(e, r_entity_matrix);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -4667,8 +4666,16 @@ void R_SetupSceneUBO(void)
 	}
 	else if (R_IsRenderingRefractView())
 	{
-		float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
-		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+		if (g_CurrentReflectCache->normal[2] > 0)
+		{
+			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+		}
+		else
+		{
+			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+		}
 	}
 	else if (g_bPortalClipPlaneEnabled[0])
 	{

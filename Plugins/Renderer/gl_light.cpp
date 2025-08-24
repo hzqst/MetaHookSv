@@ -1097,7 +1097,7 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
@@ -1159,7 +1159,7 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
 			glDrawArrays(GL_QUADS, 0, 4);

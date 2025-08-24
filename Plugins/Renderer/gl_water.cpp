@@ -266,8 +266,9 @@ water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceMode
 	vec3_t vert{};
 	vec3_t normal{};
 
-	//Calculate r_entity_matrix from ent->origin and ent->angles
-	R_RotateForEntity(ent);
+	//Calculate real vert and normal based on ent->origin and ent->angles
+
+	R_RotateForEntity(ent, r_entity_matrix);
 
 	VectorTransform(pWaterModel->vert, r_entity_matrix, vert);
 	VectorRotate(pWaterModel->normal, r_entity_matrix, normal);

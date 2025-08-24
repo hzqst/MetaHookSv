@@ -507,6 +507,9 @@ bool R_ShouldDrawViewModel()
 		return false;
 	}
 
+	if (R_IsRenderingWaterView())
+		return false;
+
 	return true;
 }
 
@@ -582,14 +585,14 @@ void R_RotateForTransform(const float *in_origin, const float* in_angles)
 
 	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
 	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
-	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
 }
 
 /*
-	Purpose : Setup world matrix for this entity
+	Purpose : Setup local -> world matrix for this entity
+	output: GoldSrc's CPU-based calculation (col-major matrix)
 */
 
-void R_RotateForEntity(cl_entity_t *e)
+void R_RotateForEntity(cl_entity_t *e, float out[4][4])
 {
 	int i;
 	vec3_t angles;
@@ -644,9 +647,8 @@ void R_RotateForEntity(cl_entity_t *e)
 		{0.0f, 0.0f, 0.0f, 1.0f}
 	};
 
-	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
-	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
+	memcpy(out, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(out, angles, modelpos, 1);
 }
 
 float R_GlowBlend(cl_entity_t *entity)

@@ -435,7 +435,7 @@ void R_RenderShadowDynamicLights(void)
 						glLoadMatrixf(bias);
 						glMultMatrixf(r_projection_matrix);
 						glMultMatrixf(r_world_matrix);
-						glGetFloatv(GL_TEXTURE_MATRIX, args->shadowtex->matrix);
+						glGetFloatv(GL_TEXTURE_MATRIX, (float *)args->shadowtex->matrix);
 						glPopMatrix();
 						glMatrixMode(GL_MODELVIEW);
 

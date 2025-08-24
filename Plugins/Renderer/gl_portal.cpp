@@ -55,7 +55,7 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 
 		if (prog.u_entityMatrix)
 		{
-			glUniformMatrix4fv(prog.u_entityMatrix, 1, false, (const GLfloat *)r_entity_matrix);
+			glUniformMatrix4fv(prog.u_entityMatrix, 1, true, (const GLfloat *)r_entity_matrix);
 		}
 
 		if (progOutput)

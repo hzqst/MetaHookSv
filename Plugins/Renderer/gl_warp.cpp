@@ -25,7 +25,7 @@ void R_DrawSkyBox(void)
 
 	entity_ubo_t EntityUBO;
 
-	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
+	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = 0;
 
