@@ -3490,6 +3490,9 @@ void R_NewMap(void)
 	{
 		GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pWorldSurfaceWorldModel]() {
 
+			if (!(*cl_worldmodel))
+				return;
+
 			auto pCurrentWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
 			if (pWorldSurfaceWorldModel == pCurrentWorldSurfaceWorldModel)
