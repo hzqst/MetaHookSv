@@ -208,7 +208,7 @@ public:
 	std::unordered_map<int, CStudioModelRenderSubModel*> mSubmodels;
 
 	//Material Storage
-	std::unordered_map<int, std::shared_ptr<CStudioModelRenderMaterial>> mStudioMaterials;
+	std::unordered_map<uint32_t, std::shared_ptr<CStudioModelRenderMaterial>> mStudioMaterials;
 
 	model_t* BodyModel{};
 	model_t* TextureModel{};
