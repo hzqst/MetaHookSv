@@ -195,6 +195,46 @@
     "flags" "STUDIO_BF_LOWERBODY"
 }
 {
+    "classname" "studio_sequence"
+    "name" "swim"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "die_simple"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "die_backwards1"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "die_backwards"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "die_forwards"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "headshot"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "die_spin"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "gutshot"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
 }
