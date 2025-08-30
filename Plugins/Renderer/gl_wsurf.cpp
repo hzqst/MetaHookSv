@@ -505,11 +505,6 @@ void R_RecursiveMarkSurfaces(mbasenode_t* basenode, const visnodes_t& visnodes, 
 	R_RecursiveMarkSurfaces(node->children[1], visnodes, vissurfaces);
 }
 
-void R_CollectWaterSurface(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
-{
-	R_GetWaterSurfaceModel(mod, surf, direction, pWorldModel, pLeaf);
-}
-
 void R_RecursiveLinkTextureChain(model_t* mod, mbasenode_t* basenode, const visnodes_t& visnodes, const vissurfaces_t& vissurfaces, vissurfaces_t& watersurfaces, texsurfaces_t *texsurfaces)
 {
 	if (basenode->contents == CONTENTS_SOLID)
@@ -1036,12 +1031,12 @@ public:
 
 		for (auto surf : m_watersurfaces)
 		{
-			R_CollectWaterSurface(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
+			R_GetWaterSurfaceModel(m_model, surf, 0, m_pWorldModel.get(), m_pLeaf.get());
 		}
 
 		for (auto surf : m_reversedwatersurfaces)
 		{
-			R_CollectWaterSurface(m_model, surf, 1, m_pWorldModel.get(), m_pLeaf.get());
+			R_GetWaterSurfaceModel(m_model, surf, 1, m_pWorldModel.get(), m_pLeaf.get());
 		}
 
 		R_GenerateResourceForWaterModels(m_model, m_pWorldModel.get(), m_pLeaf.get());
