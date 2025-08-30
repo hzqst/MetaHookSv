@@ -169,10 +169,6 @@ CStudioModelRenderData::~CStudioModelRenderData()
 	{
 		delete pSubmodel;
 	}
-	for (const auto &itor : mStudioMaterials)
-	{
-		delete itor.second;
-	}
 }
 
 bool R_StudioHasOutline()
@@ -2498,7 +2494,7 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 
 		if (pStudioMaterial)
 		{
-			R_StudioSetupMaterial(pRenderData, pStudioMaterial, context);
+			R_StudioSetupMaterial(pRenderData, pStudioMaterial.get(), context);
 		}
 	}
 }
@@ -4225,7 +4221,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void* pthis, int dummy)
 	StudioSetupBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
 }
 
-CStudioModelRenderMaterial* R_StudioGetMaterialFromTextureId(const CStudioModelRenderData *pRenderData, int gltexturenum)
+std::shared_ptr<CStudioModelRenderMaterial> R_StudioGetMaterialFromTextureId(const CStudioModelRenderData *pRenderData, int gltexturenum)
 {
 	if (gltexturenum > 0)
 	{
@@ -4240,16 +4236,14 @@ CStudioModelRenderMaterial* R_StudioGetMaterialFromTextureId(const CStudioModelR
 	return nullptr;
 }
 
-CStudioModelRenderMaterial* R_StudioCreateMaterial(CStudioModelRenderData* pRenderData, mstudiotexture_t* texture)
+std::shared_ptr<CStudioModelRenderMaterial> R_StudioCreateMaterial(CStudioModelRenderData* pRenderData, mstudiotexture_t* texture)
 {
-	//TODO: hash the texturename ?
-
 	auto pStudioMaterial = R_StudioGetMaterialFromTextureId(pRenderData, texture->index);
 
 	if (pStudioMaterial)
 		return pStudioMaterial;
 
-	pStudioMaterial = new CStudioModelRenderMaterial();
+	pStudioMaterial = std::make_shared<CStudioModelRenderMaterial>();
 
 	pRenderData->mStudioMaterials[texture->index] = pStudioMaterial;
 
@@ -4921,6 +4915,9 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 		studiohdr->soundtable = EngineGetModelIndex(mod);
 
 		gEngfuncs.Con_DPrintf("R_CreateStudioRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
+		//Always reload
+		pRenderData->mStudioMaterials.clear();
 
 		R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
 		R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());

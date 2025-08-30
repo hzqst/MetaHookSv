@@ -208,7 +208,7 @@ public:
 	std::unordered_map<int, CStudioModelRenderSubModel*> mSubmodels;
 
 	//Material Storage
-	std::unordered_map<int, CStudioModelRenderMaterial*> mStudioMaterials;
+	std::unordered_map<int, std::shared_ptr<CStudioModelRenderMaterial>> mStudioMaterials;
 
 	model_t* BodyModel{};
 	model_t* TextureModel{};
@@ -400,7 +400,7 @@ void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
 
-CStudioModelRenderMaterial* R_StudioGetMaterialFromTextureId(const CStudioModelRenderData* pRenderData, int gltexturenum);
+std::shared_ptr<CStudioModelRenderMaterial> R_StudioGetMaterialFromTextureId(const CStudioModelRenderData* pRenderData, int gltexturenum);
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
