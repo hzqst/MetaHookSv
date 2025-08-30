@@ -97,26 +97,24 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 		mod->needload = NL_PRESENT;
 	}
 
-	if ((int)r_studio_lazy_load->value == 0)
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (studiohdr)
 	{
-		auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
-
-		if (studiohdr)
+		if ((int)r_studio_lazy_load->value == 0)
 		{
-			auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
-
-			if (pRenderData)
-			{
-
-			}
-			else
-			{
-				gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: pRenderData not available for \"%s\".\n", mod->name);
-			}
+			//Force load
+			R_CreateStudioRenderData(mod, studiohdr);
 		}
 		else
 		{
-			gEngfuncs.Con_DPrintf("Mod_LoadStudioModel: studiohdr not available for \"%s\".\n", mod->name);
+			//Only reload if already present
+			auto pRenderData = R_GetStudioRenderDataFromModel(mod);
+
+			if (pRenderData)
+			{
+				R_CreateStudioRenderData(mod, studiohdr);
+			}
 		}
 	}
 }

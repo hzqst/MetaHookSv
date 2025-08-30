@@ -384,6 +384,7 @@ extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
+std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromModel(model_t* mod);
 void R_StudioClearVanillaBonesCaches();
 void R_StudioClearAllBoneCaches();
 void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
@@ -399,8 +400,6 @@ void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModelRenderData* pRenderData);
-
-std::shared_ptr<CStudioModelRenderMaterial> R_StudioGetMaterialFromTextureId(const CStudioModelRenderData* pRenderData, int gltexturenum);
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);

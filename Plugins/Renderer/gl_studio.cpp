@@ -5,6 +5,7 @@
 #include "UtilThreadTask.h"
 #include "LambdaThreadedTask.h"
 
+#include "MurmurHash2.h"
 #include <sstream>
 #include <algorithm>
 
@@ -316,6 +317,44 @@ void R_StudioGetTextureHeaderSkinref(
 	(*pskinref) = nullptr;
 
 	R_StudioGetTextureHeaderSkinref(studiohdr, (*ptexturehdr), pRenderData, e, ptexture, pskinref);
+}
+
+uint32_t R_StudioGetTextureHash(mstudiotexture_t* ptexture)
+{
+	uint32_t seed = 0;
+	uint32_t result = MurmurHash2(ptexture->name, strlen(ptexture->name), seed);
+
+	return result;
+}
+
+std::shared_ptr<CStudioModelRenderMaterial> R_StudioGetMaterialFromTexture(const CStudioModelRenderData* pRenderData, mstudiotexture_t* ptexture)
+{
+	auto textureHash = R_StudioGetTextureHash(ptexture);
+
+	const auto& itor = pRenderData->mStudioMaterials.find(textureHash);
+
+	if (itor != pRenderData->mStudioMaterials.end())
+	{
+		return itor->second;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<CStudioModelRenderMaterial> R_StudioCreateMaterial(CStudioModelRenderData* pRenderData, mstudiotexture_t* ptexture)
+{
+	auto pStudioMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
+
+	if (pStudioMaterial)
+		return pStudioMaterial;
+
+	auto textureHash = R_StudioGetTextureHash(ptexture);
+
+	pStudioMaterial = std::make_shared<CStudioModelRenderMaterial>();
+
+	pRenderData->mStudioMaterials[textureHash] = pStudioMaterial;
+
+	return pStudioMaterial;
 }
 
 inline float vec2_length(const vec2_t v)
@@ -2428,7 +2467,9 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 	if (!ptexturehdr->textureindex)
 		return;
 
-	auto ptexture = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
+	auto ptexturebase = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
+
+	auto ptexture = ptexturebase + index;
 
 	if ((*currententity)->index > 0)
 	{
@@ -2436,7 +2477,7 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 		int l = 160;
 		int m = 191;
 
-		if (!stricmp(ptexture[index].name, "DM_Base.bmp") || R_ParseRemapSkin(ptexture[index].name, &l, &m, &h))
+		if (!stricmp(ptexture->name, "DM_Base.bmp") || R_ParseRemapSkin(ptexture->name, &l, &m, &h))
 		{
 			auto pskin = R_StudioGetSkin((*currententity)->index, index);
 
@@ -2452,9 +2493,9 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 					if (pTextureData)
 					{
 						char fullname[1024];
-						snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture[index].name, (*currententity)->index);
+						snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture->name, (*currententity)->index);
 
-						byte* orig_palette = pTextureData + (ptexture[index].height * ptexture[index].width);
+						byte* orig_palette = pTextureData + (ptexture->height * ptexture->width);
 
 						byte tmp_palette[768];
 						memcpy(tmp_palette, orig_palette, 768);
@@ -2470,7 +2511,7 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 
 						GL_UnloadTextureWithType(fullname, GLT_STUDIO);
 
-						pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, pskin->width, pskin->height, pTextureData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
+						pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, pskin->width, pskin->height, pTextureData, false, (ptexture->flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
 					}
 				}
 
@@ -2483,14 +2524,14 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 		}
 	}
 
-	GL_Bind(ptexture[index].index);
+	GL_Bind(ptexture->index);
 
 	//Parse packed texture index from texture name...
-	R_ParsePackedSkin(ptexture[index].name, context);
+	R_ParsePackedSkin(ptexture->name, context);
 
 	if ((*currenttexture) > 0)
 	{
-		auto pStudioMaterial = R_StudioGetMaterialFromTextureId(pRenderData, (*currenttexture));
+		auto pStudioMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
 
 		if (pStudioMaterial)
 		{
@@ -4221,35 +4262,6 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void* pthis, int dummy)
 	StudioSetupBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
 }
 
-std::shared_ptr<CStudioModelRenderMaterial> R_StudioGetMaterialFromTextureId(const CStudioModelRenderData *pRenderData, int gltexturenum)
-{
-	if (gltexturenum > 0)
-	{
-		const auto& itor = pRenderData->mStudioMaterials.find(gltexturenum);
-
-		if (itor != pRenderData->mStudioMaterials.end())
-		{
-			return itor->second;
-		}
-	}
-
-	return nullptr;
-}
-
-std::shared_ptr<CStudioModelRenderMaterial> R_StudioCreateMaterial(CStudioModelRenderData* pRenderData, mstudiotexture_t* texture)
-{
-	auto pStudioMaterial = R_StudioGetMaterialFromTextureId(pRenderData, texture->index);
-
-	if (pStudioMaterial)
-		return pStudioMaterial;
-
-	pStudioMaterial = std::make_shared<CStudioModelRenderMaterial>();
-
-	pRenderData->mStudioMaterials[texture->index] = pStudioMaterial;
-
-	return pStudioMaterial;
-}
-
 void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int StudioTextureType)
 {
 	if (textureValue && textureValue[0])
@@ -4483,6 +4495,8 @@ void R_StudioLoadExternalFile_BoneInternal(bspentity_t* ent, studiohdr_t* studio
 	}
 
 	REGISTER_BONE_FLAGS_KEY_VALUE(STUDIO_BF_LOWERBODY);
+
+#undef REGISTER_BONE_FLAGS_KEY_VALUE
 }
 
 void R_StudioLoadExternalFile_Bone(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
@@ -4526,7 +4540,7 @@ void R_StudioLoadExternalFile_SeqInternal(bspentity_t* ent, studiohdr_t* studioh
 {
 	auto flags_string = ValueForKey(ent, "flags");
 
-#define REGISTER_BONE_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
+#define REGISTER_SEQUENCE_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
 	{\
 		pseqdesc->flags |= name; \
 	}\
@@ -4535,7 +4549,9 @@ void R_StudioLoadExternalFile_SeqInternal(bspentity_t* ent, studiohdr_t* studioh
 		pseqdesc->flags &= ~name; \
 	}
 
-	REGISTER_BONE_FLAGS_KEY_VALUE(STUDIO_SF_HIDE_LOWERBODY);
+	REGISTER_SEQUENCE_FLAGS_KEY_VALUE(STUDIO_SF_HIDE_LOWERBODY);
+
+#undef REGISTER_SEQUENCE_FLAGS_KEY_VALUE
 }
 
 void R_StudioLoadExternalFile_Sequence(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
