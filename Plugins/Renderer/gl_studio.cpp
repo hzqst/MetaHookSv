@@ -3953,7 +3953,8 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 					}
 				}
 
-				auto pstudiohdr = IEngineStudio.Mod_Extradata(model);
+				auto pstudiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
+
 				if (pstudiohdr)
 				{
 					if (pplayer->gaitsequence > 0 && (R_GetStudioSequenceFlags(pstudiohdr, pplayer->gaitsequence) & STUDIO_SF_HIDE_LOWERBODY))
