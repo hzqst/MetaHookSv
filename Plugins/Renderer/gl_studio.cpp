@@ -3849,6 +3849,16 @@ void CopyPlayerInfoStudioRenderData(const player_info_t* src, player_info_t* dst
 	VectorCopy(src->prevgaitorigin, dst->prevgaitorigin);
 }
 
+int R_GetStudioSequenceFlags(studiohdr_t* pstudiohdr, int sequence)
+{
+	if (!pstudiohdr || sequence < 0 || sequence >= pstudiohdr->numseq)
+		return 0;
+
+	auto pseqdesc = (mstudioseqdesc_t*)((byte*)pstudiohdr + pstudiohdr->seqindex) + sequence;
+
+	return pseqdesc->flags;
+}
+
 /*
 
 	Purpose : StudioDrawPlayer hook handler
@@ -3876,6 +3886,8 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 		if (R_IsRenderingLowerBody())
 		{
+			bool bHideLowerbody = false;
+			
 			//Sniber NMSL
 			vec3_t vecSavedModelOrigin = { 0 };
 			float flSavedModelScale = 0;
@@ -3940,19 +3952,31 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 						}
 					}
 				}
+
+				auto pstudiohdr = IEngineStudio.Mod_Extradata(model);
+				if (pstudiohdr)
+				{
+					if (pplayer->gaitsequence > 0 && (R_GetStudioSequenceFlags(pstudiohdr, pplayer->gaitsequence) & STUDIO_SF_HIDE_LOWERBODY))
+						bHideLowerbody = true;
+					else if (pplayer->sequence > 0 && (R_GetStudioSequenceFlags(pstudiohdr, pplayer->sequence) & STUDIO_SF_HIDE_LOWERBODY))
+						bHideLowerbody = true;
+				}
 			}
 
-			if (g_ViewEntityIndex_SCClient)
+			if (!bHideLowerbody)
 			{
-				iSavedViewEntityIndex_SCClient = (*g_ViewEntityIndex_SCClient);
-				(*g_ViewEntityIndex_SCClient) = 0;
-			}
+				if (g_ViewEntityIndex_SCClient)
+				{
+					iSavedViewEntityIndex_SCClient = (*g_ViewEntityIndex_SCClient);
+					(*g_ViewEntityIndex_SCClient) = 0;
+				}
 
-			result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
+				result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
 
-			if (g_ViewEntityIndex_SCClient)
-			{
-				(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex_SCClient;
+				if (g_ViewEntityIndex_SCClient)
+				{
+					(*g_ViewEntityIndex_SCClient) = iSavedViewEntityIndex_SCClient;
+				}
 			}
 
 			VectorCopy(vecSavedModelOrigin, pModelPos);
@@ -4503,6 +4527,58 @@ void R_StudioLoadExternalFile_Bone(bspentity_t* ent, studiohdr_t* studiohdr, CSt
 	}
 }
 
+void R_StudioLoadExternalFile_SeqInternal(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData, mstudioseqdesc_t* pseqdesc)
+{
+	auto flags_string = ValueForKey(ent, "flags");
+
+#define REGISTER_BONE_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
+	{\
+		pseqdesc->flags |= name; \
+	}\
+	if (flags_string && !strcmp(flags_string, "-" #name))\
+	{\
+		pseqdesc->flags &= ~name; \
+	}
+
+	REGISTER_BONE_FLAGS_KEY_VALUE(STUDIO_SF_HIDE_LOWERBODY);
+}
+
+void R_StudioLoadExternalFile_Sequence(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
+{
+	auto name_string = ValueForKey(ent, "name");
+	if (name_string && name_string[0])
+	{
+		auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex);
+
+		for (int i = 0; i < studiohdr->numseq; ++i)
+		{
+			if (!strcmp(pseqdesc[i].label, name_string))
+			{
+				R_StudioLoadExternalFile_SeqInternal(ent, studiohdr, pRenderData, &pseqdesc[i]);
+				return;
+			}
+		}
+
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find \"%s\" in entity \"studio_sequence\"\n", name_string);
+		return;
+	}
+	auto index_string = ValueForKey(ent, "index");
+	if (index_string && index_string[0])
+	{
+		int seqindex = atoi(index_string);
+
+		if (seqindex >= 0 && seqindex < studiohdr->numseq)
+		{
+			auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex);
+
+			R_StudioLoadExternalFile_SeqInternal(ent, studiohdr, pRenderData, &pseqdesc[seqindex]);
+		}
+
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to find seq index \"%s\" in entity \"studio_sequence\"\n", index_string);
+		return;
+	}
+}
+
 void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
 {
 #define REGISTER_CELSHADE_KEY_VALUE(name, parser) if (1)\
@@ -4621,6 +4697,10 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 			else if (!strcmp(classname, "studio_bone"))
 			{
 				R_StudioLoadExternalFile_Bone(ent, studiohdr, pRenderData);
+			}
+			else if (!strcmp(classname, "studio_sequence"))
+			{
+				R_StudioLoadExternalFile_Sequence(ent, studiohdr, pRenderData);
 			}
 		}
 

@@ -235,8 +235,18 @@ typedef struct alight_s
 #define STUDIO_NF_CELSHADE_EXTENSIONBITS	(STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H)
 #define STUDIO_NF_CELSHADE_ALLBITS	(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_EXTENSIONBITS)
 
-//Bone flags
-#define STUDIO_BF_LOWERBODY	0x1
+
+// sequence flags
+#define STUDIO_LOOPING	0x0001
+#define STUDIO_SF_HIDE_LOWERBODY	0x2
+
+// bone flags
+#define STUDIO_HAS_NORMALS	0x0001
+#define STUDIO_HAS_VERTICES 0x0002
+#define STUDIO_HAS_BBOX		0x0004
+#define STUDIO_HAS_CHROME	0x0008	// if any of the textures have chrome on them
+
+#define STUDIO_BF_LOWERBODY			0x10
 
 //Vanilla GoldSrc flags for studio models
 #define EF_ROCKET			1			//! leave a trail
