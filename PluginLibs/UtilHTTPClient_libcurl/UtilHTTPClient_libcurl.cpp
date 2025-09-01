@@ -1,4 +1,3 @@
-#include <Windows.h>
 #include <format>
 #include <regex>
 #include <mutex>
@@ -1126,9 +1125,55 @@ public:
 
 	bool SetCookie(const char* host, const char* url, const char* cookie) override
 	{
-		//TODO: ....
+		if (!m_CurlCookieHandle)
+			return false;
 
-		return false;
+		// Parse the URL to extract domain and path
+		auto parsed_url = ParseUrlInternal(url);
+		if (!parsed_url)
+			return false;
+
+		SCOPE_EXIT{ parsed_url->Destroy(); };
+
+		// Create a temporary CURL handle to set the cookie
+		CURL* temp_handle = curl_easy_init();
+		if (!temp_handle)
+			return false;
+
+		// Configure the handle to use our shared cookie store
+		curl_easy_setopt(temp_handle, CURLOPT_SHARE, m_CurlCookieHandle);
+		
+		// Set the URL to establish the domain context
+		curl_easy_setopt(temp_handle, CURLOPT_URL, url);
+		
+		// Build complete cookie string with domain and path
+		std::string cookie_str = cookie;
+		std::string domain = parsed_url->GetHost();
+		std::string path = parsed_url->GetTarget();
+		
+		// If path is empty, default to "/"
+		if (path.empty())
+			path = "/";
+		
+		// Check if cookie already contains domain or path attributes
+		if (cookie_str.find("domain=") == std::string::npos)
+		{
+			cookie_str += std::format("; domain={}", domain);
+		}
+		
+		if (cookie_str.find("path=") == std::string::npos)
+		{
+			cookie_str += std::format("; path={}", path);
+		}
+		
+		// Set the cookie using CURLOPT_COOKIELIST with "Set-Cookie:" format
+		std::string cookie_header = std::format("Set-Cookie: {}", cookie_str);
+		CURLcode result = curl_easy_setopt(temp_handle, CURLOPT_COOKIELIST, cookie_header.c_str());
+		
+		// Clean up the temporary handle
+		curl_easy_cleanup(temp_handle);
+		
+		return (result == CURLE_OK);
 	}
 
 };
