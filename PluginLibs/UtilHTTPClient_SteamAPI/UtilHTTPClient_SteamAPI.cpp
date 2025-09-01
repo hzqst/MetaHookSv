@@ -87,6 +87,70 @@ private:
 	bool m_secure{};
 };
 
+IURLParsedResult* ParseUrlInternal(const std::string& url)
+{
+	std::regex url_regex(
+		R"((http|https|ws|wss|mqtt|mqtts)://([^/:]+)(?::(\d+))?(/.*)?)",
+		std::regex_constants::icase
+	);
+
+	std::smatch url_match_result;
+
+	if (std::regex_match(url, url_match_result, url_regex)) {
+		// If we found a match
+		if (url_match_result.size() >= 4) {
+			// Extract the matched groups
+			std::string scheme = url_match_result[1].str();
+			std::string host = url_match_result[2].str();
+			std::string port_str = url_match_result[3].str();
+			std::string target = (url_match_result.size() >= 5) ? url_match_result[4].str() : "";
+
+			unsigned port_us = 0;
+
+			if (!port_str.empty()) {
+				try {
+					size_t pos;
+					int port = std::stoi(port_str, &pos);
+					if (pos != port_str.size() || port < 0 || port > 65535) {
+						return nullptr;
+					}
+					port_us = static_cast<unsigned short>(port);
+				}
+				catch (const std::invalid_argument&) {
+					return nullptr;
+				}
+				catch (const std::out_of_range&) {
+					return nullptr;
+				}
+			}
+			else {
+				if (scheme == "http") {
+					port_us = 80;
+				}
+				else if (scheme == "https") {
+					port_us = 443;
+				}
+				else if (scheme == "ws") {
+					port_us = 80;
+				}
+				else if (scheme == "wss") {
+					port_us = 443;
+				}
+				else if (scheme == "mqtt") {
+					port_us = 1883;
+				}
+				else if (scheme == "mqtts") {
+					port_us = 8883;
+				}
+			}
+
+			return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
+		}
+	}
+
+	return nullptr;
+}
+
 class CUtilHTTPPayload : public IUtilHTTPPayload
 {
 private:
@@ -130,6 +194,11 @@ private:
 	bool m_bResponseError{};
 	bool m_bIsStreamPayload{};
 	int m_iResponseStatusCode{};
+	std::string m_ResponseErrorMessage;
+
+	//cached headers
+	std::unordered_map<std::string, std::shared_ptr<std::string>> m_headers;
+
 	CUtilHTTPPayload* m_pResponsePayload{};
 
 	HTTPRequestHandle m_RequestHandle{ INVALID_HTTPREQUEST_HANDLE  };
@@ -197,6 +266,33 @@ public:
 		return SteamHTTP()->GetHTTPResponseHeaderValue(m_RequestHandle, name, (uint8 *)buf, buflen);
 	}
 
+	const char* GetHeaderValue(const char* name) override
+	{
+		auto it = m_headers.find(name);
+		if (it != m_headers.end())
+		{
+			return it->second->c_str();
+		}
+
+		size_t valueLength{ 0 };
+		if (GetHeaderSize(name, &valueLength) && valueLength > 0)
+		{
+			std::string value(valueLength, '\0');
+			if (GetHeader(name, value.data(), valueLength))
+			{
+				m_headers[name] = std::make_shared<std::string>(value);
+
+				auto it = m_headers.find(name);
+				if (it != m_headers.end())
+				{
+					return it->second->c_str();
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	bool IsResponseCompleted() const override
 	{
 		return m_bResponseCompleted;
@@ -205,6 +301,11 @@ public:
 	bool IsResponseError() const override
 	{
 		return m_bResponseError;
+	}
+
+	const char* GetResponseErrorMessage() const override
+	{
+		return m_ResponseErrorMessage.c_str();
 	}
 
 	int GetStatusCode() const override
@@ -744,59 +845,6 @@ public:
 		}
 	}
 
-	IURLParsedResult* ParseUrlInternal(const std::string& url)
-	{
-		std::regex url_regex(
-			R"((http|https)://([^/]+)(:?(\d+)?)?(/.*)?)",
-			std::regex_constants::icase
-		);
-
-		std::smatch url_match_result;
-
-		if (std::regex_match(url, url_match_result, url_regex)) {
-			// If we found a match
-			if (url_match_result.size() >= 4) {
-				// Extract the matched groups
-				std::string scheme = url_match_result[1].str();
-				std::string host = url_match_result[2].str();
-				std::string port_str = url_match_result[3].str();
-				std::string target = (url_match_result.size() >= 6) ? url_match_result[5].str() : "";
-
-				unsigned port_us = 0;
-
-				if (!port_str.empty()) {
-
-					try {
-						size_t pos;
-						int port = std::stoi(port_str, &pos);
-						if (pos != port_str.size() || port < 0 || port > 65535) {
-							return nullptr;
-						}
-						port_us = static_cast<unsigned short>(port);
-					}
-					catch (const std::invalid_argument&) {
-						return nullptr;
-					}
-					catch (const std::out_of_range&) {
-						return nullptr;
-					}
-				}
-				else {
-					if (scheme == "http") {
-						port_us = 80;
-					}
-					else if (scheme == "https") {
-						port_us = 443;
-					}
-				}
-
-				return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
-			}
-		}
-
-		return nullptr;
-	}
-
 	IURLParsedResult *ParseUrl(const char *url) override
 	{
 		return ParseUrlInternal(url);
@@ -814,7 +862,7 @@ public:
 
 	IUtilHTTPRequest* CreateSyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		auto result = ParseUrl(url);
+		auto result = ParseUrlInternal(url);
 
 		if (!result)
 			return nullptr;
@@ -826,7 +874,7 @@ public:
 
 	IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		auto result = ParseUrl(url);
+		auto result = ParseUrlInternal(url);
 
 		if (!result)
 			return nullptr;
@@ -835,7 +883,6 @@ public:
 
 		return CreateAsyncRequestEx(result->GetHost(), result->GetPort(), result->GetTarget(), result->IsSecure(), method, callbacks);
 	}
-
 
 	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
@@ -917,3 +964,20 @@ public:
 };
 
 EXPOSE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION);
+
+class CUtilHTTPClientFactory : public IUtilHTTPClientFactory
+{
+public:
+
+	IUtilHTTPClient* CreateUtilHTTPClient() override
+	{
+		return new (std::nothrow) CUtilHTTPClient();
+	}
+
+	IURLParsedResult* ParseUrl(const char* url) override
+	{
+		return ParseUrlInternal(url);
+	}
+};
+
+EXPOSE_SINGLE_INTERFACE(CUtilHTTPClientFactory, IUtilHTTPClientFactory, UTIL_HTTPCLIENT_FACTORY_STEAMAPI_INTERFACE_VERSION);

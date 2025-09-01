@@ -69,6 +69,70 @@ private:
 	bool m_secure{};
 };
 
+IURLParsedResult* ParseUrlInternal(const std::string& url)
+{
+	std::regex url_regex(
+		R"((http|https|ws|wss|mqtt|mqtts)://([^/:]+)(?::(\d+))?(/.*)?)",
+		std::regex_constants::icase
+	);
+
+	std::smatch url_match_result;
+
+	if (std::regex_match(url, url_match_result, url_regex)) {
+		// If we found a match
+		if (url_match_result.size() >= 4) {
+			// Extract the matched groups
+			std::string scheme = url_match_result[1].str();
+			std::string host = url_match_result[2].str();
+			std::string port_str = url_match_result[3].str();
+			std::string target = (url_match_result.size() >= 5) ? url_match_result[4].str() : "";
+
+			unsigned port_us = 0;
+
+			if (!port_str.empty()) {
+				try {
+					size_t pos;
+					int port = std::stoi(port_str, &pos);
+					if (pos != port_str.size() || port < 0 || port > 65535) {
+						return nullptr;
+					}
+					port_us = static_cast<unsigned short>(port);
+				}
+				catch (const std::invalid_argument&) {
+					return nullptr;
+				}
+				catch (const std::out_of_range&) {
+					return nullptr;
+				}
+			}
+			else {
+				if (scheme == "http") {
+					port_us = 80;
+				}
+				else if (scheme == "https") {
+					port_us = 443;
+				}
+				else if (scheme == "ws") {
+					port_us = 80;
+				}
+				else if (scheme == "wss") {
+					port_us = 443;
+				}
+				else if (scheme == "mqtt") {
+					port_us = 1883;
+				}
+				else if (scheme == "mqtts") {
+					port_us = 8883;
+				}
+			}
+
+			return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
+		}
+	}
+
+	return nullptr;
+}
+
 class CUtilHTTPPayload : public IUtilHTTPPayload
 {
 private:
@@ -114,10 +178,11 @@ private:
 	bool m_bIsStream{};
 	bool m_bIsHeaderProcessed{};
 	int m_iResponseStatusCode{};
+	std::string m_ResponseErrorMessage;
 	CUtilHTTPPayload* m_pResponsePayload{};
 	CUtilHTTPPayload* m_pResponseHeaderPayload{};
 
-	std::unordered_map<std::string, std::string> m_headers;
+	std::unordered_map<std::string, std::shared_ptr<std::string>> m_headers;
 
 	CURL* m_CurlEasyHandle{};
 
@@ -148,7 +213,7 @@ public:
 	{
 		auto it = m_headers.find(name);
 		if (it != m_headers.end()) {
-			*buflen = it->second.length() + 1;
+			*buflen = it->second->length() + 1;
 			return true;
 		}
 		return false;
@@ -158,10 +223,25 @@ public:
 	{
 		auto it = m_headers.find(name);
 		if (it != m_headers.end()) {
-			strncpy(buf, it->second.c_str(), buflen);
+			strncpy(buf, it->second->c_str(), buflen);
+			buf[buflen - 1] = 0;
 			return true;
 		}
 		return false;
+	}
+
+	const char* GetHeaderValue(const char* name) override
+	{
+		if (!name)
+			return nullptr;
+
+		auto it = m_headers.find(name);
+		if (it != m_headers.end())
+		{
+			return it->second->c_str();
+		}
+
+		return nullptr;
 	}
 
 	bool IsResponseCompleted() const override
@@ -172,6 +252,11 @@ public:
 	bool IsResponseError() const override
 	{
 		return m_bResponseError;
+	}
+
+	const char* GetResponseErrorMessage() const override
+	{
+		return m_ResponseErrorMessage.c_str();
 	}
 
 	int GetStatusCode() const override
@@ -231,7 +316,18 @@ public:
 
 					// Only store if both key and value are not empty
 					if (!key.empty()) {
-						m_headers[std::string(key)] = std::string(value);
+						std::string k(key);
+						auto it = m_headers.find(k);
+						if (it != m_headers.end())
+						{
+							auto pstr = it->second;
+							(*pstr) += "\r\n";
+							(*pstr) += value;
+						}
+						else
+						{
+							m_headers[k] = std::make_shared<std::string>(value);
+						}
 					}
 				}
 			}
@@ -250,6 +346,9 @@ public:
 		if (code != CURLE_OK || m_iResponseStatusCode >= 400 || !m_iResponseStatusCode)
 		{
 			m_bResponseError = true;
+
+			if(code != CURLE_OK)
+				m_ResponseErrorMessage = curl_easy_strerror(code);
 		}
 
 		m_bResponseCompleted = true;
@@ -323,6 +422,7 @@ public:
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_NOSIGNAL, 1);
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CONNECTTIMEOUT_MS, 60000);
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_TIMEOUT_MS, 60000);
+		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_ACCEPT_ENCODING, "");
 		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_COOKIEFILE, "");
 		if(m_CurlCookieHandle)
 			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SHARE, m_CurlCookieHandle);
@@ -426,12 +526,12 @@ public:
 			m_bRequestSuccessful = true;
 		}
 
-		OnRespondFinish();
-
 		if (m_Callbacks)
 		{
 			m_Callbacks->OnResponseComplete(this, m_pResponse);
 		}
+
+		OnRespondFinish();
 	}
 
 	void WriteHeader(const void* data, size_t size)
@@ -935,7 +1035,7 @@ public:
 
 	IUtilHTTPRequest* CreateSyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		auto result = ParseUrl(url);
+		auto result = ParseUrlInternal(url);
 
 		if (!result)
 			return nullptr;
@@ -947,7 +1047,7 @@ public:
 
 	IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		auto result = ParseUrl(url);
+		auto result = ParseUrlInternal(url);
 
 		if (!result)
 			return nullptr;
@@ -964,7 +1064,7 @@ public:
 
 	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
-		auto result = ParseUrl(url);
+		auto result = ParseUrlInternal(url);
 
 		if (!result)
 			return nullptr;
@@ -1034,3 +1134,20 @@ public:
 };
 
 EXPOSE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION);
+
+class CUtilHTTPClientFactory : public IUtilHTTPClientFactory
+{
+public:
+
+	IUtilHTTPClient* CreateUtilHTTPClient() override
+	{
+		return new (std::nothrow) CUtilHTTPClient();
+	}
+
+	IURLParsedResult* ParseUrl(const char* url) override
+	{
+		return ParseUrlInternal(url);
+	}
+};
+
+EXPOSE_SINGLE_INTERFACE(CUtilHTTPClientFactory, IUtilHTTPClientFactory, UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION);

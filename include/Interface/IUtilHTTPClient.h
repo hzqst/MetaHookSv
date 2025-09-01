@@ -43,6 +43,8 @@ public:
 	virtual bool GetHeader(const char* name, char* buf, size_t buflen) = 0;
 	virtual bool IsResponseCompleted() const = 0;
 	virtual bool IsResponseError() const = 0;
+	virtual const char* GetResponseErrorMessage() const = 0;
+	virtual const char* GetHeaderValue(const char* name) = 0;
 };
 
 class IUtilHTTPRequest : public IBaseInterface
@@ -127,7 +129,7 @@ public:
 	//You should call this function every frame
 	virtual void RunFrame() = 0;
 
-	//You are responsible for destroying the IURLParsedResult* instance
+	//Note that this has been marked as deprecated and should not be used
 	virtual IURLParsedResult* ParseUrl(const char* url) = 0;
 
 	//You should immediately call Destroy() after using the IUtilHTTPRequest* instance
@@ -151,3 +153,15 @@ public:
 
 #define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_007"
 #define UTIL_HTTPCLIENT_LIBCURL_INTERFACE_VERSION "UtilHTTPClient_libcurl_007"
+
+class IUtilHTTPClientFactory : public IBaseInterface
+{
+public:
+	virtual IUtilHTTPClient* CreateUtilHTTPClient() = 0;
+
+	//You are responsible for destroying the IURLParsedResult* instance
+	virtual IURLParsedResult* ParseUrl(const char* url) = 0;
+};
+
+#define UTIL_HTTPCLIENT_FACTORY_STEAMAPI_INTERFACE_VERSION "UtilHTTPClientFactory_SteamAPI_007"
+#define UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION "UtilHTTPClientFactory_libcurl_007"
