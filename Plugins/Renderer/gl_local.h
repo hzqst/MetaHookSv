@@ -347,6 +347,8 @@ extern cvar_t* r_leaf_lazy_load;
 
 extern cvar_t* r_studio_lazy_load;
 
+extern cvar_t* r_studio_unload;
+
 extern cvar_t* r_viewmodel_debug;
 
 void GammaToLinear(float *color);

@@ -346,6 +346,8 @@ cvar_t* r_leaf_lazy_load = NULL;
 
 cvar_t* r_studio_lazy_load = NULL;
 
+cvar_t* r_studio_unload = NULL;
+
 cvar_t* r_viewmodel_debug = NULL;
 
 cvar_t* r_wsurf_parallax_scale = NULL;
@@ -3416,6 +3418,12 @@ void R_InitCvars(void)
 	*/
 	r_studio_lazy_load = gEngfuncs.pfnRegisterVariable("r_studio_lazy_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	/*
+	r_studio_unload 0: Never unload GPU resources for unused studiomodels.
+	r_studio_unload 1: Unload GPU resources for unused studiomodels on level changes.
+	*/
+	r_studio_unload = gEngfuncs.pfnRegisterVariable("r_studio_unload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	r_viewmodel_debug = gEngfuncs.pfnRegisterVariable("r_viewmodel_debug", "0", FCVAR_CLIENTDLL );
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
@@ -3483,24 +3491,27 @@ void R_NewMap(void)
 
 	R_StudioFlushAllSkins();
 
-	//Free GPU resources after one seconds...
-	auto pWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
-
-	if (pWorldSurfaceWorldModel)
+	if ((int)r_studio_unload->value > 0)
 	{
-		GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pWorldSurfaceWorldModel]() {
+		//Free GPU resources after one seconds...
+		auto pWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
-			if (!(*cl_worldmodel))
-				return;
+		if (pWorldSurfaceWorldModel)
+		{
+			GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pWorldSurfaceWorldModel]() {
 
-			auto pCurrentWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
+				if (!(*cl_worldmodel))
+					return;
 
-			if (pWorldSurfaceWorldModel == pCurrentWorldSurfaceWorldModel)
-			{
-				R_FreeUnreferencedStudioRenderData();
-			}
+				auto pCurrentWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
 
-		}, gEngfuncs.GetAbsoluteTime() + 1.0f));
+				if (pWorldSurfaceWorldModel == pCurrentWorldSurfaceWorldModel)
+				{
+					R_FreeUnreferencedStudioRenderData();
+				}
+
+				}, gEngfuncs.GetAbsoluteTime() + 1.0f));
+		}
 	}
 	
 	(*r_framecount) = 1;
