@@ -2552,7 +2552,14 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
 	}
 
+	//Don't draw transparent part of viewmodel in pre-viewmodel pass.
 	if (R_IsRenderingPreViewModel() && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
+	{
+		return;
+	}
+
+	//Disable shadow of transparent objects.
+	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
 	{
 		return;
 	}
