@@ -229,8 +229,17 @@ extern "C"
 				gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
 		}
 #endif
-		MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)(-1), 0);
+
+		//Fix 3266 silent crash
+		if (g_pfnSys_Error)
+		{
+			g_pfnSys_Error("%s", msg);
+		}
+		else
+		{
+			MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+			NtTerminateProcess((HANDLE)(-1), 0);
+		}
 	}
 }
 

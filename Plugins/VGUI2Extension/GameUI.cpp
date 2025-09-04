@@ -2945,6 +2945,14 @@ void GameUI_FillAddress_COptionsSubMultiplayer_ctor(const mh_dll_info_t& DllInfo
 		{
 			return TRUE;
 		}
+		if (Candidate[0] == 0x8B &&
+			Candidate[1] == 0x44 &&
+			Candidate[2] == 0x24 &&
+			Candidate[3] == 0x04 &&
+			Candidate[4] == 0x81)
+		{
+			return TRUE;
+		}
 
 		return FALSE;
 	});
