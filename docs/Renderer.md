@@ -263,6 +263,20 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * BSP specular textures only work when `r_detailtextures` set to 1, and deferred shading pipeline available and enabled.
 
+## StudioModel external file
+
+You may create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file `[modelname]_external.txt` to override studiomodel properties without need to modify the content of `[modelname].mdl` file.
+
+The content of `[modelname]_external.txt` looks like this:
+
+```
+{
+    "classname" "value"
+    "key2" "value2"
+    "key3" "value3"
+}
+```
+
 ## StudioModel texture replacement
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
@@ -357,7 +371,9 @@ The channel `BLUE` will be used as the ratio of the Spherized-Normal on "face" t
 
 * Use cvar `r_studio_base_specular 1.0 2.0` to control the intensity and focus of the phong-model specular lighting.
 
-* Higher "intensity" results in higher brightness, while higher "focus" gets the specular lighting focused into a shiny point.
+* For base specular stuffs, higher "intensity" results in higher brightness, while higher "focus" gets the specular lighting focused into a shiny point.
+
+* `classname` `studio_texture` with key-value pair `base_specular` `1.0 2.0` overrides the cvar one.
 
 ## StudioModel alpha-transparent texture
 
@@ -430,7 +446,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 {
     "classname" "studio_efx"
-    "flags" "EF_OUTLINE"
+    "flags" "FMODEL_OUTLINE"
 }
 ```
 
@@ -601,6 +617,173 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 `r_studio_hair_specular_smooth` controls how does the hair specular performance in dark area.
 
 `r_studio_hair_shadow_offset` controls how the offset of hair shadow (horizontal and vertical offset in screen space).
+
+## Studio _external.txt samples
+
+### StudioTexture override sample
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "123.bmp"
+    "replacetexture" "123.dds"
+    "normaltexture" "123.png"
+    "parallaxtexture" "123.tga"
+    "speculartexture" "123.jpg"
+    "flags" "STUDIO_NF_FLATSHADE"
+    "base_specular" "1.0 2.0"
+}
+```
+
+* Possible studio_texture flags:
+
+```
+// lighting options
+#define STUDIO_NF_FLATSHADE		0x0001
+#define STUDIO_NF_CHROME		0x0002
+#define STUDIO_NF_FULLBRIGHT	0x0004
+#define STUDIO_NF_NOMIPS        0x0008
+#define STUDIO_NF_ALPHA         0x0010
+#define STUDIO_NF_ADDITIVE      0x0020
+#define STUDIO_NF_MASKED        0x0040
+
+// renderer-private options
+#define STUDIO_NF_CELSHADE					0x1000
+#define STUDIO_NF_CELSHADE_FACE				0x2000
+#define STUDIO_NF_CELSHADE_HAIR				0x4000
+#define STUDIO_NF_HASOUTLINE				0x8000  //For internal unsage only.
+#define STUDIO_NF_DOUBLE_FACE				0x10000
+
+#define STUDIO_NF_NOOUTLINE					0x40000
+```
+
+### StudioEffects override sample
+
+```
+{
+    "classname" "studio_efx"
+    "flags" "FMODEL_OUTLINE"
+}
+{
+    "classname" "studio_efx"
+    "flags" "-FMODEL_ROCKET"
+}
+```
+
+* Note that flags with `-FMODEL_ROCKET` means remove `FMODEL_ROCKET` from flags.
+
+* Possible studio_efx flags:
+
+```
+#define	FMODEL_ROCKET			1			// leave a trail
+#define	FMODEL_GRENADE			2			// leave a trail
+#define	FMODEL_GIB				4			// leave a trail
+#define	FMODEL_ROTATE			8			// rotate (bonus items)
+#define	FMODEL_TRACER			0x10		// green split trail
+#define	FMODEL_ZOMGIB			0x20		// small blood trail
+#define	FMODEL_TRACER2			0x40		// orange split trail + rotate
+#define	FMODEL_TRACER3			0x80		// purple trail
+#define FMODEL_DYNAMIC_LIGHT	0x100			
+#define FMODEL_TRACE_HITBOX		0x200		//Use hitbox collision
+#define FMODEL_FORCESKYLIGHT	0x400		//Forces the model to lit by sky
+#define FMODEL_OUTLINE			0x1000		//Draw outline
+
+//Vanilla flags alternative for studio models
+#define EF_ROCKET			1			//! leave a trail
+#define EF_GRENADE			2			//! leave a trail
+#define EF_GIB				4			//! leave a trail
+#define EF_ROTATE			8			//! rotate (bonus items)
+#define EF_TRACER			0x10		//! green split trail
+#define EF_ZOMGIB			0x20		//! small blood trail
+#define EF_TRACER2			0x40		//! orange split trail + rotate
+#define EF_TRACER3			0x80		//! purple trail
+#define EF_NOSHADELIGHT		0x100		//! No shade lighting
+#define EF_HITBOXCOLLISIONS	0x200		//! Use hitbox collisions
+#define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
+#define EF_OUTLINE			0x1000		// Draw outline
+```
+
+### StudioCelshade control sample
+
+```
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "160 150 150"
+    "celshade_head_offset" "3.5 2 0"
+    "celshade_lightdir_adjust" "0.01 0.001"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_smooth" "0.1"
+    "rimlight_smooth2" "0.0 0.3"
+    "rimlight_color" "40 40 40"
+    "rimdark_power" "5.0"
+    "rimdark_smooth" "0.1"
+    "rimdark_smooth2" "0.0 0.3"
+    "rimdark_color" "50 50 50"
+    "hair_specular_exp" "256"
+    "hair_specular_exp2" "8"
+    "hair_specular_intensity" "0.3 0.3 0.3"
+    "hair_specular_intensity2" "0.12 0.12 0.12"
+    "hair_specular_noise" "500 600 0.004 0.005"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
+}
+```
+
+### StudioLowerbody control sample
+
+```
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "0 0 0"
+    "duck_model_origin" "0 0 0"
+    "model_scale" "1"
+}
+```
+
+### StudioBone modification sample
+
+```
+{
+    "classname" "studio_bone"
+    "name" "Bip01"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "index" "0"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "index" "1"
+    "flags" "-STUDIO_BF_LOWERBODY"
+}
+```
+
+* Note that flags with `-STUDIO_BF_LOWERBODY` means remove `STUDIO_BF_LOWERBODY` from flags.
+
+### StudioSequence modification sample
+
+```
+{
+    "classname" "studio_sequence"
+    "name" "swim"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "idle"
+    "flags" "-STUDIO_SF_HIDE_LOWERBODY"
+}
+```
+
+* Note that flags with `-STUDIO_SF_HIDE_LOWERBODY` means remove `STUDIO_SF_HIDE_LOWERBODY` from flags.
+
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 

@@ -248,6 +248,19 @@ typedef struct alight_s
 
 #define STUDIO_BF_LOWERBODY			0x10
 
+#define	FMODEL_ROCKET			1			// leave a trail
+#define	FMODEL_GRENADE			2			// leave a trail
+#define	FMODEL_GIB				4			// leave a trail
+#define	FMODEL_ROTATE			8			// rotate (bonus items)
+#define	FMODEL_TRACER			0x10		// green split trail
+#define	FMODEL_ZOMGIB			0x20		// small blood trail
+#define	FMODEL_TRACER2			0x40		// orange split trail + rotate
+#define	FMODEL_TRACER3			0x80		// purple trail
+#define FMODEL_DYNAMIC_LIGHT	0x100			
+#define FMODEL_TRACE_HITBOX		0x200		//Use hitbox collision
+#define FMODEL_FORCESKYLIGHT	0x400		// forces the model to lit by sky
+#define FMODEL_OUTLINE			0x1000		//Added by hzqst
+
 //Vanilla GoldSrc flags for studio models
 #define EF_ROCKET			1			//! leave a trail
 #define EF_GRENADE			2			//! leave a trail

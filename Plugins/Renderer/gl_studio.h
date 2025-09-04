@@ -124,12 +124,12 @@ class CStudioModelRenderMaterial
 {
 public:
 	CStudioModelRenderTexture textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
+	StudioConVar base_specular;
 };
 
 class CStudioCelshadeControl
 {
 public:
-	StudioConVar base_specular;
 	StudioConVar celshade_specular;
 	StudioConVar celshade_midpoint;
 	StudioConVar celshade_softness;
@@ -302,37 +302,32 @@ public:
 	CStudioBoneCache* m_next;
 };
 
+extern cvar_t* r_studio_base_specular;
+
 class CStudioSetupSkinContext
 {
 public:
-	CStudioSetupSkinContext(program_state_t* State)
+	CStudioSetupSkinContext(program_state_t* State) : StudioProgramState(State)
 	{
-		StudioProgramState = State;
-		packedDiffuseIndex = -1;
-		packedNormalIndex = -1;
-		packedParallaxIndex = -1;
-		packedSpecularIndex = -1;
-		packedCount = 0;
-		packedStride = 0;
-		width = 0; 
-		height = 0;
-		s = 0;
-		t = 0;
-		framerate = 0;
-		numframes = 0;
+		vec2_t base_specular{};
+		if (UTIL_ParseCvarAsVector2(r_studio_base_specular, base_specular))
+		{
+			memcpy(baseSpecular, base_specular, sizeof(base_specular));
+		}
 	}
 
-	program_state_t* StudioProgramState;
-	int packedDiffuseIndex;
-	int packedNormalIndex;
-	int packedParallaxIndex;
-	int packedSpecularIndex;
-	int packedCount;
-	float packedStride;
-	float width, height;
-	float s, t;
-	float framerate;
-	float numframes;
+	program_state_t* StudioProgramState{};
+	int packedDiffuseIndex{-1};
+	int packedNormalIndex{ -1 };
+	int packedParallaxIndex{ -1 };
+	int packedSpecularIndex{ -1 };
+	int packedCount{};
+	vec2_t baseSpecular{};
+	float packedStride{};
+	float width{}, height{};
+	float s{}, t{};
+	float framerate{};
+	float numframes{};
 };
 
 //engine
@@ -380,8 +375,8 @@ extern model_t *cl_sprite_shell;
 extern int r_studio_drawcall;
 extern int r_studio_polys;
 
-extern MapConVar* r_studio_base_specular;
-extern MapConVar* r_studio_celshade_specular;
+extern cvar_t* r_studio_base_specular;
+extern cvar_t* r_studio_celshade_specular;
 
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
 std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromModel(model_t* mod);

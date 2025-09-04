@@ -4474,12 +4474,6 @@ void R_ParseBSPEntity_Env_SSR_Control(bspentity_t* ent)
 	R_ParseMapCvarSetMapValue(r_ssr_fade, ValueForKey(ent, "fade"));
 }
 
-void R_ParseBSPEntity_Env_Studio_Control(bspentity_t* ent)
-{
-	R_ParseMapCvarSetMapValue(r_studio_base_specular, ValueForKey(ent, "base_specular"));
-	R_ParseMapCvarSetMapValue(r_studio_celshade_specular, ValueForKey(ent, "celshade_specular"));
-}
-
 void R_LoadBSPEntities(std::vector<bspentity_t*>& vBSPEntities)
 {
 	for (auto ent : vBSPEntities)
@@ -4529,10 +4523,6 @@ void R_LoadBSPEntities(std::vector<bspentity_t*>& vBSPEntities)
 			R_ParseBSPEntity_Env_SSR_Control(ent);
 		}
 
-		else if (!strcmp(classname, "env_studio_control"))
-		{
-			R_ParseBSPEntity_Env_Studio_Control(ent);
-		}
 	}//end for
 }
 
