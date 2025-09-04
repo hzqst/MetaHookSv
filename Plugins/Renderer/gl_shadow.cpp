@@ -205,9 +205,6 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 		if (ent->index == 0)
 			return false;
 
-		//if (ent->player && StudioGetSequenceActivityType(ent->model, &ent->curstate) == 1)
-		//	return true;
-
 		if (ent->curstate.movetype == MOVETYPE_NONE && ent->curstate.solid == SOLID_NOT)
 			return false;
 
@@ -321,20 +318,21 @@ void R_RenderShadowScene(void)
 			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
 			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
 
+			r_draw_shadowcaster = true;
+
 			cl_entity_t *backup_curentity = (*currententity);
 
 			for (int j = 0; j < shadow_numvisedicts[i]; ++j)
 			{
 				(*currententity) = shadow_visedicts[i][j];
 
-				r_draw_shadowcaster = true;
-
 				R_DrawCurrentEntity(false);
 
-				r_draw_shadowcaster = false;
 			}
 
 			(*currententity) = backup_curentity;
+
+			r_draw_shadowcaster = false;
 		}
 
 		glClearDepth(1);

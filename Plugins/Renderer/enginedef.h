@@ -259,9 +259,11 @@ typedef struct alight_s
 #define FMODEL_DYNAMIC_LIGHT	0x100			
 #define FMODEL_TRACE_HITBOX		0x200		//Use hitbox collision
 #define FMODEL_FORCESKYLIGHT	0x400		// forces the model to lit by sky
-#define FMODEL_OUTLINE			0x1000		//Added by hzqst
+#define FMODEL_OUTLINE			0x1000		//Renderer-specified flags
+#define FMODEL_NOBLOOM			0x2000		//Renderer-specified flags
+#define FMODEL_NOSHADOW			0x4000		//Renderer-specified flags
 
-//Vanilla GoldSrc flags for studio models
+//Vanilla GoldSrc flags for studio models, deprecated
 #define EF_ROCKET			1			//! leave a trail
 #define EF_GRENADE			2			//! leave a trail
 #define EF_GIB				4			//! leave a trail
@@ -273,10 +275,8 @@ typedef struct alight_s
 #define EF_NOSHADELIGHT		0x100			//! No shade lighting
 #define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
 #define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
+#define EF_OUTLINE			0x1000		//Renderer-specified flags
 
-//Renderer specified flags added by hzqst
-#define EF_OUTLINE			0x1000		//Only work with studiomodel now.
-#define EF_NOBLOOM			0x2000		//Only work with sprite now.
 
 #define kRenderFxDrawDeferedTransparentMeshes 0x80000000
 

@@ -170,12 +170,12 @@ CStudioModelRenderData::~CStudioModelRenderData()
 
 bool R_StudioHasOutline()
 {
-	return r_studio_outline->value > 0 && ((*pstudiohdr)->flags & EF_OUTLINE);
+	return (int)r_studio_outline->value > 0 && ((*pstudiohdr)->flags & FMODEL_OUTLINE);
 }
 
 bool R_StudioHasHairShadow()
 {
-	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
+	return r_draw_hashair && r_draw_hasface && (int)r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
 }
 
 void R_StudioClearVanillaBonesCaches()
@@ -2790,22 +2790,41 @@ void R_StudioDrawMesh_DrawPass(
 			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 
+			if((*pstudiohdr)->flags & FMODEL_NOBLOOM)
+				iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
 			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
 		}
 		else
 		{
 			int iStencilRef = 0;
+			int iStencilMask = 0;
 
 			if (R_IsRenderingPreViewModel())
+			{
 				iStencilRef |= STENCIL_MASK_VIEW_MODEL;
+				iStencilMask |= STENCIL_MASK_VIEW_MODEL;
+			}
 
 			if (r_draw_hasoutline)
+			{
 				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
+				iStencilMask |= STENCIL_MASK_HAS_OUTLINE;
+			}
 
 			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
+			{
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
+				iStencilMask |= STENCIL_MASK_HAS_FLATSHADE;
+			}
 
-			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_HAS_OUTLINE | STENCIL_MASK_HAS_FLATSHADE | STENCIL_MASK_VIEW_MODEL);
+			if ((*pstudiohdr)->flags & FMODEL_NOBLOOM)
+			{
+				iStencilRef |= STENCIL_MASK_NO_BLOOM;
+				iStencilMask |= STENCIL_MASK_NO_BLOOM;
+			}
+
+			GL_BeginStencilWrite(iStencilRef, iStencilMask);
 		}
 	}
 
@@ -3247,6 +3266,11 @@ void R_GLStudioDrawPoints(void)
 	if (!pRenderData->hVAO)
 	{
 		//GPU resources not ready yet.
+		return;
+	}
+
+	if ( ((*pstudiohdr)->flags & FMODEL_NOSHADOW) && R_IsRenderingShadowView())
+	{
 		return;
 	}
 
@@ -3827,30 +3851,6 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		{
 			result = pfnDrawPlayer(pthis, dummy, flags, pplayer);
 		}
-#if 0
-		if (!g_PlayerInfoStorage[playerindex].Filled)
-		{
-			CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
-
-			g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
-			g_PlayerInfoStorage[playerindex].Filled = true;
-		}
-		else
-		{
-			if ((g_PlayerInfoStorage[playerindex].FilledWithRenderFlags & STUDIO_RENDER) && !(flags & STUDIO_RENDER))
-			{
-
-			}
-			else
-			{
-				CopyPlayerInfoStudioRenderData(pPlayerInfo, &g_PlayerInfoStorage[playerindex].ChangedPlayerInfo);
-
-				g_PlayerInfoStorage[playerindex].FilledWithRenderFlags = flags;
-				g_PlayerInfoStorage[playerindex].Filled = true;
-			}
-		}
-
-#endif
 	}
 	else
 	{
@@ -4312,6 +4312,8 @@ void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, CStu
 	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_TRACE_HITBOX);
 	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_FORCESKYLIGHT);
 	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_OUTLINE);
+	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_NOBLOOM);
+	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_NOSHADOW);
 
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_ROCKET);
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_GRENADE);

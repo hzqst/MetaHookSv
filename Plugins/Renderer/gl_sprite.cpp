@@ -784,7 +784,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	bool bNoBloom = false;
 
-	if (pSpriteVBOData && (pSpriteVBOData->flags & EF_NOBLOOM))
+	if (pSpriteVBOData && (pSpriteVBOData->flags & FMODEL_NOBLOOM))
 	{
 		bNoBloom = true;
 	}
@@ -924,7 +924,7 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_v
 		pSpriteVBOData->flags &= ~name; \
 	}
 
-	REGISTER_EFX_FLAGS_KEY_VALUE(EF_NOBLOOM);
+	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_NOBLOOM);
 
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }

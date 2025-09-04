@@ -277,6 +277,8 @@ The content of `[modelname]_external.txt` looks like this:
 }
 ```
 
+* Most advanced features about studio rendering are based on `_external.txt` file.
+
 ## StudioModel texture replacement
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
@@ -363,7 +365,7 @@ The channel `RED` will be used as the intensity of the specular.
 
 The channel `GREEN` will be used as the intensity of the Screen-Space-Reflection.
 
-The channel `BLUE` will be used as the ratio of the Spherized-Normal on "face" textures。(This only affects textures with STUDIO_NF_CELSHADE_FACE)
+The channel `BLUE` will be used as the ratio of the Spherized-Normal on "face" textures。(This only affects textures with `STUDIO_NF_CELSHADE_FACE`)
 
 ### Cvars
 
@@ -783,7 +785,6 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 ```
 
 * Note that flags with `-STUDIO_SF_HIDE_LOWERBODY` means remove `STUDIO_SF_HIDE_LOWERBODY` from flags.
-
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 

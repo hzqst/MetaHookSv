@@ -400,7 +400,7 @@ bool R_IsRenderingGammaBlending()
 }
 
 /*
-	Purpose : Check if we are rendering Shadow Pass
+	Purpose : Check if we are rendering Shadow View
 */
 
 bool R_IsRenderingShadowView(void)

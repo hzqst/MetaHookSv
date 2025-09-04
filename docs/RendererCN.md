@@ -257,6 +257,22 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * BSP高光贴图只有在 `r_detailtextures` 设为 1，延迟渲染管线可用且启用时才会生效。
 
+## StudioModel 外部文件
+
+你可以创建一个名为 `[modelname]_external.txt` 的文本文件，与 `[modelname].mdl` 文件放在同一目录下，用于覆盖 studiomodel 属性，而无需修改 `[modelname].mdl` 文件的内容。
+
+`[modelname]_external.txt` 文件的内容如下所示：
+
+```
+{
+    "classname" "value"
+    "key2" "value2"
+    "key3" "value3"
+}
+```
+
+* 大多数关于 studio 渲染的高级功能都基于 `_external.txt` 文件。
+
 ## 模型贴图替换
 
 你需要在`{ModelName}.mdl`模型的同目录下创建 `{ModelName}_external.txt`文件，文件应包含以下内容：
@@ -583,6 +599,175 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 `r_studio_hair_specular_smooth` 控制头发高光在黑暗环境下的淡出表现。
 
 `r_studio_hair_shadow_offset` 控制刘海阴影在屏幕空间下相对水平和垂直方向的偏移。
+
+## Studio _external.txt 示例
+
+### StudioTexture 示例
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "123.bmp"
+    "replacetexture" "123.dds"
+    "normaltexture" "123.png"
+    "parallaxtexture" "123.tga"
+    "speculartexture" "123.jpg"
+    "flags" "STUDIO_NF_FLATSHADE"
+    "base_specular" "1.0 2.0"
+}
+```
+
+* 可能的 studio_texture 标志：
+
+```
+// lighting options
+#define STUDIO_NF_FLATSHADE		0x0001
+#define STUDIO_NF_CHROME		0x0002
+#define STUDIO_NF_FULLBRIGHT	0x0004
+#define STUDIO_NF_NOMIPS        0x0008
+#define STUDIO_NF_ALPHA         0x0010
+#define STUDIO_NF_ADDITIVE      0x0020
+#define STUDIO_NF_MASKED        0x0040
+
+// renderer-private options
+#define STUDIO_NF_CELSHADE					0x1000
+#define STUDIO_NF_CELSHADE_FACE				0x2000
+#define STUDIO_NF_CELSHADE_HAIR				0x4000
+#define STUDIO_NF_HASOUTLINE				0x8000  //For internal unsage only.
+#define STUDIO_NF_DOUBLE_FACE				0x10000
+
+#define STUDIO_NF_NOOUTLINE					0x40000
+```
+
+### StudioEffects 示例
+
+```
+{
+    "classname" "studio_efx"
+    "flags" "FMODEL_OUTLINE"
+}
+{
+    "classname" "studio_efx"
+    "flags" "-FMODEL_ROCKET"
+}
+```
+
+* 注意：带有 `-FMODEL_ROCKET` 的标志表示从标志中移除 `FMODEL_ROCKET`。
+
+* 可能的 studio_efx 标志：
+
+```
+#define	FMODEL_ROCKET			1			// leave a trail
+#define	FMODEL_GRENADE			2			// leave a trail
+#define	FMODEL_GIB				4			// leave a trail
+#define	FMODEL_ROTATE			8			// rotate (bonus items)
+#define	FMODEL_TRACER			0x10		// green split trail
+#define	FMODEL_ZOMGIB			0x20		// small blood trail
+#define	FMODEL_TRACER2			0x40		// orange split trail + rotate
+#define	FMODEL_TRACER3			0x80		// purple trail
+#define FMODEL_DYNAMIC_LIGHT	0x100			
+#define FMODEL_TRACE_HITBOX		0x200		//Use hitbox collision
+#define FMODEL_FORCESKYLIGHT	0x400		// forces the model to lit by sky
+#define FMODEL_OUTLINE			0x1000		//Renderer-specified flags
+#define FMODEL_NOBLOOM			0x2000		//Renderer-specified flags
+#define FMODEL_NOSHADOW			0x4000		//Renderer-specified flags
+
+//Vanilla GoldSrc flags for studio models, deprecated
+#define EF_ROCKET			1			//! leave a trail
+#define EF_GRENADE			2			//! leave a trail
+#define EF_GIB				4			//! leave a trail
+#define EF_ROTATE			8			//! rotate (bonus items)
+#define EF_TRACER			0x10			//! green split trail
+#define EF_ZOMGIB			0x20			//! small blood trail
+#define EF_TRACER2			0x40			//! orange split trail + rotate
+#define EF_TRACER3			0x80			//! purple trail
+#define EF_NOSHADELIGHT		0x100			//! No shade lighting
+#define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
+#define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
+#define EF_OUTLINE			0x1000		//Renderer-specified flags
+
+```
+
+### StudioCelshade 示例
+
+```
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "160 150 150"
+    "celshade_head_offset" "3.5 2 0"
+    "celshade_lightdir_adjust" "0.01 0.001"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_smooth" "0.1"
+    "rimlight_smooth2" "0.0 0.3"
+    "rimlight_color" "40 40 40"
+    "rimdark_power" "5.0"
+    "rimdark_smooth" "0.1"
+    "rimdark_smooth2" "0.0 0.3"
+    "rimdark_color" "50 50 50"
+    "hair_specular_exp" "256"
+    "hair_specular_exp2" "8"
+    "hair_specular_intensity" "0.3 0.3 0.3"
+    "hair_specular_intensity2" "0.12 0.12 0.12"
+    "hair_specular_noise" "500 600 0.004 0.005"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
+}
+```
+
+### StudioLowerbody 示例
+
+```
+{
+    "classname" "studio_lowerbody_control"
+    "model_origin" "0 0 0"
+    "duck_model_origin" "0 0 0"
+    "model_scale" "1"
+}
+```
+
+### StudioBone 修改示例
+
+```
+{
+    "classname" "studio_bone"
+    "name" "Bip01"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "index" "0"
+    "flags" "STUDIO_BF_LOWERBODY"
+}
+{
+    "classname" "studio_bone"
+    "index" "1"
+    "flags" "-STUDIO_BF_LOWERBODY"
+}
+```
+
+* 注意：带有 `-STUDIO_BF_LOWERBODY` 的标志表示从标志中移除 `STUDIO_BF_LOWERBODY`。
+
+### StudioSequence 修改示例
+
+```
+{
+    "classname" "studio_sequence"
+    "name" "swim"
+    "flags" "STUDIO_SF_HIDE_LOWERBODY"
+}
+{
+    "classname" "studio_sequence"
+    "name" "idle"
+    "flags" "-STUDIO_SF_HIDE_LOWERBODY"
+}
+```
+
+* 注意：带有 `-STUDIO_SF_HIDE_LOWERBODY` 的标志表示从标志中移除 `STUDIO_SF_HIDE_LOWERBODY`。
 
 ## 顶点缓冲对象 (又称 VBO) 批量绘制优化
 
