@@ -648,6 +648,14 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 }
 {
     "classname" "studio_efx"
+    "flags" "FMODEL_NOBLOOM"
+}
+{
+    "classname" "studio_efx"
+    "flags" "FMODEL_NOSHADOW"
+}
+{
+    "classname" "studio_efx"
     "flags" "-FMODEL_ROCKET"
 }
 ```

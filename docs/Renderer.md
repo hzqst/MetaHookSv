@@ -668,6 +668,14 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 }
 {
     "classname" "studio_efx"
+    "flags" "FMODEL_NOBLOOM"
+}
+{
+    "classname" "studio_efx"
+    "flags" "FMODEL_NOSHADOW"
+}
+{
+    "classname" "studio_efx"
     "flags" "-FMODEL_ROCKET"
 }
 ```
@@ -687,22 +695,25 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 #define	FMODEL_TRACER3			0x80		// purple trail
 #define FMODEL_DYNAMIC_LIGHT	0x100			
 #define FMODEL_TRACE_HITBOX		0x200		//Use hitbox collision
-#define FMODEL_FORCESKYLIGHT	0x400		//Forces the model to lit by sky
-#define FMODEL_OUTLINE			0x1000		//Draw outline
+#define FMODEL_FORCESKYLIGHT	0x400		// forces the model to lit by sky
+#define FMODEL_OUTLINE			0x1000		//Renderer-specified flags
+#define FMODEL_NOBLOOM			0x2000		//Renderer-specified flags
+#define FMODEL_NOSHADOW			0x4000		//Renderer-specified flags
 
-//Vanilla flags alternative for studio models
+//Vanilla GoldSrc flags for studio models, deprecated
 #define EF_ROCKET			1			//! leave a trail
 #define EF_GRENADE			2			//! leave a trail
 #define EF_GIB				4			//! leave a trail
 #define EF_ROTATE			8			//! rotate (bonus items)
-#define EF_TRACER			0x10		//! green split trail
-#define EF_ZOMGIB			0x20		//! small blood trail
-#define EF_TRACER2			0x40		//! orange split trail + rotate
-#define EF_TRACER3			0x80		//! purple trail
-#define EF_NOSHADELIGHT		0x100		//! No shade lighting
-#define EF_HITBOXCOLLISIONS	0x200		//! Use hitbox collisions
+#define EF_TRACER			0x10			//! green split trail
+#define EF_ZOMGIB			0x20			//! small blood trail
+#define EF_TRACER2			0x40			//! orange split trail + rotate
+#define EF_TRACER3			0x80			//! purple trail
+#define EF_NOSHADELIGHT		0x100			//! No shade lighting
+#define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
 #define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
-#define EF_OUTLINE			0x1000		// Draw outline
+#define EF_OUTLINE			0x1000		//Renderer-specified flags
+
 ```
 
 ### StudioCelshade control sample
