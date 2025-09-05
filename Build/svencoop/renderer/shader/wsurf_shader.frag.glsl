@@ -17,7 +17,6 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_0) uniform sampler2DArray lightmapT
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_1) uniform sampler2DArray lightmapTexArray_1;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_2) uniform sampler2DArray lightmapTexArray_2;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapTexArray_3;
-layout(binding = WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL) uniform usampler2D viewmodelStencilTex;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -295,8 +294,6 @@ void main()
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 	
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
-
-	ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
 
 	vec2 baseTexcoord = vec2(0.0, 0.0);
 

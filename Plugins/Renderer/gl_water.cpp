@@ -1066,15 +1066,6 @@ void R_DrawWaterSurfaceModelReflective(
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
-	}
-
 	program_state_t WaterProgramState = 0;
 
 	if (bIsAboveWater)
@@ -1221,8 +1212,6 @@ void R_DrawWaterSurfaceModelReflective(
 
 	GL_UseProgram(0);
 
-	GL_EndStencil();
-
 	R_DrawWaterSurfaceModelEnd();
 }
 
@@ -1237,15 +1226,6 @@ void R_DrawWaterSurfaceModelRipple(
 {
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
-
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
-	}
 
 	program_state_t WaterProgramState = WATER_LEGACY_ENABLED;
 
@@ -1335,7 +1315,6 @@ void R_DrawWaterSurfaceModelRipple(
 
 	GL_UseProgram(0);
 
-	GL_EndStencil();
 	R_DrawWaterSurfaceModelEnd();
 }
 
@@ -1350,15 +1329,6 @@ void R_DrawWaterSurfaceModelLegacy(
 {
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
-
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
-	}
 
 	float scale;
 
@@ -1452,8 +1422,6 @@ void R_DrawWaterSurfaceModelLegacy(
 	r_wsurf_polys += pWaterModel->polyCount;
 
 	GL_UseProgram(0);
-
-	GL_EndStencil();
 
 	R_DrawWaterSurfaceModelEnd();
 }

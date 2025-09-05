@@ -232,7 +232,6 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterSurfaceFBO = { 0 };
-FBO_Container_t s_ViewModelFBO = { 0 };
 
 FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
@@ -348,11 +347,10 @@ cvar_t* r_studio_lazy_load = NULL;
 
 cvar_t* r_studio_unload = NULL;
 
-cvar_t* r_viewmodel_debug = NULL;
+cvar_t* r_viewmodel_scale = NULL;
 
 cvar_t* r_wsurf_parallax_scale = NULL;
 cvar_t* r_wsurf_sky_fog = NULL;
-cvar_t* r_wsurf_zprepass = NULL;
 
 /*
 	Purpose : Check if we can render fog
@@ -2395,7 +2393,6 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterSurfaceFBO);
-	GL_FreeFBO(&s_ViewModelFBO);
 }
 
 void GL_GenerateFrameBuffers(void)
@@ -2496,18 +2493,6 @@ void GL_GenerateFrameBuffers(void)
 
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_WaterSurfaceFBO);
-
-	s_ViewModelFBO.iWidth = glwidth;
-	s_ViewModelFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_ViewModelFBO);
-	GL_FrameBufferColorTexture(&s_ViewModelFBO, GL_RGBA8);
-	GL_FrameBufferDepthTexture(&s_ViewModelFBO, GL_DEPTH24_STENCIL8);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		GL_FreeFBO(&s_ViewModelFBO);
-		Sys_Error("Failed to initialize ViewModel framebuffer.\n");
-	}
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -2935,21 +2920,8 @@ void R_PreDrawViewModel(void)
 {
 	(*currententity) = cl_viewent;
 
-	auto currentRenderingFBO = GL_GetCurrentRenderingFBO();
-	GL_BindFrameBuffer(&s_ViewModelFBO);
-
-	vec4_t clearcolor = { 0, 0, 0, 0 };
-	GL_ClearColor(clearcolor);
-	GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
 	if (R_ShouldDrawViewModel())
 	{
-		R_SetupGLForViewModel();
-
-		glColorMask(0, 0, 0, 0);
-
-		glDepthRange(0, 0.3f);
-
 		r_draw_previewmodel = true;
 
 		switch ((*currententity)->model->type)
@@ -2975,20 +2947,13 @@ void R_PreDrawViewModel(void)
 				VectorCopy(ent->origin, (*currententity)->attachment[i]);
 			}
 
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS | STUDIO_RENDER);
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS);
 
 			break;
 		}
 		}
 		r_draw_previewmodel = false;
-
-		glDepthRange(0, 1);
-
-		glColorMask(1, 1, 1, 1);
-
 	}
-
-	GL_BindFrameBuffer(currentRenderingFBO);
 }
 
 void R_DrawViewModel(void)
@@ -3005,9 +2970,9 @@ void R_DrawViewModel(void)
 	{
 		R_SetupGLForViewModel();
 
-		glDepthRange(0, 0.3f);
-
 		r_draw_viewmodel = true;
+
+		glDepthRange(0, 0.1);
 
 		switch ((*currententity)->model->type)
 		{
@@ -3109,6 +3074,12 @@ void R_RenderView_SvEngine(int viewIdx)
 		}
 
 		R_PreRenderView();
+
+		if (!(*r_refdef.onlyClientDraws))
+		{
+			//alloc TEMPENT here
+			R_PreDrawViewModel();
+		}
 
 		R_RenderScene();
 
@@ -3424,7 +3395,7 @@ void R_InitCvars(void)
 	*/
 	r_studio_unload = gEngfuncs.pfnRegisterVariable("r_studio_unload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	r_viewmodel_debug = gEngfuncs.pfnRegisterVariable("r_viewmodel_debug", "0", FCVAR_CLIENTDLL );
+	r_viewmodel_scale = gEngfuncs.pfnRegisterVariable("r_viewmodel_scale", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
@@ -3802,7 +3773,7 @@ void R_SetupGLForViewModel(void)
 		r_xfov_viewmodel = V_CalcFovV(fov, width, height);
 
 		V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4, (r_params.movevars ? r_params.movevars->zmax : 4096));
 	}
 	else
 	{
@@ -3820,7 +3791,7 @@ void R_SetupGLForViewModel(void)
 		r_yfov_viewmodel = V_CalcFovH(fov, width, height);
 
 		V_AdjustFovH(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4, (r_params.movevars ? r_params.movevars->zmax : 4096));
 	}
 
 	glGetFloatv(GL_PROJECTION_MATRIX, r_viewmodel_projection_matrix);
@@ -4332,9 +4303,6 @@ void R_RenderScene(void)
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
-		//draw stencil here, alloc TEMPENT
-		R_PreDrawViewModel();
-
 		//Restore matrix
 		R_UploadProjMatrixForWorld();
 

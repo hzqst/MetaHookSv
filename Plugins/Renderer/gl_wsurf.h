@@ -307,7 +307,6 @@ extern decalcache_t *gDecalCache;
 
 extern cvar_t *r_wsurf_parallax_scale;
 extern cvar_t *r_wsurf_sky_fog;
-extern cvar_t *r_wsurf_zprepass;
 
 mleaf_t* R_GetWorldLeafByIndex(model_t* mod, int index);
 int R_GetWorldLeafIndex(model_t* mod, mleaf_t* leaf);
@@ -400,4 +399,3 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 #define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
 #define WSURF_ALPHA_SOLID_ENABLED			0x200000000ull
 #define WSURF_LINEAR_FOG_SHIFT_ENABLED		0x400000000ull
-#define WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED	0x800000000ull

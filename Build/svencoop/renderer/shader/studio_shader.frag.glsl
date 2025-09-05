@@ -9,10 +9,10 @@ layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
 layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
 layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
-layout(binding = STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL) uniform usampler2D viewmodelStencilTex;
 
 /* celshade */
 
+uniform float r_viewmodel_scale;
 uniform vec2 r_base_specular;
 uniform vec4 r_celshade_specular;
 uniform float r_celshade_midpoint;
@@ -765,8 +765,6 @@ void main(void)
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 	
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
-
-	ClipViewModelTest(viewmodelStencilTex, screenTexCoord);
 
 	vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 

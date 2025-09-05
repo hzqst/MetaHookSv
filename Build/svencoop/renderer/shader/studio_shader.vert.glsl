@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+uniform float r_viewmodel_scale;
 uniform vec3 r_celshade_head_offset;
 uniform vec2 r_hair_shadow_offset;
 uniform vec2 r_uvscale;
@@ -22,6 +23,33 @@ flat out uint v_packedbone;
 out vec3 v_tangent;
 out vec3 v_bitangent;
 out vec3 v_smoothnormal;
+
+vec4 R_StudioViewModelProjection(float flScale)
+{
+    // 方法2：世界空间缩放，保持屏幕投影
+    
+    vec3 cameraPos = CameraUBO.viewpos.xyz;
+    
+    // 1. 计算原始屏幕位置（用于参考）
+    vec4 originalClipPos = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(v_worldpos, 1.0);
+    vec2 originalScreenPos = originalClipPos.xy / originalClipPos.w;
+    
+    // 2. 沿着视线方向缩放
+    vec3 toVertex = v_worldpos - cameraPos;
+    vec3 scaledWorldPos = cameraPos + toVertex * flScale;
+    
+    // 3. 计算缩放后的裁剪位置
+    vec4 scaledClipPos = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(scaledWorldPos, 1.0);
+    
+    // 4. 计算需要的横向偏移来保持屏幕位置
+    vec2 scaledScreenPos = scaledClipPos.xy / scaledClipPos.w;
+    vec2 screenDelta = originalScreenPos - scaledScreenPos;
+    
+    // 5. 在裁剪空间中补偿这个偏移
+    scaledClipPos.xy += screenDelta * scaledClipPos.w;
+    
+    return scaledClipPos;
+}
 
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
@@ -175,7 +203,12 @@ void main(void)
 
 	#endif
 
+#if defined(VIEW_MODEL_SCALING_ENABLED)
+	gl_Position = R_StudioViewModelProjection(r_viewmodel_scale);
+#else
 	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
+#endif
+
 	v_projpos = gl_Position;
 	v_texcoord = v_texcoord * r_uvscale;
 }

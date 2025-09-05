@@ -791,7 +791,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	if (r_draw_opaque)
 	{
-		int iStencilRef = STENCIL_MASK_WORLD;
+		int iStencilRef = 0;
 		
 		if (bNoBloom)
 			iStencilRef |= STENCIL_MASK_NO_BLOOM;

@@ -161,9 +161,6 @@ vec4 ScreenSpaceReflection()
 
 float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity, uint stencilValue)
 {
-	if((stencilValue & STENCIL_MASK_NO_SHADOW) == STENCIL_MASK_NO_SHADOW)
-		return 0;
-
 	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
 	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w + 0.001);
 	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
@@ -198,7 +195,7 @@ void main()
 
 #if !defined(SKY_FOG_ENABLED)
 
-	if((stencilValue & STENCIL_MASK_HAS_FOG) == 0)
+	if((stencilValue & STENCIL_MASK_NO_FOG) == STENCIL_MASK_NO_FOG)
 		out_FragColor = finalColor;
 	else
 		out_FragColor = CalcFog(finalColor, flDistanceToFragment);

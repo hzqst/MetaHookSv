@@ -174,7 +174,6 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
 { WSURF_ALPHA_SOLID_ENABLED			,"WSURF_ALPHA_SOLID_ENABLED"},
 { WSURF_LINEAR_FOG_SHIFT_ENABLED	,"WSURF_LINEAR_FOG_SHIFT_ENABLED"},
-{ WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED	,"WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -300,9 +299,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_ALPHA_SOLID_ENABLED)
 			defs << "#define ALPHA_SOLID_ENABLED\n";
-
-		if (state & WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED)
-			defs << "#define CLIP_VIEW_MODEL_PIXEL_ENABLED\n";
 
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
@@ -2237,31 +2233,15 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
-	{
-		WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
-	}
-
 	R_DrawWorldSurfaceLeafBegin(pLeaf, (1 << WSURF_VBO_POSITION));
 
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
-	}
-
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 	r_wsurf_drawcall++;
 	r_wsurf_polys += texchain.polyCount;
-
-	GL_EndStencil();
 
 	GL_UseProgram(0);
 
@@ -2269,7 +2249,7 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 }//R_DrawWorldSurfaceLeafSolid
 
-void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC];
 
@@ -2379,11 +2359,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
-		if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
-		{
-			WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
-		}
-
 		if (!R_IsRenderingGBuffer())
 		{
 			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
@@ -2450,14 +2425,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
 
-		if (r_draw_opaque)
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
-		}
-		else
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
-		}
+		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
@@ -2470,8 +2438,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		r_wsurf_polys += texchain.polyCount;
 
 		GL_UseProgram(0);
-
-		GL_EndStencil();
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
@@ -2548,7 +2514,7 @@ texture_t* R_GetAnimatedTexture(texture_t* base)
 	return base;
 }
 
-void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM];
 
@@ -2654,11 +2620,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
-		if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
-		{
-			WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
-		}
-
 		if (!R_IsRenderingGBuffer())
 		{
 			if ((WSurfProgramState & WSURF_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
@@ -2730,14 +2691,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
 
-		if (r_draw_opaque)
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
-		}
-		else
-		{
-			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
-		}
+		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
@@ -2751,13 +2705,11 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		GL_UseProgram(0);
 
-		GL_EndStencil();
-
 		R_DrawWorldSurfaceLeafEnd();
 	}
 }//R_DrawWorldSurfaceLeafAnim
 
-void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, bool bUseZPrePass)
+void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
 	const auto& texchain = pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SKY];
 
@@ -2805,12 +2757,7 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 		WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 	}
 
-	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
-	{
-		WSurfProgramState |= WSURF_CLIP_VIEW_MODEL_PIXEL_ENABLED;
-	}
-
-	if ((int)r_wsurf_sky_fog->value >= 1)
+	if ((int)r_wsurf_sky_fog->value > 0)
 	{
 		if (!R_IsRenderingGBuffer())
 		{
@@ -2884,15 +2831,6 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	R_DrawWorldSurfaceLeafBegin(pLeaf, VBOStates);
 
-	if (r_draw_opaque)
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_SHADOW, STENCIL_MASK_ALL);
-	}
-	else
-	{
-		GL_BeginStencilWrite(STENCIL_MASK_NO_SHADOW, STENCIL_MASK_NO_SHADOW);
-	}
-
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -2902,8 +2840,6 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	r_wsurf_polys += texchain.polyCount;
 
 	GL_UseProgram(0);
-
-	GL_EndStencil();
 
 	R_DrawWorldSurfaceLeafEnd();
 
@@ -2919,14 +2855,6 @@ float R_ScrollSpeed(void)
 	scrollSpeed *= (*cl_time);
 
 	return scrollSpeed;
-}
-
-bool R_ShouldDrawZPrePass(void)
-{
-	if (R_IsRenderingShadowView())
-		return false;
-
-	return (r_wsurf_zprepass->value > 0) ? true : false;
 }
 
 void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, cl_entity_t* ent)
@@ -2959,15 +2887,6 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 		}
 	}
-
-	if (s_ViewModelFBO.s_hBackBufferStencilView)
-	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL);
-		glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
-		glActiveTexture(GL_TEXTURE0);
-	}
-
-	bool bUseZPrePass = false;
 
 	std::shared_ptr<CWorldSurfaceLeaf> pLeaf;
 
@@ -3011,64 +2930,22 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 				if (pNoVisLeaf && pNoVisLeaf->hABO)
 				{
-					if (R_ShouldDrawZPrePass())
-					{
-						glColorMask(0, 0, 0, 0);
-
-						R_DrawWorldSurfaceLeafSolid(pNoVisLeaf.get(), true);
-
-						glColorMask(1, 1, 1, 1);
-
-						glDepthFunc(GL_EQUAL);
-
-						bUseZPrePass = true;
-					}
-
 					glColorMask(0, 0, 0, 0);
 
-					R_DrawWorldSurfaceLeafSky(pModel.get(), pNoVisLeaf.get(), false);
+					R_DrawWorldSurfaceLeafSky(pModel.get(), pNoVisLeaf.get());
 
 					glColorMask(1, 1, 1, 1);
 
-					R_DrawWorldSurfaceLeafStatic(pModel.get(), pNoVisLeaf.get(), false);
-					R_DrawWorldSurfaceLeafAnim(pModel.get(), pNoVisLeaf.get(), false);
-
-					if (bUseZPrePass)
-					{
-						glDepthFunc(GL_LEQUAL);
-					}
+					R_DrawWorldSurfaceLeafStatic(pModel.get(), pNoVisLeaf.get());
+					R_DrawWorldSurfaceLeafAnim(pModel.get(), pNoVisLeaf.get());
 
 					g_WorldSurfaceRenderer.pCurrentWaterLeaf = pLeaf;
 				}
 			}
 			else
 			{
-				if (R_ShouldDrawZPrePass())
-				{
-					glColorMask(0, 0, 0, 0);
-
-					R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
-
-					glColorMask(1, 1, 1, 1);
-
-					glDepthFunc(GL_EQUAL);
-
-					bUseZPrePass = true;
-				}
-
-				//glColorMask(0, 0, 0, 0);
-
-				//R_DrawWorldSurfaceLeafSky(pModel.get(), pLeaf.get(), bUseZPrePass);
-
-				//glColorMask(1, 1, 1, 1);
-
-				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get(), bUseZPrePass);
-				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get(), bUseZPrePass);
-
-				if (bUseZPrePass)
-				{
-					glDepthFunc(GL_LEQUAL);
-				}
+				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
+				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
 
 				g_WorldSurfaceRenderer.pCurrentWorldLeaf = pLeaf;
 			}
@@ -3095,21 +2972,12 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 		if (pLeaf && pLeaf->hABO)
 		{
-			R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get(), bUseZPrePass);
-			R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get(), bUseZPrePass);
+			R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
+			R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
 		}
 	}
 
 	R_DrawDecals(ent);
-
-	GL_ClearStencil(STENCIL_MASK_HAS_DECAL);
-
-	if (s_ViewModelFBO.s_hBackBufferStencilView)
-	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(GL_TEXTURE0);
-	}
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
@@ -3141,7 +3009,6 @@ void R_InitWSurf(void)
 {
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_fog = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_fog", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	r_wsurf_zprepass = gEngfuncs.pfnRegisterVariable("r_wsurf_zprepass", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	R_ClearBSPEntities();
 }

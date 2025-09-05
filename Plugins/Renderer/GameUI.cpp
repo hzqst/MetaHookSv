@@ -43,7 +43,7 @@ public:
 		m_pCelShade = new CCvarToggleCheckButton(this, "CelShade", "#GameUI_CelShade", "r_studio_celshade");
 		m_pAntiAliasing = new CCvarToggleCheckButton(this, "AntiAliasing", "#GameUI_AntiAliasing", "r_fxaa");
 		m_pSkyFog = new CCvarToggleCheckButton(this, "SkyFog", "#GameUI_SkyFog", "r_wsurf_sky_fog");
-		m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
+		//m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
 		m_pHDR = new CCvarToggleCheckButton(this, "HDR", "#GameUI_HDR", "r_hdr");
 		m_pGammaBlending = new CCvarToggleCheckButton(this, "GammaBlending", "#GameUI_GammaBlending", "r_gamma_blend");
 
@@ -87,7 +87,7 @@ public:
 		ApplyChangesToConVar(m_pCelShade->GetCvarName(), m_pCelShade->IsSelected());
 		ApplyChangesToConVar(m_pAntiAliasing->GetCvarName(), m_pAntiAliasing->IsSelected());
 		ApplyChangesToConVar(m_pSkyFog->GetCvarName(), m_pSkyFog->IsSelected());
-		ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
+		//ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
 		ApplyChangesToConVar(m_pHDR->GetCvarName(), m_pHDR->IsSelected());
 		ApplyChangesToConVar(m_pGammaBlending->GetCvarName(), m_pGammaBlending->IsSelected());
 
@@ -141,7 +141,7 @@ public:
 		m_pCelShade->Reset();
 		m_pAntiAliasing->Reset();
 		m_pSkyFog->Reset();
-		m_pZPrepass->Reset();
+		//m_pZPrepass->Reset();
 		m_pHDR->Reset();
 		m_pGammaBlending->Reset();
 
@@ -204,7 +204,7 @@ private:
 	CCvarToggleCheckButton *m_pCelShade;
 	CCvarToggleCheckButton *m_pAntiAliasing;
 	CCvarToggleCheckButton * m_pSkyFog;
-	CCvarToggleCheckButton *m_pZPrepass;
+	//CCvarToggleCheckButton *m_pZPrepass;
 	CCvarToggleCheckButton *m_pHDR;
 	CCvarToggleCheckButton* m_pGammaBlending;
 

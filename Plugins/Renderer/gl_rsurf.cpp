@@ -1098,7 +1098,6 @@ void R_DrawDecals(cl_entity_t *ent)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
 
-	//Decal only affects brush pixels
 	GL_BeginStencilCompareEqual(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 
 	//Decal only affects diffuse, normal and specular

@@ -75,6 +75,10 @@ void R_DrawSkyBox(void)
 			}
 		}
 	}
+	else
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_NO_FOG, STENCIL_MASK_NO_FOG);
+	}
 
 	if (R_IsRenderingGammaBlending())
 	{
@@ -107,6 +111,8 @@ void R_DrawSkyBox(void)
 	}
 
 	GL_UseProgram(0);
+
+	GL_EndStencil();
 
 	glDepthMask(GL_TRUE);
 }

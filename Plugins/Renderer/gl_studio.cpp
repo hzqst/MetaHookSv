@@ -1453,8 +1453,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
 			defs << "#define LEGACY_ELIGHT_ENABLED\n";
 
-		if (state & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
-			defs << "#define CLIP_VIEW_MODEL_PIXEL_ENABLED\n";
+		if (state & STUDIO_VIEW_MODEL_SCALING_ENABLED)
+			defs << "#define VIEW_MODEL_SCALING_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -1462,6 +1462,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		
 		if (prog.program)
 		{
+			SHADER_UNIFORM(prog, r_viewmodel_scale, "r_viewmodel_scale");
 			SHADER_UNIFORM(prog, r_base_specular, "r_base_specular");
 			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
 			SHADER_UNIFORM(prog, r_celshade_specular, "r_celshade_specular");
@@ -1544,7 +1545,6 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
-{ STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED	,"STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED"		},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2552,21 +2552,10 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
 	}
 
-	//Don't draw transparent part of viewmodel in pre-viewmodel pass.
-	if (R_IsRenderingPreViewModel() && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
-	{
-		return;
-	}
-
-	//Disable shadow of transparent objects.
+	//Disable shadow for transparent objects.
 	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
 	{
 		return;
-	}
-
-	if (!R_IsRenderingPreViewModel() && !R_IsRenderingViewModel())
-	{
-		StudioProgramState |= STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED;
 	}
 
 	if ((int)r_studio_legacy_dlight->value >= 2)
@@ -2577,6 +2566,11 @@ void R_StudioDrawMesh_DrawPass(
 	if ((int)r_studio_legacy_elight->value >= 1)
 	{
 		StudioProgramState |= STUDIO_LEGACY_ELIGHT_ENABLED;
+	}
+
+	if (R_IsRenderingViewModel())
+	{
+		StudioProgramState |= STUDIO_VIEW_MODEL_SCALING_ENABLED;
 	}
 
 	if (R_IsRenderingWaterView())
@@ -2698,17 +2692,6 @@ void R_StudioDrawMesh_DrawPass(
 		}
 	}
 
-	if (StudioProgramState & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
-	{
-		if (s_ViewModelFBO.s_hBackBufferStencilView)
-		{
-			//Texture unit 8 = viewmodel stencil texture
-			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL);
-			glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
-			glActiveTexture(GL_TEXTURE0);
-		}
-	}
-
 	CStudioSetupSkinContext Context(&StudioProgramState);
 
 	if (r_fullbright->value >= 2)
@@ -2786,10 +2769,7 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		if (r_draw_opaque)
 		{
-			int iStencilRef =  STENCIL_MASK_WORLD;
-
-			if (R_IsRenderingPreViewModel())
-				iStencilRef |= STENCIL_MASK_VIEW_MODEL;
+			int iStencilRef = 0;
 
 			if (r_draw_hasoutline)
 				iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
@@ -2806,12 +2786,6 @@ void R_StudioDrawMesh_DrawPass(
 		{
 			int iStencilRef = 0;
 			int iStencilMask = 0;
-
-			if (R_IsRenderingPreViewModel())
-			{
-				iStencilRef |= STENCIL_MASK_VIEW_MODEL;
-				iStencilMask |= STENCIL_MASK_VIEW_MODEL;
-			}
 
 			if (r_draw_hasoutline)
 			{
@@ -2893,6 +2867,11 @@ void R_StudioDrawMesh_DrawPass(
 	studio_program_t prog = { 0 };
 
 	R_UseStudioProgram(StudioProgramState, &prog);
+
+	if (prog.r_viewmodel_scale != -1)
+	{
+		glUniform1f(prog.r_viewmodel_scale, r_viewmodel_scale->value);
+	}
 
 	if (prog.r_base_specular != -1)
 	{
@@ -3074,17 +3053,6 @@ void R_StudioDrawMesh_DrawPass(
 	GL_UseProgram(0);
 
 	//Restore texture state
-
-	if (StudioProgramState & STUDIO_CLIP_VIEW_MODEL_PIXEL_ENABLED)
-	{
-		//Texture unit 8 = Texture stencil texture
-		if (s_ViewModelFBO.s_hBackBufferStencilView)
-		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL);
-			glBindTexture(GL_TEXTURE_2D, s_ViewModelFBO.s_hBackBufferStencilView);
-			glActiveTexture(GL_TEXTURE0);
-		}
-	}
 
 	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
 	{
@@ -3554,9 +3522,11 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		r_draw_deferredtrans = true;
 	}
 
-	//Hair pass, write into s_BackBufferFBO2
+	//Hair pass, draw within s_BackBufferFBO2
 	if (R_StudioHasHairShadow())
 	{
+		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
+
 		GL_BindFrameBuffer(&s_BackBufferFBO2);
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
@@ -3574,10 +3544,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 
-		if (r_draw_gbuffer)
-			GL_BindFrameBuffer(&s_GBufferFBO);
-		else
-			GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
+		GL_BindFrameBuffer(CurrentFBO);
 	}
 
 	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
@@ -3656,20 +3623,20 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 	GL_ClearStencil(STENCIL_MASK_HAS_OUTLINE);
 
+#if 0 //Do we need to clear FBO2?
 	if (r_draw_hashair)
 	{
+		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
+
 		GL_BindFrameBuffer(&s_BackBufferFBO2);
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
 		GL_ClearColor(clearcolor);
 		GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-		if (r_draw_gbuffer)
-			GL_BindFrameBuffer(&s_GBufferFBO);
-		else
-			GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
+		GL_BindFrameBuffer(CurrentFBO);
 	}
-
+#endif
 	r_draw_hashair = false;
 	r_draw_hasface = false;
 	r_draw_hasalpha = false;

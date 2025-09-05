@@ -95,7 +95,6 @@
 #define STUDIO_BIND_TEXTURE_STENCIL				5
 #define STUDIO_BIND_TEXTURE_ANIMATED			6
 #define STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE		7
-#define STUDIO_BIND_TEXTURE_VIEW_MODEL_STENCIL	8
 
 #define STUDIO_VA_POSITION		0
 #define STUDIO_VA_NORMAL		1
@@ -107,17 +106,16 @@
 
 #define STENCIL_MASK_ALL						0xFF
 #define STENCIL_MASK_NONE						0
-#define STENCIL_MASK_WORLD						1
-#define STENCIL_MASK_VIEW_MODEL					1
-#define STENCIL_MASK_NO_SHADOW					2
-#define STENCIL_MASK_NO_BLOOM					4
-#define STENCIL_MASK_HAS_FLATSHADE				0x8
-#define STENCIL_MASK_HAS_OUTLINE				0x10//temp mask
-#define STENCIL_MASK_HAS_DECAL					0x20//temp mask
-#define STENCIL_MASK_HAS_SHADOW					0x40//temp mask
-#define STENCIL_MASK_HAS_FACE					0x80//temp mask
 
-#define STENCIL_MASK_HAS_FOG					STENCIL_MASK_WORLD
+//Main view
+#define STENCIL_MASK_NO_FOG						1
+#define STENCIL_MASK_NO_BLOOM					2
+#define STENCIL_MASK_HAS_FLATSHADE				0x4
+#define STENCIL_MASK_HAS_DECAL					0x8
+//Studio view
+#define STENCIL_MASK_HAS_OUTLINE				0x10
+#define STENCIL_MASK_HAS_SHADOW					0x20
+#define STENCIL_MASK_HAS_FACE					0x40
 
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
@@ -142,7 +140,6 @@
 #define WSURF_BIND_LIGHTMAP_TEXTURE_1 7
 #define WSURF_BIND_LIGHTMAP_TEXTURE_2 8
 #define WSURF_BIND_LIGHTMAP_TEXTURE_3 9
-#define WSURF_BIND_TEXTURE_VIEW_MODEL_STENCIL 10
 
 #define DSHADE_BIND_DIFFUSE_TEXTURE			0
 #define DSHADE_BIND_LIGHTMAP_TEXTURE		1
@@ -696,27 +693,9 @@ vec4 ProcessLinearBlendShift(vec4 color)
 		#endif
 	}
 
-	void ClipViewModelTest(usampler2D s, vec2 screenTexCoord)
-	{
-#if defined(CLIP_VIEW_MODEL_PIXEL_ENABLED)
-
-		uint stencilValue = LoadStencilValueFromStencilTexture(s, screenTexCoord);
-
-		if ((stencilValue & STENCIL_MASK_VIEW_MODEL) == STENCIL_MASK_VIEW_MODEL)
-		{
-			discard;
-		}
-#endif
-	}
-
 #else
 
 	void ClipPlaneTest(vec3 worldpos, vec3 normal)
-	{
-
-	}
-
-	void ClipViewModelTest(usampler2D s, vec2 screenTexCoord)
 	{
 
 	}

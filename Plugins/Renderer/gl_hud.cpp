@@ -1028,8 +1028,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
-	//Only draw on non-flatshade AND shadow-allowed surfaces
-	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_HAS_FLATSHADE | STENCIL_MASK_NO_SHADOW);
+	//Only draw on non-flatshade surfaces
+	GL_BeginStencilCompareNotEqual(STENCIL_MASK_HAS_FLATSHADE, STENCIL_MASK_HAS_FLATSHADE);
 
 	GL_UseProgram(hbao_blur2.program);
 

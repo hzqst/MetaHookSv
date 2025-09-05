@@ -190,21 +190,6 @@ int HUD_Redraw(float time, int intermission)
 			glEnable(GL_ALPHA_TEST);
 			glEnable(GL_BLEND);
 		}
-		else if (r_viewmodel_debug && (int)r_viewmodel_debug->value >= 1)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			glEnable(GL_TEXTURE_2D);
-
-			if ((int)r_viewmodel_debug->value == 1)
-				R_DrawHUDQuad_Texture(s_ViewModelFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
-
-			GL_UseProgram(0);
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
 		else if (r_hdr_debug && r_hdr_debug->value)
 		{
 			glDisable(GL_BLEND);

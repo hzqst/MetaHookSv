@@ -247,7 +247,6 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterSurfaceFBO;
-extern FBO_Container_t s_ViewModelFBO;
 
 extern FBO_Container_t* g_CurrentSceneFBO;
 extern FBO_Container_t *g_CurrentRenderingFBO;
@@ -349,7 +348,7 @@ extern cvar_t* r_studio_lazy_load;
 
 extern cvar_t* r_studio_unload;
 
-extern cvar_t* r_viewmodel_debug;
+extern cvar_t* r_viewmodel_scale;
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
