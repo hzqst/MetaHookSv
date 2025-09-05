@@ -1456,6 +1456,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_CLIP_NEARPLANE_ENABLED)
 			defs << "#define CLIP_NEARPLANE_ENABLED\n";
 
+		//if (state & STUDIO_VIEWMODEL_SCALE_ENABLED)
+		//	defs << "#define VIEWMODEL_SCALE_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -1490,6 +1493,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			SHADER_UNIFORM(prog, r_packed_stride, "r_packed_stride");
 			SHADER_UNIFORM(prog, r_packed_index, "r_packed_index");
 			SHADER_UNIFORM(prog, r_framerate_numframes, "r_framerate_numframes");
+			SHADER_UNIFORM(prog, r_nearplaneclip, "r_nearplaneclip");
+			//SHADER_UNIFORM(prog, r_viewmodel_scale, "r_viewmodel_scale");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -1545,6 +1550,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
 { STUDIO_CLIP_NEARPLANE_ENABLED			,"STUDIO_CLIP_NEARPLANE_ENABLED"			},
+//{ STUDIO_VIEWMODEL_SCALE_ENABLED		,"STUDIO_VIEWMODEL_SCALE_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2568,10 +2574,18 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_LEGACY_ELIGHT_ENABLED;
 	}
 
-	if (R_IsRenderingClippedLowerBody())
+	if (R_IsRenderingClippedLowerBody() && 
+		r_drawlowerbodyclipnear->value >= 0 && 
+		r_drawlowerbodyclipfar->value > 0 && 
+		r_drawlowerbodyclipfar->value >= r_drawlowerbodyclipnear->value)
 	{
 		StudioProgramState |= STUDIO_CLIP_NEARPLANE_ENABLED;
 	}
+
+	//if (R_IsRenderingViewModel())
+	//{
+	//	StudioProgramState |= STUDIO_VIEWMODEL_SCALE_ENABLED;
+	//}
 
 	if (R_IsRenderingWaterView())
 	{
@@ -3036,6 +3050,18 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		glUniform2f(prog.r_framerate_numframes, Context.framerate, Context.numframes);
 	}
+
+	if (prog.r_nearplaneclip != -1 && (StudioProgramState & STUDIO_CLIP_NEARPLANE_ENABLED))
+	{
+		glUniform2f(prog.r_nearplaneclip, r_drawlowerbodyclipnear->value, r_drawlowerbodyclipfar->value);
+	}
+
+#if 0
+	if (prog.r_viewmodel_scale != -1 && (StudioProgramState & STUDIO_VIEWMODEL_SCALE_ENABLED))
+	{
+		glUniform1f(prog.r_viewmodel_scale, viewmodel_scale->value);
+	}
+#endif
 
 	if (pRenderMesh->iIndiceCount)
 	{

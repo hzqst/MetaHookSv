@@ -11115,6 +11115,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
 	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
+	gPrivateFuncs.triapi_FogParams = gEngfuncs.pTriAPI->FogParams;
 
 	Engine_FillAddress_HasOfficialFBOSupport(DllInfo, RealDllInfo);
 
@@ -11408,6 +11409,7 @@ void Engine_InstallHooks(void)
 	gEngfuncs.pTriAPI->GetMatrix = triapi_GetMatrix;
 	gEngfuncs.pTriAPI->BoxInPVS = triapi_BoxInPVS;
 	gEngfuncs.pTriAPI->Fog = triapi_Fog;
+	gEngfuncs.pTriAPI->FogParams = triapi_FogParams;
 
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);

@@ -39,6 +39,7 @@ uniform vec2 r_uvscale;
 uniform float r_packed_stride;
 uniform vec4 r_packed_index;
 uniform vec2 r_framerate_numframes;
+uniform vec2 r_nearplaneclip;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -765,8 +766,10 @@ void main(void)
 
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
-	ClipNearPlaneTest(flDistanceToFragment);
-	
+	#if defined(CLIP_NEARPLANE_ENABLED)
+	ClipNearPlaneTest(flDistanceToFragment, r_nearplaneclip.x, r_nearplaneclip.y);
+	#endif
+
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
 	vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);

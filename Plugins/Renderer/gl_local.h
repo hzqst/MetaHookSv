@@ -338,6 +338,10 @@ extern cvar_t* r_drawlowerbody;
 
 extern cvar_t* r_drawlowerbodypitch;
 
+extern cvar_t* r_drawlowerbodyclipnear;
+
+extern cvar_t* r_drawlowerbodyclipfar;
+
 extern cvar_t* r_sprite_lerping;
 
 extern cvar_t* r_detailskytextures;
@@ -347,6 +351,18 @@ extern cvar_t* r_leaf_lazy_load;
 extern cvar_t* r_studio_lazy_load;
 
 extern cvar_t* r_studio_unload;
+
+extern cvar_t* r_wsurf_parallax_scale;
+
+extern cvar_t* r_wsurf_sky_fog;
+
+extern cvar_t* gl_nearplane;
+
+//extern cvar_t* viewmodel_nearplane;
+
+//extern cvar_t* viewmodel_farplane;
+
+//extern cvar_t* viewmodel_scale;
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
@@ -442,7 +458,8 @@ void triapi_Brightness(float brightness);
 void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode);
 int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
-void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn);
+void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
+void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
 
 void __stdcall SCClient_glBegin(int GLPrimitiveCode);
 void __stdcall SCClient_glEnd();

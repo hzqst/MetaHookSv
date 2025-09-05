@@ -28,37 +28,39 @@
 #define STUDIO_VA_BITANGENT		5
 #define STUDIO_VA_SMOOTHNORMAL	6
 
-typedef struct
+typedef struct studio_program_s
 {
-	int program;
-	int r_base_specular;
-	int r_celshade_specular;
-	int r_celshade_midpoint;
-	int r_celshade_softness;
-	int r_celshade_shadow_color;
-	int r_celshade_head_offset;
-	int r_celshade_lightdir_adjust;
-	int r_rimlight_power;
-	int r_rimlight_smooth;
-	int r_rimlight_smooth2;
-	int r_rimlight_color;
-	int r_rimdark_power;
-	int r_rimdark_smooth;
-	int r_rimdark_smooth2;
-	int r_rimdark_color;
-	int r_outline_dark;
-	int r_hair_specular_exp;
-	int r_hair_specular_noise;
-	int r_hair_specular_intensity;
-	int r_hair_specular_exp2;
-	int r_hair_specular_noise2;
-	int r_hair_specular_intensity2;
-	int r_hair_specular_smooth;
-	int r_hair_shadow_offset;
-	int r_uvscale;
-	int r_packed_stride;
-	int r_packed_index;
-	int r_framerate_numframes;
+	int program{0};
+	int r_base_specular{-1};
+	int r_celshade_specular{-1};
+	int r_celshade_midpoint{-1};
+	int r_celshade_softness{-1};
+	int r_celshade_shadow_color{-1};
+	int r_celshade_head_offset{-1};
+	int r_celshade_lightdir_adjust{-1};
+	int r_rimlight_power{-1};
+	int r_rimlight_smooth{-1};
+	int r_rimlight_smooth2{-1};
+	int r_rimlight_color{-1};
+	int r_rimdark_power{-1};
+	int r_rimdark_smooth{-1};
+	int r_rimdark_smooth2{-1};
+	int r_rimdark_color{-1};
+	int r_outline_dark{-1};
+	int r_hair_specular_exp{-1};
+	int r_hair_specular_noise{-1};
+	int r_hair_specular_intensity{-1};
+	int r_hair_specular_exp2{-1};
+	int r_hair_specular_noise2{-1};
+	int r_hair_specular_intensity2{-1};
+	int r_hair_specular_smooth{-1};
+	int r_hair_shadow_offset{-1};
+	int r_uvscale{-1};
+	int r_packed_stride{-1};
+	int r_packed_index{-1};
+	int r_framerate_numframes{-1};
+	int r_nearplaneclip{-1};
+	//int r_viewmodel_scale{-1};
 }studio_program_t;
 
 class studiovertexbase_t
@@ -450,5 +452,6 @@ extern r_studio_interface_t **gpStudioInterface;
 #define STUDIO_LEGACY_DLIGHT_ENABLED			0x1000000000000ull
 #define STUDIO_LEGACY_ELIGHT_ENABLED			0x2000000000000ull
 #define STUDIO_CLIP_NEARPLANE_ENABLED			0x4000000000000ull
+//#define STUDIO_VIEWMODEL_SCALE_ENABLED			0x8000000000000ull
 
 #define STUDIO_PACKED_TEXTURE_ALLBITS	(STUDIO_PACKED_DIFFUSETEXTURE_ENABLED | STUDIO_PACKED_NORMALTEXTURE_ENABLED | STUDIO_PACKED_PARALLAXTEXTURE_ENABLED | STUDIO_PACKED_SPECULARTEXTURE_ENABLED)

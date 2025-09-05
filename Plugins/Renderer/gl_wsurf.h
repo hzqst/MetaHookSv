@@ -303,11 +303,6 @@ extern msurface_t **gDecalSurfs;
 extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;
 
-//cvar
-
-extern cvar_t *r_wsurf_parallax_scale;
-extern cvar_t *r_wsurf_sky_fog;
-
 mleaf_t* R_GetWorldLeafByIndex(model_t* mod, int index);
 int R_GetWorldLeafIndex(model_t* mod, mleaf_t* leaf);
 int R_GetWorldSurfaceIndex(model_t* mod, msurface_t* surf);

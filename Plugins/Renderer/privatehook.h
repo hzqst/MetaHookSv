@@ -103,7 +103,8 @@ typedef struct
 	void(*triapi_Color4fRendermode)(float r, float g, float b, float a, int rendermode);
 	void(*triapi_GetMatrix) (const int pname, float* matrix);
 	int (*triapi_BoxInPVS)(float* mins, float* maxs);
-	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, BOOL bOn);
+	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
+	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
