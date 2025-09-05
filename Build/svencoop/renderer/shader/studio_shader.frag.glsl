@@ -12,7 +12,6 @@ layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDif
 
 /* celshade */
 
-uniform float r_viewmodel_scale;
 uniform vec2 r_base_specular;
 uniform vec4 r_celshade_specular;
 uniform float r_celshade_midpoint;
@@ -761,8 +760,12 @@ void main(void)
 	vec4 specularColor = vec4(0.0);
 
 	float flNormalMask = 0.0;
+	
+	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
+
+	ClipNearPlaneTest(flDistanceToFragment);
 	
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
@@ -843,8 +846,6 @@ void main(void)
 	#endif
 
 #endif
-
-	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 #if defined(SHADOW_CASTER_ENABLED)
 

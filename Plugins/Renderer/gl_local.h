@@ -348,8 +348,6 @@ extern cvar_t* r_studio_lazy_load;
 
 extern cvar_t* r_studio_unload;
 
-extern cvar_t* r_viewmodel_scale;
-
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);

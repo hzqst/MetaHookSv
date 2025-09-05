@@ -347,8 +347,6 @@ cvar_t* r_studio_lazy_load = NULL;
 
 cvar_t* r_studio_unload = NULL;
 
-cvar_t* r_viewmodel_scale = NULL;
-
 cvar_t* r_wsurf_parallax_scale = NULL;
 cvar_t* r_wsurf_sky_fog = NULL;
 
@@ -3369,12 +3367,27 @@ void R_InitCvars(void)
 
 	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	/*
+		r_sprite_lerping 0: Don't between current frame and previous frame for animated sprites.
+		r_sprite_lerping 1: Lerp between current frame and previous frame for animated sprites. this provides smoother animation for sprites that have their rendermode set to texture and additive. This works as what it is in Xash3d-fwgs.
+	*/
 	r_sprite_lerping = gEngfuncs.pfnRegisterVariable("r_sprite_lerping", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	/*
+		r_drawlowerbody 0: disable lower body rendering
+		r_drawlowerbody 1: enable lower body rendering
+	*/
 	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	/*
+		r_drawlowerbodyattachments 0: hide entites attached to local player with MOVETYPE_FOLLOW, when drawing lowerbody
+		r_drawlowerbodyattachments 1: don't hide entites attached to local player with MOVETYPE_FOLLOW, when drawing lowerbody
+	*/
 	r_drawlowerbodyattachments = gEngfuncs.pfnRegisterVariable("r_drawlowerbodyattachments", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	/*
+		r_drawlowerbodypitch 45: to hide lowerbody model when your viewangles.pitch > 45 degree.
+	*/
 	r_drawlowerbodypitch = gEngfuncs.pfnRegisterVariable("r_drawlowerbodypitch", "45", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
@@ -3394,8 +3407,6 @@ void R_InitCvars(void)
 	r_studio_unload 1: Unload GPU resources for unused studiomodels on level changes.
 	*/
 	r_studio_unload = gEngfuncs.pfnRegisterVariable("r_studio_unload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
-	r_viewmodel_scale = gEngfuncs.pfnRegisterVariable("r_viewmodel_scale", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);

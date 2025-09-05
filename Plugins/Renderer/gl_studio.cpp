@@ -1453,8 +1453,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_LEGACY_ELIGHT_ENABLED)
 			defs << "#define LEGACY_ELIGHT_ENABLED\n";
 
-		if (state & STUDIO_VIEW_MODEL_SCALING_ENABLED)
-			defs << "#define VIEW_MODEL_SCALING_ENABLED\n";
+		if (state & STUDIO_CLIP_NEARPLANE_ENABLED)
+			defs << "#define CLIP_NEARPLANE_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -1462,7 +1462,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, r_viewmodel_scale, "r_viewmodel_scale");
 			SHADER_UNIFORM(prog, r_base_specular, "r_base_specular");
 			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
 			SHADER_UNIFORM(prog, r_celshade_specular, "r_celshade_specular");
@@ -1545,6 +1544,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
+{ STUDIO_CLIP_NEARPLANE_ENABLED			,"STUDIO_CLIP_NEARPLANE_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2568,9 +2568,9 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_LEGACY_ELIGHT_ENABLED;
 	}
 
-	if (R_IsRenderingViewModel())
+	if (R_IsRenderingClippedLowerBody())
 	{
-		StudioProgramState |= STUDIO_VIEW_MODEL_SCALING_ENABLED;
+		StudioProgramState |= STUDIO_CLIP_NEARPLANE_ENABLED;
 	}
 
 	if (R_IsRenderingWaterView())
@@ -2867,11 +2867,6 @@ void R_StudioDrawMesh_DrawPass(
 	studio_program_t prog = { 0 };
 
 	R_UseStudioProgram(StudioProgramState, &prog);
-
-	if (prog.r_viewmodel_scale != -1)
-	{
-		glUniform1f(prog.r_viewmodel_scale, r_viewmodel_scale->value);
-	}
 
 	if (prog.r_base_specular != -1)
 	{

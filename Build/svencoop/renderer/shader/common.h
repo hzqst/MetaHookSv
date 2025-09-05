@@ -693,9 +693,55 @@ vec4 ProcessLinearBlendShift(vec4 color)
 		#endif
 	}
 
+	void ClipNearPlaneTest(float flDistanceToFragment)
+	{
+#if defined(CLIP_NEARPLANE_ENABLED)
+
+		float distanceToCamera = flDistanceToFragment;
+
+		float nearPlane = 4.0;
+
+		// 定义一个过渡区域，在这个区域内使用hashed alpha testing
+		float transitionStart = nearPlane;
+		float transitionEnd = nearPlane * 2;
+
+		// 如果距离小于近平面，直接丢弃
+		if (distanceToCamera < nearPlane) {
+			discard;
+		}
+
+		// 在过渡区域内使用hashed alpha testing
+		if (distanceToCamera < transitionEnd) {
+			// 计算alpha值，距离越近alpha越小
+			float alpha = (distanceToCamera - transitionStart) / (transitionEnd - transitionStart);
+
+			// 使用屏幕空间位置创建hash值
+			vec2 screenPos = gl_FragCoord.xy;
+
+			// 简单的hash函数，基于屏幕坐标
+			float hash = fract(sin(dot(screenPos, vec2(12.9898, 78.233))) * 43758.5453);
+
+			// 使用三角形分布的噪声图案，减少条带效应
+			vec2 gridPos = fract(screenPos * 0.25);
+			float triangleNoise = abs(gridPos.x - 0.5) + abs(gridPos.y - 0.5);
+			hash = fract(hash + triangleNoise);
+
+			// 如果hash值大于alpha，丢弃该像素
+			if (hash > alpha) {
+				discard;
+			}
+		}
+#endif
+	}
+
 #else
 
 	void ClipPlaneTest(vec3 worldpos, vec3 normal)
+	{
+
+	}
+
+	void ClipNearPlaneTest(float flDistanceToFragment)
 	{
 
 	}
