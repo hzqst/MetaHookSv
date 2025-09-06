@@ -1056,20 +1056,20 @@ WEBP (RGB8 / RGBA8)
 
 `level`控制渲染等级。
 
-|  可能的值                      | 结果                                                                      |
-|        ----                          | ----                                                                        |
-| "level" "0"                          | 渲染为传统水面                                                      |
-| "level" "WATER_LEVEL_LEGACY"         | 渲染为传统水面                                                      |
-| "level" "1"                          | 仅反射天空盒                                                    |
-| "level" "WATER_LEVEL_REFLECT_SKYBOX" | 仅反射天空盒                                                    |
+|  可能的值                      | 结果                                                                |
+|        ----                          | ----                                                         |
+| "level" "0"                          | 渲染为传统水面                                                |
+| "level" "WATER_LEVEL_LEGACY"         | 渲染为传统水面                                                |
+| "level" "1"                          | 反射天空盒和世界                                              |
+| "level" "WATER_LEVEL_REFLECT_SKYBOX" | 反射天空盒和世界                                              |
 | "level" "2"                          | 反射天空盒和世界                                              |
 | "level" "WATER_LEVEL_REFLECT_WORLD"  | 反射天空盒和世界                                              |
-| "level" "3"                          | 反射天空盒、世界、实体和粒子                         |
-| "level" "WATER_LEVEL_REFLECT_ENTITY" | 反射天空盒、世界、实体和粒子                         |
-| "level" "4"                          | 使用SSR反射，仅反射屏幕空间中的像素              |
-| "level" "WATER_LEVEL_REFLECT_SSR"    | 使用SSR反射，仅反射屏幕空间中的像素              |
-| "level" "5"                          | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果  |
-| "level" "WATER_LEVEL_LEGACY_RIPPLE"  | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果  |
+| "level" "3"                          | 反射天空盒、世界、实体和粒子                                   |
+| "level" "WATER_LEVEL_REFLECT_ENTITY" | 反射天空盒、世界、实体和粒子                                   |
+| "level" "4"                          | 使用SSR反射，仅反射屏幕空间中的像素 (暂未实现)                  |
+| "level" "WATER_LEVEL_REFLECT_SSR"    | 使用SSR反射，仅反射屏幕空间中的像素 (暂未实现)                  |
+| "level" "5"                          | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果               |
+| "level" "WATER_LEVEL_LEGACY_RIPPLE"  | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果               |
 
 ## light_dynamic
 
