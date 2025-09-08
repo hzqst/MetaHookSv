@@ -2609,7 +2609,7 @@ void R_PreRenderView()
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0.1, 1);
+	glDepthRange(0, 1);
 }
 
 void R_PostRenderView()
@@ -3792,6 +3792,15 @@ void R_SetupGL(void)
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
 	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
+	
+	if (R_ShouldDrawViewModel() && !R_IsRenderingShadowView() && !R_IsRenderingWaterView() && !R_IsRenderingPortal())
+	{
+		glDepthRange(0.1, 1);
+	}
+	else
+	{
+		glDepthRange(0, 1);
+	}
 }
 
 void R_CheckVariables(void)
