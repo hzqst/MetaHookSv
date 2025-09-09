@@ -616,6 +616,9 @@ typedef struct metahook_api_s
 	void (*DeleteThreadPool)(ThreadWorkItemHandle_t hThreadPool);
 
 	void (*DeleteWorkItem)(ThreadWorkItemHandle_t hWorkItem);
+
+	bool (*VideoModeIsWindowed)();
+
 	//Always terminate with a NULL
 	PVOID Terminator;
 

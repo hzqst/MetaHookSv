@@ -1,7 +1,5 @@
 #include "gl_local.h"
 
-#define MAX_SAVESTACK 16
-
 vec3_t save_vieworg[MAX_SAVESTACK] = { 0 };
 vec3_t save_viewang[MAX_SAVESTACK] = { 0 };
 int save_refdef_stack = 0;
@@ -122,6 +120,7 @@ void GL_PopFrameBuffer(void)
 
 void GL_PushMatrix(void)
 {
+	Sys_Error("NOT AVAILABLE");
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 
@@ -131,6 +130,7 @@ void GL_PushMatrix(void)
 
 void GL_PopMatrix(void)
 {
+	Sys_Error("NOT AVAILABLE");
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 
@@ -430,7 +430,9 @@ void GL_CreateShadowTexture(int texid, int w, int h, float *borderColor, bool im
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+	//GL_DEPTH_TEXTURE_MODE has nothing to do with rendering to a depth texture. That's old fixed-function stuff from desktop OpenGL 2.1.
+	//glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
@@ -999,4 +1001,210 @@ float GetFrameRateFromFrameDuration(int frameduration)
 		return 1000.0f / frameduration;
 
 	return 0;
+}
+
+static mat4 r_pushed_world_matrix[MAX_SAVESTACK];
+static size_t r_pushed_world_matrix_count{};
+
+float* R_GetWorldMatrix()
+{
+	return r_world_matrix;
+}
+
+void R_PushWorldMatrix()
+{
+	if (r_pushed_world_matrix_count == MAX_SAVESTACK)
+	{
+		Sys_Error("R_PushWorldMatrix: max stack excceeded!");
+		return;
+	}
+
+	memcpy(r_pushed_world_matrix[r_pushed_world_matrix_count], r_world_matrix, sizeof(mat4));
+	r_pushed_world_matrix_count++;
+}
+
+void R_PopWorldMatrix()
+{
+	if (r_pushed_world_matrix_count == 0)
+	{
+		Sys_Error("R_PopWorldMatrix: empty r_pushed_world_matrix!");
+		return;
+	}
+
+	auto& matrix = r_pushed_world_matrix[r_pushed_world_matrix_count - 1];
+
+	memcpy(r_world_matrix, matrix, sizeof(mat4));
+
+	r_pushed_world_matrix_count--;
+}
+
+void R_LoadIdentityForWorldMatrix()
+{
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(r_world_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+void R_TranslateWorldMatrix(float x, float y, float z)
+{
+	// Apply translation to the world matrix (equivalent to glTranslatef)
+	// In a 4x4 matrix, translation values go in the last column (indices 12, 13, 14)
+	r_world_matrix[12] += r_world_matrix[0] * x + r_world_matrix[4] * y + r_world_matrix[8] * z;
+	r_world_matrix[13] += r_world_matrix[1] * x + r_world_matrix[5] * y + r_world_matrix[9] * z;
+	r_world_matrix[14] += r_world_matrix[2] * x + r_world_matrix[6] * y + r_world_matrix[10] * z;
+}
+
+static mat4 r_pushed_projection_matrix[MAX_SAVESTACK];
+static size_t r_pushed_projection_matrix_count{};
+
+void R_PushProjectionMatrix()
+{
+	if (r_pushed_projection_matrix_count == MAX_SAVESTACK)
+	{
+		Sys_Error("R_PushProjectionMatrix: max stack excceeded!");
+		return;
+	}
+	memcpy(r_pushed_projection_matrix[r_pushed_projection_matrix_count], r_projection_matrix, sizeof(mat4));
+	r_pushed_projection_matrix_count++;
+}
+
+void R_PopProjectionMatrix()
+{
+	if (r_pushed_projection_matrix_count == 0)
+	{
+		Sys_Error("R_PopProjectionMatrix: empty r_pushed_projection_matrix!");
+		return;
+	}
+
+	auto& matrix = r_pushed_projection_matrix[r_pushed_projection_matrix_count - 1];
+
+	memcpy(r_projection_matrix, matrix, sizeof(mat4));
+
+	r_pushed_projection_matrix_count--;
+}
+
+float* R_GetProjectionMatrix()
+{
+	return r_projection_matrix;
+}
+
+void R_LoadIdentityForProjectionMatrix()
+{
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(r_projection_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+/*
+
+	// All graphics APIs except for OpenGL use [0, 1] as NDC Z range.
+	// OpenGL uses [-1, 1] unless glClipControl is used to change it.
+	// Use IRenderDevice::GetDeviceInfo().NDC to get the NDC Z range.
+	// See https://github.com/DiligentGraphics/DiligentCore/blob/master/doc/CoordinateSystem.md
+	void SetNearFarClipPlanes(T zNear, T zFar, bool NegativeOneToOneZ)
+	{
+		if (_44 == 0)
+		{
+			// Perspective projection
+			if (NegativeOneToOneZ)
+			{
+				// https://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
+				// http://www.terathon.com/gdc07_lengyel.pdf
+				// Note that OpenGL uses right-handed coordinate system, where
+				// camera is looking in negative z direction:
+				//   OO
+				//  |__|<--------------------
+				//         -z             +z
+				// Consequently, OpenGL projection matrix given by these two
+				// references inverts z axis.
+
+				// We do not need to do this, because we use DX coordinate
+				// system for the camera space. Thus we need to invert the
+				// sign of the values in the third column in the matrix
+				// from the references:
+
+				_33 = -(-(zFar + zNear) / (zFar - zNear));
+				_43 = -2 * zNear * zFar / (zFar - zNear);
+				_34 = -(-1);
+			}
+			else
+			{
+				_33 = zFar / (zFar - zNear);
+				_43 = -zNear * zFar / (zFar - zNear);
+				_34 = 1;
+			}
+		}
+		else
+		{
+			// Orthographic projection
+			_33 = (NegativeOneToOneZ ? 2 : 1) / (zFar - zNear);
+			_43 = (NegativeOneToOneZ ? zNear + zFar : zNear) / (zNear - zFar);
+		}
+	}
+	static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
+	{
+		// clang-format off
+		Matrix4x4 Proj
+			{
+						 2   / (right - left),                                 0,   0,    0,
+											0,                2 / (top - bottom),   0,    0,
+											0,                                 0,   0,    0,
+				(left + right)/(left - right),   (top + bottom) / (bottom - top),   0,    1
+			};
+		// clang-format on
+		Proj.SetNearFarClipPlanes(zNear, zFar, NegativeOneToOneZ);
+		return Proj;
+	}
+*/
+
+void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
+{
+	memset(r_projection_matrix, 0, sizeof(float) * 16);
+
+	// 基础正交投影矩阵布局 (按照OrthoOffCenter实现)
+	r_projection_matrix[0] = 2.0f / (right - left);                     // _11
+	r_projection_matrix[5] = 2.0f / (top - bottom);                     // _22
+	r_projection_matrix[12] = (left + right) / (left - right);          // _41
+	r_projection_matrix[13] = (top + bottom) / (bottom - top);          // _42
+	r_projection_matrix[15] = 1.0f;                                     // _44
+
+	// 设置近远裁剪平面 (按照SetNearFarClipPlanes实现)
+	if (NegativeOneToOneZ)
+	{
+		// OpenGL风格 [-1, 1] NDC Z范围
+		r_projection_matrix[10] = 2.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = (zNear + zFar) / (zNear - zFar);     // _43
+	}
+	else
+	{
+		// DirectX风格 [0, 1] NDC Z范围
+		r_projection_matrix[10] = 1.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = zNear / (zNear - zFar);              // _43
+	}
+}
+
+void GL_BeginDebugGroup(const char *name)
+{
+#if defined(_DEBUG)
+	if (glPushDebugGroup)
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
+#endif
+}
+
+void GL_EndDebugGroup()
+{
+#if defined(_DEBUG)
+	if (glPopDebugGroup)
+		glPopDebugGroup();
+#endif
 }

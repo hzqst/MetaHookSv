@@ -42,6 +42,8 @@ typedef struct
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
+	void (*GL_Set2D)(void);
+	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
 	void (*EmitWaterPolys)(msurface_t* fa, int direction);
@@ -108,9 +110,12 @@ typedef struct
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void (__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 	void (__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
+	void(__fastcall* enginesurface_drawFilledRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
+	void(__fastcall* enginesurface_drawTexturedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	int(__fastcall* enginesurface_createNewTextureID)(void* pthis, int);
+	void(__fastcall* enginesurface_drawPrintCharAdd)(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
 	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int);
@@ -143,9 +148,7 @@ typedef struct
 	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
-#if 0
-	void (*BuildNormalIndexTable)(void);
-#endif
+
 	void (*BuildGlowShellVerts)(vec3_t* pstudioverts, auxvert_t* pauxverts);
 	void (*R_StudioChrome)(int* pchrome, int bone, vec3_t normal);
 
@@ -187,6 +190,7 @@ typedef struct
 	void(*R_StudioSaveBones)(void);
 
 	//SDL2
+	void (__cdecl*SDL_GetWindowPosition)(void* window, int* x, int* y);
 	int(__cdecl* SDL_GL_SetAttribute)(int attr, int value);
 	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
 	void (__cdecl* SDL_GL_SwapWindow)(void* window);

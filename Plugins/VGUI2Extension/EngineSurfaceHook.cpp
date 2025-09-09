@@ -14,6 +14,7 @@ static void (*m_pfnEngineSurface_popMakeCurrent)(void) = NULL;
 
 bool* g_bScissor = NULL;
 RECT* g_ScissorRect = NULL;
+
 PVOID** g_SDL2_mainwindow = NULL;
 
 class CEngineSurfaceProxy : public IEngineSurface
@@ -429,143 +430,12 @@ static CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
 void EngineSurface_FillAddress(void)
 {
-#if 0
-	PVOID* OriginalVFTable = (g_iEngineType == ENGINE_GOLDSRC_HL25) ? *(PVOID**)staticSurface_HL25 : *(PVOID**)staticSurface;
 
-	auto pushMakeCurrent = OriginalVFTable[1];
-
-	typedef struct
-	{
-		ULONG_PTR mainwindow_candidate;
-		int mainwindow_candidate_reg;
-		int mainwindow_candidate_InstCount;
-		int g_bScissor_InstCount;
-		ULONG_PTR candidate[4];
-		int candidate_count;
-	}pushMakeCurrent_ctx;
-
-	pushMakeCurrent_ctx ctx = { 0 };
-
-	g_pMetaHookAPI->DisasmRanges(pushMakeCurrent, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (pushMakeCurrent_ctx*)context;
-
-		if (!g_SDL2_mainwindow &&
-			instCount < 35 &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-		{
-			ctx->mainwindow_candidate = (decltype(ctx->mainwindow_candidate))pinst->detail->x86.operands[1].mem.disp;
-			ctx->mainwindow_candidate_reg = pinst->detail->x86.operands[0].reg;
-			ctx->mainwindow_candidate_InstCount = instCount;
-		}
-
-		if (!g_SDL2_mainwindow && 
-			instCount < 40 && ctx->mainwindow_candidate &&
-			instCount > ctx->mainwindow_candidate_InstCount &&
-			instCount < ctx->mainwindow_candidate_InstCount + 6 &&			
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == ctx->mainwindow_candidate_reg)
-		{
-			g_SDL2_mainwindow = (decltype(g_SDL2_mainwindow))ctx->mainwindow_candidate;
-		}
-
-		if (!g_SDL2_mainwindow && 
-			instCount < 40 && ctx->mainwindow_candidate &&
-			instCount > ctx->mainwindow_candidate_InstCount && 
-			instCount < ctx->mainwindow_candidate_InstCount + 6 &&			
-			pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == ctx->mainwindow_candidate_reg)
-		{
-			g_SDL2_mainwindow = (decltype(g_SDL2_mainwindow))ctx->mainwindow_candidate;
-		}
-
-		if (!g_bScissor && pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[1].imm == 1 &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-		{
-			g_bScissor = (decltype(g_bScissor))pinst->detail->x86.operands[0].mem.disp;
-			ctx->g_bScissor_InstCount = instCount;
-		}
-
-		if (ctx->g_bScissor_InstCount > 0 && instCount > ctx->g_bScissor_InstCount && ctx->candidate_count < 4)
-		{
-			if(pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-			{
-				ctx->candidate[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-				ctx->candidate_count++;
-			}
-		}
-
-		if (ctx->candidate_count >= 4 && g_bScissor)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-	}, 0, &ctx);
-
-	if (ctx.candidate_count >= 4)
-	{
-		std::qsort(ctx.candidate, ctx.candidate_count, sizeof(ctx.candidate[0]), [](const void* a, const void* b) {
-			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-			});
-		g_ScissorRect = (decltype(g_ScissorRect))ctx.candidate[0];
-	}
-
-	Sig_VarNotFound(g_SDL2_mainwindow);
-	Sig_VarNotFound(g_bScissor);
-	Sig_VarNotFound(g_ScissorRect);
-#endif
 }
 
 void EngineSurface_InstallHooks(void)
 {
-#if 0
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		PVOID* ProxyVFTable = *(PVOID**)&g_EngineSurfaceProxy_HL25;
 
-		//g_pMetaHookAPI->VFTHook(staticSurface_HL25, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnEngineSurface_pushMakeCurrent);
-		//g_pMetaHookAPI->VFTHook(staticSurface_HL25, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnEngineSurface_popMakeCurrent);
-	}
-	else
-	{
-		PVOID* ProxyVFTable = *(PVOID**)&g_EngineSurfaceProxy;
-
-		//g_pMetaHookAPI->VFTHook(staticSurface, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnEngineSurface_pushMakeCurrent);
-		//g_pMetaHookAPI->VFTHook(staticSurface, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnEngineSurface_popMakeCurrent);
-	}
-#endif
 }
 
 void EngineSurface_UninstallHooks(void)

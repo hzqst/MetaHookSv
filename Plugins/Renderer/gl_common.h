@@ -53,6 +53,13 @@ public:
 #define TEXTUREDRECT_VA_MATRIX2			5
 #define TEXTUREDRECT_VA_MATRIX3			6
 
+#define FILLEDRECT_VA_POSITION			0
+#define FILLEDRECT_VA_COLOR				1
+#define FILLEDRECT_VA_MATRIX0			2
+#define FILLEDRECT_VA_MATRIX1			3
+#define FILLEDRECT_VA_MATRIX2			4
+#define FILLEDRECT_VA_MATRIX3			5
+
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
@@ -158,6 +165,12 @@ typedef struct texturedrectvertex_s
 	vec2_t texcoord;
 	vec4_t col;
 }texturedrectvertex_t;
+
+typedef struct filledrectvertex_s
+{
+	vec2_t pos;
+	vec4_t col;
+}filledrectvertex_t;
 
 typedef struct triapivertex_s
 {

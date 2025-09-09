@@ -3296,6 +3296,12 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 	if (!pStartSearch)
 		return NULL;
 
+	if(!dwSearchLen)
+		return NULL;
+
+	if(!dwPatternLen)
+		return NULL;
+
 	char *dwStartAddr = (char *)pStartSearch;
 	char *dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 
@@ -3522,6 +3528,26 @@ public:
 	virtual void dtor();
 	virtual int GetBitsPerPixel();
 };
+
+bool MH_VideoModeIsWindowed()
+{
+	if (g_pVideoMode && (*g_pVideoMode))
+	{
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*g_pVideoMode);
+
+			return pVideoMode->IsWindowedMode();
+		}
+		else
+		{
+			IVideoMode* pVideoMode = (IVideoMode*)(*g_pVideoMode);
+
+			return pVideoMode->IsWindowedMode();
+		}
+	}
+	return false;
+}
 
 DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 {
@@ -4663,6 +4689,7 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_WaitForWorkItemToComplete,
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
+	MH_VideoModeIsWindowed,
 	NULL
 };
 
@@ -4757,5 +4784,6 @@ metahook_api_t gMetaHookAPI =
 	MH_WaitForWorkItemToComplete,
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
+	MH_VideoModeIsWindowed,
 	NULL
 };

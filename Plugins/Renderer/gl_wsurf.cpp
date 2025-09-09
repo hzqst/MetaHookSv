@@ -4477,15 +4477,30 @@ void R_DrawBrushModel(cl_entity_t* e)
 	glDisable(GL_BLEND);
 }
 
-void R_SetupCameraUBO(void)
+void R_SetupCameraUBO(bool bViewModel)
 {
 	camera_ubo_t CameraUBO;
 
-	memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+	if (!bViewModel)
+	{
+		InvertMatrix(r_world_matrix, r_world_matrix_inv);
+		InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
+		memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+		memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+		memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+		memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+	}
+	else
+	{
+		InvertMatrix(r_world_matrix, r_world_matrix_inv);
+		InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
+
+		memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+		memcpy(CameraUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
+		memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+		memcpy(CameraUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
+	}
 	auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
 
 	if (CurrentSceneFBO)
@@ -4690,8 +4705,8 @@ void R_PrepareDrawWorld(void)
 		glMatrixMode(GL_MODELVIEW);
 	}
 
+	R_SetupCameraUBO(false);
 	R_SetupSceneUBO();
-	R_SetupCameraUBO();
 	R_SetupDLightUBO();
 }
 

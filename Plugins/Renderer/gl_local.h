@@ -45,6 +45,8 @@
 #include "gl_portal.h"
 #include "gl_entity.h"
 
+#define MAX_SAVESTACK 16
+
 typedef struct walk_context_s
 {
 	walk_context_s(void* a, size_t l, int d) : address(a), len(l), depth(d)
@@ -92,6 +94,12 @@ extern mleaf_t **r_oldviewleaf;
 extern int *r_loading_skybox;
 
 extern RECT *window_rect;
+
+extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
+extern int(*g_iVertexBufferEntriesUsed);
+
+extern RECT* g_ScissorRect;
+extern bool* g_bScissor;
 
 extern float * s_fXMouseAspectAdjustment;
 extern float * s_fYMouseAspectAdjustment;
@@ -171,6 +179,8 @@ extern float* g_iEndDist_SCClient;
 extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 extern int* g_ViewEntityIndex_SCClient;
+
+extern void** (*pmainwindow);
 
 extern bool g_bPortalClipPlaneEnabled[6];
 
@@ -383,6 +393,7 @@ void R_NewMap(void);
 void GL_BuildLightmaps(void);
 void Host_ClearMemory(qboolean bQuite);
 void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window);
+void DT_Initialize();
 void R_Init(void);
 void R_Shutdown(void);
 void R_SetupGL(void);
@@ -396,7 +407,7 @@ void R_AnimateLight(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
 void R_SetupSceneUBO(void);
-void R_SetupCameraUBO(void);
+void R_SetupCameraUBO(bool bViewModel);
 void R_GameFrameStart();
 void R_RenderFrameStart();
 void R_RenderEndFrame();
@@ -419,6 +430,8 @@ void R_AddTEntity(cl_entity_t *pEnt);
 void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
 void GL_Shutdown(void);
 void GL_Init(void);
+void GL_Set2D();
+void GL_Finish2D();
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
 GLuint GL_GenTexture(void);
@@ -465,11 +478,19 @@ void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
 
 float* R_GetWorldMatrix();
+void R_PushWorldMatrix();
+void R_PopWorldMatrix();
 void R_LoadIdentityForWorldMatrix();
+void R_TranslateWorldMatrix(float x, float y, float z);
 
 float* R_GetProjectionMatrix();
+void R_PushProjectionMatrix();
+void R_PopProjectionMatrix();
 void R_LoadIdentityForProjectionMatrix();
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
+
+void GL_BeginDebugGroup(const char* name);
+void GL_EndDebugGroup();
 
 void __stdcall SCClient_glBegin(int GLPrimitiveCode);
 void __stdcall SCClient_glEnd();
@@ -488,8 +509,11 @@ void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelI
 
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 void __fastcall enginesurface_popMakeCurrent(void* pthis, int);
+void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1);
 void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId);
+void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
@@ -587,7 +611,10 @@ bool R_IsRenderingFlippedViewModel(void);
 
 bool R_IsDeferredRenderingEnabled(void);
 
+void* Sys_GetMainWindow();
+
 //Fog
+bool R_CanRenderFog();
 bool R_IsRenderingFog();
 void R_DisableRenderingFog();
 void R_InhibitRenderingFog();

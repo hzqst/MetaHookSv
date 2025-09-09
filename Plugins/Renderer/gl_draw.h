@@ -19,9 +19,6 @@ extern char(*szCustName)[10];
 
 extern float gl_max_ansio;
 
-extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
-extern int(*g_iVertexBufferEntriesUsed);
-
 gltexture_t *gltextures_get();
 
 typedef struct gl_mipmap_texture_data_s
@@ -306,3 +303,5 @@ void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType
 const char * V_GetFileExtension(const char * path);
 const char * V_UnqualifiedFileName(const char * in);
 int GL_GetAnsioValue();
+void GL_UploadCompressedTexture(gl_loadtexture_context_t* context, int iTextureTarget);
+void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextureTarget);

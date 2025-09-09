@@ -925,3 +925,11 @@ typedef struct EngineSurfaceVertexBuffer_s
 } EngineSurfaceVertexBuffer_t;
 
 #define MAXVERTEXBUFFERS (64 * 4)
+
+typedef struct TCoordRect_s
+{
+	float s0;
+	float t0;
+	float s1;
+	float t1;
+} TCoordRect;

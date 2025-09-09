@@ -14,21 +14,14 @@
 #include "UtilThreadTask.h"
 #include "LambdaThreadedTask.h"
 
-const float r_identity_matrix[4][4] = {
-	{1.0f, 0.0f, 0.0f, 0.0f},
-	{0.0f, 1.0f, 0.0f, 0.0f},
-	{0.0f, 0.0f, 1.0f, 0.0f},
-	{0.0f, 0.0f, 0.0f, 1.0f}
-};
-
 private_funcs_t gPrivateFuncs = { 0 };
 
 refdef_t r_refdef = { 0 };
 ref_params_t r_params = { 0 };
-refdef_GoldSrc_t *r_refdef_GoldSrc = nullptr;
-refdef_SvEngine_t *r_refdef_SvEngine = nullptr;
+refdef_GoldSrc_t* r_refdef_GoldSrc = nullptr;
+refdef_SvEngine_t* r_refdef_SvEngine = nullptr;
 
-float *scrfov = nullptr;
+float* scrfov = nullptr;
 float r_xfov = 0;
 float r_yfov = 0;
 float r_xfov_viewmodel = 0;
@@ -42,10 +35,10 @@ int r_fog_mode = 0;
 float r_fog_control[3] = { 0 };
 float r_fog_color[4] = { 0 };
 
-RECT *window_rect = nullptr;
+RECT* window_rect = nullptr;
 
-float * s_fXMouseAspectAdjustment = nullptr;
-float * s_fYMouseAspectAdjustment = nullptr;
+float* s_fXMouseAspectAdjustment = nullptr;
+float* s_fYMouseAspectAdjustment = nullptr;
 
 float s_fXMouseAspectAdjustment_Storage = 0;
 float s_fYMouseAspectAdjustment_Storage = 0;
@@ -53,100 +46,100 @@ float s_fYMouseAspectAdjustment_Storage = 0;
 cl_entity_t* r_worldentity = nullptr;
 model_t** cl_worldmodel = nullptr;
 
-int *cl_numvisedicts = nullptr;
-cl_entity_t **cl_visedicts = nullptr;
-cl_entity_t **currententity = nullptr;
-int *numTransObjs = nullptr;
-int *maxTransObjs = nullptr;
-transObjRef **transObjects = nullptr;
-mleaf_t **r_viewleaf = nullptr;
-mleaf_t **r_oldviewleaf = nullptr;
+int* cl_numvisedicts = nullptr;
+cl_entity_t** cl_visedicts = nullptr;
+cl_entity_t** currententity = nullptr;
+int* numTransObjs = nullptr;
+int* maxTransObjs = nullptr;
+transObjRef** transObjects = nullptr;
+mleaf_t** r_viewleaf = nullptr;
+mleaf_t** r_oldviewleaf = nullptr;
 
-float r_viewport[4] = {0};
+float r_viewport[4] = { 0 };
 
-vec_t *vup = nullptr;
-vec_t *vpn = nullptr;
-vec_t *vright = nullptr;
-vec_t *r_origin = nullptr;
-vec_t *modelorg = nullptr;
-vec_t *r_entorigin = nullptr;
-float *r_world_matrix = nullptr;
-float *r_projection_matrix = nullptr;
-float *gWorldToScreen = nullptr;
-float *gScreenToWorld = nullptr;
-overviewInfo_t *gDevOverview = nullptr;
-mplane_t *frustum = nullptr;
+vec_t* vup = nullptr;
+vec_t* vpn = nullptr;
+vec_t* vright = nullptr;
+vec_t* r_origin = nullptr;
+vec_t* modelorg = nullptr;
+vec_t* r_entorigin = nullptr;
+float* r_world_matrix = nullptr;
+float* r_projection_matrix = nullptr;
+float* gWorldToScreen = nullptr;
+float* gScreenToWorld = nullptr;
+overviewInfo_t* gDevOverview = nullptr;
+mplane_t* frustum = nullptr;
 
 qboolean* vertical_fov_SvEngine = nullptr;
 
 vec_t* cl_simorg = nullptr;
 
-int *g_bUserFogOn = nullptr;
-float *g_UserFogColor = nullptr;
-float *g_UserFogDensity = nullptr;
-float *g_UserFogStart = nullptr;
-float *g_UserFogEnd = nullptr;
+int* g_bUserFogOn = nullptr;
+float* g_UserFogColor = nullptr;
+float* g_UserFogDensity = nullptr;
+float* g_UserFogStart = nullptr;
+float* g_UserFogEnd = nullptr;
 
 /*
 	r_visframecount is updated only when you encounter a new leaf
 	while r_framecount is updated every new frame
 */
 
-int *r_framecount = nullptr;
-int *r_visframecount = nullptr;
+int* r_framecount = nullptr;
+int* r_visframecount = nullptr;
 
-int *cl_max_edicts = nullptr;
-cl_entity_t **cl_entities = nullptr;
+int* cl_max_edicts = nullptr;
+cl_entity_t** cl_entities = nullptr;
 
-TEMPENTITY *gTempEnts = nullptr;
+TEMPENTITY* gTempEnts = nullptr;
 
-int *cl_viewentity = nullptr;
-void *cl_frames = nullptr;
+int* cl_viewentity = nullptr;
+void* cl_frames = nullptr;
 int size_of_frame = sizeof(frame_t);
-int *cl_parsecount = nullptr;
-int *cl_waterlevel = nullptr;
-double *cl_time = nullptr;
-double *cl_oldtime = nullptr;
-int *envmap = nullptr;
-int *cl_stats = nullptr;
-float *cl_weaponstarttime = nullptr;
-int *cl_weaponsequence = nullptr;
-int *cl_light_level = nullptr;
-int *c_alias_polys = nullptr;
-int *c_brush_polys = nullptr;
+int* cl_parsecount = nullptr;
+int* cl_waterlevel = nullptr;
+double* cl_time = nullptr;
+double* cl_oldtime = nullptr;
+int* envmap = nullptr;
+int* cl_stats = nullptr;
+float* cl_weaponstarttime = nullptr;
+int* cl_weaponsequence = nullptr;
+int* cl_light_level = nullptr;
+int* c_alias_polys = nullptr;
+int* c_brush_polys = nullptr;
 int(*rtable)[20][20] = nullptr;
 
-model_t *mod_known = nullptr;
-int *mod_numknown = nullptr;
+model_t* mod_known = nullptr;
+int* mod_numknown = nullptr;
 
 char (*loadname)[64] = nullptr;
-model_t **loadmodel = nullptr;
+model_t** loadmodel = nullptr;
 
 int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 
-int *gl_msaa_fbo = nullptr;
-int *gl_backbuffer_fbo = nullptr;
-int *gl_mtexable = nullptr;
-qboolean *mtexenabled = 0;
+int* gl_msaa_fbo = nullptr;
+int* gl_backbuffer_fbo = nullptr;
+int* gl_mtexable = nullptr;
+qboolean* mtexenabled = 0;
 
-vec_t *r_soundOrigin = nullptr;
-vec_t *r_playerViewportAngles = nullptr;
+vec_t* r_soundOrigin = nullptr;
+vec_t* r_playerViewportAngles = nullptr;
 
-cactive_t *cls_state = nullptr;
-int *cls_signon = nullptr;
-qboolean *scr_drawloading = nullptr;
+cactive_t* cls_state = nullptr;
+int* cls_signon = nullptr;
+qboolean* scr_drawloading = nullptr;
 
 movevars_t* pmovevars = nullptr;
 struct playermove_s* pmove = nullptr;
 struct playermove_10152_s* pmove_10152 = nullptr;
 
-int *filterMode = nullptr;
-float *filterColorRed = nullptr;
-float *filterColorGreen = nullptr;
-float *filterColorBlue = nullptr;
-float *filterBrightness = nullptr;
+int* filterMode = nullptr;
+float* filterColorRed = nullptr;
+float* filterColorGreen = nullptr;
+float* filterColorBlue = nullptr;
+float* filterBrightness = nullptr;
 
 void* engineSurface = nullptr;
 
@@ -167,25 +160,27 @@ int* allocated_textures = nullptr;
 
 //client dll
 
-int *g_iUser1 = nullptr;
-int *g_iUser2 = nullptr;
+int* g_iUser1 = nullptr;
+int* g_iUser2 = nullptr;
 
 int* g_iWaterLevel = nullptr;
-bool *g_bRenderingPortals_SCClient = nullptr;
+bool* g_bRenderingPortals_SCClient = nullptr;
 int* g_ViewEntityIndex_SCClient = nullptr;//Sniber NMSL
 
 float* g_iFogColor_SCClient = nullptr;
 float* g_iStartDist_SCClient = nullptr;
 float* g_iEndDist_SCClient = nullptr;
 
+void** (*pmainwindow) = nullptr;
+
 bool g_bPortalClipPlaneEnabled[6] = { false };
 
-vec4_t g_PortalClipPlane[6] = {0};
+vec4_t g_PortalClipPlane[6] = { 0 };
 
 bool g_bHasLowerBody = false;
 
 float r_entity_matrix[4][4] = { 0 };
-float r_entity_color[4] = {0};
+float r_entity_color[4] = { 0 };
 
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
@@ -245,7 +240,7 @@ FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterSurfaceFBO = { 0 };
 
 FBO_Container_t* g_CurrentSceneFBO = nullptr;
-FBO_Container_t *g_CurrentRenderingFBO = nullptr;
+FBO_Container_t* g_CurrentRenderingFBO = nullptr;
 
 bool g_bNoStretchAspect = true;
 bool g_bUseOITBlend = false;
@@ -253,92 +248,92 @@ bool g_bUseLegacyTextureLoader = false;
 bool g_bHasOfficialFBOSupport = false;
 bool g_bHasOfficialGLTexAllocSupport = true;
 
-cvar_t *ati_subdiv = nullptr;
-cvar_t *ati_npatch = nullptr;
+cvar_t* ati_subdiv = nullptr;
+cvar_t* ati_npatch = nullptr;
 
-cvar_t *r_bmodelinterp = nullptr;
-cvar_t *r_bmodelhighfrac = nullptr;
-cvar_t *r_norefresh = nullptr;
-cvar_t *r_drawentities = nullptr;
-cvar_t *r_drawviewmodel = nullptr;
-cvar_t *r_speeds = nullptr;
-cvar_t *r_fullbright = nullptr;
-cvar_t *r_decals = nullptr;
-cvar_t *r_lightmap = nullptr;
-cvar_t *r_shadows = nullptr;
-cvar_t *r_mirroralpha = nullptr;
-cvar_t *r_wateralpha = nullptr;
-cvar_t *r_dynamic = nullptr;
-cvar_t *r_novis = nullptr;
-cvar_t *r_mmx = nullptr;
-cvar_t *r_traceglow = nullptr;
-cvar_t *r_wadtextures = nullptr;
-cvar_t *r_glowshellfreq = nullptr;
-cvar_t *r_detailtextures = nullptr;
-cvar_t *r_cullsequencebox = nullptr;
+cvar_t* r_bmodelinterp = nullptr;
+cvar_t* r_bmodelhighfrac = nullptr;
+cvar_t* r_norefresh = nullptr;
+cvar_t* r_drawentities = nullptr;
+cvar_t* r_drawviewmodel = nullptr;
+cvar_t* r_speeds = nullptr;
+cvar_t* r_fullbright = nullptr;
+cvar_t* r_decals = nullptr;
+cvar_t* r_lightmap = nullptr;
+cvar_t* r_shadows = nullptr;
+cvar_t* r_mirroralpha = nullptr;
+cvar_t* r_wateralpha = nullptr;
+cvar_t* r_dynamic = nullptr;
+cvar_t* r_novis = nullptr;
+cvar_t* r_mmx = nullptr;
+cvar_t* r_traceglow = nullptr;
+cvar_t* r_wadtextures = nullptr;
+cvar_t* r_glowshellfreq = nullptr;
+cvar_t* r_detailtextures = nullptr;
+cvar_t* r_cullsequencebox = nullptr;
 
-cvar_t *gl_vsync = nullptr;
-cvar_t *gl_ztrick = nullptr;
-cvar_t *gl_finish = nullptr;
-cvar_t *gl_clear = nullptr;
-cvar_t *gl_clearcolor = nullptr;
-cvar_t *gl_cull = nullptr;
-cvar_t *gl_texsort = nullptr;
-cvar_t *gl_smoothmodels = nullptr;
-cvar_t *gl_affinemodels = nullptr;
-cvar_t *gl_flashblend = nullptr;
-cvar_t *gl_playermip = nullptr;
-cvar_t *gl_nocolors = nullptr;
-cvar_t *gl_keeptjunctions = nullptr;
-cvar_t *gl_reporttjunctions = nullptr;
-cvar_t *gl_wateramp = nullptr;
-cvar_t *gl_dither = nullptr;
-cvar_t *gl_spriteblend = nullptr;
-cvar_t *gl_polyoffset = nullptr;
-cvar_t *gl_lightholes = nullptr;
-cvar_t *gl_zmax = nullptr;
-cvar_t *gl_alphamin = nullptr;
-cvar_t *gl_overdraw = nullptr;
-cvar_t *gl_overbright = nullptr;
-cvar_t *gl_envmapsize = nullptr;
-cvar_t *gl_flipmatrix = nullptr;
-cvar_t *gl_monolights = nullptr;
-cvar_t *gl_fog = nullptr;
-cvar_t *gl_wireframe = nullptr;
-cvar_t *gl_ansio = nullptr;
-cvar_t *developer = nullptr;
+cvar_t* gl_vsync = nullptr;
+cvar_t* gl_ztrick = nullptr;
+cvar_t* gl_finish = nullptr;
+cvar_t* gl_clear = nullptr;
+cvar_t* gl_clearcolor = nullptr;
+cvar_t* gl_cull = nullptr;
+cvar_t* gl_texsort = nullptr;
+cvar_t* gl_smoothmodels = nullptr;
+cvar_t* gl_affinemodels = nullptr;
+cvar_t* gl_flashblend = nullptr;
+cvar_t* gl_playermip = nullptr;
+cvar_t* gl_nocolors = nullptr;
+cvar_t* gl_keeptjunctions = nullptr;
+cvar_t* gl_reporttjunctions = nullptr;
+cvar_t* gl_wateramp = nullptr;
+cvar_t* gl_dither = nullptr;
+cvar_t* gl_spriteblend = nullptr;
+cvar_t* gl_polyoffset = nullptr;
+cvar_t* gl_lightholes = nullptr;
+cvar_t* gl_zmax = nullptr;
+cvar_t* gl_alphamin = nullptr;
+cvar_t* gl_overdraw = nullptr;
+cvar_t* gl_overbright = nullptr;
+cvar_t* gl_envmapsize = nullptr;
+cvar_t* gl_flipmatrix = nullptr;
+cvar_t* gl_monolights = nullptr;
+cvar_t* gl_fog = nullptr;
+cvar_t* gl_wireframe = nullptr;
+cvar_t* gl_ansio = nullptr;
+cvar_t* developer = nullptr;
 cvar_t* sv_cheats = nullptr;
-cvar_t *gl_round_down = nullptr;
-cvar_t *gl_picmip = nullptr;
-cvar_t *gl_max_size = nullptr;
+cvar_t* gl_round_down = nullptr;
+cvar_t* gl_picmip = nullptr;
+cvar_t* gl_max_size = nullptr;
 
-cvar_t *v_texgamma = nullptr;
-cvar_t *v_lightgamma = nullptr;
-cvar_t *v_brightness = nullptr;
-cvar_t *v_gamma = nullptr;
-cvar_t *v_lambert = nullptr;
+cvar_t* v_texgamma = nullptr;
+cvar_t* v_lightgamma = nullptr;
+cvar_t* v_brightness = nullptr;
+cvar_t* v_gamma = nullptr;
+cvar_t* v_lambert = nullptr;
 
-cvar_t *cl_righthand = nullptr;
-cvar_t *chase_active = nullptr;
-cvar_t *spec_pip = nullptr;
+cvar_t* cl_righthand = nullptr;
+cvar_t* chase_active = nullptr;
+cvar_t* spec_pip = nullptr;
 
-cvar_t *default_fov = nullptr;
-cvar_t *viewmodel_fov = nullptr;
+cvar_t* default_fov = nullptr;
+cvar_t* viewmodel_fov = nullptr;
 
-cvar_t *r_vertical_fov = nullptr;
+cvar_t* r_vertical_fov = nullptr;
 cvar_t* gl_widescreen_yfov = nullptr;
 
 cvar_t* cl_fixmodelinterpolationartifacts = nullptr;
 
-cvar_t *dev_overview_color = nullptr;
+cvar_t* dev_overview_color = nullptr;
 
 cvar_t* r_gamma_blend = nullptr;
 
-cvar_t *r_linear_blend_shift = nullptr;
+cvar_t* r_linear_blend_shift = nullptr;
 
-cvar_t *r_linear_fog_shift = nullptr;
+cvar_t* r_linear_fog_shift = nullptr;
 
-cvar_t *r_linear_fog_shiftz = nullptr;
+cvar_t* r_linear_fog_shiftz = nullptr;
 
 cvar_t* r_fog_trans = nullptr;
 
@@ -368,11 +363,10 @@ cvar_t* r_wsurf_sky_fog = nullptr;
 
 cvar_t* gl_nearplane = nullptr;
 
-//cvar_t* viewmodel_nearplane = nullptr;
-
-//cvar_t* viewmodel_farplane = nullptr;
-
-//cvar_t* viewmodel_scale = nullptr;
+void* Sys_GetMainWindow()
+{
+	return (**pmainwindow);
+}
 
 /*
 	Purpose : Check if we can render fog
@@ -457,7 +451,7 @@ bool R_IsRenderingPortal(void)
 	Purpose: Check if we are rendering lowerbody entity
 */
 
-bool R_IsLowerBodyEntity(cl_entity_t *ent)
+bool R_IsLowerBodyEntity(cl_entity_t* ent)
 {
 	return ent == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody;
 }
@@ -584,7 +578,7 @@ void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset)
 	}
 }
 
-void R_RotateForTransform(const float *in_origin, const float* in_angles)
+void R_RotateForTransform(const float* in_origin, const float* in_angles)
 {
 	int i;
 	vec3_t angles;
@@ -595,6 +589,13 @@ void R_RotateForTransform(const float *in_origin, const float* in_angles)
 
 	float entity_matrix[4][4];
 
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
 	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
 	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
 }
@@ -604,7 +605,7 @@ void R_RotateForTransform(const float *in_origin, const float* in_angles)
 	output: GoldSrc's CPU-based calculation (col-major matrix)
 */
 
-void R_RotateForEntity(cl_entity_t *e, float out[4][4])
+void R_RotateForEntity(cl_entity_t* e, float out[4][4])
 {
 	int i;
 	vec3_t angles;
@@ -663,7 +664,7 @@ void R_RotateForEntity(cl_entity_t *e, float out[4][4])
 	Matrix4x4_CreateFromEntity(out, angles, modelpos, 1);
 }
 
-float R_GlowBlend(cl_entity_t *entity)
+float R_GlowBlend(cl_entity_t* entity)
 {
 	if (gPrivateFuncs.R_GlowBlend)
 	{
@@ -741,7 +742,7 @@ float R_GlowBlend(cl_entity_t *entity)
 	return 0;
 }
 
-int CL_FxBlend(cl_entity_t *entity)
+int CL_FxBlend(cl_entity_t* entity)
 {
 	//Hack for R_DrawSpriteModel
 	if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal && entity->curstate.renderamt == 0)
@@ -862,8 +863,8 @@ void R_DrawParticles(void)
 		if (p->type != pt_blob)
 		{
 			// hack a scale up to keep particles from disappearing
-			scale = (p->org[0] - r_origin[0])*vpn[0] + (p->org[1] - r_origin[1])*vpn[1]
-				+ (p->org[2] - r_origin[2])*vpn[2];
+			scale = (p->org[0] - r_origin[0]) * vpn[0] + (p->org[1] - r_origin[1]) * vpn[1]
+				+ (p->org[2] - r_origin[2]) * vpn[2];
 			if (scale < 20)
 				scale = 1;
 			else
@@ -1097,7 +1098,7 @@ void triapi_EndClear()
 void triapi_End()
 {
 	size_t n = gTriAPICommand.Vertices.size();
-	
+
 	// 如果没有顶点数据，直接返回
 	if (n == 0)
 	{
@@ -1108,7 +1109,7 @@ void triapi_End()
 	if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES)
 	{
 		// 三角形列表 - 直接使用索引
-		if (n < 3) 
+		if (n < 3)
 		{
 			triapi_EndClear();
 			return;
@@ -1127,7 +1128,7 @@ void triapi_End()
 	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_FAN)
 	{
 		// 三角形扇形 - 转换为三角形列表索引
-		if (n < 3) 
+		if (n < 3)
 		{
 			triapi_EndClear();
 			return;
@@ -1143,7 +1144,7 @@ void triapi_End()
 	else if (gTriAPICommand.GLPrimitiveCode == GL_QUADS)
 	{
 		// 四边形 - 转换为三角形列表索引
-		if (n < 4) 
+		if (n < 4)
 		{
 			triapi_EndClear();
 			return;
@@ -1158,7 +1159,7 @@ void triapi_End()
 				gTriAPICommand.Indices.push_back((GLuint)i + 0);
 				gTriAPICommand.Indices.push_back((GLuint)i + 1);
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
-				
+
 				// 第二个三角形
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 				gTriAPICommand.Indices.push_back((GLuint)i + 3);
@@ -1168,7 +1169,7 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_POLYGON)
 	{
-		if (n < 3) 
+		if (n < 3)
 		{
 			triapi_EndClear();
 			return;
@@ -1187,7 +1188,7 @@ void triapi_End()
 	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_STRIP)
 	{
 		// 三角形带 - 转换为三角形列表索引
-		if (n < 3) 
+		if (n < 3)
 		{
 			triapi_EndClear();
 			return;
@@ -1215,7 +1216,7 @@ void triapi_End()
 	else if (gTriAPICommand.GLPrimitiveCode == GL_QUAD_STRIP)
 	{
 		// 四边形带 - 转换为三角形列表索引
-		if (n < 4) 
+		if (n < 4)
 		{
 			triapi_EndClear();
 			return;
@@ -1385,7 +1386,7 @@ void triapi_End()
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
+
 		ProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 		if (R_IsRenderingWaterView())
@@ -1449,13 +1450,13 @@ void triapi_End()
 	{
 		glDrawElements(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
 	}
-	else 
+	else
 	{
 		glDrawElements(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
 	}
 
 	GL_UseProgram(0);
-	
+
 	glDisableVertexAttribArray(TRIAPI_VA_POSITION);
 	glDisableVertexAttribArray(TRIAPI_VA_TEXCOORD);
 	glDisableVertexAttribArray(TRIAPI_VA_COLOR);
@@ -1464,7 +1465,7 @@ void triapi_End()
 	glDepthMask(GL_TRUE);
 
 	GL_BindVAO(0);
-	
+
 	triapi_EndClear();
 }
 
@@ -1546,7 +1547,7 @@ void triapi_Vertex3f(float x, float y, float z)
 	vertex.color[1] = gTriAPICommand.DrawColor[1];
 	vertex.color[2] = gTriAPICommand.DrawColor[2];
 	vertex.color[3] = gTriAPICommand.DrawColor[3];
-	
+
 	gTriAPICommand.Vertices.push_back(vertex);
 }
 
@@ -1587,117 +1588,6 @@ void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode
 	}
 }
 
-float *R_GetWorldMatrix()
-{
-	return r_world_matrix;
-}
-
-void R_LoadIdentityForWorldMatrix()
-{
-	memcpy(r_world_matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	memcpy(r_world_matrix_inv, r_identity_matrix, sizeof(r_identity_matrix));
-}
-
-float* R_GetProjectionMatrix()
-{
-	return r_projection_matrix;
-}
-
-void R_LoadIdentityForProjectionMatrix()
-{
-	memcpy(r_projection_matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	memcpy(r_projection_matrix_inv, r_identity_matrix, sizeof(r_identity_matrix));
-}
-
-/*
-
-	// All graphics APIs except for OpenGL use [0, 1] as NDC Z range.
-	// OpenGL uses [-1, 1] unless glClipControl is used to change it.
-	// Use IRenderDevice::GetDeviceInfo().NDC to get the NDC Z range.
-	// See https://github.com/DiligentGraphics/DiligentCore/blob/master/doc/CoordinateSystem.md
-	void SetNearFarClipPlanes(T zNear, T zFar, bool NegativeOneToOneZ)
-	{
-		if (_44 == 0)
-		{
-			// Perspective projection
-			if (NegativeOneToOneZ)
-			{
-				// https://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
-				// http://www.terathon.com/gdc07_lengyel.pdf
-				// Note that OpenGL uses right-handed coordinate system, where
-				// camera is looking in negative z direction:
-				//   OO
-				//  |__|<--------------------
-				//         -z             +z
-				// Consequently, OpenGL projection matrix given by these two
-				// references inverts z axis.
-
-				// We do not need to do this, because we use DX coordinate
-				// system for the camera space. Thus we need to invert the
-				// sign of the values in the third column in the matrix
-				// from the references:
-
-				_33 = -(-(zFar + zNear) / (zFar - zNear));
-				_43 = -2 * zNear * zFar / (zFar - zNear);
-				_34 = -(-1);
-			}
-			else
-			{
-				_33 = zFar / (zFar - zNear);
-				_43 = -zNear * zFar / (zFar - zNear);
-				_34 = 1;
-			}
-		}
-		else
-		{
-			// Orthographic projection
-			_33 = (NegativeOneToOneZ ? 2 : 1) / (zFar - zNear);
-			_43 = (NegativeOneToOneZ ? zNear + zFar : zNear) / (zNear - zFar);
-		}
-	}
-	static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
-	{
-		// clang-format off
-		Matrix4x4 Proj
-			{
-						 2   / (right - left),                                 0,   0,    0,
-											0,                2 / (top - bottom),   0,    0,
-											0,                                 0,   0,    0,
-				(left + right)/(left - right),   (top + bottom) / (bottom - top),   0,    1
-			};
-		// clang-format on
-		Proj.SetNearFarClipPlanes(zNear, zFar, NegativeOneToOneZ);
-		return Proj;
-	}
-*/
-
-void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
-{
-	memset(r_projection_matrix, 0, sizeof(float) * 16);
-	
-	// 基础正交投影矩阵布局 (按照OrthoOffCenter实现)
-	r_projection_matrix[0] = 2.0f / (right - left);                     // _11
-	r_projection_matrix[5] = 2.0f / (top - bottom);                     // _22
-	r_projection_matrix[12] = (left + right) / (left - right);          // _41
-	r_projection_matrix[13] = (top + bottom) / (bottom - top);          // _42
-	r_projection_matrix[15] = 1.0f;                                     // _44
-	
-	// 设置近远裁剪平面 (按照SetNearFarClipPlanes实现)
-	if (NegativeOneToOneZ)
-	{
-		// OpenGL风格 [-1, 1] NDC Z范围
-		r_projection_matrix[10] = 2.0f / (zFar - zNear);               // _33
-		r_projection_matrix[14] = (zNear + zFar) / (zNear - zFar);     // _43
-	}
-	else
-	{
-		// DirectX风格 [0, 1] NDC Z范围
-		r_projection_matrix[10] = 1.0f / (zFar - zNear);               // _33
-		r_projection_matrix[14] = zNear / (zNear - zFar);              // _43
-	}
-	
-	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
-}
 
 void triapi_GetMatrix(const int pname, float* matrix)
 {
@@ -1864,7 +1754,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 	GL_UseProgram(0);
 }
 
-void R_AddTEntity(cl_entity_t *ent)
+void R_AddTEntity(cl_entity_t* ent)
 {
 	if (R_IsRenderingShadowView())
 		return;
@@ -1932,7 +1822,7 @@ void R_AddTEntity(cl_entity_t *ent)
 	}
 }
 
-entity_state_t *R_GetPlayerState(int index)
+entity_state_t* R_GetPlayerState(int index)
 {
 	if (!(index >= 0 && index <= MAX_CLIENTS))
 	{
@@ -1940,7 +1830,7 @@ entity_state_t *R_GetPlayerState(int index)
 		return nullptr;
 	}
 
-	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
+	return ((entity_state_t*)((char*)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
 }
 
 void R_DrawSpriteEntity(bool bTransparent)
@@ -2098,7 +1988,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 	}
 }
 
-void R_SetRenderMode(cl_entity_t *pEntity)
+void R_SetRenderMode(cl_entity_t* pEntity)
 {
 	switch (pEntity->curstate.rendermode)
 	{
@@ -2183,7 +2073,7 @@ void S_ExtraUpdate(void)
 	gPrivateFuncs.S_ExtraUpdate();
 }
 
-int SignbitsForPlane(mplane_t *out)
+int SignbitsForPlane(mplane_t* out)
 {
 	int bits, j;
 
@@ -2319,8 +2209,8 @@ void GL_GenerateFrameBuffers(void)
 	s_GBufferFBO.iWidth = glwidth;
 	s_GBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_GBufferFBO);
-	
-	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, 
+
+	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO,
 		GBUFFER_INTERNAL_FORMAT_DIFFUSE,
 		GBUFFER_INTERNAL_FORMAT_LIGHTMAP,
 		GBUFFER_INTERNAL_FORMAT_WORLDNORM,
@@ -2498,6 +2388,9 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
 		return;
 
+	if (source == GL_DEBUG_SOURCE_APPLICATION)
+		return;
+
 	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
@@ -2581,7 +2474,7 @@ void GL_Shutdown(void)
 void GL_FlushFinalBuffer()
 {
 	GL_BindFrameBuffer(&s_FinalBufferFBO);
-	
+
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 }
@@ -2628,12 +2521,35 @@ void R_RenderEndFrame()
 	R_StudioEndFrame();
 }
 
-void GL_BeginRendering(int *x, int *y, int *width, int *height)
+void GL_Set2D()
+{
+	glViewport(glx, gly, glwidth, glheight);
+
+	R_PushProjectionMatrix();
+	R_SetupOrthoProjectionMatrix(0, glwidth, glheight, 0, -99999, 99999, true);
+
+	R_PushWorldMatrix();
+	R_LoadIdentityForWorldMatrix();
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	//glDisable(GL_BLEND);
+}
+
+void GL_Finish2D()
+{
+	R_PopProjectionMatrix();
+	R_PopWorldMatrix();
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	//glEnable(GL_BLEND);
+}
+
+void GL_BeginRendering(int* x, int* y, int* width, int* height)
 {
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
-	//Window resized?
-#if 1
 	if ((*width) != glwidth || (*height) != glheight)
 	{
 		glx = (*x);
@@ -2650,7 +2566,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		glwidth = (*width);
 		glheight = (*height);
 	}
-#endif
 
 	//No V_RenderView calls when level changes so don't GL_FlushFinalBuffer, this replicates vanilla engine's behavior
 	if (SCR_IsLoadingVisible())
@@ -2670,7 +2585,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 }
 
 /*
-	Purpose: 
+	Purpose:
 		Called on beginning of RenderView
 		This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
 */
@@ -2710,7 +2625,7 @@ void R_PreRenderView()
 		r_draw_gammablend = false;
 	}
 
-	vec4_t vecClearColor = {0};
+	vec4_t vecClearColor = { 0 };
 
 	if (CL_IsDevOverviewMode())
 	{
@@ -2977,7 +2892,7 @@ void R_RenderView_SvEngine(int viewIdx)
 
 	(*c_alias_polys) += r_studio_polys;
 	(*c_brush_polys) += r_wsurf_polys;
-	
+
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
 	(*currenttexture) = -1;
 
@@ -3005,7 +2920,7 @@ void R_RenderView_SvEngine(int viewIdx)
 void R_RenderView(void)
 {
 	//No arg(s) in GoldSrc
-	r_renderview_pass ++;
+	r_renderview_pass++;
 	R_RenderView_SvEngine(r_renderview_pass);
 }
 
@@ -3088,7 +3003,7 @@ void GL_EndRendering(void)
 }
 
 #if 0
-void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue)
+void DLL_SetModKey(void* pinfo, char* pkey, char* pvalue)
 {
 	gPrivateFuncs.DLL_SetModKey(pinfo, pkey, pvalue);
 
@@ -3120,7 +3035,7 @@ void R_InitCvars(void)
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
 	r_novis = gEngfuncs.pfnGetCvarPointer("r_novis");
 
-	r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
+	//r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
 
 	r_cullsequencebox = gEngfuncs.pfnGetCvarPointer("r_cullsequencebox");
 
@@ -3137,7 +3052,7 @@ void R_InitCvars(void)
 	gl_finish = gEngfuncs.pfnGetCvarPointer("gl_finish");
 	gl_clear = gEngfuncs.pfnGetCvarPointer("gl_clear");
 	gl_clearcolor = gEngfuncs.pfnGetCvarPointer("gl_clearcolor");
-	if(!gl_clearcolor)
+	if (!gl_clearcolor)
 		gl_clearcolor = gEngfuncs.pfnRegisterVariable("gl_clearcolor", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	dev_overview_color = gEngfuncs.pfnRegisterVariable("dev_overview_color", "0 255 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -3178,7 +3093,7 @@ void R_InitCvars(void)
 
 	sv_cheats = gEngfuncs.pfnGetCvarPointer("sv_cheats");
 
-	gEngfuncs.Cvar_SetValue("r_detailtextures", 1);
+	//gEngfuncs.Cvar_SetValue("r_detailtextures", 1);
 
 	gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
 	if (!gl_ansio)
@@ -3194,15 +3109,15 @@ void R_InitCvars(void)
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
 	viewmodel_fov = gEngfuncs.pfnGetCvarPointer("viewmodel_fov");
-	if(!viewmodel_fov)
+	if (!viewmodel_fov)
 		viewmodel_fov = gEngfuncs.pfnRegisterVariable("viewmodel_fov", "90", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	default_fov = gEngfuncs.pfnGetCvarPointer("default_fov");
 
-	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", (vertical_fov_SvEngine  && (*vertical_fov_SvEngine)) ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", (vertical_fov_SvEngine && (*vertical_fov_SvEngine)) ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_widescreen_yfov = gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov");
-	if(!gl_widescreen_yfov)
+	if (!gl_widescreen_yfov)
 		gl_widescreen_yfov = gEngfuncs.pfnRegisterVariable("gl_widescreen_yfov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	cl_fixmodelinterpolationartifacts = gEngfuncs.pfnGetCvarPointer("cl_fixmodelinterpolationartifacts");
@@ -3392,22 +3307,22 @@ void R_NewMap(void)
 				}, gEngfuncs.GetAbsoluteTime() + 1.0f));
 		}
 	}
-	
+
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;
 }
 
-mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
+mleaf_t* Mod_PointInLeaf(vec3_t p, model_t* model)
 {
 	if (!model || !model->nodes)
 		Sys_Error("Mod_PointInLeaf: bad model");
 
-	auto basenode = (mbasenode_t *)model->nodes;
+	auto basenode = (mbasenode_t*)model->nodes;
 
 	while (1)
 	{
 		if (basenode->contents < 0)
-			return (mleaf_t *)basenode;
+			return (mleaf_t*)basenode;
 
 		auto node = (mnode_t*)basenode;
 
@@ -3424,7 +3339,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 	//return gPrivateFuncs.Mod_PointInLeaf(p, model);
 }
 
-float *R_GetAttachmentPoint(int entity, int attachment)
+float* R_GetAttachmentPoint(int entity, int attachment)
 {
 	auto pEntity = gEngfuncs.GetEntityByIndex(entity);
 
@@ -3498,7 +3413,7 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 	}
 }
 
-void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
+void V_AdjustFovH(float* fov_x, float* fov_y, float width, float height)
 {
 	float x, y;
 
@@ -3560,7 +3475,7 @@ bool CL_IsDevOverviewMode(void)
 	return gPrivateFuncs.CL_IsDevOverviewMode();
 }
 
-void CL_SetDevOverView(void *a1)
+void CL_SetDevOverView(void* a1)
 {
 	return gPrivateFuncs.CL_SetDevOverView(a1);
 }
@@ -3591,7 +3506,7 @@ float R_GetDefaultFOV()
 	return 90;
 }
 
-void R_AdjustScopeFOVForViewModel(float *fov)
+void R_AdjustScopeFOVForViewModel(float* fov)
 {
 	if (viewmodel_fov->value > 0)
 	{
@@ -3638,26 +3553,6 @@ void R_LoadLegacyOpenGLMatrixForWorld()
 	glLoadMatrixf(r_projection_matrix);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadMatrixf(r_world_matrix);
-}
-
-void R_UploadProjMatrixForViewModel(void)
-{
-	camera_ubo_t CameraUBO;
-	memcpy(CameraUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
-	memcpy(CameraUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
-
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), &CameraUBO.projMatrix);
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, invProjMatrix), sizeof(mat4), &CameraUBO.invProjMatrix);
-}
-
-void R_UploadProjMatrixForWorld(void)
-{
-	camera_ubo_t CameraUBO;
-	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
-
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), &CameraUBO.projMatrix);
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, invProjMatrix), sizeof(mat4), &CameraUBO.invProjMatrix);
 }
 
 void R_SetupGLForViewModel(void)
@@ -3707,7 +3602,7 @@ void R_SetupGLForViewModel(void)
 
 	InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
 
-	R_UploadProjMatrixForViewModel();
+	R_SetupCameraUBO(true);
 }
 
 void R_SetupGL(void)
@@ -3907,9 +3802,6 @@ void R_SetupGL(void)
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
 
-	InvertMatrix(r_world_matrix, r_world_matrix_inv);
-	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
-	
 	if (R_ShouldDrawViewModel() && !R_IsRenderingShadowView() && !R_IsRenderingWaterView() && !R_IsRenderingPortal())
 	{
 		glDepthRange(0.1, 1);
@@ -4005,7 +3897,7 @@ void R_MarkLeaves(void)
 	{
 		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
-			auto basenode = (mbasenode_t *)&(*cl_worldmodel)->leafs[i + 1];
+			auto basenode = (mbasenode_t*)&(*cl_worldmodel)->leafs[i + 1];
 
 			do
 			{
@@ -4044,7 +3936,7 @@ void R_DrawEntitiesOnList(void)
 			continue;
 		}
 
-		if ((*currententity)->model && 
+		if ((*currententity)->model &&
 			(*currententity)->model->type != mod_sprite)
 		{
 			R_DrawCurrentEntity(false);
@@ -4071,13 +3963,13 @@ void R_SetupFog(void)
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, cl_time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
 
-	glEnable(GL_FOG);
-	glFogi(GL_FOG_MODE, r_fog_mode);
-	glFogf(GL_FOG_DENSITY, r_fog_control[2]);
+	//glEnable(GL_FOG);
+	//glFogi(GL_FOG_MODE, r_fog_mode);
+	//glFogf(GL_FOG_DENSITY, r_fog_control[2]);
 	//glHint(GL_FOG_HINT, GL_NICEST);
-	glFogfv(GL_FOG_COLOR, r_fog_color);
-	glFogf(GL_FOG_START, r_fog_control[0]);
-	glFogf(GL_FOG_END, r_fog_control[1]);
+	//glFogfv(GL_FOG_COLOR, r_fog_color);
+	//glFogf(GL_FOG_START, r_fog_control[0]);
+	//glFogf(GL_FOG_END, r_fog_control[1]);
 }
 
 void R_RenderWaterFog(void)
@@ -4133,7 +4025,8 @@ void R_DisableRenderingFog()
 	r_fog_mode = 0;
 	r_fog_enabled = false;
 
-	glDisable(GL_FOG);
+	//Core profile
+	//glDisable(GL_FOG);
 }
 
 void R_InhibitRenderingFog()
@@ -4142,7 +4035,8 @@ void R_InhibitRenderingFog()
 	{
 		r_fog_enabled = false;
 
-		glDisable(GL_FOG);
+		//Core profile
+		//glDisable(GL_FOG);
 	}
 }
 
@@ -4220,9 +4114,6 @@ void R_RenderScene(void)
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
-		//Restore matrix
-		R_UploadProjMatrixForWorld();
-
 		R_DrawWorld();
 		S_ExtraUpdate();
 		R_DrawEntitiesOnList();
@@ -4274,9 +4165,9 @@ int EngineGetMaxKnownModel(void)
 	return MAX_KNOWN_MODELS;
 }
 
-int EngineGetModelIndex(model_t *mod)
+int EngineGetModelIndex(model_t* mod)
 {
-	int index = (mod - (model_t *)(mod_known));
+	int index = (mod - (model_t*)(mod_known));
 
 	if (index >= 0 && index < *mod_numknown)
 		return index;
@@ -4284,9 +4175,9 @@ int EngineGetModelIndex(model_t *mod)
 	return -1;
 }
 
-model_t *EngineGetModelByIndex(int index)
+model_t* EngineGetModelByIndex(int index)
 {
-	auto pmod_known = (model_t *)(mod_known);
+	auto pmod_known = (model_t*)(mod_known);
 
 	if (index >= 0 && index < *mod_numknown)
 		return &pmod_known[index];
@@ -4412,7 +4303,7 @@ bool R_LoadDetailSkyTextures(const char* name)
 	return true;
 }
 
-void R_LoadSkyInternal(const char *name)
+void R_LoadSkyInternal(const char* name)
 {
 	if (R_LoadLegacySkyTextures(name))
 	{
@@ -4430,7 +4321,7 @@ void R_LoadSkyInternal(const char *name)
 	}
 }
 
-void R_LoadSkyBox_SvEngine(const char *name)
+void R_LoadSkyBox_SvEngine(const char* name)
 {
 	R_FreeSkyboxTextures();
 
@@ -4446,7 +4337,7 @@ void R_LoadSkys(void)
 
 #if 0
 
-void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
+void R_BuildCubemap_Snapshot(cubemap_t* cubemap, int index)
 {
 	char name[64];
 	COM_FileBase((*cl_worldmodel)->name, name);
@@ -4465,7 +4356,7 @@ void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 	snprintf(filepath, sizeof(filepath), "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), index, cubemap->extension.c_str());
 	filepath[sizeof(filepath) - 1] = 0;
 
-	byte *pBuf = (byte *)malloc(cubemap->size * cubemap->size * 3);
+	byte* pBuf = (byte*)malloc(cubemap->size * cubemap->size * 3);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -4479,7 +4370,7 @@ void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 	free(pBuf);
 }
 
-void R_BuildCubemap(cubemap_t *cubemap)
+void R_BuildCubemap(cubemap_t* cubemap)
 {
 	gEngfuncs.Con_Printf("Building cubemap \"%s\" , cubemap size = %d\n", cubemap->name.c_str(), cubemap->size);
 
@@ -4552,13 +4443,13 @@ void R_BuildCubemaps_f(void)
 		R_BuildCubemap(&r_cubemaps[i]);
 }
 
-cubemap_t *R_FindCubemap(float *origin)
+cubemap_t* R_FindCubemap(float* origin)
 {
 	if (*envmap)
 		return NULL;
 
 	float max_dist = 99999;
-	cubemap_t *cubemap = nullptr;
+	cubemap_t* cubemap = nullptr;
 
 	for (size_t i = 0; i < r_cubemaps.size(); ++i)
 	{
@@ -4575,7 +4466,7 @@ cubemap_t *R_FindCubemap(float *origin)
 	return cubemap;
 }
 
-void R_LoadCubemap(cubemap_t *cubemap)
+void R_LoadCubemap(cubemap_t* cubemap)
 {
 	char name[64];
 	COM_FileBase((*cl_worldmodel)->name, name);
@@ -4610,6 +4501,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 	R_SaveDrawTexturedRectProgramStates();
+	R_SaveDrawFilledRectProgramStates();
 
 	gEngfuncs.Con_Printf("R_SaveProgramStates_f: Program state caches saved.\n");
 }
@@ -4626,12 +4518,13 @@ void R_LoadProgramStates_f(void)
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
 	R_LoadDrawTexturedRectProgramStates();
+	R_LoadDrawFilledRectProgramStates();
 	GL_UseProgram(0);
 
 	gEngfuncs.Con_Printf("R_LoadProgramStates_f: Program state caches loaded.\n");
 }
 
-void GammaToLinear(float *color)
+void GammaToLinear(float* color)
 {
 	color[0] = pow(color[0], v_gamma->value);
 	color[1] = pow(color[1], v_gamma->value);
@@ -4983,7 +4876,7 @@ void Mod_ClearModel(void)
 	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
 	g_WorldSurfaceRenderer.pCurrentWaterLeaf.reset();
 
-	for (int i = 0;i < EngineGetMaxKnownModel(); i++)
+	for (int i = 0; i < EngineGetMaxKnownModel(); i++)
 	{
 		auto mod = EngineGetModelByIndex(i);
 
@@ -5010,22 +4903,23 @@ void Host_ClearMemory(qboolean bQuite)
 	gPrivateFuncs.Host_ClearMemory(bQuite);
 }
 
-void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy, void *window)
+void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window)
 {
-	//return gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic(videomode, 0, window);
-
-	auto err = glewInit();
-
-	if (GLEW_OK != err)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
-		return;
-	}
+		auto err = glewInit();
 
-	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
-	{
-		glDebugMessageCallback(GL_DebugOutputCallback, 0);
-		glEnable(GL_DEBUG_OUTPUT);
+		if (GLEW_OK != err)
+		{
+			Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+			return;
+		}
+
+		if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
+		{
+			glDebugMessageCallback(GL_DebugOutputCallback, 0);
+			glEnable(GL_DEBUG_OUTPUT);
+		}
 	}
 
 	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_ImageID_offset);
@@ -5100,15 +4994,14 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 	}
 
 	{
-		glViewport(0, 0, width, height);
-
-		R_LoadIdentityForWorldMatrix();
-		R_SetupOrthoProjectionMatrix(0.0f, width, height, 0.0f, -1.0f, 1.0f, true);
+		glx = 0;
+		gly = 0;
+		glwidth = width;
+		glheight = height;
+		GL_Set2D();
 
 		glClearColor(0, 0, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		GL_BeginFullScreenQuad(false);
 
 		for (int i = 0; i < m_ImageID->Size(); ++i)
 		{
@@ -5133,6 +5026,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 				float topu = 1.0;
 
 				auto gltexturenum = GLStartupTextures[i];
+
 				texturedrectvertex_t vertices[4];
 
 				vertices[0].col[0] = 1;
@@ -5171,7 +5065,9 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 				vertices[3].pos[0] = dx;
 				vertices[3].pos[1] = dy;
 
-				R_DrawTexturedRect(gltexturenum, vertices, sizeof(vertices), 0);
+				const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+				R_DrawTexturedRect(gltexturenum, vertices, _countof(vertices), indices, _countof(indices), 0, "DrawStartupGraphic");
 			}
 		}
 
@@ -5181,5 +5077,635 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 	for (size_t i = 0; i < GLStartupTextures.size(); i++)
 	{
 		GL_DeleteTexture(GLStartupTextures[i]);
+	}
+}
+
+void DT_Initialize()
+{
+	r_detailtextures = gEngfuncs.pfnRegisterVariable("r_detailtextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	(*detTexSupported) = true;
+}
+
+static std::unordered_map<int, EngineSurfaceTexture*> g_VGuiSurfaceTextures;
+static EngineSurfaceTexture* staticTextureCurrent{};
+
+EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS] = nullptr;
+
+int(*g_iVertexBufferEntriesUsed) = 0;
+
+RECT* g_ScissorRect = nullptr;
+bool* g_bScissor = nullptr;
+
+inline float InterpTCoord(float val, float mins, float maxs, float tMin, float tMax)
+{
+	float flPercent = (float)(val - mins) / (maxs - mins);
+	return tMin + (tMax - tMin) * flPercent;
+}
+
+static bool ScissorRect_TCoords(int x0, int y0, int x1, int y1, float s0, float t0, float s1, float t1, RECT* pOut, TCoordRect* pTCoords)
+{
+	RECT rcChar;
+
+	rcChar.left = x0;
+	rcChar.top = y0;
+	rcChar.right = x1;
+	rcChar.bottom = y1;
+
+	if ((*g_bScissor))
+	{
+		if (!IntersectRect(pOut, g_ScissorRect, &rcChar))
+			return false;
+
+		if (pTCoords)
+		{
+			pTCoords->s0 = InterpTCoord(pOut->left, rcChar.left, rcChar.right, s0, s1);
+			pTCoords->s1 = InterpTCoord(pOut->right, rcChar.left, rcChar.right, s0, s1);
+			pTCoords->t0 = InterpTCoord(pOut->top, rcChar.top, rcChar.bottom, t0, t1);
+			pTCoords->t1 = InterpTCoord(pOut->bottom, rcChar.top, rcChar.bottom, t0, t1);
+		}
+	}
+	else
+	{
+		*pOut = rcChar;
+
+		if (pTCoords)
+		{
+			pTCoords->s0 = s0;
+			pTCoords->s1 = s1;
+			pTCoords->t0 = t0;
+			pTCoords->t1 = t1;
+		}
+	}
+
+	return true;
+}
+
+static bool ScissorRect(int x0, int y0, int x1, int y1, RECT* pOut)
+{
+	return ScissorRect_TCoords(x0, y0, x1, y1, 0, 0, 0, 0, pOut, NULL);
+}
+
+static EngineSurfaceTexture* staticGetTextureById(int id)
+{
+	auto it = g_VGuiSurfaceTextures.find(id);
+
+	if (it != g_VGuiSurfaceTextures.end())
+	{
+		return it->second;
+	}
+
+	return nullptr;
+}
+
+static EngineSurfaceTexture* staticAllocTextureForId(int id)
+{
+	auto it = g_VGuiSurfaceTextures.find(id);
+
+	if (it != g_VGuiSurfaceTextures.end())
+	{
+		return it->second;
+	}
+
+	EngineSurfaceTexture* pNewEntry = new EngineSurfaceTexture;
+
+	g_VGuiSurfaceTextures[id] = pNewEntry;
+
+	return pNewEntry;
+}
+
+void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace)
+{
+	int surfaceAbsExtents[4] = { 0 };
+	int xTranslate = 0, yTranslate = 0;
+
+	POINT pnt = { 0 };
+	RECT rect = { 0 };
+
+	if (translateToScreenSpace)
+	{
+		if (g_pMetaHookAPI->VideoModeIsWindowed())
+		{
+			gPrivateFuncs.SDL_GetWindowPosition(Sys_GetMainWindow(), (int*)&pnt.x, (int*)&pnt.y);
+		}
+		else
+		{
+			pnt.x = 0;
+			pnt.y = 0;
+		}
+	}
+
+	if (g_pMetaHookAPI->VideoModeIsWindowed())
+	{
+		gPrivateFuncs.SDL_GetWindowSize(Sys_GetMainWindow(), (int*)&rect.right, (int*)&rect.bottom);
+	}
+	else
+	{
+		g_pMetaHookAPI->GetVideoMode((int*)&rect.right, (int*)&rect.bottom, nullptr, nullptr);
+	}
+
+	xTranslate = pnt.x;
+	yTranslate = pnt.y;
+
+	int wide = rect.right;
+	int tall = rect.bottom;
+
+	int x0, y0, x1, y1;
+
+	x0 = insets[0];
+	y0 = insets[1];
+
+	x1 = absExtents[0] - xTranslate;
+	y1 = absExtents[1] - yTranslate;
+
+	surfaceAbsExtents[0] = absExtents[0] - xTranslate;
+	surfaceAbsExtents[1] = absExtents[1] - yTranslate;
+	surfaceAbsExtents[2] = absExtents[2] - xTranslate;
+	surfaceAbsExtents[3] = absExtents[3] - yTranslate;
+
+	(*g_bScissor) = true;
+	(*g_ScissorRect).left = clipRect[0] - xTranslate - (insets[0] + surfaceAbsExtents[0]);
+	(*g_ScissorRect).top = clipRect[1] - yTranslate - (insets[1] + surfaceAbsExtents[1]);
+	(*g_ScissorRect).right = clipRect[2] - xTranslate - (insets[0] + surfaceAbsExtents[0]);
+	(*g_ScissorRect).bottom = clipRect[3] - yTranslate - (insets[1] + surfaceAbsExtents[1]);
+
+	R_PushWorldMatrix();
+
+	R_PushProjectionMatrix();
+
+	R_SetupOrthoProjectionMatrix(0, wide, tall, 0, -1, 1, true);
+
+	R_LoadIdentityForWorldMatrix();
+
+	R_TranslateWorldMatrix(x0, y0, 0);
+
+	R_TranslateWorldMatrix(x1, y1, 0);
+}
+
+void __fastcall enginesurface_popMakeCurrent(void* pthis, int)
+{
+	enginesurface_drawFlushText(pthis, 0);
+
+	(*g_bScissor) = false;
+
+	R_PopProjectionMatrix();
+
+	R_PopWorldMatrix();
+}
+
+void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1)
+{
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	RECT rcOut;
+
+	if (!ScissorRect(x0, y0, x1, y1, &rcOut))
+		return;
+
+	filledrectvertex_t vertices[4];
+
+	vertices[0].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[0].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[0].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[0].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[0].pos[0] = rcOut.left;
+	vertices[0].pos[1] = rcOut.top;
+
+	vertices[1].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[1].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[1].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[1].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[1].pos[0] = rcOut.right;
+	vertices[1].pos[1] = rcOut.top;
+
+	vertices[2].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[2].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[2].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[2].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[2].pos[0] = rcOut.right;
+	vertices[2].pos[1] = rcOut.bottom;
+
+	vertices[3].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[3].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[3].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[3].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[3].pos[0] = rcOut.left;
+	vertices[3].pos[1] = rcOut.bottom;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED, "drawFilledRect");
+}
+
+void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (!texture)
+		texture = staticAllocTextureForId(textureId);
+
+	if (texture)
+	{
+		texture->_id = textureId;
+		texture->_wide = wide;
+		texture->_tall = tall;
+
+		texture->_s0 = 0;
+		texture->_t0 = 0;
+		texture->_s1 = 1;
+		texture->_t1 = 1;
+
+		staticTextureCurrent = texture;
+		GL_Bind(textureId);
+
+		if (hardwareFilter)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+}
+
+void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId)
+{
+	if (textureId != (*currenttexture))
+	{
+		enginesurface_drawFlushText(pthis, 0);
+
+		(*currenttexture) = textureId;
+	}
+
+	staticTextureCurrent = staticGetTextureById(textureId);
+
+	glBindTexture(GL_TEXTURE_2D, textureId);
+}
+
+void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0, int x1, int y1)
+{
+	if (!staticTextureCurrent)
+		return;
+
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	RECT rcOut;
+	TCoordRect tRect;
+
+	if (!ScissorRect_TCoords(x0, y0, x1, y1, staticTextureCurrent->_s0, staticTextureCurrent->_t0, staticTextureCurrent->_s1, staticTextureCurrent->_t1, &rcOut, &tRect))
+		return;
+
+	texturedrectvertex_t vertices[4];
+
+	vertices[0].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[0].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[0].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[0].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[0].texcoord[0] = tRect.s0;
+	vertices[0].texcoord[1] = tRect.t0;
+	vertices[0].pos[0] = rcOut.left;
+	vertices[0].pos[1] = rcOut.top;
+
+	vertices[1].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[1].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[1].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[1].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[1].texcoord[0] = tRect.s1;
+	vertices[1].texcoord[1] = tRect.t0;
+	vertices[1].pos[0] = rcOut.right;
+	vertices[1].pos[1] = rcOut.top;
+
+	vertices[2].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[2].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[2].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[2].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[2].texcoord[0] = tRect.s1;
+	vertices[2].texcoord[1] = tRect.t1;
+	vertices[2].pos[0] = rcOut.right;
+	vertices[2].pos[1] = rcOut.bottom;
+
+	vertices[3].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[3].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[3].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[3].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[3].texcoord[0] = tRect.s0;
+	vertices[3].texcoord[1] = tRect.t1;
+	vertices[3].pos[0] = rcOut.left;
+	vertices[3].pos[1] = rcOut.bottom;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawTexturedRect");
+}
+
+void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
+{
+	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 20);
+
+	if ((*_drawTextColor)[3] == 255)
+		return;
+
+	RECT rcOut;
+	TCoordRect tRect;
+
+	if (!ScissorRect_TCoords(x, y, x + wide, y + tall, s0, t0, s1, t1, &rcOut, &tRect))
+		return;
+
+	texturedrectvertex_t vertices[4];
+
+	vertices[0].col[0] = (*_drawTextColor)[0] / 255.0f;
+	vertices[0].col[1] = (*_drawTextColor)[1] / 255.0f;
+	vertices[0].col[2] = (*_drawTextColor)[2] / 255.0f;
+	vertices[0].col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
+	vertices[0].texcoord[0] = tRect.s0;
+	vertices[0].texcoord[1] = tRect.t0;
+	vertices[0].pos[0] = rcOut.left;
+	vertices[0].pos[1] = rcOut.top;
+
+	vertices[1].col[0] = (*_drawTextColor)[0] / 255.0f;
+	vertices[1].col[1] = (*_drawTextColor)[1] / 255.0f;
+	vertices[1].col[2] = (*_drawTextColor)[2] / 255.0f;
+	vertices[1].col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
+	vertices[1].texcoord[0] = tRect.s1;
+	vertices[1].texcoord[1] = tRect.t0;
+	vertices[1].pos[0] = rcOut.right;
+	vertices[1].pos[1] = rcOut.top;
+
+	vertices[2].col[0] = (*_drawTextColor)[0] / 255.0f;
+	vertices[2].col[1] = (*_drawTextColor)[1] / 255.0f;
+	vertices[2].col[2] = (*_drawTextColor)[2] / 255.0f;
+	vertices[2].col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
+	vertices[2].texcoord[0] = tRect.s1;
+	vertices[2].texcoord[1] = tRect.t1;
+	vertices[2].pos[0] = rcOut.right;
+	vertices[2].pos[1] = rcOut.bottom;
+
+	vertices[3].col[0] = (*_drawTextColor)[0] / 255.0f;
+	vertices[3].col[1] = (*_drawTextColor)[1] / 255.0f;
+	vertices[3].col[2] = (*_drawTextColor)[2] / 255.0f;
+	vertices[3].col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
+	vertices[3].texcoord[0] = tRect.s0;
+	vertices[3].texcoord[1] = tRect.t1;
+	vertices[3].pos[0] = rcOut.left;
+	vertices[3].pos[1] = rcOut.bottom;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED, "drawPrintCharAdd");
+}
+
+void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload)
+{
+	bool bLoaded = false;
+	char filepath[1024]{};
+
+	auto texture = staticGetTextureById(textureId);
+
+	if (texture && !forceReload)
+	{
+		enginesurface_drawSetTexture(pthis, dummy, textureId);
+		return;
+	}
+
+	gl_loadtexture_context_t loadContext;
+	loadContext.wrap = GL_CLAMP_TO_EDGE;
+	loadContext.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+	loadContext.ignore_direction_LoadTGA = true;
+
+	loadContext.callback = [pthis, textureId, hardwareFilter, filename](gl_loadtexture_context_t* ctx) {
+
+		if (ctx->mipmaps.size() > 0)
+		{
+			if (ctx->compressed)
+			{
+				auto texture = staticGetTextureById(textureId);
+
+				if (!texture)
+					texture = staticAllocTextureForId(textureId);
+
+				if (texture)
+				{
+					texture->_id = textureId;
+					texture->_wide = ctx->width;
+					texture->_tall = ctx->height;
+
+					texture->_s0 = 0;
+					texture->_t0 = 0;
+					texture->_s1 = 1;
+					texture->_t1 = 1;
+
+					strncpy(texture->_name, filename, sizeof(texture->_name) - 1);
+					texture->_name[sizeof(texture->_name) - 1] = 0;
+
+					(*currenttexture) = -1;
+					GL_Bind(textureId);
+					GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
+				}
+
+				return true;
+			}
+			else
+			{
+				auto texture = staticGetTextureById(textureId);
+
+				if (!texture)
+					texture = staticAllocTextureForId(textureId);
+
+				if (texture)
+				{
+					texture->_id = textureId;
+					texture->_wide = ctx->width;
+					texture->_tall = ctx->height;
+
+					texture->_s0 = 0;
+					texture->_t0 = 0;
+					texture->_s1 = 1;
+					texture->_t1 = 1;
+
+					strncpy(texture->_name, filename, sizeof(texture->_name) - 1);
+					texture->_name[sizeof(texture->_name) - 1] = 0;
+
+					(*currenttexture) = -1;
+					GL_Bind(textureId);
+					GL_UploadUncompressedTexture(ctx, GL_TEXTURE_2D);
+				}
+
+				return true;
+			}
+		}
+
+		return false;
+		};
+
+	if (1)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.dds", filename);
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadDDS(filepath, "UI", &loadContext))
+		{
+			bLoaded = true;
+		}
+
+		if (!bLoaded && LoadDDS(filepath, NULL, &loadContext))
+		{
+			bLoaded = true;
+		}
+	}
+
+	if (!bLoaded)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
+
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
+		{
+			bLoaded = true;
+		}
+
+		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
+		{
+			bLoaded = true;
+		}
+	}
+
+	if (!bLoaded)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
+
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
+		{
+			bLoaded = true;
+		}
+
+		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
+		{
+			bLoaded = true;
+		}
+	}
+
+	if (texture)
+	{
+		enginesurface_drawSetTexture(pthis, 0, textureId);
+	}
+}
+
+void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (texture)
+	{
+		wide = texture->_wide;
+		tall = texture->_tall;
+	}
+	else
+	{
+		wide = 0;
+		tall = 0;
+	}
+}
+
+bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int textureId)
+{
+	return(staticGetTextureById(textureId) != nullptr);
+}
+
+void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (!texture)
+		texture = staticAllocTextureForId(textureId);
+
+	if (texture)
+	{
+		texture->_id = textureId;
+		texture->_wide = wide;
+		texture->_tall = tall;
+
+		texture->_s0 = 0;
+		texture->_t0 = 0;
+		texture->_s1 = 1;
+		texture->_t1 = 1;
+
+		staticTextureCurrent = texture;
+		GL_Bind(textureId);
+
+		if (hardwareFilter)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+	}
+}
+
+
+int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
+{
+	// allocated_surface_texture = 5810; from BlobEngine
+	return (int)GL_GenTexture();
+}
+
+void __fastcall enginesurface_drawFlushText(void* pthis, int dummy)
+{
+	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 20);
+
+	if ((*g_iVertexBufferEntriesUsed) > 0)
+	{
+		std::vector<texturedrectvertex_t> vertices;
+		std::vector<uint32_t> indices;
+
+		vertices.reserve((*g_iVertexBufferEntriesUsed));
+
+		for (int i = 0; i < (*g_iVertexBufferEntriesUsed); i++)
+		{
+			texturedrectvertex_t v;
+
+			memcpy(v.texcoord, (*g_VertexBuffer)[i].texcoords, sizeof(vec2_t));
+			memcpy(v.pos, (*g_VertexBuffer)[i].vertex, sizeof(vec2_t));
+			v.col[0] = (*_drawTextColor)[0] / 255.0f;
+			v.col[1] = (*_drawTextColor)[1] / 255.0f;
+			v.col[2] = (*_drawTextColor)[2] / 255.0f;
+			v.col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
+
+			vertices.emplace_back(v);
+
+		}
+
+		const uint32_t baseIndices[] = { 0, 1, 2, 2, 3, 0 };
+
+		for (int i = 0; i < (*g_iVertexBufferEntriesUsed); i += 4)
+		{
+			for (int j = 0; j < _countof(baseIndices); ++j)
+			{
+				indices.emplace_back(i + baseIndices[j]);
+			}
+		}
+
+		R_DrawTexturedRect((*currenttexture), vertices.data(), vertices.size(), indices.data(), indices.size(), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawFlushText");
+
+		(*g_iVertexBufferEntriesUsed) = 0;
 	}
 }
