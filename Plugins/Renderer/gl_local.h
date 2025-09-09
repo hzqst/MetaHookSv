@@ -203,6 +203,8 @@ extern float *filterColorGreen;
 extern float *filterColorBlue;
 extern float *filterBrightness;
 
+extern void* engineSurface;
+
 extern bool* detTexSupported;
 
 extern cache_system_t(*cache_head);
@@ -380,6 +382,7 @@ void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
 void Host_ClearMemory(qboolean bQuite);
+void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window);
 void R_Init(void);
 void R_Shutdown(void);
 void R_SetupGL(void);
@@ -461,6 +464,13 @@ void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
 
+float* R_GetWorldMatrix();
+void R_LoadIdentityForWorldMatrix();
+
+float* R_GetProjectionMatrix();
+void R_LoadIdentityForProjectionMatrix();
+void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
+
 void __stdcall SCClient_glBegin(int GLPrimitiveCode);
 void __stdcall SCClient_glEnd();
 void __stdcall SCClient_glColor4f(float r, float g, float b, float a);
@@ -474,30 +484,22 @@ void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
-void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+
+void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+void __fastcall enginesurface_popMakeCurrent(void* pthis, int);
+void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
+void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
+void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall);
+bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int);
+void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+
 void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
 void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
-qboolean R_ParseStringAsColor1(const char *string, float *vec);
-qboolean R_ParseStringAsColor2(const char *string, float *vec);
-qboolean R_ParseStringAsColor3(const char *string, float *vec);
-qboolean R_ParseStringAsColor4(const char *string, float *vec);
-qboolean R_ParseStringAsVector1(const char *string, float *vec);
-qboolean R_ParseStringAsVector2(const char *string, float *vec);
-qboolean R_ParseStringAsVector3(const char *string, float *vec);
-qboolean R_ParseStringAsVector4(const char *string, float *vec);
-qboolean R_ParseCvarAsColor1(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor2(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor3(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor4(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector1(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector2(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);
 GLuint GL_GenTextureRGBA8(int w, int h, bool immutable);
@@ -607,7 +609,7 @@ void GL_PushDrawState(void);
 void GL_PopDrawState(void);
 
 void GL_Begin2D(void);
-void GL_Begin2DEx(int width, int height);
+void GL_Begin2DEx(int x, int y, int width, int height);
 void GL_End2D(void);
 
 void GL_ClearColor(vec4_t color);

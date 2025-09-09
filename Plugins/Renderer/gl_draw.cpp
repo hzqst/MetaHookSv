@@ -777,7 +777,7 @@ int GL_GetMipmapTextureTargetFromLoadTextureContext(const gl_loadtexture_context
 void GL_UploadTexturePreCommon(gl_loadtexture_context_t* context, int iTextureTarget)
 {
 	//Disable auto-mipmap-generation.
-	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
+	//glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 
 	if (context->mipmap)
 	{
@@ -915,7 +915,7 @@ void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextur
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+			Sys_Error("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
 		}
 	}
 	else
@@ -941,7 +941,7 @@ void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextur
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+			Sys_Error("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
 		}
 	}
 
@@ -3448,28 +3448,114 @@ void BuildGammaTable(float g)
 	}
 }
 
+static std::unordered_map<int, EngineSurfaceTexture*> g_VGuiSurfaceTextures;
+static EngineSurfaceTexture* staticTextureCurrent{};
+
+EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS] = nullptr;
+
+int (*g_iVertexBufferEntriesUsed) = 0;
+
+static EngineSurfaceTexture* staticGetTextureById(int id)
+{
+	auto it = g_VGuiSurfaceTextures.find(id);
+
+	if (it != g_VGuiSurfaceTextures.end())
+	{
+		return it->second;
+	}
+
+	return nullptr;
+}
+
+static EngineSurfaceTexture* staticAllocTextureForId(int id)
+{
+	auto it = g_VGuiSurfaceTextures.find(id);
+
+	if (it != g_VGuiSurfaceTextures.end())
+	{
+		return it->second;
+	}
+
+	EngineSurfaceTexture* pNewEntry = new EngineSurfaceTexture;
+
+	g_VGuiSurfaceTextures[id] = pNewEntry;
+
+	return pNewEntry;
+}
+
+void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace)
+{
+	Sys_Error("TODO");
+}
+
+void __fastcall enginesurface_popMakeCurrent(void* pthis, int)
+{
+	Sys_Error("TODO");
+}
+
+void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (!texture)
+		texture = staticAllocTextureForId(textureId);
+
+	if (texture)
+	{
+		texture->_id = textureId;
+		texture->_wide = wide;
+		texture->_tall = tall;
+
+		texture->_s0 = 0;
+		texture->_t0 = 0;
+		texture->_s1 = 1;
+		texture->_t1 = 1;
+
+		staticTextureCurrent = texture;
+		GL_Bind(textureId);
+
+		if (hardwareFilter)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+}
+
+void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId)
+{
+	if (textureId != (*currenttexture))
+	{
+		enginesurface_drawFlushText(pthis, 0);
+		(*currenttexture) = textureId;
+	}
+
+	staticTextureCurrent = staticGetTextureById(textureId);
+
+	glBindTexture(GL_TEXTURE_2D, textureId);
+}
+
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload)
 {
 	bool bLoaded = false;
-	char filepath[1024];
+	char filepath[1024]{};
 
-	if (gPrivateFuncs.staticGetTextureById)
-	{
-		auto texture = gPrivateFuncs.staticGetTextureById(textureId);
+	auto texture = staticGetTextureById(textureId);
 
-		if (texture && !forceReload)
-		{
-			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-			return;
-		}
-	}
-	else
+	if (texture && !forceReload)
 	{
-		if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId) && !forceReload)
-		{
-			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-			return;
-		}
+		enginesurface_drawSetTexture(pthis, dummy, textureId);
+		return;
 	}
 
 	gl_loadtexture_context_t loadContext;
@@ -3477,26 +3563,63 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	loadContext.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
 	loadContext.ignore_direction_LoadTGA = true;
 
-	loadContext.callback = [pthis, textureId, hardwareFilter](gl_loadtexture_context_t* ctx) {
+	loadContext.callback = [pthis, textureId, hardwareFilter, filename](gl_loadtexture_context_t* ctx) {
 
 		if (ctx->mipmaps.size() > 0)
 		{
 			if (ctx->compressed)
 			{
-				//We have to call drawSetTextureRGBA with dummy shit to allocate a new enginesurface_Texture for us
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId, (const char*)texloader_buffer, 16, 16, hardwareFilter, true);
+				auto texture = staticGetTextureById(textureId);
 
-				(*currenttexture) = -1;
-				GL_Bind(textureId);
-				GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
+				if (!texture)
+					texture = staticAllocTextureForId(textureId);
+
+				if (texture)
+				{
+					texture->_id = textureId;
+					texture->_wide = ctx->width;
+					texture->_tall = ctx->height;
+
+					texture->_s0 = 0;
+					texture->_t0 = 0;
+					texture->_s1 = 1;
+					texture->_t1 = 1;
+
+					strncpy(texture->_name, filename, sizeof(texture->_name) - 1);
+					texture->_name[sizeof(texture->_name) - 1] = 0;
+
+					(*currenttexture) = -1;
+					GL_Bind(textureId);
+					GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
+				}
 
 				return true;
 			}
 			else
 			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId,
-					(const char*)ctx->mipmaps[0].data, ctx->mipmaps[0].width, ctx->mipmaps[0].height,
-					hardwareFilter, true);
+				auto texture = staticGetTextureById(textureId);
+
+				if (!texture)
+					texture = staticAllocTextureForId(textureId);
+
+				if (texture)
+				{
+					texture->_id = textureId;
+					texture->_wide = ctx->width;
+					texture->_tall = ctx->height;
+
+					texture->_s0 = 0;
+					texture->_t0 = 0;
+					texture->_s1 = 1;
+					texture->_t1 = 1;
+
+					strncpy(texture->_name, filename, sizeof(texture->_name) - 1);
+					texture->_name[sizeof(texture->_name) - 1] = 0;
+
+					(*currenttexture) = -1;
+					GL_Bind(textureId);
+					GL_UploadUncompressedTexture(ctx, GL_TEXTURE_2D);
+				}
 
 				return true;
 			}
@@ -3518,22 +3641,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 			bLoaded = true;
 		}
 	}
-#if 0
-	if (1)
-	{
-		snprintf(filepath, sizeof(filepath), "%s.png", filename);
 
-		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
-		{
-			bLoaded = true;
-		}
-
-		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
-		{
-			bLoaded = true;
-		}
-	}
-#endif
 	if (!bLoaded)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
@@ -3564,28 +3672,72 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 		}
 	}
 
-	if (bLoaded)
+	if (texture)
 	{
-		if (gPrivateFuncs.staticGetTextureById)
-		{
-			auto texture = gPrivateFuncs.staticGetTextureById(textureId);
+		enginesurface_drawSetTexture(pthis, 0, textureId);
+	}
+}
 
-			if (texture)
-			{
-				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-				return;
-			}
+void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (texture)
+	{
+		wide = texture->_wide;
+		tall = texture->_tall;
+	}
+	else
+	{
+		wide = 0;
+		tall = 0;
+	}
+}
+
+bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int textureId)
+{
+	return(staticGetTextureById(textureId) != nullptr);
+}
+
+void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload)
+{
+	auto texture = staticGetTextureById(textureId);
+
+	if (!texture)
+		texture = staticAllocTextureForId(textureId);
+
+	if (texture)
+	{
+		texture->_id = textureId;
+		texture->_wide = wide;
+		texture->_tall = tall;
+
+		texture->_s0 = 0;
+		texture->_t0 = 0;
+		texture->_s1 = 1;
+		texture->_t1 = 1;
+
+		staticTextureCurrent = texture;
+		GL_Bind(textureId);
+
+		if (hardwareFilter)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
 		{
-			if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId))
-			{
-				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-				return;
-			}
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 	}
 }
+
 
 int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
 {
@@ -3595,12 +3747,35 @@ int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
 
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
 {
-	gPrivateFuncs.enginesurface_drawFlushText(pthis, dummy);
+	int (* _drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 8) ;//TODO?
 
-	//Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	if ((*g_iVertexBufferEntriesUsed) > 0)
+	{
+		std::vector<texturedrectvertex_t> vertices;
+
+		vertices.reserve((*g_iVertexBufferEntriesUsed));
+
+		for (int i = 0; i < (*g_iVertexBufferEntriesUsed); ++i)
+		{
+			texturedrectvertex_t v;
+
+			memcpy(v.texcoord, (*g_VertexBuffer)[i].texcoords, sizeof(vec2_t));
+			memcpy(v.pos, (*g_VertexBuffer)[i].vertex, sizeof(vec2_t));
+
+			v.col[0] = (*_drawTextColor)[0];
+			v.col[1] = (*_drawTextColor)[1];
+			v.col[2] = (*_drawTextColor)[2];
+			v.col[3] = (*_drawTextColor)[3];
+
+			vertices.emplace_back(v);
+		}
+
+		R_DrawTexturedRect((*currenttexture), vertices.data(), vertices.size() * sizeof(texturedrectvertex_t), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED);
+
+		(*g_iVertexBufferEntriesUsed) = 0;
+	}
 }
+
 #if 0
 void W_CleanupName(const char* in, char* out)
 {

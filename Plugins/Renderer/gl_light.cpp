@@ -363,7 +363,7 @@ void R_InitLight(void)
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 	}, 
 	[]() {
-		glDisableVertexAttribArray(0);
+		//glDisableVertexAttribArray(0);
 	});
 
 	std::vector<float> coneVertices;
@@ -427,7 +427,7 @@ void R_InitLight(void)
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 	},
 	[]() {
-		glDisableVertexAttribArray(0);
+		//glDisableVertexAttribArray(0);
 	});
 
 	r_draw_gbuffer = false;
@@ -1034,6 +1034,7 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightspecular, args->specular);
 			glUniform1f(prog.u_lightspecularpow, args->specularpow);
 
+			//TODO: core profile
 			glDrawArrays(GL_QUADS, 0, 4);
 
 			GL_EndFullScreenQuad();
@@ -1162,6 +1163,7 @@ void R_LightShadingPass(void)
 				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
+			//TODO: core profile
 			glDrawArrays(GL_QUADS, 0, 4);
 
 			if (args->shadowtex->depth_stencil && args->shadowtex->ready)

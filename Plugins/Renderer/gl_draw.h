@@ -19,6 +19,9 @@ extern char(*szCustName)[10];
 
 extern float gl_max_ansio;
 
+extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
+extern int(*g_iVertexBufferEntriesUsed);
+
 gltexture_t *gltextures_get();
 
 typedef struct gl_mipmap_texture_data_s

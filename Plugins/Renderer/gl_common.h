@@ -45,6 +45,14 @@ public:
 	uint32_t DrawCount{ 1 };
 };
 
+#define TEXTUREDRECT_VA_POSITION		0
+#define TEXTUREDRECT_VA_TEXCOORD		1
+#define TEXTUREDRECT_VA_COLOR			2
+#define TEXTUREDRECT_VA_MATRIX0			3
+#define TEXTUREDRECT_VA_MATRIX1			4
+#define TEXTUREDRECT_VA_MATRIX2			5
+#define TEXTUREDRECT_VA_MATRIX3			6
+
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
@@ -138,6 +146,18 @@ typedef struct vertex3f_s
 {
 	vec3_t	v;
 }vertex3f_t;
+
+typedef struct rect_instance_data_s
+{
+	mat4 matrix;
+}rect_instance_data_t;
+
+typedef struct texturedrectvertex_s
+{
+	vec2_t pos;
+	vec2_t texcoord;
+	vec4_t col;
+}texturedrectvertex_t;
 
 typedef struct triapivertex_s
 {

@@ -51,6 +51,8 @@ SHADER_DEFINE(gamma_uncorrection);
 
 SHADER_DEFINE(under_water_effect);
 
+std::unordered_map<program_state_t, drawtexturedrect_program_t> g_DrawTexturedRectProgramTable;
+
 cvar_t *r_hdr = NULL;
 cvar_t *r_hdr_debug = NULL;
 MapConVar *r_hdr_blurwidth = NULL;
@@ -119,6 +121,73 @@ void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput
 	{
 		g_pMetaHookAPI->SysError("R_UseHudDebugProgram: Failed to load program!");
 	}
+}
+
+void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_program_t* progOutput)
+{
+	drawtexturedrect_program_t prog = { 0 };
+
+	auto itor = g_DrawTexturedRectProgramTable.find(state);
+	if (itor == g_DrawTexturedRectProgramTable.end())
+	{
+		std::stringstream defs;
+
+		auto def = defs.str();
+
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\drawtexturedrect_shader.vert.glsl", "renderer\\shader\\drawtexturedrect_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+
+		if (prog.program)
+		{
+
+		}
+
+		g_DrawTexturedRectProgramTable[state] = prog;
+	}
+	else
+	{
+		prog = itor->second;
+	}
+
+	if (prog.program)
+	{
+		GL_UseProgram(prog.program);
+
+		if (progOutput)
+			*progOutput = prog;
+	}
+	else
+	{
+		Sys_Error("R_UseDrawTexturedRectProgram: Failed to load program!");
+	}
+}
+
+const program_state_mapping_t s_DrawTexturedRectProgramStateName[] = {
+	{ DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED			 ,"DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED"				},
+	{ DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED			 ,"DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED"			},
+	{ DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED	 ,"DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED"		},
+	{ DRAW_TEXTURED_RECT_SCISSOR_ENABLED				 ,"DRAW_TEXTURED_RECT_SCISSOR_ENABLED"					},
+	{ DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED				 ,"DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED"				},
+};
+
+void R_SaveDrawTexturedRectProgramStates(void)
+{
+	std::vector<program_state_t> states;
+
+	for (auto& p : g_DrawTexturedRectProgramTable)
+	{
+		states.emplace_back(p.first);
+	}
+
+	R_SaveProgramStatesCaches("renderer/shader/triapi_cache.txt", states, s_DrawTexturedRectProgramStateName, _ARRAYSIZE(s_DrawTexturedRectProgramStateName));
+}
+
+void R_LoadDrawTexturedRectProgramStates(void)
+{
+	R_LoadProgramStateCaches("renderer/shader/triapi_cache.txt", s_DrawTexturedRectProgramStateName, _ARRAYSIZE(s_DrawTexturedRectProgramStateName), [](program_state_t state) {
+
+		R_UseDrawTexturedRectProgram(state, NULL);
+
+	});
 }
 
 void R_InitPostProcess(void)
@@ -317,11 +386,136 @@ void R_DrawHUDQuad(int w, int h)
 	glEnd();
 }
 
-void R_DrawHUDQuad_Texture(int tex, int w, int h)
+void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuffer, size_t verticeBufferSize, uint64_t programState)
 {
-	GL_Bind(tex);
+	static GLuint hVAO = 0;
+	static GLuint hVBOVertex = 0;
+	static GLuint hVBOInstance = 0;
+	static GLuint hEBO = 0;
 
-	R_DrawHUDQuad(w, h);
+	if (!hVBOVertex)
+	{
+		hVBOVertex = GL_GenBuffer();
+		GL_UploadDataToVBODynamicDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, NULL);
+	}
+	if (!hVBOInstance)
+	{
+		hVBOInstance = GL_GenBuffer();
+		GL_UploadDataToVBODynamicDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, NULL);
+	}
+	if (!hEBO)
+	{
+		hEBO = GL_GenBuffer();
+		GL_UploadDataToEBODynamicDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, NULL);
+	}
+	if (!hVAO)
+	{
+		hVAO = GL_GenVAO();
+		GL_BindStatesForVAO(
+			hVAO,
+			[&]() {
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hEBO);
+
+				glBindBuffer(GL_ARRAY_BUFFER, hVBOVertex);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, pos));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_POSITION);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, texcoord));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_TEXCOORD);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, col));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_COLOR);
+
+				glBindBuffer(GL_ARRAY_BUFFER, hVBOInstance);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX0, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX0);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX1, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[1]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX1, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX1);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX2, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[2]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX2, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX2);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX3, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[3]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
+
+
+			},
+			[]() {
+
+
+			});
+		
+	}
+
+	glDisable(GL_DEPTH_TEST);
+	glBindTexture(GL_TEXTURE_2D, gltexturenum);
+
+	rect_instance_data_t instanceDataBuffer[1]{};
+
+	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+	Matrix4x4_ConcatTransforms(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
+
+	const uint32_t baseIndices[] = { 0, 1, 2, 2, 3, 0 };
+	std::vector<uint32_t> indices;
+
+	size_t verticeCount = verticeBufferSize / sizeof(texturedrectvertex_t);
+	size_t quadCount = verticeCount / 4;
+	for (size_t i = 0; i < quadCount; ++i)
+	{
+		for (size_t j = 0; j < _countof(baseIndices); ++j)
+		{
+			indices.emplace_back(i * 4 + baseIndices[j]);
+		}
+	}
+
+	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeBufferSize, verticeBuffer);
+	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
+	GL_UploadSubDataToEBO(hEBO, 0, indices.size() * sizeof(uint32_t), indices.data());
+
+	GL_BindVAO(hVAO);
+
+	if (programState & DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else if (programState & DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+	}
+	else if (programState & DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+
+	drawtexturedrect_program_t prog{};
+	R_UseDrawTexturedRectProgram(programState, &prog);
+
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+	GL_UseProgram(0);
+
+	glDisable(GL_BLEND);
+
+	GL_BindVAO(0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 }
 
 /*
@@ -710,7 +904,9 @@ void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 
 	glDisable(GL_BLEND);
 
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
+	//TODO...
+	Sys_Error("TODO");
+	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight,);
 
 	GL_UseProgram(0);
 }
@@ -754,7 +950,9 @@ void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(1, r_under_water_effect_wave_speed->value);
 	glUniform1f(2, r_under_water_effect_wave_size->value);
 
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
+	//TODO
+	Sys_Error("TODO");
+	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
 }
@@ -789,16 +987,13 @@ void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_BeginFullScreenQuad(false);
 
+	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
+	glDisable(GL_BLEND);
+	GL_Bind(src->s_hBackBufferTex);
+
 	GL_UseProgram(gamma_correction.program);
 
-	//Could be non-fullscreen quad
-
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);
 
@@ -811,15 +1006,13 @@ void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
 
 	GL_BeginFullScreenQuad(false);
 
+	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
+	glDisable(GL_BLEND);
+	GL_Bind(src->s_hBackBufferTex);
+
 	GL_UseProgram(gamma_uncorrection.program);
 
-	//Could be non-fullscreen quad
-
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glDisable(GL_BLEND);
-
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);
 
@@ -1058,17 +1251,10 @@ void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_BindFrameBuffer(dst);
 
-	GL_UseProgram(0);
+	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
-
-	GL_UseProgram(0);
+	Sys_Error("TODO");
+	//R_DrawTexturedRect(src->s_hBackBufferTex, 0, 0, glwidth, glheight, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED);
 
 	GL_PopMatrix();
 	GL_PopDrawState();

@@ -170,6 +170,14 @@
 #define WSURF_VA_SPECULARTEXTURE_TEXCOORD 10
 #define WSURF_VA_STYLES 11
 
+#define TEXTUREDRECT_VA_POSITION		0
+#define TEXTUREDRECT_VA_TEXCOORD		1
+#define TEXTUREDRECT_VA_COLOR			2
+#define TEXTUREDRECT_VA_MATRIX0			3
+#define TEXTUREDRECT_VA_MATRIX1			4
+#define TEXTUREDRECT_VA_MATRIX2			5
+#define TEXTUREDRECT_VA_MATRIX3			6
+
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
@@ -697,28 +705,21 @@ vec4 ProcessLinearBlendShift(vec4 color)
 	{
 #if defined(CLIP_NEARPLANE_ENABLED)
 
-		// 如果距离小于近平面，直接丢弃
 		if (flDistanceToFragment < transitionStart) {
 			discard;
 		}
 
-		// 在过渡区域内使用hashed alpha testing
 		if (flDistanceToFragment < transitionEnd) {
-			// 计算alpha值，距离越近alpha越小
 			float alpha = (flDistanceToFragment - transitionStart) / (transitionEnd - transitionStart);
 
-			// 使用屏幕空间位置创建hash值
 			vec2 screenPos = gl_FragCoord.xy;
 
-			// 简单的hash函数，基于屏幕坐标
 			float hash = fract(sin(dot(screenPos, vec2(12.9898, 78.233))) * 43758.5453);
 
-			// 使用三角形分布的噪声图案，减少条带效应
 			vec2 gridPos = fract(screenPos * 0.25);
 			float triangleNoise = abs(gridPos.x - 0.5) + abs(gridPos.y - 0.5);
 			hash = fract(hash + triangleNoise);
 
-			// 如果hash值大于alpha，丢弃该像素
 			if (hash > alpha) {
 				discard;
 			}

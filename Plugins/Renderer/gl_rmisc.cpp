@@ -802,14 +802,16 @@ void GL_Begin2D(void)
 	glDisable(GL_CULL_FACE);
 }
 
-void GL_Begin2DEx(int width, int height)
+void GL_Begin2DEx(int x, int y, int width, int height)
 {
-	glViewport(glx, gly, width, height);
+	glViewport(x, y, width, height);
 
+	//TODO...
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0, width, height, 0, -99999, 99999);
 
+	//TODO...
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }

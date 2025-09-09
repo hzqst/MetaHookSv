@@ -136,6 +136,11 @@ typedef struct
 	int layer;
 }hud_debug_program_t;
 
+typedef struct drawtexturedrect_program_s
+{
+	int program;
+}drawtexturedrect_program_t;
+
 extern cvar_t *r_hdr;
 extern cvar_t *r_hdr_debug;
 extern MapConVar *r_hdr_blurwidth;
@@ -177,11 +182,21 @@ void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst);
 void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
 void R_DrawHUDQuad(int w, int h);
-void R_DrawHUDQuad_Texture(int tex, int w, int h);
 void R_ShutdownPostProcess(void);
 void R_InitPostProcess(void);
+void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeBufferSize, uint64_t programState);
 
 #define HUD_DEBUG_TEXARRAY 1
 #define HUD_DEBUG_SHADOW 2
 
 void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput);
+
+#define DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED 0x1ull
+#define DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED 0x2ull
+#define DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
+#define DRAW_TEXTURED_RECT_SCISSOR_ENABLED 0x8ull
+#define DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED 0x10ull
+
+void R_SaveDrawTexturedRectProgramStates(void);
+void R_LoadDrawTexturedRectProgramStates(void);
+void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_program_t* progOutput);

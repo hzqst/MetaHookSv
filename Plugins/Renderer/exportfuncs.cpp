@@ -100,6 +100,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 int HUD_Redraw(float time, int intermission)
 {
+#if 0
 	if (AllowCheats())
 	{
 		if (r_water_debug && (int)r_water_debug->value > 0)
@@ -116,7 +117,7 @@ int HUD_Redraw(float time, int intermission)
 			case 0:
 				if (g_WaterReflectCaches[cacheIndex].reflect_texture)
 				{
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_texture, glwidth / 2, glheight / 2);
+					R_DrawTextureRect(g_WaterReflectCaches[cacheIndex].reflect_texture, glwidth / 2, glheight / 2);
 				}
 				break;
 			case 1:
@@ -125,14 +126,14 @@ int HUD_Redraw(float time, int intermission)
 					hud_debug_program_t prog = { 0 };
 					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_depth_texture, glwidth / 2, glheight / 2);
+					R_DrawTextureRect(g_WaterReflectCaches[cacheIndex].reflect_depth_texture, glwidth / 2, glheight / 2);
 					GL_UseProgram(0);
 				}
 				break;
 			case 2:
 				if (g_WaterReflectCaches[cacheIndex].refract_texture)
 				{
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
+					R_DrawTextureRect(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
 				}
 				break;
 			case 3:
@@ -141,7 +142,7 @@ int HUD_Redraw(float time, int intermission)
 					hud_debug_program_t prog = { 0 };
 					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_depth_texture, glwidth / 2, glheight / 2);
+					R_DrawTextureRect(g_WaterReflectCaches[cacheIndex].refract_depth_texture, glwidth / 2, glheight / 2);
 					GL_UseProgram(0);
 				}
 				break;
@@ -162,7 +163,7 @@ int HUD_Redraw(float time, int intermission)
 			hud_debug_program_t prog = { 0 };
 			R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-			R_DrawHUDQuad_Texture(current_shadow_texture->depth_stencil, glwidth / 2, glheight / 2);
+			R_DrawTexturedRect(current_shadow_texture->depth_stencil, glwidth / 2, glheight / 2);
 
 			GL_UseProgram(0);
 
@@ -178,13 +179,13 @@ int HUD_Redraw(float time, int intermission)
 			glEnable(GL_TEXTURE_2D);
 
 			if((int)r_light_debug->value == 1)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_GBufferFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
 			else if((int)r_light_debug->value == 2)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_GBufferFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
 			else if((int)r_light_debug->value == 3)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex3, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_GBufferFBO.s_hBackBufferTex3, glwidth / 2, glheight / 2);
 			else if((int)r_light_debug->value == 4)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex4, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_GBufferFBO.s_hBackBufferTex4, glwidth / 2, glheight / 2);
 
 			GL_UseProgram(0);
 			glEnable(GL_ALPHA_TEST);
@@ -242,7 +243,7 @@ int HUD_Redraw(float time, int intermission)
 
 			if (pFBO)
 			{
-				R_DrawHUDQuad_Texture(pFBO->s_hBackBufferTex, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(pFBO->s_hBackBufferTex, glwidth / 2, glheight / 2);
 			}
 
 			glEnable(GL_ALPHA_TEST);
@@ -261,24 +262,24 @@ int HUD_Redraw(float time, int intermission)
 				hud_debug_program_t prog = { 0 };
 				R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-				R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth / 2, glheight / 2);
 
 				GL_UseProgram(0);
 				break;
 			}
 			case 2:
 			{
-				R_DrawHUDQuad_Texture(s_DepthLinearFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_DepthLinearFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
 				break;
 			}
 			case 3:
 			{
-				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_HBAOCalcFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
 				break;
 			}
 			case 4:
 			{
-				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
+				R_DrawTexturedRect(s_HBAOCalcFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
 				break;
 			}
 			default:
@@ -289,7 +290,7 @@ int HUD_Redraw(float time, int intermission)
 			glEnable(GL_BLEND);
 		}
 	}
-
+#endif
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 

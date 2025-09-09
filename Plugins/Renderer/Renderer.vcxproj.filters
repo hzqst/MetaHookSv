@@ -891,5 +891,11 @@
     <None Include="..\..\Build\svencoop\renderer\shader\triapi_shader.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.frag.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.vert.glsl">
+      <Filter>GLSL</Filter>
+    </None>
   </ItemGroup>
 </Project>

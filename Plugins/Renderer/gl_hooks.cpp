@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include "gl_local.h"
+#include <utlvector.h>
 
 #define MOD_POINTINLEAF_SIG_SVENGINE "\x2A\x8B\x2A\x24\x2A\x85\x2A\x2A\x2A\x8B\x2A\xA4\x00\x00\x00"
 #define MOD_POINTINLEAF_SIG_SVENGINE_10152 "\x8B\x54\x24\x08\x2A\x8D\x2A\xA4\x00\x00\x00\x85\xD2\x74\x2A\x83\x2A\x00"
@@ -323,7 +324,117 @@
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
-#define DRAWSTARTUPGRAPHIC_SVENGINE "55 8B EC 6A FF 68 ?? ?? ?? ?? 64 A1 00 00 00 00 50 83 EC 7C"
+#define DRAWSTARTUPGRAPHIC_BLOB ""//TODO
+#define DRAWSTARTUPGRAPHIC_NEW ""//TODO
+#define DRAWSTARTUPGRAPHIC_HL25 "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x70\x53\x56\x57"
+#define DRAWSTARTUPGRAPHIC_SVENGINE "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x7C\x53\x56\x57"
+
+void Engine_FillAddress_EngineSurface_isTextureIDValid(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	auto enginesurface_isTextureIDValid_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_isTextureIDValid, RealDllInfo, DllInfo);
+
+	if (!enginesurface_isTextureIDValid_VA)
+	{
+		//Someone just hooked enginesurface_isTextureIDValid ?
+		Sig_NotFound(enginesurface_isTextureIDValid_VA);
+	}
+
+	typedef struct enginesurface_isTextureIDValid_SearchContext_s
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+		void* candicate{};
+		int instCount{};
+	}enginesurface_isTextureIDValid_SearchContext;
+
+	enginesurface_isTextureIDValid_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges(enginesurface_isTextureIDValid_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (enginesurface_isTextureIDValid_SearchContext*)context;
+
+		if (instCount <= 8 && pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM)
+		{
+			ctx->candicate = (decltype(ctx->candicate))pinst->detail->x86.operands[0].imm;
+		}
+
+		ctx->instCount = instCount;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+		}, 0, &ctx);
+
+	if (ctx.candicate && ctx.instCount <= 20)
+	{
+		gPrivateFuncs.staticGetTextureById = (decltype(gPrivateFuncs.staticGetTextureById))ConvertDllInfoSpace(ctx.candicate, DllInfo, RealDllInfo);
+	}
+}
+
+void Engine_FillAddress_EngineSurface_drawFlushText(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	auto enginesurface_drawFlushText_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_drawFlushText, RealDllInfo, DllInfo);
+
+	if (!enginesurface_drawFlushText_VA)
+	{
+		Sig_NotFound(enginesurface_drawFlushText);
+	}
+	typedef struct enginesurface_drawFlushText_SearchContext_s
+	{
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+	}enginesurface_drawFlushText_SearchContext;
+
+	enginesurface_drawFlushText_SearchContext ctx = { DllInfo, RealDllInfo };
+
+	g_pMetaHookAPI->DisasmRanges(enginesurface_drawFlushText_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (enginesurface_drawFlushText_SearchContext*)context;
+
+		if (pinst->id == X86_INS_CMP &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM
+			)
+		{
+			g_iVertexBufferEntriesUsed = (decltype(g_iVertexBufferEntriesUsed))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+		}
+
+		if (pinst->id == X86_INS_PUSH &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
+			)
+		{
+			g_VertexBuffer = (decltype(g_VertexBuffer))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+		}, 0, &ctx);
+
+	Sig_VarNotFound(g_VertexBuffer);
+	Sig_VarNotFound(g_iVertexBufferEntriesUsed);
+}
 
 void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
@@ -332,16 +443,20 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 	if (engineFactory)
 	{
 #define ENGINE_SURFACE_VERSION "EngineSurface007"
-		void* engineSurface = (void*)engineFactory(ENGINE_SURFACE_VERSION, NULL);
+		engineSurface = (void*)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
 		auto engineSurface_vftable = *(PVOID**)engineSurface;
 
+		int index_pushMakeCurrent = 1;
+		int index_popMakeCurrent = 2;
 		int index_drawSetTextureRGBA = 8;
 		int index_drawSetTexture = 9;
 		int index_createNewTextureID = 11;
 		int index_drawSetTextureFile = 18;
+		int index_drawGetTextureSize = 19;
 		int index_isTextureIDValid = 20;
 		int index_drawFlushText = 22;
+		int index_drawSetTextureBGRA = 24;
 
 		engineSurface_vftable = (decltype(engineSurface_vftable))ConvertDllInfoSpace(engineSurface_vftable, RealDllInfo, DllInfo);
 
@@ -367,63 +482,26 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 			*/
 			index_createNewTextureID++;
 			index_drawSetTextureFile++;
+			index_drawGetTextureSize++;
 			index_isTextureIDValid++;
 			index_drawFlushText++;
+			index_drawSetTextureBGRA++;
 		}
+
+		gPrivateFuncs.enginesurface_pushMakeCurrent = (decltype(gPrivateFuncs.enginesurface_pushMakeCurrent))			GetVFunctionFromVFTable(engineSurface_vftable, index_pushMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.enginesurface_popMakeCurrent = (decltype(gPrivateFuncs.enginesurface_popMakeCurrent))				GetVFunctionFromVFTable(engineSurface_vftable, index_popMakeCurrent, DllInfo, RealDllInfo, RealDllInfo);
 
 		gPrivateFuncs.enginesurface_drawSetTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureRGBA))		GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTextureRGBA,	DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawSetTexture = (decltype(gPrivateFuncs.enginesurface_drawSetTexture))				GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTexture,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_createNewTextureID = (decltype(gPrivateFuncs.enginesurface_createNewTextureID))		GetVFunctionFromVFTable(engineSurface_vftable, index_createNewTextureID,	DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawSetTextureFile = (decltype(gPrivateFuncs.enginesurface_drawSetTextureFile))		GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTextureFile,	DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.enginesurface_drawGetTextureSize = (decltype(gPrivateFuncs.enginesurface_drawGetTextureSize))		GetVFunctionFromVFTable(engineSurface_vftable, index_drawGetTextureSize,	DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_isTextureIDValid = (decltype(gPrivateFuncs.enginesurface_isTextureIDValid))			GetVFunctionFromVFTable(engineSurface_vftable, index_isTextureIDValid,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawFlushText = (decltype(gPrivateFuncs.enginesurface_drawFlushText))				GetVFunctionFromVFTable(engineSurface_vftable, index_drawFlushText,			DllInfo, RealDllInfo, RealDllInfo);
-
-		auto enginesurface_isTextureIDValid_VA = ConvertDllInfoSpace(gPrivateFuncs.enginesurface_isTextureIDValid, RealDllInfo, DllInfo);
-
-		if (!enginesurface_isTextureIDValid_VA)
-		{
-			//Someone just hooked enginesurface_isTextureIDValid ?
-			Sig_NotFound(enginesurface_isTextureIDValid_VA);
-		}
-
-		typedef struct enginesurface_isTextureIDValid_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			void* candicate{};
-			int instCount{};
-		}enginesurface_isTextureIDValid_SearchContext;
-
-		enginesurface_isTextureIDValid_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(enginesurface_isTextureIDValid_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (enginesurface_isTextureIDValid_SearchContext*)context;
-
-			if (instCount <= 8 && pinst->id == X86_INS_CALL &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				ctx->candicate = (decltype(ctx->candicate))pinst->detail->x86.operands[0].imm;
-			}
-
-			ctx->instCount = instCount;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-		}, 0, &ctx);
-
-		if (ctx.candicate && ctx.instCount <= 20)
-		{
-			gPrivateFuncs.staticGetTextureById = (decltype(gPrivateFuncs.staticGetTextureById))ConvertDllInfoSpace(ctx.candicate, DllInfo, RealDllInfo);
-		}
+		gPrivateFuncs.enginesurface_drawSetTextureBGRA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureBGRA))		GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTextureBGRA, DllInfo, RealDllInfo, RealDllInfo);
+		
+		Engine_FillAddress_EngineSurface_isTextureIDValid(DllInfo, RealDllInfo);
+		Engine_FillAddress_EngineSurface_drawFlushText(DllInfo, RealDllInfo);
 	}
 }
 
@@ -11089,6 +11167,82 @@ void Engine_FillAddress_PVSNode(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 }
 
+void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic)
+		return;
+
+	PVOID DrawStartupGraphic_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_SVENGINE, DllInfo);
+		gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))ConvertDllInfoSpace((PVOID)DrawStartupGraphic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_HL25, DllInfo);
+		gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))ConvertDllInfoSpace((PVOID)DrawStartupGraphic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_NEW, DllInfo);
+		gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))ConvertDllInfoSpace((PVOID)DrawStartupGraphic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		PVOID GL_DisableMultitexture_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_DisableMultitexture, RealDllInfo, DllInfo);
+
+		DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_BLOB, DllInfo);
+		gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))ConvertDllInfoSpace((PVOID)DrawStartupGraphic_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(CVideoMode_Common_DrawStartupGraphic);
+
+	{
+		typedef struct DrawStartupGraphic_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		} DrawStartupGraphic_SearchContext;
+
+		DrawStartupGraphic_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(DrawStartupGraphic_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (DrawStartupGraphic_SearchContext*)context;
+
+			if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp > 0x100 && pinst->detail->x86.operands[0].mem.disp < 0x400 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0 )
+			{
+				gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset = pinst->detail->x86.operands[0].mem.disp;
+				gPrivateFuncs.CVideoMode_Common_m_ImageID_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset - sizeof(CUtlMemory<bimage_t>);
+				gPrivateFuncs.CVideoMode_Common_m_iBaseResX_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset + 8;
+				gPrivateFuncs.CVideoMode_Common_m_iBaseResY_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset + 12;
+			}
+
+			if (gPrivateFuncs.CVideoMode_Common_m_ImageID_offset)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, &ctx);
+	}
+
+	Sig_FuncNotFound(CVideoMode_Common_m_ImageID_offset);
+}
+
 void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
@@ -11096,6 +11250,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	if (hSDL2)
 	{
 		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
+		gPrivateFuncs.SDL_GetWindowSize = (decltype(gPrivateFuncs.SDL_GetWindowSize))GetProcAddress(hSDL2, "SDL_GetWindowSize");
+		gPrivateFuncs.SDL_GL_SwapWindow = (decltype(gPrivateFuncs.SDL_GL_SwapWindow))GetProcAddress(hSDL2, "SDL_GL_SwapWindow");
 	}
 
 	Engine_FillAddress_EngineSurface(DllInfo, RealDllInfo);
@@ -11298,6 +11454,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_DT_Initialize(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_PVSNode(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_DrawStartupGraphic(DllInfo, RealDllInfo);
 }
 
 static hook_t* g_phook_GL_Init = NULL;
@@ -11317,9 +11475,15 @@ static hook_t* g_phook_GL_UnloadTextures = NULL;
 static hook_t* g_phook_GL_UnloadTexture = NULL;
 static hook_t* g_phook_GL_LoadTexture2 = NULL;
 static hook_t* g_phook_GL_BuildLightmaps = NULL;
+static hook_t* g_phook_enginesurface_pushMakeCurrent = NULL;
+static hook_t* g_phook_enginesurface_popMakeCurrent = NULL;
+static hook_t* g_phook_enginesurface_drawSetTextureRGBA = NULL;
 static hook_t* g_phook_enginesurface_createNewTextureID = NULL;
 static hook_t* g_phook_enginesurface_drawSetTextureFile = NULL;
+static hook_t* g_phook_enginesurface_drawSetTexture = NULL;
 static hook_t* g_phook_enginesurface_drawFlushText = NULL;
+static hook_t* g_phook_enginesurface_isTextureIDValid = NULL;
+static hook_t* g_phook_enginesurface_drawSetTextureBGRA = NULL;
 static hook_t* g_phook_Mod_LoadStudioModel = NULL;
 static hook_t* g_phook_Mod_LoadBrushModel = NULL;
 static hook_t* g_phook_Mod_LoadSpriteModel = NULL;
@@ -11342,20 +11506,12 @@ static hook_t* g_phook_DLL_SetModKey = NULL;
 static hook_t* g_phook_SDL_GL_SetAttribute = NULL;
 static hook_t* g_phook_PVSNode = NULL;
 static hook_t* g_phook_Host_ClearMemory = NULL;
+static hook_t* g_phook_CVideoMode_Common_DrawStartupGraphic = NULL;
+
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
 static hook_t* g_phook_UpdatePlayerPitch = NULL;
-
-#if 0
-#include <intrin.h>
-void __stdcall NewglDeleteTextures(GLsizei n, const GLuint* textures)
-{
-	gEngfuncs.Con_DPrintf("glDeleteTextures: n=%d, texid=[%d], retaddr=%p.\n", n, textures[0], _ReturnAddress());
-
-	gPrivateFuncs.glDeleteTextures(n, textures);
-}
-#endif
 
 void Engine_InstallHooks(void)
 {
@@ -11386,8 +11542,15 @@ void Engine_InstallHooks(void)
 		Install_InlineHook(enginesurface_createNewTextureID);
 	}
 
+	Install_InlineHook(enginesurface_pushMakeCurrent);
+	Install_InlineHook(enginesurface_popMakeCurrent);
+	Install_InlineHook(enginesurface_drawSetTextureRGBA);
 	Install_InlineHook(enginesurface_drawSetTextureFile);
+	Install_InlineHook(enginesurface_drawSetTexture);
 	Install_InlineHook(enginesurface_drawFlushText);
+	Install_InlineHook(enginesurface_isTextureIDValid);
+	Install_InlineHook(enginesurface_drawSetTextureBGRA);
+
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
@@ -11413,6 +11576,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(PVSNode);
 	Install_InlineHook(Host_ClearMemory);
+	Install_InlineHook(CVideoMode_Common_DrawStartupGraphic);
 
 	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
@@ -11451,8 +11615,14 @@ void Engine_UninstallHooks(void)
 		Uninstall_Hook(enginesurface_createNewTextureID);
 	}
 
+	Uninstall_Hook(enginesurface_pushMakeCurrent);
+	Uninstall_Hook(enginesurface_popMakeCurrent);
+	Uninstall_Hook(enginesurface_drawSetTextureRGBA);
 	Uninstall_Hook(enginesurface_drawSetTextureFile);
+	Uninstall_Hook(enginesurface_drawSetTexture);
 	Uninstall_Hook(enginesurface_drawFlushText);
+	Uninstall_Hook(enginesurface_isTextureIDValid);
+	Uninstall_Hook(enginesurface_drawSetTextureBGRA);
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
@@ -11471,6 +11641,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(PVSNode);
+	Uninstall_Hook(CVideoMode_Common_DrawStartupGraphic);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
@@ -11484,7 +11655,7 @@ int WINAPI GL_RedirectedGenTexture(void)
 }
 
 /*
-Purpose: Redirect all "mov eax, allocated_textures" to "call GL_RedirectedGenTexture" for legacy engine
+	Purpose: Redirect all "mov eax, allocated_textures" to "call GL_RedirectedGenTexture" for legacy engine
 */
 
 void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -11578,6 +11749,32 @@ void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const
 			break;
 		}
 	}
+}
+
+const GLubyte* __stdcall CoreProfile_glGetString(GLenum e)
+{
+	if(e == GL_EXTENSIONS)
+		return (const GLubyte*)"";
+
+	return glGetString(e);
+}
+
+void R_RedirectLegacyOpenGLCall_glGetString(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glGetString", CoreProfile_glGetString, NULL);
+	}
+	else
+	{
+		Sys_Error("TODO");
+	}
+}
+
+void R_RedirectLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	R_RedirectLegacyOpenGLTextureAllocation(DllInfo, RealDllInfo);
+	R_RedirectLegacyOpenGLCall_glGetString(DllInfo, RealDllInfo);
 }
 
 void R_PatchResetLatched(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)

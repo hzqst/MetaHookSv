@@ -105,7 +105,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseSpriteProgram: Failed to load program!");
+		Sys_Error("R_UseSpriteProgram: Failed to load program!");
 	}
 }
 
@@ -306,17 +306,19 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseTriAPIProgram: Failed to load program!");
+		Sys_Error("R_UseTriAPIProgram: Failed to load program!");
 	}
 }
 
 void R_SaveTriAPIProgramStates(void)
 {
 	std::vector<program_state_t> states;
+
 	for (auto& p : g_TriAPIProgramTable)
 	{
 		states.emplace_back(p.first);
 	}
+
 	R_SaveProgramStatesCaches("renderer/shader/triapi_cache.txt", states, s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName));
 }
 
@@ -326,7 +328,7 @@ void R_LoadTriAPIProgramStates(void)
 
 		R_UseTriAPIProgram(state, NULL);
 
-		});
+	});
 }
 
 void R_InitSprite(void)
@@ -403,69 +405,6 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 //And https://github.com/FWGS/xash3d-fwgs/blob/33da68b013fd9a2c683316758d751308d1a98109/ref/gl/gl_sprite.c#L462
 void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** oldframe, mspriteframe_t** curframe, float *lerp)
 {
-#if 0
-	float	framerate = 10.0f;
-	float	lerpFrac = 0.0f, frame;
-	float	frametime = (1.0f / framerate);
-	int	i, j, iframe, oldf, newf;
-
-	bool fDoInterp = (ent->curstate.effects & EF_NOINTERP) ? false : true;
-
-	if (!fDoInterp || ent->curstate.framerate < 0.0f || pSprite->numframes <= 1)
-	{
-		*oldframe = *curframe = R_GetSpriteFrame(pSprite, ent->curstate.frame);
-		*lerp = lerpFrac;
-		return;
-	}
-	frame = fmax(0.0f, ent->curstate.frame);
-	iframe = (int)ent->curstate.frame;
-
-	if (ent->curstate.framerate > 0.0f)
-	{
-		frametime = (1.0f / ent->curstate.framerate);
-		framerate = ent->curstate.framerate;
-	}
-
-	if (iframe < 0)
-	{
-		iframe = 0;
-	}
-	else if (iframe >= pSprite->numframes)
-	{
-		iframe = pSprite->numframes - 1;
-	}
-
-	oldf = (int)floor(frame - 0.5);
-	newf = (int)ceil(frame - 0.5);
-
-	oldf = oldf % (pSprite->numframes - 1);
-	newf = newf % (pSprite->numframes + 1);
-
-	if (pSprite->frames[iframe].type == SPR_SINGLE)
-	{
-		// frame was changed
-		if (newf != ent->latched.prevframe)
-		{
-			ent->latched.prevanimtime = (*cl_time) + frametime;
-			ent->latched.prevframe = newf;
-			lerpFrac = 0.0f; // reset lerp
-		}
-
-		if (ent->latched.prevanimtime != 0.0f && ent->latched.prevanimtime >= (*cl_time))
-			lerpFrac = (ent->latched.prevanimtime - (*cl_time)) * framerate;
-
-		// compute lerp factor
-		lerpFrac = (int)(10000 * lerpFrac) / 10000.0f;
-		lerpFrac = clamp(1.0f - lerpFrac, 0.0f, 1.0f);
-
-		// get the interpolated frames
-		*oldframe = R_GetSpriteFrame(pSprite, oldf);
-		*curframe = R_GetSpriteFrame(pSprite, newf);
-	}
-
-	*lerp = lerpFrac;
-#endif
-
 	auto frame = (int)ent->curstate.frame;
 	auto lerpFrac = 1.0f;
 
@@ -842,6 +781,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		GL_EnableMultitexture();
 		GL_Bind(oldframe->gl_texturenum);
 
+		//TODO: core profile
 		glDrawArrays(GL_QUADS, 0, 4);
 
 		GL_Bind(0);
@@ -849,6 +789,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	}
 	else
 	{
+		//TODO: core profile
 		glDrawArrays(GL_QUADS, 0, 4);
 	}
 

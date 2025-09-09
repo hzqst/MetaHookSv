@@ -894,3 +894,34 @@ typedef struct extra_player_info_czds_s
 }extra_player_info_czds_t;
 
 static_assert(sizeof(extra_player_info_czds_t) == 0x1C, "Size check");
+
+typedef struct bimage_s
+{
+	byte* buffer;
+	int x, y, width, height;
+	bool scaled;
+	bool unk;
+}bimage_t;
+
+static_assert(sizeof(bimage_t) == 24, "Size check");
+
+class EngineSurfaceTexture
+{
+public:
+	int     _id{};
+	int     _wide{};
+	int     _tall{};
+	float	_s0{};
+	float	_t0{};
+	float	_s1{};
+	float	_t1{};
+	char	_name[256]{};
+};
+
+typedef struct EngineSurfaceVertexBuffer_s
+{
+	float texcoords[2];
+	float vertex[2];
+} EngineSurfaceVertexBuffer_t;
+
+#define MAXVERTEXBUFFERS (64 * 4)

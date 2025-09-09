@@ -9,8 +9,17 @@
 #include <set>
 #include <SDL2/SDL_video.h>
 
+#include <utlvector.h>
+
 #include "UtilThreadTask.h"
 #include "LambdaThreadedTask.h"
+
+const float r_identity_matrix[4][4] = {
+	{1.0f, 0.0f, 0.0f, 0.0f},
+	{0.0f, 1.0f, 0.0f, 0.0f},
+	{0.0f, 0.0f, 1.0f, 0.0f},
+	{0.0f, 0.0f, 0.0f, 1.0f}
+};
 
 private_funcs_t gPrivateFuncs = { 0 };
 
@@ -138,6 +147,8 @@ float *filterColorRed = nullptr;
 float *filterColorGreen = nullptr;
 float *filterColorBlue = nullptr;
 float *filterBrightness = nullptr;
+
+void* engineSurface = nullptr;
 
 bool* detTexSupported = nullptr;
 
@@ -583,13 +594,6 @@ void R_RotateForTransform(const float *in_origin, const float* in_angles)
 	VectorCopy(in_angles, angles);
 
 	float entity_matrix[4][4];
-
-	const float r_identity_matrix[4][4] = {
-		{1.0f, 0.0f, 0.0f, 0.0f},
-		{0.0f, 1.0f, 0.0f, 0.0f},
-		{0.0f, 0.0f, 1.0f, 0.0f},
-		{0.0f, 0.0f, 0.0f, 1.0f}
-	};
 
 	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
 	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
@@ -1583,16 +1587,128 @@ void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode
 	}
 }
 
+float *R_GetWorldMatrix()
+{
+	return r_world_matrix;
+}
+
+void R_LoadIdentityForWorldMatrix()
+{
+	memcpy(r_world_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	memcpy(r_world_matrix_inv, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+float* R_GetProjectionMatrix()
+{
+	return r_projection_matrix;
+}
+
+void R_LoadIdentityForProjectionMatrix()
+{
+	memcpy(r_projection_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	memcpy(r_projection_matrix_inv, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+/*
+
+	// All graphics APIs except for OpenGL use [0, 1] as NDC Z range.
+	// OpenGL uses [-1, 1] unless glClipControl is used to change it.
+	// Use IRenderDevice::GetDeviceInfo().NDC to get the NDC Z range.
+	// See https://github.com/DiligentGraphics/DiligentCore/blob/master/doc/CoordinateSystem.md
+	void SetNearFarClipPlanes(T zNear, T zFar, bool NegativeOneToOneZ)
+	{
+		if (_44 == 0)
+		{
+			// Perspective projection
+			if (NegativeOneToOneZ)
+			{
+				// https://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
+				// http://www.terathon.com/gdc07_lengyel.pdf
+				// Note that OpenGL uses right-handed coordinate system, where
+				// camera is looking in negative z direction:
+				//   OO
+				//  |__|<--------------------
+				//         -z             +z
+				// Consequently, OpenGL projection matrix given by these two
+				// references inverts z axis.
+
+				// We do not need to do this, because we use DX coordinate
+				// system for the camera space. Thus we need to invert the
+				// sign of the values in the third column in the matrix
+				// from the references:
+
+				_33 = -(-(zFar + zNear) / (zFar - zNear));
+				_43 = -2 * zNear * zFar / (zFar - zNear);
+				_34 = -(-1);
+			}
+			else
+			{
+				_33 = zFar / (zFar - zNear);
+				_43 = -zNear * zFar / (zFar - zNear);
+				_34 = 1;
+			}
+		}
+		else
+		{
+			// Orthographic projection
+			_33 = (NegativeOneToOneZ ? 2 : 1) / (zFar - zNear);
+			_43 = (NegativeOneToOneZ ? zNear + zFar : zNear) / (zNear - zFar);
+		}
+	}
+	static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
+	{
+		// clang-format off
+		Matrix4x4 Proj
+			{
+						 2   / (right - left),                                 0,   0,    0,
+											0,                2 / (top - bottom),   0,    0,
+											0,                                 0,   0,    0,
+				(left + right)/(left - right),   (top + bottom) / (bottom - top),   0,    1
+			};
+		// clang-format on
+		Proj.SetNearFarClipPlanes(zNear, zFar, NegativeOneToOneZ);
+		return Proj;
+	}
+*/
+
+void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
+{
+	memset(r_projection_matrix, 0, sizeof(float) * 16);
+	
+	// 基础正交投影矩阵布局 (按照OrthoOffCenter实现)
+	r_projection_matrix[0] = 2.0f / (right - left);                     // _11
+	r_projection_matrix[5] = 2.0f / (top - bottom);                     // _22
+	r_projection_matrix[12] = (left + right) / (left - right);          // _41
+	r_projection_matrix[13] = (top + bottom) / (bottom - top);          // _42
+	r_projection_matrix[15] = 1.0f;                                     // _44
+	
+	// 设置近远裁剪平面 (按照SetNearFarClipPlanes实现)
+	if (NegativeOneToOneZ)
+	{
+		// OpenGL风格 [-1, 1] NDC Z范围
+		r_projection_matrix[10] = 2.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = (zNear + zFar) / (zNear - zFar);     // _43
+	}
+	else
+	{
+		// DirectX风格 [0, 1] NDC Z范围
+		r_projection_matrix[10] = 1.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = zNear / (zNear - zFar);              // _43
+	}
+	
+	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
+}
+
 void triapi_GetMatrix(const int pname, float* matrix)
 {
 	if (pname == GL_MODELVIEW_MATRIX)
 	{
-		memcpy(matrix, r_world_matrix, sizeof(float[16]));
+		memcpy(matrix, R_GetWorldMatrix(), sizeof(mat4));
 		return;
 	}
 	else if (pname == GL_PROJECTION_MATRIX)
 	{
-		memcpy(matrix, r_projection_matrix, sizeof(float[16]));
+		memcpy(matrix, R_GetProjectionMatrix(), sizeof(mat4));
 		return;
 	}
 	Sys_Error("triapi_GetMatrix: Invalid matrix type %d !", pname);
@@ -2389,9 +2505,6 @@ void GL_Init(void)
 {
 	gPrivateFuncs.GL_Init();
 
-	//Just like what GL_SetMode does
-	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
-
 	auto err = glewInit();
 
 	if (GLEW_OK != err)
@@ -2400,10 +2513,14 @@ void GL_Init(void)
 		return;
 	}
 
+	//Just like what GL_SetMode does
+	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+
 	if (!(*gl_mtexable))
 	{
-		Sys_Error("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
-		return;
+		//Who care
+		//Sys_Error("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
+		//return;
 	}
 
 	if (!GLEW_VERSION_4_3)
@@ -4492,6 +4609,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveTriAPIProgramStates();
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
+	R_SaveDrawTexturedRectProgramStates();
 
 	gEngfuncs.Con_Printf("R_SaveProgramStates_f: Program state caches saved.\n");
 }
@@ -4507,6 +4625,7 @@ void R_LoadProgramStates_f(void)
 	R_LoadTriAPIProgramStates();
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
+	R_LoadDrawTexturedRectProgramStates();
 	GL_UseProgram(0);
 
 	gEngfuncs.Con_Printf("R_LoadProgramStates_f: Program state caches loaded.\n");
@@ -4531,13 +4650,22 @@ int __cdecl SDL_GL_SetAttribute(int attr, int value)
 	}
 	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
 	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+		//return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);// SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
 	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
 	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
 	}
+
+	if (attr == SDL_GL_ALPHA_SIZE && value == 0)
+	{
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
 
@@ -4880,4 +5008,180 @@ void Host_ClearMemory(qboolean bQuite)
 	Mod_ClearModel();
 
 	gPrivateFuncs.Host_ClearMemory(bQuite);
+}
+
+void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy, void *window)
+{
+	//return gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic(videomode, 0, window);
+
+	auto err = glewInit();
+
+	if (GLEW_OK != err)
+	{
+		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
+
+	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
+	{
+		glDebugMessageCallback(GL_DebugOutputCallback, 0);
+		glEnable(GL_DEBUG_OUTPUT);
+	}
+
+	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_ImageID_offset);
+	int m_iBaseResX = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_iBaseResX_offset);
+	int m_iBaseResY = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_iBaseResY_offset);
+
+	int width = 0, height = 0;
+	gPrivateFuncs.SDL_GetWindowSize((SDL_Window*)window, &width, &height);
+
+	float fSrcAspect, fDstAspect;
+	int srcWide, srcTall;
+	float flXDiff, flYDiff;
+
+	g_pMetaHookAPI->GetVideoMode(&srcWide, &srcTall, nullptr, nullptr);
+
+	fSrcAspect = (float)srcWide / (float)srcTall;
+	fDstAspect = (float)width / (float)height;
+
+	bool s_bEnforceAspect = g_pInterface->CommandLine->CheckParm("-stretchaspect") == 0;
+	if (s_bEnforceAspect)
+	{
+		if (fSrcAspect > fDstAspect)
+		{
+			float fDesiredWidth = width * (1 / fSrcAspect);
+			flYDiff = height - fDesiredWidth;
+			height = height - flYDiff;
+		}
+		else
+		{
+			float fDesiredHeight = height / (1 / fSrcAspect);
+			flXDiff = width - fDesiredHeight;
+			width = width - flXDiff;
+		}
+	}
+
+	// work out scaling factors
+	float xScale, yScale;
+	xScale = (float)width / (float)m_iBaseResX;
+	yScale = (float)height / (float)m_iBaseResY;
+
+	std::vector<int> GLStartupTextures;
+
+	GLStartupTextures.reserve(m_ImageID->Size());
+
+	for (int i = 0; i < m_ImageID->Size(); ++i)
+	{
+		const auto& bimage = m_ImageID->Element(i);
+
+		if (bimage.buffer)
+		{
+			int dx = bimage.x;
+			int dy = bimage.y;
+			int dw = bimage.x + bimage.width;
+			int dt = bimage.y + bimage.height;
+
+			if (bimage.scaled)
+			{
+				dx = (int)ceil(dx * xScale);
+				dy = (int)ceil(dy * yScale);
+				dw = (int)ceil(dw * xScale);
+				dt = (int)ceil(dt * yScale);
+			}
+
+			float topv = 1.0;
+			float topu = 1.0;
+
+			auto gltexturenum = enginesurface_createNewTextureID(engineSurface, 0);
+			enginesurface_drawSetTextureRGBA(engineSurface, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
+
+			GLStartupTextures.push_back(gltexturenum);
+		}
+	}
+
+	while (1)
+	{
+		glViewport(0, 0, width, height);
+
+		R_LoadIdentityForWorldMatrix();
+		R_SetupOrthoProjectionMatrix(0.0f, width, height, 0.0f, -1.0f, 1.0f, true);
+
+		glClearColor(0, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		GL_BeginFullScreenQuad(false);
+
+		for (int i = 0; i < m_ImageID->Size(); ++i)
+		{
+			const auto& bimage = m_ImageID->Element(i);
+
+			if (bimage.buffer)
+			{
+				int dx = bimage.x;
+				int dy = bimage.y;
+				int dw = bimage.x + bimage.width;
+				int dt = bimage.y + bimage.height;
+
+				if (bimage.scaled)
+				{
+					dx = (int)ceil(dx * xScale);
+					dy = (int)ceil(dy * yScale);
+					dw = (int)ceil(dw * xScale);
+					dt = (int)ceil(dt * yScale);
+				}
+
+				float topv = 1.0;
+				float topu = 1.0;
+
+				auto gltexturenum = GLStartupTextures[i];
+				texturedrectvertex_t vertices[4];
+
+				vertices[0].col[0] = 1;
+				vertices[0].col[1] = 1;
+				vertices[0].col[2] = 1;
+				vertices[0].col[3] = 1;
+				vertices[0].texcoord[0] = 0;
+				vertices[0].texcoord[1] = topv;
+				vertices[0].pos[0] = dx;
+				vertices[0].pos[1] = dt;
+
+				vertices[1].col[0] = 1;
+				vertices[1].col[1] = 1;
+				vertices[1].col[2] = 1;
+				vertices[1].col[3] = 1;
+				vertices[1].texcoord[0] = topu;
+				vertices[1].texcoord[1] = topv;
+				vertices[1].pos[0] = dw;
+				vertices[1].pos[1] = dt;
+
+				vertices[2].col[0] = 1;
+				vertices[2].col[1] = 1;
+				vertices[2].col[2] = 1;
+				vertices[2].col[3] = 1;
+				vertices[2].texcoord[0] = topu;
+				vertices[2].texcoord[1] = 0;
+				vertices[2].pos[0] = dw;
+				vertices[2].pos[1] = dy;
+
+				vertices[3].col[0] = 1;
+				vertices[3].col[1] = 1;
+				vertices[3].col[2] = 1;
+				vertices[3].col[3] = 1;
+				vertices[3].texcoord[0] = 0;
+				vertices[3].texcoord[1] = 0;
+				vertices[3].pos[0] = dx;
+				vertices[3].pos[1] = dy;
+
+				R_DrawTexturedRect(gltexturenum, vertices, sizeof(vertices), 0);
+			}
+		}
+
+		gPrivateFuncs.SDL_GL_SwapWindow((SDL_Window*)window);
+
+	}
+
+	for (size_t i = 0; i < GLStartupTextures.size(); i++)
+	{
+		GL_DeleteTexture(GLStartupTextures[i]);
+	}
 }

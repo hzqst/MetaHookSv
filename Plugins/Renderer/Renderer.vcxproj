@@ -447,6 +447,8 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\down_sample.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\fullscreenquad.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\fullscreentriangle.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\gamma_correction.frag.glsl" />

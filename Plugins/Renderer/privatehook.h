@@ -106,19 +106,28 @@ typedef struct
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
+	void (__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+	void (__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
 	int(__fastcall* enginesurface_createNewTextureID)(void* pthis, int);
 	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
+	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
 	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int);
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
+	void( __fastcall *enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
 	//void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 	void (*Host_ClearMemory)(qboolean bQuite);
+	void(__fastcall* CVideoMode_Common_DrawStartupGraphic)(void* videomode, int dummy, void* window);
+	int CVideoMode_Common_m_ImageID_Size_offset;
+	int CVideoMode_Common_m_ImageID_offset;
+	int CVideoMode_Common_m_iBaseResX_offset;
+	int CVideoMode_Common_m_iBaseResY_offset;
 
 	//Sven Co-op Client DLL
 	void(__fastcall* ClientPortalManager_ResetAll)(void* pthis, int dummy);
@@ -179,6 +188,8 @@ typedef struct
 
 	//SDL2
 	int(__cdecl* SDL_GL_SetAttribute)(int attr, int value);
+	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
+	void (__cdecl* SDL_GL_SwapWindow)(void* window);
 
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;
@@ -202,6 +213,7 @@ void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
 void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks();
