@@ -5099,7 +5099,6 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 		}
 	}
 
-	while (1)
 	{
 		glViewport(0, 0, width, height);
 
@@ -5177,7 +5176,6 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void *videomode, int dummy,
 		}
 
 		gPrivateFuncs.SDL_GL_SwapWindow((SDL_Window*)window);
-
 	}
 
 	for (size_t i = 0; i < GLStartupTextures.size(); i++)

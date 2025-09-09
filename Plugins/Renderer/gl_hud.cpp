@@ -462,7 +462,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
-	Matrix4x4_ConcatTransforms(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
+	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*projMatrix), (*worldMatrix));
 
 	const uint32_t baseIndices[] = { 0, 1, 2, 2, 3, 0 };
 	std::vector<uint32_t> indices;

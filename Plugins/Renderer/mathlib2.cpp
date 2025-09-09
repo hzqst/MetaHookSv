@@ -872,6 +872,20 @@ void Matrix4x4_ConcatTransforms(float out[4][4], float in1[4][4], float in2[4][4
 	out[2][3] = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] + in1[2][2] * in2[2][3] + in1[2][3];
 }
 
+void Matrix4x4_Multiply(float out[4][4], float in1[4][4], float in2[4][4])
+{
+	int i, j, k;
+
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			out[i][j] = 0.0f;
+			for (k = 0; k < 4; k++) {
+				out[i][j] += in1[i][k] * in2[k][j];
+			}
+		}
+	}
+}
+
 void Matrix4x4_Transpose(float out[4][4], const float in1[4][4])
 {
 	out[0][0] = in1[0][0];
