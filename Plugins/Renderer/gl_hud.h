@@ -211,6 +211,7 @@ void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput
 #define DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
 #define DRAW_FILLED_RECT_ZERO_SRC_ALPHA_BLEND_ENABLED 0x8ull
 #define DRAW_FILLED_RECT_SCISSOR_ENABLED 0x8ull
+#define DRAW_FILLED_RECT_LINE_ENABLED 0x10ull
 
 void R_SaveDrawTexturedRectProgramStates(void);
 void R_LoadDrawTexturedRectProgramStates(void);
