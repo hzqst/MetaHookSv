@@ -510,6 +510,9 @@ void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelI
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 void __fastcall enginesurface_popMakeCurrent(void* pthis, int);
 void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawOutlinedRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawLine(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawPolyLine(void* pthis, int, int* px, int* py, int numPoints);
 void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId);
 void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0, int x1, int y1);

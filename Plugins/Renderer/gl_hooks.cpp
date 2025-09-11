@@ -581,6 +581,10 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 		int index_pushMakeCurrent = 1;
 		int index_popMakeCurrent = 2;
 		int index_drawFilledRect = 3;
+		int index_drawOutlinedRect = 4;
+		int index_drawLine = 5;
+		int index_drawPolyLine = 6;
+		int index_drawTexturedPolygon = 7;
 		int index_drawSetTextureRGBA = 8;
 		int index_drawSetTexture = 9;
 		int index_drawTexturedRect = 10;
@@ -626,6 +630,9 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 		gPrivateFuncs.enginesurface_pushMakeCurrent = (decltype(gPrivateFuncs.enginesurface_pushMakeCurrent))			GetVFunctionFromVFTable(engineSurface_vftable, index_pushMakeCurrent,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_popMakeCurrent = (decltype(gPrivateFuncs.enginesurface_popMakeCurrent))				GetVFunctionFromVFTable(engineSurface_vftable, index_popMakeCurrent,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawFilledRect = (decltype(gPrivateFuncs.enginesurface_drawFilledRect))				GetVFunctionFromVFTable(engineSurface_vftable, index_drawFilledRect,		DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.enginesurface_drawOutlinedRect = (decltype(gPrivateFuncs.enginesurface_drawOutlinedRect))			GetVFunctionFromVFTable(engineSurface_vftable, index_drawOutlinedRect,		DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.enginesurface_drawLine = (decltype(gPrivateFuncs.enginesurface_drawLine))							GetVFunctionFromVFTable(engineSurface_vftable, index_drawLine,				DllInfo, RealDllInfo, RealDllInfo);
+		gPrivateFuncs.enginesurface_drawPolyLine = (decltype(gPrivateFuncs.enginesurface_drawPolyLine))					GetVFunctionFromVFTable(engineSurface_vftable, index_drawPolyLine,			DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawSetTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureRGBA))		GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTextureRGBA,	DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawSetTexture = (decltype(gPrivateFuncs.enginesurface_drawSetTexture))				GetVFunctionFromVFTable(engineSurface_vftable, index_drawSetTexture,		DllInfo, RealDllInfo, RealDllInfo);
 		gPrivateFuncs.enginesurface_drawTexturedRect = (decltype(gPrivateFuncs.enginesurface_drawTexturedRect))			GetVFunctionFromVFTable(engineSurface_vftable, index_drawTexturedRect,		DllInfo, RealDllInfo, RealDllInfo);
@@ -11677,6 +11684,9 @@ static hook_t* g_phook_DT_Initialize = NULL;
 static hook_t* g_phook_enginesurface_pushMakeCurrent = NULL;
 static hook_t* g_phook_enginesurface_popMakeCurrent = NULL;
 static hook_t* g_phook_enginesurface_drawFilledRect = NULL;
+static hook_t* g_phook_enginesurface_drawOutlinedRect = NULL;
+static hook_t* g_phook_enginesurface_drawLine = NULL;
+static hook_t* g_phook_enginesurface_drawPolyLine = NULL;
 static hook_t* g_phook_enginesurface_drawSetTextureRGBA = NULL;
 static hook_t* g_phook_enginesurface_createNewTextureID = NULL;
 static hook_t* g_phook_enginesurface_drawPrintCharAdd = NULL;
@@ -11743,23 +11753,22 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(DT_Initialize);
 
-	if (!g_bHasOfficialGLTexAllocSupport)
-	{
-		Install_InlineHook(enginesurface_createNewTextureID);
-	}
-
 	Install_InlineHook(enginesurface_pushMakeCurrent);
 	Install_InlineHook(enginesurface_popMakeCurrent);
 	Install_InlineHook(enginesurface_drawFilledRect);
+	Install_InlineHook(enginesurface_drawOutlinedRect);
+	Install_InlineHook(enginesurface_drawLine);
+	Install_InlineHook(enginesurface_drawPolyLine);
 	Install_InlineHook(enginesurface_drawSetTextureRGBA);
 	Install_InlineHook(enginesurface_drawPrintCharAdd);
 	Install_InlineHook(enginesurface_drawSetTextureFile);
 	Install_InlineHook(enginesurface_drawSetTexture);
 	Install_InlineHook(enginesurface_drawTexturedRect);
-	Install_InlineHook(enginesurface_drawFlushText);
+	Install_InlineHook(enginesurface_createNewTextureID);
 	Install_InlineHook(enginesurface_drawGetTextureSize);
 	Install_InlineHook(enginesurface_isTextureIDValid);
 	Install_InlineHook(enginesurface_drawSetTextureBGRA);
+	Install_InlineHook(enginesurface_drawFlushText);
 
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
@@ -11831,6 +11840,9 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(enginesurface_pushMakeCurrent);
 	Uninstall_Hook(enginesurface_popMakeCurrent);
 	Uninstall_Hook(enginesurface_drawFilledRect);
+	Uninstall_Hook(enginesurface_drawOutlinedRect);
+	Uninstall_Hook(enginesurface_drawLine);
+	Uninstall_Hook(enginesurface_drawPolyLine);
 	Uninstall_Hook(enginesurface_drawSetTextureRGBA);
 	Uninstall_Hook(enginesurface_drawPrintCharAdd);
 	Uninstall_Hook(enginesurface_drawSetTextureFile);

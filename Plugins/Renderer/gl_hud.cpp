@@ -712,8 +712,15 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	drawfilledrect_program_t prog{};
 	R_UseDrawFilledRectProgram(programState, &prog);
-
-	glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	
+	if (programState & DRAW_FILLED_RECT_LINE_ENABLED)
+	{
+		glDrawElements(GL_LINES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	}
+	else
+	{
+		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	}
 
 	GL_UseProgram(0);
 

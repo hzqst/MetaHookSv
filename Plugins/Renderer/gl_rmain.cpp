@@ -5300,6 +5300,81 @@ void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, i
 	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED, "drawFilledRect");
 }
 
+void __fastcall enginesurface_drawOutlinedRect(void* pthis, int, int x0, int y0, int x1, int y1)
+{
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	enginesurface_drawFilledRect(pthis, 0, x0, y0, x1, y0 + 1);
+	enginesurface_drawFilledRect(pthis, 0, x0, y1 - 1, x1, y1);
+	enginesurface_drawFilledRect(pthis, 0, x0, y0 + 1, x0 + 1, y1 - 1);
+	enginesurface_drawFilledRect(pthis, 0, x1 - 1, y0 + 1, x1, y1 - 1);
+}
+
+void __fastcall enginesurface_drawLine(void* pthis, int, int x0, int y0, int x1, int y1)
+{
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	filledrectvertex_t vertices[2];
+
+	vertices[0].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[0].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[0].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[0].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[0].pos[0] = x0;
+	vertices[0].pos[1] = y0;
+
+	vertices[1].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[1].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[1].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[1].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[1].pos[0] = x1;
+	vertices[1].pos[1] = y1;
+
+	const uint32_t indices[] = { 0,1 };
+
+	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), DRAW_FILLED_RECT_LINE_ENABLED, "drawFilledRect");
+}
+
+void __fastcall enginesurface_drawPolyLine(void* pthis, int, int* px, int* py, int numPoints)
+{
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	std::vector<filledrectvertex_t> vertices;
+	std::vector<uint32_t> indices;
+
+	for (int i = 0; i < numPoints; ++i)
+	{
+		filledrectvertex_t v;
+
+		v.col[0] = (*_drawColor)[0] / 255.0f;
+		v.col[1] = (*_drawColor)[1] / 255.0f;
+		v.col[2] = (*_drawColor)[2] / 255.0f;
+		v.col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+
+		v.pos[0] = px[i];
+		v.pos[0] = py[i];
+
+		vertices.emplace_back(v);
+	}
+
+	for (uint32_t i = 0; i < (uint32_t)vertices.size() - 1; ++i)
+	{
+		indices.emplace_back(i);
+		indices.emplace_back(i + 1);
+	}
+
+	R_DrawFilledRect(vertices.data(), vertices.size(), indices.data(), indices.size(), DRAW_FILLED_RECT_LINE_ENABLED, "drawFilledRect");
+}
+
 void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel)
 {
 	auto texture = staticGetTextureById(textureId);
