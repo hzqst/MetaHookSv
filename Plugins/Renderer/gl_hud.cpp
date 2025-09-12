@@ -512,10 +512,6 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
 
 
-			},
-			[]() {
-
-
 			});
 		
 	}
@@ -651,10 +647,6 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glEnableVertexAttribArray(FILLEDRECT_VA_MATRIX3);
 
 
-			},
-			[]() {
-
-
 			});
 
 	}
@@ -731,6 +723,87 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	GL_EndDebugGroup();
 }
 
+void R_DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata)
+{
+	texturedrectvertex_t vertices[4];
+
+	vertices[0].col[0] = color4v[0];
+	vertices[0].col[1] = color4v[1];
+	vertices[0].col[2] = color4v[2];
+	vertices[0].col[3] = color4v[3];
+	vertices[0].texcoord[0] = 0;
+	vertices[0].texcoord[1] = 1;
+	vertices[0].pos[0] = x0;
+	vertices[0].pos[1] = y1;
+
+	vertices[1].col[0] = color4v[0];
+	vertices[1].col[1] = color4v[1];
+	vertices[1].col[2] = color4v[2];
+	vertices[1].col[3] = color4v[3];
+	vertices[1].texcoord[0] = 1;
+	vertices[1].texcoord[1] = 1;
+	vertices[1].pos[0] = x1;
+	vertices[1].pos[1] = y1;
+
+	vertices[2].col[0] = color4v[0];
+	vertices[2].col[1] = color4v[1];
+	vertices[2].col[2] = color4v[2];
+	vertices[2].col[3] = color4v[3];
+	vertices[2].texcoord[0] = 1;
+	vertices[2].texcoord[1] = 0;
+	vertices[2].pos[0] = x1;
+	vertices[2].pos[1] = y0;
+
+	vertices[3].col[0] = color4v[0];
+	vertices[3].col[1] = color4v[1];
+	vertices[3].col[2] = color4v[2];
+	vertices[3].col[3] = color4v[3];
+	vertices[3].texcoord[0] = 0;
+	vertices[3].texcoord[1] = 0;
+	vertices[3].pos[0] = x0;
+	vertices[3].pos[1] = y0;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawTexturedRect(gltexturenum, vertices, _countof(vertices), indices, _countof(indices), programState, debugMetadata);
+}
+
+void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata)
+{
+	filledrectvertex_t vertices[4];
+
+	vertices[0].col[0] = color4v[0];
+	vertices[0].col[1] = color4v[1];
+	vertices[0].col[2] = color4v[2];
+	vertices[0].col[3] = color4v[2];
+	vertices[0].pos[0] = x0;
+	vertices[0].pos[1] = y1;
+
+	vertices[1].col[0] = color4v[0];
+	vertices[1].col[1] = color4v[1];
+	vertices[1].col[2] = color4v[2];
+	vertices[1].col[3] = color4v[2];
+	vertices[1].pos[0] = x1;
+	vertices[1].pos[1] = y1;
+
+	vertices[2].col[0] = color4v[0];
+	vertices[2].col[1] = color4v[1];
+	vertices[2].col[2] = color4v[2];
+	vertices[2].col[3] = color4v[2];
+	vertices[2].pos[0] = x1;
+	vertices[2].pos[1] = y0;
+
+	vertices[3].col[0] = color4v[0];
+	vertices[3].col[1] = color4v[1];
+	vertices[3].col[2] = color4v[2];
+	vertices[3].col[3] = color4v[2];
+	vertices[3].pos[0] = x0;
+	vertices[3].pos[1] = y0;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), programState, debugMetadata);
+}
 /*
 	Purpose: Blit src FBO to screen, the current rendering FBO will be undefined, you must bind correct FBO again after this
 */
@@ -816,11 +889,13 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 {
 	GL_BindFrameBuffer(dst);
 
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 	GL_ClearStencil(0xFF);
 
-	if(bUseFilter2x2)
+	if (bUseFilter2x2)
 	{
 		GL_UseProgram(pp_downsample2x2.program);
 		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src_color->iWidth, 2.0f / src_color->iHeight);
@@ -830,7 +905,7 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 		GL_UseProgram(pp_downsample.program);
 	}
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindVAO(r_empty_vao);
 
 	GL_Bind(src_color->s_hBackBufferTex);
 
@@ -848,11 +923,17 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 	{
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
+
+	GL_BindVAO(0);
+
+	GL_Bind(0);
 }
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 {
 	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -873,40 +954,50 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 		glUniform2f(pp_lumindown.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindVAO(r_empty_vao);
 
 	GL_Bind(src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_Bind(0);
+
+	GL_BindVAO(0);
 }
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
 {
 	GL_BindFrameBuffer(dst);
 
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_luminadapt.program);
+
 	glUniform1f(pp_luminadapt.frametime, frametime * math_clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
-	GL_EnableMultitexture();
-	GL_Bind(ada->s_hBackBufferTex);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, ada->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 }
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
 {
 	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -915,18 +1006,19 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	glUniform1i(pp_brightpass.baseTex, 0);
 	glUniform1i(pp_brightpass.lumTex, 1);
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
-	GL_EnableMultitexture();
-	GL_Bind(lum->s_hBackBufferTex);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
@@ -949,14 +1041,22 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 
 	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
+	GL_BindVAO(r_empty_vao);
+
 	GL_Bind(src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_Bind(0);
+
+	GL_BindVAO(0);
 }
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
 {
 	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -966,7 +1066,7 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 
 	GL_UseProgram(pp_downsample.program);
 	
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindVAO(r_empty_vao);
 
 	GL_Bind(blur1->s_hBackBufferTex);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -977,12 +1077,16 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	GL_Bind(blur3->s_hBackBufferTex);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	GL_BindVAO(0);
+
 	glDisable(GL_BLEND);
 }
 
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum)
 {
 	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -995,31 +1099,29 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glUniform1f(pp_tonemap.exposure, math_clamp(r_hdr_exposure->GetValue(), 0.001, 10));
 	glUniform1f(pp_tonemap.darkness, math_clamp(r_hdr_darkness->GetValue(), 0.001, 10));
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindVAO(r_empty_vao);
 
-	GL_EnableMultitexture();
-	GL_Bind(blur->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
-	glActiveTexture(GL_TEXTURE2);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, blur->s_hBackBufferTex);
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
+	GL_BindTextureUnit(2, GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	glActiveTexture(GL_TEXTURE2);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(2, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE1);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 
-	GL_Bind(0);
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 }
 
 bool R_IsHDREnabled(void)
 {
+	return false;
+
 	if (!r_hdr->value)
 		return false;
 
@@ -1037,12 +1139,7 @@ bool R_IsHDREnabled(void)
 
 void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t* dst)
 {
-	GL_BeginFullScreenQuad(false);
-
-	//GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-	glColor4f(1, 1, 1, 1);
+	GL_BeginDebugGroupFormat("R_HDR - color=%s, stencil=%s, dst=%s", GL_GetFrameBufferName(src_color), GL_GetFrameBufferName(src_stencil), GL_GetFrameBufferName(dst));
 
 	R_DownSample(src_color, src_stencil, &s_DownSampleFBO[0], true, true);//(1->1/4)
 	R_DownSample(&s_DownSampleFBO[0], NULL, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
@@ -1082,13 +1179,15 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
-
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, dst);
+
+	GL_EndDebugGroup();
 }
 
 bool R_IsFXAAEnabled(void)
 {
+	return false;
+
 	if (!r_fxaa->value)
 		return false;
 
@@ -1106,26 +1205,30 @@ bool R_IsFXAAEnabled(void)
 
 void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_FXAA - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Begin2D();
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	GL_UseProgram(pp_fxaa.program);
 	glUniform1i(pp_fxaa.tex0, 0);
 	glUniform1f(pp_fxaa.rt_w, glwidth);
 	glUniform1f(pp_fxaa.rt_h, glheight);
 
-	glDisable(GL_BLEND);
-
 	//TODO...
 	Sys_Error("TODO");
 	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight,);
 
 	GL_UseProgram(0);
+
+	GL_EndDebugGroup();
 }
 
 bool R_IsUnderWaterEffectEnabled(void)
 {
+	return false;
+
 	if (!r_under_water_effect->value)
 		return false;
 
@@ -1152,11 +1255,11 @@ bool R_IsUnderWaterEffectEnabled(void)
 
 void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_UnderWaterEffect - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Begin2D();
-
-	glDisable(GL_BLEND);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	GL_UseProgram(under_water_effect.program);
 	glUniform1f(0, r_under_water_effect_wave_amount->value);
@@ -1167,7 +1270,9 @@ void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 	Sys_Error("TODO");
 	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight);
 
-	GL_UseProgram(0);
+	GL_UseProgram(0); 
+	
+	GL_EndDebugGroup();
 }
 
 bool R_IsGammaBlendEnabled()
@@ -1196,102 +1301,122 @@ bool R_IsGammaBlendEnabled()
 
 void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_GammaCorrection - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_BeginFullScreenQuad(false);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
-	glDisable(GL_BLEND);
 	GL_Bind(src->s_hBackBufferTex);
 
 	GL_UseProgram(gamma_correction.program);
 
+	GL_BindVAO(r_empty_vao);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
 void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_GammaUncorrection - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_BeginFullScreenQuad(false);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
-	glDisable(GL_BLEND);
 	GL_Bind(src->s_hBackBufferTex);
 
 	GL_UseProgram(gamma_uncorrection.program);
 
+	GL_BindVAO(r_empty_vao);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
 void R_ClearOITBuffer(void)
 {
-	GL_BeginFullScreenQuad(false);
+	GL_BeginDebugGroup("R_ClearOITBuffer");
 
 	GL_UseProgram(oitbuffer_clear.program);
 
+	GL_BindVAO(r_empty_vao);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
-
 	GLuint val = 0;
 	glClearNamedBufferData(g_WorldSurfaceRenderer.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
+
+	GL_EndDebugGroup();
 }
 
 void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_BlendOITBuffer - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 	
-	GL_BeginFullScreenQuad(false);
-
-	glDisable(GL_BLEND);
-
 	GL_UseProgram(blit_oitblend.program);	
 
 	GL_Bind(src->s_hBackBufferTex);
 
+	GL_BindVAO(r_empty_vao);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
 void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_LinearizeDepth - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	GL_BeginFullScreenQuad(false);
-
-	glDisable(GL_BLEND);
 
 	GL_UseProgram(depth_linearize.program);
 
 	glUniform4f(0, r_znear * r_zfar, r_znear - r_zfar, r_zfar, r_ortho ? 0 : 1);
 	
+	GL_BindVAO(r_empty_vao);
+
 	GL_Bind(src->s_hBackBufferDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	GL_Bind(0);
+
+	GL_BindVAO(0);
+
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
 bool R_IsAmbientOcclusionEnabled(void)
 {
+	return false;
+
 	if (!r_ssao->value)
 		return false;
 
@@ -1315,7 +1440,7 @@ bool R_IsAmbientOcclusionEnabled(void)
 
 void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_BeginFullScreenQuad(false);
+	GL_BeginDebugGroupFormat("R_AmbientOcclusion - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	//Prepare parameters
 	const float *ProjMatrix = r_projection_matrix;
@@ -1387,21 +1512,23 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 		glUniform1f(hbao_calc_blur.control_PowExponent, PowExponent);
 	}
 
+	GL_BindVAO(r_empty_vao);
+
 	//Texture unit 0 = linearized depth
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	//Texture unit 1 = random texture
-	GL_EnableMultitexture();
-	GL_Bind(hbao_randomview[0]);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, hbao_randomview[0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Disable texture unit 1
-	GL_Bind(0);
-	GL_DisableMultitexture();
+	//Texture unit 1 = random texture
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 0
-	GL_Bind(0);
+	//Texture unit 0 = linearized depth
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 
 	//SSAO blur stage
 
@@ -1412,10 +1539,17 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 1.0f / float(glwidth), 0);
 
+	GL_BindVAO(r_empty_vao);
+
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex
+	GL_Bind(0);
+
+	GL_BindVAO(0);
 
 	//Write to main framebuffer or GBuffer lightmap channel
 	GL_BindFrameBuffer(dst);
@@ -1442,6 +1576,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 0, 1.0f / float(glheight));
 
+	GL_BindVAO(r_empty_vao);
+
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
@@ -1450,25 +1586,26 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_UseProgram(0);
 
+	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
+	GL_Bind(0);
+
+	GL_BindVAO(0);
+
 	GL_EndStencil();
 
 	glDisable(GL_BLEND);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
-void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
+void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_PushDrawState();
-	GL_PushMatrix();
-
 	GL_BindFrameBuffer(dst);
 
-	GL_Begin2DEx(0, 0, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	Sys_Error("TODO");
-	//R_DrawTexturedRect(src->s_hBackBufferTex, 0, 0, glwidth, glheight, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED);
+	const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	GL_PopMatrix();
-	GL_PopDrawState();
+	//upside down
+	R_DrawTexturedQuad(src->s_hBackBufferTex, 0, glheight, glwidth, 0, color, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "R_BlitFinalBuffer");
 }

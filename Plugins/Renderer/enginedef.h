@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bspfile.h"
+#include "wrect.h"
 
 #define	MAX_QPATH 64
 
@@ -923,6 +924,16 @@ typedef struct EngineSurfaceVertexBuffer_s
 	float texcoords[2];
 	float vertex[2];
 } EngineSurfaceVertexBuffer_t;
+
+static_assert(sizeof(EngineSurfaceVertexBuffer_t) == 16);
+
+typedef struct AdditiveRectVertexBuffer_s
+{
+	float vertex[2];
+	float color[4];
+} AdditiveRectVertexBuffer_t;
+
+static_assert(sizeof(AdditiveRectVertexBuffer_t) == 24);
 
 #define MAXVERTEXBUFFERS (64 * 4)
 

@@ -107,6 +107,10 @@ typedef struct
 	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
+	void (*Draw_Frame)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_FillRGBA)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*Draw_FillRGBABlend)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void (__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 	void (__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
@@ -158,6 +162,8 @@ typedef struct
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);
 	qboolean(*studioapi_StudioCheckBBox)(void);
+	void(*studioapi_GL_SetRenderMode)(int rendermode);
+	void(*studioapi_SetupRenderer)(int rendermode);
 	void(*studioapi_RestoreRenderer)(void);
 
 	//Client Studio
@@ -218,13 +224,15 @@ void Engine_InstallHooks();
 void Engine_UninstallHooks();
 void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
-void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-void R_RedirectLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks();
 void Client_UninstallHooks();
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
 
 PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);
 PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);

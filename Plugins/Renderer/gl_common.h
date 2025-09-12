@@ -17,6 +17,7 @@ typedef struct FBO_Container_s
 	int iHeight;
 	int iTextureColorFormat;
 	int iTextureDepthFormat;
+	char szFrameBufferName[64]{};
 }FBO_Container_t;
 
 class CDrawArrayAttrib

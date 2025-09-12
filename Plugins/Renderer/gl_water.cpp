@@ -1063,6 +1063,9 @@ void R_DrawWaterSurfaceModelReflective(
 	bool bIsAboveWater,
 	float color[4])
 {
+
+	GL_BeginDebugGroup("R_DrawWaterSurfaceModelReflective");
+
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1213,6 +1216,8 @@ void R_DrawWaterSurfaceModelReflective(
 	GL_UseProgram(0);
 
 	R_DrawWaterSurfaceModelEnd();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawWaterSurfaceModelRipple(
@@ -1224,6 +1229,8 @@ void R_DrawWaterSurfaceModelRipple(
 	bool bIsAboveWater,
 	float color[4])
 {
+	GL_BeginDebugGroup("R_DrawWaterSurfaceModelRipple");
+
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1316,6 +1323,8 @@ void R_DrawWaterSurfaceModelRipple(
 	GL_UseProgram(0);
 
 	R_DrawWaterSurfaceModelEnd();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawWaterSurfaceModelLegacy(
@@ -1327,6 +1336,8 @@ void R_DrawWaterSurfaceModelLegacy(
 	bool bIsAboveWater,
 	float color[4])
 {
+	GL_BeginDebugGroup("R_DrawWaterSurfaceModelLegacy");
+
 	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -1424,6 +1435,8 @@ void R_DrawWaterSurfaceModelLegacy(
 	GL_UseProgram(0);
 
 	R_DrawWaterSurfaceModelEnd();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawWaterSurfaceModel(
@@ -1501,6 +1514,8 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 	if (!pEntityComponentContainer)
 		return;
 
+	GL_BeginDebugGroup("R_DrawWaters");
+
 	for (size_t i = 0; i < pEntityComponentContainer->RenderWaterModels.size(); ++i)
 	{
 		const auto& pWaterModel = pEntityComponentContainer->RenderWaterModels[i];
@@ -1513,4 +1528,7 @@ void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entit
 			ReflectCache,
 			ent);
 	}
+
+	GL_EndDebugGroup();
+
 }

@@ -20,9 +20,6 @@ void R_DrawSkyBox(void)
 	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
 		return;
 
-	glDisable(GL_BLEND);
-	glDepthMask(GL_FALSE);
-
 	entity_ubo_t EntityUBO;
 
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
@@ -90,8 +87,13 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
+	glDepthMask(GL_FALSE);
+	glDisable(GL_BLEND);
+
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
+
+	GL_BindVAO(r_empty_vao);
 
 	if (r_detailskytextures->value && g_WorldSurfaceRenderer.vSkyboxTextureId[6])
 	{
@@ -109,6 +111,8 @@ void R_DrawSkyBox(void)
 			glDrawArrays(GL_TRIANGLES, 6 * i, 6);
 		}
 	}
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 

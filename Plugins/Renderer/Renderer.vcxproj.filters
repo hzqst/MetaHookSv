@@ -780,9 +780,6 @@
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl">
       <Filter>GLSL</Filter>
     </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl">
-      <Filter>GLSL</Filter>
-    </None>
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl">
       <Filter>GLSL</Filter>
     </None>

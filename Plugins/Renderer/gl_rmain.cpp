@@ -21,6 +21,10 @@ ref_params_t r_params = { 0 };
 refdef_GoldSrc_t* r_refdef_GoldSrc = nullptr;
 refdef_SvEngine_t* r_refdef_SvEngine = nullptr;
 
+GLuint r_empty_vao = 0;
+
+vec4_t g_GLColor{ 0 };
+
 float* scrfov = nullptr;
 float r_xfov = 0;
 float r_yfov = 0;
@@ -79,6 +83,12 @@ float* g_UserFogColor = nullptr;
 float* g_UserFogDensity = nullptr;
 float* g_UserFogStart = nullptr;
 float* g_UserFogEnd = nullptr;
+
+qboolean* giScissorTest = nullptr;
+int* scissor_x = nullptr;
+int* scissor_y = nullptr;
+int* scissor_width = nullptr;
+int* scissor_height = nullptr;
 
 /*
 	r_visframecount is updated only when you encounter a new leaf
@@ -795,56 +805,6 @@ void R_DrawParticles(void)
 
 	GL_Bind((*particletexture));
 
-#if 0
-	glEnable(GL_ALPHA_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	program_state_t LegacySpriteProgramState = 0;
-
-	if (!R_IsRenderingGBuffer())
-	{
-		if (R_IsRenderingFog())
-		{
-			if (r_fog_mode == GL_LINEAR)
-			{
-				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-			}
-			else if (r_fog_mode == GL_EXP2)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
-			}
-
-			if (!R_IsRenderingGammaBlending() && r_linear_fog_shift->value > 0)
-			{
-				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_SHIFT_ENABLED;
-			}
-		}
-	}
-
-	if (R_IsRenderingWaterView())
-	{
-		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
-	}
-
-	if (r_draw_oitblend)
-	{
-		LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
-	}
-
-	if (R_IsRenderingGammaBlending())
-	{
-		LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
-	}
-
-	R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
-#endif
-
 	gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
 	gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
 
@@ -986,7 +946,7 @@ void R_DrawParticles(void)
 
 	glDisable(GL_BLEND);
 	//TODO: do in shader. Warning: disabling this causes https://github.com/hzqst/MetaHookSv/issues/666
-	glDisable(GL_ALPHA_TEST);
+	//glDisable(GL_ALPHA_TEST);
 }
 
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
@@ -1044,7 +1004,6 @@ public:
 	int GLPrimitiveCode{};
 	vec2_t TexCoord{};
 	vec4_t DrawColor{};
-	vec4_t GLColor{};
 	std::vector<vertex3f_t> Positions{};
 	std::vector<triapivertex_t> Vertices{};
 	std::vector<uint32_t> Indices{};
@@ -1471,38 +1430,56 @@ void triapi_End()
 
 void triapi_Color4f(float r, float g, float b, float a)
 {
-	gTriAPICommand.GLColor[0] = r;
-	gTriAPICommand.GLColor[1] = g;
-	gTriAPICommand.GLColor[2] = b;
-	gTriAPICommand.GLColor[3] = a;
+	gTriAPICommand.DrawColor[0] = r;
+	gTriAPICommand.DrawColor[1] = g;
+	gTriAPICommand.DrawColor[2] = b;
+	gTriAPICommand.DrawColor[3] = a;
 
 	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
 	{
-		gTriAPICommand.DrawColor[0] = r;
-		gTriAPICommand.DrawColor[1] = g;
-		gTriAPICommand.DrawColor[2] = b;
-		gTriAPICommand.DrawColor[3] = a;
+		CoreProfile_glColor4f(r, g, b, a);
 	}
 	else
 	{
-		gTriAPICommand.DrawColor[0] = r * a;
-		gTriAPICommand.DrawColor[1] = g * a;
-		gTriAPICommand.DrawColor[2] = b * a;
-		gTriAPICommand.DrawColor[3] = 1;
+		CoreProfile_glColor4f(r * a, g * a, b * a, 1);
 	}
 }
 
 void triapi_Color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
-	gTriAPICommand.GLColor[0] = r / 255.0;
-	gTriAPICommand.GLColor[1] = g / 255.0;
-	gTriAPICommand.GLColor[2] = b / 255.0;
-	gTriAPICommand.GLColor[3] = a / 255.0;
+	gTriAPICommand.DrawColor[0] = r / 255.0;
+	gTriAPICommand.DrawColor[1] = g / 255.0;
+	gTriAPICommand.DrawColor[2] = b / 255.0;
+	gTriAPICommand.DrawColor[3] = a / 255.0;
 
-	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0];
-	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1];
-	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2];
-	gTriAPICommand.DrawColor[3] = 1;
+	CoreProfile_glColor4f(gTriAPICommand.DrawColor[0], gTriAPICommand.DrawColor[1], gTriAPICommand.DrawColor[2], 1);
+}
+
+void triapi_Brightness(float brightness)
+{
+	CoreProfile_glColor4f(
+		gTriAPICommand.DrawColor[0] * gTriAPICommand.DrawColor[3] * brightness,
+		gTriAPICommand.DrawColor[1] * gTriAPICommand.DrawColor[3] * brightness,
+		gTriAPICommand.DrawColor[2] * gTriAPICommand.DrawColor[3] * brightness,
+		1
+	);
+}
+
+void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode)
+{
+	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
+	{
+		gTriAPICommand.DrawColor[3] = a / 255;
+	}
+
+	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
+	{
+		CoreProfile_glColor4f(r, g, b, a);
+	}
+	else
+	{
+		CoreProfile_glColor4f(r * a, g * a, b * a, 1.0f);
+	}
 }
 
 void triapi_Vertex3fv(float* v)
@@ -1520,10 +1497,10 @@ void triapi_Vertex3fv(float* v)
 	vertex.pos[2] = v[2];
 	vertex.texcoord[0] = gTriAPICommand.TexCoord[0];
 	vertex.texcoord[1] = gTriAPICommand.TexCoord[1];
-	vertex.color[0] = gTriAPICommand.DrawColor[0];
-	vertex.color[1] = gTriAPICommand.DrawColor[1];
-	vertex.color[2] = gTriAPICommand.DrawColor[2];
-	vertex.color[3] = gTriAPICommand.DrawColor[3];
+	vertex.color[0] = g_GLColor[0];
+	vertex.color[1] = g_GLColor[1];
+	vertex.color[2] = g_GLColor[2];
+	vertex.color[3] = g_GLColor[3];
 
 	gTriAPICommand.Vertices.push_back(vertex);
 }
@@ -1557,38 +1534,6 @@ void triapi_TexCoord2f(float s, float t)
 	gTriAPICommand.TexCoord[1] = t;
 }
 
-void triapi_Brightness(float brightness)
-{
-	gTriAPICommand.DrawColor[0] = gTriAPICommand.GLColor[0] * gTriAPICommand.GLColor[3] * brightness;
-	gTriAPICommand.DrawColor[1] = gTriAPICommand.GLColor[1] * gTriAPICommand.GLColor[3] * brightness;
-	gTriAPICommand.DrawColor[2] = gTriAPICommand.GLColor[2] * gTriAPICommand.GLColor[3] * brightness;
-	gTriAPICommand.DrawColor[3] = 1;
-}
-
-void triapi_Color4fRendermode(float r, float g, float b, float a, int rendermode)
-{
-	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
-	{
-		gTriAPICommand.GLColor[3] = a / 255;
-	}
-
-	if (gTriAPICommand.RenderMode == kRenderTransAlpha)
-	{
-		gTriAPICommand.DrawColor[0] = r;
-		gTriAPICommand.DrawColor[1] = g;
-		gTriAPICommand.DrawColor[2] = b;
-		gTriAPICommand.DrawColor[3] = a;
-	}
-	else
-	{
-		gTriAPICommand.DrawColor[0] = r * a;
-		gTriAPICommand.DrawColor[1] = g * a;
-		gTriAPICommand.DrawColor[2] = b * a;
-		gTriAPICommand.DrawColor[3] = 1;
-	}
-}
-
-
 void triapi_GetMatrix(const int pname, float* matrix)
 {
 	if (pname == GL_MODELVIEW_MATRIX)
@@ -1596,13 +1541,14 @@ void triapi_GetMatrix(const int pname, float* matrix)
 		memcpy(matrix, R_GetWorldMatrix(), sizeof(mat4));
 		return;
 	}
-	else if (pname == GL_PROJECTION_MATRIX)
+
+	if (pname == GL_PROJECTION_MATRIX)
 	{
 		memcpy(matrix, R_GetProjectionMatrix(), sizeof(mat4));
 		return;
 	}
+
 	Sys_Error("triapi_GetMatrix: Invalid matrix type %d !", pname);
-	//return gPrivateFuncs.triapi_GetMatrix(pname, matrix);
 }
 
 int triapi_BoxInPVS(float* mins, float* maxs)
@@ -1631,12 +1577,20 @@ void __stdcall SCClient_glEnd()
 	triapi_End();
 }
 
-void __stdcall SCClient_glColor4f(float r, float g, float b, float a)
+void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a)
 {
-	gTriAPICommand.DrawColor[0] = r;
-	gTriAPICommand.DrawColor[1] = g;
-	gTriAPICommand.DrawColor[2] = b;
-	gTriAPICommand.DrawColor[3] = a;
+	g_GLColor[0] = r;
+	g_GLColor[1] = g;
+	g_GLColor[2] = b;
+	g_GLColor[3] = a;
+}
+
+void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+	g_GLColor[0] = r / 255.0f;
+	g_GLColor[1] = g / 255.0f;
+	g_GLColor[2] = b / 255.0f;
+	g_GLColor[3] = a / 255.0f;
 }
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)
@@ -1681,12 +1635,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
 
-			//GL_DisableMultitexture();
-
-			//TODO: Do in shader?
-			glEnable(GL_ALPHA_TEST);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 			R_InhibitRenderingFog();
 
 			ClientDLL_DrawTransparentTriangles();
@@ -1699,7 +1647,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		if (!onlyClientDraw)
 		{
-			//GL_DisableMultitexture();
 			R_DrawParticles();
 		}
 
@@ -1724,19 +1671,11 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
 
-			//GL_DisableMultitexture();
-
-			//TODO: Do in shader?
-			glEnable(GL_ALPHA_TEST);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 			R_InhibitRenderingFog();
 
 			ClientDLL_DrawTransparentTriangles();
 
 			R_RestoreRenderingFog();
-
-			glDisable(GL_ALPHA_TEST);
 
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
@@ -1744,7 +1683,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		if (!onlyClientDraw)
 		{
-			//GL_DisableMultitexture();
 			R_DrawParticles();
 		}
 
@@ -2065,7 +2003,8 @@ void R_SetRenderMode(cl_entity_t* pEntity)
 
 void R_PolyBlend(void)
 {
-	gPrivateFuncs.R_PolyBlend();
+	//TODO
+	//gPrivateFuncs.R_PolyBlend();
 }
 
 void S_ExtraUpdate(void)
@@ -2096,7 +2035,7 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	auto right = tan(fovx * (M_PI / 360.0)) * zNear;
 	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
 
-	glFrustum(-right, right, -top, top, zNear, zFar);
+	R_SetupFrustumProjectionMatrix(-right, right, -top, top, zNear, zFar);
 
 	r_znear = zNear;
 	r_zfar = zFar;
@@ -2159,7 +2098,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_FinalBufferFBO.iWidth = glwidth;
 	s_FinalBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_FinalBufferFBO);
+	GL_GenFrameBuffer(&s_FinalBufferFBO, "s_FinalBufferFBO");
 	GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
 	GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -2172,7 +2111,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO);
+	GL_GenFrameBuffer(&s_BackBufferFBO, "s_BackBufferFBO");
 	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
 
@@ -2184,7 +2123,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_BackBufferFBO2.iWidth = glwidth;
 	s_BackBufferFBO2.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO2);
+	GL_GenFrameBuffer(&s_BackBufferFBO2, "s_BackBufferFBO2");
 	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
 
@@ -2196,7 +2135,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_BackBufferFBO3.iWidth = glwidth;
 	s_BackBufferFBO3.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO3);
+	GL_GenFrameBuffer(&s_BackBufferFBO3, "s_BackBufferFBO3");
 	GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA8);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
 
@@ -2208,7 +2147,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_GBufferFBO.iWidth = glwidth;
 	s_GBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_GBufferFBO);
+	GL_GenFrameBuffer(&s_GBufferFBO, "s_GBufferFBO");
 
 	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO,
 		GBUFFER_INTERNAL_FORMAT_DIFFUSE,
@@ -2226,7 +2165,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_DepthLinearFBO.iWidth = glwidth;
 	s_DepthLinearFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_DepthLinearFBO);
+	GL_GenFrameBuffer(&s_DepthLinearFBO, "s_DepthLinearFBO");
 	GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2237,7 +2176,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_HBAOCalcFBO.iWidth = glwidth;
 	s_HBAOCalcFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_HBAOCalcFBO);
+	GL_GenFrameBuffer(&s_HBAOCalcFBO, "s_HBAOCalcFBO");
 	GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2247,10 +2186,10 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	//Framebuffers that bind no texture
-	GL_GenFrameBuffer(&s_ShadowFBO);
+	GL_GenFrameBuffer(&s_ShadowFBO, "s_ShadowFBO");
 
 	//Framebuffers that bind no texture
-	GL_GenFrameBuffer(&s_WaterSurfaceFBO);
+	GL_GenFrameBuffer(&s_WaterSurfaceFBO, "s_WaterSurfaceFBO");
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -2263,7 +2202,7 @@ void GL_GenerateFrameBuffers(void)
 		downH >>= 1;
 		s_DownSampleFBO[i].iWidth = downW;
 		s_DownSampleFBO[i].iHeight = downH;
-		GL_GenFrameBuffer(&s_DownSampleFBO[i]);
+		GL_GenFrameBuffer(&s_DownSampleFBO[i], "s_DownSampleFBO");
 		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
 		GL_FrameBufferDepthTexture(&s_DownSampleFBO[i], GL_DEPTH24_STENCIL8);
 
@@ -2287,7 +2226,7 @@ void GL_GenerateFrameBuffers(void)
 	{
 		s_LuminFBO[i].iWidth = downW;
 		s_LuminFBO[i].iHeight = downH;
-		GL_GenFrameBuffer(&s_LuminFBO[i]);
+		GL_GenFrameBuffer(&s_LuminFBO[i], "s_LuminFBO");
 		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
 
 		vec4_t clearColor = { 0, 0, 0, 0 };
@@ -2309,7 +2248,7 @@ void GL_GenerateFrameBuffers(void)
 	{
 		s_Lumin1x1FBO[i].iWidth = 1;
 		s_Lumin1x1FBO[i].iHeight = 1;
-		GL_GenFrameBuffer(&s_Lumin1x1FBO[i]);
+		GL_GenFrameBuffer(&s_Lumin1x1FBO[i], "s_Lumin1x1FBO");
 		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
 
 		vec4_t clearColor = { 0, 0, 0, 0 };
@@ -2326,7 +2265,7 @@ void GL_GenerateFrameBuffers(void)
 	//Bright Pass FBO
 	s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
 	s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
-	GL_GenFrameBuffer(&s_BrightPassFBO);
+	GL_GenFrameBuffer(&s_BrightPassFBO, "s_BrightPassFBO");
 	GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2347,7 +2286,7 @@ void GL_GenerateFrameBuffers(void)
 			s_BlurPassFBO[i][j].iWidth = downW;
 			s_BlurPassFBO[i][j].iHeight = downH;
 
-			GL_GenFrameBuffer(&s_BlurPassFBO[i][j]);
+			GL_GenFrameBuffer(&s_BlurPassFBO[i][j], "s_BlurPassFBO");
 			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], GL_RGB16F);
 
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2362,7 +2301,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
 	s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
-	GL_GenFrameBuffer(&s_BrightAccumFBO);
+	GL_GenFrameBuffer(&s_BrightAccumFBO, "s_BrightAccumFBO");
 	GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -2372,7 +2311,7 @@ void GL_GenerateFrameBuffers(void)
 
 	s_ToneMapFBO.iWidth = glwidth;
 	s_ToneMapFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_ToneMapFBO);
+	GL_GenFrameBuffer(&s_ToneMapFBO, "s_ToneMapFBO");
 	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -2521,6 +2460,17 @@ void R_RenderEndFrame()
 	R_StudioEndFrame();
 }
 
+void GL_Set2DEx(int x, int y, int width, int height)
+{
+	glViewport(x, y, width, height);
+
+	R_SetupOrthoProjectionMatrix(0, width, height, 0, -99999, 99999, true);
+	R_LoadIdentityForWorldMatrix();
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+}
+
 void GL_Set2D()
 {
 	glViewport(glx, gly, glwidth, glheight);
@@ -2533,17 +2483,17 @@ void GL_Set2D()
 
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
-	//glDisable(GL_BLEND);
 }
 
 void GL_Finish2D()
 {
+	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+
 	R_PopProjectionMatrix();
 	R_PopWorldMatrix();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	//glEnable(GL_BLEND);
 }
 
 void GL_BeginRendering(int* x, int* y, int* width, int* height)
@@ -2692,12 +2642,6 @@ void R_PostRenderView()
 		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 		R_FXAA(&s_BackBufferFBO2, &s_BackBufferFBO);
 	}
-
-	//Restore OpenGL states to default
-	//GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glColor4f(1, 1, 1, 1);
-	glDisable(GL_BLEND);
 }
 
 void R_PreDrawViewModel(void)
@@ -2804,7 +2748,7 @@ void R_DrawViewModel(void)
 		glDepthRange(0.1, 1);
 
 		//Valve add this for what? idk we gonna remove this shit when move to core profile
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	}
 	else
 	{
@@ -2875,8 +2819,8 @@ void R_RenderView_SvEngine(int viewIdx)
 		R_PostRenderView();
 
 		//This will switch to final framebuffer (RGBA8)
-		//TODO: Why not using GL_BlitFrameBufferToFrameBufferColorOnly?		
-		R_BlendFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO);
+		R_BlitFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO);
+		//GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_FinalBufferFBO);
 		GL_SetCurrentSceneFBO(NULL);
 
 		if (!(*r_refdef.onlyClientDraws))
@@ -3036,6 +2980,7 @@ void R_InitCvars(void)
 	r_novis = gEngfuncs.pfnGetCvarPointer("r_novis");
 
 	//r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
+	r_detailtextures = gEngfuncs.pfnRegisterVariable("r_detailtextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_cullsequencebox = gEngfuncs.pfnGetCvarPointer("r_cullsequencebox");
 
@@ -3539,26 +3484,9 @@ void R_AdjustScopeFOVForViewModel(float* fov)
 	}
 }
 
-void R_LoadLegacyOpenGLMatrixForViewModel()
-{
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(r_viewmodel_projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixf(r_world_matrix);
-}
-
-void R_LoadLegacyOpenGLMatrixForWorld()
-{
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(r_projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixf(r_world_matrix);
-}
-
 void R_SetupGLForViewModel(void)
 {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	R_LoadIdentityForProjectionMatrix();
 
 	if ((int)r_vertical_fov->value > 0)
 	{
@@ -3597,18 +3525,15 @@ void R_SetupGLForViewModel(void)
 		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
 	}
 
-	glGetFloatv(GL_PROJECTION_MATRIX, r_viewmodel_projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
+	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
-	InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
-
-	R_SetupCameraUBO(true);
+	R_SetupCameraUBO();
 }
 
 void R_SetupGL(void)
 {
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	R_LoadIdentityForProjectionMatrix();
+
 	auto v0 = (*r_refdef.vrect).x;
 	auto v1 = glheight - (*r_refdef.vrect).y;
 	auto v2 = (*r_refdef.vrect).x + (*r_refdef.vrect).width;
@@ -3770,23 +3695,16 @@ void R_SetupGL(void)
 	}
 
 	glCullFace(GL_FRONT);
-	glGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glRotatef(-90, 1, 0, 0);
-	glRotatef(90, 0, 0, 1);
-	glRotatef(-(*r_refdef.viewangles)[2], 1, 0, 0);
-	glRotatef(-(*r_refdef.viewangles)[0], 0, 1, 0);
-	glRotatef(-(*r_refdef.viewangles)[1], 0, 0, 1);
-	glTranslatef(-(*r_refdef.vieworg)[0], -(*r_refdef.vieworg)[1], -(*r_refdef.vieworg)[2]);
 
-	glGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
+	R_LoadIdentityForWorldMatrix();
+	R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
 	if (!gl_cull->value)
 		glDisable(GL_CULL_FACE);
 	else
 		glEnable(GL_CULL_FACE);
+
 	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_DEPTH_TEST);
 
 	for (int i = 0; i < 16; i += 4)
@@ -4054,7 +3972,8 @@ void R_EndRenderOpaque(void)
 {
 	r_draw_opaque = false;
 
-	glDisable(GL_ALPHA_TEST);
+	//Core Profile
+	//glDisable(GL_ALPHA_TEST);
 
 	//Transfer everything from GBuffer into SceneFBO
 	if (R_IsRenderingGBuffer())
@@ -4063,7 +3982,7 @@ void R_EndRenderOpaque(void)
 	}
 
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
-	R_LoadLegacyOpenGLMatrixForWorld();
+	//R_LoadLegacyOpenGLMatrixForWorld();
 }
 
 void ClientDLL_DrawNormalTriangles(void)
@@ -4091,7 +4010,7 @@ void ClientDLL_DrawNormalTriangles(void)
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
 	//This should have been restored to 0 by SC client dll while drawing portal overlay but they don't, which breaks HUD/GUIs somehow.
-	glAlphaFunc(GL_NOTEQUAL, 0);
+	//glAlphaFunc(GL_NOTEQUAL, 0);//Core Profile
 
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
 	(*currenttexture) = -1;
@@ -5082,9 +5001,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy,
 
 void DT_Initialize()
 {
-	r_detailtextures = gEngfuncs.pfnRegisterVariable("r_detailtextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
-	(*detTexSupported) = true;
+	//Fuck Valve
 }
 
 static std::unordered_map<int, EngineSurfaceTexture*> g_VGuiSurfaceTextures;
@@ -5747,7 +5664,7 @@ void __fastcall enginesurface_drawFlushText(void* pthis, int dummy)
 {
 	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 20);
 
-	if ((*g_iVertexBufferEntriesUsed) > 0)
+	if ((*g_iVertexBufferEntriesUsed) > 0 && (*currenttexture) > 0)
 	{
 		std::vector<texturedrectvertex_t> vertices;
 		std::vector<uint32_t> indices;
@@ -5780,7 +5697,199 @@ void __fastcall enginesurface_drawFlushText(void* pthis, int dummy)
 		}
 
 		R_DrawTexturedRect((*currenttexture), vertices.data(), vertices.size(), indices.data(), indices.size(), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawFlushText");
-
-		(*g_iVertexBufferEntriesUsed) = 0;
 	}
+
+	(*g_iVertexBufferEntriesUsed) = 0;
+}
+
+static int ValidateWRect(const wrect_t* prc)
+{
+
+	if (!prc)
+		return false;
+
+	if ((prc->left >= prc->right) || (prc->top >= prc->bottom))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+static int IntersectWRect(const wrect_t* prc1, const wrect_t* prc2, wrect_t* prc)
+{
+	wrect_t rc;
+
+	if (!prc)
+		prc = &rc;
+
+	prc->left = max(prc1->left, prc2->left);
+	prc->right = min(prc1->right, prc2->right);
+
+	if (prc->left < prc->right)
+	{
+		prc->top = max(prc1->top, prc2->top);
+		prc->bottom = min(prc1->bottom, prc2->bottom);
+
+		if (prc->top < prc->bottom)
+			return 1;
+
+	}
+
+	return 0;
+}
+
+static void AdjustSubRect(mspriteframe_t* pFrame, float* pfLeft, float* pfRight, float* pfTop,
+	float* pfBottom, int* pw, int* ph, const wrect_t* prcSubRect)
+{
+	wrect_t rc;
+	float f;
+
+	if (!ValidateWRect(prcSubRect))
+		return;
+
+	// clip sub rect to sprite
+
+	rc.top = rc.left = 0;
+	rc.right = *pw;
+	rc.bottom = *ph;
+
+	if (!IntersectWRect(prcSubRect, &rc, &rc))
+		return;
+
+	*pw = rc.right - rc.left;
+	*ph = rc.bottom - rc.top;
+
+	f = 1.0 / (float)pFrame->width;
+	*pfLeft = ((float)rc.left + 0.5) * f;
+	*pfRight = ((float)rc.right - 0.5) * f;
+
+	f = 1.0 / (float)pFrame->height;
+	*pfTop = ((float)rc.top + 0.5) * f;
+	*pfBottom = ((float)rc.bottom - 0.5) * f;
+
+	return;
+}
+
+void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
+{
+	float fLeft = 0;
+	float fRight = 1;
+	float fTop = 0;
+	float fBottom = 1;
+	int iWidth = pFrame->width;
+	int iHeight = pFrame->height;
+
+	if (prcSubRect)
+	{
+		AdjustSubRect(pFrame, &fLeft, &fRight, &fTop, &fBottom, &iWidth, &iHeight, prcSubRect);
+	}
+
+	// Set up program state for GL Core Profile rendering
+	uint64_t programState = DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
+	
+	if ((*giScissorTest))
+	{
+		programState |= DRAW_TEXTURED_RECT_SCISSOR_ENABLED;
+	}
+
+	// Use R_DrawTexturedRect for GL Core Profile compatibility
+	texturedrectvertex_t vertices[4];
+
+	// Set up vertices with texture coordinates and positions
+	// Bottom-left vertex
+	vertices[0].col[0] = 1.0f;
+	vertices[0].col[1] = 1.0f;
+	vertices[0].col[2] = 1.0f;
+	vertices[0].col[3] = 1.0f;
+	vertices[0].texcoord[0] = fLeft;
+	vertices[0].texcoord[1] = fBottom;
+	vertices[0].pos[0] = (float)x;
+	vertices[0].pos[1] = (float)(y + iHeight);
+
+	// Bottom-right vertex
+	vertices[1].col[0] = 1.0f;
+	vertices[1].col[1] = 1.0f;
+	vertices[1].col[2] = 1.0f;
+	vertices[1].col[3] = 1.0f;
+	vertices[1].texcoord[0] = fRight;
+	vertices[1].texcoord[1] = fBottom;
+	vertices[1].pos[0] = (float)(x + iWidth);
+	vertices[1].pos[1] = (float)(y + iHeight);
+
+	// Top-right vertex
+	vertices[2].col[0] = 1.0f;
+	vertices[2].col[1] = 1.0f;
+	vertices[2].col[2] = 1.0f;
+	vertices[2].col[3] = 1.0f;
+	vertices[2].texcoord[0] = fRight;
+	vertices[2].texcoord[1] = fTop;
+	vertices[2].pos[0] = (float)(x + iWidth);
+	vertices[2].pos[1] = (float)y;
+
+	// Top-left vertex
+	vertices[3].col[0] = 1.0f;
+	vertices[3].col[1] = 1.0f;
+	vertices[3].col[2] = 1.0f;
+	vertices[3].col[3] = 1.0f;
+	vertices[3].texcoord[0] = fLeft;
+	vertices[3].texcoord[1] = fTop;
+	vertices[3].pos[0] = (float)x;
+	vertices[3].pos[1] = (float)y;
+
+	const uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
+
+	R_DrawTexturedRect(pFrame->gl_texturenum, vertices, _countof(vertices), indices, _countof(indices), programState, "Draw_Frame");
+}
+
+void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a)
+{
+	// Convert RGBA values from 0-255 to 0.0-1.0 range
+	float color[4] = {
+		r / 255.0f,
+		g / 255.0f, 
+		b / 255.0f,
+		a / 255.0f
+	};
+
+	// Set up program state for GL Core Profile rendering
+	// Use additive blend mode (GL_SRC_ALPHA, GL_ONE) as in original implementation
+	uint64_t programState = DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED;
+
+	// Use R_DrawFilledQuad for GL Core Profile compatibility
+	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "Draw_FillRGBA");
+}
+
+void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a)
+{
+	// Convert RGBA values from 0-255 to 0.0-1.0 range
+	float color[4] = {
+		r / 255.0f,
+		g / 255.0f,
+		b / 255.0f,
+		a / 255.0f
+	};
+
+	uint64_t programState = DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED;
+
+	// Use R_DrawFilledQuad for GL Core Profile compatibility
+	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "Draw_FillRGBABlend");
+}
+
+void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a)
+{
+	// Convert RGBA values from 0-255 to 0.0-1.0 range
+	float color[4] = {
+		r / 255.0f,
+		g / 255.0f,
+		b / 255.0f,
+		a / 255.0f
+	};
+
+	// Set up program state for GL Core Profile rendering
+	// Use additive blend mode (GL_SRC_ALPHA, GL_ONE) as in original implementation
+	uint64_t programState = DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED;
+
+	// Use R_DrawFilledQuad for GL Core Profile compatibility
+	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "NET_DrawRect");
 }

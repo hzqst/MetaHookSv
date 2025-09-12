@@ -1094,6 +1094,8 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
+	GL_BeginDebugGroup("R_DrawDecals");
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
@@ -1300,4 +1302,6 @@ void R_DrawDecals(cl_entity_t *ent)
 	GL_EndStencil();
 
 	(*gDecalSurfCount) = 0;
+
+	GL_EndDebugGroup();
 }

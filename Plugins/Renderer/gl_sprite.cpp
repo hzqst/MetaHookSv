@@ -495,6 +495,8 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 
 void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
+	GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", ent->model ? ent->model->name : "<empty>");
+
 	auto pSpriteVBOData = (sprite_vbo_t *)pSprite->cachespot;
 
 	auto scale = ent->curstate.scale;
@@ -774,26 +776,36 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		glUniform1f(6, math_clamp(lerp, 0.0f, 1.0f));
 	}
 
-	GL_Bind(frame->gl_texturenum);
+	const uint32_t indices [] = {0,1,2,2,3,0};
 
 	if (SpriteProgramState & SPRITE_LERP_ENABLED)
 	{
-		GL_EnableMultitexture();
-		GL_Bind(oldframe->gl_texturenum);
+		GL_BindVAO(r_empty_vao);
 
-		//TODO: core profile
-		glDrawArrays(GL_QUADS, 0, 4);
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
 
-		GL_Bind(0);
-		GL_DisableMultitexture();
+		GL_BindTextureUnit(1, GL_TEXTURE_2D, oldframe->gl_texturenum);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
+
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+		
+		GL_BindVAO(0);
 	}
 	else
 	{
-		//TODO: core profile
-		glDrawArrays(GL_QUADS, 0, 4);
-	}
+		GL_BindVAO(r_empty_vao);
 
-	GL_Bind(0);
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+		
+		GL_BindVAO(0);
+	}
 
 	r_sprite_drawcall++;
 	r_sprite_polys++;
@@ -808,6 +820,8 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	glEnable(GL_DEPTH_TEST);
 
 	GL_EndStencil();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawSpriteModel(cl_entity_t *ent)

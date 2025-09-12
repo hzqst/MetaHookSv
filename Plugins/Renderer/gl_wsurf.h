@@ -259,19 +259,15 @@ typedef struct
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
 
 extern CWorldSurfaceRenderer g_WorldSurfaceRenderer;
+
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
-extern bool r_fog_enabled;
-extern int r_fog_mode;
-extern float r_fog_control[3];
-extern float r_fog_color[4];
+
 extern float r_shadow_matrix[3][16];
 extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];
 extern float r_world_matrix_inv[16];
 extern float r_projection_matrix_inv[16];
-extern float r_viewmodel_projection_matrix[16];
-extern float r_viewmodel_projection_matrix_inv[16];
 extern float r_znear;
 extern float r_zfar;
 extern bool r_ortho;

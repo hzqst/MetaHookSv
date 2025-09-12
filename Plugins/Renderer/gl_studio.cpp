@@ -3142,6 +3142,8 @@ void R_StudioDrawMesh(
 	if (uskinref > ptexturehdr->numtextures)
 		return;
 
+	GL_BeginDebugGroup("R_StudioDrawMesh");
+
 	int flags = ptexture[uskinref].flags;
 
 	//Lighting related flags are ignored when r_fullbright >= 2
@@ -3196,6 +3198,8 @@ void R_StudioDrawMesh(
 			pskinref,
 			flags);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_StudioDrawSubmodel(
@@ -3270,11 +3274,15 @@ void R_GLStudioDrawPoints(void)
 		return;
 	}
 
+	GL_BeginDebugGroupFormat("R_GLStudioDrawPoints - %s", (*pstudiohdr)->name);
+
 	R_StudioDrawRenderDataBegin(pRenderData);
 
 	R_StudioDrawSubmodel((*pstudiohdr),(*psubmodel), pRenderData.get());
 
 	R_StudioDrawRenderDataEnd();
+
+	GL_EndDebugGroup();
 }
 
 void R_StudioTransformVector(vec3_t in, vec3_t out)
@@ -3284,11 +3292,22 @@ void R_StudioTransformVector(vec3_t in, vec3_t out)
 	out[2] = in[0] * (*rotationmatrix)[2][0] + in[1] * (*rotationmatrix)[2][1] + in[2] * (*rotationmatrix)[2][2] + (*rotationmatrix)[2][3];
 }
 
+static int g_StudioRendererRendermode = 0;
+
+void studioapi_GL_SetRenderMode(int rendermode)
+{
+	
+}
+
+void studioapi_SetupRenderer(int rendermode)
+{
+	g_StudioRendererRendermode = rendermode;
+}
+
 void studioapi_RestoreRenderer(void)
 {
 	glDepthMask(1);
-
-	gPrivateFuncs.studioapi_RestoreRenderer();
+	glDisable(GL_BLEND);
 }
 
 qboolean studioapi_StudioCheckBBox(void)
@@ -4733,17 +4752,6 @@ public:
 				glVertexAttribPointer(STUDIO_VA_TANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, tangent));
 				glVertexAttribPointer(STUDIO_VA_BITANGENT, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, bitangent));
 				glVertexAttribPointer(STUDIO_VA_SMOOTHNORMAL, 3, GL_FLOAT, false, sizeof(studiovertextbn_t), OFFSET(studiovertextbn_t, smoothnormal));
-			},
-			[]() {
-				glDisableVertexAttribArray(STUDIO_VA_POSITION);
-				glDisableVertexAttribArray(STUDIO_VA_NORMAL);
-				glDisableVertexAttribArray(STUDIO_VA_TEXCOORD);
-				glDisableVertexAttribArray(STUDIO_VA_PACKEDBONE);
-				glDisableVertexAttribArray(STUDIO_VA_TANGENT);
-				glDisableVertexAttribArray(STUDIO_VA_BITANGENT);
-				glDisableVertexAttribArray(STUDIO_VA_SMOOTHNORMAL);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-				glBindBuffer(GL_ARRAY_BUFFER, 0);
 			});
 	}
 };

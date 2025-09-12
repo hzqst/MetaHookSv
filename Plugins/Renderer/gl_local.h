@@ -67,6 +67,10 @@ typedef struct refdef_s
 	qboolean *onlyClientDraws;
 }refdef_t;
 
+extern GLuint r_empty_vao;
+
+extern vec4_t g_GLColor;
+
 extern refdef_t r_refdef;
 extern refdef_GoldSrc_t *r_refdef_GoldSrc;
 extern refdef_SvEngine_t *r_refdef_SvEngine;
@@ -79,6 +83,11 @@ extern float r_yfov_viewmodel;
 extern float r_xfov_currentpass;
 extern float r_yfov_currentpass;
 extern float r_screenaspect;
+
+extern bool r_fog_enabled;
+extern int r_fog_mode;
+extern float r_fog_control[3];
+extern float r_fog_color[4];
 
 extern cl_entity_t* r_worldentity;
 extern model_t** cl_worldmodel;
@@ -160,6 +169,12 @@ extern float *g_UserFogColor;
 extern float *g_UserFogDensity;
 extern float *g_UserFogStart;
 extern float *g_UserFogEnd;
+
+extern qboolean* giScissorTest;
+extern int* scissor_x;
+extern int* scissor_y;
+extern int* scissor_width;
+extern int* scissor_height;
 
 extern model_t *mod_known;
 extern int *mod_numknown;
@@ -370,12 +385,6 @@ extern cvar_t* r_wsurf_sky_fog;
 
 extern cvar_t* gl_nearplane;
 
-//extern cvar_t* viewmodel_nearplane;
-
-//extern cvar_t* viewmodel_farplane;
-
-//extern cvar_t* viewmodel_scale;
-
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -407,7 +416,7 @@ void R_AnimateLight(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
 void R_SetupSceneUBO(void);
-void R_SetupCameraUBO(bool bViewModel);
+void R_SetupCameraUBO(void);
 void R_GameFrameStart();
 void R_RenderFrameStart();
 void R_RenderEndFrame();
@@ -432,6 +441,7 @@ void GL_Shutdown(void);
 void GL_Init(void);
 void GL_Set2D();
 void GL_Finish2D();
+void GL_Set2DEx(int x, int y, int width, int height);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
 GLuint GL_GenTexture(void);
@@ -455,8 +465,8 @@ void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
 void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
-void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind, const std::function<void()>& unbind);
-void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind, const std::function<void()>& unbind);
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind);
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind);
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
@@ -482,19 +492,23 @@ void R_PushWorldMatrix();
 void R_PopWorldMatrix();
 void R_LoadIdentityForWorldMatrix();
 void R_TranslateWorldMatrix(float x, float y, float z);
+void R_SetupPlayerViewWorldMatrix(const vec3_t origin, const vec3_t viewangles);
 
 float* R_GetProjectionMatrix();
 void R_PushProjectionMatrix();
 void R_PopProjectionMatrix();
 void R_LoadIdentityForProjectionMatrix();
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
+void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar);
 
 void GL_BeginDebugGroup(const char* name);
+void GL_BeginDebugGroupFormat(const char* fmt, ...);
 void GL_EndDebugGroup();
 
 void __stdcall SCClient_glBegin(int GLPrimitiveCode);
 void __stdcall SCClient_glEnd();
-void __stdcall SCClient_glColor4f(float r, float g, float b, float a);
+void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a);
+void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
@@ -523,6 +537,11 @@ void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
 void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall);
 bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int);
 void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+
+void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a);
+void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a);
+void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a);
 
 void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
 void* Draw_CacheGet(cachewad_t* wad, int index);
@@ -556,7 +575,8 @@ FBO_Container_t* GL_GetCurrentRenderingFBO();
 void GL_BindFrameBuffer(FBO_Container_t *fbo);
 void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
 
-void GL_GenFrameBuffer(FBO_Container_t *s);
+const char* GL_GetFrameBufferName(FBO_Container_t* s);
+void GL_GenFrameBuffer(FBO_Container_t* s, const char* szFrameBufferName);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
@@ -638,9 +658,7 @@ void GL_PopMatrix(void);
 void GL_PushDrawState(void);
 void GL_PopDrawState(void);
 
-void GL_Begin2D(void);
-void GL_Begin2DEx(int x, int y, int width, int height);
-void GL_End2D(void);
+void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum);
 
 void GL_ClearColor(vec4_t color);
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask);
@@ -653,9 +671,6 @@ void GL_BeginStencilWrite(int ref, int write_mask);
 void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_EndStencil();
-
-void GL_BeginFullScreenQuad(bool enableDepthTest);
-void GL_EndFullScreenQuad(void);
 
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);

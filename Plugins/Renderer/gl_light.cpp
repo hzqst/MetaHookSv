@@ -287,6 +287,8 @@ void R_ShutdownLight(void)
 
 void R_InitLight(void)
 {
+	r_empty_vao = GL_GenVAO();
+
 	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
@@ -361,9 +363,6 @@ void R_InitLight(void)
 	[]() {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-	}, 
-	[]() {
-		//glDisableVertexAttribArray(0);
 	});
 
 	std::vector<float> coneVertices;
@@ -425,9 +424,6 @@ void R_InitLight(void)
 	[]() {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-	},
-	[]() {
-		//glDisableVertexAttribArray(0);
 	});
 
 	r_draw_gbuffer = false;
@@ -941,6 +937,12 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 void R_LightShadingPass(void)
 {
+	GL_BeginDebugGroup("R_LightShadingPass");
+
+	//Write to GBuffer->lightmap only whatsoever
+	GL_BindFrameBuffer(&s_GBufferFBO);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP);
+
 	//Disable depth write and re-enable later after light pass.
 	glDepthMask(GL_FALSE);
 
@@ -948,41 +950,30 @@ void R_LightShadingPass(void)
 	glBlendFunc(GL_ONE, GL_ONE);
 
 	//Texture unit 0 = GBuffer diffuse array
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+	GL_BindTextureUnit(DSHADE_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
 	//Texture unit 1 = GBuffer lightmap array
-	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+	GL_BindTextureUnit(DSHADE_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 
 	//Texture unit 2 = GBuffer worldnorm array
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_WORLDNORM_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+	GL_BindTextureUnit(DSHADE_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
 	//Texture unit 3 = GBuffer specular array
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SPECULAR_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_DEPTH_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	//Texture unit 5 = Stencil texture
 	if (s_GBufferFBO.s_hBackBufferStencilView)
 	{
-		glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_STENCIL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+		GL_BindTextureUnit(DSHADE_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	}
 
 	//Texture unit 6 = Flashlight cone texture
 	if (r_flashlight_cone_texture)
 	{
-		glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_CONE_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
+		GL_BindTextureUnit(DSHADE_BIND_CONE_TEXTURE, GL_TEXTURE_2D, r_flashlight_cone_texture);
 	}
 
 	const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
@@ -990,6 +981,8 @@ void R_LightShadingPass(void)
 		if (args->bVolume)
 		{
 			GL_BindVAO(r_sphere_vao);
+
+			Sys_Error("TODO");
 
 			glPushMatrix();
 			glLoadIdentity();
@@ -1020,8 +1013,6 @@ void R_LightShadingPass(void)
 		}
 		else
 		{
-			GL_BeginFullScreenQuad(false);
-
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
 
 			dlight_program_t prog = { 0 };
@@ -1035,9 +1026,8 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightspecularpow, args->specularpow);
 
 			//TODO: core profile
-			glDrawArrays(GL_QUADS, 0, 4);
-
-			GL_EndFullScreenQuad();
+			//glDrawArrays(GL_QUADS, 0, 4);
+			Sys_Error("TODO");
 		}
 	};
 
@@ -1070,9 +1060,7 @@ void R_LightShadingPass(void)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1103,25 +1091,16 @@ void R_LightShadingPass(void)
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
 
 			GL_BindVAO(0);
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
-			{
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, 0);
-			}
 		}
 		else
 		{
-			GL_BeginFullScreenQuad(false);
-
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED;
 
 			if (r_flashlight_cone_texture)
@@ -1133,9 +1112,7 @@ void R_LightShadingPass(void)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1164,21 +1141,12 @@ void R_LightShadingPass(void)
 			}
 
 			//TODO: core profile
-			glDrawArrays(GL_QUADS, 0, 4);
-
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
-			{
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
-			}
-
-			GL_EndFullScreenQuad();
+			Sys_Error("TODO");
+			//glDrawArrays(GL_QUADS, 0, 4);
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, 0);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
 		}
 
@@ -1186,31 +1154,21 @@ void R_LightShadingPass(void)
 
 	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_CONE_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(DSHADE_BIND_CONE_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_STENCIL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(DSHADE_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SPECULAR_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_WORLDNORM_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	GL_BindTextureUnit(DSHADE_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_LIGHTMAP_TEXTURE);
-	GL_Bind(0);
+	GL_BindTextureUnit(DSHADE_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
 
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	GL_BindTextureUnit(DSHADE_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -1219,21 +1177,23 @@ void R_LightShadingPass(void)
 
 void R_FinalShadingPass(FBO_Container_t *dst)
 {
-	//Re-enable depth write
-	glDepthMask(GL_TRUE);
-
 	//Write GBuffer depth and stencil buffer into main framebuffer
 	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
 
+	GL_BeginDebugGroupFormat("R_FinalShadingPass - write to %s", GL_GetFrameBufferName(dst));
+
+	//Re-enable depth write
+	glDepthMask(GL_TRUE);
+
 	GL_BindFrameBuffer(dst);
 
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
+
 	//Only draw color0 channel
-	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_DIFFUSE);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0 + 0);
 
 	//No blend for final shading pass
 	glDisable(GL_BLEND);
-
-	GL_BeginFullScreenQuad(false);
 
 	program_state_t FinalProgramState = 0;
 
@@ -1273,79 +1233,60 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
+	GL_BindVAO(r_empty_vao);
+
 	//Texture unit 0 = GBuffer texture array
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+	GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
 	//Texture unit 1 = GBuffer lightmap array
-	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+	GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 
 	//Texture unit 2 = GBuffer worldnorm array
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+	GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
 	//Texture unit 3 = GBuffer specular array
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+	GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	//Texture unit 5 = Stencil texture
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_STENCIL_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+	GL_BindTextureUnit(DFINAL_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Disable texture unit 5 (stencil)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_STENCIL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 5 = Stencil texture
+	GL_BindTextureUnit(DFINAL_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 4 (depth)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 4 = Depth texture
+	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 3 (specular)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 3 = GBuffer specular array
+	GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 2 (worldnorm)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 2 = GBuffer worldnorm array
+	GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 1 (lightmap)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-	GL_Bind(0);
+	//Texture unit 1 = GBuffer lightmap array
+	GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
 
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	//Texture unit 0 = GBuffer texture array
+	GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_EndDebugGroup();
 }
 
 void R_EndRenderGBuffer(FBO_Container_t *dst)
 {
-	R_LinearizeDepth(&s_GBufferFBO, &s_DepthLinearFBO);
-
 	if (R_IsAmbientOcclusionEnabled())
 	{
+		R_LinearizeDepth(&s_GBufferFBO, &s_DepthLinearFBO);
 		R_AmbientOcclusion(&s_DepthLinearFBO, &s_GBufferFBO);
 	}
-
-	//Write to GBuffer->lightmap only whatsoever
-	GL_BindFrameBuffer(&s_GBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP);
 
 	R_LightShadingPass();
 
@@ -1382,8 +1323,6 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 
 	if (color)
 	{
-		GL_BeginFullScreenQuad(false);
-
 		//No blend for final shading pass
 		glDisable(GL_BLEND);
 
@@ -1392,56 +1331,42 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 		//Setup final program
 		R_UseDFinalProgram(FinalProgramState, NULL);
 
-		//Texture unit 0 = GBuffer
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+		GL_BindVAO(r_empty_vao);
+
+		//Texture unit 0 = GBuffer diffuse color
+		GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
 		//Texture unit 1 = GBuffer lightmap array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
+		GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 		
 		//Texture unit 2 = GBuffer worldnorm array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+		GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
 		//Texture unit 4 = GBuffer specular array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+		GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 		//Texture unit 4 = GBuffer depth texture
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//Disable texture unit 4 (GBuffer depth)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 3 (GBuffer specular)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 2 (GBuffer worldnorm)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 1 (GBuffer lightmap)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
 		
 		//Switch back to texture unit 0 (GBuffer diffuse)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DIFFUSE_TEXTURE);
+		GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+		GL_BindVAO(0);
 
 		GL_UseProgram(0);
-
-		GL_EndFullScreenQuad();
 	}
 }

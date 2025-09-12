@@ -443,7 +443,6 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\depthlinearize.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\down_sample.frag.glsl" />

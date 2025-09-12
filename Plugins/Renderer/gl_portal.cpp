@@ -315,19 +315,15 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	R_UsePortalProgram(PortalProgramState, &prog);
 
-	GL_Bind(textureId);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, textureId);
 
-	GL_EnableMultitexture();
-
-	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, pPortalModel->texinfo->texture->gl_texturenum);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)(0), pPortalModel->drawCount, 0);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 
-	GL_DisableMultitexture();
-
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
 
@@ -366,19 +362,15 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(PortalProgramState, &prog);
 
-	GL_Bind(textureId);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, textureId);
 
-	GL_EnableMultitexture();
-
-	GL_Bind(pPortalModel->texinfo->texture->gl_texturenum);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, pPortalModel->texinfo->texture->gl_texturenum);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pPortalModel->drawCount, 0);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 
-	GL_DisableMultitexture();
-
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
 

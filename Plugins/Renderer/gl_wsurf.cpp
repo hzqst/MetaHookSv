@@ -13,9 +13,6 @@ float r_shadow_matrix[3][16] = { 0 };
 float r_world_matrix_inv[16] = { 0 };
 float r_projection_matrix_inv[16] = { 0 };
 
-float r_viewmodel_projection_matrix[16] = { 0 };
-float r_viewmodel_projection_matrix_inv[16] = { 0 };
-
 vec3_t r_frustum_origin[4] = { 0 };
 vec3_t r_frustum_vec[4] = { 0 };
 float r_znear = 0;
@@ -1316,25 +1313,7 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, parallaxtexcoord));
 			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, speculartexcoord));
 		}
-		},
-		[]()
-		{
-			glDisableVertexAttribArray(WSURF_VA_POSITION);
-			glDisableVertexAttribArray(WSURF_VA_NORMAL);
-			glDisableVertexAttribArray(WSURF_VA_S_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_STYLES);
-
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		});
+	});
 
 	pWorldModel->VAOMap[VBOStates] = hVAO;
 
@@ -2087,9 +2066,9 @@ void R_GenerateSceneUBO(void)
 
 	GL_BindStatesForVAO(
 		g_WorldSurfaceRenderer.hDecalVAO,
-		g_WorldSurfaceRenderer.hDecalVBO,
-		g_WorldSurfaceRenderer.hDecalEBO,
 		[]() {
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO);
+
 			glEnableVertexAttribArray(WSURF_VA_POSITION);
 			glEnableVertexAttribArray(WSURF_VA_NORMAL);
 			glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
@@ -2102,6 +2081,7 @@ void R_GenerateSceneUBO(void)
 			glEnableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_STYLES);
+
 			glVertexAttribPointer(WSURF_VA_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
 			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
 			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, s_tangent));
@@ -2114,21 +2094,10 @@ void R_GenerateSceneUBO(void)
 			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
 			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
 			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
-		},
-		[]() {
-			glDisableVertexAttribArray(WSURF_VA_POSITION);
-			glDisableVertexAttribArray(WSURF_VA_NORMAL);
-			glDisableVertexAttribArray(WSURF_VA_S_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_STYLES);
-		});
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalEBO);
+		}
+	);
 
 	if (g_bUseOITBlend)
 	{
@@ -2212,6 +2181,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	if (!texchain.drawCount)
 		return;
 
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafSolid");
+
 	program_state_t WSurfProgramState = 0;
 
 	if (R_IsRenderingGBuffer())
@@ -2247,10 +2218,15 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 	R_DrawWorldSurfaceLeafEnd();
 
+	GL_EndDebugGroup();
+
+
 }//R_DrawWorldSurfaceLeafSolid
 
 void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafStatic");
+
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC];
 
 	for (size_t i = 0; i < vTexChainList.size(); ++i)
@@ -2441,6 +2417,9 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
+
+	GL_EndDebugGroup();
+
 }//R_DrawWorldSurfaceLeafStatic
 
 texture_t* R_GetAnimatedTexture(texture_t* base)
@@ -2516,6 +2495,8 @@ texture_t* R_GetAnimatedTexture(texture_t* base)
 
 void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafAnim");
+
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM];
 
 	for (size_t i = 0; i < vTexChainList.size(); ++i)
@@ -2707,6 +2688,9 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
+
+	GL_EndDebugGroup();
+
 }//R_DrawWorldSurfaceLeafAnim
 
 void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
@@ -2715,6 +2699,8 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	if (!texchain.drawCount)
 		return;
+
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafSky");
 
 	auto texture = texchain.texture;
 
@@ -2843,6 +2829,8 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	R_DrawWorldSurfaceLeafEnd();
 
+	GL_EndDebugGroup();
+
 }//R_DrawWorldSurfaceLeafSky
 
 float R_ScrollSpeed(void)
@@ -2859,6 +2847,8 @@ float R_ScrollSpeed(void)
 
 void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, cl_entity_t* ent)
 {
+	GL_BeginDebugGroupFormat("R_DrawWorldSurfaceModel - %s", ent->model ? ent->model->name : "<empty>");
+
 	entity_ubo_t EntityUBO;
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
@@ -2870,9 +2860,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
-		glActiveTexture(GL_TEXTURE0);
+		GL_BindTextureUnit(WSURF_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
 	}
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
@@ -2881,9 +2869,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
-				glActiveTexture(GL_TEXTURE0);
+				GL_BindTextureUnit(WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx, GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
 			}
 		}
 	}
@@ -2981,9 +2967,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 	if (g_WorldSurfaceRenderer.bShadowmapTexture)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glActiveTexture(GL_TEXTURE0);
+		GL_BindTextureUnit(WSURF_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D_ARRAY, 0);
 	}
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
@@ -2992,17 +2976,17 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+				GL_BindTextureUnit(WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx, GL_TEXTURE_2D_ARRAY, 0);
 			}
 		}
-		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (pLeaf)
 	{
 		R_DrawWaters(pModel.get(), pLeaf.get(), ent);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_InitWSurf(void)
@@ -3532,6 +3516,9 @@ detail_texture_cache_t* R_FindDetailTextureCache(int texId)
 
 void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, program_state_t* WSurfProgramState)
 {
+	if (!r_detailtextures)
+		return;
+
 	if (!r_detailtextures->value)
 		return;
 
@@ -3548,9 +3535,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
@@ -3558,9 +3543,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
@@ -3568,9 +3551,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
@@ -3578,9 +3559,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
@@ -3589,6 +3568,9 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t* WSurfProgramState)
 {
+	if (!r_detailtextures)
+		return;
+
 	if (!r_detailtextures->value)
 		return;
 
@@ -3610,41 +3592,28 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_NORMALTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_PARALLAXTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_SPECULARTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
-	}
-
-	if (bRestore)
-	{
-		glActiveTexture(GL_TEXTURE0);
+		GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 }
 
@@ -4472,35 +4441,23 @@ void R_DrawBrushModel(cl_entity_t* e)
 
 	glDepthMask(GL_TRUE);
 	//TODO: Fixed-function can be done in shader
-	glDisable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_NOTEQUAL, 0);
+	//glDisable(GL_ALPHA_TEST);
+	//glAlphaFunc(GL_NOTEQUAL, 0);
 	glDisable(GL_BLEND);
 }
 
-void R_SetupCameraUBO(bool bViewModel)
+void R_SetupCameraUBO()
 {
 	camera_ubo_t CameraUBO;
 
-	if (!bViewModel)
-	{
-		InvertMatrix(r_world_matrix, r_world_matrix_inv);
-		InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
+	InvertMatrix(r_world_matrix, r_world_matrix_inv);
+	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
-		memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-		memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-		memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-		memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
-	}
-	else
-	{
-		InvertMatrix(r_world_matrix, r_world_matrix_inv);
-		InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
+	memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 
-		memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-		memcpy(CameraUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
-		memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-		memcpy(CameraUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
-	}
 	auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
 
 	if (CurrentSceneFBO)
@@ -4705,7 +4662,7 @@ void R_PrepareDrawWorld(void)
 		glMatrixMode(GL_MODELVIEW);
 	}
 
-	R_SetupCameraUBO(false);
+	R_SetupCameraUBO();
 	R_SetupSceneUBO();
 	R_SetupDLightUBO();
 }
@@ -4742,8 +4699,8 @@ void R_DrawWorld(void)
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
 
 	//Just for backward-compatibility
-	glColor3f(1.0f, 1.0f, 1.0f);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//glColor3f(1.0f, 1.0f, 1.0f);
+	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = true;

@@ -34,6 +34,8 @@ static hook_t* g_phook_R_StudioSaveBones = NULL;
 static hook_t *g_phook_R_StudioRenderModel = NULL;
 static hook_t *g_phook_R_StudioRenderFinal = NULL;
 
+static hook_t* g_phook_studioapi_GL_SetRenderMode = NULL;
+static hook_t* g_phook_studioapi_SetupRenderer = NULL;
 static hook_t* g_phook_studioapi_RestoreRenderer = NULL;
 static hook_t* g_phook_studioapi_StudioDynamicLight = NULL;
 static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
@@ -42,6 +44,8 @@ static hook_t* g_phook_CL_FxBlend = NULL;
 
 void EngineStudio_UninstallHooks(void)
 {
+	Uninstall_Hook(studioapi_GL_SetRenderMode);
+	Uninstall_Hook(studioapi_SetupRenderer);
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
@@ -965,6 +969,8 @@ void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_
 
 void EngineStudio_InstalHooks()
 {
+	Install_InlineHook(studioapi_GL_SetRenderMode);
+	Install_InlineHook(studioapi_SetupRenderer);
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
@@ -1790,6 +1796,8 @@ void ClientStudio_InstallHooks()
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
+	gPrivateFuncs.studioapi_GL_SetRenderMode = pstudio->GL_SetRenderMode;
+	gPrivateFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;

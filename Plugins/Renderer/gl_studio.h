@@ -400,7 +400,10 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, CStudioModel
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
+void studioapi_GL_SetRenderMode(int rendermode);
+void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
+
 void UpdatePlayerPitch(cl_entity_t* ent, float a2);
 
 int __fastcall GameStudioRenderer_StudioDrawPlayer(void* pthis, int dummy, int flags, struct entity_state_s* pplayer);

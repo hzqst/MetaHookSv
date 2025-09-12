@@ -81,8 +81,10 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 	Engine_InstallHooks();
-	R_RedirectLegacyOpenGLCall(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+
 	R_PatchResetLatched(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+
+	R_RedirectEngineLegacyOpenGLCall(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	VGUI2Extension_Init();
 	BaseUI_InstallHooks();
@@ -137,6 +139,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();
 	UtilThreadTask_Init();
+
+	R_RedirectClientLegacyOpenGLCall(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 }
 
 void IPluginsV4::ExitGame(int iResult)

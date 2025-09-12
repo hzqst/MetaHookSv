@@ -504,18 +504,16 @@ void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
-void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind, const std::function<void()>& unbind)
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind)
 {
 	GL_BindVAO(VAO);
 
 	bind();
 
 	GL_BindVAO(0);
-
-	unbind();
 }
 
-void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind, const std::function<void()>& unbind)
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind)
 {
 	GL_BindVAO(VAO);
 
@@ -525,11 +523,6 @@ void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function
 	bind();
 
 	GL_BindVAO(0);
-
-	unbind();
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GL_Bind(int texnum)

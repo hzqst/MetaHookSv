@@ -169,6 +169,8 @@ bool R_ShouldRenderShadow(void)
 
 bool R_ShouldRenderShadowScene(void)
 {
+	return false;
+
 	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
 		return false;
 

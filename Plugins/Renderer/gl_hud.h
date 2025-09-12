@@ -165,7 +165,7 @@ extern int last_luminance;
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 
-void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst);
+void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst);
 void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst);
 void R_ClearOITBuffer(void);
 void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst);
@@ -194,6 +194,9 @@ void R_InitPostProcess(void);
 
 void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);
 void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);
+
+void R_DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
+void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
 
 #define HUD_DEBUG_TEXARRAY 1
 #define HUD_DEBUG_SHADOW 2
