@@ -905,3 +905,62 @@ void Matrix4x4_Transpose(float out[4][4], const float in1[4][4])
 	out[3][2] = in1[2][3];
 	out[3][3] = in1[3][3];
 }
+
+
+void Matrix4x4_CreateFromEntityEx(float out[4][4], const vec3_t angles, const vec3_t origin, const vec3_t scales)
+{
+	// Convert angles from degrees to radians
+	float yaw = angles[1] * M_PI / 180.0f;   // Z rotation
+	float pitch = angles[0] * M_PI / 180.0f; // Y rotation
+	float roll = angles[2] * M_PI / 180.0f;  // X rotation
+
+	float cy = cos(yaw);
+	float sy = sin(yaw);
+	float cp = cos(pitch);
+	float sp = sin(pitch);
+	float cr = cos(roll);
+	float sr = sin(roll);
+
+	// Build rotation matrix (ZYX order)
+	float rotMatrix[4][4];
+	rotMatrix[0][0] = cy * cp;
+	rotMatrix[0][1] = cy * sp * sr - sy * cr;
+	rotMatrix[0][2] = cy * sp * cr + sy * sr;
+	rotMatrix[0][3] = 0.0f;
+
+	rotMatrix[1][0] = sy * cp;
+	rotMatrix[1][1] = sy * sp * sr + cy * cr;
+	rotMatrix[1][2] = sy * sp * cr - cy * sr;
+	rotMatrix[1][3] = 0.0f;
+
+	rotMatrix[2][0] = -sp;
+	rotMatrix[2][1] = cp * sr;
+	rotMatrix[2][2] = cp * cr;
+	rotMatrix[2][3] = 0.0f;
+
+	rotMatrix[3][0] = 0.0f;
+	rotMatrix[3][1] = 0.0f;
+	rotMatrix[3][2] = 0.0f;
+	rotMatrix[3][3] = 1.0f;
+
+	// Apply scale and translation
+	out[0][0] = rotMatrix[0][0] * scales[0];
+	out[0][1] = rotMatrix[0][1] * scales[1];
+	out[0][2] = rotMatrix[0][2] * scales[2];
+	out[0][3] = origin[0];
+
+	out[1][0] = rotMatrix[1][0] * scales[0];
+	out[1][1] = rotMatrix[1][1] * scales[1];
+	out[1][2] = rotMatrix[1][2] * scales[2];
+	out[1][3] = origin[1];
+
+	out[2][0] = rotMatrix[2][0] * scales[0];
+	out[2][1] = rotMatrix[2][1] * scales[1];
+	out[2][2] = rotMatrix[2][2] * scales[2];
+	out[2][3] = origin[2];
+
+	out[3][0] = 0.0f;
+	out[3][1] = 0.0f;
+	out[3][2] = 0.0f;
+	out[3][3] = 1.0f;
+}

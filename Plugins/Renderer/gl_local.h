@@ -667,6 +667,7 @@ void GL_PopDrawState(void);
 void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum);
 
 void GL_ClearColor(vec4_t color);
+void GL_ClearDepth(float depth);
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask);
 void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask);
 void GL_ClearStencil(int stencilmask);

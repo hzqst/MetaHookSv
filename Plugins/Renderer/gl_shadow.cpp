@@ -344,6 +344,27 @@ void R_RenderShadowScene(void)
 	}
 }
 
+void R_SetupShadowMatrix(float out[4][4])
+{
+	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+	// Define bias matrix to map from [-1,1] to [0,1] coordinate space
+	const float bias[4][4] = {
+		{0.5f, 0.0f, 0.0f, 0.5f},
+		{0.0f, 0.5f, 0.0f, 0.5f},
+		{0.0f, 0.0f, 0.5f, 0.5f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	// First multiply projection matrix with world matrix
+	float projWorldMatrix[4][4];
+	Matrix4x4_Multiply(projWorldMatrix, *projMatrix, *worldMatrix);
+
+	// Then multiply bias matrix with the result
+	Matrix4x4_Multiply(out, (float(*)[4])bias, projWorldMatrix);
+}
+
 void R_RenderShadowDynamicLights(void)
 {
 	if (!r_deferred_lighting->value)
@@ -353,10 +374,10 @@ void R_RenderShadowDynamicLights(void)
 	{
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-				if (args->shadowtex)
-				{
-					args->shadowtex->ready = false;
-				}
+			if (args->shadowtex)
+			{
+				args->shadowtex->ready = false;
+			}
 		};
 
 		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
@@ -379,13 +400,13 @@ void R_RenderShadowDynamicLights(void)
 						current_shadow_texture = args->shadowtex;
 
 						GL_BindFrameBufferWithTextures(&s_ShadowFBO, args->shadowtex->color, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
-						glDrawBuffer(GL_NONE);
+						//glDrawBuffer(GL_NONE);
 
-						glDisable(GL_BLEND);
-						glDisable(GL_ALPHA_TEST);
-						glEnable(GL_DEPTH_TEST);
-						glDepthFunc(GL_LEQUAL);
-						glDepthMask(GL_TRUE);
+						//glDisable(GL_ALPHA_TEST);
+						//glDisable(GL_BLEND);
+						//glEnable(GL_DEPTH_TEST);
+						//glDepthFunc(GL_LEQUAL);
+						//glDepthMask(GL_TRUE);
 
 						glEnable(GL_POLYGON_OFFSET_FILL);
 						glPolygonOffset(10, 10);
@@ -422,26 +443,11 @@ void R_RenderShadowDynamicLights(void)
 							R_RenderScene();
 						}
 
-						const float bias[16] = {
-							0.5f, 0.0f, 0.0f, 0.0f,
-							0.0f, 0.5f, 0.0f, 0.0f,
-							0.0f, 0.0f, 0.5f, 0.0f,
-							0.5f, 0.5f, 0.5f, 1.0f
-						};
-
-						glMatrixMode(GL_TEXTURE);
-						glPushMatrix();
-						glLoadIdentity();
-						glLoadMatrixf(bias);
-						glMultMatrixf(r_projection_matrix);
-						glMultMatrixf(r_world_matrix);
-						glGetFloatv(GL_TEXTURE_MATRIX, (float *)args->shadowtex->matrix);
-						glPopMatrix();
-						glMatrixMode(GL_MODELVIEW);
+						R_SetupShadowMatrix(args->shadowtex->matrix);
 
 						glDisable(GL_POLYGON_OFFSET_FILL);
 						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-						glDrawBuffer(GL_COLOR_ATTACHMENT0);
+						//glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 						R_PopRefDef();
 

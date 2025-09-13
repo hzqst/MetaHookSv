@@ -984,23 +984,19 @@ void R_LightShadingPass(void)
 
 			GL_BindVAO(r_sphere_vao);
 
-			Sys_Error("TODO");
+			vec3_t angles = { 0, 0, 0 };
+			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+			vec3_t scales = { args->radius, args->radius, args->radius };
 
-			glPushMatrix();
-			glLoadIdentity();
-			glTranslatef(args->origin[0], args->origin[1], args->origin[2]);
-			glScalef(args->radius, args->radius, args->radius);
-
-			float modelmatrix[16];
-			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-			glPopMatrix();
+			float modelmatrix[4][4];
+			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix);
 			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
 			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
 			glUniform1f(prog.u_lightradius, args->radius);
@@ -1010,6 +1006,8 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightspecularpow, args->specularpow);
 
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
+
+			GL_UseProgram(0);
 
 			GL_BindVAO(0);
 
@@ -1035,9 +1033,10 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightspecular, args->specular);
 			glUniform1f(prog.u_lightspecularpow, args->specularpow);
 
-			//TODO: core profile
-			//glDrawArrays(GL_QUADS, 0, 4);
-			Sys_Error("TODO");
+			const uint32_t indices[] = { 0,1,2,2,3,0 };
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+			GL_UseProgram(0);
 
 			GL_BindVAO(0);
 
@@ -1055,17 +1054,12 @@ void R_LightShadingPass(void)
 
 			GL_BindVAO(r_cone_vao);
 
-			glPushMatrix();
-			glLoadIdentity();
-			glTranslatef(args->origin[0], args->origin[1], args->origin[2]);
-			glRotatef(args->angle[1], 0, 0, 1);
-			glRotatef(args->angle[0], 0, 1, 0);
-			glRotatef(args->angle[2], 1, 0, 0);
-			glScalef(args->distance, args->radius, args->radius);
+			vec3_t angles = { args->angle[0], args->angle[1], args->angle[2] };
+			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+			vec3_t scales = { args->radius, args->radius, args->radius };
 
-			float modelmatrix[16];
-			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-			glPopMatrix();
+			float modelmatrix[4][4];
+			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
 
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
@@ -1074,17 +1068,10 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
-			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
-			}
-
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix);
 			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
 			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
 			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
@@ -1107,12 +1094,21 @@ void R_LightShadingPass(void)
 				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
+			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+			}
+
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
+
+			GL_UseProgram(0);
 
 			GL_BindVAO(0);
 
@@ -1133,13 +1129,6 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
-			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
-			}
-
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
@@ -1165,9 +1154,15 @@ void R_LightShadingPass(void)
 				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
-			//TODO: core profile
-			Sys_Error("TODO");
-			//glDrawArrays(GL_QUADS, 0, 4);
+			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+			}
+
+			const uint32_t indices[] = { 0,1,2,2,3,0 };
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
@@ -1180,7 +1175,6 @@ void R_LightShadingPass(void)
 
 			GL_EndDebugGroup();
 		}
-
 	};
 
 	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);

@@ -778,6 +778,23 @@ void GL_ClearColor(vec4_t color)
 #endif
 }
 
+void GL_ClearDepth(float depth)
+{
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearDepthStencil");
+#endif
+
+	glDepthMask(GL_TRUE);
+
+	glClearDepth(depth);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
+}
+
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 {
 #ifdef _DEBUG

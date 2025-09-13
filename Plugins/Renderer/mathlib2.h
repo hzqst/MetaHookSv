@@ -63,6 +63,7 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void R_ConcatRotations(float in1[3][3], float in2[3][3], float out[3][3]);
 void R_ConcatTransforms(float in1[3][4], float in2[3][4], float out[3][4]);
 void Matrix4x4_CreateFromEntity(float out[4][4], const vec3_t angles, const vec3_t origin, float scale);
+void Matrix4x4_CreateFromEntityEx(float out[4][4], const vec3_t angles, const vec3_t origin, const vec3_t scales);
 
 void FloorDivMod(double numer, double denom, int *quotient, int *rem);
 int GreatestCommonDivisor(int i1, int i2);

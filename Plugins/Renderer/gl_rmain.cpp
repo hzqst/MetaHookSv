@@ -1009,13 +1009,18 @@ public:
 	std::vector<uint32_t> Indices{};
 	int RenderMode{ };
 	int DrawRenderMode{ };
+	GLuint hVAO{};
 };
 
 CTriAPICommand gTriAPICommand;
 
 void triapi_Shutdown()
 {
-
+	if (gTriAPICommand.hVAO)
+	{
+		GL_DeleteVAO(gTriAPICommand.hVAO);
+		gTriAPICommand.hVAO = 0;
+	}
 }
 
 void triapi_RenderMode(int mode)
@@ -1208,6 +1213,14 @@ void triapi_End()
 		triapi_EndClear();
 		return;
 	}
+
+	if (!gTriAPICommand.hVAO)
+	{
+		gTriAPICommand.hVAO = GL_GenVAO();
+	}
+
+	GL_BindVAO(gTriAPICommand.hVAO);
+
 	glEnableVertexAttribArray(TRIAPI_VA_POSITION);
 	glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
 	glEnableVertexAttribArray(TRIAPI_VA_COLOR);
@@ -1415,10 +1428,6 @@ void triapi_End()
 	}
 
 	GL_UseProgram(0);
-
-	glDisableVertexAttribArray(TRIAPI_VA_POSITION);
-	glDisableVertexAttribArray(TRIAPI_VA_TEXCOORD);
-	glDisableVertexAttribArray(TRIAPI_VA_COLOR);
 
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
@@ -2701,9 +2710,9 @@ void R_DrawViewModel(void)
 	{
 		R_SetupGLForViewModel();
 
-		r_draw_viewmodel = true;
+		GL_ClearDepth(1.0f);
 
-		glDepthRange(0, 0.1);
+		r_draw_viewmodel = true;
 
 		switch ((*currententity)->model->type)
 		{
@@ -2747,11 +2756,6 @@ void R_DrawViewModel(void)
 		}
 
 		r_draw_viewmodel = false;
-
-		glDepthRange(0.1, 1);
-
-		//Valve add this for what? idk we gonna remove this shit when move to core profile
-		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	}
 	else
 	{
@@ -3721,15 +3725,6 @@ void R_SetupGL(void)
 	}
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
-
-	if (R_ShouldDrawViewModel() && !R_IsRenderingShadowView() && !R_IsRenderingWaterView() && !R_IsRenderingPortal())
-	{
-		glDepthRange(0.1, 1);
-	}
-	else
-	{
-		glDepthRange(0, 1);
-	}
 }
 
 void R_CheckVariables(void)
