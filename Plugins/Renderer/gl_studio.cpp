@@ -3552,7 +3552,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
 		GL_ClearColor(clearcolor);
-		GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 		int saved_renderfx = (*currententity)->curstate.renderfx;
 		int saved_renderamt = (*currententity)->curstate.renderamt;
@@ -3653,7 +3653,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
 		GL_ClearColor(clearcolor);
-		GL_ClearDepthStencil(1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 		GL_BindFrameBuffer(CurrentFBO);
 	}

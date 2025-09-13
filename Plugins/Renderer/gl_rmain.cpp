@@ -2609,7 +2609,7 @@ void R_PreRenderView()
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0.1, 1);
+	glDepthRange(0, 1);
 }
 
 void R_PostRenderView()
@@ -2722,9 +2722,11 @@ void R_DrawViewModel(void)
 	{
 		R_SetupGLForViewModel();
 
+		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_NONE);
+
 		r_draw_viewmodel = true;
 
-		glDepthRange(0, 0.1);
+		//glDepthRange(0, 0.1);
 
 		switch ((*currententity)->model->type)
 		{
@@ -2769,7 +2771,7 @@ void R_DrawViewModel(void)
 
 		r_draw_viewmodel = false;
 
-		glDepthRange(0.1, 1);
+		//glDepthRange(0.1, 1);
 
 		//Valve add this for what? idk we gonna remove this shit when move to core profile
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
