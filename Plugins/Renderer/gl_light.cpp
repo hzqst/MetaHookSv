@@ -980,6 +980,8 @@ void R_LightShadingPass(void)
 	{
 		if (args->bVolume)
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawVolumePointLight");
+
 			GL_BindVAO(r_sphere_vao);
 
 			Sys_Error("TODO");
@@ -1010,9 +1012,17 @@ void R_LightShadingPass(void)
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
 			GL_BindVAO(0);
+
+			GL_EndDebugGroup();
 		}
 		else
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawFullscreenPointLight");
+
+			GL_Set2D();
+
+			GL_BindVAO(r_empty_vao);
+
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
 
 			dlight_program_t prog = { 0 };
@@ -1028,6 +1038,12 @@ void R_LightShadingPass(void)
 			//TODO: core profile
 			//glDrawArrays(GL_QUADS, 0, 4);
 			Sys_Error("TODO");
+
+			GL_BindVAO(0);
+
+			GL_Finish2D();
+
+			GL_EndDebugGroup();
 		}
 	};
 
@@ -1035,6 +1051,8 @@ void R_LightShadingPass(void)
 	{
 		if (args->bVolume)
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawConeSpotLight");
+
 			GL_BindVAO(r_cone_vao);
 
 			glPushMatrix();
@@ -1098,9 +1116,16 @@ void R_LightShadingPass(void)
 
 			GL_BindVAO(0);
 
+			GL_EndDebugGroup();
 		}
 		else
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawFullscreenSpotLight");
+
+			GL_Set2D();
+
+			GL_BindVAO(r_empty_vao);
+
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED;
 
 			if (r_flashlight_cone_texture)
@@ -1148,11 +1173,19 @@ void R_LightShadingPass(void)
 			{
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
+
+			GL_BindVAO(0);
+
+			GL_Finish2D();
+
+			GL_EndDebugGroup();
 		}
 
 	};
 
 	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
+
+	glDisable(GL_BLEND);
 
 	GL_BindTextureUnit(DSHADE_BIND_CONE_TEXTURE, GL_TEXTURE_2D, 0);
 
@@ -1177,7 +1210,7 @@ void R_LightShadingPass(void)
 
 void R_FinalShadingPass(FBO_Container_t *dst)
 {
-	//Write GBuffer depth and stencil buffer into main framebuffer
+	//Write GBuffer depth and stencil buffer into dst framebuffer
 	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
 
 	GL_BeginDebugGroupFormat("R_FinalShadingPass - write to %s", GL_GetFrameBufferName(dst));
@@ -1276,6 +1309,8 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 	GL_BindVAO(0);
 
 	GL_UseProgram(0);
+
+	GL_Finish2D();
 
 	GL_EndDebugGroup();
 }

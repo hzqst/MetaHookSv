@@ -539,6 +539,12 @@ bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int);
 void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
 
 void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameHoles(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameHoles_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameAdditive(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameAdditive_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameGeneric(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+void Draw_SpriteFrameGeneric_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
 void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a);
 void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a);
 void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a);

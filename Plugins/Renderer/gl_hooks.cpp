@@ -346,6 +346,21 @@
 #define DRAW_FRAME_HL25 ""
 #define DRAW_FRAME_SVENGINE "\x83\xEC\x38\xDB\x44\x24\x40\x2A\x2A\x2A\x2A\x8B\x7C\x24\x4C"
 
+#define DRAW_SPRITEFRAMEHOLES_BLOB ""//TODO
+#define DRAW_SPRITEFRAMEHOLES_NEW ""//TODO
+#define DRAW_SPRITEFRAMEHOLES_HL25 ""
+#define DRAW_SPRITEFRAMEHOLES_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00\xFF\xD6\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
+
+#define DRAW_SPRITEFRAMEADDITIVE_BLOB ""//TODO
+#define DRAW_SPRITEFRAMEADDITIVE_NEW ""//TODO
+#define DRAW_SPRITEFRAMEADDITIVE_HL25 ""
+#define DRAW_SPRITEFRAMEADDITIVE_SVENGINE "\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\xFF\x74\x24\x10"
+
+#define DRAW_SPRITEFRAMEGENERIC_BLOB ""//TODO
+#define DRAW_SPRITEFRAMEGENERIC_NEW ""//TODO
+#define DRAW_SPRITEFRAMEGENERIC_HL25 ""
+#define DRAW_SPRITEFRAMEGENERIC_SVENGINE "\x8B\x44\x24\x1C\x2A\x8B\x5C\x24\x08\x2A\x2A\x68\xE2\x0B\x00\x00"
+
 #define DRAW_FILLEDRGBA_BLOB ""//TODO
 #define DRAW_FILLEDRGBA_NEW ""//TODO
 #define DRAW_FILLEDRGBA_HL25 ""
@@ -421,6 +436,12 @@ static hook_t* g_phook_PVSNode = NULL;
 static hook_t* g_phook_Host_ClearMemory = NULL;
 static hook_t* g_phook_CVideoMode_Common_DrawStartupGraphic = NULL;
 static hook_t* g_phook_Draw_Frame = NULL;
+static hook_t* g_phook_Draw_SpriteFrameHoles = NULL;
+static hook_t* g_phook_Draw_SpriteFrameHoles_SvEngine = NULL;
+static hook_t* g_phook_Draw_SpriteFrameAdditive = NULL;
+static hook_t* g_phook_Draw_SpriteFrameAdditive_SvEngine = NULL;
+static hook_t* g_phook_Draw_SpriteFrameGeneric = NULL;
+static hook_t* g_phook_Draw_SpriteFrameGeneric_SvEngine = NULL;
 static hook_t* g_phook_Draw_FillRGBA = NULL;
 static hook_t* g_phook_Draw_FillRGBABlend = NULL;
 static hook_t* g_phook_NET_DrawRect = NULL;
@@ -11635,6 +11656,119 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 	Sig_VarNotFound(scissor_height);
 }
 
+void Engine_FillAddress_Draw_SpriteFrameHoles(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.Draw_SpriteFrameHoles || gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine)
+		return;
+
+	PVOID Draw_SpriteFrameHoles_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_SVENGINE, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameHoles_SvEngine);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_HL25, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameHoles);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_NEW, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameHoles);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_BLOB, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameHoles);
+	}
+
+}
+
+void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.Draw_SpriteFrameAdditive || gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine)
+		return;
+
+	PVOID Draw_SpriteFrameAdditive_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_SVENGINE, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameAdditive_SvEngine);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_HL25, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_NEW, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_BLOB, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
+	}
+
+}
+
+void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.Draw_SpriteFrameGeneric || gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine)
+		return;
+
+	PVOID Draw_SpriteFrameGeneric_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_SVENGINE, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameGeneric_SvEngine);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_HL25, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_NEW, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_BLOB, DllInfo);
+		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
+
+		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
+	}
+}
+
 void Engine_FillAddress_Draw_FillRGBA(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_FillRGBA)
@@ -11938,6 +12072,12 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_Draw_Frame(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_Draw_SpriteFrameHoles(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_Draw_SpriteFrameAdditive(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_Draw_SpriteFrameGeneric(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_Draw_FillRGBA(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Draw_FillRGBABlend(DllInfo, RealDllInfo);
@@ -12016,6 +12156,12 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Host_ClearMemory);
 	Install_InlineHook(CVideoMode_Common_DrawStartupGraphic);
 	Install_InlineHook(Draw_Frame);
+	Install_InlineHook(Draw_SpriteFrameHoles);
+	Install_InlineHook(Draw_SpriteFrameHoles_SvEngine);
+	Install_InlineHook(Draw_SpriteFrameAdditive);
+	Install_InlineHook(Draw_SpriteFrameAdditive_SvEngine);
+	Install_InlineHook(Draw_SpriteFrameGeneric);
+	Install_InlineHook(Draw_SpriteFrameGeneric_SvEngine);
 	Install_InlineHook(Draw_FillRGBA);
 	Install_InlineHook(Draw_FillRGBABlend);
 	Install_InlineHook(NET_DrawRect);
@@ -12095,6 +12241,12 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(PVSNode);
 	Uninstall_Hook(CVideoMode_Common_DrawStartupGraphic);
 	Uninstall_Hook(Draw_Frame);
+	Uninstall_Hook(Draw_SpriteFrameHoles);
+	Uninstall_Hook(Draw_SpriteFrameHoles_SvEngine);
+	Uninstall_Hook(Draw_SpriteFrameAdditive);
+	Uninstall_Hook(Draw_SpriteFrameAdditive_SvEngine);
+	Uninstall_Hook(Draw_SpriteFrameGeneric);
+	Uninstall_Hook(Draw_SpriteFrameGeneric_SvEngine);
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
 	Uninstall_Hook(NET_DrawRect);

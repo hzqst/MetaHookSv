@@ -2,11 +2,11 @@
 
 #include "common.h"
 
-in vec2 texCoord;
-
 layout(location=0) uniform vec2 texelsize;
 
 layout(binding=0) uniform sampler2D baseTex;
+
+in vec2 texCoord;
 
 layout(location=0) out float out_Color;
 

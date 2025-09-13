@@ -2464,7 +2464,10 @@ void GL_Set2DEx(int x, int y, int width, int height)
 {
 	glViewport(x, y, width, height);
 
+	R_PushProjectionMatrix();
 	R_SetupOrthoProjectionMatrix(0, width, height, 0, -99999, 99999, true);
+
+	R_PushWorldMatrix();
 	R_LoadIdentityForWorldMatrix();
 
 	glDisable(GL_DEPTH_TEST);
@@ -2819,8 +2822,7 @@ void R_RenderView_SvEngine(int viewIdx)
 		R_PostRenderView();
 
 		//This will switch to final framebuffer (RGBA8)
-		R_BlitFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO);
-		//GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_FinalBufferFBO);
+		R_BlitFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO); //GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_FinalBufferFBO);
 		GL_SetCurrentSceneFBO(NULL);
 
 		if (!(*r_refdef.onlyClientDraws))
@@ -5771,7 +5773,7 @@ static void AdjustSubRect(mspriteframe_t* pFrame, float* pfLeft, float* pfRight,
 	return;
 }
 
-void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
+void DrawFrameInternal(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, uint64_t programState, const char *szDebugName)
 {
 	float fLeft = 0;
 	float fRight = 1;
@@ -5785,9 +5787,6 @@ void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
 		AdjustSubRect(pFrame, &fLeft, &fRight, &fTop, &fBottom, &iWidth, &iHeight, prcSubRect);
 	}
 
-	// Set up program state for GL Core Profile rendering
-	uint64_t programState = DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
-	
 	if ((*giScissorTest))
 	{
 		programState |= DRAW_TEXTURED_RECT_SCISSOR_ENABLED;
@@ -5798,40 +5797,40 @@ void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
 
 	// Set up vertices with texture coordinates and positions
 	// Bottom-left vertex
-	vertices[0].col[0] = 1.0f;
-	vertices[0].col[1] = 1.0f;
-	vertices[0].col[2] = 1.0f;
-	vertices[0].col[3] = 1.0f;
+	vertices[0].col[0] = g_GLColor[0];
+	vertices[0].col[1] = g_GLColor[1];
+	vertices[0].col[2] = g_GLColor[2];
+	vertices[0].col[3] = g_GLColor[3];
 	vertices[0].texcoord[0] = fLeft;
 	vertices[0].texcoord[1] = fBottom;
 	vertices[0].pos[0] = (float)x;
 	vertices[0].pos[1] = (float)(y + iHeight);
 
 	// Bottom-right vertex
-	vertices[1].col[0] = 1.0f;
-	vertices[1].col[1] = 1.0f;
-	vertices[1].col[2] = 1.0f;
-	vertices[1].col[3] = 1.0f;
+	vertices[1].col[0] = g_GLColor[0];
+	vertices[1].col[1] = g_GLColor[1];
+	vertices[1].col[2] = g_GLColor[2];
+	vertices[1].col[3] = g_GLColor[3];
 	vertices[1].texcoord[0] = fRight;
 	vertices[1].texcoord[1] = fBottom;
 	vertices[1].pos[0] = (float)(x + iWidth);
 	vertices[1].pos[1] = (float)(y + iHeight);
 
 	// Top-right vertex
-	vertices[2].col[0] = 1.0f;
-	vertices[2].col[1] = 1.0f;
-	vertices[2].col[2] = 1.0f;
-	vertices[2].col[3] = 1.0f;
+	vertices[2].col[0] = g_GLColor[0];
+	vertices[2].col[1] = g_GLColor[1];
+	vertices[2].col[2] = g_GLColor[2];
+	vertices[2].col[3] = g_GLColor[3];
 	vertices[2].texcoord[0] = fRight;
 	vertices[2].texcoord[1] = fTop;
 	vertices[2].pos[0] = (float)(x + iWidth);
 	vertices[2].pos[1] = (float)y;
 
 	// Top-left vertex
-	vertices[3].col[0] = 1.0f;
-	vertices[3].col[1] = 1.0f;
-	vertices[3].col[2] = 1.0f;
-	vertices[3].col[3] = 1.0f;
+	vertices[3].col[0] = g_GLColor[0];
+	vertices[3].col[1] = g_GLColor[1];
+	vertices[3].col[2] = g_GLColor[2];
+	vertices[3].col[3] = g_GLColor[3];
 	vertices[3].texcoord[0] = fLeft;
 	vertices[3].texcoord[1] = fTop;
 	vertices[3].pos[0] = (float)x;
@@ -5839,7 +5838,112 @@ void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
 
 	const uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
 
-	R_DrawTexturedRect(pFrame->gl_texturenum, vertices, _countof(vertices), indices, _countof(indices), programState, "Draw_Frame");
+	R_DrawTexturedRect(pFrame->gl_texturenum, vertices, _countof(vertices), indices, _countof(indices), programState, szDebugName);
+}
+
+void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
+{
+	uint64_t programState = 0;
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_Frame");
+}
+
+void Draw_SpriteFrameHoles(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect)
+{
+	uint64_t programState = DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED;
+
+	if ((int)gl_spriteblend->value > 0)
+	{
+		programState |= DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
+	}
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameHoles");
+}
+
+void Draw_SpriteFrameHoles_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
+{
+	uint64_t programState = DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED;
+
+	if ((int)gl_spriteblend->value > 0)
+	{
+		programState |= DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
+	}
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameHoles");
+}
+
+void Draw_SpriteFrameAdditive(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect)
+{
+	uint64_t programState = DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED;
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameAdditive");
+}
+
+void Draw_SpriteFrameAdditive_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect)
+{
+	uint64_t programState = DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED;
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameAdditive");
+}
+
+void Draw_SpriteFrameGeneric(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height)
+{
+	uint64_t programState = 0;
+
+	if (src == GL_ONE && dest == GL_ONE)
+	{
+		programState = DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED;
+	}
+	else if (src == GL_SRC_ALPHA && dest == GL_ONE_MINUS_SRC_ALPHA)
+	{
+		programState = DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
+	}
+	else
+	{
+		Sys_Error("Draw_SpriteFrameGeneric: invalid (src, dest) : (%d , %d)", src, dest);
+		return;
+	}
+
+	int oldWidth = pFrame->width;
+	int oldHeight = pFrame->height;
+
+	pFrame->width = width;
+	pFrame->height = height;
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameGeneric");
+
+	pFrame->width = oldWidth;
+	pFrame->height = oldHeight;
+}
+
+void Draw_SpriteFrameGeneric_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height)
+{
+	uint64_t programState = 0;
+
+	if (src == GL_ONE && dest == GL_ONE)
+	{
+		programState = DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED;
+	}
+	else if (src == GL_SRC_ALPHA && dest == GL_ONE_MINUS_SRC_ALPHA)
+	{
+		programState = DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED;
+	}
+	else
+	{
+		Sys_Error("Draw_SpriteFrameGeneric: invalid (src, dest) : (%d , %d)", src, dest);
+		return;
+	}
+
+	int oldWidth = pFrame->width;
+	int oldHeight = pFrame->height;
+
+	pFrame->width = width;
+	pFrame->height = height;
+
+	DrawFrameInternal(pFrame, x, y, prcSubRect, programState, "Draw_SpriteFrameGeneric");
+
+	pFrame->width = oldWidth;
+	pFrame->height = oldHeight;
 }
 
 void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a)

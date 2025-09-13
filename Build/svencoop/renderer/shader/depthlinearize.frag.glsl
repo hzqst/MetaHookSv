@@ -2,9 +2,9 @@
 
 layout(location=0) uniform vec4 clipInfo;
 
-layout(binding=0)  uniform sampler2D inputTexture;
+layout(binding=0) uniform sampler2D inputTexture;
 
-layout(location=0,index=0) out float out_Color;
+layout(location=0, index=0) out float out_Color;
 
 float reconstructCSZ(float d) {
   if (clipInfo[3] != 0) {

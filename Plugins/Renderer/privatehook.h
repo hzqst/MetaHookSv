@@ -108,6 +108,12 @@ typedef struct
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
 	void (*Draw_Frame)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameHoles)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameHoles_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameAdditive)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameAdditive_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameGeneric)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+	void (*Draw_SpriteFrameGeneric_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
 	void (*Draw_FillRGBA)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*Draw_FillRGBABlend)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
@@ -129,7 +135,6 @@ typedef struct
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
 	void( __fastcall *enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
-	//void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);

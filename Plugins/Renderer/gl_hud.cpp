@@ -303,47 +303,31 @@ void R_InitPostProcess(void)
 	}
 
 	//FXAA Pass
-	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl", NULL);
-	SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
-	SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
-	SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
+	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl", NULL);
 
 	//DownSample Pass
 	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", NULL);
 	
 	//2x2 Downsample Pass
 	pp_downsample2x2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n", NULL);
-	SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
 
 	//Luminance Downsample Pass
 	pp_lumindown.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "", NULL);
-	SHADER_UNIFORM(pp_lumindown, texelsize, "texelsize");
 
 	//Log Luminance Downsample Pass
 	pp_luminlog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n", NULL);
-	SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
 
 	//Exp Luminance Downsample Pass
 	pp_luminexp.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n", NULL);
-	SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
 
 	//Luminance Adaptation Downsample Pass
 	pp_luminadapt.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "", NULL);
-	SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
 
 	//Bright Pass
-	pp_brightpass.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "#define LUMTEX_ENABLED\n", "", NULL);
-	SHADER_UNIFORM(pp_brightpass, baseTex, "baseTex");
-	SHADER_UNIFORM(pp_brightpass, lumTex, "lumTex");
+	pp_brightpass.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "", "", NULL);
 
 	//Tone mapping
-	pp_tonemap.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "#define LUMTEX_ENABLED\n#define TONEMAP_ENABLED\n", "", NULL);
-	SHADER_UNIFORM(pp_tonemap, baseTex, "baseTex");
-	SHADER_UNIFORM(pp_tonemap, blurTex, "blurTex");
-	SHADER_UNIFORM(pp_tonemap, lumTex, "lumTex");
-	SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
-	SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
-	SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
+	pp_tonemap.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "", "", NULL);
 
 	//SSAO
 	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
@@ -821,10 +805,14 @@ void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 */
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorOnly - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -832,10 +820,14 @@ void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Containe
 */
 void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorDepth - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -843,10 +835,14 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 */
 void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorDepthStencil - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -854,10 +850,14 @@ void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_
 */
 void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferDepthOnly - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -865,10 +865,14 @@ void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Containe
 */
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferStencilOnly - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -876,10 +880,14 @@ void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Contai
 */
 void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferDepthStencil - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -887,9 +895,11 @@ void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Conta
 */
 void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_Container_t *dst, bool bUseFilter2x2, bool bUseStencilFilter)
 {
+	GL_BeginDebugGroupFormat("R_DownSample - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -898,7 +908,7 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 	if (bUseFilter2x2)
 	{
 		GL_UseProgram(pp_downsample2x2.program);
-		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src_color->iWidth, 2.0f / src_color->iHeight);
+		glUniform2f(0, 2.0f / src_color->iWidth, 2.0f / src_color->iHeight);
 	}
 	else
 	{
@@ -924,16 +934,24 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
+	GL_Bind(0);
+
 	GL_BindVAO(0);
 
-	GL_Bind(0);
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 {
+	GL_BeginDebugGroupFormat("R_LuminPass - write to %s, type = %d", GL_GetFrameBufferName(dst), type);
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -941,17 +959,17 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 	if(type == LUMPASS_LOG)
 	{
 		GL_UseProgram(pp_luminlog.program);
-		glUniform2f(pp_luminlog.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(0, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else if(type == LUMPASS_EXP)
 	{
 		GL_UseProgram(pp_luminexp.program);
-		glUniform2f(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(0, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else
 	{
 		GL_UseProgram(pp_lumindown.program);
-		glUniform2f(pp_lumindown.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(0, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 
 	GL_BindVAO(r_empty_vao);
@@ -963,20 +981,28 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 	GL_Bind(0);
 
 	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
 {
+	GL_BeginDebugGroupFormat("R_LuminAdaptation - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_luminadapt.program);
 
-	glUniform1f(pp_luminadapt.frametime, frametime * math_clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
+	glUniform1f(0, frametime * math_clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
 
 	GL_BindVAO(r_empty_vao);
 
@@ -991,20 +1017,26 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
 {
+	GL_BeginDebugGroupFormat("R_BrightPass - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_brightpass.program);
-	glUniform1i(pp_brightpass.baseTex, 0);
-	glUniform1i(pp_brightpass.lumTex, 1);
 
 	GL_BindVAO(r_empty_vao);
 
@@ -1019,16 +1051,26 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 {
+	GL_BeginDebugGroupFormat("R_BlurPass - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
-	if(vertical)
+	if (vertical)
 	{
 		GL_UseProgram(pp_gaussianblurv.program);
 		glUniform1f(0, 1.0f / src->iHeight); 
@@ -1039,8 +1081,6 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 		glUniform1f(0, 1.0f / src->iWidth);
 	}
 
-	glViewport(glx, gly, dst->iWidth, dst->iHeight);
-
 	GL_BindVAO(r_empty_vao);
 
 	GL_Bind(src->s_hBackBufferTex);
@@ -1050,13 +1090,21 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 	GL_Bind(0);
 
 	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
 {
+	GL_BeginDebugGroupFormat("R_BrightAccum - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
@@ -1080,24 +1128,29 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	GL_BindVAO(0);
 
 	glDisable(GL_BLEND);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum)
 {
+	GL_BeginDebugGroupFormat("R_ToneMapping - write to %s", GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
-	GL_Set2DEx(glx, gly, dst->iWidth, dst->iHeight);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_tonemap.program);
-	glUniform1i(pp_tonemap.baseTex, 0);
-	glUniform1i(pp_tonemap.blurTex, 1);
-	glUniform1i(pp_tonemap.lumTex, 2);
-	glUniform1f(pp_tonemap.blurfactor, math_clamp(r_hdr_blurwidth->GetValue(), 0, 1));
-	glUniform1f(pp_tonemap.exposure, math_clamp(r_hdr_exposure->GetValue(), 0.001, 10));
-	glUniform1f(pp_tonemap.darkness, math_clamp(r_hdr_darkness->GetValue(), 0.001, 10));
+	glUniform1f(0, math_clamp(r_hdr_blurwidth->GetValue(), 0, 1));
+	glUniform1f(1, math_clamp(r_hdr_darkness->GetValue(), 0.001, 10));
+	glUniform1f(2, math_clamp(r_hdr_exposure->GetValue(), 0.001, 10));
 
 	GL_BindVAO(r_empty_vao);
 
@@ -1116,12 +1169,16 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 bool R_IsHDREnabled(void)
 {
-	return false;
-
 	if (!r_hdr->value)
 		return false;
 
@@ -1142,7 +1199,7 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 	GL_BeginDebugGroupFormat("R_HDR - color=%s, stencil=%s, dst=%s", GL_GetFrameBufferName(src_color), GL_GetFrameBufferName(src_stencil), GL_GetFrameBufferName(dst));
 
 	R_DownSample(src_color, src_stencil, &s_DownSampleFBO[0], true, true);//(1->1/4)
-	R_DownSample(&s_DownSampleFBO[0], NULL, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
+	R_DownSample(&s_DownSampleFBO[0], nullptr, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
 
 	//Log Luminance DownSample from .. (RGB16F to R32F)
 	R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], LUMPASS_LOG);//(1/16)->64x64
@@ -1177,8 +1234,6 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 	//Tone mapping
 	R_ToneMapping(src_color, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
-	GL_UseProgram(0);
-
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, dst);
 
 	GL_EndDebugGroup();
@@ -1186,8 +1241,6 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 
 bool R_IsFXAAEnabled(void)
 {
-	return false;
-
 	if (!r_fxaa->value)
 		return false;
 
@@ -1211,24 +1264,29 @@ void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_UseProgram(pp_fxaa.program);
-	glUniform1i(pp_fxaa.tex0, 0);
-	glUniform1f(pp_fxaa.rt_w, glwidth);
-	glUniform1f(pp_fxaa.rt_h, glheight);
+	GL_BindVAO(r_empty_vao);
 
-	//TODO...
-	Sys_Error("TODO");
-	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight,);
+	GL_UseProgram(pp_fxaa.program);
+	glUniform1f(0, dst->iWidth);
+	glUniform1f(1, dst->iHeight);
+
+	GL_Bind(src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_Bind(0);
 
 	GL_UseProgram(0);
+
+	GL_BindVAO(0);
+
+	GL_Finish2D();
 
 	GL_EndDebugGroup();
 }
 
 bool R_IsUnderWaterEffectEnabled(void)
 {
-	return false;
-
 	if (!r_under_water_effect->value)
 		return false;
 
@@ -1266,11 +1324,19 @@ void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(1, r_under_water_effect_wave_speed->value);
 	glUniform1f(2, r_under_water_effect_wave_size->value);
 
-	//TODO
-	Sys_Error("TODO");
-	//R_DrawTexturedRect(src->s_hBackBufferTex, glwidth, glheight);
+	GL_BindVAO(r_empty_vao);
+
+	GL_Bind(src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_Bind(0);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0); 
+
+	GL_Finish2D();
 	
 	GL_EndDebugGroup();
 }
@@ -1319,6 +1385,8 @@ void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_UseProgram(0);
 
+	GL_Finish2D();
+
 	GL_EndDebugGroup();
 }
 
@@ -1341,6 +1409,8 @@ void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
 	GL_BindVAO(0);
 
 	GL_UseProgram(0);
+
+	GL_Finish2D();
 
 	GL_EndDebugGroup();
 }
@@ -1392,6 +1462,8 @@ void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 
 	GL_BindFrameBuffer(dst);
 
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GL_UseProgram(depth_linearize.program);
@@ -1410,13 +1482,13 @@ void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 
 	GL_UseProgram(0);
 
+	GL_Finish2D();
+
 	GL_EndDebugGroup();
 }
 
 bool R_IsAmbientOcclusionEnabled(void)
 {
-	return false;
-
 	if (!r_ssao->value)
 		return false;
 
@@ -1438,12 +1510,12 @@ bool R_IsAmbientOcclusionEnabled(void)
 	return true;
 }
 
-void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
+void R_AmbientOcclusion_CalcPass(FBO_Container_t* src, FBO_Container_t* dst, float meters2viewspace)
 {
-	GL_BeginDebugGroupFormat("R_AmbientOcclusion - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+	GL_BeginDebugGroup("R_AmbientOcclusion_CalcPass");
 
 	//Prepare parameters
-	const float *ProjMatrix = r_projection_matrix;
+	const float* ProjMatrix = r_projection_matrix;
 
 	float projInfoPerspective[] = {
 		2.0f / (ProjMatrix[4 * 0 + 0]),       // (x) * (R - L)/N
@@ -1452,10 +1524,9 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 		-(1.0f + ProjMatrix[4 * 2 + 1]) / ProjMatrix[4 * 1 + 1], // B/N
 	};
 
-	float projScale = float(glheight) / (tanf(r_yfov * M_PI * 0.5f / 180.f) * 2.0f);
+	float projScale = float(src->iHeight) / (tanf(r_yfov * M_PI * 0.5f / 180.f) * 2.0f);
 
 	// radius
-	float meters2viewspace = 1.0f;
 	float R = r_ssao_radius->GetValue() * meters2viewspace;
 	auto R2 = R * R;
 	auto NegInvR2 = -1.0f / R2;
@@ -1467,21 +1538,22 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	auto AOMultiplier = 1.0f / (1.0f - NDotVBias);
 
 	// resolution
-	int quarterWidth = ((glwidth + 3) / 4);
-	int quarterHeight = ((glheight + 3) / 4);
+	int quarterWidth = ((src->iWidth + 3) / 4);
+	int quarterHeight = ((src->iHeight + 3) / 4);
 
 	vec2_t InvQuarterResolution;
 	InvQuarterResolution[0] = 1.0f / float(quarterWidth);
 	InvQuarterResolution[1] = 1.0f / float(quarterHeight);
 
 	vec2_t InvFullResolution;
-	InvFullResolution[0] = 1.0f / float(glwidth);
-	InvFullResolution[1] = 1.0f / float(glheight);
+	InvFullResolution[0] = 1.0f / float(src->iWidth);
+	InvFullResolution[1] = 1.0f / float(src->iHeight);
 
 	GL_BindFrameBuffer(&s_HBAOCalcFBO);
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	glDisable(GL_BLEND);
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	//Setup for hbao_calc
 	if (r_fog_mode == GL_LINEAR && R_IsRenderingFog())
@@ -1518,22 +1590,36 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	//Texture unit 1 = random texture
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, hbao_randomview[0]);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, hbao_randomview[0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	//Texture unit 1 = random texture
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 
 	//Texture unit 0 = linearized depth
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
+}
+
+void R_AmbientOcclusion_BlurPass(FBO_Container_t* src, FBO_Container_t* dst, float meters2viewspace)
+{
+	GL_BeginDebugGroup("R_AmbientOcclusion_BlurPass");
+
 	//SSAO blur stage
+	GL_BindFrameBuffer(&s_HBAOCalcFBO);
 
 	//Write to HBAO texture2
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	GL_UseProgram(hbao_blur.program);
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
@@ -1551,6 +1637,17 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_BindVAO(0);
 
+	GL_UseProgram(0);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
+}
+
+void R_AmbientOcclusion_WritePass(FBO_Container_t* src, FBO_Container_t* dst, float meters2viewspace)
+{
+	GL_BeginDebugGroup("R_AmbientOcclusion_WritePass");
+
 	//Write to main framebuffer or GBuffer lightmap channel
 	GL_BindFrameBuffer(dst);
 
@@ -1563,6 +1660,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
+
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	//0 for occluded color, 1 for non-occluded color
 	glEnable(GL_BLEND);
@@ -1581,19 +1680,35 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
-	//fullscreen triangle.
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	GL_UseProgram(0);
 
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
 	GL_Bind(0);
 
 	GL_BindVAO(0);
 
+	GL_UseProgram(0);
+
 	GL_EndStencil();
 
 	glDisable(GL_BLEND);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
+}
+
+void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	GL_BeginDebugGroupFormat("R_AmbientOcclusion - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
+	float meters2viewspace = 1.0f;
+
+	R_AmbientOcclusion_CalcPass(src, dst, meters2viewspace);
+
+	R_AmbientOcclusion_BlurPass(src, dst, meters2viewspace);
+
+	R_AmbientOcclusion_WritePass(src, dst, meters2viewspace);
 
 	GL_EndDebugGroup();
 }
@@ -1607,5 +1722,7 @@ void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 	const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	//upside down
-	R_DrawTexturedQuad(src->s_hBackBufferTex, 0, glheight, glwidth, 0, color, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "R_BlitFinalBuffer");
+	R_DrawTexturedQuad(src->s_hBackBufferTex, 0, dst->iHeight, dst->iWidth, 0, color, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "R_BlitFinalBuffer");
+
+	GL_Finish2D();
 }

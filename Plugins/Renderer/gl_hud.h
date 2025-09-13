@@ -12,9 +12,6 @@
 typedef struct
 {
 	int program;
-	int tex0;
-	int rt_w;
-	int rt_h;
 }pp_fxaa_program_t;
 
 typedef struct
@@ -25,38 +22,31 @@ typedef struct
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_downsample2x2_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_lumindown_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_luminlog_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_luminexp_program_t;
 
 typedef struct
 {
 	int program;
-	int frametime;
 }pp_luminadapt_program_t;
 
 typedef struct
 {
 	int program;
-	int baseTex;
-	int lumTex;
 }pp_brightpass_program_t;
 
 typedef struct
@@ -67,13 +57,6 @@ typedef struct
 typedef struct
 {
 	int program;
-	int baseTex;
-	int blurTex;
-	int lumTex;
-	int blurfactor;
-	int exposure;
-	int darkness;
-	int gamma;
 }pp_tonemap_program_t;
 
 typedef struct
