@@ -446,17 +446,17 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	if (!hVBOVertex)
 	{
 		hVBOVertex = GL_GenBuffer();
-		GL_UploadDataToVBODynamicDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, NULL);
+		GL_UploadDataToVBOStreamDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, nullptr);
 	}
 	if (!hVBOInstance)
 	{
 		hVBOInstance = GL_GenBuffer();
-		GL_UploadDataToVBODynamicDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, NULL);
+		GL_UploadDataToVBOStreamDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, nullptr);
 	}
 	if (!hEBO)
 	{
 		hEBO = GL_GenBuffer();
-		GL_UploadDataToEBODynamicDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, NULL);
+		GL_UploadDataToEBOStreamDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, nullptr);
 	}
 	if (!hVAO)
 	{
@@ -520,11 +520,15 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
-
+#if 0
 	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
 	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
 	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
-
+#else
+	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
+	GL_UploadDataToVBOStreamMap(hVBOInstance, sizeof(instanceDataBuffer), instanceDataBuffer);
+	GL_UploadDataToEBOStreamMap(hEBO, indicesCount * sizeof(uint32_t), indices);
+#endif
 	GL_BindVAO(hVAO);
 
 	if (programState & DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED)
@@ -655,9 +659,9 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
 
-	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(filledrectvertex_t), verticeBuffer);
-	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
-	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
+	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(filledrectvertex_t), verticeBuffer);
+	GL_UploadDataToVBOStreamMap(hVBOInstance, sizeof(instanceDataBuffer), instanceDataBuffer);
+	GL_UploadDataToEBOStreamMap(hEBO, indicesCount * sizeof(uint32_t), indices);
 
 	GL_BindVAO(hVAO);
 

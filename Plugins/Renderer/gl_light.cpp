@@ -991,12 +991,15 @@ void R_LightShadingPass(void)
 			float modelmatrix[4][4];
 			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
 
+			float modelmatrix_T[4][4];
+			Matrix4x4_Transpose(modelmatrix_T, modelmatrix);
+
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix);
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
 			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
 			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
 			glUniform1f(prog.u_lightradius, args->radius);
@@ -1056,10 +1059,13 @@ void R_LightShadingPass(void)
 
 			vec3_t angles = { args->angle[0], args->angle[1], args->angle[2] };
 			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
-			vec3_t scales = { args->radius, args->radius, args->radius };
+			vec3_t scales = { args->distance, args->radius, args->radius };
 
 			float modelmatrix[4][4];
 			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
+
+			float modelmatrix_T[4][4];
+			Matrix4x4_Transpose(modelmatrix_T, modelmatrix);
 
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
@@ -1071,7 +1077,7 @@ void R_LightShadingPass(void)
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix);
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
 			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
 			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
 			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);

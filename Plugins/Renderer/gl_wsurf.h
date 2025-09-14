@@ -256,8 +256,6 @@ typedef struct
 	int u_parallaxScale;
 }wsurf_program_t;
 
-#define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
-
 extern CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
 extern int r_wsurf_drawcall;

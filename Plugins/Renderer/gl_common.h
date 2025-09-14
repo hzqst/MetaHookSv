@@ -2,6 +2,8 @@
 
 #include "qgl.h"
 
+#define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
+
 typedef struct FBO_Container_s
 {
 	GLuint s_hBackBufferFBO;

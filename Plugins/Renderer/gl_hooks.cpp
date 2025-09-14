@@ -12166,7 +12166,6 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Draw_FillRGBABlend);
 	Install_InlineHook(NET_DrawRect);
 
-	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
 		Install_InlineHook(SDL_GL_SetAttribute);
@@ -12459,20 +12458,161 @@ void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 	R_RedirectEngineLegacyOpenGLCallAPI(DllInfo, RealDllInfo);
 }
 
+void R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\x68\x01\x85\x00\x00\x68\x00\x85\x00\x00\xFF\x15";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 10, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glTexEnvf, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glBegin(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\x6A\x06\xFF\x15\x2A\x2A\x2A\x2A\xF6\x87\x88\x00\x00\x00\x80";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 2, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, triapi_glBegin, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glEnd(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\xFF\x15\x2A\x2A\x2A\x2A\xF7\x87\x88\x00\x00\x00\x00\x01\x00\x00";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 0, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, triapi_glEnd, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glColor4f(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\xF3\x0F\x11\x0C\x24\xFF\x15\x2A\x2A\x2A\x2A\x8D\x45\x98";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 5, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glColor4f, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glEnable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x75\x00\x68\xE1\x0D\x00\x00\xFF\x15";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 5, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glEnable, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glDisable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\x68\x60\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 5, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glDisable, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
 void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_bIsSvenCoop)
 	{
 		//Sniber NMSL
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glBegin", SCClient_glBegin, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glEnd", SCClient_glEnd, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glColor4f", CoreProfile_glColor4f, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glColor4ub", CoreProfile_glColor4ub, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glEnable", CoreProfile_glEnable, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glDisable", CoreProfile_glDisable, NULL);
-		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "opengl32.dll", "glTexEnvf", CoreProfile_glTexEnvf, NULL);
-
-		g_pMetaHookAPI->InlinePatchRedirectBranch((PUCHAR)RealDllInfo.ImageBase + 0x45C6E, CoreProfile_glTexEnvf, nullptr);
+		R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glBegin(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glEnd(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glColor4f(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glEnable(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glDisable(DllInfo, RealDllInfo);
 	}
 }
 

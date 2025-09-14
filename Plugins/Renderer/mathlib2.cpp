@@ -906,44 +906,69 @@ void Matrix4x4_Transpose(float out[4][4], const float in1[4][4])
 	out[3][3] = in1[3][3];
 }
 
+/*
+glPushMatrix();
+glLoadIdentity();
+glTranslatef(origin[0], origin[1], origin[2]);
+glRotatef(angle[1], 0, 0, 1);
+glRotatef(angle[0], 0, 1, 0);
+glRotatef(angle[2], 1, 0, 0);
+glScalef(scales[0], scales[1], scales[2]);
 
+float modelmatrix[16];
+glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
+glPopMatrix();
+*/
 void Matrix4x4_CreateFromEntityEx(float out[4][4], const vec3_t angles, const vec3_t origin, const vec3_t scales)
 {
+	// Replicate exact OpenGL immediate mode behavior:
+	// glTranslatef(origin[0], origin[1], origin[2]);
+	// glRotatef(angle[1], 0, 0, 1);  // Z rotation (yaw)
+	// glRotatef(angle[0], 0, 1, 0);  // Y rotation (pitch)
+	// glRotatef(angle[2], 1, 0, 0);  // X rotation (roll)
+	// glScalef(scales[0], scales[1], scales[2]);
+	//
+	// Effective matrix multiplication order: T * Rz * Ry * Rx * S
+
 	// Convert angles from degrees to radians
 	float yaw = angles[1] * M_PI / 180.0f;   // Z rotation
 	float pitch = angles[0] * M_PI / 180.0f; // Y rotation
 	float roll = angles[2] * M_PI / 180.0f;  // X rotation
 
-	float cy = cos(yaw);
-	float sy = sin(yaw);
-	float cp = cos(pitch);
-	float sp = sin(pitch);
-	float cr = cos(roll);
-	float sr = sin(roll);
+	// Precompute trigonometric values
+	float cy = cos(yaw), sy = sin(yaw);
+	float cp = cos(pitch), sp = sin(pitch);
+	float cr = cos(roll), sr = sin(roll);
 
-	// Build rotation matrix (ZYX order)
+	// Build composite rotation matrix: Rz * Ry * Rx (right-to-left multiplication)
 	float rotMatrix[4][4];
+
+	// Row 0
 	rotMatrix[0][0] = cy * cp;
 	rotMatrix[0][1] = cy * sp * sr - sy * cr;
 	rotMatrix[0][2] = cy * sp * cr + sy * sr;
 	rotMatrix[0][3] = 0.0f;
 
+	// Row 1
 	rotMatrix[1][0] = sy * cp;
 	rotMatrix[1][1] = sy * sp * sr + cy * cr;
 	rotMatrix[1][2] = sy * sp * cr - cy * sr;
 	rotMatrix[1][3] = 0.0f;
 
+	// Row 2
 	rotMatrix[2][0] = -sp;
 	rotMatrix[2][1] = cp * sr;
 	rotMatrix[2][2] = cp * cr;
 	rotMatrix[2][3] = 0.0f;
 
+	// Row 3
 	rotMatrix[3][0] = 0.0f;
 	rotMatrix[3][1] = 0.0f;
 	rotMatrix[3][2] = 0.0f;
 	rotMatrix[3][3] = 1.0f;
 
-	// Apply scale and translation
+	// Apply scale to rotation matrix (S is applied first in vertex transformation)
+	// Then apply translation (T is applied last in vertex transformation)
 	out[0][0] = rotMatrix[0][0] * scales[0];
 	out[0][1] = rotMatrix[0][1] * scales[1];
 	out[0][2] = rotMatrix[0][2] * scales[2];

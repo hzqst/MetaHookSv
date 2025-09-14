@@ -458,10 +458,12 @@ void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* d
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data);
+void GL_UploadDataToVBOStreamMap(GLuint VBO, size_t size, const void* data);
 void GL_UploadSubDataToVBO(GLuint VBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data);
+void GL_UploadDataToEBOStreamMap(GLuint EBO, size_t size, const void* data);
 void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
 void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
@@ -505,8 +507,8 @@ void GL_BeginDebugGroup(const char* name);
 void GL_BeginDebugGroupFormat(const char* fmt, ...);
 void GL_EndDebugGroup();
 
-void __stdcall SCClient_glBegin(int GLPrimitiveCode);
-void __stdcall SCClient_glEnd();
+void __stdcall triapi_glBegin(int GLPrimitiveCode);
+void __stdcall triapi_glEnd();
 void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a);
 void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 

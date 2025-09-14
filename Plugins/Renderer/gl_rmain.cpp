@@ -1010,12 +1010,19 @@ public:
 	int RenderMode{ };
 	int DrawRenderMode{ };
 	GLuint hVAO{};
+	GLuint hVBO{};
+	size_t VBOCapacity{};
 };
 
 CTriAPICommand gTriAPICommand;
 
 void triapi_Shutdown()
 {
+	if (gTriAPICommand.hVBO)
+	{
+		GL_DeleteBuffer(gTriAPICommand.hVBO);
+		gTriAPICommand.hVBO = 0;
+	}
 	if (gTriAPICommand.hVAO)
 	{
 		GL_DeleteVAO(gTriAPICommand.hVAO);
@@ -1027,7 +1034,6 @@ void triapi_RenderMode(int mode)
 {
 	gTriAPICommand.RenderMode = mode;
 }
-
 
 void triapi_Begin(int primitiveCode)
 {
@@ -1217,17 +1223,43 @@ void triapi_End()
 	if (!gTriAPICommand.hVAO)
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
+		gTriAPICommand.hVBO = GL_GenBuffer();
+
+		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
+		if (gTriAPICommand.VBOCapacity < 16 * sizeof(triapivertex_t))
+			gTriAPICommand.VBOCapacity = 16 * sizeof(triapivertex_t);
+		GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
+
+		GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
+
+			glBindBuffer(GL_ARRAY_BUFFER, gTriAPICommand.hVBO);
+
+			glEnableVertexAttribArray(TRIAPI_VA_POSITION);
+			glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+			glEnableVertexAttribArray(TRIAPI_VA_COLOR);
+
+			glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
+			glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
+			glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
+
+		});
 	}
 
+	if (gTriAPICommand.Vertices.size() * sizeof(triapivertex_t) > gTriAPICommand.VBOCapacity)
+	{
+		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
+		GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
+	}
+
+	GL_BeginDebugGroup("triapi_End");
+
+#if 0
+	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
+#else
+	GL_UploadDataToVBOStreamMap(gTriAPICommand.hVBO, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
+#endif
+
 	GL_BindVAO(gTriAPICommand.hVAO);
-
-	glEnableVertexAttribArray(TRIAPI_VA_POSITION);
-	glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
-	glEnableVertexAttribArray(TRIAPI_VA_COLOR);
-
-	glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].pos);
-	glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].texcoord);
-	glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), &gTriAPICommand.Vertices[0].color);
 
 	uint64_t ProgramState = 0;
 
@@ -1434,6 +1466,8 @@ void triapi_End()
 
 	GL_BindVAO(0);
 
+	GL_EndDebugGroup();
+
 	triapi_EndClear();
 }
 
@@ -1529,10 +1563,10 @@ void triapi_Vertex3f(float x, float y, float z)
 	vertex.pos[2] = z;
 	vertex.texcoord[0] = gTriAPICommand.TexCoord[0];
 	vertex.texcoord[1] = gTriAPICommand.TexCoord[1];
-	vertex.color[0] = gTriAPICommand.DrawColor[0];
-	vertex.color[1] = gTriAPICommand.DrawColor[1];
-	vertex.color[2] = gTriAPICommand.DrawColor[2];
-	vertex.color[3] = gTriAPICommand.DrawColor[3];
+	vertex.color[0] = g_GLColor[0];
+	vertex.color[1] = g_GLColor[1];
+	vertex.color[2] = g_GLColor[2];
+	vertex.color[3] = g_GLColor[3];
 
 	gTriAPICommand.Vertices.push_back(vertex);
 }
@@ -1575,13 +1609,13 @@ void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox)
 	gPrivateFuncs.triapi_FogParams(flDensity, bFogAffectsSkybox);
 }
 
-void __stdcall SCClient_glBegin(int GLPrimitiveCode)
+void __stdcall triapi_glBegin(int GLPrimitiveCode)
 {
 	gTriAPICommand.GLPrimitiveCode = GLPrimitiveCode;
 	gTriAPICommand.DrawRenderMode = gTriAPICommand.RenderMode;
 }
 
-void __stdcall SCClient_glEnd()
+void __stdcall triapi_glEnd()
 {
 	triapi_End();
 }
@@ -4455,11 +4489,11 @@ int __cdecl SDL_GL_SetAttribute(int attr, int value)
 	}
 	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
 	{
+		//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
 	}
 	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
 	{
-		//return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);// SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
 	}
 	//Why the fuck 4,4,4 in GoldSrc and SvEngine????

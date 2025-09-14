@@ -418,6 +418,20 @@ void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void GL_UploadDataToVBOStreamMap(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	void *pMapped = glMapBufferRange(
+		GL_ARRAY_BUFFER,
+		0,
+		size,
+		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+	);
+	memcpy(pMapped, data, size);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void GL_UploadSubDataToVBO(GLuint VBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
@@ -461,6 +475,20 @@ void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadDataToEBOStreamMap(GLuint EBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	void* pMapped = glMapBufferRange(
+		GL_ELEMENT_ARRAY_BUFFER,
+		0,
+		size,
+		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+	);
+	memcpy(pMapped, data, size);
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
