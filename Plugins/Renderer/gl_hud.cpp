@@ -763,28 +763,28 @@ void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint
 	vertices[0].col[0] = color4v[0];
 	vertices[0].col[1] = color4v[1];
 	vertices[0].col[2] = color4v[2];
-	vertices[0].col[3] = color4v[2];
+	vertices[0].col[3] = color4v[3];
 	vertices[0].pos[0] = x0;
 	vertices[0].pos[1] = y1;
 
 	vertices[1].col[0] = color4v[0];
 	vertices[1].col[1] = color4v[1];
 	vertices[1].col[2] = color4v[2];
-	vertices[1].col[3] = color4v[2];
+	vertices[1].col[3] = color4v[3];
 	vertices[1].pos[0] = x1;
 	vertices[1].pos[1] = y1;
 
 	vertices[2].col[0] = color4v[0];
 	vertices[2].col[1] = color4v[1];
 	vertices[2].col[2] = color4v[2];
-	vertices[2].col[3] = color4v[2];
+	vertices[2].col[3] = color4v[3];
 	vertices[2].pos[0] = x1;
 	vertices[2].pos[1] = y0;
 
 	vertices[3].col[0] = color4v[0];
 	vertices[3].col[1] = color4v[1];
 	vertices[3].col[2] = color4v[2];
-	vertices[3].col[3] = color4v[2];
+	vertices[3].col[3] = color4v[3];
 	vertices[3].pos[0] = x0;
 	vertices[3].pos[1] = y0;
 
