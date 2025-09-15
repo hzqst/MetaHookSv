@@ -1,5 +1,6 @@
 #include "gl_local.h"
 #include <sstream>
+#include <math.h>
 
 //renderer
 
@@ -226,7 +227,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 	if (R_ShouldRenderShadow())
 	{
-		GL_BeginDebugGroup("R_RenderShadowDynamicLights");
+		GL_BeginDebugGroup("R_RenderShadowmapForDynamicLights");
 
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
@@ -251,13 +252,16 @@ void R_RenderShadowmapForDynamicLights(void)
 							R_AllocShadowTexture(args->shadowtex, 1024, false);
 						}
 
-						args->shadowtex->distance = args->distance;
-						args->shadowtex->cone_angle = args->coneAngle;
 						current_shadow_texture = args->shadowtex;
 
 						GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
 
 						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
+
+						current_shadow_texture->viewport[0] = 0;
+						current_shadow_texture->viewport[1] = 0;
+						current_shadow_texture->viewport[2] = args->shadowtex->size;
+						current_shadow_texture->viewport[3] = args->shadowtex->size;
 
 						glEnable(GL_POLYGON_OFFSET_FILL);
 						glPolygonOffset(10, 10);
@@ -276,6 +280,20 @@ void R_RenderShadowmapForDynamicLights(void)
 						(*r_refdef.viewangles)[1] = args->angle[1];
 						(*r_refdef.viewangles)[2] = args->angle[2];
 
+						R_LoadIdentityForWorldMatrix();
+						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+						float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
+						R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
+
+						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+						Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
+						Matrix4x4_Copy(current_shadow_texture->projmatrix, (*projMatrix));
+
+						R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, (*worldMatrix), (*projMatrix));
+
 						auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 						if (pLocalPlayer->model && args->bIsFromLocalPlayer)
@@ -293,11 +311,6 @@ void R_RenderShadowmapForDynamicLights(void)
 						{
 							R_RenderScene();
 						}
-
-						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
-
-						R_SetupShadowMatrix(args->shadowtex->matrix, (*worldMatrix), (*projMatrix));
 
 						glDisable(GL_POLYGON_OFFSET_FILL);
 						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -319,9 +332,116 @@ void R_RenderShadowmapForDynamicLights(void)
 			{
 				args->shadowtex->ready = false;
 
-				//TODO:...
-			}
+				r_draw_shadowcaster = true;
 
+				// Allocate 4096x4096 CSM texture if not already allocated
+				if (!args->shadowtex->depth_stencil)
+				{
+					R_AllocShadowTexture(args->shadowtex, 4096, false);
+				}
+
+				// Calculate cascade distances based on camera frustum
+				// These could be configurable via cvars in the future
+				float nearPlane = 1.0f;  // Should match r_nearclip or similar
+				float farPlane = 8192.0f; // Should match r_farclip or similar
+				float cascadeDistances[4];
+
+				// Use logarithmic distribution for cascades
+				for (int i = 0; i < 4; ++i)
+				{
+					float ratio = (float)(i + 1) / 4.0f;
+					cascadeDistances[i] = nearPlane * pow(farPlane / nearPlane, ratio);
+				}
+
+				// Copy to args for shader use
+				for (int i = 0; i < 4; ++i)
+				{
+					args->csmDistances[i] = cascadeDistances[i];
+				}
+
+				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+
+				// Render each cascade
+				for (int cascade = 0; cascade < 4; ++cascade)
+				{
+					GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascade);
+
+					// Calculate viewport for each cascade (4x4 grid in 4096x4096 texture)
+					int viewportX = (cascade % 2) * 2048; // 0 or 2048
+					int viewportY = (cascade / 2) * 2048; // 0 or 2048
+
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, 4096, 4096);
+
+					current_shadow_texture = args->shadowtex;
+
+					current_shadow_texture->viewport[0] = viewportX;
+					current_shadow_texture->viewport[1] = viewportY;
+					current_shadow_texture->viewport[2] = 2048;
+					current_shadow_texture->viewport[3] = 2048;
+
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+					glEnable(GL_POLYGON_OFFSET_FILL);
+					glPolygonOffset(10, 10);
+
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+					R_PushRefDef();
+
+					// Set up orthographic projection for this cascade
+					float orthoSize = args->size * (1.0f + cascade * 0.5f); // Increase size for further cascades
+
+					// Create light-view matrices
+					float lightViewMatrix[4][4], lightProjMatrix[4][4];
+
+					// Set up view matrix from light's perspective
+					vec3_t lightPos, lightTarget, lightUp;
+					VectorCopy(args->origin, lightPos);
+					VectorMA(lightPos, 1.0f, args->vforward, lightTarget);
+					VectorCopy(args->vup, lightUp);
+
+					Matrix4x4_CreateLookAt(lightViewMatrix, lightPos, lightTarget, lightUp);
+
+					// Set up orthographic projection matrix
+					Matrix4x4_CreateOrtho(lightProjMatrix, -orthoSize, orthoSize, -orthoSize, orthoSize,
+										-cascadeDistances[cascade], cascadeDistances[cascade]);
+
+					// Calculate shadow matrix for this cascade
+					R_SetupShadowMatrix(args->csmMatrices[cascade], lightViewMatrix, lightProjMatrix);
+
+					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+					// Set matrices for rendering
+					Matrix4x4_Copy((*worldMatrix), lightViewMatrix);
+					Matrix4x4_Copy((*projMatrix), lightProjMatrix);
+
+					Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
+					Matrix4x4_Copy(current_shadow_texture->projmatrix, (*projMatrix));
+
+					R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, (*worldMatrix), (*projMatrix));
+
+					// Update refdef for shadow rendering
+					VectorCopy(args->origin, (*r_refdef.vieworg));
+					VectorCopy(args->angle, (*r_refdef.viewangles));
+
+					// Render scene from light's perspective
+					R_RenderScene();
+
+					glDisable(GL_POLYGON_OFFSET_FILL);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					R_PopRefDef();
+
+					GL_EndDebugGroup();
+				}
+
+				args->shadowtex->ready = true;
+
+				r_draw_shadowcaster = false;
+
+				GL_EndDebugGroup();
+			}
 		};
 
 		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
@@ -338,7 +458,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 void R_RenderShadowMap_Start(void)
 {
-	for (int i = 0; i < _ARRAYSIZE(cl_dlight_shadow_textures); ++i)
+	for (int i = 0; i < _countof(cl_dlight_shadow_textures); ++i)
 	{
 		cl_dlight_shadow_textures[i].ready = false;
 	}

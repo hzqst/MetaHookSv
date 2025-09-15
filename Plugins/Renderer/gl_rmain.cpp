@@ -3592,22 +3592,11 @@ void R_SetupGL(void)
 
 	if (R_IsRenderingShadowView())
 	{
-		auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
-
-		if (CurrentSceneFBO)
-		{
-			r_viewport[0] = 0;
-			r_viewport[1] = 0;
-			r_viewport[2] = CurrentSceneFBO->iWidth;
-			r_viewport[3] = CurrentSceneFBO->iHeight;
-		}
-		else
-		{
-			r_viewport[0] = 0;
-			r_viewport[1] = 0;
-			r_viewport[2] = current_shadow_texture->size;
-			r_viewport[3] = current_shadow_texture->size;
-		}
+		//Use viewport from current shadow texture
+		r_viewport[0] = current_shadow_texture->viewport[0];
+		r_viewport[1] = current_shadow_texture->viewport[1];
+		r_viewport[2] = current_shadow_texture->viewport[2];
+		r_viewport[3] = current_shadow_texture->viewport[3];
 	}
 	else if (R_IsRenderingWaterView())
 	{
@@ -3640,10 +3629,10 @@ void R_SetupGL(void)
 
 	if (R_IsRenderingShadowView())
 	{
-		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
-		R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, current_shadow_texture->distance);
+		memcpy(r_world_matrix, current_shadow_texture->worldmatrix, sizeof(mat4));
+		memcpy(r_projection_matrix, current_shadow_texture->projmatrix, sizeof(mat4));
 	}
-	else if (r_vertical_fov->value)
+	else if ((int)r_vertical_fov->value > 0)
 	{
 		auto height = (double)(*r_refdef.vrect).height;
 		auto width = (double)(*r_refdef.vrect).width;
@@ -3684,6 +3673,9 @@ void R_SetupGL(void)
 			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
 			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
+
+		R_LoadIdentityForWorldMatrix();
+		R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 	}
 	else
 	{
@@ -3725,12 +3717,12 @@ void R_SetupGL(void)
 			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
 			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
+
+		R_LoadIdentityForWorldMatrix();
+		R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 	}
 
 	glCullFace(GL_FRONT);
-
-	R_LoadIdentityForWorldMatrix();
-	R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 	if (!gl_cull->value)
 		glDisable(GL_CULL_FACE);

@@ -194,6 +194,12 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		if (state & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			defs << "#define SHADOW_TEXTURE_ENABLED\n";
 
+		if (state & DLIGHT_DIRECTIONAL_ENABLED)
+			defs << "#define DIRECTIONAL_ENABLED\n";
+
+		if (state & DLIGHT_CSM_ENABLED)
+			defs << "#define CSM_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -213,6 +219,9 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_shadowtexel, "u_shadowtexel");
 			SHADER_UNIFORM(prog, u_shadowmatrix, "u_shadowmatrix");
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
+			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
+			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
+			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -241,6 +250,8 @@ const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_VOLUME_ENABLED				,"DLIGHT_VOLUME_ENABLED" },
 { DLIGHT_CONE_TEXTURE_ENABLED		,"DLIGHT_CONE_TEXTURE_ENABLED" },
 { DLIGHT_SHADOW_TEXTURE_ENABLED		,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_DIRECTIONAL_ENABLED		,"DLIGHT_DIRECTIONAL_ENABLED" },
+{ DLIGHT_CSM_ENABLED				,"DLIGHT_CSM_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -675,7 +686,27 @@ void R_IterateDynamicLights(
 		}
 		else if (dynlight->type == DynamicLightType_Directional)
 		{
-			//TODO: DirectionalLight
+			vec3_t vforward, vright, vup;
+			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
+
+			DirectionalLightCallbackArgs args;
+			VectorCopy(dynlight->origin, args.origin);
+			VectorCopy(dynlight->angles, args.angle);
+			VectorCopy(vforward, args.vforward);
+			VectorCopy(vright, args.vright);
+			VectorCopy(vup, args.vup);
+			args.size = dynlight->size;
+			VectorCopy(dynlight->color, args.color);
+			args.ambient = dynlight->ambient;
+			args.diffuse = dynlight->diffuse;
+			args.specular = dynlight->specular;
+			args.specularpow = dynlight->specularpow;
+			args.shadowtex = &dynlight->shadowtex;
+			args.csmMatrices = dynlight->csmMatrices;
+			args.csmDistances = dynlight->csmDistances;
+			args.bVolume = false; // DirectionalLight always uses fullscreen
+
+			directionalLightCallback(&args, context);
 		}
 	}
 
@@ -994,14 +1025,38 @@ void R_LightShadingPass(void)
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform1f(prog.u_lightradius, args->radius);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_modelmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->radius);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
@@ -1023,13 +1078,34 @@ void R_LightShadingPass(void)
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform1f(prog.u_lightradius, args->radius);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->radius);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			const uint32_t indices[] = { 0,1,2,2,3,0 };
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
@@ -1077,18 +1153,54 @@ void R_LightShadingPass(void)
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
-			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
-			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
-			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
-			glUniform1f(prog.u_lightradius, args->distance);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_modelmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
+			}
+			if (prog.u_lightdir != -1)
+			{
+				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+			}
+			if (prog.u_lightright != -1)
+			{
+				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+			}
+			if (prog.u_lightup != -1)
+			{
+				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightcone != -1)
+			{
+				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->distance);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
 			{
@@ -1097,7 +1209,7 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
 			}
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
@@ -1141,17 +1253,50 @@ void R_LightShadingPass(void)
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
-			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
-			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
-			glUniform1f(prog.u_lightradius, args->distance);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_lightdir != -1)
+			{
+				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+			}
+			if (prog.u_lightright != -1)
+			{
+				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+			}
+			if (prog.u_lightup != -1)
+			{
+				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightcone != -1)
+			{
+				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->distance);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
 			{
@@ -1160,7 +1305,7 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
 			}
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
@@ -1186,7 +1331,101 @@ void R_LightShadingPass(void)
 
 	const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
 	{
-		//TODO: DirectionalLight
+		GL_BeginDebugGroup("R_LightShadingPass - DrawDirectionalLight");
+
+		GL_Set2D();
+
+		GL_BindVAO(r_empty_vao);
+
+		program_state_t DLightProgramState = DLIGHT_DIRECTIONAL_ENABLED;
+
+		if (args->shadowtex && args->shadowtex->depth_stencil && args->shadowtex->ready)
+		{
+			DLightProgramState |= DLIGHT_CSM_ENABLED;
+		}
+
+		dlight_program_t prog = { 0 };
+		R_UseDLightProgram(DLightProgramState, &prog);
+
+		if (prog.u_lightdir != -1)
+		{
+			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+		}
+		if (prog.u_lightright != -1)
+		{
+			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+		}
+		if (prog.u_lightup != -1)
+		{
+			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+		}
+		if (prog.u_lightpos != -1)
+		{
+			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+		}
+		if (prog.u_lightcolor != -1)
+		{
+			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+		}
+		if (prog.u_lightambient != -1)
+		{
+			glUniform1f(prog.u_lightambient, args->ambient);
+		}
+		if (prog.u_lightdiffuse != -1)
+		{
+			glUniform1f(prog.u_lightdiffuse, args->diffuse);
+		}
+		if (prog.u_lightspecular != -1)
+		{
+			glUniform1f(prog.u_lightspecular, args->specular);
+		}
+		if (prog.u_lightspecularpow != -1)
+		{
+			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+		}
+
+		if (prog.u_lightSize != -1)
+		{
+			glUniform1f(prog.u_lightSize, args->size);
+		}
+
+		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		{
+			if (prog.u_csmMatrices != -1)
+			{
+				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)args->csmMatrices);
+			}
+
+			if (prog.u_csmDistances != -1)
+			{
+				glUniform4f(prog.u_csmDistances, args->csmDistances[0], args->csmDistances[1],
+						   args->csmDistances[2], args->csmDistances[3]);
+			}
+
+			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
+			{
+				// CSM uses 4096x4096 texture, each cascade is 2048x2048
+				glUniform2f(prog.u_shadowtexel, 2048.0f, 1.0f / 2048.0f);
+			}
+
+			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+		}
+
+		const uint32_t indices[] = { 0,1,2,2,3,0 };
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		{
+			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+		}
+
+		GL_UseProgram(0);
+
+		GL_BindVAO(0);
+
+		GL_Finish2D();
+
+		GL_EndDebugGroup();
 	};
 
 	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);

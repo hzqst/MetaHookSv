@@ -3985,6 +3985,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 	PARSE_KEY_VALUE_STRING(origin, UTIL_ParseStringAsVector3);
 	PARSE_KEY_VALUE_STRING(angles, UTIL_ParseStringAsVector3);
 	PARSE_KEY_VALUE_STRING(color, UTIL_ParseStringAsColor3);
+	PARSE_KEY_VALUE_STRING_WRITEREF(size, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(distance, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(ambient, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(diffuse, UTIL_ParseStringAsVector1);

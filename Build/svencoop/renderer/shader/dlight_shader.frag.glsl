@@ -13,8 +13,13 @@ layout(binding = DSHADE_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 layout(binding = DSHADE_BIND_CONE_TEXTURE) uniform sampler2D coneTex;
 #endif
 
-#if defined(SHADOW_TEXTURE_ENABLED)
+#if defined(SHADOW_TEXTURE_ENABLED) || defined(CSM_ENABLED)
 layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTex;
+#endif
+
+#if defined(CSM_ENABLED)
+uniform mat4 u_csmMatrices[4];
+uniform vec4 u_csmDistances;
 #endif
 
 #if defined(SHADOW_TEXTURE_ENABLED)
@@ -36,6 +41,7 @@ uniform vec3 u_lightright;
 uniform vec3 u_lightup;
 uniform vec3 u_lightcolor;
 uniform vec2 u_lightcone;
+uniform float u_lightSize;
 uniform float u_lightradius;
 uniform float u_lightambient;
 uniform float u_lightdiffuse;
@@ -160,6 +166,109 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 #endif
 
+#if defined(CSM_ENABLED)
+
+float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize, vec2 csmOffset)
+{
+    vec4 uv = basecoord;
+    uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
+    uv.xy = uv.xy * 0.5 + csmOffset; // Map to CSM cascade region
+
+    return textureProj(shadowTex, uv);
+}
+
+float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
+{
+    float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
+
+    // Determine which cascade to use
+    int cascadeIndex = 3; // Default to furthest cascade
+    for(int i = 0; i < 4; ++i)
+    {
+        if(distanceFromCamera < u_csmDistances[i])
+        {
+            cascadeIndex = i;
+            break;
+        }
+    }
+
+    // Calculate shadow coordinates for selected cascade
+    vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
+
+    float visibility = 0.0;
+
+    if(shadowCoords.z / shadowCoords.w > 1.0)
+    {
+        visibility = 1.0;
+    }
+    else
+    {
+        // Calculate CSM texture offset based on cascade index
+        vec2 csmOffset;
+        csmOffset.x = (cascadeIndex % 2) * 0.5; // 0.0 or 0.5
+        csmOffset.y = (cascadeIndex / 2) * 0.5; // 0.0 or 0.5
+
+        float texRes = 2048.0; // Each cascade is 2048x2048
+        float invRes = 1.0 / 2048.0;
+
+        vec2 uv = shadowCoords.xy * texRes;
+
+        vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
+
+        float s = fract(uv.x);
+        float t = fract(uv.y);
+
+        flooredUV *= invRes;
+
+        // PCF filtering (simplified version)
+        float uw0 = (5.0 * s - 6.0);
+        float uw1 = (11.0 * s - 28.0);
+        float uw2 = -(11.0 * s + 17.0);
+        float uw3 = -(5.0 * s + 1.0);
+
+        float u0 = (4.0 * s - 5.0) / uw0 - 3.0;
+        float u1 = (4.0 * s - 16.0) / uw1 - 1.0;
+        float u2 = -(7.0 * s + 5.0) / uw2 + 1.0;
+        float u3 = -s / uw3 + 3.0;
+
+        float vw0 = (5.0 * t - 6.0);
+        float vw1 = (11.0 * t - 28.0);
+        float vw2 = -(11.0 * t + 17.0);
+        float vw3 = -(5.0 * t + 1.0);
+
+        float v0 = (4.0 * t - 5.0) / vw0 - 3.0;
+        float v1 = (4.0 * t - 16.0) / vw1 - 1.0;
+        float v2 = -(7.0 * t + 5.0) / vw2 + 1.0;
+        float v3 = -t / vw3 + 3.0;
+
+        visibility += uw0 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v0), invRes, csmOffset);
+        visibility += uw1 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v0), invRes, csmOffset);
+        visibility += uw2 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v0), invRes, csmOffset);
+        visibility += uw3 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v0), invRes, csmOffset);
+
+        visibility += uw0 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v1), invRes, csmOffset);
+        visibility += uw1 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v1), invRes, csmOffset);
+        visibility += uw2 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v1), invRes, csmOffset);
+        visibility += uw3 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v1), invRes, csmOffset);
+
+        visibility += uw0 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v2), invRes, csmOffset);
+        visibility += uw1 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes, csmOffset);
+        visibility += uw2 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes, csmOffset);
+        visibility += uw3 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v2), invRes, csmOffset);
+
+        visibility += uw0 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v3), invRes, csmOffset);
+        visibility += uw1 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v3), invRes, csmOffset);
+        visibility += uw2 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v3), invRes, csmOffset);
+        visibility += uw3 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v3), invRes, csmOffset);
+
+        visibility /= 2704.0;
+    }
+
+    return visibility;
+}
+
+#endif
+
 vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord)
 {
     vec4 AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
@@ -251,6 +360,34 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     }
 }
 
+vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
+{
+    vec3 LightDirection = u_lightdir.xyz;
+
+    // Check if world position is within the directional light's rectangular area
+    vec3 worldToLight = World - u_lightpos.xyz;
+
+    // Project onto light's right and up vectors
+    float projRight = dot(worldToLight, u_lightright.xyz);
+    float projUp = dot(worldToLight, u_lightup.xyz);
+
+    // Check if within bounds
+    if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
+
+#if defined(CSM_ENABLED)
+    float flShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection);
+    Color.r *= flShadowIntensity;
+    Color.g *= flShadowIntensity;
+    Color.b *= flShadowIntensity;
+#endif
+
+    return Color;
+}
+
 void main()
 {
 #if defined(VOLUME_ENABLED)
@@ -273,6 +410,8 @@ void main()
     out_FragColor = CalcSpotLight(worldpos, normal, vBaseTexCoord);
 #elif defined(POINT_ENABLED)
     out_FragColor = CalcPointLight(worldpos, normal, vBaseTexCoord);
+#elif defined(DIRECTIONAL_ENABLED)
+    out_FragColor = CalcDirectionalLight(worldpos, normal, vBaseTexCoord);
 #endif
 
 }

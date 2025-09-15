@@ -24,6 +24,11 @@ public:
 	float specularpow{};
 	int shadow{};
 	shadow_texture_t shadowtex;
+
+	// DirectionalLight specific fields
+	float size{}; // Orthographic projection width/height for DirectionalLight
+	mat4 csmMatrices[4]; // Shadow matrices for each cascade level
+	float csmDistances[4]; // Distance splits for each cascade
 };
 
 extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
@@ -101,12 +106,18 @@ typedef struct DirectionalLightCallbackArgs_s
 {
 	vec3_t origin;
 	vec3_t angle;
+	vec3_t vforward;
+	vec3_t vright;
+	vec3_t vup;
 	float size;
+	vec3_t color;
 	float ambient;
 	float diffuse;
 	float specular;
 	float specularpow;
 	shadow_texture_t* shadowtex;
+	mat4* csmMatrices; // Array of 4 cascade matrices
+	float* csmDistances; // Array of 4 cascade distances
 	bool bVolume;
 }DirectionalLightCallbackArgs;
 
@@ -135,6 +146,10 @@ typedef struct
 	int u_shadowtexel;
 	int u_shadowmatrix;
 	int u_modelmatrix;
+	// DirectionalLight CSM specific uniforms
+	int u_csmMatrices;
+	int u_csmDistances;
+	int u_lightSize;
 }dlight_program_t;
 
 typedef struct
@@ -183,6 +198,8 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DLIGHT_VOLUME_ENABLED					0x4ull
 #define DLIGHT_CONE_TEXTURE_ENABLED				0x8ull
 #define DLIGHT_SHADOW_TEXTURE_ENABLED			0x10ull
+#define DLIGHT_DIRECTIONAL_ENABLED				0x20ull
+#define DLIGHT_CSM_ENABLED						0x40ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull

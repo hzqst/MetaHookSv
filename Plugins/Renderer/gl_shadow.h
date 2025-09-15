@@ -3,10 +3,15 @@
 typedef struct shadow_texture_s
 {
 	GLuint depth_stencil;
+
 	size_t size;
-	mat4 matrix;
-	float distance;
-	float cone_angle;
+
+	uint32_t viewport[4];
+
+	mat4 worldmatrix;
+	mat4 projmatrix;
+	mat4 shadowmatrix;
+
 	bool ready;
 }shadow_texture_t;
 
