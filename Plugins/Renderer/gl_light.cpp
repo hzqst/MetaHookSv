@@ -695,8 +695,8 @@ void R_IterateDynamicLights(
 			VectorCopy(vforward, args.vforward);
 			VectorCopy(vright, args.vright);
 			VectorCopy(vup, args.vup);
-			args.size = dynlight->size;
 			VectorCopy(dynlight->color, args.color);
+			args.size = dynlight->size;
 			args.ambient = dynlight->ambient;
 			args.diffuse = dynlight->diffuse;
 			args.specular = dynlight->specular;
@@ -1398,8 +1398,7 @@ void R_LightShadingPass(void)
 
 			if (prog.u_csmDistances != -1)
 			{
-				glUniform4f(prog.u_csmDistances, args->csmDistances[0], args->csmDistances[1],
-						   args->csmDistances[2], args->csmDistances[3]);
+				glUniform4f(prog.u_csmDistances, args->csmDistances[0], args->csmDistances[1], args->csmDistances[2], args->csmDistances[3]);
 			}
 
 			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)

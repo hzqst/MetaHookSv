@@ -15,8 +15,8 @@ float r_projection_matrix_inv[16] = { 0 };
 
 vec3_t r_frustum_origin[4] = { 0 };
 vec3_t r_frustum_vec[4] = { 0 };
-float r_znear = 0;
-float r_zfar = 0;
+float r_znear = 4;
+float r_zfar = 4096;
 bool r_ortho = false;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
@@ -4396,20 +4396,6 @@ void R_SetupCameraUBO()
 void R_SetupSceneUBO(void)
 {
 	scene_ubo_t SceneUBO;
-
-	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
-
-	vec3_t vforward;
-	gEngfuncs.pfnAngleVectors(r_shadow_angles->GetValues(), vforward, NULL, NULL);
-	memcpy(SceneUBO.shadowDirection, vforward, sizeof(vec3_t));
-	memcpy(SceneUBO.shadowColor, r_shadow_color->GetValues(), sizeof(vec3_t));
-
-	SceneUBO.shadowColor[3] = r_shadow_intensity->GetValue();
-
-	memcpy(SceneUBO.shadowFade, r_shadow_distfade->GetValues(), sizeof(vec2_t));
-	memcpy(&SceneUBO.shadowFade[2], r_shadow_lumfade->GetValues(), sizeof(vec2_t));
 
 	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
 

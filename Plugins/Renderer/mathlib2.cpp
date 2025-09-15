@@ -990,73 +990,59 @@ void Matrix4x4_CreateFromEntityEx(float out[4][4], const vec3_t angles, const ve
 	out[3][3] = 1.0f;
 }
 
+void Matrix4x4_CreateCSMOffset(float out[4][4], int cascadeIndex)
+{
+	// Create offset matrix for CSM cascade texture coordinate mapping
+	// CSM uses 4096x4096 texture divided into four 2048x2048 regions
+	// Layout: [0,1]
+	//         [2,3]
+
+	// Scale by 0.5 to map from [-1,1] to [0,0.5]
+	float scale = 0.5f;
+
+	// Calculate offset based on cascade index
+	float offsetX = 0.0f;
+	float offsetY = 0.0f;
+
+	switch (cascadeIndex)
+	{
+		case 0: // Top-left
+			offsetX = -0.5f;
+			offsetY = -0.5f;
+			break;
+		case 1: // Top-right
+			offsetX = 0.5f;
+			offsetY = -0.5f;
+			break;
+		case 2: // Bottom-left
+			offsetX = -0.5f;
+			offsetY = 0.5f;
+			break;
+		case 3: // Bottom-right
+			offsetX = 0.5f;
+			offsetY = 0.5f;
+			break;
+	}
+
+	// Create scale and translate matrix
+	out[0][0] = scale; out[0][1] = 0.0f;  out[0][2] = 0.0f;  out[0][3] = 0;
+	out[1][0] = 0.0f;  out[1][1] = scale; out[1][2] = 0.0f;  out[1][3] = 0;
+	out[2][0] = 0.0f;  out[2][1] = 0.0f;  out[2][2] = scale; out[2][3] = 0.0f;
+	out[3][0] = offsetX;  out[3][1] = offsetY;  out[3][2] = 0.0f;  out[3][3] = 1.0f;
+}
+
+void Matrix4x4_CreateIdentity(float out[4][4])
+{
+	out[0][0] = 1.0f; out[0][1] = 0.0f; out[0][2] = 0.0f; out[0][3] = 0.0f;
+	out[1][0] = 0.0f; out[1][1] = 1.0f; out[1][2] = 0.0f; out[1][3] = 0.0f;
+	out[2][0] = 0.0f; out[2][1] = 0.0f; out[2][2] = 1.0f; out[2][3] = 0.0f;
+	out[3][0] = 0.0f; out[3][1] = 0.0f; out[3][2] = 0.0f; out[3][3] = 1.0f;
+}
+
 void Matrix4x4_Copy(float out[4][4], const float in[4][4])
 {
 	out[0][0] = in[0][0]; out[0][1] = in[0][1]; out[0][2] = in[0][2]; out[0][3] = in[0][3];
 	out[1][0] = in[1][0]; out[1][1] = in[1][1]; out[1][2] = in[1][2]; out[1][3] = in[1][3];
 	out[2][0] = in[2][0]; out[2][1] = in[2][1]; out[2][2] = in[2][2]; out[2][3] = in[2][3];
 	out[3][0] = in[3][0]; out[3][1] = in[3][1]; out[3][2] = in[3][2]; out[3][3] = in[3][3];
-}
-
-void Matrix4x4_CreateLookAt(float out[4][4], const vec3_t eye, const vec3_t center, const vec3_t up)
-{
-	vec3_t f, u, s;
-
-	// f = normalize(center - eye)
-	VectorSubtract(center, eye, f);
-	VectorNormalize(f);
-
-	// s = normalize(cross(f, up))
-	CrossProduct(f, up, s);
-	VectorNormalize(s);
-
-	// u = cross(s, f)
-	CrossProduct(s, f, u);
-
-	out[0][0] = s[0];
-	out[0][1] = u[0];
-	out[0][2] = -f[0];
-	out[0][3] = 0.0f;
-
-	out[1][0] = s[1];
-	out[1][1] = u[1];
-	out[1][2] = -f[1];
-	out[1][3] = 0.0f;
-
-	out[2][0] = s[2];
-	out[2][1] = u[2];
-	out[2][2] = -f[2];
-	out[2][3] = 0.0f;
-
-	out[3][0] = -DotProduct(s, eye);
-	out[3][1] = -DotProduct(u, eye);
-	out[3][2] = DotProduct(f, eye);
-	out[3][3] = 1.0f;
-}
-
-void Matrix4x4_CreateOrtho(float out[4][4], float left, float right, float bottom, float top, float zNear, float zFar)
-{
-	float width = right - left;
-	float height = top - bottom;
-	float depth = zFar - zNear;
-
-	out[0][0] = 2.0f / width;
-	out[0][1] = 0.0f;
-	out[0][2] = 0.0f;
-	out[0][3] = -(right + left) / width;
-
-	out[1][0] = 0.0f;
-	out[1][1] = 2.0f / height;
-	out[1][2] = 0.0f;
-	out[1][3] = -(top + bottom) / height;
-
-	out[2][0] = 0.0f;
-	out[2][1] = 0.0f;
-	out[2][2] = -2.0f / depth;
-	out[2][3] = -(zFar + zNear) / depth;
-
-	out[3][0] = 0.0f;
-	out[3][1] = 0.0f;
-	out[3][2] = 0.0f;
-	out[3][3] = 1.0f;
 }

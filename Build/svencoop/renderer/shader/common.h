@@ -203,11 +203,6 @@ struct camera_ubo_t {
 };
 
 struct scene_ubo_t{
-
-	mat4 shadowMatrix[3];
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
 	vec4 clipPlane;
 	vec4 fogColor;
 	float fogStart;

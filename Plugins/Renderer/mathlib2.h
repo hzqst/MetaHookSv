@@ -90,9 +90,9 @@ int InvertMatrix(const float * m, float *out);
 void Matrix4x4_Multiply(float out[4][4], const float in1[4][4], const float in2[4][4]);
 void Matrix4x4_ConcatTransforms(float out[4][4], float in1[4][4], float in2[4][4]);
 void Matrix4x4_Transpose(float out[4][4], const float in1[4][4]);
+void Matrix4x4_CreateCSMOffset(float out[4][4], int cascadeIndex);
+void Matrix4x4_CreateIdentity(float out[4][4]);
 void Matrix4x4_Copy(float out[4][4], const float in[4][4]);
-void Matrix4x4_CreateLookAt(float out[4][4], const vec3_t eye, const vec3_t center, const vec3_t up);
-void Matrix4x4_CreateOrtho(float out[4][4], float left, float right, float bottom, float top, float zNear, float zFar);
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 
 void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);

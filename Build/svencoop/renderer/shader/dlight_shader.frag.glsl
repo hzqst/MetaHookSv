@@ -168,11 +168,10 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 #if defined(CSM_ENABLED)
 
-float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize, vec2 csmOffset)
+float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
 {
     vec4 uv = basecoord;
     uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
-    uv.xy = uv.xy * 0.5 + csmOffset; // Map to CSM cascade region
 
     return textureProj(shadowTex, uv);
 }
@@ -183,11 +182,31 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
     // Determine which cascade to use
     int cascadeIndex = 3; // Default to furthest cascade
+    float cascadeBlendFactor = 0.0;
+
     for(int i = 0; i < 4; ++i)
     {
         if(distanceFromCamera < u_csmDistances[i])
         {
             cascadeIndex = i;
+            // Calculate blend factor for smooth transition between cascades
+            if(i > 0)
+            {
+                float blendRegion = (u_csmDistances[i] - u_csmDistances[i-1]) * 0.1; // 10% blend region
+                float distFromPrevBoundary = distanceFromCamera - u_csmDistances[i-1];
+                if(distFromPrevBoundary < blendRegion)
+                {
+                    cascadeBlendFactor = distFromPrevBoundary / blendRegion;
+                }
+                else
+                {
+                    cascadeBlendFactor = 1.0;
+                }
+            }
+            else
+            {
+                cascadeBlendFactor = 1.0;
+            }
             break;
         }
     }
@@ -195,73 +214,99 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
     // Calculate shadow coordinates for selected cascade
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
+    // Add bias to prevent shadow acne and self-shadowing issues
+    float bias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+    shadowCoords.z -= bias;
+
     float visibility = 0.0;
 
-    if(shadowCoords.z / shadowCoords.w > 1.0)
+    // Check if we're outside the shadow map bounds
+    if(shadowCoords.z / shadowCoords.w > 1.0 || shadowCoords.z / shadowCoords.w < 0.0)
     {
         visibility = 1.0;
     }
     else
     {
-        // Calculate CSM texture offset based on cascade index
-        vec2 csmOffset;
-        csmOffset.x = (cascadeIndex % 2) * 0.5; // 0.0 or 0.5
-        csmOffset.y = (cascadeIndex / 2) * 0.5; // 0.0 or 0.5
+        // Perspective divide
+        vec3 projCoords = shadowCoords.xyz / shadowCoords.w;
 
-        float texRes = 2048.0; // Each cascade is 2048x2048
-        float invRes = 1.0 / 2048.0;
+        // Check if we're outside the [0,1] range for texture coordinates
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        {
+            visibility = 1.0;
+        }
+        else
+        {
+            float texRes = 4096.0;
+            float invRes = 1.0 / 4096.0;
 
-        vec2 uv = shadowCoords.xy * texRes;
+            vec2 uv = projCoords.xy * texRes;
+            vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
 
-        vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
+            float s = fract(uv.x);
+            float t = fract(uv.y);
 
-        float s = fract(uv.x);
-        float t = fract(uv.y);
+            flooredUV *= invRes;
 
-        flooredUV *= invRes;
+            // Improved PCF filtering with more samples for smoother shadows
+            int pcfSamples = 0;
+            float pcfRadius = 1.5; // Slightly larger radius for smoother edges
 
-        // PCF filtering (simplified version)
-        float uw0 = (5.0 * s - 6.0);
-        float uw1 = (11.0 * s - 28.0);
-        float uw2 = -(11.0 * s + 17.0);
-        float uw3 = -(5.0 * s + 1.0);
+            for(int x = -1; x <= 1; x++)
+            {
+                for(int y = -1; y <= 1; y++)
+                {
+                    vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
+                    vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
+                    visibility += texture(shadowTex, sampleCoord.xyz);
+                    pcfSamples++;
+                }
+            }
 
-        float u0 = (4.0 * s - 5.0) / uw0 - 3.0;
-        float u1 = (4.0 * s - 16.0) / uw1 - 1.0;
-        float u2 = -(7.0 * s + 5.0) / uw2 + 1.0;
-        float u3 = -s / uw3 + 3.0;
+            visibility /= float(pcfSamples);
+        }
+    }
 
-        float vw0 = (5.0 * t - 6.0);
-        float vw1 = (11.0 * t - 28.0);
-        float vw2 = -(11.0 * t + 17.0);
-        float vw3 = -(5.0 * t + 1.0);
+    // Blend with previous cascade if needed for smooth transitions
+    if(cascadeIndex > 0 && cascadeBlendFactor < 1.0)
+    {
+        vec4 prevShadowCoords = u_csmMatrices[cascadeIndex-1] * vec4(World, 1.0);
+        prevShadowCoords.z -= bias;
 
-        float v0 = (4.0 * t - 5.0) / vw0 - 3.0;
-        float v1 = (4.0 * t - 16.0) / vw1 - 1.0;
-        float v2 = -(7.0 * t + 5.0) / vw2 + 1.0;
-        float v3 = -t / vw3 + 3.0;
+        float prevVisibility = 0.0;
 
-        visibility += uw0 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v0), invRes, csmOffset);
-        visibility += uw1 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v0), invRes, csmOffset);
-        visibility += uw2 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v0), invRes, csmOffset);
-        visibility += uw3 * vw0 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v0), invRes, csmOffset);
+        if(prevShadowCoords.z / prevShadowCoords.w > 1.0 || prevShadowCoords.z / prevShadowCoords.w < 0.0)
+        {
+            prevVisibility = 1.0;
+        }
+        else
+        {
+            vec3 prevProjCoords = prevShadowCoords.xyz / prevShadowCoords.w;
 
-        visibility += uw0 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v1), invRes, csmOffset);
-        visibility += uw1 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v1), invRes, csmOffset);
-        visibility += uw2 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v1), invRes, csmOffset);
-        visibility += uw3 * vw1 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v1), invRes, csmOffset);
+            if(prevProjCoords.x < 0.0 || prevProjCoords.x > 1.0 || prevProjCoords.y < 0.0 || prevProjCoords.y > 1.0)
+            {
+                prevVisibility = 1.0;
+            }
+            else
+            {
+                // Simple PCF for previous cascade
+                int prevPcfSamples = 0;
+                for(int x = -1; x <= 1; x++)
+                {
+                    for(int y = -1; y <= 1; y++)
+                    {
+                        vec2 offset = vec2(float(x), float(y)) * 1.5 * (1.0 / 4096.0);
+                        vec4 sampleCoord = vec4(prevProjCoords.xy + offset, prevProjCoords.z, 1.0);
+                        prevVisibility += texture(shadowTex, sampleCoord.xyz);
+                        prevPcfSamples++;
+                    }
+                }
+                prevVisibility /= float(prevPcfSamples);
+            }
+        }
 
-        visibility += uw0 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v2), invRes, csmOffset);
-        visibility += uw1 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes, csmOffset);
-        visibility += uw2 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes, csmOffset);
-        visibility += uw3 * vw2 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v2), invRes, csmOffset);
-
-        visibility += uw0 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v3), invRes, csmOffset);
-        visibility += uw1 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v3), invRes, csmOffset);
-        visibility += uw2 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v3), invRes, csmOffset);
-        visibility += uw3 * vw3 * CSMShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v3), invRes, csmOffset);
-
-        visibility /= 2704.0;
+        // Blend between current and previous cascade
+        visibility = mix(prevVisibility, visibility, cascadeBlendFactor);
     }
 
     return visibility;
@@ -372,9 +417,9 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     float projUp = dot(worldToLight, u_lightup.xyz);
 
     // Check if within bounds
-    if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
-        return vec4(0.0, 0.0, 0.0, 0.0);
-    }
+   // if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
+   //     return vec4(0.0, 0.0, 0.0, 0.0);
+   // }
 
     vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 

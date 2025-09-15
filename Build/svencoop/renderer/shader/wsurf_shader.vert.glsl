@@ -181,22 +181,6 @@ void main(void)
 	v_speculartexcoord = in_speculartexcoord;
 #endif
 
-#if defined(SHADOWMAP_ENABLED)
-
-	#if defined(SHADOWMAP_HIGH_ENABLED)
-        v_shadowcoord[0] = SceneUBO.shadowMatrix[0] * vec4(v_worldpos, 1.0);
-    #endif
-
-    #if defined(SHADOWMAP_MEDIUM_ENABLED)
-        v_shadowcoord[1] = SceneUBO.shadowMatrix[1] * vec4(v_worldpos, 1.0);
-    #endif
-
-    #if defined(SHADOWMAP_LOW_ENABLED)
-        v_shadowcoord[2] = SceneUBO.shadowMatrix[2] * vec4(v_worldpos, 1.0);
-    #endif
-
-#endif
-
 	#if defined(SKYBOX_ENABLED)
 		
 	#elif defined(DECAL_ENABLED)

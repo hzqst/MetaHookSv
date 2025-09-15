@@ -198,6 +198,7 @@ void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const f
 		glPushMatrix();
 		glLoadIdentity();
 		glLoadMatrixf(bias);
+		glMultMatrixf(offsetMatrix); // CSM offset matrix
 		glMultMatrixf(r_projection_matrix);
 		glMultMatrixf(r_world_matrix);
 		glGetFloatv(GL_TEXTURE_MATRIX, (float *)shadowmatrix);
@@ -284,6 +285,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 						float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
+						R_LoadIdentityForProjectionMatrix();
 						R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
 
 						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
@@ -342,8 +344,8 @@ void R_RenderShadowmapForDynamicLights(void)
 
 				// Calculate cascade distances based on camera frustum
 				// These could be configurable via cvars in the future
-				float nearPlane = 1.0f;  // Should match r_nearclip or similar
-				float farPlane = 8192.0f; // Should match r_farclip or similar
+				float nearPlane = r_znear;  // Should match r_nearclip or similar
+				float farPlane = r_zfar; // Should match r_farclip or similar
 				float cascadeDistances[4];
 
 				// Use logarithmic distribution for cascades
@@ -359,12 +361,19 @@ void R_RenderShadowmapForDynamicLights(void)
 					args->csmDistances[i] = cascadeDistances[i];
 				}
 
-				GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, 4096, 4096);
+				current_shadow_texture = args->shadowtex;
+
+				current_shadow_texture->viewport[0] = 0;
+				current_shadow_texture->viewport[1] = 0;
+				current_shadow_texture->viewport[2] = args->shadowtex->size;
+				current_shadow_texture->viewport[3] = args->shadowtex->size;
+
+				GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, current_shadow_texture->depth_stencil, current_shadow_texture->size, current_shadow_texture->size);
 
 				GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-				glEnable(GL_POLYGON_OFFSET_FILL);
-				glPolygonOffset(10, 10);
+				//glEnable(GL_POLYGON_OFFSET_FILL);
+				//glPolygonOffset(1.0f, 1.0f);
 
 				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
@@ -377,35 +386,32 @@ void R_RenderShadowmapForDynamicLights(void)
 				{
 					GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascade);
 
-					// Calculate viewport for each cascade (4x4 grid in 4096x4096 texture)
-					int viewportX = (cascade % 2) * 2048; // 0 or 2048
-					int viewportY = (cascade / 2) * 2048; // 0 or 2048
-
-					current_shadow_texture = args->shadowtex;
-
-					current_shadow_texture->viewport[0] = viewportX;
-					current_shadow_texture->viewport[1] = viewportY;
-					current_shadow_texture->viewport[2] = 2048;
-					current_shadow_texture->viewport[3] = 2048;
-
 					// Update refdef for shadow rendering
 					VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 
-					// Set up orthographic projection for this cascade
-					float orthoSize = args->size * (1.0f + cascade * 0.5f); // Increase size for further cascades
-
-					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, -2048, 2048, true);
-
+					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+					// Set up orthographic projection for this cascade
+					float orthoSize = args->size * (1.0f + cascade * 0.5f) / 2.5f; // Increase size for further cascades
+
+					R_LoadIdentityForProjectionMatrix();
+					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
 
 					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
-					Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
-					Matrix4x4_Copy(current_shadow_texture->projmatrix, (*projMatrix));
+					float csmOffsetMatrix[4][4];
+					Matrix4x4_CreateCSMOffset(csmOffsetMatrix, cascade);
 
-					R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, (*worldMatrix), (*projMatrix));
+					mat4 tempProjmatrix;
+					Matrix4x4_Multiply(tempProjmatrix, (*projMatrix), csmOffsetMatrix);
+
+					Matrix4x4_Copy(current_shadow_texture->projmatrix, tempProjmatrix);
+					Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
+
+					R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, current_shadow_texture->worldmatrix, current_shadow_texture->projmatrix);
 
 					Matrix4x4_Copy(args->csmMatrices[cascade], current_shadow_texture->shadowmatrix);
 
@@ -419,7 +425,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-				glDisable(GL_POLYGON_OFFSET_FILL);
+				//glDisable(GL_POLYGON_OFFSET_FILL);
 
 				args->shadowtex->ready = true;
 
