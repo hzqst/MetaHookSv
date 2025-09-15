@@ -220,7 +220,6 @@ bool r_draw_viewmodel = false;
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_gammablend = false;
-bool r_draw_legacysprite = false;
 bool r_draw_reflectview = false;
 bool r_draw_refractview = false;
 bool r_draw_portalview = false;
@@ -1253,7 +1252,7 @@ void triapi_End()
 
 	GL_BeginDebugGroup("triapi_End");
 
-#if 0
+#if 1
 	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
 #else
 	GL_UploadDataToVBOStreamMap(gTriAPICommand.hVBO, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
@@ -1672,8 +1671,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		r_draw_oitblend = true;
 
-		r_draw_legacysprite = true;
-
 		if (r_drawentities->value)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
@@ -1692,8 +1689,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawParticles();
 		}
-
-		r_draw_legacysprite = false;
 
 		r_draw_oitblend = false;
 
@@ -1708,8 +1703,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 	}
 	else
 	{
-		r_draw_legacysprite = true;
-
 		if (r_drawentities->value)
 		{
 			R_DrawTEntitiesOnList(onlyClientDraw);
@@ -1728,8 +1721,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 		{
 			R_DrawParticles();
 		}
-
-		r_draw_legacysprite = false;
 	}
 
 	GL_UseProgram(0);
@@ -2809,6 +2800,8 @@ void R_ClearPortalClipPlanes(void)
 
 void R_RenderView_SvEngine(int viewIdx)
 {
+	GL_BeginDebugGroup("R_RenderView");
+
 	//Clear texture id cache since SC client dll bind texture id 0 by glBindTexture directly and leave texture id caching system corrupted.
 	(*currenttexture) = -1;
 
@@ -2899,6 +2892,8 @@ void R_RenderView_SvEngine(int viewIdx)
 			r_sprite_polys, r_sprite_drawcall
 		);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_RenderView(void)
@@ -3973,9 +3968,6 @@ void R_DisableRenderingFog()
 {
 	r_fog_mode = 0;
 	r_fog_enabled = false;
-
-	//Core profile
-	//glDisable(GL_FOG);
 }
 
 void R_InhibitRenderingFog()
@@ -3983,9 +3975,6 @@ void R_InhibitRenderingFog()
 	if (r_fog_mode)
 	{
 		r_fog_enabled = false;
-
-		//Core profile
-		//glDisable(GL_FOG);
 	}
 }
 
@@ -3994,8 +3983,6 @@ void R_RestoreRenderingFog()
 	if (r_fog_mode)
 	{
 		r_fog_enabled = true;
-
-		glEnable(GL_FOG);
 	}
 }
 
@@ -4003,55 +3990,43 @@ void R_EndRenderOpaque(void)
 {
 	r_draw_opaque = false;
 
-	//Core Profile
-	//glDisable(GL_ALPHA_TEST);
-
 	//Transfer everything from GBuffer into SceneFBO
 	if (R_IsRenderingGBuffer())
 	{
 		R_EndRenderGBuffer(GL_GetCurrentSceneFBO());
 	}
-
-	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
-	//R_LoadLegacyOpenGLMatrixForWorld();
 }
 
 void ClientDLL_DrawNormalTriangles(void)
 {
+	GL_BeginDebugGroup("ClientDLL_DrawNormalTriangles");
 	//Good news: Stencil write has been completely removed from portal code.
 
 	GL_PushFrameBuffer();
 
-	//glStencilMask(0xFF);
-
 	//SC client dll should have enabled this but they don't
 	glEnable(GL_POLYGON_OFFSET_FILL);
-
-	r_draw_legacysprite = true;
 
 	//Call ClientDLL_DrawNormalTriangles instead of HUD_DrawNormalTriangles
 	gPrivateFuncs.ClientDLL_DrawNormalTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 
-	r_draw_legacysprite = false;
-
-	//glStencilMask(0);
-
 	glDisable(GL_POLYGON_OFFSET_FILL);
-
-	//This should have been restored to 0 by SC client dll while drawing portal overlay but they don't, which breaks HUD/GUIs somehow.
-	//glAlphaFunc(GL_NOTEQUAL, 0);//Core Profile
 
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
 	(*currenttexture) = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
 	GL_PopFrameBuffer();
+
+	GL_EndDebugGroup();
 }
 
 void R_RenderScene(void)
 {
+	GL_BeginDebugGroup("R_RenderScene");
+
 	if (CL_IsDevOverviewMode())
 		CL_SetDevOverView(R_GetRefDef());
 
@@ -4092,6 +4067,8 @@ void R_RenderScene(void)
 	S_ExtraUpdate();
 
 	R_DisableRenderingFog();
+
+	GL_EndDebugGroup();
 }
 
 int EngineGetMaxGLTextures()

@@ -642,8 +642,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dynlight.origin, args.origin);
 				VectorCopy(dynlight.color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = dynlight.ambient;
 				args.diffuse = dynlight.diffuse;
 				args.specular = dynlight.specular;
@@ -659,8 +657,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.radius = radius;
 				VectorCopy(dynlight.origin, args.origin);
 				VectorCopy(dynlight.color, args.color);
-
-				//GammaToLinear(args.color);
 
 				args.ambient = dynlight.ambient;
 				args.diffuse = dynlight.diffuse;
@@ -770,8 +766,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 #if 1//Don't do such thing for spotlight
 			struct pmtrace_s trace {};
 
-			//auto iLocalPlayerPhysEntIndex = EngineFindPhysEntIndexByEntity(gEngfuncs.GetLocalPlayer());
-
 			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
@@ -827,8 +821,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -854,8 +846,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vright, args.vright);
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
-
-				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
@@ -902,8 +892,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -919,8 +907,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.radius = radius;
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
-
-				//GammaToLinear(args.color);
 
 				args.ambient = ambient;
 				args.diffuse = diffuse;
@@ -1074,6 +1060,11 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
+			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+			}
+
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
@@ -1100,10 +1091,8 @@ void R_LightShadingPass(void)
 				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
@@ -1135,6 +1124,11 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
+			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+			}
+
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
@@ -1160,10 +1154,8 @@ void R_LightShadingPass(void)
 				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 

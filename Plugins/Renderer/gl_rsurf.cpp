@@ -1158,25 +1158,6 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
-	//Mix shadow if not deferred
-	if (g_WorldSurfaceRenderer.bShadowmapTexture && !R_IsRenderingGBuffer())
-	{
-		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-		if (shadow_numvisedicts[0] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-		}
-		if (shadow_numvisedicts[1] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-		}
-		if (shadow_numvisedicts[2] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
-		}
-	}
-
 	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;

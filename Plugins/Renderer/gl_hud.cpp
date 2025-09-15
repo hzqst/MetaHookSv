@@ -520,7 +520,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
-#if 0
+#if 1
 	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
 	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
 	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
@@ -658,11 +658,15 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
-
-	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(filledrectvertex_t), verticeBuffer);
+#if 1
+	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
+	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
+	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
+#else
+	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
 	GL_UploadDataToVBOStreamMap(hVBOInstance, sizeof(instanceDataBuffer), instanceDataBuffer);
 	GL_UploadDataToEBOStreamMap(hEBO, indicesCount * sizeof(uint32_t), indices);
-
+#endif
 	GL_BindVAO(hVAO);
 
 	if (programState & DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED)

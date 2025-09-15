@@ -872,7 +872,7 @@ void Matrix4x4_ConcatTransforms(float out[4][4], float in1[4][4], float in2[4][4
 	out[2][3] = in1[2][0] * in2[0][3] + in1[2][1] * in2[1][3] + in1[2][2] * in2[2][3] + in1[2][3];
 }
 
-void Matrix4x4_Multiply(float out[4][4], float in1[4][4], float in2[4][4])
+void Matrix4x4_Multiply(float out[4][4], const float in1[4][4], const float in2[4][4])
 {
 	int i, j, k;
 

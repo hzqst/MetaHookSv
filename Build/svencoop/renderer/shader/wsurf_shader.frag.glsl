@@ -12,7 +12,6 @@ layout(binding = WSURF_BIND_DETAIL_TEXTURE) uniform sampler2D detailTex;
 layout(binding = WSURF_BIND_NORMAL_TEXTURE) uniform sampler2D normalTex;
 layout(binding = WSURF_BIND_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
 layout(binding = WSURF_BIND_SPECULAR_TEXTURE) uniform sampler2D specularTex;
-layout(binding = WSURF_BIND_SHADOWMAP_TEXTURE) uniform sampler2DArray shadowmapTexArray;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_0) uniform sampler2DArray lightmapTexArray_0;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_1) uniform sampler2DArray lightmapTexArray_1;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_2) uniform sampler2DArray lightmapTexArray_2;
@@ -168,127 +167,6 @@ vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld, vec2 baseTexcoor
 
 #endif
 
-float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
-{
-	vec4 newcoord = coord + vec4(off.x * SHADOW_TEXTURE_OFFSET, off.y * SHADOW_TEXTURE_OFFSET, 0.0, 0.0);
-
-	float depth0 = textureLod(shadowmapTexArray, vec3(newcoord.xy / newcoord.w, layer), 0 ).a;
-
-	float depth1 = newcoord.z / newcoord.w;
-
-	return depth0 < depth1 ? 0.0 : 1.0;
-}
-
-vec3 ShadowGetWorldPosition(vec4 coord, float layer)
-{
-	return textureLod(shadowmapTexArray, vec3(coord.xy / coord.w, layer), 0 ).xyz;
-}
-
-float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float shadow_high, float shadow_medium, float shadow_low)
-{
-	float shadow_intensity = 1.0;
-
-	vec3 scene = worldpos.xyz;
-	
-	vec3 caster = ShadowGetWorldPosition(v_shadowcoord[ilayer], layer);
-
-	float dist = abs(caster.z - scene.z);
-	float distlerp = (dist - SceneUBO.shadowFade.x) / SceneUBO.shadowFade.y;
-	shadow_intensity *= 1.0 - clamp(distlerp, 0.0, 1.0);
-
-	shadow_high = 1.0 - shadow_high;
-	shadow_medium = 1.0 - shadow_medium;
-	shadow_low = 1.0 - shadow_low;
-
-	float shadow_final = shadow_high + shadow_medium + shadow_low;
-	shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_intensity;
-
-	return shadow_final;//0 = shadow, 1 = no shadow
-}
-
-float CalcShadowIntensity(vec3 worldpos, vec3 norm, vec3 lightdir)
-{
-	float shadow_final = 0.0;
-	if(dot(norm.xyz, lightdir.xyz) < 0.0) 
-	{
-		float shadow_high = 1.0;
-
-		#ifdef SHADOWMAP_HIGH_ENABLED
-			shadow_high = 0.0;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2(0.0,0.0), 0.0) * 0.25;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, -1.0), 0.0) * 0.0625;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 0.0), 0.0) * 0.125;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 1.0), 0.0) * 0.0625;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, -1.0), 0.0) * 0.125;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, 1.0), 0.0) * 0.125;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, -1.0), 0.0) * 0.0625;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 0.0), 0.0) * 0.125;
-			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 1.0), 0.0) * 0.0625;
-		#endif
-
-		float shadow_medium = 1.0;
-
-		#ifdef SHADOWMAP_MEDIUM_ENABLED
-			shadow_medium = 0.0;
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.35,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(-0.35,0.0), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.35), 1.0);
-			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,-0.35), 1.0);
-			shadow_medium *= 0.2;
-		#endif
-
-		float shadow_low = 1.0;
-
-		#ifdef SHADOWMAP_LOW_ENABLED
-			shadow_low = 0.0;
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.35,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(-0.35,0.0), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.35), 2.0);
-			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,-0.35), 2.0);
-			shadow_low *= 0.2;
-		#endif
-
-		if(false)
-		{
-			//nothing here
-		}
-		
-	#ifdef SHADOWMAP_HIGH_ENABLED
-		else if(shadow_high < 0.95)
-		{
-			shadow_final = CalcShadowIntensityInternal(worldpos, 0, 0.0, shadow_high, shadow_medium, shadow_low);
-		}
-	#endif
-
-	#ifdef SHADOWMAP_MEDIUM_ENABLED
-		else if(shadow_medium < 0.95)
-		{
-			shadow_final = CalcShadowIntensityInternal(worldpos, 1, 1.0, shadow_high, shadow_medium, shadow_low);
-		}
-	#endif
-
-	#ifdef SHADOWMAP_LOW_ENABLED
-		else if(shadow_low < 0.95)
-		{
-			shadow_final = CalcShadowIntensityInternal(worldpos, 2, 2.0, shadow_high, shadow_medium, shadow_low);
-		}
-	#endif
-	}
-	return shadow_final;
-}
-
-float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
-{
-	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
-	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w);
-	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
-	shadowIntensity *= SceneUBO.shadowColor.a;
-
-	return shadowIntensity;
-}
-
 void main()
 {
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
@@ -426,12 +304,6 @@ float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 
 #else
 
-	#if defined(SHADOWMAP_ENABLED)
-
-		float shadowIntensity = CalcShadowIntensity(v_worldpos, vNormal, SceneUBO.shadowDirection.xyz);
-
-	#endif
-
 	#if defined(GBUFFER_ENABLED)
 
 		vec4 specularColor = vec4(0.0);
@@ -445,10 +317,6 @@ float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 			vec2 specularTexCoord = vec2(baseTexcoord.x * v_speculartexcoord.x, baseTexcoord.y * v_speculartexcoord.y);
 			specularColor.xy = texture(specularTex, specularTexCoord).xy;
 
-		#endif
-
-		#if defined(SHADOWMAP_ENABLED)
-			specularColor.z = shadowIntensity;
 		#endif
 
 		#if defined(DECAL_ENABLED)
@@ -467,16 +335,6 @@ float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
 		#endif
 
 	#else
-
-	//non-deferred path
-
-	#if defined(SHADOWMAP_ENABLED)
-
-		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
-
-		lightmapColor.xyz *= (1.0 - shadowIntensity);
-
-	#endif
 
 		vec4 color = CalcFog(
 			ProcessLinearBlendShift(diffuseColor * lightmapColor * detailColor * entityColor), 

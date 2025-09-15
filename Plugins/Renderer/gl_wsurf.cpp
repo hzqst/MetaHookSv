@@ -150,10 +150,6 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_EXP2_FOG_ENABLED			,"WSURF_EXP2_FOG_ENABLED"},
 { WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
 { WSURF_SHADOW_CASTER_ENABLED		,"WSURF_SHADOW_CASTER_ENABLED"},
-{ WSURF_SHADOWMAP_ENABLED			,"WSURF_SHADOWMAP_ENABLED"},
-{ WSURF_SHADOWMAP_HIGH_ENABLED		,"WSURF_SHADOWMAP_HIGH_ENABLED"},
-{ WSURF_SHADOWMAP_MEDIUM_ENABLED	,"WSURF_SHADOWMAP_MEDIUM_ENABLED"},
-{ WSURF_SHADOWMAP_LOW_ENABLED		,"WSURF_SHADOWMAP_LOW_ENABLED"},
 { WSURF_SKYBOX_ENABLED				,"WSURF_SKYBOX_ENABLED"},
 { WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
 { WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
@@ -237,18 +233,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 		if (state & WSURF_SHADOW_CASTER_ENABLED)
 			defs << "#define SHADOW_CASTER_ENABLED\n";
 
-		if (state & WSURF_SHADOWMAP_ENABLED)
-			defs << "#define SHADOWMAP_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_HIGH_ENABLED)
-			defs << "#define SHADOWMAP_HIGH_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_MEDIUM_ENABLED)
-			defs << "#define SHADOWMAP_MEDIUM_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_LOW_ENABLED)
-			defs << "#define SHADOWMAP_LOW_ENABLED\n";
-
 		if (state & WSURF_SKYBOX_ENABLED)
 			defs << "#define SKYBOX_ENABLED\n";
 
@@ -296,8 +280,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_ALPHA_SOLID_ENABLED)
 			defs << "#define ALPHA_SOLID_ENABLED\n";
-
-		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
 		auto def = defs.str();
 
@@ -2283,24 +2265,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			}
 		}
 
-		if (g_WorldSurfaceRenderer.bShadowmapTexture)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-			if (shadow_numvisedicts[0] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-			}
-			if (shadow_numvisedicts[1] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-			}
-			if (shadow_numvisedicts[2] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
-			}
-		}
-
 		if (R_IsRenderingWaterView())
 		{
 			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -2550,24 +2514,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
-			}
-		}
-
-		if (g_WorldSurfaceRenderer.bShadowmapTexture)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-			if (shadow_numvisedicts[0] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-			}
-			if (shadow_numvisedicts[1] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-			}
-			if (shadow_numvisedicts[2] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 			}
 		}
 
@@ -2858,11 +2804,6 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
-	if (g_WorldSurfaceRenderer.bShadowmapTexture)
-	{
-		GL_BindTextureUnit(WSURF_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
-	}
-
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
 		for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
@@ -2893,6 +2834,18 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			//Use previous leaf when current leaf not available
 			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf.lock();
+		}
+
+		//Always draw skybox before world, when rendering water view
+		if (R_IsRenderingWaterView())
+		{
+			if (pLeaf)
+			{
+				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+				{
+					R_DrawSkyBox();
+				}
+			}
 		}
 
 		if (pLeaf && pLeaf->hABO)
@@ -2937,11 +2890,14 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 		}
 
-		if (pLeaf)
+		if (!R_IsRenderingWaterView())
 		{
-			if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+			if (pLeaf)
 			{
-				R_DrawSkyBox();
+				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+				{
+					R_DrawSkyBox();
+				}
 			}
 		}
 	}
@@ -2964,11 +2920,6 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	}
 
 	R_DrawDecals(ent);
-
-	if (g_WorldSurfaceRenderer.bShadowmapTexture)
-	{
-		GL_BindTextureUnit(WSURF_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D_ARRAY, 0);
-	}
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
@@ -3973,16 +3924,24 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t* ent)
 
 void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 {
-	light_dynamic_t dynlight;
+	light_dynamic_t dynlight{};
 
-	dynlight.type = DLIGHT_POINT;
-	VectorClear(dynlight.origin);
-	VectorClear(dynlight.color);
-	dynlight.distance = 0;
-	dynlight.ambient = 0;
-	dynlight.diffuse = 0;
-	dynlight.specular = 0;
-	dynlight.specularpow = 0;
+	auto type_string = ValueForKey(ent, "type");
+	if (type_string)
+	{
+		if (!strcmp(type_string, "point"))
+		{
+			dynlight.type = DLIGHT_POINT;
+		}
+		else if(!strcmp(type_string, "spot"))
+		{
+			dynlight.type = DLIGHT_SPOT;
+		}
+		else if (!strcmp(type_string, "directional"))
+		{
+			dynlight.type = DLIGHT_DIRECTIONAL;
+		}
+	}
 
 	auto origin_string = ValueForKey(ent, "origin");
 	if (origin_string)
@@ -4084,6 +4043,19 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 		else
 		{
 			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_specularpow\" in entity \"light_dynamic\"\n");
+		}
+	}
+
+	auto shadow_string = ValueForKey(ent, "_shadow");
+	if (shadow_string)
+	{
+		if (sscanf(specularpow_string, "%d", &dynlight.shadow) == 1)
+		{
+			
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_shadow\" in entity \"light_dynamic\"\n");
 		}
 	}
 
@@ -4427,11 +4399,6 @@ void R_DrawBrushModel(cl_entity_t* e)
 		g_WorldSurfaceRenderer.bLightmapTexture = false;
 	}
 
-	g_WorldSurfaceRenderer.bShadowmapTexture = false;
-
-	if (R_ShouldRenderShadowScene() && r_draw_opaque)
-		g_WorldSurfaceRenderer.bShadowmapTexture = true;
-
 	auto pModel = R_GetWorldSurfaceModel(clmodel);
 
 	if (pModel)
@@ -4514,14 +4481,22 @@ void R_SetupSceneUBO(void)
 	}
 	else if (R_IsRenderingRefractView())
 	{
-		if (g_CurrentReflectCache->normal[2] > 0)
+		if (R_IsAboveWater(g_CurrentReflectCache))
 		{
-			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
-			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			if (g_CurrentReflectCache->normal[2] > 0)
+			{
+				float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+				memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			}
+			else
+			{
+				float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+				memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			}
 		}
 		else
 		{
-			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
 			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 		}
 	}
@@ -4626,41 +4601,10 @@ void R_SetupDLightUBO(void)
 /*
 	Purpose : Setup texture states and SceneUBO for DrawWorld
 */
-
 void R_PrepareDrawWorld(void)
 {
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = false;
-	g_WorldSurfaceRenderer.bShadowmapTexture = false;
-
-	//Shall we put this in shadow pass?
-	if (R_ShouldRenderShadowScene())
-	{
-		g_WorldSurfaceRenderer.bShadowmapTexture = true;
-
-		const float bias[16] = {
-			0.5f, 0.0f, 0.0f, 0.0f,
-			0.0f, 0.5f, 0.0f, 0.0f,
-			0.0f, 0.0f, 0.5f, 0.0f,
-			0.5f, 0.5f, 0.5f, 1.0f
-		};
-
-		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		for (int i = 0; i < 3; ++i)
-		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				glLoadIdentity();
-				glLoadMatrixf(bias);
-				glMultMatrixf(shadow_projmatrix[i]);
-				glMultMatrixf(shadow_mvmatrix[i]);
-				glGetFloatv(GL_TEXTURE_MATRIX, r_shadow_matrix[i]);
-			}
-		}
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
 
 	R_SetupCameraUBO();
 	R_SetupSceneUBO();

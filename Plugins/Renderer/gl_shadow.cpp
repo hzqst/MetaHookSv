@@ -3,17 +3,9 @@
 
 //renderer
 
-shadow_texture_t r_shadow_texture = {0};
-
 shadow_texture_t cl_dlight_shadow_textures[256] = { 0 };
 
 shadow_texture_t *current_shadow_texture = NULL;
-
-float shadow_projmatrix[3][16] = { 0 };
-float shadow_mvmatrix[3][16] = { 0 };
-
-cl_entity_t *shadow_visedicts[3][512] = { 0 };
-int shadow_numvisedicts[3] = {0};
 
 //cvar
 cvar_t *r_shadow = NULL;
@@ -87,30 +79,10 @@ void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorA
 	vec4_t depthBorderColor = { 1, 1, 1, 1 };
 	
 	shadowtex->depth_stencil = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor, true);
-
-	if (bUseColorArrayAsDepth)
-	{
-		vec4_t borderColor = { -99999, -99999, -99999, 1};
-		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, true, borderColor, true);
-	}
 }
 
 void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 {
-	if (shadowtex->color)
-	{
-		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete color [%d].\n", shadowtex->color);
-		GL_DeleteTexture(shadowtex->color);
-		shadowtex->color = 0;
-	}
-
-	if (shadowtex->color_array_as_depth)
-	{
-		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete color_array_as_depth [%d].\n", shadowtex->color_array_as_depth);
-		GL_DeleteTexture(shadowtex->color_array_as_depth);
-		shadowtex->color_array_as_depth = 0;
-	}
-
 	if (shadowtex->depth_stencil)
 	{
 		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete depth_stencil [%d].\n", shadowtex->depth_stencil);
@@ -123,8 +95,6 @@ void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 
 void R_InitShadow(void)
 {
-	R_AllocShadowTexture(&r_shadow_texture, 4096, true);
-
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
 	r_shadow_distfade = R_RegisterMapCvar("r_shadow_distfade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2);
@@ -142,9 +112,7 @@ void R_InitShadow(void)
 
 void R_ShutdownShadow(void)
 {
-	R_FreeShadowTexture(&r_shadow_texture);
-
-	for (int i = 0; i < _ARRAYSIZE(cl_dlight_shadow_textures); ++i)
+	for (int i = 0; i < _countof(cl_dlight_shadow_textures); ++i)
 	{
 		R_FreeShadowTexture(&cl_dlight_shadow_textures[i]);
 	}
@@ -165,16 +133,6 @@ bool R_ShouldRenderShadow(void)
 		return false;
 
 	return r_shadow->value ? true : false;
-}
-
-bool R_ShouldRenderShadowScene(void)
-{
-	return false;
-
-	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
-		return false;
-
-	return R_ShouldRenderShadow();
 }
 
 bool R_ShouldCastShadow(cl_entity_t *ent)
@@ -210,7 +168,7 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 		if (ent->curstate.movetype == MOVETYPE_NONE && ent->curstate.solid == SOLID_NOT)
 			return false;
 
-		//if (g_iEngineType == ENGINE_SVENGINE)
+		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			if (ent->curstate.effects & EF_NOSHADOW)
 				return false;
@@ -222,156 +180,51 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 	return false;
 }
 
-/*
-
-	Purpose : Rendering textures for shadow mapping
-
-*/
-void R_RenderShadowScene(void)
+void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4])
 {
-	vec3_t shadow_angles = { r_shadow_angles->GetValues()[0], r_shadow_angles->GetValues()[1] , r_shadow_angles->GetValues()[2] };
+	/*
+	Counterpart of following matrix:
+		const float bias[16] = {
+				0.5f, 0.0f, 0.0f, 0.0f,
+				0.0f, 0.5f, 0.0f, 0.0f,
+				0.0f, 0.0f, 0.5f, 0.0f,
+				0.5f, 0.5f, 0.5f, 1.0f
+			};
+		glMatrixMode(GL_TEXTURE);
+		glPushMatrix();
+		glLoadIdentity();
+		glLoadMatrixf(bias);
+		glMultMatrixf(r_projection_matrix);
+		glMultMatrixf(r_world_matrix);
+		glGetFloatv(GL_TEXTURE_MATRIX, (float *)shadowmatrix);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+	*/
 
-	float max_distance[3] = { r_shadow_high_distance->GetValue(), r_shadow_medium_distance->GetValue(), r_shadow_low_distance->GetValue() };
-
-	float shadow_scales[3] = { r_shadow_high_scale->GetValue(), r_shadow_medium_scale->GetValue(), r_shadow_low_scale->GetValue() };
-
-	for (int j = 0; j < (*cl_numvisedicts); ++j)
-	{
-		if (R_ShouldCastShadow(cl_visedicts[j]))
-		{
-			vec3_t vec;
-			VectorSubtract(cl_visedicts[j]->origin, (*r_refdef.vieworg), vec);
-			float distance = VectorLength(vec);
-
-			if (distance < max_distance[0])
-			{
-				if (shadow_numvisedicts[0] < 512)
-				{
-					shadow_visedicts[0][shadow_numvisedicts[0]] = cl_visedicts[j];
-					shadow_numvisedicts[0]++;
-				}
-			}
-			else if (distance < max_distance[1])
-			{
-				if (shadow_numvisedicts[1] < 512)
-				{
-					shadow_visedicts[1][shadow_numvisedicts[1]] = cl_visedicts[j];
-					shadow_numvisedicts[1]++;
-				}
-			}
-			else if (distance < max_distance[2])
-			{
-				if (shadow_numvisedicts[2] < 512)
-				{
-					shadow_visedicts[2][shadow_numvisedicts[2]] = cl_visedicts[j];
-					shadow_numvisedicts[2]++;
-				}
-			}
-		}
-	}
-
-	if (R_ShouldRenderShadowScene())
-	{
-		r_draw_shadowscene = true;
-
-		GL_BindFrameBuffer(&s_ShadowFBO);
-
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_GEQUAL);
-
-		glDepthMask(GL_TRUE);
-
-		for (int i = 0; i < 3; ++i)
-		{
-			if (!shadow_numvisedicts[i])
-				continue;
-
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.color_array_as_depth, 0, i);
-			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth_stencil, 0);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-
-			float texsize = (float)r_shadow_texture.size / shadow_scales[i];
-			glOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
-
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			glRotatef(-90, 1, 0, 0);
-			glRotatef(90, 0, 0, 1);
-			glRotatef(-shadow_angles[2], 1, 0, 0);
-			glRotatef(-shadow_angles[0], 0, 1, 0);
-			glRotatef(-shadow_angles[1], 0, 0, 1);
-			glTranslatef(-(*r_refdef.vieworg)[0], -(*r_refdef.vieworg)[1], -(*r_refdef.vieworg)[2]);
-
-			glGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
-			glGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
-
-			glViewport(0, 0, r_shadow_texture.size, r_shadow_texture.size);
-
-			vec4_t vecClearColor = { -99999, -99999, -99999, 1 };
-
-			GL_ClearColorDepthStencil(vecClearColor, 0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-			GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, offsetof(camera_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
-
-			r_draw_shadowcaster = true;
-
-			cl_entity_t *backup_curentity = (*currententity);
-
-			for (int j = 0; j < shadow_numvisedicts[i]; ++j)
-			{
-				(*currententity) = shadow_visedicts[i][j];
-
-				R_DrawCurrentEntity(false);
-
-			}
-
-			(*currententity) = backup_curentity;
-
-			r_draw_shadowcaster = false;
-		}
-
-		glClearDepth(1);
-		glDepthFunc(GL_LEQUAL);
-
-		r_draw_shadowscene = false;
-	}
-}
-
-void R_SetupShadowMatrix(float out[4][4])
-{
-	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
-
-	// Define bias matrix to map from [-1,1] to [0,1] coordinate space
-	const float bias[4][4] = {
-		{0.5f, 0.0f, 0.0f, 0.5f},
-		{0.0f, 0.5f, 0.0f, 0.5f},
-		{0.0f, 0.0f, 0.5f, 0.5f},
-		{0.0f, 0.0f, 0.0f, 1.0f}
+	const float bias[16] = {
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.5f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.0f
 	};
 
 	// First multiply projection matrix with world matrix
 	float projWorldMatrix[4][4];
-	Matrix4x4_Multiply(projWorldMatrix, *projMatrix, *worldMatrix);
+	Matrix4x4_Multiply(projWorldMatrix, worldMatrix, projMatrix);
 
 	// Then multiply bias matrix with the result
-	Matrix4x4_Multiply(out, (float(*)[4])bias, projWorldMatrix);
+	Matrix4x4_Multiply(out, projWorldMatrix, (const float (*)[4])bias);
 }
 
-void R_RenderShadowDynamicLights(void)
+void R_RenderShadowmapForDynamicLights(void)
 {
 	if (!r_deferred_lighting->value)
 		return;
 
 	if (R_ShouldRenderShadow())
 	{
+		GL_BeginDebugGroup("R_RenderShadowDynamicLights");
+
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
 			if (args->shadowtex)
@@ -399,14 +252,9 @@ void R_RenderShadowDynamicLights(void)
 						args->shadowtex->cone_angle = args->coneAngle;
 						current_shadow_texture = args->shadowtex;
 
-						GL_BindFrameBufferWithTextures(&s_ShadowFBO, args->shadowtex->color, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
-						//glDrawBuffer(GL_NONE);
+						GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
 
-						//glDisable(GL_ALPHA_TEST);
-						//glDisable(GL_BLEND);
-						//glEnable(GL_DEPTH_TEST);
-						//glDepthFunc(GL_LEQUAL);
-						//glDepthMask(GL_TRUE);
+						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
 
 						glEnable(GL_POLYGON_OFFSET_FILL);
 						glPolygonOffset(10, 10);
@@ -443,11 +291,13 @@ void R_RenderShadowDynamicLights(void)
 							R_RenderScene();
 						}
 
-						R_SetupShadowMatrix(args->shadowtex->matrix);
+						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+						R_SetupShadowMatrix(args->shadowtex->matrix, (*worldMatrix), (*projMatrix));
 
 						glDisable(GL_POLYGON_OFFSET_FILL);
 						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-						//glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 						R_PopRefDef();
 
@@ -455,11 +305,14 @@ void R_RenderShadowDynamicLights(void)
 
 						r_draw_shadowcaster = false;
 
+						GL_EndDebugGroup();
 					}
 				}
 		};
 
 		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
+
+		GL_EndDebugGroup();
 	}
 }
 
@@ -471,10 +324,6 @@ void R_RenderShadowDynamicLights(void)
 
 void R_RenderShadowMap_Start(void)
 {
-	shadow_numvisedicts[0] = 0;
-	shadow_numvisedicts[1] = 0;
-	shadow_numvisedicts[2] = 0;
-
 	for (int i = 0; i < _ARRAYSIZE(cl_dlight_shadow_textures); ++i)
 	{
 		cl_dlight_shadow_textures[i].ready = false;
@@ -494,6 +343,5 @@ void R_RenderShadowMap(void)
 	if (!r_shadow->value)
 		return;
 
-	R_RenderShadowScene();
-	R_RenderShadowDynamicLights();
+	R_RenderShadowmapForDynamicLights();
 }

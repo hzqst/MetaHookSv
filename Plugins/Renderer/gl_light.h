@@ -1,15 +1,20 @@
 #pragma once
 
+#define DLIGHT_POINT					0
+#define DLIGHT_SPOT						1
+#define DLIGHT_DIRECTIONAL				2
+
 typedef struct light_dynamic_s
 {
-	int type;
-	vec3_t origin;
-	float color[3];
-	float distance;
-	float ambient;
-	float diffuse;
-	float specular;
-	float specularpow;
+	int type{ DLIGHT_POINT };
+	vec3_t origin{};
+	float color[3]{};
+	float distance{};
+	float ambient{};
+	float diffuse{};
+	float specular{};
+	float specularpow{};
+	int shadow{};
 	shadow_texture_t shadowtex;
 }light_dynamic_t;
 
@@ -162,6 +167,3 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DFINAL_SSR_EXPONENTIAL_STEP_ENABLED		0x40ull
 #define DFINAL_SSR_BINARY_SEARCH_ENABLED		0x80ull
 #define DFINAL_LINEAR_FOG_SHIFT_ENABLED			0x100ull
-
-#define DLIGHT_POINT					0
-#define DLIGHT_SPOT						1

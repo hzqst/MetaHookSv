@@ -20,6 +20,8 @@ void R_DrawSkyBox(void)
 	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
 		return;
 
+	GL_BeginDebugGroup("R_DrawSkyBox");
+
 	entity_ubo_t EntityUBO;
 
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
@@ -119,4 +121,6 @@ void R_DrawSkyBox(void)
 	GL_EndStencil();
 
 	glDepthMask(GL_TRUE);
+
+	GL_EndDebugGroup();
 }

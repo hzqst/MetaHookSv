@@ -365,9 +365,26 @@ void R_InitWater(void)
 
 bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
 {
-	float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
-	float equation[4] = { pWaterModel->normal[0], pWaterModel->normal[1], pWaterModel->normal[2], -pWaterModel->planedist };
-	return DotProduct4(org, equation) > 0;
+	if (pWaterModel->normal[2] > 0)
+	{
+		float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
+		float equation[4] = { pWaterModel->normal[0], pWaterModel->normal[1], pWaterModel->normal[2], -pWaterModel->planedist };
+		return DotProduct4(org, equation) > 0;
+	}
+
+	return false;
+}
+
+bool R_IsAboveWater(water_reflect_cache_t* pWaterReflectCache)
+{
+	if (pWaterReflectCache->normal[2] > 0)
+	{
+		float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
+		float equation[4] = { pWaterReflectCache->normal[0], pWaterReflectCache->normal[1], pWaterReflectCache->normal[2], -pWaterReflectCache->planedist };
+		return DotProduct4(org, equation) > 0;
+	}
+
+	return false;
 }
 
 CEnvWaterControl* R_FindWaterControl(msurface_t* surf)
@@ -698,6 +715,8 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 
 void R_RenderWaterRefractView(water_reflect_cache_t* ReflectCache)
 {
+	GL_BeginDebugGroup("R_RenderWaterRefractView");
+
 	int texwidth = glwidth * 0.5f;
 	int texheight = glheight * 0.5f;
 
@@ -744,10 +763,14 @@ void R_RenderWaterRefractView(water_reflect_cache_t* ReflectCache)
 	GL_SetCurrentSceneFBO(NULL);
 
 	ReflectCache->refractmap_ready = true;
+
+	GL_EndDebugGroup();
 }
 
 void R_RenderWaterReflectView(water_reflect_cache_t* ReflectCache)
 {
+	GL_BeginDebugGroup("R_RenderWaterReflectView");
+
 	r_draw_reflectview = true;
 	g_CurrentReflectCache = ReflectCache;
 
@@ -810,6 +833,8 @@ void R_RenderWaterReflectView(water_reflect_cache_t* ReflectCache)
 	GL_SetCurrentSceneFBO(NULL);
 
 	ReflectCache->reflectmap_ready = true;
+
+	GL_EndDebugGroup();
 }
 
 void R_RenderWaterPass_CollectWorldWater(const std::shared_ptr<CWaterSurfaceModel>& pWaterModel)
@@ -949,6 +974,8 @@ void R_RenderWaterPass(void)
 	if (R_IsRenderingWaterView())
 		return;
 
+	GL_BeginDebugGroup("R_RenderWaterPass");
+
 	g_VisibleWaterSurfaceModels.clear();
 	g_VisibleWaterEntity.clear();
 	R_ClearWaterReflectCaches();
@@ -1034,6 +1061,8 @@ void R_RenderWaterPass(void)
 			R_RenderWaterRefractView(&g_WaterReflectCaches[i]);
 		}
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel, int VBOStates)

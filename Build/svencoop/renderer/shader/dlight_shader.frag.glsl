@@ -219,8 +219,6 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(SHADOW_TEXTURE_ENABLED)
 
-    //uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
-
     float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
     Color.r *= flShadowIntensity;
     Color.g *= flShadowIntensity;
@@ -263,7 +261,7 @@ void main()
 
     vec4 worldnormColor = texture(gbufferWorldNorm, vBaseTexCoord);
 
-    float depth = texture(depthTex, vBaseTexCoord).r;
+    //float depth = texture(depthTex, vBaseTexCoord).r;
 
     //vec3 worldpos = GenerateWorldPositionFromDepth(vBaseTexCoord, depth);
 

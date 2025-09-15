@@ -87,7 +87,7 @@ void VectorAngles(const vec3_t forward, vec3_t angles);
 
 int InvertMatrix(const float * m, float *out);
 
-void Matrix4x4_Multiply(float out[4][4], float in1[4][4], float in2[4][4]);
+void Matrix4x4_Multiply(float out[4][4], const float in1[4][4], const float in2[4][4]);
 void Matrix4x4_ConcatTransforms(float out[4][4], float in1[4][4], float in2[4][4]);
 void Matrix4x4_Transpose(float out[4][4], const float in1[4][4]);
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);

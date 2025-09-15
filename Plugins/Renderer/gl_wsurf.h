@@ -232,7 +232,6 @@ public:
 
 	bool				bDiffuseTexture{};
 	bool				bLightmapTexture{};
-	bool				bShadowmapTexture{};
 
 	int					iLightmapUsedBits{};
 	int					iNumLegacyDLights{};
@@ -367,10 +366,6 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 #define WSURF_EXP2_FOG_ENABLED				0x200ull
 #define WSURF_GBUFFER_ENABLED				0x400ull
 #define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
-#define WSURF_SHADOWMAP_ENABLED				0x2000ull
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000ull
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000ull
 #define WSURF_SKYBOX_ENABLED				0x40000ull
 #define WSURF_DECAL_ENABLED					0x80000ull
 #define WSURF_CLIP_ENABLED					0x100000ull

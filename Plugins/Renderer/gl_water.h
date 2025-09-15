@@ -139,6 +139,7 @@ extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
 bool R_IsAboveWater(CWaterSurfaceModel *pWaterModel);
+bool R_IsAboveWater(water_reflect_cache_t* pWaterReflectCache);
 void R_InitWater(void);
 void R_ShutdownWater(void);
 void R_RenderWaterPass(void);
