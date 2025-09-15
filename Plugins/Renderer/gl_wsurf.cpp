@@ -3998,6 +3998,12 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 		dynlight->shadow = atoi(shadow_string);
 	}
 
+	auto follow_player_string = ValueForKey(ent, "follow_player");
+	if (follow_player_string)
+	{
+		dynlight->follow_player = atoi(follow_player_string);
+	}
+
 #undef PARSE_KEY_VALUE_STRING
 #undef PARSE_KEY_VALUE_STRING_WRITEREF
 

@@ -638,16 +638,27 @@ void R_IterateDynamicLights(
 		{
 			float radius = math_clamp(dynlight->distance, 0, 999999);
 
+			vec3_t dlight_origin;
+
+			if (dynlight->follow_player)
+			{
+				VectorCopy((*r_refdef.vieworg), dlight_origin);
+			}
+			else
+			{
+				VectorCopy(dynlight->origin, dlight_origin);
+			}
+
 			vec3_t distToLight;
-			VectorSubtract((*r_refdef.vieworg), dynlight->origin, distToLight);
+			VectorSubtract((*r_refdef.vieworg), dlight_origin, distToLight);
 
 			if (VectorLength(distToLight) > radius + 32)
 			{
 				vec3_t mins, maxs;
 				for (int j = 0; j < 3; j++)
 				{
-					mins[j] = dynlight->origin[j] - radius;
-					maxs[j] = dynlight->origin[j] + radius;
+					mins[j] = dlight_origin[j] - radius;
+					maxs[j] = dlight_origin[j] + radius;
 				}
 
 				if (R_CullBox(mins, maxs))
@@ -655,7 +666,7 @@ void R_IterateDynamicLights(
 
 				PointLightCallbackArgs args;
 				args.radius = radius;
-				VectorCopy(dynlight->origin, args.origin);
+				VectorCopy(dlight_origin, args.origin);
 				VectorCopy(dynlight->color, args.color);
 
 				args.ambient = dynlight->ambient;
@@ -686,11 +697,22 @@ void R_IterateDynamicLights(
 		}
 		else if (dynlight->type == DynamicLightType_Directional)
 		{
+			vec3_t dlight_origin;
+
+			if (dynlight->follow_player)
+			{
+				VectorCopy((*r_refdef.vieworg), dlight_origin);
+			}
+			else
+			{
+				VectorCopy(dynlight->origin, dlight_origin);
+			}
+
 			vec3_t vforward, vright, vup;
 			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
 
 			DirectionalLightCallbackArgs args;
-			VectorCopy(dynlight->origin, args.origin);
+			VectorCopy(dlight_origin, args.origin);
 			VectorCopy(dynlight->angles, args.angle);
 			VectorCopy(vforward, args.vforward);
 			VectorCopy(vright, args.vright);

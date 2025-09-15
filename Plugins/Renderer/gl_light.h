@@ -23,6 +23,7 @@ public:
 	float specular{};
 	float specularpow{};
 	int shadow{};
+	int follow_player{};
 	shadow_texture_t shadowtex;
 
 	// DirectionalLight specific fields

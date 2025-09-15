@@ -417,9 +417,9 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     float projUp = dot(worldToLight, u_lightup.xyz);
 
     // Check if within bounds
-   // if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
-   //     return vec4(0.0, 0.0, 0.0, 0.0);
-   // }
+    if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
 
     vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 

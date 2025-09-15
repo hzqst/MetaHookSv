@@ -372,9 +372,6 @@ void R_RenderShadowmapForDynamicLights(void)
 
 				GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-				//glEnable(GL_POLYGON_OFFSET_FILL);
-				//glPolygonOffset(1.0f, 1.0f);
-
 				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
@@ -385,6 +382,17 @@ void R_RenderShadowmapForDynamicLights(void)
 				for (int cascade = 0; cascade < 4; ++cascade)
 				{
 					GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascade);
+
+					// Set up scissor test for this cascade region
+					// CSM layout: [0,1]
+					//             [2,3]
+					int scissorX = (cascade % 2) * 2048;  // 0 or 2048
+					int scissorY = (cascade / 2) * 2048;  // 0 or 2048
+					int scissorWidth = 2048;
+					int scissorHeight = 2048;
+
+					glEnable(GL_SCISSOR_TEST);
+					glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
 					// Update refdef for shadow rendering
 					VectorCopy(args->origin, (*r_refdef.vieworg));
@@ -418,14 +426,15 @@ void R_RenderShadowmapForDynamicLights(void)
 					// Render scene from light's perspective
 					R_RenderScene();
 
+					// Disable scissor test after rendering this cascade
+					glDisable(GL_SCISSOR_TEST);
+
 					GL_EndDebugGroup();
 				}
 
 				R_PopRefDef();
 
 				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-				//glDisable(GL_POLYGON_OFFSET_FILL);
 
 				args->shadowtex->ready = true;
 
