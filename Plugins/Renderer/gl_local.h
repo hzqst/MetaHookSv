@@ -551,6 +551,7 @@ void Draw_SpriteFrameGeneric_SvEngine(mspriteframe_t* pFrame, int x, int y, cons
 void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a);
 void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a);
 void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a);
+void Draw_Pic(int x, int y, qpic_t *pic);
 
 void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
 void* Draw_CacheGet(cachewad_t* wad, int index);

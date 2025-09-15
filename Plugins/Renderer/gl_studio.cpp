@@ -178,11 +178,6 @@ bool R_StudioHasHairShadow()
 	return r_draw_hashair && r_draw_hasface && (int)r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
 }
 
-void R_StudioClearVanillaBonesCaches()
-{
-	//TODO: draw a null model with no bone and no bodypart ?
-}
-
 void R_FreeStudioBoneCache(CStudioBoneCache* pStudioBoneCache)
 {
 	pStudioBoneCache->m_next = g_pStudioBoneFreeCaches;
@@ -2581,11 +2576,6 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		StudioProgramState |= STUDIO_CLIP_NEARPLANE_ENABLED;
 	}
-
-	//if (R_IsRenderingViewModel())
-	//{
-	//	StudioProgramState |= STUDIO_VIEWMODEL_SCALE_ENABLED;
-	//}
 
 	if (R_IsRenderingWaterView())
 	{

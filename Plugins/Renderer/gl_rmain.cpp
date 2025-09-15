@@ -944,8 +944,6 @@ void R_DrawParticles(void)
 	gPrivateFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
-	//TODO: do in shader. Warning: disabling this causes https://github.com/hzqst/MetaHookSv/issues/666
-	//glDisable(GL_ALPHA_TEST);
 }
 
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
@@ -6002,4 +6000,62 @@ void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a)
 
 	// Use R_DrawFilledQuad for GL Core Profile compatibility
 	R_DrawFilledQuad(x, y, x + w, y + h, color, programState, "NET_DrawRect");
+}
+
+void Draw_Pic(int x, int y, qpic_t* pic)
+{
+	if (!pic)
+		return;
+
+	auto gl = (glpic_t*)pic->data;
+
+	uint64_t programState = DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED;
+
+	// Use R_DrawTexturedRect for GL Core Profile compatibility
+	texturedrectvertex_t vertices[4];
+
+	// Set up vertices with texture coordinates and positions
+	// Bottom-left vertex
+	vertices[0].col[0] = 1;
+	vertices[0].col[1] = 1;
+	vertices[0].col[2] = 1;
+	vertices[0].col[3] = 1;
+	vertices[0].texcoord[0] = gl->sl;
+	vertices[0].texcoord[1] = gl->tl;
+	vertices[0].pos[0] = (float)x;
+	vertices[0].pos[1] = (float)y;
+
+	// Bottom-right vertex
+	vertices[1].col[0] = 1;
+	vertices[1].col[1] = 1;
+	vertices[1].col[2] = 1;
+	vertices[1].col[3] = 1;
+	vertices[1].texcoord[0] = gl->sh;
+	vertices[1].texcoord[1] = gl->tl;
+	vertices[1].pos[0] = (float)(x + pic->width);
+	vertices[1].pos[1] = (float)(y);
+
+	// Top-right vertex
+	vertices[2].col[0] = 1;
+	vertices[2].col[1] = 1;
+	vertices[2].col[2] = 1;
+	vertices[2].col[3] = 1;
+	vertices[2].texcoord[0] = gl->sh;
+	vertices[2].texcoord[1] = gl->th;
+	vertices[2].pos[0] = (float)(x + pic->width);
+	vertices[2].pos[1] = (float)(y + pic->height);
+
+	// Top-left vertex
+	vertices[3].col[0] = 1;
+	vertices[3].col[1] = 1;
+	vertices[3].col[2] = 1;
+	vertices[3].col[3] = 1;
+	vertices[3].texcoord[0] = gl->sl;
+	vertices[3].texcoord[1] = gl->th;
+	vertices[3].pos[0] = (float)x;
+	vertices[3].pos[1] = (float)(y + pic->height);
+
+	const uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
+
+	R_DrawTexturedRect(gl->texnum, vertices, _countof(vertices), indices, _countof(indices), programState, "Draw_Pic");
 }

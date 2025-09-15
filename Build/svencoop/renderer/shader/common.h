@@ -692,9 +692,9 @@ vec4 ProcessLinearBlendShift(vec4 color)
 			if(dot(clipVec, clipPlane) < 0)
 				discard;
 
-			clipPlane.w += 32.0;
-			if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
-				discard;
+			//clipPlane.w += 32.0;
+			//if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
+			//	discard;
 
 		#elif defined(CLIP_ENABLED)
 

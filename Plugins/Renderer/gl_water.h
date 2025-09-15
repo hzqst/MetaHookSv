@@ -61,8 +61,9 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-typedef struct water_reflect_cache_s
+class CWaterReflectCache
 {
+public:
 	GLuint refract_texture{};
 	GLuint refract_depth_texture{};
 	GLuint reflect_texture{};
@@ -76,7 +77,7 @@ typedef struct water_reflect_cache_s
 	bool used{};
 	bool refractmap_ready{};
 	bool reflectmap_ready{};
-}water_reflect_cache_t;
+};
 
 class CWaterSurfaceModel
 {
@@ -121,25 +122,18 @@ public:
 extern vec3_t g_CurrentCameraView;
 
 //water
-extern water_reflect_cache_t *g_CurrentReflectCache;
-extern water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
+extern CWaterReflectCache *g_CurrentReflectCache;
+extern CWaterReflectCache g_WaterReflectCaches[MAX_REFLECT_WATERS];
 //shader
 
 //cvar
 extern cvar_t *r_water;
-extern cvar_t *r_water_debug;
-
-typedef struct
-{
-	int percent;
-	int destcolor[3];
-}cshift_t;
 
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
 bool R_IsAboveWater(CWaterSurfaceModel *pWaterModel);
-bool R_IsAboveWater(water_reflect_cache_t* pWaterReflectCache);
+bool R_IsAboveWater(CWaterReflectCache* pWaterReflectCache);
 void R_InitWater(void);
 void R_ShutdownWater(void);
 void R_RenderWaterPass(void);

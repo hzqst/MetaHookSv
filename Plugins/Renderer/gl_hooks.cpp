@@ -376,6 +376,11 @@
 #define NET_DRAWRECT_HL25 ""
 #define NET_DRAWRECT_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x81\xFE\x00\x04\x00\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\xFE\x01"
 
+#define DRAW_PIC_BLOB ""//TODO
+#define DRAW_PIC_NEW ""//TODO
+#define DRAW_PIC_HL25 ""
+#define DRAW_PIC_SVENGINE "\x83\xEC\x08\x83\x7C\x24\x14\x00\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x3D"
+
 static hook_t* g_phook_GL_Init = NULL;
 static hook_t* g_phook_GL_Set2D = NULL;
 static hook_t* g_phook_GL_Finish2D = NULL;
@@ -445,6 +450,7 @@ static hook_t* g_phook_Draw_SpriteFrameGeneric_SvEngine = NULL;
 static hook_t* g_phook_Draw_FillRGBA = NULL;
 static hook_t* g_phook_Draw_FillRGBABlend = NULL;
 static hook_t* g_phook_NET_DrawRect = NULL;
+static hook_t* g_phook_Draw_Pic = NULL;
 
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
@@ -11851,6 +11857,37 @@ void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(NET_DrawRect);
 }
 
+void Engine_FillAddress_Draw_Pic(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.Draw_Pic)
+		return;
+
+	PVOID Draw_Pic_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Draw_Pic_VA = Search_Pattern(DRAW_PIC_SVENGINE, DllInfo);
+		gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))ConvertDllInfoSpace((PVOID)Draw_Pic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Draw_Pic_VA = Search_Pattern(DRAW_PIC_HL25, DllInfo);
+		gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))ConvertDllInfoSpace((PVOID)Draw_Pic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		Draw_Pic_VA = Search_Pattern(DRAW_PIC_NEW, DllInfo);
+		gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))ConvertDllInfoSpace((PVOID)Draw_Pic_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		Draw_Pic_VA = Search_Pattern(DRAW_PIC_BLOB, DllInfo);
+		gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))ConvertDllInfoSpace((PVOID)Draw_Pic_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(Draw_Pic);
+}
+
 void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto hSDL2 = GetModuleHandleA("SDL2.dll");
@@ -12083,6 +12120,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_Draw_FillRGBABlend(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_NET_DrawRect(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_Draw_Pic(DllInfo, RealDllInfo);
 }
 
 void Engine_InstallHooks(void)
@@ -12165,6 +12204,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Draw_FillRGBA);
 	Install_InlineHook(Draw_FillRGBABlend);
 	Install_InlineHook(NET_DrawRect);
+	Install_InlineHook(Draw_Pic);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
@@ -12249,6 +12289,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
 	Uninstall_Hook(NET_DrawRect);
+	Uninstall_Hook(Draw_Pic);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{

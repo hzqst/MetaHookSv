@@ -9,7 +9,7 @@ shadow_texture_t *current_shadow_texture = NULL;
 
 //cvar
 cvar_t *r_shadow = NULL;
-cvar_t *r_shadow_debug = NULL;
+
 MapConVar *r_shadow_distfade = NULL;
 MapConVar *r_shadow_lumfade = NULL;
 MapConVar *r_shadow_angles = NULL;
@@ -72,6 +72,9 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 	return 0;
 }
 
+/*
+	Purpose: allocate a depth stencil texture in "shadowtex->depth_stencil" with width/height of "size"
+*/
 void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArrayAsDepth)
 {
 	shadowtex->size = size;
@@ -96,7 +99,7 @@ void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 void R_InitShadow(void)
 {
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
+
 	r_shadow_distfade = R_RegisterMapCvar("r_shadow_distfade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2);
 	r_shadow_lumfade = R_RegisterMapCvar("r_shadow_lumfade", "80 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2, ConVar_Color255);
 	r_shadow_angles = R_RegisterMapCvar("r_shadow_angles", "90 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 3);
@@ -310,7 +313,18 @@ void R_RenderShadowmapForDynamicLights(void)
 				}
 		};
 
-		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
+		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+		{
+			if (args->shadowtex)
+			{
+				args->shadowtex->ready = false;
+
+				//TODO:...
+			}
+
+		};
+
+		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
 
 		GL_EndDebugGroup();
 	}

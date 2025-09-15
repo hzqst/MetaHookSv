@@ -3924,140 +3924,81 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t* ent)
 
 void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 {
-	light_dynamic_t dynlight{};
+	/*
+		Example:
+
+		{
+			"origin" "-30 68 72"
+			"size" "1024.0"
+			"color" "192 192 192"
+			"classname" "light_dynamic"
+			"type" "directional"
+			"ambient" "0.1"
+			"diffuse" "1.0"
+			"specular" "1.0"
+			"specularpow" "10.0"
+			"shadow" "1"
+		}
+	*/
+	auto dynlight = std::make_shared<CDynamicLight>();
 
 	auto type_string = ValueForKey(ent, "type");
 	if (type_string)
 	{
 		if (!strcmp(type_string, "point"))
 		{
-			dynlight.type = DLIGHT_POINT;
+			dynlight->type = DynamicLightType_Point;
 		}
 		else if(!strcmp(type_string, "spot"))
 		{
-			dynlight.type = DLIGHT_SPOT;
+			dynlight->type = DynamicLightType_Spot;
 		}
 		else if (!strcmp(type_string, "directional"))
 		{
-			dynlight.type = DLIGHT_DIRECTIONAL;
+			dynlight->type = DynamicLightType_Directional;
 		}
 	}
 
-	auto origin_string = ValueForKey(ent, "origin");
-	if (origin_string)
-	{
-		float temp[4];
-
-		if (sscanf(origin_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			dynlight.origin[0] = temp[0];
-			dynlight.origin[1] = temp[1];
-			dynlight.origin[2] = temp[2];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"origin\" in entity \"light_dynamic\"\n");
-		}
+#define PARSE_KEY_VALUE_STRING(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, dynlight->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
+		}\
+	}
+#define PARSE_KEY_VALUE_STRING_WRITEREF(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, &dynlight->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
+		}\
 	}
 
-	auto color_string = ValueForKey(ent, "_light");
-	if (color_string)
-	{
-		float temp[4];
-		if (sscanf(color_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			dynlight.color[0] = math_clamp(temp[0], 0, 255) / 255.0f;
-			dynlight.color[1] = math_clamp(temp[1], 0, 255) / 255.0f;
-			dynlight.color[2] = math_clamp(temp[2], 0, 255) / 255.0f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_light\" in entity \"light_dynamic\"\n");
-		}
-	}
+	PARSE_KEY_VALUE_STRING(origin, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING(angles, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING(color, UTIL_ParseStringAsColor3);
+	PARSE_KEY_VALUE_STRING_WRITEREF(distance, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(ambient, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(diffuse, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(specular, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(specularpow, UTIL_ParseStringAsVector1);
 
-	auto distance_string = ValueForKey(ent, "_distance");
-	if (distance_string)
-	{
-		float temp[4];
-		if (sscanf(distance_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.distance = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_distance\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto ambient_string = ValueForKey(ent, "_ambient");
-	if (ambient_string)
-	{
-		float temp[4];
-		if (sscanf(ambient_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.ambient = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_ambient\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto diffuse_string = ValueForKey(ent, "_diffuse");
-	if (diffuse_string)
-	{
-		float temp[4];
-		if (sscanf(diffuse_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.diffuse = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_diffuse\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto specular_string = ValueForKey(ent, "_specular");
-	if (specular_string)
-	{
-		float temp[4];
-		if (sscanf(specular_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.specular = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_specular\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto specularpow_string = ValueForKey(ent, "_specularpow");
-	if (specularpow_string)
-	{
-		float temp[4];
-		if (sscanf(specularpow_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.specularpow = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_specularpow\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto shadow_string = ValueForKey(ent, "_shadow");
+	auto shadow_string = ValueForKey(ent, "shadow");
 	if (shadow_string)
 	{
-		if (sscanf(specularpow_string, "%d", &dynlight.shadow) == 1)
-		{
-			
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_shadow\" in entity \"light_dynamic\"\n");
-		}
+		dynlight->shadow = atoi(shadow_string);
 	}
+
+#undef PARSE_KEY_VALUE_STRING
+#undef PARSE_KEY_VALUE_STRING_WRITEREF
 
 	g_DynamicLights.emplace_back(dynlight);
 }
@@ -4407,9 +4348,6 @@ void R_DrawBrushModel(cl_entity_t* e)
 	}
 
 	glDepthMask(GL_TRUE);
-	//TODO: Fixed-function can be done in shader
-	//glDisable(GL_ALPHA_TEST);
-	//glAlphaFunc(GL_NOTEQUAL, 0);
 	glDisable(GL_BLEND);
 }
 
@@ -4570,27 +4508,34 @@ void R_SetupDLightUBO(void)
 	if (!R_CanRenderGBuffer())
 	{
 		const auto PointLightCallback = [](PointLightCallbackArgs* args, void* context)
-			{
-				auto DLightUBO = (dlight_ubo_t*)(context);
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
 
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
 
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
 
-				g_WorldSurfaceRenderer.iNumLegacyDLights++;
-			};
+			g_WorldSurfaceRenderer.iNumLegacyDLights++;
+		};
 
-		const auto SpotlightCallback = [](SpotLightCallbackArgs* args, void* context)
-			{
-				auto DLightUBO = (dlight_ubo_t*)(context);
-			};
+		const auto SpotLightCallback = [](SpotLightCallbackArgs* args, void* context)
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
+			//Pass nothing to dlight ubo
+		};
 
-		R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
+		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
+			//Pass nothing to dlight ubo
+		};
+
+		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, &DLightUBO);
 	}
 
 	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iNumLegacyDLights;

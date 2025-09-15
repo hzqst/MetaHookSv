@@ -16,7 +16,7 @@ extern shadow_texture_t *current_shadow_texture;
 
 //cvar
 extern cvar_t *r_shadow;
-extern cvar_t *r_shadow_debug;
+
 extern MapConVar *r_shadow_distfade;
 extern MapConVar *r_shadow_lumfade;
 extern MapConVar *r_shadow_angles;

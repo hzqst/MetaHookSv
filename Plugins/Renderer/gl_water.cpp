@@ -6,10 +6,9 @@ vec3_t g_CurrentCameraView;
 
 //cvar
 cvar_t* r_water = NULL;
-cvar_t* r_water_debug = NULL;
 
-water_reflect_cache_t* g_CurrentReflectCache = NULL;
-water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
+CWaterReflectCache* g_CurrentReflectCache = NULL;
+CWaterReflectCache g_WaterReflectCaches[MAX_REFLECT_WATERS];
 
 int g_iNumWaterReflectCaches = 0;
 
@@ -182,7 +181,7 @@ void R_FreeWaterVBO(CWaterSurfaceModel* WaterVBO)
 
 }
 
-void R_FreeWaterReflectCache(water_reflect_cache_t* ReflectCache)
+void R_FreeWaterReflectCache(CWaterReflectCache* ReflectCache)
 {
 	if (ReflectCache->reflect_texture)
 	{
@@ -230,7 +229,7 @@ void R_ClearWaterReflectCaches(void)
 	g_iNumWaterReflectCaches = 0;
 }
 
-water_reflect_cache_t* R_FindReflectCache(int level, vec3_t normal, float planedist)
+CWaterReflectCache* R_FindReflectCache(int level, vec3_t normal, float planedist)
 {
 	for (int i = 0; i < g_iNumWaterReflectCaches; ++i)
 	{
@@ -248,7 +247,7 @@ water_reflect_cache_t* R_FindReflectCache(int level, vec3_t normal, float planed
 	return NULL;
 }
 
-water_reflect_cache_t* R_FindEmptyReflectCache()
+CWaterReflectCache* R_FindEmptyReflectCache()
 {
 	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
 	{
@@ -261,7 +260,7 @@ water_reflect_cache_t* R_FindEmptyReflectCache()
 	return NULL;
 }
 
-water_reflect_cache_t* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceModel* pWaterModel)
+CWaterReflectCache* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceModel* pWaterModel)
 {
 	vec3_t vert{};
 	vec3_t normal{};
@@ -360,7 +359,6 @@ void R_ShutdownWater(void)
 void R_InitWater(void)
 {
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 }
 
 bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
@@ -375,7 +373,7 @@ bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
 	return false;
 }
 
-bool R_IsAboveWater(water_reflect_cache_t* pWaterReflectCache)
+bool R_IsAboveWater(CWaterReflectCache* pWaterReflectCache)
 {
 	if (pWaterReflectCache->normal[2] > 0)
 	{
@@ -628,7 +626,6 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 
 			if (pWaterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
-				//TODO: disable mimap for normal texture ?
 				gl_loadtexture_result_t loadResult;
 				if (R_LoadTextureFromFile(pWaterControl->normalmap.c_str(), pWaterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
 				{
@@ -713,7 +710,7 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 	return pWaterModel;
 }
 
-void R_RenderWaterRefractView(water_reflect_cache_t* ReflectCache)
+void R_RenderWaterRefractView(CWaterReflectCache* ReflectCache)
 {
 	GL_BeginDebugGroup("R_RenderWaterRefractView");
 
@@ -767,7 +764,7 @@ void R_RenderWaterRefractView(water_reflect_cache_t* ReflectCache)
 	GL_EndDebugGroup();
 }
 
-void R_RenderWaterReflectView(water_reflect_cache_t* ReflectCache)
+void R_RenderWaterReflectView(CWaterReflectCache* ReflectCache)
 {
 	GL_BeginDebugGroup("R_RenderWaterReflectView");
 
@@ -1029,7 +1026,7 @@ void R_RenderWaterPass(void)
 
 		auto ent = g_VisibleWaterEntity[i];
 
-		water_reflect_cache_t* pReflectCache = NULL;
+		CWaterReflectCache* pReflectCache = NULL;
 
 		if (pWaterModel->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterModel->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value > 0)
 		{
@@ -1087,7 +1084,7 @@ void R_DrawWaterSurfaceModelReflective(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache,
+	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent,
 	bool bIsAboveWater,
 	float color[4])
@@ -1253,7 +1250,7 @@ void R_DrawWaterSurfaceModelRipple(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache,
+	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent,
 	bool bIsAboveWater,
 	float color[4])
@@ -1360,7 +1357,7 @@ void R_DrawWaterSurfaceModelLegacy(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache,
+	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent,
 	bool bIsAboveWater,
 	float color[4])
@@ -1472,7 +1469,7 @@ void R_DrawWaterSurfaceModel(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf, 
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache, 
+	CWaterReflectCache* pReflectCache, 
 	cl_entity_t* ent)
 {
 	if (!pWaterModel->drawCount)

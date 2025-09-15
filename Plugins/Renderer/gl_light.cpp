@@ -3,7 +3,6 @@
 #include <sstream>
 
 cvar_t * r_deferred_lighting = NULL;
-cvar_t *r_light_debug = NULL;
 
 MapConVar* r_flashlight_enable = NULL;
 MapConVar *r_flashlight_ambient = NULL;
@@ -44,7 +43,10 @@ GLuint r_cone_vao = 0;
 GLuint r_flashlight_cone_texture = 0;
 std::string r_flashlight_cone_texture_name;
 
-std::vector<light_dynamic_t> g_DynamicLights;
+/*
+	Purpose: dynamic lights from "[mapname]_entity.txt"
+*/
+std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 std::unordered_map<program_state_t, dfinal_program_t> g_DFinalProgramTable;
 
@@ -290,7 +292,6 @@ void R_InitLight(void)
 	r_empty_vao = GL_GenVAO();
 
 	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
 	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -612,26 +613,30 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 	return dot > cone_cosine;
 }
 
-void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback, void *context)
+void R_IterateDynamicLights(
+	fnPointLightCallback pointlightCallback, 
+	fnSpotLightCallback spotlightCallback,
+	fnDirectionalLightCallback directionalLightCallback,
+	void *context)
 {
 	for (size_t i = 0; i < g_DynamicLights.size(); i++)
 	{
-		auto &dynlight = g_DynamicLights[i];
+		const auto &dynlight = g_DynamicLights[i];
 
-		if (dynlight.type == DLIGHT_POINT)
+		if (dynlight->type == DynamicLightType_Point)
 		{
-			float radius = math_clamp(dynlight.distance, 0, 999999);
+			float radius = math_clamp(dynlight->distance, 0, 999999);
 
 			vec3_t distToLight;
-			VectorSubtract((*r_refdef.vieworg), dynlight.origin, distToLight);
+			VectorSubtract((*r_refdef.vieworg), dynlight->origin, distToLight);
 
 			if (VectorLength(distToLight) > radius + 32)
 			{
 				vec3_t mins, maxs;
 				for (int j = 0; j < 3; j++)
 				{
-					mins[j] = dynlight.origin[j] - radius;
-					maxs[j] = dynlight.origin[j] + radius;
+					mins[j] = dynlight->origin[j] - radius;
+					maxs[j] = dynlight->origin[j] + radius;
 				}
 
 				if (R_CullBox(mins, maxs))
@@ -639,34 +644,38 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 				PointLightCallbackArgs args;
 				args.radius = radius;
-				VectorCopy(dynlight.origin, args.origin);
-				VectorCopy(dynlight.color, args.color);
+				VectorCopy(dynlight->origin, args.origin);
+				VectorCopy(dynlight->color, args.color);
 
-				args.ambient = dynlight.ambient;
-				args.diffuse = dynlight.diffuse;
-				args.specular = dynlight.specular;
-				args.specularpow = dynlight.specularpow;
-				args.shadowtex = &dynlight.shadowtex;
+				args.ambient = dynlight->ambient;
+				args.diffuse = dynlight->diffuse;
+				args.specular = dynlight->specular;
+				args.specularpow = dynlight->specularpow;
+				args.shadowtex = &dynlight->shadowtex;
 				args.bVolume = true;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 			else
 			{
 				PointLightCallbackArgs args;
 				args.radius = radius;
-				VectorCopy(dynlight.origin, args.origin);
-				VectorCopy(dynlight.color, args.color);
+				VectorCopy(dynlight->origin, args.origin);
+				VectorCopy(dynlight->color, args.color);
 
-				args.ambient = dynlight.ambient;
-				args.diffuse = dynlight.diffuse;
-				args.specular = dynlight.specular;
-				args.specularpow = dynlight.specularpow;
-				args.shadowtex = &dynlight.shadowtex;
+				args.ambient = dynlight->ambient;
+				args.diffuse = dynlight->diffuse;
+				args.specular = dynlight->specular;
+				args.specularpow = dynlight->specularpow;
+				args.shadowtex = &dynlight->shadowtex;
 				args.bVolume = false;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
+		}
+		else if (dynlight->type == DynamicLightType_Directional)
+		{
+			//TODO: DirectionalLight
 		}
 	}
 
@@ -829,7 +838,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.bVolume = true;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
-				spotlight_callback(&args, context);
+				spotlightCallback(&args, context);
 			}
 			else
 			{
@@ -855,7 +864,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.bVolume = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
-				spotlight_callback(&args, context);
+				spotlightCallback(&args, context);
 			}			
 		}
 		else
@@ -899,7 +908,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.shadowtex = &cl_dlight_shadow_textures[i];
 				args.bVolume = true;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 			else
 			{
@@ -915,7 +924,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.shadowtex = &cl_dlight_shadow_textures[i];
 				args.bVolume = false;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 		}
 	}
@@ -935,16 +944,16 @@ void R_LightShadingPass(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	//Texture unit 0 = GBuffer diffuse array
+	//Texture unit 0 = GBuffer diffuse
 	GL_BindTextureUnit(DSHADE_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
-	//Texture unit 1 = GBuffer lightmap array
+	//Texture unit 1 = GBuffer lightmap
 	GL_BindTextureUnit(DSHADE_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 
-	//Texture unit 2 = GBuffer worldnorm array
+	//Texture unit 2 = GBuffer worldnorm
 	GL_BindTextureUnit(DSHADE_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
-	//Texture unit 3 = GBuffer specular array
+	//Texture unit 3 = GBuffer specular
 	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
@@ -1175,7 +1184,12 @@ void R_LightShadingPass(void)
 		}
 	};
 
-	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
+	const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+	{
+		//TODO: DirectionalLight
+	};
+
+	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
 
 	glDisable(GL_BLEND);
 

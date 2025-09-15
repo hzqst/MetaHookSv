@@ -944,3 +944,21 @@ typedef struct TCoordRect_s
 	float s1;
 	float t1;
 } TCoordRect;
+
+typedef struct qpic_s
+{
+	int			width, height;
+	byte		data[4];			// variably sized
+} qpic_t;
+
+typedef struct
+{
+	int		texnum;
+	float	sl, tl, sh, th;
+} glpic_t;
+
+typedef struct
+{
+	int percent;
+	int destcolor[3];
+}cshift_t;

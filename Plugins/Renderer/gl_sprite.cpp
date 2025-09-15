@@ -611,9 +611,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		}
 	}
 
-	//TODO: do in shader?
-	//glEnable(GL_ALPHA_TEST);
-
 	SpriteProgramState |= SPRITE_ALPHA_TEST_ENABLED;
 
 	if (R_IsRenderingWaterView())
@@ -811,9 +808,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	r_sprite_polys++;
 
 	GL_UseProgram(0);
-
-	//TODO: do in shader??
-	//glDisable(GL_ALPHA_TEST);
 
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);

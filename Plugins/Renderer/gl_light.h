@@ -1,13 +1,21 @@
 #pragma once
 
-#define DLIGHT_POINT					0
-#define DLIGHT_SPOT						1
-#define DLIGHT_DIRECTIONAL				2
+#include <memory>
 
-typedef struct light_dynamic_s
+enum DynamicLightType
 {
-	int type{ DLIGHT_POINT };
+	DynamicLightType_Unknown = 0,
+	DynamicLightType_Point,
+	DynamicLightType_Spot,
+	DynamicLightType_Directional
+};
+
+class CDynamicLight
+{
+public:
+	DynamicLightType type{ DynamicLightType_Unknown };
 	vec3_t origin{};
+	vec3_t angles{};
 	float color[3]{};
 	float distance{};
 	float ambient{};
@@ -16,12 +24,11 @@ typedef struct light_dynamic_s
 	float specularpow{};
 	int shadow{};
 	shadow_texture_t shadowtex;
-}light_dynamic_t;
+};
 
-extern std::vector<light_dynamic_t> g_DynamicLights;
+extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 extern cvar_t * r_deferred_lighting;
-extern cvar_t *r_light_debug;
 
 extern MapConVar* r_flashlight_enable;
 extern MapConVar *r_flashlight_ambient;
@@ -54,7 +61,7 @@ typedef struct PointLightCallbackArgs_s
 {
 	float radius;
 	vec3_t origin;
-	vec3_t color;//linear space color
+	vec3_t color;
 	float ambient;
 	float diffuse;
 	float specular;
@@ -78,7 +85,7 @@ typedef struct SpotLightCallbackArgs_s
 	vec3_t vforward;
 	vec3_t vright;
 	vec3_t vup;
-	vec3_t color;//linear space color
+	vec3_t color;
 	float ambient;
 	float diffuse;
 	float specular;
@@ -90,7 +97,26 @@ typedef struct SpotLightCallbackArgs_s
 
 typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
 
-void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback, void *context);
+typedef struct DirectionalLightCallbackArgs_s
+{
+	vec3_t origin;
+	vec3_t angle;
+	float size;
+	float ambient;
+	float diffuse;
+	float specular;
+	float specularpow;
+	shadow_texture_t* shadowtex;
+	bool bVolume;
+}DirectionalLightCallbackArgs;
+
+typedef void(*fnDirectionalLightCallback)(DirectionalLightCallbackArgs* args, void* context);
+
+void R_IterateDynamicLights(
+	fnPointLightCallback pointlightCallback,
+	fnSpotLightCallback spotlightCallback,
+	fnDirectionalLightCallback directionalLightCallback,
+	void* context);
 
 typedef struct
 {

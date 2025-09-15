@@ -130,13 +130,13 @@ typedef struct drawfilledrect_program_s
 }drawfilledrect_program_t;
 
 extern cvar_t *r_hdr;
-extern cvar_t *r_hdr_debug;
+
 extern MapConVar *r_hdr_blurwidth;
 extern MapConVar *r_hdr_exposure;
 extern MapConVar *r_hdr_darkness;
 extern MapConVar *r_hdr_adaptation;
+
 extern cvar_t *r_ssao;
-extern cvar_t *r_ssao_debug;
 extern MapConVar *r_ssao_radius;
 extern MapConVar *r_ssao_intensity;
 extern MapConVar *r_ssao_bias;

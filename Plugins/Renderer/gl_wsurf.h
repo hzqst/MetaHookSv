@@ -347,7 +347,7 @@ void R_DrawWaterSurfaceModel(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache,
+	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent);
 
 GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);

@@ -55,7 +55,7 @@ std::unordered_map<program_state_t, drawtexturedrect_program_t> g_DrawTexturedRe
 std::unordered_map<program_state_t, drawfilledrect_program_t> g_DrawFilledRectProgramTable;
 
 cvar_t *r_hdr = NULL;
-cvar_t *r_hdr_debug = NULL;
+
 MapConVar *r_hdr_blurwidth = NULL;
 MapConVar *r_hdr_exposure = NULL;
 MapConVar *r_hdr_darkness = NULL;
@@ -69,7 +69,7 @@ cvar_t* r_under_water_effect_wave_speed = NULL;
 cvar_t* r_under_water_effect_wave_size = NULL;
 
 cvar_t *r_ssao = NULL;
-cvar_t *r_ssao_debug = NULL;
+
 MapConVar *r_ssao_radius = NULL;
 MapConVar *r_ssao_intensity = NULL;
 MapConVar *r_ssao_bias = NULL;
@@ -392,7 +392,7 @@ void R_InitPostProcess(void)
 	pp_gaussianblurv.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n", NULL);
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_CLIENTDLL);
+
 	r_hdr_blurwidth = R_RegisterMapCvar("r_hdr_blurwidth", "0.075", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_exposure = R_RegisterMapCvar("r_hdr_exposure", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_darkness = R_RegisterMapCvar("r_hdr_darkness", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -406,7 +406,7 @@ void R_InitPostProcess(void)
 	r_under_water_effect_wave_size = gEngfuncs.pfnRegisterVariable("r_under_water_effect_wave_size", "0.01", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0",  FCVAR_CLIENTDLL);
+
 	r_ssao_radius = R_RegisterMapCvar("r_ssao_radius", "30.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_intensity = R_RegisterMapCvar("r_ssao_intensity", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_bias = R_RegisterMapCvar("r_ssao_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
