@@ -359,7 +359,18 @@ void R_RenderShadowmapForDynamicLights(void)
 					args->csmDistances[i] = cascadeDistances[i];
 				}
 
+				GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, 4096, 4096);
+
+				GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+				glEnable(GL_POLYGON_OFFSET_FILL);
+				glPolygonOffset(10, 10);
+
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
 				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+
+				R_PushRefDef();
 
 				// Render each cascade
 				for (int cascade = 0; cascade < 4; ++cascade)
@@ -370,8 +381,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					int viewportX = (cascade % 2) * 2048; // 0 or 2048
 					int viewportY = (cascade / 2) * 2048; // 0 or 2048
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, 4096, 4096);
-
 					current_shadow_texture = args->shadowtex;
 
 					current_shadow_texture->viewport[0] = viewportX;
@@ -379,62 +388,38 @@ void R_RenderShadowmapForDynamicLights(void)
 					current_shadow_texture->viewport[2] = 2048;
 					current_shadow_texture->viewport[3] = 2048;
 
-					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-					glEnable(GL_POLYGON_OFFSET_FILL);
-					glPolygonOffset(10, 10);
-
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-					R_PushRefDef();
+					// Update refdef for shadow rendering
+					VectorCopy(args->origin, (*r_refdef.vieworg));
+					VectorCopy(args->angle, (*r_refdef.viewangles));
 
 					// Set up orthographic projection for this cascade
 					float orthoSize = args->size * (1.0f + cascade * 0.5f); // Increase size for further cascades
 
-					// Create light-view matrices
-					float lightViewMatrix[4][4], lightProjMatrix[4][4];
+					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, -2048, 2048, true);
 
-					// Set up view matrix from light's perspective
-					vec3_t lightPos, lightTarget, lightUp;
-					VectorCopy(args->origin, lightPos);
-					VectorMA(lightPos, 1.0f, args->vforward, lightTarget);
-					VectorCopy(args->vup, lightUp);
-
-					Matrix4x4_CreateLookAt(lightViewMatrix, lightPos, lightTarget, lightUp);
-
-					// Set up orthographic projection matrix
-					Matrix4x4_CreateOrtho(lightProjMatrix, -orthoSize, orthoSize, -orthoSize, orthoSize,
-										-cascadeDistances[cascade], cascadeDistances[cascade]);
-
-					// Calculate shadow matrix for this cascade
-					R_SetupShadowMatrix(args->csmMatrices[cascade], lightViewMatrix, lightProjMatrix);
+					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
-
-					// Set matrices for rendering
-					Matrix4x4_Copy((*worldMatrix), lightViewMatrix);
-					Matrix4x4_Copy((*projMatrix), lightProjMatrix);
 
 					Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
 					Matrix4x4_Copy(current_shadow_texture->projmatrix, (*projMatrix));
 
 					R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, (*worldMatrix), (*projMatrix));
 
-					// Update refdef for shadow rendering
-					VectorCopy(args->origin, (*r_refdef.vieworg));
-					VectorCopy(args->angle, (*r_refdef.viewangles));
+					Matrix4x4_Copy(args->csmMatrices[cascade], current_shadow_texture->shadowmatrix);
 
 					// Render scene from light's perspective
 					R_RenderScene();
 
-					glDisable(GL_POLYGON_OFFSET_FILL);
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-					R_PopRefDef();
-
 					GL_EndDebugGroup();
 				}
+
+				R_PopRefDef();
+
+				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+				glDisable(GL_POLYGON_OFFSET_FILL);
 
 				args->shadowtex->ready = true;
 
