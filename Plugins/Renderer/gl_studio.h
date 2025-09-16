@@ -373,10 +373,6 @@ extern int* r_remapindex;
 extern model_t *cl_sprite_white;
 extern model_t *cl_sprite_shell;
 
-//renderer
-extern int r_studio_drawcall;
-extern int r_studio_polys;
-
 extern cvar_t* r_studio_base_specular;
 extern cvar_t* r_studio_celshade_specular;
 

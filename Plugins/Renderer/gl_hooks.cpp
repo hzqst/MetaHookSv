@@ -107,16 +107,22 @@
 #define GL_LOADTEXTURE2_SIG_HL25 "\x55\x8B\xEC\xB8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x45\x08\x2A\x89\x85\x2A\x2A\x2A\x2A\x33\xDB\x8B\x45\x18"
 #define GL_LOADTEXTURE2_SIG_SVENGINE "\x51\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x33\xC0\x59\xC3\x2A\x55\x8B\x6C\x24\x10"
 
-#define GL_SET2D_SIG_BLOB ""
-#define GL_SET2D_SIG_NEW2 ""
-#define GL_SET2D_SIG_NEW ""
+#define GL_SETMODE_SIG_BLOB "\x8B\x44\x24\x10\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x85\xC0"
+#define GL_SETMODE_SIG_NEW2 GL_SETMODE_SIG_BLOB
+#define GL_SETMODE_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\x2A\x2A\x8B\x75\x0C\x33\xDB\x3B\xF3\x2A\x89\x1D\x2A\x2A\x2A\x2A\x74\x2A"
+#define GL_SETMODE_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x45\x08\x2A\x8B\x5D\x1C"
+#define GL_SETMODE_SIG_SVENGINE "\x81\xEC\x2A\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x6C\x01\x00\x00\x2A\x8B\x9C\x24\x78\x01\x00\x00"
+
+#define GL_SET2D_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
+#define GL_SET2D_SIG_NEW2 GL_SET2D_SIG_BLOB
+#define GL_SET2D_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
 #define GL_SET2D_SIG_HL25 "\xCC\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x01\x17\x00\x00"
 #define GL_SET2D_SIG_SVENGINE "\x56\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x01\x17\x00\x00"
 
-#define GL_FINISH2D_SIG_BLOB ""
-#define GL_FINISH2D_SIG_NEW2 ""
-#define GL_FINISH2D_SIG_NEW ""
-#define GL_FINISH2D_SIG_HL25 "\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x71\x0B\x00\x00"
+#define GL_FINISH2D_SIG_BLOB "\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x71\x0B\x00\x00"
+#define GL_FINISH2D_SIG_NEW2 GL_FINISH2D_SIG_BLOB
+#define GL_FINISH2D_SIG_NEW  GL_FINISH2D_SIG_BLOB
+#define GL_FINISH2D_SIG_HL25 GL_FINISH2D_SIG_BLOB
 #define GL_FINISH2D_SIG_SVENGINE "\x56\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\xFF\xD6\x68\x00\x17\x00\x00"
 
 #define GL_BEGINRENDERING_SIG_BLOB "\x8B\x44\x24\x08\x8B\x4C\x24\x04\x8B\x54\x24\x0C\xC7\x00\x00\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\xC7\x01\x00\x00\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\x2B\xC1"
@@ -336,52 +342,62 @@
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
-#define DRAWSTARTUPGRAPHIC_BLOB ""//TODO
-#define DRAWSTARTUPGRAPHIC_NEW ""//TODO
+#define DRAWSTARTUPGRAPHIC_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x2C\x53\x56\x57\x8B\xF9\x8B\x87\xA8\x01\x00\x00"
+#define DRAWSTARTUPGRAPHIC_NEW2 DRAWSTARTUPGRAPHIC_BLOB
+#define DRAWSTARTUPGRAPHIC_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x8B\xF1\x33\xDB\x2A\x89\x75\xE0\x39\x9E\x2A\x01\x00\x00"
 #define DRAWSTARTUPGRAPHIC_HL25 "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x70\x53\x56\x57"
 #define DRAWSTARTUPGRAPHIC_SVENGINE "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x7C\x53\x56\x57"
 
-#define DRAW_FRAME_BLOB ""//TODO
-#define DRAW_FRAME_NEW ""//TODO
-#define DRAW_FRAME_HL25 ""
+#define DRAW_FRAME_BLOB "\x83\xEC\x14\xDB\x44\x24\x1C\x53\x55\x56\x8B\x74\x24\x24\xD9\x5C\x24\x28"
+#define DRAW_FRAME_NEW2 "\x83\xEC\x14\xDB\x44\x24\x1C\x56\x8B\x74\x24\x1C\xB8\x00\x00\x80\x3F"
+#define DRAW_FRAME_NEW "\x55\x8B\xEC\x83\xEC\x14\xDB\x45\x0C\x53\x56\x8B\x75\x08\x57\xD9\x5D\x0C"
+#define DRAW_FRAME_HL25 "\x55\x8B\xEC\x83\xEC\x20\xF3\x0F\x10\x0D\x2A\x2A\x2A\x2A\x0F\x57\xC0\x8B\x45\x08"
 #define DRAW_FRAME_SVENGINE "\x83\xEC\x38\xDB\x44\x24\x40\x2A\x2A\x2A\x2A\x8B\x7C\x24\x4C"
 
-#define DRAW_SPRITEFRAMEHOLES_BLOB ""//TODO
-#define DRAW_SPRITEFRAMEHOLES_NEW ""//TODO
-#define DRAW_SPRITEFRAMEHOLES_HL25 ""
+#define DRAW_SPRITEFRAMEHOLES_BLOB "\x68\xC0\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D"
+#define DRAW_SPRITEFRAMEHOLES_NEW2 DRAW_SPRITEFRAMEHOLES_BLOB
+#define DRAW_SPRITEFRAMEHOLES_NEW  "\x55\x8B\xEC\x68\xC0\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D"
+#define DRAW_SPRITEFRAMEHOLES_HL25 "\x55\x8B\xEC\x68\xC0\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x0F\x2E\x05"
 #define DRAW_SPRITEFRAMEHOLES_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00\xFF\xD6\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
-#define DRAW_SPRITEFRAMEADDITIVE_BLOB ""//TODO
-#define DRAW_SPRITEFRAMEADDITIVE_NEW ""//TODO
-#define DRAW_SPRITEFRAMEADDITIVE_HL25 ""
+#define DRAW_SPRITEFRAMEADDITIVE_BLOB "\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x8B\x44\x24\x14"
+#define DRAW_SPRITEFRAMEADDITIVE_NEW2 DRAW_SPRITEFRAMEADDITIVE_BLOB
+#define DRAW_SPRITEFRAMEADDITIVE_NEW "\x55\x8B\xEC\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15"
+#define DRAW_SPRITEFRAMEADDITIVE_HL25 DRAW_SPRITEFRAMEADDITIVE_NEW
 #define DRAW_SPRITEFRAMEADDITIVE_SVENGINE "\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\xFF\x74\x24\x10"
 
-#define DRAW_SPRITEFRAMEGENERIC_BLOB ""//TODO
-#define DRAW_SPRITEFRAMEGENERIC_NEW ""//TODO
-#define DRAW_SPRITEFRAMEGENERIC_HL25 ""
+#define DRAW_SPRITEFRAMEGENERIC_BLOB "\x8B\x44\x24\x20\x8B\x4C\x24\x24\x2A\x2A\x8B\x74\x24\x0C\x2A\x68\xE2\x0B\x00\x00\x8B\x3E"
+#define DRAW_SPRITEFRAMEGENERIC_NEW2 DRAW_SPRITEFRAMEGENERIC_BLOB
+#define DRAW_SPRITEFRAMEGENERIC_NEW  "\x55\x8B\xEC\x8B\x45\x24\x8B\x4D\x28\x2A\x2A\x8B\x75\x08\x2A\x68\xE2\x0B\x00\x00"
+#define DRAW_SPRITEFRAMEGENERIC_HL25 "\x55\x8B\xEC\x8B\x45\x24\x2A\x8B\x5D\x08\x2A\x2A\x68\xE2\x0B\x00\x00\x8B\x3B"
 #define DRAW_SPRITEFRAMEGENERIC_SVENGINE "\x8B\x44\x24\x1C\x2A\x8B\x5C\x24\x08\x2A\x2A\x68\xE2\x0B\x00\x00"
 
-#define DRAW_FILLEDRGBA_BLOB ""//TODO
-#define DRAW_FILLEDRGBA_NEW ""//TODO
-#define DRAW_FILLEDRGBA_HL25 ""
+#define DRAW_FILLEDRGBA_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01"
+#define DRAW_FILLEDRGBA_NEW2 DRAW_FILLEDRGBA_BLOB
+#define DRAW_FILLEDRGBA_NEW  "\x55\x8B\xEC\x83\xEC\x08\x8D\x45\x24\x8D\x4D\x20\x50\x8D\x55\x1C\x51\x8D\x45\x18\x52\x8D\x4D\x14\x50\x8D\x55\x10\x51\x8D\x45\x0C\x52\x8D\x4D\x08\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01"
+#define DRAW_FILLEDRGBA_HL25 "\x55\x8B\xEC\x8D\x45\x24\x50\x8D\x45\x20\x50\x8D\x45\x1C\x50\x8D\x45\x18\x50\x8D\x45\x14\x50\x8D\x45\x10\x50\x8D\x45\x0C\x50\x8D\x45\x08\x50\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x51\xC7\x04\x24\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x68\x02\x03\x00\x00"
 #define DRAW_FILLEDRGBA_SVENGINE "\x56\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x24\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x6A\x01\x68\x02\x03\x00\x00"
 
-#define DRAW_FILLEDRGBABLEND_BLOB ""//TODO
-#define DRAW_FILLEDRGBABLEND_NEW ""//TODO
-#define DRAW_FILLEDRGBABLEND_HL25 ""
+#define DRAW_FILLEDRGBABLEND_BLOB "\x83\xEC\x08\x8D\x44\x24\x28\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x8D\x54\x24\x24\x51\x8D\x44\x24\x24\x52\x8D\x4C\x24\x24\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00"
+#define DRAW_FILLEDRGBABLEND_NEW2 DRAW_FILLEDRGBABLEND_BLOB
+#define DRAW_FILLEDRGBABLEND_NEW  "\x55\x8B\xEC\x83\xEC\x08\x8D\x45\x24\x8D\x4D\x20\x50\x8D\x55\x1C\x51\x8D\x45\x18\x52\x8D\x4D\x14\x50\x8D\x55\x10\x51\x8D\x45\x0C\x52\x8D\x4D\x08\x50\x51\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00"
+#define DRAW_FILLEDRGBABLEND_HL25 "\x55\x8B\xEC\x8D\x45\x24\x50\x8D\x45\x20\x50\x8D\x45\x1C\x50\x8D\x45\x18\x50\x8D\x45\x14\x50\x8D\x45\x10\x50\x8D\x45\x0C\x50\x8D\x45\x08\x50\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x20\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x51\xC7\x04\x24\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00\x68\x02\x03\x00\x00"
 #define DRAW_FILLEDRGBABLEND_SVENGINE "\x56\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x24\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x03\x03\x00\x00\x68\x02\x03\x00\x00"
 
-#define NET_DRAWRECT_BLOB ""//TODO
-#define NET_DRAWRECT_NEW ""//TODO
-#define NET_DRAWRECT_HL25 ""
+#define NET_DRAWRECT_BLOB ""//NOT A THING
+#define NET_DRAWRECT_NEW ""//NOT A THING
+#define NET_DRAWRECT_HL25 ""//NOT A THING
 #define NET_DRAWRECT_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x81\xFE\x00\x04\x00\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\xFE\x01"
 
-#define DRAW_PIC_BLOB ""//TODO
-#define DRAW_PIC_NEW ""//TODO
-#define DRAW_PIC_HL25 ""
+#define DRAW_PIC_BLOB "\x51\x56\x8B\x74\x24\x14\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
+#define DRAW_PIC_NEW2 DRAW_PIC_BLOB
+#define DRAW_PIC_NEW "\x55\x8B\xEC\x2A\x2A\x8B\x75\x10\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
+#define DRAW_PIC_HL25 "\x55\x8B\xEC\x2A\x8B\x5D\x10\x85\xDB\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
 #define DRAW_PIC_SVENGINE "\x83\xEC\x08\x83\x7C\x24\x14\x00\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x3D"
 
 static hook_t* g_phook_GL_Init = NULL;
+static hook_t* g_phook_GL_SetMode = NULL;
+static hook_t* g_phook_GL_SetModeLegacy = NULL;
 static hook_t* g_phook_GL_Set2D = NULL;
 static hook_t* g_phook_GL_Finish2D = NULL;
 static hook_t* g_phook_GL_BeginRendering = NULL;
@@ -413,6 +429,7 @@ static hook_t* g_phook_enginesurface_drawPrintCharAdd = NULL;
 static hook_t* g_phook_enginesurface_drawSetTextureFile = NULL;
 static hook_t* g_phook_enginesurface_drawSetTexture = NULL;
 static hook_t* g_phook_enginesurface_drawTexturedRect = NULL;
+static hook_t* g_phook_enginesurface_drawTexturedRectAdd = NULL;
 static hook_t* g_phook_enginesurface_drawFlushText = NULL;
 static hook_t* g_phook_enginesurface_drawGetTextureSize = NULL;
 static hook_t* g_phook_enginesurface_isTextureIDValid = NULL;
@@ -704,6 +721,9 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 		int index_drawSetTextureRGBA = 8;
 		int index_drawSetTexture = 9;
 		int index_drawTexturedRect = 10;
+
+		int index_drawTexturedRectAdd = 11;
+
 		int index_createNewTextureID = 11;
 		int index_drawPrintCharAdd = 17;
 		int index_drawSetTextureFile = 18;
@@ -741,6 +761,8 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 			index_isTextureIDValid++;
 			index_drawFlushText++;
 			index_drawSetTextureBGRA++;
+
+			gPrivateFuncs.enginesurface_drawTexturedRectAdd = (decltype(gPrivateFuncs.enginesurface_drawTexturedRectAdd))GetVFunctionFromVFTable(engineSurface_vftable, index_drawTexturedRectAdd, DllInfo, RealDllInfo, RealDllInfo);
 		}
 
 		gPrivateFuncs.enginesurface_pushMakeCurrent = (decltype(gPrivateFuncs.enginesurface_pushMakeCurrent))			GetVFunctionFromVFTable(engineSurface_vftable, index_pushMakeCurrent,		DllInfo, RealDllInfo, RealDllInfo);
@@ -763,6 +785,17 @@ void Engine_FillAddress_EngineSurface(const mh_dll_info_t& DllInfo, const mh_dll
 		Engine_FillAddress_EngineSurface_pushMakeCurrent(DllInfo, RealDllInfo);
 		Engine_FillAddress_EngineSurface_isTextureIDValid(DllInfo, RealDllInfo);
 		Engine_FillAddress_EngineSurface_drawFlushText(DllInfo, RealDllInfo);
+
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.enginesurface_drawColor_offset = 4;
+			gPrivateFuncs.enginesurface_drawTextColor_offset = 20;
+		}
+		else
+		{
+			gPrivateFuncs.enginesurface_drawColor_offset = 8;
+			gPrivateFuncs.enginesurface_drawTextColor_offset = 24;
+		}
 	}
 }
 
@@ -957,6 +990,47 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	Sig_FuncNotFound(GL_Init);
 }
 
+void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.GL_SetMode || gPrivateFuncs.GL_SetModeLegacy)
+		return;
+
+	PVOID GL_SetMode_VA{};
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_HL25, DllInfo);
+		gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_NEW, DllInfo);
+		if(!GL_SetMode_VA)
+			GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_NEW2, DllInfo);
+
+		if (gPrivateFuncs.SDL_GL_GetProcAddress)
+		{
+			gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+		}
+		else
+		{
+			gPrivateFuncs.GL_SetModeLegacy = (decltype(gPrivateFuncs.GL_SetModeLegacy))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+		}
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_SetModeLegacy = (decltype(gPrivateFuncs.GL_SetModeLegacy))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(GL_SetMode);
+}
+
 void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_PolyBlend)
@@ -1094,7 +1168,6 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	{
 		GL_Bind_VA = Search_Pattern(GL_BIND_SIG_NEW, DllInfo);
 
-		//try another signature
 		if (!GL_Bind_VA)
 			GL_Bind_VA = Search_Pattern(GL_BIND_SIG_NEW2, DllInfo);
 
@@ -11540,6 +11613,9 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_NEW, DllInfo);
+		if(!DrawStartupGraphic_VA)
+			DrawStartupGraphic_VA = Search_Pattern(DRAWSTARTUPGRAPHIC_NEW2, DllInfo);
+
 		gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic = (decltype(gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic))ConvertDllInfoSpace((PVOID)DrawStartupGraphic_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -11568,7 +11644,7 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base != 0 &&
-				pinst->detail->x86.operands[0].mem.disp > 0x100 && pinst->detail->x86.operands[0].mem.disp < 0x400 &&
+				pinst->detail->x86.operands[0].mem.disp >= 0x100 && pinst->detail->x86.operands[0].mem.disp < 0x400 &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 				pinst->detail->x86.operands[1].imm == 0 )
 			{
@@ -11614,6 +11690,9 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_Frame_VA = Search_Pattern(DRAW_FRAME_NEW, DllInfo);
+		if(!Draw_Frame_VA)
+			Draw_Frame_VA = Search_Pattern(DRAW_FRAME_NEW2, DllInfo);
+
 		gPrivateFuncs.Draw_Frame = (decltype(gPrivateFuncs.Draw_Frame))ConvertDllInfoSpace((PVOID)Draw_Frame_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -11763,6 +11842,9 @@ void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, c
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_NEW, DllInfo);
+		if (!Draw_SpriteFrameAdditive_VA)
+			Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_NEW2, DllInfo);
+
 		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
 
 		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
@@ -11801,6 +11883,9 @@ void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, co
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_NEW, DllInfo);
+		if (!Draw_SpriteFrameGeneric_VA)
+			Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_NEW2, DllInfo);
+
 		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
 
 		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
@@ -11834,6 +11919,8 @@ void Engine_FillAddress_Draw_FillRGBA(const mh_dll_info_t& DllInfo, const mh_dll
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_FillRGBA_VA = Search_Pattern(DRAW_FILLEDRGBA_NEW, DllInfo);
+		if(!Draw_FillRGBA_VA)
+			Draw_FillRGBA_VA = Search_Pattern(DRAW_FILLEDRGBA_NEW2, DllInfo);
 		gPrivateFuncs.Draw_FillRGBA = (decltype(gPrivateFuncs.Draw_FillRGBA))ConvertDllInfoSpace((PVOID)Draw_FillRGBA_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -11865,6 +11952,8 @@ void Engine_FillAddress_Draw_FillRGBABlend(const mh_dll_info_t& DllInfo, const m
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_FillRGBABlend_VA = Search_Pattern(DRAW_FILLEDRGBABLEND_NEW, DllInfo);
+		if(!Draw_FillRGBABlend_VA)
+			Draw_FillRGBABlend_VA = Search_Pattern(DRAW_FILLEDRGBABLEND_NEW2, DllInfo);
 		gPrivateFuncs.Draw_FillRGBABlend = (decltype(gPrivateFuncs.Draw_FillRGBABlend))ConvertDllInfoSpace((PVOID)Draw_FillRGBABlend_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -11916,6 +12005,9 @@ void Engine_FillAddress_Draw_Pic(const mh_dll_info_t& DllInfo, const mh_dll_info
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		Draw_Pic_VA = Search_Pattern(DRAW_PIC_NEW, DllInfo);
+		if(!Draw_Pic_VA)
+			Draw_Pic_VA = Search_Pattern(DRAW_PIC_NEW2, DllInfo);
+
 		gPrivateFuncs.Draw_Pic = (decltype(gPrivateFuncs.Draw_Pic))ConvertDllInfoSpace((PVOID)Draw_Pic_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -11937,6 +12029,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
 		gPrivateFuncs.SDL_GetWindowSize = (decltype(gPrivateFuncs.SDL_GetWindowSize))GetProcAddress(hSDL2, "SDL_GetWindowSize");
 		gPrivateFuncs.SDL_GL_SwapWindow = (decltype(gPrivateFuncs.SDL_GL_SwapWindow))GetProcAddress(hSDL2, "SDL_GL_SwapWindow");
+		gPrivateFuncs.SDL_GL_GetProcAddress = (decltype(gPrivateFuncs.SDL_GL_GetProcAddress))GetProcAddress(hSDL2, "SDL_GL_GetProcAddress");
 	}
 
 	Engine_FillAddress_EngineSurface(DllInfo, RealDllInfo);
@@ -11961,6 +12054,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	Engine_FillAddress_HasOfficialGLTexAllocSupport(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_GL_Init(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_GL_SetMode(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_PolyBlend(DllInfo, RealDllInfo);
 
@@ -12165,7 +12260,16 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 void Engine_InstallHooks(void)
 {
-	Install_InlineHook(GL_Init);
+	Install_InlineHook(GL_Init); 
+	if (gPrivateFuncs.GL_SetModeLegacy)
+	{
+		Install_InlineHook(GL_SetModeLegacy);
+	}
+	else
+	{
+		Install_InlineHook(GL_SetMode);
+	}
+	//Install_InlineHook(GL_Bind);
 	Install_InlineHook(GL_Set2D);
 	Install_InlineHook(GL_Finish2D);
 	Install_InlineHook(GL_BeginRendering);
@@ -12201,6 +12305,10 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(enginesurface_drawSetTextureFile);
 	Install_InlineHook(enginesurface_drawSetTexture);
 	Install_InlineHook(enginesurface_drawTexturedRect);
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Install_InlineHook(enginesurface_drawTexturedRectAdd);
+	}
 	Install_InlineHook(enginesurface_createNewTextureID);
 	Install_InlineHook(enginesurface_drawGetTextureSize);
 	Install_InlineHook(enginesurface_isTextureIDValid);
@@ -12242,7 +12350,12 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Draw_SpriteFrameGeneric_SvEngine);
 	Install_InlineHook(Draw_FillRGBA);
 	Install_InlineHook(Draw_FillRGBABlend);
-	Install_InlineHook(NET_DrawRect);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Install_InlineHook(NET_DrawRect);
+	}
+
 	Install_InlineHook(Draw_Pic);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
@@ -12255,6 +12368,14 @@ void Engine_UninstallHooks(void)
 {
 	//Engine
 	Uninstall_Hook(GL_Init);
+	if (gPrivateFuncs.GL_SetModeLegacy)
+	{
+		Uninstall_Hook(GL_SetModeLegacy);
+	}
+	else
+	{
+		Uninstall_Hook(GL_SetMode);
+	}
 	Uninstall_Hook(GL_Set2D);
 	Uninstall_Hook(GL_Finish2D);
 	Uninstall_Hook(GL_BeginRendering);
@@ -12295,6 +12416,10 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(enginesurface_drawSetTextureFile);
 	Uninstall_Hook(enginesurface_drawSetTexture);
 	Uninstall_Hook(enginesurface_drawTexturedRect);
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Uninstall_Hook(enginesurface_drawTexturedRectAdd);
+	}
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(enginesurface_drawGetTextureSize);
 	Uninstall_Hook(enginesurface_isTextureIDValid);
@@ -12327,7 +12452,12 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Draw_SpriteFrameGeneric_SvEngine);
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
-	Uninstall_Hook(NET_DrawRect);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		Uninstall_Hook(NET_DrawRect);
+	}
+
 	Uninstall_Hook(Draw_Pic);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
@@ -12494,6 +12624,16 @@ void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat 
 	if (target == GL_TEXTURE_2D && pname == GL_TEXTURE_MAX_ANISOTROPY)
 		return;
 
+	if (pname == GL_TEXTURE_WRAP_S && (GLuint)param == GL_CLAMP)
+	{
+		return glTexParameterf(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	}
+
+	if (pname == GL_TEXTURE_WRAP_T && (GLuint)param == GL_CLAMP)
+	{
+		return glTexParameterf(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+
 	glTexParameterf(target, pname, param);
 }
 
@@ -12510,6 +12650,65 @@ void __stdcall CoreProfile_glBegin(int GLPrimitiveCode)
 	Sys_Error("glBegin not allowed in Core Profile");
 }
 
+void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc)
+{
+	if (!strcmp(proc, "glGetString"))
+		return CoreProfile_glGetString;
+	if (!strcmp(proc, "glAlphaFunc"))
+		return CoreProfile_glAlphaFunc;
+	if (!strcmp(proc, "glEnable"))
+		return CoreProfile_glEnable;
+	if (!strcmp(proc, "glDisable"))
+		return CoreProfile_glDisable;
+	if (!strcmp(proc, "glIsEnabled"))
+		return CoreProfile_glIsEnabled;
+	if (!strcmp(proc, "glShadeModel"))
+		return CoreProfile_glShadeModel;
+	if (!strcmp(proc, "glTexEnvf"))
+		return CoreProfile_glTexEnvf;
+	if (!strcmp(proc, "glTexParameterf"))
+		return CoreProfile_glTexParameterf;
+	if (!strcmp(proc, "glBegin"))
+		return CoreProfile_glBegin;
+	if (!strcmp(proc, "glColor4f"))
+		return CoreProfile_glColor4f;
+	if (!strcmp(proc, "glColor4ub"))
+		return CoreProfile_glColor4ub;
+
+	return gPrivateFuncs.SDL_GL_GetProcAddress(proc);
+}
+
+void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc)
+{
+	if (!strcmp(proc, "glGetString"))
+		return CoreProfile_glGetString;
+	if (!strcmp(proc, "glAlphaFunc"))
+		return CoreProfile_glAlphaFunc;
+	if (!strcmp(proc, "glEnable"))
+		return CoreProfile_glEnable;
+	if (!strcmp(proc, "glDisable"))
+		return CoreProfile_glDisable;
+	if (!strcmp(proc, "glIsEnabled"))
+		return CoreProfile_glIsEnabled;
+	if (!strcmp(proc, "glShadeModel"))
+		return CoreProfile_glShadeModel;
+	if (!strcmp(proc, "glTexEnvf"))
+		return CoreProfile_glTexEnvf;
+	if (!strcmp(proc, "glTexParameterf"))
+		return CoreProfile_glTexParameterf;
+	if (!strcmp(proc, "glBegin"))
+		return CoreProfile_glBegin;
+	if (!strcmp(proc, "glColor4f"))
+		return CoreProfile_glColor4f;
+	if (!strcmp(proc, "glColor4ub"))
+		return CoreProfile_glColor4ub;
+
+	return GetProcAddress(hModule, proc);
+}
+
+/*
+	TODO: defer this to be compatiable with renderdoc?
+*/
 void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -12526,9 +12725,14 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glColor4f", CoreProfile_glColor4f, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glColor4ub", CoreProfile_glColor4ub, NULL);
 	}
+	else if(gPrivateFuncs.SDL_GL_GetProcAddress)
+	{ 
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_GetProcAddress", CoreProfile_SDL_GL_GetProcAddress, NULL);
+	}
 	else
 	{
-		Sys_Error("TODO");
+		//blob engine
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "kernel32.dll", "GetProcAddress", CoreProfile_GetProcAddress, NULL);
 	}
 }
 

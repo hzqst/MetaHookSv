@@ -1216,9 +1216,6 @@ void R_DrawWaterSurfaceModelReflective(
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
-	r_wsurf_drawcall++;
-	r_wsurf_polys += pWaterModel->polyCount;
-
 	glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_DEPTH_TEXTURE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1340,9 +1337,6 @@ void R_DrawWaterSurfaceModelRipple(
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
-	r_wsurf_drawcall++;
-	r_wsurf_polys += pWaterModel->polyCount;
-
 	glDisable(GL_BLEND);
 
 	GL_UseProgram(0);
@@ -1453,9 +1447,6 @@ void R_DrawWaterSurfaceModelLegacy(
 	GL_Bind(pWaterModel->texture->gl_texturenum);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
-
-	r_wsurf_drawcall++;
-	r_wsurf_polys += pWaterModel->polyCount;
 
 	GL_UseProgram(0);
 

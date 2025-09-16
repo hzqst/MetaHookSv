@@ -582,7 +582,17 @@ void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 	s->iTextureColorFormat = iInternalFormat;
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
+
 	glBindTexture(tex2D, 0);
+
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferTex", GL_GetFrameBufferName(s));
+		glObjectLabel(GL_TEXTURE, s->s_hBackBufferTex, -1, szObjectName);
+	}
+#endif
 }
 
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
@@ -619,6 +629,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	glBindTexture(tex2D, 0);
 
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferDepthTex", GL_GetFrameBufferName(s));
+		glObjectLabel(GL_TEXTURE, s->s_hBackBufferDepthTex, -1, szObjectName);
+	}
+#endif
+
 	s->iTextureDepthFormat = iInternalFormat;
 
 	if (iInternalFormat == GL_DEPTH24_STENCIL8 && glTextureView)
@@ -631,6 +650,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
+		}
+#endif
 	}
 	else if (iInternalFormat == GL_DEPTH32F_STENCIL8 && glTextureView)
 	{
@@ -642,6 +670,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
+		}
+#endif
 	}
 	else
 	{

@@ -1694,6 +1694,15 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, &loadContext);
 
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "GL_LoadTextureEx - %s", identifier);
+		glObjectLabel(GL_TEXTURE, glt->texnum, -1, szObjectName);
+	}
+#endif
+
 	return glt->texnum;
 }
 
@@ -1743,6 +1752,15 @@ gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType
 
 	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, context);
+
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "GL_LoadTextureEx - %s", identifier);
+		glObjectLabel(GL_TEXTURE, glt->texnum, -1, szObjectName);
+	}
+#endif
 
 	return glt;
 }

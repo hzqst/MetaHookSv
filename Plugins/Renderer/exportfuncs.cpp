@@ -97,31 +97,39 @@ int HUD_VidInit(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
-	/*
-		//Elimate Sv Co-op client's fixed-function fog
-		if ( g_iWaterLevel <= 2 && g_iStartDist_SCClient >= 0.0 && g_iEndDist_SCClient > 0.0 )
-		{
-			glFogi(GL_FOG_MODE, GL_LINEAR);
-			v157[0] = *(float *)&dword_1063A6D4 / 255.0;
-			v157[1] = *(float *)&dword_1063A6D8 / 255.0;
-			v157[2] = *(float *)&dword_1063A6DC / 255.0;
-			glFogfv(0xB66u, v157);
-			glHint(GL_FOG_HINT, GL_DONT_CARE);
-			glFogf(GL_FOG_START, g_iStartDist_SCClient);
-			glFogf(GL_FOG_END, g_iEndDist_SCClient);
-			glEnable(GL_FOG);
-		}
-	*/
-	float Saved_iStartDist_SCClient = (*g_iStartDist_SCClient);
-	float Saved_iEndDist_SCClient = (*g_iEndDist_SCClient);
+	if (g_iStartDist_SCClient && g_iEndDist_SCClient)
+	{
+		/*
+			//Elimate Sv Co-op client's fixed-function fog
+			if ( g_iWaterLevel <= 2 && g_iStartDist_SCClient >= 0.0 && g_iEndDist_SCClient > 0.0 )
+			{
+				glFogi(GL_FOG_MODE, GL_LINEAR);
+				v157[0] = *(float *)&dword_1063A6D4 / 255.0;
+				v157[1] = *(float *)&dword_1063A6D8 / 255.0;
+				v157[2] = *(float *)&dword_1063A6DC / 255.0;
+				glFogfv(0xB66u, v157);
+				glHint(GL_FOG_HINT, GL_DONT_CARE);
+				glFogf(GL_FOG_START, g_iStartDist_SCClient);
+				glFogf(GL_FOG_END, g_iEndDist_SCClient);
+				glEnable(GL_FOG);
+			}
+		*/
 
-	(*g_iStartDist_SCClient) = 0;
-	(*g_iEndDist_SCClient) = 0;
+		float Saved_iStartDist_SCClient = (*g_iStartDist_SCClient);
+		float Saved_iEndDist_SCClient = (*g_iEndDist_SCClient);
 
-	gExportfuncs.V_CalcRefdef(pparams);
+		(*g_iStartDist_SCClient) = 0;
+		(*g_iEndDist_SCClient) = 0;
 
-	(*g_iStartDist_SCClient) = Saved_iStartDist_SCClient;
-	(*g_iEndDist_SCClient) = Saved_iEndDist_SCClient;
+		gExportfuncs.V_CalcRefdef(pparams);
+
+		(*g_iStartDist_SCClient) = Saved_iStartDist_SCClient;
+		(*g_iEndDist_SCClient) = Saved_iEndDist_SCClient;
+	}
+	else
+	{
+		gExportfuncs.V_CalcRefdef(pparams);
+	}
 
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }

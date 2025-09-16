@@ -2400,6 +2400,16 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
+void GL_SetMode(void* window, HDC* pmaindc, void* pbaseRC)
+{
+	gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
+}
+
+void GL_SetModeLegacy(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
+{
+	gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, fD3D, pszDriver, pszCmdLine);
+}
+
 void GL_Init(void)
 {
 	gPrivateFuncs.GL_Init();
@@ -2568,6 +2578,18 @@ void GL_Finish2D()
 
 void GL_BeginRendering(int* x, int* y, int* width, int* height)
 {
+	/*
+		if (gl_vsync.value != g_IsVSyncEnabled)
+		{
+		#if USE_DILIGENT_GRAPHICS
+
+		#else
+			SDL_GL_SetSwapInterval(gl_vsync.value > 0);
+		#endif
+			g_IsVSyncEnabled = gl_vsync.value;
+		}
+	*/
+
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
 	if ((*width) != glwidth || (*height) != glheight)
@@ -2600,8 +2622,8 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 	R_RenderFrameStart();
 
 	r_renderview_pass = 0;
-	*c_alias_polys = 0;
-	*c_brush_polys = 0;
+	(*c_alias_polys) = 0;
+	(*c_brush_polys) = 0;
 }
 
 /*
@@ -2613,13 +2635,6 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 void R_PreRenderView()
 {
 	//Reset statistics
-
-	r_wsurf_drawcall = 0;
-	r_wsurf_polys = 0;
-	r_studio_drawcall = 0;
-	r_studio_polys = 0;
-	r_sprite_drawcall = 0;
-	r_sprite_polys = 0;
 
 	//Always force GammaBlend to be disabled at very beginning.
 	r_draw_gammablend = false;
@@ -2900,9 +2915,6 @@ void R_RenderView_SvEngine(int viewIdx)
 		GL_SetCurrentSceneFBO(NULL);
 	}
 
-	(*c_alias_polys) += r_studio_polys;
-	(*c_brush_polys) += r_wsurf_polys;
-
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
 	(*currenttexture) = -1;
 
@@ -2917,12 +2929,8 @@ void R_RenderView_SvEngine(int viewIdx)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps in %3i ms at viewpass #%d, with:\n  %d brushpolys,%d brushdraw.\n  %d studiopolys, %d studiodraw.\n  %d spritepolys, %d spritedraw.\n",
-			(int)(framerate + 0.5), (int)((time2 - time1) * 1000),
-			r_renderview_pass,
-			r_wsurf_polys, r_wsurf_drawcall,
-			r_studio_polys, r_studio_drawcall,
-			r_sprite_polys, r_sprite_drawcall
+		gEngfuncs.Con_Printf("%3ifps in %3i ms.\n",
+			(int)(framerate + 0.5), (int)((time2 - time1) * 1000)
 		);
 	}
 
@@ -5028,6 +5036,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy,
 
 	for (size_t i = 0; i < GLStartupTextures.size(); i++)
 	{
+		staticFreeTextureId(GLStartupTextures[i]);
 		GL_DeleteTexture(GLStartupTextures[i]);
 	}
 }
@@ -5124,6 +5133,19 @@ static EngineSurfaceTexture* staticAllocTextureForId(int id)
 	return pNewEntry;
 }
 
+void staticFreeTextureId(int id)
+{
+	auto it = g_VGuiSurfaceTextures.find(id);
+	if (it != g_VGuiSurfaceTextures.end())
+	{
+		EngineSurfaceTexture* pNewEntry = it->second;
+
+		delete pNewEntry;
+
+		g_VGuiSurfaceTextures.erase(it);
+	}
+}
+
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace)
 {
 	int surfaceAbsExtents[4] = { 0 };
@@ -5205,7 +5227,7 @@ void __fastcall enginesurface_popMakeCurrent(void* pthis, int)
 
 void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1)
 {
-	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawColor_offset);
 
 	if ((*_drawColor)[3] == 255)
 		return;
@@ -5252,7 +5274,7 @@ void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, i
 
 void __fastcall enginesurface_drawOutlinedRect(void* pthis, int, int x0, int y0, int x1, int y1)
 {
-	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawColor_offset);
 
 	if ((*_drawColor)[3] == 255)
 		return;
@@ -5265,7 +5287,7 @@ void __fastcall enginesurface_drawOutlinedRect(void* pthis, int, int x0, int y0,
 
 void __fastcall enginesurface_drawLine(void* pthis, int, int x0, int y0, int x1, int y1)
 {
-	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawColor_offset);
 
 	if ((*_drawColor)[3] == 255)
 		return;
@@ -5361,6 +5383,15 @@ void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "drawSetTextureRGBA - %d", textureId);
+			glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
+		}
+#endif
 	}
 }
 
@@ -5383,7 +5414,7 @@ void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0,
 	if (!staticTextureCurrent)
 		return;
 
-	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + 4);
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawColor_offset);
 
 	if ((*_drawColor)[3] == 255)
 		return;
@@ -5434,12 +5465,77 @@ void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0,
 
 	const uint32_t indices[] = { 0,1,2,2,3,0 };
 
+#ifdef _DEBUG
+	char szDebugName[256]{};
+	snprintf(szDebugName, sizeof(szDebugName), "drawTexturedRect - %d", staticTextureCurrent->_id);
+	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, szDebugName);
+#else
 	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawTexturedRect");
+#endif
+}
+
+void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int y0, int x1, int y1)
+{
+	if (!staticTextureCurrent)
+		return;
+
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawColor_offset);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	RECT rcOut;
+	TCoordRect tRect;
+
+	if (!ScissorRect_TCoords(x0, y0, x1, y1, staticTextureCurrent->_s0, staticTextureCurrent->_t0, staticTextureCurrent->_s1, staticTextureCurrent->_t1, &rcOut, &tRect))
+		return;
+
+	texturedrectvertex_t vertices[4];
+
+	vertices[0].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[0].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[0].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[0].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[0].texcoord[0] = tRect.s0;
+	vertices[0].texcoord[1] = tRect.t0;
+	vertices[0].pos[0] = rcOut.left;
+	vertices[0].pos[1] = rcOut.top;
+
+	vertices[1].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[1].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[1].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[1].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[1].texcoord[0] = tRect.s1;
+	vertices[1].texcoord[1] = tRect.t0;
+	vertices[1].pos[0] = rcOut.right;
+	vertices[1].pos[1] = rcOut.top;
+
+	vertices[2].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[2].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[2].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[2].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[2].texcoord[0] = tRect.s1;
+	vertices[2].texcoord[1] = tRect.t1;
+	vertices[2].pos[0] = rcOut.right;
+	vertices[2].pos[1] = rcOut.bottom;
+
+	vertices[3].col[0] = (*_drawColor)[0] / 255.0f;
+	vertices[3].col[1] = (*_drawColor)[1] / 255.0f;
+	vertices[3].col[2] = (*_drawColor)[2] / 255.0f;
+	vertices[3].col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+	vertices[3].texcoord[0] = tRect.s0;
+	vertices[3].texcoord[1] = tRect.t1;
+	vertices[3].pos[0] = rcOut.left;
+	vertices[3].pos[1] = rcOut.bottom;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED, "drawTexturedRectAdd");
 }
 
 void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
 {
-	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 20);
+	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawTextColor_offset);
 
 	if ((*_drawTextColor)[3] == 255)
 		return;
@@ -5539,6 +5635,15 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					(*currenttexture) = -1;
 					GL_Bind(textureId);
 					GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
+
+#if defined(_DEBUG)
+					if (glObjectLabel)
+					{
+						char szObjectName[256]{};
+						snprintf(szObjectName, sizeof(szObjectName), "enginesurface - %s", filename);
+						glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
+					}
+#endif
 				}
 
 				return true;
@@ -5567,6 +5672,15 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					(*currenttexture) = -1;
 					GL_Bind(textureId);
 					GL_UploadUncompressedTexture(ctx, GL_TEXTURE_2D);
+
+#if defined(_DEBUG)
+					if (glObjectLabel)
+					{
+						char szObjectName[256]{};
+						snprintf(szObjectName, sizeof(szObjectName), "enginesurface - %s", filename);
+						glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
+					}
+#endif
 				}
 
 				return true;
@@ -5579,6 +5693,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	if (1)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.dds", filename);
+
 		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadDDS(filepath, "UI", &loadContext))
 		{
 			bLoaded = true;
@@ -5683,6 +5798,15 @@ void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "drawSetTextureBGRA - %d", textureId);
+			glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
+		}
+#endif
 	}
 }
 
@@ -5695,7 +5819,7 @@ int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
 
 void __fastcall enginesurface_drawFlushText(void* pthis, int dummy)
 {
-	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + 20);
+	int (*_drawTextColor)[4] = (decltype(_drawTextColor))((ULONG_PTR)pthis + gPrivateFuncs.enginesurface_drawTextColor_offset);
 
 	if ((*g_iVertexBufferEntriesUsed) > 0 && (*currenttexture) > 0)
 	{
@@ -5716,7 +5840,6 @@ void __fastcall enginesurface_drawFlushText(void* pthis, int dummy)
 			v.col[3] = 1.0f - ((*_drawTextColor)[3] / 255.0f);
 
 			vertices.emplace_back(v);
-
 		}
 
 		const uint32_t baseIndices[] = { 0, 1, 2, 2, 3, 0 };

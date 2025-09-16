@@ -444,6 +444,8 @@ void R_AddTEntity(cl_entity_t *pEnt);
 void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
 void GL_Shutdown(void);
 void GL_Init(void);
+void GL_SetMode(void* window, HDC* pmaindc, void* pbaseRC);
+void GL_SetModeLegacy(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 void GL_Set2D();
 void GL_Finish2D();
 void GL_Set2DEx(int x, int y, int width, int height);
@@ -529,6 +531,7 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 
+void staticFreeTextureId(int id);
 void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 void __fastcall enginesurface_popMakeCurrent(void* pthis, int);
 void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1);
@@ -538,6 +541,7 @@ void __fastcall enginesurface_drawPolyLine(void* pthis, int, int* px, int* py, i
 void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId);
 void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int y0, int x1, int y1);
 void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);

@@ -42,6 +42,8 @@ typedef struct
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
+	void (*GL_SetModeLegacy)(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
+	void (*GL_SetMode)(void* window, HDC* pmaindc, void* pbaseRC);
 	void (*GL_Set2D)(void);
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
@@ -129,6 +131,7 @@ typedef struct
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
 	void(__fastcall* enginesurface_drawTexturedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
+	void(__fastcall* enginesurface_drawTexturedRectAdd)(void* pthis, int, int x0, int y0, int x1, int y1);
 	int(__fastcall* enginesurface_createNewTextureID)(void* pthis, int);
 	void(__fastcall* enginesurface_drawPrintCharAdd)(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
@@ -137,6 +140,9 @@ typedef struct
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
 	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
 	void( __fastcall *enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+	int enginesurface_drawColor_offset;
+	int enginesurface_drawTextColor_offset;
+
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
@@ -210,6 +216,7 @@ typedef struct
 	int(__cdecl* SDL_GL_SetAttribute)(int attr, int value);
 	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
 	void (__cdecl* SDL_GL_SwapWindow)(void* window);
+	void* (__cdecl* SDL_GL_GetProcAddress)(const char* proc);
 
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;
@@ -217,8 +224,6 @@ typedef struct
 	bool R_LightStrength_inlined;
 	bool R_GlowBlend_inlined;
 
-	//Just for debugging
-	//void(__stdcall* glDeleteTextures)(GLsizei n, const GLuint* textures);
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;

@@ -6,9 +6,6 @@ std::unordered_map<program_state_t, sprite_program_t> g_SpriteProgramTable;
 std::unordered_map<program_state_t, legacysprite_program_t> g_LegacySpriteProgramTable;
 std::unordered_map<program_state_t, triapi_program_t> g_TriAPIProgramTable;
 
-int r_sprite_drawcall = 0;
-int r_sprite_polys = 0;
-
 int *particletexture = NULL;
 particle_t **active_particles = NULL;
 word **host_basepal = NULL;
@@ -803,9 +800,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		
 		GL_BindVAO(0);
 	}
-
-	r_sprite_drawcall++;
-	r_sprite_polys++;
 
 	GL_UseProgram(0);
 

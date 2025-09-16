@@ -257,9 +257,6 @@ typedef struct
 
 extern CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
-extern int r_wsurf_drawcall;
-extern int r_wsurf_polys;
-
 extern float r_shadow_matrix[3][16];
 extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];

@@ -84,11 +84,6 @@ skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS] = NULL;
 int* r_remapindex = NULL;
 #endif
 
-//Stats
-
-int r_studio_drawcall = 0;
-int r_studio_polys = 0;
-
 //Cvars
 
 cvar_t* r_studio_debug = NULL;
@@ -3056,9 +3051,6 @@ void R_StudioDrawMesh_DrawPass(
 	if (pRenderMesh->iIndiceCount)
 	{
 		glDrawElements(GL_TRIANGLES, pRenderMesh->iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(pRenderMesh->iStartIndex));
-
-		++r_studio_drawcall;
-		r_studio_polys += pRenderMesh->iPolyCount;
 	}
 
 	GL_UseProgram(0);

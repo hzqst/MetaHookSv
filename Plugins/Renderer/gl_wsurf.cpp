@@ -18,8 +18,6 @@ vec3_t r_frustum_vec[4] = { 0 };
 float r_znear = 4;
 float r_zfar = 4096;
 bool r_ortho = false;
-int r_wsurf_drawcall = 0;
-int r_wsurf_polys = 0;
 
 int g_iCurrentFrameLeafLoadCount = 0;
 
@@ -2193,9 +2191,6 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-	r_wsurf_drawcall++;
-	r_wsurf_polys += texchain.polyCount;
-
 	GL_UseProgram(0);
 
 	R_DrawWorldSurfaceLeafEnd();
@@ -2373,9 +2368,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 		R_EndDetailTexture(WSurfProgramState);
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.polyCount;
 
 		GL_UseProgram(0);
 
@@ -2627,9 +2619,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		R_EndDetailTexture(WSurfProgramState);
 
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.polyCount;
-
 		GL_UseProgram(0);
 
 		R_DrawWorldSurfaceLeafEnd();
@@ -2767,9 +2756,6 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
-
-	r_wsurf_drawcall++;
-	r_wsurf_polys += texchain.polyCount;
 
 	GL_UseProgram(0);
 

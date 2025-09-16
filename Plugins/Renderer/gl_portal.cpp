@@ -328,9 +328,6 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 	GL_UseProgram(0);
 
 	R_DrawPortalSurfaceModelEnd();
-
-	r_wsurf_drawcall++;
-	r_wsurf_polys += pPortalModel->polyCount;
 }
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
@@ -375,9 +372,6 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 	GL_UseProgram(0);
 
 	R_DrawPortalSurfaceModelEnd();
-
-	r_wsurf_drawcall++;
-	r_wsurf_polys += pPortalModel->polyCount;
 }
 
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)

@@ -24,9 +24,6 @@ typedef struct triapi_program_s
 	int program;
 }triapi_program_t;
 
-extern int r_sprite_drawcall;
-extern int r_sprite_polys;
-
 extern int *particletexture;
 extern particle_t **active_particles;
 extern word **host_basepal;

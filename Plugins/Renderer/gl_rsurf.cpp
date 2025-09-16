@@ -355,8 +355,8 @@ void GL_BuildLightmaps(void)
 		}
 	}
 
-	GLint maxLayers;
-	glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayers);
+	if (g_WorldSurfaceRenderer.vWorldModels.empty())
+		return;
 
 	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
 
@@ -392,9 +392,9 @@ void GL_BuildLightmaps(void)
 		{
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
 		}
+
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
-	
-	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
@@ -1240,8 +1240,6 @@ void R_DrawDecals(cl_entity_t *ent)
 			glDrawElements(GL_TRIANGLES, g_DecalBaseDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalBaseDrawBatch.StartIndex[i]));
 		}
 
-		r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
-		r_wsurf_drawcall += g_DecalBaseDrawBatch.BatchCount;
 	}
 
 	//Draw decals with detail textures
@@ -1264,8 +1262,6 @@ void R_DrawDecals(cl_entity_t *ent)
 			R_EndDetailTexture(WSurfProgramStateDetail);
 		}
 
-		r_wsurf_polys += g_DecalDetailDrawBatch.BatchCount;
-		r_wsurf_drawcall += g_DecalDetailDrawBatch.BatchCount;
 	}
 
 	GL_BindVAO(0);
