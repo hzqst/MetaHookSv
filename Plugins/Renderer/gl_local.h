@@ -20,6 +20,8 @@
 #include <set>
 #include <map>
 #include <atomic>
+#include <memory>
+#include <sstream>
 
 #include "qgl.h"
 #include "mathlib2.h"
@@ -175,6 +177,8 @@ extern int* scissor_x;
 extern int* scissor_y;
 extern int* scissor_width;
 extern int* scissor_height;
+
+extern screenfade_t* cl_sf;
 
 extern model_t *mod_known;
 extern int *mod_numknown;

@@ -3624,8 +3624,8 @@ void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const cha
 
 void R_ClearBSPEntities()
 {
-	g_EnvWaterControls.clear();
 	r_flashlight_cone_texture_name.clear();
+	g_EnvWaterControls.clear();
 	g_DynamicLights.clear();
 }
 
@@ -3970,6 +3970,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
 		}\
 	}
+
 #define PARSE_KEY_VALUE_STRING_WRITEREF(name, parser) auto name##_string = ValueForKey(ent, #name);\
 	if (name##_string)\
 	{\
@@ -3980,6 +3981,11 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 		{\
 			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
 		}\
+	}
+#define PARSE_KEY_VALUE_STRING_WRITEINT(name) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		dynlight->name = atoi(name##_string);\
 	}
 
 	PARSE_KEY_VALUE_STRING(origin, UTIL_ParseStringAsVector3);
@@ -3992,27 +3998,19 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 	PARSE_KEY_VALUE_STRING_WRITEREF(specular, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(specularpow, UTIL_ParseStringAsVector1);
 
-	auto shadow_string = ValueForKey(ent, "shadow");
-	if (shadow_string)
-	{
-		dynlight->shadow = atoi(shadow_string);
-	}
-
-	auto follow_player_string = ValueForKey(ent, "follow_player");
-	if (follow_player_string)
-	{
-		dynlight->follow_player = atoi(follow_player_string);
-	}
+	PARSE_KEY_VALUE_STRING_WRITEINT(shadow);
+	PARSE_KEY_VALUE_STRING_WRITEINT(follow_player);
 
 #undef PARSE_KEY_VALUE_STRING
 #undef PARSE_KEY_VALUE_STRING_WRITEREF
+#undef PARSE_KEY_VALUE_STRING_WRITEINT
 
 	g_DynamicLights.emplace_back(dynlight);
 }
 
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 {
-	auto pWaterControl = new CEnvWaterControl;
+	auto pWaterControl = std::make_shared<CEnvWaterControl>();
 
 	auto basetexture_string = ValueForKey(ent, "basetexture");
 	if (basetexture_string)
@@ -4031,94 +4029,39 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 		pWaterControl->normalmap = normalmap_string;
 	}
 
-	auto fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
-	if (fresnelfactor_string)
-	{
-		float temp[4];
-		if (sscanf(fresnelfactor_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
-		{
-			pWaterControl->fresnelfactor[0] = math_clamp(temp[0], 0, 999999);
-			pWaterControl->fresnelfactor[1] = math_clamp(temp[1], 0, 999999);
-			pWaterControl->fresnelfactor[2] = math_clamp(temp[2], 0, 999999);
-			pWaterControl->fresnelfactor[3] = math_clamp(temp[3], 0, 1);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\", 4 floats are required.\n");
-		}
+#define PARSE_KEY_VALUE_STRING(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, pWaterControl->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"env_water_control\"\n");\
+		}\
 	}
 
-	auto normfactor_string = ValueForKey(ent, "normfactor");
-	if (normfactor_string)
-	{
-		float temp[4];
-		if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->normfactor = math_clamp(temp[0], 0, 10);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"normfactor\" in entity \"env_water_control\", 2 floats are required.\n");
-		}
+#define PARSE_KEY_VALUE_STRING_WRITEREF(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, &pWaterControl->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"env_water_control\"\n");\
+		}\
 	}
 
-	auto depthfactor_string = ValueForKey(ent, "depthfactor");
-	if (depthfactor_string)
-	{
-		float temp[4];
-		if (sscanf(depthfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			pWaterControl->depthfactor[0] = math_clamp(temp[0], 0, 10);
-			pWaterControl->depthfactor[1] = math_clamp(temp[1], 0, 10);
-			pWaterControl->depthfactor[2] = math_clamp(temp[2], 0, 999999);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\", 3 floats are required.\n");
-		}
-	}
+	PARSE_KEY_VALUE_STRING(fresnelfactor, UTIL_ParseStringAsVector4);
+	PARSE_KEY_VALUE_STRING(depthfactor, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING_WRITEREF(normfactor, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(minheight, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(maxtrans, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(speedrate, UTIL_ParseStringAsVector1);
 
-	auto minheight_string = ValueForKey(ent, "minheight");
-	if (minheight_string)
-	{
-		float temp[4];
-		if (sscanf(minheight_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->minheight = math_clamp(temp[0], 0, 10000);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minheight\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
-
-	auto maxtrans_string = ValueForKey(ent, "maxtrans");
-	if (maxtrans_string)
-	{
-		float temp[4];
-		if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->maxtrans = math_clamp(temp[0], 0, 255) / 255.0f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
-
-	auto speedrate_string = ValueForKey(ent, "speedrate");
-	if (speedrate_string)
-	{
-		float temp[4];
-		if (sscanf(speedrate_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->speedrate = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"speedrate\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
+#undef PARSE_KEY_VALUE_STRING
+#undef PARSE_KEY_VALUE_STRING_WRITEREF
 
 	auto level_string = ValueForKey(ent, "level");
 	if (level_string)

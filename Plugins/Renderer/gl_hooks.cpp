@@ -962,19 +962,21 @@ void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_i
 	if (gPrivateFuncs.R_PolyBlend)
 		return;
 
+	PVOID R_PolyBlend_VA{};
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		auto R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_SVENGINE, DllInfo);
+		R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_SVENGINE, DllInfo);
 		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))ConvertDllInfoSpace(R_PolyBlend_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		auto R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_HL25, DllInfo);
+		R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_HL25, DllInfo);
 		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))ConvertDllInfoSpace(R_PolyBlend_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		auto R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_NEW, DllInfo);
+		R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_NEW, DllInfo);
 
 		if (!R_PolyBlend_VA)
 			R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_NEW2, DllInfo);
@@ -983,11 +985,59 @@ void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_i
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		auto R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_BLOB, DllInfo);
+		R_PolyBlend_VA = Search_Pattern(R_POLYBLEND_BLOB, DllInfo);
 		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))ConvertDllInfoSpace(R_PolyBlend_VA, DllInfo, RealDllInfo);
 	}
 
 	Sig_FuncNotFound(R_PolyBlend);
+
+	{
+		typedef struct R_PolyBlend_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+		}R_PolyBlend_SearchContext;
+
+		R_PolyBlend_SearchContext ctx = { DllInfo, RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges(R_PolyBlend_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_PolyBlend_SearchContext*)context;
+
+			if (address[0] == 0xE8 && instCount < 10)
+			{
+				gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))ConvertDllInfoSpace((PVOID) pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+			}
+
+			if (pinst->id == X86_INS_TEST &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+				pinst->detail->x86.operands[0].size == 1 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 2)
+			{
+				cl_sf = (decltype(cl_sf))ConvertDllInfoSpace((PUCHAR)pinst->detail->x86.operands[0].mem.disp - offsetof(screenfade_t, fadeFlags), ctx->DllInfo, ctx->RealDllInfo);
+			}
+
+			if (gPrivateFuncs.V_FadeAlpha && cl_sf)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &ctx);
+
+		Sig_FuncNotFound(V_FadeAlpha);
+		Sig_VarNotFound(cl_sf);
+	}
 }
 
 void Engine_FillAddress_S_ExtraUpdate(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -2451,41 +2501,34 @@ void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll
 	if (gPrivateFuncs.R_RenderScene)
 		return;
 
-	ULONG_PTR R_RenderScene_VA = 0;
-	ULONG R_RenderScene_RVA = 0;
+	PVOID R_RenderScene_VA = 0;
 
-	ULONG_PTR R_RenderView_VA = (gPrivateFuncs.R_RenderView_SvEngine) ? (ULONG_PTR)gPrivateFuncs.R_RenderView_SvEngine : (ULONG_PTR)gPrivateFuncs.R_RenderView;
-	ULONG R_RenderView_RVA = 0;
+	PVOID R_RenderView_VA = (gPrivateFuncs.R_RenderView_SvEngine) ? (PVOID)gPrivateFuncs.R_RenderView_SvEngine : (PVOID)gPrivateFuncs.R_RenderView;
 
-	//Convert R_RenderView_VA to DllInfo-based.
-	Convert_VA_to_RVA(R_RenderView, RealDllInfo);
-	Convert_RVA_to_VA(R_RenderView, DllInfo);
+	R_RenderView_VA = ConvertDllInfoSpace(R_RenderView_VA, RealDllInfo, DllInfo);
 
-	ULONG_PTR R_SetupGL_VA = (ULONG_PTR)gPrivateFuncs.R_SetupGL;
-	ULONG R_SetupGL_RVA = 0;
-
-	//Convert R_SetupGL_VA to DllInfo-based.
-	Convert_VA_to_RVA(R_SetupGL, RealDllInfo);
-	Convert_RVA_to_VA(R_SetupGL, DllInfo);
+	PVOID R_SetupGL_VA = ConvertDllInfoSpace((PVOID)gPrivateFuncs.R_SetupGL, RealDllInfo, DllInfo);
 
 	{
 		typedef struct R_RenderScene_SearchContext_s
 		{
-			ULONG_PTR& R_RenderScene;
-			ULONG_PTR R_SetupGL_VA{};
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+			PVOID &R_SetupGL_VA;
+			PVOID &R_RenderScene_VA;
 			bool bFoundCallSetupGL{};
 		}R_RenderScene_SearchContext;
 
-		R_RenderScene_SearchContext ctx = { R_RenderScene_VA, R_SetupGL_VA };
+		R_RenderScene_SearchContext ctx = { DllInfo, RealDllInfo, R_SetupGL_VA, R_RenderScene_VA };
 
-		g_pMetaHookAPI->DisasmRanges((PVOID)R_RenderView_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(R_RenderView_VA, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_RenderScene_SearchContext*)context;
 
 			if (address[0] == 0xE8)
 			{
-				ULONG_PTR target = (decltype(target))pinst->detail->x86.operands[0].imm;
+				PVOID target = (decltype(target))pinst->detail->x86.operands[0].imm;
 
 				if (target == ctx->R_SetupGL_VA)
 				{
@@ -2506,7 +2549,7 @@ void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll
 						auto pinst = (cs_insn*)inst;
 						auto ctx2 = (R_RenderScene_SearchContext*)context;
 
-						ULONG_PTR target2 = (decltype(target2))pinst->detail->x86.operands[0].imm;
+						PVOID target2 = (decltype(target2))pinst->detail->x86.operands[0].imm;
 
 						if (target2 == ctx2->R_SetupGL_VA)
 						{
@@ -2526,7 +2569,7 @@ void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll
 
 					if (ctx2.bFoundCallSetupGL)
 					{
-						ctx2.R_RenderScene = target;
+						ctx2.R_RenderScene_VA = target;
 						return TRUE;
 					}
 				}
@@ -2535,7 +2578,7 @@ void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll
 			if (ctx->bFoundCallSetupGL)
 				return TRUE;
 
-			if (ctx->R_RenderScene)
+			if (ctx->R_RenderScene_VA)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2548,43 +2591,39 @@ void Engine_FillAddress_R_RenderScene(const mh_dll_info_t& DllInfo, const mh_dll
 
 			}, 0, &ctx);
 
-		Convert_VA_to_RVA(R_RenderScene, DllInfo);
+		if (R_RenderScene_VA)
+		{
+			gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))ConvertDllInfoSpace(R_RenderScene_VA, DllInfo, RealDllInfo);
+		}
 	}
 
 	if (gPrivateFuncs.R_RenderScene_inlined)
 		return;
 
-	if (!R_RenderScene_RVA)
+	if (!R_RenderScene_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			char pattern[] = "\xDD\xD8\xDD\xD8\xE8";
-			auto addr = (ULONG_PTR)Search_Pattern_From(R_RenderView_VA, pattern, DllInfo);
+			auto addr = (PUCHAR)Search_Pattern_From(R_RenderView_VA, pattern, DllInfo);
 			Sig_AddrNotFound(R_RenderScene);
-			R_RenderScene_VA = (ULONG_PTR)GetCallAddress(addr + 4);
-			Convert_VA_to_RVA(R_RenderScene, DllInfo);
+			R_RenderScene_VA = GetCallAddress(addr + 4);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_RenderScene_VA = (ULONG_PTR)Search_Pattern(R_RENDERSCENE_SIG_HL25, DllInfo);
-			Convert_VA_to_RVA(R_RenderScene, DllInfo);
+			R_RenderScene_VA = Search_Pattern(R_RENDERSCENE_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_RenderScene_VA = (ULONG_PTR)Search_Pattern(R_RENDERSCENE_SIG_NEW, DllInfo);
-			Convert_VA_to_RVA(R_RenderScene, DllInfo);
+			R_RenderScene_VA = Search_Pattern(R_RENDERSCENE_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_RenderScene_VA = (ULONG_PTR)Search_Pattern(R_RENDERSCENE_SIG_BLOB, DllInfo);
-			Convert_VA_to_RVA(R_RenderScene, DllInfo);
+			R_RenderScene_VA = Search_Pattern(R_RENDERSCENE_SIG_BLOB, DllInfo);
 		}
 	}
 
-	if (R_RenderScene_RVA)
-	{
-		gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))VA_from_RVA(R_RenderScene, RealDllInfo);
-	}
+	gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))ConvertDllInfoSpace(R_RenderScene_VA, DllInfo, RealDllInfo);
 
 	Sig_FuncNotFound(R_RenderScene);
 }

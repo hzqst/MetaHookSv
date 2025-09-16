@@ -90,6 +90,8 @@ int* scissor_y = nullptr;
 int* scissor_width = nullptr;
 int* scissor_height = nullptr;
 
+screenfade_t* cl_sf = nullptr;
+
 /*
 	r_visframecount is updated only when you encounter a new leaf
 	while r_framecount is updated every new frame
@@ -315,6 +317,7 @@ cvar_t* sv_cheats = nullptr;
 cvar_t* gl_round_down = nullptr;
 cvar_t* gl_picmip = nullptr;
 cvar_t* gl_max_size = nullptr;
+cvar_t* gl_polyblend = nullptr;
 
 cvar_t* v_texgamma = nullptr;
 cvar_t* v_lightgamma = nullptr;
@@ -2035,8 +2038,40 @@ void R_SetRenderMode(cl_entity_t* pEntity)
 
 void R_PolyBlend(void)
 {
-	//TODO
-	//gPrivateFuncs.R_PolyBlend();
+	unsigned char	color[4]{};
+
+	//if (!gl_polyblend->value)
+	//	return;
+
+	auto alpha = gPrivateFuncs.V_FadeAlpha();
+
+	if (alpha > 0)
+	{
+		uint64_t ProgramState = 0;
+
+		if ((*cl_sf).fadeFlags & FFADE_MODULATE)
+		{
+			ProgramState |= DRAW_FILLED_RECT_ZERO_SRC_ALPHA_BLEND_ENABLED;
+
+			color[0] = (unsigned short)((*cl_sf).fader * alpha + (255 - alpha) * 255) >> 8;
+			color[1] = (unsigned short)((*cl_sf).fadeg * alpha + (255 - alpha) * 255) >> 8;
+			color[2] = (unsigned short)((*cl_sf).fadeb * alpha + (255 - alpha) * 255) >> 8;
+			color[3] = 255;
+		}
+		else
+		{
+			ProgramState |= DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED;
+
+			color[0] = (*cl_sf).fader;
+			color[1] = (*cl_sf).fadeg;
+			color[2] = (*cl_sf).fadeb;
+			color[3] = alpha;
+		}
+
+		vec4_t drawColor4v = { color[0] / 255.0f, color[1] / 255.0f , color[2] / 255.0f , color[3] / 255.0f };
+
+		R_DrawFilledQuad(0, 0, glwidth, glheight, drawColor4v, ProgramState, "R_PolyBlend");
+	}
 }
 
 void S_ExtraUpdate(void)
@@ -3065,7 +3100,7 @@ void R_InitCvars(void)
 	gl_round_down = gEngfuncs.pfnGetCvarPointer("gl_round_down");
 	gl_picmip = gEngfuncs.pfnGetCvarPointer("gl_picmip");
 	gl_max_size = gEngfuncs.pfnGetCvarPointer("gl_max_size");
-	//gl_max_size->value = gl_max_texture_size;
+	gl_polyblend = gEngfuncs.pfnGetCvarPointer("gl_polyblend");
 
 	developer = gEngfuncs.pfnGetCvarPointer("developer");
 

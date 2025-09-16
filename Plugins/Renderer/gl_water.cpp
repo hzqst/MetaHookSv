@@ -1,5 +1,4 @@
 #include "gl_local.h"
-#include <sstream>
 
 //renderer
 vec3_t g_CurrentCameraView;
@@ -17,7 +16,7 @@ std::vector<std::shared_ptr<CWaterSurfaceModel>> g_VisibleWaterSurfaceModels;
 
 std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
-std::vector<CEnvWaterControl*> g_EnvWaterControls;
+std::vector<std::shared_ptr<CEnvWaterControl>> g_EnvWaterControls;
 
 //std::vector<cubemap_t> r_cubemaps;
 
@@ -137,24 +136,24 @@ void R_UseWaterProgram(program_state_t state, water_program_t* progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseWaterProgram: Failed to load program!");
+		Sys_Error("R_UseWaterProgram: Failed to load program!");
 	}
 }
 
 const program_state_mapping_t s_WaterProgramStateName[] = {
-{ WATER_LEGACY_ENABLED					, "WATER_LEGACY_ENABLED"			 },
-{ WATER_UNDERWATER_ENABLED				, "WATER_UNDERWATER_ENABLED"		 },
-{ WATER_GBUFFER_ENABLED					, "WATER_GBUFFER_ENABLED"			 },
-{ WATER_DEPTH_ENABLED					, "WATER_DEPTH_ENABLED"				 },
-{ WATER_REFRACT_ENABLED					, "WATER_REFRACT_ENABLED"			 },
-{ WATER_LINEAR_FOG_ENABLED				, "WATER_LINEAR_FOG_ENABLED"		 },
-{ WATER_EXP_FOG_ENABLED					, "WATER_EXP_FOG_ENABLED"			 },
-{ WATER_EXP2_FOG_ENABLED				, "WATER_EXP2_FOG_ENABLED"			 },
-{ WATER_ALPHA_BLEND_ENABLED				, "WATER_ALPHA_BLEND_ENABLED"		 },
-{ WATER_ADDITIVE_BLEND_ENABLED			, "WATER_ADDITIVE_BLEND_ENABLED"	 },
-{ WATER_OIT_BLEND_ENABLED				, "WATER_OIT_BLEND_ENABLED"			 },
-{ WATER_GAMMA_BLEND_ENABLED				, "WATER_GAMMA_BLEND_ENABLED"		 },
-{ WATER_LINEAR_FOG_SHIFT_ENABLED		, "WATER_LINEAR_FOG_SHIFT_ENABLED"	 },
+	{ WATER_LEGACY_ENABLED					, "WATER_LEGACY_ENABLED"			 },
+	{ WATER_UNDERWATER_ENABLED				, "WATER_UNDERWATER_ENABLED"		 },
+	{ WATER_GBUFFER_ENABLED					, "WATER_GBUFFER_ENABLED"			 },
+	{ WATER_DEPTH_ENABLED					, "WATER_DEPTH_ENABLED"				 },
+	{ WATER_REFRACT_ENABLED					, "WATER_REFRACT_ENABLED"			 },
+	{ WATER_LINEAR_FOG_ENABLED				, "WATER_LINEAR_FOG_ENABLED"		 },
+	{ WATER_EXP_FOG_ENABLED					, "WATER_EXP_FOG_ENABLED"			 },
+	{ WATER_EXP2_FOG_ENABLED				, "WATER_EXP2_FOG_ENABLED"			 },
+	{ WATER_ALPHA_BLEND_ENABLED				, "WATER_ALPHA_BLEND_ENABLED"		 },
+	{ WATER_ADDITIVE_BLEND_ENABLED			, "WATER_ADDITIVE_BLEND_ENABLED"	 },
+	{ WATER_OIT_BLEND_ENABLED				, "WATER_OIT_BLEND_ENABLED"			 },
+	{ WATER_GAMMA_BLEND_ENABLED				, "WATER_GAMMA_BLEND_ENABLED"		 },
+	{ WATER_LINEAR_FOG_SHIFT_ENABLED		, "WATER_LINEAR_FOG_SHIFT_ENABLED"	 },
 };
 
 void R_SaveWaterProgramStates(void)
@@ -385,9 +384,9 @@ bool R_IsAboveWater(CWaterReflectCache* pWaterReflectCache)
 	return false;
 }
 
-CEnvWaterControl* R_FindWaterControl(msurface_t* surf)
+std::shared_ptr<CEnvWaterControl> R_FindWaterControl(msurface_t* surf)
 {
-	for (auto pWaterControl : g_EnvWaterControls)
+	for (const auto &pWaterControl : g_EnvWaterControls)
 	{
 		if (pWaterControl->basetexture[0] == '*')
 		{
@@ -496,11 +495,11 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 
 	if (!skipDrips)
 	{
-		int randBase = procFrame & 0xff;
-		int randTexBase = pDstBuf[0] & 0xffff;
-		int rand1 = m_pPermutation[(randTexBase + (randBase++)) & (RANDOM_BYTES_SIZE - 1)] << 1;
+		int randBase = procFrame & 0xFF;
+		int randTexBase = pDstBuf[0] & 0xFFFF;
+		int rand1 = m_pPermutation[(randTexBase + (randBase++) % 0xFF) & (RANDOM_BYTES_SIZE - 1)] << 1;
 		int rand2 = m_pPermutation[(randTexBase + (randBase++)) & (RANDOM_BYTES_SIZE - 1)] << 1;
-		short dripsize = 96 + (m_pPermutation[randBase] >> 2);
+		short dripsize = 96 + (m_pPermutation[(randBase % 0xFF)] >> 2);
 
 		int x = rand1 & (bufWide - 1);
 		int y = rand2 & (bufTall - 1);

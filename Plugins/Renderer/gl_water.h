@@ -40,7 +40,7 @@ public:
 	float speedrate{ 1 };
 };
 
-extern std::vector<CEnvWaterControl*> g_EnvWaterControls;
+extern std::vector<std::shared_ptr<CEnvWaterControl>> g_EnvWaterControls;
 
 //extern std::vector<cubemap_t> r_cubemaps;
 

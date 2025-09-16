@@ -962,3 +962,11 @@ typedef struct
 	int percent;
 	int destcolor[3];
 }cshift_t;
+
+#include <screenfade.h>
+
+#define FFADE_IN			0x0000		// Just here so we don't pass 0 into the function
+#define FFADE_OUT			0x0001		// Fade out (not in)
+#define FFADE_MODULATE		0x0002		// Modulate (don't blend)
+#define FFADE_STAYOUT		0x0004		// ignores the duration, stays faded out until new ScreenFade message received
+#define FFADE_LONGFADE		0x0008		// used to indicate the fade can be longer than 16 seconds (added for czero)
