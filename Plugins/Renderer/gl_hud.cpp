@@ -521,8 +521,13 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
 #if 1
+	GL_UploadDataToVBOStreamDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, nullptr);
 	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
+
+	GL_UploadDataToVBOStreamDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, nullptr);
 	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
+
+	GL_UploadDataToEBOStreamDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, nullptr);
 	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
 #else
 	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);

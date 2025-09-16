@@ -1225,7 +1225,7 @@ void triapi_End()
 		gTriAPICommand.hVAO = GL_GenVAO();
 		gTriAPICommand.hVBO = GL_GenBuffer();
 
-		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
+		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t);
 		if (gTriAPICommand.VBOCapacity < 16 * sizeof(triapivertex_t))
 			gTriAPICommand.VBOCapacity = 16 * sizeof(triapivertex_t);
 		GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
@@ -1245,11 +1245,12 @@ void triapi_End()
 		});
 	}
 
-	if (gTriAPICommand.Vertices.size() * sizeof(triapivertex_t) > gTriAPICommand.VBOCapacity)
+	if (gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t) > gTriAPICommand.VBOCapacity)
 	{
-		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
-		GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
+		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t);
 	}
+
+	GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
 
 	GL_BeginDebugGroup("triapi_End");
 
