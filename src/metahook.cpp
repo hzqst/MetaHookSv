@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "metahook.h"
 #include "interface.h"
-`#include <IVideoMode.h>
+#include <IVideoMode.h>
 
 #include <detours.h>
 #include <capstone.h>
