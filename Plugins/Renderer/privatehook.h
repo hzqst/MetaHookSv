@@ -121,6 +121,7 @@ typedef struct
 	void (*Draw_FillRGBABlend)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*Draw_Pic)(int x, int y, qpic_t* pic);
+	void (*D_FillRect)(vrect_t* r, unsigned char* color);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void (__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
 	void (__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);

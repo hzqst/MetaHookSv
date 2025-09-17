@@ -389,6 +389,12 @@
 #define NET_DRAWRECT_HL25 ""//NOT A THING
 #define NET_DRAWRECT_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x81\xFE\x00\x04\x00\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\xFE\x01"
 
+#define D_FILLRECT_BLOB "\x83\xEC\x08\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00"
+#define D_FILLRECT_NEW2 D_FILLRECT_BLOB
+#define D_FILLRECT_NEW "\x55\x8B\xEC\x83\xEC\x08\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x00\x04\x46\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00"
+#define D_FILLRECT_HL25 "\x55\x8B\xEC\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xE2\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x2A\xC7\x04\x24\x00\x00\x04\x46"
+#define D_FILLRECT_SVENGINE "\x56\x8B\x35\x2A\x2A\x2A\x2A\x81\xFE\x00\x04\x00\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\xFE\x01"
+
 #define DRAW_PIC_BLOB "\x51\x56\x8B\x74\x24\x14\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
 #define DRAW_PIC_NEW2 DRAW_PIC_BLOB
 #define DRAW_PIC_NEW "\x55\x8B\xEC\x2A\x2A\x8B\x75\x10\x85\xF6\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00"
@@ -468,6 +474,7 @@ static hook_t* g_phook_Draw_FillRGBA = NULL;
 static hook_t* g_phook_Draw_FillRGBABlend = NULL;
 static hook_t* g_phook_NET_DrawRect = NULL;
 static hook_t* g_phook_Draw_Pic = NULL;
+static hook_t* g_phook_D_FillRect = NULL;
 
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
@@ -11985,6 +11992,40 @@ void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_FuncNotFound(NET_DrawRect);
 }
 
+void Engine_FillAddress_D_FillRect(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.D_FillRect)
+		return;
+
+	PVOID D_FillRect_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		D_FillRect_VA = Search_Pattern(D_FILLRECT_SVENGINE, DllInfo);
+		gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))ConvertDllInfoSpace((PVOID)D_FillRect_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		D_FillRect_VA = Search_Pattern(D_FILLRECT_HL25, DllInfo);
+		gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))ConvertDllInfoSpace((PVOID)D_FillRect_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		D_FillRect_VA = Search_Pattern(D_FILLRECT_NEW, DllInfo);
+		if(!D_FillRect_VA)
+			D_FillRect_VA = Search_Pattern(D_FILLRECT_NEW2, DllInfo);
+
+		gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))ConvertDllInfoSpace((PVOID)D_FillRect_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		D_FillRect_VA = Search_Pattern(D_FILLRECT_BLOB, DllInfo);
+		gPrivateFuncs.D_FillRect = (decltype(gPrivateFuncs.D_FillRect))ConvertDllInfoSpace((PVOID)D_FillRect_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(D_FillRect);
+}
+
 void Engine_FillAddress_Draw_Pic(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_Pic)
@@ -12357,6 +12398,7 @@ void Engine_InstallHooks(void)
 	}
 
 	Install_InlineHook(Draw_Pic);
+	Install_InlineHook(D_FillRect);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
@@ -12452,13 +12494,12 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Draw_SpriteFrameGeneric_SvEngine);
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		Uninstall_Hook(NET_DrawRect);
 	}
-
 	Uninstall_Hook(Draw_Pic);
+	Uninstall_Hook(D_FillRect);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{

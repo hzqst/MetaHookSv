@@ -970,3 +970,5 @@ typedef struct
 #define FFADE_MODULATE		0x0002		// Modulate (don't blend)
 #define FFADE_STAYOUT		0x0004		// ignores the duration, stays faded out until new ScreenFade message received
 #define FFADE_LONGFADE		0x0008		// used to indicate the fade can be longer than 16 seconds (added for czero)
+
+typedef struct vrect_s vrect_t;

@@ -6210,3 +6210,46 @@ void Draw_Pic(int x, int y, qpic_t* pic)
 
 	R_DrawTexturedRect(gl->texnum, vertices, _countof(vertices), indices, _countof(indices), programState, "Draw_Pic");
 }
+
+void D_FillRect(vrect_t* r, unsigned char* color)
+{
+	// Use R_DrawFilledRect for GL Core Profile compatibility
+	filledrectvertex_t vertices[4];
+
+	// Set up vertices with color and positions
+	// Bottom-left vertex
+	vertices[0].col[0] = color[0] / 255.0f;
+	vertices[0].col[1] = color[1] / 255.0f;
+	vertices[0].col[2] = color[2] / 255.0f;
+	vertices[0].col[3] = 1.0f;
+	vertices[0].pos[0] = (float)r->x;
+	vertices[0].pos[1] = (float)r->y;
+
+	// Bottom-right vertex
+	vertices[1].col[0] = color[0] / 255.0f;
+	vertices[1].col[1] = color[1] / 255.0f;
+	vertices[1].col[2] = color[2] / 255.0f;
+	vertices[1].col[3] = 1.0f;
+	vertices[1].pos[0] = (float)(r->x + r->width);
+	vertices[1].pos[1] = (float)r->y;
+
+	// Top-right vertex
+	vertices[2].col[0] = color[0] / 255.0f;
+	vertices[2].col[1] = color[1] / 255.0f;
+	vertices[2].col[2] = color[2] / 255.0f;
+	vertices[2].col[3] = 1.0f;
+	vertices[2].pos[0] = (float)(r->x + r->width);
+	vertices[2].pos[1] = (float)(r->y + r->height);
+
+	// Top-left vertex
+	vertices[3].col[0] = color[0] / 255.0f;
+	vertices[3].col[1] = color[1] / 255.0f;
+	vertices[3].col[2] = color[2] / 255.0f;
+	vertices[3].col[3] = 1.0f;
+	vertices[3].pos[0] = (float)r->x;
+	vertices[3].pos[1] = (float)(r->y + r->height);
+
+	const uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
+
+	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), 0, "D_FillRect");
+}
