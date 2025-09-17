@@ -100,7 +100,7 @@ void GL_Texturemode_internal(const char *value)
 			}
 			else if (iTextureTarget == GL_TEXTURE_2D)
 			{
-				GL_Bind(pgltextures[j].texnum);
+				glBindTexture(GL_TEXTURE_2D, pgltextures[j].texnum);
 
 				if (pgltextures[j].mipmap)
 				{
@@ -116,7 +116,7 @@ void GL_Texturemode_internal(const char *value)
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 				}
 
-				GL_Bind(0);
+				glBindTexture(GL_TEXTURE_2D, 0);
 			}
 		}
 	}
@@ -362,6 +362,8 @@ void GL_DeleteVAO(GLuint VAO)
 void GL_DeleteTexture(GLuint texid)
 {
 	gEngfuncs.Con_DPrintf("GL_DeleteTexture: texid [%d].\n", texid);
+
+	staticFreeTextureId(texid);
 
 	glDeleteTextures(1, &texid);
 }

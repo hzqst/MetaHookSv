@@ -406,6 +406,7 @@ void R_NewMap(void);
 void GL_BuildLightmaps(void);
 void Host_ClearMemory(qboolean bQuite);
 void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window);
+void __fastcall CGame_DrawStartupVideo(void* pgame, int dummy, const char *filename, void* window);
 void DT_Initialize();
 void R_Init(void);
 void R_Shutdown(void);
@@ -545,10 +546,12 @@ void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int 
 void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);
-void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
 void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall);
 bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int);
+void __fastcall enginesurface_drawSetSubTextureRGBA(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
+void __fastcall enginesurface_drawFlushText(void* pthis, int dummy);
 void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+void __fastcall enginesurface_drawUpdateRegionTextureBGRA(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
 
 void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
 void Draw_SpriteFrameHoles(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);

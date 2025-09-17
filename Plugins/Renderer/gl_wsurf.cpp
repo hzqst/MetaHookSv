@@ -2218,7 +2218,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_Bind(base->gl_texturenum);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, base->gl_texturenum);
 
 			R_BeginDetailTextureByDetailTextureCache(texchain.detailTextureCache, &WSurfProgramState);
 		}
@@ -2467,7 +2467,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_Bind(texture->gl_texturenum);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 
 			R_BeginDetailTextureByGLTextureId(texture->gl_texturenum, &WSurfProgramState);
 		}
@@ -2645,7 +2645,7 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	{
 		WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-		GL_Bind(texture->gl_texturenum);
+		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 	}
 
 	if (R_IsRenderingWaterView())
@@ -3464,7 +3464,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum)
 	{
-		GL_Bind(cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_REPLACETEXTURE_ENABLED;
@@ -4213,7 +4213,7 @@ void R_DrawBrushModel(cl_entity_t* e)
 	qboolean rotated;
 
 	(*currententity) = e;
-	(*currenttexture) = -1;
+	//(*currenttexture) = -1;
 
 	auto clmodel = e->model;
 
@@ -4503,7 +4503,7 @@ void R_DrawWorld(void)
 	VectorCopy((*r_refdef.vieworg), modelorg);
 
 	(*currententity) = r_worldentity;
-	(*currenttexture) = -1;
+	//(*currenttexture) = -1;
 
 	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;

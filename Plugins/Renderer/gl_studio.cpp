@@ -1692,9 +1692,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 		{
 			if (ReplaceTexture.numframes)
 			{
-				glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
-				glActiveTexture(GL_TEXTURE0);
+				GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
 
 				context->numframes = ReplaceTexture.numframes;
 				context->framerate = ReplaceTexture.framerate;
@@ -1703,7 +1701,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 			}
 			else
 			{
-				GL_Bind(ReplaceTexture.gltexturenum);
+				GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, ReplaceTexture.gltexturenum);
 			}
 
 			if (ReplaceTexture.scaleX > 0)
@@ -1729,9 +1727,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 
 		if (NormalTexture.gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
-			glBindTexture(GL_TEXTURE_2D, NormalTexture.gltexturenum);
-			glActiveTexture(GL_TEXTURE0);
+			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_NORMAL, GL_TEXTURE_2D, NormalTexture.gltexturenum);
 
 			(*context->StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
 		}
@@ -1740,9 +1736,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 
 		if (SpecularTexture.gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
-			glBindTexture(GL_TEXTURE_2D, SpecularTexture.gltexturenum);
-			glActiveTexture(GL_TEXTURE0);
+			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SPECULAR, GL_TEXTURE_2D, SpecularTexture.gltexturenum);
 
 			(*context->StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
 		}
@@ -1903,15 +1897,6 @@ void R_StudioFlushAllSkins()
 
 void R_StudioFlushSkins(int keynum)
 {
-#if 0
-	for (int index = 0; index < MAX_SKINS; index++)
-	{
-		if ((*pDM_RemapSkin)[keynum][index])
-			(*pDM_RemapSkin)[keynum][index]->model = NULL;
-	}
-#endif
-
-#if 1
 	const auto& itor = g_StudioSkinCache.find(keynum);
 
 	if (itor != g_StudioSkinCache.end())
@@ -1926,7 +1911,6 @@ void R_StudioFlushSkins(int keynum)
 			}
 		}
 	}
-#endif
 }
 
 skin_t* R_StudioGetSkin(int keynum, int index)
@@ -2167,14 +2151,14 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 
 				if (pskin->gl_index != 0)
 				{
-					GL_Bind(pskin->gl_index);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, pskin->gl_index);
 					return;
 				}
 			}
 		}
 	}
 
-	GL_Bind(ptexture->index);
+	GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, ptexture->index);
 
 	//Parse packed texture index from texture name...
 	R_ParsePackedSkin(ptexture->name, context);
@@ -3060,46 +3044,40 @@ void R_StudioDrawMesh_DrawPass(
 	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
 	{
 		//Texture unit 7 = Shadow Diffuse texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE, GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
 	{
 		//Texture unit 6 = Animated texture 
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_ANIMATED);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, 0);
 	}
 
 	if (StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED)
 	{
 		//Texture unit 5 = Stencil texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_STENCIL);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_SPECULARTEXTURE_ENABLED)
 	{
 		//Texture unit 4 = Specular texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_SPECULAR);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SPECULAR, GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_PARALLAXTEXTURE_ENABLED)
 	{
 		//Texture unit 3 = Parallax texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_PARALLAX);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_PARALLAX, GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_NORMALTEXTURE_ENABLED)
 	{
 		//Texture unit 2 = Normal texture
-		glActiveTexture(GL_TEXTURE0 + STUDIO_BIND_TEXTURE_NORMAL);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_NORMAL, GL_TEXTURE_2D, 0);
 	}
 
-	glActiveTexture(GL_TEXTURE0);
+	GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, 0);
 
 	//Restore states
 	glDepthMask(GL_TRUE);

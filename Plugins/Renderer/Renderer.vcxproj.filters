@@ -443,6 +443,9 @@
     <ClCompile Include="LambdaThreadedTask.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">

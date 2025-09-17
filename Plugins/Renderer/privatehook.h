@@ -122,9 +122,10 @@ typedef struct
 	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
 	void (*Draw_Pic)(int x, int y, qpic_t* pic);
 	void (*D_FillRect)(vrect_t* r, unsigned char* color);
-	enginesurface_Texture* (*staticGetTextureById)(int id);
-	void (__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
-	void (__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
+	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
+
+	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+	void(__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
 	void(__fastcall* enginesurface_drawFilledRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawLine)(void* pthis, int, int x0, int y0, int x1, int y1);
@@ -137,10 +138,33 @@ typedef struct
 	void(__fastcall* enginesurface_drawPrintCharAdd)(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
-	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int);
+	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int textureID);
+	void(__fastcall* enginesurface_drawSetSubTextureRGBA)(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
-	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
-	void( __fastcall *enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+	void(__fastcall* enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+	void(__fastcall* enginesurface_drawUpdateRegionTextureBGRA)(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
+
+	int index_enginesurface_pushMakeCurrent;
+	int index_enginesurface_popMakeCurrent;
+	int index_enginesurface_drawFilledRect;
+	int index_enginesurface_drawOutlinedRect;
+	int index_enginesurface_drawLine;
+	int index_enginesurface_drawPolyLine;
+	int index_enginesurface_drawTexturedPolygon;
+	int index_enginesurface_drawSetTextureRGBA;
+	int index_enginesurface_drawSetTexture;
+	int index_enginesurface_drawTexturedRect;
+	int index_enginesurface_drawTexturedRectAdd;
+	int index_enginesurface_createNewTextureID;
+	int index_enginesurface_drawPrintCharAdd;
+	int index_enginesurface_drawSetTextureFile;
+	int index_enginesurface_drawGetTextureSize;
+	int index_enginesurface_isTextureIDValid;
+	int index_enginesurface_drawSetSubTextureRGBA;
+	int index_enginesurface_drawFlushText;
+	int index_enginesurface_drawSetTextureBGRA;
+	int index_enginesurface_drawUpdateRegionTextureBGRA;
+
 	int enginesurface_drawColor_offset;
 	int enginesurface_drawTextColor_offset;
 
@@ -154,6 +178,7 @@ typedef struct
 	int CVideoMode_Common_m_ImageID_offset;
 	int CVideoMode_Common_m_iBaseResX_offset;
 	int CVideoMode_Common_m_iBaseResY_offset;
+	void(__fastcall* CGame_DrawStartupVideo)(void* pgame, int dummy, const char *filename, void* window);
 
 	//Sven Co-op Client DLL
 	void(__fastcall* ClientPortalManager_ResetAll)(void* pthis, int dummy);
@@ -235,6 +260,7 @@ extern extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65];
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();
 void Engine_UninstallHooks();
+void EngineSurface_InstallHooks(void);
 void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
 void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

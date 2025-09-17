@@ -1236,7 +1236,8 @@ void R_DrawDecals(cl_entity_t *ent)
 
 		for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
 		{
-			GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalBaseDrawBatch.GLTextureId[i]);
+
 			glDrawElements(GL_TRIANGLES, g_DecalBaseDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalBaseDrawBatch.StartIndex[i]));
 		}
 
@@ -1249,7 +1250,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		{
 			program_state_t WSurfProgramStateDetail = WSurfProgramState;
 
-			GL_Bind(g_DecalDetailDrawBatch.GLTextureId[i]);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalDetailDrawBatch.GLTextureId[i]);
 
 			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.DetailTextureCaches[i], &WSurfProgramStateDetail);
 
@@ -1263,6 +1264,8 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 
 	}
+
+	GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 

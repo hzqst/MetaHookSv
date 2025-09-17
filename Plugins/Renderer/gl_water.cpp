@@ -523,7 +523,7 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 
 	glBindTexture(GL_TEXTURE_2D, pWaterModel->ripplemap);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pWaterModel->ripple_width, pWaterModel->ripple_height, GL_RGBA, GL_UNSIGNED_BYTE, pWaterModel->ripple_data);
-	glBindTexture(GL_TEXTURE_2D, *currenttexture);
+	glBindTexture(GL_TEXTURE_2D, (*currenttexture));
 }
 
 std::shared_ptr<CWaterSurfaceModel> R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
@@ -1191,47 +1191,39 @@ void R_DrawWaterSurfaceModelReflective(
 
 	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GL_Bind(pWaterModel->texture->gl_texturenum);
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, pWaterModel->texture->gl_texturenum);
 
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, pWaterModel->normalmap);
+	GL_BindTextureUnit(WATER_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, pWaterModel->normalmap);
 
 	if (pReflectCache && pReflectCache->refractmap_ready)
 	{
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, pReflectCache->refract_texture);
-
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_DEPTH_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, pReflectCache->refract_depth_texture);
+		GL_BindTextureUnit(WATER_BIND_REFRACT_TEXTURE, GL_TEXTURE_2D, pReflectCache->refract_texture);
+		GL_BindTextureUnit(WATER_BIND_REFRACT_DEPTH_TEXTURE, GL_TEXTURE_2D, pReflectCache->refract_depth_texture);
 	}
 
 	if (pReflectCache && pReflectCache->reflectmap_ready)
 	{
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, pReflectCache->reflect_texture);
-
-		glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_DEPTH_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, pReflectCache->reflect_depth_texture);
+		GL_BindTextureUnit(WATER_BIND_REFLECT_TEXTURE, GL_TEXTURE_2D, pReflectCache->reflect_texture);
+		GL_BindTextureUnit(WATER_BIND_REFLECT_DEPTH_TEXTURE, GL_TEXTURE_2D, pReflectCache->reflect_depth_texture);
 	}
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	GL_BindTextureUnit(WATER_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFLECT_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	if (pReflectCache && pReflectCache->reflectmap_ready)
+	{
+		GL_BindTextureUnit(WATER_BIND_REFLECT_TEXTURE, GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(WATER_BIND_REFLECT_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
+	}
 
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_REFRACT_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_NORMAL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glActiveTexture(GL_TEXTURE0 + WATER_BIND_BASE_TEXTURE);
+	if (pReflectCache && pReflectCache->refractmap_ready)
+	{
+		GL_BindTextureUnit(WATER_BIND_REFRACT_TEXTURE, GL_TEXTURE_2D, 0);
+		GL_BindTextureUnit(WATER_BIND_REFRACT_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
+	}
 
 	glDisable(GL_BLEND);
 
@@ -1321,6 +1313,8 @@ void R_DrawWaterSurfaceModelRipple(
 
 	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
 
+	//TODO: blend state?
+
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
 
@@ -1333,13 +1327,15 @@ void R_DrawWaterSurfaceModelRipple(
 	if (prog.u_speed != -1)
 		glUniform1f(prog.u_speed, 0);
 
-	GL_Bind(pWaterModel->ripplemap);
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, pWaterModel->ripplemap);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
-	glDisable(GL_BLEND);
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
+
+	//TODO: blend state?
 
 	R_DrawWaterSurfaceModelEnd();
 
@@ -1432,6 +1428,8 @@ void R_DrawWaterSurfaceModelLegacy(
 
 	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
 
+	//TODO: blend state?
+
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
 
@@ -1444,11 +1442,15 @@ void R_DrawWaterSurfaceModelLegacy(
 	if (prog.u_speed != -1)
 		glUniform1f(prog.u_speed, pWaterModel->speedrate);
 
-	GL_Bind(pWaterModel->texture->gl_texturenum);
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, pWaterModel->texture->gl_texturenum);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
+	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
+
 	GL_UseProgram(0);
+
+	//TODO: blend state?
 
 	R_DrawWaterSurfaceModelEnd();
 

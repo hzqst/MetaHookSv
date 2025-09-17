@@ -512,7 +512,9 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	}
 
 	glDisable(GL_DEPTH_TEST);
-	glBindTexture(GL_TEXTURE_2D, gltexturenum);
+
+	if(gltexturenum > 0)
+		glBindTexture(GL_TEXTURE_2D, gltexturenum);
 
 	rect_instance_data_t instanceDataBuffer[1]{};
 
@@ -567,7 +569,8 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 	GL_BindVAO(0);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	if (gltexturenum > 0)
+		glBindTexture(GL_TEXTURE_2D, 0);
 
 	GL_EndDebugGroup();
 }
@@ -930,7 +933,7 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src_color->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src_color->s_hBackBufferTex);
 
 	if (bUseStencilFilter && src_stencil)
 	{
@@ -947,7 +950,7 @@ void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -987,11 +990,11 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1096,11 +1099,11 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1129,14 +1132,16 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(blur1->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, blur1->s_hBackBufferTex);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(blur2->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, blur2->s_hBackBufferTex);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(blur3->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, blur3->s_hBackBufferTex);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1283,11 +1288,11 @@ void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 	glUniform1f(0, dst->iWidth);
 	glUniform1f(1, dst->iHeight);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
 
@@ -1339,11 +1344,11 @@ void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1386,13 +1391,15 @@ void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_Bind(src->s_hBackBufferTex);
-
 	GL_UseProgram(gamma_correction.program);
 
 	GL_BindVAO(r_empty_vao);
 
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1411,13 +1418,15 @@ void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
 
 	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	GL_Bind(src->s_hBackBufferTex);
-
 	GL_UseProgram(gamma_uncorrection.program);
 
 	GL_BindVAO(r_empty_vao);
 
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1456,11 +1465,13 @@ void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 	
 	GL_UseProgram(blit_oitblend.program);	
 
-	GL_Bind(src->s_hBackBufferTex);
-
 	GL_BindVAO(r_empty_vao);
 
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1485,11 +1496,11 @@ void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 	
 	GL_BindVAO(r_empty_vao);
 
-	GL_Bind(src->s_hBackBufferDepthTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1641,12 +1652,11 @@ void R_AmbientOcclusion_BlurPass(FBO_Container_t* src, FBO_Container_t* dst, flo
 	GL_BindVAO(r_empty_vao);
 
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex
-	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, s_HBAOCalcFBO.s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1691,12 +1701,11 @@ void R_AmbientOcclusion_WritePass(FBO_Container_t* src, FBO_Container_t* dst, fl
 	GL_BindVAO(r_empty_vao);
 
 	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
-	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, s_HBAOCalcFBO.s_hBackBufferTex2);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Texture unit 0 = s_HBAOCalcFBO.s_hBackBufferTex2
-	GL_Bind(0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
