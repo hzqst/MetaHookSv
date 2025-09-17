@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "metahook.h"
 #include "interface.h"
+`#include <IVideoMode.h>
 
 #include <detours.h>
 #include <capstone.h>
@@ -3479,56 +3480,6 @@ DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
-typedef struct videomode_s
-{
-	int width;
-	int height;
-	int bpp;
-}videomode_t;
-
-class IVideoMode
-{
-public:
-	virtual const char *GetName();
-	virtual void Init();
-	virtual void Shutdown();
-	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
-	virtual void SetInitialized(bool init);
-	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
-	virtual void RestoreVideo();
-	virtual void ReleaseVideo();
-	virtual void dtor();
-	virtual int GetBitsPerPixel();
-};
-
-class IVideoMode_HL25
-{
-public:
-	virtual const char* GetName();
-	virtual void Init();
-	virtual void Shutdown();
-	virtual void unk();
-	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
-	virtual void SetInitialized(bool init);
-	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
-	virtual void RestoreVideo();
-	virtual void ReleaseVideo();
-	virtual void dtor();
-	virtual int GetBitsPerPixel();
-};
-
 bool MH_VideoModeIsWindowed()
 {
 	if (g_pVideoMode && (*g_pVideoMode))
@@ -3547,6 +3498,14 @@ bool MH_VideoModeIsWindowed()
 		}
 	}
 	return false;
+}
+
+void* MH_VideoMode()
+{
+	if (g_pVideoMode)
+		return (*g_pVideoMode);
+
+	return nullptr;
 }
 
 DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
@@ -4690,6 +4649,7 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
 	MH_VideoModeIsWindowed,
+	MH_VideoMode,
 	NULL
 };
 
@@ -4785,5 +4745,6 @@ metahook_api_t gMetaHookAPI =
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
 	MH_VideoModeIsWindowed,
+	MH_VideoMode,
 	NULL
 };
