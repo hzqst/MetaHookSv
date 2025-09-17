@@ -623,10 +623,13 @@ typedef struct metahook_api_s
 
 	void (*DeleteWorkItem)(ThreadWorkItemHandle_t hWorkItem);
 
+	/*
+		Purpose:Same as VideoMode_IsWindowed() in engine
+	*/
 	bool (*VideoModeIsWindowed)();
 
 	/*
-		Purpose return "IVideoMode* videomode";
+		Purpose: return "IVideoMode* videomode";
 	*/
 	void*(*VideoMode)();
 
