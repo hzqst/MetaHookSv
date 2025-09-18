@@ -18,6 +18,7 @@
 #include <entity_types.h>
 
 #include <IEngineSurface.h>
+#include <IVideoMode.h>
 
 #include <set>
 #include <map>
@@ -448,8 +449,8 @@ void R_AddTEntity(cl_entity_t *pEnt);
 void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
 void GL_Shutdown(void);
 void GL_Init(void);
-void GL_SetMode(void* window, HDC* pmaindc, void* pbaseRC);
-void GL_SetModeLegacy(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
+qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 void GL_Set2D();
 void GL_Finish2D();
 void GL_Set2DEx(int x, int y, int width, int height);

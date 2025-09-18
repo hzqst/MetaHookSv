@@ -2385,100 +2385,6 @@ void GL_GenerateFrameBuffers(void)
 	GL_BindFrameBuffer(NULL);
 }
 
-void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-{
-	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
-		return;
-
-	if (source == GL_DEBUG_SOURCE_APPLICATION)
-		return;
-
-	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
-}
-
-void GL_SetMode(void* window, HDC* pmaindc, void* pbaseRC)
-{
-	gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
-}
-
-void GL_SetModeLegacy(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
-{
-	gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, fD3D, pszDriver, pszCmdLine);
-}
-
-void GL_Init(void)
-{
-	gPrivateFuncs.GL_Init();
-
-	auto err = glewInit();
-
-	if (GLEW_OK != err)
-	{
-		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
-		return;
-	}
-
-	//Just like what GL_SetMode does
-	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
-
-	if (!(*gl_mtexable))
-	{
-		//Who care
-		//Sys_Error("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
-		//return;
-	}
-
-	if (!GLEW_VERSION_4_3)
-	{
-		Sys_Error("OpenGL 4.3 is not supported!\n");
-		return;
-	}
-
-	//No vanilla detail texture support
-	(*detTexSupported) = false;
-
-	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
-	{
-		glDebugMessageCallback(GL_DebugOutputCallback, 0);
-		glEnable(GL_DEBUG_OUTPUT);
-	}
-
-	gl_max_texture_size = 128;
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
-
-	gl_max_ansio = 1;
-
-	if (glewIsSupported("GL_EXT_texture_filter_anisotropic"))
-	{
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_max_ansio);
-	}
-
-	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
-
-	g_bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
-
-	if (gEngfuncs.CheckParm("-oitblend", NULL))
-		g_bUseOITBlend = true;
-
-	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
-		g_bUseOITBlend = false;
-
-	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
-		g_bUseOITBlend = false;
-
-	if (!g_bUseLegacyTextureLoader && gEngfuncs.CheckParm("-use_legacy_texloader", NULL))
-		g_bUseLegacyTextureLoader = true;
-
-	GL_GenerateFrameBuffers();
-	GL_InitShaders();
-}
-
-void GL_Shutdown(void)
-{
-	GL_FreeShaders();
-	GL_FreeFrameBuffers();
-}
-
 /*
 	Purpose : Switch to s_FinalBufferFBO and clear it
 */
@@ -4826,13 +4732,197 @@ void Host_ClearMemory(qboolean bQuite)
 	gPrivateFuncs.Host_ClearMemory(bQuite);
 }
 
-void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window)
+
+#ifndef WGL_ARB_create_context
+#define WGL_ARB_create_context
+#define WGL_CONTEXT_MAJOR_VERSION_ARB          0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB          0x2092
+#define WGL_CONTEXT_LAYER_PLANE_ARB            0x2093
+#define WGL_CONTEXT_FLAGS_ARB                  0x2094
+#define WGL_CONTEXT_DEBUG_BIT_ARB              0x0001
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x0002
+
+#ifndef WGL_ARB_create_context_profile
+#define WGL_ARB_create_context_profile
+#define WGL_CONTEXT_PROFILE_MASK_ARB              0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB          0x00000001
+#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
+#endif
+
+#ifndef WGL_ARB_create_context_robustness
+#define WGL_ARB_create_context_robustness
+#define WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB           0x00000004
+#define WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB 0x8256
+#define WGL_NO_RESET_NOTIFICATION_ARB               0x8261
+#define WGL_LOSE_CONTEXT_ON_RESET_ARB               0x8252
+#endif
+#endif
+
+#ifndef WGL_EXT_create_context_es2_profile
+#define WGL_EXT_create_context_es2_profile
+#define WGL_CONTEXT_ES2_PROFILE_BIT_EXT 0x00000004
+#endif
+
+#ifndef WGL_EXT_create_context_es_profile
+#define WGL_EXT_create_context_es_profile
+#define WGL_CONTEXT_ES_PROFILE_BIT_EXT 0x00000004
+#endif
+
+#ifndef WGL_ARB_framebuffer_sRGB
+#define WGL_ARB_framebuffer_sRGB
+#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB 0x20A9
+#endif
+
+#ifndef WGL_ARB_pixel_format_float
+#define WGL_ARB_pixel_format_float
+#define WGL_TYPE_RGBA_FLOAT_ARB 0x21A0
+#endif
+
+#ifndef WGL_ARB_context_flush_control
+#define WGL_ARB_context_flush_control
+#define WGL_CONTEXT_RELEASE_BEHAVIOR_ARB       0x2097
+#define WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB  0x0000
+#define WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB 0x2098
+#endif
+
+#ifndef WGL_ARB_create_context_no_error
+#define WGL_ARB_create_context_no_error
+#define WGL_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#endif
+
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* attribList);
+typedef VOID(WINAPI* PFNWGLSWAPBUFFERS)(HDC hDC);
+
+static PFNWGLCREATECONTEXTATTRIBSARBPROC  wglCreateContextAttribsARB{};
+static PFNWGLSWAPBUFFERS  wglSwapBuffers{};
+static HDC g_hDC{};
+static HGLRC g_hOpenGLCoreContext{};
+
+void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
+	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
+		return;
+
+	if (source == GL_DEBUG_SOURCE_APPLICATION)
+		return;
+
+	//if (source == GL_DEBUG_SOURCE_API && type ==  GL_DEBUG_TYPE_OTHER)
+	//	return;
+
+	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], severity:[%d], message:[%s]\n", source, type, id, severity, message);
+}
+
+void InitializeGraphicEngine(void *window)
+{
+	if (!gPrivateFuncs.SDL_GL_SetAttribute)
+	{
+		g_hDC = GetDC((HWND)window);
+
+		PIXELFORMATDESCRIPTOR pfd = {
+			sizeof(PIXELFORMATDESCRIPTOR),
+			1,
+			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+			PFD_TYPE_RGBA,
+			32,
+			0, 0, 0, 0, 0, 0,
+			0,
+			0,
+			0,
+			0, 0, 0, 0,
+			24,
+			8,
+			0,
+			PFD_MAIN_PLANE,
+			0,
+			0, 0, 0
+		};
+
+		int pixelFormat = ChoosePixelFormat(g_hDC, &pfd);
+
+		if (!pixelFormat)
+		{
+			Sys_Error("InitializeGraphicEngine: ChoosePixelFormat failed!");
+			return;
+		}
+
+		if (!SetPixelFormat(g_hDC, pixelFormat, &pfd))
+		{
+			Sys_Error("InitializeGraphicEngine: SetPixelFormat failed!");
+			return;
+		}
+
+		auto hTempOpenGLContext = wglCreateContext(g_hDC);
+
+		if (!hTempOpenGLContext)
+		{
+			Sys_Error("InitializeGraphicEngine: wglCreateContext failed!");
+			return;
+		}
+
+		if (!wglMakeCurrent(g_hDC, hTempOpenGLContext))
+		{
+			Sys_Error("InitializeGraphicEngine: wglMakeCurrent failed!");
+			return;
+		}
+
+		wglCreateContextAttribsARB = (decltype(wglCreateContextAttribsARB))wglGetProcAddress("wglCreateContextAttribsARB");
+
+		if (!wglCreateContextAttribsARB)
+		{
+			Sys_Error("InitializeGraphicEngine: wglCreateContextAttribsARB not found!");
+			return;
+		}
+
+		auto hOpenGL = GetModuleHandleA("OpenGL32.dll");
+
+		if (!hOpenGL)
+		{
+			Sys_Error("InitializeGraphicEngine: OpenGL32.dll not found!");
+			return;
+		}
+
+		wglSwapBuffers = (decltype(wglSwapBuffers))GetProcAddress(hOpenGL, "wglSwapBuffers");
+
+		if (!wglSwapBuffers)
+		{
+			Sys_Error("InitializeGraphicEngine: wglSwapBuffers not found!");
+			return;
+		}
+
+		wglMakeCurrent(g_hDC, nullptr);
+
+		wglDeleteContext(hTempOpenGLContext);
+
+		int contextAttribs[] = {
+		   WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+		   WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+		   WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+		   WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		   0
+		};
+
+		g_hOpenGLCoreContext = wglCreateContextAttribsARB(g_hDC, nullptr, contextAttribs);
+
+		if (!g_hOpenGLCoreContext)
+		{
+			Sys_Error("InitializeGraphicEngine: failed to wglCreateContextAttribsARB!");
+			return;
+		}
+
+		wglMakeCurrent(g_hDC, g_hOpenGLCoreContext);
+	}
+
 	auto err = glewInit();
 
 	if (GLEW_OK != err)
 	{
 		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
+
+	if (!GLEW_VERSION_4_3)
+	{
+		Sys_Error("OpenGL 4.3 is not supported!\n");
 		return;
 	}
 
@@ -4842,12 +4932,108 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy,
 		glEnable(GL_DEBUG_OUTPUT);
 	}
 
-	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_ImageID);
-	int m_iBaseResX = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX);
-	int m_iBaseResY = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY);
+	MessageBoxA(NULL, "0", "0", MB_OK);
+}
+
+qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
+{
+	auto r = gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
+
+	if (r)
+	{
+		
+	}
+
+	return r;
+}
+
+qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
+{
+	auto r = gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, false, "opengl32.dll", pszCmdLine);
+
+	if (r && g_hOpenGLCoreContext)
+	{
+		if ((*pbaseRC))
+		{
+			wglMakeCurrent((*pmaindc), nullptr);
+			wglDeleteContext((*pbaseRC));
+		}
+		wglMakeCurrent((*pmaindc), g_hOpenGLCoreContext);
+
+		(*pmaindc) = g_hDC;
+		(*pbaseRC) = g_hOpenGLCoreContext;
+	}
+	return r;
+}
+
+void GL_Init(void)
+{
+	gPrivateFuncs.GL_Init();
+
+	//Just like what GL_SetMode does
+	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+
+	//No vanilla detail texture support
+	(*detTexSupported) = false;
+
+	gl_max_texture_size = 128;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
+
+	gl_max_ansio = 1;
+
+	if (glewIsSupported("GL_EXT_texture_filter_anisotropic"))
+	{
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_max_ansio);
+	}
+
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
+
+	g_bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+
+	if (gEngfuncs.CheckParm("-oitblend", NULL))
+		g_bUseOITBlend = true;
+
+	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
+		g_bUseOITBlend = false;
+
+	if (g_bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
+		g_bUseOITBlend = false;
+
+	if (!g_bUseLegacyTextureLoader && gEngfuncs.CheckParm("-use_legacy_texloader", NULL))
+		g_bUseLegacyTextureLoader = true;
+
+	GL_GenerateFrameBuffers();
+	GL_InitShaders();
+}
+
+void GL_Shutdown(void)
+{
+	GL_FreeShaders();
+	GL_FreeFrameBuffers();
+}
+
+void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, void* window)
+{
+	InitializeGraphicEngine(window);
+
+	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)pthis + gPrivateFuncs.offset_CVideoMode_Common_m_ImageID);
+	int m_iBaseResX = *(int*)((ULONG_PTR)pthis + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX);
+	int m_iBaseResY = *(int*)((ULONG_PTR)pthis + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY);
 
 	int width = 0, height = 0;
-	gPrivateFuncs.SDL_GetWindowSize((SDL_Window*)window, &width, &height);
+	if (gPrivateFuncs.SDL_GetWindowSize)
+	{
+		gPrivateFuncs.SDL_GetWindowSize((SDL_Window*)window, &width, &height);
+	}
+	else
+	{
+		RECT rc{};
+		if (GetClientRect((HWND)window, &rc))
+		{
+			width = rc.right - rc.left;
+			height = rc.bottom - rc.top;
+		}
+	}
 
 	float fSrcAspect, fDstAspect;
 	int srcWide, srcTall;
@@ -5001,7 +5187,14 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy,
 			}
 		}
 
-		gPrivateFuncs.SDL_GL_SwapWindow((SDL_Window*)window);
+		if (gPrivateFuncs.SDL_GL_SwapWindow)
+		{
+			gPrivateFuncs.SDL_GL_SwapWindow(window);
+		}
+		else
+		{
+			wglSwapBuffers(g_hDC);
+		}
 	}
 
 	for (size_t i = 0; i < GLStartupTextures.size(); i++)

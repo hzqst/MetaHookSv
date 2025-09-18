@@ -47,8 +47,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		Sys_Error("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 
-	MessageBoxA(NULL, "0", "0", MB_OK);
-
 	auto FreeImage_VersionString = FreeImage_GetVersion();
 	int FreeImage_MajorVersion = 0, FreeImage_MinorVersion = 0, FreeImage_ReleaseSerial = 0;
 	if (3 != sscanf(FreeImage_VersionString, "%d.%d.%d", &FreeImage_MajorVersion, &FreeImage_MinorVersion, &FreeImage_ReleaseSerial) ||
@@ -89,6 +87,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 	Engine_InstallHooks();
 	EngineSurface_InstallHooks();
+	VideoMode_InstallHooks();
 
 	R_PatchResetLatched(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
@@ -157,6 +156,8 @@ void IPluginsV4::ExitGame(int iResult)
 	GameUI_UninstallHooks();
 	VGUI2Extension_Shutdown();
 	Engine_UninstallHooks();
+	EngineSurface_UninstallHooks();
+	VideoMode_UninstallHooks();
 }
 
 const char completeVersion[] =

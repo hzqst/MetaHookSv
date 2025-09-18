@@ -15,44 +15,48 @@ typedef struct videomode_s
 class IVideoMode
 {
 public:
-	virtual const char* GetName();
+	virtual const char* GetName() const;
 	virtual void Init();
 	virtual void Shutdown();
 	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
+	virtual const videomode_t* GetCurrentMode() const;
+	virtual const videomode_t* GetMode(int num) const;
+	virtual int GetModeCount() const;
+	virtual bool IsWindowedMode() const;
+	virtual bool GetInitialized() const;
 	virtual void SetInitialized(bool init);
 	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
+	virtual void unk();//not implemented
 	virtual void RestoreVideo();
 	virtual void ReleaseVideo();
 	virtual void Destroy();
 	virtual int GetBitsPerPixel();
+	virtual void Minimize();
+	virtual void RestoreFromMinimize();
 };
 
 class IVideoMode_HL25
 {
 public:
-	virtual const char* GetName();
+	virtual const char* GetName() const;
 	virtual void Init();
+	virtual void Startup();//PlayStartupVideo or DrawStartupGraphic
 	virtual void Shutdown();
-	virtual void unk();
 	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
+	virtual const videomode_t* GetCurrentMode() const;
+	virtual const videomode_t* GetMode(int num) const;
+	virtual int GetModeCount() const;
+	virtual bool IsWindowedMode() const;
+	virtual bool GetInitialized() const;
 	virtual void SetInitialized(bool init);
 	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
+	virtual void unk();//not implemented
 	virtual void RestoreVideo();
 	virtual void ReleaseVideo();
 	virtual void Destroy();
 	virtual int GetBitsPerPixel();
+	virtual void Minimize();
+	virtual void RestoreFromMinimize();
 };
 
 #endif

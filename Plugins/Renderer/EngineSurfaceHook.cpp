@@ -356,26 +356,36 @@ void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int
 	POINT pnt = { 0 };
 	RECT rect = { 0 };
 
-	if (translateToScreenSpace)
+	if (gPrivateFuncs.SDL_GetWindowPosition)
 	{
+		if (translateToScreenSpace)
+		{
+			if (g_pMetaHookAPI->VideoModeIsWindowed())
+			{
+				gPrivateFuncs.SDL_GetWindowPosition(Sys_GetMainWindow(), (int*)&pnt.x, (int*)&pnt.y);
+			}
+			else
+			{
+				pnt.x = 0;
+				pnt.y = 0;
+			}
+		}
+
 		if (g_pMetaHookAPI->VideoModeIsWindowed())
 		{
-			gPrivateFuncs.SDL_GetWindowPosition(Sys_GetMainWindow(), (int*)&pnt.x, (int*)&pnt.y);
+			gPrivateFuncs.SDL_GetWindowSize(Sys_GetMainWindow(), (int*)&rect.right, (int*)&rect.bottom);
 		}
 		else
 		{
-			pnt.x = 0;
-			pnt.y = 0;
+			g_pMetaHookAPI->GetVideoMode((int*)&rect.right, (int*)&rect.bottom, nullptr, nullptr);
 		}
-	}
-
-	if (g_pMetaHookAPI->VideoModeIsWindowed())
-	{
-		gPrivateFuncs.SDL_GetWindowSize(Sys_GetMainWindow(), (int*)&rect.right, (int*)&rect.bottom);
 	}
 	else
 	{
-		g_pMetaHookAPI->GetVideoMode((int*)&rect.right, (int*)&rect.bottom, nullptr, nullptr);
+		if (translateToScreenSpace)
+			ClientToScreen((HWND)Sys_GetMainWindow(), &pnt);
+
+		GetClientRect((HWND)Sys_GetMainWindow(), &rect);
 	}
 
 	xTranslate = pnt.x;

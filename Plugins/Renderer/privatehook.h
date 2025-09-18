@@ -44,8 +44,8 @@ typedef struct
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
-	void (*GL_SetModeLegacy)(void* window, HDC* pmaindc, void* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
-	void (*GL_SetMode)(void* window, HDC* pmaindc, void* pbaseRC);
+	qboolean (*GL_SetMode)(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+	qboolean (*GL_SetModeLegacy)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 	void (*GL_Set2D)(void);
 	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
@@ -264,11 +264,18 @@ extern extra_player_info_t(*g_PlayerExtraInfo)[65];
 extern extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65];
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void VideoMode_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();
 void Engine_UninstallHooks();
-void EngineSurface_InstallHooks(void);
+void EngineSurface_InstallHooks();
+void VideoMode_InstallHooks();
+
 void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
+void EngineSurface_UninstallHooks();
+void VideoMode_UninstallHooks();
+
 void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);

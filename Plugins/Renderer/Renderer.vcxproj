@@ -328,6 +328,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="util.cpp" />
     <ClCompile Include="UtilThreadTask.cpp" />
     <ClCompile Include="VGUI2ExtensionImport.cpp" />
+    <ClCompile Include="VideoMode.cpp" />
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
