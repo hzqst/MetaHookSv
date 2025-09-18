@@ -47,11 +47,13 @@ public:
 
 	void Shutdown() override
 	{
-		if (g_pViewPort)
-		{
-			delete g_pViewPort;
-			g_pViewPort = NULL;
-		}
+		//Should be recursively freed by VGUI2 root panel
+		//if (g_pViewPort)
+		//{
+		//	delete g_pViewPort;
+		//	g_pViewPort = NULL;
+		//}
+		g_pViewPort = NULL;
 	}
 
 	void Start() override

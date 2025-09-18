@@ -12595,9 +12595,13 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_SetAttribute", CoreProfile_GL_SetAttribute, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_CreateWindow", CoreProfile_SDL_CreateWindow, NULL);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		g_pMetaHookAPI->BlobIATHook(g_pMetaHookAPI->GetBlobEngineModule(), "kernel32.dll", "GetProcAddress", CoreProfile_GetProcAddress, NULL);
+	}
 	else
 	{
-		//blob engine
+		//non-SDL
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "kernel32.dll", "GetProcAddress", CoreProfile_GetProcAddress, NULL);
 	}
 }
