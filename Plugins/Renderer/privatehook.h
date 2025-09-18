@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "qgl.h"
 
 #include <studio.h>
@@ -165,8 +167,11 @@ typedef struct
 	int index_enginesurface_drawSetTextureBGRA;
 	int index_enginesurface_drawUpdateRegionTextureBGRA;
 
-	int enginesurface_drawColor_offset;
-	int enginesurface_drawTextColor_offset;
+	int offset_enginesurface_drawColor;
+	int offset_enginesurface_drawTextColor;
+
+	int index_BaseUISurface_DrawSetTexture;
+	int offset_BaseUISurface_m_CurrentTextureId;
 
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
@@ -174,10 +179,10 @@ typedef struct
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 	void (*Host_ClearMemory)(qboolean bQuite);
 	void(__fastcall* CVideoMode_Common_DrawStartupGraphic)(void* videomode, int dummy, void* window);
-	int CVideoMode_Common_m_ImageID_Size_offset;
-	int CVideoMode_Common_m_ImageID_offset;
-	int CVideoMode_Common_m_iBaseResX_offset;
-	int CVideoMode_Common_m_iBaseResY_offset;
+	int offset_CVideoMode_Common_m_ImageID_Size;
+	int offset_CVideoMode_Common_m_ImageID;
+	int offset_CVideoMode_Common_m_iBaseResX;
+	int offset_CVideoMode_Common_m_iBaseResY;
 	void(__fastcall* CGame_DrawStartupVideo)(void* pgame, int dummy, const char *filename, void* window);
 
 	//Sven Co-op Client DLL
@@ -243,6 +248,7 @@ typedef struct
 	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
 	void (__cdecl* SDL_GL_SwapWindow)(void* window);
 	void* (__cdecl* SDL_GL_GetProcAddress)(const char* proc);
+	void* (__cdecl* SDL_CreateWindow)(const char* title, int x, int y, int w,int h, uint32_t flags);
 
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;

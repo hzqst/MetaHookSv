@@ -153,8 +153,6 @@ float* filterColorGreen = nullptr;
 float* filterColorBlue = nullptr;
 float* filterBrightness = nullptr;
 
-void* engineSurface = nullptr;
-
 bool* detTexSupported = nullptr;
 
 cache_system_t(*cache_head) = nullptr;
@@ -592,7 +590,6 @@ void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset)
 
 void R_RotateForTransform(const float* in_origin, const float* in_angles)
 {
-	int i;
 	vec3_t angles;
 	vec3_t modelpos;
 
@@ -662,8 +659,6 @@ void R_RotateForEntity(cl_entity_t* e, float out[4][4])
 			}
 		}
 	}
-
-	float entity_matrix[4][4];
 
 	const float r_identity_matrix[4][4] = {
 		{1.0f, 0.0f, 0.0f, 0.0f},
@@ -4490,37 +4485,6 @@ void GammaToLinear(float* color)
 	color[2] = pow(color[2], v_gamma->value);
 }
 
-int __cdecl SDL_GL_SetAttribute(int attr, int value)
-{
-	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
-	}
-	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
-	{
-		//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
-	}
-	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
-	}
-	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
-	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
-	}
-
-	if (attr == SDL_GL_ALPHA_SIZE && value == 0)
-	{
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	}
-
-	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
-}
-
 void CL_EmitPlayerFlashlight(int entindex)
 {
 	cl_entity_t* ent = gEngfuncs.GetEntityByIndex(entindex);
@@ -4864,26 +4828,23 @@ void Host_ClearMemory(qboolean bQuite)
 
 void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
+	auto err = glewInit();
+
+	if (GLEW_OK != err)
 	{
-		auto err = glewInit();
-
-		if (GLEW_OK != err)
-		{
-			Sys_Error("glewInit failed, %s", glewGetErrorString(err));
-			return;
-		}
-
-		if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
-		{
-			glDebugMessageCallback(GL_DebugOutputCallback, 0);
-			glEnable(GL_DEBUG_OUTPUT);
-		}
+		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+		return;
 	}
 
-	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_ImageID_offset);
-	int m_iBaseResX = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_iBaseResX_offset);
-	int m_iBaseResY = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.CVideoMode_Common_m_iBaseResY_offset);
+	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
+	{
+		glDebugMessageCallback(GL_DebugOutputCallback, 0);
+		glEnable(GL_DEBUG_OUTPUT);
+	}
+
+	CUtlVector<bimage_t>* m_ImageID = (CUtlVector<bimage_t> *)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_ImageID);
+	int m_iBaseResX = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX);
+	int m_iBaseResY = *(int*)((ULONG_PTR)videomode + gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY);
 
 	int width = 0, height = 0;
 	gPrivateFuncs.SDL_GetWindowSize((SDL_Window*)window, &width, &height);
@@ -4945,10 +4906,20 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy,
 			float topv = 1.0;
 			float topu = 1.0;
 
-			auto gltexturenum = enginesurface_createNewTextureID(engineSurface, 0);
-			enginesurface_drawSetTextureRGBA(engineSurface, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
+			if (engineSurface_HL25)
+			{
+				auto gltexturenum = enginesurface_createNewTextureID(engineSurface_HL25, 0);
+				enginesurface_drawSetTextureRGBA(engineSurface_HL25, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
 
-			GLStartupTextures.push_back(gltexturenum);
+				GLStartupTextures.push_back(gltexturenum);
+			}
+			else
+			{
+				auto gltexturenum = enginesurface_createNewTextureID(engineSurface, 0);
+				enginesurface_drawSetTextureRGBA(engineSurface, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
+
+				GLStartupTextures.push_back(gltexturenum);
+			}
 		}
 	}
 

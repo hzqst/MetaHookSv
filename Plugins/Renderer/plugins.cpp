@@ -35,12 +35,19 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
+	if (g_pInterface->MetaHookAPIVersion < 107)
+	{
+		Sys_Error("MetaHookAPIVersion 107 is required!");
+	}
+
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);
 
 	if (iVideoMode == 0)
 	{
 		Sys_Error("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
+
+	MessageBoxA(NULL, "0", "0", MB_OK);
 
 	auto FreeImage_VersionString = FreeImage_GetVersion();
 	int FreeImage_MajorVersion = 0, FreeImage_MinorVersion = 0, FreeImage_ReleaseSerial = 0;

@@ -166,7 +166,7 @@ public:
 
 	std::shared_ptr<CWorldSurfaceLeaf> GetLeafByIndex(int index) const
 	{
-		if (index < 0 || index >= m_vLeaves.size())
+		if (index < 0 || index >= (int)m_vLeaves.size())
 			return nullptr;
 
 		return m_vLeaves[index];

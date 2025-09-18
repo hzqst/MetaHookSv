@@ -5,6 +5,7 @@
 #include <map>
 #include "gl_local.h"
 #include <utlvector.h>
+#include <SDL2/SDL_video.h>
 
 #define MOD_POINTINLEAF_SIG_SVENGINE "\x2A\x8B\x2A\x24\x2A\x85\x2A\x2A\x2A\x8B\x2A\xA4\x00\x00\x00"
 #define MOD_POINTINLEAF_SIG_SVENGINE_10152 "\x8B\x54\x24\x08\x2A\x8D\x2A\xA4\x00\x00\x00\x85\xD2\x74\x2A\x83\x2A\x00"
@@ -410,6 +411,7 @@
 static hook_t* g_phook_GL_Init = NULL;
 static hook_t* g_phook_GL_SetMode = NULL;
 static hook_t* g_phook_GL_SetModeLegacy = NULL;
+static hook_t* g_phook_GL_Bind = NULL;
 static hook_t* g_phook_GL_Set2D = NULL;
 static hook_t* g_phook_GL_Finish2D = NULL;
 static hook_t* g_phook_GL_BeginRendering = NULL;
@@ -11325,6 +11327,8 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
+			int xor_reg{};
+			int xor_instCount{};
 		} DrawStartupGraphic_SearchContext;
 
 		DrawStartupGraphic_SearchContext ctx = { DllInfo, RealDllInfo };
@@ -11334,6 +11338,33 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (DrawStartupGraphic_SearchContext*)context;
 
+			if (pinst->id == X86_INS_XOR &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
+			{
+				ctx->xor_instCount = instCount;
+				ctx->xor_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (ctx->xor_reg &&
+				instCount > ctx->xor_instCount && 
+				instCount < ctx->xor_instCount + 5 &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp >= 0x100 && pinst->detail->x86.operands[0].mem.disp < 0x400 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG&&
+				pinst->detail->x86.operands[1].reg == ctx->xor_reg)
+			{
+				gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size = pinst->detail->x86.operands[0].mem.disp;
+				gPrivateFuncs.offset_CVideoMode_Common_m_ImageID = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size - sizeof(CUtlMemory<bimage_t>);
+				gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size + 8;
+				gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size + 12;
+			}
+
 			if (pinst->id == X86_INS_CMP &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -11342,13 +11373,13 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 				pinst->detail->x86.operands[1].imm == 0 )
 			{
-				gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset = pinst->detail->x86.operands[0].mem.disp;
-				gPrivateFuncs.CVideoMode_Common_m_ImageID_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset - sizeof(CUtlMemory<bimage_t>);
-				gPrivateFuncs.CVideoMode_Common_m_iBaseResX_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset + 8;
-				gPrivateFuncs.CVideoMode_Common_m_iBaseResY_offset = gPrivateFuncs.CVideoMode_Common_m_ImageID_Size_offset + 12;
+				gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size = pinst->detail->x86.operands[0].mem.disp;
+				gPrivateFuncs.offset_CVideoMode_Common_m_ImageID = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size - sizeof(CUtlMemory<bimage_t>);
+				gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResX = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size + 8;
+				gPrivateFuncs.offset_CVideoMode_Common_m_iBaseResY = gPrivateFuncs.offset_CVideoMode_Common_m_ImageID_Size + 12;
 			}
 
-			if (gPrivateFuncs.CVideoMode_Common_m_ImageID_offset)
+			if (gPrivateFuncs.offset_CVideoMode_Common_m_ImageID)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -11361,7 +11392,7 @@ void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const m
 			}, 0, &ctx);
 	}
 
-	Sig_FuncNotFound(CVideoMode_Common_m_ImageID_offset);
+	Sig_FuncNotFound(offset_CVideoMode_Common_m_ImageID);
 }
 
 void Engine_FillAddress_DrawStartupVideo(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -11423,7 +11454,10 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
-			int Cmp_instCount{-1};
+			int test_instCount{ };
+			int test_reg{};
+			PVOID test_CandidateVA{};
+			int Cmp_instCount{};
 			ULONG_PTR CandidatesVA[6]{};
 			int CandidateCount{};
 		} Draw_Frame_SearchContext;
@@ -11435,7 +11469,38 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (Draw_Frame_SearchContext*)context;
 
-			if (ctx->Cmp_instCount == -1 &&
+			if (!giScissorTest &&
+				!ctx->test_reg &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			{
+				ctx->test_reg = pinst->detail->x86.operands[0].reg;
+				ctx->test_instCount = instCount;
+				ctx->test_CandidateVA = (decltype(ctx->test_CandidateVA))pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (!giScissorTest &&
+				ctx->test_reg &&
+				instCount > ctx->test_instCount &&
+				instCount < ctx->test_instCount+3 &&
+				pinst->id == X86_INS_TEST &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->test_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == ctx->test_reg)
+			{
+				giScissorTest = (decltype(giScissorTest))ConvertDllInfoSpace((PVOID)ctx->test_CandidateVA, ctx->DllInfo, ctx->RealDllInfo);
+				ctx->Cmp_instCount = instCount;
+			}
+
+			if (!giScissorTest &&
+				!ctx->Cmp_instCount &&
 				pinst->id == X86_INS_CMP &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -11449,7 +11514,7 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 				ctx->Cmp_instCount = instCount;
 			}
 
-			if (ctx->CandidateCount < 4 && instCount > ctx->Cmp_instCount)
+			if (ctx->Cmp_instCount > 0 && ctx->CandidateCount < 4 && instCount > ctx->Cmp_instCount && instCount < ctx->Cmp_instCount + 20)
 			{
 				if (pinst->id == X86_INS_PUSH &&
 					pinst->detail->x86.op_count == 1 &&
@@ -11459,6 +11524,17 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 				{
 					ctx->CandidatesVA[ctx->CandidateCount] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+					ctx->CandidateCount++;
+				}
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{
+					ctx->CandidatesVA[ctx->CandidateCount] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->CandidateCount++;
 				}
 			}
@@ -11477,14 +11553,14 @@ void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 		if (ctx.CandidateCount > 0)
 		{
-			//std::qsort(ctx.CandidatesVA, ctx.CandidateCount, sizeof(ctx.CandidatesVA[0]), [](const void* a, const void* b) {
-			//	return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-			//	});
+			std::qsort(ctx.CandidatesVA, ctx.CandidateCount, sizeof(ctx.CandidatesVA[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+				});
 
-			scissor_height = (decltype(scissor_height))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[0], ctx.DllInfo, ctx.RealDllInfo);
-			scissor_width = (decltype(scissor_width))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[1], ctx.DllInfo, ctx.RealDllInfo);
-			scissor_y = (decltype(scissor_y))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[2], ctx.DllInfo, ctx.RealDllInfo);
-			scissor_x = (decltype(scissor_x))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[3], ctx.DllInfo, ctx.RealDllInfo);
+			scissor_x = (decltype(scissor_x))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[0], ctx.DllInfo, ctx.RealDllInfo);
+			scissor_y = (decltype(scissor_y))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[1], ctx.DllInfo, ctx.RealDllInfo);
+			scissor_width = (decltype(scissor_width))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[2], ctx.DllInfo, ctx.RealDllInfo);
+			scissor_height = (decltype(scissor_height))ConvertDllInfoSpace((PVOID)ctx.CandidatesVA[3], ctx.DllInfo, ctx.RealDllInfo);
 		}
 	}
 
@@ -11779,6 +11855,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 		gPrivateFuncs.SDL_GetWindowSize = (decltype(gPrivateFuncs.SDL_GetWindowSize))GetProcAddress(hSDL2, "SDL_GetWindowSize");
 		gPrivateFuncs.SDL_GL_SwapWindow = (decltype(gPrivateFuncs.SDL_GL_SwapWindow))GetProcAddress(hSDL2, "SDL_GL_SwapWindow");
 		gPrivateFuncs.SDL_GL_GetProcAddress = (decltype(gPrivateFuncs.SDL_GL_GetProcAddress))GetProcAddress(hSDL2, "SDL_GL_GetProcAddress");
+		gPrivateFuncs.SDL_CreateWindow = (decltype(gPrivateFuncs.SDL_CreateWindow))GetProcAddress(hSDL2, "SDL_CreateWindow");
 	}
 
 	EngineSurface_FillAddress(DllInfo, RealDllInfo);
@@ -12022,7 +12099,7 @@ void Engine_InstallHooks(void)
 	{
 		Install_InlineHook(GL_SetMode);
 	}
-	//Install_InlineHook(GL_Bind);
+	Install_InlineHook(GL_Bind);
 	Install_InlineHook(GL_Set2D);
 	Install_InlineHook(GL_Finish2D);
 	Install_InlineHook(GL_BeginRendering);
@@ -12047,31 +12124,10 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(DT_Initialize);
 
-	//Install_InlineHook(enginesurface_pushMakeCurrent);
-	//Install_InlineHook(enginesurface_popMakeCurrent);
-	//Install_InlineHook(enginesurface_drawFilledRect);
-	//Install_InlineHook(enginesurface_drawOutlinedRect);
-	//Install_InlineHook(enginesurface_drawLine);
-	//Install_InlineHook(enginesurface_drawPolyLine);
-	//Install_InlineHook(enginesurface_drawSetTextureRGBA);
-	//Install_InlineHook(enginesurface_drawPrintCharAdd);
-	//Install_InlineHook(enginesurface_drawSetTextureFile);
-	//Install_InlineHook(enginesurface_drawSetTexture);
-	//Install_InlineHook(enginesurface_drawTexturedRect);
-	//Install_InlineHook(enginesurface_drawTexturedRectAdd);
-	//Install_InlineHook(enginesurface_createNewTextureID);
-	//Install_InlineHook(enginesurface_drawGetTextureSize);
-	//Install_InlineHook(enginesurface_isTextureIDValid);
-	//Install_InlineHook(enginesurface_drawSetSubTextureRGBA);
-	//Install_InlineHook(enginesurface_drawFlushText);
-	//Install_InlineHook(enginesurface_drawSetTextureBGRA);
-	//Install_InlineHook(enginesurface_drawUpdateRegionTextureBGRA);
-
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 
-#if 1
 	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 	gEngfuncs.pTriAPI->Begin = triapi_Begin;
 	gEngfuncs.pTriAPI->End = triapi_End;
@@ -12082,7 +12138,7 @@ void Engine_InstallHooks(void)
 	gEngfuncs.pTriAPI->Vertex3f = triapi_Vertex3f;
 	gEngfuncs.pTriAPI->Brightness = triapi_Brightness;
 	gEngfuncs.pTriAPI->Color4fRendermode = triapi_Color4fRendermode;
-#endif
+
 	gEngfuncs.pTriAPI->GetMatrix = triapi_GetMatrix;
 	gEngfuncs.pTriAPI->BoxInPVS = triapi_BoxInPVS;
 	gEngfuncs.pTriAPI->Fog = triapi_Fog;
@@ -12111,11 +12167,6 @@ void Engine_InstallHooks(void)
 
 	Install_InlineHook(Draw_Pic);
 	Install_InlineHook(D_FillRect);
-
-	if (gPrivateFuncs.SDL_GL_SetAttribute)
-	{
-		Install_InlineHook(SDL_GL_SetAttribute);
-	}
 }
 
 void Engine_UninstallHooks(void)
@@ -12130,6 +12181,7 @@ void Engine_UninstallHooks(void)
 	{
 		Uninstall_Hook(GL_SetMode);
 	}
+	Uninstall_Hook(GL_Bind);
 	Uninstall_Hook(GL_Set2D);
 	Uninstall_Hook(GL_Finish2D);
 	Uninstall_Hook(GL_BeginRendering);
@@ -12210,11 +12262,6 @@ void Engine_UninstallHooks(void)
 	}
 	Uninstall_Hook(Draw_Pic);
 	Uninstall_Hook(D_FillRect);
-
-	if (gPrivateFuncs.SDL_GL_SetAttribute)
-	{
-		Uninstall_Hook(SDL_GL_SetAttribute);
-	}
 }
 
 int WINAPI GL_RedirectedGenTexture(void)
@@ -12471,6 +12518,48 @@ void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc)
 	return GetProcAddress(hModule, proc);
 }
 
+int __cdecl CoreProfile_GL_SetAttribute(int attr, int value)
+{
+	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
+	}
+	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
+	{
+		//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
+	}
+	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
+	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
+	}
+
+	if (attr == SDL_GL_ALPHA_SIZE && value == 0)
+	{
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+
+	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
+}
+
+void* CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags)
+{
+	std::string newTitle = title;
+	newTitle += " OpenGL 4.3 Core Profile";
+
+	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	flags &= ~SDL_WINDOW_RESIZABLE;
+
+	return gPrivateFuncs.SDL_CreateWindow(newTitle.c_str(), x, y, w, h, flags);
+}
+
 /*
 	TODO: defer this to be compatiable with renderdoc?
 */
@@ -12493,6 +12582,8 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 	else if(gPrivateFuncs.SDL_GL_GetProcAddress)
 	{ 
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_GetProcAddress", CoreProfile_SDL_GL_GetProcAddress, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_SetAttribute", CoreProfile_GL_SetAttribute, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_CreateWindow", CoreProfile_SDL_CreateWindow, NULL);
 	}
 	else
 	{

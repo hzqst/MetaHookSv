@@ -557,7 +557,12 @@ void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function
 
 void GL_Bind(int texnum)
 {
-	gPrivateFuncs.GL_Bind(texnum);
+	//gPrivateFuncs.GL_Bind(texnum);
+	if ((*currenttexture) != texnum)
+	{
+		glBindTexture(GL_TEXTURE_2D, texnum);
+		(*currenttexture) = texnum;
+	}
 }
 
 void GL_SelectTexture(GLenum target)

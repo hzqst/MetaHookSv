@@ -17,6 +17,8 @@
 #include <triangleapi.h>
 #include <entity_types.h>
 
+#include <IEngineSurface.h>
+
 #include <set>
 #include <map>
 #include <atomic>
@@ -111,6 +113,9 @@ extern int(*g_iVertexBufferEntriesUsed);
 
 extern RECT* g_ScissorRect;
 extern bool* g_bScissor;
+
+extern IEngineSurface* engineSurface;
+extern IEngineSurface_HL25* engineSurface_HL25;
 
 extern float * s_fXMouseAspectAdjustment;
 extern float * s_fYMouseAspectAdjustment;
@@ -231,8 +236,6 @@ extern float *filterColorRed;
 extern float *filterColorGreen;
 extern float *filterColorBlue;
 extern float *filterBrightness;
-
-extern void* engineSurface;
 
 extern bool* detTexSupported;
 
@@ -728,8 +731,6 @@ int EngineFindPhysEntIndexByEntity(cl_entity_t* ent);
 bool EngineIsEntityInVisibleList(cl_entity_t* ent);
 
 float GetFrameRateFromFrameDuration(int frameduration);
-
-int _cdecl SDL_GL_SetAttribute(int attr, int value);
 
 void R_EmitFlashlights();
 void R_CreateLowerBodyModel();
