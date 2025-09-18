@@ -12159,12 +12159,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Draw_SpriteFrameGeneric_SvEngine);
 	Install_InlineHook(Draw_FillRGBA);
 	Install_InlineHook(Draw_FillRGBABlend);
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		Install_InlineHook(NET_DrawRect);
-	}
-
+	Install_InlineHook(NET_DrawRect);
 	Install_InlineHook(Draw_Pic);
 	Install_InlineHook(D_FillRect);
 }
@@ -12206,41 +12201,9 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(DT_Initialize);
 
-	//Uninstall_Hook(enginesurface_pushMakeCurrent);
-	//Uninstall_Hook(enginesurface_popMakeCurrent);
-	//Uninstall_Hook(enginesurface_drawFilledRect);
-	//Uninstall_Hook(enginesurface_drawOutlinedRect);
-	//Uninstall_Hook(enginesurface_drawLine);
-	//Uninstall_Hook(enginesurface_drawPolyLine);
-	//Uninstall_Hook(enginesurface_drawSetTextureRGBA);
-	//Uninstall_Hook(enginesurface_drawPrintCharAdd);
-	//Uninstall_Hook(enginesurface_drawSetTextureFile);
-	//Uninstall_Hook(enginesurface_drawSetTexture);
-	//Uninstall_Hook(enginesurface_drawTexturedRect);
-	//Uninstall_Hook(enginesurface_drawTexturedRectAdd);
-	// Uninstall_Hook(enginesurface_createNewTextureID);
-	//Uninstall_Hook(enginesurface_drawFlushText);
-	//Uninstall_Hook(enginesurface_drawGetTextureSize);
-	//Uninstall_Hook(enginesurface_isTextureIDValid);
-	//Uninstall_Hook(enginesurface_drawSetSubTextureRGBA);
-	//Uninstall_Hook(enginesurface_drawFlushText);
-	//Uninstall_Hook(enginesurface_drawSetTextureBGRA);
-	//Uninstall_Hook(enginesurface_drawUpdateRegionTextureBGRA);
-
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
-	//Uninstall_Hook(triapi_RenderMode);
-	//Uninstall_Hook(triapi_Begin);
-	//Uninstall_Hook(triapi_End);
-	//Uninstall_Hook(triapi_Color4f);
-	//Uninstall_Hook(triapi_Color4ub);
-	//Uninstall_Hook(triapi_TexCoord2f);
-	//Uninstall_Hook(triapi_Vertex3fv);
-	//Uninstall_Hook(triapi_Vertex3f);
-	//Uninstall_Hook(triapi_Brightness);
-	//Uninstall_Hook(triapi_Color4fRendermode);
-	//Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
@@ -12256,10 +12219,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Draw_SpriteFrameGeneric_SvEngine);
 	Uninstall_Hook(Draw_FillRGBA);
 	Uninstall_Hook(Draw_FillRGBABlend);
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		Uninstall_Hook(NET_DrawRect);
-	}
+	Uninstall_Hook(NET_DrawRect);
 	Uninstall_Hook(Draw_Pic);
 	Uninstall_Hook(D_FillRect);
 }
