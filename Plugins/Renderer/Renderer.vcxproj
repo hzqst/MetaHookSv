@@ -462,8 +462,6 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\hdr_tonemap.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.vert.glsl" />

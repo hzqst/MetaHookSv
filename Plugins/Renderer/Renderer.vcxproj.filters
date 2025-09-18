@@ -831,12 +831,6 @@
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl">
-      <Filter>GLSL</Filter>
-    </None>
     <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl">
       <Filter>GLSL</Filter>
     </None>
