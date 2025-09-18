@@ -3,7 +3,6 @@
 #include <algorithm>
 
 std::unordered_map<program_state_t, sprite_program_t> g_SpriteProgramTable;
-std::unordered_map<program_state_t, legacysprite_program_t> g_LegacySpriteProgramTable;
 std::unordered_map<program_state_t, triapi_program_t> g_TriAPIProgramTable;
 
 int *particletexture = NULL;
@@ -142,96 +141,6 @@ void R_LoadSpriteProgramStates(void)
 	R_LoadProgramStateCaches("renderer/shader/sprite_cache.txt", s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName), [](program_state_t state) {
 
 		R_UseSpriteProgram(state, NULL);
-
-	});
-}
-
-void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *progOutput)
-{
-	legacysprite_program_t prog = { 0 };
-
-	auto itor = g_LegacySpriteProgramTable.find(state);
-	if (itor == g_LegacySpriteProgramTable.end())
-	{
-		std::stringstream defs;
-
-		if (state & SPRITE_OIT_BLEND_ENABLED)
-			defs << "#define OIT_BLEND_ENABLED\n";
-
-		if (state & SPRITE_GAMMA_BLEND_ENABLED)
-			defs << "#define GAMMA_BLEND_ENABLED\n";
-
-		if (state & SPRITE_ALPHA_BLEND_ENABLED)
-			defs << "#define ALPHA_BLEND_ENABLED\n";
-
-		if (state & SPRITE_ADDITIVE_BLEND_ENABLED)
-			defs << "#define ADDITIVE_BLEND_ENABLED\n";
-
-		if (state & SPRITE_LINEAR_FOG_ENABLED)
-			defs << "#define LINEAR_FOG_ENABLED\n";
-
-		if (state & SPRITE_EXP_FOG_ENABLED)
-			defs << "#define EXP_FOG_ENABLED\n";
-
-		if (state & SPRITE_EXP2_FOG_ENABLED)
-			defs << "#define EXP2_FOG_ENABLED\n";
-
-		if (state & SPRITE_CLIP_ENABLED)
-			defs << "#define CLIP_ENABLED\n";
-
-		if (state & SPRITE_LERP_ENABLED)
-			defs << "#define LERP_ENABLED\n";
-
-		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
-			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
-
-		if (state & SPRITE_ALPHA_TEST_ENABLED)
-			defs << "#define ALPHA_TEST_ENABLED\n";
-
-		auto def = defs.str();
-
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\legacysprite_shader.vert.glsl", "renderer\\shader\\legacysprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
-
-		if (prog.program)
-		{
-
-		}
-
-		g_LegacySpriteProgramTable[state] = prog;
-	}
-	else
-	{
-		prog = itor->second;
-	}
-
-	if (prog.program)
-	{
-		GL_UseProgram(prog.program);
-
-		if (progOutput)
-			*progOutput = prog;
-	}
-	else
-	{
-		g_pMetaHookAPI->SysError("R_UseLegacySpriteProgram: Failed to load program!");
-	}
-}
-
-void R_SaveLegacySpriteProgramStates(void)
-{
-	std::vector<program_state_t> states;
-	for (auto &p : g_LegacySpriteProgramTable)
-	{
-		states.emplace_back(p.first);
-	}
-	R_SaveProgramStatesCaches("renderer/shader/legacysprite_cache.txt", states, s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName));
-}
-
-void R_LoadLegacySpriteProgramStates(void)
-{
-	R_LoadProgramStateCaches("renderer/shader/legacysprite_cache.txt", s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName), [](program_state_t state) {
-
-		R_UseLegacySpriteProgram(state, NULL);
 
 	});
 }

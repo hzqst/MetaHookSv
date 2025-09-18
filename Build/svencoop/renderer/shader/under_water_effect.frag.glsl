@@ -10,7 +10,7 @@ layout (location = 2) uniform float wave_size = 0.01;
 
 layout(binding = 0) uniform sampler2D baseTex;
 
-layout(location=0) out vec4 out_Color;
+layout(location = 0) out vec4 out_Color;
 
 void main() {
 

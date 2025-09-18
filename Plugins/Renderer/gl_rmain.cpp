@@ -4459,7 +4459,6 @@ void R_SaveProgramStates_f(void)
 	R_SaveStudioProgramStates();
 	R_SaveSpriteProgramStates();
 	R_SaveTriAPIProgramStates();
-	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 	R_SaveDrawTexturedRectProgramStates();
 	R_SaveDrawFilledRectProgramStates();
@@ -4476,7 +4475,6 @@ void R_LoadProgramStates_f(void)
 	R_LoadStudioProgramStates();
 	R_LoadSpriteProgramStates();
 	R_LoadTriAPIProgramStates();
-	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
 	R_LoadDrawTexturedRectProgramStates();
 	R_LoadDrawFilledRectProgramStates();
