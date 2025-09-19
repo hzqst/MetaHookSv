@@ -528,6 +528,8 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
 	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
 
+	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+
 	GL_BindVAO(g_DrawTexturedRectCommand.hVAO);
 
 	if (programState & DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED)
@@ -662,6 +664,8 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
 	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
+
+	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
 	GL_BindVAO(g_DrawFilledRectCommand.hVAO);
 

@@ -1243,8 +1243,8 @@ void triapi_End()
 	// 尝试使用环形分配器
 	size_t vertexDataSize = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
 
-	CPMBRingBuffer::Allocation ringAllocation;
-	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 16, ringAllocation))
+	CPMBRingBuffer::Allocation vertexAllocation;
+	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
 	{
 		//ring buffer full
 		triapi_EndClear();
@@ -1253,16 +1253,11 @@ void triapi_End()
 
 	GL_BeginDebugGroup("triapi_End");
 
-	bool useRingBuffer = false;
-	size_t vertexOffset = 0;
+	memcpy(vertexAllocation.ptr, gTriAPICommand.Vertices.data(), vertexDataSize);
 
-	// 使用环形分配器
-	memcpy(ringAllocation.ptr, gTriAPICommand.Vertices.data(), vertexDataSize);
-	useRingBuffer = true;
-	vertexOffset = ringAllocation.offset;
+	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(triapivertex_t));
 
-	// 计算基准索引（环形缓冲区中的绝对位置）
-	GLuint baseIndex = (GLuint)(vertexOffset / sizeof(triapivertex_t));
+	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 
 	GL_BindVAO(gTriAPICommand.hVAO);
 
@@ -1457,11 +1452,11 @@ void triapi_End()
 	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseIndex);
+		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseVertex);
 	}
 	else
 	{
-		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseIndex);
+		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseVertex);
 	}
 
 	GL_UseProgram(0);

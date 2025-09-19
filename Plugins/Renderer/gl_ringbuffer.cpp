@@ -8,17 +8,13 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize)
 		return true;
 
 	m_BufferSize = bufferSize;
-	m_WriteOffset = 0;
-	m_CurrentFrame = 0;
+	m_Head = 0;
+	m_Tail = 0;
+	m_UsedSize = 0;
+	m_CurrFrameSize = 0;
 
-	// 初始化帧信息
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		m_Frames[i].startOffset = 0;
-		m_Frames[i].endOffset = 0;
-		m_Frames[i].fence = nullptr;
-		m_Frames[i].active = false;
-	}
+	// 清空已完成帧列表
+	m_CompletedFrames.clear();
 
 	m_RingVBO = GL_GenBuffer();
 
@@ -39,14 +35,14 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize)
 void CPMBRingBuffer::Shutdown()
 {
 	// 清理所有fence
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	for (auto& frame : m_CompletedFrames)
 	{
-		if (m_Frames[i].fence)
+		if (frame.fence)
 		{
-			glDeleteSync(m_Frames[i].fence);
-			m_Frames[i].fence = nullptr;
+			glDeleteSync(frame.fence);
 		}
 	}
+	m_CompletedFrames.clear();
 
 	if (m_MappedPtr)
 	{
@@ -61,152 +57,166 @@ void CPMBRingBuffer::Shutdown()
 		GL_DeleteBuffer(m_RingVBO);
 		m_RingVBO = 0;
 	}
+
+	m_Head = 0;
+	m_Tail = 0;
+	m_UsedSize = 0;
+	m_CurrFrameSize = 0;
 }
 
-bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation &allocation)
+bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation)
 {
-	// 清理已完成的帧
-	CleanupCompletedFrames();
+	// 释放已完成的帧
+	ReleaseCompletedFrames();
 
-	// 对齐到指定边界
-	size_t alignedOffset = (m_WriteOffset + alignment - 1) & ~(alignment - 1);
-	size_t alignedSize = (size + alignment - 1) & ~(alignment - 1);
+	// 验证参数
+	if (size == 0)
+		return false;
+	if (!IsPowerOfTwo(alignment))
+		return false;
 
-	// 检查是否需要wrap around
-	if (alignedOffset + alignedSize > m_BufferSize)
-	{
-		// 尝试从头开始分配
-		if (CanAllocateAt(0, alignedSize))
-		{
-			// 如果当前帧正在进行中，需要结束当前段
-			if (m_Frames[m_CurrentFrame].active && m_Frames[m_CurrentFrame].endOffset == 0)
-			{
-				m_Frames[m_CurrentFrame].endOffset = m_WriteOffset;
-			}
+	// 对齐size
+	size = AlignUp(size, alignment);
 
-			m_WriteOffset = 0;
-			alignedOffset = 0;
-		}
-		else
-		{
-			// 缓冲区满了，返回无效分配
-			return false;
-		}
-	}
-
-	// 检查是否与正在使用的区域重叠
-	if (!CanAllocateAt(alignedOffset, alignedSize))
+	// 检查是否有足够空间
+	if (m_UsedSize + size > m_BufferSize)
 	{
 		return false;
 	}
 
-	allocation.ptr = (char*)m_MappedPtr + alignedOffset;
-	allocation.offset = alignedOffset;
-	allocation.size = alignedSize;
-	allocation.valid = true;
+	size_t alignedHead = AlignUp(m_Head, alignment);
 
-	m_WriteOffset = alignedOffset + alignedSize;
-	return true;
+	if (m_Head >= m_Tail)
+	{
+		// 情况1: 正常布局 [----Tail####Head----]
+		if (alignedHead + size <= m_BufferSize)
+		{
+			// 有足够空间在当前位置分配
+			size_t offset = alignedHead;
+			size_t adjustedSize = size + (alignedHead - m_Head);
+
+			allocation.ptr = (char*)m_MappedPtr + offset;
+			allocation.offset = offset;
+			allocation.size = size;
+			allocation.valid = true;
+
+			m_Head += adjustedSize;
+			m_UsedSize += adjustedSize;
+			m_CurrFrameSize += adjustedSize;
+
+			return true;
+		}
+		else if (size <= m_Tail)
+		{
+			// 环绕分配：从缓冲区开头分配
+			size_t addSize = (m_BufferSize - m_Head) + size;
+
+			allocation.ptr = (char*)m_MappedPtr;
+			allocation.offset = 0;
+			allocation.size = size;
+			allocation.valid = true;
+
+			m_UsedSize += addSize;
+			m_CurrFrameSize += addSize;
+			m_Head = size;
+
+			return true;
+		}
+	}
+	else if (alignedHead + size <= m_Tail)
+	{
+		// 情况2: 环绕布局 [####Head----Tail####]
+		size_t offset = alignedHead;
+		size_t adjustedSize = size + (alignedHead - m_Head);
+
+		allocation.ptr = (char*)m_MappedPtr + offset;
+		allocation.offset = offset;
+		allocation.size = size;
+		allocation.valid = true;
+
+		m_Head += adjustedSize;
+		m_UsedSize += adjustedSize;
+		m_CurrFrameSize += adjustedSize;
+
+		return true;
+	}
+
+	// 没有足够空间
+	return false;
 }
 
 void CPMBRingBuffer::BeginFrame()
 {
-	// 清理之前帧的fence
-	auto& frame = m_Frames[m_CurrentFrame];
-	if (frame.fence)
-	{
-		glDeleteSync(frame.fence);
-		frame.fence = nullptr;
-	}
+	// 释放已完成的帧
+	ReleaseCompletedFrames();
 
-	frame.startOffset = m_WriteOffset;
-	frame.active = true;
+	// 重置当前帧大小
+	m_CurrFrameSize = 0;
 }
 
 void CPMBRingBuffer::EndFrame()
 {
-	auto& frame = m_Frames[m_CurrentFrame];
-	frame.endOffset = m_WriteOffset;
-	frame.fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-
-	m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	// 只有非零大小的帧才需要创建fence
+	if (m_CurrFrameSize > 0)
+	{
+		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		if (fence)
+		{
+			m_CompletedFrames.emplace_back(fence, m_Head, m_CurrFrameSize);
+		}
+		m_CurrFrameSize = 0;
+	}
 }
 
 void CPMBRingBuffer::Reset()
 {
 	// 等待所有fence完成
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	for (auto& frame : m_CompletedFrames)
 	{
-		if (m_Frames[i].fence)
+		if (frame.fence)
 		{
-			glClientWaitSync(m_Frames[i].fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
-			glDeleteSync(m_Frames[i].fence);
-			m_Frames[i].fence = nullptr;
+			glClientWaitSync(frame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+			glDeleteSync(frame.fence);
 		}
-		m_Frames[i].active = false;
 	}
+	m_CompletedFrames.clear();
 
-	m_WriteOffset = 0;
-	m_CurrentFrame = 0;
+	m_Head = 0;
+	m_Tail = 0;
+	m_UsedSize = 0;
+	m_CurrFrameSize = 0;
 }
 
-bool CPMBRingBuffer::CanAllocateAt(size_t offset, size_t size)
+void CPMBRingBuffer::ReleaseCompletedFrames()
 {
-	// 检查与正在使用的区域是否重叠
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	// 释放所有已完成的帧
+	while (!m_CompletedFrames.empty())
 	{
-		auto& frame = m_Frames[i];
-		if (!frame.active) continue;
+		const auto& oldestFrame = m_CompletedFrames.front();
 
-		size_t frameStart = frame.startOffset;
-		size_t frameEnd = frame.endOffset;
-
-		// 特殊处理当前正在构建的帧
-		if (i == m_CurrentFrame && frameEnd == 0)
+		// 检查fence状态
+		GLenum result = glClientWaitSync(oldestFrame.fence, 0, 0);
+		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
 		{
-			// 当前帧还在构建中，使用当前写入位置作为结束位置
-			frameEnd = m_WriteOffset;
-		}
+			// GPU已完成处理该帧，可以安全释放
+			m_UsedSize -= oldestFrame.size;
+			m_Tail = oldestFrame.offset;
 
-		// 如果帧区域为空，跳过检查
-		if (frameStart == frameEnd) continue;
-
-		// 检查区域重叠
-		if (frameStart <= frameEnd)
-		{
-			// 正常情况：[frameStart, frameEnd)
-			// 检查新分配区域是否与已用区域重叠
-			if (offset < frameEnd && offset + size > frameStart)
-				return false;
+			glDeleteSync(oldestFrame.fence);
+			m_CompletedFrames.pop_front();
 		}
 		else
 		{
-			// Wrap around情况：[frameStart, bufferSize) + [0, frameEnd)
-			// 已用区域分为两段，检查新分配是否与任一段重叠
-			bool overlapWithEnd = (offset < frameEnd);  // 与 [0, frameEnd) 重叠
-			bool overlapWithStart = (offset < frameStart && offset + size > frameStart);  // 与 [frameStart, bufferSize) 重叠
-
-			if (overlapWithEnd || overlapWithStart)
-				return false;
+			// GPU还在处理，停止检查
+			break;
 		}
 	}
-	return true;
-}
 
-void CPMBRingBuffer::CleanupCompletedFrames()
-{
-	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	// 如果缓冲区为空，重置Head/Tail指针
+	if (IsEmpty())
 	{
-		auto& frame = m_Frames[i];
-		if (!frame.active || !frame.fence) continue;
-
-		// 检查fence状态
-		GLenum result = glClientWaitSync(frame.fence, 0, 0);
-		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
-		{
-			glDeleteSync(frame.fence);
-			frame.fence = nullptr;
-			frame.active = false;
-		}
+		m_CompletedFrames.clear();
+		m_Head = 0;
+		m_Tail = 0;
 	}
 }
