@@ -4812,6 +4812,16 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], severity:[%d], message:[%s]\n", source, type, id, severity, message);
 }
 
+void GL_LogOverride()
+{
+	gEngfuncs.Con_Printf("gl_log is not supported!\n");
+}
+
+HGLRC __stdcall CoreProfile_qwglCreateContext(HDC hDC)
+{
+	return g_hOpenGLCoreContext;
+}
+
 void InitializeGraphicEngine(void *window)
 {
 	if (!gPrivateFuncs.SDL_GL_SetAttribute)
@@ -4911,6 +4921,10 @@ void InitializeGraphicEngine(void *window)
 
 		wglMakeCurrent(g_hDC, g_hOpenGLCoreContext);
 	}
+	else
+	{
+		g_hOpenGLCoreContext = wglGetCurrentContext();
+	}
 
 	auto err = glewInit();
 
@@ -4932,6 +4946,8 @@ void InitializeGraphicEngine(void *window)
 		glEnable(GL_DEBUG_OUTPUT);
 	}
 
+	g_pMetaHookAPI->HookCmd("gl_log", GL_LogOverride);
+
 	MessageBoxA(NULL, "0", "0", MB_OK);
 }
 
@@ -4951,18 +4967,11 @@ qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, 
 {
 	auto r = gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, false, "opengl32.dll", pszCmdLine);
 
-	if (r && g_hOpenGLCoreContext)
+	if (r)
 	{
-		if ((*pbaseRC))
-		{
-			wglMakeCurrent((*pmaindc), nullptr);
-			wglDeleteContext((*pbaseRC));
-		}
-		wglMakeCurrent((*pmaindc), g_hOpenGLCoreContext);
-
-		(*pmaindc) = g_hDC;
-		(*pbaseRC) = g_hOpenGLCoreContext;
+		
 	}
+
 	return r;
 }
 

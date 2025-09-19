@@ -708,6 +708,119 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		gPrivateFuncs.GL_SetModeLegacy = (decltype(gPrivateFuncs.GL_SetModeLegacy))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
 		Sig_FuncNotFound(GL_SetModeLegacy);
 	}
+
+	if (g_iEngineType != ENGINE_SVENGINE)
+	{
+		/*
+		float* r_shadelight = NULL;
+		int* r_ambientlight = NULL;
+		vec3_t* r_blightvec = NULL;
+		vec3_t* r_plightvec = NULL;
+		int* lightgammatable = NULL;
+	*/
+
+		typedef struct R_StudioLighting_SearchContext_s
+		{
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+			PVOID base{};
+			size_t max_insts{};
+			int max_depth{};
+			std::set<PVOID> code{};
+			std::set<PVOID> branches{};
+			std::vector<walk_context_t> walks{};
+			PUCHAR mov_reg_mem_address{};
+			int mov_reg_mem_instCount{};
+			int mov_reg{};
+		} R_StudioLighting_SearchContext;
+
+		R_StudioLighting_SearchContext ctx = { DllInfo, RealDllInfo };
+		ctx.base = GL_SetMode_VA;
+		ctx.max_insts = 500;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x500, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_StudioLighting_SearchContext*)context;
+
+				if (gPrivateFuncs.GL_SetMode_call_qwglCreateContext)
+					return TRUE;
+
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
+
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base != 0 &&
+					pinst->detail->x86.operands[1].mem.disp ==0)
+				{
+					ctx->mov_reg = pinst->detail->x86.operands[0].reg;
+					ctx->mov_reg_mem_address = address;
+					ctx->mov_reg_mem_instCount = instCount;
+				}
+
+				if (ctx->mov_reg_mem_address &&
+					address > ctx->mov_reg_mem_address + 0 &&
+					address < ctx->mov_reg_mem_address + 10 &&
+					instCount > ctx->mov_reg_mem_instCount + 0 &&
+					instCount < ctx->mov_reg_mem_instCount + 3 &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->mov_reg)
+				{
+					auto nextaddr = address + instLen;
+
+					if (nextaddr[0] == 0xFF && nextaddr[1] == 0x15)
+					{
+						gPrivateFuncs.GL_SetMode_call_qwglCreateContext = ConvertDllInfoSpace(nextaddr, ctx->DllInfo, ctx->RealDllInfo);
+						return TRUE;
+					}
+				}
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+						{
+							ctx->walks.emplace_back(imm, 0x500, depth + 1);
+						}
+					}
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+				}, walk.depth, &ctx);
+		}
+
+		Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
+	}
 }
 
 void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -11905,10 +12018,9 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 		gPrivateFuncs.SDL_GL_SwapWindow = (decltype(gPrivateFuncs.SDL_GL_SwapWindow))GetProcAddress(hSDL2, "SDL_GL_SwapWindow");
 		gPrivateFuncs.SDL_GL_GetProcAddress = (decltype(gPrivateFuncs.SDL_GL_GetProcAddress))GetProcAddress(hSDL2, "SDL_GL_GetProcAddress");
 		gPrivateFuncs.SDL_CreateWindow = (decltype(gPrivateFuncs.SDL_CreateWindow))GetProcAddress(hSDL2, "SDL_CreateWindow");
+		//Fuck Sniber
+		gPrivateFuncs.SDL_GL_ExtensionSupported = (decltype(gPrivateFuncs.SDL_GL_ExtensionSupported))GetProcAddress(hSDL2, "SDL_GL_ExtensionSupported");
 	}
-
-	EngineSurface_FillAddress(DllInfo, RealDllInfo);
-	VideoMode_FillAddress(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_Begin = gEngfuncs.pTriAPI->Begin;
@@ -11924,6 +12036,10 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	gPrivateFuncs.triapi_FogParams = gEngfuncs.pTriAPI->FogParams;
+
+	EngineSurface_FillAddress(DllInfo, RealDllInfo);
+
+	VideoMode_FillAddress(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_HasOfficialFBOSupport(DllInfo, RealDllInfo);
 
@@ -12559,7 +12675,7 @@ int __cdecl CoreProfile_GL_SetAttribute(int attr, int value)
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
 
-void* CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags)
+void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags)
 {
 	std::string newTitle = title;
 	newTitle += " OpenGL 4.3 Core Profile";
@@ -12567,12 +12683,21 @@ void* CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h
 	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 	flags &= ~SDL_WINDOW_RESIZABLE;
 
-	return gPrivateFuncs.SDL_CreateWindow(newTitle.c_str(), x, y, w, h, flags);
+	return gPrivateFuncs.SDL_CreateWindow(title, x, y, w, h, flags);
 }
 
-/*
-	TODO: defer this to be compatiable with renderdoc?
-*/
+int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char *extension)
+{
+	if (!strcmp(extension, "GL_ARB_texture_rectangle"))
+		return 0;
+	if (!strcmp(extension, "GL_NV_texture_rectangle"))
+		return 0;
+	if (!strcmp(extension, "GL_EXT_framebuffer_multisample"))
+		return 0;
+
+	return gPrivateFuncs.SDL_GL_ExtensionSupported(extension);
+}
+
 void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -12588,6 +12713,10 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glBegin", CoreProfile_glBegin, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glColor4f", CoreProfile_glColor4f, NULL);
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "opengl32.dll", "glColor4ub", CoreProfile_glColor4ub, NULL);
+
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_ExtensionSupported", CoreProfile_SDL_GL_ExtensionSupported, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_GL_SetAttribute", CoreProfile_GL_SetAttribute, NULL);
+		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "SDL2.dll", "SDL_CreateWindow", CoreProfile_SDL_CreateWindow, NULL);
 	}
 	else if(gPrivateFuncs.SDL_GL_GetProcAddress)
 	{ 
@@ -12603,6 +12732,12 @@ void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_
 	{
 		//non-SDL
 		g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetEngineModule(), "kernel32.dll", "GetProcAddress", CoreProfile_GetProcAddress, NULL);
+
+	}
+
+	if (gPrivateFuncs.GL_SetMode_call_qwglCreateContext)
+	{
+		g_pMetaHookAPI->InlinePatchRedirectBranch(gPrivateFuncs.GL_SetMode_call_qwglCreateContext, CoreProfile_qwglCreateContext, NULL);
 	}
 }
 

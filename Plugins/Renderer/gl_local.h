@@ -524,6 +524,7 @@ void __stdcall triapi_glBegin(int GLPrimitiveCode);
 void __stdcall triapi_glEnd();
 void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a);
 void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+HGLRC __stdcall CoreProfile_qwglCreateContext(HDC hDC);
 
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
@@ -631,9 +632,6 @@ void R_BuildCubemaps_f(void);
 
 void R_SaveProgramStates_f(void);
 void R_LoadProgramStates_f(void);
-
-void R_LoadLegacyOpenGLMatrixForViewModel();
-void R_LoadLegacyOpenGLMatrixForWorld();
 
 void R_Reload_f(void);
 void R_DumpTextures_f(void);
