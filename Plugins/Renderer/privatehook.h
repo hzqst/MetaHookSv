@@ -60,6 +60,7 @@ typedef struct
 	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
+	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
 	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
 	void* (*Draw_CacheGet)(cachewad_t* wad, int index);

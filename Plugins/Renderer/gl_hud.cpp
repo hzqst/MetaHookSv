@@ -54,6 +54,10 @@ SHADER_DEFINE(under_water_effect);
 std::unordered_map<program_state_t, drawtexturedrect_program_t> g_DrawTexturedRectProgramTable;
 std::unordered_map<program_state_t, drawfilledrect_program_t> g_DrawFilledRectProgramTable;
 
+CPMBRingBuffer g_TexturedRectVertexBuffer;
+CPMBRingBuffer g_FilledRectVertexBuffer;
+CPMBRingBuffer g_RectInstanceBuffer;
+
 cvar_t *r_hdr = NULL;
 
 MapConVar *r_hdr_blurwidth = NULL;
@@ -259,7 +263,7 @@ void R_LoadDrawFilledRectProgramStates(void)
 		});
 }
 
-void R_InitPostProcess(void)
+void R_InitHUD(void)
 {
 	float numDir = 8; // keep in sync to glsl
 
@@ -413,60 +417,40 @@ void R_InitPostProcess(void)
 	r_ssao_blur_sharpness = R_RegisterMapCvar("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
+
+
 }
 
-void R_ShutdownPostProcess(void)
+class CDrawRectCommand
 {
+public:
+	GLuint hVAO{};
+};
 
-}
-
-void R_DrawHUDQuad(int w, int h)
-{
-	Sys_Error("deprecated");
-}
+CDrawRectCommand g_DrawTexturedRectCommand;
 
 void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuffer, size_t verticeCount, const uint32_t *indices, size_t indicesCount, uint64_t programState, const char * debugMetadata)
 {
-	static GLuint hVAO = 0;
-	static GLuint hVBOVertex = 0;
-	static GLuint hVBOInstance = 0;
-	static GLuint hEBO = 0;
+	if (!g_DrawTexturedRectCommand.hVAO)
+	{
+		g_DrawTexturedRectCommand.hVAO = GL_GenVAO();
 
-	if (verticeCount > MAXVERTEXBUFFERS)
-	{
-		Sys_Error("R_DrawTexturedRect: insufficient vertexBuffer");
-		return;
-	}
-	if (indicesCount > (MAXVERTEXBUFFERS / 4) * 6)
-	{
-		Sys_Error("R_DrawTexturedRect: insufficient vertexBuffer");
-		return;
-	}
+		if (!g_TexturedRectVertexBuffer.Initialize(64 * 1024 * 1024))
+		{
+			Sys_Error("R_DrawTexturedRect: Failed to initialize g_TexturedRectVertexBuffer.\n");
+			return;
+		}
 
-	if (!hVBOVertex)
-	{
-		hVBOVertex = GL_GenBuffer();
-		GL_UploadDataToVBOStreamDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, nullptr);
-	}
-	if (!hVBOInstance)
-	{
-		hVBOInstance = GL_GenBuffer();
-		GL_UploadDataToVBOStreamDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, nullptr);
-	}
-	if (!hEBO)
-	{
-		hEBO = GL_GenBuffer();
-		GL_UploadDataToEBOStreamDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, nullptr);
-	}
-	if (!hVAO)
-	{
-		hVAO = GL_GenVAO();
+		if (!g_RectInstanceBuffer.Initialize(32 * 1024 * 1024))
+		{
+			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectInstanceBuffer.\n");
+			return;
+		}
+
 		GL_BindStatesForVAO(
-			hVAO,
+			g_DrawTexturedRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hEBO);
-
-				glBindBuffer(GL_ARRAY_BUFFER, hVBOVertex);
+				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer.GetVBO());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, pos));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_POSITION);
@@ -477,7 +461,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribPointer(TEXTUREDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, col));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, hVBOInstance);
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetVBO());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX0, 1);
@@ -495,9 +479,31 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
 
-
 			});
-		
+
+	}
+
+	rect_instance_data_t instanceDataBuffer[1]{};
+
+	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
+
+	size_t vertexDataSize = verticeCount * sizeof(texturedrectvertex_t);
+	size_t instanceDataSize = sizeof(instanceDataBuffer);
+
+	CPMBRingBuffer::Allocation vertexAllocation;
+	CPMBRingBuffer::Allocation instanceAllocation;
+
+	if (!g_TexturedRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
+	{
+		return;
+	}
+
+	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 16, instanceAllocation))
+	{
+		return;
 	}
 
 	if (debugMetadata)
@@ -516,27 +522,13 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	if(gltexturenum > 0)
 		glBindTexture(GL_TEXTURE_2D, gltexturenum);
 
-	rect_instance_data_t instanceDataBuffer[1]{};
+	memcpy(vertexAllocation.ptr, verticeBuffer, vertexDataSize);
+	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(texturedrectvertex_t));
 
-	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
+	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
 
-	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
-#if 1
-	GL_UploadDataToVBOStreamDraw(hVBOVertex, sizeof(texturedrectvertex_t) * MAXVERTEXBUFFERS, nullptr);
-	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
-
-	GL_UploadDataToVBOStreamDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, nullptr);
-	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
-
-	GL_UploadDataToEBOStreamDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, nullptr);
-	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
-#else
-	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
-	GL_UploadDataToVBOStreamMap(hVBOInstance, sizeof(instanceDataBuffer), instanceDataBuffer);
-	GL_UploadDataToEBOStreamMap(hEBO, indicesCount * sizeof(uint32_t), indices);
-#endif
-	GL_BindVAO(hVAO);
+	GL_BindVAO(g_DrawTexturedRectCommand.hVAO);
 
 	if (programState & DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED)
 	{
@@ -561,7 +553,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	drawtexturedrect_program_t prog{};
 	R_UseDrawTexturedRectProgram(programState, &prog);
 
-	glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
 
 	GL_UseProgram(0);
 
@@ -575,48 +567,31 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	GL_EndDebugGroup();
 }
 
+CDrawRectCommand g_DrawFilledRectCommand;
+
 void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata)
 {
-	static GLuint hVAO = 0;
-	static GLuint hVBOVertex = 0;
-	static GLuint hVBOInstance = 0;
-	static GLuint hEBO = 0;
+	if (!g_DrawFilledRectCommand.hVAO)
+	{
+		g_DrawFilledRectCommand.hVAO = GL_GenVAO();
 
-	if (verticeCount > MAXVERTEXBUFFERS)
-	{
-		Sys_Error("R_DrawFilledRect: insufficient vertexBuffer");
-		return;
-	}
-	if (indicesCount > (MAXVERTEXBUFFERS / 4) * 6)
-	{
-		Sys_Error("R_DrawFilledRect: insufficient vertexBuffer");
-		return;
-	}
+		// 初始化filled rect环形分配器
+		if (!g_FilledRectVertexBuffer.Initialize(64 * 1024 * 1024))
+		{
+			Sys_Error("R_DrawFilledRect: Failed to initialize g_FilledRectVertexBuffer.\n");
+			return;
+		}
 
-	if (!hVBOVertex)
-	{
-		hVBOVertex = GL_GenBuffer();
-		GL_UploadDataToVBODynamicDraw(hVBOVertex, sizeof(filledrectvertex_t) * MAXVERTEXBUFFERS, NULL);
-	}
-	if (!hVBOInstance)
-	{
-		hVBOInstance = GL_GenBuffer();
-		GL_UploadDataToVBODynamicDraw(hVBOInstance, sizeof(rect_instance_data_t) * 1, NULL);
-	}
-	if (!hEBO)
-	{
-		hEBO = GL_GenBuffer();
-		GL_UploadDataToEBODynamicDraw(hEBO, sizeof(uint32_t) * (MAXVERTEXBUFFERS / 4) * 6, NULL);
-	}
-	if (!hVAO)
-	{
-		hVAO = GL_GenVAO();
+		if (!g_RectInstanceBuffer.Initialize(32 * 1024 * 1024))
+		{
+			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectInstanceBuffer.\n");
+			return;
+		}
+
 		GL_BindStatesForVAO(
-			hVAO,
+			g_DrawFilledRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, hEBO);
-
-				glBindBuffer(GL_ARRAY_BUFFER, hVBOVertex);
+				glBindBuffer(GL_ARRAY_BUFFER, g_FilledRectVertexBuffer.GetVBO());
 
 				glVertexAttribPointer(FILLEDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, pos));
 				glEnableVertexAttribArray(FILLEDRECT_VA_POSITION);
@@ -624,7 +599,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribPointer(FILLEDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, col));
 				glEnableVertexAttribArray(FILLEDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, hVBOInstance);
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetVBO());
 
 				glVertexAttribPointer(FILLEDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX0, 1);
@@ -642,9 +617,31 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(FILLEDRECT_VA_MATRIX3);
 
-
 			});
 
+	}
+
+	rect_instance_data_t instanceDataBuffer[1]{};
+
+	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
+
+	size_t vertexDataSize = verticeCount * sizeof(filledrectvertex_t);
+	size_t instanceDataSize = sizeof(instanceDataBuffer);
+
+	CPMBRingBuffer::Allocation vertexAllocation;
+	CPMBRingBuffer::Allocation instanceAllocation;
+
+	if (!g_FilledRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
+	{
+		return;
+	}
+
+	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 16, instanceAllocation))
+	{
+		return;
 	}
 
 	if (debugMetadata)
@@ -660,22 +657,13 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	glDisable(GL_DEPTH_TEST);
 
-	rect_instance_data_t instanceDataBuffer[1]{};
+	memcpy(vertexAllocation.ptr, verticeBuffer, vertexDataSize);
+	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(filledrectvertex_t));
 
-	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
+	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
 
-	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
-#if 1
-	GL_UploadSubDataToVBO(hVBOVertex, 0, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
-	GL_UploadSubDataToVBO(hVBOInstance, 0, sizeof(instanceDataBuffer), instanceDataBuffer);
-	GL_UploadSubDataToEBO(hEBO, 0, indicesCount * sizeof(uint32_t), indices);
-#else
-	GL_UploadDataToVBOStreamMap(hVBOVertex, verticeCount * sizeof(texturedrectvertex_t), verticeBuffer);
-	GL_UploadDataToVBOStreamMap(hVBOInstance, sizeof(instanceDataBuffer), instanceDataBuffer);
-	GL_UploadDataToEBOStreamMap(hEBO, indicesCount * sizeof(uint32_t), indices);
-#endif
-	GL_BindVAO(hVAO);
+	GL_BindVAO(g_DrawFilledRectCommand.hVAO);
 
 	if (programState & DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED)
 	{
@@ -704,14 +692,14 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	drawfilledrect_program_t prog{};
 	R_UseDrawFilledRectProgram(programState, &prog);
-	
+
 	if (programState & DRAW_FILLED_RECT_LINE_ENABLED)
 	{
-		glDrawElements(GL_LINES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
 	}
 	else
 	{
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+		glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
 	}
 
 	GL_UseProgram(0);
@@ -1747,4 +1735,11 @@ void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 	R_DrawTexturedQuad(src->s_hBackBufferTex, 0, dst->iHeight, dst->iWidth, 0, color, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "R_BlitFinalBuffer");
 
 	GL_Finish2D();
+}
+
+void R_ShutdownHUD(void)
+{
+	g_TexturedRectVertexBuffer.Shutdown();
+	g_FilledRectVertexBuffer.Shutdown();
+	g_RectInstanceBuffer.Shutdown();
 }

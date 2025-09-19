@@ -449,6 +449,9 @@
     <ClCompile Include="VideoMode.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="gl_ringbuffer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -773,6 +776,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="LambdaThreadedTask.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_ringbuffer.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

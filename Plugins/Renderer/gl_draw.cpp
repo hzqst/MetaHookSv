@@ -670,6 +670,11 @@ void GL_UnloadTextures(void)
 	}
 }
 
+void GL_LoadFilterTexture(void)
+{
+	//do nothing
+}
+
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType)
 {
 	char hashedIdentifier[64] = { 0 };

@@ -63,6 +63,12 @@
 #define GL_UNLOADTEXTURE_SIG_HL25 "\x55\x8B\xEC\x2A\x2A\x33\xFF\xBE\x2A\x2A\x2A\x2A\x39\x2A\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x08"
 #define GL_UNLOADTEXTURE_SIG_SVENGINE "\x56\x33\xF6\x39\x35\x2A\x2A\x2A\x2A\x2A\x2A\x55\x8B\x2A\x2A\x0C\x57"
 
+#define GL_LOADFILTERTEXTURE_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x53\x56\x68\xC0\x00\x00\x00\x85\xC0\x0F\x85\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\x40"
+#define GL_LOADFILTERTEXTURE_SIG_NEW2 "\xA1\x2A\x2A\x2A\x2A\x53\x85\xC0\x56\x0F\x85\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x68\xC0\x00\x00\x00"
+#define GL_LOADFILTERTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x53\x85\xC0\x56\x0F\x85\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x00\x00\x00\xA3"
+#define GL_LOADFILTERTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x0C\x83\x3D\x2A\x2A\x2A\x2A\x00\xF3\x0F\x10\x45\x14"
+#define GL_LOADFILTERTEXTURE_SIG_SVENGINE "\x83\xEC\x08\xD9\x44\x24\x18\xD9\x44\x24\x0C\xD8\xC9\xD9\x05"
+
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 #define R_DRAWWORLD_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x0B\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x68\xB8\x0B\x00\x00"//valve's 9891 update fucked this
@@ -428,6 +434,7 @@ static hook_t* g_phook_R_AddDynamicLights = NULL;
 static hook_t* g_phook_R_GLStudioDrawPoints = NULL;
 static hook_t* g_phook_GL_UnloadTextures = NULL;
 static hook_t* g_phook_GL_UnloadTexture = NULL;
+static hook_t* g_phook_GL_LoadFilterTexture = NULL;
 static hook_t* g_phook_GL_LoadTexture2 = NULL;
 static hook_t* g_phook_GL_BuildLightmaps = NULL;
 static hook_t* g_phook_DT_Initialize = NULL;
@@ -2626,6 +2633,40 @@ void Engine_FillAddress_R_NewMap(const mh_dll_info_t& DllInfo, const mh_dll_info
 	}
 
 	Sig_FuncNotFound(GL_UnloadTextures);
+}
+
+void Engine_FillAddress_GL_LoadFilterTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.GL_LoadFilterTexture)
+		return;
+
+	PVOID GL_LoadFilterTexture_VA = 0;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		GL_LoadFilterTexture_VA = Search_Pattern(GL_LOADFILTERTEXTURE_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))ConvertDllInfoSpace((PVOID)GL_LoadFilterTexture_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		GL_LoadFilterTexture_VA = Search_Pattern(GL_LOADFILTERTEXTURE_SIG_HL25, DllInfo);
+		gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))ConvertDllInfoSpace((PVOID)GL_LoadFilterTexture_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		GL_LoadFilterTexture_VA = Search_Pattern(GL_LOADFILTERTEXTURE_SIG_NEW, DllInfo);
+		if(!GL_LoadFilterTexture_VA)
+			GL_LoadFilterTexture_VA = Search_Pattern(GL_LOADFILTERTEXTURE_SIG_NEW2, DllInfo);
+
+		gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))ConvertDllInfoSpace((PVOID)GL_LoadFilterTexture_VA, DllInfo, RealDllInfo);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		GL_LoadFilterTexture_VA = Search_Pattern(GL_LOADFILTERTEXTURE_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_LoadFilterTexture = (decltype(gPrivateFuncs.GL_LoadFilterTexture))ConvertDllInfoSpace((PVOID)GL_LoadFilterTexture_VA, DllInfo, RealDllInfo);
+	}
+
+	Sig_FuncNotFound(GL_LoadFilterTexture);
 }
 
 void Engine_FillAddress_GL_BuildLightmaps(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -12073,6 +12114,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_NewMap(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_GL_LoadFilterTexture(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_GL_BuildLightmaps(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_BuildLightMap(DllInfo, RealDllInfo);
@@ -12286,6 +12329,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_PointInLeaf);
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(GL_UnloadTextures);
+	Install_InlineHook(GL_LoadFilterTexture);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(DT_Initialize);
@@ -12363,6 +12407,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Mod_PointInLeaf);
 	Uninstall_Hook(R_GLStudioDrawPoints);
 	Uninstall_Hook(GL_UnloadTextures);
+	Uninstall_Hook(GL_LoadFilterTexture);
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(DT_Initialize);
@@ -12490,212 +12535,6 @@ void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo,
 			break;
 		}
 	}
-}
-
-const GLubyte* __stdcall CoreProfile_glGetString(GLenum e)
-{
-	if(e == GL_EXTENSIONS)
-		return (const GLubyte*)"";
-
-	return glGetString(e);
-}
-
-void __stdcall CoreProfile_glAlphaFunc(GLenum func, GLclampf ref)
-{
-
-}
-
-void __stdcall CoreProfile_glEnable(GLenum cap)
-{
-	if (cap == GL_TEXTURE_2D)
-		return;
-
-	if (cap == GL_ALPHA_TEST)
-		return;
-
-	if (cap == GL_FOG)
-		return;
-
-	if (cap == GL_LIGHTING)
-		return;
-
-	glEnable(cap);
-}
-
-void __stdcall CoreProfile_glDisable(GLenum cap)
-{
-	if (cap == GL_TEXTURE_2D)
-		return;
-
-	if (cap == GL_ALPHA_TEST)
-		return;
-
-	if (cap == GL_FOG)
-		return;
-
-	if (cap == GL_LIGHTING)
-		return;
-
-	glDisable(cap);
-}
-
-void __stdcall CoreProfile_glShadeModel(GLenum mode)
-{
-	
-}
-
-void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
-{
-	
-}
-
-void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param)
-{
-	if (target == GL_TEXTURE_2D && pname == GL_TEXTURE_MAX_ANISOTROPY)
-		return;
-
-	if (pname == GL_TEXTURE_WRAP_S && (GLuint)param == GL_CLAMP)
-	{
-		return glTexParameterf(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	}
-
-	if (pname == GL_TEXTURE_WRAP_T && (GLuint)param == GL_CLAMP)
-	{
-		return glTexParameterf(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-
-	glTexParameterf(target, pname, param);
-}
-
-GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap)
-{
-	if (cap == GL_FOG)
-		return false;
-
-	return glIsEnabled(cap);
-}
-
-void __stdcall CoreProfile_glBegin(int GLPrimitiveCode)
-{
-	
-}
-
-void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures)
-{
-	for (GLsizei i = 0; i < n; ++i)
-	{
-		textures[i] = GL_GenTexture();
-	}
-}
-
-void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc)
-{
-	if (!strcmp(proc, "glGetString"))
-		return CoreProfile_glGetString;
-	if (!strcmp(proc, "glAlphaFunc"))
-		return CoreProfile_glAlphaFunc;
-	if (!strcmp(proc, "glEnable"))
-		return CoreProfile_glEnable;
-	if (!strcmp(proc, "glDisable"))
-		return CoreProfile_glDisable;
-	if (!strcmp(proc, "glIsEnabled"))
-		return CoreProfile_glIsEnabled;
-	if (!strcmp(proc, "glShadeModel"))
-		return CoreProfile_glShadeModel;
-	if (!strcmp(proc, "glTexEnvf"))
-		return CoreProfile_glTexEnvf;
-	if (!strcmp(proc, "glTexParameterf"))
-		return CoreProfile_glTexParameterf;
-	if (!strcmp(proc, "glBegin"))
-		return CoreProfile_glBegin;
-	if (!strcmp(proc, "glColor4f"))
-		return CoreProfile_glColor4f;
-	if (!strcmp(proc, "glColor4ub"))
-		return CoreProfile_glColor4ub;
-
-	return gPrivateFuncs.SDL_GL_GetProcAddress(proc);
-}
-
-void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc)
-{
-	if (!strcmp(proc, "glGetString"))
-		return CoreProfile_glGetString;
-	if (!strcmp(proc, "glAlphaFunc"))
-		return CoreProfile_glAlphaFunc;
-	if (!strcmp(proc, "glEnable"))
-		return CoreProfile_glEnable;
-	if (!strcmp(proc, "glDisable"))
-		return CoreProfile_glDisable;
-	if (!strcmp(proc, "glIsEnabled"))
-		return CoreProfile_glIsEnabled;
-	if (!strcmp(proc, "glShadeModel"))
-		return CoreProfile_glShadeModel;
-	if (!strcmp(proc, "glTexEnvf"))
-		return CoreProfile_glTexEnvf;
-	if (!strcmp(proc, "glTexParameterf"))
-		return CoreProfile_glTexParameterf;
-	if (!strcmp(proc, "glBegin"))
-		return CoreProfile_glBegin;
-	if (!strcmp(proc, "glColor4f"))
-		return CoreProfile_glColor4f;
-	if (!strcmp(proc, "glColor4ub"))
-		return CoreProfile_glColor4ub;
-
-	return GetProcAddress(hModule, proc);
-}
-
-int __cdecl CoreProfile_GL_SetAttribute(int attr, int value)
-{
-	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
-	}
-	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
-	{
-		//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
-	}
-	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
-	}
-	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
-	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
-	{
-		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
-	}
-
-	if (attr == SDL_GL_ALPHA_SIZE && value == 0)
-	{
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	}
-
-	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
-}
-
-void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags)
-{
-	std::string newTitle = title;
-	newTitle += " OpenGL 4.3 Core Profile";
-
-	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-	flags &= ~SDL_WINDOW_RESIZABLE;
-
-	return gPrivateFuncs.SDL_CreateWindow(title, x, y, w, h, flags);
-}
-
-int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char *extension)
-{
-	if (!strcmp(extension, "GL_ARB_texture_rectangle"))
-		return 0;
-	if (!strcmp(extension, "GL_NV_texture_rectangle"))
-		return 0;
-	if (!strcmp(extension, "GL_EXT_framebuffer_multisample"))
-		return 0;
-
-	return gPrivateFuncs.SDL_GL_ExtensionSupported(extension);
 }
 
 void R_RedirectEngineLegacyOpenGLCallAPI(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

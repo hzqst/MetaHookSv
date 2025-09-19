@@ -310,6 +310,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="gl_light.cpp" />
     <ClCompile Include="gl_model.cpp" />
     <ClCompile Include="gl_portal.cpp" />
+    <ClCompile Include="gl_ringbuffer.cpp" />
     <ClCompile Include="gl_rmain.cpp" />
     <ClCompile Include="gl_rmisc.cpp" />
     <ClCompile Include="gl_rsurf.cpp" />
@@ -424,6 +425,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_portal.h" />
     <ClInclude Include="gl_common.h" />
+    <ClInclude Include="gl_ringbuffer.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />
     <ClInclude Include="gl_sprite.h" />

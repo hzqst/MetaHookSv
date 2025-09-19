@@ -170,10 +170,8 @@ void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst);
 void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
 
-void R_DrawHUDQuad(int w, int h);
-
-void R_ShutdownPostProcess(void);
-void R_InitPostProcess(void);
+void R_InitHUD(void);
+void R_ShutdownHUD(void);
 
 void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);
 void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);

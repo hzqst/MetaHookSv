@@ -1005,19 +1005,16 @@ public:
 	int RenderMode{ };
 	int DrawRenderMode{ };
 	GLuint hVAO{};
-	GLuint hVBO{};
-	size_t VBOCapacity{};
 };
 
 CTriAPICommand gTriAPICommand;
+CPMBRingBuffer g_TriAPIVertexBuffer;
 
 void triapi_Shutdown()
 {
-	if (gTriAPICommand.hVBO)
-	{
-		GL_DeleteBuffer(gTriAPICommand.hVBO);
-		gTriAPICommand.hVBO = 0;
-	}
+	// 清理环形分配器
+	g_TriAPIVertexBuffer.Shutdown();
+
 	if (gTriAPICommand.hVAO)
 	{
 		GL_DeleteVAO(gTriAPICommand.hVAO);
@@ -1070,7 +1067,7 @@ void triapi_End()
 		triapi_EndClear();
 		return;
 	}
-
+	
 	if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES)
 	{
 		// 三角形列表 - 直接使用索引
@@ -1218,42 +1215,54 @@ void triapi_End()
 	if (!gTriAPICommand.hVAO)
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
-		gTriAPICommand.hVBO = GL_GenBuffer();
 
-		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t);
-		if (gTriAPICommand.VBOCapacity < 16 * sizeof(triapivertex_t))
-			gTriAPICommand.VBOCapacity = 16 * sizeof(triapivertex_t);
-		GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
+		// 初始化triapi环形分配器
+		if (g_TriAPIVertexBuffer.Initialize(64 * 1024 * 1024)) // 64MB
+		{
+			// 使用静态VAO配置（offset=0）
+			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
 
-		GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
+				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetVBO());
 
-			glBindBuffer(GL_ARRAY_BUFFER, gTriAPICommand.hVBO);
+				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
+				glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+				glEnableVertexAttribArray(TRIAPI_VA_COLOR);
 
-			glEnableVertexAttribArray(TRIAPI_VA_POSITION);
-			glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
-			glEnableVertexAttribArray(TRIAPI_VA_COLOR);
+				glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
+				glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
+				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
 
-			glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
-			glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
-			glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
-
-		});
+			});
+		}
+		else
+		{
+			Sys_Error("triapi_End: Failed to initialize triapi ring buffer\n");
+		}
 	}
 
-	if (gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t) > gTriAPICommand.VBOCapacity)
+	// 尝试使用环形分配器
+	size_t vertexDataSize = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
+
+	CPMBRingBuffer::Allocation ringAllocation;
+	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 16, ringAllocation))
 	{
-		gTriAPICommand.VBOCapacity = gTriAPICommand.Vertices.capacity() * sizeof(triapivertex_t);
+		//ring buffer full
+		triapi_EndClear();
+		return;
 	}
-
-	GL_UploadDataToVBOStreamDraw(gTriAPICommand.hVBO, gTriAPICommand.VBOCapacity, nullptr);
 
 	GL_BeginDebugGroup("triapi_End");
 
-#if 1
-	GL_UploadSubDataToVBO(gTriAPICommand.hVBO, 0, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
-#else
-	GL_UploadDataToVBOStreamMap(gTriAPICommand.hVBO, gTriAPICommand.Vertices.size() * sizeof(triapivertex_t), gTriAPICommand.Vertices.data());
-#endif
+	bool useRingBuffer = false;
+	size_t vertexOffset = 0;
+
+	// 使用环形分配器
+	memcpy(ringAllocation.ptr, gTriAPICommand.Vertices.data(), vertexDataSize);
+	useRingBuffer = true;
+	vertexOffset = ringAllocation.offset;
+
+	// 计算基准索引（环形缓冲区中的绝对位置）
+	GLuint baseIndex = (GLuint)(vertexOffset / sizeof(triapivertex_t));
 
 	GL_BindVAO(gTriAPICommand.hVAO);
 
@@ -1448,11 +1457,11 @@ void triapi_End()
 	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElements(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
+		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseIndex);
 	}
 	else
 	{
-		glDrawElements(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data());
+		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseIndex);
 	}
 
 	GL_UseProgram(0);
@@ -2423,6 +2432,11 @@ void R_RenderFrameStart()
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
 
+	g_TriAPIVertexBuffer.BeginFrame();
+	g_TexturedRectVertexBuffer.BeginFrame();
+	g_FilledRectVertexBuffer.BeginFrame();
+	g_RectInstanceBuffer.BeginFrame();
+
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioStartFrame();
@@ -2437,6 +2451,11 @@ void R_RenderFrameStart()
 void R_RenderEndFrame()
 {
 	R_StudioEndFrame();
+
+	g_TriAPIVertexBuffer.EndFrame();
+	g_TexturedRectVertexBuffer.EndFrame();
+	g_FilledRectVertexBuffer.EndFrame();
+	g_RectInstanceBuffer.EndFrame();
 }
 
 void GL_Set2DEx(int x, int y, int width, int height)
@@ -3159,7 +3178,7 @@ void R_Init(void)
 	R_InitWSurf();
 	R_InitLight();
 	R_InitSprite();
-	R_InitPostProcess();
+	R_InitHUD();
 	R_InitPortal();
 	R_InitEntityComponents();
 
@@ -3174,7 +3193,7 @@ void R_Shutdown(void)
 	R_ShutdownWSurf();
 	R_ShutdownLight();
 	R_ShutdownSprite();
-	R_ShutdownPostProcess();
+	R_ShutdownHUD();
 	R_ShutdownPortal();
 	R_ShutdownEntityComponents();
 	triapi_Shutdown();
@@ -4822,6 +4841,209 @@ HGLRC __stdcall CoreProfile_qwglCreateContext(HDC hDC)
 	return g_hOpenGLCoreContext;
 }
 
+const GLubyte* __stdcall CoreProfile_glGetString(GLenum e)
+{
+	if (e == GL_EXTENSIONS)
+		return (const GLubyte*)"";
+
+	return glGetString(e);
+}
+
+void __stdcall CoreProfile_glAlphaFunc(GLenum func, GLclampf ref)
+{
+
+}
+
+void __stdcall CoreProfile_glEnable(GLenum cap)
+{
+	if (cap == GL_TEXTURE_2D)
+		return;
+
+	if (cap == GL_ALPHA_TEST)
+		return;
+
+	if (cap == GL_FOG)
+		return;
+
+	if (cap == GL_LIGHTING)
+		return;
+
+	glEnable(cap);
+}
+
+void __stdcall CoreProfile_glDisable(GLenum cap)
+{
+	if (cap == GL_TEXTURE_2D)
+		return;
+
+	if (cap == GL_ALPHA_TEST)
+		return;
+
+	if (cap == GL_FOG)
+		return;
+
+	if (cap == GL_LIGHTING)
+		return;
+
+	glDisable(cap);
+}
+
+void __stdcall CoreProfile_glShadeModel(GLenum mode)
+{
+
+}
+
+void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
+{
+
+}
+
+void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param)
+{
+	if (target == GL_TEXTURE_2D && pname == GL_TEXTURE_MAX_ANISOTROPY)
+		return;
+
+	if (pname == GL_TEXTURE_WRAP_S && (GLuint)param == GL_CLAMP)
+	{
+		return glTexParameterf(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	}
+
+	if (pname == GL_TEXTURE_WRAP_T && (GLuint)param == GL_CLAMP)
+	{
+		return glTexParameterf(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+
+	glTexParameterf(target, pname, param);
+}
+
+GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap)
+{
+	if (cap == GL_FOG)
+		return false;
+
+	return glIsEnabled(cap);
+}
+
+void __stdcall CoreProfile_glBegin(int GLPrimitiveCode)
+{
+
+}
+
+void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures)
+{
+	for (GLsizei i = 0; i < n; ++i)
+	{
+		textures[i] = GL_GenTexture();
+	}
+}
+
+void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc)
+{
+	if (!strcmp(proc, "glGetString"))
+		return CoreProfile_glGetString;
+	if (!strcmp(proc, "glAlphaFunc"))
+		return CoreProfile_glAlphaFunc;
+	if (!strcmp(proc, "glEnable"))
+		return CoreProfile_glEnable;
+	if (!strcmp(proc, "glDisable"))
+		return CoreProfile_glDisable;
+	if (!strcmp(proc, "glIsEnabled"))
+		return CoreProfile_glIsEnabled;
+	if (!strcmp(proc, "glShadeModel"))
+		return CoreProfile_glShadeModel;
+	if (!strcmp(proc, "glTexEnvf"))
+		return CoreProfile_glTexEnvf;
+	if (!strcmp(proc, "glTexParameterf"))
+		return CoreProfile_glTexParameterf;
+	if (!strcmp(proc, "glBegin"))
+		return CoreProfile_glBegin;
+	if (!strcmp(proc, "glColor4f"))
+		return CoreProfile_glColor4f;
+	if (!strcmp(proc, "glColor4ub"))
+		return CoreProfile_glColor4ub;
+
+	return gPrivateFuncs.SDL_GL_GetProcAddress(proc);
+}
+
+void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc)
+{
+	if (!strcmp(proc, "glGetString"))
+		return CoreProfile_glGetString;
+	if (!strcmp(proc, "glAlphaFunc"))
+		return CoreProfile_glAlphaFunc;
+	if (!strcmp(proc, "glEnable"))
+		return CoreProfile_glEnable;
+	if (!strcmp(proc, "glDisable"))
+		return CoreProfile_glDisable;
+	if (!strcmp(proc, "glIsEnabled"))
+		return CoreProfile_glIsEnabled;
+	if (!strcmp(proc, "glShadeModel"))
+		return CoreProfile_glShadeModel;
+	if (!strcmp(proc, "glTexEnvf"))
+		return CoreProfile_glTexEnvf;
+	if (!strcmp(proc, "glTexParameterf"))
+		return CoreProfile_glTexParameterf;
+	if (!strcmp(proc, "glBegin"))
+		return CoreProfile_glBegin;
+	if (!strcmp(proc, "glColor4f"))
+		return CoreProfile_glColor4f;
+	if (!strcmp(proc, "glColor4ub"))
+		return CoreProfile_glColor4ub;
+
+	return GetProcAddress(hModule, proc);
+}
+
+int __cdecl CoreProfile_GL_SetAttribute(int attr, int value)
+{
+	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
+	}
+	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
+	{
+		//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
+	}
+	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
+	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
+	}
+
+	if (attr == SDL_GL_ALPHA_SIZE && value == 0)
+	{
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 4);
+		gPrivateFuncs.SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	}
+
+	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
+}
+
+void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags)
+{
+	flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	flags &= ~SDL_WINDOW_RESIZABLE;
+
+	return gPrivateFuncs.SDL_CreateWindow(title, x, y, w, h, flags);
+}
+
+int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
+{
+	if (!strcmp(extension, "GL_ARB_texture_rectangle"))
+		return 0;
+	if (!strcmp(extension, "GL_NV_texture_rectangle"))
+		return 0;
+	if (!strcmp(extension, "GL_EXT_framebuffer_multisample"))
+		return 0;
+
+	return gPrivateFuncs.SDL_GL_ExtensionSupported(extension);
+}
+
 void InitializeGraphicEngine(void *window)
 {
 	if (!gPrivateFuncs.SDL_GL_SetAttribute)
@@ -4905,7 +5127,7 @@ void InitializeGraphicEngine(void *window)
 
 		int contextAttribs[] = {
 		   WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-		   WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+		   WGL_CONTEXT_MINOR_VERSION_ARB, 4,
 		   WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 		   WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 		   0
@@ -4934,9 +5156,9 @@ void InitializeGraphicEngine(void *window)
 		return;
 	}
 
-	if (!GLEW_VERSION_4_3)
+	if (!GLEW_VERSION_4_4)
 	{
-		Sys_Error("OpenGL 4.3 is not supported!\n");
+		Sys_Error("OpenGL 4.4 is not supported!\n");
 		return;
 	}
 
@@ -4947,8 +5169,6 @@ void InitializeGraphicEngine(void *window)
 	}
 
 	g_pMetaHookAPI->HookCmd("gl_log", GL_LogOverride);
-
-	MessageBoxA(NULL, "0", "0", MB_OK);
 }
 
 qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)

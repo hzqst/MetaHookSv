@@ -49,6 +49,7 @@
 #include "gl_cvar.h"
 #include "gl_portal.h"
 #include "gl_entity.h"
+#include "gl_ringbuffer.h"
 
 #define MAX_SAVESTACK 16
 
@@ -111,6 +112,10 @@ extern RECT *window_rect;
 
 extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
 extern int(*g_iVertexBufferEntriesUsed);
+
+extern CPMBRingBuffer g_TexturedRectVertexBuffer;
+extern CPMBRingBuffer g_FilledRectVertexBuffer;
+extern CPMBRingBuffer g_RectInstanceBuffer;
 
 extern RECT* g_ScissorRect;
 extern bool* g_bScissor;
@@ -525,9 +530,25 @@ void __stdcall triapi_glEnd();
 void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a);
 void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 HGLRC __stdcall CoreProfile_qwglCreateContext(HDC hDC);
+const GLubyte* __stdcall CoreProfile_glGetString(GLenum e);
+void __stdcall CoreProfile_glAlphaFunc(GLenum func, GLclampf ref);
+void __stdcall CoreProfile_glEnable(GLenum cap);
+void __stdcall CoreProfile_glDisable(GLenum cap);
+void __stdcall CoreProfile_glShadeModel(GLenum mode);
+void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param);
+void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param);
+GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap);
+void __stdcall CoreProfile_glBegin(int GLPrimitiveCode);
+void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
+void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc);
+void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc);
+int __cdecl CoreProfile_GL_SetAttribute(int attr, int value);
+void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags);
+int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension);
 
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
+void GL_LoadFilterTexture(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
