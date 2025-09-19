@@ -1217,7 +1217,7 @@ void triapi_End()
 		gTriAPICommand.hVAO = GL_GenVAO();
 
 		// 初始化triapi环形分配器
-		if (g_TriAPIVertexBuffer.Initialize(64 * 1024 * 1024)) // 64MB
+		if (g_TriAPIVertexBuffer.Initialize(128 * 1024 * 1024)) // 128MB
 		{
 			// 使用静态VAO配置（offset=0）
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
