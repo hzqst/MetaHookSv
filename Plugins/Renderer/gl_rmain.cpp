@@ -5194,6 +5194,14 @@ void GL_Init(void)
 {
 	gPrivateFuncs.GL_Init();
 
+	auto err = glewInit();
+
+	if (GLEW_OK != err)
+	{
+		Sys_Error("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
+
 	//Just like what GL_SetMode does
 	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
 
