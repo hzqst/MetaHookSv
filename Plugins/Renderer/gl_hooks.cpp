@@ -120,6 +120,12 @@
 #define GL_SETMODE_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x45\x08\x2A\x8B\x5D\x1C"
 #define GL_SETMODE_SIG_SVENGINE "\x81\xEC\x2A\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x6C\x01\x00\x00\x2A\x8B\x9C\x24\x78\x01\x00\x00"
 
+#define GL_SHUTDOWN_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x8B\x02\x51\x50\xE8"
+#define GL_SHUTDOWN_SIG_NEW2 GL_SETMODE_SIG_BLOB
+#define GL_SHUTDOWN_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x8B\x02\x51\x50\xE8"
+#define GL_SHUTDOWN_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x30\xE8"
+#define GL_SHUTDOWN_SIG_SVENGINE GL_SHUTDOWN_SIG_HL25
+
 #define GL_SET2D_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
 #define GL_SET2D_SIG_NEW2 GL_SET2D_SIG_BLOB
 #define GL_SET2D_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
@@ -828,6 +834,86 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 		Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
 	}
+}
+
+void Engine_FillAddress_GL_Shutdown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.GL_Shutdown)
+		return;
+
+	PUCHAR GL_Shutdown_VA{};
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		GL_Shutdown_VA = (PUCHAR)Search_Pattern(GL_SHUTDOWN_SIG_SVENGINE, DllInfo);
+
+		if (GL_Shutdown_VA)
+		{
+			GL_Shutdown_VA += Sig_Length(GL_SHUTDOWN_SIG_SVENGINE) - 1;
+		}
+
+		if (GL_Shutdown_VA)
+		{
+			gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))ConvertDllInfoSpace(GL_Shutdown_VA, DllInfo, RealDllInfo);
+			gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))ConvertDllInfoSpace(GetCallAddress(GL_Shutdown_VA), DllInfo, RealDllInfo);
+		}
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		GL_Shutdown_VA = (PUCHAR)Search_Pattern(GL_SHUTDOWN_SIG_HL25, DllInfo);
+
+		if (GL_Shutdown_VA)
+		{
+			GL_Shutdown_VA += Sig_Length(GL_SHUTDOWN_SIG_HL25) - 1;
+		}
+
+		if (GL_Shutdown_VA)
+		{
+			gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))ConvertDllInfoSpace(GL_Shutdown_VA, DllInfo, RealDllInfo);
+			gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))ConvertDllInfoSpace(GetCallAddress(GL_Shutdown_VA), DllInfo, RealDllInfo);
+		}
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		GL_Shutdown_VA = (PUCHAR)Search_Pattern(GL_SHUTDOWN_SIG_NEW, DllInfo);
+		if (GL_Shutdown_VA)
+		{
+			GL_Shutdown_VA += Sig_Length(GL_SHUTDOWN_SIG_NEW) - 1;
+		}
+		else
+		{
+			if (!GL_Shutdown_VA)
+				GL_Shutdown_VA = (PUCHAR)Search_Pattern(GL_SHUTDOWN_SIG_NEW2, DllInfo);
+
+			if (GL_Shutdown_VA)
+			{
+				GL_Shutdown_VA += Sig_Length(GL_SHUTDOWN_SIG_NEW2) - 1;
+			}
+		}
+
+		if (GL_Shutdown_VA)
+		{
+			gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))ConvertDllInfoSpace(GL_Shutdown_VA, DllInfo, RealDllInfo);
+			gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))ConvertDllInfoSpace(GetCallAddress(GL_Shutdown_VA), DllInfo, RealDllInfo);
+		}
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		GL_Shutdown_VA = (PUCHAR)Search_Pattern(GL_SHUTDOWN_SIG_BLOB, DllInfo);
+
+		if (GL_Shutdown_VA)
+		{
+			GL_Shutdown_VA += Sig_Length(GL_SHUTDOWN_SIG_BLOB) - 1;
+		}
+
+		if (GL_Shutdown_VA)
+		{
+			gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown = (decltype(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown))ConvertDllInfoSpace(GL_Shutdown_VA, DllInfo, RealDllInfo);
+			gPrivateFuncs.GL_Shutdown = (decltype(gPrivateFuncs.GL_Shutdown))ConvertDllInfoSpace(GetCallAddress(GL_Shutdown_VA), DllInfo, RealDllInfo);
+		}
+	}
+
+	Sig_FuncNotFound(GL_Shutdown);
 }
 
 void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -12090,6 +12176,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_GL_SetMode(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_GL_Shutdown(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_R_PolyBlend(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_S_ExtraUpdate(DllInfo, RealDllInfo);
@@ -12308,6 +12396,9 @@ void Engine_InstallHooks(void)
 	{
 		Install_InlineHook(GL_SetMode);
 	}
+
+	g_pMetaHookAPI->InlinePatchRedirectBranch(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown, GL_Shutdown, NULL);
+
 	Install_InlineHook(GL_Bind);
 	Install_InlineHook(GL_Set2D);
 	Install_InlineHook(GL_Finish2D);

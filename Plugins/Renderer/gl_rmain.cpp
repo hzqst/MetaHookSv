@@ -5238,10 +5238,16 @@ void GL_Init(void)
 	GL_InitShaders();
 }
 
-void GL_Shutdown(void)
+void GL_Shutdown(void* window, HDC pmaindc, HGLRC pbaseRC)
 {
 	GL_FreeShaders();
 	GL_FreeFrameBuffers();
+
+	if (!gPrivateFuncs.SDL_GL_SetAttribute)
+	{
+		wglMakeCurrent(pmaindc, nullptr);
+		wglDeleteContext(pbaseRC);
+	}
 }
 
 void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, void* window)

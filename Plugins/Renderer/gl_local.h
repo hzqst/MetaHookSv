@@ -452,7 +452,7 @@ void R_DrawEntitiesOnList(void);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AddTEntity(cl_entity_t *pEnt);
 void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
-void GL_Shutdown(void);
+void GL_Shutdown(void* window, HDC pmaindc, HGLRC pbaseRC);
 void GL_Init(void);
 qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC);
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);

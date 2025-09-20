@@ -1927,8 +1927,6 @@ void HUD_Shutdown(void)
 
 	R_Shutdown();
 
-	GL_Shutdown();
-
 	UtilThreadTask_Shutdown();
 }
 
