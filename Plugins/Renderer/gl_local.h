@@ -524,6 +524,10 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar);
 void GL_BeginDebugGroup(const char* name);
 void GL_BeginDebugGroupFormat(const char* fmt, ...);
 void GL_EndDebugGroup();
+void GL_SetTextureDebugName(GLuint textureId, const char* name);
+void GL_SetTextureDebugNameFormat(GLuint textureId, const char* fmt, ...);
+void GL_SetFrameBufferDebugName(GLuint framebufferId, const char* name);
+void GL_SetFrameBufferDebugNameFormat(GLuint framebufferId, const char* fmt, ...);
 
 void __stdcall triapi_glBegin(int GLPrimitiveCode);
 void __stdcall triapi_glEnd();

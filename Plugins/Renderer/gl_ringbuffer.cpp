@@ -18,6 +18,8 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize)
 
 	m_RingVBO = GL_GenBuffer();
 
+	GL_BindVAO(0);
+
 	glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
 
 	// 创建persistent mapped buffer
@@ -46,6 +48,8 @@ void CPMBRingBuffer::Shutdown()
 
 	if (m_MappedPtr)
 	{
+		GL_BindVAO(0);
+
 		glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);

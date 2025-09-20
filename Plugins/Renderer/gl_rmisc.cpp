@@ -545,12 +545,7 @@ void GL_GenFrameBuffer(FBO_Container_t *s, const char *szFrameBufferName)
 	strncpy(s->szFrameBufferName, szFrameBufferName, sizeof(s->szFrameBufferName) - 1);
 	s->szFrameBufferName[sizeof(s->szFrameBufferName) - 1] = 0;
 
-#if defined(_DEBUG)
-	if (glObjectLabel)
-	{
-		glObjectLabel(GL_FRAMEBUFFER, s->s_hBackBufferFBO, -1, szFrameBufferName);
-	}
-#endif
+	GL_SetFrameBufferDebugName(s->s_hBackBufferFBO, szFrameBufferName);
 }
 
 const char* GL_GetFrameBufferName(FBO_Container_t* s)
@@ -585,14 +580,7 @@ void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	glBindTexture(tex2D, 0);
 
-#if defined(_DEBUG)
-	if (glObjectLabel)
-	{
-		char szObjectName[256]{};
-		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferTex", GL_GetFrameBufferName(s));
-		glObjectLabel(GL_TEXTURE, s->s_hBackBufferTex, -1, szObjectName);
-	}
-#endif
+	GL_SetTextureDebugNameFormat(s->s_hBackBufferTex, "%s - s_hBackBufferTex", GL_GetFrameBufferName(s));
 }
 
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
@@ -629,14 +617,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	glBindTexture(tex2D, 0);
 
-#if defined(_DEBUG)
-	if (glObjectLabel)
-	{
-		char szObjectName[256]{};
-		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferDepthTex", GL_GetFrameBufferName(s));
-		glObjectLabel(GL_TEXTURE, s->s_hBackBufferDepthTex, -1, szObjectName);
-	}
-#endif
+	GL_SetTextureDebugNameFormat(s->s_hBackBufferDepthTex, "%s - s_hBackBufferDepthTex", GL_GetFrameBufferName(s));
 
 	s->iTextureDepthFormat = iInternalFormat;
 
@@ -651,14 +632,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-#if defined(_DEBUG)
-		if (glObjectLabel)
-		{
-			char szObjectName[256]{};
-			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
-			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
-		}
-#endif
+		GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
 	}
 	else if (iInternalFormat == GL_DEPTH32F_STENCIL8 && glTextureView)
 	{
@@ -671,14 +645,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-#if defined(_DEBUG)
-		if (glObjectLabel)
-		{
-			char szObjectName[256]{};
-			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
-			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
-		}
-#endif
+		GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
 	}
 	else
 	{
@@ -803,23 +770,17 @@ void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum)
 
 void GL_ClearColor(vec4_t color)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_ClearColor");
-#endif
 
 	glClearColor(color[0], color[1], color[2], color[3]);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_ClearDepth(float depth)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_ClearDepthStencil");
-#endif
 
 	glDepthMask(GL_TRUE);
 
@@ -827,16 +788,12 @@ void GL_ClearDepth(float depth)
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_ClearDepthStencil");
-#endif
 
 	glStencilMask(stencilmask);
 	glDepthMask(GL_TRUE);
@@ -848,16 +805,12 @@ void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 
 	glStencilMask(0);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_ClearColorDepthStencil");
-#endif
 
 	glStencilMask(stencilmask);
 	glDepthMask(GL_TRUE);
@@ -870,71 +823,53 @@ void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int st
 
 	glStencilMask(0);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_ClearStencil(int mask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_ClearStencil");
-#endif
 
 	glStencilMask(mask);
 	glClearStencil(0);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glStencilMask(0);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_BeginStencilCompareEqual(int ref, int mask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_BeginStencilCompareEqual");
-#endif
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_EQUAL, ref, mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_BeginStencilCompareNotEqual(int ref, int mask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_BeginStencilCompareNotEqual");
-#endif
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_NOTEQUAL, ref, mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_BeginStencilWrite(int ref, int write_mask)
 {
-#ifdef _DEBUG
 	GL_BeginDebugGroup("GL_BeginStencilWrite");
-#endif
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(write_mask);
 	glStencilFunc(GL_ALWAYS, ref, write_mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-#ifdef _DEBUG
 	GL_EndDebugGroup();
-#endif
 }
 
 void GL_EndStencil()
@@ -1345,4 +1280,56 @@ void GL_EndDebugGroup()
 	if (glPopDebugGroup)
 		glPopDebugGroup();
 #endif
+}
+
+void GL_SetTextureDebugName(GLuint textureId, const char* name)
+{
+	if (glObjectLabel)
+	{
+		glObjectLabel(GL_TEXTURE, textureId, -1, name);
+	}
+}
+
+void GL_SetTextureDebugNameFormat(GLuint textureId, const char* fmt, ...)
+{
+	char buf[256]{};
+
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	_vsnprintf(buf, sizeof(buf) - 1, fmt, argptr);
+	va_end(argptr);
+
+	buf[sizeof(buf) - 1] = 0;
+
+	if (glObjectLabel)
+	{
+		glObjectLabel(GL_TEXTURE, textureId, -1, buf);
+	}
+}
+
+void GL_SetFrameBufferDebugName(GLuint framebufferId, const char* name)
+{
+	if (glObjectLabel)
+	{
+		glObjectLabel(GL_FRAMEBUFFER, framebufferId, -1, name);
+	}
+}
+
+void GL_SetFrameBufferDebugNameFormat(GLuint framebufferId, const char* fmt, ...)
+{
+	char buf[256]{};
+
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	_vsnprintf(buf, sizeof(buf) - 1, fmt, argptr);
+	va_end(argptr);
+
+	buf[sizeof(buf) - 1] = 0;
+
+	if (glObjectLabel)
+	{
+		glObjectLabel(GL_FRAMEBUFFER, framebufferId, -1, buf);
+	}
 }

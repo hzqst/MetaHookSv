@@ -1217,7 +1217,7 @@ void triapi_End()
 		gTriAPICommand.hVAO = GL_GenVAO();
 
 		// 初始化triapi环形分配器
-		if (g_TriAPIVertexBuffer.Initialize(128 * 1024 * 1024)) // 128MB
+		if (g_TriAPIVertexBuffer.Initialize(16 * 1024 * 1024)) // 16MB
 		{
 			// 使用静态VAO配置（offset=0）
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
@@ -2070,7 +2070,11 @@ void R_PolyBlend(void)
 
 		vec4_t drawColor4v = { color[0] / 255.0f, color[1] / 255.0f , color[2] / 255.0f , color[3] / 255.0f };
 
+		GL_Set2D();
+
 		R_DrawFilledQuad(0, 0, glwidth, glheight, drawColor4v, ProgramState, "R_PolyBlend");
+
+		GL_Finish2D();
 	}
 }
 

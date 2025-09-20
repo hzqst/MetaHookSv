@@ -964,12 +964,14 @@ void Engine_FillAddress_R_PolyBlend(const mh_dll_info_t& DllInfo, const mh_dll_i
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_PolyBlend_SearchContext*)context;
 
-			if (address[0] == 0xE8 && instCount < 10)
+			if (!gPrivateFuncs.V_FadeAlpha &&
+				address[0] == 0xE8 && instCount < 10)
 			{
 				gPrivateFuncs.V_FadeAlpha = (decltype(gPrivateFuncs.V_FadeAlpha))ConvertDllInfoSpace((PVOID) pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
 			}
 
-			if (pinst->id == X86_INS_TEST &&
+			if (!cl_sf &&
+				pinst->id == X86_INS_TEST &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
@@ -12388,6 +12390,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 void Engine_InstallHooks(void)
 {
 	Install_InlineHook(GL_Init); 
+
 	if (gPrivateFuncs.GL_SetModeLegacy)
 	{
 		Install_InlineHook(GL_SetModeLegacy);

@@ -435,13 +435,13 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	{
 		g_DrawTexturedRectCommand.hVAO = GL_GenVAO();
 
-		if (!g_TexturedRectVertexBuffer.Initialize(64 * 1024 * 1024))
+		if (!g_TexturedRectVertexBuffer.Initialize(16 * 1024 * 1024))
 		{
 			Sys_Error("R_DrawTexturedRect: Failed to initialize g_TexturedRectVertexBuffer.\n");
 			return;
 		}
 
-		if (!g_RectInstanceBuffer.Initialize(32 * 1024 * 1024))
+		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024))
 		{
 			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectInstanceBuffer.\n");
 			return;
@@ -578,13 +578,13 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 		g_DrawFilledRectCommand.hVAO = GL_GenVAO();
 
 		// 初始化filled rect环形分配器
-		if (!g_FilledRectVertexBuffer.Initialize(64 * 1024 * 1024))
+		if (!g_FilledRectVertexBuffer.Initialize(16 * 1024 * 1024))
 		{
 			Sys_Error("R_DrawFilledRect: Failed to initialize g_FilledRectVertexBuffer.\n");
 			return;
 		}
 
-		if (!g_RectInstanceBuffer.Initialize(32 * 1024 * 1024))
+		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024))
 		{
 			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectInstanceBuffer.\n");
 			return;

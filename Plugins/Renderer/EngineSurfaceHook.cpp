@@ -596,14 +596,7 @@ void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-#if defined(_DEBUG)
-		if (glObjectLabel)
-		{
-			char szObjectName[256]{};
-			snprintf(szObjectName, sizeof(szObjectName), "drawSetTextureRGBA - %d", textureId);
-			glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
-		}
-#endif
+		GL_SetTextureDebugNameFormat(textureId, "drawSetTextureRGBA - %d", textureId);
 	}
 }
 
@@ -679,13 +672,7 @@ void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0,
 
 	(*currenttexture) = staticTextureCurrent->_id;
 
-#ifdef _DEBUG
-	char szDebugName[256]{};
-	snprintf(szDebugName, sizeof(szDebugName), "drawTexturedRect - %d", staticTextureCurrent->_id);
-	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, szDebugName);
-#else
 	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawTexturedRect");
-#endif
 }
 
 void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int y0, int x1, int y1)
@@ -853,14 +840,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					GL_Bind(textureId);
 					GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
 
-#if defined(_DEBUG)
-					if (glObjectLabel)
-					{
-						char szObjectName[256]{};
-						snprintf(szObjectName, sizeof(szObjectName), "enginesurface - %s", filename);
-						glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
-					}
-#endif
+					GL_SetTextureDebugNameFormat(textureId, "enginesurface - %s", filename);
 				}
 
 				return true;
@@ -889,14 +869,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					GL_Bind(textureId);
 					GL_UploadUncompressedTexture(ctx, GL_TEXTURE_2D);
 
-#if defined(_DEBUG)
-					if (glObjectLabel)
-					{
-						char szObjectName[256]{};
-						snprintf(szObjectName, sizeof(szObjectName), "enginesurface - %s", filename);
-						glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
-					}
-#endif
+					GL_SetTextureDebugNameFormat(textureId, "enginesurface - %s", filename);
 				}
 
 				return true;
@@ -1028,14 +1001,7 @@ void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, wide, tall, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
 
-#if defined(_DEBUG)
-		if (glObjectLabel)
-		{
-			char szObjectName[256]{};
-			snprintf(szObjectName, sizeof(szObjectName), "drawSetTextureBGRA - %d", textureId);
-			glObjectLabel(GL_TEXTURE, textureId, -1, szObjectName);
-		}
-#endif
+		GL_SetTextureDebugNameFormat(textureId, "drawSetTextureBGRA - %d", textureId);
 	}
 }
 

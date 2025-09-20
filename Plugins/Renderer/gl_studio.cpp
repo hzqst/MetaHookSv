@@ -2224,11 +2224,11 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 
 	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
 	{
-		StudioUBO.r_scale = (*currententity)->curstate.renderamt * 0.05f;
+		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		StudioUBO.r_scale = pRenderData->CelshadeControl.outline_size.GetValue() * 0.05f;
+		StudioUBO.r_scale = max(pRenderData->CelshadeControl.outline_size.GetValue() * 0.05f, 0.05f);
 	}
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
