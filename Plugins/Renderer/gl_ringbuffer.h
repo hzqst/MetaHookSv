@@ -5,9 +5,9 @@
 class CPMBRingBuffer
 {
 private:
-	GLuint m_RingVBO;
-	void* m_MappedPtr;
-	size_t m_BufferSize;
+	GLuint m_RingVBO{};
+	//void* m_MappedPtr;
+	size_t m_BufferSize{};
 
 	// 简化的 Head/Tail 指针机制
 	size_t m_Head;          // 写入指针
@@ -40,6 +40,7 @@ public:
 	bool Initialize(size_t bufferSize); // 8MB default
 	void Shutdown();
 	bool Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation);
+	void Commit(CPMBRingBuffer::Allocation& allocation);
 	void BeginFrame();
 	void EndFrame();
 	void Reset();

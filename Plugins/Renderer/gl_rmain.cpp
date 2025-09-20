@@ -1257,7 +1257,7 @@ void triapi_End()
 
 	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(triapivertex_t));
 
-	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+	g_TriAPIVertexBuffer.Commit(vertexAllocation);
 
 	GL_BindVAO(gTriAPICommand.hVAO);
 

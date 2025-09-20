@@ -4,7 +4,7 @@
 bool CPMBRingBuffer::Initialize(size_t bufferSize)
 {
 	//Already initialized
-	if (m_MappedPtr)
+	if (m_RingVBO)
 		return true;
 
 	m_BufferSize = bufferSize;
@@ -22,14 +22,11 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize)
 
 	// 创建persistent mapped buffer
 	glBufferStorage(GL_ARRAY_BUFFER, m_BufferSize, nullptr,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-	m_MappedPtr = glMapBufferRange(GL_ARRAY_BUFFER, 0, m_BufferSize,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	return m_MappedPtr != nullptr;
+	return true;
 }
 
 void CPMBRingBuffer::Shutdown()
@@ -44,14 +41,6 @@ void CPMBRingBuffer::Shutdown()
 	}
 	m_CompletedFrames.clear();
 
-	if (m_MappedPtr)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		m_MappedPtr = nullptr;
-	}
-
 	if (m_RingVBO)
 	{
 		GL_DeleteBuffer(m_RingVBO);
@@ -62,6 +51,22 @@ void CPMBRingBuffer::Shutdown()
 	m_Tail = 0;
 	m_UsedSize = 0;
 	m_CurrFrameSize = 0;
+}
+
+void CPMBRingBuffer::Commit(CPMBRingBuffer::Allocation& allocation)
+{
+	if (glUnmapNamedBuffer)
+	{
+		glUnmapNamedBuffer(m_RingVBO);
+	}
+	else
+	{
+		// We must unbind VAO because otherwise we will break the bindings
+		GL_BindVAO(0);
+		glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 }
 
 bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation)
@@ -95,10 +100,21 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 			size_t offset = alignedHead;
 			size_t adjustedSize = size + (alignedHead - m_Head);
 
-			allocation.ptr = (char*)m_MappedPtr + offset;
-			allocation.offset = offset;
-			allocation.size = size;
-			allocation.valid = true;
+			if (glMapNamedBufferRange)
+			{
+				allocation.ptr = glMapNamedBufferRange(m_RingVBO, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+				allocation.offset = offset;
+				allocation.size = size;
+				allocation.valid = true;
+			}
+			else
+			{
+				// We must unbind VAO because otherwise we will break the bindings
+				GL_BindVAO(0);
+				glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
+				glMapBufferRange(GL_ARRAY_BUFFER, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			}
 
 			m_Head += adjustedSize;
 			m_UsedSize += adjustedSize;
@@ -111,10 +127,22 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 			// 环绕分配：从缓冲区开头分配
 			size_t addSize = (m_BufferSize - m_Head) + size;
 
-			allocation.ptr = (char*)m_MappedPtr;
-			allocation.offset = 0;
-			allocation.size = size;
-			allocation.valid = true;
+
+			if (glMapNamedBufferRange)
+			{
+				allocation.ptr = glMapNamedBufferRange(m_RingVBO, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+				allocation.offset = 0;
+				allocation.size = size;
+				allocation.valid = true;
+			}
+			else
+			{
+				// We must unbind VAO because otherwise we will break the bindings
+				GL_BindVAO(0);
+				glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
+				glMapBufferRange(GL_ARRAY_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			}
 
 			m_UsedSize += addSize;
 			m_CurrFrameSize += addSize;
@@ -129,10 +157,21 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		size_t offset = alignedHead;
 		size_t adjustedSize = size + (alignedHead - m_Head);
 
-		allocation.ptr = (char*)m_MappedPtr + offset;
-		allocation.offset = offset;
-		allocation.size = size;
-		allocation.valid = true;
+		if (glMapNamedBufferRange)
+		{
+			allocation.ptr = glMapNamedBufferRange(m_RingVBO, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+			allocation.offset = offset;
+			allocation.size = size;
+			allocation.valid = true;
+		}
+		else
+		{
+			// We must unbind VAO because otherwise we will break the bindings
+			GL_BindVAO(0);
+			glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
+			glMapBufferRange(GL_ARRAY_BUFFER, offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
 
 		m_Head += adjustedSize;
 		m_UsedSize += adjustedSize;
