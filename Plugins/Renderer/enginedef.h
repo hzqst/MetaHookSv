@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bspfile.h"
+#include "wrect.h"
 
 #define	MAX_QPATH 64
 
@@ -894,3 +895,80 @@ typedef struct extra_player_info_czds_s
 }extra_player_info_czds_t;
 
 static_assert(sizeof(extra_player_info_czds_t) == 0x1C, "Size check");
+
+typedef struct bimage_s
+{
+	byte* buffer;
+	int x, y, width, height;
+	bool scaled;
+	bool unk;
+}bimage_t;
+
+static_assert(sizeof(bimage_t) == 24, "Size check");
+
+class EngineSurfaceTexture
+{
+public:
+	int     _id{};
+	int     _wide{};
+	int     _tall{};
+	float	_s0{};
+	float	_t0{};
+	float	_s1{};
+	float	_t1{};
+	char	_name[256]{};
+};
+
+typedef struct EngineSurfaceVertexBuffer_s
+{
+	float texcoords[2];
+	float vertex[2];
+} EngineSurfaceVertexBuffer_t;
+
+static_assert(sizeof(EngineSurfaceVertexBuffer_t) == 16);
+
+typedef struct AdditiveRectVertexBuffer_s
+{
+	float vertex[2];
+	float color[4];
+} AdditiveRectVertexBuffer_t;
+
+static_assert(sizeof(AdditiveRectVertexBuffer_t) == 24);
+
+#define MAXVERTEXBUFFERS (64 * 4)
+
+typedef struct TCoordRect_s
+{
+	float s0;
+	float t0;
+	float s1;
+	float t1;
+} TCoordRect;
+
+typedef struct qpic_s
+{
+	int			width, height;
+	byte		data[4];			// variably sized
+} qpic_t;
+
+typedef struct
+{
+	int		texnum;
+	float	sl, tl, sh, th;
+} glpic_t;
+
+typedef struct
+{
+	int percent;
+	int destcolor[3];
+}cshift_t;
+
+#include <screenfade.h>
+
+#define FFADE_IN			0x0000		// Just here so we don't pass 0 into the function
+#define FFADE_OUT			0x0001		// Fade out (not in)
+#define FFADE_MODULATE		0x0002		// Modulate (don't blend)
+#define FFADE_STAYOUT		0x0004		// ignores the duration, stays faded out until new ScreenFade message received
+#define FFADE_LONGFADE		0x0008		// used to indicate the fade can be longer than 16 seconds (added for czero)
+
+typedef struct vrect_s vrect_t;

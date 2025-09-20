@@ -45,7 +45,6 @@ void main()
 #if defined(LEGACY_ENABLED)
 
 	vFinalColor.xyz = texture(baseTex, v_diffusetexcoord.xy).xyz;
-	//vFinalColor.xyz = vec3(1, 1, 1);//test
 	vFinalColor.a = flWaterColorAlpha;
 
 	//The basetexture of water is in TexGamme Space and will need to convert to Linear Space

@@ -20,8 +20,7 @@ void R_DrawSkyBox(void)
 	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
 		return;
 
-	glDisable(GL_BLEND);
-	glDepthMask(GL_FALSE);
+	GL_BeginDebugGroup("R_DrawSkyBox");
 
 	entity_ubo_t EntityUBO;
 
@@ -90,14 +89,19 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
+	glDepthMask(GL_FALSE);
+	glDisable(GL_BLEND);
+
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
+
+	GL_BindVAO(r_empty_vao);
 
 	if (r_detailskytextures->value && g_WorldSurfaceRenderer.vSkyboxTextureId[6])
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[6 + i]);
+			GL_BindTextureUnit(0, GL_TEXTURE_2D, g_WorldSurfaceRenderer.vSkyboxTextureId[6 + i]);
 			glDrawArrays(GL_TRIANGLES, 6 * i, 6);
 		}
 	}
@@ -105,14 +109,20 @@ void R_DrawSkyBox(void)
 	{
 		for (int i = 0; i < 6; ++i)
 		{
-			GL_Bind(g_WorldSurfaceRenderer.vSkyboxTextureId[i]);
+			GL_BindTextureUnit(0, GL_TEXTURE_2D, g_WorldSurfaceRenderer.vSkyboxTextureId[i]);
 			glDrawArrays(GL_TRIANGLES, 6 * i, 6);
 		}
 	}
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
 	GL_EndStencil();
 
 	glDepthMask(GL_TRUE);
+
+	GL_EndDebugGroup();
 }

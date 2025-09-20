@@ -44,7 +44,7 @@ public:
 
 	std::vector<decal_t *> Decals;
 	std::vector<std::shared_ptr<CWaterSurfaceModel>> RenderWaterModels;
-	std::vector<water_reflect_cache_t *> ReflectCaches;
+	std::vector<CWaterReflectCache *> ReflectCaches;
 	std::vector<int> DeferredStudioPasses;
 };
 

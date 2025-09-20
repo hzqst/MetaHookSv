@@ -3,11 +3,7 @@
 #include <algorithm>
 
 std::unordered_map<program_state_t, sprite_program_t> g_SpriteProgramTable;
-std::unordered_map<program_state_t, legacysprite_program_t> g_LegacySpriteProgramTable;
 std::unordered_map<program_state_t, triapi_program_t> g_TriAPIProgramTable;
-
-int r_sprite_drawcall = 0;
-int r_sprite_polys = 0;
 
 int *particletexture = NULL;
 particle_t **active_particles = NULL;
@@ -105,7 +101,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseSpriteProgram: Failed to load program!");
+		Sys_Error("R_UseSpriteProgram: Failed to load program!");
 	}
 }
 
@@ -145,96 +141,6 @@ void R_LoadSpriteProgramStates(void)
 	R_LoadProgramStateCaches("renderer/shader/sprite_cache.txt", s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName), [](program_state_t state) {
 
 		R_UseSpriteProgram(state, NULL);
-
-	});
-}
-
-void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *progOutput)
-{
-	legacysprite_program_t prog = { 0 };
-
-	auto itor = g_LegacySpriteProgramTable.find(state);
-	if (itor == g_LegacySpriteProgramTable.end())
-	{
-		std::stringstream defs;
-
-		if (state & SPRITE_OIT_BLEND_ENABLED)
-			defs << "#define OIT_BLEND_ENABLED\n";
-
-		if (state & SPRITE_GAMMA_BLEND_ENABLED)
-			defs << "#define GAMMA_BLEND_ENABLED\n";
-
-		if (state & SPRITE_ALPHA_BLEND_ENABLED)
-			defs << "#define ALPHA_BLEND_ENABLED\n";
-
-		if (state & SPRITE_ADDITIVE_BLEND_ENABLED)
-			defs << "#define ADDITIVE_BLEND_ENABLED\n";
-
-		if (state & SPRITE_LINEAR_FOG_ENABLED)
-			defs << "#define LINEAR_FOG_ENABLED\n";
-
-		if (state & SPRITE_EXP_FOG_ENABLED)
-			defs << "#define EXP_FOG_ENABLED\n";
-
-		if (state & SPRITE_EXP2_FOG_ENABLED)
-			defs << "#define EXP2_FOG_ENABLED\n";
-
-		if (state & SPRITE_CLIP_ENABLED)
-			defs << "#define CLIP_ENABLED\n";
-
-		if (state & SPRITE_LERP_ENABLED)
-			defs << "#define LERP_ENABLED\n";
-
-		if (state & SPRITE_LINEAR_FOG_SHIFT_ENABLED)
-			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
-
-		if (state & SPRITE_ALPHA_TEST_ENABLED)
-			defs << "#define ALPHA_TEST_ENABLED\n";
-
-		auto def = defs.str();
-
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\legacysprite_shader.vert.glsl", "renderer\\shader\\legacysprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
-
-		if (prog.program)
-		{
-
-		}
-
-		g_LegacySpriteProgramTable[state] = prog;
-	}
-	else
-	{
-		prog = itor->second;
-	}
-
-	if (prog.program)
-	{
-		GL_UseProgram(prog.program);
-
-		if (progOutput)
-			*progOutput = prog;
-	}
-	else
-	{
-		g_pMetaHookAPI->SysError("R_UseLegacySpriteProgram: Failed to load program!");
-	}
-}
-
-void R_SaveLegacySpriteProgramStates(void)
-{
-	std::vector<program_state_t> states;
-	for (auto &p : g_LegacySpriteProgramTable)
-	{
-		states.emplace_back(p.first);
-	}
-	R_SaveProgramStatesCaches("renderer/shader/legacysprite_cache.txt", states, s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName));
-}
-
-void R_LoadLegacySpriteProgramStates(void)
-{
-	R_LoadProgramStateCaches("renderer/shader/legacysprite_cache.txt", s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName), [](program_state_t state) {
-
-		R_UseLegacySpriteProgram(state, NULL);
 
 	});
 }
@@ -306,17 +212,19 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseTriAPIProgram: Failed to load program!");
+		Sys_Error("R_UseTriAPIProgram: Failed to load program!");
 	}
 }
 
 void R_SaveTriAPIProgramStates(void)
 {
 	std::vector<program_state_t> states;
+
 	for (auto& p : g_TriAPIProgramTable)
 	{
 		states.emplace_back(p.first);
 	}
+
 	R_SaveProgramStatesCaches("renderer/shader/triapi_cache.txt", states, s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName));
 }
 
@@ -326,7 +234,7 @@ void R_LoadTriAPIProgramStates(void)
 
 		R_UseTriAPIProgram(state, NULL);
 
-		});
+	});
 }
 
 void R_InitSprite(void)
@@ -403,69 +311,6 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 //And https://github.com/FWGS/xash3d-fwgs/blob/33da68b013fd9a2c683316758d751308d1a98109/ref/gl/gl_sprite.c#L462
 void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** oldframe, mspriteframe_t** curframe, float *lerp)
 {
-#if 0
-	float	framerate = 10.0f;
-	float	lerpFrac = 0.0f, frame;
-	float	frametime = (1.0f / framerate);
-	int	i, j, iframe, oldf, newf;
-
-	bool fDoInterp = (ent->curstate.effects & EF_NOINTERP) ? false : true;
-
-	if (!fDoInterp || ent->curstate.framerate < 0.0f || pSprite->numframes <= 1)
-	{
-		*oldframe = *curframe = R_GetSpriteFrame(pSprite, ent->curstate.frame);
-		*lerp = lerpFrac;
-		return;
-	}
-	frame = fmax(0.0f, ent->curstate.frame);
-	iframe = (int)ent->curstate.frame;
-
-	if (ent->curstate.framerate > 0.0f)
-	{
-		frametime = (1.0f / ent->curstate.framerate);
-		framerate = ent->curstate.framerate;
-	}
-
-	if (iframe < 0)
-	{
-		iframe = 0;
-	}
-	else if (iframe >= pSprite->numframes)
-	{
-		iframe = pSprite->numframes - 1;
-	}
-
-	oldf = (int)floor(frame - 0.5);
-	newf = (int)ceil(frame - 0.5);
-
-	oldf = oldf % (pSprite->numframes - 1);
-	newf = newf % (pSprite->numframes + 1);
-
-	if (pSprite->frames[iframe].type == SPR_SINGLE)
-	{
-		// frame was changed
-		if (newf != ent->latched.prevframe)
-		{
-			ent->latched.prevanimtime = (*cl_time) + frametime;
-			ent->latched.prevframe = newf;
-			lerpFrac = 0.0f; // reset lerp
-		}
-
-		if (ent->latched.prevanimtime != 0.0f && ent->latched.prevanimtime >= (*cl_time))
-			lerpFrac = (ent->latched.prevanimtime - (*cl_time)) * framerate;
-
-		// compute lerp factor
-		lerpFrac = (int)(10000 * lerpFrac) / 10000.0f;
-		lerpFrac = clamp(1.0f - lerpFrac, 0.0f, 1.0f);
-
-		// get the interpolated frames
-		*oldframe = R_GetSpriteFrame(pSprite, oldf);
-		*curframe = R_GetSpriteFrame(pSprite, newf);
-	}
-
-	*lerp = lerpFrac;
-#endif
-
 	auto frame = (int)ent->curstate.frame;
 	auto lerpFrac = 1.0f;
 
@@ -556,6 +401,8 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 
 void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
+	GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", ent->model ? ent->model->name : "<empty>");
+
 	auto pSpriteVBOData = (sprite_vbo_t *)pSprite->cachespot;
 
 	auto scale = ent->curstate.scale;
@@ -669,9 +516,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		}
 		}
 	}
-
-	//TODO: do in shader?
-	//glEnable(GL_ALPHA_TEST);
 
 	SpriteProgramState |= SPRITE_ALPHA_TEST_ENABLED;
 
@@ -835,38 +679,46 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		glUniform1f(6, math_clamp(lerp, 0.0f, 1.0f));
 	}
 
-	GL_Bind(frame->gl_texturenum);
+	const uint32_t indices [] = {0,1,2,2,3,0};
 
 	if (SpriteProgramState & SPRITE_LERP_ENABLED)
 	{
-		GL_EnableMultitexture();
-		GL_Bind(oldframe->gl_texturenum);
+		GL_BindVAO(r_empty_vao);
 
-		glDrawArrays(GL_QUADS, 0, 4);
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
 
-		GL_Bind(0);
-		GL_DisableMultitexture();
+		GL_BindTextureUnit(1, GL_TEXTURE_2D, oldframe->gl_texturenum);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
+
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+		
+		GL_BindVAO(0);
 	}
 	else
 	{
-		glDrawArrays(GL_QUADS, 0, 4);
+		GL_BindVAO(r_empty_vao);
+
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+		
+		GL_BindVAO(0);
 	}
 
-	GL_Bind(0);
-
-	r_sprite_drawcall++;
-	r_sprite_polys++;
-
 	GL_UseProgram(0);
-
-	//TODO: do in shader??
-	//glDisable(GL_ALPHA_TEST);
 
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 
 	GL_EndStencil();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawSpriteModel(cl_entity_t *ent)

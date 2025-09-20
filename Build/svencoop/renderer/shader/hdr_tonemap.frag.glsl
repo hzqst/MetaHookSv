@@ -2,14 +2,27 @@
 
 #include "common.h"
 
-uniform sampler2D baseTex;
-uniform sampler2D blurTex;
-uniform float blurfactor;
-uniform float darkness;
-in float lum;
+layout(binding=0) uniform sampler2D baseTex;
+layout(binding=1) uniform sampler2D blurTex;
+layout(binding=2) uniform sampler2D lumTex;
+
+layout(location=0) uniform float blurfactor;
+layout(location=1) uniform float darkness;
+layout(location=2) uniform float exposure;
+
 in vec2 texCoord;
 
 layout(location=0) out vec4 out_Color;
+
+float SampleLumTexture()
+{
+	return texture(lumTex, vec2(0.5, 0.5)).x;
+}
+
+float CalcLum()
+{
+	return exposure / max(0.001, SampleLumTexture());
+}
 
 vec3 vignette(vec3 c, vec2 win_bias)
 {
@@ -30,7 +43,7 @@ void main()
 
 	vColor = pow(vColor, vec3(darkness));
 	
-	vec3 L = vColor * lum;
+	vec3 L = vColor * CalcLum();
 
     // exposure
 	vColor = L / (1 + L);

@@ -355,8 +355,8 @@ void GL_BuildLightmaps(void)
 		}
 	}
 
-	GLint maxLayers;
-	glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayers);
+	if (g_WorldSurfaceRenderer.vWorldModels.empty())
+		return;
 
 	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
 
@@ -392,9 +392,9 @@ void GL_BuildLightmaps(void)
 		{
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
 		}
+
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
-	
-	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
@@ -1094,6 +1094,8 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
+	GL_BeginDebugGroup("R_DrawDecals");
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
@@ -1153,25 +1155,6 @@ void R_DrawDecals(cl_entity_t *ent)
 		if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
-		}
-	}
-
-	//Mix shadow if not deferred
-	if (g_WorldSurfaceRenderer.bShadowmapTexture && !R_IsRenderingGBuffer())
-	{
-		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-		if (shadow_numvisedicts[0] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-		}
-		if (shadow_numvisedicts[1] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-		}
-		if (shadow_numvisedicts[2] > 0)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 		}
 	}
 
@@ -1253,12 +1236,11 @@ void R_DrawDecals(cl_entity_t *ent)
 
 		for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
 		{
-			GL_Bind(g_DecalBaseDrawBatch.GLTextureId[i]);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalBaseDrawBatch.GLTextureId[i]);
+
 			glDrawElements(GL_TRIANGLES, g_DecalBaseDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalBaseDrawBatch.StartIndex[i]));
 		}
 
-		r_wsurf_polys += g_DecalBaseDrawBatch.BatchCount;
-		r_wsurf_drawcall += g_DecalBaseDrawBatch.BatchCount;
 	}
 
 	//Draw decals with detail textures
@@ -1268,7 +1250,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		{
 			program_state_t WSurfProgramStateDetail = WSurfProgramState;
 
-			GL_Bind(g_DecalDetailDrawBatch.GLTextureId[i]);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalDetailDrawBatch.GLTextureId[i]);
 
 			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.DetailTextureCaches[i], &WSurfProgramStateDetail);
 
@@ -1281,9 +1263,9 @@ void R_DrawDecals(cl_entity_t *ent)
 			R_EndDetailTexture(WSurfProgramStateDetail);
 		}
 
-		r_wsurf_polys += g_DecalDetailDrawBatch.BatchCount;
-		r_wsurf_drawcall += g_DecalDetailDrawBatch.BatchCount;
 	}
+
+	GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -1300,4 +1282,6 @@ void R_DrawDecals(cl_entity_t *ent)
 	GL_EndStencil();
 
 	(*gDecalSurfCount) = 0;
+
+	GL_EndDebugGroup();
 }

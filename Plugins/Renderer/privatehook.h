@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "qgl.h"
 
 #include <studio.h>
@@ -42,6 +44,12 @@ typedef struct
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
+	qboolean (*GL_SetMode)(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+	qboolean (*GL_SetModeLegacy)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
+	void* Sys_ShutdownGame_call_GL_Shutdown;
+	void (*GL_Shutdown)(void* window, HDC pmaindc, HGLRC pbaseRC);
+	void (*GL_Set2D)(void);
+	void (*GL_Finish2D)(void);
 	void (*GL_BeginRendering)(int* x, int* y, int* width, int* height);
 	void (*GL_EndRendering)(void);
 	void (*EmitWaterPolys)(msurface_t* fa, int direction);
@@ -54,6 +62,7 @@ typedef struct
 	void (*Draw_MiptexTexture)(cachewad_t* wad, byte* data);
 	void (*GL_UnloadTexture)(const char* identifier);
 	void (*GL_UnloadTextures)(void);
+	void (*GL_LoadFilterTexture)(void);
 	texture_t* (*Draw_DecalTexture)(int index);
 	void* (*Draw_CustomCacheGet)(cachewad_t* wad, void* raw, int rawsize, int index);
 	void* (*Draw_CacheGet)(cachewad_t* wad, int index);
@@ -79,6 +88,7 @@ typedef struct
 	void(*S_ExtraUpdate)(void);
 	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
+	int(*V_FadeAlpha)(void);
 	void(*R_DecalShootInternal)(texture_t* ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_ResetLatched)(cl_entity_t* ent, qboolean full_reset);
 	void(*DT_Initialize)(void);
@@ -105,20 +115,81 @@ typedef struct
 	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
-	enginesurface_Texture* (*staticGetTextureById)(int id);
+	void (*Draw_Frame)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameHoles)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameHoles_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameAdditive)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameAdditive_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+	void (*Draw_SpriteFrameGeneric)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+	void (*Draw_SpriteFrameGeneric_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+	void (*Draw_FillRGBA)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*Draw_FillRGBABlend)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*NET_DrawRect)(int x, int y, int w, int h, int r, int g, int b, int a);
+	void (*Draw_Pic)(int x, int y, qpic_t* pic);
+	void (*D_FillRect)(vrect_t* r, unsigned char* color);
+	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
+
+	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+	void(__fastcall* enginesurface_popMakeCurrent)(void* pthis, int);
+	void(__fastcall* enginesurface_drawFilledRect)(void* pthis, int, int x0, int y0, int x1, int y1);
+	void(__fastcall* enginesurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
+	void(__fastcall* enginesurface_drawLine)(void* pthis, int, int x0, int y0, int x1, int y1);
+	void(__fastcall* enginesurface_drawPolyLine)(void* pthis, int, int* px, int* py, int numPoints);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
+	void(__fastcall* enginesurface_drawTexturedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
+	void(__fastcall* enginesurface_drawTexturedRectAdd)(void* pthis, int, int x0, int y0, int x1, int y1);
 	int(__fastcall* enginesurface_createNewTextureID)(void* pthis, int);
+	void(__fastcall* enginesurface_drawPrintCharAdd)(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 	void(__fastcall* enginesurface_drawSetTextureFile)(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
-	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int);
+	void(__fastcall* enginesurface_drawGetTextureSize)(void* pthis, int, int textureId, int& wide, int& tall);
+	bool(__fastcall* enginesurface_isTextureIDValid)(void* pthis, int, int textureID);
+	void(__fastcall* enginesurface_drawSetSubTextureRGBA)(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
 	void(__fastcall* enginesurface_drawFlushText)(void* pthis, int);
-	bool(__fastcall* BaseUISurface_DeleteTextureByID)(void* pthis, int, int textureId);
-	//void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
+	void(__fastcall* enginesurface_drawSetTextureBGRA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+	void(__fastcall* enginesurface_drawUpdateRegionTextureBGRA)(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
+
+	int index_enginesurface_pushMakeCurrent;
+	int index_enginesurface_popMakeCurrent;
+	int index_enginesurface_drawFilledRect;
+	int index_enginesurface_drawOutlinedRect;
+	int index_enginesurface_drawLine;
+	int index_enginesurface_drawPolyLine;
+	int index_enginesurface_drawTexturedPolygon;
+	int index_enginesurface_drawSetTextureRGBA;
+	int index_enginesurface_drawSetTexture;
+	int index_enginesurface_drawTexturedRect;
+	int index_enginesurface_drawTexturedRectAdd;
+	int index_enginesurface_createNewTextureID;
+	int index_enginesurface_drawPrintCharAdd;
+	int index_enginesurface_drawSetTextureFile;
+	int index_enginesurface_drawGetTextureSize;
+	int index_enginesurface_isTextureIDValid;
+	int index_enginesurface_drawSetSubTextureRGBA;
+	int index_enginesurface_drawFlushText;
+	int index_enginesurface_drawSetTextureBGRA;
+	int index_enginesurface_drawUpdateRegionTextureBGRA;
+
+	int offset_enginesurface_drawColor;
+	int offset_enginesurface_drawTextColor;
+
+	int index_BaseUISurface_DrawSetTexture;
+	int offset_BaseUISurface_m_CurrentTextureId;
+
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void* (*Hunk_AllocName)(int size, const char* name);
 	void* (*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 	void (*Host_ClearMemory)(qboolean bQuite);
+	void(__fastcall* CVideoMode_Common_DrawStartupGraphic)(void* videomode, int dummy, void* window);
+	int offset_CVideoMode_Common_m_ImageID_Size;
+	int offset_CVideoMode_Common_m_ImageID;
+	int offset_CVideoMode_Common_m_iBaseResX;
+	int offset_CVideoMode_Common_m_iBaseResY;
+	void(__fastcall* CGame_DrawStartupVideo)(void* pgame, int dummy, const char *filename, void* window);
+
+	//HGLRC (__stdcall* qwglCreateContext)(HDC hDC);
+	void *GL_SetMode_call_qwglCreateContext;
 
 	//Sven Co-op Client DLL
 	void(__fastcall* ClientPortalManager_ResetAll)(void* pthis, int dummy);
@@ -134,15 +205,15 @@ typedef struct
 	void (*R_StudioSetupSkin)(studiohdr_t* ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float* normal, float* src, float* lambert);
-#if 0
-	void (*BuildNormalIndexTable)(void);
-#endif
+
 	void (*BuildGlowShellVerts)(vec3_t* pstudioverts, auxvert_t* pauxverts);
 	void (*R_StudioChrome)(int* pchrome, int bone, vec3_t normal);
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s* ent, struct alight_s* plight);
 	qboolean(*studioapi_StudioCheckBBox)(void);
+	void(*studioapi_GL_SetRenderMode)(int rendermode);
+	void(*studioapi_SetupRenderer)(int rendermode);
 	void(*studioapi_RestoreRenderer)(void);
 
 	//Client Studio
@@ -178,7 +249,13 @@ typedef struct
 	void(*R_StudioSaveBones)(void);
 
 	//SDL2
+	void (__cdecl*SDL_GetWindowPosition)(void* window, int* x, int* y);
 	int(__cdecl* SDL_GL_SetAttribute)(int attr, int value);
+	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
+	void (__cdecl* SDL_GL_SwapWindow)(void* window);
+	void* (__cdecl* SDL_GL_GetProcAddress)(const char* proc);
+	void* (__cdecl* SDL_CreateWindow)(const char* title, int x, int y, int w,int h, uint32_t flags);
+	int(__cdecl* SDL_GL_ExtensionSupported)(const char* extension);
 
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;
@@ -186,8 +263,6 @@ typedef struct
 	bool R_LightStrength_inlined;
 	bool R_GlowBlend_inlined;
 
-	//Just for debugging
-	//void(__stdcall* glDeleteTextures)(GLsizei n, const GLuint* textures);
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;
@@ -196,16 +271,27 @@ extern extra_player_info_t(*g_PlayerExtraInfo)[65];
 extern extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65];
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void VideoMode_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();
 void Engine_UninstallHooks();
+void EngineSurface_InstallHooks();
+void VideoMode_InstallHooks();
+
 void ClientStudio_UninstallHooks();
 void EngineStudio_UninstallHooks();
-void R_RedirectLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_UninstallHooks();
+void VideoMode_UninstallHooks();
+
+void R_RedirectEngineLegacyOpenGLTextureAllocation(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectEngineLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void R_PatchResetLatched(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Client_InstallHooks();
 void Client_UninstallHooks();
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
 
 PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);
 PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);

@@ -299,6 +299,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
+    <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
@@ -309,6 +310,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="gl_light.cpp" />
     <ClCompile Include="gl_model.cpp" />
     <ClCompile Include="gl_portal.cpp" />
+    <ClCompile Include="gl_ringbuffer.cpp" />
     <ClCompile Include="gl_rmain.cpp" />
     <ClCompile Include="gl_rmisc.cpp" />
     <ClCompile Include="gl_rsurf.cpp" />
@@ -327,6 +329,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="util.cpp" />
     <ClCompile Include="UtilThreadTask.cpp" />
     <ClCompile Include="VGUI2ExtensionImport.cpp" />
+    <ClCompile Include="VideoMode.cpp" />
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -422,6 +425,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_portal.h" />
     <ClInclude Include="gl_common.h" />
+    <ClInclude Include="gl_ringbuffer.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />
     <ClInclude Include="gl_sprite.h" />
@@ -443,10 +447,11 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\depthlinearize.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\down_sample.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\fullscreenquad.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\fullscreentriangle.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\gamma_correction.frag.glsl" />
@@ -460,8 +465,6 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\hdr_tonemap.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl" />
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\portal_shader.vert.glsl" />

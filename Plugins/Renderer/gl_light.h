@@ -1,22 +1,40 @@
 #pragma once
 
-typedef struct light_dynamic_s
-{
-	int type;
-	vec3_t origin;
-	float color[3];
-	float distance;
-	float ambient;
-	float diffuse;
-	float specular;
-	float specularpow;
-	shadow_texture_t shadowtex;
-}light_dynamic_t;
+#include <memory>
 
-extern std::vector<light_dynamic_t> g_DynamicLights;
+enum DynamicLightType
+{
+	DynamicLightType_Unknown = 0,
+	DynamicLightType_Point,
+	DynamicLightType_Spot,
+	DynamicLightType_Directional
+};
+
+class CDynamicLight
+{
+public:
+	DynamicLightType type{ DynamicLightType_Unknown };
+	vec3_t origin{};
+	vec3_t angles{};
+	float color[3]{};
+	float distance{};
+	float ambient{};
+	float diffuse{};
+	float specular{};
+	float specularpow{};
+	int shadow{};
+	int follow_player{};
+	shadow_texture_t shadowtex;
+
+	// DirectionalLight specific fields
+	float size{}; // Orthographic projection width/height for DirectionalLight
+	mat4 csmMatrices[4]; // Shadow matrices for each cascade level
+	float csmDistances[4]; // Distance splits for each cascade
+};
+
+extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 extern cvar_t * r_deferred_lighting;
-extern cvar_t *r_light_debug;
 
 extern MapConVar* r_flashlight_enable;
 extern MapConVar *r_flashlight_ambient;
@@ -49,7 +67,7 @@ typedef struct PointLightCallbackArgs_s
 {
 	float radius;
 	vec3_t origin;
-	vec3_t color;//linear space color
+	vec3_t color;
 	float ambient;
 	float diffuse;
 	float specular;
@@ -73,7 +91,7 @@ typedef struct SpotLightCallbackArgs_s
 	vec3_t vforward;
 	vec3_t vright;
 	vec3_t vup;
-	vec3_t color;//linear space color
+	vec3_t color;
 	float ambient;
 	float diffuse;
 	float specular;
@@ -85,7 +103,32 @@ typedef struct SpotLightCallbackArgs_s
 
 typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
 
-void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback, void *context);
+typedef struct DirectionalLightCallbackArgs_s
+{
+	vec3_t origin;
+	vec3_t angle;
+	vec3_t vforward;
+	vec3_t vright;
+	vec3_t vup;
+	float size;
+	vec3_t color;
+	float ambient;
+	float diffuse;
+	float specular;
+	float specularpow;
+	shadow_texture_t* shadowtex;
+	mat4* csmMatrices; // Array of 4 cascade matrices
+	float* csmDistances; // Array of 4 cascade distances
+	bool bVolume;
+}DirectionalLightCallbackArgs;
+
+typedef void(*fnDirectionalLightCallback)(DirectionalLightCallbackArgs* args, void* context);
+
+void R_IterateDynamicLights(
+	fnPointLightCallback pointlightCallback,
+	fnSpotLightCallback spotlightCallback,
+	fnDirectionalLightCallback directionalLightCallback,
+	void* context);
 
 typedef struct
 {
@@ -104,6 +147,10 @@ typedef struct
 	int u_shadowtexel;
 	int u_shadowmatrix;
 	int u_modelmatrix;
+	// DirectionalLight CSM specific uniforms
+	int u_csmMatrices;
+	int u_csmDistances;
+	int u_lightSize;
 }dlight_program_t;
 
 typedef struct
@@ -152,6 +199,8 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DLIGHT_VOLUME_ENABLED					0x4ull
 #define DLIGHT_CONE_TEXTURE_ENABLED				0x8ull
 #define DLIGHT_SHADOW_TEXTURE_ENABLED			0x10ull
+#define DLIGHT_DIRECTIONAL_ENABLED				0x20ull
+#define DLIGHT_CSM_ENABLED						0x40ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull
@@ -162,6 +211,3 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DFINAL_SSR_EXPONENTIAL_STEP_ENABLED		0x40ull
 #define DFINAL_SSR_BINARY_SEARCH_ENABLED		0x80ull
 #define DFINAL_LINEAR_FOG_SHIFT_ENABLED			0x100ull
-
-#define DLIGHT_POINT					0
-#define DLIGHT_SPOT						1

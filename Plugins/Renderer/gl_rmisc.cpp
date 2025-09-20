@@ -1,7 +1,5 @@
 #include "gl_local.h"
 
-#define MAX_SAVESTACK 16
-
 vec3_t save_vieworg[MAX_SAVESTACK] = { 0 };
 vec3_t save_viewang[MAX_SAVESTACK] = { 0 };
 int save_refdef_stack = 0;
@@ -122,6 +120,7 @@ void GL_PopFrameBuffer(void)
 
 void GL_PushMatrix(void)
 {
+	Sys_Error("NOT AVAILABLE");
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 
@@ -131,6 +130,7 @@ void GL_PushMatrix(void)
 
 void GL_PopMatrix(void)
 {
+	Sys_Error("NOT AVAILABLE");
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 
@@ -430,7 +430,9 @@ void GL_CreateShadowTexture(int texid, int w, int h, float *borderColor, bool im
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+	//GL_DEPTH_TEXTURE_MODE has nothing to do with rendering to a depth texture. That's old fixed-function stuff from desktop OpenGL 2.1.
+	//glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
@@ -535,36 +537,25 @@ void GL_FreeTextureEntry(gltexture_t *glt)
 	GL_FreeTextureEntryInternal(glt);
 }
 
-void GL_GenFrameBuffer(FBO_Container_t *s)
+void GL_GenFrameBuffer(FBO_Container_t *s, const char *szFrameBufferName)
 {
 	glGenFramebuffers(1, &s->s_hBackBufferFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, s->s_hBackBufferFBO);
+
+	strncpy(s->szFrameBufferName, szFrameBufferName, sizeof(s->szFrameBufferName) - 1);
+	s->szFrameBufferName[sizeof(s->szFrameBufferName) - 1] = 0;
+
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		glObjectLabel(GL_FRAMEBUFFER, s->s_hBackBufferFBO, -1, szFrameBufferName);
+	}
+#endif
 }
 
-void GL_GenRenderBuffer(FBO_Container_t *s, int type)
+const char* GL_GetFrameBufferName(FBO_Container_t* s)
 {
-	if (type == 1)
-	{
-		glGenRenderbuffers(1, &s->s_hBackBufferDB);
-		glBindRenderbuffer(GL_RENDERBUFFER, s->s_hBackBufferDB);
-	}
-	else
-	{
-		glGenRenderbuffers(1, &s->s_hBackBufferCB);
-		glBindRenderbuffer(GL_RENDERBUFFER, s->s_hBackBufferCB);
-	}
-}
-
-void GL_RenderBufferStorage(FBO_Container_t *s, int type, GLuint iInternalFormat)
-{
-	glRenderbufferStorage(GL_RENDERBUFFER, iInternalFormat, s->iWidth, s->iHeight);
-
-	if (type == 2)
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
-	else if (type == 1)
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
-	else if (type == 0)
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, s->s_hBackBufferCB);
+	return s->szFrameBufferName;
 }
 
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
@@ -591,7 +582,17 @@ void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 	s->iTextureColorFormat = iInternalFormat;
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
+
 	glBindTexture(tex2D, 0);
+
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferTex", GL_GetFrameBufferName(s));
+		glObjectLabel(GL_TEXTURE, s->s_hBackBufferTex, -1, szObjectName);
+	}
+#endif
 }
 
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
@@ -628,6 +629,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	glBindTexture(tex2D, 0);
 
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferDepthTex", GL_GetFrameBufferName(s));
+		glObjectLabel(GL_TEXTURE, s->s_hBackBufferDepthTex, -1, szObjectName);
+	}
+#endif
+
 	s->iTextureDepthFormat = iInternalFormat;
 
 	if (iInternalFormat == GL_DEPTH24_STENCIL8 && glTextureView)
@@ -640,6 +650,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
+		}
+#endif
 	}
 	else if (iInternalFormat == GL_DEPTH32F_STENCIL8 && glTextureView)
 	{
@@ -651,6 +670,15 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+#if defined(_DEBUG)
+		if (glObjectLabel)
+		{
+			char szObjectName[256]{};
+			snprintf(szObjectName, sizeof(szObjectName), "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			glObjectLabel(GL_TEXTURE, s->s_hBackBufferStencilView, -1, szObjectName);
+		}
+#endif
 	}
 	else
 	{
@@ -765,77 +793,51 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex2, 0);
 }
 
-void GL_BeginFullScreenQuad(bool enableDepthTest)
+void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum)
 {
-	if (enableDepthTest)
-	{
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_ALWAYS);
-	}
-	else
-	{
-		glDisable(GL_DEPTH_TEST);
-	}
-	glDisable(GL_CULL_FACE);
-}
-
-void GL_EndFullScreenQuad(void)
-{
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-}
-
-void GL_Begin2D(void)
-{
-	glViewport(glx, gly, glwidth, glheight);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, glwidth, glheight, 0, -99999, 99999);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_CULL_FACE);
-}
-
-void GL_Begin2DEx(int width, int height)
-{
-	glViewport(glx, gly, width, height);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, width, height, 0, -99999, 99999);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-}
-
-void GL_End2D(void)
-{
-	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(r_projection_matrix);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixf(r_world_matrix);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	// Texture unit 0 = GBuffer diffuse array
+	glActiveTexture(GL_TEXTURE0 + textureUnit);
+	glBindTexture(target, gltexturenum);
+	glActiveTexture(GL_TEXTURE0 + 0);
 }
 
 void GL_ClearColor(vec4_t color)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearColor");
+#endif
+
 	glClearColor(color[0], color[1], color[2], color[3]);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
+}
+
+void GL_ClearDepth(float depth)
+{
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearDepthStencil");
+#endif
+
+	glDepthMask(GL_TRUE);
+
+	glClearDepth(depth);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearDepthStencil");
+#endif
+
 	glStencilMask(stencilmask);
 	glDepthMask(GL_TRUE);
 
@@ -845,10 +847,18 @@ void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glStencilMask(0);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearColorDepthStencil");
+#endif
+
 	glStencilMask(stencilmask);
 	glDepthMask(GL_TRUE);
 
@@ -859,52 +869,72 @@ void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int st
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glStencilMask(0);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_ClearStencil(int mask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_ClearStencil");
+#endif
+
 	glStencilMask(mask);
 	glClearStencil(0);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glStencilMask(0);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_BeginStencilCompareEqual(int ref, int mask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_BeginStencilCompareEqual");
+#endif
+
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_EQUAL, ref, mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_BeginStencilCompareNotEqual(int ref, int mask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_BeginStencilCompareNotEqual");
+#endif
+
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_NOTEQUAL, ref, mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_BeginStencilWrite(int ref, int write_mask)
 {
+#ifdef _DEBUG
+	GL_BeginDebugGroup("GL_BeginStencilWrite");
+#endif
+
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(write_mask);
 	glStencilFunc(GL_ALWAYS, ref, write_mask);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-}
 
-void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask)
-{
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(write_mask);
-	glStencilFunc(GL_EQUAL, ref, compare_mask);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-}
-
-void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask)
-{
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(write_mask);
-	glStencilFunc(GL_NOTEQUAL, ref, compare_mask);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+#ifdef _DEBUG
+	GL_EndDebugGroup();
+#endif
 }
 
 void GL_EndStencil()
@@ -997,4 +1027,322 @@ float GetFrameRateFromFrameDuration(int frameduration)
 		return 1000.0f / frameduration;
 
 	return 0;
+}
+
+static mat4 r_pushed_world_matrix[MAX_SAVESTACK];
+static size_t r_pushed_world_matrix_count{};
+
+float* R_GetWorldMatrix()
+{
+	return r_world_matrix;
+}
+
+void R_PushWorldMatrix()
+{
+	if (r_pushed_world_matrix_count == MAX_SAVESTACK)
+	{
+		Sys_Error("R_PushWorldMatrix: max stack excceeded!");
+		return;
+	}
+
+	memcpy(r_pushed_world_matrix[r_pushed_world_matrix_count], r_world_matrix, sizeof(mat4));
+	r_pushed_world_matrix_count++;
+}
+
+void R_PopWorldMatrix()
+{
+	if (r_pushed_world_matrix_count == 0)
+	{
+		Sys_Error("R_PopWorldMatrix: empty r_pushed_world_matrix!");
+		return;
+	}
+
+	auto& matrix = r_pushed_world_matrix[r_pushed_world_matrix_count - 1];
+
+	memcpy(r_world_matrix, matrix, sizeof(mat4));
+
+	r_pushed_world_matrix_count--;
+}
+
+void R_LoadIdentityForWorldMatrix()
+{
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(r_world_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+void R_RotateWorldMatrix(float angle, float x, float y, float z)
+{
+	// Apply rotate translation to "r_world_matrix" like glRotatef
+	
+	// Convert angle from degrees to radians
+	float radian = (angle * M_PI) / 180.0f;
+	
+	// Normalize the axis vector
+	float len = sqrtf(x * x + y * y + z * z);
+	if (len == 0.0f)
+		return;
+	
+	x /= len;
+	y /= len;
+	z /= len;
+	
+	// Calculate sin and cos
+	float s, c;
+	SinCos(radian, &s, &c);
+	float one_minus_c = 1.0f - c;
+	
+	// Create rotation matrix using Rodrigues' rotation formula
+	// This is equivalent to glRotatef implementation
+	float rotation_matrix[16] = {
+		// Column 0
+		c + x * x * one_minus_c,
+		y * x * one_minus_c + z * s,
+		z * x * one_minus_c - y * s,
+		0.0f,
+		
+		// Column 1
+		x * y * one_minus_c - z * s,
+		c + y * y * one_minus_c,
+		z * y * one_minus_c + x * s,
+		0.0f,
+		
+		// Column 2
+		x * z * one_minus_c + y * s,
+		y * z * one_minus_c - x * s,
+		c + z * z * one_minus_c,
+		0.0f,
+		
+		// Column 3
+		0.0f,
+		0.0f,
+		0.0f,
+		1.0f
+	};
+	
+	// Multiply current world matrix with rotation matrix
+	// result = r_world_matrix * rotation_matrix
+	float result[16];
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			result[j * 4 + i] = 0.0f;
+			for (int k = 0; k < 4; k++) {
+				result[j * 4 + i] += r_world_matrix[k * 4 + i] * rotation_matrix[j * 4 + k];
+			}
+		}
+	}
+	
+	// Copy result back to world matrix
+	memcpy(r_world_matrix, result, sizeof(float) * 16);
+}
+
+void R_TranslateWorldMatrix(float x, float y, float z)
+{
+	// Apply translation to the world matrix (equivalent to glTranslatef)
+	// In a 4x4 matrix, translation values go in the last column (indices 12, 13, 14)
+	r_world_matrix[12] += r_world_matrix[0] * x + r_world_matrix[4] * y + r_world_matrix[8] * z;
+	r_world_matrix[13] += r_world_matrix[1] * x + r_world_matrix[5] * y + r_world_matrix[9] * z;
+	r_world_matrix[14] += r_world_matrix[2] * x + r_world_matrix[6] * y + r_world_matrix[10] * z;
+}
+
+void R_SetupPlayerViewWorldMatrix(const vec3_t origin, const vec3_t viewangles)
+{
+	R_RotateWorldMatrix(-90, 1, 0, 0);
+	R_RotateWorldMatrix(90, 0, 0, 1);
+	R_RotateWorldMatrix(-viewangles[2], 1, 0, 0); // roll
+	R_RotateWorldMatrix(-viewangles[0], 0, 1, 0); // pitch
+	R_RotateWorldMatrix(-viewangles[1], 0, 0, 1); // yaw
+	R_TranslateWorldMatrix(-origin[0], -origin[1], -origin[2]);
+}
+
+static mat4 r_pushed_projection_matrix[MAX_SAVESTACK];
+static size_t r_pushed_projection_matrix_count{};
+
+void R_PushProjectionMatrix()
+{
+	if (r_pushed_projection_matrix_count == MAX_SAVESTACK)
+	{
+		Sys_Error("R_PushProjectionMatrix: max stack excceeded!");
+		return;
+	}
+	memcpy(r_pushed_projection_matrix[r_pushed_projection_matrix_count], r_projection_matrix, sizeof(mat4));
+	r_pushed_projection_matrix_count++;
+}
+
+void R_PopProjectionMatrix()
+{
+	if (r_pushed_projection_matrix_count == 0)
+	{
+		Sys_Error("R_PopProjectionMatrix: empty r_pushed_projection_matrix!");
+		return;
+	}
+
+	auto& matrix = r_pushed_projection_matrix[r_pushed_projection_matrix_count - 1];
+
+	memcpy(r_projection_matrix, matrix, sizeof(mat4));
+
+	r_pushed_projection_matrix_count--;
+}
+
+float* R_GetProjectionMatrix()
+{
+	return r_projection_matrix;
+}
+
+void R_LoadIdentityForProjectionMatrix()
+{
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(r_projection_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+}
+
+/*
+
+	// All graphics APIs except for OpenGL use [0, 1] as NDC Z range.
+	// OpenGL uses [-1, 1] unless glClipControl is used to change it.
+	// Use IRenderDevice::GetDeviceInfo().NDC to get the NDC Z range.
+	// See https://github.com/DiligentGraphics/DiligentCore/blob/master/doc/CoordinateSystem.md
+	void SetNearFarClipPlanes(T zNear, T zFar, bool NegativeOneToOneZ)
+	{
+		if (_44 == 0)
+		{
+			// Perspective projection
+			if (NegativeOneToOneZ)
+			{
+				// https://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
+				// http://www.terathon.com/gdc07_lengyel.pdf
+				// Note that OpenGL uses right-handed coordinate system, where
+				// camera is looking in negative z direction:
+				//   OO
+				//  |__|<--------------------
+				//         -z             +z
+				// Consequently, OpenGL projection matrix given by these two
+				// references inverts z axis.
+
+				// We do not need to do this, because we use DX coordinate
+				// system for the camera space. Thus we need to invert the
+				// sign of the values in the third column in the matrix
+				// from the references:
+
+				_33 = -(-(zFar + zNear) / (zFar - zNear));
+				_43 = -2 * zNear * zFar / (zFar - zNear);
+				_34 = -(-1);
+			}
+			else
+			{
+				_33 = zFar / (zFar - zNear);
+				_43 = -zNear * zFar / (zFar - zNear);
+				_34 = 1;
+			}
+		}
+		else
+		{
+			// Orthographic projection
+			_33 = (NegativeOneToOneZ ? 2 : 1) / (zFar - zNear);
+			_43 = (NegativeOneToOneZ ? zNear + zFar : zNear) / (zNear - zFar);
+		}
+	}
+	static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
+	{
+		// clang-format off
+		Matrix4x4 Proj
+			{
+						 2   / (right - left),                                 0,   0,    0,
+											0,                2 / (top - bottom),   0,    0,
+											0,                                 0,   0,    0,
+				(left + right)/(left - right),   (top + bottom) / (bottom - top),   0,    1
+			};
+		// clang-format on
+		Proj.SetNearFarClipPlanes(zNear, zFar, NegativeOneToOneZ);
+		return Proj;
+	}
+*/
+
+void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar)
+{
+	memset(r_projection_matrix, 0, sizeof(float) * 16);
+
+	// 透视投影矩阵 (按照glFrustum实现)
+	// 参考OpenGL规范中的glFrustum矩阵公式
+	float rl = right - left;
+	float tb = top - bottom;
+	float fn = zFar - zNear;
+
+	r_projection_matrix[0] = (2.0f * zNear) / rl;                    // _11
+	r_projection_matrix[5] = (2.0f * zNear) / tb;                    // _22
+	r_projection_matrix[8] = (right + left) / rl;                    // _31
+	r_projection_matrix[9] = (top + bottom) / tb;                    // _32
+	r_projection_matrix[10] = -(zFar + zNear) / fn;                  // _33
+	r_projection_matrix[11] = -1.0f;                                 // _34
+	r_projection_matrix[14] = -(2.0f * zFar * zNear) / fn;          // _43
+}
+
+void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
+{
+	memset(r_projection_matrix, 0, sizeof(float) * 16);
+
+	// 基础正交投影矩阵布局 (按照OrthoOffCenter实现)
+	r_projection_matrix[0] = 2.0f / (right - left);                     // _11
+	r_projection_matrix[5] = 2.0f / (top - bottom);                     // _22
+	r_projection_matrix[12] = (left + right) / (left - right);          // _41
+	r_projection_matrix[13] = (top + bottom) / (bottom - top);          // _42
+	r_projection_matrix[15] = 1.0f;                                     // _44
+
+	// 设置近远裁剪平面 (按照SetNearFarClipPlanes实现)
+	if (NegativeOneToOneZ)
+	{
+		// OpenGL风格 [-1, 1] NDC Z范围
+		r_projection_matrix[10] = 2.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = (zNear + zFar) / (zNear - zFar);     // _43
+	}
+	else
+	{
+		// DirectX风格 [0, 1] NDC Z范围
+		r_projection_matrix[10] = 1.0f / (zFar - zNear);               // _33
+		r_projection_matrix[14] = zNear / (zNear - zFar);              // _43
+	}
+}
+
+void GL_BeginDebugGroup(const char *name)
+{
+#if defined(_DEBUG)
+	if (glPushDebugGroup)
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
+#endif
+}
+
+void GL_BeginDebugGroupFormat(const char* fmt, ...)
+{
+	char buf[256]{};
+
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	_vsnprintf(buf, sizeof(buf) - 1, fmt, argptr);
+	va_end(argptr);
+
+	buf[sizeof(buf) - 1] = 0;
+
+#if defined(_DEBUG)
+	if (glPushDebugGroup)
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, buf);
+#endif
+}
+
+void GL_EndDebugGroup()
+{
+#if defined(_DEBUG)
+	if (glPopDebugGroup)
+		glPopDebugGroup();
+#endif
 }

@@ -100,7 +100,7 @@ void GL_Texturemode_internal(const char *value)
 			}
 			else if (iTextureTarget == GL_TEXTURE_2D)
 			{
-				GL_Bind(pgltextures[j].texnum);
+				glBindTexture(GL_TEXTURE_2D, pgltextures[j].texnum);
 
 				if (pgltextures[j].mipmap)
 				{
@@ -116,7 +116,7 @@ void GL_Texturemode_internal(const char *value)
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 				}
 
-				GL_Bind(0);
+				glBindTexture(GL_TEXTURE_2D, 0);
 			}
 		}
 	}
@@ -363,6 +363,8 @@ void GL_DeleteTexture(GLuint texid)
 {
 	gEngfuncs.Con_DPrintf("GL_DeleteTexture: texid [%d].\n", texid);
 
+	staticFreeTextureId(texid);
+
 	glDeleteTextures(1, &texid);
 }
 
@@ -418,6 +420,20 @@ void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void GL_UploadDataToVBOStreamMap(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	void *pMapped = glMapBufferRange(
+		GL_ARRAY_BUFFER,
+		0,
+		size,
+		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+	);
+	memcpy(pMapped, data, size);
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void GL_UploadSubDataToVBO(GLuint VBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
@@ -464,6 +480,20 @@ void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void GL_UploadDataToEBOStreamMap(GLuint EBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	void* pMapped = glMapBufferRange(
+		GL_ELEMENT_ARRAY_BUFFER,
+		0,
+		size,
+		GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT
+	);
+	memcpy(pMapped, data, size);
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
@@ -504,18 +534,16 @@ void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
-void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind, const std::function<void()>& unbind)
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind)
 {
 	GL_BindVAO(VAO);
 
 	bind();
 
 	GL_BindVAO(0);
-
-	unbind();
 }
 
-void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind, const std::function<void()>& unbind)
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind)
 {
 	GL_BindVAO(VAO);
 
@@ -525,16 +553,16 @@ void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function
 	bind();
 
 	GL_BindVAO(0);
-
-	unbind();
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GL_Bind(int texnum)
 {
-	gPrivateFuncs.GL_Bind(texnum);
+	//gPrivateFuncs.GL_Bind(texnum);
+	if ((*currenttexture) != texnum)
+	{
+		glBindTexture(GL_TEXTURE_2D, texnum);
+		(*currenttexture) = texnum;
+	}
 }
 
 void GL_SelectTexture(GLenum target)
@@ -640,6 +668,11 @@ void GL_UnloadTextures(void)
 			}
 		}
 	}
+}
+
+void GL_LoadFilterTexture(void)
+{
+	//do nothing
 }
 
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType)
@@ -777,7 +810,7 @@ int GL_GetMipmapTextureTargetFromLoadTextureContext(const gl_loadtexture_context
 void GL_UploadTexturePreCommon(gl_loadtexture_context_t* context, int iTextureTarget)
 {
 	//Disable auto-mipmap-generation.
-	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
+	//glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 
 	if (context->mipmap)
 	{
@@ -915,7 +948,7 @@ void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextur
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+			Sys_Error("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
 		}
 	}
 	else
@@ -941,7 +974,7 @@ void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextur
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+			Sys_Error("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
 		}
 	}
 
@@ -1673,6 +1706,15 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, &loadContext);
 
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "GL_LoadTextureEx - %s", identifier);
+		glObjectLabel(GL_TEXTURE, glt->texnum, -1, szObjectName);
+	}
+#endif
+
 	return glt->texnum;
 }
 
@@ -1722,6 +1764,15 @@ gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType
 
 	//Upload texture data to GPU.
 	GL_UploadTexture(glt, textureType, context);
+
+#if defined(_DEBUG)
+	if (glObjectLabel)
+	{
+		char szObjectName[256]{};
+		snprintf(szObjectName, sizeof(szObjectName), "GL_LoadTextureEx - %s", identifier);
+		glObjectLabel(GL_TEXTURE, glt->texnum, -1, szObjectName);
+	}
+#endif
 
 	return glt;
 }
@@ -3447,377 +3498,3 @@ void BuildGammaTable(float g)
 		lightgammatable[i] = i;
 	}
 }
-
-void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload)
-{
-	bool bLoaded = false;
-	char filepath[1024];
-
-	if (gPrivateFuncs.staticGetTextureById)
-	{
-		auto texture = gPrivateFuncs.staticGetTextureById(textureId);
-
-		if (texture && !forceReload)
-		{
-			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-			return;
-		}
-	}
-	else
-	{
-		if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId) && !forceReload)
-		{
-			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-			return;
-		}
-	}
-
-	gl_loadtexture_context_t loadContext;
-	loadContext.wrap = GL_CLAMP_TO_EDGE;
-	loadContext.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-	loadContext.ignore_direction_LoadTGA = true;
-
-	loadContext.callback = [pthis, textureId, hardwareFilter](gl_loadtexture_context_t* ctx) {
-
-		if (ctx->mipmaps.size() > 0)
-		{
-			if (ctx->compressed)
-			{
-				//We have to call drawSetTextureRGBA with dummy shit to allocate a new enginesurface_Texture for us
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId, (const char*)texloader_buffer, 16, 16, hardwareFilter, true);
-
-				(*currenttexture) = -1;
-				GL_Bind(textureId);
-				GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
-
-				return true;
-			}
-			else
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId,
-					(const char*)ctx->mipmaps[0].data, ctx->mipmaps[0].width, ctx->mipmaps[0].height,
-					hardwareFilter, true);
-
-				return true;
-			}
-		}
-
-		return false;
-	};
-
-	if (1)
-	{
-		snprintf(filepath, sizeof(filepath), "%s.dds", filename);
-		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadDDS(filepath, "UI", &loadContext))
-		{
-			bLoaded = true;
-		}
-
-		if (!bLoaded && LoadDDS(filepath, NULL, &loadContext))
-		{
-			bLoaded = true;
-		}
-	}
-#if 0
-	if (1)
-	{
-		snprintf(filepath, sizeof(filepath), "%s.png", filename);
-
-		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
-		{
-			bLoaded = true;
-		}
-
-		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
-		{
-			bLoaded = true;
-		}
-	}
-#endif
-	if (!bLoaded)
-	{
-		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
-
-		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
-		{
-			bLoaded = true;
-		}
-
-		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
-		{
-			bLoaded = true;
-		}
-	}
-
-	if (!bLoaded)
-	{
-		snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
-
-		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGenericFileIO(filepath, "UI", &loadContext))
-		{
-			bLoaded = true;
-		}
-
-		if (!bLoaded && LoadImageGenericFileIO(filepath, NULL, &loadContext))
-		{
-			bLoaded = true;
-		}
-	}
-
-	if (bLoaded)
-	{
-		if (gPrivateFuncs.staticGetTextureById)
-		{
-			auto texture = gPrivateFuncs.staticGetTextureById(textureId);
-
-			if (texture)
-			{
-				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-				return;
-			}
-		}
-		else
-		{
-			if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId))
-			{
-				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
-				return;
-			}
-		}
-	}
-}
-
-int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
-{
-	// allocated_surface_texture = 5810; from BlobEngine
-	return (int)GL_GenTexture();
-}
-
-void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
-{
-	gPrivateFuncs.enginesurface_drawFlushText(pthis, dummy);
-
-	//Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-#if 0
-void W_CleanupName(const char* in, char* out)
-{
-	int		i;
-	int		c;
-
-	for (i = 0; i < 16; i++)
-	{
-		c = in[i];
-		if (!c)
-			break;
-
-		if (c >= 'A' && c <= 'Z')
-			c += ('a' - 'A');
-		out[i] = c;
-	}
-
-	for (; i < 16; i++)
-		out[i] = 0;
-}
-
-qboolean Draw_ValidateCustomLogo(cachewad_t* wad, byte* data, lumpinfo_t* lump)
-{
-	texture_t		tex = { 0 };
-	miptex_t* mip = nullptr;
-	miptex_t tmp = { 0 };
-	int				i = 0, pix = 0, paloffset = 0, palettesize = 0;
-	int				size = 0;
-
-	if (wad->cacheExtra != 32)
-	{
-		gEngfuncs.Con_Printf("Draw_ValidateCustomLogo: Bad cached wad %s\n", wad->name);
-		return false;
-	}
-
-	tmp = *(miptex_t*)(data + wad->cacheExtra);
-	tex = *(texture_t*)data;
-	mip = &tmp;
-
-	Q_memcpy(tex.name, mip->name, sizeof(tex.name));
-	tex.width = LittleLong(mip->width);
-	tex.height = LittleLong(mip->height);
-	tex.anim_max = 0;
-	tex.anim_min = 0;
-	tex.anim_total = 0;
-	tex.alternate_anims = NULL;
-	tex.anim_next = NULL;
-
-	for (i = 0; i < MIPLEVELS; i++)
-		tex.offsets[i] = LittleLong(mip->offsets[0]) + wad->cacheExtra;
-
-	pix = tex.width * tex.height;
-	paloffset = 0;
-
-	for (i = 0; i < MIPLEVELS; i++, pix >>= 2)
-		paloffset += pix;
-
-	palettesize = *(unsigned short*)(data + sizeof(miptex_t) + pix);
-
-	if ((tex.width == 0 || tex.width > 256) || (tex.height == 0 || tex.height > 256))
-	{
-		gEngfuncs.Con_Printf("Draw_ValidateCustomLogo: Bad cached wad %s\n", wad->name);
-		return false;
-	}
-
-	pix = tex.width * tex.height;
-
-	for (i = 0; i < MIPLEVELS - 1; i++, pix >>= 2)
-	{
-		if (mip->offsets[i] + pix != mip->offsets[i + 1])
-		{
-			gEngfuncs.Con_Printf("Draw_ValidateCustomLogo: Bad cached wad %s\n", wad->name);
-			return false;
-		}
-	}
-
-	if (palettesize > 256)
-	{
-		gEngfuncs.Con_Printf("Draw_ValidateCustomLogo: Bad cached wad palette size %i on %s\n", palettesize, wad->name);
-		return false;
-	}
-
-	size = LittleLong(mip->offsets[0]) + paloffset + sizeof(short) + (palettesize * 3);
-
-	if (size > lump->disksize)
-	{
-		gEngfuncs.Con_Printf("Draw_ValidateCustomLogo: Bad cached wad %s\n", wad->name);
-		return false;
-	}
-
-	return true;
-}
-
-qboolean Draw_CacheLoadFromCustom(char* clean, cachewad_t* wad, void* raw, int rawsize, cacheentry_t* pic)
-{
-	int				idx = 0;
-	byte* buf = nullptr;
-	lumpinfo_t* pLump = nullptr;
-	byte* pStart = nullptr, * pDest = nullptr;
-
-	if (Q_strlen(clean) > 4)
-	{
-		idx = Q_atoi(&clean[3]);
-
-		if (idx < 0 || idx >= wad->lumpCount)
-			return false;
-	}
-
-	pLump = &wad->lumps[idx];
-	buf = (byte*)Cache_Alloc(&pic->cache, wad->cacheExtra + pLump->size + 1, clean);
-
-	if (!buf)
-	{
-		Sys_Error("Draw_CacheGet: not enough space for %s in %s", clean, wad->name);
-		return false;
-	}
-
-	buf[pLump->size + wad->cacheExtra] = 0;
-	pDest = &buf[wad->cacheExtra];
-	pStart = (byte*)raw + pLump->filepos;
-	Q_memcpy(pDest, pStart, pLump->size);
-
-	if (!Draw_ValidateCustomLogo(wad, buf, pLump))
-		return false;
-
-	(*gfCustomBuild) = true;
-
-	Q_strcpy((*szCustName), "T");
-	Q_memcpy(&(*szCustName)[1], clean, 5);
-	(*szCustName)[6] = 0;
-
-	if (wad->pfnCacheBuild)
-		wad->pfnCacheBuild(wad, buf);
-
-	gfCustomBuild = false;
-	return true;
-}
-
-void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index)
-{
-	cacheentry_t* pic{};
-	void* dat{};
-	char* path{};
-	char name[16]{};
-	char clean[16]{};
-
-	if (index >= wad->cacheCount) {
-		Sys_Error("Draw_CustomCacheGet:Cache wad indexed before load \"%s\": %d", wad->name, index);
-	}
-
-	pic = &wad->cache[index];
-	path = pic->name;
-	dat = Cache_Check(&pic->cache);
-
-	if (dat)
-		return dat;
-
-	COM_FileBase(path, name);
-	W_CleanupName(name, clean);
-
-	if (Draw_CacheLoadFromCustom(clean, wad, raw, rawsize, pic))
-	{
-		dat = pic->cache.data;
-
-		if (!dat) {
-			Sys_Error("Draw_CustomCacheGet: Failed to load \"%s\".", pic->name);
-		}
-	}
-
-	return dat;
-}
-
-void* Draw_CacheGet(cachewad_t* wad, int index)
-{
-	cacheentry_t* pic{};
-	void* dat{};
-	char* path{};
-	char name[16]{};
-	char clean[16]{};
-	lumpinfo_t* pLump{};
-	int i = 0;
-
-	if (index >= wad->cacheCount) {
-		Sys_Error("Draw_CacheGet: Cache wad indexed before load \"%s\": %d", wad->name, index);
-	}
-
-	pic = &wad->cache[index];
-	path = pic->name;
-	dat = NULL;
-
-	if (!wad->tempWad)
-		dat = Cache_Check(&pic->cache);
-
-	if (dat)
-		return dat;
-
-	COM_FileBase(path, name);
-	W_CleanupName(name, clean);
-
-	for (i = 0, pLump = wad->lumps; i < wad->lumpCount; i++, pLump++)
-	{
-		if (!Q_strcmp(clean, pLump->name))
-			break;
-	}
-
-	if (i >= wad->lumpCount)
-		return NULL;
-
-	if (Draw_CacheReload(wad, i, pLump, pic, clean, path))
-	{
-		dat = (qpic_t*)pic->cache.data;
-
-		if (!dat) {
-			Sys_Error("Draw_CacheGet: Failed to load \"%s\"", path);
-		}
-	}
-
-	return dat;
-}
-#endif

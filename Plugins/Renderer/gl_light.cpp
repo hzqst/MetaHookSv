@@ -3,7 +3,6 @@
 #include <sstream>
 
 cvar_t * r_deferred_lighting = NULL;
-cvar_t *r_light_debug = NULL;
 
 MapConVar* r_flashlight_enable = NULL;
 MapConVar *r_flashlight_ambient = NULL;
@@ -44,7 +43,10 @@ GLuint r_cone_vao = 0;
 GLuint r_flashlight_cone_texture = 0;
 std::string r_flashlight_cone_texture_name;
 
-std::vector<light_dynamic_t> g_DynamicLights;
+/*
+	Purpose: dynamic lights from "[mapname]_entity.txt"
+*/
+std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 std::unordered_map<program_state_t, dfinal_program_t> g_DFinalProgramTable;
 
@@ -192,6 +194,12 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		if (state & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			defs << "#define SHADOW_TEXTURE_ENABLED\n";
 
+		if (state & DLIGHT_DIRECTIONAL_ENABLED)
+			defs << "#define DIRECTIONAL_ENABLED\n";
+
+		if (state & DLIGHT_CSM_ENABLED)
+			defs << "#define CSM_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -211,6 +219,9 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_shadowtexel, "u_shadowtexel");
 			SHADER_UNIFORM(prog, u_shadowmatrix, "u_shadowmatrix");
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
+			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
+			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
+			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -239,6 +250,8 @@ const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_VOLUME_ENABLED				,"DLIGHT_VOLUME_ENABLED" },
 { DLIGHT_CONE_TEXTURE_ENABLED		,"DLIGHT_CONE_TEXTURE_ENABLED" },
 { DLIGHT_SHADOW_TEXTURE_ENABLED		,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_DIRECTIONAL_ENABLED		,"DLIGHT_DIRECTIONAL_ENABLED" },
+{ DLIGHT_CSM_ENABLED				,"DLIGHT_CSM_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -287,8 +300,9 @@ void R_ShutdownLight(void)
 
 void R_InitLight(void)
 {
+	r_empty_vao = GL_GenVAO();
+
 	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
 	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -361,9 +375,6 @@ void R_InitLight(void)
 	[]() {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-	}, 
-	[]() {
-		glDisableVertexAttribArray(0);
 	});
 
 	std::vector<float> coneVertices;
@@ -425,9 +436,6 @@ void R_InitLight(void)
 	[]() {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-	},
-	[]() {
-		glDisableVertexAttribArray(0);
 	});
 
 	r_draw_gbuffer = false;
@@ -616,26 +624,41 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 	return dot > cone_cosine;
 }
 
-void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback, void *context)
+void R_IterateDynamicLights(
+	fnPointLightCallback pointlightCallback, 
+	fnSpotLightCallback spotlightCallback,
+	fnDirectionalLightCallback directionalLightCallback,
+	void *context)
 {
 	for (size_t i = 0; i < g_DynamicLights.size(); i++)
 	{
-		auto &dynlight = g_DynamicLights[i];
+		const auto &dynlight = g_DynamicLights[i];
 
-		if (dynlight.type == DLIGHT_POINT)
+		if (dynlight->type == DynamicLightType_Point)
 		{
-			float radius = math_clamp(dynlight.distance, 0, 999999);
+			float radius = math_clamp(dynlight->distance, 0, 999999);
+
+			vec3_t dlight_origin;
+
+			if (dynlight->follow_player)
+			{
+				VectorCopy((*r_refdef.vieworg), dlight_origin);
+			}
+			else
+			{
+				VectorCopy(dynlight->origin, dlight_origin);
+			}
 
 			vec3_t distToLight;
-			VectorSubtract((*r_refdef.vieworg), dynlight.origin, distToLight);
+			VectorSubtract((*r_refdef.vieworg), dlight_origin, distToLight);
 
 			if (VectorLength(distToLight) > radius + 32)
 			{
 				vec3_t mins, maxs;
 				for (int j = 0; j < 3; j++)
 				{
-					mins[j] = dynlight.origin[j] - radius;
-					maxs[j] = dynlight.origin[j] + radius;
+					mins[j] = dlight_origin[j] - radius;
+					maxs[j] = dlight_origin[j] + radius;
 				}
 
 				if (R_CullBox(mins, maxs))
@@ -643,38 +666,69 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 				PointLightCallbackArgs args;
 				args.radius = radius;
-				VectorCopy(dynlight.origin, args.origin);
-				VectorCopy(dynlight.color, args.color);
+				VectorCopy(dlight_origin, args.origin);
+				VectorCopy(dynlight->color, args.color);
 
-				//GammaToLinear(args.color);
-
-				args.ambient = dynlight.ambient;
-				args.diffuse = dynlight.diffuse;
-				args.specular = dynlight.specular;
-				args.specularpow = dynlight.specularpow;
-				args.shadowtex = &dynlight.shadowtex;
+				args.ambient = dynlight->ambient;
+				args.diffuse = dynlight->diffuse;
+				args.specular = dynlight->specular;
+				args.specularpow = dynlight->specularpow;
+				args.shadowtex = &dynlight->shadowtex;
 				args.bVolume = true;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 			else
 			{
 				PointLightCallbackArgs args;
 				args.radius = radius;
-				VectorCopy(dynlight.origin, args.origin);
-				VectorCopy(dynlight.color, args.color);
+				VectorCopy(dynlight->origin, args.origin);
+				VectorCopy(dynlight->color, args.color);
 
-				//GammaToLinear(args.color);
-
-				args.ambient = dynlight.ambient;
-				args.diffuse = dynlight.diffuse;
-				args.specular = dynlight.specular;
-				args.specularpow = dynlight.specularpow;
-				args.shadowtex = &dynlight.shadowtex;
+				args.ambient = dynlight->ambient;
+				args.diffuse = dynlight->diffuse;
+				args.specular = dynlight->specular;
+				args.specularpow = dynlight->specularpow;
+				args.shadowtex = &dynlight->shadowtex;
 				args.bVolume = false;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
+		}
+		else if (dynlight->type == DynamicLightType_Directional)
+		{
+			vec3_t dlight_origin;
+
+			if (dynlight->follow_player)
+			{
+				VectorCopy((*r_refdef.vieworg), dlight_origin);
+			}
+			else
+			{
+				VectorCopy(dynlight->origin, dlight_origin);
+			}
+
+			vec3_t vforward, vright, vup;
+			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
+
+			DirectionalLightCallbackArgs args;
+			VectorCopy(dlight_origin, args.origin);
+			VectorCopy(dynlight->angles, args.angle);
+			VectorCopy(vforward, args.vforward);
+			VectorCopy(vright, args.vright);
+			VectorCopy(vup, args.vup);
+			VectorCopy(dynlight->color, args.color);
+			args.size = dynlight->size;
+			args.ambient = dynlight->ambient;
+			args.diffuse = dynlight->diffuse;
+			args.specular = dynlight->specular;
+			args.specularpow = dynlight->specularpow;
+			args.shadowtex = &dynlight->shadowtex;
+			args.csmMatrices = dynlight->csmMatrices;
+			args.csmDistances = dynlight->csmDistances;
+			args.bVolume = false; // DirectionalLight always uses fullscreen
+
+			directionalLightCallback(&args, context);
 		}
 	}
 
@@ -774,8 +828,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 #if 1//Don't do such thing for spotlight
 			struct pmtrace_s trace {};
 
-			//auto iLocalPlayerPhysEntIndex = EngineFindPhysEntIndexByEntity(gEngfuncs.GetLocalPlayer());
-
 			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
 			{
 				// Trace a line outward, don't use hitboxes (too slow)
@@ -831,8 +883,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -841,7 +891,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.bVolume = true;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
-				spotlight_callback(&args, context);
+				spotlightCallback(&args, context);
 			}
 			else
 			{
@@ -859,8 +909,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dlight_vup, args.vup);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -869,7 +917,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.bVolume = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
-				spotlight_callback(&args, context);
+				spotlightCallback(&args, context);
 			}			
 		}
 		else
@@ -906,8 +954,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -915,7 +961,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.shadowtex = &cl_dlight_shadow_textures[i];
 				args.bVolume = true;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 			else
 			{
@@ -924,8 +970,6 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
 
-				//GammaToLinear(args.color);
-
 				args.ambient = ambient;
 				args.diffuse = diffuse;
 				args.specular = specular;
@@ -933,7 +977,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				args.shadowtex = &cl_dlight_shadow_textures[i];
 				args.bVolume = false;
 
-				pointlight_callback(&args, context);
+				pointlightCallback(&args, context);
 			}
 		}
 	}
@@ -941,102 +985,160 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 void R_LightShadingPass(void)
 {
+	GL_BeginDebugGroup("R_LightShadingPass");
+
+	//Write to GBuffer->lightmap only whatsoever
+	GL_BindFrameBuffer(&s_GBufferFBO);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP);
+
 	//Disable depth write and re-enable later after light pass.
 	glDepthMask(GL_FALSE);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	//Texture unit 0 = GBuffer diffuse array
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+	//Texture unit 0 = GBuffer diffuse
+	GL_BindTextureUnit(DSHADE_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
-	//Texture unit 1 = GBuffer lightmap array
-	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+	//Texture unit 1 = GBuffer lightmap
+	GL_BindTextureUnit(DSHADE_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 
-	//Texture unit 2 = GBuffer worldnorm array
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_WORLDNORM_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+	//Texture unit 2 = GBuffer worldnorm
+	GL_BindTextureUnit(DSHADE_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
-	//Texture unit 3 = GBuffer specular array
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SPECULAR_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+	//Texture unit 3 = GBuffer specular
+	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_DEPTH_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	//Texture unit 5 = Stencil texture
 	if (s_GBufferFBO.s_hBackBufferStencilView)
 	{
-		glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_STENCIL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+		GL_BindTextureUnit(DSHADE_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	}
 
 	//Texture unit 6 = Flashlight cone texture
 	if (r_flashlight_cone_texture)
 	{
-		glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_CONE_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
+		GL_BindTextureUnit(DSHADE_BIND_CONE_TEXTURE, GL_TEXTURE_2D, r_flashlight_cone_texture);
 	}
 
 	const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 	{
 		if (args->bVolume)
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawVolumePointLight");
+
 			GL_BindVAO(r_sphere_vao);
 
-			glPushMatrix();
-			glLoadIdentity();
-			glTranslatef(args->origin[0], args->origin[1], args->origin[2]);
-			glScalef(args->radius, args->radius, args->radius);
+			vec3_t angles = { 0, 0, 0 };
+			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+			vec3_t scales = { args->radius, args->radius, args->radius };
 
-			float modelmatrix[16];
-			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-			glPopMatrix();
+			float modelmatrix[4][4];
+			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
+
+			float modelmatrix_T[4][4];
+			Matrix4x4_Transpose(modelmatrix_T, modelmatrix);
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform1f(prog.u_lightradius, args->radius);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_modelmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->radius);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
+			GL_UseProgram(0);
+
 			GL_BindVAO(0);
+
+			GL_EndDebugGroup();
 		}
 		else
 		{
-			GL_BeginFullScreenQuad(false);
+			GL_BeginDebugGroup("R_LightShadingPass - DrawFullscreenPointLight");
+
+			GL_Set2D();
+
+			GL_BindVAO(r_empty_vao);
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform1f(prog.u_lightradius, args->radius);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->radius);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
-			glDrawArrays(GL_QUADS, 0, 4);
+			const uint32_t indices[] = { 0,1,2,2,3,0 };
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
-			GL_EndFullScreenQuad();
+			GL_UseProgram(0);
+
+			GL_BindVAO(0);
+
+			GL_Finish2D();
+
+			GL_EndDebugGroup();
 		}
 	};
 
@@ -1044,19 +1146,19 @@ void R_LightShadingPass(void)
 	{
 		if (args->bVolume)
 		{
+			GL_BeginDebugGroup("R_LightShadingPass - DrawConeSpotLight");
+
 			GL_BindVAO(r_cone_vao);
 
-			glPushMatrix();
-			glLoadIdentity();
-			glTranslatef(args->origin[0], args->origin[1], args->origin[2]);
-			glRotatef(args->angle[1], 0, 0, 1);
-			glRotatef(args->angle[0], 0, 1, 0);
-			glRotatef(args->angle[2], 1, 0, 0);
-			glScalef(args->distance, args->radius, args->radius);
+			vec3_t angles = { args->angle[0], args->angle[1], args->angle[2] };
+			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+			vec3_t scales = { args->distance, args->radius, args->radius };
 
-			float modelmatrix[16];
-			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-			glPopMatrix();
+			float modelmatrix[4][4];
+			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
+
+			float modelmatrix_T[4][4];
+			Matrix4x4_Transpose(modelmatrix_T, modelmatrix);
 
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
@@ -1068,27 +1170,59 @@ void R_LightShadingPass(void)
 			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
-			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
-			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
-			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
-			glUniform1f(prog.u_lightradius, args->distance);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_modelmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, (float *)modelmatrix_T);
+			}
+			if (prog.u_lightdir != -1)
+			{
+				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+			}
+			if (prog.u_lightright != -1)
+			{
+				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+			}
+			if (prog.u_lightup != -1)
+			{
+				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightcone != -1)
+			{
+				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->distance);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
 			{
@@ -1097,29 +1231,34 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
+			}
+
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
+
+			GL_UseProgram(0);
 
 			GL_BindVAO(0);
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
-			{
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, 0);
-			}
+			GL_EndDebugGroup();
 		}
 		else
 		{
-			GL_BeginFullScreenQuad(false);
+			GL_BeginDebugGroup("R_LightShadingPass - DrawFullscreenSpotLight");
+
+			GL_Set2D();
+
+			GL_BindVAO(r_empty_vao);
 
 			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED;
 
@@ -1131,26 +1270,55 @@ void R_LightShadingPass(void)
 			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
-
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
-			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
-			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
-			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
-			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
-			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
-			glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
-			glUniform1f(prog.u_lightradius, args->distance);
-			glUniform1f(prog.u_lightambient, args->ambient);
-			glUniform1f(prog.u_lightdiffuse, args->diffuse);
-			glUniform1f(prog.u_lightspecular, args->specular);
-			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			if (prog.u_lightdir != -1)
+			{
+				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+			}
+			if (prog.u_lightright != -1)
+			{
+				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+			}
+			if (prog.u_lightup != -1)
+			{
+				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+			}
+			if (prog.u_lightpos != -1)
+			{
+				glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+			}
+			if (prog.u_lightcolor != -1)
+			{
+				glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+			}
+			if (prog.u_lightcone != -1)
+			{
+				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+			}
+			if (prog.u_lightradius != -1)
+			{
+				glUniform1f(prog.u_lightradius, args->distance);
+			}
+			if (prog.u_lightambient != -1)
+			{
+				glUniform1f(prog.u_lightambient, args->ambient);
+			}
+			if (prog.u_lightdiffuse != -1)
+			{
+				glUniform1f(prog.u_lightdiffuse, args->diffuse);
+			}
+			if (prog.u_lightspecular != -1)
+			{
+				glUniform1f(prog.u_lightspecular, args->specular);
+			}
+			if (prog.u_lightspecularpow != -1)
+			{
+				glUniform1f(prog.u_lightspecularpow, args->specularpow);
+			}
 
 			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
 			{
@@ -1159,56 +1327,147 @@ void R_LightShadingPass(void)
 
 			if (prog.u_shadowmatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->matrix);
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
 			}
-
-			glDrawArrays(GL_QUADS, 0, 4);
-
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
-			{
-				glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SHADOWMAP_TEXTURE);
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glDisable(GL_TEXTURE_2D);
-			}
-
-			GL_EndFullScreenQuad();
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{
-				glDisable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, 0);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
 			}
-		}
 
+			const uint32_t indices[] = { 0,1,2,2,3,0 };
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+			}
+
+			GL_BindVAO(0);
+
+			GL_Finish2D();
+
+			GL_EndDebugGroup();
+		}
 	};
 
-	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, NULL);
+	const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+	{
+		GL_BeginDebugGroup("R_LightShadingPass - DrawDirectionalLight");
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_CONE_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		GL_Set2D();
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_STENCIL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		GL_BindVAO(r_empty_vao);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		program_state_t DLightProgramState = DLIGHT_DIRECTIONAL_ENABLED;
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_SPECULAR_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		if (args->shadowtex && args->shadowtex->depth_stencil && args->shadowtex->ready)
+		{
+			DLightProgramState |= DLIGHT_CSM_ENABLED;
+		}
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_WORLDNORM_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		dlight_program_t prog = { 0 };
+		R_UseDLightProgram(DLightProgramState, &prog);
 
-	glActiveTexture(GL_TEXTURE0 + DSHADE_BIND_LIGHTMAP_TEXTURE);
-	GL_Bind(0);
+		if (prog.u_lightdir != -1)
+		{
+			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+		}
+		if (prog.u_lightright != -1)
+		{
+			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+		}
+		if (prog.u_lightup != -1)
+		{
+			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+		}
+		if (prog.u_lightpos != -1)
+		{
+			glUniform3f(prog.u_lightpos, args->origin[0], args->origin[1], args->origin[2]);
+		}
+		if (prog.u_lightcolor != -1)
+		{
+			glUniform3f(prog.u_lightcolor, args->color[0], args->color[1], args->color[2]);
+		}
+		if (prog.u_lightambient != -1)
+		{
+			glUniform1f(prog.u_lightambient, args->ambient);
+		}
+		if (prog.u_lightdiffuse != -1)
+		{
+			glUniform1f(prog.u_lightdiffuse, args->diffuse);
+		}
+		if (prog.u_lightspecular != -1)
+		{
+			glUniform1f(prog.u_lightspecular, args->specular);
+		}
+		if (prog.u_lightspecularpow != -1)
+		{
+			glUniform1f(prog.u_lightspecularpow, args->specularpow);
+		}
 
-	GL_DisableMultitexture();
-	GL_Bind(0);
+		if (prog.u_lightSize != -1)
+		{
+			glUniform1f(prog.u_lightSize, args->size);
+		}
+
+		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		{
+			if (prog.u_csmMatrices != -1)
+			{
+				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)args->csmMatrices);
+			}
+
+			if (prog.u_csmDistances != -1)
+			{
+				glUniform4f(prog.u_csmDistances, args->csmDistances[0], args->csmDistances[1], args->csmDistances[2], args->csmDistances[3]);
+			}
+
+			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
+			{
+				// CSM uses 4096x4096 texture, each cascade is 2048x2048
+				glUniform2f(prog.u_shadowtexel, 2048.0f, 1.0f / 2048.0f);
+			}
+
+			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+		}
+
+		const uint32_t indices[] = { 0,1,2,2,3,0 };
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		{
+			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+		}
+
+		GL_UseProgram(0);
+
+		GL_BindVAO(0);
+
+		GL_Finish2D();
+
+		GL_EndDebugGroup();
+	};
+
+	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
+
+	glDisable(GL_BLEND);
+
+	GL_BindTextureUnit(DSHADE_BIND_CONE_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindTextureUnit(DSHADE_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_EndDebugGroup();
 }
 
 /*
@@ -1217,21 +1476,23 @@ void R_LightShadingPass(void)
 
 void R_FinalShadingPass(FBO_Container_t *dst)
 {
+	//Write GBuffer depth and stencil buffer into dst framebuffer
+	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
+
+	GL_BeginDebugGroupFormat("R_FinalShadingPass - write to %s", GL_GetFrameBufferName(dst));
+
 	//Re-enable depth write
 	glDepthMask(GL_TRUE);
 
-	//Write GBuffer depth and stencil buffer into main framebuffer
-	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
-
 	GL_BindFrameBuffer(dst);
 
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
+
 	//Only draw color0 channel
-	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_DIFFUSE);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0 + 0);
 
 	//No blend for final shading pass
 	glDisable(GL_BLEND);
-
-	GL_BeginFullScreenQuad(false);
 
 	program_state_t FinalProgramState = 0;
 
@@ -1271,79 +1532,62 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
+	GL_BindVAO(r_empty_vao);
+
 	//Texture unit 0 = GBuffer texture array
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+	GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
 	//Texture unit 1 = GBuffer lightmap array
-	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+	GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 
 	//Texture unit 2 = GBuffer worldnorm array
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+	GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
 	//Texture unit 3 = GBuffer specular array
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+	GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	//Texture unit 5 = Stencil texture
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_STENCIL_TEXTURE);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+	GL_BindTextureUnit(DFINAL_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Disable texture unit 5 (stencil)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_STENCIL_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 5 = Stencil texture
+	GL_BindTextureUnit(DFINAL_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 4 (depth)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 4 = Depth texture
+	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 3 (specular)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 3 = GBuffer specular array
+	GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 2 (worldnorm)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+	//Texture unit 2 = GBuffer worldnorm array
+	GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
 
-	//Disable texture unit 1 (lightmap)
-	glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-	GL_Bind(0);
+	//Texture unit 1 = GBuffer lightmap array
+	GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
 
-	GL_DisableMultitexture();
-	GL_Bind(0);
+	//Texture unit 0 = GBuffer texture array
+	GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
 
 	GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_EndRenderGBuffer(FBO_Container_t *dst)
 {
-	R_LinearizeDepth(&s_GBufferFBO, &s_DepthLinearFBO);
-
 	if (R_IsAmbientOcclusionEnabled())
 	{
+		R_LinearizeDepth(&s_GBufferFBO, &s_DepthLinearFBO);
 		R_AmbientOcclusion(&s_DepthLinearFBO, &s_GBufferFBO);
 	}
-
-	//Write to GBuffer->lightmap only whatsoever
-	GL_BindFrameBuffer(&s_GBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP);
 
 	R_LightShadingPass();
 
@@ -1380,8 +1624,6 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 
 	if (color)
 	{
-		GL_BeginFullScreenQuad(false);
-
 		//No blend for final shading pass
 		glDisable(GL_BLEND);
 
@@ -1390,56 +1632,42 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 		//Setup final program
 		R_UseDFinalProgram(FinalProgramState, NULL);
 
-		//Texture unit 0 = GBuffer
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+		GL_BindVAO(r_empty_vao);
+
+		//Texture unit 0 = GBuffer diffuse color
+		GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
 
 		//Texture unit 1 = GBuffer lightmap array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
+		GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
 		
 		//Texture unit 2 = GBuffer worldnorm array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+		GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 
 		//Texture unit 4 = GBuffer specular array
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+		GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 		//Texture unit 4 = GBuffer depth texture
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		//Disable texture unit 4 (GBuffer depth)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DEPTH_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 3 (GBuffer specular)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_SPECULAR_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 2 (GBuffer worldnorm)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_WORLDNORM_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_WORLDNORM_TEXTURE, GL_TEXTURE_2D, 0);
 
 		//Disable texture unit 1 (GBuffer lightmap)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_LIGHTMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(DFINAL_BIND_LIGHTMAP_TEXTURE, GL_TEXTURE_2D, 0);
 		
 		//Switch back to texture unit 0 (GBuffer diffuse)
-		glActiveTexture(GL_TEXTURE0 + DFINAL_BIND_DIFFUSE_TEXTURE);
+		GL_BindTextureUnit(DFINAL_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);
+
+		GL_BindVAO(0);
 
 		GL_UseProgram(0);
-
-		GL_EndFullScreenQuad();
 	}
 }

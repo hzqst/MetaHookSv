@@ -34,6 +34,8 @@ static hook_t* g_phook_R_StudioSaveBones = NULL;
 static hook_t *g_phook_R_StudioRenderModel = NULL;
 static hook_t *g_phook_R_StudioRenderFinal = NULL;
 
+static hook_t* g_phook_studioapi_GL_SetRenderMode = NULL;
+static hook_t* g_phook_studioapi_SetupRenderer = NULL;
 static hook_t* g_phook_studioapi_RestoreRenderer = NULL;
 static hook_t* g_phook_studioapi_StudioDynamicLight = NULL;
 static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
@@ -42,6 +44,8 @@ static hook_t* g_phook_CL_FxBlend = NULL;
 
 void EngineStudio_UninstallHooks(void)
 {
+	Uninstall_Hook(studioapi_GL_SetRenderMode);
+	Uninstall_Hook(studioapi_SetupRenderer);
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
@@ -93,203 +97,45 @@ int HUD_VidInit(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
-	gExportfuncs.V_CalcRefdef(pparams);
+	if (g_iStartDist_SCClient && g_iEndDist_SCClient)
+	{
+		/*
+			//Elimate Sv Co-op client's fixed-function fog
+			if ( g_iWaterLevel <= 2 && g_iStartDist_SCClient >= 0.0 && g_iEndDist_SCClient > 0.0 )
+			{
+				glFogi(GL_FOG_MODE, GL_LINEAR);
+				v157[0] = *(float *)&dword_1063A6D4 / 255.0;
+				v157[1] = *(float *)&dword_1063A6D8 / 255.0;
+				v157[2] = *(float *)&dword_1063A6DC / 255.0;
+				glFogfv(0xB66u, v157);
+				glHint(GL_FOG_HINT, GL_DONT_CARE);
+				glFogf(GL_FOG_START, g_iStartDist_SCClient);
+				glFogf(GL_FOG_END, g_iEndDist_SCClient);
+				glEnable(GL_FOG);
+			}
+		*/
+
+		float Saved_iStartDist_SCClient = (*g_iStartDist_SCClient);
+		float Saved_iEndDist_SCClient = (*g_iEndDist_SCClient);
+
+		(*g_iStartDist_SCClient) = 0;
+		(*g_iEndDist_SCClient) = 0;
+
+		gExportfuncs.V_CalcRefdef(pparams);
+
+		(*g_iStartDist_SCClient) = Saved_iStartDist_SCClient;
+		(*g_iEndDist_SCClient) = Saved_iEndDist_SCClient;
+	}
+	else
+	{
+		gExportfuncs.V_CalcRefdef(pparams);
+	}
 
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
 
 int HUD_Redraw(float time, int intermission)
 {
-	if (AllowCheats())
-	{
-		if (r_water_debug && (int)r_water_debug->value > 0)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			glEnable(GL_TEXTURE_2D);
-			int texIndex = ((int)r_water_debug->value - 1) % 4;
-			int cacheIndex = ((int)r_water_debug->value - 1) / 4;
-			switch (texIndex)
-			{
-			case 0:
-				if (g_WaterReflectCaches[cacheIndex].reflect_texture)
-				{
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_texture, glwidth / 2, glheight / 2);
-				}
-				break;
-			case 1:
-				if (g_WaterReflectCaches[cacheIndex].reflect_depth_texture)
-				{
-					hud_debug_program_t prog = { 0 };
-					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].reflect_depth_texture, glwidth / 2, glheight / 2);
-					GL_UseProgram(0);
-				}
-				break;
-			case 2:
-				if (g_WaterReflectCaches[cacheIndex].refract_texture)
-				{
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_texture, glwidth / 2, glheight / 2);
-				}
-				break;
-			case 3:
-				if (g_WaterReflectCaches[cacheIndex].refract_depth_texture)
-				{
-					hud_debug_program_t prog = { 0 };
-					R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-					R_DrawHUDQuad_Texture(g_WaterReflectCaches[cacheIndex].refract_depth_texture, glwidth / 2, glheight / 2);
-					GL_UseProgram(0);
-				}
-				break;
-			default:
-				break;
-			}
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
-		else if (r_shadow_debug && r_shadow_debug->value > 0 && current_shadow_texture && current_shadow_texture->depth_stencil)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			glEnable(GL_TEXTURE_2D);
-
-			hud_debug_program_t prog = { 0 };
-			R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-			R_DrawHUDQuad_Texture(current_shadow_texture->depth_stencil, glwidth / 2, glheight / 2);
-
-			GL_UseProgram(0);
-
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
-		else if (r_light_debug && (int)r_light_debug->value >= 1 && (int)r_light_debug->value <= 4)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			glEnable(GL_TEXTURE_2D);
-
-			if((int)r_light_debug->value == 1)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
-			else if((int)r_light_debug->value == 2)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
-			else if((int)r_light_debug->value == 3)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex3, glwidth / 2, glheight / 2);
-			else if((int)r_light_debug->value == 4)
-				R_DrawHUDQuad_Texture(s_GBufferFBO.s_hBackBufferTex4, glwidth / 2, glheight / 2);
-
-			GL_UseProgram(0);
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
-		else if (r_hdr_debug && r_hdr_debug->value)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			glEnable(GL_TEXTURE_2D);
-			FBO_Container_t* pFBO = NULL;
-			switch ((int)r_hdr_debug->value)
-			{
-			case 1:
-				pFBO = &s_DownSampleFBO[0]; break;
-			case 2:
-				pFBO = &s_DownSampleFBO[1]; break;
-			case 3:
-				pFBO = &s_LuminFBO[0]; break;
-			case 4:
-				pFBO = &s_LuminFBO[1]; break;
-			case 5:
-				pFBO = &s_LuminFBO[2]; break;
-			case 6:
-				pFBO = &s_Lumin1x1FBO[0]; break;
-			case 7:
-				pFBO = &s_Lumin1x1FBO[1]; break;
-			case 8:
-				pFBO = &s_Lumin1x1FBO[2]; break;
-			case 9:
-				pFBO = &s_BrightPassFBO; break;
-			case 10:
-				pFBO = &s_BlurPassFBO[0][0]; break;
-			case 11:
-				pFBO = &s_BlurPassFBO[0][1]; break;
-			case 12:
-				pFBO = &s_BlurPassFBO[1][0]; break;
-			case 13:
-				pFBO = &s_BlurPassFBO[1][1]; break;
-			case 14:
-				pFBO = &s_BlurPassFBO[2][0]; break;
-			case 15:
-				pFBO = &s_BlurPassFBO[2][1]; break;
-			case 16:
-				pFBO = &s_BrightAccumFBO; break;
-			case 17:
-				pFBO = &s_ToneMapFBO; break;
-			case 18:
-				pFBO = &s_BackBufferFBO; break;
-			default:
-				break;
-			}
-
-			if (pFBO)
-			{
-				R_DrawHUDQuad_Texture(pFBO->s_hBackBufferTex, glwidth / 2, glheight / 2);
-			}
-
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
-		else if (r_ssao_debug && r_ssao_debug->value)
-		{
-			glDisable(GL_BLEND);
-			glDisable(GL_ALPHA_TEST);
-			glColor4f(1, 1, 1, 1);
-
-			switch ((int)r_ssao_debug->value)
-			{
-			case 1:
-			{
-				hud_debug_program_t prog = { 0 };
-				R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-				R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth / 2, glheight / 2);
-
-				GL_UseProgram(0);
-				break;
-			}
-			case 2:
-			{
-				R_DrawHUDQuad_Texture(s_DepthLinearFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
-				break;
-			}
-			case 3:
-			{
-				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
-				break;
-			}
-			case 4:
-			{
-				R_DrawHUDQuad_Texture(s_HBAOCalcFBO.s_hBackBufferTex2, glwidth / 2, glheight / 2);
-				break;
-			}
-			default:
-				break;
-			}
-
-			glEnable(GL_ALPHA_TEST);
-			glEnable(GL_BLEND);
-		}
-	}
-
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
@@ -1155,6 +1001,8 @@ void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_
 
 void EngineStudio_InstalHooks()
 {
+	Install_InlineHook(studioapi_GL_SetRenderMode);
+	Install_InlineHook(studioapi_SetupRenderer);
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
@@ -1980,6 +1828,8 @@ void ClientStudio_InstallHooks()
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
+	gPrivateFuncs.studioapi_GL_SetRenderMode = pstudio->GL_SetRenderMode;
+	gPrivateFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
@@ -2076,8 +1926,6 @@ void HUD_Shutdown(void)
 	EngineStudio_UninstallHooks();
 
 	R_Shutdown();
-
-	GL_Shutdown();
 
 	UtilThreadTask_Shutdown();
 }

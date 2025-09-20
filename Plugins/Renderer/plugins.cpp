@@ -35,6 +35,11 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
+	if (g_pInterface->MetaHookAPIVersion < 107)
+	{
+		Sys_Error("MetaHookAPIVersion 107 is required!");
+	}
+
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);
 
 	if (iVideoMode == 0)
@@ -81,8 +86,12 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 	Engine_InstallHooks();
-	R_RedirectLegacyOpenGLTextureAllocation(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	EngineSurface_InstallHooks();
+	VideoMode_InstallHooks();
+
 	R_PatchResetLatched(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+
+	R_RedirectEngineLegacyOpenGLCall(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
 
 	VGUI2Extension_Init();
 	BaseUI_InstallHooks();
@@ -137,6 +146,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 	Client_InstallHooks();
 	UtilThreadTask_Init();
+
+	R_RedirectClientLegacyOpenGLCall(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
 }
 
 void IPluginsV4::ExitGame(int iResult)
@@ -145,6 +156,8 @@ void IPluginsV4::ExitGame(int iResult)
 	GameUI_UninstallHooks();
 	VGUI2Extension_Shutdown();
 	Engine_UninstallHooks();
+	EngineSurface_UninstallHooks();
+	VideoMode_UninstallHooks();
 }
 
 const char completeVersion[] =

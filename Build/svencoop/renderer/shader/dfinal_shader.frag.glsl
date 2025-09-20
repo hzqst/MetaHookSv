@@ -159,16 +159,6 @@ vec4 ScreenSpaceReflection()
     return ScreenSpaceReflectionInternal(position, reflectionDirection);
 }
 
-float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity, uint stencilValue)
-{
-	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
-	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w + 0.001);
-	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
-	shadowIntensity *= SceneUBO.shadowColor.a;
-
-	return shadowIntensity;
-}
-
 void main()
 {
     vec4 diffuseColor = texture(gbufferDiffuse, texCoord);
@@ -176,9 +166,6 @@ void main()
 	vec4 worldnormColor = texture(gbufferWorldNorm, texCoord);
     vec4 specularColor = texture(gbufferSpecular, texCoord);
 	uint stencilValue = texture(stencilTex, texCoord).r;
-
-	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z, stencilValue);
-	lightmapColor.xyz *= (1.0 - shadowIntensity);
 
 #if defined(SSR_ENABLED)
     if(specularColor.g > 0.0)

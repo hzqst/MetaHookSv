@@ -443,6 +443,15 @@
     <ClCompile Include="LambdaThreadedTask.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoMode.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="gl_ringbuffer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -769,6 +778,9 @@
     <ClInclude Include="LambdaThreadedTask.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="gl_ringbuffer.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Build\svencoop\renderer\shader\blit_oitblend.frag.glsl">
@@ -778,9 +790,6 @@
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\dfinal_shader.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\dlight_shader.frag.glsl">
@@ -829,12 +838,6 @@
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\hud_debug.vert.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.frag.glsl">
-      <Filter>GLSL</Filter>
-    </None>
-    <None Include="..\..\Build\svencoop\renderer\shader\legacysprite_shader.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\oitbuffer_clear.frag.glsl">
@@ -889,6 +892,12 @@
       <Filter>GLSL</Filter>
     </None>
     <None Include="..\..\Build\svencoop\renderer\shader\triapi_shader.vert.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.frag.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
   </ItemGroup>

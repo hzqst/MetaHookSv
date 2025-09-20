@@ -4,11 +4,11 @@
 
 in vec2 texCoord;
 
-layout(location=0) uniform float du;
+layout(location = 0) uniform float du;
 
 layout(binding = 0) uniform sampler2D tex;
 
-layout(location=0) out vec4 out_Color;
+layout(location = 0) out vec4 out_Color;
 
 void main() {
   vec4 color = vec4(0.0);

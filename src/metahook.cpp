@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "metahook.h"
 #include "interface.h"
+#include <IVideoMode.h>
 
 #include <detours.h>
 #include <capstone.h>
@@ -3296,6 +3297,12 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 	if (!pStartSearch)
 		return NULL;
 
+	if(!dwSearchLen)
+		return NULL;
+
+	if(!dwPatternLen)
+		return NULL;
+
 	char *dwStartAddr = (char *)pStartSearch;
 	char *dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 
@@ -3473,55 +3480,33 @@ DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
-typedef struct videomode_s
+bool MH_VideoModeIsWindowed()
 {
-	int width;
-	int height;
-	int bpp;
-}videomode_t;
+	if (g_pVideoMode && (*g_pVideoMode))
+	{
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*g_pVideoMode);
 
-class IVideoMode
-{
-public:
-	virtual const char *GetName();
-	virtual void Init();
-	virtual void Shutdown();
-	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
-	virtual void SetInitialized(bool init);
-	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
-	virtual void RestoreVideo();
-	virtual void ReleaseVideo();
-	virtual void dtor();
-	virtual int GetBitsPerPixel();
-};
+			return pVideoMode->IsWindowedMode();
+		}
+		else
+		{
+			IVideoMode* pVideoMode = (IVideoMode*)(*g_pVideoMode);
 
-class IVideoMode_HL25
+			return pVideoMode->IsWindowedMode();
+		}
+	}
+	return false;
+}
+
+void* MH_VideoMode()
 {
-public:
-	virtual const char* GetName();
-	virtual void Init();
-	virtual void Shutdown();
-	virtual void unk();
-	virtual bool AddMode(int width, int height, int bpp);
-	virtual videomode_t* GetCurrentMode();
-	virtual videomode_t* GetMode(int num);
-	virtual int GetModeCount();
-	virtual bool IsWindowedMode();
-	virtual bool GetInitialized();
-	virtual void SetInitialized(bool init);
-	virtual void UpdateWindowPosition();
-	virtual void FlipScreen();
-	virtual void RestoreVideo();
-	virtual void ReleaseVideo();
-	virtual void dtor();
-	virtual int GetBitsPerPixel();
-};
+	if (g_pVideoMode)
+		return (*g_pVideoMode);
+
+	return nullptr;
+}
 
 DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 {
@@ -4663,6 +4648,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_WaitForWorkItemToComplete,
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
+	MH_VideoModeIsWindowed,
+	MH_VideoMode,
 	NULL
 };
 
@@ -4757,5 +4744,7 @@ metahook_api_t gMetaHookAPI =
 	MH_WaitForWorkItemToComplete,
 	MH_DeleteThreadPool,
 	MH_DeleteWorkItem,
+	MH_VideoModeIsWindowed,
+	MH_VideoMode,
 	NULL
 };

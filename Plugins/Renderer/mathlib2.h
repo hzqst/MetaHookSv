@@ -63,6 +63,7 @@ void ClearBounds(vec3_t mins, vec3_t maxs);
 void R_ConcatRotations(float in1[3][3], float in2[3][3], float out[3][3]);
 void R_ConcatTransforms(float in1[3][4], float in2[3][4], float out[3][4]);
 void Matrix4x4_CreateFromEntity(float out[4][4], const vec3_t angles, const vec3_t origin, float scale);
+void Matrix4x4_CreateFromEntityEx(float out[4][4], const vec3_t angles, const vec3_t origin, const vec3_t scales);
 
 void FloorDivMod(double numer, double denom, int *quotient, int *rem);
 int GreatestCommonDivisor(int i1, int i2);
@@ -86,8 +87,12 @@ void VectorAngles(const vec3_t forward, vec3_t angles);
 
 int InvertMatrix(const float * m, float *out);
 
+void Matrix4x4_Multiply(float out[4][4], const float in1[4][4], const float in2[4][4]);
 void Matrix4x4_ConcatTransforms(float out[4][4], float in1[4][4], float in2[4][4]);
 void Matrix4x4_Transpose(float out[4][4], const float in1[4][4]);
+void Matrix4x4_CreateCSMOffset(float out[4][4], int cascadeIndex);
+void Matrix4x4_CreateIdentity(float out[4][4]);
+void Matrix4x4_Copy(float out[4][4], const float in[4][4]);
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 
 void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);

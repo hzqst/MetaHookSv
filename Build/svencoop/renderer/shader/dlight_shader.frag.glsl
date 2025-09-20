@@ -13,8 +13,13 @@ layout(binding = DSHADE_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 layout(binding = DSHADE_BIND_CONE_TEXTURE) uniform sampler2D coneTex;
 #endif
 
-#if defined(SHADOW_TEXTURE_ENABLED)
+#if defined(SHADOW_TEXTURE_ENABLED) || defined(CSM_ENABLED)
 layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTex;
+#endif
+
+#if defined(CSM_ENABLED)
+uniform mat4 u_csmMatrices[4];
+uniform vec4 u_csmDistances;
 #endif
 
 #if defined(SHADOW_TEXTURE_ENABLED)
@@ -36,6 +41,7 @@ uniform vec3 u_lightright;
 uniform vec3 u_lightup;
 uniform vec3 u_lightcolor;
 uniform vec2 u_lightcone;
+uniform float u_lightSize;
 uniform float u_lightradius;
 uniform float u_lightambient;
 uniform float u_lightdiffuse;
@@ -160,6 +166,154 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 #endif
 
+#if defined(CSM_ENABLED)
+
+float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
+{
+    vec4 uv = basecoord;
+    uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
+
+    return textureProj(shadowTex, uv);
+}
+
+float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
+{
+    float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
+
+    // Determine which cascade to use
+    int cascadeIndex = 3; // Default to furthest cascade
+    float cascadeBlendFactor = 0.0;
+
+    for(int i = 0; i < 4; ++i)
+    {
+        if(distanceFromCamera < u_csmDistances[i])
+        {
+            cascadeIndex = i;
+            // Calculate blend factor for smooth transition between cascades
+            if(i > 0)
+            {
+                float blendRegion = (u_csmDistances[i] - u_csmDistances[i-1]) * 0.1; // 10% blend region
+                float distFromPrevBoundary = distanceFromCamera - u_csmDistances[i-1];
+                if(distFromPrevBoundary < blendRegion)
+                {
+                    cascadeBlendFactor = distFromPrevBoundary / blendRegion;
+                }
+                else
+                {
+                    cascadeBlendFactor = 1.0;
+                }
+            }
+            else
+            {
+                cascadeBlendFactor = 1.0;
+            }
+            break;
+        }
+    }
+
+    // Calculate shadow coordinates for selected cascade
+    vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
+
+    // Add bias to prevent shadow acne and self-shadowing issues
+    float bias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+    shadowCoords.z -= bias;
+
+    float visibility = 0.0;
+
+    // Check if we're outside the shadow map bounds
+    if(shadowCoords.z / shadowCoords.w > 1.0 || shadowCoords.z / shadowCoords.w < 0.0)
+    {
+        visibility = 1.0;
+    }
+    else
+    {
+        // Perspective divide
+        vec3 projCoords = shadowCoords.xyz / shadowCoords.w;
+
+        // Check if we're outside the [0,1] range for texture coordinates
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        {
+            visibility = 1.0;
+        }
+        else
+        {
+            float texRes = 4096.0;
+            float invRes = 1.0 / 4096.0;
+
+            vec2 uv = projCoords.xy * texRes;
+            vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
+
+            float s = fract(uv.x);
+            float t = fract(uv.y);
+
+            flooredUV *= invRes;
+
+            // Improved PCF filtering with more samples for smoother shadows
+            int pcfSamples = 0;
+            float pcfRadius = 1.5; // Slightly larger radius for smoother edges
+
+            for(int x = -1; x <= 1; x++)
+            {
+                for(int y = -1; y <= 1; y++)
+                {
+                    vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
+                    vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
+                    visibility += texture(shadowTex, sampleCoord.xyz);
+                    pcfSamples++;
+                }
+            }
+
+            visibility /= float(pcfSamples);
+        }
+    }
+
+    // Blend with previous cascade if needed for smooth transitions
+    if(cascadeIndex > 0 && cascadeBlendFactor < 1.0)
+    {
+        vec4 prevShadowCoords = u_csmMatrices[cascadeIndex-1] * vec4(World, 1.0);
+        prevShadowCoords.z -= bias;
+
+        float prevVisibility = 0.0;
+
+        if(prevShadowCoords.z / prevShadowCoords.w > 1.0 || prevShadowCoords.z / prevShadowCoords.w < 0.0)
+        {
+            prevVisibility = 1.0;
+        }
+        else
+        {
+            vec3 prevProjCoords = prevShadowCoords.xyz / prevShadowCoords.w;
+
+            if(prevProjCoords.x < 0.0 || prevProjCoords.x > 1.0 || prevProjCoords.y < 0.0 || prevProjCoords.y > 1.0)
+            {
+                prevVisibility = 1.0;
+            }
+            else
+            {
+                // Simple PCF for previous cascade
+                int prevPcfSamples = 0;
+                for(int x = -1; x <= 1; x++)
+                {
+                    for(int y = -1; y <= 1; y++)
+                    {
+                        vec2 offset = vec2(float(x), float(y)) * 1.5 * (1.0 / 4096.0);
+                        vec4 sampleCoord = vec4(prevProjCoords.xy + offset, prevProjCoords.z, 1.0);
+                        prevVisibility += texture(shadowTex, sampleCoord.xyz);
+                        prevPcfSamples++;
+                    }
+                }
+                prevVisibility /= float(prevPcfSamples);
+            }
+        }
+
+        // Blend between current and previous cascade
+        visibility = mix(prevVisibility, visibility, cascadeBlendFactor);
+    }
+
+    return visibility;
+}
+
+#endif
+
 vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord)
 {
     vec4 AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
@@ -219,8 +373,6 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(SHADOW_TEXTURE_ENABLED)
 
-    //uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
-
     float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
     Color.r *= flShadowIntensity;
     Color.g *= flShadowIntensity;
@@ -253,6 +405,34 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     }
 }
 
+vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
+{
+    vec3 LightDirection = u_lightdir.xyz;
+
+    // Check if world position is within the directional light's rectangular area
+    vec3 worldToLight = World - u_lightpos.xyz;
+
+    // Project onto light's right and up vectors
+    float projRight = dot(worldToLight, u_lightright.xyz);
+    float projUp = dot(worldToLight, u_lightup.xyz);
+
+    // Check if within bounds
+    if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
+
+#if defined(CSM_ENABLED)
+    float flShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection);
+    Color.r *= flShadowIntensity;
+    Color.g *= flShadowIntensity;
+    Color.b *= flShadowIntensity;
+#endif
+
+    return Color;
+}
+
 void main()
 {
 #if defined(VOLUME_ENABLED)
@@ -263,7 +443,7 @@ void main()
 
     vec4 worldnormColor = texture(gbufferWorldNorm, vBaseTexCoord);
 
-    float depth = texture(depthTex, vBaseTexCoord).r;
+    //float depth = texture(depthTex, vBaseTexCoord).r;
 
     //vec3 worldpos = GenerateWorldPositionFromDepth(vBaseTexCoord, depth);
 
@@ -275,6 +455,8 @@ void main()
     out_FragColor = CalcSpotLight(worldpos, normal, vBaseTexCoord);
 #elif defined(POINT_ENABLED)
     out_FragColor = CalcPointLight(worldpos, normal, vBaseTexCoord);
+#elif defined(DIRECTIONAL_ENABLED)
+    out_FragColor = CalcDirectionalLight(worldpos, normal, vBaseTexCoord);
 #endif
 
 }

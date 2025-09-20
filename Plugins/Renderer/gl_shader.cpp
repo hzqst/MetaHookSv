@@ -44,7 +44,7 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
-	if (developer->value >= 255)
+	if (developer && developer->value >= 255)
 	{
 		FILESYSTEM_ANY_CREATEDIR("logs");
 		FILESYSTEM_ANY_CREATEDIR("logs/renderer");
@@ -283,18 +283,18 @@ void GL_UseProgram(GLuint program)
 	if (currentprogram != program)
 	{
 		currentprogram = program;
-		glUseProgramObjectARB(program);
+		glUseProgram(program);
 	}
 }
 
 GLuint GL_GetUniformLoc(GLuint program, const char *name)
 {
-	return glGetUniformLocationARB(program, name);
+	return glGetUniformLocation(program, name);
 }
 
 GLuint GL_GetAttribLoc(GLuint program, const char *name)
 {
-	return glGetAttribLocationARB(program, name);
+	return glGetAttribLocation(program, name);
 }
 
 void GL_Uniform1i(GLuint loc, int v0)
@@ -304,17 +304,17 @@ void GL_Uniform1i(GLuint loc, int v0)
 
 void GL_Uniform2i(GLuint loc, int v0, int v1)
 {
-	glUniform2iARB(loc, v0, v1);
+	glUniform2i(loc, v0, v1);
 }
 
 void GL_Uniform3i(GLuint loc, int v0, int v1, int v2)
 {
-	glUniform3iARB(loc, v0, v1, v2);
+	glUniform3i(loc, v0, v1, v2);
 }
 
 void GL_Uniform4i(GLuint loc, int v0, int v1, int v2, int v3)
 {
-	glUniform4iARB(loc, v0, v1, v2, v3);
+	glUniform4i(loc, v0, v1, v2, v3);
 }
 
 void GL_Uniform1f(GLuint loc, float v0)
@@ -349,12 +349,12 @@ void GL_VertexAttrib3fv(GLuint index, float *v)
 
 void GL_MultiTexCoord2f(GLenum target, float s, float t)
 {
-	glMultiTexCoord2fARB(target, s, t);
+	glMultiTexCoord2f(target, s, t);
 }
 
 void GL_MultiTexCoord3f(GLenum target, float s, float t, float r)
 {
-	glMultiTexCoord3fARB(target, s, t, r);
+	glMultiTexCoord3f(target, s, t, r);
 }
 
 void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size)

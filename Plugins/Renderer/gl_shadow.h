@@ -1,31 +1,27 @@
 #pragma once
 
-typedef struct
+typedef struct shadow_texture_s
 {
-	GLuint color;
-	GLuint color_array_as_depth;
 	GLuint depth_stencil;
+
 	size_t size;
-	mat4 matrix;
-	float distance;
-	float cone_angle;
+
+	uint32_t viewport[4];
+
+	mat4 worldmatrix;
+	mat4 projmatrix;
+	mat4 shadowmatrix;
+
 	bool ready;
 }shadow_texture_t;
-
-extern shadow_texture_t r_shadow_texture;
 
 extern shadow_texture_t cl_dlight_shadow_textures[MAX_DLIGHTS_SVENGINE];
 
 extern shadow_texture_t *current_shadow_texture;
 
-extern float shadow_projmatrix[3][16];
-extern float shadow_mvmatrix[3][16];
-
-extern int shadow_numvisedicts[3];
-
 //cvar
 extern cvar_t *r_shadow;
-extern cvar_t *r_shadow_debug;
+
 extern MapConVar *r_shadow_distfade;
 extern MapConVar *r_shadow_lumfade;
 extern MapConVar *r_shadow_angles;
@@ -39,7 +35,6 @@ extern MapConVar *r_shadow_low_distance;
 extern MapConVar *r_shadow_low_scale;
 
 bool R_ShouldCastShadow(cl_entity_t *ent);
-bool R_ShouldRenderShadowScene(void);
 bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void); 
 void R_InitShadow(void);

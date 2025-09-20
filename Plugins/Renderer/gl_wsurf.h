@@ -166,7 +166,7 @@ public:
 
 	std::shared_ptr<CWorldSurfaceLeaf> GetLeafByIndex(int index) const
 	{
-		if (index < 0 || index >= m_vLeaves.size())
+		if (index < 0 || index >= (int)m_vLeaves.size())
 			return nullptr;
 
 		return m_vLeaves[index];
@@ -232,7 +232,6 @@ public:
 
 	bool				bDiffuseTexture{};
 	bool				bLightmapTexture{};
-	bool				bShadowmapTexture{};
 
 	int					iLightmapUsedBits{};
 	int					iNumLegacyDLights{};
@@ -256,22 +255,13 @@ typedef struct
 	int u_parallaxScale;
 }wsurf_program_t;
 
-#define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
-
 extern CWorldSurfaceRenderer g_WorldSurfaceRenderer;
-extern int r_wsurf_drawcall;
-extern int r_wsurf_polys;
-extern bool r_fog_enabled;
-extern int r_fog_mode;
-extern float r_fog_control[3];
-extern float r_fog_color[4];
+
 extern float r_shadow_matrix[3][16];
 extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];
 extern float r_world_matrix_inv[16];
 extern float r_projection_matrix_inv[16];
-extern float r_viewmodel_projection_matrix[16];
-extern float r_viewmodel_projection_matrix_inv[16];
 extern float r_znear;
 extern float r_zfar;
 extern bool r_ortho;
@@ -354,7 +344,7 @@ void R_DrawWaterSurfaceModel(
 	CWorldSurfaceModel* pModel,
 	CWorldSurfaceLeaf* pLeaf,
 	CWaterSurfaceModel* pWaterModel,
-	water_reflect_cache_t* pReflectCache,
+	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent);
 
 GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);
@@ -373,10 +363,6 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
 #define WSURF_EXP2_FOG_ENABLED				0x200ull
 #define WSURF_GBUFFER_ENABLED				0x400ull
 #define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
-#define WSURF_SHADOWMAP_ENABLED				0x2000ull
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000ull
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000ull
 #define WSURF_SKYBOX_ENABLED				0x40000ull
 #define WSURF_DECAL_ENABLED					0x80000ull
 #define WSURF_CLIP_ENABLED					0x100000ull

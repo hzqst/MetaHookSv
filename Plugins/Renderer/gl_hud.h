@@ -12,9 +12,6 @@
 typedef struct
 {
 	int program;
-	int tex0;
-	int rt_w;
-	int rt_h;
 }pp_fxaa_program_t;
 
 typedef struct
@@ -25,38 +22,31 @@ typedef struct
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_downsample2x2_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_lumindown_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_luminlog_program_t;
 
 typedef struct
 {
 	int program;
-	int texelsize;
 }pp_luminexp_program_t;
 
 typedef struct
 {
 	int program;
-	int frametime;
 }pp_luminadapt_program_t;
 
 typedef struct
 {
 	int program;
-	int baseTex;
-	int lumTex;
 }pp_brightpass_program_t;
 
 typedef struct
@@ -67,13 +57,6 @@ typedef struct
 typedef struct
 {
 	int program;
-	int baseTex;
-	int blurTex;
-	int lumTex;
-	int blurfactor;
-	int exposure;
-	int darkness;
-	int gamma;
 }pp_tonemap_program_t;
 
 typedef struct
@@ -136,14 +119,24 @@ typedef struct
 	int layer;
 }hud_debug_program_t;
 
+typedef struct drawtexturedrect_program_s
+{
+	int program;
+}drawtexturedrect_program_t;
+
+typedef struct drawfilledrect_program_s
+{
+	int program;
+}drawfilledrect_program_t;
+
 extern cvar_t *r_hdr;
-extern cvar_t *r_hdr_debug;
+
 extern MapConVar *r_hdr_blurwidth;
 extern MapConVar *r_hdr_exposure;
 extern MapConVar *r_hdr_darkness;
 extern MapConVar *r_hdr_adaptation;
+
 extern cvar_t *r_ssao;
-extern cvar_t *r_ssao_debug;
 extern MapConVar *r_ssao_radius;
 extern MapConVar *r_ssao_intensity;
 extern MapConVar *r_ssao_bias;
@@ -155,7 +148,7 @@ extern int last_luminance;
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 
-void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst);
+void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst);
 void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst);
 void R_ClearOITBuffer(void);
 void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst);
@@ -176,12 +169,38 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst);
 void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
-void R_DrawHUDQuad(int w, int h);
-void R_DrawHUDQuad_Texture(int tex, int w, int h);
-void R_ShutdownPostProcess(void);
-void R_InitPostProcess(void);
+
+void R_InitHUD(void);
+void R_ShutdownHUD(void);
+
+void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);
+void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata);
+
+void R_DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
+void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
 
 #define HUD_DEBUG_TEXARRAY 1
 #define HUD_DEBUG_SHADOW 2
 
 void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput);
+
+#define DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED 0x1ull
+#define DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED 0x2ull
+#define DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
+#define DRAW_TEXTURED_RECT_SCISSOR_ENABLED 0x8ull
+#define DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED 0x10ull
+
+#define DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED 0x1ull
+#define DRAW_FILLED_RECT_ADDITIVE_BLEND_ENABLED 0x2ull
+#define DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
+#define DRAW_FILLED_RECT_ZERO_SRC_ALPHA_BLEND_ENABLED 0x8ull
+#define DRAW_FILLED_RECT_SCISSOR_ENABLED 0x8ull
+#define DRAW_FILLED_RECT_LINE_ENABLED 0x10ull
+
+void R_SaveDrawTexturedRectProgramStates(void);
+void R_LoadDrawTexturedRectProgramStates(void);
+void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_program_t* progOutput);
+
+void R_SaveDrawFilledRectProgramStates(void);
+void R_LoadDrawFilledRectProgramStates(void);
+void R_UseDrawFilledRectProgram(program_state_t state, drawfilledrect_program_t* progOutput);

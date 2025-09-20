@@ -135,11 +135,10 @@
 #define WSURF_BIND_NORMAL_TEXTURE 2
 #define WSURF_BIND_PARALLAX_TEXTURE 3
 #define WSURF_BIND_SPECULAR_TEXTURE 4
-#define WSURF_BIND_SHADOWMAP_TEXTURE 5
-#define WSURF_BIND_LIGHTMAP_TEXTURE_0 6
-#define WSURF_BIND_LIGHTMAP_TEXTURE_1 7
-#define WSURF_BIND_LIGHTMAP_TEXTURE_2 8
-#define WSURF_BIND_LIGHTMAP_TEXTURE_3 9
+#define WSURF_BIND_LIGHTMAP_TEXTURE_0 5
+#define WSURF_BIND_LIGHTMAP_TEXTURE_1 6
+#define WSURF_BIND_LIGHTMAP_TEXTURE_2 7
+#define WSURF_BIND_LIGHTMAP_TEXTURE_3 8
 
 #define DSHADE_BIND_DIFFUSE_TEXTURE			0
 #define DSHADE_BIND_LIGHTMAP_TEXTURE		1
@@ -170,6 +169,21 @@
 #define WSURF_VA_SPECULARTEXTURE_TEXCOORD 10
 #define WSURF_VA_STYLES 11
 
+#define TEXTUREDRECT_VA_POSITION		0
+#define TEXTUREDRECT_VA_TEXCOORD		1
+#define TEXTUREDRECT_VA_COLOR			2
+#define TEXTUREDRECT_VA_MATRIX0			3
+#define TEXTUREDRECT_VA_MATRIX1			4
+#define TEXTUREDRECT_VA_MATRIX2			5
+#define TEXTUREDRECT_VA_MATRIX3			6
+
+#define FILLEDRECT_VA_POSITION			0
+#define FILLEDRECT_VA_COLOR				1
+#define FILLEDRECT_VA_MATRIX0			2
+#define FILLEDRECT_VA_MATRIX1			3
+#define FILLEDRECT_VA_MATRIX2			4
+#define FILLEDRECT_VA_MATRIX3			5
+
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
@@ -189,11 +203,6 @@ struct camera_ubo_t {
 };
 
 struct scene_ubo_t{
-
-	mat4 shadowMatrix[3];
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
 	vec4 clipPlane;
 	vec4 fogColor;
 	float fogStart;
@@ -678,9 +687,9 @@ vec4 ProcessLinearBlendShift(vec4 color)
 			if(dot(clipVec, clipPlane) < 0)
 				discard;
 
-			clipPlane.w += 32.0;
-			if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
-				discard;
+			//clipPlane.w += 32.0;
+			//if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
+			//	discard;
 
 		#elif defined(CLIP_ENABLED)
 
@@ -697,28 +706,21 @@ vec4 ProcessLinearBlendShift(vec4 color)
 	{
 #if defined(CLIP_NEARPLANE_ENABLED)
 
-		// 如果距离小于近平面，直接丢弃
 		if (flDistanceToFragment < transitionStart) {
 			discard;
 		}
 
-		// 在过渡区域内使用hashed alpha testing
 		if (flDistanceToFragment < transitionEnd) {
-			// 计算alpha值，距离越近alpha越小
 			float alpha = (flDistanceToFragment - transitionStart) / (transitionEnd - transitionStart);
 
-			// 使用屏幕空间位置创建hash值
 			vec2 screenPos = gl_FragCoord.xy;
 
-			// 简单的hash函数，基于屏幕坐标
 			float hash = fract(sin(dot(screenPos, vec2(12.9898, 78.233))) * 43758.5453);
 
-			// 使用三角形分布的噪声图案，减少条带效应
 			vec2 gridPos = fract(screenPos * 0.25);
 			float triangleNoise = abs(gridPos.x - 0.5) + abs(gridPos.y - 0.5);
 			hash = fract(hash + triangleNoise);
 
-			// 如果hash值大于alpha，丢弃该像素
 			if (hash > alpha) {
 				discard;
 			}

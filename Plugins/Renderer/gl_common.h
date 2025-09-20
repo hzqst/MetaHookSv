@@ -2,6 +2,8 @@
 
 #include "qgl.h"
 
+#define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
+
 typedef struct FBO_Container_s
 {
 	GLuint s_hBackBufferFBO;
@@ -17,6 +19,7 @@ typedef struct FBO_Container_s
 	int iHeight;
 	int iTextureColorFormat;
 	int iTextureDepthFormat;
+	char szFrameBufferName[64]{};
 }FBO_Container_t;
 
 class CDrawArrayAttrib
@@ -44,6 +47,21 @@ public:
 	uint64_t DrawArgsOffset{};
 	uint32_t DrawCount{ 1 };
 };
+
+#define TEXTUREDRECT_VA_POSITION		0
+#define TEXTUREDRECT_VA_TEXCOORD		1
+#define TEXTUREDRECT_VA_COLOR			2
+#define TEXTUREDRECT_VA_MATRIX0			3
+#define TEXTUREDRECT_VA_MATRIX1			4
+#define TEXTUREDRECT_VA_MATRIX2			5
+#define TEXTUREDRECT_VA_MATRIX3			6
+
+#define FILLEDRECT_VA_POSITION			0
+#define FILLEDRECT_VA_COLOR				1
+#define FILLEDRECT_VA_MATRIX0			2
+#define FILLEDRECT_VA_MATRIX1			3
+#define FILLEDRECT_VA_MATRIX2			4
+#define FILLEDRECT_VA_MATRIX3			5
 
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
@@ -84,11 +102,10 @@ public:
 #define WSURF_BIND_NORMAL_TEXTURE 2
 #define WSURF_BIND_PARALLAX_TEXTURE 3
 #define WSURF_BIND_SPECULAR_TEXTURE 4
-#define WSURF_BIND_SHADOWMAP_TEXTURE 5
-#define WSURF_BIND_LIGHTMAP_TEXTURE_0 6
-#define WSURF_BIND_LIGHTMAP_TEXTURE_1 7
-#define WSURF_BIND_LIGHTMAP_TEXTURE_2 8
-#define WSURF_BIND_LIGHTMAP_TEXTURE_3 9
+#define WSURF_BIND_LIGHTMAP_TEXTURE_0 5
+#define WSURF_BIND_LIGHTMAP_TEXTURE_1 6
+#define WSURF_BIND_LIGHTMAP_TEXTURE_2 7
+#define WSURF_BIND_LIGHTMAP_TEXTURE_3 8
 
 #define STUDIO_BIND_TEXTURE_DIFFUSE				0
 #define STUDIO_BIND_TEXTURE_NORMAL				2
@@ -138,6 +155,24 @@ typedef struct vertex3f_s
 {
 	vec3_t	v;
 }vertex3f_t;
+
+typedef struct rect_instance_data_s
+{
+	mat4 matrix;
+}rect_instance_data_t;
+
+typedef struct texturedrectvertex_s
+{
+	vec2_t pos;
+	vec2_t texcoord;
+	vec4_t col;
+}texturedrectvertex_t;
+
+typedef struct filledrectvertex_s
+{
+	vec2_t pos;
+	vec4_t col;
+}filledrectvertex_t;
 
 typedef struct triapivertex_s
 {
@@ -233,10 +268,6 @@ typedef struct camera_ubo_s
 //viewport.z=linkListSize
 typedef struct scene_ubo_s
 {
-	mat4 shadowMatrix[3];
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
 	vec4 clipPlane;
 	vec4 fogColor;
 	float fogStart;

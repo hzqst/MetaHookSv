@@ -158,12 +158,12 @@ typedef struct
 	void* (__fastcall* CCareerBotFrame_ctor)(void* pthis, int dummy, void* parent);
 
 	//SDL2
-	void (*SDL_GetWindowPosition)(void* window, int* x, int* y);
-	void (*SDL_GetWindowSize)(void* window, int* w, int* h);
-	int (*SDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi);
-	void*(*SDL_GetWindowFromID)(int id);
-	int (*SDL_GetWindowWMInfo)(void* window, void* info);
-	void* (*SDL_GL_GetCurrentWindow)(void);
+	void (__cdecl*SDL_GetWindowPosition)(void* window, int* x, int* y);
+	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
+	int (__cdecl*SDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi);
+	void*(__cdecl*SDL_GetWindowFromID)(int id);
+	int (__cdecl*SDL_GetWindowWMInfo)(void* window, void* info);
+	void* (__cdecl*SDL_GL_GetCurrentWindow)(void);
 }private_funcs_t;
 
 extern void *GameViewport;

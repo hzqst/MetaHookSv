@@ -13,16 +13,11 @@ float r_shadow_matrix[3][16] = { 0 };
 float r_world_matrix_inv[16] = { 0 };
 float r_projection_matrix_inv[16] = { 0 };
 
-float r_viewmodel_projection_matrix[16] = { 0 };
-float r_viewmodel_projection_matrix_inv[16] = { 0 };
-
 vec3_t r_frustum_origin[4] = { 0 };
 vec3_t r_frustum_vec[4] = { 0 };
-float r_znear = 0;
-float r_zfar = 0;
+float r_znear = 4;
+float r_zfar = 4096;
 bool r_ortho = false;
-int r_wsurf_drawcall = 0;
-int r_wsurf_polys = 0;
 
 int g_iCurrentFrameLeafLoadCount = 0;
 
@@ -153,10 +148,6 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_EXP2_FOG_ENABLED			,"WSURF_EXP2_FOG_ENABLED"},
 { WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
 { WSURF_SHADOW_CASTER_ENABLED		,"WSURF_SHADOW_CASTER_ENABLED"},
-{ WSURF_SHADOWMAP_ENABLED			,"WSURF_SHADOWMAP_ENABLED"},
-{ WSURF_SHADOWMAP_HIGH_ENABLED		,"WSURF_SHADOWMAP_HIGH_ENABLED"},
-{ WSURF_SHADOWMAP_MEDIUM_ENABLED	,"WSURF_SHADOWMAP_MEDIUM_ENABLED"},
-{ WSURF_SHADOWMAP_LOW_ENABLED		,"WSURF_SHADOWMAP_LOW_ENABLED"},
 { WSURF_SKYBOX_ENABLED				,"WSURF_SKYBOX_ENABLED"},
 { WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
 { WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
@@ -240,18 +231,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 		if (state & WSURF_SHADOW_CASTER_ENABLED)
 			defs << "#define SHADOW_CASTER_ENABLED\n";
 
-		if (state & WSURF_SHADOWMAP_ENABLED)
-			defs << "#define SHADOWMAP_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_HIGH_ENABLED)
-			defs << "#define SHADOWMAP_HIGH_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_MEDIUM_ENABLED)
-			defs << "#define SHADOWMAP_MEDIUM_ENABLED\n";
-
-		if (state & WSURF_SHADOWMAP_LOW_ENABLED)
-			defs << "#define SHADOWMAP_LOW_ENABLED\n";
-
 		if (state & WSURF_SKYBOX_ENABLED)
 			defs << "#define SKYBOX_ENABLED\n";
 
@@ -299,8 +278,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_ALPHA_SOLID_ENABLED)
 			defs << "#define ALPHA_SOLID_ENABLED\n";
-
-		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
 		auto def = defs.str();
 
@@ -1316,25 +1293,7 @@ GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, 
 			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, parallaxtexcoord));
 			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertexdetail_t), OFFSET(brushvertexdetail_t, speculartexcoord));
 		}
-		},
-		[]()
-		{
-			glDisableVertexAttribArray(WSURF_VA_POSITION);
-			glDisableVertexAttribArray(WSURF_VA_NORMAL);
-			glDisableVertexAttribArray(WSURF_VA_S_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_STYLES);
-
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		});
+	});
 
 	pWorldModel->VAOMap[VBOStates] = hVAO;
 
@@ -2087,9 +2046,9 @@ void R_GenerateSceneUBO(void)
 
 	GL_BindStatesForVAO(
 		g_WorldSurfaceRenderer.hDecalVAO,
-		g_WorldSurfaceRenderer.hDecalVBO,
-		g_WorldSurfaceRenderer.hDecalEBO,
 		[]() {
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO);
+
 			glEnableVertexAttribArray(WSURF_VA_POSITION);
 			glEnableVertexAttribArray(WSURF_VA_NORMAL);
 			glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
@@ -2102,6 +2061,7 @@ void R_GenerateSceneUBO(void)
 			glEnableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_STYLES);
+
 			glVertexAttribPointer(WSURF_VA_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
 			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
 			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, s_tangent));
@@ -2114,21 +2074,10 @@ void R_GenerateSceneUBO(void)
 			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
 			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
 			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
-		},
-		[]() {
-			glDisableVertexAttribArray(WSURF_VA_POSITION);
-			glDisableVertexAttribArray(WSURF_VA_NORMAL);
-			glDisableVertexAttribArray(WSURF_VA_S_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glDisableVertexAttribArray(WSURF_VA_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
-			glDisableVertexAttribArray(WSURF_VA_STYLES);
-		});
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalEBO);
+		}
+	);
 
 	if (g_bUseOITBlend)
 	{
@@ -2212,6 +2161,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	if (!texchain.drawCount)
 		return;
 
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafSolid");
+
 	program_state_t WSurfProgramState = 0;
 
 	if (R_IsRenderingGBuffer())
@@ -2240,17 +2191,19 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-	r_wsurf_drawcall++;
-	r_wsurf_polys += texchain.polyCount;
-
 	GL_UseProgram(0);
 
 	R_DrawWorldSurfaceLeafEnd();
+
+	GL_EndDebugGroup();
+
 
 }//R_DrawWorldSurfaceLeafSolid
 
 void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafStatic");
+
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC];
 
 	for (size_t i = 0; i < vTexChainList.size(); ++i)
@@ -2265,7 +2218,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_Bind(base->gl_texturenum);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, base->gl_texturenum);
 
 			R_BeginDetailTextureByDetailTextureCache(texchain.detailTextureCache, &WSurfProgramState);
 		}
@@ -2304,24 +2257,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
-			}
-		}
-
-		if (g_WorldSurfaceRenderer.bShadowmapTexture)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-			if (shadow_numvisedicts[0] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-			}
-			if (shadow_numvisedicts[1] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-			}
-			if (shadow_numvisedicts[2] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 			}
 		}
 
@@ -2434,13 +2369,13 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		R_EndDetailTexture(WSurfProgramState);
 
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.polyCount;
-
 		GL_UseProgram(0);
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
+
+	GL_EndDebugGroup();
+
 }//R_DrawWorldSurfaceLeafStatic
 
 texture_t* R_GetAnimatedTexture(texture_t* base)
@@ -2516,6 +2451,8 @@ texture_t* R_GetAnimatedTexture(texture_t* base)
 
 void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
 {
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafAnim");
+
 	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM];
 
 	for (size_t i = 0; i < vTexChainList.size(); ++i)
@@ -2530,7 +2467,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_Bind(texture->gl_texturenum);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 
 			R_BeginDetailTextureByGLTextureId(texture->gl_texturenum, &WSurfProgramState);
 		}
@@ -2569,24 +2506,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
-			}
-		}
-
-		if (g_WorldSurfaceRenderer.bShadowmapTexture)
-		{
-			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
-
-			if (shadow_numvisedicts[0] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
-			}
-			if (shadow_numvisedicts[1] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
-			}
-			if (shadow_numvisedicts[2] > 0)
-			{
-				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 			}
 		}
 
@@ -2700,13 +2619,13 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		R_EndDetailTexture(WSurfProgramState);
 
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.polyCount;
-
 		GL_UseProgram(0);
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
+
+	GL_EndDebugGroup();
+
 }//R_DrawWorldSurfaceLeafAnim
 
 void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
@@ -2716,6 +2635,8 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	if (!texchain.drawCount)
 		return;
 
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafSky");
+
 	auto texture = texchain.texture;
 
 	program_state_t WSurfProgramState = 0;
@@ -2724,7 +2645,7 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	{
 		WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-		GL_Bind(texture->gl_texturenum);
+		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 	}
 
 	if (R_IsRenderingWaterView())
@@ -2836,12 +2757,11 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
-	r_wsurf_drawcall++;
-	r_wsurf_polys += texchain.polyCount;
-
 	GL_UseProgram(0);
 
 	R_DrawWorldSurfaceLeafEnd();
+
+	GL_EndDebugGroup();
 
 }//R_DrawWorldSurfaceLeafSky
 
@@ -2859,6 +2779,8 @@ float R_ScrollSpeed(void)
 
 void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, cl_entity_t* ent)
 {
+	GL_BeginDebugGroupFormat("R_DrawWorldSurfaceModel - %s", ent->model ? ent->model->name : "<empty>");
+
 	entity_ubo_t EntityUBO;
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
@@ -2868,22 +2790,13 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
-	if (g_WorldSurfaceRenderer.bShadowmapTexture)
-	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
-		glActiveTexture(GL_TEXTURE0);
-	}
-
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
 		for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
-				glActiveTexture(GL_TEXTURE0);
+				GL_BindTextureUnit(WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx, GL_TEXTURE_2D_ARRAY, g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx]);
 			}
 		}
 	}
@@ -2907,6 +2820,18 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			//Use previous leaf when current leaf not available
 			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf.lock();
+		}
+
+		//Always draw skybox before world, when rendering water view
+		if (R_IsRenderingWaterView())
+		{
+			if (pLeaf)
+			{
+				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+				{
+					R_DrawSkyBox();
+				}
+			}
 		}
 
 		if (pLeaf && pLeaf->hABO)
@@ -2951,11 +2876,14 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 		}
 
-		if (pLeaf)
+		if (!R_IsRenderingWaterView())
 		{
-			if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+			if (pLeaf)
 			{
-				R_DrawSkyBox();
+				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
+				{
+					R_DrawSkyBox();
+				}
 			}
 		}
 	}
@@ -2979,30 +2907,23 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 	R_DrawDecals(ent);
 
-	if (g_WorldSurfaceRenderer.bShadowmapTexture)
-	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SHADOWMAP_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glActiveTexture(GL_TEXTURE0);
-	}
-
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
 		for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 		{
 			if (g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx])
 			{
-				glActiveTexture(GL_TEXTURE0 + WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+				GL_BindTextureUnit(WSURF_BIND_LIGHTMAP_TEXTURE_0 + lightmap_idx, GL_TEXTURE_2D_ARRAY, 0);
 			}
 		}
-		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (pLeaf)
 	{
 		R_DrawWaters(pModel.get(), pLeaf.get(), ent);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_InitWSurf(void)
@@ -3532,6 +3453,9 @@ detail_texture_cache_t* R_FindDetailTextureCache(int texId)
 
 void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, program_state_t* WSurfProgramState)
 {
+	if (!r_detailtextures)
+		return;
+
 	if (!r_detailtextures->value)
 		return;
 
@@ -3540,7 +3464,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum)
 	{
-		GL_Bind(cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_REPLACETEXTURE_ENABLED;
@@ -3548,9 +3472,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
@@ -3558,9 +3480,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
@@ -3568,9 +3488,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
@@ -3578,9 +3496,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 	if (cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum)
 	{
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
+		GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
 
 		if (WSurfProgramState)
 			*WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
@@ -3589,6 +3505,9 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t* cache, pro
 
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t* WSurfProgramState)
 {
+	if (!r_detailtextures)
+		return;
+
 	if (!r_detailtextures->value)
 		return;
 
@@ -3610,41 +3529,28 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_DETAIL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_NORMALTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_NORMAL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_PARALLAXTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_PARALLAX_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
+		GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 
 	if (WSurfProgramState & WSURF_SPECULARTEXTURE_ENABLED)
 	{
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE0 + WSURF_BIND_SPECULAR_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
-	}
-
-	if (bRestore)
-	{
-		glActiveTexture(GL_TEXTURE0);
+		GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, 0);
 	}
 }
 
@@ -3704,8 +3610,8 @@ void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const cha
 
 void R_ClearBSPEntities()
 {
-	g_EnvWaterControls.clear();
 	r_flashlight_cone_texture_name.clear();
+	g_EnvWaterControls.clear();
 	g_DynamicLights.clear();
 }
 
@@ -4004,126 +3910,93 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t* ent)
 
 void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 {
-	light_dynamic_t dynlight;
+	/*
+		Example:
 
-	dynlight.type = DLIGHT_POINT;
-	VectorClear(dynlight.origin);
-	VectorClear(dynlight.color);
-	dynlight.distance = 0;
-	dynlight.ambient = 0;
-	dynlight.diffuse = 0;
-	dynlight.specular = 0;
-	dynlight.specularpow = 0;
-
-	auto origin_string = ValueForKey(ent, "origin");
-	if (origin_string)
-	{
-		float temp[4];
-
-		if (sscanf(origin_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
-			dynlight.origin[0] = temp[0];
-			dynlight.origin[1] = temp[1];
-			dynlight.origin[2] = temp[2];
+			"origin" "-30 68 72"
+			"size" "1024.0"
+			"color" "192 192 192"
+			"classname" "light_dynamic"
+			"type" "directional"
+			"ambient" "0.1"
+			"diffuse" "1.0"
+			"specular" "1.0"
+			"specularpow" "10.0"
+			"shadow" "1"
 		}
-		else
+	*/
+	auto dynlight = std::make_shared<CDynamicLight>();
+
+	auto type_string = ValueForKey(ent, "type");
+	if (type_string)
+	{
+		if (!strcmp(type_string, "point"))
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"origin\" in entity \"light_dynamic\"\n");
+			dynlight->type = DynamicLightType_Point;
+		}
+		else if(!strcmp(type_string, "spot"))
+		{
+			dynlight->type = DynamicLightType_Spot;
+		}
+		else if (!strcmp(type_string, "directional"))
+		{
+			dynlight->type = DynamicLightType_Directional;
 		}
 	}
 
-	auto color_string = ValueForKey(ent, "_light");
-	if (color_string)
-	{
-		float temp[4];
-		if (sscanf(color_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			dynlight.color[0] = math_clamp(temp[0], 0, 255) / 255.0f;
-			dynlight.color[1] = math_clamp(temp[1], 0, 255) / 255.0f;
-			dynlight.color[2] = math_clamp(temp[2], 0, 255) / 255.0f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_light\" in entity \"light_dynamic\"\n");
-		}
+#define PARSE_KEY_VALUE_STRING(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, dynlight->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
+		}\
 	}
 
-	auto distance_string = ValueForKey(ent, "_distance");
-	if (distance_string)
-	{
-		float temp[4];
-		if (sscanf(distance_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.distance = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_distance\" in entity \"light_dynamic\"\n");
-		}
+#define PARSE_KEY_VALUE_STRING_WRITEREF(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, &dynlight->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"light_dynamic\"\n");\
+		}\
+	}
+#define PARSE_KEY_VALUE_STRING_WRITEINT(name) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		dynlight->name = atoi(name##_string);\
 	}
 
-	auto ambient_string = ValueForKey(ent, "_ambient");
-	if (ambient_string)
-	{
-		float temp[4];
-		if (sscanf(ambient_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.ambient = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_ambient\" in entity \"light_dynamic\"\n");
-		}
-	}
+	PARSE_KEY_VALUE_STRING(origin, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING(angles, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING(color, UTIL_ParseStringAsColor3);
+	PARSE_KEY_VALUE_STRING_WRITEREF(size, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(distance, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(ambient, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(diffuse, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(specular, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(specularpow, UTIL_ParseStringAsVector1);
 
-	auto diffuse_string = ValueForKey(ent, "_diffuse");
-	if (diffuse_string)
-	{
-		float temp[4];
-		if (sscanf(diffuse_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.diffuse = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_diffuse\" in entity \"light_dynamic\"\n");
-		}
-	}
+	PARSE_KEY_VALUE_STRING_WRITEINT(shadow);
+	PARSE_KEY_VALUE_STRING_WRITEINT(follow_player);
 
-	auto specular_string = ValueForKey(ent, "_specular");
-	if (specular_string)
-	{
-		float temp[4];
-		if (sscanf(specular_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.specular = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_specular\" in entity \"light_dynamic\"\n");
-		}
-	}
-
-	auto specularpow_string = ValueForKey(ent, "_specularpow");
-	if (specularpow_string)
-	{
-		float temp[4];
-		if (sscanf(specularpow_string, "%f", &temp[0]) == 1)
-		{
-			dynlight.specularpow = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_specularpow\" in entity \"light_dynamic\"\n");
-		}
-	}
+#undef PARSE_KEY_VALUE_STRING
+#undef PARSE_KEY_VALUE_STRING_WRITEREF
+#undef PARSE_KEY_VALUE_STRING_WRITEINT
 
 	g_DynamicLights.emplace_back(dynlight);
 }
 
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 {
-	auto pWaterControl = new CEnvWaterControl;
+	auto pWaterControl = std::make_shared<CEnvWaterControl>();
 
 	auto basetexture_string = ValueForKey(ent, "basetexture");
 	if (basetexture_string)
@@ -4142,94 +4015,39 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 		pWaterControl->normalmap = normalmap_string;
 	}
 
-	auto fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
-	if (fresnelfactor_string)
-	{
-		float temp[4];
-		if (sscanf(fresnelfactor_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
-		{
-			pWaterControl->fresnelfactor[0] = math_clamp(temp[0], 0, 999999);
-			pWaterControl->fresnelfactor[1] = math_clamp(temp[1], 0, 999999);
-			pWaterControl->fresnelfactor[2] = math_clamp(temp[2], 0, 999999);
-			pWaterControl->fresnelfactor[3] = math_clamp(temp[3], 0, 1);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\", 4 floats are required.\n");
-		}
+#define PARSE_KEY_VALUE_STRING(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, pWaterControl->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"env_water_control\"\n");\
+		}\
 	}
 
-	auto normfactor_string = ValueForKey(ent, "normfactor");
-	if (normfactor_string)
-	{
-		float temp[4];
-		if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->normfactor = math_clamp(temp[0], 0, 10);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"normfactor\" in entity \"env_water_control\", 2 floats are required.\n");
-		}
+#define PARSE_KEY_VALUE_STRING_WRITEREF(name, parser) auto name##_string = ValueForKey(ent, #name);\
+	if (name##_string)\
+	{\
+		if (parser(name##_string, &pWaterControl->name))\
+		{\
+		}\
+		else\
+		{\
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \" #name \" in entity \"env_water_control\"\n");\
+		}\
 	}
 
-	auto depthfactor_string = ValueForKey(ent, "depthfactor");
-	if (depthfactor_string)
-	{
-		float temp[4];
-		if (sscanf(depthfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			pWaterControl->depthfactor[0] = math_clamp(temp[0], 0, 10);
-			pWaterControl->depthfactor[1] = math_clamp(temp[1], 0, 10);
-			pWaterControl->depthfactor[2] = math_clamp(temp[2], 0, 999999);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\", 3 floats are required.\n");
-		}
-	}
+	PARSE_KEY_VALUE_STRING(fresnelfactor, UTIL_ParseStringAsVector4);
+	PARSE_KEY_VALUE_STRING(depthfactor, UTIL_ParseStringAsVector3);
+	PARSE_KEY_VALUE_STRING_WRITEREF(normfactor, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(minheight, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(maxtrans, UTIL_ParseStringAsVector1);
+	PARSE_KEY_VALUE_STRING_WRITEREF(speedrate, UTIL_ParseStringAsVector1);
 
-	auto minheight_string = ValueForKey(ent, "minheight");
-	if (minheight_string)
-	{
-		float temp[4];
-		if (sscanf(minheight_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->minheight = math_clamp(temp[0], 0, 10000);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minheight\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
-
-	auto maxtrans_string = ValueForKey(ent, "maxtrans");
-	if (maxtrans_string)
-	{
-		float temp[4];
-		if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->maxtrans = math_clamp(temp[0], 0, 255) / 255.0f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
-
-	auto speedrate_string = ValueForKey(ent, "speedrate");
-	if (speedrate_string)
-	{
-		float temp[4];
-		if (sscanf(speedrate_string, "%f", &temp[0]) == 1)
-		{
-			pWaterControl->speedrate = temp[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"speedrate\" in entity \"env_water_control\", 1 float is required.\n");
-		}
-	}
+#undef PARSE_KEY_VALUE_STRING
+#undef PARSE_KEY_VALUE_STRING_WRITEREF
 
 	auto level_string = ValueForKey(ent, "level");
 	if (level_string)
@@ -4395,7 +4213,7 @@ void R_DrawBrushModel(cl_entity_t* e)
 	qboolean rotated;
 
 	(*currententity) = e;
-	(*currenttexture) = -1;
+	//(*currenttexture) = -1;
 
 	auto clmodel = e->model;
 
@@ -4458,11 +4276,6 @@ void R_DrawBrushModel(cl_entity_t* e)
 		g_WorldSurfaceRenderer.bLightmapTexture = false;
 	}
 
-	g_WorldSurfaceRenderer.bShadowmapTexture = false;
-
-	if (R_ShouldRenderShadowScene() && r_draw_opaque)
-		g_WorldSurfaceRenderer.bShadowmapTexture = true;
-
 	auto pModel = R_GetWorldSurfaceModel(clmodel);
 
 	if (pModel)
@@ -4471,15 +4284,15 @@ void R_DrawBrushModel(cl_entity_t* e)
 	}
 
 	glDepthMask(GL_TRUE);
-	//TODO: Fixed-function can be done in shader
-	glDisable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_NOTEQUAL, 0);
 	glDisable(GL_BLEND);
 }
 
-void R_SetupCameraUBO(void)
+void R_SetupCameraUBO()
 {
 	camera_ubo_t CameraUBO;
+
+	InvertMatrix(r_world_matrix, r_world_matrix_inv);
+	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
 	memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
 	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
@@ -4519,20 +4332,6 @@ void R_SetupSceneUBO(void)
 {
 	scene_ubo_t SceneUBO;
 
-	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
-
-	vec3_t vforward;
-	gEngfuncs.pfnAngleVectors(r_shadow_angles->GetValues(), vforward, NULL, NULL);
-	memcpy(SceneUBO.shadowDirection, vforward, sizeof(vec3_t));
-	memcpy(SceneUBO.shadowColor, r_shadow_color->GetValues(), sizeof(vec3_t));
-
-	SceneUBO.shadowColor[3] = r_shadow_intensity->GetValue();
-
-	memcpy(SceneUBO.shadowFade, r_shadow_distfade->GetValues(), sizeof(vec2_t));
-	memcpy(&SceneUBO.shadowFade[2], r_shadow_lumfade->GetValues(), sizeof(vec2_t));
-
 	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
 
 	if (R_IsRenderingReflectView())
@@ -4542,14 +4341,22 @@ void R_SetupSceneUBO(void)
 	}
 	else if (R_IsRenderingRefractView())
 	{
-		if (g_CurrentReflectCache->normal[2] > 0)
+		if (R_IsAboveWater(g_CurrentReflectCache))
 		{
-			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
-			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			if (g_CurrentReflectCache->normal[2] > 0)
+			{
+				float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+				memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			}
+			else
+			{
+				float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+				memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+			}
 		}
 		else
 		{
-			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
+			float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], -g_CurrentReflectCache->normal[2], g_CurrentReflectCache->planedist };
 			memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 		}
 	}
@@ -4623,27 +4430,34 @@ void R_SetupDLightUBO(void)
 	if (!R_CanRenderGBuffer())
 	{
 		const auto PointLightCallback = [](PointLightCallbackArgs* args, void* context)
-			{
-				auto DLightUBO = (dlight_ubo_t*)(context);
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
 
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
-				DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->origin[0];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->origin[1];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->origin[2];
+			DLightUBO->origin_radius[g_WorldSurfaceRenderer.iNumLegacyDLights][3] = args->radius;
 
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
-				DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][0] = args->color[0];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][1] = args->color[1];
+			DLightUBO->color_minlight[g_WorldSurfaceRenderer.iNumLegacyDLights][2] = args->color[2];
 
-				g_WorldSurfaceRenderer.iNumLegacyDLights++;
-			};
+			g_WorldSurfaceRenderer.iNumLegacyDLights++;
+		};
 
-		const auto SpotlightCallback = [](SpotLightCallbackArgs* args, void* context)
-			{
-				auto DLightUBO = (dlight_ubo_t*)(context);
-			};
+		const auto SpotLightCallback = [](SpotLightCallbackArgs* args, void* context)
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
+			//Pass nothing to dlight ubo
+		};
 
-		R_IterateDynamicLights(PointLightCallback, SpotlightCallback, &DLightUBO);
+		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+		{
+			auto DLightUBO = (dlight_ubo_t*)(context);
+			//Pass nothing to dlight ubo
+		};
+
+		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, &DLightUBO);
 	}
 
 	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iNumLegacyDLights;
@@ -4654,44 +4468,13 @@ void R_SetupDLightUBO(void)
 /*
 	Purpose : Setup texture states and SceneUBO for DrawWorld
 */
-
 void R_PrepareDrawWorld(void)
 {
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = false;
-	g_WorldSurfaceRenderer.bShadowmapTexture = false;
 
-	//Shall we put this in shadow pass?
-	if (R_ShouldRenderShadowScene())
-	{
-		g_WorldSurfaceRenderer.bShadowmapTexture = true;
-
-		const float bias[16] = {
-			0.5f, 0.0f, 0.0f, 0.0f,
-			0.0f, 0.5f, 0.0f, 0.0f,
-			0.0f, 0.0f, 0.5f, 0.0f,
-			0.5f, 0.5f, 0.5f, 1.0f
-		};
-
-		glMatrixMode(GL_TEXTURE);
-		glPushMatrix();
-		for (int i = 0; i < 3; ++i)
-		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				glLoadIdentity();
-				glLoadMatrixf(bias);
-				glMultMatrixf(shadow_projmatrix[i]);
-				glMultMatrixf(shadow_mvmatrix[i]);
-				glGetFloatv(GL_TEXTURE_MATRIX, r_shadow_matrix[i]);
-			}
-		}
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-	}
-
-	R_SetupSceneUBO();
 	R_SetupCameraUBO();
+	R_SetupSceneUBO();
 	R_SetupDLightUBO();
 }
 
@@ -4720,15 +4503,15 @@ void R_DrawWorld(void)
 	VectorCopy((*r_refdef.vieworg), modelorg);
 
 	(*currententity) = r_worldentity;
-	(*currenttexture) = -1;
+	//(*currenttexture) = -1;
 
 	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
 
 	//Just for backward-compatibility
-	glColor3f(1.0f, 1.0f, 1.0f);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//glColor3f(1.0f, 1.0f, 1.0f);
+	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = true;

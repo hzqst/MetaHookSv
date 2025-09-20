@@ -100,6 +100,12 @@ typedef struct mh_plugininfo_s
 #include <cdll_export.h>
 #include <cdll_int.h>
 
+#include <IFileSystem.h>
+#include <ICommandLine.h>
+#include <IRegistry.h>
+
+#define METAHOOK_API_VERSION 107
+
 typedef struct hook_s hook_t;
 
 #define VIDEOMODE_SOFTWARE 0
@@ -616,6 +622,17 @@ typedef struct metahook_api_s
 	void (*DeleteThreadPool)(ThreadWorkItemHandle_t hThreadPool);
 
 	void (*DeleteWorkItem)(ThreadWorkItemHandle_t hWorkItem);
+
+	/*
+		Purpose:Same as VideoMode_IsWindowed() in engine
+	*/
+	bool (*VideoModeIsWindowed)();
+
+	/*
+		Purpose: return "IVideoMode* videomode";
+	*/
+	void*(*VideoMode)();
+
 	//Always terminate with a NULL
 	PVOID Terminator;
 
@@ -626,12 +643,6 @@ typedef struct mh_enginesave_s
 	cl_exportfuncs_t *pExportFuncs;
 	cl_enginefunc_t *pEngineFuncs;
 }mh_enginesave_t;
-
-#include <IFileSystem.h>
-#include <ICommandLine.h>
-#include <IRegistry.h>
-
-#define METAHOOK_API_VERSION 106
 
 class ICommandLine;
 class IFileSystem;

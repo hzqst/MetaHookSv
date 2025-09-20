@@ -151,10 +151,20 @@ void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCU
 	ctx.ImageSize = ImageSize;
 	ctx.flags = flags;
 
-	if (ctx.ImageBase == MH_GetEngineBase())
+	UNICODE_STRING EngineDLlName{};
+	RtlInitUnicodeString(&EngineDLlName, L"hw.dll");
+
+	UNICODE_STRING ClientDLlName{};
+	RtlInitUnicodeString(&ClientDLlName, L"client.dll");
+
+	if (ctx.ImageBase == MH_GetEngineBase() || 0 == RtlCompareUnicodeString(BaseDllName, &EngineDLlName, TRUE))
+	{
 		ctx.flags |= LOAD_DLL_NOTIFICATION_IS_ENGINE;
-	else if (ctx.ImageBase == MH_GetClientBase())
+	}
+	else if (ctx.ImageBase == MH_GetClientBase() || 0 == RtlCompareUnicodeString(BaseDllName, &ClientDLlName, TRUE))
+	{
 		ctx.flags |= LOAD_DLL_NOTIFICATION_IS_CLIENT;
+	}
 
 	ctx.FullDllName = NULL;
 	ctx.BaseDllName = NULL;

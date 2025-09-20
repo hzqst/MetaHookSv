@@ -17,9 +17,14 @@
 #include <triangleapi.h>
 #include <entity_types.h>
 
+#include <IEngineSurface.h>
+#include <IVideoMode.h>
+
 #include <set>
 #include <map>
 #include <atomic>
+#include <memory>
+#include <sstream>
 
 #include "qgl.h"
 #include "mathlib2.h"
@@ -44,6 +49,9 @@
 #include "gl_cvar.h"
 #include "gl_portal.h"
 #include "gl_entity.h"
+#include "gl_ringbuffer.h"
+
+#define MAX_SAVESTACK 16
 
 typedef struct walk_context_s
 {
@@ -65,6 +73,10 @@ typedef struct refdef_s
 	qboolean *onlyClientDraws;
 }refdef_t;
 
+extern GLuint r_empty_vao;
+
+extern vec4_t g_GLColor;
+
 extern refdef_t r_refdef;
 extern refdef_GoldSrc_t *r_refdef_GoldSrc;
 extern refdef_SvEngine_t *r_refdef_SvEngine;
@@ -77,6 +89,11 @@ extern float r_yfov_viewmodel;
 extern float r_xfov_currentpass;
 extern float r_yfov_currentpass;
 extern float r_screenaspect;
+
+extern bool r_fog_enabled;
+extern int r_fog_mode;
+extern float r_fog_control[3];
+extern float r_fog_color[4];
 
 extern cl_entity_t* r_worldentity;
 extern model_t** cl_worldmodel;
@@ -92,6 +109,19 @@ extern mleaf_t **r_oldviewleaf;
 extern int *r_loading_skybox;
 
 extern RECT *window_rect;
+
+extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
+extern int(*g_iVertexBufferEntriesUsed);
+
+extern CPMBRingBuffer g_TexturedRectVertexBuffer;
+extern CPMBRingBuffer g_FilledRectVertexBuffer;
+extern CPMBRingBuffer g_RectInstanceBuffer;
+
+extern RECT* g_ScissorRect;
+extern bool* g_bScissor;
+
+extern IEngineSurface* engineSurface;
+extern IEngineSurface_HL25* engineSurface_HL25;
 
 extern float * s_fXMouseAspectAdjustment;
 extern float * s_fYMouseAspectAdjustment;
@@ -153,6 +183,14 @@ extern float *g_UserFogDensity;
 extern float *g_UserFogStart;
 extern float *g_UserFogEnd;
 
+extern qboolean* giScissorTest;
+extern int* scissor_x;
+extern int* scissor_y;
+extern int* scissor_width;
+extern int* scissor_height;
+
+extern screenfade_t* cl_sf;
+
 extern model_t *mod_known;
 extern int *mod_numknown;
 
@@ -171,6 +209,8 @@ extern float* g_iEndDist_SCClient;
 extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 extern int* g_ViewEntityIndex_SCClient;
+
+extern void** (*pmainwindow);
 
 extern bool g_bPortalClipPlaneEnabled[6];
 
@@ -358,12 +398,6 @@ extern cvar_t* r_wsurf_sky_fog;
 
 extern cvar_t* gl_nearplane;
 
-//extern cvar_t* viewmodel_nearplane;
-
-//extern cvar_t* viewmodel_farplane;
-
-//extern cvar_t* viewmodel_scale;
-
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -380,12 +414,16 @@ void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
 void Host_ClearMemory(qboolean bQuite);
+void __fastcall CVideoMode_Common_DrawStartupGraphic(void* videomode, int dummy, void* window);
+void __fastcall CGame_DrawStartupVideo(void* pgame, int dummy, const char *filename, void* window);
+void DT_Initialize();
 void R_Init(void);
 void R_Shutdown(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
-void R_PrepareDrawWorld(void);
+void R_PrepareDrawWorld(void); 
+void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4]);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_CheckVariables(void);
@@ -414,8 +452,13 @@ void R_DrawEntitiesOnList(void);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AddTEntity(cl_entity_t *pEnt);
 void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
-void GL_Shutdown(void);
+void GL_Shutdown(void* window, HDC pmaindc, HGLRC pbaseRC);
 void GL_Init(void);
+qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
+void GL_Set2D();
+void GL_Finish2D();
+void GL_Set2DEx(int x, int y, int width, int height);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
 GLuint GL_GenTexture(void);
@@ -432,15 +475,17 @@ void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* d
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data);
+void GL_UploadDataToVBOStreamMap(GLuint VBO, size_t size, const void* data);
 void GL_UploadSubDataToVBO(GLuint VBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBOStreamDraw(GLuint EBO, size_t size, const void* data);
+void GL_UploadDataToEBOStreamMap(GLuint EBO, size_t size, const void* data);
 void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
 void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
-void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind, const std::function<void()>& unbind);
-void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind, const std::function<void()>& unbind);
+void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind);
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind);
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
@@ -461,12 +506,49 @@ void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
 
-void __stdcall SCClient_glBegin(int GLPrimitiveCode);
-void __stdcall SCClient_glEnd();
-void __stdcall SCClient_glColor4f(float r, float g, float b, float a);
+float* R_GetWorldMatrix();
+void R_PushWorldMatrix();
+void R_PopWorldMatrix();
+void R_LoadIdentityForWorldMatrix();
+void R_TranslateWorldMatrix(float x, float y, float z);
+void R_SetupPlayerViewWorldMatrix(const vec3_t origin, const vec3_t viewangles);
+
+float* R_GetProjectionMatrix();
+void R_PushProjectionMatrix();
+void R_PopProjectionMatrix();
+void R_LoadIdentityForProjectionMatrix();
+void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
+void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar);
+void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar);
+
+void GL_BeginDebugGroup(const char* name);
+void GL_BeginDebugGroupFormat(const char* fmt, ...);
+void GL_EndDebugGroup();
+
+void __stdcall triapi_glBegin(int GLPrimitiveCode);
+void __stdcall triapi_glEnd();
+void __stdcall CoreProfile_glColor4f(float r, float g, float b, float a);
+void __stdcall CoreProfile_glColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+HGLRC __stdcall CoreProfile_qwglCreateContext(HDC hDC);
+const GLubyte* __stdcall CoreProfile_glGetString(GLenum e);
+void __stdcall CoreProfile_glAlphaFunc(GLenum func, GLclampf ref);
+void __stdcall CoreProfile_glEnable(GLenum cap);
+void __stdcall CoreProfile_glDisable(GLenum cap);
+void __stdcall CoreProfile_glShadeModel(GLenum mode);
+void __stdcall CoreProfile_glTexEnvf(GLenum target, GLenum pname, GLfloat param);
+void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat param);
+GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap);
+void __stdcall CoreProfile_glBegin(int GLPrimitiveCode);
+void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
+void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc);
+void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc);
+int __cdecl CoreProfile_GL_SetAttribute(int attr, int value);
+void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags);
+int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension);
 
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
+void GL_LoadFilterTexture(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
@@ -474,30 +556,45 @@ void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 mbasenode_t* PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs);
-void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+
+void staticFreeTextureId(int id);
+void __fastcall enginesurface_pushMakeCurrent(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+void __fastcall enginesurface_popMakeCurrent(void* pthis, int);
+void __fastcall enginesurface_drawFilledRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawOutlinedRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawLine(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawPolyLine(void* pthis, int, int* px, int* py, int numPoints);
+void __fastcall enginesurface_drawSetTextureRGBA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
+void __fastcall enginesurface_drawSetTexture(void* pthis, int, int textureId);
+void __fastcall enginesurface_drawTexturedRect(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int y0, int x1, int y1);
+void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
 void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
 int __fastcall enginesurface_createNewTextureID(void* pthis, int);
-void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
+void __fastcall enginesurface_drawGetTextureSize(void* pthis, int, int textureId, int& wide, int& tall);
+bool __fastcall enginesurface_isTextureIDValid(void* pthis, int, int);
+void __fastcall enginesurface_drawSetSubTextureRGBA(void* pthis, int, int textureID, int drawX, int drawY, const unsigned char* rgba, int subTextureWide, int subTextureTall);
+void __fastcall enginesurface_drawFlushText(void* pthis, int dummy);
+void __fastcall enginesurface_drawSetTextureBGRA(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, bool forceUpload);
+void __fastcall enginesurface_drawUpdateRegionTextureBGRA(void* pthis, int, int textureID, int x, int y, const unsigned char* pchData, int wide, int tall);
+
+void Draw_Frame(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameHoles(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameHoles_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameAdditive(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameAdditive_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
+void Draw_SpriteFrameGeneric(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+void Draw_SpriteFrameGeneric_SvEngine(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, int src, int dest, int width, int height);
+void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a);
+void Draw_FillRGBABlend(int x, int y, int w, int h, int r, int g, int b, int a);
+void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a);
+void Draw_Pic(int x, int y, qpic_t *pic);
+void D_FillRect(vrect_t* r, unsigned char* color);
+
 void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
 void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
-qboolean R_ParseStringAsColor1(const char *string, float *vec);
-qboolean R_ParseStringAsColor2(const char *string, float *vec);
-qboolean R_ParseStringAsColor3(const char *string, float *vec);
-qboolean R_ParseStringAsColor4(const char *string, float *vec);
-qboolean R_ParseStringAsVector1(const char *string, float *vec);
-qboolean R_ParseStringAsVector2(const char *string, float *vec);
-qboolean R_ParseStringAsVector3(const char *string, float *vec);
-qboolean R_ParseStringAsVector4(const char *string, float *vec);
-qboolean R_ParseCvarAsColor1(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor2(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor3(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsColor4(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector1(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector2(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec);
-qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);
 GLuint GL_GenTextureRGBA8(int w, int h, bool immutable);
@@ -527,7 +624,8 @@ FBO_Container_t* GL_GetCurrentRenderingFBO();
 void GL_BindFrameBuffer(FBO_Container_t *fbo);
 void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
 
-void GL_GenFrameBuffer(FBO_Container_t *s);
+const char* GL_GetFrameBufferName(FBO_Container_t* s);
+void GL_GenFrameBuffer(FBO_Container_t* s, const char* szFrameBufferName);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
@@ -556,9 +654,6 @@ void R_BuildCubemaps_f(void);
 void R_SaveProgramStates_f(void);
 void R_LoadProgramStates_f(void);
 
-void R_LoadLegacyOpenGLMatrixForViewModel();
-void R_LoadLegacyOpenGLMatrixForWorld();
-
 void R_Reload_f(void);
 void R_DumpTextures_f(void);
 
@@ -585,7 +680,10 @@ bool R_IsRenderingFlippedViewModel(void);
 
 bool R_IsDeferredRenderingEnabled(void);
 
+void* Sys_GetMainWindow();
+
 //Fog
+bool R_CanRenderFog();
 bool R_IsRenderingFog();
 void R_DisableRenderingFog();
 void R_InhibitRenderingFog();
@@ -606,11 +704,10 @@ void GL_PopMatrix(void);
 void GL_PushDrawState(void);
 void GL_PopDrawState(void);
 
-void GL_Begin2D(void);
-void GL_Begin2DEx(int width, int height);
-void GL_End2D(void);
+void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum);
 
 void GL_ClearColor(vec4_t color);
+void GL_ClearDepth(float depth);
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask);
 void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask);
 void GL_ClearStencil(int stencilmask);
@@ -621,9 +718,6 @@ void GL_BeginStencilWrite(int ref, int write_mask);
 void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_EndStencil();
-
-void GL_BeginFullScreenQuad(bool enableDepthTest);
-void GL_EndFullScreenQuad(void);
 
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);
@@ -658,8 +752,6 @@ bool EngineIsEntityInVisibleList(cl_entity_t* ent);
 
 float GetFrameRateFromFrameDuration(int frameduration);
 
-int _cdecl SDL_GL_SetAttribute(int attr, int value);
-
 void R_EmitFlashlights();
 void R_CreateLowerBodyModel();
 
@@ -679,7 +771,6 @@ extern bool r_draw_shadowscene;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;
-extern bool r_draw_legacysprite;
 extern bool r_draw_reflectview;
 extern bool r_draw_refractview;
 extern bool r_draw_portalview;

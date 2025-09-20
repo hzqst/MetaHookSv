@@ -2,12 +2,12 @@
 
 #include "common.h"
 
-uniform float frametime;
+layout(location = 0) uniform float frametime;
 
-layout(binding=0) uniform sampler2D currentTex;
-layout(binding=1) uniform sampler2D adaptedTex;
+layout(binding = 0) uniform sampler2D currentTex;
+layout(binding = 1) uniform sampler2D adaptedTex;
 
-layout(location=0) out float out_Color;
+layout(location = 0) out float out_Color;
 
 void main()
 {
