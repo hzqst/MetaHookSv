@@ -296,8 +296,11 @@ typedef struct alight_s
 //This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
 #define kRenderFxDrawShadowHair 0x80000005
 
-//This is the renderfx for rendering lowerbody
-#define kRenderFxLowerBody 30
+//This is the renderfx for rendering post-process glow
+#define kRenderFxPostProcessGlow 30
+
+//This is the renderfx for rendering post-process glow (wallhack)
+#define kRenderFxPostProcessGlowWallHack 31
 
 //gl_model
 

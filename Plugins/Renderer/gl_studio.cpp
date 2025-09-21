@@ -3527,6 +3527,8 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	{
 		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
 
+		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHair");
+
 		GL_BindFrameBuffer(&s_BackBufferFBO2);
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
@@ -3545,25 +3547,35 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		(*currententity)->curstate.renderamt = saved_renderamt;
 
 		GL_BindFrameBuffer(CurrentFBO);
+
+		GL_EndDebugGroup();
 	}
 
 	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
+		{
+			int saved_renderfx = (*currententity)->curstate.renderfx;
+			int saved_renderamt = (*currententity)->curstate.renderamt;
 
-		//Draw normal pass
+			GL_BeginDebugGroup("R_StudioRenderModel - DrawNormalPass");
 
-		(*currententity)->curstate.renderfx = 0;
+			//Draw normal pass
 
-		pfnRenderModel(pthis, dummy);
+			(*currententity)->curstate.renderfx = 0;
 
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
+			pfnRenderModel(pthis, dummy);
+
+			(*currententity)->curstate.renderfx = saved_renderfx;
+			(*currententity)->curstate.renderamt = saved_renderamt;
+
+			GL_EndDebugGroup();
+		}
 
 		//Outline pass
 		if (r_draw_hasoutline)
 		{
+			GL_BeginDebugGroup("R_StudioRenderModel - DrawOutlinePass");
+
 			int saved_renderfx = (*currententity)->curstate.renderfx;
 			int saved_renderamt = (*currententity)->curstate.renderamt;
 
@@ -3574,6 +3586,8 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 			(*currententity)->curstate.renderfx = saved_renderfx;
 			(*currententity)->curstate.renderamt = saved_renderamt;
+
+			GL_EndDebugGroup();
 		}
 
 		if (r_draw_opaque)
@@ -3603,11 +3617,19 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	else
 	{
 		//Draw normal pass
-		pfnRenderModel(pthis, dummy);
+		{
+			GL_BeginDebugGroup("R_StudioRenderModel - DrawNormalPass");
+
+			pfnRenderModel(pthis, dummy);
+
+			GL_EndDebugGroup();
+		}
 
 		//Outline pass
 		if (r_draw_hasoutline)
 		{
+			GL_BeginDebugGroup("R_StudioRenderModel - DrawOutlinePass");
+
 			int saved_renderfx = (*currententity)->curstate.renderfx;
 			int saved_renderamt = (*currententity)->curstate.renderamt;
 
@@ -3618,25 +3640,17 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 			(*currententity)->curstate.renderfx = saved_renderfx;
 			(*currententity)->curstate.renderamt = saved_renderamt;
+
+			GL_EndDebugGroup();
 		}
 	}
 
-	GL_ClearStencil(STENCIL_MASK_HAS_OUTLINE);
-
-#if 0 //Do we need to clear FBO2?
-	if (r_draw_hashair)
+	//only clear if there is.
+	if (r_draw_hasoutline)
 	{
-		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
-
-		GL_BindFrameBuffer(&s_BackBufferFBO2);
-
-		vec4_t clearcolor = { 0, 0, 0, 0 };
-		GL_ClearColor(clearcolor);
-		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-		GL_BindFrameBuffer(CurrentFBO);
+		GL_ClearStencil(STENCIL_MASK_HAS_OUTLINE);
 	}
-#endif
+
 	r_draw_hashair = false;
 	r_draw_hasface = false;
 	r_draw_hasalpha = false;
