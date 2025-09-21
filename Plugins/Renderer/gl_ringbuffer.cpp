@@ -43,7 +43,7 @@ bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferT
 
 		if (glObjectLabel)
 		{
-			glObjectLabel(GL_BUFFER, m_hEBO, -1, m_BufferName.c_str());
+			glObjectLabel(GL_BUFFER, m_hVBO, -1, m_BufferName.c_str());
 		}
 	}
 	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
