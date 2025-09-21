@@ -2527,6 +2527,11 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_ADDITIVE_RENDER_MODE_ENABLED;
 	}
 
+	if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlow)
+	{
+		StudioProgramState |= STUDIO_POSTPROCESS_GLOW_STENCIL_ENABLED;
+	}
+
 	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.renderamt < 255)
 	{
 		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
@@ -2760,8 +2765,13 @@ void R_StudioDrawMesh_DrawPass(
 			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 
+			if(StudioProgramState & STUDIO_POSTPROCESS_GLOW_STENCIL_ENABLED )
+				iStencilRef |= STENCIL_MASK_PPGLOW;
+
 			if((*pstudiohdr)->flags & FMODEL_NOBLOOM)
 				iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
+
 
 			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
 		}
@@ -2780,6 +2790,12 @@ void R_StudioDrawMesh_DrawPass(
 			{
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 				iStencilMask |= STENCIL_MASK_HAS_FLATSHADE;
+			}
+
+			if (StudioProgramState & STUDIO_POSTPROCESS_GLOW_STENCIL_ENABLED)
+			{
+				iStencilRef |= STENCIL_MASK_PPGLOW;
+				iStencilMask |= STENCIL_MASK_PPGLOW;
 			}
 
 			if ((*pstudiohdr)->flags & FMODEL_NOBLOOM)
@@ -3527,7 +3543,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	{
 		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
 
-		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHair");
+		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHairPass");
 
 		GL_BindFrameBuffer(&s_BackBufferFBO2);
 
@@ -3606,6 +3622,8 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		else
 		{
 			//Draw GlowShell pass now
+
+			int saved_renderfx = (*currententity)->curstate.renderfx;
 
 			(*currententity)->curstate.renderfx = kRenderFxDrawGlowShell;
 
