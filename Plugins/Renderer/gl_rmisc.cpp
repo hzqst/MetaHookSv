@@ -1258,6 +1258,7 @@ void GL_BeginDebugGroup(const char *name)
 
 void GL_BeginDebugGroupFormat(const char* fmt, ...)
 {
+#if defined(_DEBUG)
 	char buf[256]{};
 
 	va_list argptr;
@@ -1268,7 +1269,6 @@ void GL_BeginDebugGroupFormat(const char* fmt, ...)
 
 	buf[sizeof(buf) - 1] = 0;
 
-#if defined(_DEBUG)
 	if (glPushDebugGroup)
 		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, buf);
 #endif

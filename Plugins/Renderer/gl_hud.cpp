@@ -57,6 +57,7 @@ std::unordered_map<program_state_t, drawfilledrect_program_t> g_DrawFilledRectPr
 CPMBRingBuffer g_TexturedRectVertexBuffer;
 CPMBRingBuffer g_FilledRectVertexBuffer;
 CPMBRingBuffer g_RectInstanceBuffer;
+CPMBRingBuffer g_RectIndexBuffer;
 
 cvar_t *r_hdr = NULL;
 
@@ -435,15 +436,21 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	{
 		g_DrawTexturedRectCommand.hVAO = GL_GenVAO();
 
-		if (!g_TexturedRectVertexBuffer.Initialize(16 * 1024 * 1024))
+		if (!g_TexturedRectVertexBuffer.Initialize(16 * 1024 * 1024, GL_ARRAY_BUFFER))
 		{
 			Sys_Error("R_DrawTexturedRect: Failed to initialize g_TexturedRectVertexBuffer.\n");
 			return;
 		}
 
-		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024))
+		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024, GL_ARRAY_BUFFER))
 		{
 			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectInstanceBuffer.\n");
+			return;
+		}
+
+		if (!g_RectIndexBuffer.Initialize(256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		{
+			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectIndexBuffer.\n");
 			return;
 		}
 
@@ -479,6 +486,8 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
 
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetEBO());
+
 			});
 
 	}
@@ -492,9 +501,11 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 	size_t vertexDataSize = verticeCount * sizeof(texturedrectvertex_t);
 	size_t instanceDataSize = sizeof(instanceDataBuffer);
+	size_t indexDataSize = indicesCount * sizeof(uint32_t);
 
 	CPMBRingBuffer::Allocation vertexAllocation;
 	CPMBRingBuffer::Allocation instanceAllocation;
+	CPMBRingBuffer::Allocation indexAllocation;
 
 	if (!g_TexturedRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
 	{
@@ -506,11 +517,14 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 		return;
 	}
 
+	if (!g_RectIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	{
+		return;
+	}
+
 	if (debugMetadata)
 	{
-		char debugGroupName[256]{};
-		snprintf(debugGroupName, sizeof(debugGroupName), "R_DrawTexturedRect - %s", debugMetadata);
-		GL_BeginDebugGroup(debugGroupName);
+		GL_BeginDebugGroupFormat("R_DrawTexturedRect - %s", debugMetadata);
 	}
 	else
 	{
@@ -528,7 +542,8 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
 	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
 
-	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+	memcpy(indexAllocation.ptr, indices, indexDataSize);
+	GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
 
 	GL_BindVAO(g_DrawTexturedRectCommand.hVAO);
 
@@ -555,7 +570,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	drawtexturedrect_program_t prog{};
 	R_UseDrawTexturedRectProgram(programState, &prog);
 
-	glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
+	glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), 1, baseVertex, baseInstance);
 
 	GL_UseProgram(0);
 
@@ -578,15 +593,21 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 		g_DrawFilledRectCommand.hVAO = GL_GenVAO();
 
 		// 初始化filled rect环形分配器
-		if (!g_FilledRectVertexBuffer.Initialize(16 * 1024 * 1024))
+		if (!g_FilledRectVertexBuffer.Initialize(16 * 1024 * 1024, GL_ARRAY_BUFFER))
 		{
 			Sys_Error("R_DrawFilledRect: Failed to initialize g_FilledRectVertexBuffer.\n");
 			return;
 		}
 
-		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024))
+		if (!g_RectInstanceBuffer.Initialize(8 * 1024 * 1024, GL_ARRAY_BUFFER))
 		{
 			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectInstanceBuffer.\n");
+			return;
+		}
+
+		if (!g_RectIndexBuffer.Initialize(256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		{
+			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectIndexBuffer.\n");
 			return;
 		}
 
@@ -619,6 +640,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(FILLEDRECT_VA_MATRIX3);
 
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetEBO());
 			});
 
 	}
@@ -632,9 +654,11 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	size_t vertexDataSize = verticeCount * sizeof(filledrectvertex_t);
 	size_t instanceDataSize = sizeof(instanceDataBuffer);
+	size_t indexDataSize = indicesCount * sizeof(uint32_t);
 
 	CPMBRingBuffer::Allocation vertexAllocation;
 	CPMBRingBuffer::Allocation instanceAllocation;
+	CPMBRingBuffer::Allocation indexAllocation;
 
 	if (!g_FilledRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
 	{
@@ -646,11 +670,14 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 		return;
 	}
 
+	if (!g_RectIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	{
+		return;
+	}
+
 	if (debugMetadata)
 	{
-		char debugGroupName[256]{};
-		snprintf(debugGroupName, sizeof(debugGroupName), "R_DrawFilledRect - %s", debugMetadata);
-		GL_BeginDebugGroup(debugGroupName);
+		GL_BeginDebugGroupFormat("R_DrawFilledRect - %s", debugMetadata);
 	}
 	else
 	{
@@ -665,7 +692,8 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
 	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
 
-	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+	memcpy(indexAllocation.ptr, indices, indexDataSize);
+	GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
 
 	GL_BindVAO(g_DrawFilledRectCommand.hVAO);
 
@@ -699,11 +727,11 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 
 	if (programState & DRAW_FILLED_RECT_LINE_ENABLED)
 	{
-		glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
+		glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), 1, baseVertex, baseInstance);
 	}
 	else
 	{
-		glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, indices, 1, baseVertex, baseInstance);
+		glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), 1, baseVertex, baseInstance);
 	}
 
 	GL_UseProgram(0);
@@ -1746,4 +1774,5 @@ void R_ShutdownHUD(void)
 	g_TexturedRectVertexBuffer.Shutdown();
 	g_FilledRectVertexBuffer.Shutdown();
 	g_RectInstanceBuffer.Shutdown();
+	g_RectIndexBuffer.Shutdown();
 }

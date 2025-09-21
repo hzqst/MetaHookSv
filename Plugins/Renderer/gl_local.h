@@ -116,6 +116,7 @@ extern int(*g_iVertexBufferEntriesUsed);
 extern CPMBRingBuffer g_TexturedRectVertexBuffer;
 extern CPMBRingBuffer g_FilledRectVertexBuffer;
 extern CPMBRingBuffer g_RectInstanceBuffer;
+extern CPMBRingBuffer g_RectIndexBuffer;
 
 extern RECT* g_ScissorRect;
 extern bool* g_bScissor;

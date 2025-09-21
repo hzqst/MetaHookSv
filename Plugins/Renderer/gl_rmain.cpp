@@ -1009,11 +1009,13 @@ public:
 
 CTriAPICommand gTriAPICommand;
 CPMBRingBuffer g_TriAPIVertexBuffer;
+CPMBRingBuffer g_TriAPIIndexBuffer;
 
 void triapi_Shutdown()
 {
 	// 清理环形分配器
 	g_TriAPIVertexBuffer.Shutdown();
+	g_TriAPIIndexBuffer.Shutdown();
 
 	if (gTriAPICommand.hVAO)
 	{
@@ -1216,8 +1218,8 @@ void triapi_End()
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
 
-		// 初始化triapi环形分配器
-		if (g_TriAPIVertexBuffer.Initialize(16 * 1024 * 1024)) // 16MB
+		if (g_TriAPIVertexBuffer.Initialize(16 * 1024 * 1024, GL_ARRAY_BUFFER) &&
+			g_TriAPIIndexBuffer.Initialize(256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
 		{
 			// 使用静态VAO配置（offset=0）
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
@@ -1232,6 +1234,8 @@ void triapi_End()
 				glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
 				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
 
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer.GetEBO());
+
 			});
 		}
 		else
@@ -1242,11 +1246,24 @@ void triapi_End()
 
 	// 尝试使用环形分配器
 	size_t vertexDataSize = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
+	size_t indexDataSize = gTriAPICommand.Indices.size() * sizeof(uint32_t);
 
 	CPMBRingBuffer::Allocation vertexAllocation;
 	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
 	{
 		//ring buffer full
+		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIVertexBuffer full!\n");
+
+		triapi_EndClear();
+		return;
+	}
+
+	CPMBRingBuffer::Allocation indexAllocation;
+	if (!g_TriAPIIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	{
+		//ring buffer full
+		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIIndexBuffer full!\n");
+
 		triapi_EndClear();
 		return;
 	}
@@ -1257,7 +1274,9 @@ void triapi_End()
 
 	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(triapivertex_t));
 
-	//glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+	memcpy(indexAllocation.ptr, gTriAPICommand.Indices.data(), indexDataSize);
+
+	GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
 
 	GL_BindVAO(gTriAPICommand.hVAO);
 
@@ -1452,11 +1471,11 @@ void triapi_End()
 	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseVertex);
+		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
 	}
 	else
 	{
-		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, gTriAPICommand.Indices.data(), baseVertex);
+		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
 	}
 
 	GL_UseProgram(0);
@@ -2432,9 +2451,11 @@ void R_RenderFrameStart()
 	++(*r_framecount);
 
 	g_TriAPIVertexBuffer.BeginFrame();
+	g_TriAPIIndexBuffer.BeginFrame();
 	g_TexturedRectVertexBuffer.BeginFrame();
 	g_FilledRectVertexBuffer.BeginFrame();
 	g_RectInstanceBuffer.BeginFrame();
+	g_RectIndexBuffer.BeginFrame();
 
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
@@ -2452,9 +2473,11 @@ void R_RenderEndFrame()
 	R_StudioEndFrame();
 
 	g_TriAPIVertexBuffer.EndFrame();
+	g_TriAPIIndexBuffer.EndFrame();
 	g_TexturedRectVertexBuffer.EndFrame();
 	g_FilledRectVertexBuffer.EndFrame();
 	g_RectInstanceBuffer.EndFrame();
+	g_RectIndexBuffer.EndFrame();
 }
 
 void GL_Set2DEx(int x, int y, int width, int height)

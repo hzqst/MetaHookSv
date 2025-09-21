@@ -1,7 +1,7 @@
 #include "gl_local.h"
 
 // 环形分配器实现
-bool CPMBRingBuffer::Initialize(size_t bufferSize)
+bool CPMBRingBuffer::Initialize(size_t bufferSize, int bufferType)
 {
 	//Already initialized
 	if (m_MappedPtr)
@@ -12,24 +12,46 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize)
 	m_Tail = 0;
 	m_UsedSize = 0;
 	m_CurrFrameSize = 0;
+	m_FrameStartOffset = 0;
 
 	// 清空已完成帧列表
 	m_CompletedFrames.clear();
 
-	m_RingVBO = GL_GenBuffer();
+	if (bufferType == GL_ARRAY_BUFFER)
+	{
+		m_hVBO = GL_GenBuffer();
+	}
+	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
+	{
+		m_hEBO = GL_GenBuffer();
+	}
 
 	GL_BindVAO(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
+	if (bufferType == GL_ARRAY_BUFFER)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_hVBO);
 
-	// 创建persistent mapped buffer
-	glBufferStorage(GL_ARRAY_BUFFER, m_BufferSize, nullptr,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBufferStorage(GL_ARRAY_BUFFER, m_BufferSize, nullptr,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
-	m_MappedPtr = glMapBufferRange(GL_ARRAY_BUFFER, 0, m_BufferSize,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		m_MappedPtr = glMapBufferRange(GL_ARRAY_BUFFER, 0, m_BufferSize,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_hEBO);
+
+		glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, m_BufferSize, nullptr,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+		m_MappedPtr = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, m_BufferSize,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 
 	return m_MappedPtr != nullptr;
 }
@@ -50,16 +72,31 @@ void CPMBRingBuffer::Shutdown()
 	{
 		GL_BindVAO(0);
 
-		glBindBuffer(GL_ARRAY_BUFFER, m_RingVBO);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		if (m_hVBO)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_hVBO);
+			glUnmapBuffer(GL_ARRAY_BUFFER);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+		}
+		else if(m_hEBO)
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_hEBO);
+			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		}
+
 		m_MappedPtr = nullptr;
 	}
 
-	if (m_RingVBO)
+	if (m_hVBO)
 	{
-		GL_DeleteBuffer(m_RingVBO);
-		m_RingVBO = 0;
+		GL_DeleteBuffer(m_hVBO);
+		m_hVBO = 0;
+	}
+	else if (m_hEBO)
+	{
+		GL_DeleteBuffer(m_hEBO);
+		m_hEBO = 0;
 	}
 
 	m_Head = 0;
@@ -95,54 +132,71 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		// 情况1: 正常布局 [----Tail####Head----]
 		if (alignedHead + size <= m_BufferSize)
 		{
-			// 有足够空间在当前位置分配
-			size_t offset = alignedHead;
-			size_t adjustedSize = size + (alignedHead - m_Head);
-
-			allocation.ptr = (char*)m_MappedPtr + offset;
-			allocation.offset = offset;
+			// 在当前位置分配
+			allocation.ptr = (char*)m_MappedPtr + alignedHead;
+			allocation.offset = alignedHead;
 			allocation.size = size;
 			allocation.valid = true;
 
-			m_Head += adjustedSize;
+			size_t adjustedSize = size + (alignedHead - m_Head);
+			m_Head = alignedHead + size;
 			m_UsedSize += adjustedSize;
 			m_CurrFrameSize += adjustedSize;
-
 			return true;
 		}
 		else if (size <= m_Tail)
 		{
-			// 环绕分配：从缓冲区开头分配
-			size_t addSize = (m_BufferSize - m_Head) + size;
+			// 环绕到开头分配
+			size_t wastedSpace = m_BufferSize - m_Head;
 
 			allocation.ptr = (char*)m_MappedPtr;
 			allocation.offset = 0;
 			allocation.size = size;
 			allocation.valid = true;
 
-			m_UsedSize += addSize;
-			m_CurrFrameSize += addSize;
 			m_Head = size;
-
+			m_UsedSize += wastedSpace + size;
+			m_CurrFrameSize += wastedSpace + size;
 			return true;
 		}
 	}
-	else if (alignedHead + size <= m_Tail)
+	else
 	{
 		// 情况2: 环绕布局 [####Head----Tail####]
-		size_t offset = alignedHead;
-		size_t adjustedSize = size + (alignedHead - m_Head);
+		if (alignedHead + size <= m_Tail)
+		{
+			// 在 Head 和 Tail 之间分配
+			allocation.ptr = (char*)m_MappedPtr + alignedHead;
+			allocation.offset = alignedHead;
+			allocation.size = size;
+			allocation.valid = true;
 
-		allocation.ptr = (char*)m_MappedPtr + offset;
-		allocation.offset = offset;
-		allocation.size = size;
-		allocation.valid = true;
+			size_t adjustedSize = size + (alignedHead - m_Head);
+			m_Head = alignedHead + size;
+			m_UsedSize += adjustedSize;
+			m_CurrFrameSize += adjustedSize;
+			return true;
+		}
+		else if (m_Tail + size <= m_BufferSize)
+		{
+			// 新增：尝试在 Tail 之后分配
+			size_t alignedTail = AlignUp(m_Tail, alignment);
+			if (alignedTail + size <= m_BufferSize)
+			{
+				// 浪费掉 Head 到 Tail 之间的空间
+				size_t wastedSpace = m_Tail - m_Head;
 
-		m_Head += adjustedSize;
-		m_UsedSize += adjustedSize;
-		m_CurrFrameSize += adjustedSize;
+				allocation.ptr = (char*)m_MappedPtr + alignedTail;
+				allocation.offset = alignedTail;
+				allocation.size = size;
+				allocation.valid = true;
 
-		return true;
+				m_Head = alignedTail + size;
+				m_UsedSize += wastedSpace + size + (alignedTail - m_Tail);
+				m_CurrFrameSize += wastedSpace + size + (alignedTail - m_Tail);
+				return true;
+			}
+		}
 	}
 
 	// 没有足够空间
@@ -156,6 +210,7 @@ void CPMBRingBuffer::BeginFrame()
 
 	// 重置当前帧大小
 	m_CurrFrameSize = 0;
+	m_FrameStartOffset = m_Head;
 }
 
 void CPMBRingBuffer::EndFrame()
@@ -166,7 +221,7 @@ void CPMBRingBuffer::EndFrame()
 		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		if (fence)
 		{
-			m_CompletedFrames.emplace_back(fence, m_Head, m_CurrFrameSize);
+			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
 		}
 		m_CurrFrameSize = 0;
 	}
@@ -202,9 +257,16 @@ void CPMBRingBuffer::ReleaseCompletedFrames()
 		GLenum result = glClientWaitSync(oldestFrame.fence, 0, 0);
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
 		{
-			// GPU已完成处理该帧，可以安全释放
+			// 计算帧的结束位置
+			size_t frameEnd = oldestFrame.offset + oldestFrame.size;
+
+			// 处理环绕情况
+			if (frameEnd > m_BufferSize) {
+				frameEnd = frameEnd - m_BufferSize;
+			}
+
 			m_UsedSize -= oldestFrame.size;
-			m_Tail = oldestFrame.offset;
+			m_Tail = frameEnd;  // 设置为帧的结束位置
 
 			glDeleteSync(oldestFrame.fence);
 			m_CompletedFrames.pop_front();

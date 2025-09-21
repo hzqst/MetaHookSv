@@ -5,15 +5,17 @@
 class CPMBRingBuffer
 {
 private:
-	GLuint m_RingVBO;
-	void* m_MappedPtr;
-	size_t m_BufferSize;
+	GLuint m_hVBO{};
+	GLuint m_hEBO{};
+	void* m_MappedPtr{};
+	size_t m_BufferSize{};
 
 	// 简化的 Head/Tail 指针机制
-	size_t m_Head;          // 写入指针
-	size_t m_Tail;          // 释放指针
-	size_t m_UsedSize;      // 已使用空间
-	size_t m_CurrFrameSize; // 当前帧大小
+	size_t m_Head{};          // 写入指针
+	size_t m_Tail{};          // 释放指针
+	size_t m_UsedSize{};      // 已使用空间
+	size_t m_CurrFrameSize{}; // 当前帧大小
+	size_t m_FrameStartOffset{};
 
 	// 已完成帧的fence信息
 	struct FrameHeadAttribs
@@ -37,13 +39,14 @@ public:
 		bool valid{};
 	};
 
-	bool Initialize(size_t bufferSize); // 8MB default
+	bool Initialize(size_t bufferSize, int bufferType);
 	void Shutdown();
 	bool Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation);
 	void BeginFrame();
 	void EndFrame();
 	void Reset();
-	GLuint GetVBO() const { return m_RingVBO; }
+	GLuint GetVBO() const { return m_hVBO; }
+	GLuint GetEBO() const { return m_hEBO; }
 
 	// 调试和状态查询
 	bool IsEmpty() const { return m_UsedSize == 0; }
