@@ -15,10 +15,11 @@
 #define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
 #define S_LOADSOUND_SIG_BLOB "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
 
-private_funcs_t gPrivateFuncs = { 0 };
+private_funcs_t gPrivateFuncs = {  };
 
-static hook_t* g_phook_S_LoadSound_FS_Open = NULL;
-static hook_t* g_phook_Mod_LoadModel_FS_Open = NULL;
+std::set<PVOID> S_LoadSound_call_FS_Open;
+std::set<PVOID> Mod_LoadModel_call_FS_Open;
+
 static hook_t* g_phook_CL_PrecacheResources = NULL;
 
 qboolean CL_PrecacheResources()
@@ -75,97 +76,101 @@ FileHandle_t S_LoadSound_FS_Open(const char* pFileName, const char* pOptions)
 	return gPrivateFuncs.FS_Open(pFileName, pOptions);
 }
 
-void Engine_InstallHooks()
+void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (1)
-	{
-		/*
+	PVOID S_LoadSound_VA = NULL;
+
+	/*
 .text:01D98912 68 F0 52 ED 01                                      push    offset aSLoadsoundCoul ; "S_LoadSound: Couldn't load %s\n"
 .text:01D98917 E8 24 70 F9 FF                                      call    sub_1D2F940
 .text:01D9891C 83 C4 08                                            add     esp, 8
 		*/
-		const char sigs[] = "S_LoadSound: Couldn't load %s";
-		auto S_LoadSound_String = Search_Pattern_Data(sigs);
-		if (!S_LoadSound_String)
-			S_LoadSound_String = Search_Pattern_Rdata(sigs);
-		if (S_LoadSound_String)
+	const char sigs[] = "S_LoadSound: Couldn't load %s";
+	auto S_LoadSound_String = Search_Pattern_Data(sigs, DllInfo);
+	if (!S_LoadSound_String)
+		S_LoadSound_String = Search_Pattern_Rdata(sigs, DllInfo);
+	if (S_LoadSound_String)
+	{
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+		*(DWORD*)(pattern + 1) = (DWORD)S_LoadSound_String;
+		auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
+		if (S_LoadSound_PushString)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-			*(DWORD*)(pattern + 1) = (DWORD)S_LoadSound_String;
-			auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern);
-			if (S_LoadSound_PushString)
-			{
-				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
+			S_LoadSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
 
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC)
-					{
-						return TRUE;
-					}
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC)
+				{
+					return TRUE;
+				}
 
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC)
-					{
-						return TRUE;
-					}
+				if (Candidate[0] == 0x83 &&
+					Candidate[1] == 0xEC)
+				{
+					return TRUE;
+				}
 
-					//.text:01D98710 81 EC 48 05 00 00                                   sub     esp, 548h
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00)
-					{
-						return TRUE;
-					}
+				//.text:01D98710 81 EC 48 05 00 00                                   sub     esp, 548h
+				if (Candidate[0] == 0x81 &&
+					Candidate[1] == 0xEC &&
+					Candidate[4] == 0x00 &&
+					Candidate[5] == 0x00)
+				{
+					return TRUE;
+				}
 
-					return FALSE;
+				return FALSE;
 				});
-			}
 		}
 	}
 
-	if (!gPrivateFuncs.S_LoadSound)
+	if (!S_LoadSound_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_HL25);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_NEW);
-			if (!gPrivateFuncs.S_LoadSound)
-				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_8308);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW, DllInfo);
+			if (!S_LoadSound_VA)
+				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_8308, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_BLOB);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
+
 	Sig_FuncNotFound(S_LoadSound);
 
-	if (1)
 	{
 		typedef struct
 		{
-			PVOID base;
-			size_t max_insts;
-			int max_depth;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+
+			PVOID base{};
+			size_t max_insts{};
+			int max_depth{};
 			std::set<PVOID> code;
 			std::set<PVOID> branches;
 			std::vector<walk_context_t> walks;
 
-			PVOID address_rb;
-			int instCount_rb;
+			PVOID address_rb{};
+			int instCount_rb{};
 		}S_LoadSound_SearchContext;
 
-		S_LoadSound_SearchContext ctx = { 0 };
+		S_LoadSound_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		ctx.base = gPrivateFuncs.S_LoadSound;
+		ctx.base = S_LoadSound_VA;
 
 		ctx.max_insts = 1000;
 		ctx.max_depth = 16;
@@ -181,9 +186,6 @@ void Engine_InstallHooks()
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (S_LoadSound_SearchContext*)context;
 
-				if (g_phook_S_LoadSound_FS_Open)
-					return TRUE;
-
 				if (ctx->code.size() > ctx->max_insts)
 					return TRUE;
 
@@ -197,10 +199,10 @@ void Engine_InstallHooks()
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
 					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineRdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
+						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
 						))
 				{
 					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
@@ -217,9 +219,13 @@ void Engine_InstallHooks()
 				{
 					if (!gPrivateFuncs.FS_Open)
 					{
-						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))GetCallAddress(address);
+						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
 					}
-					g_phook_S_LoadSound_FS_Open = g_pMetaHookAPI->InlinePatchRedirectBranch(address, S_LoadSound_FS_Open, NULL);
+					
+					auto realAddress = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+					S_LoadSound_call_FS_Open.emplace(realAddress);
+
 					return TRUE;
 				}
 
@@ -248,29 +254,34 @@ void Engine_InstallHooks()
 
 				return FALSE;
 
-			}, walk.depth, &ctx);
+				}, walk.depth, &ctx);
 		}
 
-		if (!g_phook_S_LoadSound_FS_Open)
+		if (S_LoadSound_call_FS_Open.empty())
 		{
 			Sys_Error("S_LoadSound.FS_Open not found");
 			return;
 		}
 	}
+}
 
-	if (1)
+void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID Mod_LoadModel_VA = NULL;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		const char sigs1[] = "Mod_NumForName: %s not found";
-		auto Mod_NumForName_String = Search_Pattern_Data(sigs1);
+		const char sigs1[] = "Mod_LoadModel: Could not load";
+		auto Mod_NumForName_String = Search_Pattern_Data(sigs1, DllInfo);
 		if (!Mod_NumForName_String)
-			Mod_NumForName_String = Search_Pattern_Rdata(sigs1);
+			Mod_NumForName_String = Search_Pattern_Rdata(sigs1, DllInfo);
 		Sig_VarNotFound(Mod_NumForName_String);
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
 		*(DWORD*)(pattern + 1) = (DWORD)Mod_NumForName_String;
-		auto Mod_NumForName_PushString = Search_Pattern(pattern);
+		auto Mod_NumForName_PushString = Search_Pattern(pattern, DllInfo);
 		Sig_VarNotFound(Mod_NumForName_PushString);
 
-		gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_NumForName_PushString, 0x500, [](PUCHAR Candidate) {
+		Mod_LoadModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_NumForName_PushString, 0x500, [](PUCHAR Candidate) {
 
 			//.text:01D40B30 81 EC 0C 01 00 00                                   sub     esp, 10Ch
 			if (Candidate[0] == 0x81 &&
@@ -285,29 +296,63 @@ void Engine_InstallHooks()
 				return TRUE;
 
 			return FALSE;
-		});
-
-		Sig_FuncNotFound(Mod_LoadModel);
+			});
 	}
+	else
+	{
+		const char sigs1[] = "Mod_NumForName: %s not found";
+		auto Mod_NumForName_String = Search_Pattern_Data(sigs1, DllInfo);
+		if (!Mod_NumForName_String)
+			Mod_NumForName_String = Search_Pattern_Rdata(sigs1, DllInfo);
+		Sig_VarNotFound(Mod_NumForName_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+		*(DWORD*)(pattern + 1) = (DWORD)Mod_NumForName_String;
+		auto Mod_NumForName_PushString = Search_Pattern(pattern, DllInfo);
+		Sig_VarNotFound(Mod_NumForName_PushString);
+
+		Mod_LoadModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_NumForName_PushString, 0x500, [](PUCHAR Candidate) {
+
+			//.text:01D40B30 81 EC 0C 01 00 00                                   sub     esp, 10Ch
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00)
+				return TRUE;
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+			});
+	}
+
+	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))ConvertDllInfoSpace(Mod_LoadModel_VA, DllInfo, RealDllInfo);
+
+	Sig_FuncNotFound(Mod_LoadModel);
 
 	if (1)
 	{
 		typedef struct
 		{
-			PVOID base;
-			size_t max_insts;
-			int max_depth;
+			const mh_dll_info_t& DllInfo;
+			const mh_dll_info_t& RealDllInfo;
+
+			PVOID base{};
+			size_t max_insts{};
+			int max_depth{};
 			std::set<PVOID> code;
 			std::set<PVOID> branches;
 			std::vector<walk_context_t> walks;
 
-			int instCount_rb;
-			PUCHAR address_rb;
+			int instCount_rb{};
+			PUCHAR address_rb{};
 		}Mod_LoadModel_SearchContext;
 
-		Mod_LoadModel_SearchContext ctx = { 0 };
+		Mod_LoadModel_SearchContext ctx = { DllInfo, RealDllInfo };
 
-		ctx.base = gPrivateFuncs.Mod_LoadModel;
+		ctx.base = Mod_LoadModel_VA;
 
 		ctx.max_insts = 1000;
 		ctx.max_depth = 16;
@@ -323,9 +368,6 @@ void Engine_InstallHooks()
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (Mod_LoadModel_SearchContext*)context;
 
-				if (g_phook_Mod_LoadModel_FS_Open)
-					return TRUE;
-
 				if (ctx->code.size() > ctx->max_insts)
 					return TRUE;
 
@@ -339,10 +381,10 @@ void Engine_InstallHooks()
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
 					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineRdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
+						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
 						))
 				{
 					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
@@ -359,10 +401,13 @@ void Engine_InstallHooks()
 				{
 					if (!gPrivateFuncs.FS_Open)
 					{
-						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))GetCallAddress(address);
+						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
 					}
 
-					g_phook_Mod_LoadModel_FS_Open = g_pMetaHookAPI->InlinePatchRedirectBranch(address, Mod_LoadModel_FS_Open, NULL);
+					auto realAddress = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+					Mod_LoadModel_call_FS_Open.emplace(realAddress);
+
 					return TRUE;
 				}
 
@@ -391,31 +436,62 @@ void Engine_InstallHooks()
 
 				return FALSE;
 
-			}, walk.depth, &ctx);
+				}, walk.depth, &ctx);
 		}
 
-		if (!g_phook_Mod_LoadModel_FS_Open)
+		if (Mod_LoadModel_call_FS_Open.empty())
 		{
 			Sys_Error("Mod_LoadModel.FS_Open not found");
 			return;
 		}
 	}
+}
 
-	if (1)
+void Engine_FillAddress_CL_PrecacheResources(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	PVOID CL_PrecacheResources_VA = NULL;
+
+	const char sigs1[] = "#GameUI_PrecachingResources";
+	auto CL_PrecacheResources_String = Search_Pattern_Data(sigs1, DllInfo);
+	if (!CL_PrecacheResources_String)
+		CL_PrecacheResources_String = Search_Pattern_Rdata(sigs1, DllInfo);
+	Sig_VarNotFound(CL_PrecacheResources_String);
+	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
+	*(DWORD*)(pattern + 1) = (DWORD)CL_PrecacheResources_String;
+
+	auto CL_PrecacheResources_PushString = Search_Pattern(pattern, DllInfo);
+	Sig_VarNotFound(CL_PrecacheResources_PushString);
+
+	CL_PrecacheResources_VA = g_pMetaHookAPI->ReverseSearchFunctionBegin(CL_PrecacheResources_PushString, 0x50);
+
+	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))ConvertDllInfoSpace(CL_PrecacheResources_VA, DllInfo, RealDllInfo);
+
+	Sig_FuncNotFound(CL_PrecacheResources);
+}
+
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	Engine_FillAddress_S_LoadSound(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_Mod_LoadModel(DllInfo, RealDllInfo);
+
+	Engine_FillAddress_CL_PrecacheResources(DllInfo, RealDllInfo);
+}
+
+void Engine_InstallHooks()
+{
 	{
-		const char sigs1[] = "#GameUI_PrecachingResources";
-		auto CL_PrecacheResources_String = Search_Pattern_Data(sigs1);
-		if (!CL_PrecacheResources_String)
-			CL_PrecacheResources_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(CL_PrecacheResources_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD*)(pattern + 1) = (DWORD)CL_PrecacheResources_String;
+		for (auto addr : S_LoadSound_call_FS_Open)
+		{
+			g_pMetaHookAPI->InlinePatchRedirectBranch(addr, S_LoadSound_FS_Open, NULL);
+		}
+	}
 
-		auto CL_PrecacheResources_PushString = Search_Pattern(pattern);
-		Sig_VarNotFound(CL_PrecacheResources_PushString);
-
-		gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))g_pMetaHookAPI->ReverseSearchFunctionBegin(CL_PrecacheResources_PushString, 0x50);
-		Sig_FuncNotFound(CL_PrecacheResources);
+	{
+		for (auto addr : Mod_LoadModel_call_FS_Open)
+		{
+			g_pMetaHookAPI->InlinePatchRedirectBranch(addr, Mod_LoadModel_FS_Open, NULL);
+		}
 	}
 
 	Install_InlineHook(CL_PrecacheResources);
@@ -423,7 +499,42 @@ void Engine_InstallHooks()
 
 void Engine_UninstallHooks()
 {
-	Uninstall_Hook(S_LoadSound_FS_Open);
-	Uninstall_Hook(Mod_LoadModel_FS_Open);
 	Uninstall_Hook(CL_PrecacheResources);
+}
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)
+{
+	if ((ULONG_PTR)addr > (ULONG_PTR)SrcDllInfo.ImageBase && (ULONG_PTR)addr < (ULONG_PTR)SrcDllInfo.ImageBase + SrcDllInfo.ImageSize)
+	{
+		auto addr_VA = (ULONG_PTR)addr;
+		auto addr_RVA = RVA_from_VA(addr, SrcDllInfo);
+
+		return (PVOID)VA_from_RVA(addr, TargetDllInfo);
+	}
+
+	return nullptr;
+}
+
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo)
+{
+	if ((ULONG_PTR)vftable > (ULONG_PTR)RealDllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)RealDllInfo.ImageBase + RealDllInfo.ImageSize)
+	{
+		ULONG_PTR vftable_VA = (ULONG_PTR)vftable;
+		ULONG vftable_RVA = RVA_from_VA(vftable, RealDllInfo);
+		auto vftable_DllInfo = (decltype(vftable))VA_from_RVA(vftable, DllInfo);
+
+		auto vf_VA = (ULONG_PTR)vftable_DllInfo[index];
+		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
+
+		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
+	}
+	else if ((ULONG_PTR)vftable > (ULONG_PTR)DllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)DllInfo.ImageBase + DllInfo.ImageSize)
+	{
+		auto vf_VA = (ULONG_PTR)vftable[index];
+		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
+
+		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
+	}
+
+	return vftable[index];
 }
