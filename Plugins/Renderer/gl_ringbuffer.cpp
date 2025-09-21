@@ -1,12 +1,13 @@
 #include "gl_local.h"
 
 // 环形分配器实现
-bool CPMBRingBuffer::Initialize(size_t bufferSize, int bufferType)
+bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferType)
 {
 	//Already initialized
 	if (m_MappedPtr)
 		return true;
 
+	m_BufferName = name;
 	m_BufferSize = bufferSize;
 	m_Head = 0;
 	m_Tail = 0;
@@ -39,6 +40,11 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize, int bufferType)
 			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		if (glObjectLabel)
+		{
+			glObjectLabel(GL_BUFFER, m_hEBO, -1, m_BufferName.c_str());
+		}
 	}
 	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
 	{
@@ -51,6 +57,11 @@ bool CPMBRingBuffer::Initialize(size_t bufferSize, int bufferType)
 			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		if (glObjectLabel)
+		{
+			glObjectLabel(GL_BUFFER, m_hEBO, -1, m_BufferName.c_str());
+		}
 	}
 
 	return m_MappedPtr != nullptr;
@@ -108,7 +119,7 @@ void CPMBRingBuffer::Shutdown()
 bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation)
 {
 	// 释放已完成的帧
-	ReleaseCompletedFrames();
+	//ReleaseCompletedFrames();
 
 	// 验证参数
 	if (size == 0)
@@ -223,6 +234,9 @@ void CPMBRingBuffer::EndFrame()
 		{
 			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
 		}
+
+		//gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
+
 		m_CurrFrameSize = 0;
 	}
 }
@@ -248,32 +262,30 @@ void CPMBRingBuffer::Reset()
 
 void CPMBRingBuffer::ReleaseCompletedFrames()
 {
-	// 释放所有已完成的帧
-	while (!m_CompletedFrames.empty())
+	// 保留最近N帧不释放（N取决于GPU pipeline深度）
+	const size_t MIN_FRAMES_TO_KEEP = 0;
+
+	while (m_CompletedFrames.size() > MIN_FRAMES_TO_KEEP)
 	{
 		const auto& oldestFrame = m_CompletedFrames.front();
 
-		// 检查fence状态
-		GLenum result = glClientWaitSync(oldestFrame.fence, 0, 0);
+		GLenum result = glClientWaitSync(oldestFrame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
 		{
-			// 计算帧的结束位置
+			// 只有当fence完成且已经过了足够帧数才释放
 			size_t frameEnd = oldestFrame.offset + oldestFrame.size;
-
-			// 处理环绕情况
 			if (frameEnd > m_BufferSize) {
 				frameEnd = frameEnd - m_BufferSize;
 			}
 
 			m_UsedSize -= oldestFrame.size;
-			m_Tail = frameEnd;  // 设置为帧的结束位置
+			m_Tail = frameEnd;
 
 			glDeleteSync(oldestFrame.fence);
 			m_CompletedFrames.pop_front();
 		}
 		else
 		{
-			// GPU还在处理，停止检查
 			break;
 		}
 	}

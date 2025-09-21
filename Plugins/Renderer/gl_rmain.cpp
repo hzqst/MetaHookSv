@@ -795,6 +795,9 @@ void R_DrawParticles(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
+	if (R_IsRenderingShadowView())
+		return;
+
 	gPrivateFuncs.R_FreeDeadParticles(&(*active_particles));
 
 	vec3_t			up, right;
@@ -1218,8 +1221,8 @@ void triapi_End()
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
 
-		if (g_TriAPIVertexBuffer.Initialize(16 * 1024 * 1024, GL_ARRAY_BUFFER) &&
-			g_TriAPIIndexBuffer.Initialize(256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER) &&
+			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
 		{
 			// 使用静态VAO配置（offset=0）
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
@@ -1671,7 +1674,10 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 void ClientDLL_DrawTransparentTriangles(void)
 {
 	//Call ClientDLL_DrawTransparentTriangles() instead of HUD_DrawTransparentTriangles
-	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
+	if (!R_IsRenderingShadowView())
+	{
+		gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
+	}
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 }
@@ -2552,6 +2558,8 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 		glheight = (*height);
 	}
 
+	R_RenderFrameStart();
+
 	//No V_RenderView calls when level changes so don't GL_FlushFinalBuffer, this replicates vanilla engine's behavior
 	if (SCR_IsLoadingVisible())
 	{
@@ -2561,8 +2569,6 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 	{
 		GL_FlushFinalBuffer();
 	}
-
-	R_RenderFrameStart();
 
 	r_renderview_pass = 0;
 	(*c_alias_polys) = 0;

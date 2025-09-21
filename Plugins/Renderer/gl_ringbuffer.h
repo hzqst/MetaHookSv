@@ -29,7 +29,7 @@ private:
 	};
 
 	std::deque<FrameHeadAttribs> m_CompletedFrames;
-
+	std::string m_BufferName;
 public:
 	struct Allocation
 	{
@@ -39,7 +39,7 @@ public:
 		bool valid{};
 	};
 
-	bool Initialize(size_t bufferSize, int bufferType);
+	bool Initialize(const char* name, size_t bufferSize, int bufferType);
 	void Shutdown();
 	bool Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation);
 	void BeginFrame();
