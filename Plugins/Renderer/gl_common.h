@@ -123,7 +123,7 @@ public:
 #define STENCIL_MASK_NO_BLOOM					2
 #define STENCIL_MASK_HAS_FLATSHADE				0x4
 #define STENCIL_MASK_HAS_DECAL					0x8
-#define STENCIL_MASK_PPGLOW						0x20
+#define STENCIL_MASK_NO_GLOW					0x20
 
 //Studio view
 #define STENCIL_MASK_HAS_OUTLINE				0x10

@@ -48,6 +48,7 @@ SHADER_DEFINE(blit_oitblend);
 
 SHADER_DEFINE(gamma_correction);
 SHADER_DEFINE(gamma_uncorrection);
+SHADER_DEFINE(copy_color);
 
 SHADER_DEFINE(under_water_effect);
 
@@ -365,6 +366,8 @@ void R_InitHUD(void)
 	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
 
 	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl", NULL);
+
+	copy_color.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", NULL);
 
 	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl", NULL);
 
@@ -930,7 +933,7 @@ void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Conta
 */
 void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_Container_t *dst, bool bUseFilter2x2, bool bUseStencilFilter)
 {
-	GL_BeginDebugGroupFormat("R_DownSample - write to %s", GL_GetFrameBufferName(dst));
+	GL_BeginDebugGroupFormat("R_DownSample - %s to %s", GL_GetFrameBufferName(src_color), GL_GetFrameBufferName(dst));
 
 	GL_BindFrameBuffer(dst);
 
@@ -1062,7 +1065,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
 {
-	GL_BeginDebugGroupFormat("R_BrightPass - write to %s", GL_GetFrameBufferName(dst));
+	GL_BeginDebugGroupFormat("R_BrightPass - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	GL_BindFrameBuffer(dst);
 
@@ -1094,9 +1097,9 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	GL_EndDebugGroup();
 }
 
-void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
+void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, float scale, bool vertical)
 {
-	GL_BeginDebugGroupFormat("R_BlurPass - write to %s", GL_GetFrameBufferName(dst));
+	GL_BeginDebugGroupFormat("R_BlurPass - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	GL_BindFrameBuffer(dst);
 
@@ -1108,12 +1111,12 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 	if (vertical)
 	{
 		GL_UseProgram(pp_gaussianblurv.program);
-		glUniform1f(0, 1.0f / src->iHeight); 
+		glUniform1f(0, scale / src->iHeight);
 	}
 	else
 	{
 		GL_UseProgram(pp_gaussianblurh.program);
-		glUniform1f(0, 1.0f / src->iWidth);
+		glUniform1f(0, scale / src->iWidth);
 	}
 
 	GL_BindVAO(r_empty_vao);
@@ -1256,14 +1259,14 @@ void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Contain
 	R_BrightPass(&s_DownSampleFBO[1], &s_BrightPassFBO, &s_Lumin1x1FBO[last_luminance]);
 
 	//Gaussian Blur Pass (with bright pass)
-	R_BlurPass(&s_BrightPassFBO, &s_BlurPassFBO[0][0], false);
-	R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], true);
+	R_BlurPass(&s_BrightPassFBO, &s_BlurPassFBO[0][0], 1, false);
+	R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], 1, true);
 	//Blur again and downsample from 1/16 to 1/32
-	R_BlurPass(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][0], false);
-	R_BlurPass(&s_BlurPassFBO[1][0], &s_BlurPassFBO[1][1], true);
+	R_BlurPass(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][0], 1, false);
+	R_BlurPass(&s_BlurPassFBO[1][0], &s_BlurPassFBO[1][1], 1, true);
 	//Blur again and downsample from 1/32 to 1/64
-	R_BlurPass(&s_BlurPassFBO[1][1], &s_BlurPassFBO[2][0], false);
-	R_BlurPass(&s_BlurPassFBO[2][0], &s_BlurPassFBO[2][1], true);
+	R_BlurPass(&s_BlurPassFBO[1][1], &s_BlurPassFBO[2][0], 1, false);
+	R_BlurPass(&s_BlurPassFBO[2][0], &s_BlurPassFBO[2][1], 1, true);
 
 	//Accumulate all blurred textures
 	R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
@@ -1754,18 +1757,67 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_EndDebugGroup();
 }
 
-void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
+void R_CopyColor(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	GL_BeginDebugGroupFormat("R_CopyColor - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
 	GL_BindFrameBuffer(dst);
 
 	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
-	const float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	GL_UseProgram(copy_color.program);
 
-	//upside down
-	R_DrawTexturedQuad(src->s_hBackBufferTex, 0, dst->iHeight, dst->iWidth, 0, color, DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "R_BlitFinalBuffer");
+	GL_BindVAO(r_empty_vao);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
+
+	GL_UseProgram(0);
 
 	GL_Finish2D();
+
+	GL_EndDebugGroup();
+}
+
+void R_AddGlowColor(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	GL_BeginDebugGroupFormat("R_AddGlowColor - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+
+	GL_BindFrameBuffer(dst);
+
+	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW, STENCIL_MASK_NO_GLOW);
+
+	GL_UseProgram(copy_color.program);
+
+	GL_BindVAO(r_empty_vao);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
+
+	GL_BindVAO(0);
+
+	GL_UseProgram(0);
+
+	GL_EndStencil();
+
+	glDisable(GL_BLEND);
+
+	GL_Finish2D();
+
+	GL_EndDebugGroup();
 }
 
 void R_ShutdownHUD(void)

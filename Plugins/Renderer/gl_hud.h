@@ -87,6 +87,11 @@ typedef struct
 typedef struct
 {
 	int program;
+}copy_color_program_t;
+
+typedef struct
+{
+	int program;
 }under_water_effect_program_t;
 
 typedef struct
@@ -148,7 +153,11 @@ extern int last_luminance;
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 
-void R_BlitFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst);
+void R_DownSample(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t* dst, bool bUseFilter2x2, bool bUseStencilFilter);
+void R_BlurPass(FBO_Container_t* src, FBO_Container_t* dst, float scale, bool vertical);
+
+void R_CopyColor(FBO_Container_t* src, FBO_Container_t* dst);
+void R_AddGlowColor(FBO_Container_t* src, FBO_Container_t* dst);
 void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst);
 void R_ClearOITBuffer(void);
 void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst);

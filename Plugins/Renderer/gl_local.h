@@ -118,6 +118,9 @@ extern CPMBRingBuffer g_FilledRectVertexBuffer;
 extern CPMBRingBuffer g_RectInstanceBuffer;
 extern CPMBRingBuffer g_RectIndexBuffer;
 
+extern std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
+extern std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
+
 extern RECT* g_ScissorRect;
 extern bool* g_bScissor;
 
@@ -399,6 +402,8 @@ extern cvar_t* r_wsurf_sky_fog;
 
 extern cvar_t* gl_nearplane;
 
+extern cvar_t* r_glow_bloomscale;
+
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -670,20 +675,22 @@ void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
 bool R_IsRenderingGammaBlending();
-bool R_IsRenderingShadowView(void);
-bool R_IsRenderingWaterView(void);
-bool R_IsRenderingReflectView(void);
-bool R_IsRenderingRefractView(void);
+bool R_IsRenderingShadowView();
+bool R_IsRenderingWaterView();
+bool R_IsRenderingReflectView();
+bool R_IsRenderingRefractView();
 bool R_IsLowerBodyEntity(cl_entity_t* ent);
-bool R_IsRenderingLowerBody(void);
-bool R_IsRenderingClippedLowerBody(void);
-bool R_IsRenderingPortal(void);
+bool R_IsRenderingLowerBody();
+bool R_IsRenderingClippedLowerBody();
+bool R_IsRenderingPortal();
+bool R_IsRenderingGlowStencil();
+bool R_IsRenderingGlowColor();
 bool R_IsRenderingFirstPersonView();
 bool R_IsRenderingPreViewModel();
 bool R_IsRenderingViewModel();
-bool R_IsRenderingFlippedViewModel(void);
+bool R_IsRenderingFlippedViewModel();
 
-bool R_IsDeferredRenderingEnabled(void);
+bool R_IsDeferredRenderingEnabled();
 
 void* Sys_GetMainWindow();
 
@@ -693,9 +700,9 @@ bool R_IsRenderingFog();
 void R_DisableRenderingFog();
 void R_InhibitRenderingFog();
 void R_RestoreRenderingFog();
-void R_RenderWaterFog(void);
-void R_RenderSvenFog(void);
-void R_RenderUserFog(void);
+void R_RenderWaterFog();
+void R_RenderSvenFog();
+void R_RenderUserFog();
 
 //refdef
 void R_PushRefDef(void);
@@ -720,8 +727,6 @@ void GL_ClearStencil(int stencilmask);
 void GL_BeginStencilCompareEqual(int ref, int mask);
 void GL_BeginStencilCompareNotEqual(int ref, int mask);
 void GL_BeginStencilWrite(int ref, int write_mask);
-void GL_BeginStencilCompareEqualWrite(int ref, int compare_mask, int write_mask);
-void GL_BeginStencilCompareNotEqualWrite(int ref, int compare_mask, int write_mask);
 void GL_EndStencil();
 
 void GL_Texturemode_f(void);

@@ -752,7 +752,7 @@ void main(void)
 
 	#endif
 
-#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
+#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED) && !defined(GLOW_COLOR_ENABLED)
 
 	vec3 vWorldPos = v_worldpos.xyz;
 
@@ -852,7 +852,16 @@ void main(void)
 
 #if defined(SHADOW_CASTER_ENABLED)
 
-	//Position output
+	#if defined(STUDIO_NF_MASKED)
+		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
+
+		if(diffuseColor.a < 0.5)
+			discard;
+	#endif
+
+	out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+
+#elif defined(GLOW_COLOR_ENABLED)
 
 	#if defined(STUDIO_NF_MASKED)
 		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
@@ -861,7 +870,7 @@ void main(void)
 			discard;
 	#endif
 
-	out_Diffuse = vec4(StudioUBO.entity_origin.x, StudioUBO.entity_origin.y, StudioUBO.entity_origin.z, gl_FragCoord.z);
+	out_Diffuse = vec4(StudioUBO.r_color.xyz, 1.0);
 
 #elif defined(HAIR_SHADOW_ENABLED)
 

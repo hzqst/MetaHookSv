@@ -192,6 +192,12 @@ bool g_bHasLowerBody = false;
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = { 0 };
 
+//This is the pass for rendering glow stencil
+bool r_draw_glowstencil = false;
+
+//This is the pass for rendering glow color
+bool r_draw_glowcolor = false;
+
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
 
@@ -225,6 +231,9 @@ bool r_draw_refractview = false;
 bool r_draw_portalview = false;
 
 int r_renderview_pass = 0;
+
+std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
+std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 
 int glx = 0;
 int gly = 0;
@@ -373,6 +382,8 @@ cvar_t* r_wsurf_sky_fog = nullptr;
 
 cvar_t* gl_nearplane = nullptr;
 
+cvar_t* r_glow_bloomscale = nullptr;
+
 void* Sys_GetMainWindow()
 {
 	return (**pmainwindow);
@@ -424,7 +435,7 @@ bool R_IsRenderingGammaBlending()
 	Purpose : Check if we are rendering Shadow View
 */
 
-bool R_IsRenderingShadowView(void)
+bool R_IsRenderingShadowView()
 {
 	return r_draw_shadowcaster;
 }
@@ -433,17 +444,17 @@ bool R_IsRenderingShadowView(void)
 	Purpose : Check if we are rendering Water Pass
 */
 
-bool R_IsRenderingWaterView(void)
+bool R_IsRenderingWaterView()
 {
 	return r_draw_reflectview || r_draw_refractview;
 }
 
-bool R_IsRenderingReflectView(void)
+bool R_IsRenderingReflectView()
 {
 	return r_draw_reflectview;
 }
 
-bool R_IsRenderingRefractView(void)
+bool R_IsRenderingRefractView()
 {
 	return r_draw_refractview;
 }
@@ -452,9 +463,27 @@ bool R_IsRenderingRefractView(void)
 	Purpose : Check if we are rendering Portal Pass
 */
 
-bool R_IsRenderingPortal(void)
+bool R_IsRenderingPortal()
 {
 	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
+}
+
+/*
+	Purpose: Check if we are rendering glow stencil, disable color write-in
+*/
+
+bool R_IsRenderingGlowStencil()
+{
+	return r_draw_glowstencil;
+}
+
+/*
+	Purpose: Check if we are rendering glow color, disable depth write-in
+*/
+
+bool R_IsRenderingGlowColor()
+{
+	return r_draw_glowcolor;
 }
 
 /*
@@ -466,12 +495,12 @@ bool R_IsLowerBodyEntity(cl_entity_t* ent)
 	return ent == gEngfuncs.GetLocalPlayer() && g_bHasLowerBody;
 }
 
-bool R_IsRenderingLowerBody(void)
+bool R_IsRenderingLowerBody()
 {
 	return R_IsLowerBodyEntity((*currententity));
 }
 
-bool R_IsRenderingClippedLowerBody(void)
+bool R_IsRenderingClippedLowerBody()
 {
 	return R_IsLowerBodyEntity((*currententity)) && !R_IsRenderingShadowView() && !R_IsRenderingPortal();
 }
@@ -503,7 +532,7 @@ bool R_IsRenderingViewModel()
 	Purpose: Check if we are rendering viewmodel
 */
 
-bool R_IsRenderingFlippedViewModel(void)
+bool R_IsRenderingFlippedViewModel()
 {
 	if (R_IsRenderingPreViewModel() || R_IsRenderingViewModel())
 	{
@@ -800,6 +829,8 @@ void R_DrawParticles(void)
 
 	gPrivateFuncs.R_FreeDeadParticles(&(*active_particles));
 
+	GL_BeginDebugGroup("R_DrawParticles");
+
 	vec3_t			up, right;
 	float			scale;
 
@@ -945,6 +976,9 @@ void R_DrawParticles(void)
 	gPrivateFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
+	GL_UseProgram(0);
+
+	GL_EndDebugGroup();
 }
 
 mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
@@ -1671,21 +1705,89 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	}
 }
 
-void ClientDLL_DrawTransparentTriangles(void)
+void R_DrawGlowStencil()
 {
-	//Call ClientDLL_DrawTransparentTriangles() instead of HUD_DrawTransparentTriangles
-	if (!R_IsRenderingShadowView())
+	if (g_PostProcessGlowStencilEntities.empty())
+		return;
+
+	r_draw_glowstencil = true;
+
+	glColorMask(0, 0, 0, 0);
+
+	for (auto ent : g_PostProcessGlowStencilEntities)
 	{
-		gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
+		(*currententity) = ent;
+
+		R_DrawCurrentEntity(true);
 	}
 
-	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+	glColorMask(1, 1, 1, 1);
+
+	r_draw_glowstencil = false;
+}
+
+void R_DrawPostProcessGlow()
+{
+	if (g_PostProcessGlowColorEntities.empty())
+		return;
+
+	auto CurrentFBO = GL_GetCurrentSceneFBO();
+
+	GL_BeginDebugGroup("R_DrawPostProcessGlowColor");
+
+	{
+		GL_BlitFrameBufferToFrameBufferDepthStencil(CurrentFBO, &s_BackBufferFBO3);
+
+		GL_BindFrameBuffer(&s_BackBufferFBO3);
+		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
+
+		vec4_t clearColor = { 0, 0, 0, 1 };
+		GL_ClearColor(clearColor);
+
+		r_draw_glowcolor = true;
+
+		for (auto ent : g_PostProcessGlowColorEntities)
+		{
+			(*currententity) = ent;
+
+			R_DrawCurrentEntity(true);
+		}
+
+		r_draw_glowcolor = false;
+	}
+
+	GL_EndDebugGroup();
+
+	R_DownSample(&s_BackBufferFBO3, nullptr, &s_DownSampleFBO[0], true, false);//(1->1/4)
+	R_DownSample(&s_DownSampleFBO[0], nullptr, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
+	R_BlurPass(&s_DownSampleFBO[1], &s_BlurPassFBO[0][0], math_clamp(r_glow_bloomscale->value, 0.1f, 1.0f), false);
+	R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], math_clamp(r_glow_bloomscale->value, 0.1f, 1.0f), true);
+
+	GL_BindFrameBuffer(CurrentFBO);
+	GL_SetCurrentSceneFBO(CurrentFBO);
+
+	R_AddGlowColor(&s_BlurPassFBO[0][1], CurrentFBO);
+}
+
+void ClientDLL_DrawTransparentTriangles(void)
+{
+	GL_BeginDebugGroup("ClientDLL_DrawTransparentTriangles");
+
+	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
+
+	R_DrawGlowStencil();
+
+	R_DrawPostProcessGlow();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawTransEntities(int onlyClientDraw)
 {
 	if (R_IsRenderingShadowView())
 		return;
+
+	GL_BeginDebugGroup("R_DrawTransEntities");
 
 	if (g_bUseOITBlend)
 	{
@@ -1749,7 +1851,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 		}
 	}
 
-	GL_UseProgram(0);
+	GL_EndDebugGroup();
 }
 
 void R_AddTEntity(cl_entity_t* ent)
@@ -2192,93 +2294,107 @@ void GL_GenerateFrameBuffers(void)
 {
 	GL_FreeFrameBuffers();
 
-	s_FinalBufferFBO.iWidth = glwidth;
-	s_FinalBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_FinalBufferFBO, "s_FinalBufferFBO");
-	GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
-	GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_FinalBufferFBO);
-		Sys_Error("Failed to initialize FinalBufferFBO!\n");
+		s_FinalBufferFBO.iWidth = glwidth;
+		s_FinalBufferFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_FinalBufferFBO, "s_FinalBufferFBO");
+		GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
+		GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_FinalBufferFBO);
+			Sys_Error("Failed to initialize FinalBufferFBO!\n");
+		}
 	}
 
-	s_BackBufferFBO.iWidth = glwidth;
-	s_BackBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO, "s_BackBufferFBO");
-	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
-	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_BackBufferFBO);
-		Sys_Error("Failed to initialize BackBufferFBO!\n");
+		s_BackBufferFBO.iWidth = glwidth;
+		s_BackBufferFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_BackBufferFBO, "s_BackBufferFBO");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO);
+			Sys_Error("Failed to initialize BackBufferFBO!\n");
+		}
 	}
 
-	s_BackBufferFBO2.iWidth = glwidth;
-	s_BackBufferFBO2.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO2, "s_BackBufferFBO2");
-	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
-	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_BackBufferFBO2);
-		Sys_Error("Failed to initialize BackBufferFBO2!\n");
+		s_BackBufferFBO2.iWidth = glwidth;
+		s_BackBufferFBO2.iHeight = glheight;
+		GL_GenFrameBuffer(&s_BackBufferFBO2, "s_BackBufferFBO2");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO2);
+			Sys_Error("Failed to initialize BackBufferFBO2!\n");
+		}
 	}
 
-	s_BackBufferFBO3.iWidth = glwidth;
-	s_BackBufferFBO3.iHeight = glheight;
-	GL_GenFrameBuffer(&s_BackBufferFBO3, "s_BackBufferFBO3");
-	GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA8);
-	GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_BackBufferFBO3);
-		Sys_Error("Failed to initialize BackBufferFBO3!\n");
+		s_BackBufferFBO3.iWidth = glwidth;
+		s_BackBufferFBO3.iHeight = glheight;
+		GL_GenFrameBuffer(&s_BackBufferFBO3, "s_BackBufferFBO3");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA8);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO3);
+			Sys_Error("Failed to initialize BackBufferFBO3!\n");
+		}
 	}
 
-	s_GBufferFBO.iWidth = glwidth;
-	s_GBufferFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_GBufferFBO, "s_GBufferFBO");
-
-	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO,
-		GBUFFER_INTERNAL_FORMAT_DIFFUSE,
-		GBUFFER_INTERNAL_FORMAT_LIGHTMAP,
-		GBUFFER_INTERNAL_FORMAT_WORLDNORM,
-		GBUFFER_INTERNAL_FORMAT_SPECULAR);
-
-	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_GBufferFBO);
-		Sys_Error("Failed to initialize GBuffer framebuffer.\n");
+		s_GBufferFBO.iWidth = glwidth;
+		s_GBufferFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_GBufferFBO, "s_GBufferFBO");
+
+		GL_FrameBufferColorTextureDeferred(&s_GBufferFBO,
+			GBUFFER_INTERNAL_FORMAT_DIFFUSE,
+			GBUFFER_INTERNAL_FORMAT_LIGHTMAP,
+			GBUFFER_INTERNAL_FORMAT_WORLDNORM,
+			GBUFFER_INTERNAL_FORMAT_SPECULAR);
+
+		GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_GBufferFBO);
+			Sys_Error("Failed to initialize GBuffer framebuffer.\n");
+		}
 	}
 
-	s_DepthLinearFBO.iWidth = glwidth;
-	s_DepthLinearFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_DepthLinearFBO, "s_DepthLinearFBO");
-	GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_DepthLinearFBO);
-		Sys_Error("Failed to initialize DepthLinear framebuffer!\n");
+		s_DepthLinearFBO.iWidth = glwidth;
+		s_DepthLinearFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_DepthLinearFBO, "s_DepthLinearFBO");
+		GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_DepthLinearFBO);
+			Sys_Error("Failed to initialize DepthLinear framebuffer!\n");
+		}
 	}
 
-	s_HBAOCalcFBO.iWidth = glwidth;
-	s_HBAOCalcFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_HBAOCalcFBO, "s_HBAOCalcFBO");
-	GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_HBAOCalcFBO);
-		Sys_Error("Failed to initialize HBAOCalc framebuffer.\n");
+		s_HBAOCalcFBO.iWidth = glwidth;
+		s_HBAOCalcFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_HBAOCalcFBO, "s_HBAOCalcFBO");
+		GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_HBAOCalcFBO);
+			Sys_Error("Failed to initialize HBAOCalc framebuffer.\n");
+		}
 	}
 
 	//Framebuffers that bind no texture
@@ -2287,132 +2403,147 @@ void GL_GenerateFrameBuffers(void)
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_WaterSurfaceFBO, "s_WaterSurfaceFBO");
 
-	//DownSample FBO 1->1/4->1/16
-	int downW, downH;
-
-	downW = glwidth;
-	downH = glheight;
-	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 	{
-		downW >>= 1;
-		downH >>= 1;
-		s_DownSampleFBO[i].iWidth = downW;
-		s_DownSampleFBO[i].iHeight = downH;
-		GL_GenFrameBuffer(&s_DownSampleFBO[i], "s_DownSampleFBO");
-		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
-		GL_FrameBufferDepthTexture(&s_DownSampleFBO[i], GL_DEPTH24_STENCIL8);
+		//DownSample FBO 1->1/4->1/16
+		int downW, downH;
 
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		downW = glwidth;
+		downH = glheight;
+		for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		{
-			GL_FreeFBO(&s_DownSampleFBO[i]);
-			Sys_Error("Failed to initialize DownSample #%d framebuffer.\n", i);
-		}
-	}
-
-	//Luminance FBO
-	downW = glwidth;
-	downH = glheight;
-	while ((downH >> 1) >= 256)
-	{
-		downW >>= 1;
-		downH >>= 1;
-	}
-	//64x64 16x16 4x4
-	for (int i = 0; i < LUMIN_BUFFERS; ++i)
-	{
-		s_LuminFBO[i].iWidth = downW;
-		s_LuminFBO[i].iHeight = downH;
-		GL_GenFrameBuffer(&s_LuminFBO[i], "s_LuminFBO");
-		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
-
-		vec4_t clearColor = { 0, 0, 0, 0 };
-
-		GL_ClearColor(clearColor);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			GL_FreeFBO(&s_LuminFBO[i]);
-			Sys_Error("Failed to initialize Luminance #%d framebuffer.\n", i);
-		}
-
-		downW >>= 2;
-		downH >>= 2;
-	}
-
-	//Luminance 1x1 FBO
-	for (int i = 0; i < LUMIN1x1_BUFFERS; ++i)
-	{
-		s_Lumin1x1FBO[i].iWidth = 1;
-		s_Lumin1x1FBO[i].iHeight = 1;
-		GL_GenFrameBuffer(&s_Lumin1x1FBO[i], "s_Lumin1x1FBO");
-		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
-
-		vec4_t clearColor = { 0, 0, 0, 0 };
-
-		GL_ClearColor(clearColor);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			GL_FreeFBO(&s_Lumin1x1FBO[i]);
-			Sys_Error("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
-		}
-	}
-
-	//Bright Pass FBO
-	s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
-	s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
-	GL_GenFrameBuffer(&s_BrightPassFBO, "s_BrightPassFBO");
-	GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-
-	{
-		GL_FreeFBO(&s_BrightPassFBO);
-		Sys_Error("Failed to initialize BrightPass framebuffer.\n");
-	}
-
-	//Blur FBO
-	downW = glwidth >> DOWNSAMPLE_BUFFERS;
-	downH = glheight >> DOWNSAMPLE_BUFFERS;
-
-	for (int i = 0; i < BLUR_BUFFERS; ++i)
-	{
-		for (int j = 0; j < 2; ++j)
-		{
-			s_BlurPassFBO[i][j].iWidth = downW;
-			s_BlurPassFBO[i][j].iHeight = downH;
-
-			GL_GenFrameBuffer(&s_BlurPassFBO[i][j], "s_BlurPassFBO");
-			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], GL_RGB16F);
+			downW >>= 1;
+			downH >>= 1;
+			s_DownSampleFBO[i].iWidth = downW;
+			s_DownSampleFBO[i].iHeight = downH;
+			GL_GenFrameBuffer(&s_DownSampleFBO[i], "s_DownSampleFBO");
+			GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
+			GL_FrameBufferDepthTexture(&s_DownSampleFBO[i], GL_DEPTH24_STENCIL8);
 
 			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
-				GL_FreeFBO(&s_BlurPassFBO[i][j]);
-				Sys_Error("Failed to initialize Blur #%d framebuffer.\n", i);
+				GL_FreeFBO(&s_DownSampleFBO[i]);
+				Sys_Error("Failed to initialize DownSample #%d framebuffer.\n", i);
 			}
 		}
-		downW >>= 1;
-		downH >>= 1;
 	}
 
-	s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
-	s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
-	GL_GenFrameBuffer(&s_BrightAccumFBO, "s_BrightAccumFBO");
-	GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_BrightAccumFBO);
-		Sys_Error("Failed to initialize BrightAccumulate #%d framebuffer.\n");
+		int downW, downH;
+		//Luminance FBO
+		downW = glwidth;
+		downH = glheight;
+		while ((downH >> 1) >= 256)
+		{
+			downW >>= 1;
+			downH >>= 1;
+		}
+		//64x64 16x16 4x4
+		for (int i = 0; i < LUMIN_BUFFERS; ++i)
+		{
+			s_LuminFBO[i].iWidth = downW;
+			s_LuminFBO[i].iHeight = downH;
+			GL_GenFrameBuffer(&s_LuminFBO[i], "s_LuminFBO");
+			GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
+
+			vec4_t clearColor = { 0, 0, 0, 0 };
+
+			GL_ClearColor(clearColor);
+
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			{
+				GL_FreeFBO(&s_LuminFBO[i]);
+				Sys_Error("Failed to initialize Luminance #%d framebuffer.\n", i);
+			}
+
+			downW >>= 2;
+			downH >>= 2;
+		}
 	}
 
-	s_ToneMapFBO.iWidth = glwidth;
-	s_ToneMapFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_ToneMapFBO, "s_ToneMapFBO");
-	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GL_FreeFBO(&s_ToneMapFBO);
-		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
+		//Luminance 1x1 FBO
+		for (int i = 0; i < LUMIN1x1_BUFFERS; ++i)
+		{
+			s_Lumin1x1FBO[i].iWidth = 1;
+			s_Lumin1x1FBO[i].iHeight = 1;
+			GL_GenFrameBuffer(&s_Lumin1x1FBO[i], "s_Lumin1x1FBO");
+			GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
+
+			vec4_t clearColor = { 0, 0, 0, 0 };
+
+			GL_ClearColor(clearColor);
+
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			{
+				GL_FreeFBO(&s_Lumin1x1FBO[i]);
+				Sys_Error("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
+			}
+		}
+	}
+
+	{
+		//Bright Pass FBO
+		s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
+		s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
+		GL_GenFrameBuffer(&s_BrightPassFBO, "s_BrightPassFBO");
+		GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+
+		{
+			GL_FreeFBO(&s_BrightPassFBO);
+			Sys_Error("Failed to initialize BrightPass framebuffer.\n");
+		}
+	}
+	{
+		int downW, downH;
+		//Blur FBO
+		downW = glwidth >> DOWNSAMPLE_BUFFERS;
+		downH = glheight >> DOWNSAMPLE_BUFFERS;
+
+		for (int i = 0; i < BLUR_BUFFERS; ++i)
+		{
+			for (int j = 0; j < 2; ++j)
+			{
+				s_BlurPassFBO[i][j].iWidth = downW;
+				s_BlurPassFBO[i][j].iHeight = downH;
+
+				GL_GenFrameBuffer(&s_BlurPassFBO[i][j], "s_BlurPassFBO");
+				GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], GL_RGB16F);
+
+				if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+				{
+					GL_FreeFBO(&s_BlurPassFBO[i][j]);
+					Sys_Error("Failed to initialize Blur #%d framebuffer.\n", i);
+				}
+			}
+			downW >>= 1;
+			downH >>= 1;
+		}
+	}
+
+	{
+		s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
+		s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
+		GL_GenFrameBuffer(&s_BrightAccumFBO, "s_BrightAccumFBO");
+		GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BrightAccumFBO);
+			Sys_Error("Failed to initialize BrightAccumulate #%d framebuffer.\n");
+		}
+	}
+
+	{
+		s_ToneMapFBO.iWidth = glwidth;
+		s_ToneMapFBO.iHeight = glheight;
+		GL_GenFrameBuffer(&s_ToneMapFBO, "s_ToneMapFBO");
+		GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_ToneMapFBO);
+			gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
+		}
 	}
 
 	GL_BindFrameBuffer(NULL);
@@ -2462,6 +2593,8 @@ void R_RenderFrameStart()
 	g_FilledRectVertexBuffer.BeginFrame();
 	g_RectInstanceBuffer.BeginFrame();
 	g_RectIndexBuffer.BeginFrame();
+	g_PostProcessGlowStencilEntities.clear();
+	g_PostProcessGlowColorEntities.clear();
 
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
@@ -2730,6 +2863,8 @@ void R_DrawViewModel(void)
 
 	if (R_ShouldDrawViewModel())
 	{
+		GL_BeginDebugGroup("R_DrawViewModel");
+
 		R_SetupGLForViewModel();
 
 		GL_ClearDepth(1.0f);
@@ -2778,6 +2913,8 @@ void R_DrawViewModel(void)
 		}
 
 		r_draw_viewmodel = false;
+
+		GL_EndDebugGroup();
 	}
 	else
 	{
@@ -2850,7 +2987,7 @@ void R_RenderView_SvEngine(int viewIdx)
 		R_PostRenderView();
 
 		//This will switch to final framebuffer (RGBA8)
-		R_BlitFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO); //GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_FinalBufferFBO);
+		R_CopyColor(&s_BackBufferFBO, &s_FinalBufferFBO);
 		GL_SetCurrentSceneFBO(NULL);
 
 		if (!(*r_refdef.onlyClientDraws))
@@ -3177,6 +3314,11 @@ void R_InitCvars(void)
 		"zNear" aka near plane in Perspective-Projection
 	*/
 	gl_nearplane = gEngfuncs.pfnRegisterVariable("gl_nearplane", "4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	/*
+		Scale to glow color bloom
+	*/
+	r_glow_bloomscale = gEngfuncs.pfnRegisterVariable("r_glow_bloomscale", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		"zNear" aka near plane in Perspective-Projection for viewmodel

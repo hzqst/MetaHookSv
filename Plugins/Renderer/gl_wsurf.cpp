@@ -4299,12 +4299,12 @@ void R_SetupCameraUBO()
 	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
 	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 
-	auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
+	auto CurrentFBO = GL_GetCurrentSceneFBO();
 
-	if (CurrentSceneFBO)
+	if (CurrentFBO)
 	{
-		CameraUBO.viewport[0] = CurrentSceneFBO->iWidth;
-		CameraUBO.viewport[1] = CurrentSceneFBO->iHeight;
+		CameraUBO.viewport[0] = CurrentFBO->iWidth;
+		CameraUBO.viewport[1] = CurrentFBO->iHeight;
 		CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
 		CameraUBO.viewport[3] = 0;
 	}
