@@ -49,6 +49,7 @@ SHADER_DEFINE(blit_oitblend);
 SHADER_DEFINE(gamma_correction);
 SHADER_DEFINE(gamma_uncorrection);
 SHADER_DEFINE(copy_color);
+SHADER_DEFINE(copy_color_halo_add);
 
 SHADER_DEFINE(under_water_effect);
 
@@ -368,6 +369,9 @@ void R_InitHUD(void)
 	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl", NULL);
 
 	copy_color.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", NULL);
+
+	copy_color_halo_add.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl",
+		"#define HALO_ADD_ENABLED\n", "#define HALO_ADD_ENABLED\n", NULL);
 
 	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl", NULL);
 
@@ -1784,20 +1788,20 @@ void R_CopyColor(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_EndDebugGroup();
 }
 
-void R_AddGlowColor(FBO_Container_t* src, FBO_Container_t* dst)
+void R_CopyColorHaloAdd(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_BeginDebugGroupFormat("R_AddGlowColor - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
+	GL_BeginDebugGroupFormat("R_CopyColorHaloAdd - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	GL_BindFrameBuffer(dst);
 
 	GL_Set2DEx(0, 0, dst->iWidth, dst->iHeight);
 
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW, STENCIL_MASK_NO_GLOW);
 
-	GL_UseProgram(copy_color.program);
+	GL_UseProgram(copy_color_halo_add.program);
 
 	GL_BindVAO(r_empty_vao);
 

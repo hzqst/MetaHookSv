@@ -1766,7 +1766,7 @@ void R_DrawPostProcessGlow()
 	GL_BindFrameBuffer(CurrentFBO);
 	GL_SetCurrentSceneFBO(CurrentFBO);
 
-	R_AddGlowColor(&s_BlurPassFBO[0][1], CurrentFBO);
+	R_CopyColorHaloAdd(&s_BlurPassFBO[0][1], CurrentFBO);
 }
 
 void ClientDLL_DrawTransparentTriangles(void)
@@ -3318,7 +3318,7 @@ void R_InitCvars(void)
 	/*
 		Scale to glow color bloom
 	*/
-	r_glow_bloomscale = gEngfuncs.pfnRegisterVariable("r_glow_bloomscale", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_glow_bloomscale = gEngfuncs.pfnRegisterVariable("r_glow_bloomscale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		"zNear" aka near plane in Perspective-Projection for viewmodel

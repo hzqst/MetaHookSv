@@ -11,5 +11,13 @@ layout(location = 0) out vec4 out_Color;
 void main() {
   vec4 baseColor = texture(baseTex, texCoord);
   
+  #if defined(HALO_ADD_ENABLED)
+
+    // Store max color component in alpha for alpha blend of one/invSrcAlpha
+    float flLuminance = max( baseColor.r, max( baseColor.g, baseColor.b ) );
+    baseColor.a = pow( flLuminance, 0.8f );
+
+  #endif
+  
   out_Color = baseColor;
 }
