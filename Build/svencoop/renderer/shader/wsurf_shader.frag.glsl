@@ -240,6 +240,12 @@ void main()
 	lightmapColor += texture(lightmapTexArray_3, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z) ) * ConvertStyleToLightStyle(v_styles.w);
 #endif
 
+	lightmapColor.x = pow(lightmapColor.x, SceneUBO.r_lightmap_pow);
+	lightmapColor.y = pow(lightmapColor.y, SceneUBO.r_lightmap_pow);
+	lightmapColor.z = pow(lightmapColor.z, SceneUBO.r_lightmap_pow);
+
+	lightmapColor *= SceneUBO.r_lightmap_scale;
+
 #if defined(LEGACY_DLIGHT_ENABLED)
 
 	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);

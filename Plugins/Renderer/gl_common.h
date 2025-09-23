@@ -153,6 +153,9 @@ public:
 #define DFINAL_BIND_DEPTH_TEXTURE			4
 #define DFINAL_BIND_STENCIL_TEXTURE			5
 
+#define CSM_RESOLUTION 4096.0
+#define CSM_LEVELS 4
+
 typedef struct vertex3f_s
 {
 	vec3_t	v;
@@ -292,8 +295,8 @@ typedef struct scene_ubo_s
 	vec4 r_lightstylevalue[256 / 4];
 	float r_linear_fog_shift;
 	float r_linear_fog_shiftz;
-	float padding2;
-	float padding3;
+	float r_lightmap_scale;
+	float r_lightmap_pow;
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");

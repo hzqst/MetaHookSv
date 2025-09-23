@@ -2125,8 +2125,6 @@ void R_ClearDecalCache(void)
 
 void R_DrawWorldSurfaceLeafBegin(CWorldSurfaceLeaf* pLeaf, int VBOStates)
 {
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
 	auto pModel = pLeaf->m_pModel.lock();
 
 	auto pWorldModel = pModel->m_pWorldModel.lock();
@@ -2141,7 +2139,6 @@ void R_DrawWorldSurfaceLeafEnd()
 {
 	GL_BindABO(0);
 	GL_BindVAO(0);
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 }
 
 bool R_WorldSurfaceLeafHasSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf)
@@ -2184,6 +2181,11 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	if (WSurfProgramState & WSURF_SHADOW_CASTER_ENABLED)
+	{
+		glDisable(GL_CULL_FACE);
+	}
+
 	R_DrawWorldSurfaceLeafBegin(pLeaf, (1 << WSURF_VBO_POSITION));
 
 	wsurf_program_t prog = { 0 };
@@ -2192,6 +2194,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 	GL_UseProgram(0);
+
+	glEnable(GL_CULL_FACE);
 
 	R_DrawWorldSurfaceLeafEnd();
 
@@ -2867,6 +2871,10 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 					g_WorldSurfaceRenderer.pCurrentWaterLeaf = pLeaf;
 				}
 			}
+			else if (R_IsRenderingShadowView())
+			{
+				R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
+			}
 			else
 			{
 				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
@@ -2876,7 +2884,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 		}
 
-		if (!R_IsRenderingWaterView())
+		if (!R_IsRenderingWaterView() && !R_IsRenderingShadowView())
 		{
 			if (pLeaf)
 			{
@@ -2900,8 +2908,15 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 		if (pLeaf && pLeaf->hABO)
 		{
-			R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
-			R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
+			if (R_IsRenderingShadowView())
+			{
+				R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
+			}
+			else
+			{
+				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
+				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
+			}
 		}
 	}
 
@@ -3943,6 +3958,10 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 		{
 			dynlight->type = DynamicLightType_Directional;
 		}
+		else
+		{
+			dynlight->type = (DynamicLightType)atoi(type_string);
+		}
 	}
 
 #define PARSE_KEY_VALUE_STRING(name, parser) auto name##_string = ValueForKey(ent, #name);\
@@ -4116,6 +4135,7 @@ void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t* ent)
 	R_ParseMapCvarSetMapValue(r_flashlight_cone_cosine, ValueForKey(ent, "cone_cosine"));
 
 	auto cone_texture = ValueForKey(ent, "cone_texture");
+
 	if (cone_texture)
 	{
 		r_flashlight_cone_texture_name = cone_texture;
@@ -4132,17 +4152,13 @@ void R_ParseBSPEntity_Env_HDR_Control(bspentity_t* ent)
 
 void R_ParseBSPEntity_Env_Shadow_Control(bspentity_t* ent)
 {
-	R_ParseMapCvarSetMapValue(r_shadow_color, ValueForKey(ent, "color"));
-	R_ParseMapCvarSetMapValue(r_shadow_intensity, ValueForKey(ent, "intensity"));
-	R_ParseMapCvarSetMapValue(r_shadow_angles, ValueForKey(ent, "angles"));
-	R_ParseMapCvarSetMapValue(r_shadow_distfade, ValueForKey(ent, "distfade"));
-	R_ParseMapCvarSetMapValue(r_shadow_lumfade, ValueForKey(ent, "lumfade"));
-	R_ParseMapCvarSetMapValue(r_shadow_high_distance, ValueForKey(ent, "high_distance"));
-	R_ParseMapCvarSetMapValue(r_shadow_high_scale, ValueForKey(ent, "high_scale"));
-	R_ParseMapCvarSetMapValue(r_shadow_medium_distance, ValueForKey(ent, "medium_distance"));
-	R_ParseMapCvarSetMapValue(r_shadow_medium_scale, ValueForKey(ent, "medium_scale"));
-	R_ParseMapCvarSetMapValue(r_shadow_low_distance, ValueForKey(ent, "low_distance"));
-	R_ParseMapCvarSetMapValue(r_shadow_low_scale, ValueForKey(ent, "low_scale"));
+	
+}
+
+void R_ParseBSPEntity_Env_Lightmap_Control(bspentity_t* ent)
+{
+	R_ParseMapCvarSetMapValue(r_lightmap_pow, ValueForKey(ent, "pow"));
+	R_ParseMapCvarSetMapValue(r_lightmap_scale, ValueForKey(ent, "scale"));
 }
 
 void R_ParseBSPEntity_Env_SSR_Control(bspentity_t* ent)
@@ -4198,6 +4214,11 @@ void R_LoadBSPEntities(std::vector<bspentity_t*>& vBSPEntities)
 		else if (!strcmp(classname, "env_shadow_control"))
 		{
 			R_ParseBSPEntity_Env_Shadow_Control(ent);
+		}
+
+		else if (!strcmp(classname, "env_lightmap_control"))
+		{
+			R_ParseBSPEntity_Env_Lightmap_Control(ent);
 		}
 
 		else if (!strcmp(classname, "env_ssr_control"))
@@ -4371,7 +4392,6 @@ void R_SetupSceneUBO(void)
 
 	//Fog colors are converted to linear space before use.
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
-	//GammaToLinear(SceneUBO.fogColor);
 
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
@@ -4401,6 +4421,9 @@ void R_SetupSceneUBO(void)
 	SceneUBO.r_linear_blend_shift = math_clamp(r_linear_blend_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shiftz = math_clamp(r_linear_fog_shiftz->value, 0, 1);
+
+	SceneUBO.r_lightmap_pow = r_lightmap_pow->GetValue();
+	SceneUBO.r_lightmap_scale = r_lightmap_scale->GetValue();
 
 	if (gl_overbright->value)
 		SceneUBO.r_lightscale = 1;

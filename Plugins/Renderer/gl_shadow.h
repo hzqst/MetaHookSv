@@ -22,18 +22,6 @@ extern shadow_texture_t *current_shadow_texture;
 //cvar
 extern cvar_t *r_shadow;
 
-extern MapConVar *r_shadow_distfade;
-extern MapConVar *r_shadow_lumfade;
-extern MapConVar *r_shadow_angles;
-extern MapConVar *r_shadow_color;
-extern MapConVar *r_shadow_intensity;
-extern MapConVar *r_shadow_high_distance;
-extern MapConVar *r_shadow_high_scale;
-extern MapConVar *r_shadow_medium_distance;
-extern MapConVar *r_shadow_medium_scale;
-extern MapConVar *r_shadow_low_distance;
-extern MapConVar *r_shadow_low_scale;
-
 bool R_ShouldCastShadow(cl_entity_t *ent);
 bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void); 

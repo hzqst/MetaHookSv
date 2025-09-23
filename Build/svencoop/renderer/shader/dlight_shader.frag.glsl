@@ -176,15 +176,15 @@ float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float 
     return textureProj(shadowTex, uv);
 }
 
-float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
+float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vBaseTexCoord)
 {
     float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
 
     // Determine which cascade to use
-    int cascadeIndex = 3; // Default to furthest cascade
+    int cascadeIndex = (CSM_LEVELS - 1); // Default to furthest cascade
     float cascadeBlendFactor = 0.0;
 
-    for(int i = 0; i < 4; ++i)
+    for(int i = 0; i < CSM_LEVELS; ++i)
     {
         if(distanceFromCamera < u_csmDistances[i])
         {
@@ -214,8 +214,22 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
     // Calculate shadow coordinates for selected cascade
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
-    // Add bias to prevent shadow acne and self-shadowing issues
-    float bias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+    // Enhanced bias calculation for better handling of corner/crevice areas
+    float normalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+
+    // Additional bias for cascade transitions and geometric complexity
+    float cascadeBias = 0.0001 * (cascadeIndex + 1); // Increase bias for further cascades
+
+    // Detect potential corner/crevice areas by checking normal variation
+    // Use a small offset to sample nearby normals and detect geometric complexity
+    vec2 texelOffset = vec2(1.0 / 4096.0);
+    vec3 normalRight = OctahedronToUnitVector(texture(gbufferWorldNorm, vBaseTexCoord + vec2(texelOffset.x, 0.0)).xy);
+    vec3 normalUp = OctahedronToUnitVector(texture(gbufferWorldNorm, vBaseTexCoord + vec2(0.0, texelOffset.y)).xy);
+
+    float normalVariation = length(normalRight - Norm) + length(normalUp - Norm);
+    float complexityBias = normalVariation * 0.002; // Extra bias for complex geometry
+
+    float bias = normalBias + cascadeBias + complexityBias;
     shadowCoords.z -= bias;
 
     float visibility = 0.0;
@@ -237,8 +251,8 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         }
         else
         {
-            float texRes = 4096.0;
-            float invRes = 1.0 / 4096.0;
+            float texRes = CSM_RESOLUTION;
+            float invRes = 1.0 / CSM_RESOLUTION;
 
             vec2 uv = projCoords.xy * texRes;
             vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
@@ -271,7 +285,13 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
     if(cascadeIndex > 0 && cascadeBlendFactor < 1.0)
     {
         vec4 prevShadowCoords = u_csmMatrices[cascadeIndex-1] * vec4(World, 1.0);
-        prevShadowCoords.z -= bias;
+
+        // Apply same enhanced bias calculation for previous cascade
+        float prevNormalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+        float prevCascadeBias = 0.0001 * cascadeIndex; // Previous cascade index
+        float prevBias = prevNormalBias + prevCascadeBias + complexityBias;
+
+        prevShadowCoords.z -= prevBias;
 
         float prevVisibility = 0.0;
 
@@ -424,7 +444,7 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 
 #if defined(CSM_ENABLED)
-    float flShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection);
+    float flShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
     Color.r *= flShadowIntensity;
     Color.g *= flShadowIntensity;
     Color.b *= flShadowIntensity;

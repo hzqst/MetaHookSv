@@ -13,11 +13,14 @@ enum DynamicLightType
 class CDynamicLight
 {
 public:
+	~CDynamicLight();
+
 	DynamicLightType type{ DynamicLightType_Unknown };
 	vec3_t origin{};
 	vec3_t angles{};
+	float size{}; // Orthographic projection width/height for DirectionalLight, or radius for point light
 	float color[3]{};
-	float distance{};
+	float distance{};//Spotlight range
 	float ambient{};
 	float diffuse{};
 	float specular{};
@@ -27,7 +30,6 @@ public:
 	shadow_texture_t shadowtex;
 
 	// DirectionalLight specific fields
-	float size{}; // Orthographic projection width/height for DirectionalLight
 	mat4 csmMatrices[4]; // Shadow matrices for each cascade level
 	float csmDistances[4]; // Distance splits for each cascade
 };
@@ -35,6 +37,9 @@ public:
 extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 extern cvar_t * r_deferred_lighting;
+
+extern MapConVar* r_lightmap_pow;
+extern MapConVar* r_lightmap_scale;
 
 extern MapConVar* r_flashlight_enable;
 extern MapConVar *r_flashlight_ambient;

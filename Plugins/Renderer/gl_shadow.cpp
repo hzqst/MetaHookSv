@@ -11,18 +11,6 @@ shadow_texture_t *current_shadow_texture = NULL;
 //cvar
 cvar_t *r_shadow = NULL;
 
-MapConVar *r_shadow_distfade = NULL;
-MapConVar *r_shadow_lumfade = NULL;
-MapConVar *r_shadow_angles = NULL;
-MapConVar *r_shadow_color = NULL;
-MapConVar *r_shadow_intensity = NULL;
-MapConVar *r_shadow_high_distance = NULL;
-MapConVar *r_shadow_high_scale = NULL;
-MapConVar *r_shadow_medium_distance = NULL;
-MapConVar *r_shadow_medium_scale = NULL;
-MapConVar *r_shadow_low_distance = NULL;
-MapConVar *r_shadow_low_scale = NULL;
-
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
 	/*if (g_bIsSvenCoop)
@@ -100,18 +88,6 @@ void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 void R_InitShadow(void)
 {
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
-	r_shadow_distfade = R_RegisterMapCvar("r_shadow_distfade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2);
-	r_shadow_lumfade = R_RegisterMapCvar("r_shadow_lumfade", "80 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2, ConVar_Color255);
-	r_shadow_angles = R_RegisterMapCvar("r_shadow_angles", "90 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 3);
-	r_shadow_color = R_RegisterMapCvar("r_shadow_color", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 3, ConVar_Color255);
-	r_shadow_intensity = R_RegisterMapCvar("r_shadow_intensity", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_distance = R_RegisterMapCvar("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_scale = R_RegisterMapCvar("r_shadow_high_scale", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_distance = R_RegisterMapCvar("r_shadow_medium_distance", "800", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_scale = R_RegisterMapCvar("r_shadow_medium_scale", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_distance = R_RegisterMapCvar("r_shadow_low_distance", "1200", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_scale = R_RegisterMapCvar("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 void R_ShutdownShadow(void)
@@ -120,6 +96,7 @@ void R_ShutdownShadow(void)
 	{
 		R_FreeShadowTexture(&cl_dlight_shadow_textures[i]);
 	}
+	//TODO: g_DynamicLights ?
 }
 
 bool R_ShouldRenderShadow(void)
@@ -339,13 +316,13 @@ void R_RenderShadowmapForDynamicLights(void)
 				// Allocate 4096x4096 CSM texture if not already allocated
 				if (!args->shadowtex->depth_stencil)
 				{
-					R_AllocShadowTexture(args->shadowtex, 4096, false);
+					R_AllocShadowTexture(args->shadowtex, CSM_RESOLUTION, false);
 				}
 
 				// Calculate cascade distances based on camera frustum
 				// These could be configurable via cvars in the future
-				float nearPlane = r_znear;  // Should match r_nearclip or similar
-				float farPlane = r_zfar; // Should match r_farclip or similar
+				float nearPlane = r_znear;  // Should match r_nearclip or similar, 4.0 by default
+				float farPlane = r_zfar; // Should match r_farclip or similar, 8192.0 by default
 				float cascadeDistances[4];
 
 				// Use logarithmic distribution for cascades
@@ -379,17 +356,17 @@ void R_RenderShadowmapForDynamicLights(void)
 				R_PushRefDef();
 
 				// Render each cascade
-				for (int cascade = 0; cascade < 4; ++cascade)
+				for (int cascade = 0; cascade < CSM_LEVELS; ++cascade)
 				{
 					GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascade);
 
 					// Set up scissor test for this cascade region
 					// CSM layout: [0,1]
 					//             [2,3]
-					int scissorX = (cascade % 2) * 2048;  // 0 or 2048
-					int scissorY = (cascade / 2) * 2048;  // 0 or 2048
-					int scissorWidth = 2048;
-					int scissorHeight = 2048;
+					int scissorX = (cascade % 2) * (CSM_RESOLUTION / 2);  // 0 or 2048
+					int scissorY = (cascade / 2) * (CSM_RESOLUTION / 2);  // 0 or 2048
+					int scissorWidth = (CSM_RESOLUTION / 2);
+					int scissorHeight = (CSM_RESOLUTION / 2);
 
 					glEnable(GL_SCISSOR_TEST);
 					glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -402,7 +379,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 					// Set up orthographic projection for this cascade
-					float orthoSize = args->size * (1.0f + cascade * 0.5f) / 2.5f; // Increase size for further cascades
+					float orthoSize = args->size * (1.0f + cascade * 2.0f) / (1.0f + (4-1) * 2.0f); // Increase size for further cascades
 
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);

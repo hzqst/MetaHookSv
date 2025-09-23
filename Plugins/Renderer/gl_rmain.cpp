@@ -3316,7 +3316,7 @@ void R_InitCvars(void)
 	gl_nearplane = gEngfuncs.pfnRegisterVariable("gl_nearplane", "4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-		Scale to glow color bloom
+		Scale to renderfx=kRenderFxPostProcessGlow(30) and renderfx=kRenderFxPostProcessGlowWallHack(31) bloom
 	*/
 	r_glow_bloomscale = gEngfuncs.pfnRegisterVariable("r_glow_bloomscale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 

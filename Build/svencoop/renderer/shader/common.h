@@ -190,6 +190,9 @@
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
 
+#define CSM_RESOLUTION 4096.0
+#define CSM_LEVELS 4
+
 struct camera_ubo_t {
 	mat4 viewMatrix;
 	mat4 projMatrix;
@@ -227,8 +230,8 @@ struct scene_ubo_t{
 	vec4 r_lightstylevalue[64];
 	float r_linear_fog_shift;
 	float r_linear_fog_shiftz;
-	float padding2;
-	float padding3;
+	float r_lightmap_scale;
+	float r_lightmap_pow;
 };
 
 struct dlight_ubo_t{

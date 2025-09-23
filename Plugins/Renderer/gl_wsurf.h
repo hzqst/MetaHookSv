@@ -272,7 +272,6 @@ extern int g_iNumOITBlendObjects;
 void R_InitWSurf(void);
 void R_FreeWorldResources(void);
 void R_LoadWorldResources(void);
-void R_FreeUnreferencedWorldSurfaceModels(void);
 void R_FreeWorldSurfaceModels(model_t* mod);
 void R_FreeWorldSurfaceWorldModels(model_t* mod);
 void R_ClearWorldSurfaceModels(void);

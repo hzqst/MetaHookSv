@@ -4,6 +4,9 @@
 
 cvar_t * r_deferred_lighting = NULL;
 
+MapConVar* r_lightmap_pow = nullptr;
+MapConVar* r_lightmap_scale = nullptr;
+
 MapConVar* r_flashlight_enable = NULL;
 MapConVar *r_flashlight_ambient = NULL;
 MapConVar *r_flashlight_diffuse = NULL;
@@ -51,6 +54,15 @@ std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 std::unordered_map<program_state_t, dfinal_program_t> g_DFinalProgramTable;
 
 std::unordered_map<program_state_t, dlight_program_t> g_DLightProgramTable;
+
+CDynamicLight::~CDynamicLight()
+{
+	if (shadowtex.depth_stencil)
+	{
+		GL_DeleteTexture(shadowtex.depth_stencil);
+		shadowtex.depth_stencil = 0;
+	}
+}
 
 void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 {
@@ -304,18 +316,26 @@ void R_InitLight(void)
 
 	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	r_lightmap_pow = R_RegisterMapCvar("r_lightmap_pow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_lightmap_scale = R_RegisterMapCvar("r_lightmap_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	/*
+		Affects legacy dynamic lights
+	*/
 	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	/*
+		Affects flashlight
+	*/
 	r_flashlight_enable = R_RegisterMapCvar("r_flashlight_enable", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
 	r_flashlight_distance = R_RegisterMapCvar("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_min_distance = R_RegisterMapCvar("r_flashlight_min_distance", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_cone_cosine = R_RegisterMapCvar("r_flashlight_cone_cosine", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -636,7 +656,7 @@ void R_IterateDynamicLights(
 
 		if (dynlight->type == DynamicLightType_Point)
 		{
-			float radius = math_clamp(dynlight->distance, 0, 999999);
+			float radius = math_clamp(dynlight->size, 0, 999999);
 
 			vec3_t dlight_origin;
 
@@ -695,21 +715,28 @@ void R_IterateDynamicLights(
 				pointlightCallback(&args, context);
 			}
 		}
+		else if (dynlight->type == DynamicLightType_Spot)
+		{
+			//not supported yet
+		}
 		else if (dynlight->type == DynamicLightType_Directional)
 		{
 			vec3_t dlight_origin;
 
+			vec3_t vforward, vright, vup;
+			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
+
 			if (dynlight->follow_player)
 			{
 				VectorCopy((*r_refdef.vieworg), dlight_origin);
+				VectorMA(dlight_origin, dynlight->origin[0], vforward, dlight_origin);
+				VectorMA(dlight_origin, dynlight->origin[1], vright, dlight_origin);
+				VectorMA(dlight_origin, dynlight->origin[2], vup, dlight_origin);
 			}
 			else
 			{
 				VectorCopy(dynlight->origin, dlight_origin);
 			}
-
-			vec3_t vforward, vright, vup;
-			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
 
 			DirectionalLightCallbackArgs args;
 			VectorCopy(dlight_origin, args.origin);
