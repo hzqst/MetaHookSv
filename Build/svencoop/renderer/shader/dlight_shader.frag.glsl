@@ -215,21 +215,12 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
     // Enhanced bias calculation for better handling of corner/crevice areas
-    float normalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+    float normalBias = max(0.0001 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
 
     // Additional bias for cascade transitions and geometric complexity
     float cascadeBias = 0.0001 * (cascadeIndex + 1); // Increase bias for further cascades
 
-    // Detect potential corner/crevice areas by checking normal variation
-    // Use a small offset to sample nearby normals and detect geometric complexity
-    vec2 texelOffset = vec2(1.0 / 4096.0);
-    vec3 normalRight = OctahedronToUnitVector(texture(gbufferWorldNorm, vBaseTexCoord + vec2(texelOffset.x, 0.0)).xy);
-    vec3 normalUp = OctahedronToUnitVector(texture(gbufferWorldNorm, vBaseTexCoord + vec2(0.0, texelOffset.y)).xy);
-
-    float normalVariation = length(normalRight - Norm) + length(normalUp - Norm);
-    float complexityBias = normalVariation * 0.002; // Extra bias for complex geometry
-
-    float bias = normalBias + cascadeBias + complexityBias;
+    float bias = normalBias + cascadeBias;
     shadowCoords.z -= bias;
 
     float visibility = 0.0;
@@ -289,7 +280,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
         // Apply same enhanced bias calculation for previous cascade
         float prevNormalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
         float prevCascadeBias = 0.0001 * cascadeIndex; // Previous cascade index
-        float prevBias = prevNormalBias + prevCascadeBias + complexityBias;
+        float prevBias = prevNormalBias + prevCascadeBias;
 
         prevShadowCoords.z -= prevBias;
 
@@ -315,7 +306,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                 {
                     for(int y = -1; y <= 1; y++)
                     {
-                        vec2 offset = vec2(float(x), float(y)) * 1.5 * (1.0 / 4096.0);
+                        vec2 offset = vec2(float(x), float(y)) * 1.5 * (1.0 / CSM_RESOLUTION);
                         vec4 sampleCoord = vec4(prevProjCoords.xy + offset, prevProjCoords.z, 1.0);
                         prevVisibility += texture(shadowTex, sampleCoord.xyz);
                         prevPcfSamples++;
