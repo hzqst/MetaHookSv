@@ -2,6 +2,8 @@
 #include <sstream>
 #include <algorithm>
 
+static std::vector<std::shared_ptr<CSpriteModelRenderData>> g_SpriteRenderDataCache;
+
 std::unordered_map<program_state_t, sprite_program_t> g_SpriteProgramTable;
 std::unordered_map<program_state_t, triapi_program_t> g_TriAPIProgramTable;
 
@@ -399,11 +401,9 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 	return true;
 }
 
-void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
+void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
 	GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", ent->model ? ent->model->name : "<empty>");
-
-	auto pSpriteVBOData = (sprite_vbo_t *)pSprite->cachespot;
 
 	auto scale = ent->curstate.scale;
 
@@ -626,19 +626,14 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	bool bNoBloom = false;
-
-	if (pSpriteVBOData && (pSpriteVBOData->flags & FMODEL_NOBLOOM))
-	{
-		bNoBloom = true;
-	}
-
 	if (r_draw_opaque)
 	{
 		int iStencilRef = 0;
-		
-		if (bNoBloom)
+
+		if ((pRenderData->flags & FMODEL_NOBLOOM))
+		{
 			iStencilRef |= STENCIL_MASK_NO_BLOOM;
+		}
 
 		//has stencil write-in
 		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
@@ -647,8 +642,10 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	{
 		int iStencilRef = 0;
 
-		if (bNoBloom)
+		if ((pRenderData->flags & FMODEL_NOBLOOM))
+		{
 			iStencilRef |= STENCIL_MASK_NO_BLOOM;
+		}
 
 		//has stencil write-in
 		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_NO_BLOOM);
@@ -728,6 +725,14 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	auto pSprite = (msprite_t *)ent->model->cache.data;
 
+	if (!pSprite)
+		return;
+
+	auto pSpriteRenderData = R_GetSpriteRenderDataFromModel(ent->model);
+
+	if (!pSpriteRenderData)
+		return;
+
 	float lerp = 0;
 	mspriteframe_t* frame = NULL;
 	mspriteframe_t* oldframe = NULL;
@@ -747,7 +752,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		return;
 	}
 
-	R_DrawSpriteModelInterpFrames(ent, pSprite, frame, oldframe, lerp);
+	R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), pSprite, frame, oldframe, lerp);
 }
 
 void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures)
@@ -763,17 +768,17 @@ void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int
 	}
 }
 
-void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData)
+void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
 {
 	auto flags_string = ValueForKey(ent, "flags");
 
 #define REGISTER_EFX_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
 	{\
-		pSpriteVBOData->flags |= name; \
+		pRenderData->flags |= name; \
 	}\
 	if (flags_string && !strcmp(flags_string, "-" #name))\
 	{\
-		pSpriteVBOData->flags &= ~name; \
+		pRenderData->flags &= ~name; \
 	}
 
 	REGISTER_EFX_FLAGS_KEY_VALUE(FMODEL_NOBLOOM);
@@ -781,7 +786,7 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_v
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }
 
-void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData)
+void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
 {
 	std::string fullPath = mod->name;
 
@@ -806,7 +811,7 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pS
 
 			if (!strcmp(classname, "sprite_efx"))
 			{
-				R_SpriteLoadExternalFile_Efx(ent, pSprite, pSpriteVBOData);
+				R_SpriteLoadExternalFile_Efx(ent, pSprite, pRenderData);
 			}
 		}
 
@@ -817,4 +822,112 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pS
 
 		gEngfuncs.COM_FreeFile((void*)pFile);
 	}
+}
+
+std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromModel(model_t* mod)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex >= (int)g_SpriteRenderDataCache.size())
+		return nullptr;
+
+	return g_SpriteRenderDataCache[modelindex];
+}
+
+std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromSpriteDataFast(msprite_t* pSprite)
+{
+	if (!pSprite->cachespot)
+		return nullptr;
+
+	auto mod = (model_t*)pSprite->cachespot;
+
+	const auto& pRenderData = R_GetSpriteRenderDataFromModel(mod);
+
+	if (pRenderData)
+	{
+		if (mod && mod->type == mod_studio)
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT || mod->needload == NL_UNREFERENCED)
+			{
+				if (mod->cache.data == pSprite)
+				{
+					if (mod->needload == NL_UNREFERENCED)
+						mod->needload = NL_PRESENT;
+
+					return pRenderData;
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+void R_AllocSlotForSpriteRenderData(model_t* mod, msprite_t* pSprite, const std::shared_ptr<CSpriteModelRenderData>& pRenderData)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex >= (int)g_SpriteRenderDataCache.size())
+	{
+		g_SpriteRenderDataCache.resize(modelindex + 1);
+	}
+
+	g_SpriteRenderDataCache[modelindex] = pRenderData;
+
+	pSprite->cachespot = mod;
+}
+
+void R_FreeSpriteRenderData(model_t* mod)
+{
+	auto modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex >= 0 && modelindex < (int)g_SpriteRenderDataCache.size())
+	{
+		auto pRenderData = g_SpriteRenderDataCache[modelindex];
+
+		if (pRenderData)
+		{
+			gEngfuncs.Con_DPrintf("R_FreeSpriteRenderData: modelindex[%d] modname[%s]!\n", EngineGetModelIndex(mod), mod->name);
+
+			g_SpriteRenderDataCache[modelindex].reset();
+		}
+	}
+}
+
+void R_FreeSpriteRenderData(const std::shared_ptr<CSpriteModelRenderData>& pRenderData)
+{
+	auto mod = pRenderData->model;
+
+	R_FreeSpriteRenderData(mod);
+}
+
+std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t *mod)
+{
+	auto pSprite = (msprite_t*)mod->cache.data;
+
+	auto pRenderData = R_GetSpriteRenderDataFromModel(mod);
+
+	if (pRenderData)
+	{
+		pSprite->cachespot = mod;
+
+		gEngfuncs.Con_DPrintf("R_CreateSpriteRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
+		//Always reload
+		//pRenderData->mStudioMaterials.clear();
+
+		R_SpriteLoadExternalFile(mod, pSprite, pRenderData.get());
+
+		return pRenderData;
+	}
+
+	gEngfuncs.Con_DPrintf("R_CreateSpriteRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
+
+	pRenderData = std::make_shared<CSpriteModelRenderData>(mod);
+
+	R_AllocSlotForSpriteRenderData(mod, pSprite, pRenderData);
+
+	R_SpriteLoadExternalFile(mod, pSprite, pRenderData.get());
+
+	return pRenderData;
 }

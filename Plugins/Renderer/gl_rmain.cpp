@@ -565,6 +565,17 @@ bool R_ShouldDrawViewModel()
 	return true;
 }
 
+bool R_IsViewmodelAttachment(cl_entity_t* ent, cl_entity_t* aiment)
+{
+	return aiment == gEngfuncs.GetLocalPlayer() && (aiment->curstate.effects & EF_VIEWMODEL);
+}
+
+bool R_IsViewmodelAttachment(cl_entity_t* ent)
+{
+	auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
+
+	return aiment == gEngfuncs.GetLocalPlayer() && (aiment->curstate.effects & EF_VIEWMODEL);
+}
 
 /*
 	Purpose : Check if we are in SinglePlayer game
@@ -2007,15 +2018,25 @@ void R_DrawStudioEntity(bool bTransparent)
 				return;
 			}
 
-			//The aiment is invisible ?
-			if (!EngineIsEntityInVisibleList(aiment))
+			if (R_IsViewmodelAttachment((*currententity), aiment))
 			{
-				return;
-			}
+				if (!R_ShouldDrawViewModel())
+					return;
 
-			if (R_IsLowerBodyEntity(aiment) && (int)r_drawlowerbodyattachments->value < 1)
+				aiment = cl_viewent;
+			}
+			else
 			{
-				return;
+				//The aiment is invisible ?
+				if (!EngineIsEntityInVisibleList(aiment))
+				{
+					return;
+				}
+
+				if (R_IsLowerBodyEntity(aiment) && (int)r_drawlowerbodyattachments->value < 1)
+				{
+					return;
+				}
 			}
 
 			if (aiment->model && aiment->model->type == mod_studio)
@@ -4903,7 +4924,10 @@ void Mod_ClearModel(void)
 			mod->needload = NL_UNREFERENCED;
 
 			if (mod->type == mod_sprite)
+			{
+				R_FreeSpriteRenderData(mod);
 				mod->cache.data = nullptr;
+			}
 
 			if (mod->type == mod_brush)
 			{

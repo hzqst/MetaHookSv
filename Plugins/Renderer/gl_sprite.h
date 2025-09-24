@@ -25,14 +25,17 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
-typedef struct sprite_vbo_s
+class CSpriteModelRenderData
 {
-	sprite_vbo_s()
+public:
+	CSpriteModelRenderData(model_t* mod) : model(mod)
 	{
-		flags = 0;
+
 	}
-	int flags;
-}sprite_vbo_t;
+
+	int flags{};
+	model_t* model{};
+};
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
 void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput);
@@ -43,7 +46,12 @@ void R_SaveSpriteProgramStates(void);
 void R_LoadTriAPIProgramStates(void);
 void R_SaveTriAPIProgramStates(void);
 void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures);
-void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData);
+void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRenderData* pSpriteRenderData);
+std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromModel(model_t* mod);
+std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromSpriteDataFast(msprite_t* pSprite);
+std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t* mod);
+void R_FreeSpriteRenderData(model_t* mod);
+void R_FreeSpriteRenderData(const std::shared_ptr<CSpriteModelRenderData>& pRenderData);
 
 #define SPRITE_GBUFFER_ENABLED				0x2ull
 #define SPRITE_OIT_BLEND_ENABLED			0x4ull
