@@ -128,21 +128,35 @@ void main(void)
 	vec2 texcoord = vec2(0.0, 0.0);
 	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, SceneUBO.z_far, vertex, normal, texcoord);
 
-	vec4 worldpos4 = vec4(vertex, 1.0);
-    v_worldpos = worldpos4.xyz;
-
 	vec4 normal4 = vec4(normal.xyz, 0.0);
 	v_normal = normalize((normal4).xyz);
+
+	#if defined(REVERT_NORMAL_ENABLED)
+		v_normal = v_normal * -1.0;
+	#endif
+
+	vec4 worldpos4 = vec4(vertex, 1.0);
+
+	worldpos4.xyz += v_normal.xyz * EntityUBO.scale;
+
+    v_worldpos = worldpos4.xyz;
 
 	v_diffusetexcoord = texcoord;
 
 #else
 
-	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
-    v_worldpos = worldpos4.xyz;
-
 	vec4 normal4 = vec4(in_normal.xyz, 0.0);
 	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
+
+	#if defined(REVERT_NORMAL_ENABLED)
+		v_normal = v_normal * -1.0;
+	#endif
+
+	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
+
+	worldpos4.xyz += v_normal.xyz * EntityUBO.scale;
+
+    v_worldpos = worldpos4.xyz;
 
 	#ifdef DIFFUSE_ENABLED
 		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusetexcoord.z * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
@@ -163,10 +177,23 @@ void main(void)
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
+
     vec4 tangent4 = vec4(in_tangent, 0.0);
+	
+	#if defined(REVERT_NORMAL_ENABLED)
+		tangent4 = tangent4 * -1.0;
+	#endif
+
     v_tangent = normalize((EntityUBO.entityMatrix * tangent4).xyz);
+
 	vec4 bitangent4 = vec4(in_bitangent, 0.0);
+	
+	#if defined(REVERT_NORMAL_ENABLED)
+		bitangent4 = bitangent4 * -1.0;
+	#endif
+
     v_bitangent = normalize((EntityUBO.entityMatrix * bitangent4).xyz);
+
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED)

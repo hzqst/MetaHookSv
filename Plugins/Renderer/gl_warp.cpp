@@ -27,7 +27,8 @@ void R_DrawSkyBox(void)
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = 0;
-
+	EntityUBO.scale = 0;
+	
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);

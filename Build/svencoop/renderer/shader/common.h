@@ -244,6 +244,9 @@ struct entity_ubo_t{
 	mat4 entityMatrix;
 	vec4 color;
 	float scrollSpeed;
+	float scale;
+	float padding2;
+	float padding3;
 };
 
 struct studio_ubo_t{

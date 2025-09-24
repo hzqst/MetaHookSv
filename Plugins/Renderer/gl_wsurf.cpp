@@ -165,6 +165,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
 { WSURF_ALPHA_SOLID_ENABLED			,"WSURF_ALPHA_SOLID_ENABLED"},
 { WSURF_LINEAR_FOG_SHIFT_ENABLED	,"WSURF_LINEAR_FOG_SHIFT_ENABLED"},
+{ WSURF_REVERT_NORMAL_ENABLED		,"WSURF_REVERT_NORMAL_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -278,6 +279,12 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_ALPHA_SOLID_ENABLED)
 			defs << "#define ALPHA_SOLID_ENABLED\n";
+
+		if (state & WSURF_LINEAR_FOG_SHIFT_ENABLED)
+			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
+
+		if (state & WSURF_REVERT_NORMAL_ENABLED)
+			defs << "#define REVERT_NORMAL_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -2181,10 +2188,9 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (WSurfProgramState & WSURF_SHADOW_CASTER_ENABLED)
-	{
-		glDisable(GL_CULL_FACE);
-	}
+	//glDisable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	WSurfProgramState |= WSURF_REVERT_NORMAL_ENABLED;
 
 	R_DrawWorldSurfaceLeafBegin(pLeaf, (1 << WSURF_VBO_POSITION));
 
@@ -2195,7 +2201,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 	GL_UseProgram(0);
 
-	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	//glEnable(GL_CULL_FACE);
 
 	R_DrawWorldSurfaceLeafEnd();
 
@@ -2789,10 +2796,11 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = R_ScrollSpeed();
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
+	EntityUBO.scale = 0;
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{

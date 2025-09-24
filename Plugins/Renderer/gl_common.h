@@ -315,7 +315,7 @@ typedef struct entity_ubo_s
 	mat4 entityMatrix;
 	vec4 color;
 	float scrollSpeed;
-	float padding1;
+	float scale;
 	float padding2;
 	float padding3;
 }entity_ubo_t;
