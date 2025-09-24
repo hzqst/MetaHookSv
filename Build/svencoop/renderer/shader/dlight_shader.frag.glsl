@@ -168,14 +168,6 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 #if defined(CSM_ENABLED)
 
-float CSMShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
-{
-    vec4 uv = basecoord;
-    uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
-
-    return textureProj(shadowTex, uv);
-}
-
 float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vBaseTexCoord)
 {
     float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
@@ -215,7 +207,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
     // Enhanced bias calculation for better handling of corner/crevice areas
-    float normalBias = max(0.0001 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
+    float normalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
 
     // Additional bias for cascade transitions and geometric complexity
     float cascadeBias = 0.0001 * (cascadeIndex + 1); // Increase bias for further cascades
@@ -224,6 +216,9 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     shadowCoords.z -= bias;
 
     float visibility = 0.0;
+    float texRes = float(CSM_RESOLUTION);
+    float invRes = 1.0 / float(CSM_RESOLUTION);
+    float pcfRadius = 1.2;
 
     // Check if we're outside the shadow map bounds
     if(shadowCoords.z / shadowCoords.w > 1.0 || shadowCoords.z / shadowCoords.w < 0.0)
@@ -242,17 +237,6 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
         }
         else
         {
-            float texRes = CSM_RESOLUTION;
-            float invRes = 1.0 / CSM_RESOLUTION;
-
-            vec2 uv = projCoords.xy * texRes;
-            vec2 flooredUV = vec2(floor(uv.x), floor(uv.y));
-
-            float s = fract(uv.x);
-            float t = fract(uv.y);
-
-            flooredUV *= invRes;
-
             // Improved PCF filtering with more samples for smoother shadows
             int pcfSamples = 0;
             float pcfRadius = 1.5; // Slightly larger radius for smoother edges
@@ -306,7 +290,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                 {
                     for(int y = -1; y <= 1; y++)
                     {
-                        vec2 offset = vec2(float(x), float(y)) * 1.5 * (1.0 / CSM_RESOLUTION);
+                        vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
                         vec4 sampleCoord = vec4(prevProjCoords.xy + offset, prevProjCoords.z, 1.0);
                         prevVisibility += texture(shadowTex, sampleCoord.xyz);
                         prevPcfSamples++;
