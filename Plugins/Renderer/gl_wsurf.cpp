@@ -1902,7 +1902,6 @@ void R_GenerateSceneUBO(void)
 
 	g_WorldSurfaceRenderer.hMaterialSSBO = GL_GenBuffer();
 	GL_UploadDataToSSBOStaticDraw(g_WorldSurfaceRenderer.hMaterialSSBO, sizeof(world_material_t) * 1, nullptr);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_MATERIAL_SSBO, g_WorldSurfaceRenderer.hMaterialSSBO);
 
 	GL_BindStatesForVAO(
 		g_WorldSurfaceRenderer.hDecalVAO,
@@ -2597,6 +2596,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_MATERIAL_SSBO, g_WorldSurfaceRenderer.hMaterialSSBO);
 
 	if (g_WorldSurfaceRenderer.bLightmapTexture)
 	{
