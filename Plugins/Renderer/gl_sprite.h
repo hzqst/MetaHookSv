@@ -25,6 +25,7 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
+#if 0
 #define SPRITE_REPLACE_TEXTURE		0
 #define SPRITE_MAX_TEXTURE			1
 
@@ -34,6 +35,9 @@ public:
 	std::string basetexture;
 	CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
 };
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
+#endif
 
 class CSpriteModelRenderData
 {
@@ -45,7 +49,7 @@ public:
 
 	int flags{};
 	model_t* model{};
-	std::unordered_map<uint32_t, std::shared_ptr<CSpriteModelRenderMaterial>> mSpriteMaterials;
+	//std::unordered_map<uint32_t, std::shared_ptr<CSpriteModelRenderMaterial>> mSpriteMaterials;
 };
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
@@ -61,8 +65,6 @@ std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromModel(model_t* 
 std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t* mod);
 void R_FreeSpriteRenderData(model_t* mod);
 void R_FreeSpriteRenderData(const std::shared_ptr<CSpriteModelRenderData>& pRenderData);
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
 
 #define SPRITE_GBUFFER_ENABLED				0x2ull
 #define SPRITE_OIT_BLEND_ENABLED			0x4ull

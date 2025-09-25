@@ -412,6 +412,7 @@ public:
 
 void R_DrawSpriteModelBindFrameTexture(cl_entity_t* ent, CSpriteModelRenderData* pRenderData, msprite_t* pSprite, mspriteframe_t* frame, int bindSlot, CDrawSpriteModelContext *context)
 {
+#if 0
 	auto pRenderMaterial = R_SpriteGetMaterial(pRenderData, frame);
 
 	if (pRenderMaterial)
@@ -443,8 +444,10 @@ void R_DrawSpriteModelBindFrameTexture(cl_entity_t* ent, CSpriteModelRenderData*
 	}
 	else
 	{
-		GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, frame->gl_texturenum);
+		
 	}
+#endif
+	GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, frame->gl_texturenum);
 }
 
 void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
