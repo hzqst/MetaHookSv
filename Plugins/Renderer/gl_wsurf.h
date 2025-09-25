@@ -178,8 +178,10 @@ class CDecalDrawBatch
 {
 public:
 	GLuint GLTextureId[MAX_DECALS];
-	GLint StartIndex[MAX_DECALS];
+	GLuint StartIndex[MAX_DECALS];
 	GLuint IndiceCount[MAX_DECALS];
+	GLuint StartInstance[MAX_DECALS];
+	GLuint InstanceCount[MAX_DECALS];
 	CWorldSurfaceRenderMaterial* pRenderMaterial[MAX_DECALS];
 	int BatchCount;
 };
@@ -194,6 +196,8 @@ public:
 	std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial{};
 	GLint startIndex{};
 	GLuint indiceCount{};
+	GLint startInstance{};
+	GLuint instanceCount{};
 };
 
 class CWorldSurfaceRenderer
@@ -203,7 +207,7 @@ public:
 	GLuint				hCameraUBO{};
 	GLuint				hDLightUBO{};
 	GLuint				hEntityUBO{};
-	GLuint				hDecalVBO{};
+	GLuint				hDecalVBO[2]{};
 	GLuint				hDecalEBO{};
 	GLuint				hDecalVAO{};
 	GLuint				hDecalSSBO{};

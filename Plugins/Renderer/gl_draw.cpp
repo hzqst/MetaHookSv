@@ -378,6 +378,22 @@ void GL_BindABO(GLuint ABO)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, ABO);
 }
 
+void GL_UploadDataToUBODynamicDraw(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_UNIFORM_BUFFER, VBO);
+
+	glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW);
+
+	auto err = glGetError();
+
+	if (GL_OUT_OF_MEMORY == err)
+	{
+		Sys_Error("GL_UploadDataToUBODynamicDraw: GL_OUT_OF_MEMORY!");
+	}
+
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* data)
 {
 	if (glNamedBufferSubData)
@@ -403,20 +419,46 @@ void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data)
 	{
 		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 	}
+
+	auto err = glGetError();
+
+	if (GL_OUT_OF_MEMORY == err)
+	{
+		Sys_Error("GL_UploadDataToVBOStaticDraw: GL_OUT_OF_MEMORY!");
+	}
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
 	glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+
+	auto err = glGetError();
+
+	if (GL_OUT_OF_MEMORY == err)
+	{
+		Sys_Error("GL_UploadDataToVBOStaticDraw: GL_OUT_OF_MEMORY!");
+	}
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void GL_UploadDataToVBOStreamDraw(GLuint VBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
 	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+
+	auto err = glGetError();
+
+	if (GL_OUT_OF_MEMORY == err)
+	{
+		Sys_Error("GL_UploadDataToVBOStaticDraw: GL_OUT_OF_MEMORY!");
+	}
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

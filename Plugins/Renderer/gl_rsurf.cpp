@@ -19,8 +19,7 @@ msurface_t **gDecalSurfs = NULL;
 decal_t *gDecalPool = NULL;
 decalcache_t *gDecalCache = NULL;
 
-CDecalDrawBatch g_DecalBaseDrawBatch = { 0 };
-CDecalDrawBatch g_DecalDetailDrawBatch = { 0 };
+CDecalDrawBatch g_DecalDrawBatch = { 0 };
 
 void R_RecursiveWorldNode(mnode_t *node)
 {
@@ -870,102 +869,107 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		return;
 	}
 
-	auto brushface = &pWorldModel->m_vFaceBuffer[surfIndex];
+	const auto brushface = &pWorldModel->m_vFaceBuffer[surfIndex];
 
 	std::vector<vertex3f_t> vPolyVertices;
-	std::vector<decalvertex_t> vVertexBuffer;
+	std::vector<decalvertex_t> vVertexDataBuffer;
+	decalinstancedata_t vInstanceDataBuffer[1];
 
 	vPolyVertices.reserve(MAX_DECALVERTS);
-	vVertexBuffer.reserve(MAX_DECALVERTS);
+	vVertexDataBuffer.reserve(MAX_DECALVERTS);
 
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
 	{
-		vertex3f_t vert;
+		vertex3f_t tempVertex;
 
-		vert.v[0] = v[0];
-		vert.v[1] = v[1];
-		vert.v[2] = v[2];
+		tempVertex.v[0] = v[0];
+		tempVertex.v[1] = v[1];
+		tempVertex.v[2] = v[2];
 
-		vPolyVertices.emplace_back(vert);
+		decalvertex_t tempVertexData;
 
-		decalvertex_t vertexData;
+		tempVertexData.pos[0] = v[0];
+		tempVertexData.pos[1] = v[1];
+		tempVertexData.pos[2] = v[2];
 
-		vertexData.pos[0] = v[0];
-		vertexData.pos[1] = v[1];
-		vertexData.pos[2] = v[2];
+		tempVertexData.texcoord[0] = v[3];
+		tempVertexData.texcoord[1] = v[4];
 
-		vertexData.texcoord[0] = v[3];
-		vertexData.texcoord[1] = v[4];
-		vertexData.texcoord[2] = 0;
+		tempVertexData.lightmaptexcoord[0] = v[5];
+		tempVertexData.lightmaptexcoord[1] = v[6];
 
-		vertexData.lightmaptexcoord[0] = v[5];
-		vertexData.lightmaptexcoord[1] = v[6];
-		vertexData.lightmaptexcoord[2] = surf->lightmaptexturenum;
-
-		float replaceScale[2] = { 1,1 };
-		float detailScale[2] = { 1,1 };
-		float normalScale[2] = { 1,1 };
-		float parallaxScale[2] = { 1,1 };
-		float specularScale[2] = { 1,1 };
-
-		if (pRenderMaterial)
-		{
-			if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
-			{
-				replaceScale[0] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleX;
-				replaceScale[1] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleY;
-			}
-			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
-			{
-				detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
-				detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
-			}
-			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
-			{
-				normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
-				normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
-			}
-			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
-			{
-				parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
-				parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
-			}
-			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
-			{
-				specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
-				specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
-			}
-		}
-
-		vertexData.replacetexcoord[0] = replaceScale[0];
-		vertexData.replacetexcoord[1] = replaceScale[1];
-		vertexData.detailtexcoord[0] = detailScale[0];
-		vertexData.detailtexcoord[1] = detailScale[1];
-		vertexData.normaltexcoord[0] = normalScale[0];
-		vertexData.normaltexcoord[1] = normalScale[1];
-		vertexData.parallaxtexcoord[0] = parallaxScale[0];
-		vertexData.parallaxtexcoord[1] = parallaxScale[1];
-		vertexData.speculartexcoord[0] = specularScale[0];
-		vertexData.speculartexcoord[1] = specularScale[1];
-
-		vertexData.normal[0] = brushface->normal[0];
-		vertexData.normal[1] = brushface->normal[1];
-		vertexData.normal[2] = brushface->normal[2];
-		vertexData.s_tangent[0] = brushface->s_tangent[0];
-		vertexData.s_tangent[1] = brushface->s_tangent[1];
-		vertexData.s_tangent[2] = brushface->s_tangent[2];
-		vertexData.t_tangent[0] = brushface->t_tangent[0];
-		vertexData.t_tangent[1] = brushface->t_tangent[1];
-		vertexData.t_tangent[2] = brushface->t_tangent[2];
-
-		vertexData.decalindex = decalIndex;
-
-		memcpy(&vertexData.styles, surf->styles, sizeof(surf->styles));
-
-		vVertexBuffer.emplace_back(vertexData);
+		vPolyVertices.emplace_back(tempVertex);
+		vVertexDataBuffer.emplace_back(tempVertexData);
 
 		v += VERTEXSIZE;
 	}
+
+	float replaceScale[2] = { 1,1 };
+	float detailScale[2] = { 1,1 };
+	float normalScale[2] = { 1,1 };
+	float parallaxScale[2] = { 1,1 };
+	float specularScale[2] = { 1,1 };
+
+	if (pRenderMaterial)
+	{
+		if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
+		{
+			replaceScale[0] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleX;
+			replaceScale[1] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleY;
+		}
+		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
+		{
+			detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+			detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
+		}
+		if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
+		{
+			normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+			normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
+		}
+		if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
+		{
+			parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+			parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
+		}
+		if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
+		{
+			specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+			specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
+		}
+	}
+
+	decalinstancedata_t tempInstanceData;
+
+	tempInstanceData.lightmaptexturenum[0] = surf->lightmaptexturenum;
+	tempInstanceData.lightmaptexturenum[1] = 0;
+
+	memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
+
+	tempInstanceData.replacetexcoord[0] = replaceScale[0];
+	tempInstanceData.replacetexcoord[1] = replaceScale[1];
+	tempInstanceData.detailtexcoord[0] = detailScale[0];
+	tempInstanceData.detailtexcoord[1] = detailScale[1];
+	tempInstanceData.normaltexcoord[0] = normalScale[0];
+	tempInstanceData.normaltexcoord[1] = normalScale[1];
+	tempInstanceData.parallaxtexcoord[0] = parallaxScale[0];
+	tempInstanceData.parallaxtexcoord[1] = parallaxScale[1];
+	tempInstanceData.speculartexcoord[0] = specularScale[0];
+	tempInstanceData.speculartexcoord[1] = specularScale[1];
+
+	tempInstanceData.normal[0] = brushface->normal[0];
+	tempInstanceData.normal[1] = brushface->normal[1];
+	tempInstanceData.normal[2] = brushface->normal[2];
+	tempInstanceData.s_tangent[0] = brushface->s_tangent[0];
+	tempInstanceData.s_tangent[1] = brushface->s_tangent[1];
+	tempInstanceData.s_tangent[2] = brushface->s_tangent[2];
+	tempInstanceData.t_tangent[0] = brushface->t_tangent[0];
+	tempInstanceData.t_tangent[1] = brushface->t_tangent[1];
+	tempInstanceData.t_tangent[2] = brushface->t_tangent[2];
+
+	tempInstanceData.decalindex = decalIndex;
+
+	vInstanceDataBuffer[0] = tempInstanceData;
 
 	std::vector<uint32_t> vTriangleListIndices;
 	vTriangleListIndices.reserve(MAX_DECALINDICES);
@@ -977,11 +981,14 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		vTriangleListIndices[i] += decalIndex * MAX_DECALVERTS;
 	}
 
-	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexBuffer.size(), vVertexBuffer.data());
+	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX], sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexDataBuffer.size(), vVertexDataBuffer.data());
+	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer) * decalIndex, sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer), vInstanceDataBuffer);
 	GL_UploadSubDataToEBO(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
 
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALINDICES * decalIndex;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = vTriangleListIndices.size();
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startInstance = decalIndex;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].instanceCount = 1;
 }
 
 bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
@@ -1019,8 +1026,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	if (pEntityComponentContainer->Decals.empty())
 		return;
 
-	g_DecalBaseDrawBatch.BatchCount = 0;
-	g_DecalDetailDrawBatch.BatchCount = 0;
+	g_DecalDrawBatch.BatchCount = 0;
 
 	for (size_t i = 0; i < pEntityComponentContainer->Decals.size(); i++)
 	{
@@ -1065,8 +1071,8 @@ void R_DrawDecals(cl_entity_t *ent)
 				else
 				{
 					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = 0;
-					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = 0;
 					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = 0;
+					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].instanceCount = 0;
 				}
 
 				//Mark this decal as ready
@@ -1075,21 +1081,15 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount > 0)
 			{
-				if (!g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
+				if (g_DecalDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
-					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
-					g_DecalBaseDrawBatch.IndiceCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
-					g_DecalBaseDrawBatch.pRenderMaterial[g_DecalBaseDrawBatch.BatchCount] = nullptr;
-					++g_DecalBaseDrawBatch.BatchCount;
-				}
-				else if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
-				{
-					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
-					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
-					g_DecalDetailDrawBatch.IndiceCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
-					g_DecalDetailDrawBatch.pRenderMaterial[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial.get();
-					++g_DecalDetailDrawBatch.BatchCount;
+					g_DecalDrawBatch.GLTextureId[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
+					g_DecalDrawBatch.StartIndex[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
+					g_DecalDrawBatch.IndiceCount[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
+					g_DecalDrawBatch.pRenderMaterial[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial.get();
+					g_DecalDrawBatch.StartInstance[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startInstance;
+					g_DecalDrawBatch.InstanceCount[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].instanceCount;
+					++g_DecalDrawBatch.BatchCount;
 				}
 			}
 		}
@@ -1227,43 +1227,33 @@ void R_DrawDecals(cl_entity_t *ent)
 
 	GL_BindVAO(g_WorldSurfaceRenderer.hDecalVAO);
 
-	//Draw decals with no detail textures
-	if (g_DecalBaseDrawBatch.BatchCount > 0)
+	if (g_DecalDrawBatch.BatchCount > 0)
 	{
-		program_state_t WSurfProgramStateBase = WSurfProgramState;
-
-		wsurf_program_t prog = { 0 };
-		R_UseWSurfProgram(WSurfProgramStateBase, &prog);
-
-		for (int i = 0; i < g_DecalBaseDrawBatch.BatchCount; ++i)
-		{
-			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalBaseDrawBatch.GLTextureId[i]);
-
-			glDrawElements(GL_TRIANGLES, g_DecalBaseDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalBaseDrawBatch.StartIndex[i]));
-		}
-
-	}
-
-	//Draw decals with detail textures
-	if (g_DecalDetailDrawBatch.BatchCount > 0)
-	{
-		for (int i = 0; i < g_DecalDetailDrawBatch.BatchCount; ++i)
+		for (int i = 0; i < g_DecalDrawBatch.BatchCount; ++i)
 		{
 			program_state_t WSurfProgramStateDetail = WSurfProgramState;
 
-			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalDetailDrawBatch.GLTextureId[i]);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalDrawBatch.GLTextureId[i]);
 
-			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.pRenderMaterial[i], &WSurfProgramStateDetail);
+			if (g_DecalDrawBatch.pRenderMaterial[i])
+			{
+				R_BeginDetailTextureByDetailTextureCache(g_DecalDrawBatch.pRenderMaterial[i], &WSurfProgramStateDetail);
+			}
 
 			wsurf_program_t prog = { 0 };
 
 			R_UseWSurfProgram(WSurfProgramStateDetail, &prog);
 
-			glDrawElements(GL_TRIANGLES, g_DecalDetailDrawBatch.IndiceCount[i], GL_UNSIGNED_INT, BUFFER_OFFSET(g_DecalDetailDrawBatch.StartIndex[i]));
+			glDrawElementsInstancedBaseInstance(
+				GL_TRIANGLES,
+				g_DecalDrawBatch.IndiceCount[i],
+				GL_UNSIGNED_INT,
+				BUFFER_OFFSET(g_DecalDrawBatch.StartIndex[i]),
+				g_DecalDrawBatch.InstanceCount[i],
+				g_DecalDrawBatch.StartInstance[i]);
 
 			R_EndDetailTexture(WSurfProgramStateDetail);
 		}
-
 	}
 
 	GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, 0);

@@ -191,20 +191,24 @@ typedef struct triapivertex_s
 typedef struct decalvertex_s
 {
 	vec3_t	pos;
-	//for parallax mapping?
+	float	texcoord[2];
+	float	lightmaptexcoord[2];
+}decalvertex_t;
+
+typedef struct decalinstancedata_s
+{
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
-	float	texcoord[3];//[2]=unused
-	float	lightmaptexcoord[3];//[2]=lightmaptexnum
+	float	lightmaptexturenum[2];
+	byte styles[4];
 	float	replacetexcoord[2];
 	float	detailtexcoord[2];
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		decalindex;
-	unsigned char styles[4];
-}decalvertex_t;
+}decalinstancedata_t;
 
 //GPU Resource
 

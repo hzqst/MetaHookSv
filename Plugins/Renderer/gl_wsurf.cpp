@@ -318,10 +318,13 @@ void R_FreeSceneUBO(void)
 		g_WorldSurfaceRenderer.hDecalVAO = 0;
 	}
 
-	if (g_WorldSurfaceRenderer.hDecalVBO)
+	for (int i = 0; i < WSURF_VBO_MAX; ++i)
 	{
-		GL_DeleteBuffer(g_WorldSurfaceRenderer.hDecalVBO);
-		g_WorldSurfaceRenderer.hDecalVBO = 0;
+		if (g_WorldSurfaceRenderer.hDecalVBO[i])
+		{
+			GL_DeleteBuffer(g_WorldSurfaceRenderer.hDecalVBO[i]);
+			g_WorldSurfaceRenderer.hDecalVBO[i] = 0;
+		}
 	}
 
 	if (g_WorldSurfaceRenderer.hDecalEBO)
@@ -1816,7 +1819,7 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, t_tangent));
 		glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
 
-		glVertexAttribIPointer(WSURF_VA_LIGHTMAP_TEXTURENUM, 2, GL_FLOAT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
+		glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
 		glVertexAttribDivisor(WSURF_VA_LIGHTMAP_TEXTURENUM, 1);
 
 		glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
@@ -1880,67 +1883,87 @@ void R_GenerateSceneUBO(void)
 		return;
 
 	g_WorldSurfaceRenderer.hSceneUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hSceneUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hSceneUBO, sizeof(scene_ubo_t), nullptr);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, g_WorldSurfaceRenderer.hSceneUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	g_WorldSurfaceRenderer.hCameraUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hCameraUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(camera_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hCameraUBO, sizeof(camera_ubo_t), nullptr);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_CAMERA_UBO, g_WorldSurfaceRenderer.hCameraUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	g_WorldSurfaceRenderer.hDLightUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hDLightUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(dlight_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hDLightUBO, sizeof(dlight_ubo_t), nullptr);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_DLIGHT_UBO, g_WorldSurfaceRenderer.hDLightUBO);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	g_WorldSurfaceRenderer.hEntityUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_WorldSurfaceRenderer.hEntityUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hEntityUBO, sizeof(entity_ubo_t), nullptr);
 
-	//15 MBytes of VRAM
-	g_WorldSurfaceRenderer.hDecalVBO = GL_GenBuffer();
-	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL);
+	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX] = GL_GenBuffer();
+	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX], sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, nullptr);
+
+	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE] = GL_GenBuffer();
+	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * 1 * MAX_DECALS, nullptr);
 
 	g_WorldSurfaceRenderer.hDecalEBO = GL_GenBuffer();
-	GL_UploadDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * MAX_DECALS, NULL);
+	GL_UploadDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * MAX_DECALS, nullptr);
 
 	g_WorldSurfaceRenderer.hDecalVAO = GL_GenVAO();
 
 	GL_BindStatesForVAO(
 		g_WorldSurfaceRenderer.hDecalVAO,
 		[]() {
-			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO);
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX]);
 
 			glEnableVertexAttribArray(WSURF_VA_POSITION);
+			glEnableVertexAttribArray(WSURF_VA_TEXCOORD);
+			glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
+
+			glVertexAttribPointer(WSURF_VA_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
+			glVertexAttribPointer(WSURF_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, texcoord));
+			glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE]);
+
 			glEnableVertexAttribArray(WSURF_VA_NORMAL);
 			glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 			glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glEnableVertexAttribArray(WSURF_VA_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
+			glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXTURENUM);
+			glEnableVertexAttribArray(WSURF_VA_STYLES);
 			glEnableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
 			glEnableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_STYLES);
 
-			glVertexAttribPointer(WSURF_VA_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
-			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
-			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, s_tangent));
-			glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, t_tangent));
-			glVertexAttribPointer(WSURF_VA_TEXCOORD, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, texcoord));
-			glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
-			glVertexAttribPointer(WSURF_VA_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, replacetexcoord));
-			glVertexAttribPointer(WSURF_VA_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, detailtexcoord));
-			glVertexAttribPointer(WSURF_VA_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normaltexcoord));
-			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
-			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
-			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
+			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, normal));
+			glVertexAttribDivisor(WSURF_VA_NORMAL, 1);
+
+			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, s_tangent));
+			glVertexAttribDivisor(WSURF_VA_S_TANGENT, 1);
+
+			glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, t_tangent));
+			glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
+
+			glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXTURENUM, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, lightmaptexturenum));
+			glVertexAttribDivisor(WSURF_VA_LIGHTMAP_TEXTURENUM, 1);
+
+			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, styles));
+			glVertexAttribDivisor(WSURF_VA_STYLES, 1);
+
+			glVertexAttribPointer(WSURF_VA_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, replacetexcoord));
+			glVertexAttribDivisor(WSURF_VA_REPLACETEXTURE_TEXCOORD, 1);
+
+			glVertexAttribPointer(WSURF_VA_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, detailtexcoord));
+			glVertexAttribDivisor(WSURF_VA_DETAILTEXTURE_TEXCOORD, 1);
+
+			glVertexAttribPointer(WSURF_VA_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, normaltexcoord));
+			glVertexAttribDivisor(WSURF_VA_NORMALTEXTURE_TEXCOORD, 1);
+
+			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, parallaxtexcoord));
+			glVertexAttribDivisor(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 1);
+
+			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, speculartexcoord));
+			glVertexAttribDivisor(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 1);
+
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalEBO);
 		}
@@ -1982,8 +2005,8 @@ void R_ClearDecalCache(void)
 {
 	for (int i = 0; i < MAX_DECALS; ++i)
 	{
-		g_WorldSurfaceRenderer.vCachedDecals[i].startIndex = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].indiceCount = 0;
+		g_WorldSurfaceRenderer.vCachedDecals[i].instanceCount = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].pRenderMaterial = nullptr;
 	}
 }

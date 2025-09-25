@@ -1635,9 +1635,7 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	g_hStudioUBO = GL_GenBuffer();
-	glBindBuffer(GL_UNIFORM_BUFFER, g_hStudioUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	GL_UploadDataToUBODynamicDraw(g_hStudioUBO, sizeof(studio_ubo_t), nullptr);
 
 	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
 
