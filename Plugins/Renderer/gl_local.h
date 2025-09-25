@@ -394,7 +394,7 @@ extern cvar_t* r_leaf_lazy_load;
 
 extern cvar_t* r_studio_lazy_load;
 
-extern cvar_t* r_studio_unload;
+extern cvar_t* r_studio_parallel_load;
 
 extern cvar_t* r_wsurf_parallax_scale;
 

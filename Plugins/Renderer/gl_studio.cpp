@@ -4764,7 +4764,7 @@ public:
 		g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), m_hThreadWorkItem);
 	}
 
-	bool RunTask()
+	bool RunTask() override
 	{
 		if (!m_pStudioHeader)
 			return false;
@@ -4849,7 +4849,29 @@ void R_CreateStudioRenderDataAsyncLoadTask(model_t* mod, studiohdr_t* studiohdr,
 			pRenderData->TextureModel ? (studiohdr_t*)IEngineStudio.Mod_Extradata(pRenderData->TextureModel) : nullptr
 		);
 
-		pRenderData->m_pGameResourceAsyncLoadTask->StartAsyncTask();
+		if ((int)r_studio_parallel_load->value > 0)
+		{
+			pRenderData->m_pGameResourceAsyncLoadTask->StartAsyncTask();
+		}
+		else
+		{
+			if (pRenderData->m_pGameResourceAsyncLoadTask->RunTask())
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
+
+					pRenderData->AsyncUploadResouce();
+
+					}));
+			}
+			else
+			{
+				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
+
+					pRenderData->ReleaseAsyncLoadTask();
+
+					}));
+			}
+		}
 	}
 }
 

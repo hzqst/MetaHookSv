@@ -349,5 +349,6 @@ public:
 	std::atomic<bool> m_IsDataReady{};
 
 	virtual void StartAsyncTask() {};
+	virtual bool RunTask() {};
 	virtual void UploadResource() {};
 };

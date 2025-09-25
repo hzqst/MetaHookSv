@@ -958,7 +958,7 @@ public:
 		g_pMetaHookAPI->QueueWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), m_hThreadWorkItem);
 	}
 
-	bool RunTask()
+	bool RunTask() override
 	{
 		if (m_pLeaf->m_bIsClosing.load())
 			return false;

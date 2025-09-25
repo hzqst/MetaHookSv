@@ -374,7 +374,7 @@ cvar_t* r_leaf_lazy_load = nullptr;
 
 cvar_t* r_studio_lazy_load = nullptr;
 
-cvar_t* r_studio_unload = nullptr;
+cvar_t* r_studio_parallel_load = nullptr;
 
 cvar_t* r_wsurf_parallax_scale = nullptr;
 
@@ -3324,10 +3324,11 @@ void R_InitCvars(void)
 	r_studio_lazy_load = gEngfuncs.pfnRegisterVariable("r_studio_lazy_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-	r_studio_unload 0: Never unload GPU resources for unused studiomodels.
-	r_studio_unload 1: Unload GPU resources for unused studiomodels on level changes.
+	r_studio_parallel_load 0: Load studiomodel in main thread.
+	r_studio_parallel_load 1: Load studiomodel in worker thread.
 	*/
-	r_studio_unload = gEngfuncs.pfnRegisterVariable("r_studio_unload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_studio_parallel_load = gEngfuncs.pfnRegisterVariable("r_studio_parallel_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_fog = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_fog", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
@@ -3418,7 +3419,6 @@ void R_NewMap(void)
 
 	R_StudioFlushAllSkins();
 
-	if ((int)r_studio_unload->value > 0)
 	{
 		//Free GPU resources after one seconds...
 		auto pWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
