@@ -1,6 +1,6 @@
 #pragma once
 
-#include <set>
+#include "gl_model.h"
 
 typedef struct sprite_program_s
 {
@@ -25,6 +25,16 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
+#define SPRITE_REPLACE_TEXTURE		0
+#define SPRITE_MAX_TEXTURE			1
+
+class CSpriteModelRenderMaterial
+{
+public:
+	std::string basetexture;
+	CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
+};
+
 class CSpriteModelRenderData
 {
 public:
@@ -35,6 +45,7 @@ public:
 
 	int flags{};
 	model_t* model{};
+	std::unordered_map<uint32_t, std::shared_ptr<CSpriteModelRenderMaterial>> mSpriteMaterials;
 };
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
@@ -45,13 +56,13 @@ void R_LoadSpriteProgramStates(void);
 void R_SaveSpriteProgramStates(void);
 void R_LoadTriAPIProgramStates(void);
 void R_SaveTriAPIProgramStates(void);
-void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures);
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRenderData* pSpriteRenderData);
 std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromModel(model_t* mod);
-std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromSpriteDataFast(msprite_t* pSprite);
 std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t* mod);
 void R_FreeSpriteRenderData(model_t* mod);
 void R_FreeSpriteRenderData(const std::shared_ptr<CSpriteModelRenderData>& pRenderData);
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
 
 #define SPRITE_GBUFFER_ENABLED				0x2ull
 #define SPRITE_OIT_BLEND_ENABLED			0x4ull

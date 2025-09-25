@@ -4919,7 +4919,7 @@ void Mod_ClearModel(void)
 	{
 		auto mod = EngineGetModelByIndex(i);
 
-		if (mod->type != mod_alias && mod->needload != NL_CLIENT)
+		if (mod && mod->type != mod_alias && mod->needload != NL_CLIENT)
 		{
 			mod->needload = NL_UNREFERENCED;
 

@@ -1495,9 +1495,9 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 	std::vector<brushinstancedata_t> vInstanceDataBuffer;
 	std::vector<uint32_t> vIndiceBuffer;
 
-	vVertexDataBuffer.reserve(0x10000);
+	vVertexDataBuffer.reserve(mod->numvertexes);
 	vInstanceDataBuffer.reserve(mod->numsurfaces);
-	vIndiceBuffer.reserve(0x10000);
+	vIndiceBuffer.reserve(mod->numvertexes * 4);
 
 	auto pWorldModel = std::make_shared<CWorldSurfaceWorldModel>(mod);
 

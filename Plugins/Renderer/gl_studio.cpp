@@ -4188,7 +4188,7 @@ void R_StudioLoadExternalFile_BaseKeyValues(bspentity_t* ent, studiohdr_t* studi
 	}
 }
 
-void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int StudioTextureType)
+void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int studioTextureType)
 {
 	if (textureValue && textureValue[0])
 	{
@@ -4242,13 +4242,13 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				return;
 			}
 
-			pStudioMaterial->textures[StudioTextureType].gltexturenum = loadResult.gltexturenum;
-			pStudioMaterial->textures[StudioTextureType].numframes = loadResult.numframes;
-			pStudioMaterial->textures[StudioTextureType].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
-			pStudioMaterial->textures[StudioTextureType].width = loadResult.width;
-			pStudioMaterial->textures[StudioTextureType].height = loadResult.height;
-			pStudioMaterial->textures[StudioTextureType].scaleX = 0;
-			pStudioMaterial->textures[StudioTextureType].scaleY = 0;
+			pStudioMaterial->textures[studioTextureType].gltexturenum = loadResult.gltexturenum;
+			pStudioMaterial->textures[studioTextureType].numframes = loadResult.numframes;
+			pStudioMaterial->textures[studioTextureType].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
+			pStudioMaterial->textures[studioTextureType].width = loadResult.width;
+			pStudioMaterial->textures[studioTextureType].height = loadResult.height;
+			pStudioMaterial->textures[studioTextureType].scaleX = 0;
+			pStudioMaterial->textures[studioTextureType].scaleY = 0;
 
 			if (scaleValue && scaleValue[0])
 			{
@@ -4257,17 +4257,17 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				if (2 == sscanf(scaleValue, "%f %f", &scales[0], &scales[1]))
 				{
 					if (scales[0] > 0 || scales[0] < 0)
-						pStudioMaterial->textures[StudioTextureType].scaleX = scales[0];
+						pStudioMaterial->textures[studioTextureType].scaleX = scales[0];
 
 					if (scales[1] > 0 || scales[1] < 0)
-						pStudioMaterial->textures[StudioTextureType].scaleY = scales[1];
+						pStudioMaterial->textures[studioTextureType].scaleY = scales[1];
 				}
 				else if (1 == sscanf(scaleValue, "%f", &scales[0]))
 				{
 					if (scales[0] > 0 || scales[0] < 0)
 					{
-						pStudioMaterial->textures[StudioTextureType].scaleX = scales[0];
-						pStudioMaterial->textures[StudioTextureType].scaleY = scales[0];
+						pStudioMaterial->textures[studioTextureType].scaleX = scales[0];
+						pStudioMaterial->textures[studioTextureType].scaleY = scales[0];
 					}
 				}
 			}

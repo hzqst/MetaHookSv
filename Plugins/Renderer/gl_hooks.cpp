@@ -12264,6 +12264,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_StudioSetupSkin(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_Host_ClearMemory(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_Cache_Alloc(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Draw_MiptexTexture(DllInfo, RealDllInfo);
