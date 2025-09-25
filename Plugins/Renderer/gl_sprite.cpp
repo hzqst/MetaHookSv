@@ -786,6 +786,11 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, CSpriteM
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }
 
+void R_SpriteLoadExternalFile_Texture(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
+{
+
+}
+
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
 {
 	std::string fullPath = mod->name;
@@ -812,6 +817,10 @@ void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRend
 			if (!strcmp(classname, "sprite_efx"))
 			{
 				R_SpriteLoadExternalFile_Efx(ent, pSprite, pRenderData);
+			}
+			else if (!strcmp(classname, "sprite_texture"))
+			{
+				R_SpriteLoadExternalFile_Texture(ent, pSprite, pRenderData);
 			}
 		}
 

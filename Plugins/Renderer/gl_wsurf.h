@@ -105,7 +105,6 @@ public:
 		if (m_pGameResourceAsyncLoadTask)
 		{
 			m_pGameResourceAsyncLoadTask->UploadResource();
-			m_pGameResourceAsyncLoadTask.reset();
 		}
 	}
 

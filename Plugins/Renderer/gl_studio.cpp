@@ -4727,6 +4727,7 @@ public:
 				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
 
 					pRenderData->AsyncUploadResouce();
+					pRenderData->ReleaseAsyncLoadTask();
 
 					}));
 			}
@@ -4860,6 +4861,7 @@ void R_CreateStudioRenderDataAsyncLoadTask(model_t* mod, studiohdr_t* studiohdr,
 				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pRenderData]() {
 
 					pRenderData->AsyncUploadResouce();
+					pRenderData->ReleaseAsyncLoadTask();
 
 					}));
 			}

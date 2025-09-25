@@ -927,6 +927,7 @@ public:
 				GameThreadTaskScheduler()->QueueTask(LambdaThreadedTask_CreateInstance([pLeaf]() {
 
 					pLeaf->AsyncUploadResouce();
+					pLeaf->ReleaseAsyncLoadTask();
 
 					}));
 			}
