@@ -691,6 +691,8 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 		CDrawIndexAttrib drawAttrib;
 		drawAttrib.FirstIndexLocation = brushface->reverse_start_index;
 		drawAttrib.NumIndices = brushface->reverse_index_count;
+		drawAttrib.FirstInstanceLocation = brushface->instance_index;
+		drawAttrib.NumInstances = brushface->instance_count;
 
 		pWaterModel->m_vDrawAttribBuffer.emplace_back(drawAttrib);
 	}
@@ -699,6 +701,8 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 		CDrawIndexAttrib drawAttrib;
 		drawAttrib.FirstIndexLocation = brushface->start_index;
 		drawAttrib.NumIndices = brushface->index_count;
+		drawAttrib.FirstInstanceLocation = brushface->instance_index;
+		drawAttrib.NumInstances = brushface->instance_count;
 
 		pWaterModel->m_vDrawAttribBuffer.emplace_back(drawAttrib);
 	}
@@ -1061,15 +1065,13 @@ void R_RenderWaterPass(void)
 	GL_EndDebugGroup();
 }
 
-void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel, int VBOStates)
+void R_DrawWaterSurfaceModelBegin(CWorldSurfaceLeaf* pLeaf, CWaterSurfaceModel* pWaterModel)
 {
 	auto pModel = pLeaf->m_pModel.lock();
 
 	auto pWorldModel = pModel->m_pWorldModel.lock();
 	
-	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pWorldModel.get(), VBOStates);
-
-	GL_BindVAO(hVAO);
+	GL_BindVAO(pWorldModel->hVAO);
 	GL_BindABO(pWaterModel->hABO);
 }
 
@@ -1162,9 +1164,7 @@ void R_DrawWaterSurfaceModelReflective(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
-	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP) | (1 << WSURF_VBO_NORMAL);
-
-	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel);
 
 	water_program_t prog = { 0 };
 	R_UseWaterProgram(WaterProgramState, &prog);
@@ -1309,9 +1309,7 @@ void R_DrawWaterSurfaceModelRipple(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
-	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE);
-
-	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel);
 
 	//TODO: blend state?
 
@@ -1424,9 +1422,7 @@ void R_DrawWaterSurfaceModelLegacy(
 		WaterProgramState |= WATER_OIT_BLEND_ENABLED;
 	}
 
-	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE);
-
-	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel, VBOStates);
+	R_DrawWaterSurfaceModelBegin(pLeaf, pWaterModel);
 
 	//TODO: blend state?
 

@@ -7,24 +7,19 @@
 uniform float u_parallaxScale;
 
 layout(location = WSURF_VA_POSITION) in vec3 in_vertex;
+layout(location = WSURF_VA_TEXCOORD) in vec2 in_diffusetexcoord;
+layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec2 in_lightmaptexcoord;
+
 layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
 layout(location = WSURF_VA_S_TANGENT) in vec3 in_tangent;
 layout(location = WSURF_VA_T_TANGENT) in vec3 in_bitangent;
-layout(location = WSURF_VA_TEXCOORD) in vec3 in_diffusetexcoord;
-layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec3 in_lightmaptexcoord;
+layout(location = WSURF_VA_LIGHTMAP_TEXTURENUM) in vec2 in_lightmaptexturenum_texcoordscale;
+layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 layout(location = WSURF_VA_REPLACETEXTURE_TEXCOORD) in vec2 in_replacetexcoord;
 layout(location = WSURF_VA_DETAILTEXTURE_TEXCOORD) in vec2 in_detailtexcoord;
 layout(location = WSURF_VA_NORMALTEXTURE_TEXCOORD) in vec2 in_normaltexcoord;
 layout(location = WSURF_VA_PARALLAXTEXTURE_TEXCOORD) in vec2 in_parallaxtexcoord;
 layout(location = WSURF_VA_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord;
-
-#if defined(SKYBOX_ENABLED)
-
-#elif defined(DECAL_ENABLED)
-	layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
-#else
-	layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
-#endif
 
 out vec3 v_worldpos;
 out vec3 v_normal;
@@ -159,13 +154,13 @@ void main(void)
     v_worldpos = worldpos4.xyz;
 
 	#ifdef DIFFUSE_ENABLED
-		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusetexcoord.z * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
+		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_lightmaptexturenum_texcoordscale.y * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
 	#endif
 
 #endif
 
 #if defined(LIGHTMAP_ENABLED)
-	v_lightmaptexcoord = in_lightmaptexcoord;
+	v_lightmaptexcoord = vec3(in_lightmaptexcoord.x, in_lightmaptexcoord.y, in_lightmaptexturenum_texcoordscale.x);
 #endif
 
 #if defined(REPLACETEXTURE_ENABLED)

@@ -3,13 +3,14 @@
 #include <vector>
 #include <memory>
 
-#define WSURF_DIFFUSE_TEXTURE		0
-#define WSURF_REPLACE_TEXTURE		1
-#define WSURF_DETAIL_TEXTURE		2
-#define WSURF_NORMAL_TEXTURE		3
-#define WSURF_PARALLAX_TEXTURE		4
-#define WSURF_SPECULAR_TEXTURE		5
-#define WSURF_MAX_TEXTURE			6
+#include "gl_model.h"
+
+#define WSURF_REPLACE_TEXTURE		0
+#define WSURF_DETAIL_TEXTURE		1
+#define WSURF_NORMAL_TEXTURE		2
+#define WSURF_PARALLAX_TEXTURE		3
+#define WSURF_SPECULAR_TEXTURE		4
+#define WSURF_MAX_TEXTURE			5
 
 #define WSURF_TEXCHAIN_LIST_STATIC		0
 #define WSURF_TEXCHAIN_LIST_ANIM		1
@@ -20,33 +21,16 @@
 #define WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY	2
 #define WSURF_TEXCHAIN_SPECIAL_MAX				3
 
-#define WSURF_VBO_POSITION		0
-#define WSURF_VBO_DIFFUSE		1
-#define WSURF_VBO_LIGHTMAP		2
-#define WSURF_VBO_NORMAL		3
-#define WSURF_VBO_DETAIL		4
-#define WSURF_VBO_MAX			5
+#define WSURF_VBO_VERTEX		0
+#define WSURF_VBO_INSTANCE		1
+#define WSURF_VBO_MAX			2
 
-typedef struct detail_texture_s
+class CWorldSurfaceRenderMaterial
 {
-	detail_texture_s()
-	{
-		gltexturenum = 0;
-		width = 0;
-		height = 0;
-		scaleX = 0;
-		scaleY = 0;
-	}
-	int gltexturenum;
-	int width, height;
-	float scaleX, scaleY;
-}detail_texture_t;
-
-typedef struct detail_texture_cache_s
-{
+public:
 	std::string basetexture;
-	detail_texture_t tex[WSURF_MAX_TEXTURE];
-}detail_texture_cache_t;
+	CGameModelRenderTexture textures[WSURF_MAX_TEXTURE];
+};
 
 //CPU Resource that is for generating EBO
 class CWorldSurfaceBrushFace
@@ -64,6 +48,8 @@ public:
 	uint32_t index_count{};
 	uint32_t reverse_start_index{};
 	uint32_t reverse_index_count{};
+	uint32_t instance_index{};
+	uint32_t instance_count{};
 	float totalSquare{};
 };
 
@@ -84,8 +70,7 @@ public:
 	uint32_t startDrawOffset{};
 	uint32_t drawCount{};
 	uint32_t polyCount{};
-
-	detail_texture_cache_t* detailTextureCache{};
+	std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial;
 };
 
 class CWorldSurfaceModel;
@@ -146,7 +131,7 @@ public:
 	model_t* m_model{};
 	GLuint hVBO[WSURF_VBO_MAX]{};
 	GLuint hEBO{};
-	std::unordered_map<int, GLuint> VAOMap;
+	GLuint hVAO{};
 	std::vector<CWorldSurfaceBrushFace> m_vFaceBuffer;
 };
 
@@ -189,27 +174,27 @@ public:
 	std::vector<std::shared_ptr<CWorldSurfaceLeaf>> m_vLeaves;
 };
 
-//for decal drawing
-typedef struct decal_drawbatch_s
+class CDecalDrawBatch
 {
+public:
 	GLuint GLTextureId[MAX_DECALS];
-	detail_texture_cache_t *DetailTextureCaches[MAX_DECALS];
 	GLint StartIndex[MAX_DECALS];
 	GLuint IndiceCount[MAX_DECALS];
+	CWorldSurfaceRenderMaterial* pRenderMaterial[MAX_DECALS];
 	int BatchCount;
-}decal_drawbatch_t;
+};
 
-//for decal drawing
-typedef struct cached_decal_s
+class CCachedDecal
 {
+public:
 	vec3_t origin{};
 	GLuint gltexturenum{};
 	GLuint gltexturewidth{};
 	GLuint gltextureheight{};
-	detail_texture_cache_t* pDetailTextures{};
+	std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial{};
 	GLint startIndex{};
 	GLuint indiceCount{};
-}cached_decal_t;
+};
 
 class CWorldSurfaceRenderer
 {
@@ -240,7 +225,7 @@ public:
 
 	int					vSkyboxTextureId[12]{};
 
-	cached_decal_t		vCachedDecals[MAX_DECALS]{};
+	CCachedDecal		vCachedDecals[MAX_DECALS]{};
 
 	std::vector<model_t *> vWorldModels;
 
@@ -325,10 +310,10 @@ void R_PrepareDecals(void);
 std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
 std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);
 
-detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
-detail_texture_cache_t *R_FindDetailTextureCache(int texId);
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::string &decalname);
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltexturenum);
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t *WSurfProgramState);
 void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_ShutdownWSurf(void);
 void R_GenerateSceneUBO(void);
@@ -345,7 +330,7 @@ void R_DrawWaterSurfaceModel(
 	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent);
 
-GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel, int VBOStates);
+GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel);
 
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer);
 

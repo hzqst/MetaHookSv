@@ -85,17 +85,18 @@ public:
 #define BINDING_POINT_OIT_COUNTER_SSBO 7
 
 #define WSURF_VA_POSITION 0
-#define WSURF_VA_NORMAL 1
-#define WSURF_VA_S_TANGENT 2
-#define WSURF_VA_T_TANGENT 3
-#define WSURF_VA_TEXCOORD 4
-#define WSURF_VA_LIGHTMAP_TEXCOORD 5
-#define WSURF_VA_REPLACETEXTURE_TEXCOORD 6
-#define WSURF_VA_DETAILTEXTURE_TEXCOORD 7
-#define WSURF_VA_NORMALTEXTURE_TEXCOORD 8
-#define WSURF_VA_PARALLAXTEXTURE_TEXCOORD 9
-#define WSURF_VA_SPECULARTEXTURE_TEXCOORD 10
-#define WSURF_VA_STYLES 11
+#define WSURF_VA_TEXCOORD 1
+#define WSURF_VA_LIGHTMAP_TEXCOORD 2
+#define WSURF_VA_NORMAL 3
+#define WSURF_VA_S_TANGENT 4
+#define WSURF_VA_T_TANGENT 5
+#define WSURF_VA_LIGHTMAP_TEXTURENUM 6
+#define WSURF_VA_STYLES 7
+#define WSURF_VA_REPLACETEXTURE_TEXCOORD 8
+#define WSURF_VA_DETAILTEXTURE_TEXCOORD 9
+#define WSURF_VA_NORMALTEXTURE_TEXCOORD 10
+#define WSURF_VA_PARALLAXTEXTURE_TEXCOORD 11
+#define WSURF_VA_SPECULARTEXTURE_TEXCOORD 12
 
 #define WSURF_BIND_DIFFUSE_TEXTURE 0
 #define WSURF_BIND_DETAIL_TEXTURE 1
@@ -207,38 +208,26 @@ typedef struct decalvertex_s
 
 //GPU Resource
 
-typedef struct brushvertexpos_s
+typedef struct brushvertex_s
 {
 	vec3_t	pos;
+	float	texcoord[2];
+	float	lightmaptexcoord[2]; 
+}brushvertex_t;
+
+typedef struct brushinstancedata_s
+{
 	vec3_t	normal;
-}brushvertexpos_t;
-
-typedef struct brushvertexdiffuse_s
-{
-	float	texcoord[3];//texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
-}brushvertexdiffuse_t;
-
-typedef struct brushvertexlightmap_s
-{
-	float	lightmaptexcoord[3]; //lightmaptexcoord[2]=lightmaptexnum
-	byte	styles[4];
-}brushvertexlightmap_t;
-
-typedef struct brushvertexnormal_s
-{
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
-	float	normaltexcoord[2];
-}brushvertexnormal_t;
-
-typedef struct brushvertexdetail_s
-{
+	float	lightmaptexturenum_texcoordscale[2];//lightmaptexcoord[2]=lightmaptexnum //texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
+	byte	styles[4];
 	float	replacetexcoord[2];
 	float	detailtexcoord[2];
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
-}brushvertexdetail_t;
+}brushinstancedata_t;
 
 typedef struct texture_ssbo_s
 {

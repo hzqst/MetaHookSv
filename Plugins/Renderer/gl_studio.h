@@ -9,12 +9,11 @@
 
 #define MAX_STUDIO_BONE_CACHES 1024
 
-#define STUDIO_DIFFUSE_TEXTURE			0
-#define STUDIO_REPLACE_TEXTURE			1
-#define STUDIO_NORMAL_TEXTURE			2
-#define STUDIO_PARALLAX_TEXTURE			3
-#define STUDIO_SPECULAR_TEXTURE			4
-#define STUDIO_MAX_TEXTURE				5
+#define STUDIO_REPLACE_TEXTURE			0
+#define STUDIO_NORMAL_TEXTURE			1
+#define STUDIO_PARALLAX_TEXTURE			2
+#define STUDIO_SPECULAR_TEXTURE			3
+#define STUDIO_MAX_TEXTURE				4
 
 #define STUDIO_VBO_BASE		0
 #define STUDIO_VBO_TBN		1
@@ -112,20 +111,10 @@ public:
 	std::vector<CStudioModelRenderMesh> vMesh;
 };
 
-class CStudioModelRenderTexture
-{
-public:
-	int gltexturenum{};
-	int numframes{};
-	float framerate{};
-	int width{}, height{};
-	float scaleX{}, scaleY{};
-};
-
 class CStudioModelRenderMaterial
 {
 public:
-	CStudioModelRenderTexture textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
+	CGameModelRenderTexture textures[STUDIO_MAX_TEXTURE];
 	StudioConVar base_specular;
 };
 

@@ -1728,7 +1728,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 {
 	if (r_studio_external_textures->value > 0)
 	{
-		const auto& ReplaceTexture = pStudioMaterial->textures[STUDIO_REPLACE_TEXTURE - 1];
+		const auto& ReplaceTexture = pStudioMaterial->textures[STUDIO_REPLACE_TEXTURE];
 		
 		if (ReplaceTexture.gltexturenum)
 		{
@@ -1765,7 +1765,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 			}
 		}
 
-		const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE - 1];
+		const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE];
 
 		if (NormalTexture.gltexturenum)
 		{
@@ -1774,7 +1774,7 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 			(*context->StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
 		}
 
-		const auto& SpecularTexture = pStudioMaterial->textures[STUDIO_SPECULAR_TEXTURE - 1];
+		const auto& SpecularTexture = pStudioMaterial->textures[STUDIO_SPECULAR_TEXTURE];
 
 		if (SpecularTexture.gltexturenum)
 		{
@@ -4244,13 +4244,13 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				return;
 			}
 
-			pStudioMaterial->textures[StudioTextureType - 1].gltexturenum = loadResult.gltexturenum;
-			pStudioMaterial->textures[StudioTextureType - 1].numframes = loadResult.numframes;
-			pStudioMaterial->textures[StudioTextureType - 1].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
-			pStudioMaterial->textures[StudioTextureType - 1].width = loadResult.width;
-			pStudioMaterial->textures[StudioTextureType - 1].height = loadResult.height;
-			pStudioMaterial->textures[StudioTextureType - 1].scaleX = 0;
-			pStudioMaterial->textures[StudioTextureType - 1].scaleY = 0;
+			pStudioMaterial->textures[StudioTextureType].gltexturenum = loadResult.gltexturenum;
+			pStudioMaterial->textures[StudioTextureType].numframes = loadResult.numframes;
+			pStudioMaterial->textures[StudioTextureType].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
+			pStudioMaterial->textures[StudioTextureType].width = loadResult.width;
+			pStudioMaterial->textures[StudioTextureType].height = loadResult.height;
+			pStudioMaterial->textures[StudioTextureType].scaleX = 0;
+			pStudioMaterial->textures[StudioTextureType].scaleY = 0;
 
 			if (scaleValue && scaleValue[0])
 			{
@@ -4259,17 +4259,17 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				if (2 == sscanf(scaleValue, "%f %f", &scales[0], &scales[1]))
 				{
 					if (scales[0] > 0 || scales[0] < 0)
-						pStudioMaterial->textures[StudioTextureType - 1].scaleX = scales[0];
+						pStudioMaterial->textures[StudioTextureType].scaleX = scales[0];
 
 					if (scales[1] > 0 || scales[1] < 0)
-						pStudioMaterial->textures[StudioTextureType - 1].scaleY = scales[1];
+						pStudioMaterial->textures[StudioTextureType].scaleY = scales[1];
 				}
 				else if (1 == sscanf(scaleValue, "%f", &scales[0]))
 				{
 					if (scales[0] > 0 || scales[0] < 0)
 					{
-						pStudioMaterial->textures[StudioTextureType - 1].scaleX = scales[0];
-						pStudioMaterial->textures[StudioTextureType - 1].scaleY = scales[0];
+						pStudioMaterial->textures[StudioTextureType].scaleX = scales[0];
+						pStudioMaterial->textures[StudioTextureType].scaleY = scales[0];
 					}
 				}
 			}

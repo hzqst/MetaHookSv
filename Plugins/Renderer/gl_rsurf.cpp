@@ -19,8 +19,8 @@ msurface_t **gDecalSurfs = NULL;
 decal_t *gDecalPool = NULL;
 decalcache_t *gDecalCache = NULL;
 
-decal_drawbatch_t g_DecalBaseDrawBatch = { 0 };
-decal_drawbatch_t g_DecalDetailDrawBatch = { 0 };
+CDecalDrawBatch g_DecalBaseDrawBatch = { 0 };
+CDecalDrawBatch g_DecalDetailDrawBatch = { 0 };
 
 void R_RecursiveWorldNode(mnode_t *node)
 {
@@ -836,16 +836,15 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 	return vlist;
 }
 
-void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_cache_t * pcache)
+void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
 {
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = ptexture->gl_texturenum;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth = ptexture->width;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight = ptexture->height;
-
-	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures = pcache;
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial = pRenderMaterial;
 }
 
-void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *surf, detail_texture_cache_t *pcache)
+void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *surf, CWorldSurfaceRenderMaterial* pRenderMaterial)
 {
 	auto worldmodel = R_FindWorldModelBySurface(surf);
 
@@ -882,9 +881,11 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
 	{
 		vertex3f_t vert;
+
 		vert.v[0] = v[0];
 		vert.v[1] = v[1];
 		vert.v[2] = v[2];
+
 		vPolyVertices.emplace_back(vert);
 
 		decalvertex_t vertexData;
@@ -907,32 +908,32 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		float parallaxScale[2] = { 1,1 };
 		float specularScale[2] = { 1,1 };
 
-		if (pcache)
+		if (pRenderMaterial)
 		{
-			if (pcache->tex[WSURF_REPLACE_TEXTURE].gltexturenum)
+			if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
 			{
-				replaceScale[0] = pcache->tex[WSURF_REPLACE_TEXTURE].scaleX;
-				replaceScale[1] = pcache->tex[WSURF_REPLACE_TEXTURE].scaleY;
+				replaceScale[0] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleX;
+				replaceScale[1] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleY;
 			}
-			if (pcache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
+			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
 			{
-				detailScale[0] = pcache->tex[WSURF_DETAIL_TEXTURE].scaleX;
-				detailScale[1] = pcache->tex[WSURF_DETAIL_TEXTURE].scaleY;
+				detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+				detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
 			}
-			if (pcache->tex[WSURF_NORMAL_TEXTURE].gltexturenum)
+			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
 			{
-				normalScale[0] = pcache->tex[WSURF_NORMAL_TEXTURE].scaleX;
-				normalScale[1] = pcache->tex[WSURF_NORMAL_TEXTURE].scaleY;
+				normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+				normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
 			}
-			if (pcache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
+			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
 			{
-				parallaxScale[0] = pcache->tex[WSURF_PARALLAX_TEXTURE].scaleX;
-				parallaxScale[1] = pcache->tex[WSURF_PARALLAX_TEXTURE].scaleY;
+				parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+				parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
 			}
-			if (pcache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum)
+			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
 			{
-				specularScale[0] = pcache->tex[WSURF_SPECULAR_TEXTURE].scaleX;
-				specularScale[1] = pcache->tex[WSURF_SPECULAR_TEXTURE].scaleY;
+				specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+				specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
 			}
 		}
 
@@ -983,12 +984,12 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = vTriangleListIndices.size();
 }
 
-bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, detail_texture_cache_t *pDetailTextureCache)
+bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
 {
 	if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum != texture->gl_texturenum ||
 		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth != texture->width ||
 		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight != texture->height ||
-		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures != pDetailTextureCache)
+		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial != pRenderMaterial)
 	{
 		return true;
 	}
@@ -1031,10 +1032,10 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			auto ptexture = Draw_DecalTexture(plist->texture);
 
-			auto pcache = R_FindDecalTextureCache(ptexture->name);
+			auto pRenderMaterial = R_FindDecalTextureCache(ptexture->name);
 
 			//Build VBO data for this decal if not built yet
-			if (!(plist->flags & FDECAL_VBO) || R_IsDecalCacheInvalidated(decalIndex, ptexture, pcache))
+			if (!(plist->flags & FDECAL_VBO) || R_IsDecalCacheInvalidated(decalIndex, ptexture, pRenderMaterial))
 			{
 				int vertCount = 0;
 				float *v = nullptr;
@@ -1058,8 +1059,8 @@ void R_DrawDecals(cl_entity_t *ent)
 
 				if (vertCount > 0)
 				{
-					R_UploadDecalTextures(decalIndex, ptexture, pcache);
-					R_UploadDecalVertexBuffer(decalIndex, vertCount, v, psurf, pcache);
+					R_UploadDecalTextures(decalIndex, ptexture, pRenderMaterial);
+					R_UploadDecalVertexBuffer(decalIndex, vertCount, v, psurf, pRenderMaterial.get());
 				}
 				else
 				{
@@ -1074,20 +1075,20 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount > 0)
 			{
-				if (!g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
+				if (!g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial && g_DecalBaseDrawBatch.BatchCount < MAX_DECALS)
 				{
 					g_DecalBaseDrawBatch.GLTextureId[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
-					g_DecalBaseDrawBatch.DetailTextureCaches[g_DecalBaseDrawBatch.BatchCount] = nullptr;
 					g_DecalBaseDrawBatch.StartIndex[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
 					g_DecalBaseDrawBatch.IndiceCount[g_DecalBaseDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
+					g_DecalBaseDrawBatch.pRenderMaterial[g_DecalBaseDrawBatch.BatchCount] = nullptr;
 					++g_DecalBaseDrawBatch.BatchCount;
 				}
-				else if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
+				else if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial && g_DecalDetailDrawBatch.BatchCount < MAX_DECALS)
 				{
 					g_DecalDetailDrawBatch.GLTextureId[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
-					g_DecalDetailDrawBatch.DetailTextureCaches[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pDetailTextures;
 					g_DecalDetailDrawBatch.StartIndex[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
 					g_DecalDetailDrawBatch.IndiceCount[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
+					g_DecalDetailDrawBatch.pRenderMaterial[g_DecalDetailDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial.get();
 					++g_DecalDetailDrawBatch.BatchCount;
 				}
 			}
@@ -1252,7 +1253,7 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, g_DecalDetailDrawBatch.GLTextureId[i]);
 
-			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.DetailTextureCaches[i], &WSurfProgramStateDetail);
+			R_BeginDetailTextureByDetailTextureCache(g_DecalDetailDrawBatch.pRenderMaterial[i], &WSurfProgramStateDetail);
 
 			wsurf_program_t prog = { 0 };
 

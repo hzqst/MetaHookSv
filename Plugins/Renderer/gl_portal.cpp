@@ -227,6 +227,8 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 		CDrawIndexAttrib drawAttrib;
 		drawAttrib.FirstIndexLocation = pBrushFace->start_index;
 		drawAttrib.NumIndices = pBrushFace->index_count;
+		drawAttrib.FirstInstanceLocation = pBrushFace->instance_index;
+		drawAttrib.NumInstances = pBrushFace->instance_count;
 
 		pPortalModel->vDrawAttribBuffer.emplace_back(drawAttrib);
 
@@ -255,6 +257,8 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 			CDrawIndexAttrib drawAttrib;
 			drawAttrib.FirstIndexLocation = pBrushFace->start_index;
 			drawAttrib.NumIndices = pBrushFace->index_count;
+			drawAttrib.FirstInstanceLocation = pBrushFace->instance_index;
+			drawAttrib.NumInstances = pBrushFace->instance_count;
 
 			pPortalModel->vDrawAttribBuffer.emplace_back(drawAttrib);
 
@@ -269,13 +273,11 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 	return pPortalModel;
 }
 
-void R_DrawPortalSurfaceModelBegin(CWorldPortalModel* pPortalModel, int VBOStates)
+void R_DrawPortalSurfaceModelBegin(CWorldPortalModel* pPortalModel)
 {
 	auto pWorldModel = pPortalModel->m_pWorldModel.lock();
 
-	auto hVAO = R_BindVAOForWorldSurfaceWorldModel(pWorldModel.get(), VBOStates);
-
-	GL_BindVAO(hVAO);
+	GL_BindVAO(pWorldModel->hVAO);
 	GL_BindABO(pPortalModel->hABO);
 }
 
@@ -307,9 +309,7 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	R_RotateForTransform(origin, angles);
 
-	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP);
-
-	R_DrawPortalSurfaceModelBegin(pPortalModel, VBOStates);
+	R_DrawPortalSurfaceModelBegin(pPortalModel);
 
 	portal_program_t prog = { 0 };
 
@@ -352,9 +352,7 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	R_RotateForTransform(origin, angles);
 
-	int VBOStates = (1 << WSURF_VBO_POSITION) | (1 << WSURF_VBO_DIFFUSE) | (1 << WSURF_VBO_LIGHTMAP);
-
-	R_DrawPortalSurfaceModelBegin(pPortalModel, VBOStates);
+	R_DrawPortalSurfaceModelBegin(pPortalModel);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(PortalProgramState, &prog);
