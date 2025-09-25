@@ -12433,6 +12433,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
+	Install_InlineHook(Draw_MiptexTexture);
 
 	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 	gEngfuncs.pTriAPI->Begin = triapi_Begin;

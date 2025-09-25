@@ -77,12 +77,10 @@
 #define BINDING_POINT_CAMERA_UBO 1
 #define BINDING_POINT_DLIGHT_UBO 2
 
-#define BINDING_POINT_SKYBOX_SSBO 3
-#define BINDING_POINT_DECAL_SSBO 3
-#define BINDING_POINT_TEXTURE_SSBO 3
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
 
-#define BINDING_POINT_ENTITY_UBO 4
-#define BINDING_POINT_STUDIO_UBO 4
+#define BINDING_POINT_MATERIAL_SSBO 4
 
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 5
 #define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 6
@@ -164,13 +162,9 @@
 #define WSURF_VA_NORMAL 3
 #define WSURF_VA_S_TANGENT 4
 #define WSURF_VA_T_TANGENT 5
-#define WSURF_VA_LIGHTMAP_TEXTURENUM 6
+#define WSURF_VA_TEXTURENUM 6
 #define WSURF_VA_STYLES 7
-#define WSURF_VA_REPLACETEXTURE_TEXCOORD 8
-#define WSURF_VA_DETAILTEXTURE_TEXCOORD 9
-#define WSURF_VA_NORMALTEXTURE_TEXCOORD 10
-#define WSURF_VA_PARALLAXTEXTURE_TEXCOORD 11
-#define WSURF_VA_SPECULARTEXTURE_TEXCOORD 12
+#define WSURF_VA_MATID 8
 
 #define TEXTUREDRECT_VA_POSITION		0
 #define TEXTUREDRECT_VA_TEXCOORD		1
@@ -190,6 +184,13 @@
 #define TRIAPI_VA_POSITION		0
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
+
+#define SPRITE_VA_UP_DOWN_LEFT_RIGHT 0
+#define SPRITE_VA_COLOR 1
+#define SPRITE_VA_ORIGIN 2
+#define SPRITE_VA_ANGLES 3
+#define SPRITE_VA_SCALE 4
+#define SPRITE_VA_LERP 5
 
 #define CSM_RESOLUTION 4096.0
 #define CSM_LEVELS 4
@@ -265,6 +266,14 @@ struct studio_ubo_t{
 	uvec4 r_clipbone;
 };
 
+struct world_material_t
+{
+	vec2	detailtexcoord;
+	vec2	normaltexcoord;
+	vec2	parallaxtexcoord;
+	vec2	speculartexcoord;
+};
+
 //Scene level
 
 layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
@@ -282,20 +291,6 @@ layout (std140, binding = BINDING_POINT_DLIGHT_UBO) uniform DLightBlock
    dlight_ubo_t DLightUBO;
 };
 
-#if defined(BINDLESS_ENABLED)
-
-	layout (std430, binding = BINDING_POINT_DECAL_SSBO) coherent buffer DecalBlock
-	{
-		texture_handle_t DecalSSBO[];
-	};
-
-	layout (std430, binding = BINDING_POINT_SKYBOX_SSBO) coherent buffer SkyboxBlock
-	{
-		texture_handle_t SkyboxSSBO[];
-	};
-
-#endif
-
 //Entity level
 
 layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
@@ -303,18 +298,14 @@ layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
 	entity_ubo_t EntityUBO;
 };
 
-#if defined(BINDLESS_ENABLED)
-
-layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) coherent buffer TextureBlock
-{
-	texture_handle_t TextureSSBO[];
-};
-
-#endif
-
 layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
 {
 	studio_ubo_t StudioUBO;
+};
+
+layout(std430, binding = BINDING_POINT_MATERIAL_SSBO) coherent buffer WorldMaterialBlock
+{
+	world_material_t WorldMaterialSSBO[];
 };
 
 #if defined(OIT_BLEND_ENABLED)

@@ -2,13 +2,12 @@
 
 #include "common.h"
 
-layout (location = 0) uniform ivec2 width_height;
-layout (location = 1) uniform vec4 up_down_left_right;
-layout (location = 2) uniform vec4 in_color;
-layout (location = 3) uniform vec3 in_origin;
-layout (location = 4) uniform vec3 in_angles;
-layout (location = 5) uniform float in_scale;
-layout (location = 6) uniform float in_lerp;
+layout (location = SPRITE_VA_UP_DOWN_LEFT_RIGHT) uniform vec4 in_up_down_left_right;
+layout (location = SPRITE_VA_COLOR) uniform vec4 in_color;
+layout (location = SPRITE_VA_ORIGIN) uniform vec3 in_origin;
+layout (location = SPRITE_VA_ANGLES) uniform vec3 in_angles;
+layout (location = SPRITE_VA_SCALE) uniform float in_scale;
+layout (location = SPRITE_VA_LERP) uniform float in_lerp;
 
 out vec3 v_worldpos;
 out vec3 v_normal;
@@ -91,12 +90,10 @@ void R_GetSpriteAxes_Oriented(vec3 angles, inout vec3 forward, inout vec3 right,
 
 void main()
 {
-	int width = width_height.x;
-	int height = width_height.y;
-	float up = up_down_left_right.x;
-	float down = up_down_left_right.y;
-	float left = up_down_left_right.z;
-	float right = up_down_left_right.w;
+	float up = in_up_down_left_right.x;
+	float down = in_up_down_left_right.y;
+	float left = in_up_down_left_right.z;
+	float right = in_up_down_left_right.w;
 
 	uint idx = gl_VertexID % 4;
 

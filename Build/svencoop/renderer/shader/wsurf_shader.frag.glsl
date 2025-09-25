@@ -23,7 +23,6 @@ in vec3 v_tangent;
 in vec3 v_bitangent;
 in vec2 v_diffusetexcoord;
 in vec3 v_lightmaptexcoord;
-in vec2 v_replacetexcoord;
 in vec2 v_detailtexcoord;
 in vec2 v_normaltexcoord;
 in vec2 v_parallaxtexcoord;
@@ -177,15 +176,7 @@ void main()
 
 #if defined(DIFFUSE_ENABLED)
 
-	#if defined(REPLACETEXTURE_ENABLED)
-
-		baseTexcoord = vec2(v_diffusetexcoord.x * v_replacetexcoord.x, v_diffusetexcoord.y * v_replacetexcoord.y);
-
-	#else
-
-		baseTexcoord = v_diffusetexcoord.xy;
-
-	#endif
+	baseTexcoord = v_diffusetexcoord.xy;
 
 	#if defined(PARALLAXTEXTURE_ENABLED)
 

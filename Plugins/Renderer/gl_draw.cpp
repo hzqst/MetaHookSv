@@ -576,6 +576,13 @@ void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 }
 
+void GL_UploadDataToSSBOStaticDraw(GLuint SSBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
 void GL_BindStatesForVAO(GLuint VAO, const std::function<void()> &bind)
 {
 	GL_BindVAO(VAO);
@@ -1812,6 +1819,43 @@ texture_t *Draw_DecalTexture(int index)
 	return texture;
 }
 
+bool Draw_MiptexTexture_ReplaceTexture(texture_t*tex)
+{
+	auto pRenderMaterial = R_FindDecalTextureCache(tex->name);
+
+	if (pRenderMaterial)
+	{
+		const auto& ReplaceTexture = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE];
+
+		if (ReplaceTexture.gltexturenum)
+		{
+			tex->gl_texturenum = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum;
+
+			if (ReplaceTexture.scaleX > 0)
+			{
+				tex->width = tex->width * ReplaceTexture.scaleX;
+			}
+			else if (ReplaceTexture.scaleX < 0)
+			{
+				tex->width = ReplaceTexture.width * ReplaceTexture.scaleX * -1;
+			}
+
+			if (ReplaceTexture.scaleY > 0)
+			{
+				tex->height = tex->height * ReplaceTexture.scaleY;
+			}
+			else if (ReplaceTexture.scaleY < 0)
+			{
+				tex->height = ReplaceTexture.height * ReplaceTexture.scaleY * -1;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 {
 	texture_t* tex = nullptr;
@@ -1843,65 +1887,6 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 	for (i = 0; i < MIPLEVELS; i++)
 		tex->offsets[i] = LittleLong(mip->offsets[i]) + wad->cacheExtra;
-#if 0
-	if (tex->name[0] == '$') {
-
-		auto rgbaBytes = (byte*)(data + tex->offsets[0]);
-		auto rgbaSize = tex->offsets[1] - wad->cacheExtra;
-
-		//TODO verify rgbaSize?
-
-		gl_loadtexture_context_t loadContext;
-		loadContext.wrap = GL_CLAMP_TO_EDGE;
-		loadContext.filter = GL_LINEAR;
-		loadContext.mipmap = true;
-
-		gl_loadtexture_result_t loadResult;
-
-		loadContext.callback = [&tex, &loadResult](gl_loadtexture_context_t* ctx) {
-
-			auto glt = GL_LoadTextureEx(tex->name, GLT_DECAL, ctx);
-
-			if (glt)
-			{
-				GL_FillLoadTextureResultFromLoadTextureContext(glt, ctx, &loadResult);
-				return true;
-			}
-
-			return false;
-		};
-
-		if (LoadImageGenericMemoryIO(tex->name, rgbaBytes, rgbaSize, &loadContext))
-		{
-			if (tex->width != loadResult.width) {
-				gEngfuncs.Con_Printf("Draw_MiptexTexture: Warning: \"%s\" has incorrect width. %d should be %d.\n", wad->name, tex->width, loadResult.width);
-			}
-
-			if (tex->height != loadResult.height) {
-				gEngfuncs.Con_Printf("Draw_MiptexTexture: Warning: \"%s\" has incorrect height. %d should be %d.\n", wad->name, tex->height, loadResult.height);
-			}
-
-			if ((*gfCustomBuild))
-			{
-				strncpy(tex->name, (*szCustName), sizeof(tex->name) - 1);
-				tex->name[sizeof(tex->name) - 1] = 0;
-			}
-
-			tex->name[0] = '{';
-
-			tex->gl_texturenum = loadResult.gltexturenum;
-			tex->anim_total = loadResult.numframes;
-			tex->anim_min = loadResult.frameduration;
-			tex->width = loadResult.width;
-			tex->height = loadResult.height;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("Draw_MiptexTexture: Failed to load \"%s\" with LoadImageGenericMemoryIO.\n", wad->name);
-			return;
-		}
-	}
-#endif
 
 	pix = tex->width * tex->height;
 	paloffset = 0;
@@ -1925,6 +1910,9 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_SVENGINE : TEX_TYPE_ALPHA;
 
+		if (Draw_MiptexTexture_ReplaceTexture(tex))
+			return;
+
 		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
 	}
 	else
@@ -1937,6 +1925,12 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 		//Why'th fuck 2 in SvEngine?
 		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_GRADIENT_SVENGINE : TEX_TYPE_ALPHA_GRADIENT;
+
+		if (!(*gfCustomBuild))
+		{
+			if (Draw_MiptexTexture_ReplaceTexture(tex))
+				return;
+		}
 
 		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
 	}

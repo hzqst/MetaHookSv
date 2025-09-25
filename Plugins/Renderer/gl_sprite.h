@@ -5,8 +5,7 @@
 typedef struct sprite_program_s
 {
 	int program;
-	int width_height;
-	int up_down_left_right;
+	int in_up_down_left_right;
 	int in_color;
 	int in_origin;
 	int in_angles;
@@ -25,20 +24,6 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
-#if 0
-#define SPRITE_REPLACE_TEXTURE		0
-#define SPRITE_MAX_TEXTURE			1
-
-class CSpriteModelRenderMaterial
-{
-public:
-	std::string basetexture;
-	CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
-};
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame);
-#endif
-
 class CSpriteModelRenderData
 {
 public:
@@ -49,7 +34,6 @@ public:
 
 	int flags{};
 	model_t* model{};
-	//std::unordered_map<uint32_t, std::shared_ptr<CSpriteModelRenderMaterial>> mSpriteMaterials;
 };
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);

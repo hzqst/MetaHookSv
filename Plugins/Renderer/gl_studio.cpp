@@ -128,8 +128,6 @@ cvar_t* r_studio_legacy_elight = NULL;
 
 cvar_t* r_studio_bone_caches = NULL;
 
-cvar_t* r_studio_external_textures = NULL;
-
 cvar_t* r_lowerbody_model_scale = NULL;
 cvar_t* r_lowerbody_model_offset = NULL;
 cvar_t* r_lowerbody_duck_model_offset = NULL;
@@ -1687,8 +1685,6 @@ void R_InitStudio(void)
 	//Cache bones to save CPU resources?
 	r_studio_bone_caches = gEngfuncs.pfnRegisterVariable("r_studio_bone_caches", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
-	r_studio_external_textures = gEngfuncs.pfnRegisterVariable("r_studio_external_textures", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
 	r_studio_base_specular = gEngfuncs.pfnRegisterVariable("r_studio_base_specular", "1.0 2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_specular = gEngfuncs.pfnRegisterVariable("r_studio_celshade_specular", "1.0  36.0  0.4  0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -1724,62 +1720,39 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 
 void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStudioModelRenderMaterial* pStudioMaterial, CStudioSetupSkinContext* context)
 {
-	if (r_studio_external_textures->value > 0)
+	const auto& ReplaceTexture = pStudioMaterial->textures[STUDIO_DIFFUSE_TEXTURE];
+
+	if (ReplaceTexture.gltexturenum)
 	{
-		const auto& ReplaceTexture = pStudioMaterial->textures[STUDIO_REPLACE_TEXTURE];
-		
-		if (ReplaceTexture.gltexturenum)
+		if (ReplaceTexture.numframes)
 		{
-			if (ReplaceTexture.numframes)
-			{
-				GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
+			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, ReplaceTexture.gltexturenum);
 
-				context->numframes = ReplaceTexture.numframes;
-				context->framerate = ReplaceTexture.framerate;
+			context->numframes = ReplaceTexture.numframes;
+			context->framerate = ReplaceTexture.framerate;
 
-				(*context->StudioProgramState) |= STUDIO_ANIMATED_TEXTURE_ENABLED;
-			}
-			else
-			{
-				GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, ReplaceTexture.gltexturenum);
-			}
-
-			if (ReplaceTexture.scaleX > 0)
-			{
-				context->width = ReplaceTexture.width * ReplaceTexture.scaleX;
-			}
-			else if (ReplaceTexture.scaleX < 0)
-			{
-				context->width = context->width * ReplaceTexture.scaleX * -1;
-			}
-
-			if (ReplaceTexture.scaleY > 0)
-			{
-				context->height = ReplaceTexture.height * ReplaceTexture.scaleY;
-			}
-			else if (ReplaceTexture.scaleY < 0)
-			{
-				context->height = context->height * ReplaceTexture.scaleY * -1;
-			}
+			(*context->StudioProgramState) |= STUDIO_ANIMATED_TEXTURE_ENABLED;
 		}
+	}
 
-		const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE];
+	const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE];
 
-		if (NormalTexture.gltexturenum)
-		{
-			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_NORMAL, GL_TEXTURE_2D, NormalTexture.gltexturenum);
+	if (NormalTexture.gltexturenum)
+	{
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_NORMAL, GL_TEXTURE_2D, NormalTexture.gltexturenum);
 
-			(*context->StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
-		}
+		(*context->StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
+	}
 
-		const auto& SpecularTexture = pStudioMaterial->textures[STUDIO_SPECULAR_TEXTURE];
+	//TODO: parallax texture?
 
-		if (SpecularTexture.gltexturenum)
-		{
-			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SPECULAR, GL_TEXTURE_2D, SpecularTexture.gltexturenum);
+	const auto& SpecularTexture = pStudioMaterial->textures[STUDIO_SPECULAR_TEXTURE];
 
-			(*context->StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
-		}
+	if (SpecularTexture.gltexturenum)
+	{
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SPECULAR, GL_TEXTURE_2D, SpecularTexture.gltexturenum);
+
+		(*context->StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
 	}
 }
 
@@ -2203,14 +2176,11 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 	//Parse packed texture index from texture name...
 	R_ParsePackedSkin(ptexture->name, context);
 
-	if ((*currenttexture) > 0)
-	{
-		auto pStudioMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
+	auto pStudioMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
 
-		if (pStudioMaterial)
-		{
-			R_StudioSetupMaterial(pRenderData, pStudioMaterial.get(), context);
-		}
+	if (pStudioMaterial)
+	{
+		R_StudioSetupMaterial(pRenderData, pStudioMaterial.get(), context);
 	}
 }
 
@@ -4271,6 +4241,11 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 					}
 				}
 			}
+
+			if (studioTextureType == STUDIO_DIFFUSE_TEXTURE)
+			{
+
+			}
 		}
 		else
 		{
@@ -4372,7 +4347,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, 
 		if (bTextureMatched)
 		{
 			R_StudioLoadExternalFile_TextureFlagsArray(ent, studiohdr, pRenderData, ptexture, flagsArray);
-			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, pRenderData, ptexture, replacetexture, replacescale, STUDIO_REPLACE_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, pRenderData, ptexture, replacetexture, replacescale, STUDIO_DIFFUSE_TEXTURE);
 			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, pRenderData, ptexture, normaltexture, normalscale, STUDIO_NORMAL_TEXTURE);
 			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, pRenderData, ptexture, parallaxtexture, parallaxscale, STUDIO_PARALLAX_TEXTURE);
 			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, pRenderData, ptexture, speculartexture, specularscale, STUDIO_SPECULAR_TEXTURE);
@@ -4664,6 +4639,50 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 		}
 
 		gEngfuncs.COM_FreeFile((void*)pFile);
+	}
+}
+
+void R_StudioReplaceTextures(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
+{
+	for (int i = 0; i < studiohdr->numtextures; ++i)
+	{
+		auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex) + i;
+
+		auto pRenderMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
+
+		if (pRenderMaterial)
+		{
+			auto& ReplaceTexture = pRenderMaterial->textures[STUDIO_DIFFUSE_TEXTURE];
+
+			if (ReplaceTexture.gltexturenum)
+			{
+				if (ptexture->index)
+				{
+					GL_UnloadTextureByTextureId(ptexture->index);
+					ptexture->index = 0;
+				}
+
+				ptexture->index = ReplaceTexture.gltexturenum;
+
+				if (ReplaceTexture.scaleX > 0)
+				{
+					ptexture->width = ReplaceTexture.width * ReplaceTexture.scaleX;
+				}
+				else if (ReplaceTexture.scaleX < 0)
+				{
+					ptexture->width = ptexture->width * ReplaceTexture.scaleX * -1;
+				}
+
+				if (ReplaceTexture.scaleY > 0)
+				{
+					ptexture->height = ReplaceTexture.height * ReplaceTexture.scaleY;
+				}
+				else if (ReplaceTexture.scaleY < 0)
+				{
+					ptexture->height = ptexture->height * ReplaceTexture.scaleY * -1;
+				}
+			}
+		}
 	}
 }
 

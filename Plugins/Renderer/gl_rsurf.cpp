@@ -835,12 +835,61 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 	return vlist;
 }
 
-void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
+void R_UploadDecalTextures(int decalIndex, texture_t* ptexture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
 {
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = ptexture->gl_texturenum;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth = ptexture->width;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight = ptexture->height;
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial = pRenderMaterial;
+
+	auto matId = R_FindWorldMaterialId(ptexture->gl_texturenum);
+
+	if (matId == (uint32_t)-1)
+	{
+		world_material_t mat;
+
+		mat.detailtexcoord[0] = 1;
+		mat.detailtexcoord[1] = 1;
+		mat.normaltexcoord[0] = 1;
+		mat.normaltexcoord[1] = 1;
+		mat.parallaxtexcoord[0] = 1;
+		mat.parallaxtexcoord[1] = 1;
+		mat.speculartexcoord[0] = 1;
+		mat.speculartexcoord[1] = 1;
+
+		if (pRenderMaterial)
+		{
+			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
+			{
+				mat.detailtexcoord[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+				mat.detailtexcoord[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
+			{
+				mat.normaltexcoord[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+				mat.normaltexcoord[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
+			{
+				mat.parallaxtexcoord[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+				mat.parallaxtexcoord[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
+			{
+				mat.speculartexcoord[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+				mat.speculartexcoord[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
+			}
+		}
+
+		matId = (uint32_t)g_WorldSurfaceRenderer.vWorldMaterials.size();
+
+		g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.emplace_back(ptexture->gl_texturenum);
+		g_WorldSurfaceRenderer.vWorldMaterials.emplace_back(mat);
+
+		GL_UploadDataToSSBOStaticDraw(g_WorldSurfaceRenderer.hMaterialSSBO, sizeof(world_material_t) * g_WorldSurfaceRenderer.vWorldMaterials.size(), g_WorldSurfaceRenderer.vWorldMaterials.data());
+	}
+
+	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId = matId;
 }
 
 void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *surf, CWorldSurfaceRenderMaterial* pRenderMaterial)
@@ -904,58 +953,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	float replaceScale[2] = { 1,1 };
-	float detailScale[2] = { 1,1 };
-	float normalScale[2] = { 1,1 };
-	float parallaxScale[2] = { 1,1 };
-	float specularScale[2] = { 1,1 };
-
-	if (pRenderMaterial)
-	{
-		if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
-		{
-			replaceScale[0] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleX;
-			replaceScale[1] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleY;
-		}
-		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
-		{
-			detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
-			detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
-		}
-		if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
-		{
-			normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
-			normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
-		}
-		if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
-		{
-			parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
-			parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
-		}
-		if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
-		{
-			specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
-			specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
-		}
-	}
-
 	decalinstancedata_t tempInstanceData;
-
-	tempInstanceData.lightmaptexturenum[0] = surf->lightmaptexturenum;
-	tempInstanceData.lightmaptexturenum[1] = 0;
-
-	memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
-
-	tempInstanceData.replacetexcoord[0] = replaceScale[0];
-	tempInstanceData.replacetexcoord[1] = replaceScale[1];
-	tempInstanceData.detailtexcoord[0] = detailScale[0];
-	tempInstanceData.detailtexcoord[1] = detailScale[1];
-	tempInstanceData.normaltexcoord[0] = normalScale[0];
-	tempInstanceData.normaltexcoord[1] = normalScale[1];
-	tempInstanceData.parallaxtexcoord[0] = parallaxScale[0];
-	tempInstanceData.parallaxtexcoord[1] = parallaxScale[1];
-	tempInstanceData.speculartexcoord[0] = specularScale[0];
-	tempInstanceData.speculartexcoord[1] = specularScale[1];
 
 	tempInstanceData.normal[0] = brushface->normal[0];
 	tempInstanceData.normal[1] = brushface->normal[1];
@@ -967,11 +965,17 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	tempInstanceData.t_tangent[1] = brushface->t_tangent[1];
 	tempInstanceData.t_tangent[2] = brushface->t_tangent[2];
 
-	tempInstanceData.decalindex = decalIndex;
+	tempInstanceData.lightmaptexturenum[0] = surf->lightmaptexturenum;
+	tempInstanceData.lightmaptexturenum[1] = 0;
+
+	memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
+
+	tempInstanceData.matId = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId;
 
 	vInstanceDataBuffer[0] = tempInstanceData;
 
 	std::vector<uint32_t> vTriangleListIndices;
+
 	vTriangleListIndices.reserve(MAX_DECALINDICES);
 
 	R_PolygonToTriangleList(vPolyVertices, vTriangleListIndices);
@@ -1237,7 +1241,7 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			if (g_DecalDrawBatch.pRenderMaterial[i])
 			{
-				R_BeginDetailTextureByDetailTextureCache(g_DecalDrawBatch.pRenderMaterial[i], &WSurfProgramStateDetail);
+				R_BeginDetailTextureFromRenderMaterial(g_DecalDrawBatch.pRenderMaterial[i], &WSurfProgramStateDetail);
 			}
 
 			wsurf_program_t prog = { 0 };

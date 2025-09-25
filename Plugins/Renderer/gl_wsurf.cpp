@@ -133,7 +133,6 @@ void R_ClearWorldSurfaceWorldModels(void)
 const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_DIFFUSE_ENABLED				,"WSURF_DIFFUSE_ENABLED"},
 { WSURF_LIGHTMAP_ENABLED			,"WSURF_LIGHTMAP_ENABLED"},
-{ WSURF_REPLACETEXTURE_ENABLED		,"WSURF_REPLACETEXTURE_ENABLED"},
 { WSURF_DETAILTEXTURE_ENABLED		,"WSURF_DETAILTEXTURE_ENABLED"},
 { WSURF_NORMALTEXTURE_ENABLED		,"WSURF_NORMALTEXTURE_ENABLED"},
 { WSURF_PARALLAXTEXTURE_ENABLED		,"WSURF_PARALLAXTEXTURE_ENABLED"},
@@ -196,9 +195,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		if (state & WSURF_LIGHTMAP_ENABLED)
 			defs << "#define LIGHTMAP_ENABLED\n";
-
-		if (state & WSURF_REPLACETEXTURE_ENABLED)
-			defs << "#define REPLACETEXTURE_ENABLED\n";
 
 		if (state & WSURF_DETAILTEXTURE_ENABLED)
 			defs << "#define DETAILTEXTURE_ENABLED\n";
@@ -357,22 +353,10 @@ void R_FreeSceneUBO(void)
 		g_WorldSurfaceRenderer.hDLightUBO = 0;
 	}
 
-	if (g_WorldSurfaceRenderer.hDecalSSBO)
+	if (g_WorldSurfaceRenderer.hMaterialSSBO)
 	{
-		GL_DeleteBuffer(g_WorldSurfaceRenderer.hDecalSSBO);
-		g_WorldSurfaceRenderer.hDecalSSBO = 0;
-	}
-
-	if (g_WorldSurfaceRenderer.hSkyboxSSBO)
-	{
-		GL_DeleteBuffer(g_WorldSurfaceRenderer.hSkyboxSSBO);
-		g_WorldSurfaceRenderer.hSkyboxSSBO = 0;
-	}
-
-	if (g_WorldSurfaceRenderer.hDetailSkyboxSSBO)
-	{
-		GL_DeleteBuffer(g_WorldSurfaceRenderer.hDetailSkyboxSSBO);
-		g_WorldSurfaceRenderer.hDetailSkyboxSSBO = 0;
+		GL_DeleteBuffer(g_WorldSurfaceRenderer.hMaterialSSBO);
+		g_WorldSurfaceRenderer.hMaterialSSBO = 0;
 	}
 
 	if (g_WorldSurfaceRenderer.hOITFragmentSSBO)
@@ -1489,6 +1473,78 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
     }
 }
 
+uint32_t R_FindWorldMaterialId(int gl_texturenum)
+{
+	for (size_t i = 0; i < g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.size(); ++i)
+	{
+		if (g_WorldSurfaceRenderer.vWorldMaterialTextureMapping[i] == gl_texturenum)
+			return (uint32_t)i;
+	}
+	return (uint32_t)-1;
+}
+
+void R_GenerateWorldMaterialForWorldModel(model_t* mod)
+{
+	for (int i = 0; i < mod->numtextures; ++i)
+	{
+		auto t = mod->textures[i];
+
+		if (!t)
+		{
+			if (g_iEngineType == ENGINE_SVENGINE)
+				t = (*r_missingtexture);
+			else
+				t = (*r_notexture_mip);
+		}
+
+		if (!t)
+			continue;
+
+		if (R_FindWorldMaterialId(t->gl_texturenum) != -1)
+			continue;
+
+		world_material_t mat;
+
+		mat.detailtexcoord[0] = 1;
+		mat.detailtexcoord[1] = 1;
+		mat.normaltexcoord[0] = 1;
+		mat.normaltexcoord[1] = 1;
+		mat.parallaxtexcoord[0] = 1;
+		mat.parallaxtexcoord[1] = 1;
+		mat.speculartexcoord[0] = 1;
+		mat.speculartexcoord[1] = 1;
+
+		auto pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+
+		if (pRenderMaterial)
+		{
+			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
+			{
+				mat.detailtexcoord[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+				mat.detailtexcoord[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
+			{
+				mat.normaltexcoord[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+				mat.normaltexcoord[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
+			{
+				mat.parallaxtexcoord[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+				mat.parallaxtexcoord[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
+			}
+			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
+			{
+				mat.speculartexcoord[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+				mat.speculartexcoord[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
+			}
+		}
+
+		g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.emplace_back(t->gl_texturenum);
+		g_WorldSurfaceRenderer.vWorldMaterials.emplace_back(mat);
+	}
+}
+
 std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_t* mod)
 {
 	std::vector<brushvertex_t> vVertexDataBuffer;
@@ -1524,46 +1580,6 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 			g_WorldSurfaceRenderer.iNumLightmapTextures = surf->lightmaptexturenum + 1;
 
 		auto ptexture = surf->texinfo ? surf->texinfo->texture : nullptr;
-
-		float replaceScale[2] = { 1, 1 };
-		float detailScale[2] = { 1, 1 };
-		float normalScale[2] = { 1, 1 };
-		float parallaxScale[2] = { 1, 1 };
-		float specularScale[2] = { 1, 1 };
-
-		if (ptexture)
-		{
-			auto pRenderMaterial = R_FindDetailTextureCache(ptexture->gl_texturenum);
-
-			if (pRenderMaterial)
-			{
-				if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
-				{
-					replaceScale[0] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleX;
-					replaceScale[1] = pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].scaleY;
-				}
-				if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
-				{
-					detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
-					detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
-				}
-				if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
-				{
-					normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
-					normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
-				}
-				if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
-				{
-					parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
-					parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
-				}
-				if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
-				{
-					specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
-					specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
-				}
-			}
-		}
 
 		if (pBrushFace->flags & SURF_DRAWTURB)
 		{
@@ -1756,17 +1772,7 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		tempInstanceData.lightmaptexturenum_texcoordscale[1] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 		memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
 
-		tempInstanceData.replacetexcoord[0] = replaceScale[0];
-		tempInstanceData.replacetexcoord[1] = replaceScale[1];
-		tempInstanceData.detailtexcoord[0] = detailScale[0];
-		tempInstanceData.detailtexcoord[1] = detailScale[1];
-		tempInstanceData.normaltexcoord[0] = normalScale[0];
-		tempInstanceData.normaltexcoord[1] = normalScale[1];
-		tempInstanceData.parallaxtexcoord[0] = parallaxScale[0];
-		tempInstanceData.parallaxtexcoord[1] = parallaxScale[1];
-		tempInstanceData.speculartexcoord[0] = specularScale[0];
-		tempInstanceData.speculartexcoord[1] = specularScale[1];
-
+		tempInstanceData.matId = ptexture ? R_FindWorldMaterialId(ptexture->gl_texturenum) : 0;
 		vInstanceDataBuffer.emplace_back(tempInstanceData);
 
 		pBrushFace->instance_count = 1;
@@ -1802,13 +1808,9 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		glEnableVertexAttribArray(WSURF_VA_NORMAL);
 		glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 		glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
-		glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXTURENUM);
+		glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
 		glEnableVertexAttribArray(WSURF_VA_STYLES);
-		glEnableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-		glEnableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-		glEnableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-		glEnableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-		glEnableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
+		glEnableVertexAttribArray(WSURF_VA_MATID);
 
 		glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, normal));
 		glVertexAttribDivisor(WSURF_VA_NORMAL, 1);
@@ -1819,26 +1821,14 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, t_tangent));
 		glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
 
-		glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
-		glVertexAttribDivisor(WSURF_VA_LIGHTMAP_TEXTURENUM, 1);
+		glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
+		glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
 
 		glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
 		glVertexAttribDivisor(WSURF_VA_STYLES, 1);
-
-		glVertexAttribPointer(WSURF_VA_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, replacetexcoord));
-		glVertexAttribDivisor(WSURF_VA_REPLACETEXTURE_TEXCOORD, 1);
-
-		glVertexAttribPointer(WSURF_VA_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, detailtexcoord));
-		glVertexAttribDivisor(WSURF_VA_DETAILTEXTURE_TEXCOORD, 1);
-
-		glVertexAttribPointer(WSURF_VA_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, normaltexcoord));
-		glVertexAttribDivisor(WSURF_VA_NORMALTEXTURE_TEXCOORD, 1);
-
-		glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, parallaxtexcoord));
-		glVertexAttribDivisor(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 1);
-
-		glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, speculartexcoord));
-		glVertexAttribDivisor(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 1);
+		
+		glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
+		glVertexAttribDivisor(WSURF_VA_MATID, 1);
 	});
 
 	return pWorldModel;
@@ -1869,6 +1859,8 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mo
 	{
 		g_WorldSurfaceWorldModels.resize(modelindex + 1);
 	}
+
+	R_GenerateWorldMaterialForWorldModel(mod);
 
 	auto pWorldModel = R_GenerateWorldSurfaceWorldModel(mod);
 
@@ -1908,9 +1900,15 @@ void R_GenerateSceneUBO(void)
 
 	g_WorldSurfaceRenderer.hDecalVAO = GL_GenVAO();
 
+	g_WorldSurfaceRenderer.hMaterialSSBO = GL_GenBuffer();
+	GL_UploadDataToSSBOStaticDraw(g_WorldSurfaceRenderer.hMaterialSSBO, sizeof(world_material_t) * 1, nullptr);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_MATERIAL_SSBO, g_WorldSurfaceRenderer.hMaterialSSBO);
+
 	GL_BindStatesForVAO(
 		g_WorldSurfaceRenderer.hDecalVAO,
 		[]() {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalEBO);
+
 			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX]);
 
 			glEnableVertexAttribArray(WSURF_VA_POSITION);
@@ -1926,13 +1924,9 @@ void R_GenerateSceneUBO(void)
 			glEnableVertexAttribArray(WSURF_VA_NORMAL);
 			glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 			glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
-			glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXTURENUM);
+			glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
 			glEnableVertexAttribArray(WSURF_VA_STYLES);
-			glEnableVertexAttribArray(WSURF_VA_REPLACETEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_DETAILTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_NORMALTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_PARALLAXTEXTURE_TEXCOORD);
-			glEnableVertexAttribArray(WSURF_VA_SPECULARTEXTURE_TEXCOORD);
+			glEnableVertexAttribArray(WSURF_VA_MATID);
 
 			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, normal));
 			glVertexAttribDivisor(WSURF_VA_NORMAL, 1);
@@ -1943,29 +1937,14 @@ void R_GenerateSceneUBO(void)
 			glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, t_tangent));
 			glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
 
-			glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXTURENUM, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, lightmaptexturenum));
-			glVertexAttribDivisor(WSURF_VA_LIGHTMAP_TEXTURENUM, 1);
+			glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, lightmaptexturenum));
+			glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
 
 			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, styles));
 			glVertexAttribDivisor(WSURF_VA_STYLES, 1);
 
-			glVertexAttribPointer(WSURF_VA_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, replacetexcoord));
-			glVertexAttribDivisor(WSURF_VA_REPLACETEXTURE_TEXCOORD, 1);
-
-			glVertexAttribPointer(WSURF_VA_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, detailtexcoord));
-			glVertexAttribDivisor(WSURF_VA_DETAILTEXTURE_TEXCOORD, 1);
-
-			glVertexAttribPointer(WSURF_VA_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, normaltexcoord));
-			glVertexAttribDivisor(WSURF_VA_NORMALTEXTURE_TEXCOORD, 1);
-
-			glVertexAttribPointer(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, parallaxtexcoord));
-			glVertexAttribDivisor(WSURF_VA_PARALLAXTEXTURE_TEXCOORD, 1);
-
-			glVertexAttribPointer(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, speculartexcoord));
-			glVertexAttribDivisor(WSURF_VA_SPECULARTEXTURE_TEXCOORD, 1);
-
-
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalEBO);
+			glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
+			glVertexAttribDivisor(WSURF_VA_MATID, 1);
 		}
 	);
 
@@ -2104,7 +2083,7 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 			if (texchain.pRenderMaterial)
 			{
-				R_BeginDetailTextureByDetailTextureCache(texchain.pRenderMaterial.get(), &WSurfProgramState);
+				R_BeginDetailTextureFromRenderMaterial(texchain.pRenderMaterial.get(), &WSurfProgramState);
 			}
 		}
 
@@ -2775,6 +2754,8 @@ void R_FreeWorldResources(void)
 {
 	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
 	g_WorldSurfaceRenderer.pCurrentWaterLeaf.reset();
+	g_WorldSurfaceRenderer.vWorldMaterials.clear();
+	g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.clear();
 
 	R_ClearDecalCache();
 	R_ClearDetailTextureCache();
@@ -2816,6 +2797,8 @@ void R_LoadWorldResources(void)
 			R_GetWorldSurfaceModel(mod);
 		}
 	}
+
+	GL_UploadDataToSSBOStaticDraw(g_WorldSurfaceRenderer.hMaterialSSBO, sizeof(world_material_t) * g_WorldSurfaceRenderer.vWorldMaterials.size(), g_WorldSurfaceRenderer.vWorldMaterials.data());
 }
 
 void R_ShutdownWSurf(void)
@@ -2828,7 +2811,7 @@ void R_ShutdownWSurf(void)
 }
 
 const char* s_WorldSurfaceTextureTypeNames[] = {
-	"WSURF_REPLACE_TEXTURE",
+	"WSURF_DIFFUSE_TEXTURE",
 	"WSURF_DETAIL_TEXTURE",
 	"WSURF_NORMAL_TEXTURE",
 	"WSURF_PARALLAX_TEXTURE",
@@ -2838,6 +2821,7 @@ const char* s_WorldSurfaceTextureTypeNames[] = {
 void R_LoadDecalTextures(const char* pFileContent)
 {
 	auto ptext = pFileContent;
+
 	while (1)
 	{
 		char temp[256];
@@ -2888,12 +2872,22 @@ void R_LoadDecalTextures(const char* pFileContent)
 		if (!ptext)
 			break;
 
-		//Default: load as detail texture
-		int texType = WSURF_REPLACE_TEXTURE;
+		//Default: load as diffuse texture
+		int texType = WSURF_DIFFUSE_TEXTURE;
 
 		std::string base = basetexture;
 
-		if (base.length() > (sizeof("_PARALLAX") - 1) && !strcmp(&base[base.length() - (sizeof("_PARALLAX") - 1)], "_PARALLAX"))
+		if (base.length() > (sizeof("_REPLACE") - 1) && !strcmp(&base[base.length() - (sizeof("_REPLACE") - 1)], "_REPLACE"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
+			texType = WSURF_DIFFUSE_TEXTURE;
+		}
+		else if (base.length() > (sizeof("_DIFFUSE") - 1) && !strcmp(&base[base.length() - (sizeof("_DIFFUSE") - 1)], "_DIFFUSE"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_DIFFUSE") - 1));
+			texType = WSURF_DIFFUSE_TEXTURE;
+		}
+		else if (base.length() > (sizeof("_PARALLAX") - 1) && !strcmp(&base[base.length() - (sizeof("_PARALLAX") - 1)], "_PARALLAX"))
 		{
 			base = base.substr(0, base.length() - (sizeof("_PARALLAX") - 1));
 			texType = WSURF_PARALLAX_TEXTURE;
@@ -2902,11 +2896,6 @@ void R_LoadDecalTextures(const char* pFileContent)
 		{
 			base = base.substr(0, base.length() - (sizeof("_NORMAL") - 1));
 			texType = WSURF_NORMAL_TEXTURE;
-		}
-		else if (base.length() > (sizeof("_REPLACE") - 1) && !strcmp(&base[base.length() - (sizeof("_REPLACE") - 1)], "_REPLACE"))
-		{
-			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
-			texType = WSURF_REPLACE_TEXTURE;
 		}
 		else if (base.length() > (sizeof("_DETAIL") - 1) && !strcmp(&base[base.length() - (sizeof("_DETAIL") - 1)], "_DETAIL"))
 		{
@@ -3001,6 +2990,7 @@ void R_LoadDecalTextures(const char* pFileContent)
 void R_LoadBaseDecalTextures(void)
 {
 	char* pfile = (char*)gEngfuncs.COM_LoadFile("renderer/decal_textures.txt", 5, NULL);
+
 	if (!pfile)
 	{
 		gEngfuncs.Con_DPrintf("R_LoadBaseDecalTextures: No decal texture file \"renderer/decal_textures.txt\"\n");
@@ -3087,7 +3077,12 @@ void R_LoadDetailTextures(const char* pFileContent)
 		else if (base.length() > (sizeof("_REPLACE") - 1) && !strcmp(&base[base.length() - (sizeof("_REPLACE") - 1)], "_REPLACE"))
 		{
 			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
-			texType = WSURF_REPLACE_TEXTURE;
+			texType = WSURF_DIFFUSE_TEXTURE;
+		}
+		else if (base.length() > (sizeof("_DIFFUSE") - 1) && !strcmp(&base[base.length() - (sizeof("_DIFFUSE") - 1)], "_DIFFUSE"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_DIFFUSE") - 1));
+			texType = WSURF_DIFFUSE_TEXTURE;
 		}
 		else if (base.length() > (sizeof("_DETAIL") - 1) && !strcmp(&base[base.length() - (sizeof("_DETAIL") - 1)], "_DETAIL"))
 		{
@@ -3104,7 +3099,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 
 		if (!glt)
 		{
-			gEngfuncs.Con_DPrintf("R_LoadDetailTextures: Missing basetexture %s\n", base.c_str());
+			gEngfuncs.Con_DPrintf("R_LoadDetailTextures: Missing basetexture \"%s\".\n", base.c_str());
 			continue;
 		}
 
@@ -3231,8 +3226,7 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::
 	{
 		const auto& pRenderMaterial = itor->second;
 
-		if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
+		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum
@@ -3253,8 +3247,7 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltext
 	{
 		const auto& pRenderMaterial = itor->second;
 
-		if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
+		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum ||
 			pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum
@@ -3267,22 +3260,8 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltext
 	return NULL;
 }
 
-void R_BeginDetailTextureByDetailTextureCache(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t* WSurfProgramState)
+void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t* WSurfProgramState)
 {
-	if (!r_detailtextures)
-		return;
-
-	if (!r_detailtextures->value)
-		return;
-
-	if (pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum)
-	{
-		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_REPLACE_TEXTURE].gltexturenum);
-
-		if (WSurfProgramState)
-			(*WSurfProgramState) |= WSURF_REPLACETEXTURE_ENABLED;
-	}
-
 	if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
 	{
 		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum);
@@ -3318,17 +3297,11 @@ void R_BeginDetailTextureByDetailTextureCache(CWorldSurfaceRenderMaterial* pRend
 
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t* WSurfProgramState)
 {
-	if (!r_detailtextures)
-		return;
-
-	if (!r_detailtextures->value)
-		return;
-
 	const auto& pRenderMaterial = R_FindDetailTextureCache(gltexturenum);
 
 	if (pRenderMaterial)
 	{
-		R_BeginDetailTextureByDetailTextureCache(pRenderMaterial.get(), WSurfProgramState);
+		R_BeginDetailTextureFromRenderMaterial(pRenderMaterial.get(), WSurfProgramState);
 	}
 }
 

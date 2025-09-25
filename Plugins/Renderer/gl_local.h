@@ -491,6 +491,7 @@ void GL_UploadDataToEBOStreamMap(GLuint EBO, size_t size, const void* data);
 void GL_UploadSubDataToEBO(GLuint EBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToABOStaticDraw(GLuint ABO, size_t size, const void* data);
 void GL_UploadDataToABODynamicDraw(GLuint ABO, size_t size, const void* data);
+void GL_UploadDataToSSBOStaticDraw(GLuint SSBO, size_t size, const void* data);
 void GL_BindStatesForVAO(GLuint VAO, const std::function<void()>& bind);
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, const std::function<void()>& bind);
 void GL_Bind(int texnum);

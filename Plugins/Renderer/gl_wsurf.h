@@ -5,7 +5,7 @@
 
 #include "gl_model.h"
 
-#define WSURF_REPLACE_TEXTURE		0
+#define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_DETAIL_TEXTURE		1
 #define WSURF_NORMAL_TEXTURE		2
 #define WSURF_PARALLAX_TEXTURE		3
@@ -194,6 +194,7 @@ public:
 	GLuint gltexturewidth{};
 	GLuint gltextureheight{};
 	std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial{};
+	uint32_t matId{};
 	GLint startIndex{};
 	GLuint indiceCount{};
 	GLint startInstance{};
@@ -209,11 +210,8 @@ public:
 	GLuint				hEntityUBO{};
 	GLuint				hDecalVBO[2]{};
 	GLuint				hDecalEBO{};
+	GLuint				hMaterialSSBO{};
 	GLuint				hDecalVAO{};
-	GLuint				hDecalSSBO{};
-	GLuint				hSkyboxSSBO{};
-	GLuint				hDetailSkyboxSSBO{};
-	GLuint				hWorldSSBO{};
 	GLuint				hOITFragmentSSBO{};
 	GLuint				hOITNumFragmentSSBO{};
 	GLuint				hOITAtomicSSBO{};
@@ -235,6 +233,8 @@ public:
 
 	std::weak_ptr<CWorldSurfaceLeaf> pCurrentWorldLeaf;
 	std::weak_ptr<CWorldSurfaceLeaf> pCurrentWaterLeaf;
+	std::vector<GLuint> vWorldMaterialTextureMapping;
+	std::vector<world_material_t> vWorldMaterials;
 };
 
 typedef struct
@@ -311,13 +311,15 @@ void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_DrawDecals(cl_entity_t *ent);
 void R_PrepareDecals(void);
 
+uint32_t R_FindWorldMaterialId(int gl_texturenum);
+
 std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
 std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);
 
 std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::string &decalname);
 std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltexturenum);
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t *WSurfProgramState);
+void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t *WSurfProgramState);
 void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_ShutdownWSurf(void);
 void R_GenerateSceneUBO(void);
@@ -334,37 +336,34 @@ void R_DrawWaterSurfaceModel(
 	CWaterReflectCache* pReflectCache,
 	cl_entity_t* ent);
 
-GLuint R_BindVAOForWorldSurfaceWorldModel(CWorldSurfaceWorldModel* pWorldModel);
-
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer);
 
 #define WSURF_DIFFUSE_ENABLED				0x1ull
 #define WSURF_LIGHTMAP_ENABLED				0x2ull
-#define WSURF_REPLACETEXTURE_ENABLED		0x4ull
-#define WSURF_DETAILTEXTURE_ENABLED			0x8ull
-#define WSURF_NORMALTEXTURE_ENABLED			0x10ull
-#define WSURF_PARALLAXTEXTURE_ENABLED		0x20ull
-#define WSURF_SPECULARTEXTURE_ENABLED		0x40ull
-#define WSURF_LINEAR_FOG_ENABLED			0x80ull
-#define WSURF_EXP_FOG_ENABLED				0x100ull
-#define WSURF_EXP2_FOG_ENABLED				0x200ull
-#define WSURF_GBUFFER_ENABLED				0x400ull
-#define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
-#define WSURF_SKYBOX_ENABLED				0x40000ull
-#define WSURF_DECAL_ENABLED					0x80000ull
-#define WSURF_CLIP_ENABLED					0x100000ull
-#define WSURF_CLIP_WATER_ENABLED			0x200000ull
-#define WSURF_ALPHA_BLEND_ENABLED			0x400000ull
-#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000ull
-#define WSURF_OIT_BLEND_ENABLED				0x1000000ull
-#define WSURF_GAMMA_BLEND_ENABLED			0x2000000ull
-#define WSURF_FULLBRIGHT_ENABLED			0x4000000ull
-#define WSURF_COLOR_FILTER_ENABLED			0x8000000ull
-#define WSURF_LIGHTMAP_INDEX_0_ENABLED		0x10000000ull
-#define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x20000000ull
-#define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
-#define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
-#define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
-#define WSURF_ALPHA_SOLID_ENABLED			0x200000000ull
-#define WSURF_LINEAR_FOG_SHIFT_ENABLED		0x400000000ull
-#define WSURF_REVERT_NORMAL_ENABLED			0x800000000ull
+#define WSURF_DETAILTEXTURE_ENABLED			0x4ull
+#define WSURF_NORMALTEXTURE_ENABLED			0x8ull
+#define WSURF_PARALLAXTEXTURE_ENABLED		0x10ull
+#define WSURF_SPECULARTEXTURE_ENABLED		0x20ull
+#define WSURF_LINEAR_FOG_ENABLED			0x40ull
+#define WSURF_EXP_FOG_ENABLED				0x80ull
+#define WSURF_EXP2_FOG_ENABLED				0x100ull
+#define WSURF_GBUFFER_ENABLED				0x200ull
+#define WSURF_SHADOW_CASTER_ENABLED			0x400ull
+#define WSURF_SKYBOX_ENABLED				0x800ull
+#define WSURF_DECAL_ENABLED					0x1000ull
+#define WSURF_CLIP_ENABLED					0x2000ull
+#define WSURF_CLIP_WATER_ENABLED			0x4000ull
+#define WSURF_ALPHA_BLEND_ENABLED			0x8000ull
+#define WSURF_ADDITIVE_BLEND_ENABLED		0x10000ull
+#define WSURF_OIT_BLEND_ENABLED				0x20000ull
+#define WSURF_GAMMA_BLEND_ENABLED			0x40000ull
+#define WSURF_FULLBRIGHT_ENABLED			0x80000ull
+#define WSURF_COLOR_FILTER_ENABLED			0x100000ull
+#define WSURF_LIGHTMAP_INDEX_0_ENABLED		0x200000ull
+#define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x400000ull
+#define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x800000ull
+#define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x1000000ull
+#define WSURF_LEGACY_DLIGHT_ENABLED			0x2000000ull
+#define WSURF_ALPHA_SOLID_ENABLED			0x4000000ull
+#define WSURF_LINEAR_FOG_SHIFT_ENABLED		0x8000000ull
+#define WSURF_REVERT_NORMAL_ENABLED			0x10000000ull

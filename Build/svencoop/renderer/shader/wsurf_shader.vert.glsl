@@ -13,13 +13,9 @@ layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec2 in_lightmaptexcoord;
 layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
 layout(location = WSURF_VA_S_TANGENT) in vec3 in_tangent;
 layout(location = WSURF_VA_T_TANGENT) in vec3 in_bitangent;
-layout(location = WSURF_VA_LIGHTMAP_TEXTURENUM) in vec2 in_lightmaptexturenum_texcoordscale;
+layout(location = WSURF_VA_TEXTURENUM) in vec2 in_lightmaptexturenum_texcoordscale;
 layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
-layout(location = WSURF_VA_REPLACETEXTURE_TEXCOORD) in vec2 in_replacetexcoord;
-layout(location = WSURF_VA_DETAILTEXTURE_TEXCOORD) in vec2 in_detailtexcoord;
-layout(location = WSURF_VA_NORMALTEXTURE_TEXCOORD) in vec2 in_normaltexcoord;
-layout(location = WSURF_VA_PARALLAXTEXTURE_TEXCOORD) in vec2 in_parallaxtexcoord;
-layout(location = WSURF_VA_SPECULARTEXTURE_TEXCOORD) in vec2 in_speculartexcoord;
+layout(location = WSURF_VA_MATID) in uint in_matid;
 
 out vec3 v_worldpos;
 out vec3 v_normal;
@@ -27,7 +23,6 @@ out vec3 v_tangent;
 out vec3 v_bitangent;
 out vec2 v_diffusetexcoord;
 out vec3 v_lightmaptexcoord;
-out vec2 v_replacetexcoord;
 out vec2 v_detailtexcoord;
 out vec2 v_normaltexcoord;
 out vec2 v_parallaxtexcoord;
@@ -163,12 +158,8 @@ void main(void)
 	v_lightmaptexcoord = vec3(in_lightmaptexcoord.x, in_lightmaptexcoord.y, in_lightmaptexturenum_texcoordscale.x);
 #endif
 
-#if defined(REPLACETEXTURE_ENABLED)
-	v_replacetexcoord = in_replacetexcoord;
-#endif
-
 #if defined(DETAILTEXTURE_ENABLED)
-	v_detailtexcoord = in_detailtexcoord;
+	v_detailtexcoord = WorldMaterialSSBO[in_matid].detailtexcoord;
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
@@ -192,15 +183,15 @@ void main(void)
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED)
-	v_normaltexcoord = in_normaltexcoord;
+	v_normaltexcoord = WorldMaterialSSBO[in_matid].normaltexcoord;
 #endif
 
 #if defined(PARALLAXTEXTURE_ENABLED)
-	v_parallaxtexcoord = in_parallaxtexcoord;
+	v_parallaxtexcoord = WorldMaterialSSBO[in_matid].parallaxtexcoord;
 #endif
 
 #if defined(SPECULARTEXTURE_ENABLED)
-	v_speculartexcoord = in_speculartexcoord;
+	v_speculartexcoord = WorldMaterialSSBO[in_matid].speculartexcoord;
 #endif
 
 	#if defined(SKYBOX_ENABLED)

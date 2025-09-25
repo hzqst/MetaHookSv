@@ -67,18 +67,23 @@ public:
 #define TRIAPI_VA_TEXCOORD		1
 #define TRIAPI_VA_COLOR			2
 
+#define SPRITE_VA_UP_DOWN_LEFT_RIGHT 0
+#define SPRITE_VA_COLOR 1
+#define SPRITE_VA_ORIGIN 2
+#define SPRITE_VA_ANGLES 3
+#define SPRITE_VA_SCALE 4
+#define SPRITE_VA_LERP 5
+
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_CAMERA_UBO 1
 #define BINDING_POINT_DLIGHT_UBO 2
 
-#define BINDING_POINT_SKYBOX_SSBO 3
-#define BINDING_POINT_DECAL_SSBO 3
-#define BINDING_POINT_TEXTURE_SSBO 3
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
 
-#define BINDING_POINT_ENTITY_UBO 4
-#define BINDING_POINT_STUDIO_UBO 4
+#define BINDING_POINT_MATERIAL_SSBO 4
 
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 5
 #define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 6
@@ -90,13 +95,9 @@ public:
 #define WSURF_VA_NORMAL 3
 #define WSURF_VA_S_TANGENT 4
 #define WSURF_VA_T_TANGENT 5
-#define WSURF_VA_LIGHTMAP_TEXTURENUM 6
+#define WSURF_VA_TEXTURENUM 6
 #define WSURF_VA_STYLES 7
-#define WSURF_VA_REPLACETEXTURE_TEXCOORD 8
-#define WSURF_VA_DETAILTEXTURE_TEXCOORD 9
-#define WSURF_VA_NORMALTEXTURE_TEXCOORD 10
-#define WSURF_VA_PARALLAXTEXTURE_TEXCOORD 11
-#define WSURF_VA_SPECULARTEXTURE_TEXCOORD 12
+#define WSURF_VA_MATID 8
 
 #define WSURF_BIND_DIFFUSE_TEXTURE 0
 #define WSURF_BIND_DETAIL_TEXTURE 1
@@ -187,7 +188,6 @@ typedef struct triapivertex_s
 	vec4_t	color;
 }triapivertex_t;
 
-//GPU Resource
 typedef struct decalvertex_s
 {
 	vec3_t	pos;
@@ -201,16 +201,17 @@ typedef struct decalinstancedata_s
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
 	float	lightmaptexturenum[2];
-	byte styles[4];
-	float	replacetexcoord[2];
-	float	detailtexcoord[2];
-	float	normaltexcoord[2];
-	float	parallaxtexcoord[2];
-	float	speculartexcoord[2];
-	int		decalindex;
+	byte	styles[4];
+	uint32_t matId;
 }decalinstancedata_t;
 
-//GPU Resource
+typedef struct world_material_s
+{
+	vec2_t	detailtexcoord;
+	vec2_t	normaltexcoord;
+	vec2_t	parallaxtexcoord;
+	vec2_t	speculartexcoord;
+}world_material_t;
 
 typedef struct brushvertex_s
 {
@@ -226,11 +227,7 @@ typedef struct brushinstancedata_s
 	vec3_t	t_tangent;
 	float	lightmaptexturenum_texcoordscale[2];//lightmaptexcoord[2]=lightmaptexnum //texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
 	byte	styles[4];
-	float	replacetexcoord[2];
-	float	detailtexcoord[2];
-	float	normaltexcoord[2];
-	float	parallaxtexcoord[2];
-	float	speculartexcoord[2];
+	uint32_t matId;
 }brushinstancedata_t;
 
 typedef struct texture_ssbo_s
