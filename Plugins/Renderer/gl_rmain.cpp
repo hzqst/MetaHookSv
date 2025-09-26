@@ -563,6 +563,12 @@ bool R_ShouldDrawViewModel()
 	if (R_IsRenderingWaterView())
 		return false;
 
+	if (R_IsRenderingShadowView())
+		return false;
+
+	if (R_IsRenderingPortal())
+		return false;
+
 	return true;
 }
 
