@@ -468,6 +468,14 @@ void R_RecursiveMarkSurfaces(mbasenode_t* basenode, const visnodes_t& visnodes, 
 	R_RecursiveMarkSurfaces(node->children[1], visnodes, vissurfaces);
 }
 
+texture_t* R_GetEmptyWorldTexture()
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return (*r_missingtexture);
+
+	return (*r_notexture_mip);
+}
+
 void R_RecursiveLinkTextureChain(model_t* mod, mbasenode_t* basenode, const visnodes_t& visnodes, const vissurfaces_t& vissurfaces, vissurfaces_t& watersurfaces, texsurfaces_t *texsurfaces)
 {
 	if (basenode->contents == CONTENTS_SOLID)
@@ -498,11 +506,24 @@ void R_RecursiveLinkTextureChain(model_t* mod, mbasenode_t* basenode, const visn
 			continue;
 		}
 
-		auto textureIndex = R_FindTextureIdByTexture(mod, surf->texinfo->texture);
-		
-		if (textureIndex >= 0 && textureIndex < mod->numtextures)
+		auto ptexture = (surf->texinfo && surf->texinfo->texture) ? surf->texinfo->texture : nullptr;
+
+		if (ptexture)
 		{
-			texsurfaces[textureIndex].emplace_back(surf);
+			auto textureIndex = R_FindTextureIdByTexture(mod, ptexture);
+
+			if (textureIndex >= 0 && textureIndex < mod->numtextures)
+			{
+				texsurfaces[textureIndex].emplace_back(surf);
+			}
+			else
+			{
+				texsurfaces[mod->numtextures].emplace_back(surf);
+			}
+		}
+		else
+		{
+			texsurfaces[mod->numtextures].emplace_back(surf);
 		}
 	}
 
@@ -528,11 +549,24 @@ void R_BrushModelLinkTextureChain(model_t* mod, vissurfaces_t& watersurfaces, vi
 			continue;
 		}
 
-		auto textureIndex = R_FindTextureIdByTexture(mod, surf->texinfo->texture);
+		auto ptexture = (surf->texinfo && surf->texinfo->texture) ? surf->texinfo->texture : nullptr;
 
-		if (textureIndex >= 0 && textureIndex < mod->numtextures)
+		if (ptexture)
 		{
-			texsurfaces[textureIndex].emplace_back(surf);
+			auto textureIndex = R_FindTextureIdByTexture(mod, ptexture);
+
+			if (textureIndex >= 0 && textureIndex < mod->numtextures)
+			{
+				texsurfaces[textureIndex].emplace_back(surf);
+			}
+			else
+			{
+				texsurfaces[mod->numtextures].emplace_back(surf);
+			}
+		}
+		else
+		{
+			texsurfaces[mod->numtextures].emplace_back(surf);
 		}
 	}
 }
@@ -632,17 +666,14 @@ void R_GenerateResourceForWaterModels(model_t* mod, CWorldSurfaceWorldModel* pWo
 
 void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf, int iTexChainPass, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
-	for (int i = 0; i < mod->numtextures; i++)
+	for (int i = 0; i < mod->numtextures + 1; i++)
 	{
-		auto t = mod->textures[i];
-
-		if (!t)
-		{
-			if (g_iEngineType == ENGINE_SVENGINE)
-				t = (*r_missingtexture);
-			else
-				t = (*r_notexture_mip);
-		}
+		texture_t* t = nullptr;
+		
+		if (i == mod->numtextures)
+			t = R_GetEmptyWorldTexture();
+		else
+			t = mod->textures[i];
 
 		if (!t)
 			continue;
@@ -903,7 +934,9 @@ public:
 		m_leaf(leaf),
 		m_bIsWorldLeaf(bIsWorldLeaf)
 	{
-		m_texsurfaces = new texsurfaces_t[m_model->numtextures];
+		//m_texsurfaces[m_model->numtextures] is empty texture
+		m_texsurfaces = new texsurfaces_t[m_model->numtextures + 1];
+		memset(m_texsurfaces, 0, sizeof(texsurfaces_t*) * (m_model->numtextures + 1));
 
 		m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
 
@@ -1486,17 +1519,14 @@ uint32_t R_FindWorldMaterialId(int gl_texturenum)
 
 void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 {
-	for (int i = 0; i < mod->numtextures; ++i)
+	for (int i = 0; i < mod->numtextures + 1; ++i)
 	{
-		auto t = mod->textures[i];
+		texture_t* t = nullptr;
 
-		if (!t)
-		{
-			if (g_iEngineType == ENGINE_SVENGINE)
-				t = (*r_missingtexture);
-			else
-				t = (*r_notexture_mip);
-		}
+		if (i == mod->numtextures)
+			t = R_GetEmptyWorldTexture();
+		else
+			t = mod->textures[i];
 
 		if (!t)
 			continue;
@@ -1587,7 +1617,7 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		if (surf->lightmaptexturenum + 1 > g_WorldSurfaceRenderer.iNumLightmapTextures)
 			g_WorldSurfaceRenderer.iNumLightmapTextures = surf->lightmaptexturenum + 1;
 
-		auto ptexture = surf->texinfo ? surf->texinfo->texture : nullptr;
+		auto ptexture = (surf->texinfo && surf->texinfo->texture) ? surf->texinfo->texture : R_GetEmptyWorldTexture();
 
 		if (pBrushFace->flags & SURF_DRAWTURB)
 		{
@@ -1780,7 +1810,7 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		tempInstanceData.lightmaptexturenum_texcoordscale[1] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 		memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
 
-		tempInstanceData.matId = ptexture ? R_FindWorldMaterialId(ptexture->gl_texturenum) : 0;
+		tempInstanceData.matId = R_FindWorldMaterialId(ptexture->gl_texturenum);
 		vInstanceDataBuffer.emplace_back(tempInstanceData);
 
 		pBrushFace->instance_count = 1;
@@ -3262,7 +3292,7 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForDecalTexture(
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForWorldTexture(texture_t *ptexture)
@@ -3281,7 +3311,7 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForWorldTexture(
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t* WSurfProgramState)

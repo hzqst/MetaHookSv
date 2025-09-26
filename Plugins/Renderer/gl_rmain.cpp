@@ -234,6 +234,7 @@ int r_renderview_pass = 0;
 
 std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
 std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
+std::vector<cl_entity_t*> g_ViewModelAttachmentEntities;
 
 int glx = 0;
 int gly = 0;
@@ -565,16 +566,16 @@ bool R_ShouldDrawViewModel()
 	return true;
 }
 
-bool R_IsViewmodelAttachment(cl_entity_t* ent, cl_entity_t* aiment)
-{
-	return aiment == gEngfuncs.GetLocalPlayer() && (aiment->curstate.effects & EF_VIEWMODEL);
-}
-
 bool R_IsViewmodelAttachment(cl_entity_t* ent)
 {
-	auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
+	if (ent->curstate.movetype == MOVETYPE_FOLLOW && (ent->curstate.effects & EF_VIEWMODEL))
+	{
+		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
 
-	return aiment == gEngfuncs.GetLocalPlayer() && (aiment->curstate.effects & EF_VIEWMODEL);
+		return aiment == gEngfuncs.GetLocalPlayer();
+	}
+
+	return false;
 }
 
 /*
@@ -2018,7 +2019,7 @@ void R_DrawStudioEntity(bool bTransparent)
 				return;
 			}
 
-			if (R_IsViewmodelAttachment((*currententity), aiment))
+			if (R_IsViewmodelAttachment((*currententity)))
 			{
 				if (!R_ShouldDrawViewModel())
 					return;
@@ -2616,6 +2617,7 @@ void R_RenderFrameStart()
 	g_RectIndexBuffer.BeginFrame();
 	g_PostProcessGlowStencilEntities.clear();
 	g_PostProcessGlowColorEntities.clear();
+	g_ViewModelAttachmentEntities.clear();
 
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
@@ -2880,8 +2882,6 @@ void R_DrawViewModel(void)
 	lightvec[1] = 0;
 	lightvec[2] = 0;
 
-	(*currententity) = cl_viewent;
-
 	if (R_ShouldDrawViewModel())
 	{
 		GL_BeginDebugGroup("R_DrawViewModel");
@@ -2892,13 +2892,15 @@ void R_DrawViewModel(void)
 
 		r_draw_viewmodel = true;
 
+		if (!(*cl_weaponstarttime))
+			(*cl_weaponstarttime) = (*cl_time);
+
+		(*currententity) = cl_viewent;
+
 		switch ((*currententity)->model->type)
 		{
 		case mod_studio:
 		{
-			if (!(*cl_weaponstarttime))
-				(*cl_weaponstarttime) = (*cl_time);
-
 			hud_player_info_t hudPlayerInfo;
 			gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
 
@@ -2931,6 +2933,19 @@ void R_DrawViewModel(void)
 			R_DrawBrushModel((*currententity));
 			break;
 		}
+		}
+
+		for (size_t i = 0; i < g_ViewModelAttachmentEntities.size(); ++i)
+		{
+			(*currententity) = g_ViewModelAttachmentEntities[i];
+
+			VectorCopy(cl_viewent->origin, (*currententity)->origin);
+			VectorCopy(cl_viewent->angles, (*currententity)->angles);
+
+			if ((*currententity)->curstate.rendermode == kRenderNormal)
+				R_DrawCurrentEntity(false);
+			else
+				R_DrawCurrentEntity(true);
 		}
 
 		r_draw_viewmodel = false;
@@ -4001,6 +4016,11 @@ void R_MarkLeaves(void)
 	}
 }
 
+void R_AddViewModelAttachmentEntity(cl_entity_t* ent)
+{
+	g_ViewModelAttachmentEntities.emplace_back(ent);
+}
+
 void R_DrawEntitiesOnList(void)
 {
 	if (!r_drawentities->value)
@@ -4022,6 +4042,12 @@ void R_DrawEntitiesOnList(void)
 			gl_spriteblend->value)
 		{
 			R_AddTEntity((*currententity));
+			continue;
+		}
+
+		if (R_IsViewmodelAttachment((*currententity)))
+		{
+			R_AddViewModelAttachmentEntity((*currententity));
 			continue;
 		}
 

@@ -691,7 +691,7 @@ bool R_IsRenderingFirstPersonView();
 bool R_IsRenderingPreViewModel();
 bool R_IsRenderingViewModel();
 bool R_IsRenderingFlippedViewModel();
-bool R_IsViewmodelAttachment(cl_entity_t* ent, cl_entity_t* aiment);
+bool R_IsViewmodelAttachmentInternal(cl_entity_t* aiment);
 bool R_IsViewmodelAttachment(cl_entity_t* ent);
 
 bool R_IsDeferredRenderingEnabled();
