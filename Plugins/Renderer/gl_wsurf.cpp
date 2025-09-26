@@ -936,7 +936,6 @@ public:
 	{
 		//m_texsurfaces[m_model->numtextures] is empty texture
 		m_texsurfaces = new texsurfaces_t[m_model->numtextures + 1];
-		memset(m_texsurfaces, 0, sizeof(texsurfaces_t*) * (m_model->numtextures + 1));
 
 		m_hThreadWorkItem = g_pMetaHookAPI->CreateWorkItem(g_pMetaHookAPI->GetGlobalThreadPool(), [](void* context) {
 
