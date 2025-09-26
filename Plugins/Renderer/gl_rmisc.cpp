@@ -763,9 +763,22 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)
 void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum)
 {
 	// Texture unit 0 = GBuffer diffuse array
-	glActiveTexture(GL_TEXTURE0 + textureUnit);
-	glBindTexture(target, gltexturenum);
-	glActiveTexture(GL_TEXTURE0 + 0);
+
+	if (textureUnit != 0)
+	{
+		glActiveTexture(GL_TEXTURE0 + textureUnit);
+		glBindTexture(target, gltexturenum);
+		glActiveTexture(GL_TEXTURE0 + 0);
+	}
+	else
+	{
+		glBindTexture(target, gltexturenum);
+	}
+
+	if (textureUnit == 0)
+	{
+		(*currenttexture) = gltexturenum;
+	}
 }
 
 void GL_ClearColor(vec4_t color)

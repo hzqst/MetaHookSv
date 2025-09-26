@@ -172,7 +172,7 @@ bool R_StudioHasHairShadow()
 /*
 	Purpose: Check if we should draw glow stencil for this entity
 */
-bool R_StudioShouldDrawGlowStencil(cl_entity_t* e)
+bool R_StudioShouldDrawGlowStencil()
 {
 	if (R_IsRenderingGlowColor())
 		return false;
@@ -183,7 +183,7 @@ bool R_StudioShouldDrawGlowStencil(cl_entity_t* e)
 /*
 	Purpose: Check if we should draw wall-hack glow stencil for this entity
 */
-bool R_StudioShouldDrawGlowStencilWallHack(cl_entity_t* e)
+bool R_StudioShouldDrawGlowStencilWallHack()
 {
 	if (R_IsRenderingGlowColor())
 		return false;
@@ -194,7 +194,7 @@ bool R_StudioShouldDrawGlowStencilWallHack(cl_entity_t* e)
 /*
 	Purpose: Check if we should draw glow color for this entity
 */
-bool R_StudioShouldDrawGlowColor(cl_entity_t* e)
+bool R_StudioShouldDrawGlowColor()
 {
 	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlow;
 }
@@ -202,9 +202,14 @@ bool R_StudioShouldDrawGlowColor(cl_entity_t* e)
 /*
 	Purpose: Check if we should draw wall-hack glow color for this entity
 */
-bool R_StudioShouldDrawGlowColorWallHack(cl_entity_t* e)
+bool R_StudioShouldDrawGlowColorWallHack()
 {
 	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack;
+}
+
+bool R_IsRenderingGlowShell()
+{
+	return ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) || (*currententity)->curstate.renderfx == kRenderFxDrawGlowShell;
 }
 
 void R_FreeStudioBoneCache(CStudioBoneCache* pStudioBoneCache)
@@ -2110,7 +2115,7 @@ void PaletteHueReplace(byte* palette, int newHue, int start, int end)
 
 void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext*context)
 {
-	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+	if (R_IsRenderingGlowShell())
 		return;
 
 	if (!ptexturehdr->textureindex)
@@ -2196,7 +2201,7 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 	StudioUBO.r_origin[1] = r_origin[1];
 	StudioUBO.r_origin[2] = r_origin[2];
 
-	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
+	if (R_IsRenderingGlowShell())
 	{
 		StudioUBO.r_origin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
 		StudioUBO.r_origin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
@@ -2207,7 +2212,7 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 		StudioUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
 		StudioUBO.r_color[3] = 1;
 	}
-	else if (R_StudioShouldDrawGlowColor((*currententity)) || R_StudioShouldDrawGlowColorWallHack((*currententity)))
+	else if (R_StudioShouldDrawGlowColor() || R_StudioShouldDrawGlowColorWallHack())
 	{
 		StudioUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
 		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
@@ -2243,7 +2248,7 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 
 	StudioUBO.r_scale = 0;
 
-	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
+	if (R_IsRenderingGlowShell())
 	{
 		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
 	}
@@ -2441,25 +2446,28 @@ void R_StudioDrawMesh_DrawPass(
 	short* pskinref,
 	const int flags)
 {
+	if (!pRenderMesh->iIndiceCount)
+		return;
+
 	program_state_t StudioProgramState = flags;
 
 	if (R_IsRenderingShadowView())
 	{
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 	}
-	else if (R_StudioShouldDrawGlowStencilWallHack((*currententity)))
+	else if (R_StudioShouldDrawGlowStencilWallHack())
 	{
 		StudioProgramState |= STUDIO_GLOW_STENCIL_ENABLED | STUDIO_SHADOW_CASTER_ENABLED;
 	}
-	else if (R_StudioShouldDrawGlowStencil((*currententity)))
+	else if (R_StudioShouldDrawGlowStencil())
 	{
 		StudioProgramState |= STUDIO_GLOW_STENCIL_ENABLED;
 	}
-	else if (R_StudioShouldDrawGlowColor((*currententity)) || R_StudioShouldDrawGlowColorWallHack((*currententity)))
+	else if (R_StudioShouldDrawGlowColor() || R_StudioShouldDrawGlowColorWallHack())
 	{
 		StudioProgramState |= STUDIO_GLOW_COLOR_ENABLED;
 	}
-	else if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
+	else if (R_IsRenderingGlowShell())
 	{
 		StudioProgramState |= (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_GLOW_SHELL_ENABLED | STUDIO_NF_CHROME);
 
@@ -2837,17 +2845,17 @@ void R_StudioDrawMesh_DrawPass(
 		glDisable(GL_CULL_FACE);
 	}
 
-	if (R_StudioShouldDrawGlowStencilWallHack((*currententity)))
+	if (R_StudioShouldDrawGlowStencilWallHack())
 	{
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 	}
-	else if (R_StudioShouldDrawGlowColorWallHack((*currententity)))
+	else if (R_StudioShouldDrawGlowColorWallHack())
 	{
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 	}
-	else if (R_StudioShouldDrawGlowColor((*currententity)))
+	else if (R_StudioShouldDrawGlowColor())
 	{
 		glDisable(GL_BLEND);
 		glDepthMask(GL_FALSE);
@@ -3076,10 +3084,7 @@ void R_StudioDrawMesh_DrawPass(
 		glUniform2f(prog.r_nearplaneclip, r_drawlowerbodyclipnear->value, r_drawlowerbodyclipfar->value);
 	}
 
-	if (pRenderMesh->iIndiceCount)
-	{
-		glDrawElements(GL_TRIANGLES, pRenderMesh->iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(pRenderMesh->iStartIndex));
-	}
+	glDrawElements(GL_TRIANGLES, pRenderMesh->iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(pRenderMesh->iStartIndex));
 
 	GL_UseProgram(0);
 
@@ -3505,7 +3510,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 			{
 				for (auto fx : pEntityComponentContainer->DeferredStudioPasses)
 				{
-					GL_BeginDebugGroupFormat("R_StudioRenderModel - DrawDeferredPass (%d)", fx);
+					GL_BeginDebugGroupFormat("R_StudioRenderModel - DrawDeferredPass (0x%X)", fx);
 
 					int saved_renderfx = (*currententity)->curstate.renderfx;
 					int saved_renderamt = (*currententity)->curstate.renderamt;
