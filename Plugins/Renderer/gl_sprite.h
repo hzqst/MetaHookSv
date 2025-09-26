@@ -24,6 +24,16 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
+#define SPRITE_REPLACE_TEXTURE		0
+#define SPRITE_MAX_TEXTURE			1
+
+class CSpriteModelRenderMaterial
+{
+public:
+	std::string basetexture;
+	CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
+};
+
 class CSpriteModelRenderData
 {
 public:
@@ -34,6 +44,7 @@ public:
 
 	int flags{};
 	model_t* model{};
+	std::vector<std::shared_ptr<CSpriteModelRenderMaterial>> vSpriteMaterials;
 };
 
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);

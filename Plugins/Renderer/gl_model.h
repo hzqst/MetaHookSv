@@ -13,7 +13,7 @@ class CGameModelRenderTexture
 public:
 	int gltexturenum{};
 	int width{}, height{};
-	float scaleX{}, scaleY{};
+	float scaleX{ 1 }, scaleY{ 1 };
 	int numframes{};
 	float framerate{};
 };

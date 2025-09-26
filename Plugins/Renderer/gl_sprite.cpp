@@ -275,6 +275,31 @@ void R_SpriteColor(colorVec *pColor, cl_entity_t *pEntity, int alpha)
 	}
 }
 
+int R_GetSpriteFrameIndex(msprite_t* pSprite, mspriteframe_t *pSpriteFrame)
+{
+	if (!pSprite)
+	{
+		gEngfuncs.Con_DPrintf("R_GetSpriteFrameIndex: pSprite is NULL!\n");
+		return NULL;
+	}
+
+	if (!pSprite->numframes)
+	{
+		gEngfuncs.Con_DPrintf("R_GetSpriteFrameIndex: pSprite has no frames!!!\n");
+		return NULL;
+	}
+
+	for (int i = 0; i < pSprite->numframes; ++i)
+	{
+		if (pSprite->frames[i].type == SPR_SINGLE && pSprite->frames[i].frameptr == pSpriteFrame)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 {
 	mspriteframe_t* pspriteframe;
@@ -311,7 +336,7 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 
 //Credits to https://github.com/FWGS/xashxt-fwgs/blob/dee61d6cf0a8f681c322e863f8df1d5e6f22443e/client/render/r_sprite.cpp#L126
 //And https://github.com/FWGS/xash3d-fwgs/blob/33da68b013fd9a2c683316758d751308d1a98109/ref/gl/gl_sprite.c#L462
-void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** oldframe, mspriteframe_t** curframe, float *lerp)
+void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, int* curFrameIndex, mspriteframe_t** curframe, int* oldFrameIndex, mspriteframe_t** oldframe, float *lerp)
 {
 	auto frame = (int)ent->curstate.frame;
 	auto lerpFrac = 1.0f;
@@ -377,8 +402,11 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 		}
 
 		// get the interpolated frames
-		if (oldframe) *oldframe = R_GetSpriteFrame(pSprite, ent->latched.prevseqblending[0]);
-		if (curframe) *curframe = R_GetSpriteFrame(pSprite, frame);
+		if (oldFrameIndex) (*oldFrameIndex) = ent->latched.prevseqblending[0];
+		if (oldframe) (*oldframe) = R_GetSpriteFrame(pSprite, ent->latched.prevseqblending[0]);
+
+		if (curFrameIndex) (*curFrameIndex) = frame;
+		if (curframe) (*curframe) = R_GetSpriteFrame(pSprite, frame);
 	}
 
 	*lerp = lerpFrac;
@@ -401,7 +429,35 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 	return true;
 }
 
-void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
+{
+	if (!pRenderData->vSpriteMaterials[frameIndex]) {
+		pRenderData->vSpriteMaterials[frameIndex] = std::make_shared<CSpriteModelRenderMaterial>();
+	}
+
+	return pRenderData->vSpriteMaterials[frameIndex];
+}
+
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
+{
+	return pRenderData->vSpriteMaterials[frameIndex];
+}
+
+void R_DrawSpriteModelBindFrameTexture(CSpriteModelRenderData* pRenderData, int frameIndex, mspriteframe_t* frame, int bindSlot)
+{
+	auto pRenderMaterial = R_SpriteGetMaterial(pRenderData, frameIndex);
+
+	if (pRenderMaterial && pRenderMaterial->textures[SPRITE_REPLACE_TEXTURE].gltexturenum)
+	{
+		GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, pRenderMaterial->textures[SPRITE_REPLACE_TEXTURE].gltexturenum);
+	}
+	else
+	{
+		GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, frame->gl_texturenum);
+	}
+}
+
+void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, int frameIndex, mspriteframe_t* frame, int oldFrameIndex, mspriteframe_t* oldframe, float lerp)
 {
 	GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", ent->model ? ent->model->name : "<empty>");
 
@@ -676,11 +732,11 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRe
 
 	GL_BindVAO(r_empty_vao);
 
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+	R_DrawSpriteModelBindFrameTexture(pRenderData, frameIndex, frame, 0);
 
 	if (SpriteProgramState & SPRITE_LERP_ENABLED)
 	{
-		GL_BindTextureUnit(1, GL_TEXTURE_2D, oldframe->gl_texturenum);
+		R_DrawSpriteModelBindFrameTexture(pRenderData, oldFrameIndex, oldframe, 1);
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
@@ -691,7 +747,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRe
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 	}
 
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_BindVAO(0);
 
@@ -722,16 +778,21 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		return;
 
 	float lerp = 0;
+
+	int frameIndex = 0;
 	mspriteframe_t* frame = NULL;
+
+	int oldFrameIndex = 0;
 	mspriteframe_t* oldframe = NULL;
 
 	if (R_SpriteAllowLerping(ent, pSprite))
 	{
-		R_GetSpriteFrameInterpolant(ent, pSprite, &oldframe, &frame, &lerp);
+		R_GetSpriteFrameInterpolant(ent, pSprite, &frameIndex, &frame, &oldFrameIndex, &oldframe, &lerp);
 	}
 	else
 	{
-		oldframe = frame = R_GetSpriteFrame(pSprite, ent->curstate.frame);
+		oldFrameIndex = frameIndex = (int)ent->curstate.frame;
+		oldframe = frame = R_GetSpriteFrame(pSprite, frameIndex);
 	}
 
 	if (!frame)
@@ -740,7 +801,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		return;
 	}
 
-	R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), pSprite, frame, oldframe, lerp);
+	R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), pSprite, frameIndex, frame, oldFrameIndex, oldframe, lerp);
 }
 
 void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
@@ -761,72 +822,90 @@ void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, CSpriteM
 #undef REGISTER_EFX_FLAGS_KEY_VALUE
 }
 
-void R_SpriteLoadExternalFile_ReplaceTexture(mspriteframe_t* pSpriteFrame, const gl_loadtexture_result_t &loadResult)
-{
-	if (pSpriteFrame->gl_texturenum)
-	{
-		GL_UnloadTextureByTextureId(pSpriteFrame->gl_texturenum);
-		pSpriteFrame->gl_texturenum = 0;
-	}
-
-	pSpriteFrame->gl_texturenum = loadResult.gltexturenum;
-	pSpriteFrame->width = loadResult.width;
-	pSpriteFrame->height = loadResult.height;
-
-	//Note that scaleX and scaleY is not supported yet
-}
-
-void R_SpriteLoadExternalFile_ReplaceTextureLoad(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData, mspriteframe_t* pSpriteFrame, const char* textureValue)
+void R_SpriteLoadExternalFile_FrameTextureLoad(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData, int frameIndex, mspriteframe_t* pSpriteFrame, const char* textureValue, const char* scaleValue, int spriteTextureType)
 {
 	if (textureValue && textureValue[0])
 	{
-		bool bLoaded = false;
-		gl_loadtexture_result_t loadResult;
-		std::string texturePath;
+		auto pSpriteMaterial = R_SpriteCreateMaterial(pRenderData, frameIndex);
 
-		bool bHasMipmaps = (*gSpriteMipMap) ? true : false;
-
-		//Texture name starts with "models\\" or "models/"
-		if (!bLoaded &&
-			!strnicmp(textureValue, "sprites", sizeof("sprites") - 1) &&
-			(textureValue[sizeof("sprites") - 1] == '\\' || textureValue[sizeof("sprites") - 1] == '/'))
+		if (pSpriteMaterial)
 		{
-			texturePath = textureValue;
-			if (!V_GetFileExtension(textureValue))
-				texturePath += ".tga";
+			bool bLoaded = false;
+			gl_loadtexture_result_t loadResult;
+			std::string texturePath;
 
-			bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+			bool bHasMipmaps = (*gSpriteMipMap) ? true : false;
+
+			//Texture name starts with "models\\" or "models/"
+			if (!bLoaded &&
+				!strnicmp(textureValue, "sprites", sizeof("sprites") - 1) &&
+				(textureValue[sizeof("sprites") - 1] == '\\' || textureValue[sizeof("sprites") - 1] == '/'))
+			{
+				texturePath = textureValue;
+				if (!V_GetFileExtension(textureValue))
+					texturePath += ".tga";
+
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+			}
+
+			if (!bLoaded)
+			{
+				texturePath = "gfx/";
+				texturePath += textureValue;
+
+				if (!V_GetFileExtension(textureValue))
+					texturePath += ".tga";
+
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+			}
+
+			if (!bLoaded)
+			{
+				texturePath = "renderer/texture/";
+				texturePath += textureValue;
+
+				if (!V_GetFileExtension(textureValue))
+					texturePath += ".tga";
+
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+			}
+
+			if (!bLoaded)
+			{
+				gEngfuncs.Con_Printf("R_SpriteLoadExternalFile_TextureLoad: Failed to load external texture \"%s\".\n", textureValue);
+				return;
+			}
+
+			pSpriteMaterial->textures[spriteTextureType].gltexturenum = loadResult.gltexturenum;
+			pSpriteMaterial->textures[spriteTextureType].numframes = loadResult.numframes;
+			pSpriteMaterial->textures[spriteTextureType].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
+			pSpriteMaterial->textures[spriteTextureType].width = loadResult.width;
+			pSpriteMaterial->textures[spriteTextureType].height = loadResult.height;
+			pSpriteMaterial->textures[spriteTextureType].scaleX = 1;
+			pSpriteMaterial->textures[spriteTextureType].scaleY = 1;
+
+			if (scaleValue && scaleValue[0])
+			{
+				float scales[2] = { 0 };
+
+				if (2 == sscanf(scaleValue, "%f %f", &scales[0], &scales[1]))
+				{
+					if (scales[0] > 0 || scales[0] < 0)
+						pSpriteMaterial->textures[spriteTextureType].scaleX = scales[0];
+
+					if (scales[1] > 0 || scales[1] < 0)
+						pSpriteMaterial->textures[spriteTextureType].scaleY = scales[1];
+				}
+				else if (1 == sscanf(scaleValue, "%f", &scales[0]))
+				{
+					if (scales[0] > 0 || scales[0] < 0)
+					{
+						pSpriteMaterial->textures[spriteTextureType].scaleX = scales[0];
+						pSpriteMaterial->textures[spriteTextureType].scaleY = scales[0];
+					}
+				}
+			}
 		}
-
-		if (!bLoaded)
-		{
-			texturePath = "gfx/";
-			texturePath += textureValue;
-
-			if (!V_GetFileExtension(textureValue))
-				texturePath += ".tga";
-
-			bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
-		}
-
-		if (!bLoaded)
-		{
-			texturePath = "renderer/texture/";
-			texturePath += textureValue;
-
-			if (!V_GetFileExtension(textureValue))
-				texturePath += ".tga";
-
-			bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
-		}
-
-		if (!bLoaded)
-		{
-			gEngfuncs.Con_Printf("R_SpriteLoadExternalFile_ReplaceTextureLoad: Failed to load external texture \"%s\".\n", textureValue);
-			return;
-		}
-
-		R_SpriteLoadExternalFile_ReplaceTexture(pSpriteFrame, loadResult);
 	}
 }
 
@@ -851,11 +930,9 @@ void R_SpriteLoadExternalFile_FrameTexture(bspentity_t* ent, msprite_t* pSprite,
 	}
 
 	auto replacetexture = ValueForKey(ent, "replacetexture");
+	auto replacescale = ValueForKey(ent, "replacescale");
 
-	//Note that replacescale is not supported yet
-	//auto replacescale = ValueForKey(ent, "replacescale");
-
-	R_SpriteLoadExternalFile_ReplaceTextureLoad(ent, pSprite, pRenderData, pSpriteFrame, replacetexture);
+	R_SpriteLoadExternalFile_FrameTextureLoad(ent, pSprite, pRenderData, frameIndex, pSpriteFrame, replacetexture, replacescale, SPRITE_REPLACE_TEXTURE);
 }
 
 void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
@@ -920,8 +997,6 @@ void R_AllocSlotForSpriteRenderData(model_t* mod, msprite_t* pSprite, const std:
 	}
 
 	g_SpriteRenderDataCache[modelindex] = pRenderData;
-
-	pSprite->cachespot = mod;
 }
 
 void R_FreeSpriteRenderData(model_t* mod)
@@ -956,10 +1031,11 @@ std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t *mod)
 
 	if (pRenderData)
 	{
-		pSprite->cachespot = mod;
-
 		gEngfuncs.Con_DPrintf("R_CreateSpriteRenderData: Found modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
 
+		pRenderData->vSpriteMaterials.clear();
+		pRenderData->vSpriteMaterials.resize(pSprite->numframes);
+	
 		R_SpriteLoadExternalFile(mod, pSprite, pRenderData.get());
 
 		return pRenderData;
@@ -968,6 +1044,8 @@ std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t *mod)
 	gEngfuncs.Con_DPrintf("R_CreateSpriteRenderData: Create modelindex[%d] modname[%s].\n", EngineGetModelIndex(mod), mod->name);
 
 	pRenderData = std::make_shared<CSpriteModelRenderData>(mod);
+
+	pRenderData->vSpriteMaterials.resize(pSprite->numframes);
 
 	R_AllocSlotForSpriteRenderData(mod, pSprite, pRenderData);
 

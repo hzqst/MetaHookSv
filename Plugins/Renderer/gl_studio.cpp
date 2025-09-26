@@ -86,8 +86,6 @@ int* r_remapindex = NULL;
 
 //Cvars
 
-cvar_t* r_studio_debug = NULL;
-
 cvar_t* r_studio_base_specular = NULL;
 cvar_t* r_studio_celshade_specular = NULL;
 
@@ -1443,9 +1441,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_SPECULARTEXTURE_ENABLED)
 			defs << "#define SPECULARTEXTURE_ENABLED\n";
 
-		if (state & STUDIO_DEBUG_ENABLED)
-			defs << "#define STUDIO_DEBUG_ENABLED\n";
-
 		if (state & STUDIO_PACKED_DIFFUSETEXTURE_ENABLED)
 			defs << "#define PACKED_DIFFUSETEXTURE_ENABLED\n";
 
@@ -1566,7 +1561,6 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_NORMALTEXTURE_ENABLED			,"STUDIO_NORMALTEXTURE_ENABLED"				},
 { STUDIO_PARALLAXTEXTURE_ENABLED		,"STUDIO_PARALLAXTEXTURE_ENABLED"			},
 { STUDIO_SPECULARTEXTURE_ENABLED		,"STUDIO_SPECULARTEXTURE_ENABLED"			},
-{ STUDIO_DEBUG_ENABLED					,"STUDIO_DEBUG_ENABLED"						},
 { STUDIO_PACKED_DIFFUSETEXTURE_ENABLED	,"STUDIO_PACKED_DIFFUSETEXTURE_ENABLED"		},
 { STUDIO_PACKED_NORMALTEXTURE_ENABLED	,"STUDIO_PACKED_NORMALTEXTURE_ENABLED"		},
 { STUDIO_PACKED_PARALLAXTEXTURE_ENABLED	,"STUDIO_PACKED_PARALLAXTEXTURE_ENABLED"	},
@@ -1634,8 +1628,6 @@ void R_InitStudio(void)
 {
 	g_hStudioUBO = GL_GenBuffer();
 	GL_UploadDataToUBODynamicDraw(g_hStudioUBO, sizeof(studio_ubo_t), nullptr);
-
-	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
 
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1733,6 +1725,16 @@ void R_StudioSetupMaterial(const CStudioModelRenderData* pRenderData, const CStu
 
 			(*context->StudioProgramState) |= STUDIO_ANIMATED_TEXTURE_ENABLED;
 		}
+		else
+		{
+			GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DIFFUSE, GL_TEXTURE_2D, ReplaceTexture.gltexturenum);
+		}
+
+		if (ReplaceTexture.scaleX != 0)
+			context->scaleX = ReplaceTexture.scaleX;
+
+		if (ReplaceTexture.scaleY != 0)
+			context->scaleY = ReplaceTexture.scaleY;
 	}
 
 	const auto& NormalTexture = pStudioMaterial->textures[STUDIO_NORMAL_TEXTURE];
@@ -2655,11 +2657,6 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_CLIP_BONE_ENABLED;
 	}
 
-	if (r_studio_debug->value > 0)
-	{
-		StudioProgramState |= STUDIO_DEBUG_ENABLED;
-	}
-
 	//Bind texture here
 
 	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
@@ -3056,7 +3053,7 @@ void R_StudioDrawMesh_DrawPass(
 
 	if (prog.r_uvscale != -1)
 	{
-		glUniform2f(prog.r_uvscale, Context.s, Context.t);
+		glUniform2f(prog.r_uvscale, Context.s * Context.scaleX, Context.t * Context.scaleY);
 	}
 
 	if (prog.r_packed_stride != -1)
@@ -4217,8 +4214,8 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 			pStudioMaterial->textures[studioTextureType].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
 			pStudioMaterial->textures[studioTextureType].width = loadResult.width;
 			pStudioMaterial->textures[studioTextureType].height = loadResult.height;
-			pStudioMaterial->textures[studioTextureType].scaleX = 0;
-			pStudioMaterial->textures[studioTextureType].scaleY = 0;
+			pStudioMaterial->textures[studioTextureType].scaleX = 1;
+			pStudioMaterial->textures[studioTextureType].scaleY = 1;
 
 			if (scaleValue && scaleValue[0])
 			{
@@ -4240,11 +4237,6 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 						pStudioMaterial->textures[studioTextureType].scaleY = scales[0];
 					}
 				}
-			}
-
-			if (studioTextureType == STUDIO_DIFFUSE_TEXTURE)
-			{
-
 			}
 		}
 		else
@@ -4639,50 +4631,6 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, CStudioModel
 		}
 
 		gEngfuncs.COM_FreeFile((void*)pFile);
-	}
-}
-
-void R_StudioReplaceTextures(model_t* mod, studiohdr_t* studiohdr, CStudioModelRenderData* pRenderData)
-{
-	for (int i = 0; i < studiohdr->numtextures; ++i)
-	{
-		auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex) + i;
-
-		auto pRenderMaterial = R_StudioGetMaterialFromTexture(pRenderData, ptexture);
-
-		if (pRenderMaterial)
-		{
-			auto& ReplaceTexture = pRenderMaterial->textures[STUDIO_DIFFUSE_TEXTURE];
-
-			if (ReplaceTexture.gltexturenum)
-			{
-				if (ptexture->index)
-				{
-					GL_UnloadTextureByTextureId(ptexture->index);
-					ptexture->index = 0;
-				}
-
-				ptexture->index = ReplaceTexture.gltexturenum;
-
-				if (ReplaceTexture.scaleX > 0)
-				{
-					ptexture->width = ReplaceTexture.width * ReplaceTexture.scaleX;
-				}
-				else if (ReplaceTexture.scaleX < 0)
-				{
-					ptexture->width = ptexture->width * ReplaceTexture.scaleX * -1;
-				}
-
-				if (ReplaceTexture.scaleY > 0)
-				{
-					ptexture->height = ReplaceTexture.height * ReplaceTexture.scaleY;
-				}
-				else if (ReplaceTexture.scaleY < 0)
-				{
-					ptexture->height = ptexture->height * ReplaceTexture.scaleY * -1;
-				}
-			}
-		}
 	}
 }
 

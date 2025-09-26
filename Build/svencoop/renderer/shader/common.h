@@ -268,10 +268,11 @@ struct studio_ubo_t{
 
 struct world_material_t
 {
-	vec2	detailtexcoord;
-	vec2	normaltexcoord;
-	vec2	parallaxtexcoord;
-	vec2	speculartexcoord;
+	vec2	diffuseScale;
+	vec2	detailScale;
+	vec2	normalScale;
+	vec2	parallaxScale;
+	vec2	specularScale;
 };
 
 //Scene level

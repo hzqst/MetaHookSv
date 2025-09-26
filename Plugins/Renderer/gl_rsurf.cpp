@@ -848,36 +848,43 @@ void R_UploadDecalTextures(int decalIndex, texture_t* ptexture, const std::share
 	{
 		world_material_t mat;
 
-		mat.detailtexcoord[0] = 1;
-		mat.detailtexcoord[1] = 1;
-		mat.normaltexcoord[0] = 1;
-		mat.normaltexcoord[1] = 1;
-		mat.parallaxtexcoord[0] = 1;
-		mat.parallaxtexcoord[1] = 1;
-		mat.speculartexcoord[0] = 1;
-		mat.speculartexcoord[1] = 1;
+		mat.diffuseScale[0] = 1;
+		mat.diffuseScale[1] = 1;
+		mat.detailScale[0] = 1;
+		mat.detailScale[1] = 1;
+		mat.normalScale[0] = 1;
+		mat.normalScale[1] = 1;
+		mat.parallaxScale[0] = 1;
+		mat.parallaxScale[1] = 1;
+		mat.specularScale[0] = 1;
+		mat.specularScale[1] = 1;
 
 		if (pRenderMaterial)
 		{
+			if (pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum)
+			{
+				mat.diffuseScale[0] = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].scaleX;
+				mat.diffuseScale[1] = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].scaleY;
+			}
 			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
 			{
-				mat.detailtexcoord[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
-				mat.detailtexcoord[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
+				mat.detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+				mat.detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
 			{
-				mat.normaltexcoord[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
-				mat.normaltexcoord[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
+				mat.normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+				mat.normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
 			{
-				mat.parallaxtexcoord[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
-				mat.parallaxtexcoord[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
+				mat.parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+				mat.parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
 			{
-				mat.speculartexcoord[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
-				mat.speculartexcoord[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
+				mat.specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+				mat.specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
 			}
 		}
 
@@ -1042,7 +1049,7 @@ void R_DrawDecals(cl_entity_t *ent)
 
 			auto ptexture = Draw_DecalTexture(plist->texture);
 
-			auto pRenderMaterial = R_FindDecalTextureCache(ptexture->name);
+			auto pRenderMaterial = R_GetRenderMaterialForDecalTexture(ptexture->name);
 
 			//Build VBO data for this decal if not built yet
 			if (!(plist->flags & FDECAL_VBO) || R_IsDecalCacheInvalidated(decalIndex, ptexture, pRenderMaterial))

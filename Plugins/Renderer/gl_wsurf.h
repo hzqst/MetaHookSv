@@ -316,9 +316,11 @@ uint32_t R_FindWorldMaterialId(int gl_texturenum);
 std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
 std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);
 
-std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::string &decalname);
-std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltexturenum);
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
+uint32_t R_GetWorldTextureHash(const char* name);
+uint32_t R_GetWorldTextureHash(texture_t* ptexture);
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForDecalTexture(const char *decalname);
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForWorldTexture(texture_t *ptexture);
+void R_BeginDetailTexture(texture_t* ptexture, program_state_t* WSurfProgramState);
 void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t *WSurfProgramState);
 void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_ShutdownWSurf(void);

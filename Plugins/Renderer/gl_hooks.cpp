@@ -12433,7 +12433,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
-	Install_InlineHook(Draw_MiptexTexture);
+	//Install_InlineHook(Draw_MiptexTexture);
 
 	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 	gEngfuncs.pTriAPI->Begin = triapi_Begin;
@@ -12512,7 +12512,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
-	Uninstall_Hook(Draw_MiptexTexture);
+	//Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(PVSNode);

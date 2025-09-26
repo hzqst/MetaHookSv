@@ -56,12 +56,6 @@ in vec3 v_smoothnormal;
 	in vec3 v_headup;
 	in vec3 v_headorigin;
 
-	#if defined(STUDIO_DEBUG_ENABLED)
-
-		in vec4 v_headorigin_proj;
-
-	#endif
-
 #endif
 
 layout(location = 0) out vec4 out_Diffuse;
@@ -594,27 +588,6 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #endif  //defined(STUDIO_NF_CELSHADE)
 
-#if defined(STUDIO_NF_CELSHADE_FACE) && defined(STUDIO_DEBUG_ENABLED) 
-
-vec4 R_RenderDebugPoint(vec4 baseColor)
-{ 
-	// Convert to normalized device coordinates (NDC) by dividing by the w component
-    vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
-    vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
-
-	point_ndc.x = point_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
-	vertex_ndc.x = vertex_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
-
-	if(distance(point_ndc.xy, vertex_ndc.xy) < 0.01)
-	{
-		return vec4(1.0, 0.0, 0.0, 1.0);
-	}
-
-	return baseColor;
-}
-
-#endif
-
 vec3 R_GenerateSimplifiedNormal()
 {
 	vec3 vNormal = normalize(v_normal);
@@ -794,16 +767,6 @@ void main(void)
 		specularColor.z = 0.0;//Don't write to GBuffer
 		
 		flNormalMask = rawSpecularColor.z;
-
-	#endif
-
-	//Some meshes has STUDIO_NF_CELSHADE_FACE but has no STUDIO_NF_CELSHADE, why ???
-
-	#if defined(STUDIO_DEBUG_ENABLED)  && defined(STUDIO_NF_CELSHADE_FACE)
-
-		diffuseColor.b = flNormalMask;
-
-		diffuseColor = R_RenderDebugPoint(diffuseColor);
 
 	#endif
 

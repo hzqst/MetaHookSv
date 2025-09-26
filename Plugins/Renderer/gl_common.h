@@ -207,10 +207,11 @@ typedef struct decalinstancedata_s
 
 typedef struct world_material_s
 {
-	vec2_t	detailtexcoord;
-	vec2_t	normaltexcoord;
-	vec2_t	parallaxtexcoord;
-	vec2_t	speculartexcoord;
+	vec2_t	diffuseScale;
+	vec2_t	detailScale;
+	vec2_t	normalScale;
+	vec2_t	parallaxScale;
+	vec2_t	specularScale;
 }world_material_t;
 
 typedef struct brushvertex_s

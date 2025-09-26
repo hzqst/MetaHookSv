@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <set>
 
+#include "MurmurHash2.h"
 #include "UtilThreadTask.h"
 #include "LambdaThreadedTask.h"
 
@@ -23,9 +24,9 @@ int g_iCurrentFrameLeafLoadCount = 0;
 
 std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 
-std::unordered_map <int, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_DetailTextureTable;
+std::unordered_map <uint32_t, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_WorldTextureRenderMaterials;
 
-std::unordered_map <std::string, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_DecalTextureTable;
+std::unordered_map <uint32_t, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_DecalTextureRenderMaterials;
 
 std::vector<std::shared_ptr<CWorldSurfaceModel>> g_WorldSurfaceModels;
 
@@ -661,7 +662,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				texchain.type = TEXCHAIN_SKY;
 				texchain.texture = t;
-				texchain.pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+				texchain.pRenderMaterial = R_GetRenderMaterialForWorldTexture(t);
 				texchain.drawCount = 0;
 				texchain.polyCount = 0;
 				texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
@@ -724,7 +725,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 							CWorldSurfaceBrushTexChain texchain;
 							texchain.type = TEXCHAIN_STATIC;
 							texchain.texture = t2;
-							texchain.pRenderMaterial = R_FindDetailTextureCache(t2->gl_texturenum);
+							texchain.pRenderMaterial = R_GetRenderMaterialForWorldTexture(t2);
 							texchain.drawCount = 0;
 							texchain.polyCount = 0;
 							texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
@@ -765,7 +766,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 					texchain.type = TEXCHAIN_STATIC;
 					texchain.texture = t;
-					texchain.pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+					texchain.pRenderMaterial = R_GetRenderMaterialForWorldTexture(t);
 					texchain.drawCount = 0;
 					texchain.polyCount = 0;
 					texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
@@ -797,7 +798,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				texchain.type = TEXCHAIN_STATIC;
 				texchain.texture = t;
-				texchain.pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+				texchain.pRenderMaterial = R_GetRenderMaterialForWorldTexture(t);
 				texchain.drawCount = 0;
 				texchain.polyCount = 0;
 				texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
@@ -822,7 +823,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				texchain.type = TEXCHAIN_SCROLL;
 				texchain.texture = t;
-				texchain.pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+				texchain.pRenderMaterial = R_GetRenderMaterialForWorldTexture(t);
 				texchain.drawCount = 0;
 				texchain.polyCount = 0;
 				texchain.startDrawOffset = (uint32_t)vDrawAttribBuffer.size() * sizeof(CDrawIndexAttrib);
@@ -1505,38 +1506,45 @@ void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 
 		world_material_t mat;
 
-		mat.detailtexcoord[0] = 1;
-		mat.detailtexcoord[1] = 1;
-		mat.normaltexcoord[0] = 1;
-		mat.normaltexcoord[1] = 1;
-		mat.parallaxtexcoord[0] = 1;
-		mat.parallaxtexcoord[1] = 1;
-		mat.speculartexcoord[0] = 1;
-		mat.speculartexcoord[1] = 1;
+		mat.diffuseScale[0] = 1;
+		mat.diffuseScale[1] = 1;
+		mat.detailScale[0] = 1;
+		mat.detailScale[1] = 1;
+		mat.normalScale[0] = 1;
+		mat.normalScale[1] = 1;
+		mat.parallaxScale[0] = 1;
+		mat.parallaxScale[1] = 1;
+		mat.specularScale[0] = 1;
+		mat.specularScale[1] = 1;
 
-		auto pRenderMaterial = R_FindDetailTextureCache(t->gl_texturenum);
+		auto pRenderMaterial = R_GetRenderMaterialForWorldTexture(t);
 
 		if (pRenderMaterial)
 		{
+			if (pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum)
+			{
+				mat.diffuseScale[0] = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].scaleX;
+				mat.diffuseScale[1] = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].scaleY;
+			}
 			if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
 			{
-				mat.detailtexcoord[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
-				mat.detailtexcoord[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
+				mat.detailScale[0] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleX;
+				mat.detailScale[1] = pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
 			{
-				mat.normaltexcoord[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
-				mat.normaltexcoord[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
+				mat.normalScale[0] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleX;
+				mat.normalScale[1] = pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
 			{
-				mat.parallaxtexcoord[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
-				mat.parallaxtexcoord[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
+				mat.parallaxScale[0] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleX;
+				mat.parallaxScale[1] = pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].scaleY;
 			}
 			if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
 			{
-				mat.speculartexcoord[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
-				mat.speculartexcoord[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
+				mat.specularScale[0] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleX;
+				mat.specularScale[1] = pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].scaleY;
 			}
 		}
 
@@ -1975,8 +1983,8 @@ void R_GenerateSceneUBO(void)
 
 void R_ClearDetailTextureCache(void)
 {
-	g_DetailTextureTable.clear();
-	g_DecalTextureTable.clear();
+	g_WorldTextureRenderMaterials.clear();
+	g_DecalTextureRenderMaterials.clear();
 }
 
 void R_ClearDecalCache(void)
@@ -2313,7 +2321,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 
-			R_BeginDetailTextureByGLTextureId(texture->gl_texturenum, &WSurfProgramState);
+			R_BeginDetailTexture(texture, &WSurfProgramState);
 		}
 
 		if (g_WorldSurfaceRenderer.bLightmapTexture)
@@ -2914,9 +2922,11 @@ void R_LoadDecalTextures(const char* pFileContent)
 
 		std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial;
 
-		auto itor = g_DecalTextureTable.find(base);
+		uint32_t textureHash = R_GetWorldTextureHash(base.c_str());
 
-		if (itor != g_DecalTextureTable.end())
+		auto itor = g_DecalTextureRenderMaterials.find(textureHash);
+
+		if (itor != g_DecalTextureRenderMaterials.end())
 		{
 			pRenderMaterial = itor->second;
 		}
@@ -2924,7 +2934,7 @@ void R_LoadDecalTextures(const char* pFileContent)
 		{
 			pRenderMaterial = std::make_shared<CWorldSurfaceRenderMaterial>(base);
 
-			g_DecalTextureTable[base] = pRenderMaterial;
+			g_DecalTextureRenderMaterials[textureHash] = pRenderMaterial;
 		}
 
 		if (pRenderMaterial)
@@ -2982,8 +2992,12 @@ void R_LoadDecalTextures(const char* pFileContent)
 			pRenderMaterial->textures[texType].gltexturenum = loadResult.gltexturenum;
 			pRenderMaterial->textures[texType].width = loadResult.width;
 			pRenderMaterial->textures[texType].height = loadResult.height;
-			pRenderMaterial->textures[texType].scaleX = i_xscale;
-			pRenderMaterial->textures[texType].scaleY = i_yscale;
+
+			if(i_xscale != 0)
+				pRenderMaterial->textures[texType].scaleX = i_xscale;
+
+			if (i_yscale != 0)
+				pRenderMaterial->textures[texType].scaleY = i_yscale;
 		}
 	}
 }
@@ -3109,7 +3123,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 
 		std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial;
 
-		for (auto it : g_DetailTextureTable)
+		for (auto it : g_WorldTextureRenderMaterials)
 		{
 			if (it.second->basetexture == base)
 			{
@@ -3121,7 +3135,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 		{
 			pRenderMaterial = std::make_shared<CWorldSurfaceRenderMaterial>(base);
 
-			g_DetailTextureTable[glt] = pRenderMaterial;
+			g_WorldTextureRenderMaterials[glt] = pRenderMaterial;
 		}
 
 		if (pRenderMaterial)
@@ -3219,19 +3233,30 @@ void R_LoadMapDetailTextures(void)
 	gEngfuncs.COM_FreeFile(pfile);
 }
 
-std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::string& decalname)
+uint32_t R_GetWorldTextureHash(const char *name)
 {
-	auto itor = g_DecalTextureTable.find(decalname);
+	uint32_t seed = 0;
+	uint32_t result = MurmurHash2(name, strlen(name), seed);
 
-	if (itor != g_DecalTextureTable.end())
+	return result;
+}
+
+uint32_t R_GetWorldTextureHash(texture_t* ptexture)
+{
+	return R_GetWorldTextureHash(ptexture->name);
+}
+
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForDecalTexture(const char * decalname)
+{
+	auto textureHash = R_GetWorldTextureHash(decalname);
+
+	auto itor = g_DecalTextureRenderMaterials.find(textureHash);
+
+	if (itor != g_DecalTextureRenderMaterials.end())
 	{
 		const auto& pRenderMaterial = itor->second;
 
-		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum
-			)
+		if (pRenderMaterial)
 		{
 			return pRenderMaterial;
 		}
@@ -3240,19 +3265,17 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDecalTextureCache(const std::
 	return NULL;
 }
 
-std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltexturenum)
+std::shared_ptr<CWorldSurfaceRenderMaterial> R_GetRenderMaterialForWorldTexture(texture_t *ptexture)
 {
-	auto itor = g_DetailTextureTable.find(gltexturenum);
+	auto textureHash = R_GetWorldTextureHash(ptexture);
 
-	if (itor != g_DetailTextureTable.end())
+	auto itor = g_WorldTextureRenderMaterials.find(textureHash);
+
+	if (itor != g_WorldTextureRenderMaterials.end())
 	{
 		const auto& pRenderMaterial = itor->second;
 
-		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum ||
-			pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum
-			)
+		if (pRenderMaterial)
 		{
 			return pRenderMaterial;
 		}
@@ -3263,6 +3286,11 @@ std::shared_ptr<CWorldSurfaceRenderMaterial> R_FindDetailTextureCache(int gltext
 
 void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRenderMaterial, program_state_t* WSurfProgramState)
 {
+	if (pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum)
+	{
+		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum);
+	}
+
 	if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
 	{
 		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum);
@@ -3296,9 +3324,9 @@ void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRender
 	}
 }
 
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t* WSurfProgramState)
+void R_BeginDetailTexture(texture_t *ptexture, program_state_t* WSurfProgramState)
 {
-	const auto& pRenderMaterial = R_FindDetailTextureCache(gltexturenum);
+	const auto& pRenderMaterial = R_GetRenderMaterialForWorldTexture(ptexture);
 
 	if (pRenderMaterial)
 	{

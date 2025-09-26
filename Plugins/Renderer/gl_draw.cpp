@@ -1819,43 +1819,6 @@ texture_t *Draw_DecalTexture(int index)
 	return texture;
 }
 
-bool Draw_MiptexTexture_ReplaceTexture(texture_t*tex)
-{
-	auto pRenderMaterial = R_FindDecalTextureCache(tex->name);
-
-	if (pRenderMaterial)
-	{
-		const auto& ReplaceTexture = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE];
-
-		if (ReplaceTexture.gltexturenum)
-		{
-			tex->gl_texturenum = pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum;
-
-			if (ReplaceTexture.scaleX > 0)
-			{
-				tex->width = tex->width * ReplaceTexture.scaleX;
-			}
-			else if (ReplaceTexture.scaleX < 0)
-			{
-				tex->width = ReplaceTexture.width * ReplaceTexture.scaleX * -1;
-			}
-
-			if (ReplaceTexture.scaleY > 0)
-			{
-				tex->height = tex->height * ReplaceTexture.scaleY;
-			}
-			else if (ReplaceTexture.scaleY < 0)
-			{
-				tex->height = ReplaceTexture.height * ReplaceTexture.scaleY * -1;
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 {
 	texture_t* tex = nullptr;
@@ -1910,9 +1873,6 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_SVENGINE : TEX_TYPE_ALPHA;
 
-		if (Draw_MiptexTexture_ReplaceTexture(tex))
-			return;
-
 		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
 	}
 	else
@@ -1925,12 +1885,6 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 
 		//Why'th fuck 2 in SvEngine?
 		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_GRADIENT_SVENGINE : TEX_TYPE_ALPHA_GRADIENT;
-
-		if (!(*gfCustomBuild))
-		{
-			if (Draw_MiptexTexture_ReplaceTexture(tex))
-				return;
-		}
 
 		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
 	}

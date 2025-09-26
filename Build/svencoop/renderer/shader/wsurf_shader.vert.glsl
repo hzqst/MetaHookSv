@@ -150,6 +150,7 @@ void main(void)
 
 	#ifdef DIFFUSE_ENABLED
 		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_lightmaptexturenum_texcoordscale.y * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
+		v_diffusetexcoord *= WorldMaterialSSBO[in_matid].diffuseScale;
 	#endif
 
 #endif
@@ -159,7 +160,7 @@ void main(void)
 #endif
 
 #if defined(DETAILTEXTURE_ENABLED)
-	v_detailtexcoord = WorldMaterialSSBO[in_matid].detailtexcoord;
+	v_detailtexcoord = WorldMaterialSSBO[in_matid].detailScale;
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
@@ -183,15 +184,15 @@ void main(void)
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED)
-	v_normaltexcoord = WorldMaterialSSBO[in_matid].normaltexcoord;
+	v_normaltexcoord = WorldMaterialSSBO[in_matid].normalScale;
 #endif
 
 #if defined(PARALLAXTEXTURE_ENABLED)
-	v_parallaxtexcoord = WorldMaterialSSBO[in_matid].parallaxtexcoord;
+	v_parallaxtexcoord = WorldMaterialSSBO[in_matid].parallaxScale;
 #endif
 
 #if defined(SPECULARTEXTURE_ENABLED)
-	v_speculartexcoord = WorldMaterialSSBO[in_matid].speculartexcoord;
+	v_speculartexcoord = WorldMaterialSSBO[in_matid].specularScale;
 #endif
 
 	#if defined(SKYBOX_ENABLED)
