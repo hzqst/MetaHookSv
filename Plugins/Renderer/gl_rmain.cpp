@@ -576,9 +576,7 @@ bool R_IsViewmodelAttachment(cl_entity_t* ent)
 {
 	if (ent->curstate.movetype == MOVETYPE_FOLLOW && (ent->curstate.effects & EF_VIEWMODEL))
 	{
-		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
-
-		return aiment == gEngfuncs.GetLocalPlayer();
+		return true;
 	}
 
 	return false;
@@ -2029,6 +2027,19 @@ void R_DrawStudioEntity(bool bTransparent)
 			{
 				if (!R_ShouldDrawViewModel())
 					return;
+
+				auto viewentity = gEngfuncs.GetEntityByIndex((*cl_viewentity));
+
+				if (viewentity)
+				{
+					if (aiment != viewentity)
+						return;
+				}
+				else
+				{
+					if (aiment != gEngfuncs.GetLocalPlayer())
+						return;
+				}
 
 				aiment = cl_viewent;
 			}
