@@ -4937,6 +4937,24 @@ void R_Reload_f(void)
 		delete ent;
 	}
 
+	for (int j = 1; j < EngineGetMaxClientModels(); j++)
+	{
+		auto mod = gEngfuncs.hudGetModelByIndex(j);
+
+		if (!mod)
+			break;
+
+		if (mod->type == mod_brush)
+		{
+			auto pModel = R_GetWorldSurfaceModel(mod);
+
+			if (pModel)
+			{
+				R_LinkShadowProxyForWorldSurfaceModel(pModel.get());
+			}
+		}
+	}
+
 	gEngfuncs.Con_Printf("Map entities reloaded\n");
 }
 

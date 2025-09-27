@@ -20,8 +20,6 @@ float r_znear = 4;
 float r_zfar = 4096;
 bool r_ortho = false;
 
-int g_iCurrentFrameLeafLoadCount = 0;
-
 std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 
 std::unordered_map <uint32_t, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_WorldTextureRenderMaterials;
@@ -31,6 +29,42 @@ std::unordered_map <uint32_t, std::shared_ptr<CWorldSurfaceRenderMaterial>> g_De
 std::vector<std::shared_ptr<CWorldSurfaceModel>> g_WorldSurfaceModels;
 
 std::vector<std::shared_ptr<CWorldSurfaceWorldModel>> g_WorldSurfaceWorldModels;
+
+std::unordered_map<std::string, std::shared_ptr<CWorldSurfaceShadowProxyModel>> g_WorldSurfaceShadowProxyModels;
+
+CWorldSurfaceShadowProxyDraw::~CWorldSurfaceShadowProxyDraw()
+{
+}
+
+CWorldSurfaceShadowProxyModel::~CWorldSurfaceShadowProxyModel()
+{
+	if (hEBO)
+	{
+		GL_DeleteBuffer(hEBO);
+		hEBO = 0;
+	}
+
+	for (int i = WSURF_VBO_VERTEX; i < WSURF_VBO_MAX; ++i)
+	{
+		if (hVBO[i])
+		{
+			GL_DeleteBuffer(hVBO[i]);
+			hVBO[i] = 0;
+		}
+	}
+
+	if (hVAO)
+	{
+		GL_DeleteVAO(hVAO);
+		hVAO = 0;
+	}
+
+	if (hABO)
+	{
+		GL_DeleteBuffer(hABO);
+		hABO = 0;
+	}
+}
 
 CWorldSurfaceLeaf::~CWorldSurfaceLeaf()
 {
@@ -1070,14 +1104,96 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 	pLeaf->m_pGameResourceAsyncLoadTask->StartAsyncTask();
 }
 
-/*
-	Generate leaf array for brush model
-*/
+void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel)
+{
+	std::shared_ptr<CWorldSurfaceShadowProxyModel> pShadowProxyModel;
+	std::shared_ptr<CWorldSurfaceShadowProxyDraw> pShadowProxyDraw;
+
+	auto mod = pModel->m_model;
+
+	auto worldmodel = R_FindWorldModelByModel(mod);
+
+	auto it = g_WorldSurfaceShadowProxyModels.find(mod->name);
+
+	if (it != g_WorldSurfaceShadowProxyModels.end())
+	{
+		pShadowProxyModel = it->second;
+	}
+	else
+	{
+		
+		it = g_WorldSurfaceShadowProxyModels.find(worldmodel->name);
+
+		if (it != g_WorldSurfaceShadowProxyModels.end())
+		{
+			pShadowProxyModel = it->second;
+		}
+	}
+
+	if (pShadowProxyModel)
+	{
+		if (worldmodel == mod)
+		{
+			auto it2 = std::find_if(pShadowProxyModel->DrawList.begin(), pShadowProxyModel->DrawList.end(), [mod](const std::shared_ptr<CWorldSurfaceShadowProxyDraw>& p) {
+
+				if (p->name.compare(mod->name) == 0)
+					return true;
+
+				if (p->name.starts_with("M_0_"))
+					return true;
+
+				return false;
+			});
+
+			if (it2 != pShadowProxyModel->DrawList.end())
+			{
+				pShadowProxyDraw = (*it2);
+			}
+		}
+		else
+		{
+			if (mod->name[0] == '*')
+			{
+				int submodelIndex = atoi(mod->name + 1);
+
+				if (submodelIndex >= 0 && submodelIndex < worldmodel->numsubmodels)
+				{
+					char prefix[32]{ };
+					snprintf(prefix, sizeof(prefix), "M_%d_", submodelIndex);
+
+					auto it2 = std::find_if(pShadowProxyModel->DrawList.begin(), pShadowProxyModel->DrawList.end(), [mod, prefix](const std::shared_ptr<CWorldSurfaceShadowProxyDraw>& p) {
+
+						if (p->name.compare(mod->name) == 0)
+							return true;
+
+						if (p->name.starts_with(prefix))
+							return true;
+
+						return false;
+					});
+
+					if (it2 != pShadowProxyModel->DrawList.end())
+					{
+						pShadowProxyDraw = (*it2);
+					}
+				}
+			}
+		}
+	}
+
+	if (pShadowProxyDraw)
+	{
+		pModel->m_pShadowProxyModel = pShadowProxyModel;
+		pModel->m_pShadowProxyDraw = pShadowProxyDraw;
+	}
+}
 
 std::shared_ptr<CWorldSurfaceModel> R_GenerateWorldSurfaceModel(model_t* mod)
 {
 	auto pModel = std::make_shared<CWorldSurfaceModel>(mod);
 
+	R_LinkShadowProxyForWorldSurfaceModel(pModel.get());
+	
 	if (mod == (*cl_worldmodel))
 	{
 		auto pWorldModel = R_GetWorldSurfaceWorldModel(mod);
@@ -1585,6 +1701,7 @@ void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_t* mod)
 {
 	std::vector<brushvertex_t> vVertexDataBuffer;
+	std::vector<brushvertextbn_t> vVertexTBNDataBuffer;
 	std::vector<brushinstancedata_t> vInstanceDataBuffer;
 	std::vector<uint32_t> vIndiceBuffer;
 
@@ -1611,7 +1728,11 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		pBrushFace->flags = surf->flags;
 
 		if (surf->flags & SURF_PLANEBACK)
+		{
 			VectorInverse(pBrushFace->normal);
+			VectorInverse(pBrushFace->s_tangent);
+			VectorInverse(pBrushFace->t_tangent);
+		}
 
 		if (surf->lightmaptexturenum + 1 > g_WorldSurfaceRenderer.iNumLightmapTextures)
 			g_WorldSurfaceRenderer.iNumLightmapTextures = surf->lightmaptexturenum + 1;
@@ -1635,21 +1756,23 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
 						vertex3f_t tempVertex;
-						tempVertex.v[0] = v[0];
-						tempVertex.v[1] = v[1];
-						tempVertex.v[2] = v[2];
+						VectorCopy(v, tempVertex.v);
 
 						brushvertex_t tempVertexData;
-						tempVertexData.pos[0] = v[0];
-						tempVertexData.pos[1] = v[1];
-						tempVertexData.pos[2] = v[2];
+						VectorCopy(v, tempVertexData.pos);
 						tempVertexData.texcoord[0] = v[3];
 						tempVertexData.texcoord[1] = v[4];
 						tempVertexData.lightmaptexcoord[0] = v[5];
 						tempVertexData.lightmaptexcoord[1] = v[6];
 
+						brushvertextbn_t tempVertexTBNData;
+						VectorCopy(pBrushFace->normal, tempVertexTBNData.normal);
+						VectorCopy(pBrushFace->s_tangent, tempVertexTBNData.s_tangent);
+						VectorCopy(pBrushFace->t_tangent, tempVertexTBNData.t_tangent);
+
 						vPolyVertices.emplace_back(tempVertex);
 						vVertexDataBuffer.emplace_back(tempVertexData);
+						vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
 					}
 
 					std::vector<uint32_t> vTriangleListIndices;
@@ -1681,21 +1804,23 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 					for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 					{
 						vertex3f_t tempVertex;
-						tempVertex.v[0] = v[0];
-						tempVertex.v[1] = v[1];
-						tempVertex.v[2] = v[2];
+						VectorCopy(v, tempVertex.v);
 
 						brushvertex_t tempVertexData;
-						tempVertexData.pos[0] = v[0];
-						tempVertexData.pos[1] = v[1];
-						tempVertexData.pos[2] = v[2];
+						VectorCopy(v, tempVertexData.pos);
 						tempVertexData.texcoord[0] = v[3];
 						tempVertexData.texcoord[1] = v[4];
 						tempVertexData.lightmaptexcoord[0] = v[5];
 						tempVertexData.lightmaptexcoord[1] = v[6];
 
+						brushvertextbn_t tempVertexTBNData;
+						VectorCopy(pBrushFace->normal, tempVertexTBNData.normal);
+						VectorCopy(pBrushFace->s_tangent, tempVertexTBNData.s_tangent);
+						VectorCopy(pBrushFace->t_tangent, tempVertexTBNData.t_tangent);
+
 						vPolyVertices.emplace_back(tempVertex);
 						vVertexDataBuffer.emplace_back(tempVertexData);
+						vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
 					}
 
 					std::vector<uint32_t> vTriangleListIndices;
@@ -1727,52 +1852,62 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 				vertex3f_t tempVertex[3];
 				brushvertex_t tempVertexData[3];
+				brushvertextbn_t tempVertexTBNData[3];
 
 				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
 				{
-					tempVertex[j].v[0] = v[0];
-					tempVertex[j].v[1] = v[1];
-					tempVertex[j].v[2] = v[2];
+					VectorCopy(v, tempVertex[j].v);
 
-					tempVertexData[j].pos[0] = v[0];
-					tempVertexData[j].pos[1] = v[1];
-					tempVertexData[j].pos[2] = v[2];
+					VectorCopy(v, tempVertexData[j].pos);
 
 					tempVertexData[j].texcoord[0] = v[3];
 					tempVertexData[j].texcoord[1] = v[4];
 
 					tempVertexData[j].lightmaptexcoord[0] = v[5];
 					tempVertexData[j].lightmaptexcoord[1] = v[6];
+
+					VectorCopy(pBrushFace->normal, tempVertexTBNData[j].normal);
+					VectorCopy(pBrushFace->s_tangent, tempVertexTBNData[j].s_tangent);
+					VectorCopy(pBrushFace->t_tangent, tempVertexTBNData[j].t_tangent);
 				}
-				vVertexDataBuffer.emplace_back(tempVertexData[0]);
-				vVertexDataBuffer.emplace_back(tempVertexData[1]);
-				vVertexDataBuffer.emplace_back(tempVertexData[2]);
+
 				vPolyVertices.emplace_back(tempVertex[0]);
 				vPolyVertices.emplace_back(tempVertex[1]);
 				vPolyVertices.emplace_back(tempVertex[2]);
+				vVertexDataBuffer.emplace_back(tempVertexData[0]);
+				vVertexDataBuffer.emplace_back(tempVertexData[1]);
+				vVertexDataBuffer.emplace_back(tempVertexData[2]);
+				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[0]);
+				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[1]);
+				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[2]);
 
 				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
 				{
 					memcpy(&tempVertex[1], &tempVertex[2], sizeof(vertex3f_t));
 					memcpy(&tempVertexData[1], &tempVertexData[2], sizeof(brushvertex_t));
 
-					tempVertex[2].v[0] = v[0];
-					tempVertex[2].v[1] = v[1];
-					tempVertex[2].v[2] = v[2];
-					tempVertexData[2].pos[0] = v[0];
-					tempVertexData[2].pos[1] = v[1];
-					tempVertexData[2].pos[2] = v[2];
+					VectorCopy(v, tempVertex[2].v);
+
+					VectorCopy(v, tempVertexData[2].pos);
+
 					tempVertexData[2].texcoord[0] = v[3];
 					tempVertexData[2].texcoord[1] = v[4];
 					tempVertexData[2].lightmaptexcoord[0] = v[5];
 					tempVertexData[2].lightmaptexcoord[1] = v[6];
 
-					vVertexDataBuffer.emplace_back(tempVertexData[0]);
-					vVertexDataBuffer.emplace_back(tempVertexData[1]);
-					vVertexDataBuffer.emplace_back(tempVertexData[2]);
+					VectorCopy(pBrushFace->normal, tempVertexTBNData[2].normal);
+					VectorCopy(pBrushFace->s_tangent, tempVertexTBNData[2].s_tangent);
+					VectorCopy(pBrushFace->t_tangent, tempVertexTBNData[2].t_tangent);
+
 					vPolyVertices.emplace_back(tempVertex[0]);
 					vPolyVertices.emplace_back(tempVertex[1]);
 					vPolyVertices.emplace_back(tempVertex[2]);
+					vVertexDataBuffer.emplace_back(tempVertexData[0]);
+					vVertexDataBuffer.emplace_back(tempVertexData[1]);
+					vVertexDataBuffer.emplace_back(tempVertexData[2]);
+					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[0]);
+					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[1]);
+					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[2]);
 				}
 
 				std::vector<uint32_t> vTriangleListIndices;
@@ -1795,21 +1930,11 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 		brushinstancedata_t tempInstanceData;
 
-		tempInstanceData.normal[0] = pBrushFace->normal[0];
-		tempInstanceData.normal[1] = pBrushFace->normal[1];
-		tempInstanceData.normal[2] = pBrushFace->normal[2];
-		tempInstanceData.s_tangent[0] = pBrushFace->s_tangent[0];
-		tempInstanceData.s_tangent[1] = pBrushFace->s_tangent[1];
-		tempInstanceData.s_tangent[2] = pBrushFace->s_tangent[2];
-		tempInstanceData.t_tangent[0] = pBrushFace->t_tangent[0];
-		tempInstanceData.t_tangent[1] = pBrushFace->t_tangent[1];
-		tempInstanceData.t_tangent[2] = pBrushFace->t_tangent[2];
-
 		tempInstanceData.lightmaptexturenum_texcoordscale[0] = surf->lightmaptexturenum;
 		tempInstanceData.lightmaptexturenum_texcoordscale[1] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 		memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
 
-		tempInstanceData.matId = R_FindWorldMaterialId(ptexture->gl_texturenum);
+		tempInstanceData.matId = ptexture ? R_FindWorldMaterialId(ptexture->gl_texturenum) : 0;
 		vInstanceDataBuffer.emplace_back(tempInstanceData);
 
 		pBrushFace->instance_count = 1;
@@ -1820,6 +1945,9 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 	pWorldModel->hVBO[WSURF_VBO_VERTEX] = GL_GenBuffer();
 	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_VERTEX], sizeof(brushvertex_t) * vVertexDataBuffer.size(), vVertexDataBuffer.data());
+
+	pWorldModel->hVBO[WSURF_VBO_VERTEXTBN] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_VERTEXTBN], sizeof(brushvertextbn_t)* vVertexTBNDataBuffer.size(), vVertexTBNDataBuffer.data());
 
 	pWorldModel->hVBO[WSURF_VBO_INSTANCE] = GL_GenBuffer();
 	GL_UploadDataToVBOStaticDraw(pWorldModel->hVBO[WSURF_VBO_INSTANCE], sizeof(brushinstancedata_t) * vInstanceDataBuffer.size(), vInstanceDataBuffer.data());
@@ -1840,23 +1968,21 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		glVertexAttribPointer(WSURF_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
 		glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
 
-		glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_INSTANCE]);
+		glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_VERTEXTBN]);
 
 		glEnableVertexAttribArray(WSURF_VA_NORMAL);
 		glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 		glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
+
+		glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, normal));
+		glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, s_tangent));
+		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, t_tangent));
+
+		glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_INSTANCE]);
+
 		glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
 		glEnableVertexAttribArray(WSURF_VA_STYLES);
 		glEnableVertexAttribArray(WSURF_VA_MATID);
-
-		glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, normal));
-		glVertexAttribDivisor(WSURF_VA_NORMAL, 1);
-
-		glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, s_tangent));
-		glVertexAttribDivisor(WSURF_VA_S_TANGENT, 1);
-
-		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, t_tangent));
-		glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
 
 		glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
 		glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
@@ -1929,6 +2055,9 @@ void R_GenerateSceneUBO(void)
 	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX] = GL_GenBuffer();
 	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX], sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, nullptr);
 
+	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN] = GL_GenBuffer();
+	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN], sizeof(decalvertextbn_t) * MAX_DECALVERTS * MAX_DECALS, nullptr);
+
 	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE] = GL_GenBuffer();
 	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * 1 * MAX_DECALS, nullptr);
 
@@ -1955,23 +2084,21 @@ void R_GenerateSceneUBO(void)
 			glVertexAttribPointer(WSURF_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, texcoord));
 			glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
 
-			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE]);
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN]);
 
 			glEnableVertexAttribArray(WSURF_VA_NORMAL);
 			glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 			glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
+
+			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertextbn_t), OFFSET(decalvertextbn_t, normal));
+			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertextbn_t), OFFSET(decalvertextbn_t, s_tangent));
+			glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertextbn_t), OFFSET(decalvertextbn_t, t_tangent));
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE]);
+
 			glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
 			glEnableVertexAttribArray(WSURF_VA_STYLES);
 			glEnableVertexAttribArray(WSURF_VA_MATID);
-
-			glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, normal));
-			glVertexAttribDivisor(WSURF_VA_NORMAL, 1);
-
-			glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, s_tangent));
-			glVertexAttribDivisor(WSURF_VA_S_TANGENT, 1);
-
-			glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, t_tangent));
-			glVertexAttribDivisor(WSURF_VA_T_TANGENT, 1);
 
 			glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, lightmaptexturenum));
 			glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
@@ -2052,14 +2179,12 @@ bool R_WorldSurfaceLeafHasSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLe
 	return true;
 }
 
-void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
+void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw * pShadowProxyDraw)
 {
-	const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
-
-	if (!texchain.drawCount)
+	if (!pShadowProxyDraw->drawCount)
 		return;
 
-	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafSolid");
+	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxy");
 
 	program_state_t WSurfProgramState = 0;
 
@@ -2082,6 +2207,54 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	GL_BindVAO(pShadowProxyModel->hVAO);
+	GL_BindABO(pShadowProxyModel->hABO);
+
+	wsurf_program_t prog = { 0 };
+	R_UseWSurfProgram(WSurfProgramState, &prog);
+
+	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(pShadowProxyDraw->startOffset), pShadowProxyDraw->drawCount, 0);
+
+	GL_UseProgram(0);
+
+	GL_BindABO(0);
+	GL_BindVAO(0);
+
+	GL_EndDebugGroup();
+}
+
+void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
+{
+	const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
+
+	if (!texchain.drawCount)
+		return;
+
+	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafShadow");
+
+	program_state_t WSurfProgramState = 0;
+
+	if (R_IsRenderingGBuffer())
+	{
+		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+	}
+
+	if (R_IsRenderingShadowView())
+	{
+		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+	}
+
+	if (R_IsRenderingWaterView())
+	{
+		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+	}
+	else if (g_bPortalClipPlaneEnabled[0])
+	{
+		WSurfProgramState |= WSURF_CLIP_ENABLED;
+	}
+
+	glDisable(GL_CULL_FACE);
+
 	R_DrawWorldSurfaceLeafBegin(pLeaf);
 
 	wsurf_program_t prog = { 0 };
@@ -2090,6 +2263,8 @@ void R_DrawWorldSurfaceLeafSolid(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
 	GL_UseProgram(0);
+
+	glEnable(GL_CULL_FACE);
 
 	R_DrawWorldSurfaceLeafEnd();
 
@@ -2715,7 +2890,13 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 			else if (R_IsRenderingShadowView())
 			{
-				R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
+				auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
+				auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
+				
+				if (pShadowProxyModel && pShadowProxyDraw)
+					R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
+				else
+					R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
 			}
 			else
 			{
@@ -2752,7 +2933,13 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			if (R_IsRenderingShadowView())
 			{
-				R_DrawWorldSurfaceLeafSolid(pLeaf.get(), false);
+				auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
+				auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
+
+				if (pShadowProxyModel && pShadowProxyDraw)
+					R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
+				else
+					R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
 			}
 			else
 			{
@@ -3442,6 +3629,7 @@ void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const cha
 
 void R_ClearBSPEntities()
 {
+	g_WorldSurfaceShadowProxyModels.clear();
 	r_flashlight_cone_texture_name.clear();
 	g_EnvWaterControls.clear();
 	g_DynamicLights.clear();
@@ -3932,6 +4120,39 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 	}
 }
 
+std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(const char* resourcePath);
+
+void R_ParseBSPEntity_Env_Shadow_Proxy(bspentity_t* ent)
+{
+	/*
+		// Loading "maps/de_dust2_shadow.obj" as shadow proxy geometry
+		{
+			"classname" "env_shadow_proxy"
+			"model" "maps/de_dust2.bsp"
+			"objpath" "maps/de_dust2_shadow.obj"
+		}
+	*/
+	std::string model = ValueForKey(ent, "model");
+
+	if (model.empty())
+	{
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"model\" in entity \"env_shadow_proxy\"\n"); 
+		return;
+	}
+
+	auto objpath_string = ValueForKey(ent, "objpath");
+
+	if (objpath_string)
+	{
+		g_WorldSurfaceShadowProxyModels[model] = R_LoadWorldSurfaceShadowProxyModel(objpath_string);
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"objpath\" in entity \"env_shadow_proxy\"\n");
+		return;
+	}
+}
+
 void R_ParseBSPEntity_Env_DynamicLight_Control(bspentity_t* ent)
 {
 	R_ParseMapCvarSetMapValue(r_dynlight_ambient, ValueForKey(ent, "ambient"));
@@ -4006,6 +4227,11 @@ void R_LoadBSPEntities(std::vector<bspentity_t*>& vBSPEntities)
 		else if (!strcmp(classname, "light_dynamic"))
 		{
 			R_ParseBSPEntity_Light_Dynamic(ent);
+		}
+
+		else if (!strcmp(classname, "env_shadow_proxy"))
+		{
+			R_ParseBSPEntity_Env_Shadow_Proxy(ent);
 		}
 
 		else if (!strcmp(classname, "env_dynamiclight_control"))
@@ -4343,15 +4569,10 @@ void R_DrawWorld(void)
 	VectorCopy((*r_refdef.vieworg), modelorg);
 
 	(*currententity) = r_worldentity;
-	//(*currenttexture) = -1;
 
 	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
 	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
-
-	//Just for backward-compatibility
-	//glColor3f(1.0f, 1.0f, 1.0f);
-	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = true;
@@ -4362,4 +4583,239 @@ void R_DrawWorld(void)
 	{
 		R_DrawWorldSurfaceModel(pModel, (*currententity));
 	}
+}
+
+#include "tiny_obj_loader.h"
+
+#include <istream>
+#include <streambuf>
+#include <vector>
+#include <cstring>
+
+extern IFileSystem* g_pFileSystem;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
+
+class CFileStreamBuffer : public std::streambuf {
+public:
+	CFileStreamBuffer(const std::string& filename) {
+
+		auto hFileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "rb");
+
+		if (!hFileHandle) {
+			throw std::runtime_error("Failed to open file: " + filename);
+		}
+
+		size_t fileSize = FILESYSTEM_ANY_SIZE(hFileHandle);
+		buffer_.resize(fileSize);
+
+		FILESYSTEM_ANY_READ(buffer_.data(), fileSize, hFileHandle);
+		FILESYSTEM_ANY_CLOSE(hFileHandle);
+
+		setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
+	}
+
+private:
+	std::vector<char> buffer_;
+};
+
+class CFileSystemStream : public std::istream {
+public:
+	CFileSystemStream(const std::string& filename) : std::istream(&fileStreamBuffer_), fileStreamBuffer_(filename) {}
+
+private:
+	CFileStreamBuffer fileStreamBuffer_;
+};
+
+std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(const char * resourcePath)
+{
+	
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+
+	CFileSystemStream fileStream(resourcePath);
+
+	bool ret = tinyobj::LoadObj(
+		&attrib,
+		&shapes,
+		&materials,
+		&warn,
+		&err,
+		&fileStream,
+		nullptr,
+		true,
+		false
+	);
+
+	if (!warn.empty()) {
+		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: (warning) %s.\n", err.c_str());
+	}
+	if (!err.empty()) {
+		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: (error) %s.\n", err.c_str());
+	}
+	if (!ret) {
+		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: Failed to load \"%s\".\n", resourcePath);
+		return nullptr;
+	}
+
+	std::shared_ptr<CWorldSurfaceShadowProxyModel> pShadowProxyModel = std::make_shared<CWorldSurfaceShadowProxyModel>();
+
+	std::vector<brushvertex_t> vVertexDataBuffer;
+	std::vector<brushvertextbn_t> vVertexTBNDataBuffer;
+	std::vector<brushinstancedata_t> vInstanceDataBuffer;
+	std::vector<uint32_t> vIndiceBuffer;
+	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
+
+	uint32_t baseVertex = vVertexDataBuffer.size();
+
+	for (const auto& shape : shapes) {
+
+		uint32_t instanceIndex = (uint32_t)vInstanceDataBuffer.size();
+
+		brushinstancedata_t instanceData;
+
+		instanceData.lightmaptexturenum_texcoordscale[0] = 0;
+		instanceData.lightmaptexturenum_texcoordscale[1] = 0;
+
+		instanceData.styles[0] = 0;
+		instanceData.styles[1] = 0;
+		instanceData.styles[2] = 0;
+		instanceData.styles[3] = 0;
+
+		instanceData.matId = 0;
+
+		vInstanceDataBuffer.emplace_back(instanceData);
+
+		uint32_t baseVertex = (uint32_t)vVertexDataBuffer.size();
+		uint32_t baseIndex = (uint32_t)vIndiceBuffer.size();
+		size_t indiceCount = shape.mesh.indices.size();
+
+		for (size_t j = 0; j < indiceCount; j ++) {
+
+			const auto& index = shape.mesh.indices[j];
+
+			brushvertex_t tempVertexData;
+
+			tempVertexData.pos[0] = attrib.vertices[3 * index.vertex_index + 0];
+			tempVertexData.pos[1] = attrib.vertices[3 * index.vertex_index + 1];
+			tempVertexData.pos[2] = attrib.vertices[3 * index.vertex_index + 2];
+
+			tempVertexData.texcoord[0] = attrib.texcoords[2 * index.texcoord_index + 0];
+			tempVertexData.texcoord[1] = attrib.texcoords[2 * index.texcoord_index + 1];
+
+			brushvertextbn_t tempVertexTBNData;
+
+			tempVertexTBNData.normal[0] = attrib.normals[3 * index.normal_index + 0];
+			tempVertexTBNData.normal[1] = attrib.normals[3 * index.normal_index + 1];
+			tempVertexTBNData.normal[2] = attrib.normals[3 * index.normal_index + 2];
+
+			tempVertexTBNData.s_tangent[0] = 0;
+			tempVertexTBNData.s_tangent[1] = 0;
+			tempVertexTBNData.s_tangent[2] = 0;
+
+			tempVertexTBNData.t_tangent[0] = 0;
+			tempVertexTBNData.t_tangent[1] = 0;
+			tempVertexTBNData.t_tangent[2] = 0;
+
+			vVertexDataBuffer.emplace_back(tempVertexData);
+			vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
+			vIndiceBuffer.emplace_back(baseVertex + j);
+		}
+
+		uint32_t startOffset = sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size();
+		uint32_t drawCount = 0;
+
+		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+			int fv = shape.mesh.num_face_vertices[f];
+		
+			CDrawIndexAttrib drawAttrib;
+		
+			drawAttrib.FirstIndexLocation = baseVertex + baseIndex;
+			drawAttrib.NumIndices = fv;
+			drawAttrib.FirstInstanceLocation = instanceIndex;
+			drawAttrib.NumInstances = 1;
+		
+			vDrawAttribBuffer.emplace_back(drawAttrib);
+			drawCount++;
+		
+			baseIndex += fv;
+		}
+
+		//CDrawIndexAttrib drawAttrib;
+		//
+		//drawAttrib.FirstIndexLocation = baseVertex + baseIndex;
+		//drawAttrib.NumIndices = vIndiceBuffer.size() - baseIndex;
+		//drawAttrib.FirstInstanceLocation = instanceIndex;
+		//drawAttrib.NumInstances = 1;
+		//
+		//vDrawAttribBuffer.emplace_back(drawAttrib);
+		//drawCount++;
+
+		auto pShadowProxyDraw = std::make_shared<CWorldSurfaceShadowProxyDraw>(shape.name);
+
+		pShadowProxyDraw->startOffset = startOffset;
+		pShadowProxyDraw->drawCount = drawCount;
+
+		pShadowProxyModel->DrawList.emplace_back(pShadowProxyDraw);
+	}
+
+	pShadowProxyModel->hEBO = GL_GenBuffer();
+	GL_UploadDataToEBOStaticDraw(pShadowProxyModel->hEBO, sizeof(uint32_t) * vIndiceBuffer.size(), vIndiceBuffer.data());
+
+	pShadowProxyModel->hVBO[WSURF_VBO_VERTEX] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pShadowProxyModel->hVBO[WSURF_VBO_VERTEX], sizeof(brushvertex_t) * vVertexDataBuffer.size(), vVertexDataBuffer.data());
+
+	pShadowProxyModel->hVBO[WSURF_VBO_VERTEXTBN] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pShadowProxyModel->hVBO[WSURF_VBO_VERTEXTBN], sizeof(brushvertextbn_t) * vVertexTBNDataBuffer.size(), vVertexTBNDataBuffer.data());
+
+	pShadowProxyModel->hVBO[WSURF_VBO_INSTANCE] = GL_GenBuffer();
+	GL_UploadDataToVBOStaticDraw(pShadowProxyModel->hVBO[WSURF_VBO_INSTANCE], sizeof(brushinstancedata_t) * vInstanceDataBuffer.size(), vInstanceDataBuffer.data());
+
+	pShadowProxyModel->hVAO = GL_GenVAO();
+
+	GL_BindStatesForVAO(pShadowProxyModel->hVAO, [pShadowProxyModel]() {
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pShadowProxyModel->hEBO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, pShadowProxyModel->hVBO[WSURF_VBO_VERTEX]);
+
+		glEnableVertexAttribArray(WSURF_VA_POSITION);
+		glEnableVertexAttribArray(WSURF_VA_TEXCOORD);
+		glEnableVertexAttribArray(WSURF_VA_LIGHTMAP_TEXCOORD);
+
+		glVertexAttribPointer(WSURF_VA_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+		glVertexAttribPointer(WSURF_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+		glVertexAttribPointer(WSURF_VA_LIGHTMAP_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
+
+		glBindBuffer(GL_ARRAY_BUFFER, pShadowProxyModel->hVBO[WSURF_VBO_VERTEXTBN]);
+
+		glEnableVertexAttribArray(WSURF_VA_NORMAL);
+		glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
+		glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
+
+		glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, normal));
+		glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, s_tangent));
+		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, t_tangent));
+
+		glBindBuffer(GL_ARRAY_BUFFER, pShadowProxyModel->hVBO[WSURF_VBO_INSTANCE]);
+
+		glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
+		glEnableVertexAttribArray(WSURF_VA_STYLES);
+		glEnableVertexAttribArray(WSURF_VA_MATID);
+
+		glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
+		glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
+
+		glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
+		glVertexAttribDivisor(WSURF_VA_STYLES, 1);
+
+		glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
+		glVertexAttribDivisor(WSURF_VA_MATID, 1);
+		});
+
+	pShadowProxyModel->hABO = GL_GenBuffer();
+	GL_UploadDataToABOStaticDraw(pShadowProxyModel->hABO, sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size(), vDrawAttribBuffer.data());
+
+	return pShadowProxyModel;
 }

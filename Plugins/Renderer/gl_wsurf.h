@@ -22,8 +22,9 @@
 #define WSURF_TEXCHAIN_SPECIAL_MAX				3
 
 #define WSURF_VBO_VERTEX		0
-#define WSURF_VBO_INSTANCE		1
-#define WSURF_VBO_MAX			2
+#define WSURF_VBO_VERTEXTBN		1
+#define WSURF_VBO_INSTANCE		2
+#define WSURF_VBO_MAX			3
 
 class CWorldSurfaceRenderMaterial
 {
@@ -50,7 +51,6 @@ public:
 	uint32_t reverse_index_count{};
 	uint32_t instance_index{};
 	uint32_t instance_count{};
-	float totalSquare{};
 };
 
 //CPU Resource
@@ -61,6 +61,34 @@ public:
 
 #define TEXCHAIN_PASS_SOLID 0
 #define TEXCHAIN_PASS_SOLID_WITH_SKY 1
+
+class CWorldSurfaceShadowProxyDraw
+{
+public:
+	CWorldSurfaceShadowProxyDraw(const std::string& n) : name(n)
+	{
+
+	}
+
+	~CWorldSurfaceShadowProxyDraw();
+
+	std::string name;
+	size_t startOffset{};
+	size_t drawCount{};
+};
+
+class CWorldSurfaceShadowProxyModel
+{
+public:
+
+	~CWorldSurfaceShadowProxyModel();
+
+	GLuint hVBO[WSURF_VBO_MAX]{};
+	GLuint hEBO{};
+	GLuint hVAO{};
+	GLuint hABO{};
+	std::vector<std::shared_ptr<CWorldSurfaceShadowProxyDraw>> DrawList;
+};
 
 class CWorldSurfaceBrushTexChain
 {
@@ -172,6 +200,8 @@ public:
 	model_t* m_model{};
 	std::weak_ptr<CWorldSurfaceWorldModel> m_pWorldModel{};
 	std::vector<std::shared_ptr<CWorldSurfaceLeaf>> m_vLeaves;
+	std::weak_ptr<CWorldSurfaceShadowProxyModel> m_pShadowProxyModel{};
+	std::weak_ptr<CWorldSurfaceShadowProxyDraw> m_pShadowProxyDraw{};
 };
 
 class CDecalDrawBatch
@@ -208,7 +238,7 @@ public:
 	GLuint				hCameraUBO{};
 	GLuint				hDLightUBO{};
 	GLuint				hEntityUBO{};
-	GLuint				hDecalVBO[2]{};
+	GLuint				hDecalVBO[WSURF_VBO_MAX]{};
 	GLuint				hDecalEBO{};
 	GLuint				hMaterialSSBO{};
 	GLuint				hDecalVAO{};
@@ -339,6 +369,8 @@ void R_DrawWaterSurfaceModel(
 	cl_entity_t* ent);
 
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer);
+
+void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel);
 
 #define WSURF_DIFFUSE_ENABLED				0x1ull
 #define WSURF_LIGHTMAP_ENABLED				0x2ull

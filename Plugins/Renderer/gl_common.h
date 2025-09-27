@@ -191,16 +191,20 @@ typedef struct triapivertex_s
 typedef struct decalvertex_s
 {
 	vec3_t	pos;
-	float	texcoord[2];
-	float	lightmaptexcoord[2];
+	vec2_t	texcoord;
+	vec2_t	lightmaptexcoord;
 }decalvertex_t;
 
-typedef struct decalinstancedata_s
+typedef struct decalvertextbn_s
 {
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
-	float	lightmaptexturenum[2];
+}decalvertextbn_t;
+
+typedef struct decalinstancedata_s
+{
+	vec2_t	lightmaptexturenum;
 	byte	styles[4];
 	uint32_t matId;
 }decalinstancedata_t;
@@ -217,15 +221,19 @@ typedef struct world_material_s
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
-	float	texcoord[2];
-	float	lightmaptexcoord[2]; 
+	vec2_t	texcoord;
+	vec2_t	lightmaptexcoord;
 }brushvertex_t;
 
-typedef struct brushinstancedata_s
+typedef struct brushvertextbn_s
 {
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
+}brushvertextbn_t;
+
+typedef struct brushinstancedata_s
+{
 	float	lightmaptexturenum_texcoordscale[2];//lightmaptexcoord[2]=lightmaptexnum //texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
 	byte	styles[4];
 	uint32_t matId;

@@ -36,6 +36,9 @@
     <Filter Include="GLSL">
       <UniqueIdentifier>{faf7e248-e3fa-49f4-8b21-b2dbfec7735a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tinyobjloader">
+      <UniqueIdentifier>{104f2efa-1ccc-4536-8d87-1e53bb9db912}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
@@ -452,6 +455,9 @@
     <ClCompile Include="gl_ringbuffer.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.cc">
+      <Filter>tinyobjloader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -780,6 +786,9 @@
     </ClInclude>
     <ClInclude Include="gl_ringbuffer.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.h">
+      <Filter>tinyobjloader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

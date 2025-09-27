@@ -929,24 +929,22 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 	std::vector<vertex3f_t> vPolyVertices;
 	std::vector<decalvertex_t> vVertexDataBuffer;
+	std::vector<decalvertextbn_t> vVertexTBNDataBuffer;
 	decalinstancedata_t vInstanceDataBuffer[1];
 
 	vPolyVertices.reserve(MAX_DECALVERTS);
 	vVertexDataBuffer.reserve(MAX_DECALVERTS);
+	vVertexTBNDataBuffer.reserve(MAX_DECALVERTS);
 
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
 	{
 		vertex3f_t tempVertex;
 
-		tempVertex.v[0] = v[0];
-		tempVertex.v[1] = v[1];
-		tempVertex.v[2] = v[2];
+		VectorCopy(v, tempVertex.v);
 
 		decalvertex_t tempVertexData;
 
-		tempVertexData.pos[0] = v[0];
-		tempVertexData.pos[1] = v[1];
-		tempVertexData.pos[2] = v[2];
+		VectorCopy(v, tempVertexData.pos);
 
 		tempVertexData.texcoord[0] = v[3];
 		tempVertexData.texcoord[1] = v[4];
@@ -954,23 +952,20 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		tempVertexData.lightmaptexcoord[0] = v[5];
 		tempVertexData.lightmaptexcoord[1] = v[6];
 
+		decalvertextbn_t tempVertexTBNData;
+
+		VectorCopy(brushface->normal, tempVertexTBNData.normal);
+		VectorCopy(brushface->s_tangent, tempVertexTBNData.s_tangent);
+		VectorCopy(brushface->t_tangent, tempVertexTBNData.t_tangent);
+
 		vPolyVertices.emplace_back(tempVertex);
 		vVertexDataBuffer.emplace_back(tempVertexData);
+		vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
 
 		v += VERTEXSIZE;
 	}
 
 	decalinstancedata_t tempInstanceData;
-
-	tempInstanceData.normal[0] = brushface->normal[0];
-	tempInstanceData.normal[1] = brushface->normal[1];
-	tempInstanceData.normal[2] = brushface->normal[2];
-	tempInstanceData.s_tangent[0] = brushface->s_tangent[0];
-	tempInstanceData.s_tangent[1] = brushface->s_tangent[1];
-	tempInstanceData.s_tangent[2] = brushface->s_tangent[2];
-	tempInstanceData.t_tangent[0] = brushface->t_tangent[0];
-	tempInstanceData.t_tangent[1] = brushface->t_tangent[1];
-	tempInstanceData.t_tangent[2] = brushface->t_tangent[2];
 
 	tempInstanceData.lightmaptexturenum[0] = surf->lightmaptexturenum;
 	tempInstanceData.lightmaptexturenum[1] = 0;
@@ -993,6 +988,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	}
 
 	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX], sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexDataBuffer.size(), vVertexDataBuffer.data());
+	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN], sizeof(decalvertextbn_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertextbn_t) * vVertexTBNDataBuffer.size(), vVertexTBNDataBuffer.data());
 	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer) * decalIndex, sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer), vInstanceDataBuffer);
 	GL_UploadSubDataToEBO(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
 

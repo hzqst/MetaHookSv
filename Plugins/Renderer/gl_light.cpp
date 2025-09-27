@@ -729,9 +729,9 @@ void R_IterateDynamicLights(
 			if (dynlight->follow_player)
 			{
 				VectorCopy((*r_refdef.vieworg), dlight_origin);
-				VectorMA(dlight_origin, dynlight->origin[0], vforward, dlight_origin);
-				VectorMA(dlight_origin, dynlight->origin[1], vright, dlight_origin);
-				VectorMA(dlight_origin, dynlight->origin[2], vup, dlight_origin);
+				//VectorMA(dlight_origin, dynlight->origin[0], vforward, dlight_origin);
+				//VectorMA(dlight_origin, dynlight->origin[1], vright, dlight_origin);
+				//VectorMA(dlight_origin, dynlight->origin[2], vup, dlight_origin);
 			}
 			else
 			{

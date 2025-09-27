@@ -173,31 +173,27 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
 
     // Determine which cascade to use
-    int cascadeIndex = (CSM_LEVELS - 1); // Default to furthest cascade
+    int cascadeIndex = CSM_LEVELS - 1; // Default to furthest cascade
+    int nextCascadeIndex = -1;
     float cascadeBlendFactor = 0.0;
 
-    for(int i = 0; i < CSM_LEVELS; ++i)
+    for (int i = 0; i < CSM_LEVELS; ++i)
     {
-        if(distanceFromCamera < u_csmDistances[i])
+        if (distanceFromCamera < u_csmDistances[i])
         {
             cascadeIndex = i;
-            // Calculate blend factor for smooth transition between cascades
-            if(i > 0)
+
+            // Check if we need to blend with next cascade
+            if (i < CSM_LEVELS - 1)
             {
-                float blendRegion = (u_csmDistances[i] - u_csmDistances[i-1]) * 0.1; // 10% blend region
-                float distFromPrevBoundary = distanceFromCamera - u_csmDistances[i-1];
-                if(distFromPrevBoundary < blendRegion)
+                float blendDistance = (u_csmDistances[i+1] - u_csmDistances[i]) * 0.1; // 10% blend region
+                float distToNextBoundary = u_csmDistances[i+1] - distanceFromCamera;
+
+                if (distToNextBoundary < blendDistance)
                 {
-                    cascadeBlendFactor = distFromPrevBoundary / blendRegion;
+                    nextCascadeIndex = i + 1;
+                    cascadeBlendFactor = 1.0 - (distToNextBoundary / blendDistance);
                 }
-                else
-                {
-                    cascadeBlendFactor = 1.0;
-                }
-            }
-            else
-            {
-                cascadeBlendFactor = 1.0;
             }
             break;
         }
@@ -206,14 +202,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     // Calculate shadow coordinates for selected cascade
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
-    // Enhanced bias calculation for better handling of corner/crevice areas
-    float normalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
-
-    // Additional bias for cascade transitions and geometric complexity
-    float cascadeBias = 0.0001 * (cascadeIndex + 1); // Increase bias for further cascades
-
-    float bias = normalBias + cascadeBias;
-    shadowCoords.z -= bias;
+    shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 1.0);
 
     float visibility = 0.0;
     float texRes = float(CSM_RESOLUTION);
@@ -239,7 +228,6 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
         {
             // Improved PCF filtering with more samples for smoother shadows
             int pcfSamples = 0;
-            float pcfRadius = 1.5; // Slightly larger radius for smoother edges
 
             for(int x = -1; x <= 1; x++)
             {
@@ -256,52 +244,49 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
         }
     }
 
-    // Blend with previous cascade if needed for smooth transitions
-    if(cascadeIndex > 0 && cascadeBlendFactor < 1.0)
+    // Blend with next cascade if needed for smooth transitions
+    if (nextCascadeIndex != -1 && cascadeBlendFactor > 0.0)
     {
-        vec4 prevShadowCoords = u_csmMatrices[cascadeIndex-1] * vec4(World, 1.0);
+        vec4 nextShadowCoords = u_csmMatrices[nextCascadeIndex] * vec4(World, 1.0);
 
-        // Apply same enhanced bias calculation for previous cascade
-        float prevNormalBias = max(0.0005 * (1.0 - dot(Norm, -LightDirection)), 0.0001);
-        float prevCascadeBias = 0.0001 * cascadeIndex; // Previous cascade index
-        float prevBias = prevNormalBias + prevCascadeBias;
+        float bias = 0.0001 * (nextCascadeIndex * 0.5 + 1.0);
 
-        prevShadowCoords.z -= prevBias;
+        nextShadowCoords.z += bias;
 
-        float prevVisibility = 0.0;
+        float nextVisibility = 0.0;
 
-        if(prevShadowCoords.z / prevShadowCoords.w > 1.0 || prevShadowCoords.z / prevShadowCoords.w < 0.0)
+        if(nextShadowCoords.z / nextShadowCoords.w > 1.0 || nextShadowCoords.z / nextShadowCoords.w < 0.0)
         {
-            prevVisibility = 1.0;
+            nextVisibility = 1.0;
         }
         else
         {
-            vec3 prevProjCoords = prevShadowCoords.xyz / prevShadowCoords.w;
+            vec3 nextProjCoords = nextShadowCoords.xyz / nextShadowCoords.w;
 
-            if(prevProjCoords.x < 0.0 || prevProjCoords.x > 1.0 || prevProjCoords.y < 0.0 || prevProjCoords.y > 1.0)
+            if(nextProjCoords.x < 0.0 || nextProjCoords.x > 1.0 || nextProjCoords.y < 0.0 || nextProjCoords.y > 1.0)
             {
-                prevVisibility = 1.0;
+                nextVisibility = 1.0;
             }
             else
             {
-                // Simple PCF for previous cascade
-                int prevPcfSamples = 0;
+                // Simple PCF for next cascade
+                int nextPcfSamples = 0;
                 for(int x = -1; x <= 1; x++)
                 {
                     for(int y = -1; y <= 1; y++)
                     {
                         vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
-                        vec4 sampleCoord = vec4(prevProjCoords.xy + offset, prevProjCoords.z, 1.0);
-                        prevVisibility += texture(shadowTex, sampleCoord.xyz);
-                        prevPcfSamples++;
+                        vec4 sampleCoord = vec4(nextProjCoords.xy + offset, nextProjCoords.z, 1.0);
+                        nextVisibility += texture(shadowTex, sampleCoord.xyz);
+                        nextPcfSamples++;
                     }
                 }
-                prevVisibility /= float(prevPcfSamples);
+                nextVisibility /= float(nextPcfSamples);
             }
         }
 
-        // Blend between current and previous cascade
-        visibility = mix(prevVisibility, visibility, cascadeBlendFactor);
+        // Blend between current and next cascade
+        visibility = mix(visibility, nextVisibility, cascadeBlendFactor);
     }
 
     return visibility;

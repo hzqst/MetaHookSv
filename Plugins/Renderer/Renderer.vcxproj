@@ -80,7 +80,7 @@
     <ClCompile>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -117,7 +117,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -155,7 +155,7 @@ $(SDL2CheckRequirements)</Command>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);$(SDL3IncludeDirectory);$(SDL2IncludeDirectory);$(TinyObjLoaderDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -296,6 +296,7 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.cc" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="EngineSurfaceHook.cpp" />
@@ -411,6 +412,7 @@ $(SDL2CheckRequirements)</Command>
     <ClInclude Include="..\..\include\vgui_controls\URLLabel.h" />
     <ClInclude Include="..\..\include\vgui_controls\WizardPanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\WizardSubPanel.h" />
+    <ClInclude Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="bspfile.h" />
     <ClInclude Include="CounterStrike.h" />
     <ClInclude Include="enginedef.h" />
