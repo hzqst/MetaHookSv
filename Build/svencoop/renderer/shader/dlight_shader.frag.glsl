@@ -307,6 +307,10 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
         //flatshade
         DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * 0.8, 1.0);
     }
+    else if((stencilValue & STENCIL_MASK_NO_LIGHTING) == STENCIL_MASK_NO_LIGHTING)
+    {
+        AmbientColor = vec4(0.0, 0.0, 0.0, 0.0);
+    }
     else
     {
         float DiffuseFactor = dot(Normal, -LightDirection);
@@ -422,10 +426,6 @@ void main()
 #endif
 
     vec4 worldnormColor = texture(gbufferWorldNorm, vBaseTexCoord);
-
-    //float depth = texture(depthTex, vBaseTexCoord).r;
-
-    //vec3 worldpos = GenerateWorldPositionFromDepth(vBaseTexCoord, depth);
 
     vec3 normal = OctahedronToUnitVector(worldnormColor.xy);
 

@@ -773,12 +773,26 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 				ctx->code.emplace(address);
 
+				if (instCount < 10 &&
+					!vid_d3d &&
+					gPrivateFuncs.GL_SetModeLegacy &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					((PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x3F800000)
+				{
+					vid_d3d = (decltype(vid_d3d))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				}
+
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG &&
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base != 0 &&
-					pinst->detail->x86.operands[1].mem.disp ==0)
+					pinst->detail->x86.operands[1].mem.disp == 0)
 				{
 					ctx->mov_reg = pinst->detail->x86.operands[0].reg;
 					ctx->mov_reg_mem_address = address;

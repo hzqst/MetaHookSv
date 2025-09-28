@@ -183,6 +183,8 @@ float* g_iEndDist_SCClient = nullptr;
 
 void** (*pmainwindow) = nullptr;
 
+float* vid_d3d = nullptr;
+
 bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = { 0 };
@@ -5440,7 +5442,11 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
 {
+	(*vid_d3d) = 1;
+
 	auto r = gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, false, "opengl32.dll", pszCmdLine);
+
+	(*vid_d3d) = 0;
 
 	if (r)
 	{
