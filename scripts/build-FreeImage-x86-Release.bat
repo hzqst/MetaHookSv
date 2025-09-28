@@ -1,5 +1,7 @@
 @echo off
 
+call build-zlib-x86-Release.bat
+
 setlocal
 
 :: Check if SolutionDir is already set and non-empty
