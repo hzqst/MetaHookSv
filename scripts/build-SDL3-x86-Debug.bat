@@ -23,6 +23,6 @@ if not exist "%SolutionDir%thirdparty\SDL3_fork\CMakeLists.txt" if not exist "%S
     echo submodule initialization completed.
 )
 
-call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\SDL3_fork" -B "%SolutionDir%thirdparty\build\SDL3\x86\Debug" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL3\x86\Debug" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\SDL3_fork" -B "%SolutionDir%thirdparty\build\SDL3\x86\Debug" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\SDL3\x86\Debug" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUSE_VCLTL=TRUE
 
 call cmake --build "%SolutionDir%thirdparty\build\SDL3\x86\Debug" --config Debug --target install
