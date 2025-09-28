@@ -13,12 +13,6 @@ cvar_t *r_shadow = NULL;
 
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
-	/*if (g_bIsSvenCoop)
-	{
-		if (entstate->scale != 0 && entstate->scale != 1.0f)
-			return 0;
-	}*/
-
 	if (mod->type != mod_studio)
 		return 0;
 
@@ -64,7 +58,7 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 /*
 	Purpose: allocate a depth stencil texture in "shadowtex->depth_stencil" with width/height of "size"
 */
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArrayAsDepth)
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size)
 {
 	shadowtex->size = size;
 
@@ -227,7 +221,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						if (!args->shadowtex->depth_stencil)
 						{
-							R_AllocShadowTexture(args->shadowtex, 1024, false);
+							R_AllocShadowTexture(args->shadowtex, 1024);
 						}
 
 						current_shadow_texture = args->shadowtex;
@@ -317,7 +311,9 @@ void R_RenderShadowmapForDynamicLights(void)
 				// Allocate 4096x4096 CSM texture if not already allocated
 				if (!args->shadowtex->depth_stencil)
 				{
-					R_AllocShadowTexture(args->shadowtex, CSM_RESOLUTION, false);
+					R_AllocShadowTexture(args->shadowtex, CSM_RESOLUTION);
+
+					args->shadowtex->csm = true;
 				}
 
 				// Calculate cascade distances based on camera frustum
