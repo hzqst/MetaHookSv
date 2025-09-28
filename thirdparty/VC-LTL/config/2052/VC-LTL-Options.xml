@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+ * 项目：VC-LTL
+ * 文件：VC-LTL.targets
+ * 用途：适用于 Visual Studio 的 VC-LTL 工具集的属性页配置文件
+ *
+ * 许可：MIT
+ *
+ * 作者：mingkuang (mingkuang AT live.com)
+ * 作者：Mouri_Naruto (Mouri_Naruto AT Outlook.com)
+-->
+<ProjectSchemaDefinitions
+  xmlns="http://schemas.microsoft.com/build/2009/properties"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" >
+  <Rule Name="CuyuTeam_3C886396-2D31-4C73-9281-E39A064253D9"
+        PageTemplate="tool"
+        DisplayName="NuGet程序包设置">
+    <Rule.Categories>
+      <Category Name="VC_LTL" DisplayName="VC-LTL" Description="第三方CRT运行库，优化C/C++程序体积，避免FLS上限。"/>
+    </Rule.Categories>
+
+    <Rule.DataSource>
+      <DataSource Persistence="ProjectFile"
+                  ItemType=""
+                  Label="Configuration"
+                  HasConfigurationCondition="true"/>
+    </Rule.DataSource>
+
+    <EnumProperty
+      Name="SupportLTL"
+      Category="VC_LTL"
+      DisplayName="启用VC-LTL"
+      Description="ucrt模式体积更小，但是依赖ucrtbase.dll，该文件不保证早期平台一定存在。感谢msvcr14x项目提供兼容XP系统的ucrtbase.dll。">
+      <EnumValue
+        Name="false"
+        DisplayName="禁用"/>
+
+      <EnumValue
+        Name="true"
+        DisplayName="自动（默认）"/>
+      
+      <EnumValue
+        Name="msvcrt"
+        DisplayName="msvcrt模式"/>
+
+      <EnumValue
+        Name="ucrt"
+        DisplayName="ucrt模式"/>
+    </EnumProperty>
+  </Rule>
+</ProjectSchemaDefinitions>
