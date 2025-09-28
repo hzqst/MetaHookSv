@@ -194,10 +194,14 @@ bool g_bHasLowerBody = false;
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = { 0 };
 
-//This is the pass for rendering glow stencil
+/*
+	Purpose: Indicates that we are rendering glow stencil, disable color write-in
+*/
 bool r_draw_glowstencil = false;
 
-//This is the pass for rendering glow color
+/*
+	Purpose: Indicates that we are rendering glow color, disable depth write-in
+*/
 bool r_draw_glowcolor = false;
 
 //This is the very first pass for studiomodel mesh analysis
@@ -206,31 +210,76 @@ bool r_draw_analyzingstudio = false;
 //This is when drawing a studiomodel has mesh with flag STUDIO_NF_ALPHA, STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass, and this studiomodel need to be put into the transparent queue and draw again later.
 bool r_draw_deferredtrans = false;
 
-//This is to mark the studiomodel with flag STUDIO_NF_ALPHA
+/*
+	Purpose: Indicates that we are drawing studiomodel with STUDIO_NF_ALPHA.
+*/
 bool r_draw_hasalpha = false;
 
-//This is to mark the studiomodel with flag STUDIO_NF_ADDITIVE
+/*
+	Purpose: Indicates that we are drawing studiomodel with STUDIO_NF_ADDITIVE.
+*/
 bool r_draw_hasadditive = false;
 
+/*
+	Purpose: Indicates that we are drawing studiomodel with face.
+*/
 bool r_draw_hasface = false;
 
+/*
+	Purpose: Indicates that we are drawing studiomodel with hair.
+*/
 bool r_draw_hashair = false;
 
-//This is to mark the studiomodel with outline
+/*
+	Purpose: Indicates that we are drawing studiomodel with opaque outline enabled, and there will be an outline-overlay on top of current pass.
+*/
 bool r_draw_hasoutline = false;
 
-bool r_draw_shadowcaster = false;
+/*
+	Purpose: Indicates that we are in drawing shadow view using "current_shadow_texture->viewport" as viewport and current_shadow_texture->proj/worldmatrix as proj/worldmatrix. 
+	Note that transparent objects are skipped.
+*/
+bool r_draw_shadowview = false;
+
+/*
+	Purpose: skips R_CullBox (frustum culling) check
+*/
 bool r_draw_shadowscene = false;
 
+/*
+	Purpose: Indicates that we are in R_PreDrawViewModel
+*/
 bool r_draw_previewmodel = false;
+
+/*
+	Purpose: Indicates that we are in R_PreDrawViewModel, affects model flipping, bone caching.
+*/
 bool r_draw_viewmodel = false;
 
+/*
+	Purpose: Indicates that we are in drawing opaqe objects
+*/
 bool r_draw_opaque = false;
+
+/*
+	Purpose: Indicates that we are in drawing transparent objects with OIT blending enabled
+*/
 bool r_draw_oitblend = false;
+
+/*
+	Purpose: Indicates that we are in drawing objects in gamma space directly, and no gamma correction should be performed on top of current backbuffer
+*/
 bool r_draw_gammablend = false;
+
+/*
+	Purpose: Indicates that we are in drawing water reflect view
+*/
 bool r_draw_reflectview = false;
+
+/*
+	Purpose: Indicates that we are in drawing water refract view
+*/
 bool r_draw_refractview = false;
-bool r_draw_portalview = false;
 
 int r_renderview_pass = 0;
 
@@ -440,7 +489,7 @@ bool R_IsRenderingGammaBlending()
 
 bool R_IsRenderingShadowView()
 {
-	return r_draw_shadowcaster;
+	return r_draw_shadowview;
 }
 
 /*

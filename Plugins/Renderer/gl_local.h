@@ -783,14 +783,13 @@ extern bool r_draw_hasadditive;
 extern bool r_draw_hasface;
 extern bool r_draw_hashair;
 extern bool r_draw_hasoutline;
-extern bool r_draw_shadowcaster;
+extern bool r_draw_shadowview;
 extern bool r_draw_shadowscene;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;
 extern bool r_draw_reflectview;
 extern bool r_draw_refractview;
-extern bool r_draw_portalview;
 
 extern int r_renderview_pass;
 

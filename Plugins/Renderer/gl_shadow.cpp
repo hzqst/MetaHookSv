@@ -217,7 +217,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					if (args->bIsFromLocalPlayer)
 					{
-						r_draw_shadowcaster = true;
+						r_draw_shadowview = true;
 
 						if (!args->shadowtex->depth_stencil)
 						{
@@ -292,7 +292,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						args->shadowtex->ready = true;
 
-						r_draw_shadowcaster = false;
+						r_draw_shadowview = false;
 
 						GL_EndDebugGroup();
 					}
@@ -305,7 +305,7 @@ void R_RenderShadowmapForDynamicLights(void)
 			{
 				args->shadowtex->ready = false;
 
-				r_draw_shadowcaster = true;
+				r_draw_shadowview = true;
 				r_draw_shadowscene = true;
 
 				// Allocate 4096x4096 CSM texture if not already allocated
@@ -412,7 +412,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 				args->shadowtex->ready = true;
 
-				r_draw_shadowcaster = false;
+				r_draw_shadowview = false;
 				r_draw_shadowscene = false;
 
 				GL_EndDebugGroup();
