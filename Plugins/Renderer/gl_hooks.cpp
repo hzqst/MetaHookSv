@@ -6303,6 +6303,11 @@ void Engine_FillAddress_Host_ClearMemory(const mh_dll_info_t& DllInfo, const mh_
 
 		Host_ClearMemory_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Host_ClearMemory_Call, 0x80, [](PUCHAR Candidate) {
 
+			if (Candidate[-1] == 0x90 &&
+				Candidate[0] == 0xE8 &&
+				Candidate[5] == 0xE8)
+				return TRUE;
+
 			if (Candidate[-1] == 0xCC &&
 				Candidate[0] == 0xE8 &&
 				Candidate[5] == 0xE8)
