@@ -13,41 +13,14 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-for /f "usebackq tokens=*" %%i in (`tools\vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
-  set InstallDir=%%i
-)
+call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\FreeImage_clone" -B "%SolutionDir%thirdparty\build\FreeImage\x86\Release" -A Win32 -DCMAKE_PREFIX_PATH="%SolutionDir%thirdparty\install\zlib\x86\Release" -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\FreeImage\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" -DUSE_VCLTL=TRUE
 
-:: Check if FreeImage_clone directory has been initialized
-if not exist "%SolutionDir%thirdparty\FreeImage_clone\FreeImage.2017.sln" if not exist "%SolutionDir%thirdparty\FreeImage_clone\.git" (
-    echo Initializing FreeImage_clone submodule only...
-    :: Initialize only the FreeImage_clone submodule without recursive initialization
-    call git submodule update --init "%SolutionDir%thirdparty\FreeImage_clone"
-    if errorlevel 1 (
-        echo Error: git submodule initialization failed!
-        exit /b 1
-    )
-    echo submodule initialization completed.
-)
+call cmake --build "%SolutionDir%thirdparty\build\FreeImage\x86\Release" --config Release --target install
 
-if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
+mkdir "%SolutionDir%install\"
+mkdir "%SolutionDir%install\x86\"
+mkdir "%SolutionDir%install\x86\Release\"
+copy "%SolutionDir%thirdparty\install\FreeImage\x86\Release\bin\FreeImage.dll" "%SolutionDir%install\x86\Release\FreeImage.dll"
 
-    "%InstallDir%\Common7\Tools\vsdevcmd.bat"
-
-    cd /d "%SolutionDir%thirdparty\FreeImage_clone\"
-
-    MSBuild.exe FreeImage.2017.sln "/target:FreeImage" /p:Configuration="Release" /p:Platform="Win32"
-
-    mkdir "%SolutionDir%thirdparty\install"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage\x86"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage\x86\Release"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage\x86\Release\include"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage\x86\Release\bin"
-    mkdir "%SolutionDir%thirdparty\install\FreeImage\x86\Release\lib"
-
-    copy "Dist\x32\FreeImage.h" "%SolutionDir%thirdparty\install\FreeImage\x86\Release\include\FreeImage.h" /y
-    copy "Dist\x32\FreeImage.dll" "%SolutionDir%thirdparty\install\FreeImage\x86\Release\bin\FreeImage.dll" /y
-    copy "Dist\x32\FreeImage.lib" "%SolutionDir%thirdparty\install\FreeImage\x86\Release\lib\FreeImage.lib" /y
-)
 
 endlocal

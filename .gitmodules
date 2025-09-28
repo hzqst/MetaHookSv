@@ -41,3 +41,7 @@
 	path = thirdparty/SDL3_fork
 	url = https://github.com/hzqst/SDL
 	branch = VC-LTL-SDL3
+[submodule "thirdparty/zlib-fork"]
+	path = thirdparty/zlib-fork
+	url = https://github.com/hzqst/zlib-fork
+	branch = VC-LTL
