@@ -4228,7 +4228,7 @@ void R_RenderScene(void)
 	if (!(*r_refdef.onlyClientDraws))
 	{
 		R_DrawWorld();
-		S_ExtraUpdate();
+		//S_ExtraUpdate();
 		R_DrawEntitiesOnList();
 	}
 
@@ -4252,7 +4252,7 @@ void R_RenderScene(void)
 		}
 	}
 
-	S_ExtraUpdate();
+	//S_ExtraUpdate();
 
 	R_DisableRenderingFog();
 

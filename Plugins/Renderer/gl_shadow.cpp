@@ -441,6 +441,10 @@ void R_RenderShadowMap_Start(void)
 	{
 		cl_dlight_shadow_textures[i].ready = false;
 	}
+	for (size_t i = 0; i < g_DynamicLights.size(); ++i)
+	{
+		g_DynamicLights[i]->shadowtex.ready = false;
+	}
 }
 
 /*

@@ -4723,23 +4723,25 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 
 		uint32_t startOffset = sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size();
 		uint32_t drawCount = 0;
+		uint32_t numIndices = 0;
 
 		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+
 			int fv = shape.mesh.num_face_vertices[f];
 		
-			CDrawIndexAttrib drawAttrib;
-		
-			drawAttrib.FirstIndexLocation = baseIndex;
-			drawAttrib.NumIndices = fv;
-			drawAttrib.FirstInstanceLocation = instanceIndex;
-			drawAttrib.NumInstances = 1;
-			drawAttrib.BaseVertex = 0;
-
-			vDrawAttribBuffer.emplace_back(drawAttrib);
-			drawCount++;
-		
-			baseIndex += fv;
+			numIndices += fv;
 		}
+
+		CDrawIndexAttrib drawAttrib;
+
+		drawAttrib.FirstIndexLocation = baseIndex;
+		drawAttrib.NumIndices = numIndices;
+		drawAttrib.FirstInstanceLocation = instanceIndex;
+		drawAttrib.NumInstances = 1;
+		drawAttrib.BaseVertex = 0;
+
+		vDrawAttribBuffer.emplace_back(drawAttrib);
+		drawCount++;
 
 		auto pShadowProxyDraw = std::make_shared<CWorldSurfaceShadowProxyDraw>(shape.name);
 
