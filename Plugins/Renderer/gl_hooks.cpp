@@ -114,6 +114,8 @@
 #define GL_LOADTEXTURE2_SIG_HL25 "\x55\x8B\xEC\xB8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x45\x08\x2A\x89\x85\x2A\x2A\x2A\x2A\x33\xDB\x8B\x45\x18"
 #define GL_LOADTEXTURE2_SIG_SVENGINE "\x51\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x33\xC0\x59\xC3\x2A\x55\x8B\x6C\x24\x10"
 
+#define GL_SELECTPIXELFORMAT_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x57\x0F\x85\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xC7\x05"
+
 #define GL_SETMODE_SIG_BLOB "\x8B\x44\x24\x10\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x85\xC0"
 #define GL_SETMODE_SIG_NEW2 GL_SETMODE_SIG_BLOB
 #define GL_SETMODE_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\x2A\x2A\x8B\x75\x0C\x33\xDB\x3B\xF3\x2A\x89\x1D\x2A\x2A\x2A\x2A\x74\x2A"
@@ -423,6 +425,7 @@
 static hook_t* g_phook_GL_Init = NULL;
 static hook_t* g_phook_GL_SetMode = NULL;
 static hook_t* g_phook_GL_SetModeLegacy = NULL;
+static hook_t* g_phook_GL_SelectPixelFormat = NULL;
 static hook_t* g_phook_GL_Bind = NULL;
 static hook_t* g_phook_GL_Set2D = NULL;
 static hook_t* g_phook_GL_Finish2D = NULL;
@@ -847,6 +850,13 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		}
 
 		Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
+	}
+
+	if (gPrivateFuncs.GL_SetModeLegacy)
+	{
+		PVOID GL_SelectPixelFormat_VA = Search_Pattern(GL_SELECTPIXELFORMAT_SIG_BLOB, DllInfo);
+		gPrivateFuncs.GL_SelectPixelFormat = (decltype(gPrivateFuncs.GL_SelectPixelFormat))ConvertDllInfoSpace(GL_SelectPixelFormat_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(GL_SelectPixelFormat);
 	}
 }
 
@@ -12415,6 +12425,7 @@ void Engine_InstallHooks(void)
 	if (gPrivateFuncs.GL_SetModeLegacy)
 	{
 		Install_InlineHook(GL_SetModeLegacy);
+		Install_InlineHook(GL_SelectPixelFormat);
 	}
 	else
 	{
@@ -12452,7 +12463,6 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
-	//Install_InlineHook(Draw_MiptexTexture);
 
 	gEngfuncs.pTriAPI->RenderMode = triapi_RenderMode;
 	gEngfuncs.pTriAPI->Begin = triapi_Begin;
@@ -12497,6 +12507,7 @@ void Engine_UninstallHooks(void)
 	if (gPrivateFuncs.GL_SetModeLegacy)
 	{
 		Uninstall_Hook(GL_SetModeLegacy);
+		Uninstall_Hook(GL_SelectPixelFormat);
 	}
 	else
 	{

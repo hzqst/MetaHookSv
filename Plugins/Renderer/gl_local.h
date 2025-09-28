@@ -464,6 +464,7 @@ void GL_Shutdown(void* window, HDC pmaindc, HGLRC pbaseRC);
 void GL_Init(void);
 qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC);
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
+qboolean GL_SelectPixelFormat(HDC hDC);
 void GL_Set2D();
 void GL_Finish2D();
 void GL_Set2DEx(int x, int y, int width, int height);

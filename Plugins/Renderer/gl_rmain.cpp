@@ -5428,6 +5428,12 @@ void InitializeGraphicEngine(void *window)
 	g_pMetaHookAPI->HookCmd("gl_log", GL_LogOverride);
 }
 
+qboolean GL_SelectPixelFormat(HDC hDC)
+{
+	//TODO wglSelectPixelFormat?
+	return true;
+}
+
 qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 {
 	auto r = gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
@@ -5442,11 +5448,7 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
 {
-	(*vid_d3d) = 1;
-
 	auto r = gPrivateFuncs.GL_SetModeLegacy(window, pmaindc, pbaseRC, false, "opengl32.dll", pszCmdLine);
-
-	(*vid_d3d) = 0;
 
 	if (r)
 	{
