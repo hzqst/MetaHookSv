@@ -202,7 +202,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     // Calculate shadow coordinates for selected cascade
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
-    shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 1.0);
+    shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 0.5);
 
     float visibility = 0.0;
     float texRes = float(CSM_RESOLUTION);
@@ -249,7 +249,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     {
         vec4 nextShadowCoords = u_csmMatrices[nextCascadeIndex] * vec4(World, 1.0);
 
-        float bias = 0.0001 * (nextCascadeIndex * 0.5 + 1.0);
+        float bias = 0.0001 * (nextCascadeIndex * 0.5 + 0.5);
 
         nextShadowCoords.z += bias;
 
