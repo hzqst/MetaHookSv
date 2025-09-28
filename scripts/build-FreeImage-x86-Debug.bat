@@ -22,5 +22,4 @@ mkdir "%SolutionDir%install\x86\"
 mkdir "%SolutionDir%install\x86\Debug\"
 copy "%SolutionDir%thirdparty\install\FreeImage\x86\Debug\bin\FreeImaged.dll" "%SolutionDir%install\x86\Debug\FreeImaged.dll"
 
-
 endlocal

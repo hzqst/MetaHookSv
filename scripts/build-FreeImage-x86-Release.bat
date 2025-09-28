@@ -22,5 +22,4 @@ mkdir "%SolutionDir%install\x86\"
 mkdir "%SolutionDir%install\x86\Release\"
 copy "%SolutionDir%thirdparty\install\FreeImage\x86\Release\bin\FreeImage.dll" "%SolutionDir%install\x86\Release\FreeImage.dll"
 
-
 endlocal
