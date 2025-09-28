@@ -1,7 +1,7 @@
 #version 430
 
 #extension GL_EXT_texture_array : require
-#extension GL_EXT_gpu_shader4 : require
+//#extension GL_EXT_gpu_shader4 : require
 
 #include "common.h"
 

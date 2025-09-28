@@ -4667,8 +4667,6 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 	std::vector<uint32_t> vIndiceBuffer;
 	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
 
-	uint32_t baseVertex = vVertexDataBuffer.size();
-
 	for (const auto& shape : shapes) {
 
 		uint32_t instanceIndex = (uint32_t)vInstanceDataBuffer.size();
@@ -4731,26 +4729,17 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 		
 			CDrawIndexAttrib drawAttrib;
 		
-			drawAttrib.FirstIndexLocation = baseVertex + baseIndex;
+			drawAttrib.FirstIndexLocation = baseIndex;
 			drawAttrib.NumIndices = fv;
 			drawAttrib.FirstInstanceLocation = instanceIndex;
 			drawAttrib.NumInstances = 1;
-		
+			drawAttrib.BaseVertex = 0;
+
 			vDrawAttribBuffer.emplace_back(drawAttrib);
 			drawCount++;
 		
 			baseIndex += fv;
 		}
-
-		//CDrawIndexAttrib drawAttrib;
-		//
-		//drawAttrib.FirstIndexLocation = baseVertex + baseIndex;
-		//drawAttrib.NumIndices = vIndiceBuffer.size() - baseIndex;
-		//drawAttrib.FirstInstanceLocation = instanceIndex;
-		//drawAttrib.NumInstances = 1;
-		//
-		//vDrawAttribBuffer.emplace_back(drawAttrib);
-		//drawCount++;
 
 		auto pShadowProxyDraw = std::make_shared<CWorldSurfaceShadowProxyDraw>(shape.name);
 
