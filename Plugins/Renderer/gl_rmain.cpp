@@ -204,10 +204,15 @@ bool r_draw_glowstencil = false;
 */
 bool r_draw_glowcolor = false;
 
-//This is the very first pass for studiomodel mesh analysis
+/*
+	Purpose: This is the very first pass for studiomodel mesh analysis. we draw nothing in this pass.
+*/
 bool r_draw_analyzingstudio = false;
 
-//This is when drawing a studiomodel has mesh with flag STUDIO_NF_ALPHA, STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass, and this studiomodel need to be put into the transparent queue and draw again later.
+/*
+	Purpose: This is when drawing a studiomodel has mesh with flag STUDIO_NF_ALPHA, STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass,
+	and this studiomodel need to be put into the transparent queue and draw again later.
+*/
 bool r_draw_deferredtrans = false;
 
 /*
