@@ -152,7 +152,7 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 	Sig_FuncNotFound(S_LoadSound);
 
 	{
-		typedef struct
+		typedef struct S_LoadSound_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
@@ -334,7 +334,7 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 
 	if (1)
 	{
-		typedef struct
+		typedef struct Mod_LoadModel_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;

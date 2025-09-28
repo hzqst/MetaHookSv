@@ -28,12 +28,6 @@
 [submodule "thirdparty/Chocobo1Hash"]
 	path = thirdparty/Chocobo1Hash
 	url = https://github.com/hzqst/Chocobo1Hash
-[submodule "thirdparty/SDL_2_0_16_0"]
-	path = thirdparty/SDL_2_0_16_0
-	url = https://github.com/libsdl-org/SDL
-[submodule "thirdparty/SDL3"]
-	path = thirdparty/SDL3
-	url = https://github.com/libsdl-org/SDL
 [submodule "thirdparty/sdl2-compat-fork"]
 	path = thirdparty/sdl2-compat-fork
 	url = https://github.com/hzqst/sdl2-compat-fork
@@ -43,3 +37,11 @@
 [submodule "thirdparty/csv-parser"]
 	path = thirdparty/csv-parser
 	url = https://github.com/vincentlaucsb/csv-parser
+[submodule "thirdparty/SDL3_fork"]
+	path = thirdparty/SDL3_fork
+	url = https://github.com/hzqst/SDL
+	branch = VC-LTL-SDL3
+[submodule "thirdparty/zlib-fork"]
+	path = thirdparty/zlib-fork
+	url = https://github.com/hzqst/zlib-fork
+	branch = VC-LTL
