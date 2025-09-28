@@ -40,3 +40,7 @@
 [submodule "thirdparty/csv-parser"]
 	path = thirdparty/csv-parser
 	url = https://github.com/vincentlaucsb/csv-parser
+[submodule "thirdparty/SDL3_fork"]
+	path = thirdparty/SDL3_fork
+	url = https://github.com/hzqst/SDL
+	branch = VC-LTL-SDL3
