@@ -3195,7 +3195,7 @@ void R_InitCvars(void)
 	r_novis = gEngfuncs.pfnGetCvarPointer("r_novis");
 
 	//r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
-	r_detailtextures = gEngfuncs.pfnRegisterVariable("r_detailtextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//r_detailtextures = gEngfuncs.pfnRegisterVariable("r_detailtextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_cullsequencebox = gEngfuncs.pfnGetCvarPointer("r_cullsequencebox");
 

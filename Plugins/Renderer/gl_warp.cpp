@@ -49,6 +49,8 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	int iStencilRef = STENCIL_MASK_NO_LIGHTING;
+
 	if ((int)r_wsurf_sky_fog->value > 0)
 	{
 		if (!R_IsRenderingGBuffer())
@@ -77,8 +79,10 @@ void R_DrawSkyBox(void)
 	}
 	else
 	{
-		GL_BeginStencilWrite(STENCIL_MASK_NO_FOG, STENCIL_MASK_NO_FOG);
+		iStencilRef |= STENCIL_MASK_NO_FOG;
 	}
+
+	GL_BeginStencilWrite(iStencilRef, iStencilRef);
 
 	if (R_IsRenderingGammaBlending())
 	{

@@ -12,7 +12,6 @@
 
 using namespace vgui;
 
-extern cvar_t *hud_saytext;
 extern cvar_t *hud_saytext_time;
 extern cvar_t *cap_newchat;
 
@@ -1424,14 +1423,14 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 		return 0;
 	}
 
-	int lineNum;
-	wchar_t finalBuffer[MAX_CHARS_PER_LINE];
-	const char *localized;
-	char buf[MAX_CHARS_PER_LINE];
-	int len;
-	wchar_t *msg;
-	wchar_t temp[MAX_CHARS_PER_LINE];
-	wchar_t out[MAX_CHARS_PER_LINE];
+	int lineNum = 0;
+	wchar_t finalBuffer[MAX_CHARS_PER_LINE]{};
+	const char *localized = nullptr;
+	char buf[MAX_CHARS_PER_LINE]{};
+	int len = 0;
+	wchar_t *msg = nullptr;
+	wchar_t temp[MAX_CHARS_PER_LINE]{};
+	wchar_t out[MAX_CHARS_PER_LINE]{};
 
 	for (lineNum = 0; lineNum < MAX_LINES; lineNum++)
 	{
@@ -1592,7 +1591,7 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 
 	if (useStdPrintf)
 	{
-		_snwprintf(finalBuffer, sizeof(finalBuffer), msg, w[0], w[1], w[2], w[3]);
+		_snwprintf(finalBuffer, _countof(finalBuffer), msg, w[0], w[1], w[2], w[3]);
 	}
 	else
 	{

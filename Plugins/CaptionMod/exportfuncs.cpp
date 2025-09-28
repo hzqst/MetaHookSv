@@ -27,7 +27,6 @@ cvar_t *cap_min_avol = NULL;
 cvar_t *cap_netmessage = NULL;
 cvar_t *cap_hudmessage = NULL;
 cvar_t *cap_newchat = NULL;
-cvar_t *hud_saytext = NULL;
 cvar_t* hud_saytext_time = NULL;
 cvar_t* cap_lang = NULL;
 
@@ -152,10 +151,6 @@ void HUD_Init(void)
 	hud_saytext_time = gEngfuncs.pfnGetCvarPointer("hud_saytext_time");
 	if(!hud_saytext_time)
 		hud_saytext_time = gEngfuncs.pfnRegisterVariable("hud_saytext_time", "10.0f", FCVAR_CLIENTDLL);
-
-	hud_saytext = gEngfuncs.pfnGetCvarPointer("hud_saytext");
-	if (!hud_saytext)
-		hud_saytext = gEngfuncs.pfnRegisterVariable("hud_saytext", "1", FCVAR_CLIENTDLL);
 
 	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
