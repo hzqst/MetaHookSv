@@ -1,0 +1,126 @@
+{
+    "origin" "0 0 0"
+    "angles" "60 43 0"
+    "size" "6000"
+    "color" "255 255 128"
+    "classname" "light_dynamic"
+    "type" "directional"
+    "ambient" "0.0"
+    "diffuse" "0.8"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "origin" "-1984 1186 144"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "66 66 66"
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.5"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "origin" "-1098 1092 144"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "66 66 66"
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.5"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "origin" "-936 1514 -16"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "66 66 66"
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.5"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "origin" "324 2500 -42"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "66 66 66"
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.7"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "origin" "525 512 86"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "66 66 66"
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.7"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "follow_player" "0"
+}
+{
+    "classname" "env_deferredlighting_control"
+    "lightmap_pow" "0.2"
+    "lightmap_scale" "0.2"
+}
+{
+    "classname" "env_shadow_proxy"
+    "model" "maps/de_dust2.bsp"
+    "objpath" "maps/de_dust2_shadow.obj"
+}
+{
+    "classname" "env_water_control"
+    "basetexture" "!toxi*"
+    "origin" "0 0 0"
+    "angles" "0 0 0"
+    "level" "WATER_LEVEL_LEGACY"
+}
+{
+    "classname" "env_water_control"
+    "basetexture" "!radio"
+    "origin" "0 0 0"
+    "angles" "0 0 0"
+    "level" "WATER_LEVEL_LEGACY"
+}
+{
+    "classname" "env_water_control"
+    "basetexture" "*"
+    "normalmap" "renderer/texture/water_normalmap.dds"
+    "fresnelfactor" "100 1200 8.0 0.9"
+    "depthfactor" "0.02 0.01 300"
+    "normfactor" "1.0"
+    "minheight" "7.5"
+    "maxtrans" "200"
+    "speedrate" "1.0"
+    "origin" "0 0 0"
+    "angles" "0 0 0"
+    "level" "WATER_LEVEL_REFLECT_ENTITY"
+}
+{
+    "classname" "env_flashlight_control"
+    "cone_texture" "renderer/texture/flashlight.dds"
+}
