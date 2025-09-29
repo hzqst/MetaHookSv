@@ -91,7 +91,7 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
         flooredUV *= invRes;
 
-        /*float uw0 = (4.0 - 3.0 * s);
+        float uw0 = (4.0 - 3.0 * s);
         float uw1 = 7.0;
         float uw2 = (1.0 + 3.0 * s);
 
@@ -119,9 +119,9 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         visibility += uw1 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes);
         visibility += uw2 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes);
 
-        visibility /= 144.0;*/
+        visibility /= 144.0;
 
-        float uw0 = (5.0 * s - 6.0);
+        /*float uw0 = (5.0 * s - 6.0);
         float uw1 = (11.0 * s - 28.0);
         float uw2 = -(11.0 * s + 17.0);
         float uw3 = -(5.0 * s + 1.0);
@@ -161,7 +161,7 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         visibility += uw2 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v3), invRes);
         visibility += uw3 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v3), invRes);
 
-        visibility /= 2704.0;
+        visibility /= 2704.0;*/
     }
 
     return visibility;
@@ -404,9 +404,9 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     float projUp = dot(worldToLight, u_lightup.xyz);
 
     // Check if within bounds
-    if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
-        return vec4(0.0, 0.0, 0.0, 0.0);
-    }
+    //if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
+    //    return vec4(0.0, 0.0, 0.0, 0.0);
+    //}
 
     vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 
@@ -415,21 +415,20 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 #if defined(SHADOW_TEXTURE_ENABLED)
 
     flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
-    Color.r *= flShadowIntensity;
-    Color.g *= flShadowIntensity;
-    Color.b *= flShadowIntensity;
 
 #endif
 
 #if defined(CSM_ENABLED)
-    if(flShadowIntensity > 0.01)
-    {
-        float flCSMShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
-        Color.r *= flCSMShadowIntensity;
-        Color.g *= flCSMShadowIntensity;
-        Color.b *= flCSMShadowIntensity;
-    }
+  
+    float flCSMShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
+       
+    flShadowIntensity = min(flShadowIntensity, flCSMShadowIntensity);
+
 #endif
+
+    Color.r *= flShadowIntensity;
+    Color.g *= flShadowIntensity;
+    Color.b *= flShadowIntensity;
 
     return Color;
 }
