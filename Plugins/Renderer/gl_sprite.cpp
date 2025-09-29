@@ -764,9 +764,6 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRe
 
 void R_DrawSpriteModel(cl_entity_t *ent)
 {
-	if (R_IsRenderingShadowView())
-		return;
-
 	auto pSprite = (msprite_t *)ent->model->cache.data;
 
 	if (!pSprite)

@@ -75,6 +75,7 @@ public:
 	std::string name;
 	size_t startOffset{};
 	size_t drawCount{};
+	size_t polyCount{};
 };
 
 class CWorldSurfaceShadowProxyModel

@@ -2863,6 +2863,7 @@ void R_StudioDrawMesh_DrawPass(
 	else if (StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED)
 	{
 		//client.dll!StudioRenderFinal enables GL_BLEND in GL_SetRenderMode and this will mess everything up. see r_studio.c~studioapi_GL_SetRenderMode~qglEnable( GL_BLEND );
+		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
 	}

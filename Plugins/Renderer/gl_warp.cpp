@@ -14,7 +14,7 @@ void R_DrawSkyBox(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	if (R_IsRenderingShadowView())
+	if (!(r_draw_classify & DRAW_CLASSIFY_SKYBOX))
 		return;
 
 	if (!g_WorldSurfaceRenderer.vSkyboxTextureId[0])
@@ -33,7 +33,7 @@ void R_DrawSkyBox(void)
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, g_WorldSurfaceRenderer.hEntityUBO);
 
-	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
+	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED | WSURF_FULLBRIGHT_ENABLED;
 
 	if ((*filterMode) != 0)
 	{

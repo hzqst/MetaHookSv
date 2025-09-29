@@ -211,7 +211,11 @@ void main()
 
 #endif
 
-#if defined(LIGHTMAP_ENABLED) && !defined(FULLBRIGHT_ENABLED)
+#if defined(FULLBRIGHT_ENABLED)
+	
+	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+
+#elif defined(LIGHTMAP_ENABLED)
 
 	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 0.0);
 
@@ -251,7 +255,7 @@ void main()
 
 #else
 
-	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 1.0);
 
 #endif
 

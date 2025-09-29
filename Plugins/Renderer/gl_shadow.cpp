@@ -2,14 +2,191 @@
 #include <sstream>
 #include <math.h>
 
-//renderer
+std::shared_ptr<IShadowTexture> g_DLightShadowTextures[MAX_DLIGHTS_SVENGINE]{};
 
-shadow_texture_t cl_dlight_shadow_textures[256] = { 0 };
-
-shadow_texture_t *current_shadow_texture = NULL;
+int g_iCurrentShadowCascadedIndex = 0;
+std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture{};
 
 //cvar
-cvar_t *r_shadow = NULL;
+cvar_t* r_shadow = NULL;
+
+class CBaseShadowTexture : public IShadowTexture
+{
+public:
+	CBaseShadowTexture(uint32_t size) : m_size(size)
+	{
+		m_depthtex = GL_GenShadowTexture(size, size, true);
+	}
+
+	~CBaseShadowTexture()
+	{
+		if (m_depthtex)
+		{
+			gEngfuncs.Con_DPrintf("CBaseShadowTexture: delete m_depthtex [%d].\n", m_depthtex);
+			GL_DeleteTexture(m_depthtex);
+			m_depthtex = 0;
+		}
+	}
+
+	bool IsReady() const override
+	{
+		return m_ready;
+	}
+
+	void SetReady(bool bReady) override
+	{
+		m_ready = bReady;
+	}
+
+	bool IsCascaded() const override
+	{
+		return false;
+	}
+
+	bool IsStatic() const override
+	{
+		return false;
+	}
+	
+	GLuint GetDepthTexture() const override
+	{
+		return m_depthtex;
+	}
+
+	uint32_t GetTextureSize() const override
+	{
+		return m_size;
+	}
+
+	void SetViewport(float x, float y, float w, float h) override
+	{
+		m_viewport[0] = x;
+		m_viewport[1] = y;
+		m_viewport[2] = w;
+		m_viewport[3] = h;
+	}
+	const float* GetViewport() const override
+	{
+		return m_viewport;
+	}
+
+	void SetCSMDistance(int cascadedIndex, float distance) override
+	{
+
+	}
+
+	float GetCSMDistance(int cascadedIndex) const override
+	{
+		return 0;
+	}
+
+private:
+	GLuint m_depthtex{};
+	uint32_t m_size{};
+	float m_viewport[4]{};
+	bool m_ready{};
+};
+
+class CSingleShadowTexture : public CBaseShadowTexture
+{
+public:
+	CSingleShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size), m_bStatic(bStatic)
+	{
+
+	}
+
+	void SetWorldMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(m_worldmatrix, mat, sizeof(mat4));
+	}
+	void SetProjectionMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(m_projmatrix, mat, sizeof(mat4));
+	}
+	void SetShadowMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(m_shadowmatrix, mat, sizeof(mat4));
+	}
+
+	const mat4* GetWorldMatrix(int cascadedIndex) const override
+	{
+		return &m_worldmatrix;
+	}
+	const mat4* GetProjectionMatrix(int cascadedIndex) const override
+	{
+		return &m_projmatrix;
+	}
+	const mat4* GetShadowMatrix(int cascadedIndex) const override
+	{
+		return &m_shadowmatrix;
+	}
+
+	bool IsStatic() const override
+	{
+		return m_bStatic;
+	}
+private:
+	mat4 m_worldmatrix{};
+	mat4 m_projmatrix{};
+	mat4 m_shadowmatrix{};
+	bool m_bStatic{};
+};
+
+class CCascadedShadowTexture : public CBaseShadowTexture
+{
+public:
+	CCascadedShadowTexture(uint32_t size) : CBaseShadowTexture(size)
+	{
+
+	}
+
+	bool IsCascaded() const override
+	{
+		return true;
+	}
+
+	void SetWorldMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(&m_worldmatrix[cascadedIndex], mat, sizeof(mat4));
+	}
+	void SetProjectionMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(&m_projmatrix[cascadedIndex], mat, sizeof(mat4));
+	}
+	void SetShadowMatrix(int cascadedIndex, const mat4* mat) override
+	{
+		memcpy(&m_shadowmatrix[cascadedIndex], mat, sizeof(mat4));
+	}
+
+	const mat4* GetWorldMatrix(int cascadedIndex) const override
+	{
+		return &m_worldmatrix[cascadedIndex];
+	}
+	const mat4* GetProjectionMatrix(int cascadedIndex) const override
+	{
+		return &m_projmatrix[cascadedIndex];
+	}
+	const mat4* GetShadowMatrix(int cascadedIndex) const override
+	{
+		return &m_shadowmatrix[cascadedIndex];
+	}
+
+	void SetCSMDistance(int cascadedIndex, float distance) override
+	{
+		m_csmDistances[cascadedIndex] = distance;
+	}
+
+	float GetCSMDistance(int cascadedIndex) const override
+	{
+		return m_csmDistances[cascadedIndex];
+	}
+
+private:
+	float m_csmDistances[CSM_LEVELS]{};
+	mat4 m_worldmatrix[CSM_LEVELS]{};
+	mat4 m_projmatrix[CSM_LEVELS]{};
+	mat4 m_shadowmatrix[CSM_LEVELS]{};
+};
 
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
@@ -55,28 +232,14 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 	return 0;
 }
 
-/*
-	Purpose: allocate a depth stencil texture in "shadowtex->depth_stencil" with width/height of "size"
-*/
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size)
+std::shared_ptr<IShadowTexture> R_CreateSingleShadowTexture(uint32_t size, bool bStatic)
 {
-	shadowtex->size = size;
-
-	vec4_t depthBorderColor = { 1, 1, 1, 1 };
-	
-	shadowtex->depth_stencil = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor, true);
+	return std::make_shared<CSingleShadowTexture>(size, bStatic);
 }
 
-void R_FreeShadowTexture(shadow_texture_t *shadowtex)
+std::shared_ptr<IShadowTexture> R_CreateCascadedShadowTexture(uint32_t size)
 {
-	if (shadowtex->depth_stencil)
-	{
-		gEngfuncs.Con_DPrintf("R_FreeShadowTexture: delete depth_stencil [%d].\n", shadowtex->depth_stencil);
-		GL_DeleteTexture(shadowtex->depth_stencil);
-		shadowtex->depth_stencil = 0;
-	}
-
-	shadowtex->size = 0;
+	return std::make_shared<CCascadedShadowTexture>(size);
 }
 
 void R_InitShadow(void)
@@ -86,11 +249,12 @@ void R_InitShadow(void)
 
 void R_ShutdownShadow(void)
 {
-	for (int i = 0; i < _countof(cl_dlight_shadow_textures); ++i)
+	g_pCurrentShadowTexture = nullptr;
+
+	for (int i = 0; i < _countof(g_DLightShadowTextures); ++i)
 	{
-		R_FreeShadowTexture(&cl_dlight_shadow_textures[i]);
+		g_DLightShadowTextures[i].reset();
 	}
-	//TODO: g_DynamicLights ?
 }
 
 bool R_ShouldRenderShadow(void)
@@ -203,180 +367,140 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-			if (args->shadowtex)
-			{
-				args->shadowtex->ready = false;
-			}
+			
 		};
 
 		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
 		{
-				if (args->shadowtex)
-				{
-					args->shadowtex->ready = false;
-
-					if (args->bIsFromLocalPlayer)
-					{
-						r_draw_shadowview = true;
-
-						if (!args->shadowtex->depth_stencil)
-						{
-							R_AllocShadowTexture(args->shadowtex, 1024);
-						}
-
-						current_shadow_texture = args->shadowtex;
-
-						GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
-
-						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, args->shadowtex->depth_stencil, args->shadowtex->size, args->shadowtex->size);
-
-						current_shadow_texture->viewport[0] = 0;
-						current_shadow_texture->viewport[1] = 0;
-						current_shadow_texture->viewport[2] = args->shadowtex->size;
-						current_shadow_texture->viewport[3] = args->shadowtex->size;
-
-						glEnable(GL_POLYGON_OFFSET_FILL);
-						glPolygonOffset(10, 10);
-
-						GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-						glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-						R_PushRefDef();
-
-						(*r_refdef.vieworg)[0] = args->origin[0];
-						(*r_refdef.vieworg)[1] = args->origin[1];
-						(*r_refdef.vieworg)[2] = args->origin[2];
-
-						(*r_refdef.viewangles)[0] = args->angle[0];
-						(*r_refdef.viewangles)[1] = args->angle[1];
-						(*r_refdef.viewangles)[2] = args->angle[2];
-
-						R_LoadIdentityForWorldMatrix();
-						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
-
-						float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
-						R_LoadIdentityForProjectionMatrix();
-						R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
-
-						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
-
-						Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
-						Matrix4x4_Copy(current_shadow_texture->projmatrix, (*projMatrix));
-
-						R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, (*worldMatrix), (*projMatrix));
-
-						auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-						if (pLocalPlayer->model && args->bIsFromLocalPlayer)
-						{
-							auto save_localplayer_model = pLocalPlayer->model;
-
-							//This stops local player from being rendered
-							pLocalPlayer->model = NULL;
-
-							R_RenderScene();
-
-							pLocalPlayer->model = save_localplayer_model;
-						}
-						else
-						{
-							R_RenderScene();
-						}
-
-						glDisable(GL_POLYGON_OFFSET_FILL);
-						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-						R_PopRefDef();
-
-						args->shadowtex->ready = true;
-
-						r_draw_shadowview = false;
-
-						GL_EndDebugGroup();
-					}
-				}
-		};
-
-		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
-		{
-			if (args->shadowtex)
+			if (args->ppShadowTexture && args->bIsFromLocalPlayer)
 			{
-				args->shadowtex->ready = false;
-
-				r_draw_shadowview = true;
-				r_draw_shadowscene = true;
-
-				// Allocate 4096x4096 CSM texture if not already allocated
-				if (!args->shadowtex->depth_stencil)
+				if (!(*args->ppShadowTexture))
 				{
-					R_AllocShadowTexture(args->shadowtex, CSM_RESOLUTION);
-
-					args->shadowtex->csm = true;
+					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(1024, false);
 				}
 
-				// Calculate cascade distances based on camera frustum
-				// These could be configurable via cvars in the future
-				float nearPlane = r_znear;  // Should match r_nearclip or similar, 4.0 by default
-				float farPlane = r_zfar; // Should match r_farclip or similar, 8192.0 by default
-				float cascadeDistances[4];
-
-				// Use logarithmic distribution for cascades
-				for (int i = 0; i < 4; ++i)
+				if (!(*args->ppShadowTexture)->IsReady())
 				{
-					float ratio = (float)(i + 1) / 4.0f;
-					cascadeDistances[i] = nearPlane * pow(farPlane / nearPlane, ratio);
-				}
+					r_draw_shadowview = true;
 
-				// Copy to args for shader use
-				for (int i = 0; i < 4; ++i)
-				{
-					args->csmDistances[i] = cascadeDistances[i];
-				}
+					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
-				current_shadow_texture = args->shadowtex;
+					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-				current_shadow_texture->viewport[0] = 0;
-				current_shadow_texture->viewport[1] = 0;
-				current_shadow_texture->viewport[2] = args->shadowtex->size;
-				current_shadow_texture->viewport[3] = args->shadowtex->size;
+					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
 
-				GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, current_shadow_texture->depth_stencil, current_shadow_texture->size, current_shadow_texture->size);
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-				GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+					glEnable(GL_POLYGON_OFFSET_FILL);
+					glPolygonOffset(10, 10);
 
-				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-				R_PushRefDef();
-
-				// Render each cascade
-				for (int cascade = 0; cascade < CSM_LEVELS; ++cascade)
-				{
-					GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascade);
-
-					// Set up scissor test for this cascade region
-					// CSM layout: [0,1]
-					//             [2,3]
-					int scissorX = (cascade % 2) * (CSM_RESOLUTION / 2);  // 0 or 2048
-					int scissorY = (cascade / 2) * (CSM_RESOLUTION / 2);  // 0 or 2048
-					int scissorWidth = (CSM_RESOLUTION / 2);
-					int scissorHeight = (CSM_RESOLUTION / 2);
-
-					glEnable(GL_SCISSOR_TEST);
-					glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
-
-					// Update refdef for shadow rendering
+					R_PushRefDef();
 					VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
+					float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
+
+					R_LoadIdentityForProjectionMatrix();
+					R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
+
+					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+					mat4 shadowMatrix;
+					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+
+					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
+					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
+					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
+
+					auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+					if (pLocalPlayer->model && args->bIsFromLocalPlayer)
+					{
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify &= ~DRAW_CLASSIFY_LOCAL_PLAYER;
+						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+
+						R_RenderScene();
+
+						r_draw_classify = old_draw_classify;
+					}
+					else
+					{
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+
+						R_RenderScene();
+
+						r_draw_classify = old_draw_classify;
+					}
+
+					glDisable(GL_POLYGON_OFFSET_FILL);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					R_PopRefDef();
+
+					r_draw_shadowview = false;
+
+					GL_EndDebugGroup();
+
+					g_pCurrentShadowTexture->SetReady(true);
+
+					g_pCurrentShadowTexture = nullptr;
+				}
+			}
+		};
+
+		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
+		{
+			if (args->ppShadowTexture)
+			{
+				if (!(*args->ppShadowTexture))
+				{
+					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(8192, true);
+				}
+
+				if (!(*args->ppShadowTexture)->IsReady())
+				{
+					auto pWorldSurfaceModel = R_GetWorldSurfaceModel(*(cl_worldmodel));
+
+					r_draw_shadowview = true;
+
+					g_pCurrentShadowTexture = (*args->ppShadowTexture);
+
+					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+
+					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightStatic");
+
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+
+					//glEnable(GL_POLYGON_OFFSET_FILL);
+					//glPolygonOffset(10, 10);
+
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+					R_PushRefDef();
+					VectorCopy(args->origin, (*r_refdef.vieworg));
+					VectorCopy(args->angle, (*r_refdef.viewangles));
+
+					// Update refdef for shadow rendering
+
+					R_LoadIdentityForWorldMatrix();
+					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
 					// Set up orthographic projection for this cascade
-					float orthoSize = args->size * (1.0f + cascade * 2.0f) / (1.0f + (4-1) * 2.0f); // Increase size for further cascades
+					float orthoSize = args->size; // Increase size for further cascades
 
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
@@ -384,38 +508,189 @@ void R_RenderShadowmapForDynamicLights(void)
 					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
-					float csmOffsetMatrix[4][4];
-					Matrix4x4_CreateCSMOffset(csmOffsetMatrix, cascade);
+					mat4 shadowMatrix;
+					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-					mat4 tempProjmatrix;
-					Matrix4x4_Multiply(tempProjmatrix, (*projMatrix), csmOffsetMatrix);
+					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
+					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
+					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
 
-					Matrix4x4_Copy(current_shadow_texture->projmatrix, tempProjmatrix);
-					Matrix4x4_Copy(current_shadow_texture->worldmatrix, (*worldMatrix));
+					auto old_brush_polys = (*c_brush_polys);
+					(*c_brush_polys) = 0;
 
-					R_SetupShadowMatrix(current_shadow_texture->shadowmatrix, current_shadow_texture->worldmatrix, current_shadow_texture->projmatrix);
-
-					Matrix4x4_Copy(args->csmMatrices[cascade], current_shadow_texture->shadowmatrix);
-
-					// Render scene from light's perspective
+					auto old_draw_classify = r_draw_classify;
+					r_draw_classify = DRAW_CLASSIFY_WORLD;
+					
 					R_RenderScene();
 
-					// Disable scissor test after rendering this cascade
-					glDisable(GL_SCISSOR_TEST);
+					bool bAnyPolyRendered = (*c_brush_polys) > 0 ? true : false;
+
+					r_draw_classify = old_draw_classify;
+					(*c_brush_polys) = old_brush_polys;
+
+					//glDisable(GL_POLYGON_OFFSET_FILL);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					R_PopRefDef();
+
+					r_draw_shadowview = false;
 
 					GL_EndDebugGroup();
+
+					g_pCurrentShadowTexture->SetReady(bAnyPolyRendered);
+
+					g_pCurrentShadowTexture = nullptr;
+				}
+			}
+
+			if (args->ppCSMShadowTexture)
+			{
+				// Allocate 4096x4096 CSM texture if not already allocated
+				if (!(*args->ppCSMShadowTexture))
+				{
+					(*args->ppCSMShadowTexture) = R_CreateCascadedShadowTexture(CSM_RESOLUTION);
 				}
 
-				R_PopRefDef();
+				if (!(*args->ppCSMShadowTexture)->IsReady())
+				{
+					g_pCurrentShadowTexture = (*args->ppCSMShadowTexture);
 
-				glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					r_draw_shadowview = true;
+					r_draw_shadowscene = true;
 
-				args->shadowtex->ready = true;
+					const float lambda = math_clamp(0.8, 0.0f, 1.0f); // 例如0.8，也可来自cvar
+					const float orthoMargin = 1.05f; // 5% 外扩，避免裁边
 
-				r_draw_shadowview = false;
-				r_draw_shadowscene = false;
+					// Calculate cascade distances based on camera frustum
+					// These could be configurable via cvars in the future
+					float nearPlane = r_znear;  // Should match r_nearclip or similar, 4.0 by default
+					float farPlane = r_zfar; // Should match r_farclip or similar, 8192.0 by default
 
-				GL_EndDebugGroup();
+					float fovY = (r_yfov_currentpass) * (M_PI / 360.0);
+					float fovX = (r_xfov_currentpass) * (M_PI / 360.0);
+					float tanHalfFovY = tanf(0.5f * fovY);
+					float tanHalfFovX = tanf(0.5f * fovX);
+
+					float splits[CSM_LEVELS + 1]{};
+					splits[0] = nearPlane;
+
+					// Use logarithmic distribution for cascades
+					for (int i = 1; i <= CSM_LEVELS; ++i)
+					{
+						float si = (float)i / (float)CSM_LEVELS; // [0,1]
+						float d_lin = nearPlane + (farPlane - nearPlane) * si;
+						float d_log = nearPlane * powf(farPlane / nearPlane, si);
+						splits[i] = d_lin * (1.0f - lambda) + d_log * lambda;
+					}
+
+					for (int i = 0; i < CSM_LEVELS; ++i)
+					{
+						float csmFar = splits[i + 1];
+						g_pCurrentShadowTexture->SetCSMDistance(i, csmFar);
+					}
+
+					g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
+
+					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+					R_PushRefDef();
+					//VectorCopy(args->origin, (*r_refdef.vieworg));
+					VectorCopy(args->angle, (*r_refdef.viewangles));
+
+					// Render each cascade
+					for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
+					{
+						GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascadeIndex);
+
+						g_iCurrentShadowCascadedIndex = cascadeIndex;
+
+						// Set up scissor test for this cascade region
+						// CSM layout: [0,1]
+						//             [2,3]
+						int scissorX = (cascadeIndex % 2) * (g_pCurrentShadowTexture->GetTextureSize() / 2);  // 0 or 2048
+						int scissorY = (cascadeIndex / 2) * (g_pCurrentShadowTexture->GetTextureSize() / 2);  // 0 or 2048
+						int scissorWidth = (g_pCurrentShadowTexture->GetTextureSize() / 2);
+						int scissorHeight = (g_pCurrentShadowTexture->GetTextureSize() / 2);
+
+						glEnable(GL_SCISSOR_TEST);
+						glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
+
+						// Update refdef for shadow rendering
+
+						R_LoadIdentityForWorldMatrix();
+						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+						float splitNear = splits[cascadeIndex + 0];
+						float splitFar = splits[cascadeIndex + 1];
+
+						// 该级联在相机视锥上界面的半宽/半高（取far端，因为更大）
+						float halfW_far = splitFar * tanHalfFovX;
+						float halfH_far = splitFar * tanHalfFovY;
+
+						// 该级联厚度的一半
+						float halfDepth = 0.5f * (splitFar - splitNear);
+
+						// 用包含该截头棱锥的最小球近似，半径为到far平面角点的最大距离
+						// 与光方向无关，稳定且不会裁边
+						float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
+
+						// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
+						float orthoSize = 2.0f * radius * orthoMargin;
+
+						R_LoadIdentityForProjectionMatrix();
+						R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
+
+						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+						float csmOffsetMatrix[4][4];
+						Matrix4x4_CreateCSMOffset(csmOffsetMatrix, cascadeIndex);
+
+						mat4 tempProjmatrix;
+						Matrix4x4_Multiply(tempProjmatrix, (*projMatrix), csmOffsetMatrix);
+
+						mat4 shadowMatrix;
+						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), tempProjmatrix);
+
+						g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
+						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, &tempProjmatrix);
+						g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
+
+						auto old_draw_classify = r_draw_classify;
+
+						r_draw_classify = 
+							(DRAW_CLASSIFY_OPAQUE_ENTITIES |
+							DRAW_CLASSIFY_LOCAL_PLAYER);
+
+						R_RenderScene();
+
+						r_draw_classify = old_draw_classify;
+
+						// Disable scissor test after rendering this cascade
+						glDisable(GL_SCISSOR_TEST);
+
+						GL_EndDebugGroup();
+					}
+
+					R_PopRefDef();
+
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					r_draw_shadowview = false;
+					r_draw_shadowscene = false;
+
+					GL_EndDebugGroup();
+
+					g_pCurrentShadowTexture->SetReady(true);
+
+					g_pCurrentShadowTexture = nullptr;
+				}
 			}
 		};
 
@@ -433,13 +708,27 @@ void R_RenderShadowmapForDynamicLights(void)
 
 void R_RenderShadowMap_Start(void)
 {
-	for (int i = 0; i < _countof(cl_dlight_shadow_textures); ++i)
+	for (int i = 0; i < _countof(g_DLightShadowTextures); ++i)
 	{
-		cl_dlight_shadow_textures[i].ready = false;
+		if (g_DLightShadowTextures[i] && !g_DLightShadowTextures[i]->IsStatic())
+		{
+			g_DLightShadowTextures[i]->SetReady(false);
+		}
 	}
+
 	for (size_t i = 0; i < g_DynamicLights.size(); ++i)
 	{
-		g_DynamicLights[i]->shadowtex.ready = false;
+		const auto& pDynamicLight = g_DynamicLights[i];
+
+		if (pDynamicLight->pShadowTexture && !pDynamicLight->pShadowTexture->IsStatic())
+		{
+			pDynamicLight->pShadowTexture->SetReady(false);
+		}
+
+		if (pDynamicLight->pCSMShadowTexture && !pDynamicLight->pCSMShadowTexture->IsStatic())
+		{
+			pDynamicLight->pCSMShadowTexture->SetReady(false);
+		}
 	}
 }
 

@@ -149,6 +149,7 @@
 #define DSHADE_BIND_STENCIL_TEXTURE			5
 #define DSHADE_BIND_CONE_TEXTURE			6
 #define DSHADE_BIND_SHADOWMAP_TEXTURE		7
+#define DSHADE_BIND_CSM_TEXTURE				8
 
 #define DFINAL_BIND_DIFFUSE_TEXTURE			0
 #define DFINAL_BIND_LIGHTMAP_TEXTURE		1
@@ -346,7 +347,8 @@ layout(binding = BINDING_POINT_OIT_COUNTER_SSBO, offset = 0) uniform atomic_uint
 		float x = gl_FragCoord.x;
 		float y = gl_FragCoord.y;
 		float viewportW = CameraUBO.viewport.x;
-		uint linkedListSize = uint(CameraUBO.viewport.z);
+    	float viewportH = CameraUBO.viewport.w;
+		uint linkedListSize = uint(viewportW * viewportH * MAX_NUM_NODES);
 
 		uint pixelIndex = uint(viewportW*y + x);
 

@@ -10,6 +10,8 @@ enum DynamicLightType
 	DynamicLightType_Directional
 };
 
+class IShadowTexture;
+
 class CDynamicLight
 {
 public:
@@ -27,11 +29,8 @@ public:
 	float specularpow{};
 	int shadow{};
 	int follow_player{};
-	shadow_texture_t shadowtex;
-
-	// DirectionalLight specific fields
-	mat4 csmMatrices[4]; // Shadow matrices for each cascade level
-	float csmDistances[4]; // Distance splits for each cascade
+	std::shared_ptr<IShadowTexture> pShadowTexture;
+	std::shared_ptr<IShadowTexture> pCSMShadowTexture;
 };
 
 extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
@@ -76,8 +75,8 @@ typedef struct PointLightCallbackArgs_s
 	float ambient;
 	float diffuse;
 	float specular;
-	float specularpow; 
-	shadow_texture_t* shadowtex;
+	float specularpow;
+	std::shared_ptr<IShadowTexture>* ppShadowTexture;
 	bool bVolume;
 }PointLightCallbackArgs;
 
@@ -101,7 +100,8 @@ typedef struct SpotLightCallbackArgs_s
 	float diffuse;
 	float specular;
 	float specularpow;
-	shadow_texture_t *shadowtex;
+	std::shared_ptr<IShadowTexture>* ppShadowTexture;
+	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
 	bool bIsFromLocalPlayer;
 }SpotLightCallbackArgs;
@@ -121,9 +121,8 @@ typedef struct DirectionalLightCallbackArgs_s
 	float diffuse;
 	float specular;
 	float specularpow;
-	shadow_texture_t* shadowtex;
-	mat4* csmMatrices; // Array of 4 cascade matrices
-	float* csmDistances; // Array of 4 cascade distances
+	std::shared_ptr<IShadowTexture>* ppShadowTexture;
+	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
 }DirectionalLightCallbackArgs;
 
@@ -155,6 +154,7 @@ typedef struct
 	// DirectionalLight CSM specific uniforms
 	int u_csmMatrices;
 	int u_csmDistances;
+	int u_csmTexel;
 	int u_lightSize;
 }dlight_program_t;
 

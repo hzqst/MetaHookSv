@@ -321,6 +321,8 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void *)(0), pPortalModel->drawCount, 0);
 
+	(*c_brush_polys) += pPortalModel->polyCount;
+
 	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
@@ -362,6 +364,8 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 	GL_BindTextureUnit(1, GL_TEXTURE_2D, pPortalModel->texinfo->texture->gl_texturenum);
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pPortalModel->drawCount, 0);
+
+	(*c_brush_polys) += pPortalModel->polyCount;
 
 	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
 

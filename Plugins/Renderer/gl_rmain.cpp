@@ -241,7 +241,7 @@ bool r_draw_hashair = false;
 bool r_draw_hasoutline = false;
 
 /*
-	Purpose: Indicates that we are in drawing shadow view using "current_shadow_texture->viewport" as viewport and current_shadow_texture->proj/worldmatrix as proj/worldmatrix. 
+	Purpose: Indicates that we are in drawing shadow view using "g_pCurrentShadowTexture->viewport" as viewport and g_pCurrentShadowTexture->proj/worldmatrix as proj/worldmatrix. 
 	Note that transparent objects are skipped.
 */
 bool r_draw_shadowview = false;
@@ -285,6 +285,8 @@ bool r_draw_reflectview = false;
 	Purpose: Indicates that we are in drawing water refract view
 */
 bool r_draw_refractview = false;
+
+int r_draw_classify = 0;
 
 int r_renderview_pass = 0;
 
@@ -439,7 +441,7 @@ cvar_t* r_wsurf_sky_fog = nullptr;
 
 cvar_t* gl_nearplane = nullptr;
 
-cvar_t* r_glow_bloomscale = nullptr;
+cvar_t* r_glow_bloomscale = nullptr; 
 
 void* Sys_GetMainWindow()
 {
@@ -896,7 +898,7 @@ void R_DrawParticles(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	if (R_IsRenderingShadowView())
+	if (!(r_draw_classify & DRAW_CLASSIFY_PARTICLES))
 		return;
 
 	gPrivateFuncs.R_FreeDeadParticles(&(*active_particles));
@@ -1845,20 +1847,20 @@ void ClientDLL_DrawTransparentTriangles(void)
 {
 	GL_BeginDebugGroup("ClientDLL_DrawTransparentTriangles");
 
-	gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
+	if (r_draw_classify & DRAW_CLASSIFY_TRANS_ENTITIES)
+	{
+		gPrivateFuncs.ClientDLL_DrawTransparentTriangles();
 
-	R_DrawGlowStencil();
+		R_DrawGlowStencil();
 
-	R_DrawPostProcessGlow();
+		R_DrawPostProcessGlow();
+	}
 
 	GL_EndDebugGroup();
 }
 
 void R_DrawTransEntities(int onlyClientDraw)
 {
-	if (R_IsRenderingShadowView())
-		return;
-
 	GL_BeginDebugGroup("R_DrawTransEntities");
 
 	if (g_bUseOITBlend)
@@ -1871,19 +1873,16 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		r_draw_oitblend = true;
 
-		if (r_drawentities->value)
-		{
-			R_DrawTEntitiesOnList(onlyClientDraw);
+		R_DrawTEntitiesOnList(onlyClientDraw);
 
-			R_InhibitRenderingFog();
+		R_InhibitRenderingFog();
 
-			ClientDLL_DrawTransparentTriangles();
+		ClientDLL_DrawTransparentTriangles();
 
-			R_RestoreRenderingFog();
+		R_RestoreRenderingFog();
 
-			(*numTransObjs) = 0;
-			(*r_blend) = 1;
-		}
+		(*numTransObjs) = 0;
+		(*r_blend) = 1;
 
 		if (!onlyClientDraw)
 		{
@@ -1903,19 +1902,16 @@ void R_DrawTransEntities(int onlyClientDraw)
 	}
 	else
 	{
-		if (r_drawentities->value)
-		{
-			R_DrawTEntitiesOnList(onlyClientDraw);
+		R_DrawTEntitiesOnList(onlyClientDraw);
 
-			R_InhibitRenderingFog();
+		R_InhibitRenderingFog();
 
-			ClientDLL_DrawTransparentTriangles();
+		ClientDLL_DrawTransparentTriangles();
 
-			R_RestoreRenderingFog();
+		R_RestoreRenderingFog();
 
-			(*numTransObjs) = 0;
-			(*r_blend) = 1;
-		}
+		(*numTransObjs) = 0;
+		(*r_blend) = 1;
 
 		if (!onlyClientDraw)
 		{
@@ -1928,9 +1924,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 void R_AddTEntity(cl_entity_t* ent)
 {
-	if (R_IsRenderingShadowView())
-		return;
-
 	if (!ent->model)
 		return;
 
@@ -2149,6 +2142,19 @@ void R_DrawStudioEntity(bool bTransparent)
 
 void R_DrawCurrentEntity(bool bTransparent)
 {
+	if (!(r_draw_classify & DRAW_CLASSIFY_OPAQUE_ENTITIES) && !bTransparent)
+	{
+		return;
+	}
+	if (!(r_draw_classify & DRAW_CLASSIFY_TRANS_ENTITIES) && bTransparent)
+	{
+		return;
+	}
+	if (!(r_draw_classify & DRAW_CLASSIFY_LOCAL_PLAYER) && (*currententity) == gEngfuncs.GetLocalPlayer())
+	{
+		return;
+	}
+
 	if (bTransparent)
 	{
 		(*r_blend) = CL_FxBlend((*currententity));
@@ -2697,6 +2703,19 @@ void R_RenderFrameStart()
 	R_StudioStartFrame();
 	R_CheckVariables();
 	R_AnimateLight();
+
+	r_draw_classify = DRAW_CLASSIFY_ALL;
+
+	if ((int)r_drawentities->value <= 0)
+	{
+		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+	}
+
+	if ((int)r_lightmap->value <= 0)
+	{
+		r_draw_classify &= ~DRAW_CLASSIFY_LIGHTMAP;
+	}
 }
 
 /*
@@ -3379,7 +3398,7 @@ void R_InitCvars(void)
 		r_drawlowerbody 0: disable lower body rendering
 		r_drawlowerbody 1: enable lower body rendering
 	*/
-	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_drawlowerbody = gEngfuncs.pfnRegisterVariable("r_drawlowerbody", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
 		r_drawlowerbodyattachments 0: hide entites attached to local player with MOVETYPE_FOLLOW, when drawing lowerbody
@@ -3483,13 +3502,32 @@ void R_Shutdown(void)
 
 void R_ForceCVars(qboolean mp)
 {
-	if (R_IsRenderingWaterView())
-		return;
+	if (mp && !AllowCheats())
+	{
+		if ((int)r_lightmap->value != 1)
+			gEngfuncs.Cvar_Set("r_lightmap", "1");
 
-	if (gPrivateFuncs.R_ForceCVars)
-		return gPrivateFuncs.R_ForceCVars(mp);
+		if ((int)gl_clear->value != 1)
+			gEngfuncs.Cvar_Set("gl_clear", "1");
 
-	//TODO implement this for 3266, inlined ?
+		if ((int)r_novis->value != 0)
+			gEngfuncs.Cvar_Set("r_novis", "0");
+
+		if ((int)r_fullbright->value != 0)
+			gEngfuncs.Cvar_Set("r_fullbright", "0");
+
+		if ((int)chase_active->value != 0)
+			gEngfuncs.Cvar_Set("chase_active", "0");
+
+		if ((int)gl_wireframe->value != 0)
+			gEngfuncs.Cvar_Set("gl_wireframe", "0");
+
+		if (gl_alphamin->value != 0.25f)
+			gEngfuncs.Cvar_Set("gl_alphamin", "0.25");
+
+		if ((int)r_drawentities->value != 1)
+			gEngfuncs.Cvar_Set("r_drawentities", "1");
+	}
 }
 
 void R_NewMap(void)
@@ -3836,10 +3874,10 @@ void R_SetupGL(void)
 	if (R_IsRenderingShadowView())
 	{
 		//Use viewport from current shadow texture
-		r_viewport[0] = current_shadow_texture->viewport[0];
-		r_viewport[1] = current_shadow_texture->viewport[1];
-		r_viewport[2] = current_shadow_texture->viewport[2];
-		r_viewport[3] = current_shadow_texture->viewport[3];
+		r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+		r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+		r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+		r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
 	}
 	else if (R_IsRenderingWaterView())
 	{
@@ -3872,8 +3910,8 @@ void R_SetupGL(void)
 
 	if (R_IsRenderingShadowView())
 	{
-		memcpy(r_world_matrix, current_shadow_texture->worldmatrix, sizeof(mat4));
-		memcpy(r_projection_matrix, current_shadow_texture->projmatrix, sizeof(mat4));
+		memcpy(r_world_matrix, g_pCurrentShadowTexture->GetWorldMatrix(g_iCurrentShadowCascadedIndex), sizeof(mat4));
+		memcpy(r_projection_matrix, g_pCurrentShadowTexture->GetProjectionMatrix(g_iCurrentShadowCascadedIndex), sizeof(mat4));
 	}
 	else if ((int)r_vertical_fov->value > 0)
 	{
@@ -4249,17 +4287,18 @@ void ClientDLL_DrawNormalTriangles(void)
 	GL_PushFrameBuffer();
 
 	//SC client dll should have enabled this but they don't
-	glEnable(GL_POLYGON_OFFSET_FILL);
+	//glEnable(GL_POLYGON_OFFSET_FILL);
 
 	//Call ClientDLL_DrawNormalTriangles instead of HUD_DrawNormalTriangles
-	gPrivateFuncs.ClientDLL_DrawNormalTriangles();
+	if (r_draw_classify & DRAW_CLASSIFY_OPAQUE_ENTITIES)
+	{
+		gPrivateFuncs.ClientDLL_DrawNormalTriangles();
+	}
 
-	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
-
-	glDisable(GL_POLYGON_OFFSET_FILL);
+	//glDisable(GL_POLYGON_OFFSET_FILL);
 
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
-	//(*currenttexture) = -1;
+	(*currenttexture) = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
 	GL_PopFrameBuffer();

@@ -46,12 +46,14 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
 {
 	vec4 finalColor = vec4(0);
  
+    float viewportW = CameraUBO.viewport.z;
+    float viewportH = CameraUBO.viewport.w;
     int idx = 0;
     for(int i = -3;i <= 3;i++)
     {
         for(int j = -3; j <= 3;j++)
         {
-            vec2 new_texcoord = texcoord + vec2((offset * i) / CameraUBO.viewport.x, (offset * j) / CameraUBO.viewport.y);
+            vec2 new_texcoord = texcoord + vec2((offset * i) / viewportW, (offset * j) / viewportH);
             vec4 color = GenerateBasicColor(new_texcoord);
             float weight = gauss[idx++];
             finalColor = finalColor + weight * color;

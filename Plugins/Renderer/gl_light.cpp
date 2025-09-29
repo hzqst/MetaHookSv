@@ -2,34 +2,34 @@
 #include "pm_defs.h"
 #include <sstream>
 
-cvar_t * r_deferred_lighting = NULL;
+cvar_t * r_deferred_lighting = nullptr;
 
 MapConVar* r_lightmap_pow = nullptr;
 MapConVar* r_lightmap_scale = nullptr;
 
-MapConVar* r_flashlight_enable = NULL;
-MapConVar *r_flashlight_ambient = NULL;
-MapConVar *r_flashlight_diffuse = NULL;
-MapConVar *r_flashlight_specular = NULL;
-MapConVar *r_flashlight_specularpow = NULL;
-MapConVar *r_flashlight_attachment = NULL;
-MapConVar *r_flashlight_distance = NULL;
-MapConVar* r_flashlight_min_distance = NULL;
-MapConVar *r_flashlight_cone_cosine = NULL;
+MapConVar* r_flashlight_enable = nullptr;
+MapConVar *r_flashlight_ambient = nullptr;
+MapConVar *r_flashlight_diffuse = nullptr;
+MapConVar *r_flashlight_specular = nullptr;
+MapConVar *r_flashlight_specularpow = nullptr;
+MapConVar *r_flashlight_attachment = nullptr;
+MapConVar *r_flashlight_distance = nullptr;
+MapConVar* r_flashlight_min_distance = nullptr;
+MapConVar *r_flashlight_cone_cosine = nullptr;
 
-MapConVar *r_dynlight_ambient = NULL;
-MapConVar *r_dynlight_diffuse = NULL;
-MapConVar *r_dynlight_specular = NULL;
-MapConVar *r_dynlight_specularpow = NULL;
+MapConVar *r_dynlight_ambient = nullptr;
+MapConVar *r_dynlight_diffuse = nullptr;
+MapConVar *r_dynlight_specular = nullptr;
+MapConVar *r_dynlight_specularpow = nullptr;
 
-cvar_t *r_ssr = NULL;
-MapConVar *r_ssr_ray_step = NULL;
-MapConVar *r_ssr_iter_count = NULL;
-MapConVar *r_ssr_distance_bias = NULL;
-MapConVar *r_ssr_exponential_step= NULL;
-MapConVar *r_ssr_adaptive_step = NULL;
-MapConVar *r_ssr_binary_search = NULL;
-MapConVar *r_ssr_fade = NULL;
+cvar_t *r_ssr = nullptr;
+MapConVar *r_ssr_ray_step = nullptr;
+MapConVar *r_ssr_iter_count = nullptr;
+MapConVar *r_ssr_distance_bias = nullptr;
+MapConVar *r_ssr_exponential_step= nullptr;
+MapConVar *r_ssr_adaptive_step = nullptr;
+MapConVar *r_ssr_binary_search = nullptr;
+MapConVar *r_ssr_fade = nullptr;
 
 bool r_draw_gbuffer = false;
 
@@ -47,7 +47,7 @@ GLuint r_flashlight_cone_texture = 0;
 std::string r_flashlight_cone_texture_name;
 
 /*
-	Purpose: dynamic lights from "[mapname]_entity.txt"
+	Purpose: Store dynamic lights from "[mapname]_entity.txt"
 */
 std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
@@ -57,11 +57,7 @@ std::unordered_map<program_state_t, dlight_program_t> g_DLightProgramTable;
 
 CDynamicLight::~CDynamicLight()
 {
-	if (shadowtex.depth_stencil)
-	{
-		GL_DeleteTexture(shadowtex.depth_stencil);
-		shadowtex.depth_stencil = 0;
-	}
+	
 }
 
 void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
@@ -233,6 +229,7 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
 			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
 			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
+			SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
 			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
@@ -287,6 +284,8 @@ void R_LoadDLightProgramStates(void)
 
 void R_ShutdownLight(void)
 {
+	g_DynamicLights.clear();
+
 	g_DFinalProgramTable.clear();
 
 	g_DLightProgramTable.clear();
@@ -693,7 +692,7 @@ void R_IterateDynamicLights(
 				args.diffuse = dynlight->diffuse;
 				args.specular = dynlight->specular;
 				args.specularpow = dynlight->specularpow;
-				args.shadowtex = &dynlight->shadowtex;
+				args.ppShadowTexture = &dynlight->pShadowTexture;
 				args.bVolume = true;
 
 				pointlightCallback(&args, context);
@@ -709,7 +708,7 @@ void R_IterateDynamicLights(
 				args.diffuse = dynlight->diffuse;
 				args.specular = dynlight->specular;
 				args.specularpow = dynlight->specularpow;
-				args.shadowtex = &dynlight->shadowtex;
+				args.ppShadowTexture = &dynlight->pShadowTexture;
 				args.bVolume = false;
 
 				pointlightCallback(&args, context);
@@ -729,9 +728,6 @@ void R_IterateDynamicLights(
 			if (dynlight->follow_player)
 			{
 				VectorCopy((*r_refdef.vieworg), dlight_origin);
-				//VectorMA(dlight_origin, dynlight->origin[0], vforward, dlight_origin);
-				//VectorMA(dlight_origin, dynlight->origin[1], vright, dlight_origin);
-				//VectorMA(dlight_origin, dynlight->origin[2], vup, dlight_origin);
 			}
 			else
 			{
@@ -750,9 +746,8 @@ void R_IterateDynamicLights(
 			args.diffuse = dynlight->diffuse;
 			args.specular = dynlight->specular;
 			args.specularpow = dynlight->specularpow;
-			args.shadowtex = &dynlight->shadowtex;
-			args.csmMatrices = dynlight->csmMatrices;
-			args.csmDistances = dynlight->csmDistances;
+			args.ppShadowTexture = &dynlight->pShadowTexture;
+			args.ppCSMShadowTexture = &dynlight->pCSMShadowTexture;
 			args.bVolume = false; // DirectionalLight always uses fullscreen
 
 			directionalLightCallback(&args, context);
@@ -914,7 +909,7 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.shadowtex = &cl_dlight_shadow_textures[i];
+				args.ppShadowTexture = &g_DLightShadowTextures[i];
 				args.bVolume = true;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
@@ -940,7 +935,7 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.shadowtex = &cl_dlight_shadow_textures[i];
+				args.ppShadowTexture = &g_DLightShadowTextures[i];
 				args.bVolume = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
@@ -985,7 +980,7 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.shadowtex = &cl_dlight_shadow_textures[i];
+				args.ppShadowTexture = &g_DLightShadowTextures[i];
 				args.bVolume = true;
 
 				pointlightCallback(&args, context);
@@ -1001,7 +996,7 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.shadowtex = &cl_dlight_shadow_textures[i];
+				args.ppShadowTexture = &g_DLightShadowTextures[i];
 				args.bVolume = false;
 
 				pointlightCallback(&args, context);
@@ -1194,7 +1189,9 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			auto pShadowTexture = (*args->ppShadowTexture);
+
+			if (pShadowTexture && pShadowTexture->IsReady())
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 			}
@@ -1251,24 +1248,24 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
+			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
-				glUniform2f(prog.u_shadowtexel, args->shadowtex->size, 1.0f / (float)args->shadowtex->size);
-			}
+				if (prog.u_shadowtexel != -1)
+				{
+					glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+				}
 
-			if (prog.u_shadowmatrix != -1)
-			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
-			}
+				if (prog.u_shadowmatrix != -1)
+				{
+					glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+				}
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
-			{
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
@@ -1294,7 +1291,9 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (args->shadowtex->depth_stencil && args->shadowtex->ready)
+			auto pShadowTexture = (*args->ppShadowTexture);
+
+			if (pShadowTexture && pShadowTexture->IsReady())
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 			}
@@ -1347,25 +1346,25 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
+			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
-				glUniform2f(prog.u_shadowtexel, args->shadowtex->size, 1.0f / (float)args->shadowtex->size);
-			}
+				if (prog.u_shadowtexel != -1)
+				{
+					glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+				}
 
-			if (prog.u_shadowmatrix != -1)
-			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)args->shadowtex->shadowmatrix);
-			}
+				if (prog.u_shadowmatrix != -1)
+				{
+					glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+				}
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
-			{
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
 			}
 
 			const uint32_t indices[] = { 0,1,2,2,3,0 };
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
-			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
 				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 			}
@@ -1388,7 +1387,16 @@ void R_LightShadingPass(void)
 
 		program_state_t DLightProgramState = DLIGHT_DIRECTIONAL_ENABLED;
 
-		if (args->shadowtex && args->shadowtex->depth_stencil && args->shadowtex->ready)
+		auto pShadowTexture = (*args->ppShadowTexture);
+
+		if (pShadowTexture && pShadowTexture->IsReady())
+		{
+			DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+		}
+
+		auto pCSMShadowTexture = (*args->ppCSMShadowTexture);
+
+		if (pCSMShadowTexture && pCSMShadowTexture->IsReady())
 		{
 			DLightProgramState |= DLIGHT_CSM_ENABLED;
 		}
@@ -1438,31 +1446,55 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightSize, args->size);
 		}
 
-		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+		{
+			if (prog.u_shadowtexel != -1)
+			{
+				glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+			}
+
+			if (prog.u_shadowmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+			}
+
+			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
+		}
+
+		if ((DLightProgramState & DLIGHT_CSM_ENABLED) && pCSMShadowTexture)
 		{
 			if (prog.u_csmMatrices != -1)
 			{
-				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)args->csmMatrices);
+				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)pCSMShadowTexture->GetShadowMatrix(0));
 			}
 
 			if (prog.u_csmDistances != -1)
 			{
-				glUniform4f(prog.u_csmDistances, args->csmDistances[0], args->csmDistances[1], args->csmDistances[2], args->csmDistances[3]);
+				glUniform4f(prog.u_csmDistances, 
+					pCSMShadowTexture->GetCSMDistance(0),
+					pCSMShadowTexture->GetCSMDistance(1), 
+					pCSMShadowTexture->GetCSMDistance(2), 
+					pCSMShadowTexture->GetCSMDistance(3));
 			}
 
-			if (prog.u_shadowtexel != -1 && args->shadowtex->size > 0)
+			if (prog.u_csmTexel != -1)
 			{
 				// CSM uses 4096x4096 texture, each cascade is 2048x2048
-				glUniform2f(prog.u_shadowtexel, 2048.0f, 1.0f / 2048.0f);
+				glUniform2f(prog.u_csmTexel, (pCSMShadowTexture->GetTextureSize() * 0.5f), 1.0f / (pCSMShadowTexture->GetTextureSize() * 0.5f) );
 			}
 
-			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, args->shadowtex->depth_stencil);
+			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D, pCSMShadowTexture->GetDepthTexture());
 		}
 
 		const uint32_t indices[] = { 0,1,2,2,3,0 };
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
-		if (DLightProgramState & DLIGHT_CSM_ENABLED)
+		if ((DLightProgramState & DLIGHT_CSM_ENABLED) && pCSMShadowTexture)
+		{
+			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D, 0);
+		}
+
+		if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 		{
 			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
 		}

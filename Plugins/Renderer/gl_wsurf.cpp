@@ -2215,6 +2215,8 @@ void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceShadowProxyModel* pShadowPr
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(pShadowProxyDraw->startOffset), pShadowProxyDraw->drawCount, 0);
 
+	(*c_brush_polys) += pShadowProxyDraw->drawCount;
+
 	GL_UseProgram(0);
 
 	GL_BindABO(0);
@@ -2262,6 +2264,8 @@ void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
+	(*c_brush_polys) += texchain.polyCount;
+
 	GL_UseProgram(0);
 
 	glEnable(GL_CULL_FACE);
@@ -2300,9 +2304,12 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		if (g_WorldSurfaceRenderer.bLightmapTexture)
 		{
-			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			if (r_draw_classify & DRAW_CLASSIFY_LIGHTMAP)
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			}
 
-			if (r_fullbright->value || !(*cl_worldmodel)->lightdata)
+			if ((int)r_fullbright->value > 0 || !(*cl_worldmodel)->lightdata)
 			{
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
@@ -2316,7 +2323,14 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
+		}
+		else
+		{
+			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+		}
 
+		if (WSurfProgramState & WSURF_LIGHTMAP_ENABLED)
+		{
 			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 0))
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
@@ -2422,6 +2436,8 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+
+		(*c_brush_polys) += texchain.polyCount;
 
 		R_EndDetailTexture(WSurfProgramState);
 
@@ -2530,9 +2546,12 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		if (g_WorldSurfaceRenderer.bLightmapTexture)
 		{
-			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			if (r_draw_classify & DRAW_CLASSIFY_LIGHTMAP)
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			}
 
-			if (r_fullbright->value || !(*cl_worldmodel)->lightdata)
+			if ((int)r_fullbright->value > 0 || !(*cl_worldmodel)->lightdata)
 			{
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
@@ -2546,23 +2565,10 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			{
 				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
-
-			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 0))
-			{
-				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
-			}
-			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 1))
-			{
-				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
-			}
-			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 2))
-			{
-				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
-			}
-			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
-			{
-				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
-			}
+		}
+		else
+		{
+			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 		}
 
 		if (R_IsRenderingWaterView())
@@ -2653,6 +2659,8 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+
+		(*c_brush_polys) += texchain.polyCount;
 
 		R_EndDetailTexture(WSurfProgramState);
 
@@ -2775,6 +2783,8 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
 
+	(*c_brush_polys) += texchain.polyCount;
+
 	GL_UseProgram(0);
 
 	R_DrawWorldSurfaceLeafEnd();
@@ -2890,24 +2900,30 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 			else if (R_IsRenderingShadowView())
 			{
-				auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
-				auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
-				
-				if (pShadowProxyModel && pShadowProxyDraw)
-					R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
-				else
-					R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
+				if (r_draw_classify & DRAW_CLASSIFY_WORLD)
+				{
+					auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
+					auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
+
+					if (pShadowProxyModel && pShadowProxyDraw)
+						R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
+					else
+						R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
+				}
 			}
 			else
 			{
-				R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
-				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
+				if (r_draw_classify & DRAW_CLASSIFY_WORLD)
+				{
+					R_DrawWorldSurfaceLeafStatic(pModel.get(), pLeaf.get());
+					R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
+				}
 
 				g_WorldSurfaceRenderer.pCurrentWorldLeaf = pLeaf;
 			}
 		}
 
-		if (!R_IsRenderingWaterView() && !R_IsRenderingShadowView())
+		if (!R_IsRenderingWaterView())
 		{
 			if (pLeaf)
 			{
@@ -4362,23 +4378,7 @@ void R_SetupCameraUBO()
 	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
 	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
 	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
-
-	auto CurrentFBO = GL_GetCurrentSceneFBO();
-
-	if (CurrentFBO)
-	{
-		CameraUBO.viewport[0] = CurrentFBO->iWidth;
-		CameraUBO.viewport[1] = CurrentFBO->iHeight;
-		CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
-		CameraUBO.viewport[3] = 0;
-	}
-	else
-	{
-		CameraUBO.viewport[0] = glwidth;
-		CameraUBO.viewport[1] = glheight;
-		CameraUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
-		CameraUBO.viewport[3] = 0;
-	}
+	memcpy(CameraUBO.viewport, r_viewport, sizeof(float[4]));
 	memcpy(CameraUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
 	memcpy(CameraUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
 	memcpy(CameraUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
@@ -4747,6 +4747,7 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 
 		pShadowProxyDraw->startOffset = startOffset;
 		pShadowProxyDraw->drawCount = drawCount;
+		pShadowProxyDraw->polyCount = numIndices / 3;
 
 		pShadowProxyModel->DrawList.emplace_back(pShadowProxyDraw);
 	}

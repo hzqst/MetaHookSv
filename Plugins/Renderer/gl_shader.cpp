@@ -337,26 +337,6 @@ void GL_Uniform4f(GLuint loc, float v0, int v1, int v2, int v3)
 	glUniform4f(loc, v0, v1, v2, v3);
 }
 
-void GL_VertexAttrib3f(GLuint index, float x, float y, float z)
-{
-	glVertexAttrib3f(index, x, y, z);
-}
-
-void GL_VertexAttrib3fv(GLuint index, float *v)
-{
-	glVertexAttrib3fv(index, v);
-}
-
-void GL_MultiTexCoord2f(GLenum target, float s, float t)
-{
-	glMultiTexCoord2f(target, s, t);
-}
-
-void GL_MultiTexCoord3f(GLenum target, float s, float t, float r)
-{
-	glMultiTexCoord3f(target, s, t, r);
-}
-
 void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size)
 {
 	std::stringstream ss;

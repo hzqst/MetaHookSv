@@ -629,8 +629,8 @@ void GL_CreateTextureColorFormat(int texid, int w, int h, int iInternalFormat, b
 GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 void GL_CreateTextureArrayColorFormat(int texid, int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 
-GLuint GL_GenShadowTexture(int w, int h, float *borderColor, bool immutable);
-void GL_CreateShadowTexture(int texid, int w, int h, float *borderColor, bool immutable);
+GLuint GL_GenShadowTexture(int w, int h, bool immutable);
+void GL_CreateShadowTexture(int texid, int w, int h, bool immutable);
 
 void GL_SetCurrentSceneFBO(FBO_Container_t* src);
 FBO_Container_t* GL_GetCurrentSceneFBO();
@@ -790,6 +790,7 @@ extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;
 extern bool r_draw_reflectview;
 extern bool r_draw_refractview;
+extern int r_draw_classify;
 
 extern int r_renderview_pass;
 
@@ -798,3 +799,24 @@ extern bool g_bIsCounterStrike;
 extern bool g_bIsAoMDC;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
+
+#define DRAW_CLASSIFY_WORLD				0x1
+#define DRAW_CLASSIFY_SKYBOX			0x2
+#define DRAW_CLASSIFY_OPAQUE_ENTITIES	0x4
+#define DRAW_CLASSIFY_TRANS_ENTITIES	0x8
+#define DRAW_CLASSIFY_PARTICLES			0x10
+#define DRAW_CLASSIFY_LOCAL_PLAYER		0x20
+#define DRAW_CLASSIFY_DECAL				0x40
+#define DRAW_CLASSIFY_WATER				0x80
+#define DRAW_CLASSIFY_LIGHTMAP			0x100
+
+#define DRAW_CLASSIFY_ALL				(DRAW_CLASSIFY_WORLD |\
+										DRAW_CLASSIFY_SKYBOX | \
+										DRAW_CLASSIFY_OPAQUE_ENTITIES | \
+										DRAW_CLASSIFY_TRANS_ENTITIES |\
+										DRAW_CLASSIFY_PARTICLES |\
+										DRAW_CLASSIFY_LOCAL_PLAYER |\
+										DRAW_CLASSIFY_DECAL | \
+										DRAW_CLASSIFY_WATER | \
+										DRAW_CLASSIFY_LIGHTMAP\
+)

@@ -1016,7 +1016,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	if (R_IsRenderingShadowView())
+	if (!(r_draw_classify & DRAW_CLASSIFY_DECAL))
 		return;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -1258,6 +1258,8 @@ void R_DrawDecals(cl_entity_t *ent)
 				BUFFER_OFFSET(g_DecalDrawBatch.StartIndex[i]),
 				g_DecalDrawBatch.InstanceCount[i],
 				g_DecalDrawBatch.StartInstance[i]);
+
+			(*c_brush_polys) += g_DecalDrawBatch.IndiceCount[i] / 3;
 
 			R_EndDetailTexture(WSurfProgramStateDetail);
 		}

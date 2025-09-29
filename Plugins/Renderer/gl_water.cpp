@@ -737,23 +737,35 @@ void R_RenderWaterRefractView(CWaterReflectCache* ReflectCache)
 	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
 
 	auto saved_cl_waterlevel = *cl_waterlevel;
-	*cl_waterlevel = 0;
+	(*cl_waterlevel) = 0;
 
-	auto saved_r_drawentities = r_drawentities->value;
+	auto old_draw_classify = r_draw_classify;
 
-	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
+	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
 	{
-		r_drawentities->value = 1;
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+		r_draw_classify &= ~DRAW_CLASSIFY_WORLD;
+		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
 	}
-	else
+	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_WORLD)
 	{
-		r_drawentities->value = 0;
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+	}
+	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	{
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 	}
 
 	R_RenderScene();
 
-	r_drawentities->value = saved_r_drawentities;
-	*cl_waterlevel = saved_cl_waterlevel;
+	r_draw_classify = old_draw_classify;
+
+	(*cl_waterlevel) = saved_cl_waterlevel;
 
 	R_PopRefDef();
 
@@ -809,20 +821,32 @@ void R_RenderWaterReflectView(CWaterReflectCache* ReflectCache)
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 
-	auto saved_r_drawentities = r_drawentities->value;
+	auto old_draw_classify = r_draw_classify;
 
-	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
+	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
 	{
-		r_drawentities->value = 1;
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+		r_draw_classify &= ~DRAW_CLASSIFY_WORLD;
+		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
 	}
-	else
+	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_WORLD)
 	{
-		r_drawentities->value = 0;
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
 	}
-
+	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	{
+		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+	}
+	
 	R_RenderScene();
 
-	r_drawentities->value = saved_r_drawentities;
+	r_draw_classify = old_draw_classify;
+
 	*cl_waterlevel = saved_cl_waterlevel;
 
 	R_PopRefDef();
@@ -1209,6 +1233,8 @@ void R_DrawWaterSurfaceModelReflective(
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
+	(*c_brush_polys) += pWaterModel->polyCount;
+
 	GL_BindTextureUnit(WATER_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
@@ -1329,6 +1355,8 @@ void R_DrawWaterSurfaceModelRipple(
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
+	(*c_brush_polys) += pWaterModel->polyCount;
+
 	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
@@ -1442,6 +1470,8 @@ void R_DrawWaterSurfaceModelLegacy(
 
 	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(0), pWaterModel->drawCount, 0);
 
+	(*c_brush_polys) += pWaterModel->polyCount;
+
 	GL_BindTextureUnit(WATER_BIND_BASE_TEXTURE, GL_TEXTURE_2D, 0);
 
 	GL_UseProgram(0);
@@ -1514,10 +1544,7 @@ void R_DrawWaterSurfaceModel(
 
 void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent)
 {
-	if (R_IsRenderingWaterView())
-		return;
-
-	if (R_IsRenderingShadowView())
+	if (!(r_draw_classify & DRAW_CLASSIFY_WATER))
 		return;
 
 	if (!pLeaf->m_vWaterSurfaceModels.size())

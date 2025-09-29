@@ -13,20 +13,23 @@ layout(binding = DSHADE_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 layout(binding = DSHADE_BIND_CONE_TEXTURE) uniform sampler2D coneTex;
 #endif
 
-#if defined(SHADOW_TEXTURE_ENABLED) || defined(CSM_ENABLED)
+#if defined(SHADOW_TEXTURE_ENABLED)
 layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTex;
+#endif
+
+#if defined(CSM_ENABLED)
+layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DShadow csmTex;
+#endif
+
+#if defined(SHADOW_TEXTURE_ENABLED)
+uniform mat4 u_shadowmatrix;
+uniform vec2 u_shadowtexel;
 #endif
 
 #if defined(CSM_ENABLED)
 uniform mat4 u_csmMatrices[4];
 uniform vec4 u_csmDistances;
-#endif
-
-#if defined(SHADOW_TEXTURE_ENABLED)
-
-uniform mat4 u_shadowmatrix;
-uniform vec2 u_shadowtexel;
-
+uniform vec2 u_csmTexel;
 #endif
 
 #if defined(VOLUME_ENABLED)
@@ -59,7 +62,7 @@ layout(location = 0) out vec4 out_FragColor;
 float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
 {
     vec4 uv = basecoord;
-    uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
+    uv.xy = floorcoord.xy + basecoord.w * offset * texelSize;
     
     return textureProj(shadowTex, uv);
 }
@@ -205,8 +208,8 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 0.5);
 
     float visibility = 0.0;
-    float texRes = float(CSM_RESOLUTION);
-    float invRes = 1.0 / float(CSM_RESOLUTION);
+    float texRes = u_csmTexel.x;
+    float invRes = u_csmTexel.y;
     float pcfRadius = 1.2;
 
     // Check if we're outside the shadow map bounds
@@ -235,7 +238,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                 {
                     vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
                     vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
-                    visibility += texture(shadowTex, sampleCoord.xyz);
+                    visibility += texture(csmTex, sampleCoord.xyz);
                     pcfSamples++;
                 }
             }
@@ -277,7 +280,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                     {
                         vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
                         vec4 sampleCoord = vec4(nextProjCoords.xy + offset, nextProjCoords.z, 1.0);
-                        nextVisibility += texture(shadowTex, sampleCoord.xyz);
+                        nextVisibility += texture(csmTex, sampleCoord.xyz);
                         nextPcfSamples++;
                     }
                 }
@@ -407,11 +410,25 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
     vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 
-#if defined(CSM_ENABLED)
-    float flShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
+    float flShadowIntensity = 1.0;
+
+#if defined(SHADOW_TEXTURE_ENABLED)
+
+    flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
     Color.r *= flShadowIntensity;
     Color.g *= flShadowIntensity;
     Color.b *= flShadowIntensity;
+
+#endif
+
+#if defined(CSM_ENABLED)
+    if(flShadowIntensity > 0.01)
+    {
+        float flCSMShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
+        Color.r *= flCSMShadowIntensity;
+        Color.g *= flCSMShadowIntensity;
+        Color.b *= flCSMShadowIntensity;
+    }
 #endif
 
     return Color;
