@@ -482,6 +482,15 @@ bool R_IsRenderingGBuffer()
 }
 
 /*
+	Purpose : Check if we are rendering scene with deferred lighting pipeline, lightmap should be off
+*/
+
+bool R_IsRenderingDeferredLightingScene()
+{
+	return R_IsRenderingGBuffer() && g_DynamicLights.size() > 0;
+}
+
+/*
 	Purpose : Check if we are rendering into a gamma space buffer
 */
 
@@ -3105,6 +3114,7 @@ void R_RenderView_SvEngine(int viewIdx)
 			R_PreDrawViewModel();
 		}
 
+	
 		R_RenderScene();
 
 		if (!(*r_refdef.onlyClientDraws))
@@ -4318,12 +4328,13 @@ void R_RenderScene(void)
 	R_SetFrustum();
 	R_MarkLeaves();
 
+	R_BeginRenderGBuffer();
+
 	R_PrepareDrawWorld();
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
 		R_DrawWorld();
-		//S_ExtraUpdate();
 		R_DrawEntitiesOnList();
 	}
 

@@ -37,8 +37,8 @@ extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
 
 extern cvar_t * r_deferred_lighting;
 
-extern MapConVar* r_lightmap_pow;
-extern MapConVar* r_lightmap_scale;
+extern MapConVar* r_deferred_lightmap_pow;
+extern MapConVar* r_deferred_lightmap_scale;
 
 extern MapConVar* r_flashlight_enable;
 extern MapConVar *r_flashlight_ambient;

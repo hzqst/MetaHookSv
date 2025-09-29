@@ -91,7 +91,7 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
         flooredUV *= invRes;
 
-        float uw0 = (4.0 - 3.0 * s);
+        /*float uw0 = (4.0 - 3.0 * s);
         float uw1 = 7.0;
         float uw2 = (1.0 + 3.0 * s);
 
@@ -119,9 +119,9 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         visibility += uw1 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes);
         visibility += uw2 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes);
 
-        visibility /= 144.0;
+        visibility /= 144.0;*/
 
-        /*float uw0 = (5.0 * s - 6.0);
+        float uw0 = (5.0 * s - 6.0);
         float uw1 = (11.0 * s - 28.0);
         float uw2 = -(11.0 * s + 17.0);
         float uw3 = -(5.0 * s + 1.0);
@@ -161,7 +161,7 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         visibility += uw2 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v3), invRes);
         visibility += uw3 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v3), invRes);
 
-        visibility /= 2704.0;*/
+        visibility /= 2704.0;
     }
 
     return visibility;
@@ -207,44 +207,38 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
     shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 0.5);
 
-    float visibility = 0.0;
     float texRes = u_csmTexel.x;
     float invRes = u_csmTexel.y;
-    float pcfRadius = 1.2;
+    float pcfRadius = 1.0;
+
+    float visibility = 0.0;
 
     // Check if we're outside the shadow map bounds
-    if(shadowCoords.z / shadowCoords.w > 1.0 || shadowCoords.z / shadowCoords.w < 0.0)
+    // Perspective divide
+    vec3 projCoords = shadowCoords.xyz / shadowCoords.w;
+
+    // Check if we're outside the [0,1] range for texture coordinates
+    if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
     {
         visibility = 1.0;
     }
     else
     {
-        // Perspective divide
-        vec3 projCoords = shadowCoords.xyz / shadowCoords.w;
+        // Improved PCF filtering with more samples for smoother shadows
+        int pcfSamples = 0;
 
-        // Check if we're outside the [0,1] range for texture coordinates
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        for(int x = -1; x <= 1; x++)
         {
-            visibility = 1.0;
-        }
-        else
-        {
-            // Improved PCF filtering with more samples for smoother shadows
-            int pcfSamples = 0;
-
-            for(int x = -1; x <= 1; x++)
+            for(int y = -1; y <= 1; y++)
             {
-                for(int y = -1; y <= 1; y++)
-                {
-                    vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
-                    vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
-                    visibility += texture(csmTex, sampleCoord.xyz);
-                    pcfSamples++;
-                }
+                vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
+                vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
+                visibility += texture(csmTex, sampleCoord.xyz);
+                pcfSamples++;
             }
-
-            visibility /= float(pcfSamples);
         }
+
+        visibility /= float(pcfSamples);
     }
 
     // Blend with next cascade if needed for smooth transitions
@@ -258,34 +252,27 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
         float nextVisibility = 0.0;
 
-        if(nextShadowCoords.z / nextShadowCoords.w > 1.0 || nextShadowCoords.z / nextShadowCoords.w < 0.0)
+        vec3 nextProjCoords = nextShadowCoords.xyz / nextShadowCoords.w;
+
+        if(nextProjCoords.x < 0.0 || nextProjCoords.x > 1.0 || nextProjCoords.y < 0.0 || nextProjCoords.y > 1.0)
         {
             nextVisibility = 1.0;
         }
         else
         {
-            vec3 nextProjCoords = nextShadowCoords.xyz / nextShadowCoords.w;
-
-            if(nextProjCoords.x < 0.0 || nextProjCoords.x > 1.0 || nextProjCoords.y < 0.0 || nextProjCoords.y > 1.0)
+            // Simple PCF for next cascade
+            int nextPcfSamples = 0;
+            for(int x = -1; x <= 1; x++)
             {
-                nextVisibility = 1.0;
-            }
-            else
-            {
-                // Simple PCF for next cascade
-                int nextPcfSamples = 0;
-                for(int x = -1; x <= 1; x++)
+                for(int y = -1; y <= 1; y++)
                 {
-                    for(int y = -1; y <= 1; y++)
-                    {
-                        vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
-                        vec4 sampleCoord = vec4(nextProjCoords.xy + offset, nextProjCoords.z, 1.0);
-                        nextVisibility += texture(csmTex, sampleCoord.xyz);
-                        nextPcfSamples++;
-                    }
+                    vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
+                    vec4 sampleCoord = vec4(nextProjCoords.xy + offset, nextProjCoords.z, 1.0);
+                    nextVisibility += texture(csmTex, sampleCoord.xyz);
+                    nextPcfSamples++;
                 }
-                nextVisibility /= float(nextPcfSamples);
             }
+            nextVisibility /= float(nextPcfSamples);
         }
 
         // Blend between current and next cascade
@@ -297,9 +284,9 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #endif
 
-vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord)
+void CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord, out vec4 AmbientColor, out vec4 DiffuseSpecularColor)
 {
-    vec4 AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
+    AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
     vec4 DiffuseColor = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 SpecularColor = vec4(0.0, 0.0, 0.0, 0.0);
 
@@ -317,7 +304,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
     else
     {
         float DiffuseFactor = dot(Normal, -LightDirection);
-    
+
         if (DiffuseFactor > 0.0) {
             DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * DiffuseFactor, 1.0);
             vec3 VertexToEye = normalize(CameraUBO.viewpos.xyz - World);
@@ -332,7 +319,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
             }
         }
     }
-    return (AmbientColor + DiffuseColor + SpecularColor);
+    DiffuseSpecularColor = DiffuseColor + SpecularColor;
 }
 
 vec4 CalcPointLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
@@ -340,12 +327,15 @@ vec4 CalcPointLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     vec3 LightDirection = World - u_lightpos.xyz;
     float Distance = length(LightDirection);
     LightDirection = normalize(LightDirection);
- 
-    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
+
+    vec4 AmbientColor, DiffuseSpecularColor;
+    CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord, AmbientColor, DiffuseSpecularColor);
+
+    vec4 Color = AmbientColor + DiffuseSpecularColor;
 
     float r2 = u_lightradius * u_lightradius;
     float Attenuation = clamp(( r2 - (Distance * Distance)) / r2, 0.0, 1.0);
- 
+
     return Color * Attenuation;
 }
 
@@ -397,18 +387,19 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     vec3 LightDirection = u_lightdir.xyz;
 
     // Check if world position is within the directional light's rectangular area
-    vec3 worldToLight = World - u_lightpos.xyz;
+    //vec3 worldToLight = World - u_lightpos.xyz;
 
     // Project onto light's right and up vectors
-    float projRight = dot(worldToLight, u_lightright.xyz);
-    float projUp = dot(worldToLight, u_lightup.xyz);
+    //float projRight = dot(worldToLight, u_lightright.xyz);
+    //float projUp = dot(worldToLight, u_lightup.xyz);
 
     // Check if within bounds
     //if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
     //    return vec4(0.0, 0.0, 0.0, 0.0);
     //}
 
-    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
+    vec4 AmbientColor, DiffuseSpecularColor;
+    CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord, AmbientColor, DiffuseSpecularColor);
 
     float flShadowIntensity = 1.0;
 
@@ -419,18 +410,19 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 #endif
 
 #if defined(CSM_ENABLED)
-  
+
     float flCSMShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
-       
+
     flShadowIntensity = min(flShadowIntensity, flCSMShadowIntensity);
 
 #endif
 
-    Color.r *= flShadowIntensity;
-    Color.g *= flShadowIntensity;
-    Color.b *= flShadowIntensity;
+    // Apply shadow to diffuse and specular only, keep ambient color unaffected
+    DiffuseSpecularColor.r *= flShadowIntensity;
+    DiffuseSpecularColor.g *= flShadowIntensity;
+    DiffuseSpecularColor.b *= flShadowIntensity;
 
-    return Color;
+    return AmbientColor + DiffuseSpecularColor;
 }
 
 void main()

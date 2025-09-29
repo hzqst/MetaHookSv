@@ -4209,10 +4209,10 @@ void R_ParseBSPEntity_Env_Shadow_Control(bspentity_t* ent)
 	
 }
 
-void R_ParseBSPEntity_Env_Lightmap_Control(bspentity_t* ent)
+void R_ParseBSPEntity_Env_DeferredLighting_Control(bspentity_t* ent)
 {
-	R_ParseMapCvarSetMapValue(r_lightmap_pow, ValueForKey(ent, "pow"));
-	R_ParseMapCvarSetMapValue(r_lightmap_scale, ValueForKey(ent, "scale"));
+	R_ParseMapCvarSetMapValue(r_deferred_lightmap_pow, ValueForKey(ent, "lightmap_pow"));
+	R_ParseMapCvarSetMapValue(r_deferred_lightmap_scale, ValueForKey(ent, "lightmap_scale"));
 }
 
 void R_ParseBSPEntity_Env_SSR_Control(bspentity_t* ent)
@@ -4275,9 +4275,9 @@ void R_LoadBSPEntities(std::vector<bspentity_t*>& vBSPEntities)
 			R_ParseBSPEntity_Env_Shadow_Control(ent);
 		}
 
-		else if (!strcmp(classname, "env_lightmap_control"))
+		else if (!strcmp(classname, "env_deferredlighting_control"))
 		{
-			R_ParseBSPEntity_Env_Lightmap_Control(ent);
+			R_ParseBSPEntity_Env_DeferredLighting_Control(ent);
 		}
 
 		else if (!strcmp(classname, "env_ssr_control"))
@@ -4465,8 +4465,16 @@ void R_SetupSceneUBO(void)
 	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shiftz = math_clamp(r_linear_fog_shiftz->value, 0, 1);
 
-	SceneUBO.r_lightmap_pow = r_lightmap_pow->GetValue();
-	SceneUBO.r_lightmap_scale = r_lightmap_scale->GetValue();
+	if (R_IsRenderingDeferredLightingScene())
+	{
+		SceneUBO.r_lightmap_pow = r_deferred_lightmap_pow->GetValue();
+		SceneUBO.r_lightmap_scale = r_deferred_lightmap_scale->GetValue();
+	}
+	else
+	{
+		SceneUBO.r_lightmap_pow = 1;
+		SceneUBO.r_lightmap_scale = 1;
+	}
 
 	if (gl_overbright->value)
 		SceneUBO.r_lightscale = 1;
@@ -4561,8 +4569,6 @@ void R_DrawWorld(void)
 	r_entity_color[1] = 1;
 	r_entity_color[2] = 1;
 	r_entity_color[3] = 1;
-
-	R_BeginRenderGBuffer();
 
 	// 1:1 copy from R_DrawWorld, but with hw.dll!r_worldentity instead of stack entity.
 

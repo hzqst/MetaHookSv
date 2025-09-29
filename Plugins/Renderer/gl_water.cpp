@@ -743,22 +743,32 @@ void R_RenderWaterRefractView(CWaterReflectCache* ReflectCache)
 
 	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
 	{
-		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
-		r_draw_classify &= ~DRAW_CLASSIFY_WORLD;
-		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
-		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+		r_draw_classify = (
+			DRAW_CLASSIFY_SKYBOX | 
+			DRAW_CLASSIFY_LIGHTMAP
+			);
 	}
 	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_WORLD)
 	{
-		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
-		r_draw_classify &= ~DRAW_CLASSIFY_OPAQUE_ENTITIES;
-		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-		r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+		r_draw_classify = (
+			DRAW_CLASSIFY_SKYBOX | 
+			DRAW_CLASSIFY_WORLD | 
+			DRAW_CLASSIFY_DECAL | 
+			DRAW_CLASSIFY_LIGHTMAP
+			);
 	}
-	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	else if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
 	{
-		r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+		r_draw_classify = (
+			DRAW_CLASSIFY_SKYBOX |
+			DRAW_CLASSIFY_WORLD | 
+			DRAW_CLASSIFY_OPAQUE_ENTITIES | 
+			DRAW_CLASSIFY_TRANS_ENTITIES |
+			DRAW_CLASSIFY_PARTICLES | 
+			DRAW_CLASSIFY_LOCAL_PLAYER |
+			DRAW_CLASSIFY_DECAL |
+			DRAW_CLASSIFY_LIGHTMAP
+			);
 	}
 
 	R_RenderScene();

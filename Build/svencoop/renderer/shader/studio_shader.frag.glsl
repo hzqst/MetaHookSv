@@ -811,6 +811,12 @@ void main(void)
 		lightmapColor.rgb *= ProcessOtherGammaColor3(vec3(r_outline_dark));
 	#endif
 
+	//lightmapColor.x = pow(lightmapColor.x, SceneUBO.r_lightmap_pow);
+	//lightmapColor.y = pow(lightmapColor.y, SceneUBO.r_lightmap_pow);
+	//lightmapColor.z = pow(lightmapColor.z, SceneUBO.r_lightmap_pow);
+	
+	lightmapColor *= SceneUBO.r_lightmap_scale;
+
 #endif
 
 #if defined(SHADOW_CASTER_ENABLED)

@@ -4,8 +4,8 @@
 
 cvar_t * r_deferred_lighting = nullptr;
 
-MapConVar* r_lightmap_pow = nullptr;
-MapConVar* r_lightmap_scale = nullptr;
+MapConVar* r_deferred_lightmap_pow = nullptr;
+MapConVar* r_deferred_lightmap_scale = nullptr;
 
 MapConVar* r_flashlight_enable = nullptr;
 MapConVar *r_flashlight_ambient = nullptr;
@@ -315,8 +315,8 @@ void R_InitLight(void)
 
 	r_deferred_lighting = gEngfuncs.pfnRegisterVariable("r_deferred_lighting", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
-	r_lightmap_pow = R_RegisterMapCvar("r_lightmap_pow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_lightmap_scale = R_RegisterMapCvar("r_lightmap_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_deferred_lightmap_pow = R_RegisterMapCvar("r_deferred_lightmap_pow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_deferred_lightmap_scale = R_RegisterMapCvar("r_deferred_lightmap_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	/*
 		Affects legacy dynamic lights
