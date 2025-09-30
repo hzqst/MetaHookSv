@@ -73,12 +73,13 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 	float visibility = 0.0;
 
-    if(shadowCoords.z / shadowCoords.w > 1.0)
     {
-        visibility = 1.0;
-    }
-    else
-    {
+        // Depth bias to reduce light leaking and shadow acne
+        float NdotL = max(dot(Norm, -LightDirection), 0.0);
+        float slopeBias = 0.001 * (1.0 - NdotL);
+        float constBias = 0.5 * u_shadowtexel.y; // scale with texel size
+        shadowCoords.z += max(slopeBias, constBias);
+
         float texRes = u_shadowtexel.x;
         float invRes = u_shadowtexel.y;
 
@@ -205,7 +206,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     // Calculate shadow coordinates for selected cascade
     vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
 
-    shadowCoords.z += 0.0001 * (cascadeIndex * 0.5 + 0.5);
+    shadowCoords.z += 0.001 * (cascadeIndex * 0.5 + 0.5);
 
     float texRes = u_csmTexel.x;
     float invRes = u_csmTexel.y;
@@ -217,12 +218,6 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     // Perspective divide
     vec3 projCoords = shadowCoords.xyz / shadowCoords.w;
 
-    // Check if we're outside the [0,1] range for texture coordinates
-    if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
-    {
-        visibility = 1.0;
-    }
-    else
     {
         // Improved PCF filtering with more samples for smoother shadows
         int pcfSamples = 0;
@@ -246,7 +241,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     {
         vec4 nextShadowCoords = u_csmMatrices[nextCascadeIndex] * vec4(World, 1.0);
 
-        float bias = 0.0001 * (nextCascadeIndex * 0.5 + 0.5);
+        float bias = 0.001 * (nextCascadeIndex * 0.5 + 0.5);
 
         nextShadowCoords.z += bias;
 
@@ -254,11 +249,6 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
         vec3 nextProjCoords = nextShadowCoords.xyz / nextShadowCoords.w;
 
-        if(nextProjCoords.x < 0.0 || nextProjCoords.x > 1.0 || nextProjCoords.y < 0.0 || nextProjCoords.y > 1.0)
-        {
-            nextVisibility = 1.0;
-        }
-        else
         {
             // Simple PCF for next cascade
             int nextPcfSamples = 0;

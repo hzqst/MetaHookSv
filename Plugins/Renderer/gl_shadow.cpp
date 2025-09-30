@@ -391,8 +391,8 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-					glEnable(GL_POLYGON_OFFSET_FILL);
-					glPolygonOffset(10, 10);
+					//glEnable(GL_POLYGON_OFFSET_FILL);
+					//glPolygonOffset(10, 10);
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
@@ -444,7 +444,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						r_draw_classify = old_draw_classify;
 					}
 
-					glDisable(GL_POLYGON_OFFSET_FILL);
+					//glDisable(GL_POLYGON_OFFSET_FILL);
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					R_PopRefDef();
@@ -558,8 +558,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_shadowview = true;
 					r_draw_shadowscene = true;
 
-					const float lambda = math_clamp(0.8, 0.0f, 1.0f); // 例如0.8，也可来自cvar
-					const float orthoMargin = 1.05f; // 5% 外扩，避免裁边
+					const float lambda = math_clamp(0.5, 0.0f, 1.0f); // 例如0.8，也可来自cvar
+					const float orthoMargin = 1.15f; // 15% 外扩，避免裁边
 
 					// Calculate cascade distances based on camera frustum
 					// These could be configurable via cvars in the future

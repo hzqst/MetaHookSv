@@ -5061,6 +5061,18 @@ void R_Reload_f(void)
 		}
 	}
 
+	for (const auto& pDynamicLight : g_DynamicLights)
+	{
+		if (pDynamicLight->pShadowTexture && pDynamicLight->pShadowTexture->IsStatic())
+		{
+			pDynamicLight->pShadowTexture->SetReady(false);
+		}
+		if (pDynamicLight->pCSMShadowTexture && pDynamicLight->pCSMShadowTexture->IsStatic())
+		{
+			pDynamicLight->pCSMShadowTexture->SetReady(false);
+		}
+	}
+
 	gEngfuncs.Con_Printf("Map entities reloaded\n");
 }
 

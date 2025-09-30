@@ -1107,7 +1107,9 @@ void R_GenerateWorldSurfaceModelLeaf(const std::shared_ptr<CWorldSurfaceModel>& 
 void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel)
 {
 	std::shared_ptr<CWorldSurfaceShadowProxyModel> pShadowProxyModel;
-	std::shared_ptr<CWorldSurfaceShadowProxyDraw> pShadowProxyDraw;
+
+	pModel->m_pShadowProxyModel.reset();
+	pModel->m_pShadowProxyDraws.clear();
 
 	auto mod = pModel->m_model;
 
@@ -1132,22 +1134,16 @@ void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel)
 
 	if (pShadowProxyModel)
 	{
+		pModel->m_pShadowProxyModel = pShadowProxyModel;
+
 		if (worldmodel == mod)
 		{
-			auto it2 = std::find_if(pShadowProxyModel->DrawList.begin(), pShadowProxyModel->DrawList.end(), [mod](const std::shared_ptr<CWorldSurfaceShadowProxyDraw>& p) {
-
-				if (p->name.compare(mod->name) == 0)
-					return true;
-
-				if (p->name.starts_with("M_0_"))
-					return true;
-
-				return false;
-			});
-
-			if (it2 != pShadowProxyModel->DrawList.end())
+			for (const auto &pDraw : pShadowProxyModel->DrawList)
 			{
-				pShadowProxyDraw = (*it2);
+				if (pDraw->name.compare(mod->name) == 0 || pDraw->name.starts_with("M_0_"))
+				{
+					pModel->m_pShadowProxyDraws.emplace_back(pDraw);
+				}
 			}
 		}
 		else
@@ -1161,30 +1157,16 @@ void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel)
 					char prefix[32]{ };
 					snprintf(prefix, sizeof(prefix), "M_%d_", submodelIndex);
 
-					auto it2 = std::find_if(pShadowProxyModel->DrawList.begin(), pShadowProxyModel->DrawList.end(), [mod, prefix](const std::shared_ptr<CWorldSurfaceShadowProxyDraw>& p) {
-
-						if (p->name.compare(mod->name) == 0)
-							return true;
-
-						if (p->name.starts_with(prefix))
-							return true;
-
-						return false;
-					});
-
-					if (it2 != pShadowProxyModel->DrawList.end())
+					for (const auto& pDraw : pShadowProxyModel->DrawList)
 					{
-						pShadowProxyDraw = (*it2);
+						if (pDraw->name.compare(mod->name) == 0 || pDraw->name.starts_with(prefix))
+						{
+							pModel->m_pShadowProxyDraws.emplace_back(pDraw);
+						}
 					}
 				}
 			}
 		}
-	}
-
-	if (pShadowProxyDraw)
-	{
-		pModel->m_pShadowProxyModel = pShadowProxyModel;
-		pModel->m_pShadowProxyDraw = pShadowProxyDraw;
 	}
 }
 
@@ -2179,12 +2161,9 @@ bool R_WorldSurfaceLeafHasSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLe
 	return true;
 }
 
-void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw * pShadowProxyDraw)
+void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw* pShadowProxyDraw)
 {
-	if (!pShadowProxyDraw->drawCount)
-		return;
-
-	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxy");
+	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxyInternal");
 
 	program_state_t WSurfProgramState = 0;
 
@@ -2221,6 +2200,31 @@ void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceShadowProxyModel* pShadowPr
 
 	GL_BindABO(0);
 	GL_BindVAO(0);
+
+	GL_EndDebugGroup();
+}
+
+void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceModel* pModel)
+{
+	auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
+
+	if (!pShadowProxyModel)
+		return;
+
+	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxyInternal");
+
+	for (size_t i = 0; i < pModel->m_pShadowProxyDraws.size(); ++i)
+	{
+		auto pShadowProxyDraw = pModel->m_pShadowProxyDraws[i].lock();
+
+		if (!pShadowProxyDraw)
+			return;
+
+		if (!pShadowProxyDraw->drawCount)
+			return;
+
+		R_DrawWorldSurfaceModelShadowProxyInternal(pShadowProxyModel.get(), pShadowProxyDraw.get());
+	}
 
 	GL_EndDebugGroup();
 }
@@ -2902,11 +2906,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			{
 				if (r_draw_classify & DRAW_CLASSIFY_WORLD)
 				{
-					auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
-					auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
-
-					if (pShadowProxyModel && pShadowProxyDraw)
-						R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
+					if (pModel->m_pShadowProxyDraws.size() > 0)
+						R_DrawWorldSurfaceModelShadowProxy(pModel.get());
 					else
 						R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
 				}
@@ -2949,11 +2950,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		{
 			if (R_IsRenderingShadowView())
 			{
-				auto pShadowProxyModel = pModel->m_pShadowProxyModel.lock();
-				auto pShadowProxyDraw = pModel->m_pShadowProxyDraw.lock();
-
-				if (pShadowProxyModel && pShadowProxyDraw)
-					R_DrawWorldSurfaceModelShadowProxy(pShadowProxyModel.get(), pShadowProxyDraw.get());
+				if (pModel->m_pShadowProxyDraws.size() > 0)
+					R_DrawWorldSurfaceModelShadowProxy(pModel.get());
 				else
 					R_DrawWorldSurfaceLeafShadow(pLeaf.get(), false);
 			}

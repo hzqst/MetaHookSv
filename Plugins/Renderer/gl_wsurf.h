@@ -202,7 +202,7 @@ public:
 	std::weak_ptr<CWorldSurfaceWorldModel> m_pWorldModel{};
 	std::vector<std::shared_ptr<CWorldSurfaceLeaf>> m_vLeaves;
 	std::weak_ptr<CWorldSurfaceShadowProxyModel> m_pShadowProxyModel{};
-	std::weak_ptr<CWorldSurfaceShadowProxyDraw> m_pShadowProxyDraw{};
+	std::vector<std::weak_ptr<CWorldSurfaceShadowProxyDraw>> m_pShadowProxyDraws{};
 };
 
 class CDecalDrawBatch
