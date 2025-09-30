@@ -23,7 +23,6 @@ toolsrc/MetahookInstaller/obj/
 *.slo
 *.lo
 *.o
-*.obj
 
 # Precompiled Headers
 *.gch

@@ -3444,7 +3444,7 @@ void R_InitCvars(void)
 	r_studio_parallel_load 0: Load studiomodel in main thread.
 	r_studio_parallel_load 1: Load studiomodel in worker thread.
 	*/
-	r_studio_parallel_load = gEngfuncs.pfnRegisterVariable("r_studio_parallel_load", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_studio_parallel_load = gEngfuncs.pfnRegisterVariable("r_studio_parallel_load", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_fog = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_fog", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
