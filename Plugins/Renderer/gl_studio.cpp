@@ -4766,6 +4766,9 @@ public:
 		if (m_pRenderData->bIsClosing.load())
 			return;
 
+		if (!m_IsDataReady.load())
+			return;
+
 		if (!m_vVertexBaseBuffer.size())
 			return;
 
