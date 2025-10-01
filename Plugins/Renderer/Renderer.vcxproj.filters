@@ -909,5 +909,17 @@
     <None Include="..\..\Build\svencoop\renderer\shader\drawtexturedrect_shader.vert.glsl">
       <Filter>GLSL</Filter>
     </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\copy_color.frag.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawfilledrect_shader.frag.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\drawfilledrect_shader.vert.glsl">
+      <Filter>GLSL</Filter>
+    </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\wsurf_shader.geom.glsl">
+      <Filter>GLSL</Filter>
+    </None>
   </ItemGroup>
 </Project>
