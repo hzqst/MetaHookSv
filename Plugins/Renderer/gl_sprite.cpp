@@ -324,6 +324,8 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 
 	if (pSprite->frames[frame].type == SPR_SINGLE)
 	{
+		//TODO: fake our own mspriteframe_t
+
 		pspriteframe = pSprite->frames[frame].frameptr;
 	}
 	else

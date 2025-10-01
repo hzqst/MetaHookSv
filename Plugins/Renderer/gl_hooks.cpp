@@ -3149,39 +3149,30 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	if (gPrivateFuncs.R_DrawSequentialPoly)
 		return;
 
-	ULONG_PTR R_DrawSequentialPoly_VA = 0;
-	ULONG R_DrawSequentialPoly_RVA = 0;
+	PVOID R_DrawSequentialPoly_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		R_DrawSequentialPoly_VA = (ULONG_PTR)Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE, DllInfo);
-		Convert_VA_to_RVA(R_DrawSequentialPoly, DllInfo);
+		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE, DllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_DrawSequentialPoly_VA = (ULONG_PTR)Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25, DllInfo);
-		Convert_VA_to_RVA(R_DrawSequentialPoly, DllInfo);
+		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25, DllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		R_DrawSequentialPoly_VA = (ULONG_PTR)Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW, DllInfo);
+		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW, DllInfo);
 
 		//try another signature
 		if (!R_DrawSequentialPoly_VA)
-			R_DrawSequentialPoly_VA = (ULONG_PTR)Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW2, DllInfo);
-
-		Convert_VA_to_RVA(R_DrawSequentialPoly, DllInfo);
+			R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW2, DllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		R_DrawSequentialPoly_VA = (ULONG_PTR)Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_BLOB, DllInfo);
-		Convert_VA_to_RVA(R_DrawSequentialPoly, DllInfo);
+		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_BLOB, DllInfo);
 	}
 
-	if (R_DrawSequentialPoly_RVA)
-	{
-		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))VA_from_RVA(R_DrawSequentialPoly, RealDllInfo);
-	}
+	gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
 
 	Sig_FuncNotFound(R_DrawSequentialPoly);
 
@@ -3193,30 +3184,17 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 		int *gDecalSurfCount = NULL;
 		msurface_t **gDecalSurfs = NULL;
 	*/
-	ULONG_PTR lightmaps_VA = 0;
-	ULONG lightmaps_RVA = 0;
-
-	ULONG_PTR lightmap_textures_VA = 0;
-	ULONG lightmap_textures_RVA = 0;
-
-	ULONG_PTR lightmap_rectchange_VA = 0;
-	ULONG lightmap_rectchange_RVA = 0;
-
-	ULONG_PTR gDecalSurfCount_VA = 0;
-	ULONG gDecalSurfCount_RVA = 0;
-
-	ULONG_PTR gDecalSurfs_VA = 0;
-	ULONG gDecalSurfs_RVA = 0;
+	PVOID lightmaps_VA = 0;
+	PVOID lightmap_textures_VA = 0;
+	PVOID lightmap_rectchange_VA = 0;
+	PVOID gDecalSurfCount_VA = 0;
+	PVOID gDecalSurfs_VA = 0;
+	PVOID R_RenderDynamicLightmaps_VA = 0;
 
 	typedef struct R_DrawSequentialPoly_SearchContext_s
 	{
-		ULONG_PTR& lightmaps;
-		ULONG_PTR& lightmap_textures;
-		ULONG_PTR& lightmap_rectchange;
-		ULONG_PTR& gDecalSurfs;
-		ULONG_PTR& gDecalSurfCount;
-		ULONG_PTR& R_RenderDynamicLightmaps;
 		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
 
 		std::set<PVOID> code{};
 		std::set<PVOID> branches{};
@@ -3228,15 +3206,12 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 		int decalsurf_register{};
 	} R_DrawSequentialPoly_SearchContext;
 
-	ULONG_PTR R_RenderDynamicLightmaps_VA = 0;
-	ULONG R_RenderDynamicLightmaps_RVA = 0;
-
 	R_DrawSequentialPoly_SearchContext ctx = {
-		lightmaps_VA, lightmap_textures_VA, lightmap_rectchange_VA,
-		gDecalSurfs_VA, gDecalSurfCount_VA, R_RenderDynamicLightmaps_VA, DllInfo
+		DllInfo,
+		RealDllInfo
 	};
 
-	ctx.walks.emplace_back((void*)R_DrawSequentialPoly_VA, 0x1000, 0);
+	ctx.walks.emplace_back(R_DrawSequentialPoly_VA, 0x1000, 0);
 
 	while (ctx.walks.size())
 	{
@@ -3248,7 +3223,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_DrawSequentialPoly_SearchContext*)context;
 
-			if (ctx->lightmap_textures && ctx->lightmap_rectchange && ctx->lightmaps && ctx->gDecalSurfs && ctx->gDecalSurfCount && ctx->R_RenderDynamicLightmaps)
+			if (lightmap_textures && lightmap_rectchange && lightmaps && gDecalSurfs && gDecalSurfCount && gPrivateFuncs.R_RenderDynamicLightmaps)
 				return TRUE;
 
 			if (ctx->code.size() > 1000)
@@ -3270,7 +3245,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 
 				ctx->mov_38_instcount = instCount;
 			}
-			else if (!ctx->lightmap_textures &&
+			else if (!lightmap_textures &&
 				ctx->mov_38_instcount &&
 				instCount < ctx->mov_38_instcount + 3 &&
 				pinst->id == X86_INS_MOV &&
@@ -3285,9 +3260,9 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 			{//.text:01D47A2B 8B 04 95 00 32 34 02                                mov     eax, lightmap_textures[edx*4]
 
 				if ((ULONG_PTR)pinst->detail->x86.operands[1].mem.disp != (ULONG_PTR)lightmap_modified)
-					ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					lightmap_textures = (decltype(lightmap_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (!ctx->lightmap_textures &&
+			else if (!lightmap_textures &&
 				ctx->mov_38_instcount &&
 				instCount < ctx->mov_38_instcount + 3 &&
 				pinst->id == X86_INS_PUSH &&
@@ -3300,9 +3275,9 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D5918C FF 34 85 C0 44 F5 03                                push    lightmap_textures[eax*4] 
 
-				ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				lightmap_textures = (decltype(lightmap_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (!ctx->lightmap_textures &&
+			else if (!lightmap_textures &&
 				ctx->mov_38_instcount &&
 				instCount < ctx->mov_38_instcount + 3 &&
 				pinst->id == X86_INS_MOV &&
@@ -3313,9 +3288,9 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//8B 3D 40 FB C0 02                                   mov     edi, lightmap_textures
 
-				ctx->lightmap_textures = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+				lightmap_textures = (decltype(lightmap_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (!ctx->lightmap_rectchange &&
+			else if (!lightmap_rectchange &&
 				ctx->mov_38_instcount &&
 				instCount < ctx->mov_38_instcount + 15 &&
 				pinst->id == X86_INS_ADD &&
@@ -3327,9 +3302,9 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D591B8 81 C6 C8 D8 F5 03                                   add     esi, offset lightmap_rectchange
 
-				ctx->lightmap_rectchange = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+				lightmap_rectchange = (decltype(lightmap_textures))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (ctx->lightmap_rectchange && !ctx->lightmaps &&
+			else if (lightmap_rectchange && !lightmaps &&
 				ctx->mov_38_instcount &&
 				instCount < ctx->mov_38_instcount + 20 &&
 				pinst->id == X86_INS_ADD &&
@@ -3340,7 +3315,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
 			{//.text:01D591C9 81 C1 C8 18 FE 03                                   add     ecx, offset lightmaps 
 
-				ctx->lightmaps = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
+				lightmaps = (decltype(lightmaps))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
 			}
 			else if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -3357,7 +3332,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				ctx->decalsurf_instcount = instCount;
 				ctx->decalsurf_register = pinst->detail->x86.operands[0].mem.index;
 			}
-			else if (!ctx->gDecalSurfs &&
+			else if (!gDecalSurfs &&
 				ctx->decalsurf_candidateVA &&
 				instCount < ctx->decalsurf_instcount + 3 &&
 				pinst->id == X86_INS_INC &&
@@ -3366,9 +3341,9 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				pinst->detail->x86.operands[0].reg == ctx->decalsurf_register)
 			{//.text:01D47C0F 40                                                  inc     eax
 
-				ctx->gDecalSurfs = (ULONG_PTR)ctx->decalsurf_candidateVA;
+				gDecalSurfs = (decltype(gDecalSurfs))ConvertDllInfoSpace((PVOID)ctx->decalsurf_candidateVA, ctx->DllInfo, ctx->RealDllInfo);
 			}
-			else if (!ctx->gDecalSurfCount &&
+			else if (!gDecalSurfCount &&
 				ctx->decalsurf_candidateVA &&
 				instCount < ctx->decalsurf_instcount + 5 &&
 				pinst->id == X86_INS_MOV &&
@@ -3383,7 +3358,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 				pinst->detail->x86.operands[1].reg == ctx->decalsurf_register)
 			{//.text:01D47C15 A3 98 26 34 02                                      mov     gDecalSurfCount, eax
 
-				ctx->gDecalSurfCount = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
+				gDecalSurfCount = (decltype(gDecalSurfCount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 			}
 			if (address[0] == 0xE8)
 			{
@@ -3438,7 +3413,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 
 				if (ctx2.bFoundImm14h && ctx2.bFoundPush200)
 				{
-					ctx->R_RenderDynamicLightmaps = (ULONG_PTR)target;
+					gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
 				}
 			}
 
@@ -3469,26 +3444,6 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 
 			}, walk.depth, &ctx);
 	}
-
-	Convert_VA_to_RVA(lightmap_textures, DllInfo);
-	Convert_VA_to_RVA(lightmap_rectchange, DllInfo);
-	Convert_VA_to_RVA(lightmaps, DllInfo);
-	Convert_VA_to_RVA(gDecalSurfs, DllInfo);
-	Convert_VA_to_RVA(gDecalSurfCount, DllInfo);
-	Convert_VA_to_RVA(R_RenderDynamicLightmaps, DllInfo);
-
-	if (lightmap_textures_RVA)
-		lightmap_textures = (decltype(lightmap_textures))VA_from_RVA(lightmap_textures, RealDllInfo);
-	if (lightmap_rectchange_RVA)
-		lightmap_rectchange = (decltype(lightmap_rectchange))VA_from_RVA(lightmap_rectchange, RealDllInfo);
-	if (lightmaps_RVA)
-		lightmaps = (decltype(lightmaps))VA_from_RVA(lightmaps, RealDllInfo);
-	if (gDecalSurfs_RVA)
-		gDecalSurfs = (decltype(gDecalSurfs))VA_from_RVA(gDecalSurfs, RealDllInfo);
-	if (gDecalSurfCount_RVA)
-		gDecalSurfCount = (decltype(gDecalSurfCount))VA_from_RVA(gDecalSurfCount, RealDllInfo);
-	if (R_RenderDynamicLightmaps_RVA)
-		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))VA_from_RVA(R_RenderDynamicLightmaps, RealDllInfo);
 
 	Sig_VarNotFound(lightmap_textures);
 	Sig_VarNotFound(lightmap_rectchange);

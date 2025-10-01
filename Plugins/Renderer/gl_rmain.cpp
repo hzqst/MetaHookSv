@@ -4428,10 +4428,10 @@ int EngineGetMaxELights(void)
 
 int EngineGetMaxLightmapTextures(void)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//if (g_iEngineType == ENGINE_SVENGINE)
 		return MAX_LIGHTMAPS_SVENGINE;
 
-	return MAX_LIGHTMAPS;
+	//return MAX_LIGHTMAPS;
 }
 
 int EngineGetMaxClientModels(void)

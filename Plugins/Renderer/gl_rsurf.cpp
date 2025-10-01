@@ -359,6 +359,13 @@ void GL_BuildLightmaps(void)
 
 	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
 
+	auto old_lightmaps = lightmaps;
+	
+	if (g_iEngineType != ENGINE_SVENGINE)
+	{
+		lightmaps = (byte *)malloc(4 * MAX_LIGHTMAPS_SVENGINE * BLOCK_WIDTH * BLOCK_HEIGHT);
+	}
+
 	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
 	{
 		g_WorldSurfaceRenderer.iLightmapTextureArray[lightmap_idx] = GL_GenTexture();
@@ -393,6 +400,13 @@ void GL_BuildLightmaps(void)
 		}
 
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	}
+
+	if (g_iEngineType != ENGINE_SVENGINE)
+	{
+		free(lightmaps);
+
+		lightmaps = old_lightmaps;
 	}
 }
 
