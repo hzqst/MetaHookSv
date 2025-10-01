@@ -16,25 +16,26 @@ layout(triangles) in;
 #endif
 
 // Input from vertex shader
-in vec3 v_worldpos[];
-in vec3 v_normal[];
-in vec3 v_tangent[];
-in vec3 v_bitangent[];
-in vec2 v_diffusetexcoord[];
-in vec3 v_lightmaptexcoord[];
-in vec2 v_detailtexcoord[];
-in vec2 v_normaltexcoord[];
-in vec2 v_parallaxtexcoord[];
-in vec2 v_speculartexcoord[];
-in vec4 v_shadowcoord[3][];
-in vec4 v_projpos[];
+// Note: For geometry shader, the outermost dimension must be explicitly sized for AMD compatibility
+in vec3 v_worldpos[3];
+in vec3 v_normal[3];
+in vec3 v_tangent[3];
+in vec3 v_bitangent[3];
+in vec2 v_diffusetexcoord[3];
+in vec3 v_lightmaptexcoord[3];
+in vec2 v_detailtexcoord[3];
+in vec2 v_normaltexcoord[3];
+in vec2 v_parallaxtexcoord[3];
+in vec2 v_speculartexcoord[3];
+in vec4 v_shadowcoord[3][3];  // [vertex_index][shadow_cascade_index]
+in vec4 v_projpos[3];
 
 #if defined(SKYBOX_ENABLED)
 	
 #elif defined(DECAL_ENABLED)
-	flat in uvec4 v_styles[];
+	flat in uvec4 v_styles[3];
 #else
-	flat in uvec4 v_styles[];
+	flat in uvec4 v_styles[3];
 #endif
 
 // Output to fragment shader
@@ -88,9 +89,9 @@ void main()
 			g_normaltexcoord = v_normaltexcoord[i];
 			g_parallaxtexcoord = v_parallaxtexcoord[i];
 			g_speculartexcoord = v_speculartexcoord[i];
-			g_shadowcoord[0] = v_shadowcoord[0][i];
-			g_shadowcoord[1] = v_shadowcoord[1][i];
-			g_shadowcoord[2] = v_shadowcoord[2][i];
+			g_shadowcoord[0] = v_shadowcoord[i][0];
+			g_shadowcoord[1] = v_shadowcoord[i][1];
+			g_shadowcoord[2] = v_shadowcoord[i][2];
 			g_projpos = gl_Position;
 			
 			#if !defined(SKYBOX_ENABLED)
@@ -117,9 +118,9 @@ void main()
 		g_normaltexcoord = v_normaltexcoord[i];
 		g_parallaxtexcoord = v_parallaxtexcoord[i];
 		g_speculartexcoord = v_speculartexcoord[i];
-		g_shadowcoord[0] = v_shadowcoord[0][i];
-		g_shadowcoord[1] = v_shadowcoord[1][i];
-		g_shadowcoord[2] = v_shadowcoord[2][i];
+		g_shadowcoord[0] = v_shadowcoord[i][0];
+		g_shadowcoord[1] = v_shadowcoord[i][1];
+		g_shadowcoord[2] = v_shadowcoord[i][2];
 		g_projpos = v_projpos[i];
 		
 		#if !defined(SKYBOX_ENABLED)
