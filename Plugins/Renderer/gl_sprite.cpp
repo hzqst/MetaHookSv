@@ -75,7 +75,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\sprite_shader.vert.glsl", "renderer\\shader\\sprite_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile("renderer\\shader\\sprite_shader.vert.glsl", "renderer\\shader\\sprite_shader.frag.glsl", def.c_str(), def.c_str());
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, in_up_down_left_right, "in_up_down_left_right");
@@ -190,7 +190,7 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\triapi_shader.vert.glsl", "renderer\\shader\\triapi_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile("renderer\\shader\\triapi_shader.vert.glsl", "renderer\\shader\\triapi_shader.frag.glsl", def.c_str(), def.c_str());
 
 		if (prog.program)
 		{

@@ -82,55 +82,6 @@ MapConVar *r_ssao_intensity = NULL;
 MapConVar *r_ssao_bias = NULL;
 MapConVar *r_ssao_blur_sharpness = NULL;
 
-std::unordered_map<program_state_t, hud_debug_program_t> g_HudDebugProgramTable;
-
-void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput)
-{
-	hud_debug_program_t prog = { 0 };
-
-	auto itor = g_HudDebugProgramTable.find(state);
-	if (itor == g_HudDebugProgramTable.end())
-	{
-		std::stringstream defs;
-
-		if (state & HUD_DEBUG_TEXARRAY)
-			defs << "#define TEXARRAY_ENABLED\n";
-
-		if (state & HUD_DEBUG_SHADOW)
-			defs << "#define SHADOW_ENABLED\n";
-
-		auto def = defs.str();
-
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vert.glsl", "renderer\\shader\\hud_debug.frag.glsl", def.c_str(), def.c_str(), NULL);
-		if (prog.program)
-		{
-			SHADER_UNIFORM(prog, basetex, "basetex");
-			SHADER_UNIFORM(prog, layer , "layer");
-		}
-
-		g_HudDebugProgramTable[state] = prog;
-	}
-	else
-	{
-		prog = itor->second;
-	}
-
-	if (prog.program)
-	{
-		GL_UseProgram(prog.program);
-
-		if (prog.basetex != -1)
-			glUniform1i(prog.basetex, 0);
-
-		if (progOutput)
-			*progOutput = prog;
-	}
-	else
-	{
-		g_pMetaHookAPI->SysError("R_UseHudDebugProgram: Failed to load program!");
-	}
-}
-
 void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_program_t* progOutput)
 {
 	drawtexturedrect_program_t prog = { 0 };
@@ -142,7 +93,10 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\drawtexturedrect_shader.vert.glsl", "renderer\\shader\\drawtexturedrect_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile(
+			"renderer\\shader\\drawtexturedrect_shader.vert.glsl", 
+			"renderer\\shader\\drawtexturedrect_shader.frag.glsl", 
+			def.c_str(), def.c_str());
 
 		if (prog.program)
 		{
@@ -209,7 +163,10 @@ void R_UseDrawFilledRectProgram(program_state_t state, drawfilledrect_program_t*
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\drawfilledrect_shader.vert.glsl", "renderer\\shader\\drawfilledrect_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile(
+			"renderer\\shader\\drawfilledrect_shader.vert.glsl", 
+			"renderer\\shader\\drawfilledrect_shader.frag.glsl", 
+			def.c_str(), def.c_str());
 
 		if (prog.program)
 		{
@@ -310,36 +267,36 @@ void R_InitHUD(void)
 	}
 
 	//FXAA Pass
-	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl", NULL);
+	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl");
 
 	//DownSample Pass
-	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", NULL);
+	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl");
 	
 	//2x2 Downsample Pass
-	pp_downsample2x2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n", NULL);
+	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n");
 
 	//Luminance Downsample Pass
-	pp_lumindown.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "", NULL);
+	pp_lumindown.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "");
 
 	//Log Luminance Downsample Pass
-	pp_luminlog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n", NULL);
+	pp_luminlog.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n");
 
 	//Exp Luminance Downsample Pass
-	pp_luminexp.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n", NULL);
+	pp_luminexp.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n");
 
 	//Luminance Adaptation Downsample Pass
-	pp_luminadapt.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "", NULL);
+	pp_luminadapt.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "");
 
 	//Bright Pass
-	pp_brightpass.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "", "", NULL);
+	pp_brightpass.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "", "");
 
 	//Tone mapping
-	pp_tonemap.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "", "", NULL);
+	pp_tonemap.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "", "");
 
 	//SSAO
-	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
+	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl");
 
-	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
+	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl");
 
 	if (hbao_calc_blur.program)
 	{
@@ -359,24 +316,22 @@ void R_InitHUD(void)
 	//OIT Blend
 	if (g_bUseOITBlend)
 	{
-		oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
+		oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl");
 
-		blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl", NULL);
+		blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl");
 	}
 
-	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
+	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl");
 
-	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl", NULL);
+	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl");
 
-	copy_color.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", NULL);
+	copy_color.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl");
 
-	copy_color_halo_add.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl",
-		"#define HALO_ADD_ENABLED\n", "#define HALO_ADD_ENABLED\n", NULL);
+	copy_color_halo_add.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", "#define HALO_ADD_ENABLED\n", "#define HALO_ADD_ENABLED\n");
 
-	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl", NULL);
+	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl");
 
-	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
-		"#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n", NULL);
+	hbao_calc_blur_fog.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", "#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n");
 
 	if (hbao_calc_blur_fog.program)
 	{
@@ -394,14 +349,13 @@ void R_InitHUD(void)
 		SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
 	}
 
-	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", NULL);
+	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl");
 
-	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl",
-		"#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n", NULL);
+	hbao_blur2.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", "#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n");
 
-	pp_gaussianblurh.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_HORIZONAL\n", NULL);
+	pp_gaussianblurh.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_HORIZONAL\n");
 	
-	pp_gaussianblurv.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n", NULL);
+	pp_gaussianblurv.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n");
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 

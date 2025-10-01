@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <regex>
+#include <ScopeExit/ScopeExit.h>
 
 std::vector<GLuint> g_ShaderTable;
 
@@ -37,7 +38,7 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 		glGetInfoLogARB(shader, nInfoLength, NULL, (char *)info.c_str());
 
-		g_pMetaHookAPI->SysError("Shader %s compiled with error:\n%s", filename, info.c_str());
+		Sys_Error("Shader %s compiled with error:\n%s", filename, info.c_str());
 		return;
 	}
 }
@@ -72,25 +73,22 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 	return obj;
 }
 
-GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)
+GLuint R_CompileShader(const CCompileShaderArgs *args, const CCompileShaderContext *context)
 {
 	GLuint shader_objects[32] = {};
 	int shader_object_used = 0;
 
-	//gEngfuncs.Con_DPrintf("R_CompileShaderObject %s...", vsfile);
+#define APPEND_SHADER_STAGE(stage, GLStage) if (context->stage##code.size() > 0)\
+	{\
+		shader_objects[shader_object_used] = R_CompileShaderObject(GLStage, context->stage##code.c_str(), args->stage##file);\
+		shader_object_used++;\
+	}
 
-	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER, vscode, vsfile);
-	shader_object_used++;
+	APPEND_SHADER_STAGE(vs, GL_VERTEX_SHADER);
+	APPEND_SHADER_STAGE(gs, GL_GEOMETRY_SHADER);
+	APPEND_SHADER_STAGE(fs, GL_FRAGMENT_SHADER);
 
-	if(callback)
-		callback(shader_objects, &shader_object_used);
-
-	//gEngfuncs.Con_DPrintf("R_CompileShaderObject %s...", fsfile);
-
-	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER, fscode, fsfile);
-	shader_object_used++;
-
-	//gEngfuncs.Con_DPrintf("Linking program...");
+#undef APPEND_SHADER_STAGE
 
 	GLuint program = glCreateProgram();
 	for(int i = 0;i < shader_object_used; ++i)
@@ -117,7 +115,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 
 	g_ShaderTable.emplace_back(program);
 
-	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] vs:%s, fs:%s...\n", program, vsfile, fsfile);
+	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] ...\n", program);
 
 	return program;
 }
@@ -212,68 +210,50 @@ void R_CompileShaderAppendDefine(std::string &str, const std::string &def)
 	}
 }
 
-GLuint R_CompileShaderFileEx(
-	const char *vsfile, const char *fsfile, 
-	const char *vsdefine, const char *fsdefine,
-	ExtraShaderStageCallback callback)
+GLuint R_CompileShaderFileEx(const CCompileShaderArgs *args)
 {
-	auto vscode = (char *)gEngfuncs.COM_LoadFile(vsfile, 5, 0);
+	CCompileShaderContext context = {};
 
-	if (!vscode)
-	{
-		Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", vsfile);
-		return 0;
+	#define LOAD_SHADER_STAGE(stage, macro)\
+	{\
+		auto stage##code = (char *)gEngfuncs.COM_LoadFile(args->stage##file, 5, 0);\
+		if (!stage##code)\
+		{\
+			Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", args->stage##file);\
+			return 0;\
+		}\
+		SCOPE_EXIT{ gEngfuncs.COM_FreeFile(stage##code); };\
+		gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", args->stage##file);\
+		context.stage##code = stage##code;\
+		R_CompileShaderAppendDefine(context.stage##code, macro);\
+		if (args->stage##define)\
+		{\
+			R_CompileShaderAppendDefine(context.stage##code, args->stage##define);\
+		}\
+		if (context.stage##code.find("#include") != std::string::npos)\
+		{\
+			R_CompileShaderAppendInclude(context.stage##code, args->stage##file);\
+		}\
 	}
 
-	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", vsfile);
+	LOAD_SHADER_STAGE(vs, "#define IS_VERTEX_SHADER\n")
+	LOAD_SHADER_STAGE(gs, "#define IS_GEOMETRY_SHADER\n")
+	LOAD_SHADER_STAGE(fs, "#define IS_FRAGMENT_SHADER\n")
 
-	std::string vs(vscode);
+#undef LOAD_SHADER_STAGE
 
-	R_CompileShaderAppendDefine(vs, "#define IS_VERTEX_SHADER\n");
-
-	if (vsdefine)
-	{
-		R_CompileShaderAppendDefine(vs, vsdefine);
-	}
-
-	gEngfuncs.COM_FreeFile(vscode);
-
-	auto fscode = (char *)gEngfuncs.COM_LoadFile(fsfile, 5, 0);
-	if (!fscode)
-	{
-		Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", fsfile);
-		return 0;
-	}
-
-	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", fsfile);
-
-	std::string fs(fscode);
-
-	R_CompileShaderAppendDefine(fs, "#define IS_FRAGMENT_SHADER\n");
-
-	if (fsdefine)
-	{
-		R_CompileShaderAppendDefine(fs, fsdefine);
-	}
-
-	gEngfuncs.COM_FreeFile(fscode);
-
-	if (vs.find("#include") != std::string::npos)
-	{
-		R_CompileShaderAppendInclude(vs, vsfile);
-	}
-
-	if (fs.find("#include") != std::string::npos)
-	{
-		R_CompileShaderAppendInclude(fs, fsfile);
-	}
-
-	return R_CompileShader(vs.c_str(), fs.c_str(), vsfile, fsfile, callback);
+	return R_CompileShader(args, &context);
 }
 
-GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)
+GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine)
 {
-	return R_CompileShaderFileEx(vsfile, fsfile, NULL, NULL, callback);
+	CCompileShaderArgs args = {};
+	args.vsfile = vsfile;
+	args.fsfile = fsfile;
+	args.vsdefine = vsdefine;
+	args.fsdefine = fsdefine;
+	
+	return R_CompileShaderFileEx(&args);
 }
 
 void GL_UseProgram(GLuint program)

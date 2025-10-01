@@ -314,9 +314,12 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vert.glsl", "renderer\\shader\\wsurf_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
-
-		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
+		prog.program = R_CompileShaderFile("renderer\\shader\\wsurf_shader.vert.glsl", "renderer\\shader\\wsurf_shader.frag.glsl", def.c_str(), def.c_str());
+		
+		if (prog.program)
+		{
+			SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
+		}
 
 		g_WSurfProgramTable[state] = prog;
 	}

@@ -36,7 +36,8 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\portal_shader.vert.glsl", "renderer\\shader\\portal_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile("renderer\\shader\\portal_shader.vert.glsl", "renderer\\shader\\portal_shader.frag.glsl", def.c_str(), def.c_str());
+		
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_entityMatrix, "u_entityMatrix");

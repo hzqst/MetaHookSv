@@ -98,7 +98,7 @@ void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\dfinal_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\dfinal_shader.frag.glsl", def.c_str(), def.c_str());
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_ssrRayStep, "u_ssrRayStep");
@@ -213,7 +213,7 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFile("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str());
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_lightdir, "u_lightdir");
