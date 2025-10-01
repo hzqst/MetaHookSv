@@ -46,8 +46,9 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
 {
 	vec4 finalColor = vec4(0);
  
-    float viewportW = CameraUBO.viewport.z;
-    float viewportH = CameraUBO.viewport.w;
+    vec4 viewport = GetCameraViewPort(0);
+    float viewportW = viewport.z;
+    float viewportH = viewport.w;
     int idx = 0;
     for(int i = -3;i <= 3;i++)
     {
@@ -73,7 +74,7 @@ vec3 GenerateWorldNormal(vec2 texcoord)
 
 vec3 GenerateViewNormal(vec2 texcoord)
 {
-    return normalize((CameraUBO.viewMatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
+    return normalize(( GetCameraWorldMatrix(0) * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
 }
 
 vec4 VignetteColor(vec4 c, vec2 win_bias)

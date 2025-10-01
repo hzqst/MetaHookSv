@@ -26,15 +26,15 @@ out vec3 v_smoothnormal;
 
 vec4 R_StudioViewModelProjection(float flScale)
 {
-    vec3 cameraPos = CameraUBO.viewpos.xyz;
+    vec3 cameraPos = GetCameraViewPos(0);
     
-    vec4 originalClipPos = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(v_worldpos, 1.0);
+    vec4 originalClipPos = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(v_worldpos, 1.0);
     vec2 originalScreenPos = originalClipPos.xy / originalClipPos.w;
     
     vec3 toVertex = v_worldpos - cameraPos;
     vec3 scaledWorldPos = cameraPos + toVertex * flScale;
     
-    vec4 scaledClipPos = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(scaledWorldPos, 1.0);
+    vec4 scaledClipPos = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(scaledWorldPos, 1.0);
     
     vec2 scaledScreenPos = scaledClipPos.xy / scaledClipPos.w;
     vec2 screenDelta = originalScreenPos - scaledScreenPos;
@@ -117,7 +117,7 @@ void main(void)
 		);
 		tmp = normalize(tmp);
 
-		vec3 chromeupvec = cross(tmp, CameraUBO.vright.xyz);
+		vec3 chromeupvec = cross(tmp, GetCameraVRight(0));
 		chromeupvec = normalize(chromeupvec);
 
 		vec3 chromerightvec = cross(tmp, chromeupvec);
@@ -184,11 +184,7 @@ void main(void)
 
 	#endif
 
-	//#if defined(VIEWMODEL_SCALE_ENABLED)
-	//gl_Position = R_StudioViewModelProjection(r_viewmodel_scale);
-	//#else
-	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
-	//#endif
+	gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);
 
 	v_projpos = gl_Position;
 	v_texcoord = v_texcoord * r_uvscale;

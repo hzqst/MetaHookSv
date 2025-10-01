@@ -215,7 +215,7 @@ GLuint R_CompileShaderFileEx(const CCompileShaderArgs *args)
 	CCompileShaderContext context = {};
 
 	#define LOAD_SHADER_STAGE(stage, macro)\
-	{\
+	if (args->stage##file){\
 		auto stage##code = (char *)gEngfuncs.COM_LoadFile(args->stage##file, 5, 0);\
 		if (!stage##code)\
 		{\

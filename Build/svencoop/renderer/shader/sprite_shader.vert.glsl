@@ -22,7 +22,7 @@ void R_GetSpriteAxes_ParallelUpright(vec3 angles, inout vec3 forward, inout vec3
 {
 	up = vec3(0.0, 0.0, 1.0);
 
-	right = vec3(CameraUBO.vpn.y, -CameraUBO.vpn.x, 0.0);
+	right = vec3(GetCameraVForward(0).y, -GetCameraVForward(0).x, 0.0);
 
 	right = normalize(right);
 
@@ -31,7 +31,7 @@ void R_GetSpriteAxes_ParallelUpright(vec3 angles, inout vec3 forward, inout vec3
 
 void R_GetSpriteAxes_FacingUpright(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
 {
-	vec3 tvec = -CameraUBO.viewpos.xyz;
+	vec3 tvec = -GetCameraViewPos(0);
 
 	tvec = normalize(tvec);
 
@@ -49,16 +49,16 @@ void R_GetSpriteAxes_ParallelOriented(vec3 angles, inout vec3 forward, inout vec
 	float sr = sin(angle);
 	float cr = cos(angle);
 
-	forward = CameraUBO.vpn.xyz;
-	right = vec3(CameraUBO.vright.x * cr + CameraUBO.vup.x * sr, CameraUBO.vright.y * cr + CameraUBO.vup.y * sr, CameraUBO.vright.z * cr + CameraUBO.vup.z * sr);
-	up = vec3(CameraUBO.vright.x * -sr + CameraUBO.vup.x * cr, CameraUBO.vright.y * -sr + CameraUBO.vup.y * cr, CameraUBO.vright.z * -sr + CameraUBO.vup.z * cr);
+	forward = GetCameraVForward(0);
+	right = vec3(GetCameraVRight(0).x * cr + GetCameraVUp(0).x * sr, GetCameraVRight(0).y * cr + GetCameraVUp(0).y * sr, GetCameraVRight(0).z * cr + GetCameraVUp(0).z * sr);
+	up = vec3(GetCameraVRight(0).x * -sr + GetCameraVUp(0).x * cr, GetCameraVRight(0).y * -sr + GetCameraVUp(0).y * cr, GetCameraVRight(0).z * -sr + GetCameraVUp(0).z * cr);
 }
 
 void R_GetSpriteAxes_Parallel(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
 {
-	up = CameraUBO.vup.xyz;
-	right = CameraUBO.vright.xyz;
-	forward = CameraUBO.vpn.xyz;
+	up = GetCameraVUp(0);
+	right = GetCameraVRight(0);
+	forward = GetCameraVForward(0);
 }
 
 void AngleVectors(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
@@ -135,7 +135,7 @@ void main()
 
 	vec3 outvert = vertexArray[idx];
 
-	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
+	gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);
 	v_worldpos = outvert;
 	v_normal = normalize(vForward);
 	v_color = in_color;

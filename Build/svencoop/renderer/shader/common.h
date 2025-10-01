@@ -150,6 +150,7 @@
 #define DSHADE_BIND_CONE_TEXTURE			6
 #define DSHADE_BIND_SHADOWMAP_TEXTURE		7
 #define DSHADE_BIND_CSM_TEXTURE				8
+#define DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE	9
 
 #define DFINAL_BIND_DIFFUSE_TEXTURE			0
 #define DFINAL_BIND_LIGHTMAP_TEXTURE		1
@@ -197,10 +198,10 @@
 #define CSM_RESOLUTION 4096.0
 #define CSM_LEVELS 4
 
-struct camera_ubo_t {
-	mat4 viewMatrix;
+struct camera_view_t {
+	mat4 worldMatrix;
 	mat4 projMatrix;
-	mat4 invViewMatrix;
+	mat4 invWorldMatrix;
 	mat4 invProjMatrix;
 	vec4 viewport;
 	vec4 frustum[4];
@@ -208,7 +209,14 @@ struct camera_ubo_t {
 	vec4 vpn;
 	vec4 vright;
 	vec4 vup;
-	vec4 r_origin;
+};
+
+struct camera_ubo_t {
+	camera_view_t views[6];
+	int numViews;
+	int padding;
+	int padding2;
+	int padding3;
 };
 
 struct scene_ubo_t{
@@ -311,6 +319,56 @@ layout(std430, binding = BINDING_POINT_MATERIAL_SSBO) coherent buffer WorldMater
 	world_material_t WorldMaterialSSBO[];
 };
 
+vec4 GetCameraViewPort(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].viewport;
+}
+
+mat4 GetCameraWorldMatrix(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].worldMatrix;
+}
+
+mat4 GetCameraInvWorldMatrix(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].invWorldMatrix;
+}
+
+mat4 GetCameraProjMatrix(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].projMatrix;
+}
+
+mat4 GetCameraInvProjMatrix(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].invProjMatrix;
+}
+
+vec3 GetCameraViewPos(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].viewpos.xyz;
+}
+
+vec3 GetCameraFrustumPos(uint cameraIndex, uint idx)
+{
+	return CameraUBO.views[cameraIndex].frustum[idx].xyz;
+}
+
+vec3 GetCameraVForward(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].vpn.xyz;
+}
+
+vec3 GetCameraVRight(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].vright.xyz;
+}
+
+vec3 GetCameraVUp(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].vup.xyz;
+}
+
 #if defined(OIT_BLEND_ENABLED)
 
 // A fragment node stores rendering information about one specific fragment
@@ -346,8 +404,9 @@ layout(binding = BINDING_POINT_OIT_COUNTER_SSBO, offset = 0) uniform atomic_uint
 	{
 		float x = gl_FragCoord.x;
 		float y = gl_FragCoord.y;
-		float viewportW = CameraUBO.viewport.x;
-    	float viewportH = CameraUBO.viewport.w;
+		vec4 viewport = GetCameraViewPort(0);
+		float viewportW = viewport.z;
+    	float viewportH = viewport.w;
 		uint linkedListSize = uint(viewportW * viewportH * MAX_NUM_NODES);
 
 		uint pixelIndex = uint(viewportW*y + x);
@@ -437,7 +496,7 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 
 vec3 GenerateViewPositionFromDepth(vec2 texCoord, float depth) {
 	vec4 ndc = vec4(texCoord * 2.0 - 1.0, depth, 1.0);
-	vec4 inversed = CameraUBO.invProjMatrix * ndc;
+	vec4 inversed = GetCameraInvProjMatrix(0) * ndc;
 	return inversed.xyz / inversed.w;
 }
 
@@ -447,12 +506,12 @@ vec3 GenerateWorldPositionFromDepth(vec2 texCoord, float depth)
 	clipSpaceLocation.xy = texCoord * 2.0 - 1.0;
 	clipSpaceLocation.z = depth * 2.0 - 1.0;
 	clipSpaceLocation.w = 1.0;
-	vec4 inversed = CameraUBO.invViewMatrix * CameraUBO.invProjMatrix * clipSpaceLocation;
+	vec4 inversed = GetCameraInvWorldMatrix(0) * GetCameraInvProjMatrix(0) * clipSpaceLocation;
 	return inversed.xyz / inversed.w;
 }
 
 vec2 GenerateProjectedPosition(vec3 pos) {
-	vec4 samplePosition = CameraUBO.projMatrix * vec4(pos, 1.0);
+	vec4 samplePosition = GetCameraProjMatrix(0) * vec4(pos, 1.0);
 	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
 	return samplePosition.xy;
 }

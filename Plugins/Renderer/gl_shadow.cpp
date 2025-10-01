@@ -4,7 +4,6 @@
 
 std::shared_ptr<IShadowTexture> g_DLightShadowTextures[MAX_DLIGHTS_SVENGINE]{};
 
-int g_iCurrentShadowCascadedIndex = 0;
 std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture{};
 
 //cvar
@@ -50,7 +49,7 @@ public:
 
 	bool IsStatic() const override
 	{
-		return false;
+		return m_bStatic;
 	}
 	
 	GLuint GetDepthTexture() const override
@@ -83,11 +82,6 @@ public:
 	float GetCSMDistance(int cascadedIndex) const override
 	{
 		return 0;
-	}
-
-	bool IsStatic() const override
-	{
-		return m_bStatic;
 	}
 
 protected:
@@ -432,6 +426,7 @@ void R_RenderShadowmapForDynamicLights(void)
 				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
 				{
 					r_draw_shadowview = true;
+					r_draw_multiview = true;
 
 					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
@@ -449,12 +444,19 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					R_PushRefDef();
 
+					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+
+					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
 
 					// Calculate 6 faces for cubemap shadow mapping
 					// Face order: +X, -X, +Y, -Y, +Z, -Z
-					vec3_t faceAngles[6] = {
+					const vec3_t cubemapAngles[] = {
 						{0, 0, 0},     // +X (right)
 						{0, 180, 0},   // -X (left)
 						{-90, 0, 0},   // +Y (up)
@@ -463,10 +465,12 @@ void R_RenderShadowmapForDynamicLights(void)
 						{0, -90, 0}    // -Z (backward)
 					};
 
+					camera_ubo_t CameraUBO{};
+
 					for (int i = 0; i < 6; ++i)
 					{
 						VectorCopy(args->origin, (*r_refdef.vieworg));
-						VectorCopy(faceAngles[i], (*r_refdef.viewangles));
+						VectorCopy(cubemapAngles[i], (*r_refdef.viewangles));
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -480,6 +484,22 @@ void R_RenderShadowmapForDynamicLights(void)
 						g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
 						g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
 						g_pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
+
+						R_SetupCameraView(&CameraUBO.views[i]);
+					}
+
+					CameraUBO.numViews = 6;
+
+					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+
+					{
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+
+						R_RenderScene();
+
+						r_draw_classify = old_draw_classify;
 					}
 
 					R_PopRefDef();
@@ -487,6 +507,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
+					r_draw_multiview = false;
 
 					GL_EndDebugGroup();
 
@@ -599,6 +620,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					auto pWorldSurfaceModel = R_GetWorldSurfaceModel(*(cl_worldmodel));
 
 					r_draw_shadowview = true;
+					r_draw_multiview = true;
 
 					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
@@ -615,10 +637,16 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
+
 					VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 
-					// Update refdef for shadow rendering
+					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+
+					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -639,6 +667,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
 					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
 
+					camera_ubo_t CameraUBO;
+					R_SetupCameraView(&CameraUBO.views[0]);
+					CameraUBO.numViews = 1;
+					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+
 					auto old_brush_polys = (*c_brush_polys);
 					(*c_brush_polys) = 0;
 
@@ -657,6 +690,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
+					r_draw_multiview = false;
 
 					GL_EndDebugGroup();
 
@@ -679,7 +713,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					g_pCurrentShadowTexture = (*args->ppCSMShadowTexture);
 
 					r_draw_shadowview = true;
-					r_draw_shadowscene = true;
+					r_draw_multiview = true;
 
 					const float lambda = math_clamp(0.5, 0.0f, 1.0f); // 例如0.8，也可来自cvar
 					const float orthoMargin = 1.15f; // 15% 外扩，避免裁边
@@ -725,15 +759,24 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
-					//VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
+
+					// All cascades use same worldmatrix
+
+					R_LoadIdentityForWorldMatrix();
+					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+
+					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
 					// Render each cascade
 					for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
 					{
 						GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascadeIndex);
-
-						g_iCurrentShadowCascadedIndex = cascadeIndex;
 
 						// Set up scissor test for this cascade region
 						// CSM layout: [0,1]
@@ -745,11 +788,6 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						glEnable(GL_SCISSOR_TEST);
 						glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
-
-						// Update refdef for shadow rendering
-
-						R_LoadIdentityForWorldMatrix();
-						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 						float splitNear = splits[cascadeIndex + 0];
 						float splitFar = splits[cascadeIndex + 1];
@@ -774,11 +812,17 @@ void R_RenderShadowmapForDynamicLights(void)
 						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
+						// Create offset matrix for CSM cascade texture coordinate mapping
+						// CSM uses 4096x4096 texture by default and divided into four 2048x2048 regions
+						// Layout: [0,1]
+						//         [2,3]
 						float csmOffsetMatrix[4][4];
 						Matrix4x4_CreateCSMOffset(csmOffsetMatrix, cascadeIndex);
 
+						//Let projmatrix = projmatrix * csmOffsetMatrix;
 						mat4 tempProjmatrix;
 						Matrix4x4_Multiply(tempProjmatrix, (*projMatrix), csmOffsetMatrix);
+						Matrix4x4_Copy((*projMatrix), tempProjmatrix);
 
 						mat4 shadowMatrix;
 						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), tempProjmatrix);
@@ -787,17 +831,19 @@ void R_RenderShadowmapForDynamicLights(void)
 						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, &tempProjmatrix);
 						g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
 
+						camera_ubo_t CameraUBO;
+						R_SetupCameraView(&CameraUBO.views[0]);
+						CameraUBO.numViews = 1;
+						GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+
 						auto old_draw_classify = r_draw_classify;
 
-						r_draw_classify = 
-							(DRAW_CLASSIFY_OPAQUE_ENTITIES |
-							DRAW_CLASSIFY_LOCAL_PLAYER);
+						r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
 
 						R_RenderScene();
 
 						r_draw_classify = old_draw_classify;
 
-						// Disable scissor test after rendering this cascade
 						glDisable(GL_SCISSOR_TEST);
 
 						GL_EndDebugGroup();
@@ -808,7 +854,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
-					r_draw_shadowscene = false;
+					r_draw_multiview = false;
 
 					GL_EndDebugGroup();
 

@@ -39,7 +39,7 @@ void main()
 
 	vFinalColor = vPortalColor;
 
-	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 
 #if defined(PORTAL_OVERLAY_TEXTURE_ENABLED)
 

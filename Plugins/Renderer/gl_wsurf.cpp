@@ -2033,7 +2033,7 @@ void R_GenerateSceneUBO(void)
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, g_WorldSurfaceRenderer.hSceneUBO);
 
 	g_WorldSurfaceRenderer.hCameraUBO = GL_GenBuffer();
-	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hCameraUBO, sizeof(camera_ubo_t), nullptr);
+	GL_UploadDataToUBODynamicDraw(g_WorldSurfaceRenderer.hCameraUBO, sizeof(camera_ubo_t) * 6, nullptr);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_CAMERA_UBO, g_WorldSurfaceRenderer.hCameraUBO);
 
 	g_WorldSurfaceRenderer.hDLightUBO = GL_GenBuffer();
@@ -4374,32 +4374,41 @@ void R_DrawBrushModel(cl_entity_t* e)
 	glDisable(GL_BLEND);
 }
 
-void R_SetupCameraUBO()
+void R_SetupCameraView(camera_view_t *view)
 {
-	camera_ubo_t CameraUBO;
-
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
 	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
-	memcpy(CameraUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-	memcpy(CameraUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(CameraUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-	memcpy(CameraUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
-	memcpy(CameraUBO.viewport, r_viewport, sizeof(float[4]));
-	memcpy(CameraUBO.frustum[0], r_frustum_origin[0], sizeof(vec3_t));
-	memcpy(CameraUBO.frustum[1], r_frustum_origin[1], sizeof(vec3_t));
-	memcpy(CameraUBO.frustum[2], r_frustum_origin[2], sizeof(vec3_t));
-	memcpy(CameraUBO.frustum[3], r_frustum_origin[3], sizeof(vec3_t));
-	memcpy(CameraUBO.viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
-	memcpy(CameraUBO.vpn, vpn, sizeof(vec3_t));
-	memcpy(CameraUBO.vright, vright, sizeof(vec3_t));
-	memcpy(CameraUBO.vup, vup, sizeof(vec3_t));
-	memcpy(CameraUBO.r_origin, r_origin, sizeof(vec3_t));
+	memcpy(view->worldMatrix, r_world_matrix, sizeof(mat4));
+	memcpy(view->projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(view->invWorldMatrix, r_world_matrix_inv, sizeof(mat4));
+	memcpy(view->invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+	memcpy(view->viewport, r_viewport, sizeof(float[4]));
+	memcpy(view->frustum[0], r_frustum_origin[0], sizeof(vec3_t));
+	memcpy(view->frustum[1], r_frustum_origin[1], sizeof(vec3_t));
+	memcpy(view->frustum[2], r_frustum_origin[2], sizeof(vec3_t));
+	memcpy(view->frustum[3], r_frustum_origin[3], sizeof(vec3_t));
+	memcpy(view->viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
+	memcpy(view->vpn, vpn, sizeof(vec3_t));
+	memcpy(view->vright, vright, sizeof(vec3_t));
+	memcpy(view->vup, vup, sizeof(vec3_t));
+}
+
+void R_UploadCameraUBO()
+{
+	if (r_draw_multiview)
+		return;
+
+	camera_ubo_t CameraUBO{};
+
+	R_SetupCameraView(&CameraUBO.views[0]);
+
+	CameraUBO.numViews = 1;
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 }
 
-void R_SetupSceneUBO(void)
+void R_UploadSceneUBO(void)
 {
 	scene_ubo_t SceneUBO;
 
@@ -4502,7 +4511,7 @@ void R_SetupSceneUBO(void)
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
 
-void R_SetupDLightUBO(void)
+void R_UploadDLightUBO(void)
 {
 	dlight_ubo_t DLightUBO = { 0 };
 
@@ -4554,9 +4563,9 @@ void R_PrepareDrawWorld(void)
 	g_WorldSurfaceRenderer.bDiffuseTexture = true;
 	g_WorldSurfaceRenderer.bLightmapTexture = false;
 
-	R_SetupCameraUBO();
-	R_SetupSceneUBO();
-	R_SetupDLightUBO();
+	R_UploadCameraUBO();
+	R_UploadSceneUBO();
+	R_UploadDLightUBO();
 }
 
 void R_DrawWorld(void)

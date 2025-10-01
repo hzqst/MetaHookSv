@@ -13,7 +13,7 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main()
 {
-	ClipPlaneTest(v_worldpos.xyz, -CameraUBO.vpn.xyz);
+	ClipPlaneTest(v_worldpos.xyz, -GetCameraVForward(0));
 
 	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
 
@@ -34,7 +34,7 @@ void main()
 	
 	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
-	float flDistanceToFragment = distance(v_worldpos.xyz, CameraUBO.viewpos.xyz);
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 
 	vec4 finalColor = CalcFog(
 		ProcessLinearBlendShift(baseColor * lightmapColor),

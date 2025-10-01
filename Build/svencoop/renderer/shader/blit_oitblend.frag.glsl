@@ -87,9 +87,10 @@ void main() {
 
     float x = gl_FragCoord.x;
     float y = gl_FragCoord.y;
-    float viewportW = CameraUBO.viewport.z;
-    float viewportH = CameraUBO.viewport.w;
-    uint pixelIndex = uint(viewportW*y + x);
+    vec4 viewport = GetCameraViewPort(0);
+	float viewportW = viewport.z;
+    float viewportH = viewport.w;
+    uint pixelIndex = uint(viewportW * y + x);
 
     // Get start offset from array
     uint fragOffset = numFragments[pixelIndex];

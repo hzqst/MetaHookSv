@@ -19,6 +19,7 @@ void main()
 	v_diffusetexcoord = in_texcoord;
 	v_color = in_color;
 	
-	gl_Position = CameraUBO.projMatrix * CameraUBO.viewMatrix * vec4(outvert, 1.0);
+	gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);
+	
 	v_projpos = gl_Position;
 }

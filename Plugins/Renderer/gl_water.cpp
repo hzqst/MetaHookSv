@@ -740,8 +740,6 @@ void R_RenderWaterRefractView(CWaterReflectCache* ReflectCache)
 
 	R_PushRefDef();
 
-	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
-
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	(*cl_waterlevel) = 0;
 
@@ -812,8 +810,6 @@ void R_RenderWaterReflectView(CWaterReflectCache* ReflectCache)
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 	R_PushRefDef();
-
-	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
 
 	float vForward[3], vRight[3], vUp[3];
 	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);

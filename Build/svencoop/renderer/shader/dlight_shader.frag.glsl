@@ -178,7 +178,7 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vBaseTexCoord)
 {
-    float distanceFromCamera = length(World - CameraUBO.viewpos.xyz);
+    float distanceFromCamera = length(World - GetCameraViewPos(0));
 
     // Determine which cascade to use
     int cascadeIndex = CSM_LEVELS - 1; // Default to furthest cascade
@@ -342,7 +342,7 @@ void CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
 
         if (DiffuseFactor > 0.0) {
             DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * DiffuseFactor, 1.0);
-            vec3 VertexToEye = normalize(CameraUBO.viewpos.xyz - World);
+            vec3 VertexToEye = normalize(GetCameraViewPos(0) - World);
             vec3 LightReflect = normalize(reflect(LightDirection, Normal));
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
@@ -479,7 +479,7 @@ void main()
 
     vec3 normal = OctahedronToUnitVector(worldnormColor.xy);
 
-    vec3 worldpos = CameraUBO.viewpos.xyz + normalize(v_fragpos.xyz - CameraUBO.viewpos.xyz) * worldnormColor.z;
+    vec3 worldpos = GetCameraViewPos(0) + normalize( v_fragpos.xyz - GetCameraViewPos(0) ) * worldnormColor.z;
 
 #if defined(SPOT_ENABLED)
     out_FragColor = CalcSpotLight(worldpos, normal, vBaseTexCoord);

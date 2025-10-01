@@ -247,9 +247,9 @@ bool r_draw_hasoutline = false;
 bool r_draw_shadowview = false;
 
 /*
-	Purpose: skips R_CullBox (frustum culling) check
+	Purpose: Drawing multi viewport, Skips R_CullBox (frustum culling) check
 */
-bool r_draw_shadowscene = false;
+bool r_draw_multiview = false;
 
 /*
 	Purpose: Indicates that we are in R_PreDrawViewModel
@@ -674,7 +674,7 @@ bool AllowCheats()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if (r_draw_shadowscene)
+	if (r_draw_multiview)
 		return false;
 
 	return gPrivateFuncs.R_CullBox(mins, maxs);
@@ -3114,7 +3114,6 @@ void R_RenderView_SvEngine(int viewIdx)
 			R_PreDrawViewModel();
 		}
 
-	
 		R_RenderScene();
 
 		if (!(*r_refdef.onlyClientDraws))
@@ -3724,7 +3723,7 @@ void V_AdjustFovH(float* fov_x, float* fov_y, float width, float height)
 void R_SetFrustum(void)
 {
 	float xfov = r_xfov_currentpass;
-	float yfov = r_xfov_currentpass;
+	float yfov = r_yfov_currentpass;
 
 	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
 	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - xfov * 0.5);
@@ -3851,13 +3850,11 @@ void R_SetupGLForViewModel(void)
 
 	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 
-	R_SetupCameraUBO();
+	R_UploadCameraUBO();
 }
 
 void R_SetupGL(void)
 {
-	R_LoadIdentityForProjectionMatrix();
-
 	auto v0 = (*r_refdef.vrect).x;
 	auto v1 = glheight - (*r_refdef.vrect).y;
 	auto v2 = (*r_refdef.vrect).x + (*r_refdef.vrect).width;
@@ -3881,136 +3878,106 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	if (R_IsRenderingShadowView())
-	{
-		//Use viewport from current shadow texture
-		r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-		r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-		r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-		r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-	}
-	else if (R_IsRenderingWaterView())
-	{
-		auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
-
-		if (CurrentSceneFBO)
-		{
-			r_viewport[0] = 0;
-			r_viewport[1] = 0;
-			r_viewport[2] = CurrentSceneFBO->iWidth;
-			r_viewport[3] = CurrentSceneFBO->iHeight;
-		}
-		else
-		{
-			r_viewport[0] = 0;
-			r_viewport[1] = 0;
-			r_viewport[2] = glwidth;
-			r_viewport[3] = glheight;
-		}
-	}
-	else
+	if (!r_draw_multiview)
 	{
 		r_viewport[0] = v0 + glx;
 		r_viewport[1] = v3 + gly;
 		r_viewport[2] = v4;
 		r_viewport[3] = v5;
-	}
 
-	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+		glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
-	if (R_IsRenderingShadowView())
-	{
-		memcpy(r_world_matrix, g_pCurrentShadowTexture->GetWorldMatrix(g_iCurrentShadowCascadedIndex), sizeof(mat4));
-		memcpy(r_projection_matrix, g_pCurrentShadowTexture->GetProjectionMatrix(g_iCurrentShadowCascadedIndex), sizeof(mat4));
-	}
-	else if ((int)r_vertical_fov->value > 0)
-	{
-		auto height = (double)(*r_refdef.vrect).height;
-		auto width = (double)(*r_refdef.vrect).width;
-		auto aspect = height / width;
+		R_LoadIdentityForProjectionMatrix();
 
-		auto fov = (*scrfov);
-
-		if (fov < 1.0f || fov > 179.0f)
-			fov = 90.0f;
-
-		r_yfov = fov;
-		r_xfov = V_CalcFovV(fov, width, height);
-
-		if ((*r_refdef.onlyClientDraws))
+		if ((int)r_vertical_fov->value > 0)
 		{
-			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
-		}
-		else if (CL_IsDevOverviewMode())
-		{
-			glOrtho(
-				-(4096.0 / (gDevOverview->zoom * aspect)),
-				(4096.0 / (gDevOverview->zoom * aspect)),
-				-(4096.0 / gDevOverview->zoom),
-				(4096.0 / gDevOverview->zoom),
-				16000.0 - gDevOverview->z_min,
-				16000.0 - gDevOverview->z_max);
+			auto height = (double)(*r_refdef.vrect).height;
+			auto width = (double)(*r_refdef.vrect).width;
+			auto aspect = height / width;
 
-			r_znear = 16000.0 - gDevOverview->z_min;
-			r_zfar = 16000.0 - gDevOverview->z_max;
-			r_ortho = true;
+			auto fov = (*scrfov);
 
-			r_xfov_currentpass = 0;
-			r_yfov_currentpass = 0;
-		}
-		else
-		{
-			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
-		}
+			if (fov < 1.0f || fov > 179.0f)
+				fov = 90.0f;
 
-		R_LoadIdentityForWorldMatrix();
-		R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
-	}
-	else
-	{
-		auto width = (double)(*r_refdef.vrect).width;
-		auto height = (double)(*r_refdef.vrect).height;
-		auto aspect = width / height;
-		auto fov = (*scrfov);
+			r_yfov = fov;
+			r_xfov = V_CalcFovV(fov, width, height);
 
-		if (fov < 1.0f || fov > 179.0f)
-			fov = 90.0f;
+			if ((*r_refdef.onlyClientDraws))
+			{
+				V_AdjustFovV(&r_xfov, &r_yfov, width, height);
+				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
+			}
+			else if (CL_IsDevOverviewMode())
+			{
+				glOrtho(
+					-(4096.0 / (gDevOverview->zoom * aspect)),
+					(4096.0 / (gDevOverview->zoom * aspect)),
+					-(4096.0 / gDevOverview->zoom),
+					(4096.0 / gDevOverview->zoom),
+					16000.0 - gDevOverview->z_min,
+					16000.0 - gDevOverview->z_max);
 
-		r_xfov = fov;
-		r_yfov = V_CalcFovH(fov, width, height);
+				r_znear = 16000.0 - gDevOverview->z_min;
+				r_zfar = 16000.0 - gDevOverview->z_max;
+				r_ortho = true;
 
-		if ((*r_refdef.onlyClientDraws))
-		{
-			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
-		}
-		else if (CL_IsDevOverviewMode())
-		{
-			glOrtho(
-				-(4096.0 / gDevOverview->zoom),
-				(4096.0 / gDevOverview->zoom),
-				-(4096.0 / (gDevOverview->zoom * aspect)),
-				(4096.0 / (gDevOverview->zoom * aspect)),
-				16000.0 - gDevOverview->z_min,
-				16000.0 - gDevOverview->z_max);
+				r_xfov_currentpass = 0;
+				r_yfov_currentpass = 0;
+			}
+			else
+			{
+				V_AdjustFovV(&r_xfov, &r_yfov, width, height);
+				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			}
 
-			r_znear = 16000.0 - gDevOverview->z_min;
-			r_zfar = 16000.0 - gDevOverview->z_max;
-			r_ortho = true;
-
-			r_xfov_currentpass = 0;
-			r_yfov_currentpass = 0;
+			R_LoadIdentityForWorldMatrix();
+			R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 		}
 		else
 		{
-			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
-		}
+			auto width = (double)(*r_refdef.vrect).width;
+			auto height = (double)(*r_refdef.vrect).height;
+			auto aspect = width / height;
+			auto fov = (*scrfov);
 
-		R_LoadIdentityForWorldMatrix();
-		R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+			if (fov < 1.0f || fov > 179.0f)
+				fov = 90.0f;
+
+			r_xfov = fov;
+			r_yfov = V_CalcFovH(fov, width, height);
+
+			if ((*r_refdef.onlyClientDraws))
+			{
+				V_AdjustFovH(&r_xfov, &r_yfov, width, height);
+				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
+			}
+			else if (CL_IsDevOverviewMode())
+			{
+				glOrtho(
+					-(4096.0 / gDevOverview->zoom),
+					(4096.0 / gDevOverview->zoom),
+					-(4096.0 / (gDevOverview->zoom * aspect)),
+					(4096.0 / (gDevOverview->zoom * aspect)),
+					16000.0 - gDevOverview->z_min,
+					16000.0 - gDevOverview->z_max);
+
+				r_znear = 16000.0 - gDevOverview->z_min;
+				r_zfar = 16000.0 - gDevOverview->z_max;
+				r_ortho = true;
+
+				r_xfov_currentpass = 0;
+				r_yfov_currentpass = 0;
+			}
+			else
+			{
+				V_AdjustFovH(&r_xfov, &r_yfov, width, height);
+				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			}
+
+			R_LoadIdentityForWorldMatrix();
+			R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+		}
 	}
 
 	glCullFace(GL_FRONT);
@@ -4023,18 +3990,21 @@ void R_SetupGL(void)
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 
-	for (int i = 0; i < 16; i += 4)
+	if (!r_draw_multiview)
 	{
-		for (int j = 0; j < 4; j++)
+		for (int i = 0; i < 16; i += 4)
 		{
-			gWorldToScreen[i + j] = 0;
+			for (int j = 0; j < 4; j++)
+			{
+				gWorldToScreen[i + j] = 0;
 
-			for (int k = 0; k < 4; k++)
-				gWorldToScreen[i + j] += r_world_matrix[i + k] * r_projection_matrix[k * 4 + j];
+				for (int k = 0; k < 4; k++)
+					gWorldToScreen[i + j] += r_world_matrix[i + k] * r_projection_matrix[k * 4 + j];
+			}
 		}
-	}
 
-	InvertMatrix(gWorldToScreen, gScreenToWorld);
+		InvertMatrix(gWorldToScreen, gScreenToWorld);
+	}
 }
 
 void R_CheckVariables(void)
@@ -4043,9 +4013,7 @@ void R_CheckVariables(void)
 }
 
 /*
-
-R_AnimateLight basically fills d_lightstylevalue[0~255] from cl_lightstyle[0~255]
-
+	Purpose: fills d_lightstylevalue[0~255] from cl_lightstyle[0~255]
 */
 
 void R_AnimateLight(void)
@@ -4055,20 +4023,11 @@ void R_AnimateLight(void)
 
 void R_SetupFrame(void)
 {
-	//R_RenderScene might be called for multiple times in one frame. so move those to upper level.
-	//R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
-	//R_CheckVariables();
-	//R_AnimateLight();
-
 	R_UpdateRefDef();
 
 	(*r_oldviewleaf) = (*r_viewleaf);
 
-	if (R_IsRenderingWaterView())
-	{
-		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, (*cl_worldmodel));
-	}
-	else if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
+	if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{
 		(*r_viewleaf) = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, (*cl_worldmodel));
 	}

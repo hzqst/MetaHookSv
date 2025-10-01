@@ -8,10 +8,12 @@ in vec2 texCoord;
 
 void main() {
 
-    float x = gl_FragCoord.x;
-    float y = gl_FragCoord.y;
-    float viewportW = CameraUBO.viewport.z;
-    float viewportH = CameraUBO.viewport.w;
+    float x = texCoord.x;
+    float y = texCoord.y;
+
+    vec4 viewport = GetCameraViewPort(0);
+    float viewportW = viewport.z;
+    float viewportH = viewport.w;
 
     uint index = uint(viewportW*y + x);
     

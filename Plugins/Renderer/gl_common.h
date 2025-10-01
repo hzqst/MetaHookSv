@@ -257,11 +257,11 @@ typedef struct FragmentNode_s
 
 #pragma pack(push, 16)
 
-typedef struct camera_ubo_s
+typedef struct camera_view_s
 {
-	mat4 viewMatrix{};
+	mat4 worldMatrix{};
 	mat4 projMatrix{};
-	mat4 invViewMatrix{};
+	mat4 invWorldMatrix{};
 	mat4 invProjMatrix{};
 	vec4_t viewport{};
 	vec4_t frustum[4]{};
@@ -269,8 +269,18 @@ typedef struct camera_ubo_s
 	vec4_t vpn{};
 	vec4_t vright{};
 	vec4_t vup{};
-	vec4_t r_origin{};
+}camera_view_t;
+
+typedef struct camera_ubo_s
+{
+	camera_view_t views[6];
+	int numViews;
+	int padding;
+	int padding2;
+	int padding3;
 }camera_ubo_t;
+
+static_assert((sizeof(camera_ubo_t) % 16) == 0, "Size check");
 
 //viewport.z=linkListSize
 typedef struct scene_ubo_s

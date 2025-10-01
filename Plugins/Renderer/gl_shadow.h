@@ -55,7 +55,6 @@ public:
 
 extern std::shared_ptr<IShadowTexture> g_DLightShadowTextures[MAX_DLIGHTS_SVENGINE];
 
-extern int g_iCurrentShadowCascadedIndex;
 extern std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture;
 
 //cvar

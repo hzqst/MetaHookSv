@@ -117,9 +117,6 @@ public:
 	std::vector<CDrawIndexAttrib> m_vDrawAttribBuffer{};
 };
 
-//renderer
-extern vec3_t g_CurrentCameraView;
-
 //water
 extern CWaterReflectCache *g_CurrentReflectCache;
 extern CWaterReflectCache g_WaterReflectCaches[MAX_REFLECT_WATERS];
