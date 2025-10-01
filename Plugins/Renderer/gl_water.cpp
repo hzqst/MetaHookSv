@@ -109,7 +109,13 @@ void R_UseWaterProgram(program_state_t state, water_program_t* progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFile("renderer\\shader\\water_shader.vert.glsl", "renderer\\shader\\water_shader.frag.glsl", def.c_str(), def.c_str());
+		CCompileShaderArgs args;
+		args.vsfile = "renderer\\shader\\water_shader.vert.glsl";
+		args.fsfile = "renderer\\shader\\water_shader.frag.glsl";
+		args.vsdefine = def.c_str();
+		args.fsdefine = def.c_str();
+
+		prog.program = R_CompileShaderFileEx(&args);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_watercolor, "u_watercolor");

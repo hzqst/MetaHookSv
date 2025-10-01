@@ -1490,7 +1490,13 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFile("renderer\\shader\\studio_shader.vert.glsl", "renderer\\shader\\studio_shader.frag.glsl", def.c_str(), def.c_str());
+		CCompileShaderArgs args;
+		args.vsfile = "renderer\\shader\\studio_shader.vert.glsl";
+		args.fsfile = "renderer\\shader\\studio_shader.frag.glsl";
+		args.vsdefine = def.c_str();
+		args.fsdefine = def.c_str();
+
+		prog.program = R_CompileShaderFileEx(&args);
 		
 		if (prog.program)
 		{
