@@ -208,6 +208,9 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		if (state & DLIGHT_CSM_ENABLED)
 			defs << "#define CSM_ENABLED\n";
 
+		if (state & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+			defs << "#define CUBEMAP_SHADOW_TEXTURE_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str(), NULL);
@@ -261,6 +264,7 @@ const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_SHADOW_TEXTURE_ENABLED		,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
 { DLIGHT_DIRECTIONAL_ENABLED		,"DLIGHT_DIRECTIONAL_ENABLED" },
 { DLIGHT_CSM_ENABLED				,"DLIGHT_CSM_ENABLED" },
+{ DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED	,"DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -1078,6 +1082,13 @@ void R_LightShadingPass(void)
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
+			auto pShadowTexture = (*args->ppShadowTexture);
+
+			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
+			{
+				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+			}
+
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
@@ -1114,7 +1125,17 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
+			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
+			}
+
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
+
+			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+			}
 
 			GL_UseProgram(0);
 
@@ -1131,6 +1152,13 @@ void R_LightShadingPass(void)
 			GL_BindVAO(r_empty_vao);
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
+
+			auto pShadowTexture = (*args->ppShadowTexture);
+
+			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
+			{
+				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+			}
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
@@ -1163,8 +1191,18 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
+			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
+			}
+
 			const uint32_t indices[] = { 0,1,2,2,3,0 };
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+			}
 
 			GL_UseProgram(0);
 

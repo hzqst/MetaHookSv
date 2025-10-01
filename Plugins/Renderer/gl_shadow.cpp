@@ -227,6 +227,11 @@ public:
 		return &m_shadowmatrix[index];
 	}
 
+	bool IsCubemap() const override
+	{
+		return true;
+	}
+
 private:
 	mat4 m_worldmatrix[6]{};
 	mat4 m_projmatrix[6]{};
@@ -447,13 +452,21 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
 
-					//TODO: calculate 6 faces for viewangles
+					// Calculate 6 faces for cubemap shadow mapping
+					// Face order: +X, -X, +Y, -Y, +Z, -Z
+					vec3_t faceAngles[6] = {
+						{0, 0, 0},     // +X (right)
+						{0, 180, 0},   // -X (left)
+						{-90, 0, 0},   // +Y (up)
+						{90, 0, 0},    // -Y (down)
+						{0, 90, 0},    // +Z (forward)
+						{0, -90, 0}    // -Z (backward)
+					};
+
 					for (int i = 0; i < 6; ++i)
 					{
 						VectorCopy(args->origin, (*r_refdef.vieworg));
-						(*r_refdef.viewangles)[0] = 0;
-						(*r_refdef.viewangles)[1] = 0;
-						(*r_refdef.viewangles)[2] = 0;
+						VectorCopy(faceAngles[i], (*r_refdef.viewangles));
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
