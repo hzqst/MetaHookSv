@@ -211,6 +211,10 @@ void *R_GetRefDef(void)
 	return r_refdef_SvEngine ? (void *)r_refdef_SvEngine : (void *)r_refdef_GoldSrc;
 }
 
+/*
+	Purpose: Push r_refdef.vieworg and r_refdef.viewangles into stacks
+*/
+
 void R_PushRefDef(void)
 {
 	if (save_refdef_stack == MAX_SAVESTACK)
@@ -224,7 +228,7 @@ void R_PushRefDef(void)
 }
 
 /*
-	Purpose: Update r_origin, vpn, vright and vup according to r_refdef stuffs
+	Purpose: Update r_origin, vpn, vright and vup according to r_refdef.vieworg and r_refdef.viewangles. r_origin and vpn might be used later for rendering
 */
 
 void R_UpdateRefDef(void)
@@ -233,6 +237,9 @@ void R_UpdateRefDef(void)
 	AngleVectors((*r_refdef.viewangles), vpn, vright, vup);
 }
 
+/*
+	Purpose: Push r_refdef.vieworg and r_refdef.viewangles into stacks
+*/
 void R_PopRefDef(void)
 {
 	if (save_refdef_stack == 0)

@@ -692,7 +692,11 @@ void R_IterateDynamicLights(
 				args.diffuse = dynlight->diffuse;
 				args.specular = dynlight->specular;
 				args.specularpow = dynlight->specularpow;
-				args.ppShadowTexture = &dynlight->pShadowTexture;
+
+				if (dynlight->shadow > 0) {
+					args.ppShadowTexture = &dynlight->pShadowTexture;
+				}
+
 				args.bVolume = true;
 
 				pointlightCallback(&args, context);
@@ -707,8 +711,12 @@ void R_IterateDynamicLights(
 				args.ambient = dynlight->ambient;
 				args.diffuse = dynlight->diffuse;
 				args.specular = dynlight->specular;
-				args.specularpow = dynlight->specularpow;
-				args.ppShadowTexture = &dynlight->pShadowTexture;
+				args.specularpow = dynlight->specularpow; 
+
+				if (dynlight->shadow > 0) {
+					args.ppShadowTexture = &dynlight->pShadowTexture;
+				}
+
 				args.bVolume = false;
 
 				pointlightCallback(&args, context);
@@ -716,7 +724,7 @@ void R_IterateDynamicLights(
 		}
 		else if (dynlight->type == DynamicLightType_Spot)
 		{
-			//not supported yet
+			//not implemented yet
 		}
 		else if (dynlight->type == DynamicLightType_Directional)
 		{
@@ -746,8 +754,12 @@ void R_IterateDynamicLights(
 			args.diffuse = dynlight->diffuse;
 			args.specular = dynlight->specular;
 			args.specularpow = dynlight->specularpow;
-			args.ppShadowTexture = &dynlight->pShadowTexture;
-			args.ppCSMShadowTexture = &dynlight->pCSMShadowTexture;
+
+			if (dynlight->shadow > 0) {
+				args.ppShadowTexture = &dynlight->pShadowTexture;
+				args.ppCSMShadowTexture = &dynlight->pCSMShadowTexture;
+			}
+
 			args.bVolume = false; // DirectionalLight always uses fullscreen
 
 			directionalLightCallback(&args, context);

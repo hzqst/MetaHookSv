@@ -13,7 +13,7 @@ cvar_t* r_shadow = NULL;
 class CBaseShadowTexture : public IShadowTexture
 {
 public:
-	CBaseShadowTexture(uint32_t size) : m_size(size)
+	CBaseShadowTexture(uint32_t size, bool bStatic) : m_size(size), m_bStatic(bStatic)
 	{
 		
 	}
@@ -39,6 +39,11 @@ public:
 	}
 
 	bool IsCascaded() const override
+	{
+		return false;
+	}
+
+	bool IsCubemap() const override
 	{
 		return false;
 	}
@@ -80,62 +85,62 @@ public:
 		return 0;
 	}
 
+	bool IsStatic() const override
+	{
+		return m_bStatic;
+	}
+
 protected:
 	GLuint m_depthtex{};
 	uint32_t m_size{};
 	float m_viewport[4]{};
 	bool m_ready{};
+	bool m_bStatic{};
 };
 
 class CSingleShadowTexture : public CBaseShadowTexture
 {
 public:
-	CSingleShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size), m_bStatic(bStatic)
+	CSingleShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
 		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
 	}
 
-	void SetWorldMatrix(int cascadedIndex, const mat4* mat) override
+	void SetWorldMatrix(int index, const mat4* mat) override
 	{
 		memcpy(m_worldmatrix, mat, sizeof(mat4));
 	}
-	void SetProjectionMatrix(int cascadedIndex, const mat4* mat) override
+	void SetProjectionMatrix(int index, const mat4* mat) override
 	{
 		memcpy(m_projmatrix, mat, sizeof(mat4));
 	}
-	void SetShadowMatrix(int cascadedIndex, const mat4* mat) override
+	void SetShadowMatrix(int index, const mat4* mat) override
 	{
 		memcpy(m_shadowmatrix, mat, sizeof(mat4));
 	}
 
-	const mat4* GetWorldMatrix(int cascadedIndex) const override
+	const mat4* GetWorldMatrix(int index) const override
 	{
 		return &m_worldmatrix;
 	}
-	const mat4* GetProjectionMatrix(int cascadedIndex) const override
+	const mat4* GetProjectionMatrix(int index) const override
 	{
 		return &m_projmatrix;
 	}
-	const mat4* GetShadowMatrix(int cascadedIndex) const override
+	const mat4* GetShadowMatrix(int index) const override
 	{
 		return &m_shadowmatrix;
-	}
-
-	bool IsStatic() const override
-	{
-		return m_bStatic;
 	}
 private:
 	mat4 m_worldmatrix{};
 	mat4 m_projmatrix{};
 	mat4 m_shadowmatrix{};
-	bool m_bStatic{};
 };
 
 class CCascadedShadowTexture : public CBaseShadowTexture
 {
 public:
-	CCascadedShadowTexture(uint32_t size) : CBaseShadowTexture(size)
+	CCascadedShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
 		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
 	}
@@ -145,40 +150,40 @@ public:
 		return true;
 	}
 
-	void SetWorldMatrix(int cascadedIndex, const mat4* mat) override
+	void SetWorldMatrix(int index, const mat4* mat) override
 	{
-		memcpy(&m_worldmatrix[cascadedIndex], mat, sizeof(mat4));
+		memcpy(&m_worldmatrix[index], mat, sizeof(mat4));
 	}
-	void SetProjectionMatrix(int cascadedIndex, const mat4* mat) override
+	void SetProjectionMatrix(int index, const mat4* mat) override
 	{
-		memcpy(&m_projmatrix[cascadedIndex], mat, sizeof(mat4));
+		memcpy(&m_projmatrix[index], mat, sizeof(mat4));
 	}
-	void SetShadowMatrix(int cascadedIndex, const mat4* mat) override
+	void SetShadowMatrix(int index, const mat4* mat) override
 	{
-		memcpy(&m_shadowmatrix[cascadedIndex], mat, sizeof(mat4));
-	}
-
-	const mat4* GetWorldMatrix(int cascadedIndex) const override
-	{
-		return &m_worldmatrix[cascadedIndex];
-	}
-	const mat4* GetProjectionMatrix(int cascadedIndex) const override
-	{
-		return &m_projmatrix[cascadedIndex];
-	}
-	const mat4* GetShadowMatrix(int cascadedIndex) const override
-	{
-		return &m_shadowmatrix[cascadedIndex];
+		memcpy(&m_shadowmatrix[index], mat, sizeof(mat4));
 	}
 
-	void SetCSMDistance(int cascadedIndex, float distance) override
+	const mat4* GetWorldMatrix(int index) const override
 	{
-		m_csmDistances[cascadedIndex] = distance;
+		return &m_worldmatrix[index];
+	}
+	const mat4* GetProjectionMatrix(int index) const override
+	{
+		return &m_projmatrix[index];
+	}
+	const mat4* GetShadowMatrix(int index) const override
+	{
+		return &m_shadowmatrix[index];
 	}
 
-	float GetCSMDistance(int cascadedIndex) const override
+	void SetCSMDistance(int index, float distance) override
 	{
-		return m_csmDistances[cascadedIndex];
+		m_csmDistances[index] = distance;
+	}
+
+	float GetCSMDistance(int index) const override
+	{
+		return m_csmDistances[index];
 	}
 
 private:
@@ -191,10 +196,41 @@ private:
 class CCubemapShadowTexture : public CBaseShadowTexture
 {
 public:
-	CCubemapShadowTexture(uint32_t size) : CBaseShadowTexture(size)
+	CCubemapShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
 		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_CUBE_MAP, size, size, true);
 	}
+
+	void SetWorldMatrix(int index, const mat4* mat) override
+	{
+		memcpy(&m_worldmatrix[index], mat, sizeof(mat4));
+	}
+	void SetProjectionMatrix(int index, const mat4* mat) override
+	{
+		memcpy(&m_projmatrix[index], mat, sizeof(mat4));
+	}
+	void SetShadowMatrix(int index, const mat4* mat) override
+	{
+		memcpy(&m_shadowmatrix[index], mat, sizeof(mat4));
+	}
+
+	const mat4* GetWorldMatrix(int index) const override
+	{
+		return &m_worldmatrix[index];
+	}
+	const mat4* GetProjectionMatrix(int index) const override
+	{
+		return &m_projmatrix[index];
+	}
+	const mat4* GetShadowMatrix(int index) const override
+	{
+		return &m_shadowmatrix[index];
+	}
+
+private:
+	mat4 m_worldmatrix[6]{};
+	mat4 m_projmatrix[6]{};
+	mat4 m_shadowmatrix[6]{};
 };
 
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
@@ -246,9 +282,14 @@ std::shared_ptr<IShadowTexture> R_CreateSingleShadowTexture(uint32_t size, bool 
 	return std::make_shared<CSingleShadowTexture>(size, bStatic);
 }
 
-std::shared_ptr<IShadowTexture> R_CreateCascadedShadowTexture(uint32_t size)
+std::shared_ptr<IShadowTexture> R_CreateCascadedShadowTexture(uint32_t size, bool bStatic)
 {
-	return std::make_shared<CCascadedShadowTexture>(size);
+	return std::make_shared<CCascadedShadowTexture>(size, bStatic);
+}
+
+std::shared_ptr<IShadowTexture> R_CreateCubemapShadowTexture(uint32_t size, bool bStatic)
+{
+	return std::make_shared<CCubemapShadowTexture>(size, bStatic);
 }
 
 void R_InitShadow(void)
@@ -376,7 +417,71 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-			
+			if (args->ppShadowTexture)
+			{
+				if (!(*args->ppShadowTexture))
+				{
+					(*args->ppShadowTexture) = R_CreateCubemapShadowTexture(1024, false);
+				}
+
+				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
+				{
+					r_draw_shadowview = true;
+
+					g_pCurrentShadowTexture = (*args->ppShadowTexture);
+
+					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+
+					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawPointlightShadowPass");
+
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					glDrawBuffer(GL_NONE);
+					glReadBuffer(GL_NONE);
+
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+					R_PushRefDef();
+
+					R_LoadIdentityForProjectionMatrix();
+					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
+
+					//TODO: calculate 6 faces for viewangles
+					for (int i = 0; i < 6; ++i)
+					{
+						VectorCopy(args->origin, (*r_refdef.vieworg));
+						(*r_refdef.viewangles)[0] = 0;
+						(*r_refdef.viewangles)[1] = 0;
+						(*r_refdef.viewangles)[2] = 0;
+
+						R_LoadIdentityForWorldMatrix();
+						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+						mat4 shadowMatrix;
+						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+
+						g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
+						g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
+						g_pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
+					}
+
+					R_PopRefDef();
+
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+					r_draw_shadowview = false;
+
+					GL_EndDebugGroup();
+
+					g_pCurrentShadowTexture->SetReady(true);
+
+					g_pCurrentShadowTexture = nullptr;
+				}
+			}
 		};
 
 		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
@@ -388,7 +493,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(1024, false);
 				}
 
-				if (!(*args->ppShadowTexture)->IsReady())
+				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
 				{
 					r_draw_shadowview = true;
 
@@ -399,9 +504,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
-
-					//glEnable(GL_POLYGON_OFFSET_FILL);
-					//glPolygonOffset(10, 10);
+					glDrawBuffer(GL_NONE);
+					glReadBuffer(GL_NONE);
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
@@ -453,10 +557,9 @@ void R_RenderShadowmapForDynamicLights(void)
 						r_draw_classify = old_draw_classify;
 					}
 
-					//glDisable(GL_POLYGON_OFFSET_FILL);
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
 					R_PopRefDef();
+
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
 
@@ -478,7 +581,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(8192, true);
 				}
 
-				if (!(*args->ppShadowTexture)->IsReady())
+				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
 				{
 					auto pWorldSurfaceModel = R_GetWorldSurfaceModel(*(cl_worldmodel));
 
@@ -491,9 +594,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightStatic");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
-
-					//glEnable(GL_POLYGON_OFFSET_FILL);
-					//glPolygonOffset(10, 10);
+					glDrawBuffer(GL_NONE);
+					glReadBuffer(GL_NONE);
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
@@ -537,10 +639,9 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_classify = old_draw_classify;
 					(*c_brush_polys) = old_brush_polys;
 
-					//glDisable(GL_POLYGON_OFFSET_FILL);
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
 					R_PopRefDef();
+
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
 
@@ -557,10 +658,10 @@ void R_RenderShadowmapForDynamicLights(void)
 				// Allocate 4096x4096 CSM texture if not already allocated
 				if (!(*args->ppCSMShadowTexture))
 				{
-					(*args->ppCSMShadowTexture) = R_CreateCascadedShadowTexture(CSM_RESOLUTION);
+					(*args->ppCSMShadowTexture) = R_CreateCascadedShadowTexture(CSM_RESOLUTION, false);
 				}
 
-				if (!(*args->ppCSMShadowTexture)->IsReady())
+				if ((*args->ppCSMShadowTexture) && !(*args->ppCSMShadowTexture)->IsReady())
 				{
 					g_pCurrentShadowTexture = (*args->ppCSMShadowTexture);
 
@@ -603,6 +704,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					glDrawBuffer(GL_NONE);
+					glReadBuffer(GL_NONE);
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
