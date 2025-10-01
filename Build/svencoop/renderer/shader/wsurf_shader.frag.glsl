@@ -17,25 +17,65 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_1) uniform sampler2DArray lightmapT
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_2) uniform sampler2DArray lightmapTexArray_2;
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapTexArray_3;
 
-in vec3 v_worldpos;
-in vec3 v_normal;
-in vec3 v_tangent;
-in vec3 v_bitangent;
-in vec2 v_diffusetexcoord;
-in vec3 v_lightmaptexcoord;
-in vec2 v_detailtexcoord;
-in vec2 v_normaltexcoord;
-in vec2 v_parallaxtexcoord;
-in vec2 v_speculartexcoord;
-in vec4 v_shadowcoord[3];
-in vec4 v_projpos;
-
-#if defined(SKYBOX_ENABLED)
-
-#elif defined(DECAL_ENABLED)
-	flat in uvec4 v_styles;
+// Input from geometry shader (if enabled) or vertex shader (if not)
+#ifdef WSURF_MULTIVIEW_ENABLED
+	// When geometry shader is enabled, input comes from geometry shader with g_ prefix
+	#define v_worldpos g_worldpos
+	#define v_normal g_normal
+	#define v_tangent g_tangent
+	#define v_bitangent g_bitangent
+	#define v_diffusetexcoord g_diffusetexcoord
+	#define v_lightmaptexcoord g_lightmaptexcoord
+	#define v_detailtexcoord g_detailtexcoord
+	#define v_normaltexcoord g_normaltexcoord
+	#define v_parallaxtexcoord g_parallaxtexcoord
+	#define v_speculartexcoord g_speculartexcoord
+	#define v_shadowcoord g_shadowcoord
+	#define v_projpos g_projpos
+	#define v_styles g_styles
+	
+	in vec3 g_worldpos;
+	in vec3 g_normal;
+	in vec3 g_tangent;
+	in vec3 g_bitangent;
+	in vec2 g_diffusetexcoord;
+	in vec3 g_lightmaptexcoord;
+	in vec2 g_detailtexcoord;
+	in vec2 g_normaltexcoord;
+	in vec2 g_parallaxtexcoord;
+	in vec2 g_speculartexcoord;
+	in vec4 g_shadowcoord[3];
+	in vec4 g_projpos;
+	
+	#if defined(SKYBOX_ENABLED)
+	
+	#elif defined(DECAL_ENABLED)
+		flat in uvec4 g_styles;
+	#else
+		flat in uvec4 g_styles;
+	#endif
 #else
-	flat in uvec4 v_styles;
+	// Standard path: input directly from vertex shader
+	in vec3 v_worldpos;
+	in vec3 v_normal;
+	in vec3 v_tangent;
+	in vec3 v_bitangent;
+	in vec2 v_diffusetexcoord;
+	in vec3 v_lightmaptexcoord;
+	in vec2 v_detailtexcoord;
+	in vec2 v_normaltexcoord;
+	in vec2 v_parallaxtexcoord;
+	in vec2 v_speculartexcoord;
+	in vec4 v_shadowcoord[3];
+	in vec4 v_projpos;
+	
+	#if defined(SKYBOX_ENABLED)
+	
+	#elif defined(DECAL_ENABLED)
+		flat in uvec4 v_styles;
+	#else
+		flat in uvec4 v_styles;
+	#endif
 #endif
 
 float ConvertStyleToLightStyle(uint style)

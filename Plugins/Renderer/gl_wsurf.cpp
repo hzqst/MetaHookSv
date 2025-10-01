@@ -195,6 +195,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_ALPHA_SOLID_ENABLED			,"WSURF_ALPHA_SOLID_ENABLED"},
 { WSURF_LINEAR_FOG_SHIFT_ENABLED	,"WSURF_LINEAR_FOG_SHIFT_ENABLED"},
 { WSURF_REVERT_NORMAL_ENABLED		,"WSURF_REVERT_NORMAL_ENABLED"},
+{ WSURF_MULTIVIEW_ENABLED			,"WSURF_MULTIVIEW_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -309,18 +310,24 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 		if (state & WSURF_LINEAR_FOG_SHIFT_ENABLED)
 			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
 
-		if (state & WSURF_REVERT_NORMAL_ENABLED)
-			defs << "#define REVERT_NORMAL_ENABLED\n";
+	if (state & WSURF_REVERT_NORMAL_ENABLED)
+		defs << "#define REVERT_NORMAL_ENABLED\n";
 
-		auto def = defs.str();
+	if (state & WSURF_MULTIVIEW_ENABLED)
+		defs << "#define WSURF_MULTIVIEW_ENABLED\n";
 
-		CCompileShaderArgs args;
-		args.vsfile = "renderer\\shader\\wsurf_shader.vert.glsl";
-		args.fsfile = "renderer\\shader\\wsurf_shader.frag.glsl";
-		args.vsdefine = def.c_str();
-		args.fsdefine = def.c_str();
+	auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx(&args);
+	CCompileShaderArgs args;
+	args.vsfile = "renderer\\shader\\wsurf_shader.vert.glsl";
+	if (state & WSURF_MULTIVIEW_ENABLED)
+		args.gsfile = "renderer\\shader\\wsurf_shader.geom.glsl";
+	args.fsfile = "renderer\\shader\\wsurf_shader.frag.glsl";
+	args.vsdefine = def.c_str();
+	args.gsdefine = def.c_str();
+	args.fsdefine = def.c_str();
+
+	prog.program = R_CompileShaderFileEx(&args);
 		
 		if (prog.program)
 		{
@@ -2195,6 +2202,11 @@ void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* p
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
+	if (r_draw_multiview)
+	{
+		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+	}
+
 	GL_BindVAO(pShadowProxyModel->hVAO);
 	GL_BindABO(pShadowProxyModel->hABO);
 
@@ -2266,6 +2278,11 @@ void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	else if (g_bPortalClipPlaneEnabled[0])
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
+	}
+
+	if (r_draw_multiview)
+	{
+		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 	}
 
 	glDisable(GL_CULL_FACE);
@@ -2439,6 +2456,11 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
 		{
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
+		}
+
+		if (r_draw_multiview)
+		{
+			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 		}
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
@@ -2664,6 +2686,11 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
+		if (r_draw_multiview)
+		{
+			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+		}
+
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
 
 		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
@@ -2787,6 +2814,11 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 	if (R_IsRenderingShadowView())
 	{
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+	}
+
+	if (r_draw_multiview)
+	{
+		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 	}
 
 	R_DrawWorldSurfaceLeafBegin(pLeaf);

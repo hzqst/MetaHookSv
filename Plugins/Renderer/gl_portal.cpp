@@ -28,8 +28,8 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 		if (state & PORTAL_TEXCOORD_ENABLED)
 			defs << "#define PORTAL_TEXCOORD_ENABLED\n";
 
-		if (state & REVERSE_PORTAL_TEXCOORD_ENABLED)
-			defs << "#define REVERSE_PORTAL_TEXCOORD_ENABLED\n";
+		if (state & PORTAL_REVERSE_TEXCOORD_ENABLED)
+			defs << "#define PORTAL_REVERSE_TEXCOORD_ENABLED\n";
 
 		if (state & PORTAL_GAMMA_BLEND_ENABLED)
 			defs << "#define GAMMA_BLEND_ENABLED\n";
@@ -77,7 +77,7 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 const program_state_mapping_t s_PortalProgramStateName[] = {
 { PORTAL_OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
 { PORTAL_TEXCOORD_ENABLED					, "PORTAL_TEXCOORD_ENABLED"			 },
-{ REVERSE_PORTAL_TEXCOORD_ENABLED			, "REVERSE_PORTAL_TEXCOORD_ENABLED"	 },
+{ PORTAL_REVERSE_TEXCOORD_ENABLED			, "PORTAL_REVERSE_TEXCOORD_ENABLED"	 },
 };
 
 void R_SavePortalProgramStates(void)
@@ -296,7 +296,7 @@ void R_DrawPortalSurfaceModelEnd()
 
 void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
 {
-	program_state_t PortalProgramState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
+	program_state_t PortalProgramState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? PORTAL_REVERSE_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
 	if (pPortalModel->texinfo->texture->name[0] == '{')
 	{

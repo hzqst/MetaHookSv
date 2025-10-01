@@ -22,7 +22,7 @@ void main()
 
 	vec2 vPortalTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
-#elif defined(REVERSE_PORTAL_TEXCOORD_ENABLED)
+#elif defined(PORTAL_REVERSE_TEXCOORD_ENABLED)
 
 	vec2 vPortalTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 	vPortalTexCoord.x = -vPortalTexCoord.x;
