@@ -411,31 +411,42 @@ GLuint GL_CreateStencilViewForDepthTexture(int texId)
 	return stencilviewtexid;
 }
 
-void GL_CreateShadowTexture(int texid, int w, int h, bool immutable)
+void GL_CreateShadowTexture(int textureTarget, int texid, int w, int h, bool immutable)
 {
-	glBindTexture(GL_TEXTURE_2D, texid);
+	glBindTexture(textureTarget, texid);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	if (textureTarget == GL_TEXTURE_CUBE_MAP)
+	{
+		glTexParameteri(textureTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+	}
 
 	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+	glTexStorage2D(textureTarget, 1, GL_DEPTH32F_STENCIL8, w, h);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	if (textureTarget == GL_TEXTURE_CUBE_MAP)
+	{
+		for (unsigned int i = 0; i < 6; ++i)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	}
+
+	glBindTexture(textureTarget, 0);
 }
 
-GLuint GL_GenShadowTexture(int w, int h, bool immutable)
+GLuint GL_GenShadowTexture(int textureTarget, int w, int h, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_CreateShadowTexture(texid, w, h, immutable);
+	GL_CreateShadowTexture(textureTarget, texid, w, h, immutable);
 	return texid;
 }
 

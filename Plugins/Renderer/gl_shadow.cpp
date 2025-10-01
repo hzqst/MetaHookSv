@@ -15,7 +15,7 @@ class CBaseShadowTexture : public IShadowTexture
 public:
 	CBaseShadowTexture(uint32_t size) : m_size(size)
 	{
-		m_depthtex = GL_GenShadowTexture(size, size, true);
+		
 	}
 
 	~CBaseShadowTexture()
@@ -80,7 +80,7 @@ public:
 		return 0;
 	}
 
-private:
+protected:
 	GLuint m_depthtex{};
 	uint32_t m_size{};
 	float m_viewport[4]{};
@@ -92,7 +92,7 @@ class CSingleShadowTexture : public CBaseShadowTexture
 public:
 	CSingleShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size), m_bStatic(bStatic)
 	{
-
+		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
 	}
 
 	void SetWorldMatrix(int cascadedIndex, const mat4* mat) override
@@ -137,7 +137,7 @@ class CCascadedShadowTexture : public CBaseShadowTexture
 public:
 	CCascadedShadowTexture(uint32_t size) : CBaseShadowTexture(size)
 	{
-
+		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
 	}
 
 	bool IsCascaded() const override
@@ -186,6 +186,15 @@ private:
 	mat4 m_worldmatrix[CSM_LEVELS]{};
 	mat4 m_projmatrix[CSM_LEVELS]{};
 	mat4 m_shadowmatrix[CSM_LEVELS]{};
+};
+
+class CCubemapShadowTexture : public CBaseShadowTexture
+{
+public:
+	CCubemapShadowTexture(uint32_t size) : CBaseShadowTexture(size)
+	{
+		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_CUBE_MAP, size, size, true);
+	}
 };
 
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
