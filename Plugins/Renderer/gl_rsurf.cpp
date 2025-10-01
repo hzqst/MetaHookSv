@@ -360,10 +360,13 @@ void GL_BuildLightmaps(void)
 	g_WorldSurfaceRenderer.iLightmapUsedBits = 0;
 
 	auto old_lightmaps = lightmaps;
-	
-	if (g_iEngineType != ENGINE_SVENGINE)
+
+	byte * allocated_lightmaps = nullptr;
+
+	if (g_iEngineType != ENGINE_SVENGINE && g_WorldSurfaceRenderer.iNumLightmapTextures > MAX_LIGHTMAPS)
 	{
-		lightmaps = (byte *)malloc(4 * MAX_LIGHTMAPS_SVENGINE * BLOCK_WIDTH * BLOCK_HEIGHT);
+		allocated_lightmaps = (byte *)malloc(4 * g_WorldSurfaceRenderer.iNumLightmapTextures * BLOCK_WIDTH * BLOCK_HEIGHT);
+		lightmaps = allocated_lightmaps;
 	}
 
 	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
@@ -402,9 +405,9 @@ void GL_BuildLightmaps(void)
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
 
-	if (g_iEngineType != ENGINE_SVENGINE)
+	if (allocated_lightmaps)
 	{
-		free(lightmaps);
+		free(allocated_lightmaps);
 
 		lightmaps = old_lightmaps;
 	}
