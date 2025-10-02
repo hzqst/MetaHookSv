@@ -158,6 +158,7 @@ void main(void)
 	vecLight.z *= 0.0001;
 	vecLight = normalize(vecLight);
 	outvert = outvert + vecLight * r_hair_shadow_offset.x + vec3(0.0, 0.0, r_hair_shadow_offset.y);
+	v_worldpos = outvert;
 #endif
 
 	#if defined(STUDIO_NF_CELSHADE_FACE)
