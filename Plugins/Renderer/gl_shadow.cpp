@@ -469,35 +469,18 @@ void R_RenderShadowmapForDynamicLights(void)
 					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
 					R_LoadIdentityForProjectionMatrix();
-					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
+					R_SetupPerspective(90, 90, 1.0f, args->radius);
 
 				// Calculate 6 faces for cubemap shadow mapping
 				// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
-				// Matching the standard cubemap rendering angles from R_BuildCubemap
 				const vec3_t cubemapAngles[] = {
-					{0, 0, 0},       // +X: Right (GoldSrc: Forward)
-					{0, 180, 0},     // -X: Left (GoldSrc: Backward)
-					{0, 90, 0},      // +Y: Up (GoldSrc: Left, yaw 90)
-					{0, 270, 0},     // -Y: Down (GoldSrc: Right, yaw 270)
-					{-90, 270, 0},   // +Z: Back (GoldSrc: Up, pitch -90, roll 270)
-					{90, 0, 0},      // -Z: Front (GoldSrc: Down, pitch 90)
+					{0, 0, 90},     
+					{0, 180, 270},  
+					{0, 90, 0},     
+					{0, 270, 180},  
+					{-90, 270, 0},  
+					{90, 270, 0},   
 				};
-					/*
-						{
-							"origin" "0 0 50"
-							"angles" "0 0 0"
-							"size" "256"
-							"color" "255 255 255"
-							"classname" "light_dynamic"
-							"type" "point"
-							"ambient" "0.0"
-							"diffuse" "3.0"
-							"specular" "1.0"
-							"specularpow" "10.0"
-							"shadow" "1"
-							"follow_player" "0"
-						}
-					*/
 					camera_ubo_t CameraUBO{};
 
 					CameraUBO.numViews = 6;

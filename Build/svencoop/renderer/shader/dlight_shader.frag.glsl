@@ -303,7 +303,7 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     vec3 lightToWorldDir = lightToWorld / distance;
     
     // Get light radius (zFar in shadow projection)
-    float zNear = 4.0; // gl_nearplane->value, typically 4.0
+    float zNear = 1.0; // gl_nearplane->value, typically 4.0
     float zFar = u_lightradius; // Light radius is used as zFar in shadow pass
     
     // Convert linear distance to non-linear depth
