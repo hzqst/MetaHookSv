@@ -230,11 +230,12 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_shadowtexel, "u_shadowtexel");
 			SHADER_UNIFORM(prog, u_shadowmatrix, "u_shadowmatrix");
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
-			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
-			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
-			SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
-			SHADER_UNIFORM(prog, u_cubeShadowTexel, "u_cubeShadowTexel");
-			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
+		SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
+		SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
+		SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
+		SHADER_UNIFORM(prog, u_cubeShadowTexel, "u_cubeShadowTexel");
+		SHADER_UNIFORM(prog, u_cubeShadowMatrices, "u_cubeShadowMatrices");
+		SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -1133,6 +1134,12 @@ void R_LightShadingPass(void)
 					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
 				}
 
+				if (prog.u_cubeShadowMatrices != -1)
+				{
+					// Upload all 6 shadow matrices for cubemap faces
+					glUniformMatrix4fv(prog.u_cubeShadowMatrices, 6, GL_FALSE, (float*)pShadowTexture->GetShadowMatrix(0));
+				}
+
 				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
 			}
 
@@ -1197,18 +1204,24 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+		if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+		{
+			if (prog.u_cubeShadowTexel != -1)
 			{
-				if (prog.u_cubeShadowTexel != -1)
-				{
-					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
-				}
-
-				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
+				glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
 			}
 
-			const uint32_t indices[] = { 0,1,2,2,3,0 };
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+			if (prog.u_cubeShadowMatrices != -1)
+			{
+				// Upload all 6 shadow matrices for cubemap faces
+				glUniformMatrix4fv(prog.u_cubeShadowMatrices, 6, GL_FALSE, (float*)pShadowTexture->GetShadowMatrix(0));
+			}
+
+			GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
+		}
+
+		const uint32_t indices[] = { 0,1,2,2,3,0 };
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
 			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
