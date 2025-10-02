@@ -1300,26 +1300,30 @@ void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bott
 
 	// 反向深度透视投影矩阵 (Reversed-Z) with glClipControl(GL_ZERO_TO_ONE)
 	// 
-	// OpenGL透视投影中：
-	//   z_clip = projection[10] * (-z_eye) + projection[14]  (因为输入是view space中的-z)
-	//   w_clip = -z_eye
-	//   z_ndc = z_clip / w_clip = [projection[10] * (-z_eye) + projection[14]] / (-z_eye)
-	//        = projection[10] + projection[14] / z_eye
+	// OpenGL view space: 物体在摄像机前方时 z < 0
+	// 标准的frustum投影：
+	//   对于点 (x_eye, y_eye, z_eye, 1) 其中 z_eye < 0
+	//   z_clip = projection[10] * z_eye + projection[14]
+	//   w_clip = projection[11] * z_eye = -z_eye  (所以 projection[11] = -1)
+	//   z_ndc = z_clip / w_clip
 	//
-	// 标准投影 (NDC [-1,1], GL_NEGATIVE_ONE_TO_ONE): 
+	// 标准投影 (GL_NEGATIVE_ONE_TO_ONE, NDC z∈[-1,1]):
 	//   projection[10] = -(zFar+zNear)/(zFar-zNear)
 	//   projection[14] = -2*zFar*zNear/(zFar-zNear)
-	//   => z_ndc = -(zFar+zNear)/(zFar-zNear) - 2*zFar*zNear/(zFar-zNear)/z_eye
-	//   近平面(z_eye=zNear) -> z_ndc=-1, 远平面(z_eye=zFar) -> z_ndc=1
+	//   当 z_eye=-zNear: z_ndc = [-(zFar+zNear)/(zFar-zNear)*(-zNear) + (-2*zFar*zNear)/(zFar-zNear)] / zNear = -1
+	//   当 z_eye=-zFar:  z_ndc = [-(zFar+zNear)/(zFar-zNear)*(-zFar) + (-2*zFar*zNear)/(zFar-zNear)] / zFar = 1
 	//
-	// 反向投影 (NDC [0,1], GL_ZERO_TO_ONE):
-	//   我们希望：近平面(z_eye=zNear) -> z_ndc=1, 远平面(z_eye=zFar) -> z_ndc=0
-	//   设 z_ndc = A + B/z_eye
-	//   当 z_eye=zNear: 1 = A + B/zNear  => A*zNear + B = zNear
-	//   当 z_eye=zFar:  0 = A + B/zFar   => A*zFar + B = 0
-	//   解得: A = zNear/(zNear-zFar) = -zNear/(zFar-zNear)
-	//         B = -A*zFar = zNear*zFar/(zFar-zNear)
-	//   => projection[10] = -zNear/(zFar-zNear)
+	// Reversed-Z投影 (GL_ZERO_TO_ONE, NDC z∈[0,1], 近平面→1, 远平面→0):
+	//   我们希望：
+	//     当 z_eye=-zNear: z_ndc = 1
+	//     当 z_eye=-zFar:  z_ndc = 0
+	//   设 z_ndc = (A*z_eye + B) / (-z_eye)
+	//   当 z_eye=-zNear: 1 = (A*(-zNear) + B) / zNear  => -A*zNear + B = zNear  => B = zNear(1+A)
+	//   当 z_eye=-zFar:  0 = (A*(-zFar) + B) / zFar    => -A*zFar + B = 0       => B = A*zFar
+	//   由两式：zNear(1+A) = A*zFar => zNear + A*zNear = A*zFar => zNear = A(zFar-zNear)
+	//   => A = zNear/(zFar-zNear)
+	//   => B = A*zFar = zNear*zFar/(zFar-zNear)
+	//   => projection[10] = zNear/(zFar-zNear)
 	//      projection[14] = zNear*zFar/(zFar-zNear)
 	
 	float rl = right - left;
@@ -1331,7 +1335,7 @@ void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bott
 	r_projection_matrix[8] = (right + left) / rl;                    // _31
 	r_projection_matrix[9] = (top + bottom) / tb;                    // _32
 	// 反向深度 with GL_ZERO_TO_ONE:
-	r_projection_matrix[10] = -zNear / fn;                           // _33 = -zNear/(zFar-zNear)
+	r_projection_matrix[10] = zNear / fn;                            // _33 = zNear/(zFar-zNear)
 	r_projection_matrix[11] = -1.0f;                                 // _34
 	r_projection_matrix[14] = (zNear * zFar) / fn;                   // _43 = zNear*zFar/(zFar-zNear)
 

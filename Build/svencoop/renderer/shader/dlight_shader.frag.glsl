@@ -289,23 +289,33 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 // Convert linear depth to non-linear depth for reversed-Z cubemap shadow
 // This matches the reversed-Z perspective projection with glClipControl(GL_ZERO_TO_ONE)
 // 
-// Our projection matrix produces:
-//   z_ndc = projection[10] + projection[14] / z_eye
-//         = -zNear/(zFar-zNear) + zNear*zFar/(zFar-zNear) / z_eye
+// Our projection matrix (see R_SetupFrustumProjectionMatrixReversedZ):
+//   projection[10] = zNear/(zFar-zNear)
+//   projection[14] = zNear*zFar/(zFar-zNear)
+//
+// For a point at distance d from light source:
+//   z_eye = -d (negative in OpenGL view space)
+//   z_clip = projection[10] * z_eye + projection[14]
+//          = zNear/(zFar-zNear) * (-d) + zNear*zFar/(zFar-zNear)
+//   w_clip = -z_eye = d
+//   z_ndc = z_clip / w_clip
+//         = [zNear/(zFar-zNear) * (-d) + zNear*zFar/(zFar-zNear)] / d
+//         = zNear/(zFar-zNear) * (-1) + zNear*zFar/(zFar-zNear) / d
+//         = zNear/(zFar-zNear) * (zFar/d - 1)
 //
 // With glClipControl(GL_ZERO_TO_ONE), NDC range is [0,1]:
-//   near plane (z_eye=zNear) -> z_ndc=1.0
-//   far plane (z_eye=zFar) -> z_ndc=0.0
+//   near plane (d=zNear) -> z_ndc=1.0
+//   far plane (d=zFar) -> z_ndc=0.0
 float LinearToReversedZDepth(float linearDepth, float zNear, float zFar)
 {
     float fn = zFar - zNear;
     
     // Reversed-Z with GL_ZERO_TO_ONE projection formula:
-    // z_ndc = -zNear/fn + (zNear*zFar/fn) / linearDepth
-    float z_ndc = -zNear / fn + (zNear * zFar / fn) / linearDepth;
+    // z_ndc = zNear/fn * (zFar/linearDepth - 1)
+    //       = zNear/fn * zFar/linearDepth - zNear/fn
+    float z_ndc = zNear / fn * (zFar / linearDepth - 1.0);
     
-    // z_ndc is already in [0,1] range due to glClipControl(GL_ZERO_TO_ONE)
-    // near plane -> 1.0, far plane -> 0.0
+    // z_ndc is in [0,1] range: near plane -> 1.0, far plane -> 0.0
     return z_ndc;
 }
 
