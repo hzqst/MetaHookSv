@@ -285,34 +285,52 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 
+// Convert linear depth to non-linear depth (same as depth buffer)
+// This matches the perspective projection used in shadow pass
+float LinearToNonLinearDepth(float linearDepth, float zNear, float zFar)
+{
+    // Perspective projection: depth = (zFar + zNear) / (zFar - zNear) - (2.0 * zFar * zNear) / (zFar - zNear) / linearDepth
+    // For OpenGL depth range [0, 1]: depth = depth * 0.5 + 0.5
+    float fn = zFar - zNear;
+    float nonLinear = (zFar + zNear) / fn - (2.0 * zFar * zNear) / (fn * linearDepth);
+    return nonLinear * 0.5 + 0.5;
+}
+
 float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
 {
     vec3 lightToWorld = World - LightPos;
     float distance = length(lightToWorld);
     vec3 lightToWorldDir = lightToWorld / distance;
     
+    // Get light radius (zFar in shadow projection)
+    float zNear = 4.0; // gl_nearplane->value, typically 4.0
+    float zFar = u_lightradius; // Light radius is used as zFar in shadow pass
+    
+    // Convert linear distance to non-linear depth
+    float nonLinearDepth = LinearToNonLinearDepth(distance, zNear, zFar);
+    
     // Calculate bias to reduce shadow acne
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
-    float slopeBias = 0.001 * (1.0 - NdotL);
-    float constBias = 0.001;
+    float slopeBias = 0.0005 * (1.0 - NdotL);
+    float constBias = 0.0005;
     float bias = max(slopeBias, constBias);
     
     // Sample cubemap shadow texture
-    // The depth value is stored in the distance from light
-    vec4 shadowCoord = vec4(lightToWorldDir, distance - bias);
+    vec4 shadowCoord = vec4(lightToWorldDir, nonLinearDepth - bias);
     
     // Use PCF for smoother shadows
     float visibility = 0.0;
     
-    // 3x3 PCF sampling
+    // Simplified PCF sampling (3x3 in direction space)
     for(int x = -1; x <= 1; x++)
     {
         for(int y = -1; y <= 1; y++)
         {
             for(int z = -1; z <= 1; z++)
             {
-                vec3 offset = vec3(float(x), float(y), float(z)) * u_cubeShadowTexel;
-                vec4 sampleCoord = vec4(lightToWorldDir + offset, distance - bias);
+                vec3 offset = vec3(float(x), float(y), float(z)) * u_cubeShadowTexel * 0.001;
+                vec3 sampleDir = normalize(lightToWorldDir + offset);
+                vec4 sampleCoord = vec4(sampleDir, nonLinearDepth - bias);
                 visibility += texture(cubemapShadowTex, sampleCoord);
             }
         }
