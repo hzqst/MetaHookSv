@@ -471,16 +471,17 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
 
-					// Calculate 6 faces for cubemap shadow mapping
-					// Face order: +X, -X, +Y, -Y, +Z, -Z
-					const vec3_t cubemapAngles[] = {
-						{0, 0, 0},     // +X (forward)
-						{0, 180, 0},   // -X (backward)
-						{0, -90, 0},    // +Y (left)
-						{0, 90, 0},    // -Y (right)
-						{-90, 0, 0},   // +Z (up)
-						{90, 0, 0},    // -Z (down)
-					};
+				// Calculate 6 faces for cubemap shadow mapping
+				// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
+				// Matching the standard cubemap rendering angles from R_BuildCubemap
+				const vec3_t cubemapAngles[] = {
+					{0, 0, 0},       // +X: Right (GoldSrc: Forward)
+					{0, 180, 0},     // -X: Left (GoldSrc: Backward)
+					{0, 90, 0},      // +Y: Up (GoldSrc: Left, yaw 90)
+					{0, 270, 0},     // -Y: Down (GoldSrc: Right, yaw 270)
+					{-90, 270, 0},   // +Z: Back (GoldSrc: Up, pitch -90, roll 270)
+					{90, 0, 0},      // -Z: Front (GoldSrc: Down, pitch 90)
+				};
 					/*
 						{
 							"origin" "0 0 50"
