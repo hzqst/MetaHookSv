@@ -469,20 +469,22 @@ void R_RenderShadowmapForDynamicLights(void)
 					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
 					R_LoadIdentityForProjectionMatrix();
-					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius);
+					R_SetupPerspective(90, 90, gl_nearplane->value, args->radius + 128);
 
 					// Calculate 6 faces for cubemap shadow mapping
 					// Face order: +X, -X, +Y, -Y, +Z, -Z
 					const vec3_t cubemapAngles[] = {
 						{0, 0, 0},     // +X (forward)
 						{0, 180, 0},   // -X (backward)
-						{0, 90, 0},    // +Y (left)
-						{0, -90, 0},    // -Y (right)
-						{-89, 0, 0},   // +Z (up)
-						{89, 0, 0},    // -Z (down)
+						{0, -90, 0},    // +Y (left)
+						{0, 90, 0},    // -Y (right)
+						{-90, 0, 0},   // +Z (up)
+						{90, 0, 0},    // -Z (down)
 					};
 
 					camera_ubo_t CameraUBO{};
+
+					CameraUBO.numViews = 6;
 
 					for (int i = 0; i < 6; ++i)
 					{
@@ -506,14 +508,14 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_SetupCameraView(&CameraUBO.views[i]);
 					}
 
-					CameraUBO.numViews = 6;
-
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 					{
 						auto old_draw_classify = r_draw_classify;
 						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
 
 						R_RenderScene();
 
@@ -609,6 +611,8 @@ void R_RenderShadowmapForDynamicLights(void)
 						r_draw_classify &= ~DRAW_CLASSIFY_LOCAL_PLAYER;
 						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 
 						R_RenderScene();
 
@@ -619,6 +623,8 @@ void R_RenderShadowmapForDynamicLights(void)
 						auto old_draw_classify = r_draw_classify;
 						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 
 						R_RenderScene();
 
