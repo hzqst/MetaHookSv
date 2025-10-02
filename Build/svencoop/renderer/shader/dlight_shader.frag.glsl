@@ -303,17 +303,33 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     vec3 lightToWorldDir = lightToWorld / distance;
     
     // Get light radius (zFar in shadow projection)
-    float zNear = 1.0; // gl_nearplane->value, typically 4.0
+    // Shadow pass uses: R_SetupPerspective(90, 90, 1.0f, args->radius)
+    float zNear = 1.0;
     float zFar = u_lightradius; // Light radius is used as zFar in shadow pass
+    
+    // Early out for pixels very close to light source (within near plane)
+    if (distance < zNear * 1.01)
+    {
+        return 1.0; // No shadow for pixels extremely close to light
+    }
     
     // Convert linear distance to non-linear depth
     float nonLinearDepth = LinearToNonLinearDepth(distance, zNear, zFar);
     
-    // Calculate bias to reduce shadow acne
+    // Calculate adaptive bias based on distance and angle
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
-    float slopeBias = 0.0005 * (1.0 - NdotL);
-    float constBias = 0.0005;
+    
+    // Increase bias for surfaces at grazing angles
+    float slopeBias = 0.002 * (1.0 - NdotL);
+    
+    // Use distance-dependent bias: closer to light = larger bias due to precision
+    float distanceFactor = 1.0 / max(distance, zNear);
+    float constBias = 0.001 * (1.0 + distanceFactor * 10.0);
+    
     float bias = max(slopeBias, constBias);
+    
+    // Clamp bias to avoid over-darkening
+    bias = min(bias, 0.01);
     
     // Sample cubemap shadow texture
     vec4 shadowCoord = vec4(lightToWorldDir, nonLinearDepth - bias);
