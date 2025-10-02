@@ -291,13 +291,18 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 // Reversed-Z provides better precision near the camera
 float LinearToReversedZDepth(float linearDepth, float zNear, float zFar)
 {
-    // For reversed-Z projection: near=1.0, far=0.0 in depth buffer
-    // The projection matrix maps: zNear -> 1.0, zFar -> 0.0
+    // For reversed-Z projection matrix:
+    // The depth buffer stores values where 1.0=near, 0.0=far
+    // Standard perspective projection formula but with swapped near/far handling
     float fn = zFar - zNear;
-    float ndcDepth = zNear / fn - (zFar * zNear) / (fn * linearDepth);
     
-    // Map from NDC to depth buffer [0, 1] where 1.0=near, 0.0=far
-    return ndcDepth * 0.5 + 0.5;
+    // Reversed-Z projection: z_ndc = zNear/linearDepth - zFar*zNear/(fn*linearDepth)
+    // Simplified: z_ndc = (zNear - zFar*zNear/fn) / linearDepth
+    float z_ndc = zNear / linearDepth - (zFar * zNear) / (fn * linearDepth);
+    
+    // Convert from NDC [-1,1] to depth buffer [0,1], but reversed
+    // In reversed-Z: near plane maps to 1.0, far plane maps to 0.0
+    return (1.0 - z_ndc) * 0.5;
 }
 
 // Determine which cubemap face the direction belongs to
