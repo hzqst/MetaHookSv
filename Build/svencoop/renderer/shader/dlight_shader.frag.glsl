@@ -309,21 +309,6 @@ float LinearToReversedZDepth(float linearDepth, float zNear, float zFar)
     return z_ndc;
 }
 
-// Determine which cubemap face the direction belongs to
-// Returns: face index (0-5)
-int GetCubemapFace(vec3 dir)
-{
-    vec3 absDir = abs(dir);
-    float maxAxis = max(absDir.x, max(absDir.y, absDir.z));
-    
-    if (maxAxis == absDir.x)
-        return (dir.x > 0.0) ? 0 : 1; // +X or -X
-    else if (maxAxis == absDir.y)
-        return (dir.y > 0.0) ? 2 : 3; // +Y or -Y
-    else
-        return (dir.z > 0.0) ? 4 : 5; // +Z or -Z
-}
-
 float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
 {
     vec3 lightToWorld = World - LightPos;
