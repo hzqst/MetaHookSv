@@ -457,12 +457,12 @@ void R_RenderShadowmapForDynamicLights(void)
 					// Calculate 6 faces for cubemap shadow mapping
 					// Face order: +X, -X, +Y, -Y, +Z, -Z
 					const vec3_t cubemapAngles[] = {
-						{0, 0, 0},     // +X (right)
-						{0, 180, 0},   // -X (left)
-						{-90, 0, 0},   // +Y (up)
-						{90, 0, 0},    // -Y (down)
-						{0, 90, 0},    // +Z (forward)
-						{0, -90, 0}    // -Z (backward)
+						{0, 0, 0},     // +X (forward)
+						{0, 180, 0},   // -X (backward)
+						{0, 90, 0},    // +Y (left)
+						{0, -90, 0},    // -Y (right)
+						{-90, 0, 0},   // +Z (up)
+						{90, 0, 0},    // -Z (down)
 					};
 
 					camera_ubo_t CameraUBO{};
