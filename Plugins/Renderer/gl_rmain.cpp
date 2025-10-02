@@ -2357,6 +2357,23 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	r_ortho = false;
 }
 
+void R_SetupPerspectiveReversedZ(float fovx, float fovy, float zNear, float zFar)
+{
+	r_xfov_currentpass = fovx;
+	r_yfov_currentpass = fovy;
+
+	auto right = tan(fovx * (M_PI / 360.0)) * zNear;
+	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
+
+	R_SetupFrustumProjectionMatrixReversedZ(-right, right, -top, top, zNear, zFar);
+
+	r_frustum_right = right;
+	r_frustum_top = top;
+	r_znear = zNear;
+	r_zfar = zFar;
+	r_ortho = false;
+}
+
 void GL_FreeFrameBuffers(void)
 {
 	GL_FreeFBO(&s_FinalBufferFBO);

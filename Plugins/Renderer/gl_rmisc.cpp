@@ -430,14 +430,24 @@ void GL_CreateShadowTexture(int textureTarget, int texid, int w, int h, bool imm
 		glTexParameteri(textureTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 	}
 
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	// For cubemap shadow, use reversed-Z: border should be 0.0 (far)
+	// For regular shadow maps, use 1.0 (far in normal depth)
+	float borderColor[] = { 
+		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
+		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
+		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
+		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f 
+	};
 	glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	// For cubemap shadow, use reversed-Z depth comparison (GEQUAL)
+	// For regular shadow maps, use normal depth comparison (LEQUAL)
+	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC, 
+		(textureTarget == GL_TEXTURE_CUBE_MAP) ? GL_GEQUAL : GL_LEQUAL);
 
 	glTexStorage2D(textureTarget, 1, GL_DEPTH32F_STENCIL8, w, h);
 
@@ -1262,6 +1272,28 @@ void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float
 	r_projection_matrix[10] = -(zFar + zNear) / fn;                  // _33
 	r_projection_matrix[11] = -1.0f;                                 // _34
 	r_projection_matrix[14] = -(2.0f * zFar * zNear) / fn;          // _43
+
+	r_ortho = false;
+}
+
+void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bottom, float top, float zNear, float zFar)
+{
+	memset(r_projection_matrix, 0, sizeof(float) * 16);
+
+	// 反向深度透视投影矩阵 (Reversed-Z)
+	// 交换近远平面以获得更好的深度精度
+	float rl = right - left;
+	float tb = top - bottom;
+	float fn = zFar - zNear;
+
+	r_projection_matrix[0] = (2.0f * zNear) / rl;                    // _11
+	r_projection_matrix[5] = (2.0f * zNear) / tb;                    // _22
+	r_projection_matrix[8] = (right + left) / rl;                    // _31
+	r_projection_matrix[9] = (top + bottom) / tb;                    // _32
+	// 反向深度：交换近远平面的符号
+	r_projection_matrix[10] = zNear / fn;                            // _33 (reversed)
+	r_projection_matrix[11] = -1.0f;                                 // _34
+	r_projection_matrix[14] = -(zFar * zNear) / fn;                  // _43 (reversed)
 
 	r_ortho = false;
 }

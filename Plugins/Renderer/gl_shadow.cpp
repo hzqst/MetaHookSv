@@ -455,7 +455,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
-					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+					// For cubemap shadow with reversed-Z, clear depth to 0.0 (far plane)
+					GL_ClearDepthStencil(0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
@@ -490,7 +491,8 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_UpdateRefDef();
 
 						R_LoadIdentityForProjectionMatrix();
-						R_SetupPerspective(90, 90, 1.0f, args->radius);
+						// Use reversed-Z projection for better depth precision in cubemap shadow
+						R_SetupPerspectiveReversedZ(90, 90, 0.1f, args->radius);
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
