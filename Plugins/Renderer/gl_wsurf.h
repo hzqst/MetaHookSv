@@ -281,6 +281,8 @@ extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];
 extern float r_world_matrix_inv[16];
 extern float r_projection_matrix_inv[16];
+extern float r_frustum_right;
+extern float r_frustum_top;
 extern float r_znear;
 extern float r_zfar;
 extern bool r_ortho;

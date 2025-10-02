@@ -438,6 +438,7 @@ void R_CheckVariables(void);
 void R_AnimateLight(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
+void R_SetFrustum(float xfov, float yfov, float right, float top);
 void R_UploadSceneUBO(void);
 void R_UploadCameraUBO(void);
 void R_SetupCameraView(camera_view_t* view);

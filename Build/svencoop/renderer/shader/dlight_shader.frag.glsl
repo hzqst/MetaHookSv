@@ -287,13 +287,26 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 // Convert linear depth to non-linear depth (same as depth buffer)
 // This matches the perspective projection used in shadow pass
+// OpenGL uses NDC range [-1, 1], then maps to depth buffer [0, 1]
 float LinearToNonLinearDepth(float linearDepth, float zNear, float zFar)
 {
-    // Perspective projection: depth = (zFar + zNear) / (zFar - zNear) - (2.0 * zFar * zNear) / (zFar - zNear) / linearDepth
-    // For OpenGL depth range [0, 1]: depth = depth * 0.5 + 0.5
+    // OpenGL perspective projection (glFrustum):
+    // Projection matrix element: _33 = -(f+n)/(f-n), _43 = -2fn/(f-n), _34 = -1
+    // clip_z = _33 * view_z + _43
+    // clip_w = -view_z  (因为_34 = -1)
+    // NDC_z = clip_z / clip_w
+    //
+    // 在我们的系统中，z是正的距离值（从光源到像素）
+    // 对应OpenGL的view space，这个距离是 -view_z
+    // 所以: clip_z = _33 * (-distance) + _43 = (f+n)/(f-n) * distance - 2fn/(f-n)
+    //      clip_w = -(-distance) = distance
+    //      NDC_z = clip_z / clip_w = (f+n)/(f-n) - 2fn/((f-n)*distance)
+    
     float fn = zFar - zNear;
-    float nonLinear = (zFar + zNear) / fn - (2.0 * zFar * zNear) / (fn * linearDepth);
-    return nonLinear * 0.5 + 0.5;
+    float ndcDepth = (zFar + zNear) / fn - (2.0 * zFar * zNear) / (fn * linearDepth);
+    
+    // Map from NDC [-1, 1] to depth buffer [0, 1]
+    return ndcDepth * 0.5 + 0.5;
 }
 
 float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
@@ -316,43 +329,33 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     // Convert linear distance to non-linear depth
     float nonLinearDepth = LinearToNonLinearDepth(distance, zNear, zFar);
     
+    // Debug: ensure depth is in valid range [0, 1]
+    if (nonLinearDepth < 0.0 || nonLinearDepth > 1.0)
+    {
+        // Depth out of range - should not happen if zNear/zFar are correct
+        return 1.0; // Treat as no shadow
+    }
+    
     // Calculate adaptive bias based on distance and angle
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
     
-    // Increase bias for surfaces at grazing angles
-    float slopeBias = 0.002 * (1.0 - NdotL);
-    
-    // Use distance-dependent bias: closer to light = larger bias due to precision
-    float distanceFactor = 1.0 / max(distance, zNear);
-    float constBias = 0.001 * (1.0 + distanceFactor * 10.0);
+    // Very small bias - let's be conservative
+    float slopeBias = 0.001 * (1.0 - NdotL);
+    float constBias = 0.001;
     
     float bias = max(slopeBias, constBias);
     
-    // Clamp bias to avoid over-darkening
-    bias = min(bias, 0.01);
-    
     // Sample cubemap shadow texture
+    // Use single sample - hardware filtering handles smoothing
     vec4 shadowCoord = vec4(lightToWorldDir, nonLinearDepth - bias);
+    float visibility = texture(cubemapShadowTex, shadowCoord);
     
-    // Use PCF for smoother shadows
-    float visibility = 0.0;
+    // Debug output: uncomment to visualize depth values
+     //if (distance < 10.0) return 0.0; // Red = very close
+    // if (distance < 50.0) return 0.5; // Dark = medium distance
+     //return 1.0; // White = far
     
-    // Simplified PCF sampling (3x3 in direction space)
-    for(int x = -1; x <= 1; x++)
-    {
-        for(int y = -1; y <= 1; y++)
-        {
-            for(int z = -1; z <= 1; z++)
-            {
-                vec3 offset = vec3(float(x), float(y), float(z)) * u_cubeShadowTexel * 0.001;
-                vec3 sampleDir = normalize(lightToWorldDir + offset);
-                vec4 sampleCoord = vec4(sampleDir, nonLinearDepth - bias);
-                visibility += texture(cubemapShadowTex, sampleCoord);
-            }
-        }
-    }
-    
-    return visibility / 27.0; // 3x3x3 = 27 samples
+    return visibility;
 }
 
 #endif

@@ -16,6 +16,8 @@ float r_projection_matrix_inv[16] = { 0 };
 
 vec3_t r_frustum_origin[4] = { 0 };
 vec3_t r_frustum_vec[4] = { 0 };
+float r_frustum_right = 0;
+float r_frustum_top = 0;
 float r_znear = 4;
 float r_zfar = 4096;
 bool r_ortho = false;

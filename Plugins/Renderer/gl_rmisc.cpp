@@ -1262,6 +1262,8 @@ void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float
 	r_projection_matrix[10] = -(zFar + zNear) / fn;                  // _33
 	r_projection_matrix[11] = -1.0f;                                 // _34
 	r_projection_matrix[14] = -(2.0f * zFar * zNear) / fn;          // _43
+
+	r_ortho = false;
 }
 
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
@@ -1288,6 +1290,15 @@ void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float t
 		r_projection_matrix[10] = 1.0f / (zFar - zNear);               // _33
 		r_projection_matrix[14] = zNear / (zNear - zFar);              // _43
 	}
+
+	r_ortho = true;
+
+	r_frustum_right = 0;
+	r_frustum_top = 0;
+	r_znear = 16000.0 - gDevOverview->z_min;
+	r_zfar = 16000.0 - gDevOverview->z_max;
+	r_xfov_currentpass = 0;
+	r_yfov_currentpass = 0;
 }
 
 void GL_BeginDebugGroup(const char *name)

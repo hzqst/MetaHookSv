@@ -468,19 +468,17 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
-					R_LoadIdentityForProjectionMatrix();
-					R_SetupPerspective(90, 90, 1.0f, args->radius);
+					// Calculate 6 faces for cubemap shadow mapping
+					// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
+					const vec3_t cubemapAngles[] = {
+						{0, 0, 90},     
+						{0, 180, 270},  
+						{0, 90, 0},     
+						{0, 270, 180},  
+						{-90, 270, 0},  
+						{90, 270, 0},   
+					};
 
-				// Calculate 6 faces for cubemap shadow mapping
-				// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
-				const vec3_t cubemapAngles[] = {
-					{0, 0, 90},     
-					{0, 180, 270},  
-					{0, 90, 0},     
-					{0, 270, 180},  
-					{-90, 270, 0},  
-					{90, 270, 0},   
-				};
 					camera_ubo_t CameraUBO{};
 
 					CameraUBO.numViews = 6;
@@ -491,8 +489,13 @@ void R_RenderShadowmapForDynamicLights(void)
 						VectorCopy(cubemapAngles[i], (*r_refdef.viewangles));
 						R_UpdateRefDef();
 
+						R_LoadIdentityForProjectionMatrix();
+						R_SetupPerspective(90, 90, 1.0f, args->radius);
+
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+						R_SetFrustum(90, 90, r_frustum_right, r_frustum_top);
 
 						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
@@ -586,6 +589,8 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
+
+					R_SetFrustum(r_xfov_currentpass, r_yfov_currentpass, r_frustum_right, r_frustum_top);
 
 					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();

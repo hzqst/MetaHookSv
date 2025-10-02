@@ -2350,32 +2350,11 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 
 	R_SetupFrustumProjectionMatrix(-right, right, -top, top, zNear, zFar);
 
+	r_frustum_right = right;
+	r_frustum_top = top;
 	r_znear = zNear;
 	r_zfar = zFar;
 	r_ortho = false;
-
-	vec3_t farplane;
-	VectorMA((*r_refdef.vieworg), zNear, vpn, farplane);
-
-	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
-	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
-	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
-	VectorNormalize(r_frustum_vec[0]);
-
-	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
-	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
-	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
-	VectorNormalize(r_frustum_vec[1]);
-
-	VectorMA(farplane, right, vright, r_frustum_origin[2]);
-	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
-	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
-	VectorNormalize(r_frustum_vec[2]);
-
-	VectorMA(farplane, right, vright, r_frustum_origin[3]);
-	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
-	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
-	VectorNormalize(r_frustum_vec[3]);
 }
 
 void GL_FreeFrameBuffers(void)
@@ -3725,11 +3704,8 @@ void V_AdjustFovH(float* fov_x, float* fov_y, float width, float height)
 	}
 }
 
-void R_SetFrustum(void)
+void R_SetFrustum(float xfov, float yfov, float right, float top)
 {
-	float xfov = r_xfov_currentpass;
-	float yfov = r_yfov_currentpass;
-
 	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
 	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - xfov * 0.5);
 	RotatePointAroundVector(frustum[2].normal, vright, vpn, 90.0 - yfov * 0.5);
@@ -3741,6 +3717,43 @@ void R_SetFrustum(void)
 		frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
 		frustum[i].signbits = SignbitsForPlane(&frustum[i]);
 	}
+
+	vec3_t farplane;
+	VectorMA((*r_refdef.vieworg), r_znear, vpn, farplane);
+
+	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
+	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
+	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
+	VectorNormalize(r_frustum_vec[0]);
+
+	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
+	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
+	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
+	VectorNormalize(r_frustum_vec[1]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[2]);
+	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
+	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
+	VectorNormalize(r_frustum_vec[2]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[3]);
+	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
+	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
+	VectorNormalize(r_frustum_vec[3]);
+}
+
+void R_SetFrustum(void)
+{
+	if (r_draw_multiview)
+		return;
+
+	float xfov = r_xfov_currentpass;
+	float yfov = r_yfov_currentpass;
+
+	auto right = r_frustum_right;
+	auto top = r_frustum_top;
+
+	R_SetFrustum(xfov, yfov, right, top);
 }
 
 bool CL_IsDevOverviewMode(void)
@@ -3915,20 +3928,14 @@ void R_SetupGL(void)
 			}
 			else if (CL_IsDevOverviewMode())
 			{
-				glOrtho(
+				R_SetupOrthoProjectionMatrix(
 					-(4096.0 / (gDevOverview->zoom * aspect)),
 					(4096.0 / (gDevOverview->zoom * aspect)),
 					-(4096.0 / gDevOverview->zoom),
 					(4096.0 / gDevOverview->zoom),
 					16000.0 - gDevOverview->z_min,
-					16000.0 - gDevOverview->z_max);
-
-				r_znear = 16000.0 - gDevOverview->z_min;
-				r_zfar = 16000.0 - gDevOverview->z_max;
-				r_ortho = true;
-
-				r_xfov_currentpass = 0;
-				r_yfov_currentpass = 0;
+					16000.0 - gDevOverview->z_max,
+					true);
 			}
 			else
 			{
@@ -3959,20 +3966,14 @@ void R_SetupGL(void)
 			}
 			else if (CL_IsDevOverviewMode())
 			{
-				glOrtho(
+				R_SetupOrthoProjectionMatrix(
 					-(4096.0 / gDevOverview->zoom),
 					(4096.0 / gDevOverview->zoom),
 					-(4096.0 / (gDevOverview->zoom * aspect)),
 					(4096.0 / (gDevOverview->zoom * aspect)),
 					16000.0 - gDevOverview->z_min,
-					16000.0 - gDevOverview->z_max);
-
-				r_znear = 16000.0 - gDevOverview->z_min;
-				r_zfar = 16000.0 - gDevOverview->z_max;
-				r_ortho = true;
-
-				r_xfov_currentpass = 0;
-				r_yfov_currentpass = 0;
+					16000.0 - gDevOverview->z_max,
+					true);
 			}
 			else
 			{
