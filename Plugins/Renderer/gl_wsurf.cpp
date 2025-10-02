@@ -310,11 +310,11 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 		if (state & WSURF_LINEAR_FOG_SHIFT_ENABLED)
 			defs << "#define LINEAR_FOG_SHIFT_ENABLED\n";
 
-	if (state & WSURF_REVERT_NORMAL_ENABLED)
-		defs << "#define REVERT_NORMAL_ENABLED\n";
+		if (state & WSURF_REVERT_NORMAL_ENABLED)
+			defs << "#define REVERT_NORMAL_ENABLED\n";
 
-	if (state & WSURF_MULTIVIEW_ENABLED)
-		defs << "#define WSURF_MULTIVIEW_ENABLED\n";
+		if (state & WSURF_MULTIVIEW_ENABLED)
+			defs << "#define WSURF_MULTIVIEW_ENABLED\n";
 
 	auto def = defs.str();
 
