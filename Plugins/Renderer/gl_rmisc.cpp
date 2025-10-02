@@ -457,6 +457,34 @@ GLuint GL_GenShadowTexture(int textureTarget, int w, int h, bool immutable)
 	return texid;
 }
 
+void GL_CreateShadowTextureArray(int texid, int w, int h, int depth, bool immutable)
+{
+	glBindTexture(GL_TEXTURE_2D_ARRAY, texid);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_DEPTH32F_STENCIL8, w, h, depth);
+
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+GLuint GL_GenShadowTextureArray(int w, int h, int depth, bool immutable)
+{
+	GLuint texid = GL_GenTexture();
+	GL_CreateShadowTextureArray(texid, w, h, depth, immutable);
+	return texid;
+}
+
 void GL_FreeTextureEntryInternal(gltexture_t* glt)
 {
 	GL_DeleteTexture(glt->texnum);

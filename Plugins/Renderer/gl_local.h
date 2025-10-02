@@ -632,6 +632,8 @@ void GL_CreateTextureArrayColorFormat(int texid, int w, int h, int depth, int iI
 
 GLuint GL_GenShadowTexture(int textureTarget, int w, int h, bool immutable);
 void GL_CreateShadowTexture(int textureTarget, int texid, int w, int h, bool immutable);
+GLuint GL_GenShadowTextureArray(int w, int h, int depth, bool immutable);
+void GL_CreateShadowTextureArray(int texid, int w, int h, int depth, bool immutable);
 
 void GL_SetCurrentSceneFBO(FBO_Container_t* src);
 FBO_Container_t* GL_GetCurrentSceneFBO();

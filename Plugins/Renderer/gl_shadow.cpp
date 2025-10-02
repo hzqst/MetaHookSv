@@ -141,7 +141,8 @@ class CCascadedShadowTexture : public CBaseShadowTexture
 public:
 	CCascadedShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
-		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
+		// Use texture array for CSM: size x size x 4 layers
+		m_depthtex = GL_GenShadowTextureArray(size, size, CSM_LEVELS, true);
 	}
 
 	bool IsCascaded() const override
@@ -784,114 +785,99 @@ void R_RenderShadowmapForDynamicLights(void)
 						g_pCurrentShadowTexture->SetCSMDistance(i, csmFar);
 					}
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
+				g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
 
-					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
-					glDrawBuffer(GL_NONE);
-					glReadBuffer(GL_NONE);
+				GL_BindFrameBuffer(&s_ShadowFBO);
 
+				// Bind texture array layers to framebuffer - we'll use geometry shader to select layer
+				// Note: We can't use glFramebufferTexture because that requires all layers, 
+				// but clearing needs to be done per-layer in a loop
+				for (int i = 0; i < CSM_LEVELS; ++i)
+				{
+					glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0, i);
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+				}
 
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+				// Now bind all layers for rendering
+				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0);
 
-					R_PushRefDef();
+				glDrawBuffer(GL_NONE);
+				glReadBuffer(GL_NONE);
 
-					// All cascades use same viewangles and vieworg
+				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-					VectorCopy(args->angle, (*r_refdef.viewangles));
-					R_UpdateRefDef();
+				R_PushRefDef();
 
-					// All cascades use same worldmatrix
+				// All cascades use same viewangles and vieworg
+				VectorCopy(args->angle, (*r_refdef.viewangles));
+				R_UpdateRefDef();
 
-					R_LoadIdentityForWorldMatrix();
-					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+				// All cascades use same worldmatrix
+				R_LoadIdentityForWorldMatrix();
+				R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
-					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+				r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+				r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+				r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+				r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
 
-					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+				glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
-					// Render each cascade
-					for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
-					{
-						GL_BeginDebugGroupFormat("CSM DrawCascade %d", cascadeIndex);
+				// Setup camera UBO with all cascade views
+				camera_ubo_t CameraUBO;
+				CameraUBO.numViews = CSM_LEVELS;
 
-						// Set up scissor test for this cascade region
-						// CSM layout: [0,1]
-						//             [2,3]
-						int scissorX = (cascadeIndex % 2) * (g_pCurrentShadowTexture->GetTextureSize() / 2);  // 0 or 2048
-						int scissorY = (cascadeIndex / 2) * (g_pCurrentShadowTexture->GetTextureSize() / 2);  // 0 or 2048
-						int scissorWidth = (g_pCurrentShadowTexture->GetTextureSize() / 2);
-						int scissorHeight = (g_pCurrentShadowTexture->GetTextureSize() / 2);
+				// Calculate projection matrices for all cascades and setup shadow matrices
+				for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
+				{
+					float splitNear = splits[cascadeIndex + 0];
+					float splitFar = splits[cascadeIndex + 1];
 
-						glEnable(GL_SCISSOR_TEST);
-						glScissor(scissorX, scissorY, scissorWidth, scissorHeight);
+					// 该级联在相机视锥上界面的半宽/半高（取far端，因为更大）
+					float halfW_far = splitFar * tanHalfFovX;
+					float halfH_far = splitFar * tanHalfFovY;
 
-						float splitNear = splits[cascadeIndex + 0];
-						float splitFar = splits[cascadeIndex + 1];
+					// 该级联厚度的一半
+					float halfDepth = 0.5f * (splitFar - splitNear);
 
-						// 该级联在相机视锥上界面的半宽/半高（取far端，因为更大）
-						float halfW_far = splitFar * tanHalfFovX;
-						float halfH_far = splitFar * tanHalfFovY;
+					// 用包含该截头棱锥的最小球近似，半径为到far平面角点的最大距离
+					// 与光方向无关，稳定且不会裁边
+					float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
 
-						// 该级联厚度的一半
-						float halfDepth = 0.5f * (splitFar - splitNear);
+					// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
+					float orthoSize = 2.0f * radius * orthoMargin;
 
-						// 用包含该截头棱锥的最小球近似，半径为到far平面角点的最大距离
-						// 与光方向无关，稳定且不会裁边
-						float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
+					R_LoadIdentityForProjectionMatrix();
+					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
 
-						// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
-						float orthoSize = 2.0f * radius * orthoMargin;
+					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
-						R_LoadIdentityForProjectionMatrix();
-						R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
+					mat4 shadowMatrix;
+					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+					g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
+					g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);
+					g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
 
-						// Create offset matrix for CSM cascade texture coordinate mapping
-						// CSM uses 4096x4096 texture by default and divided into four 2048x2048 regions
-						// Layout: [0,1]
-						//         [2,3]
-						float csmOffsetMatrix[4][4];
-						Matrix4x4_CreateCSMOffset(csmOffsetMatrix, cascadeIndex);
+					// Setup camera view for this cascade in the UBO
+					R_SetupCameraView(&CameraUBO.views[cascadeIndex]);
+				}
 
-						//Let projmatrix = projmatrix * csmOffsetMatrix;
-						mat4 tempProjmatrix;
-						Matrix4x4_Multiply(tempProjmatrix, (*projMatrix), csmOffsetMatrix);
-						Matrix4x4_Copy((*projMatrix), tempProjmatrix);
+				// Upload all views to UBO
+				GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
-						mat4 shadowMatrix;
-						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), tempProjmatrix);
+				auto old_draw_classify = r_draw_classify;
+				r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
 
-						g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
-						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, &tempProjmatrix);
-						g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
+				// Render all cascades in a single draw call using multiview geometry shader
+				R_RenderScene();
 
-						camera_ubo_t CameraUBO;
-						R_SetupCameraView(&CameraUBO.views[0]);
-						CameraUBO.numViews = 1;
-						GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+				r_draw_classify = old_draw_classify;
 
-						auto old_draw_classify = r_draw_classify;
-
-						r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
-
-						R_RenderScene();
-
-						r_draw_classify = old_draw_classify;
-
-						glDisable(GL_SCISSOR_TEST);
-
-						GL_EndDebugGroup();
-					}
-
-					R_PopRefDef();
+				R_PopRefDef();
 
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 

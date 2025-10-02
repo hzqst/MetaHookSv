@@ -18,7 +18,7 @@ layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTe
 #endif
 
 #if defined(CSM_ENABLED)
-layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DShadow csmTex;
+layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DArrayShadow csmTex;
 #endif
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
@@ -236,8 +236,8 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
             for(int y = -1; y <= 1; y++)
             {
                 vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
-                vec4 sampleCoord = vec4(projCoords.xy + offset, projCoords.z, 1.0);
-                visibility += texture(csmTex, sampleCoord.xyz);
+                vec4 sampleCoord = vec4(projCoords.xy + offset, float(cascadeIndex), projCoords.z);
+                visibility += texture(csmTex, sampleCoord);
                 pcfSamples++;
             }
         }
@@ -266,8 +266,8 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                 for(int y = -1; y <= 1; y++)
                 {
                     vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
-                    vec4 sampleCoord = vec4(nextProjCoords.xy + offset, nextProjCoords.z, 1.0);
-                    nextVisibility += texture(csmTex, sampleCoord.xyz);
+                    vec4 sampleCoord = vec4(nextProjCoords.xy + offset, float(nextCascadeIndex), nextProjCoords.z);
+                    nextVisibility += texture(csmTex, sampleCoord);
                     nextPcfSamples++;
                 }
             }

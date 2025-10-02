@@ -1540,11 +1540,11 @@ void R_LightShadingPass(void)
 
 			if (prog.u_csmTexel != -1)
 			{
-				// CSM uses 4096x4096 texture, each cascade is 2048x2048
-				glUniform2f(prog.u_csmTexel, (pCSMShadowTexture->GetTextureSize() * 0.5f), 1.0f / (pCSMShadowTexture->GetTextureSize() * 0.5f) );
+				// CSM now uses texture array: 4096x4096x4, each layer is full 4096x4096
+				glUniform2f(prog.u_csmTexel, pCSMShadowTexture->GetTextureSize(), 1.0f / (float)pCSMShadowTexture->GetTextureSize());
 			}
 
-			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D, pCSMShadowTexture->GetDepthTexture());
+			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, pCSMShadowTexture->GetDepthTexture());
 		}
 
 		const uint32_t indices[] = { 0,1,2,2,3,0 };
@@ -1552,7 +1552,7 @@ void R_LightShadingPass(void)
 
 		if ((DLightProgramState & DLIGHT_CSM_ENABLED) && pCSMShadowTexture)
 		{
-			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D, 0);
+			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, 0);
 		}
 
 		if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
