@@ -1535,7 +1535,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			SHADER_UNIFORM(prog, r_packed_index, "r_packed_index");
 			SHADER_UNIFORM(prog, r_framerate_numframes, "r_framerate_numframes");
 			SHADER_UNIFORM(prog, r_nearplaneclip, "r_nearplaneclip");
-			//SHADER_UNIFORM(prog, r_viewmodel_scale, "r_viewmodel_scale");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -1592,7 +1591,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_CLIP_NEARPLANE_ENABLED			,"STUDIO_CLIP_NEARPLANE_ENABLED"			},
 { STUDIO_GLOW_STENCIL_ENABLED			,"STUDIO_GLOW_STENCIL_ENABLED"				},
 { STUDIO_GLOW_COLOR_ENABLED				,"STUDIO_GLOW_COLOR_ENABLED"				},
-{ STUDIO_MULTIVIEW_ENABLED					,"STUDIO_MULTIVIEW_ENABLED"					},
+{ STUDIO_MULTIVIEW_ENABLED				,"STUDIO_MULTIVIEW_ENABLED"					},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
