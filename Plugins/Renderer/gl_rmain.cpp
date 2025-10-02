@@ -247,9 +247,14 @@ bool r_draw_hasoutline = false;
 bool r_draw_shadowview = false;
 
 /*
-	Purpose: Drawing multi viewport, Skips R_CullBox (frustum culling) check
+	Purpose: Drawing multi viewport, 
 */
 bool r_draw_multiview = false;
+
+/*
+	Purpose: Skips R_CullBox (frustum culling) check 
+*/
+bool r_draw_nofrustumcull = false;
 
 /*
 	Purpose: Indicates that we are in R_PreDrawViewModel
@@ -674,7 +679,7 @@ bool AllowCheats()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if (r_draw_multiview)
+	if (r_draw_nofrustumcull)
 		return false;
 
 	return gPrivateFuncs.R_CullBox(mins, maxs);

@@ -427,6 +427,7 @@ void R_RenderShadowmapForDynamicLights(void)
 				{
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
+					r_draw_nofrustumcull = true;
 
 					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
@@ -508,6 +509,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
+					r_draw_nofrustumcull = false;
 
 					GL_EndDebugGroup();
 
@@ -530,6 +532,7 @@ void R_RenderShadowmapForDynamicLights(void)
 				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
 				{
 					r_draw_shadowview = true;
+					r_draw_multiview = true;
 
 					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
@@ -567,6 +570,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
 					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
 
+					camera_ubo_t CameraUBO;
+					R_SetupCameraView(&CameraUBO.views[0]);
+					CameraUBO.numViews = 1;
+					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+
 					auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
 					if (pLocalPlayer->model && args->bIsFromLocalPlayer)
@@ -595,6 +603,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+					r_draw_multiview = false;
 					r_draw_shadowview = false;
 
 					GL_EndDebugGroup();
@@ -621,6 +630,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
+					r_draw_nofrustumcull = true;
 
 					g_pCurrentShadowTexture = (*args->ppShadowTexture);
 
@@ -691,6 +701,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
+					r_draw_nofrustumcull = false;
 
 					GL_EndDebugGroup();
 
@@ -714,6 +725,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
+					r_draw_nofrustumcull = true;
 
 					const float lambda = math_clamp(0.5, 0.0f, 1.0f); // 例如0.8，也可来自cvar
 					const float orthoMargin = 1.15f; // 15% 外扩，避免裁边
@@ -855,6 +867,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
+					r_draw_nofrustumcull = false;
 
 					GL_EndDebugGroup();
 
