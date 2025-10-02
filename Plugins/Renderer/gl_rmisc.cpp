@@ -1300,7 +1300,9 @@ void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bott
 	memset(r_projection_matrix, 0, sizeof(float) * 16);
 
 	// 反向深度透视投影矩阵 (Reversed-Z)
-	// 交换近远平面以获得更好的深度精度
+	// 标准投影: z_ndc = -(zFar+zNear)/(zFar-zNear) - 2*zFar*zNear/(zFar-zNear)/z_eye
+	// 反向投影: z_ndc = (zFar+zNear)/(zFar-zNear) + 2*zFar*zNear/(zFar-zNear)/z_eye
+	// 这样近平面映射到1.0，远平面映射到-1.0，然后通过深度映射变成[0,1]中的[1,0]
 	float rl = right - left;
 	float tb = top - bottom;
 	float fn = zFar - zNear;
@@ -1309,10 +1311,10 @@ void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bott
 	r_projection_matrix[5] = (2.0f * zNear) / tb;                    // _22
 	r_projection_matrix[8] = (right + left) / rl;                    // _31
 	r_projection_matrix[9] = (top + bottom) / tb;                    // _32
-	// 反向深度：交换近远平面的符号
-	r_projection_matrix[10] = zNear / fn;                            // _33 (reversed)
+	// 反向深度：翻转z的符号
+	r_projection_matrix[10] = (zFar + zNear) / fn;                   // _33 (reversed: 去掉负号)
 	r_projection_matrix[11] = -1.0f;                                 // _34
-	r_projection_matrix[14] = -(zFar * zNear) / fn;                  // _43 (reversed)
+	r_projection_matrix[14] = (2.0f * zFar * zNear) / fn;           // _43 (reversed: 去掉负号)
 
 	r_ortho = false;
 }
