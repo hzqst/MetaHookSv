@@ -100,6 +100,11 @@ public:
 		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
 	}
 
+	bool IsSingleLayer() const override
+	{
+		return true;
+	}
+
 	void SetWorldMatrix(int index, const mat4* mat) override
 	{
 		memcpy(m_worldmatrix, mat, sizeof(mat4));
@@ -142,6 +147,11 @@ public:
 	bool IsCascaded() const override
 	{
 		return true;
+	}
+
+	bool IsSingleLayer() const override
+	{
+		return false;
 	}
 
 	void SetWorldMatrix(int index, const mat4* mat) override
@@ -195,6 +205,16 @@ public:
 		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_CUBE_MAP, size, size, true);
 	}
 
+	bool IsCubemap() const override
+	{
+		return true;
+	}
+
+	bool IsSingleLayer() const override
+	{
+		return false;
+	}
+
 	void SetWorldMatrix(int index, const mat4* mat) override
 	{
 		memcpy(&m_worldmatrix[index], mat, sizeof(mat4));
@@ -219,11 +239,6 @@ public:
 	const mat4* GetShadowMatrix(int index) const override
 	{
 		return &m_shadowmatrix[index];
-	}
-
-	bool IsCubemap() const override
-	{
-		return true;
 	}
 
 private:
@@ -418,7 +433,7 @@ void R_RenderShadowmapForDynamicLights(void)
 		{
 			if (args->ppShadowTexture)
 			{
-				if (!(*args->ppShadowTexture))
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsCubemap() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != 1024)
 				{
 					(*args->ppShadowTexture) = R_CreateCubemapShadowTexture(1024, false);
 				}
@@ -525,7 +540,7 @@ void R_RenderShadowmapForDynamicLights(void)
 		{
 			if (args->ppShadowTexture && args->bIsFromLocalPlayer)
 			{
-				if (!(*args->ppShadowTexture))
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != 1024)
 				{
 					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(1024, false);
 				}
@@ -629,7 +644,7 @@ void R_RenderShadowmapForDynamicLights(void)
 		{
 			if (args->ppShadowTexture)
 			{
-				if (!(*args->ppShadowTexture))
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != true || (*args->ppShadowTexture)->GetTextureSize() != 8192)
 				{
 					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(8192, true);
 				}
@@ -725,7 +740,7 @@ void R_RenderShadowmapForDynamicLights(void)
 			if (args->ppCSMShadowTexture)
 			{
 				// Allocate 4096x4096 CSM texture if not already allocated
-				if (!(*args->ppCSMShadowTexture))
+				if ((*args->ppCSMShadowTexture) == nullptr || (*args->ppCSMShadowTexture)->IsCascaded() != true || (*args->ppCSMShadowTexture)->IsStatic() != false || (*args->ppCSMShadowTexture)->GetTextureSize() != CSM_RESOLUTION)
 				{
 					(*args->ppCSMShadowTexture) = R_CreateCascadedShadowTexture(CSM_RESOLUTION, false);
 				}

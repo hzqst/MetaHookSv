@@ -11,6 +11,11 @@ public:
 	virtual void SetReady(bool bReady) = 0;
 
 	/*
+		Single Layer Shadowmap
+	*/
+	virtual bool IsSingleLayer() const = 0;
+
+	/*
 		Directional light CSM
 	*/
 	virtual bool IsCascaded() const = 0;
