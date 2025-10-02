@@ -97,7 +97,7 @@ class CSingleShadowTexture : public CBaseShadowTexture
 public:
 	CSingleShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
-		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
+		m_depthtex = GL_GenShadowTexture(size, size, true);
 	}
 
 	bool IsSingleLayer() const override
@@ -203,7 +203,7 @@ class CCubemapShadowTexture : public CBaseShadowTexture
 public:
 	CCubemapShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 	{
-		m_depthtex = GL_GenShadowTexture(GL_TEXTURE_CUBE_MAP, size, size, true);
+		m_depthtex = GL_GenCubemapShadowTexture(size, size, true);
 	}
 
 	bool IsCubemap() const override
@@ -459,6 +459,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_ClearDepthStencil(0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					glDepthFunc(GL_GEQUAL);
+					glDepthRange(1, 0);
 
 					R_PushRefDef();
 
@@ -492,7 +494,8 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						R_LoadIdentityForProjectionMatrix();
 						// Use reversed-Z projection for better depth precision in cubemap shadow
-						R_SetupPerspectiveReversedZ(90, 90, 0.1f, args->radius);
+						//R_SetupPerspectiveReversedZ(90, 90, 0.1f, args->radius);
+						R_SetupPerspective(90, 90, 0.1f, args->radius);
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -529,6 +532,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PopRefDef();
 
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					glDepthFunc(GL_LEQUAL);
+					glDepthRange(0, 1);
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;

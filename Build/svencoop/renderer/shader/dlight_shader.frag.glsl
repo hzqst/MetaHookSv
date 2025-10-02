@@ -323,24 +323,9 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Early out for pixels very close to light source
     float zNear = 0.1;  // Updated to match the new near plane
-    if (distanceLightToWorld < zNear * 1.01)
-    {
-        return 1.0; // No shadow for pixels extremely close to light
-    }
-    
-    // Determine which cubemap face to use
-    int faceIndex = GetCubemapFace(lightToWorldDir);
-    
-    // Transform world position using the shadow matrix for this face
-    vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
-    
-    // Perspective divide
-    shadowCoord.xyz /= shadowCoord.w;
-    
-    // For reversed-Z: shadowCoord.z is in [-1, 1] NDC range
-    // Convert to [0, 1] depth buffer range where 1.0=near, 0.0=far
-    float shadowDepth = shadowCoord.z * 0.5 + 0.5;
-    
+    float zFar = u_lightradius;
+    float nonLinearDepth = LinearToReversedZDepth(distanceLightToWorld, zNear, zFar);
+
     // Calculate bias based on surface angle
     // For reversed-Z, we add bias (move towards camera/higher depth values)
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
@@ -350,7 +335,8 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Sample cubemap shadow texture with reversed-Z depth
     // For reversed-Z, we add bias to move towards higher depth values (closer to camera)
-    vec4 cubeSampleCoord = vec4(lightToWorldDir, shadowDepth + bias);
+    vec4 cubeSampleCoord = vec4(lightToWorldDir, nonLinearDepth + bias);
+    
     float visibility = texture(cubemapShadowTex, cubeSampleCoord);
     
     return visibility;

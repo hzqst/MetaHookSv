@@ -418,52 +418,71 @@ GLuint GL_CreateStencilViewForDepthTexture(int texId)
 	return stencilviewtexid;
 }
 
-void GL_CreateShadowTexture(int textureTarget, int texid, int w, int h, bool immutable)
+void GL_CreateShadowTexture(int texid, int w, int h, bool immutable)
 {
-	glBindTexture(textureTarget, texid);
+	glBindTexture(GL_TEXTURE_2D, texid);
 
-	glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
-	if (textureTarget == GL_TEXTURE_CUBE_MAP)
-	{
-		glTexParameteri(textureTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-	}
+	// For regular shadow maps, use 1.0 (far in normal depth)
+	float borderColor[] = { 1, 1, 1, 1 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+
+	// For regular shadow maps, use normal depth comparison (LEQUAL)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, w, h);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+GLuint GL_GenShadowTexture(int w, int h, bool immutable)
+{
+	GLuint texid = GL_GenTexture();
+	GL_CreateShadowTexture(texid, w, h, immutable);
+	return texid;
+}
+
+void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable)
+{
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texid);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 
 	// For cubemap shadow, use reversed-Z: border should be 0.0 (far)
 	// For regular shadow maps, use 1.0 (far in normal depth)
-	float borderColor[] = { 
-		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
-		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
-		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f, 
-		(textureTarget == GL_TEXTURE_CUBE_MAP) ? 0.0f : 1.0f 
-	};
-	glTexParameterfv(textureTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
+	float borderColor[] = { 0, 0, 0, 0 };
+	glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-	glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+
 	// For cubemap shadow, use reversed-Z depth comparison (GEQUAL)
 	// For regular shadow maps, use normal depth comparison (LEQUAL)
-	glTexParameteri(textureTarget, GL_TEXTURE_COMPARE_FUNC, 
-		(textureTarget == GL_TEXTURE_CUBE_MAP) ? GL_GEQUAL : GL_LEQUAL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
 
-	glTexStorage2D(textureTarget, 1, GL_DEPTH32F_STENCIL8, w, h);
+	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_DEPTH32F_STENCIL8, w, h);
 
-	if (textureTarget == GL_TEXTURE_CUBE_MAP)
-	{
-		for (unsigned int i = 0; i < 6; ++i)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	}
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
-	glBindTexture(textureTarget, 0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-GLuint GL_GenShadowTexture(int textureTarget, int w, int h, bool immutable)
+GLuint GL_GenCubemapShadowTexture(int w, int h, bool immutable)
 {
 	GLuint texid = GL_GenTexture();
-	GL_CreateShadowTexture(textureTarget, texid, w, h, immutable);
+	GL_CreateCubemapShadowTexture(texid, w, h, immutable);
 	return texid;
 }
 

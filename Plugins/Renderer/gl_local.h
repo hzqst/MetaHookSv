@@ -633,8 +633,12 @@ void GL_CreateTextureColorFormat(int texid, int w, int h, int iInternalFormat, b
 GLuint GL_GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 void GL_CreateTextureArrayColorFormat(int texid, int w, int h, int depth, int iInternalFormat, bool filter, float *borderColor, bool immutable);
 
-GLuint GL_GenShadowTexture(int textureTarget, int w, int h, bool immutable);
-void GL_CreateShadowTexture(int textureTarget, int texid, int w, int h, bool immutable);
+GLuint GL_GenShadowTexture(int w, int h, bool immutable);
+void GL_CreateShadowTexture(int texid, int w, int h, bool immutable);
+
+GLuint GL_GenCubemapShadowTexture(int w, int h, bool immutable);
+void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable);
+
 GLuint GL_GenShadowTextureArray(int w, int h, int depth, bool immutable);
 void GL_CreateShadowTextureArray(int texid, int w, int h, int depth, bool immutable);
 
