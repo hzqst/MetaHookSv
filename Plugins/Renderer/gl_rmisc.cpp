@@ -468,7 +468,6 @@ void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
 	// For cubemap shadow, use reversed-Z depth comparison (GEQUAL)
-	// For regular shadow maps, use normal depth comparison (LEQUAL)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
 
 	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_DEPTH32F_STENCIL8, w, h);
