@@ -753,7 +753,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 
-					const float lambda = math_clamp(0.5, 0.0f, 1.0f); // 例如0.8，也可来自cvar
+					const float lambda = 0.5f; // 例如0.8，也可来自cvar
 					const float orthoMargin = 1.15f; // 15% 外扩，避免裁边
 
 					// Calculate cascade distances based on camera frustum
@@ -797,6 +797,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
+
+					// All cascades use same viewangles and vieworg
 
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 					R_UpdateRefDef();
