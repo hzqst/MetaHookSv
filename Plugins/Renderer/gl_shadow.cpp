@@ -490,7 +490,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_UpdateRefDef();
 
 						R_LoadIdentityForProjectionMatrix();
-						R_SetupPerspective(90, 90, 1.0f, args->radius);
+						R_SetupPerspective(90, 90, 0.1f, args->radius);
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
