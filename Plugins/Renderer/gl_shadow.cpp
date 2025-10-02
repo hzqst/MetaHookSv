@@ -384,7 +384,7 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 	return false;
 }
 
-void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4])
+void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4], bool bReversedDepth)
 {
 	/*
 	Counterpart of following matrix:
@@ -406,19 +406,38 @@ void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const f
 		glMatrixMode(GL_MODELVIEW);
 	*/
 
-	const float bias[16] = {
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f
-	};
+	if (bReversedDepth)
+	{
+		const float bias[16] = {
+			0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, 0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.5f, 0.5f, 0.0f, 1.0f
+		};
 
-	// First multiply projection matrix with world matrix
-	float projWorldMatrix[4][4];
-	Matrix4x4_Multiply(projWorldMatrix, worldMatrix, projMatrix);
+		// First multiply projection matrix with world matrix
+		float projWorldMatrix[4][4];
+		Matrix4x4_Multiply(projWorldMatrix, worldMatrix, projMatrix);
 
-	// Then multiply bias matrix with the result
-	Matrix4x4_Multiply(out, projWorldMatrix, (const float (*)[4])bias);
+		// Then multiply bias matrix with the result
+		Matrix4x4_Multiply(out, projWorldMatrix, (const float (*)[4])bias);
+	}
+	else
+	{
+		const float bias[16] = {
+			0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, 0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.5f, 0.0f,
+			0.5f, 0.5f, 0.5f, 1.0f
+		};
+
+		// First multiply projection matrix with world matrix
+		float projWorldMatrix[4][4];
+		Matrix4x4_Multiply(projWorldMatrix, worldMatrix, projMatrix);
+
+		// Then multiply bias matrix with the result
+		Matrix4x4_Multiply(out, projWorldMatrix, (const float (*)[4])bias);
+	}
 }
 
 void R_RenderShadowmapForDynamicLights(void)
@@ -512,7 +531,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 						mat4 shadowMatrix;
-						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix), true);
 
 						g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
 						g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
@@ -611,7 +630,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 					mat4 shadowMatrix;
-					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix), false);
 
 					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
 					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
@@ -723,7 +742,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 					mat4 shadowMatrix;
-					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix), false);
 
 					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
 					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
@@ -881,7 +900,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
 						mat4 shadowMatrix;
-						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix), false);
 
 						g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
 						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);

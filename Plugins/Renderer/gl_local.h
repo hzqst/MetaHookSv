@@ -431,7 +431,7 @@ void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
 void R_PrepareDrawWorld(void); 
-void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4]);
+void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4], bool bReversedDepth);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_CheckVariables(void);
