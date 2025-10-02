@@ -785,99 +785,99 @@ void R_RenderShadowmapForDynamicLights(void)
 						g_pCurrentShadowTexture->SetCSMDistance(i, csmFar);
 					}
 
-				g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
+					g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
 
-				GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
 
-				GL_BindFrameBuffer(&s_ShadowFBO);
+					GL_BindFrameBuffer(&s_ShadowFBO);
 
-				// Bind texture array layers to framebuffer - we'll use geometry shader to select layer
-				// Note: We can't use glFramebufferTexture because that requires all layers, 
-				// but clearing needs to be done per-layer in a loop
-				for (int i = 0; i < CSM_LEVELS; ++i)
-				{
-					glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0, i);
-					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-				}
+					// Bind texture array layers to framebuffer - we'll use geometry shader to select layer
+					// Note: We can't use glFramebufferTexture because that requires all layers, 
+					// but clearing needs to be done per-layer in a loop
+					for (int i = 0; i < CSM_LEVELS; ++i)
+					{
+						glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0, i);
+						GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+					}
 
-				// Now bind all layers for rendering
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0);
+					// Now bind all layers for rendering
+					glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0);
 
-				glDrawBuffer(GL_NONE);
-				glReadBuffer(GL_NONE);
+					glDrawBuffer(GL_NONE);
+					glReadBuffer(GL_NONE);
 
-				glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-				R_PushRefDef();
+					R_PushRefDef();
 
-				// All cascades use same viewangles and vieworg
-				VectorCopy(args->angle, (*r_refdef.viewangles));
-				R_UpdateRefDef();
+					// All cascades use same viewangles and vieworg
+					VectorCopy(args->angle, (*r_refdef.viewangles));
+					R_UpdateRefDef();
 
-				// All cascades use same worldmatrix
-				R_LoadIdentityForWorldMatrix();
-				R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+					// All cascades use same worldmatrix
+					R_LoadIdentityForWorldMatrix();
+					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
-				r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-				r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-				r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-				r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
 
-				glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
-				// Setup camera UBO with all cascade views
-				camera_ubo_t CameraUBO;
-				CameraUBO.numViews = CSM_LEVELS;
+					// Setup camera UBO with all cascade views
+					camera_ubo_t CameraUBO;
+					CameraUBO.numViews = CSM_LEVELS;
 
-				// Calculate projection matrices for all cascades and setup shadow matrices
-				for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
-				{
-					float splitNear = splits[cascadeIndex + 0];
-					float splitFar = splits[cascadeIndex + 1];
+					// Calculate projection matrices for all cascades and setup shadow matrices
+					for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)
+					{
+						float splitNear = splits[cascadeIndex + 0];
+						float splitFar = splits[cascadeIndex + 1];
 
-					// 该级联在相机视锥上界面的半宽/半高（取far端，因为更大）
-					float halfW_far = splitFar * tanHalfFovX;
-					float halfH_far = splitFar * tanHalfFovY;
+						// 该级联在相机视锥上界面的半宽/半高（取far端，因为更大）
+						float halfW_far = splitFar * tanHalfFovX;
+						float halfH_far = splitFar * tanHalfFovY;
 
-					// 该级联厚度的一半
-					float halfDepth = 0.5f * (splitFar - splitNear);
+						// 该级联厚度的一半
+						float halfDepth = 0.5f * (splitFar - splitNear);
 
-					// 用包含该截头棱锥的最小球近似，半径为到far平面角点的最大距离
-					// 与光方向无关，稳定且不会裁边
-					float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
+						// 用包含该截头棱锥的最小球近似，半径为到far平面角点的最大距离
+						// 与光方向无关，稳定且不会裁边
+						float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
 
-					// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
-					float orthoSize = 2.0f * radius * orthoMargin;
+						// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
+						float orthoSize = 2.0f * radius * orthoMargin;
 
-					R_LoadIdentityForProjectionMatrix();
-					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
+						R_LoadIdentityForProjectionMatrix();
+						R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
 
-					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
-					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
-					mat4 shadowMatrix;
-					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+						mat4 shadowMatrix;
+						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-					g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
-					g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);
-					g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
+						g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
+						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);
+						g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
 
-					// Setup camera view for this cascade in the UBO
-					R_SetupCameraView(&CameraUBO.views[cascadeIndex]);
-				}
+						// Setup camera view for this cascade in the UBO
+						R_SetupCameraView(&CameraUBO.views[cascadeIndex]);
+					}
 
-				// Upload all views to UBO
-				GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+					// Upload all views to UBO
+					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
-				auto old_draw_classify = r_draw_classify;
-				r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
+					auto old_draw_classify = r_draw_classify;
+					r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
 
-				// Render all cascades in a single draw call using multiview geometry shader
-				R_RenderScene();
+					// Render all cascades in a single draw call using multiview geometry shader
+					R_RenderScene();
 
-				r_draw_classify = old_draw_classify;
+					r_draw_classify = old_draw_classify;
 
-				R_PopRefDef();
+					R_PopRefDef();
 
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
