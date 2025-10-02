@@ -27,7 +27,6 @@ out vec2 v_detailtexcoord;
 out vec2 v_normaltexcoord;
 out vec2 v_parallaxtexcoord;
 out vec2 v_speculartexcoord;
-out vec4 v_shadowcoord[3];
 out vec4 v_projpos;
 
 #if defined(SKYBOX_ENABLED)

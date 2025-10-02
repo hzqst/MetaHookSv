@@ -41,21 +41,51 @@ uniform vec4 r_packed_index;
 uniform vec2 r_framerate_numframes;
 uniform vec2 r_nearplaneclip;
 
-in vec3 v_worldpos;
-in vec3 v_normal;
-in vec2 v_texcoord;
-in vec4 v_projpos;
-flat in uint v_packedbone;
-in vec3 v_tangent;
-in vec3 v_bitangent;
-in vec3 v_smoothnormal;
-
-#if defined(STUDIO_NF_CELSHADE_FACE)
-
-	in vec3 v_headfwd;
-	in vec3 v_headup;
-	in vec3 v_headorigin;
-
+// Input from geometry shader (if enabled) or vertex shader (if not)
+#ifdef STUDIO_MULTIVIEW_ENABLED
+	// When geometry shader is enabled, input comes from geometry shader with g_ prefix
+	#define v_worldpos g_worldpos
+	#define v_normal g_normal
+	#define v_texcoord g_texcoord
+	#define v_projpos g_projpos
+	#define v_packedbone g_packedbone
+	#define v_tangent g_tangent
+	#define v_bitangent g_bitangent
+	#define v_smoothnormal g_smoothnormal
+	#define v_headfwd g_headfwd
+	#define v_headup g_headup
+	#define v_headorigin g_headorigin
+	
+	in vec3 g_worldpos;
+	in vec3 g_normal;
+	in vec2 g_texcoord;
+	in vec4 g_projpos;
+	flat in uint g_packedbone;
+	in vec3 g_tangent;
+	in vec3 g_bitangent;
+	in vec3 g_smoothnormal;
+	
+	#if defined(STUDIO_NF_CELSHADE_FACE)
+		in vec3 g_headfwd;
+		in vec3 g_headup;
+		in vec3 g_headorigin;
+	#endif
+#else
+	// Standard path: input directly from vertex shader
+	in vec3 v_worldpos;
+	in vec3 v_normal;
+	in vec2 v_texcoord;
+	in vec4 v_projpos;
+	flat in uint v_packedbone;
+	in vec3 v_tangent;
+	in vec3 v_bitangent;
+	in vec3 v_smoothnormal;
+	
+	#if defined(STUDIO_NF_CELSHADE_FACE)
+		in vec3 v_headfwd;
+		in vec3 v_headup;
+		in vec3 v_headorigin;
+	#endif
 #endif
 
 layout(location = 0) out vec4 out_Diffuse;

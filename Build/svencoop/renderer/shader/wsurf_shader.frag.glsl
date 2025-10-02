@@ -30,7 +30,6 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapT
 	#define v_normaltexcoord g_normaltexcoord
 	#define v_parallaxtexcoord g_parallaxtexcoord
 	#define v_speculartexcoord g_speculartexcoord
-	#define v_shadowcoord g_shadowcoord
 	#define v_projpos g_projpos
 	#define v_styles g_styles
 	
@@ -44,7 +43,6 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapT
 	in vec2 g_normaltexcoord;
 	in vec2 g_parallaxtexcoord;
 	in vec2 g_speculartexcoord;
-	in vec4 g_shadowcoord[3];
 	in vec4 g_projpos;
 	
 	#if defined(SKYBOX_ENABLED)
@@ -66,7 +64,6 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapT
 	in vec2 v_normaltexcoord;
 	in vec2 v_parallaxtexcoord;
 	in vec2 v_speculartexcoord;
-	in vec4 v_shadowcoord[3];
 	in vec4 v_projpos;
 	
 	#if defined(SKYBOX_ENABLED)
