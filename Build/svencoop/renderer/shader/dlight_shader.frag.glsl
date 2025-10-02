@@ -328,20 +328,37 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Early out for pixels very close to light source
     float zNear = 0.1;  // Updated to match the new near plane
-    float zFar = u_lightradius;
-    float nonLinearDepth = LinearToReversedZDepth(distanceLightToWorld, zNear, zFar);
-
+    if (distanceLightToWorld < zNear * 1.01)
+    {
+        return 1.0; // No shadow for pixels extremely close to light
+    }
+    
+    // Determine which cubemap face to use
+    int faceIndex = GetCubemapFace(lightToWorldDir);
+    
+    // Transform world position using the shadow matrix for this face
+    vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
+    
+    // Perspective divide
+    shadowCoord.xyz /= shadowCoord.w;
+    
+    // For reversed-Z: shadowCoord.z is the depth value from the reversed projection
+    // Convert from NDC [-1, 1] to depth buffer [0, 1]
+    // In reversed-Z, near plane (zNear) maps to higher values, far plane (zFar) maps to lower values
+    float shadowDepth = shadowCoord.z * 0.5 + 0.5;
+    
     // Calculate bias based on surface angle
-    // For reversed-Z, we add bias (move towards camera/higher depth values)
+    // For reversed-Z, we subtract bias (move towards far plane/lower depth values)
+    // This prevents self-shadowing artifacts
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
     float slopeBias = 0.001 * (1.0 - NdotL);
     float constBias = 0.0005;
     float bias = max(slopeBias, constBias);
     
     // Sample cubemap shadow texture with reversed-Z depth
-    // For reversed-Z, we add bias to move towards higher depth values (closer to camera)
-    vec4 cubeSampleCoord = vec4(lightToWorldDir, nonLinearDepth + bias);
-    
+    // For reversed-Z with GL_GEQUAL: stored_depth >= sample_depth means lit
+    // We subtract bias to avoid self-shadowing
+    vec4 cubeSampleCoord = vec4(lightToWorldDir, shadowDepth - bias);
     float visibility = texture(cubemapShadowTex, cubeSampleCoord);
     
     return visibility;
