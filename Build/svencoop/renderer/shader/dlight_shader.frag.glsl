@@ -36,6 +36,11 @@ uniform vec4 u_csmDistances;
 uniform vec2 u_csmTexel;
 #endif
 
+#if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
+uniform float u_cubeShadowTexel;
+#endif
+
+
 #if defined(VOLUME_ENABLED)
 
 uniform mat4 u_modelmatrix;
@@ -298,7 +303,6 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Use PCF for smoother shadows
     float visibility = 0.0;
-    float texelSize = 1.0 / 1024.0; // Assuming 1024x1024 cubemap
     
     // 3x3 PCF sampling
     for(int x = -1; x <= 1; x++)
@@ -307,7 +311,7 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
         {
             for(int z = -1; z <= 1; z++)
             {
-                vec3 offset = vec3(float(x), float(y), float(z)) * texelSize;
+                vec3 offset = vec3(float(x), float(y), float(z)) * u_cubeShadowTexel;
                 vec4 sampleCoord = vec4(lightToWorldDir + offset, distance - bias);
                 visibility += texture(cubemapShadowTex, sampleCoord);
             }
@@ -390,14 +394,14 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     if (SpotCosine > LimitCosine) {
         vec4 Color = CalcPointLight(World, Normal, vBaseTexCoord);
 
-#if defined(SHADOW_TEXTURE_ENABLED)
+    #if defined(SHADOW_TEXTURE_ENABLED)
 
-    float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
-    Color.r *= flShadowIntensity;
-    Color.g *= flShadowIntensity;
-    Color.b *= flShadowIntensity;
+        float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
+        Color.r *= flShadowIntensity;
+        Color.g *= flShadowIntensity;
+        Color.b *= flShadowIntensity;
 
-#endif
+    #endif
 
 #if defined(CONE_TEXTURE_ENABLED)
 
@@ -428,18 +432,6 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 {
     vec3 LightDirection = u_lightdir.xyz;
 
-    // Check if world position is within the directional light's rectangular area
-    //vec3 worldToLight = World - u_lightpos.xyz;
-
-    // Project onto light's right and up vectors
-    //float projRight = dot(worldToLight, u_lightright.xyz);
-    //float projUp = dot(worldToLight, u_lightup.xyz);
-
-    // Check if within bounds
-    //if (abs(projRight) > u_lightSize || abs(projUp) > u_lightSize) {
-    //    return vec4(0.0, 0.0, 0.0, 0.0);
-    //}
-
     vec4 AmbientColor, DiffuseSpecularColor;
     CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord, AmbientColor, DiffuseSpecularColor);
 
@@ -459,12 +451,12 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #endif
 
-    // Apply shadow to diffuse and specular only, keep ambient color unaffected
-    DiffuseSpecularColor.r *= flShadowIntensity;
-    DiffuseSpecularColor.g *= flShadowIntensity;
-    DiffuseSpecularColor.b *= flShadowIntensity;
+    vec4 Color = AmbientColor + DiffuseSpecularColor;
+    Color.r *= flShadowIntensity;
+    Color.g *= flShadowIntensity;
+    Color.b *= flShadowIntensity;
 
-    return AmbientColor + DiffuseSpecularColor;
+    return Color;
 }
 
 void main()

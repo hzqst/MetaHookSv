@@ -233,6 +233,7 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
 			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
 			SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
+			SHADER_UNIFORM(prog, u_cubeShadowTexel, "u_cubeShadowTexel");
 			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
@@ -257,14 +258,14 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 }
 
 const program_state_mapping_t s_DLightProgramStateName[] = {
-{ DLIGHT_SPOT_ENABLED				,"DLIGHT_SPOT_ENABLED"	 },
-{ DLIGHT_POINT_ENABLED				,"DLIGHT_POINT_ENABLED"	 },
-{ DLIGHT_VOLUME_ENABLED				,"DLIGHT_VOLUME_ENABLED" },
-{ DLIGHT_CONE_TEXTURE_ENABLED		,"DLIGHT_CONE_TEXTURE_ENABLED" },
-{ DLIGHT_SHADOW_TEXTURE_ENABLED		,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
-{ DLIGHT_DIRECTIONAL_ENABLED		,"DLIGHT_DIRECTIONAL_ENABLED" },
-{ DLIGHT_CSM_ENABLED				,"DLIGHT_CSM_ENABLED" },
-{ DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED	,"DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_SPOT_ENABLED						,"DLIGHT_SPOT_ENABLED"	 },
+{ DLIGHT_POINT_ENABLED						,"DLIGHT_POINT_ENABLED"	 },
+{ DLIGHT_VOLUME_ENABLED						,"DLIGHT_VOLUME_ENABLED" },
+{ DLIGHT_CONE_TEXTURE_ENABLED				,"DLIGHT_CONE_TEXTURE_ENABLED" },
+{ DLIGHT_SHADOW_TEXTURE_ENABLED				,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_DIRECTIONAL_ENABLED				,"DLIGHT_DIRECTIONAL_ENABLED" },
+{ DLIGHT_CSM_ENABLED						,"DLIGHT_CSM_ENABLED" },
+{ DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -1127,6 +1128,11 @@ void R_LightShadingPass(void)
 
 			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
+				if (prog.u_cubeShadowTexel != -1)
+				{
+					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
+				}
+
 				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
 			}
 
@@ -1193,6 +1199,11 @@ void R_LightShadingPass(void)
 
 			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
 			{
+				if (prog.u_cubeShadowTexel != -1)
+				{
+					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
+				}
+
 				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
 			}
 

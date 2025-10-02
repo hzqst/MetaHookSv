@@ -472,6 +472,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					{
 						VectorCopy(args->origin, (*r_refdef.vieworg));
 						VectorCopy(cubemapAngles[i], (*r_refdef.viewangles));
+						R_UpdateRefDef();
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -549,8 +550,17 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
+
 					VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
+					R_UpdateRefDef();
+
+					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+
+					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -650,6 +660,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					VectorCopy(args->origin, (*r_refdef.vieworg));
 					VectorCopy(args->angle, (*r_refdef.viewangles));
+					R_UpdateRefDef();
 
 					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
 					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
@@ -771,7 +782,9 @@ void R_RenderShadowmapForDynamicLights(void)
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
+
 					VectorCopy(args->angle, (*r_refdef.viewangles));
+					R_UpdateRefDef();
 
 					// All cascades use same worldmatrix
 

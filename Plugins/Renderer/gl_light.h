@@ -155,6 +155,7 @@ typedef struct
 	int u_csmMatrices;
 	int u_csmDistances;
 	int u_csmTexel;
+	int u_cubeShadowTexel;
 	int u_lightSize;
 }dlight_program_t;
 
