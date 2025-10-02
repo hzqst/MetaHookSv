@@ -455,14 +455,17 @@ void R_RenderShadowmapForDynamicLights(void)
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
-					// For cubemap shadow with reversed-Z, clear depth to 1.0 (far plane)
-					GL_ClearDepthStencil(0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-					// For reversed-Z cubemap shadow: use GEQUAL and reversed depth range
-					// This maps near plane (NDC=1) to depth=1.0, far plane (NDC=-1) to depth=0.0
-					glDepthFunc(GL_GEQUAL);
+					
+					// For reversed-Z cubemap shadow:
+					// 1. Use reversed depth range so near plane writes high values, far plane writes low values
 					glDepthRange(1.0, 0.0);  // Reversed: near=1.0, far=0.0
+					
+					// 2. Clear to 0.0 which represents infinity (far plane) in reversed-Z
+					GL_ClearDepthStencil(0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+					
+					// 3. Use GEQUAL so closer objects (higher depth values) pass the test
+					glDepthFunc(GL_GEQUAL);
 
 					R_PushRefDef();
 
