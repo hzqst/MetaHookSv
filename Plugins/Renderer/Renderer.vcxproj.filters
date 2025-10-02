@@ -921,5 +921,8 @@
     <None Include="..\..\Build\svencoop\renderer\shader\wsurf_shader.geom.glsl">
       <Filter>GLSL</Filter>
     </None>
+    <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.geom.glsl">
+      <Filter>GLSL</Filter>
+    </None>
   </ItemGroup>
 </Project>

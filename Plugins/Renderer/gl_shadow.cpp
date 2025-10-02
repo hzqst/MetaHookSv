@@ -462,8 +462,8 @@ void R_RenderShadowmapForDynamicLights(void)
 						{0, 180, 0},   // -X (backward)
 						{0, 90, 0},    // +Y (left)
 						{0, -90, 0},    // -Y (right)
-						{-90, 0, 0},   // +Z (up)
-						{90, 0, 0},    // -Z (down)
+						{-89, 0, 0},   // +Z (up)
+						{89, 0, 0},    // -Z (down)
 					};
 
 					camera_ubo_t CameraUBO{};

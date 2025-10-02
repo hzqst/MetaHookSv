@@ -482,6 +482,7 @@ $(SDL2CheckRequirements)</Command>
     <None Include="..\..\Build\svencoop\renderer\shader\sprite_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\sprite_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.frag.glsl" />
+    <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.geom.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\studio_shader.vert.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\triapi_shader.frag.glsl" />
     <None Include="..\..\Build\svencoop\renderer\shader\triapi_shader.vert.glsl" />
