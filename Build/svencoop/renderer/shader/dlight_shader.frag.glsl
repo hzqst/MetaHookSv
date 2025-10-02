@@ -350,11 +350,6 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     vec4 shadowCoord = vec4(lightToWorldDir, nonLinearDepth - bias);
     float visibility = texture(cubemapShadowTex, shadowCoord);
     
-    // Debug output: uncomment to visualize depth values
-     //if (distance < 10.0) return 0.0; // Red = very close
-    // if (distance < 50.0) return 0.5; // Dark = medium distance
-     //return 1.0; // White = far
-    
     return visibility;
 }
 
