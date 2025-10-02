@@ -286,27 +286,16 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 
-// Convert linear depth to non-linear depth for reversed-Z cubemap shadow
-// This matches the reversed-Z perspective projection with glClipControl(GL_ZERO_TO_ONE)
-// 
-// Our projection matrix produces:
-//   z_ndc = projection[10] + projection[14] / z_eye
-//         = -zNear/(zFar-zNear) + zNear*zFar/(zFar-zNear) / z_eye
-//
-// With glClipControl(GL_ZERO_TO_ONE), NDC range is [0,1]:
-//   near plane (z_eye=zNear) -> z_ndc=1.0
-//   far plane (z_eye=zFar) -> z_ndc=0.0
-float LinearToReversedZDepth(float linearDepth, float zNear, float zFar)
+// Convert linear depth to non-linear depth (same as depth buffer)
+// This matches the perspective projection used in shadow pass
+// OpenGL uses NDC range [-1, 1], then maps to depth buffer [0, 1]
+float LinearToNonLinearDepth(float linearDepth, float zNear, float zFar)
 {
     float fn = zFar - zNear;
+    float ndcDepth = (zFar + zNear) / fn - (2.0 * zFar * zNear) / (fn * linearDepth);
     
-    // Reversed-Z with GL_ZERO_TO_ONE projection formula:
-    // z_ndc = -zNear/fn + (zNear*zFar/fn) / linearDepth
-    float z_ndc = -zNear / fn + (zNear * zFar / fn) / linearDepth;
-    
-    // z_ndc is already in [0,1] range due to glClipControl(GL_ZERO_TO_ONE)
-    // near plane -> 1.0, far plane -> 0.0
-    return z_ndc;
+    // Map from NDC [-1, 1] to depth buffer [0, 1]
+    return ndcDepth * 0.5 + 0.5;
 }
 
 // Determine which cubemap face the direction belongs to
@@ -339,23 +328,30 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     {
         return 1.0; // No shadow for pixels extremely close to light
     }
+
+    // Determine which cubemap face to use
+    int faceIndex = GetCubemapFace(lightToWorldDir);
     
-    // Convert linear distance to non-linear depth using our reversed-Z projection formula
-    // This matches the depth values written during shadow pass
-    float nonLinearDepth = LinearToReversedZDepth(distanceLightToWorld, zNear, zFar);
+    // Transform world position using the shadow matrix for this face
+    vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
     
+    // Perspective divide
+    shadowCoord.xyz /= shadowCoord.w;
+    
+    // shadowCoord.z is now in [-1, 1] NDC range, convert to [0, 1] for depth buffer
+    float shadowDepth = shadowCoord.z * 0.5 + 0.5;
+    
+    shadowDepth = LinearToNonLinearDepth(distanceLightToWorld, zNear, zFar);
+
     // Calculate bias based on surface angle
-    // For reversed-Z with GL_GEQUAL comparison:
-    //   - stored_depth >= sample_depth means the pixel is visible (lit)
-    //   - We subtract bias to prevent self-shadowing (move sample depth towards far plane)
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
     float slopeBias = 0.001 * (1.0 - NdotL);
     float constBias = 0.0005;
     float bias = max(slopeBias, constBias);
     
-    // Sample cubemap shadow texture with reversed-Z depth
-    // The comparison is: if (stored_depth >= nonLinearDepth - bias) then visible
-    vec4 cubeSampleCoord = vec4(lightToWorldDir, nonLinearDepth - bias);
+    // Sample cubemap shadow texture
+    // For cubemap, we use the direction + computed depth
+    vec4 cubeSampleCoord = vec4(lightToWorldDir, shadowDepth - bias);
     float visibility = texture(cubemapShadowTex, cubeSampleCoord);
     
     return visibility;

@@ -457,9 +457,7 @@ void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
 
-	// For cubemap shadow, use reversed-Z: border should be 0.0 (far)
-	// For regular shadow maps, use 1.0 (far in normal depth)
-	float borderColor[] = { 0, 0, 0, 0 };
+	float borderColor[] = { 1, 1, 1, 1 };
 	glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -467,8 +465,7 @@ void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable)
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
-	// For cubemap shadow, use reversed-Z depth comparison (GEQUAL)
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
 	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_DEPTH32F_STENCIL8, w, h);
 

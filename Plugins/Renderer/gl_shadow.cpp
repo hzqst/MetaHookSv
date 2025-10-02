@@ -457,17 +457,8 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 					
-					// For reversed-Z cubemap shadow:
-					// 1. Use reversed depth range so near plane writes high values, far plane writes low values
-					//Adjust z-range in NDC NDC from [-1,1] to [0,1]
-					glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-
-					// 2. Clear to 0.0 which represents infinity (far plane) in reversed-Z
-					GL_ClearDepthStencil(0.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 					
-					// 3. Use GEQUAL so closer objects (higher depth values) pass the test
-					glDepthFunc(GL_GEQUAL);
-
 					R_PushRefDef();
 
 					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
@@ -480,12 +471,12 @@ void R_RenderShadowmapForDynamicLights(void)
 					// Calculate 6 faces for cubemap shadow mapping
 					// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
 					const vec3_t cubemapAngles[] = {
-						{0, 0, 90},     
-						{0, 180, 270},  
-						{0, 90, 0},     
-						{0, 270, 180},  
-						{-90, 270, 0},  
-						{90, 270, 0},   
+						{0, 0, 90},
+						{0, 180, 270},
+						{0, 90, 0},
+						{0, 270, 180},
+						{-90, 90, 0},
+						{90, 270, 0},
 					};
 
 					camera_ubo_t CameraUBO{};
@@ -499,9 +490,7 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_UpdateRefDef();
 
 						R_LoadIdentityForProjectionMatrix();
-						// Use reversed-Z projection for better depth precision in cubemap shadow
-						R_SetupPerspectiveReversedZ(90, 90, 0.1f, args->radius);
-						//R_SetupPerspective(90, 90, 0.1f, args->radius);
+						R_SetupPerspective(90, 90, 0.1f, args->radius);
 
 						R_LoadIdentityForWorldMatrix();
 						R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -538,10 +527,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PopRefDef();
 
 					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-					// Restore normal depth function and range
-					glDepthFunc(GL_LEQUAL);
-					//glDepthRange(0.0, 1.0);  // Restore standard depth range
-					glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
