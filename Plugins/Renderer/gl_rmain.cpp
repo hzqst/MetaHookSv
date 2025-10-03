@@ -313,6 +313,7 @@ FBO_Container_t s_FinalBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO2 = { 0 };
 FBO_Container_t s_BackBufferFBO3 = { 0 };
+FBO_Container_t s_BackBufferFBO4 = { 0 };
 FBO_Container_t s_GBufferFBO = { 0 };
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS] = { 0 };
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS] = { 0 };
@@ -1858,10 +1859,10 @@ void R_DrawPostProcessGlow()
 	GL_BeginDebugGroup("R_DrawPostProcessGlowColor");
 
 	{
-		GL_BlitFrameBufferToFrameBufferDepthStencil(CurrentFBO, &s_BackBufferFBO3);
+		GL_BlitFrameBufferToFrameBufferDepthStencil(CurrentFBO, &s_BackBufferFBO4);
 
-		GL_BindFrameBuffer(&s_BackBufferFBO3);
-		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
+		GL_BindFrameBuffer(&s_BackBufferFBO4);
+		GL_SetCurrentSceneFBO(&s_BackBufferFBO4);
 
 		vec4_t clearColor = { 0, 0, 0, 1 };
 		GL_ClearColor(clearColor);
@@ -1880,7 +1881,7 @@ void R_DrawPostProcessGlow()
 
 	GL_EndDebugGroup();
 
-	R_DownSample(&s_BackBufferFBO3, nullptr, &s_DownSampleFBO[0], true, false);//(1->1/4)
+	R_DownSample(&s_BackBufferFBO4, nullptr, &s_DownSampleFBO[0], true, false);//(1->1/4)
 	R_DownSample(&s_DownSampleFBO[0], nullptr, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
 	R_BlurPass(&s_DownSampleFBO[1], &s_BlurPassFBO[0][0], math_clamp(r_glow_bloomscale->value, 0.1f, 1.0f), false);
 	R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], math_clamp(r_glow_bloomscale->value, 0.1f, 1.0f), true);
@@ -2397,6 +2398,7 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
 	GL_FreeFBO(&s_BackBufferFBO3);
+	GL_FreeFBO(&s_BackBufferFBO4);
 	GL_FreeFBO(&s_GBufferFBO);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
@@ -2476,6 +2478,20 @@ void GL_GenerateFrameBuffers(void)
 		{
 			GL_FreeFBO(&s_BackBufferFBO3);
 			Sys_Error("Failed to initialize BackBufferFBO3!\n");
+		}
+	}
+
+	{
+		s_BackBufferFBO4.iWidth = glwidth;
+		s_BackBufferFBO4.iHeight = glheight;
+		GL_GenFrameBuffer(&s_BackBufferFBO4, "s_BackBufferFBO4");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO4, GL_RGBA8);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO4, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO4);
+			Sys_Error("Failed to initialize BackBufferFBO4!\n");
 		}
 	}
 
