@@ -32,6 +32,7 @@ class CSpriteModelRenderMaterial
 public:
 	std::string basetexture;
 	CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
+	mspriteframe_t replaceframe{};
 };
 
 class CSpriteModelRenderData

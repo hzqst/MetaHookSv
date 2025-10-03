@@ -313,7 +313,7 @@
 #define R_STUDIOSETUPSKIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xF6\x05"
 
 #define R_GETSPRITEFRAME_SIG "\x56\x8B\x74\x24\x08\x57\x33\xFF\x85\xF6\x75\x2A\x68\x2A\x2A\x2A\x2A\xE8"
-#define R_GETSPRITEFRAME_SIG_NEW "\x55\x8B\xEC\x56\x8B\x75\x08\x57\x33\xFF\x85\xF6\x75\x13\x68"
+#define R_GETSPRITEFRAME_SIG2 "\x55\x8B\xEC\x56\x8B\x75\x08\x57\x33\xFF\x85\xF6\x75\x13\x68"
 
 #define R_DRAWSRPITEMODEL_SIG_BLOB "\x83\xEC\x40\x53\x56\x57\x8B\x7C\x24\x50\x8B\x87\x94\x0B\x00\x00"
 #define R_DRAWSRPITEMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x00\x00\xD9\x2A\xE0\x02"
@@ -483,6 +483,7 @@ static hook_t* g_phook_Draw_FillRGBABlend = NULL;
 static hook_t* g_phook_NET_DrawRect = NULL;
 static hook_t* g_phook_Draw_Pic = NULL;
 static hook_t* g_phook_D_FillRect = NULL;
+static hook_t* g_phook_R_GetSpriteFrame = NULL;
 
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
@@ -6786,6 +6787,85 @@ void Engine_FillAddress_Draw_DecalTexture(const mh_dll_info_t& DllInfo, const mh
 	//Sig_FuncNotFound(Draw_CacheGet);
 }
 
+void Engine_FillAddress_R_GetSpriteFrame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (gPrivateFuncs.R_GetSpriteFrame)
+		return;
+
+	PVOID R_GetSpriteFrame_VA = 0;
+
+	{
+		const char sigs[] = "Sprite:  no pSprite!!!";
+		auto R_GetSpriteFrame_String = Search_Pattern_Data(sigs, DllInfo);
+		if (!R_GetSpriteFrame_String)
+			R_GetSpriteFrame_String = Search_Pattern_Rdata(sigs, DllInfo);
+		if (R_GetSpriteFrame_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)R_GetSpriteFrame_String;
+			auto R_GetSpriteFrame_Call = Search_Pattern(pattern, DllInfo);
+			if (R_GetSpriteFrame_Call)
+			{
+				R_GetSpriteFrame_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_GetSpriteFrame_Call, 0x300, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+						return TRUE;
+
+					if (Candidate[0] == 0x56 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0x74 &&
+						Candidate[3] == 0x24)
+						return TRUE;
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC &&
+						Candidate[3] == 0xA1)
+						return TRUE;
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC &&
+						Candidate[3] >= 0x50 &&
+						Candidate[3] <= 0x57)
+						return TRUE;
+
+					return FALSE;
+					});
+				gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))ConvertDllInfoSpace(R_GetSpriteFrame_VA, DllInfo, RealDllInfo);
+			}
+		}
+	}
+
+	if (!gPrivateFuncs.R_GetSpriteFrame)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			R_GetSpriteFrame_VA = Search_Pattern(R_GETSPRITEFRAME_SIG, DllInfo);
+			gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))ConvertDllInfoSpace(R_GetSpriteFrame_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			R_GetSpriteFrame_VA = Search_Pattern(R_GETSPRITEFRAME_SIG2, DllInfo);
+			gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))ConvertDllInfoSpace(R_GetSpriteFrame_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			R_GetSpriteFrame_VA = Search_Pattern(R_GETSPRITEFRAME_SIG2, DllInfo);
+			if (!R_GetSpriteFrame_VA)
+				R_GetSpriteFrame_VA = Search_Pattern(R_GETSPRITEFRAME_SIG, DllInfo);
+			gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))ConvertDllInfoSpace(R_GetSpriteFrame_VA, DllInfo, RealDllInfo);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			R_GetSpriteFrame_VA = Search_Pattern(R_GETSPRITEFRAME_SIG, DllInfo);
+			gPrivateFuncs.R_GetSpriteFrame = (decltype(gPrivateFuncs.R_GetSpriteFrame))ConvertDllInfoSpace(R_GetSpriteFrame_VA, DllInfo, RealDllInfo);
+		}
+	}
+
+	Sig_FuncNotFound(R_GetSpriteFrame);
+}
+
 void Engine_FillAddress_R_DrawSpriteModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.R_DrawSpriteModel)
@@ -12453,6 +12533,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(NET_DrawRect);
 	Install_InlineHook(Draw_Pic);
 	Install_InlineHook(D_FillRect);
+	Install_InlineHook(R_GetSpriteFrame);
 }
 
 void Engine_UninstallHooks(void)
@@ -12515,6 +12596,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(NET_DrawRect);
 	Uninstall_Hook(Draw_Pic);
 	Uninstall_Hook(D_FillRect);
+	Uninstall_Hook(R_GetSpriteFrame);
 }
 
 int WINAPI GL_RedirectedGenTexture(void)

@@ -315,7 +315,7 @@ int R_GetSpriteFrameIndex(msprite_t* pSprite, mspriteframe_t *pSpriteFrame)
 
 mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 {
-	mspriteframe_t* pspriteframe;
+	mspriteframe_t* pspriteframe = nullptr;
 
 	if (!pSprite)
 	{
@@ -341,17 +341,13 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 
 		pspriteframe = pSprite->frames[frame].frameptr;
 	}
-	else
-	{
-		pspriteframe = NULL;
-	}
 
 	return pspriteframe;
 }
 
 //Credits to https://github.com/FWGS/xashxt-fwgs/blob/dee61d6cf0a8f681c322e863f8df1d5e6f22443e/client/render/r_sprite.cpp#L126
 //And https://github.com/FWGS/xash3d-fwgs/blob/33da68b013fd9a2c683316758d751308d1a98109/ref/gl/gl_sprite.c#L462
-void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, int* curFrameIndex, mspriteframe_t** curframe, int* oldFrameIndex, mspriteframe_t** oldframe, float *lerp)
+void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** curframe, mspriteframe_t** oldframe, float *lerp)
 {
 	auto frame = (int)ent->curstate.frame;
 	auto lerpFrac = 1.0f;
@@ -417,11 +413,11 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, int* curF
 		}
 
 		// get the interpolated frames
-		if (oldFrameIndex) (*oldFrameIndex) = ent->latched.prevseqblending[0];
-		if (oldframe) (*oldframe) = R_GetSpriteFrame(pSprite, ent->latched.prevseqblending[0]);
+		if (oldframe) 
+			(*oldframe) = R_GetSpriteFrame(pSprite, ent->latched.prevseqblending[0]);
 
-		if (curFrameIndex) (*curFrameIndex) = frame;
-		if (curframe) (*curframe) = R_GetSpriteFrame(pSprite, frame);
+		if (curframe) 
+			(*curframe) = R_GetSpriteFrame(pSprite, frame);
 	}
 
 	*lerp = lerpFrac;
@@ -458,21 +454,7 @@ std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRend
 	return pRenderData->vSpriteMaterials[frameIndex];
 }
 
-void R_DrawSpriteModelBindFrameTexture(CSpriteModelRenderData* pRenderData, int frameIndex, mspriteframe_t* frame, int bindSlot)
-{
-	auto pRenderMaterial = R_SpriteGetMaterial(pRenderData, frameIndex);
-
-	if (pRenderMaterial && pRenderMaterial->textures[SPRITE_REPLACE_TEXTURE].gltexturenum)
-	{
-		GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, pRenderMaterial->textures[SPRITE_REPLACE_TEXTURE].gltexturenum);
-	}
-	else
-	{
-		GL_BindTextureUnit(bindSlot, GL_TEXTURE_2D, frame->gl_texturenum);
-	}
-}
-
-void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, int frameIndex, mspriteframe_t* frame, int oldFrameIndex, mspriteframe_t* oldframe, float lerp)
+void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
 	GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", ent->model ? ent->model->name : "<empty>");
 
@@ -747,11 +729,11 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRe
 
 	GL_BindVAO(r_empty_vao);
 
-	R_DrawSpriteModelBindFrameTexture(pRenderData, frameIndex, frame, 0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
 
 	if (SpriteProgramState & SPRITE_LERP_ENABLED)
 	{
-		R_DrawSpriteModelBindFrameTexture(pRenderData, oldFrameIndex, oldframe, 1);
+		GL_BindTextureUnit(1, GL_TEXTURE_2D, oldframe->gl_texturenum);
 
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
@@ -790,20 +772,16 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		return;
 
 	float lerp = 0;
-
-	int frameIndex = 0;
-	mspriteframe_t* frame = NULL;
-
-	int oldFrameIndex = 0;
-	mspriteframe_t* oldframe = NULL;
+	mspriteframe_t* frame = nullptr;
+	mspriteframe_t* oldframe = nullptr;
 
 	if (R_SpriteAllowLerping(ent, pSprite))
 	{
-		R_GetSpriteFrameInterpolant(ent, pSprite, &frameIndex, &frame, &oldFrameIndex, &oldframe, &lerp);
+		R_GetSpriteFrameInterpolant(ent, pSprite, &frame, &oldframe, &lerp);
 	}
 	else
 	{
-		oldFrameIndex = frameIndex = (int)ent->curstate.frame;
+		int frameIndex = (int)ent->curstate.frame;
 		oldframe = frame = R_GetSpriteFrame(pSprite, frameIndex);
 	}
 
@@ -813,7 +791,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		return;
 	}
 
-	R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), pSprite, frameIndex, frame, oldFrameIndex, oldframe, lerp);
+	R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), pSprite, frame, oldframe, lerp);
 }
 
 void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, CSpriteModelRenderData* pRenderData)
@@ -917,6 +895,14 @@ void R_SpriteLoadExternalFile_FrameTextureLoad(bspentity_t* ent, msprite_t* pSpr
 					}
 				}
 			}
+
+			if (spriteTextureType == SPRITE_REPLACE_TEXTURE)
+			{
+				pSpriteMaterial->replaceframe = (*pSpriteFrame);
+				pSpriteMaterial->replaceframe.gl_texturenum = loadResult.gltexturenum;
+				pSpriteMaterial->replaceframe.width = loadResult.width;
+				pSpriteMaterial->replaceframe.height = loadResult.height;
+			}
 		}
 	}
 }
@@ -933,7 +919,7 @@ void R_SpriteLoadExternalFile_FrameTexture(bspentity_t* ent, msprite_t* pSprite,
 
 	int frameIndex = atoi(frame);
 
-	auto pSpriteFrame = R_GetSpriteFrame(pSprite, frameIndex);
+	auto pSpriteFrame = gPrivateFuncs.R_GetSpriteFrame(pSprite, frameIndex);
 
 	if (!pSpriteFrame)
 	{

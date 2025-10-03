@@ -611,6 +611,8 @@ void NET_DrawRect(int x, int y, int w, int h, int r, int g, int b, int a);
 void Draw_Pic(int x, int y, qpic_t *pic);
 void D_FillRect(vrect_t* r, unsigned char* color);
 
+mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame);
+
 void* Draw_CustomCacheGet(cachewad_t* wad, void* raw, int rawsize, int index);
 void* Draw_CacheGet(cachewad_t* wad, int index);
 int SignbitsForPlane(mplane_t *out);
