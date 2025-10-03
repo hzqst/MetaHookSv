@@ -249,6 +249,16 @@ The following snippet replaces frame[0] of current sprite with `sprites/test.png
 }
 ```
 
+## Sprite advanced effects
+
+No bloom effect will be applied to current sprite:
+```
+{
+  "classname" "sprite_efx"
+  "flags" "FMODEL_NOBLOOM"
+}
+```
+
 ## StudioModel external file
 
 You may create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file `[modelname]_external.txt` to override studiomodel properties without need to modify the content of `[modelname].mdl` file itself.
@@ -1094,14 +1104,12 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 |        ----                          | ----                                                                        |
 | "level" "0"                          | render as legacy water                                                      |
 | "level" "WATER_LEVEL_LEGACY"         | render as legacy water                                                      |
-| "level" "1"                          | skybox and world are reflected                                              |
-| "level" "WATER_LEVEL_REFLECT_SKYBOX" | skybox and world are reflected                                              |
-| "level" "2"                          | skybox and world are reflected                                              |
-| "level" "WATER_LEVEL_REFLECT_WORLD"  | skybox and world are reflected                                              |
-| "level" "3"                          | skybox, world, entities and particles are reflected (expensive)             |
-| "level" "WATER_LEVEL_REFLECT_ENTITY" | skybox, world, entities and particles are reflected (expensive)             |
-| "level" "4"                          | use SSR to reflect, only pixeles in screen-space are reflected              |
-| "level" "WATER_LEVEL_REFLECT_SSR"    | use SSR to reflect, only pixeles in screen-space are reflected              |
+| "level" "1"                          | skybox will be rendered in reflection                                       |
+| "level" "WATER_LEVEL_REFLECT_SKYBOX" | skybox will be rendered in reflection                                       |
+| "level" "2"                          | skybox and world will be rendered in reflection                             |
+| "level" "WATER_LEVEL_REFLECT_WORLD"  | skybox and world will be rendered in reflection                             |
+| "level" "3"                          | skybox, world, entities and particles will be rendered in reflection (expensive)             |
+| "level" "WATER_LEVEL_REFLECT_ENTITY" | skybox, world, entities and particles will be rendered in reflection (expensive)             |
 | "level" "5"                          | render as legacy water, software-mode style, with pixel-art ripple effects  |
 | "level" "WATER_LEVEL_LEGACY_RIPPLE"  | render as legacy water, software-mode style, with pixel-art ripple effects  |
 
@@ -1113,16 +1121,43 @@ Dynamic lights are calculated on the fly in the game, which means they have a hi
 
 ### Keyvalues
 
-`origin` is the position of this entity's center in the world. for example `"origin" "123 456 789"`
+`origin` is the light source position. for example `"origin" "123 456 789"`
 
-`_light` is the RGB render color of the dynamic light, must be between 0 and 255. for example `"_light" "192 192 192"`
+`color` is the color of the dynamic light, must be between 0 and 255. for example `"color" "192 192 192"`
 
-`_distance` is the distance that light is allowed to cast, in inches. for example `"_distance" "300"`
+`type` can be "point", "spot" or "directional"
 
-`_ambient` is the ambient intensity of dynamic light. for example `"_ambient" "0.0"`
+`size` is the size of dynamic light, in inches. for example `"size" "256"`
 
-`_diffuse` is the diffuse intensity of dynamic light. for example `"_diffuse" "0.1"`
+`distance` is the distance that spotlight is allowed to cast, in inches. for example `"distance" "3000"` (Only for spot light)
 
-`_specular` is the specular intensity of dynamic light. for example `"_specular" "0.1"`
+`ambient` is the ambient intensity of dynamic light. for example `"ambient" "0.0"`
 
-`_specularpow` is the specular power of dynamic light. for example `"_specularpow" "10.0"`
+`diffuse` is the diffuse intensity of dynamic light. for example `"diffuse" "0.1"`
+
+`specular` is the specular intensity of dynamic light. for example `"specular" "0.1"`
+
+`specularpow` is the specular power of dynamic light. for example `"specularpow" "10.0"`
+
+`shadow` is to enable or disable shadow for this dynamic light. for example `"shadow" "1"`
+
+`static_shadow_size` is the size of static shadow texture for this dynamic light. for example `"static_shadow_size" "256"`. Note that only BSP world will be baked into static shadow.
+
+`dynamic_shadow_size` is the size of dynamic shadow texture for this dynamic light. for example `"dynamic_shadow_size" "256"`.
+
+Example:
+
+```
+{
+    "origin" "-30 68 72"
+    "size" "1024.0"
+    "color" "192 192 192"
+    "classname" "light_dynamic"
+    "type" "directional"
+    "ambient" "0.1"
+    "diffuse" "1.0"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+}
+```
