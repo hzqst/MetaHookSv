@@ -329,24 +329,24 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
         return 1.0; // No shadow for pixels extremely close to light
     }
 
-    // Determine which cubemap face to use
-    int faceIndex = GetCubemapFace(lightToWorldDir);
-    
-    // Transform world position using the shadow matrix for this face
-    vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
-    
-    // Perspective divide
-    shadowCoord.xyz /= shadowCoord.w;
-    
-    // shadowCoord.z is now in [-1, 1] NDC range, convert to [0, 1] for depth buffer
-    float shadowDepth = shadowCoord.z * 0.5 + 0.5;
-    
-    shadowDepth = LinearToNonLinearDepth(distanceLightToWorld, zNear, zFar);
+   // // Determine which cubemap face to use
+   // int faceIndex = GetCubemapFace(lightToWorldDir);
+   // 
+   // // Transform world position using the shadow matrix for this face
+   // vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
+   // 
+   // // Perspective divide
+   // shadowCoord.xyz /= shadowCoord.w;
+   // 
+   // // shadowCoord.z is now in [-1, 1] NDC range, convert to [0, 1] for depth buffer
+   // float shadowDepth = shadowCoord.z * 0.5 + 0.5;
+   // 
+    float shadowDepth = LinearToNonLinearDepth(distanceLightToWorld, zNear, zFar);
 
     // Calculate bias based on surface angle
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
-    float slopeBias = 0.001 * (1.0 - NdotL);
-    float constBias = 0.0005;
+    float slopeBias = 0.0002 * (1.0 - NdotL);
+    float constBias = 0.0004;
     float bias = max(slopeBias, constBias);
     
     // Sample cubemap shadow texture
