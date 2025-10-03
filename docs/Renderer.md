@@ -21,7 +21,7 @@
 |      Minimum      | Intel Haswell series with HD4600 |      Geforce GTX 400 series       |  AMD Radeon HD 5000 series |
 |     Recommend     |           ----                   |      Geforce GTX 1060 or better     |   AMD Radeon RX 560 or better        |
 
-* OpenGL 4.3 compatibility profile is required to run this plugin.
+* OpenGL 4.4 Core Profile is required to run this plugin.
 
 * It's recommended to run this plugin with at least 4GB of dedicated video memory. otherwise you might have bottleneck with VRAM bandwidth or get game crash due to out-of-VRAM.
 
@@ -57,43 +57,13 @@ Reflection level and shader parameters can be configured by using [env_water_con
 
 ### Console vars
 
-`r_water` set to 1 to enable reflective water.
-
-## Per-Object Dynamic Shadow
-
-Dynamic Shadows are cast only by world models (players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
-
-Dynamic Shadows can sometimes project through walls and floors, giving away the location of players or objects.
-
-### Console vars
-
-`r_shadow` set to 1 to enable Per-Object Dynamic Shadow.
-
-`r_shadow_angles` control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles "90 0 0"`
-
-`r_shadow_color` control the color of shadows, in RGBA8 format. for example `r_shadow_color "0 0 0 128"`
-
-`r_shadow_distfade` is the distance where the shadow begins to fade-out, and the maximum distance the shadow is allowed to cast, in inches. for example `r_shadow_distfade 64 128`
-
-`r_shadow_lumfade` is the luminance the shadow begins to fade-out, and minimum luminance the shadow is allowed to cast, must be between 0 ~ 255. for example `r_shadow_lumfade 64 32`
-
-`r_shadow_high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `r_shadow_high_distance 400`
-
-`r_shadow_high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `r_shadow_high_scale 4`
-
-`r_shadow_medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map, in inches. for example `r_shadow_medium_distance 800`
-
-`r_shadow_medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `r_shadow_medium_scale 2`
-
-`r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `r_shadow_low_distance 1200`
-
-`r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
+`r_water` set to 1 to enable water shader.
 
 ## Screen Space Ambient Occlusion
 
 SSAO or Screen-Space Ambient Occlusion is the type of post-processing effect that approximating the ambient occlusion effect in real time.
 
-The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://github.com/nvpro-samples/gl_ssao).
+The implementation is [HBAO or Horizon-Based-Ambient-Occlusion](https://github.com/nvpro-samples/gl_ssao).
 
 * Note that Ambient Occlusion only works when deferred shading pipeline available and enabled.
 
@@ -189,8 +159,6 @@ For example :
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
-`r_detailtextures 1` to enable BSP detail brush textures, texture replacement, normal textures, parallax textures and specular textures.
-
 Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` as suffix in basetexture name. names with no suffix will be treated as detailtexture.
 
 Detail textures will be loaded from the following path (if exists):
@@ -217,8 +185,6 @@ For decals: replace list is parsed from `{GameDirectory}/renderer/decal_textures
 
 The rules of texture searching follow the same way as "BSP detail textures"
 
-* BSP texture replacer only works when `r_detailtextures` set to 1.
-
 ### BSP normal textures
 
 Normal textures are external images applied to specified brush surfaces and change the direction of surface normal.
@@ -231,8 +197,6 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * Normal textures change nothing but the direction of surface normal, thus only work with surfaces that illuminated by dynamic lights or flashlights.
 
-* BSP normal textures only work when `r_detailtextures` set to 1, and deferred shading pipeline available and enabled.
-
 ### BSP parallax textures
 
 Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
@@ -244,8 +208,6 @@ For decals: texture list is parsed from `{GameDirectory}/renderer/decal_textures
 The rules of texture searching follow the same way as "BSP detail textures"
 
 * `r_wsurf_parallax_scale` controls the intensity (and direction if negative value is given) of parallax textures.
-
-* BSP parallax textures only work when `r_detailtextures` set to 1.
 
 ### BSP specular textures
 
@@ -261,11 +223,35 @@ The rules of texture searching follow the same way as "BSP detail textures"
 
 * Blue channel is not used yet.
 
-* BSP specular textures only work when `r_detailtextures` set to 1, and deferred shading pipeline available and enabled.
+## Sprite external file
+
+You may create a txt file named `[spritename]_external.txt` along with `[spritename].spr` file `[spritename]_external.txt` to override sprite properties without need to modify the content of `[spritename].spr` file itself.
+
+The content of `[spritename]_external.txt` looks like this:
+
+```
+{
+    "classname" "value"
+    "key2" "value2"
+    "key3" "value3"
+}
+```
+
+## Sprite texture replacement
+
+The following snippet replaces frame[0] of current sprite with `sprites/test.png`
+
+```
+{
+  "classname" "sprite_frame_texture"
+  "frame" "0"
+  “replacetexture” "sprites/test.png"
+}
+```
 
 ## StudioModel external file
 
-You may create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file `[modelname]_external.txt` to override studiomodel properties without need to modify the content of `[modelname].mdl` file.
+You may create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file `[modelname]_external.txt` to override studiomodel properties without need to modify the content of `[modelname].mdl` file itself.
 
 The content of `[modelname]_external.txt` looks like this:
 
@@ -797,6 +783,28 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 
 * Note that flags with `-STUDIO_SF_HIDE_LOWERBODY` means remove `STUDIO_SF_HIDE_LOWERBODY` from flags.
 
+## Networkable ViewEntity
+
+Networkable ViewEntity is an entity that attach to your local viewmodel. server will have full control over it.
+
+All you need to do is :
+
+1. Create a networkable entity with `pev.effects |= EF_VIEWMODEL`, `pev.aiment = pPlayer`, `pev.movetype = MOVETYPE_FOLLOW`.  Don't forget `#define EF_VIEWMODEL 0x4000 //or 16384 in decimal`
+
+2. Set a valid model for it (can be done with `SET_MODEL` from HLSDK or `g_EntityFuncs.SetModel` from Sven Co-op's angelscript system).
+
+3. Make sure the networkable entity is only visible to no one other than `pPlayer`. (can be achieved with `AddToFullPack_Post` hook)
+
+4. Make sure the number  `DEFINE_DELTA( effects, DT_INTEGER, 16, 1.0 ),` in `game_directory/delta.lst` >= 14. 
+
+* The default value in `cstrike/delta.lst` is `DEFINE_DELTA( effects, DT_INTEGER, 8, 1.0 ),` which means the maximum value it can transfer to client is 2^8=256. so 16384 is definitely too large in this case. You should change 8 to any number larger than 14 to make `EF_VIEWMODEL` work.
+
+* The default value in `svencoop/delta.lst` is `DEFINE_DELTA( effects, DT_INTEGER, 16, 1.0 ),` which means the maximum value it can transfer to client is 2^16=63356. so 16384 is good.
+
+<img width="999" height="321" alt="image" src="https://github.com/user-attachments/assets/f0380c5b-270b-43d1-854e-2996f4068d49" />
+
+<img width="1040" height="969" alt="image" src="https://github.com/user-attachments/assets/7986cd52-d837-40d6-b81d-83aa1b500695" />
+
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
 Brush surfaces, studio models and decals are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the geometry data reside in video memory rather than system memory and so it can be rendered directly by the video device.
@@ -966,7 +974,7 @@ GPU resources for brushmodels and world are streamed in worker thread instead of
 
 * Note that more CPU cores you have, faster the GPU resouces loading will be.
 
-`r_studio_lazy_load 0`: Load GPU resouces for all studio models at once when loading map. (May comsume more VRAM and system memory)
+`r_studio_lazy_load 0`: Load GPU resouces for all studio models at once when loading map. (May comsume more VRAM and system memory, and may cause Out-of-Memory error in extreme cases)
 
 `r_studio_lazy_load 1` (default): Load GPU resources for studio models only when they are being rendered. (Comsume less VRAM and system memory)
 
@@ -975,6 +983,10 @@ Resources for studiomodels are streamed in worker thread instead of main thread 
 * Note that `r_studio_lazy_load 1` makes studiomodels invisible at first few frames until all necessary GPU resources arrive.
 
 * Note that with `r_studio_lazy_load 0`, VRAM and system memory comsumption can be very crazy if server precaches too many studiomodels even without actually using them.
+
+`r_studio_parallel_load 0` (default): Disable multi-threaded loading for studiomodel.
+
+`r_studio_parallel_load 1`: Enable multi-threaded loading for studiomodel. (Warning: may consume more system memory, and may cause Out-of-Memory error in extreme cases)
 
 # New Entities
 
