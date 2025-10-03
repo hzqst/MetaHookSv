@@ -42,7 +42,7 @@ uniform vec2 r_framerate_numframes;
 uniform vec2 r_nearplaneclip;
 
 // Input from geometry shader (if enabled) or vertex shader (if not)
-#ifdef STUDIO_MULTIVIEW_ENABLED
+#if defined(MULTIVIEW_ENABLED)
 	// When geometry shader is enabled, input comes from geometry shader with g_ prefix
 	#define v_worldpos g_worldpos
 	#define v_normal g_normal
@@ -754,6 +754,8 @@ void main(void)
 			discard;
 
 	#endif
+	
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 
 #if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED) && !defined(GLOW_COLOR_ENABLED)
 
@@ -765,8 +767,6 @@ void main(void)
 
 	float flNormalMask = 0.0;
 	
-	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
-
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
 	#if defined(CLIP_NEARPLANE_ENABLED)
@@ -858,7 +858,13 @@ void main(void)
 			discard;
 	#endif
 
-	out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+	#if defined(LINEAR_DEPTH_ENABLED)
+		float newDepth = flDistanceToFragment / GetCameraZFar(GetCameraViewIndex());
+
+		gl_FragDepth = newDepth;
+	#endif
+
+	out_Diffuse = vec4(flDistanceToFragment, 0.0, 0.0, 1.0);
 
 #elif defined(GLOW_COLOR_ENABLED)
 

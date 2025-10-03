@@ -405,3 +405,4 @@ void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel);
 #define WSURF_LINEAR_FOG_SHIFT_ENABLED		0x8000000ull
 #define WSURF_REVERT_NORMAL_ENABLED			0x10000000ull
 #define WSURF_MULTIVIEW_ENABLED				0x20000000ull
+#define WSURF_LINEAR_DEPTH_ENABLED			0x40000000ull

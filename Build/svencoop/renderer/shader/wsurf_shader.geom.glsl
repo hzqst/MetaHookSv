@@ -8,7 +8,7 @@
 layout(triangles) in;
 
 // Output configuration
-#ifdef WSURF_MULTIVIEW_ENABLED
+#ifdef MULTIVIEW_ENABLED
 	// Maximum vertices: 3 per triangle * 6 views (for cubemap shadow)
 	layout(triangle_strip, max_vertices = 18) out;
 #else
@@ -60,7 +60,7 @@ out vec4 g_projpos;
 
 void main()
 {
-#ifdef WSURF_MULTIVIEW_ENABLED
+#if defined(MULTIVIEW_ENABLED)
 	// Render to multiple views (for cubemap shadow or CSM)
 	int numViews = CameraUBO.numViews;
 	

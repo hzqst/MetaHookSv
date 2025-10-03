@@ -1485,24 +1485,24 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_GLOW_STENCIL_ENABLED)
 			defs << "#define GLOW_STENCIL_ENABLED\n";
 
-	if (state & STUDIO_GLOW_COLOR_ENABLED)
-		defs << "#define GLOW_COLOR_ENABLED\n";
+		if (state & STUDIO_GLOW_COLOR_ENABLED)
+			defs << "#define GLOW_COLOR_ENABLED\n";
 
-	if (state & STUDIO_MULTIVIEW_ENABLED)
-		defs << "#define STUDIO_MULTIVIEW_ENABLED\n";
+		if (state & STUDIO_MULTIVIEW_ENABLED)
+			defs << "#define MULTIVIEW_ENABLED\n";
 
-	auto def = defs.str();
+		auto def = defs.str();
 
-	CCompileShaderArgs args;
-	args.vsfile = "renderer\\shader\\studio_shader.vert.glsl";
-	if (state & STUDIO_MULTIVIEW_ENABLED)
-		args.gsfile = "renderer\\shader\\studio_shader.geom.glsl";
-	args.fsfile = "renderer\\shader\\studio_shader.frag.glsl";
-	args.vsdefine = def.c_str();
-	args.gsdefine = def.c_str();
-	args.fsdefine = def.c_str();
+		CCompileShaderArgs args;
+		args.vsfile = "renderer\\shader\\studio_shader.vert.glsl";
+		if (state & STUDIO_MULTIVIEW_ENABLED)
+			args.gsfile = "renderer\\shader\\studio_shader.geom.glsl";
+		args.fsfile = "renderer\\shader\\studio_shader.frag.glsl";
+		args.vsdefine = def.c_str();
+		args.gsdefine = def.c_str();
+		args.fsdefine = def.c_str();
 
-	prog.program = R_CompileShaderFileEx(&args);
+		prog.program = R_CompileShaderFileEx(&args);
 		
 		if (prog.program)
 		{
@@ -1592,6 +1592,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_GLOW_STENCIL_ENABLED			,"STUDIO_GLOW_STENCIL_ENABLED"				},
 { STUDIO_GLOW_COLOR_ENABLED				,"STUDIO_GLOW_COLOR_ENABLED"				},
 { STUDIO_MULTIVIEW_ENABLED				,"STUDIO_MULTIVIEW_ENABLED"					},
+{ STUDIO_LINEAR_DEPTH_ENABLED			,"STUDIO_LINEAR_DEPTH_ENABLED"				},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2463,11 +2464,6 @@ void R_StudioDrawMesh_DrawPass(
 
 	program_state_t StudioProgramState = flags;
 
-	if (r_draw_multiview)
-	{
-		StudioProgramState |= STUDIO_MULTIVIEW_ENABLED;
-	}
-
 	if (R_IsRenderingShadowView())
 	{
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
@@ -2612,6 +2608,16 @@ void R_StudioDrawMesh_DrawPass(
 		r_drawlowerbodyclipfar->value >= r_drawlowerbodyclipnear->value)
 	{
 		StudioProgramState |= STUDIO_CLIP_NEARPLANE_ENABLED;
+	}
+
+	if (R_IsRenderingMultiView())
+	{
+		StudioProgramState |= STUDIO_MULTIVIEW_ENABLED;
+	}
+
+	if (R_IsRenderingLinearDepth())
+	{
+		StudioProgramState |= STUDIO_LINEAR_DEPTH_ENABLED;
 	}
 
 	if (R_IsRenderingWaterView())

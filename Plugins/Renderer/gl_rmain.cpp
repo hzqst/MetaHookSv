@@ -257,6 +257,11 @@ bool r_draw_multiview = false;
 bool r_draw_nofrustumcull = false;
 
 /*
+	Purpose: Write linear depth into depth buffer
+*/
+bool r_draw_lineardepth = false;
+
+/*
 	Purpose: Indicates that we are in R_PreDrawViewModel
 */
 bool r_draw_previewmodel = false;
@@ -557,6 +562,24 @@ bool R_IsRenderingGlowStencil()
 bool R_IsRenderingGlowColor()
 {
 	return r_draw_glowcolor;
+}
+
+/*
+	Purpose: Check if we are rendering multi-view. use geometry shader to emit vertex for each view.
+*/
+
+bool R_IsRenderingMultiView()
+{
+	return r_draw_multiview;
+}
+
+/*
+	Purpose: Check if we are rendering linear depth into depth buffer
+*/
+
+bool R_IsRenderingLinearDepth()
+{
+	return r_draw_lineardepth;
 }
 
 /*
@@ -3761,7 +3784,7 @@ void R_SetFrustum(float xfov, float yfov, float right, float top)
 
 void R_SetFrustum(void)
 {
-	if (r_draw_multiview)
+	if (R_IsRenderingMultiView())
 		return;
 
 	float xfov = r_xfov_currentpass;
@@ -3913,7 +3936,7 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	if (!r_draw_multiview)
+	if (!R_IsRenderingMultiView())
 	{
 		r_viewport[0] = v0 + glx;
 		r_viewport[1] = v3 + gly;
@@ -4013,7 +4036,7 @@ void R_SetupGL(void)
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 
-	if (!r_draw_multiview)
+	if (!R_IsRenderingMultiView())
 	{
 		for (int i = 0; i < 16; i += 4)
 		{

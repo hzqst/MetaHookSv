@@ -203,12 +203,12 @@ struct camera_view_t {
 	mat4 projMatrix;
 	mat4 invWorldMatrix;
 	mat4 invProjMatrix;
-	vec4 viewport;
 	vec4 frustum[4];
+	vec4 viewport;
 	vec4 viewpos;
 	vec4 vpn;
-	vec4 vright;
-	vec4 vup;
+	vec4 vright_znear;
+	vec4 vup_zfar;
 };
 
 struct camera_ubo_t {
@@ -361,13 +361,39 @@ vec3 GetCameraVForward(uint cameraIndex)
 
 vec3 GetCameraVRight(uint cameraIndex)
 {
-	return CameraUBO.views[cameraIndex].vright.xyz;
+	return CameraUBO.views[cameraIndex].vright_znear.xyz;
 }
 
 vec3 GetCameraVUp(uint cameraIndex)
 {
-	return CameraUBO.views[cameraIndex].vup.xyz;
+	return CameraUBO.views[cameraIndex].vup_zfar.xyz;
 }
+
+float GetCameraZNear(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].vright_znear.w;
+}
+
+float GetCameraZFar(uint cameraIndex)
+{
+	return CameraUBO.views[cameraIndex].vup_zfar.w;
+}
+
+#if defined(IS_FRAGMENT_SHADER) && defined(MULTIVIEW_ENABLED)
+
+int GetCameraViewIndex()
+{
+	return gl_Layer;
+}
+
+#else
+
+int GetCameraViewIndex()
+{
+	return 0;
+}
+
+#endif
 
 #if defined(OIT_BLEND_ENABLED)
 

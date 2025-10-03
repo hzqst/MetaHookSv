@@ -18,7 +18,7 @@ layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_2) uniform sampler2DArray lightmapT
 layout(binding = WSURF_BIND_LIGHTMAP_TEXTURE_3) uniform sampler2DArray lightmapTexArray_3;
 
 // Input from geometry shader (if enabled) or vertex shader (if not)
-#ifdef WSURF_MULTIVIEW_ENABLED
+#if defined(MULTIVIEW_ENABLED)
 	// When geometry shader is enabled, input comes from geometry shader with g_ prefix
 	#define v_worldpos g_worldpos
 	#define v_normal g_normal
@@ -337,8 +337,13 @@ float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 
 #if defined(SHADOW_CASTER_ENABLED)
 
-	out_Diffuse.xyz = v_worldpos.xyz;
-	out_Diffuse.w = gl_FragCoord.z;
+	#if defined(LINEAR_DEPTH_ENABLED)
+		float newDepth = flDistanceToFragment / GetCameraZFar(GetCameraViewIndex());
+
+		gl_FragDepth = newDepth;
+	#endif
+
+	out_Diffuse = vec4(flDistanceToFragment, 0.0, 0.0, 1.0);
 
 #else
 

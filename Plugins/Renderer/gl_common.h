@@ -263,12 +263,12 @@ typedef struct camera_view_s
 	mat4 projMatrix{};
 	mat4 invWorldMatrix{};
 	mat4 invProjMatrix{};
-	vec4_t viewport{};
 	vec4_t frustum[4]{};
+	vec4_t viewport{};
 	vec4_t viewpos{};
 	vec4_t vpn{};
-	vec4_t vright{};
-	vec4_t vup{};
+	vec4_t vright_znear{};
+	vec4_t vup_zfar{};
 }camera_view_t;
 
 typedef struct camera_ubo_s

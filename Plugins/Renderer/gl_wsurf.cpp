@@ -198,6 +198,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LINEAR_FOG_SHIFT_ENABLED	,"WSURF_LINEAR_FOG_SHIFT_ENABLED"},
 { WSURF_REVERT_NORMAL_ENABLED		,"WSURF_REVERT_NORMAL_ENABLED"},
 { WSURF_MULTIVIEW_ENABLED			,"WSURF_MULTIVIEW_ENABLED"},
+{ WSURF_LINEAR_DEPTH_ENABLED		,"WSURF_LINEAR_DEPTH_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -316,7 +317,10 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 			defs << "#define REVERT_NORMAL_ENABLED\n";
 
 		if (state & WSURF_MULTIVIEW_ENABLED)
-			defs << "#define WSURF_MULTIVIEW_ENABLED\n";
+			defs << "#define MULTIVIEW_ENABLED\n";
+
+		if (state & WSURF_LINEAR_DEPTH_ENABLED)
+			defs << "#define LINEAR_DEPTH_ENABLED\n";
 
 	auto def = defs.str();
 
@@ -2195,6 +2199,21 @@ void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* p
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
+	if (R_IsRenderingMultiView())
+	{
+		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+	}
+
+	if (R_IsRenderingLinearDepth())
+	{
+		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
+	}
+
+	if (R_IsRenderingLinearDepth())
+	{
+		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
+	}
+
 	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -2202,11 +2221,6 @@ void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* p
 	else if (g_bPortalClipPlaneEnabled[0])
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
-	}
-
-	if (r_draw_multiview)
-	{
-		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 	}
 
 	GL_BindVAO(pShadowProxyModel->hVAO);
@@ -2273,6 +2287,16 @@ void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
+	if (R_IsRenderingMultiView())
+	{
+		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+	}
+
+	if (R_IsRenderingLinearDepth())
+	{
+		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
+	}
+
 	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -2280,11 +2304,6 @@ void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 	else if (g_bPortalClipPlaneEnabled[0])
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
-	}
-
-	if (r_draw_multiview)
-	{
-		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 	}
 
 	glDisable(GL_CULL_FACE);
@@ -2396,6 +2415,16 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
+		if (R_IsRenderingMultiView())
+		{
+			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+		}
+
+		if (R_IsRenderingLinearDepth())
+		{
+			WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
+		}
+
 		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
@@ -2458,11 +2487,6 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
 		{
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
-		}
-
-		if (r_draw_multiview)
-		{
-			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
 		}
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
@@ -2688,9 +2712,14 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
-		if (r_draw_multiview)
+		if (R_IsRenderingMultiView())
 		{
 			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+		}
+
+		if (R_IsRenderingLinearDepth())
+		{
+			WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
 		}
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
@@ -2818,9 +2847,14 @@ void R_DrawWorldSurfaceLeafSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pL
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
 
-	if (r_draw_multiview)
+	if (R_IsRenderingMultiView())
 	{
 		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+	}
+
+	if (R_IsRenderingLinearDepth())
+	{
+		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
 	}
 
 	R_DrawWorldSurfaceLeafBegin(pLeaf);
@@ -4424,13 +4458,16 @@ void R_SetupCameraView(camera_view_t *view)
 	memcpy(view->frustum[3], r_frustum_origin[3], sizeof(vec3_t));
 	memcpy(view->viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
 	memcpy(view->vpn, vpn, sizeof(vec3_t));
-	memcpy(view->vright, vright, sizeof(vec3_t));
-	memcpy(view->vup, vup, sizeof(vec3_t));
+	memcpy(view->vright_znear, vright, sizeof(vec3_t));
+	memcpy(view->vup_zfar, vup, sizeof(vec3_t));
+
+	view->vright_znear[3] = r_znear;
+	view->vup_zfar[3] = r_zfar;
 }
 
 void R_UploadCameraUBO()
 {
-	if (r_draw_multiview)
+	if (R_IsRenderingMultiView())
 		return;
 
 	camera_ubo_t CameraUBO{};
