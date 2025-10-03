@@ -1018,31 +1018,29 @@ You can use console command `r_reload` to reload entities from both two sources.
 
 You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP file or write entities into `/maps/(MapName)_entity.txt`.
 
-## env_shadow_control
+## env_shadow_proxy
 
-`env_shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
+`env_shadow_proxy` is a point entity used to set shadow proxy geometry for BSP models.
+
+The following snippet is used to load "maps/de_dust2_shadow.obj" as the shadow proxy geometry for the `de_dust2.bsp` map.
+
+```
+{
+    "classname" "env_shadow_proxy"
+    "model" "maps/de_dust2.bsp"
+    "objpath" "maps/de_dust2_shadow.obj"
+}
+```
+
+## env_deferredlighting_control
+
+`env_deferredlighting_control` is a point entity used to control specific parameters under the deferred rendering pipeline.
 
 ### Keyvalues
 
-`angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
+`lightmap_pow` is used to flatten the brightness of lightmap (bringing bright and dark areas to the same level). For example `"lightmap_pow" "0.2"`. The closer the value is to 0, the stronger the flattening effect; when set to 1, it has no effect.
 
-`distfade` is the distance where the shadow begins to fade-out, and the maximum distance the shadow is allowed to cast, in inches. for example `"distfade" "64 128"`
-
-`lumfade` is the luminance the shadow begins to fade-out, and minimum luminance the shadow is allowed to cast, must be between 0 ~ 255. for example `"lumfade" "64 32"`
-
-`color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
-
-`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `"high_distance" "400"`
-
-`high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `"high_scale" "4"`
-
-`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map, in inches. for example `"medium_distance" "800"`
-
-`medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `"medium_scale" "2"`
-
-`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `"low_distance" "1200"`
-
-`low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
+`lightmap_scale` is used to scale the lightmap that has been adjusted by `lightmap_pow`, used to simulate ambient light/indirect lighting. For example `"lightmap_scale" "0.2"`.
 
 ## env_ssr_control
 

@@ -47,49 +47,18 @@ HDR (高动态范围) 模拟了超出显示器所能显示的亮度范围，将�
 
 ## 水面渲染
 
-水面将拥有简单的反射和折射效果
+水面着色器创建具有真实反射和折射效果的水面。
 
-水面可选择“可反射”和“传统”两种渲染模式
+所有水面分为两种类型：反射水面和传统水面。
 
-“可反射的水面”会实时反射水面上的物体，并折射水面下的物理。该功能需要渲染整个世界两次，所以有一定的性能开销，请根据掉帧严重程度自行斟酌是否开启！
+反射水面使用平面反射技术实时反射和折射整个世界，基本上需要渲染整个场景两次，而传统水面只使用基础纹理进行渲染，就像原版GoldSrc中的一样。
 
-“传统水面”则只会使用基础纹理进行渲染，就像原版GoldSrc中的一样。
-
-反射等级和渲染参数可以使用[env_water_control](RendererCN.md#env_water_control)进行配置。
+反射等级和着色器参数可以使用[env_water_control](RendererCN.md#env_water_control)进行配置。
 
 ### 控制台参数
 
-`r_water` 设为1启用“可反射的水面”。
+`r_water` 设为1启用水面着色器。
 
-## 逐对象阴影
-
-逐对象阴影只会由模型进行投射 (玩家, 怪物, 武器盒, 尸体, 其他一些模型), 并且只会投射在固体表面. 逐对象阴影是实时计算的, 所以有一定的性能开销，请根据掉帧严重程度自行斟酌是否开启！
-
-* 动态阴影有时候会穿过它本不该穿过的墙和地面，从而暴露玩家或NPC的位置。
-
-### 控制台参数
-
-`r_shadow` 设为1启用逐对象阴影
-
-`r_shadow_angles` 控制阴影投射的角度, 以PitchYawRoll的格式. 举例： `r_shadow_angles "90 0 0"`
-
-`r_shadow_color` 控制阴影的颜色, 以 RGBA8 的格式. 举例： `r_shadow_color "0 0 0 128"`
-
-`r_shadow_distfade` 控制阴影开始淡出的距离，以及阴影的最大投射距离，单位为游戏内的距离单位. 举例：`r_shadow_distfade 64 128`
-
-`r_shadow_lumfade` 控制阴影开始淡出的环境亮度, 以及阴影允许投射的最小环境亮度, 必须在 0 至 255 之间. 举例 `r_shadow_lumfade 64 32`
-
-`r_shadow_high_distance` 该距离内的实体使用高质量的阴影贴图. 举例： `r_shadow_high_distance 400`
-
-`r_shadow_high_scale` 控制渲染高质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_high_scale 4`
-
-`r_shadow_medium_distance` 该距离内的实体使用中等质量的阴影贴图. 举例： `r_shadow_medium_distance 800`
-
-`r_shadow_medium_scale` 控制渲染中等质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_medium_scale 2`
-
-`r_shadow_low_distance` 该距离内的实体使用低质量的阴影贴图. 举例： `r_shadow_low_distance 1200`
-
-`r_shadow_low_scale` 控制渲染低质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_low_scale 0.5`
 
 ## 屏幕空间环境光遮蔽
 
@@ -195,7 +164,6 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 细节贴图是一种将高分辨率外部图片 （支持格式: BMP, TGA, DDS, JPG, PNG）与基础贴图混合来提升纹理细节的效果。
 
-`r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
 
 贴图列表会自动从文件 `/maps/{MapName}_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
 
@@ -225,7 +193,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * BSP法线贴图只会改变固体表面的法线朝向, 因此只在被动态光源和手电筒照亮的表面起作用。
 
-* BSP法线贴图只有在 `r_detailtextures` 设为 1，延迟渲染管线可用且启用时才会生效。
+* BSP法线贴图只有在延迟渲染管线可用且启用时才会生效。
 
 ### BSP视差贴图
 
@@ -239,7 +207,6 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 控制台参数 `r_wsurf_parallax_scale` 可以用于控制视差(凹陷/突起)效果的最大强度（果为负则改变凹陷/突起的方向）。
 
-* BSP视差贴图只有在 `r_detailtextures` 设为 1 时有效。
 
 ### BSP高光贴图
 
@@ -255,7 +222,43 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 蓝色分量暂时未使用。
 
-* BSP高光贴图只有在 `r_detailtextures` 设为 1，延迟渲染管线可用且启用时才会生效。
+* BSP高光贴图只有在延迟渲染管线可用且启用时才会生效。
+
+## Sprite外部文件
+
+你可以创建一个名为 `[spritename]_external.txt` 的文本文件，与 `[spritename].spr` 文件放在同一目录下，用于覆盖sprite属性，而无需修改 `[spritename].spr` 文件本身。
+
+`[spritename]_external.txt` 文件的内容如下所示：
+
+```
+{
+    "classname" "value"
+    "key2" "value2"
+    "key3" "value3"
+}
+```
+
+## Sprite贴图替换
+
+以下代码片段将当前sprite的第0帧替换为 `sprites/test.png`：
+
+```
+{
+  "classname" "sprite_frame_texture"
+  "frame" "0"
+  "replacetexture" "sprites/test.png"
+}
+```
+
+## Sprite高级特效
+
+当前sprite不应用bloom效果：
+```
+{
+  "classname" "sprite_efx"
+  "flags" "FMODEL_NOBLOOM"
+}
+```
 
 ## StudioModel 外部文件
 
@@ -777,6 +780,24 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 注意：带有 `-STUDIO_SF_HIDE_LOWERBODY` 的标志表示从标志中移除 `STUDIO_SF_HIDE_LOWERBODY`。
 
+## 由服务器控制的第一人称武器实体
+
+可网络化的视图实体是一个附加到本地视图模型的实体，服务器将完全控制它。
+
+你需要做的就是：
+
+1. 创建一个可网络化的实体，设置 `pev.effects |= EF_VIEWMODEL`，`pev.aiment = pPlayer`，`pev.movetype = MOVETYPE_FOLLOW`。不要忘记 `#define EF_VIEWMODEL 0x4000 //或十进制16384`
+
+2. 为它设置一个有效的模型（可以通过HLSDK的`SET_MODEL`或Sven Co-op的angelscript系统的`g_EntityFuncs.SetModel`来完成）。
+
+3. 确保可网络化实体只对`pPlayer`可见，对其他人都不可见。（可以通过`AddToFullPack_Post`钩子来实现）
+
+4. 确保`game_directory/delta.lst`中的数字`DEFINE_DELTA( effects, DT_INTEGER, 16, 1.0 ),` >= 14。
+
+* `cstrike/delta.lst`中的默认值是`DEFINE_DELTA( effects, DT_INTEGER, 8, 1.0 ),`，这意味着它可以传输到客户端的最大值是2^8=256。所以16384在这种情况下肯定太大了。你应该将8改为任何大于14的数字来使`EF_VIEWMODEL`工作。
+
+* `svencoop/delta.lst`中的默认值是`DEFINE_DELTA( effects, DT_INTEGER, 16, 1.0 ),`，这意味着它可以传输到客户端的最大值是2^16=63356。所以16384是好的。
+
 ## 顶点缓冲对象 (又称 VBO) 批量绘制优化
 
 固体、模型、印花和Sprite均使用VBO进行渲染。渲染所需的顶点数据等信息都会提前保存在显存中，而非像原版一样每帧都从内存中重新提交到GPU，极大提升了绘制效率。
@@ -954,6 +975,10 @@ WEBP (RGB8 / RGBA8)
 
 * 需要注意的是如果禁用懒加载( `r_studio_lazy_load 0`)，那么在服务器预缓存了大量模型的情况下，即便服务器根本没有使用这些模型，这些模型也会被预先加载至GPU。这会极大增加显存和系统内存消耗，甚至导致内存不足错误。
 
+`r_studio_parallel_load 0` (默认): 禁用模型的多线程加载。
+
+`r_studio_parallel_load 1`: 启用模型的多线程加载。（警告：可能会消耗更多系统内存，在极端情况下可能导致内存不足错误）
+
 # 新的实体
 
 实体从两个来源加载：内部和外部。当前地图的BSP实体块作为内部加载，`/maps/(CurrentMapName)_entity.txt`作为外部加载。
@@ -974,31 +999,29 @@ WEBP (RGB8 / RGBA8)
 
 你可以使用[bspguy](https://github.com/wootguy/bspguy)向BSP文件添加实体或将实体写入`/maps/(MapName)_entity.txt`。
 
-## env_shadow_control
+## env_shadow_proxy
 
-`env_shadow_control`是一个点实体，用于控制整个地图的动态阴影投射，包括最大投射距离、投射方向和阴影颜色。
+`env_deferredlighting_control`是一个点实体，用于为BSP模型设置阴影代理几何体。
+
+以下片段用于加载 "maps/de_dust2_shadow.obj" 作为 `de_dust2.bsp` 这张地图的阴影代理几何体。
+
+```
+{
+    "classname" "env_shadow_proxy"
+    "model" "maps/de_dust2.bsp"
+    "objpath" "maps/de_dust2_shadow.obj"
+}
+```
+
+## env_deferredlighting_control
+
+`env_deferredlighting_control`是一个点实体，用于控制延迟渲染管线下的特定参数。
 
 ### 键值
 
-`angles`是阴影的方向，以PitchYawRoll格式。例如`"angles" "90 0 0"`
+`lightmap_pow` 用于把lightmap的亮度拉平（把亮部和暗部拉到一个水平上）。例如`"lightmap_pow" "0.2"`。值越接近0，拉平的程度越强，为1时不做任何影响。
 
-`distfade`是阴影开始淡出的距离，以及阴影允许投射的最大距离，以英寸为单位。例如`"distfade" "64 128"`
-
-`lumfade`是阴影开始淡出的亮度，以及阴影允许投射的最小亮度，必须在0到255之间。例如`"lumfade" "64 32"`
-
-`color`是阴影的颜色，以RGBA8格式。例如`"color" "0 0 0 128"`
-
-`high_distance`是实体在高质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"high_distance" "400"`
-
-`high_scale`是缩放高质量阴影贴图中实体模型大小的缩放因子。例如`"high_scale" "4"`
-
-`medium_distance`是实体在中等质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"medium_distance" "800"`
-
-`medium_scale`是缩放中等质量阴影贴图中实体模型大小的缩放因子。例如`"medium_scale" "2"`
-
-`low_distance`是实体在低质量阴影贴图中渲染的最大距离，以英寸为单位。例如`"low_distance" "1200"`
-
-`low_scale`是缩放低质量阴影贴图中实体模型大小的缩放因子。例如`"low_scale" "0.5"`
+`lightmap_scale` 用于 被 `lightmap_pow` 调整过的ligthmap进行整体缩放，用于模拟环境光/间接光照。例如`"lightmap_scale" "0.2"`。
 
 ## env_ssr_control
 
@@ -1060,14 +1083,12 @@ WEBP (RGB8 / RGBA8)
 |        ----                          | ----                                                         |
 | "level" "0"                          | 渲染为传统水面                                                |
 | "level" "WATER_LEVEL_LEGACY"         | 渲染为传统水面                                                |
-| "level" "1"                          | 反射天空盒和世界                                              |
-| "level" "WATER_LEVEL_REFLECT_SKYBOX" | 反射天空盒和世界                                              |
-| "level" "2"                          | 反射天空盒和世界                                              |
-| "level" "WATER_LEVEL_REFLECT_WORLD"  | 反射天空盒和世界                                              |
-| "level" "3"                          | 反射天空盒、世界、实体和粒子                                   |
-| "level" "WATER_LEVEL_REFLECT_ENTITY" | 反射天空盒、世界、实体和粒子                                   |
-| "level" "4"                          | 使用SSR反射，仅反射屏幕空间中的像素 (暂未实现)                  |
-| "level" "WATER_LEVEL_REFLECT_SSR"    | 使用SSR反射，仅反射屏幕空间中的像素 (暂未实现)                  |
+| "level" "1"                          | 天空盒将在反射中渲染                                           |
+| "level" "WATER_LEVEL_REFLECT_SKYBOX" | 天空盒将在反射中渲染                                           |
+| "level" "2"                          | 天空盒和世界将在反射中渲染                                     |
+| "level" "WATER_LEVEL_REFLECT_WORLD"  | 天空盒和世界将在反射中渲染                                     |
+| "level" "3"                          | 天空盒、世界、实体和粒子将在反射中渲染（昂贵）                 |
+| "level" "WATER_LEVEL_REFLECT_ENTITY" | 天空盒、世界、实体和粒子将在反射中渲染（昂贵）                 |
 | "level" "5"                          | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果               |
 | "level" "WATER_LEVEL_LEGACY_RIPPLE"  | 渲染为传统水面，软件模式风格，带有像素艺术波纹效果               |
 
@@ -1079,16 +1100,43 @@ WEBP (RGB8 / RGBA8)
 
 ### 键值
 
-`origin`是此实体在世界中的中心位置。例如`"origin" "123 456 789"`
+`origin`是光源位置。例如`"origin" "123 456 789"`
 
-`_light`是动态光源的RGB渲染颜色，必须在0到255之间。例如`"_light" "192 192 192"`
+`color`是动态光源的颜色，必须在0到255之间。例如`"color" "192 192 192"`
 
-`_distance`是光源允许投射的距离，以英寸为单位。例如`"_distance" "300"`
+`type`可以是"point"、"spot"或"directional"
 
-`_ambient`是动态光源的环境光强度。例如`"_ambient" "0.0"`
+`size`是动态光源的大小，以英寸为单位。例如`"size" "256"`
 
-`_diffuse`是动态光源的漫反射强度。例如`"_diffuse" "0.1"`
+`distance`是聚光灯允许投射的距离，以英寸为单位。例如`"distance" "3000"`（仅适用于聚光灯）
 
-`_specular`是动态光源的高光反射强度。例如`"_specular" "0.1"`
+`ambient`是动态光源的环境光强度。例如`"ambient" "0.0"`
 
-`_specularpow`是动态光源的高光反射强度。例如`"_specularpow" "10.0"`
+`diffuse`是动态光源的漫反射强度。例如`"diffuse" "0.1"`
+
+`specular`是动态光源的高光反射强度。例如`"specular" "0.1"`
+
+`specularpow`是动态光源的高光反射强度。例如`"specularpow" "10.0"`
+
+`shadow`是为此动态光源启用或禁用阴影。例如`"shadow" "1"`
+
+`static_shadow_size`是此动态光源的静态阴影纹理大小。例如`"static_shadow_size" "256"`。注意只有BSP世界会被烘焙到静态阴影中。
+
+`dynamic_shadow_size`是此动态光源的动态阴影纹理大小。例如`"dynamic_shadow_size" "256"`。
+
+示例：
+
+```
+{
+    "origin" "-30 68 72"
+    "size" "1024.0"
+    "color" "192 192 192"
+    "classname" "light_dynamic"
+    "type" "directional"
+    "ambient" "0.1"
+    "diffuse" "1.0"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+}
+```
