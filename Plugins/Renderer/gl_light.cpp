@@ -234,7 +234,6 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
 		SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
 		SHADER_UNIFORM(prog, u_cubeShadowTexel, "u_cubeShadowTexel");
-		SHADER_UNIFORM(prog, u_cubeShadowMatrices, "u_cubeShadowMatrices");
 		SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 		}
 
@@ -1134,12 +1133,6 @@ void R_LightShadingPass(void)
 					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
 				}
 
-				if (prog.u_cubeShadowMatrices != -1)
-				{
-					// Upload all 6 shadow matrices for cubemap faces
-					glUniformMatrix4fv(prog.u_cubeShadowMatrices, 6, GL_FALSE, (float*)pShadowTexture->GetShadowMatrix(0));
-				}
-
 				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
 			}
 
@@ -1209,12 +1202,6 @@ void R_LightShadingPass(void)
 			if (prog.u_cubeShadowTexel != -1)
 			{
 				glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
-			}
-
-			if (prog.u_cubeShadowMatrices != -1)
-			{
-				// Upload all 6 shadow matrices for cubemap faces
-				glUniformMatrix4fv(prog.u_cubeShadowMatrices, 6, GL_FALSE, (float*)pShadowTexture->GetShadowMatrix(0));
 			}
 
 			GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());

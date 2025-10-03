@@ -1491,6 +1491,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_MULTIVIEW_ENABLED)
 			defs << "#define MULTIVIEW_ENABLED\n";
 
+		if (state & STUDIO_LINEAR_DEPTH_ENABLED)
+			defs << "#define LINEAR_DEPTH_ENABLED\n";
+
 		auto def = defs.str();
 
 		CCompileShaderArgs args;

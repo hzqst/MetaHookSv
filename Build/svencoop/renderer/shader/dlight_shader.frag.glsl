@@ -38,7 +38,6 @@ uniform vec2 u_csmTexel;
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 uniform float u_cubeShadowTexel;
-uniform mat4 u_cubeShadowMatrices[6];
 #endif
 
 
@@ -286,31 +285,13 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 
-// Convert linear depth to non-linear depth (same as depth buffer)
-// This matches the perspective projection used in shadow pass
-// OpenGL uses NDC range [-1, 1], then maps to depth buffer [0, 1]
-float LinearToNonLinearDepth(float linearDepth, float zNear, float zFar)
+float CubeShadowCompareDepth(vec4 basecoord, vec2 offset, float texelSize)
 {
-    float fn = zFar - zNear;
-    float ndcDepth = (zFar + zNear) / fn - (2.0 * zFar * zNear) / (fn * linearDepth);
+    vec4 uv = basecoord;
     
-    // Map from NDC [-1, 1] to depth buffer [0, 1]
-    return ndcDepth * 0.5 + 0.5;
-}
-
-// Determine which cubemap face the direction belongs to
-// Returns: face index (0-5)
-int GetCubemapFace(vec3 dir)
-{
-    vec3 absDir = abs(dir);
-    float maxAxis = max(absDir.x, max(absDir.y, absDir.z));
+    uv.xy += basecoord.w * offset * texelSize;
     
-    if (maxAxis == absDir.x)
-        return (dir.x > 0.0) ? 0 : 1; // +X or -X
-    else if (maxAxis == absDir.y)
-        return (dir.y > 0.0) ? 2 : 3; // +Y or -Y
-    else
-        return (dir.z > 0.0) ? 4 : 5; // +Z or -Z
+    return texture(cubemapShadowTex, uv);
 }
 
 float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
@@ -323,25 +304,8 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     float zNear = 0.1;
     float zFar = u_lightradius;
     
-    // Early out for pixels very close to light source
-    if (distanceLightToWorld < zNear * 1.01)
-    {
-        return 1.0; // No shadow for pixels extremely close to light
-    }
-
-   // // Determine which cubemap face to use
-   // int faceIndex = GetCubemapFace(lightToWorldDir);
-   // 
-   // // Transform world position using the shadow matrix for this face
-   // vec4 shadowCoord = u_cubeShadowMatrices[faceIndex] * vec4(World, 1.0);
-   // 
-   // // Perspective divide
-   // shadowCoord.xyz /= shadowCoord.w;
-   // 
-   // // shadowCoord.z is now in [-1, 1] NDC range, convert to [0, 1] for depth buffer
-   // float shadowDepth = shadowCoord.z * 0.5 + 0.5;
-   // 
-    float shadowDepth = LinearToNonLinearDepth(distanceLightToWorld, zNear, zFar);
+    //We store linearDepth in cubeShadowTex
+    float linearDepth = distanceLightToWorld / zFar;
 
     // Calculate bias based on surface angle
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
@@ -351,8 +315,9 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Sample cubemap shadow texture
     // For cubemap, we use the direction + computed depth
-    vec4 cubeSampleCoord = vec4(lightToWorldDir, shadowDepth - bias);
-    float visibility = texture(cubemapShadowTex, cubeSampleCoord);
+    vec4 cubeSampleCoord = vec4(lightToWorldDir, linearDepth - bias);
+
+    float visibility = CubeShadowCompareDepth(cubeSampleCoord, vec2(0.0, 0.0), u_cubeShadowTexel);
     
     return visibility;
 }
