@@ -231,7 +231,6 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
 #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
 #define DLIGHT_PCF_ENABLED								0x400ull
-#define DLIGHT_PCSS_ENABLED								0x800ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull

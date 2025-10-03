@@ -198,7 +198,6 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		// #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
 		// #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
 		// #define DLIGHT_PCF_ENABLED								0x400ull
-		// #define DLIGHT_PCSS_ENABLED								0x800ull
 
 		if (state & DLIGHT_SPOT_ENABLED)
 			defs << "#define SPOT_ENABLED\n";
@@ -232,9 +231,6 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 
 		if (state & DLIGHT_PCF_ENABLED)
 			defs << "#define PCF_ENABLED\n";
-
-		if (state & DLIGHT_PCSS_ENABLED)
-			defs << "#define PCSS_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -334,7 +330,6 @@ const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
 { DLIGHT_CSM_SHADOW_TEXTURE_ENABLED					,"DLIGHT_CSM_SHADOW_TEXTURE_ENABLED" },
 { DLIGHT_PCF_ENABLED								,"DLIGHT_PCF_ENABLED" },
-{ DLIGHT_PCSS_ENABLED								,"DLIGHT_PCSS_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
