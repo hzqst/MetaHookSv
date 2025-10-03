@@ -28,10 +28,11 @@ public:
 	float specular{};
 	float specularpow{};
 	int shadow{};
-	int shadow_size{};
+	int dynamic_shadow_size{};
+	int static_shadow_size{};
 	int follow_player{};
-	std::shared_ptr<IShadowTexture> pShadowTexture;
-	std::shared_ptr<IShadowTexture> pCSMShadowTexture;
+	std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+	std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 };
 
 extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
@@ -78,10 +79,13 @@ typedef struct PointLightCallbackArgs_s
 	float specular;
 	float specularpow;
 
-	std::shared_ptr<IShadowTexture>* ppShadowTexture;
-	uint32_t shadowSize;
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
+	uint32_t dynamicShadowSize;
+	uint32_t staticShadowSize;
 
 	bool bVolume;
+	bool bStatic;
 }PointLightCallbackArgs;
 
 typedef void(*fnPointLightCallback)(PointLightCallbackArgs *args, void *context);
@@ -105,11 +109,13 @@ typedef struct SpotLightCallbackArgs_s
 	float specular;
 	float specularpow;
 
-	std::shared_ptr<IShadowTexture>* ppShadowTexture;
-	uint32_t shadowSize;
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
+	uint32_t dynamicShadowSize;
+	uint32_t staticShadowSize;
 
-	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
+	bool bStatic;
 	bool bIsFromLocalPlayer;
 }SpotLightCallbackArgs;
 
@@ -129,11 +135,13 @@ typedef struct DirectionalLightCallbackArgs_s
 	float specular;
 	float specularpow;
 
-	std::shared_ptr<IShadowTexture>* ppShadowTexture;
-	uint32_t shadowSize;
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
+	uint32_t dynamicShadowSize;
+	uint32_t staticShadowSize;
 
-	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
+	bool bStatic;
 }DirectionalLightCallbackArgs;
 
 typedef void(*fnDirectionalLightCallback)(DirectionalLightCallbackArgs* args, void* context);
@@ -158,15 +166,17 @@ typedef struct
 	int u_lightdiffuse;
 	int u_lightspecular;
 	int u_lightspecularpow;
-	int u_shadowtexel;
-	int u_shadowmatrix;
+	int u_lightSize;
 	int u_modelmatrix;
-	// DirectionalLight CSM specific uniforms
+	int u_staticShadowTexel;
+	int u_staticShadowMatrix;
+	int u_dynamicShadowTexel;
+	int u_dynamicShadowMatrix;
+	int u_staticCubemapShadowTexel;
+	int u_dynamicCubemapShadowTexel;
 	int u_csmMatrices;
 	int u_csmDistances;
 	int u_csmTexel;
-	int u_cubeShadowTexel;
-	int u_lightSize;
 }dlight_program_t;
 
 typedef struct
@@ -210,16 +220,18 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 
 #define GBUFFER_MASK_ALL			(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP | GBUFFER_MASK_WORLDNORM | GBUFFER_MASK_SPECULAR)
 
-#define DLIGHT_SPOT_ENABLED						0x1ull
-#define DLIGHT_POINT_ENABLED					0x2ull
-#define DLIGHT_VOLUME_ENABLED					0x4ull
-#define DLIGHT_CONE_TEXTURE_ENABLED				0x8ull
-#define DLIGHT_SHADOW_TEXTURE_ENABLED			0x10ull
-#define DLIGHT_DIRECTIONAL_ENABLED				0x20ull
-#define DLIGHT_CSM_ENABLED						0x40ull
-#define DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
-#define DLIGHT_PCF_ENABLED						0x100ull
-#define DLIGHT_PCSS_ENABLED						0x200ull
+#define DLIGHT_SPOT_ENABLED								0x1ull
+#define DLIGHT_POINT_ENABLED							0x2ull
+#define DLIGHT_VOLUME_ENABLED							0x4ull
+#define DLIGHT_CONE_TEXTURE_ENABLED						0x8ull
+#define DLIGHT_DIRECTIONAL_ENABLED						0x10ull
+#define DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED			0x20ull
+#define DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED			0x40ull
+#define DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
+#define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
+#define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
+#define DLIGHT_PCF_ENABLED								0x400ull
+#define DLIGHT_PCSS_ENABLED								0x800ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull

@@ -10,7 +10,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "8192"
+    "static_shadow_size" "8192"
+    "dynamic_shadow_size" "4096"
     "follow_player" "0"
 }
 {
@@ -25,7 +26,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "256"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
     "follow_player" "0"
 }
 {
@@ -40,7 +42,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "256"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
     "follow_player" "0"
 }
 {
@@ -55,7 +58,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "256"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
     "follow_player" "0"
 }
 {
@@ -70,7 +74,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "256"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
     "follow_player" "0"
 }
 {
@@ -85,7 +90,8 @@
     "specular" "1.0"
     "specularpow" "10.0"
     "shadow" "1"
-    "shadow_size" "256"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
     "follow_player" "0"
 }
 {

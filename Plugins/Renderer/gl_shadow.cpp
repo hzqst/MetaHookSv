@@ -432,25 +432,146 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-			if (args->ppShadowTexture && args->shadowSize > 0)
-			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsCubemap() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
+				if (args->ppStaticShadowTexture && args->staticShadowSize > 0)
 				{
-					(*args->ppShadowTexture) = R_CreateCubemapShadowTexture(args->shadowSize, false);
+					if ((*args->ppStaticShadowTexture) == nullptr ||
+						(*args->ppStaticShadowTexture)->IsCubemap() != true ||
+						(*args->ppStaticShadowTexture)->IsStatic() != true ||
+						(*args->ppStaticShadowTexture)->GetTextureSize() != args->staticShadowSize)
+					{
+						(*args->ppStaticShadowTexture) = R_CreateCubemapShadowTexture(args->staticShadowSize, true);
+					}
+
+					if ((*args->ppStaticShadowTexture) && !(*args->ppStaticShadowTexture)->IsReady())
+					{
+						r_draw_shadowview = true;
+						r_draw_multiview = true;
+						r_draw_nofrustumcull = true;
+						r_draw_lineardepth = true;
+
+						g_pCurrentShadowTexture = (*args->ppStaticShadowTexture);
+
+						g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+
+						GL_BeginDebugGroup("PointlightStaticShadowPass");
+
+						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+						glDrawBuffer(GL_NONE);
+						glReadBuffer(GL_NONE);
+
+						glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+						GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+						R_PushRefDef();
+
+						r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
+						r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
+						r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
+						r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
+
+						glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+
+						// Calculate 6 faces for cubemap shadow mapping
+						// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
+						const vec3_t cubemapAngles[] = {
+							{0, 0, 90},
+							{0, 180, 270},
+							{0, 90, 0},
+							{0, 270, 180},
+							{-90, 90, 0},
+							{90, 270, 0},
+						};
+
+						camera_ubo_t CameraUBO{};
+
+						CameraUBO.numViews = 6;
+
+						for (int i = 0; i < 6; ++i)
+						{
+							VectorCopy(args->origin, (*r_refdef.vieworg));
+							VectorCopy(cubemapAngles[i], (*r_refdef.viewangles));
+							R_UpdateRefDef();
+
+							R_LoadIdentityForProjectionMatrix();
+							R_SetupPerspective(90, 90, 0.1f, args->radius);
+
+							R_LoadIdentityForWorldMatrix();
+							R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
+
+							R_SetFrustum(90, 90, r_frustum_right, r_frustum_top);
+
+							auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+							auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+							mat4 shadowMatrix;
+							R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
+
+							g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
+							g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
+							g_pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
+
+							R_SetupCameraView(&CameraUBO.views[i]);
+						}
+
+						GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+
+						bool bAnyPolyRendered = false;
+
+						{
+							auto old_brush_polys = (*c_brush_polys);
+							(*c_brush_polys) = 0;
+
+							auto old_draw_classify = r_draw_classify;
+							r_draw_classify = DRAW_CLASSIFY_WORLD;
+
+							R_RenderScene();
+
+							bAnyPolyRendered = (*c_brush_polys) > 0 ? true : false;
+
+							r_draw_classify = old_draw_classify;
+							(*c_brush_polys) = old_brush_polys;
+						}
+
+						R_PopRefDef();
+
+						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+						r_draw_shadowview = false;
+						r_draw_multiview = false;
+						r_draw_nofrustumcull = false;
+						r_draw_lineardepth = false;
+
+						GL_EndDebugGroup();
+
+						g_pCurrentShadowTexture->SetReady(bAnyPolyRendered);
+
+						g_pCurrentShadowTexture = nullptr;
+					}
 				}
 
-				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
+			if (args->ppDynamicShadowTexture && args->dynamicShadowSize > 0)
+			{
+				if ((*args->ppDynamicShadowTexture) == nullptr ||
+					(*args->ppDynamicShadowTexture)->IsCubemap() != true ||
+					(*args->ppDynamicShadowTexture)->IsStatic() != false || 
+					(*args->ppDynamicShadowTexture)->GetTextureSize() != args->dynamicShadowSize)
+				{
+					(*args->ppDynamicShadowTexture) = R_CreateCubemapShadowTexture(args->dynamicShadowSize, false);
+				}
+
+				if ((*args->ppDynamicShadowTexture) && !(*args->ppDynamicShadowTexture)->IsReady())
 				{
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 					r_draw_lineardepth = true;
 
-					g_pCurrentShadowTexture = (*args->ppShadowTexture);
+					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
 					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawPointlightShadowPass");
+					GL_BeginDebugGroup("PointlightDynamicShadowPass");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
@@ -513,12 +634,20 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
+					//Only draw non-world stuffs when we have static shadow
+					if (args->bStatic)
 					{
 						auto old_draw_classify = r_draw_classify;
-						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
-						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
-						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+						r_draw_classify = DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER;
+
+						R_RenderScene();
+
+						r_draw_classify = old_draw_classify;
+					}
+					else
+					{
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify = DRAW_CLASSIFY_WORLD | DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER;
 
 						R_RenderScene();
 
@@ -545,23 +674,26 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
 		{
-			if (args->ppShadowTexture && args->shadowSize > 0)
+			if (args->ppDynamicShadowTexture && args->dynamicShadowSize > 0)
 			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
+				if ((*args->ppDynamicShadowTexture) == nullptr || 
+					(*args->ppDynamicShadowTexture)->IsSingleLayer() != true ||
+					(*args->ppDynamicShadowTexture)->IsStatic() != false || 
+					(*args->ppDynamicShadowTexture)->GetTextureSize() != args->dynamicShadowSize)
 				{
-					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(args->shadowSize, false);
+					(*args->ppDynamicShadowTexture) = R_CreateSingleShadowTexture(args->dynamicShadowSize, false);
 				}
 
-				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
+				if ((*args->ppDynamicShadowTexture) && !(*args->ppDynamicShadowTexture)->IsReady())
 				{
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
 
-					g_pCurrentShadowTexture = (*args->ppShadowTexture);
+					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
 					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawSpotlightShadowPass");
+					GL_BeginDebugGroup("DrawSpotlightDynamicShadowPass");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
@@ -609,32 +741,34 @@ void R_RenderShadowmapForDynamicLights(void)
 					CameraUBO.numViews = 1;
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
-					auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-					if (pLocalPlayer->model && args->bIsFromLocalPlayer)
 					{
-						auto old_draw_classify = r_draw_classify;
-						r_draw_classify &= ~DRAW_CLASSIFY_LOCAL_PLAYER;
-						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
-						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
-						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+						auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
 
-						R_RenderScene();
+						if (pLocalPlayer->model && args->bIsFromLocalPlayer)
+						{
+							auto old_draw_classify = r_draw_classify;
+							r_draw_classify &= ~DRAW_CLASSIFY_LOCAL_PLAYER;
+							r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+							r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+							r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+							r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 
-						r_draw_classify = old_draw_classify;
-					}
-					else
-					{
-						auto old_draw_classify = r_draw_classify;
-						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
-						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
-						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+							R_RenderScene();
 
-						R_RenderScene();
+							r_draw_classify = old_draw_classify;
+						}
+						else
+						{
+							auto old_draw_classify = r_draw_classify;
+							r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+							r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+							r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+							r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 
-						r_draw_classify = old_draw_classify;
+							R_RenderScene();
+
+							r_draw_classify = old_draw_classify;
+						}
 					}
 
 					R_PopRefDef();
@@ -655,14 +789,17 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
 		{
-			if (args->ppShadowTexture && args->shadowSize > 0)
+			if (args->ppStaticShadowTexture && args->staticShadowSize > 0)
 			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != true || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
+				if ((*args->ppStaticShadowTexture) == nullptr || 
+					(*args->ppStaticShadowTexture)->IsSingleLayer() != true || 
+					(*args->ppStaticShadowTexture)->IsStatic() != true ||
+					(*args->ppStaticShadowTexture)->GetTextureSize() != args->staticShadowSize)
 				{
-					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(args->shadowSize, true);
+					(*args->ppStaticShadowTexture) = R_CreateSingleShadowTexture(args->staticShadowSize, true);
 				}
 
-				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
+				if ((*args->ppStaticShadowTexture) && !(*args->ppStaticShadowTexture)->IsReady())
 				{
 					auto pWorldSurfaceModel = R_GetWorldSurfaceModel(*(cl_worldmodel));
 
@@ -670,11 +807,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 
-					g_pCurrentShadowTexture = (*args->ppShadowTexture);
+					g_pCurrentShadowTexture = (*args->ppStaticShadowTexture);
 
 					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightStatic");
+					GL_BeginDebugGroup("DrawDirectionalLightStaticShadow");
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
@@ -721,18 +858,22 @@ void R_RenderShadowmapForDynamicLights(void)
 					CameraUBO.numViews = 1;
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
-					auto old_brush_polys = (*c_brush_polys);
-					(*c_brush_polys) = 0;
+					bool bAnyPolyRendered = false;
 
-					auto old_draw_classify = r_draw_classify;
-					r_draw_classify = DRAW_CLASSIFY_WORLD;
-					
-					R_RenderScene();
+					{
+						auto old_brush_polys = (*c_brush_polys);
+						(*c_brush_polys) = 0;
 
-					bool bAnyPolyRendered = (*c_brush_polys) > 0 ? true : false;
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify = DRAW_CLASSIFY_WORLD;
 
-					r_draw_classify = old_draw_classify;
-					(*c_brush_polys) = old_brush_polys;
+						R_RenderScene();
+
+						bAnyPolyRendered = (*c_brush_polys) > 0 ? true : false;
+
+						r_draw_classify = old_draw_classify;
+						(*c_brush_polys) = old_brush_polys;
+					}
 
 					R_PopRefDef();
 
@@ -750,17 +891,20 @@ void R_RenderShadowmapForDynamicLights(void)
 				}
 			}
 
-			if (args->ppCSMShadowTexture)
+			if (args->ppDynamicShadowTexture)
 			{
 				// Allocate 4096x4096 CSM texture if not already allocated
-				if ((*args->ppCSMShadowTexture) == nullptr || (*args->ppCSMShadowTexture)->IsCascaded() != true || (*args->ppCSMShadowTexture)->IsStatic() != false || (*args->ppCSMShadowTexture)->GetTextureSize() != CSM_RESOLUTION)
+				if ((*args->ppDynamicShadowTexture) == nullptr || 
+					(*args->ppDynamicShadowTexture)->IsCascaded() != true ||
+					(*args->ppDynamicShadowTexture)->IsStatic() != false ||
+					(*args->ppDynamicShadowTexture)->GetTextureSize() != args->dynamicShadowSize)
 				{
-					(*args->ppCSMShadowTexture) = R_CreateCascadedShadowTexture(CSM_RESOLUTION, false);
+					(*args->ppDynamicShadowTexture) = R_CreateCascadedShadowTexture(args->dynamicShadowSize, false);
 				}
 
-				if ((*args->ppCSMShadowTexture) && !(*args->ppCSMShadowTexture)->IsReady())
+				if ((*args->ppDynamicShadowTexture) && !(*args->ppDynamicShadowTexture)->IsReady())
 				{
-					g_pCurrentShadowTexture = (*args->ppCSMShadowTexture);
+					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
@@ -798,9 +942,9 @@ void R_RenderShadowmapForDynamicLights(void)
 						g_pCurrentShadowTexture->SetCSMDistance(i, csmFar);
 					}
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, CSM_RESOLUTION, CSM_RESOLUTION);
+					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
 
-					GL_BeginDebugGroup("R_RenderShadowDynamicLights - DrawDirectionalLightCSM");
+					GL_BeginDebugGroup("DrawDirectionalLightDynamicCSM");
 
 					GL_BindFrameBuffer(&s_ShadowFBO);
 
@@ -882,13 +1026,15 @@ void R_RenderShadowmapForDynamicLights(void)
 					// Upload all views to UBO
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
-					auto old_draw_classify = r_draw_classify;
-					r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
+					{
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
 
-					// Render all cascades in a single draw call using multiview geometry shader
-					R_RenderScene();
+						// Render all cascades in a single draw call using multiview geometry shader
+						R_RenderScene();
 
-					r_draw_classify = old_draw_classify;
+						r_draw_classify = old_draw_classify;
+					}
 
 					R_PopRefDef();
 
@@ -933,14 +1079,9 @@ void R_RenderShadowMap_Start(void)
 	{
 		const auto& pDynamicLight = g_DynamicLights[i];
 
-		if (pDynamicLight->pShadowTexture && !pDynamicLight->pShadowTexture->IsStatic())
+		if (pDynamicLight->pDynamicShadowTexture)
 		{
-			pDynamicLight->pShadowTexture->SetReady(false);
-		}
-
-		if (pDynamicLight->pCSMShadowTexture && !pDynamicLight->pCSMShadowTexture->IsStatic())
-		{
-			pDynamicLight->pCSMShadowTexture->SetReady(false);
+			pDynamicLight->pDynamicShadowTexture->SetReady(false);
 		}
 	}
 }

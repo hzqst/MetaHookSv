@@ -5109,13 +5109,9 @@ void R_Reload_f(void)
 
 	for (const auto& pDynamicLight : g_DynamicLights)
 	{
-		if (pDynamicLight->pShadowTexture && pDynamicLight->pShadowTexture->IsStatic())
+		if (pDynamicLight->pDynamicShadowTexture)
 		{
-			pDynamicLight->pShadowTexture->SetReady(false);
-		}
-		if (pDynamicLight->pCSMShadowTexture && pDynamicLight->pCSMShadowTexture->IsStatic())
-		{
-			pDynamicLight->pCSMShadowTexture->SetReady(false);
+			pDynamicLight->pDynamicShadowTexture->SetReady(false);
 		}
 	}
 

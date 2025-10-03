@@ -13,33 +13,48 @@ layout(binding = DSHADE_BIND_STENCIL_TEXTURE) uniform usampler2D stencilTex;
 layout(binding = DSHADE_BIND_CONE_TEXTURE) uniform sampler2D coneTex;
 #endif
 
-#if defined(SHADOW_TEXTURE_ENABLED)
-layout(binding = DSHADE_BIND_SHADOWMAP_TEXTURE) uniform sampler2DShadow shadowTex;
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_STATIC_SHADOW_TEXTURE) uniform sampler2DShadow staticShadowTex;
 #endif
 
-#if defined(CSM_ENABLED)
+#if defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_DYNAMIC_SHADOW_TEXTURE) uniform sampler2DShadow dynamicShadowTex;
+#endif
+
+#if defined(STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_STATIC_CUBEMAP_SHADOW_TEXTURE) uniform samplerCubeShadow staticCubemapShadowTex;
+#endif
+
+#if defined(DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+layout(binding = DSHADE_BIND_DYNAMIC_CUBEMAP_SHADOW_TEXTURE) uniform samplerCubeShadow dynamicCubemapShadowTex;
+#endif
+
+#if defined(CSM_SHADOW_TEXTURE_ENABLED)
 layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DArrayShadow csmTex;
 #endif
 
-#if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
-layout(binding = DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE) uniform samplerCubeShadow cubemapShadowTex;
-// For PCSS blocker search, we need to read actual depth values
-// We use the same texture but cast it appropriately
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED)
+uniform mat4 u_staticShadowMatrix;
+uniform vec2 u_staticShadowTexel;
 #endif
 
-#if defined(SHADOW_TEXTURE_ENABLED)
-uniform mat4 u_shadowmatrix;
-uniform vec2 u_shadowtexel;
+#if defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
+uniform mat4 u_dynamicShadowMatrix;
+uniform vec2 u_dynamicShadowTexel;
 #endif
 
-#if defined(CSM_ENABLED)
+#if defined(STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+uniform vec2 u_staticCubemapShadowTexel;
+#endif
+
+#if defined(DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+uniform vec2 u_dynamicCubemapShadowTexel;
+#endif
+
+#if defined(CSM_SHADOW_TEXTURE_ENABLED)
 uniform mat4 u_csmMatrices[4];
 uniform vec4 u_csmDistances;
 uniform vec2 u_csmTexel;
-#endif
-
-#if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
-uniform float u_cubeShadowTexel;
 #endif
 
 #if defined(VOLUME_ENABLED)
@@ -67,19 +82,19 @@ in vec2 v_texcoord;
 
 layout(location = 0) out vec4 out_FragColor;
 
-#if defined(SHADOW_TEXTURE_ENABLED)
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED) || defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
 
-float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
+float ShadowCompareDepth(sampler2DShadow tex, vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
 {
     vec4 uv = basecoord;
     uv.xy = floorcoord.xy + basecoord.w * offset * texelSize;
     
-    return textureProj(shadowTex, uv);
+    return textureProj(tex, uv);
 }
 
-float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
+float CalcShadowIntensity(sampler2DShadow shadowTex, vec3 World, vec3 Norm, vec3 LightDirection, vec2 shadowTexel, mat4 shadowMatrix)
 {
-    vec4 shadowCoords = u_shadowmatrix * vec4(World, 1.0);
+    vec4 shadowCoords = shadowMatrix * vec4(World, 1.0);
 
 	float visibility = 0.0;
 
@@ -87,11 +102,11 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         // Depth bias to reduce light leaking and shadow acne
         float NdotL = max(dot(Norm, -LightDirection), 0.0);
         float slopeBias = 0.001 * (1.0 - NdotL);
-        float constBias = 0.5 * u_shadowtexel.y; // scale with texel size
+        float constBias = 0.5 * shadowTexel.y; // scale with texel size
         shadowCoords.z += max(slopeBias, constBias);
 
-        float texRes = u_shadowtexel.x;
-        float invRes = u_shadowtexel.y;
+        float texRes = shadowTexel.x;
+        float invRes = shadowTexel.y;
 
         vec2 uv = shadowCoords.xy * texRes;
 
@@ -152,25 +167,25 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
         float v2 = -(7.0 * t + 5.0) / vw2 + 1.0;
         float v3 = -t / vw3 + 3.0;
 
-        visibility += uw0 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v0), invRes);
-        visibility += uw1 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v0), invRes);
-        visibility += uw2 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v0), invRes);
-        visibility += uw3 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v0), invRes);
+        visibility += uw0 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v0), invRes);
+        visibility += uw1 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v0), invRes);
+        visibility += uw2 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v0), invRes);
+        visibility += uw3 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v0), invRes);
 
-        visibility += uw0 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v1), invRes);
-        visibility += uw1 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v1), invRes);
-        visibility += uw2 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v1), invRes);
-        visibility += uw3 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v1), invRes);
+        visibility += uw0 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v1), invRes);
+        visibility += uw1 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v1), invRes);
+        visibility += uw2 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v1), invRes);
+        visibility += uw3 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v1), invRes);
 
-        visibility += uw0 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v2), invRes);
-        visibility += uw1 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes);
-        visibility += uw2 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes);
-        visibility += uw3 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v2), invRes);
+        visibility += uw0 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v2), invRes);
+        visibility += uw1 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v2), invRes);
+        visibility += uw2 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v2), invRes);
+        visibility += uw3 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v2), invRes);
 
-        visibility += uw0 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v3), invRes);
-        visibility += uw1 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v3), invRes);
-        visibility += uw2 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v3), invRes);
-        visibility += uw3 * vw3 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u3, v3), invRes);
+        visibility += uw0 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v3), invRes);
+        visibility += uw1 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v3), invRes);
+        visibility += uw2 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v3), invRes);
+        visibility += uw3 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v3), invRes);
 
         visibility /= 2704.0;
     }
@@ -180,9 +195,9 @@ float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 
 #endif
 
-#if defined(CSM_ENABLED)
+#if defined(CSM_SHADOW_TEXTURE_ENABLED)
 
-float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vBaseTexCoord)
+float CalcCSMShadowIntensity(sampler2DArrayShadow shadowTex, vec3 World, vec3 Norm, vec3 LightDirection, vec2 vBaseTexCoord, vec2 shadowTexel, mat4 csmMatrix[4],  vec4 csmDistance)
 {
     float distanceFromCamera = length(World - GetCameraViewPos(0));
 
@@ -193,15 +208,15 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
     for (int i = 0; i < CSM_LEVELS; ++i)
     {
-        if (distanceFromCamera < u_csmDistances[i])
+        if (distanceFromCamera < csmDistance[i])
         {
             cascadeIndex = i;
 
             // Check if we need to blend with next cascade
             if (i < CSM_LEVELS - 1)
             {
-                float blendDistance = (u_csmDistances[i+1] - u_csmDistances[i]) * 0.1; // 10% blend region
-                float distToNextBoundary = u_csmDistances[i+1] - distanceFromCamera;
+                float blendDistance = (csmDistance[i+1] - csmDistance[i]) * 0.1; // 10% blend region
+                float distToNextBoundary = csmDistance[i+1] - distanceFromCamera;
 
                 if (distToNextBoundary < blendDistance)
                 {
@@ -214,12 +229,12 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     }
 
     // Calculate shadow coordinates for selected cascade
-    vec4 shadowCoords = u_csmMatrices[cascadeIndex] * vec4(World, 1.0);
+    vec4 shadowCoords = csmMatrix[cascadeIndex] * vec4(World, 1.0);
 
     shadowCoords.z += 0.001 * (cascadeIndex * 0.5 + 0.5);
 
-    float texRes = u_csmTexel.x;
-    float invRes = u_csmTexel.y;
+    float texRes = shadowTexel.x;
+    float invRes = shadowTexel.y;
     float pcfRadius = 1.0;
 
     float visibility = 0.0;
@@ -238,7 +253,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
             {
                 vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
                 vec4 sampleCoord = vec4(projCoords.xy + offset, float(cascadeIndex), projCoords.z);
-                visibility += texture(csmTex, sampleCoord);
+                visibility += texture(shadowTex, sampleCoord);
                 pcfSamples++;
             }
         }
@@ -249,7 +264,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
     // Blend with next cascade if needed for smooth transitions
     if (nextCascadeIndex != -1 && cascadeBlendFactor > 0.0)
     {
-        vec4 nextShadowCoords = u_csmMatrices[nextCascadeIndex] * vec4(World, 1.0);
+        vec4 nextShadowCoords = csmMatrix[nextCascadeIndex] * vec4(World, 1.0);
 
         float bias = 0.001 * (nextCascadeIndex * 0.5 + 0.5);
 
@@ -268,7 +283,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
                 {
                     vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
                     vec4 sampleCoord = vec4(nextProjCoords.xy + offset, float(nextCascadeIndex), nextProjCoords.z);
-                    nextVisibility += texture(csmTex, sampleCoord);
+                    nextVisibility += texture(shadowTex, sampleCoord);
                     nextPcfSamples++;
                 }
             }
@@ -284,7 +299,7 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #endif
 
-#if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
+#if defined(STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) || defined(DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
 
 // Poisson disk sampling pattern for PCF
 const vec3 POISSON_DISK_SAMPLES[20] = vec3[](
@@ -297,56 +312,13 @@ const vec3 POISSON_DISK_SAMPLES[20] = vec3[](
     vec3(0, 0.707, 0.707), vec3(0, -0.707, -0.707)
 );
 
-float CubemapShadowCompareDepth(vec3 sampleDir, float compareDepth)
+float CubemapShadowCompareDepth(samplerCubeShadow shadowTex, vec3 sampleDir, float compareDepth)
 {
-    return texture(cubemapShadowTex, vec4(sampleDir, compareDepth));
-}
-
-// Calculate average blocker distance for PCSS
-// We use a simplified approach: sample at multiple depth layers and weight them
-float CubemapShadowFindBlockerDistance(vec3 lightToWorldDir, float receiverDepth, float searchRadius)
-{
-    float blockerSum = 0.0;
-    float weightSum = 0.0;
-    
-    const int numSamples = 16;
-    const int numDepthLayers = 4;
-    
-    // Sample at different depth layers between near plane and receiver
-    for (int depthLayer = 0; depthLayer < numDepthLayers; depthLayer++)
-    {
-        // Sample depth from 0 to receiverDepth
-        float sampleDepth = receiverDepth * (float(depthLayer) + 0.5) / float(numDepthLayers);
-        
-        float layerShadow = 0.0;
-        
-        // Take multiple spatial samples at this depth
-        for (int i = 0; i < numSamples; i++)
-        {
-            vec3 sampleDir = normalize(lightToWorldDir + POISSON_DISK_SAMPLES[i] * searchRadius);
-            layerShadow += texture(cubemapShadowTex, vec4(sampleDir, sampleDepth));
-        }
-        
-        layerShadow /= float(numSamples);
-        
-        // Weight this depth layer by how much it's in shadow
-        // If layerShadow is low (more shadow), this depth likely has blockers
-        float shadowAmount = 1.0 - layerShadow;
-        if (shadowAmount > 0.1)
-        {
-            blockerSum += sampleDepth * shadowAmount;
-            weightSum += shadowAmount;
-        }
-    }
-    
-    if (weightSum < 0.01)
-        return -1.0; // No significant blockers found
-    
-    return blockerSum / weightSum;
+    return texture(shadowTex, vec4(sampleDir, compareDepth));
 }
 
 // PCF filtering with variable kernel size
-float CubemapShadowPCF(vec3 lightToWorldDir, float compareDepth, float filterRadius)
+float CubemapShadowPCF(samplerCubeShadow shadowTex, vec3 lightToWorldDir, float compareDepth, float filterRadius)
 {
     float visibility = 0.0;
     int sampleCount = 20;
@@ -354,13 +326,13 @@ float CubemapShadowPCF(vec3 lightToWorldDir, float compareDepth, float filterRad
     for (int i = 0; i < sampleCount; i++)
     {
         vec3 sampleDir = normalize(lightToWorldDir + POISSON_DISK_SAMPLES[i] * filterRadius);
-        visibility += CubemapShadowCompareDepth(sampleDir, compareDepth);
+        visibility += CubemapShadowCompareDepth(shadowTex, sampleDir, compareDepth);
     }
     
     return visibility / float(sampleCount);
 }
 
-float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
+float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection, vec2 shadowTexel)
 {
     vec3 lightToWorld = World - LightPos;
     float distanceLightToWorld = length(lightToWorld);
@@ -380,10 +352,12 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     // Slope-based bias: larger bias for surfaces at grazing angles
     // Use smoother falloff to avoid sudden changes
     float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
+
+    float invRes = shadowTexel.y;
     
     // Distance-based bias: account for cubemap texel size at different distances
     // At distance, each texel covers more world space
-    float texelWorldSize = distanceLightToWorld * u_cubeShadowTexel * 2.0;
+    float texelWorldSize = distanceLightToWorld * invRes * 2.0;
     float distanceBias = texelWorldSize * 0.5;
     
     // Constant base bias
@@ -391,7 +365,7 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     // Normal offset bias: push the sample point slightly along the normal
     // Use square root scaling to reduce offset at far distances
-    float normalOffsetScale = sqrt(distanceLightToWorld) * u_cubeShadowTexel * 0.5;
+    float normalOffsetScale = sqrt(distanceLightToWorld) * invRes * 0.5;
     // Clamp offset to prevent excessive values
     normalOffsetScale = min(normalOffsetScale, 0.1);
     
@@ -413,36 +387,13 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     
     float visibility = 0.0;
 
-#if defined(PCSS_ENABLED)
-    // PCSS: Percentage Closer Soft Shadows
-    // Step 1: Find average blocker distance
-    float lightSizeForPCSS = u_lightradius * 0.02; // Use 5% of light radius as effective light size
-    float searchRadius = lightSizeForPCSS * u_cubeShadowTexel * 1.2;
-    float avgBlockerDepth = CubemapShadowFindBlockerDistance(offsetDir, offsetLinearDepth, searchRadius);
-    
-    if (avgBlockerDepth < 0.0)
-    {
-        // No blockers found, fully lit
-        visibility = 1.0;
-    }
-    else
-    {
-        // Step 2: Estimate penumbra size based on blocker distance
-        // penumbraSize = (receiverDepth - blockerDepth) * lightSize / blockerDepth
-        float penumbraWidth = (offsetLinearDepth - avgBlockerDepth) * lightSizeForPCSS / (avgBlockerDepth + 0.001);
-        float filterRadius = penumbraWidth * u_cubeShadowTexel * 0.5;
-        filterRadius = clamp(filterRadius, u_cubeShadowTexel * 0.5, u_cubeShadowTexel * 2.0);
-        
-        // Step 3: PCF with dynamic filter size
-        visibility = CubemapShadowPCF(offsetDir, compareDepth, filterRadius);
-    }
-#elif defined(PCF_ENABLED)
+#if defined(PCF_ENABLED)
     // Standard PCF with fixed kernel size
-    float filterRadius = u_cubeShadowTexel * 1.2;
-    visibility = CubemapShadowPCF(offsetDir, compareDepth, filterRadius);
+    float filterRadius = invRes * 1.2;
+    visibility = CubemapShadowPCF(shadowTex, offsetDir, compareDepth, filterRadius);
 #else
     // No filtering, single sample (fastest but lowest quality)
-    visibility = CubemapShadowCompareDepth(offsetDir, compareDepth);
+    visibility = CubemapShadowCompareDepth(shadowTex, offsetDir, compareDepth);
 #endif
     
     return visibility;
@@ -450,9 +401,9 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
 
 #endif
 
-void CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord, out vec4 AmbientColor, out vec4 DiffuseSpecularColor)
+vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseTexCoord)
 {
-    AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
+    vec4 AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
     vec4 DiffuseColor = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 SpecularColor = vec4(0.0, 0.0, 0.0, 0.0);
 
@@ -485,7 +436,7 @@ void CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
             }
         }
     }
-    DiffuseSpecularColor = DiffuseColor + SpecularColor;
+    return AmbientColor + DiffuseColor + SpecularColor;
 }
 
 vec4 CalcPointLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
@@ -494,22 +445,31 @@ vec4 CalcPointLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     float Distance = length(LightDirection);
     LightDirection = normalize(LightDirection);
 
-    vec4 AmbientColor, DiffuseSpecularColor;
-    CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord, AmbientColor, DiffuseSpecularColor);
-
-    vec4 Color = AmbientColor + DiffuseSpecularColor;
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 
     float r2 = u_lightradius * u_lightradius;
     float Attenuation = clamp(( r2 - (Distance * Distance)) / r2, 0.0, 1.0);
 
-#if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
-    float flShadowIntensity = CalcCubemapShadowIntensity(World, u_lightpos.xyz, Normal, LightDirection);
-    Color.r *= flShadowIntensity;
-    Color.g *= flShadowIntensity;
-    Color.b *= flShadowIntensity;
+    Color = Color * Attenuation;
+
+    float flStaticShadowIntensity = 1.0;
+    float flDynamicShadowIntensity = 1.0;
+
+#if defined(STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+    flStaticShadowIntensity = CalcCubemapShadowIntensity(staticCubemapShadowTex, World, u_lightpos.xyz, Normal, LightDirection, u_staticCubemapShadowTexel);
 #endif
 
-    return Color * Attenuation;
+#if defined(DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+    flDynamicShadowIntensity = CalcCubemapShadowIntensity(dynamicCubemapShadowTex, World, u_lightpos.xyz, Normal, LightDirection, u_dynamicCubemapShadowTexel);
+#endif
+
+#if defined(STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) || defined(DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+    float flShadowIntensity = min(flStaticShadowIntensity, flDynamicShadowIntensity);
+
+    Color = Color * flShadowIntensity;
+#endif
+
+    return Color;
 }
 
 vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
@@ -518,17 +478,31 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     float SpotCosine = dot(LightToPixel, u_lightdir.xyz);
     float LimitCosine = u_lightcone.x;
     float LimitSine = u_lightcone.y;
+
     if (SpotCosine > LimitCosine) {
+
         vec4 Color = CalcPointLight(World, Normal, vBaseTexCoord);
 
-    #if defined(SHADOW_TEXTURE_ENABLED)
+        float flStaticShadowIntensity = 1.0;
+        float flDynamicShadowIntensity = 1.0;
 
-        float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
-        Color.r *= flShadowIntensity;
-        Color.g *= flShadowIntensity;
-        Color.b *= flShadowIntensity;
+        #if defined(STATIC_SHADOW_TEXTURE_ENABLED)
 
-    #endif
+            flStaticShadowIntensity = CalcShadowIntensity(staticShadowTex, World, Normal, u_lightdir.xyz, u_staticShadowTexel, u_staticShadowMatrix);
+
+        #endif
+
+        #if defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
+
+            flDynamicShadowIntensity = CalcShadowIntensity(dynamicShadowTex, World, Normal, u_lightdir.xyz, u_dynamicShadowTexel, u_dynamicShadowMatrix);
+
+        #endif
+
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED) || defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
+        float flShadowIntensity = min(flStaticShadowIntensity, flDynamicShadowIntensity);
+
+        Color = Color * flShadowIntensity;
+#endif
 
 #if defined(CONE_TEXTURE_ENABLED)
 
@@ -541,13 +515,15 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
         vec4 vConeColor = texture(coneTex, vec2(flConeProjU, flConeProjV));
 
-        return Color * vConeColor;
+        Color = Color * vConeColor;
 #else
 
         float flConeFactor = (SpotCosine - LimitCosine) * (1.0 / LimitSine);
 
-        return Color * flConeFactor;
+        Color = Color * flConeFactor;
+
 #endif
+        return Color;
 
     }
     else {
@@ -559,30 +535,28 @@ vec4 CalcDirectionalLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 {
     vec3 LightDirection = u_lightdir.xyz;
 
-    vec4 AmbientColor, DiffuseSpecularColor;
-    CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord, AmbientColor, DiffuseSpecularColor);
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, vBaseTexCoord);
 
-    float flShadowIntensity = 1.0;
+    float flStaticShadowIntensity = 1.0;
+    float flCSMShadowIntensity = 1.0;
 
-#if defined(SHADOW_TEXTURE_ENABLED)
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED)
 
-    flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
-
-#endif
-
-#if defined(CSM_ENABLED)
-
-    float flCSMShadowIntensity = CalcCSMShadowIntensity(World, Normal, LightDirection, vBaseTexCoord);
-
-    flShadowIntensity = min(flShadowIntensity, flCSMShadowIntensity);
+    flStaticShadowIntensity = CalcShadowIntensity(staticShadowTex, World, Normal, u_lightdir.xyz, u_staticShadowTexel, u_staticShadowMatrix);
 
 #endif
 
-    vec4 Color = AmbientColor + DiffuseSpecularColor;
-    Color.r *= flShadowIntensity;
-    Color.g *= flShadowIntensity;
-    Color.b *= flShadowIntensity;
+#if defined(CSM_SHADOW_TEXTURE_ENABLED)
 
+    flCSMShadowIntensity = CalcCSMShadowIntensity(csmTex, World, Normal, LightDirection, vBaseTexCoord, u_csmTexel, u_csmMatrices, u_csmDistances);
+
+#endif
+
+#if defined(STATIC_SHADOW_TEXTURE_ENABLED) || defined(CSM_SHADOW_TEXTURE_ENABLED)
+    float flShadowIntensity = min(flStaticShadowIntensity, flCSMShadowIntensity);
+
+    Color = Color * flShadowIntensity;
+#endif
     return Color;
 }
 

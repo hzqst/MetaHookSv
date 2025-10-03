@@ -143,7 +143,7 @@ void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseDFinalProgram: Failed to load program!");
+		Sys_Error("R_UseDFinalProgram: Failed to load program!");
 	}
 }
 
@@ -187,6 +187,19 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 	{
 		std::stringstream defs;
 
+		// #define DLIGHT_SPOT_ENABLED								0x1ull
+		// #define DLIGHT_POINT_ENABLED							0x2ull
+		// #define DLIGHT_VOLUME_ENABLED							0x4ull
+		// #define DLIGHT_CONE_TEXTURE_ENABLED						0x8ull
+		// #define DLIGHT_DIRECTIONAL_ENABLED						0x10ull
+		// #define DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED			0x20ull
+		// #define DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED			0x40ull
+		// #define DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
+		// #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
+		// #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
+		// #define DLIGHT_PCF_ENABLED								0x400ull
+		// #define DLIGHT_PCSS_ENABLED								0x800ull
+
 		if (state & DLIGHT_SPOT_ENABLED)
 			defs << "#define SPOT_ENABLED\n";
 
@@ -199,17 +212,23 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		if (state & DLIGHT_CONE_TEXTURE_ENABLED)
 			defs << "#define CONE_TEXTURE_ENABLED\n";
 
-		if (state & DLIGHT_SHADOW_TEXTURE_ENABLED)
-			defs << "#define SHADOW_TEXTURE_ENABLED\n";
-
 		if (state & DLIGHT_DIRECTIONAL_ENABLED)
 			defs << "#define DIRECTIONAL_ENABLED\n";
 
-		if (state & DLIGHT_CSM_ENABLED)
-			defs << "#define CSM_ENABLED\n";
+		if (state & DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED)
+			defs << "#define STATIC_SHADOW_TEXTURE_ENABLED\n";
 
-		if (state & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED)
-			defs << "#define CUBEMAP_SHADOW_TEXTURE_ENABLED\n";
+		if (state & DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED)
+			defs << "#define DYNAMIC_SHADOW_TEXTURE_ENABLED\n";
+
+		if (state & DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+			defs << "#define STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED\n";
+
+		if (state & DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED)
+			defs << "#define DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED\n";
+
+		if (state & DLIGHT_CSM_SHADOW_TEXTURE_ENABLED)
+			defs << "#define CSM_SHADOW_TEXTURE_ENABLED\n";
 
 		if (state & DLIGHT_PCF_ENABLED)
 			defs << "#define PCF_ENABLED\n";
@@ -222,6 +241,30 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		prog.program = R_CompileShaderFile("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str());
 		if (prog.program)
 		{
+			// int program;
+			// int u_lightdir;
+			// int u_lightright;
+			// int u_lightup;
+			// int u_lightpos;
+			// int u_lightcolor;
+			// int u_lightcone;
+			// int u_lightradius;
+			// int u_lightambient;
+			// int u_lightdiffuse;
+			// int u_lightspecular;
+			// int u_lightspecularpow;
+			// int u_lightSize;
+			// int u_modelmatrix;
+			// int u_staticShadowTexel;
+			// int u_staticShadowMatrix;
+			// int u_dynamicShadowTexel;
+			// int u_dynamicShadowMatrix;
+			// int u_staticCubemapShadowTexel;
+			// int u_dynamicCubemapShadowTexel;
+			// int u_csmMatrices;
+			// int u_csmDistances;
+			// int u_csmTexel;
+
 			SHADER_UNIFORM(prog, u_lightdir, "u_lightdir");
 			SHADER_UNIFORM(prog, u_lightright, "u_lightright");
 			SHADER_UNIFORM(prog, u_lightup, "u_lightup");
@@ -233,14 +276,17 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_lightdiffuse, "u_lightdiffuse");
 			SHADER_UNIFORM(prog, u_lightspecular, "u_lightspecular");
 			SHADER_UNIFORM(prog, u_lightspecularpow, "u_lightspecularpow");
-			SHADER_UNIFORM(prog, u_shadowtexel, "u_shadowtexel");
-			SHADER_UNIFORM(prog, u_shadowmatrix, "u_shadowmatrix");
+			SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
-		SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
-		SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
-		SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
-		SHADER_UNIFORM(prog, u_cubeShadowTexel, "u_cubeShadowTexel");
-		SHADER_UNIFORM(prog, u_lightSize, "u_lightSize");
+			SHADER_UNIFORM(prog, u_staticShadowTexel, "u_staticShadowTexel");
+			SHADER_UNIFORM(prog, u_staticShadowMatrix, "u_staticShadowMatrix");
+			SHADER_UNIFORM(prog, u_dynamicShadowTexel, "u_dynamicShadowTexel");
+			SHADER_UNIFORM(prog, u_dynamicShadowMatrix, "u_dynamicShadowMatrix");
+			SHADER_UNIFORM(prog, u_staticCubemapShadowTexel, "u_staticCubemapShadowTexel");
+			SHADER_UNIFORM(prog, u_dynamicCubemapShadowTexel, "u_dynamicCubemapShadowTexel");
+			SHADER_UNIFORM(prog, u_csmMatrices, "u_csmMatrices");
+			SHADER_UNIFORM(prog, u_csmDistances, "u_csmDistances");
+			SHADER_UNIFORM(prog, u_csmTexel, "u_csmTexel");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -259,21 +305,36 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseDLightProgram: Failed to load program!");
+		Sys_Error("R_UseDLightProgram: Failed to load program!");
 	}
 }
 
+		// #define DLIGHT_SPOT_ENABLED								0x1ull
+		// #define DLIGHT_POINT_ENABLED							0x2ull
+		// #define DLIGHT_VOLUME_ENABLED							0x4ull
+		// #define DLIGHT_CONE_TEXTURE_ENABLED						0x8ull
+		// #define DLIGHT_DIRECTIONAL_ENABLED						0x10ull
+		// #define DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED			0x20ull
+		// #define DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED			0x40ull
+		// #define DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
+		// #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
+		// #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
+		// #define DLIGHT_PCF_ENABLED								0x400ull
+		// #define DLIGHT_PCSS_ENABLED								0x800ull
+
 const program_state_mapping_t s_DLightProgramStateName[] = {
-{ DLIGHT_SPOT_ENABLED						,"DLIGHT_SPOT_ENABLED"	 },
-{ DLIGHT_POINT_ENABLED						,"DLIGHT_POINT_ENABLED"	 },
-{ DLIGHT_VOLUME_ENABLED						,"DLIGHT_VOLUME_ENABLED" },
-{ DLIGHT_CONE_TEXTURE_ENABLED				,"DLIGHT_CONE_TEXTURE_ENABLED" },
-{ DLIGHT_SHADOW_TEXTURE_ENABLED				,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
-{ DLIGHT_DIRECTIONAL_ENABLED				,"DLIGHT_DIRECTIONAL_ENABLED" },
-{ DLIGHT_CSM_ENABLED						,"DLIGHT_CSM_ENABLED" },
-{ DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
-{ DLIGHT_PCF_ENABLED						,"DLIGHT_PCF_ENABLED" },
-{ DLIGHT_PCSS_ENABLED						,"DLIGHT_PCSS_ENABLED" },
+{ DLIGHT_SPOT_ENABLED								,"DLIGHT_SPOT_ENABLED"	 },
+{ DLIGHT_POINT_ENABLED								,"DLIGHT_POINT_ENABLED"	 },
+{ DLIGHT_VOLUME_ENABLED								,"DLIGHT_VOLUME_ENABLED" },
+{ DLIGHT_CONE_TEXTURE_ENABLED						,"DLIGHT_CONE_TEXTURE_ENABLED" },
+{ DLIGHT_DIRECTIONAL_ENABLED						,"DLIGHT_DIRECTIONAL_ENABLED" },
+{ DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED				,"DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED				,"DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_CSM_SHADOW_TEXTURE_ENABLED					,"DLIGHT_CSM_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_PCF_ENABLED								,"DLIGHT_PCF_ENABLED" },
+{ DLIGHT_PCSS_ENABLED								,"DLIGHT_PCSS_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -668,7 +729,7 @@ void R_IterateDynamicLights(
 
 		if (dynlight->type == DynamicLightType_Point)
 		{
-			float radius = math_clamp(dynlight->size, 0, 999999);
+			float radius = max(dynlight->size, 0);
 
 			vec3_t dlight_origin;
 
@@ -696,7 +757,7 @@ void R_IterateDynamicLights(
 				if (R_CullBox(mins, maxs))
 					continue;
 
-				PointLightCallbackArgs args;
+				PointLightCallbackArgs args{};
 				args.radius = radius;
 				VectorCopy(dlight_origin, args.origin);
 				VectorCopy(dynlight->color, args.color);
@@ -707,17 +768,20 @@ void R_IterateDynamicLights(
 				args.specularpow = dynlight->specularpow;
 
 				if (dynlight->shadow > 0) {
-					args.ppShadowTexture = &dynlight->pShadowTexture;
-					args.shadowSize = dynlight->shadow_size;
+					args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
+					args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
+					args.staticShadowSize = dynlight->static_shadow_size;
+					args.dynamicShadowSize = dynlight->dynamic_shadow_size;
 				}
 
 				args.bVolume = true;
+				args.bStatic = true;
 
 				pointlightCallback(&args, context);
 			}
 			else
 			{
-				PointLightCallbackArgs args;
+				PointLightCallbackArgs args{};
 				args.radius = radius;
 				VectorCopy(dynlight->origin, args.origin);
 				VectorCopy(dynlight->color, args.color);
@@ -728,11 +792,14 @@ void R_IterateDynamicLights(
 				args.specularpow = dynlight->specularpow; 
 
 				if (dynlight->shadow > 0) {
-					args.ppShadowTexture = &dynlight->pShadowTexture;
-					args.shadowSize = dynlight->shadow_size;
+					args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
+					args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
+					args.staticShadowSize = dynlight->static_shadow_size;
+					args.dynamicShadowSize = dynlight->dynamic_shadow_size;
 				}
 
 				args.bVolume = false;
+				args.bStatic = true;
 
 				pointlightCallback(&args, context);
 			}
@@ -771,12 +838,14 @@ void R_IterateDynamicLights(
 			args.specularpow = dynlight->specularpow;
 
 			if (dynlight->shadow > 0) {
-				args.ppShadowTexture = &dynlight->pShadowTexture;
-				args.ppCSMShadowTexture = &dynlight->pCSMShadowTexture;
-				args.shadowSize = dynlight->shadow_size;
+				args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
+				args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
+				args.dynamicShadowSize = dynlight->dynamic_shadow_size;
+				args.staticShadowSize = dynlight->static_shadow_size;
 			}
 
 			args.bVolume = false; // DirectionalLight always uses fullscreen
+			args.bStatic = true;
 
 			directionalLightCallback(&args, context);
 		}
@@ -919,7 +988,7 @@ void R_IterateDynamicLights(
 
 			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, max_distance))
 			{
-				SpotLightCallbackArgs args;
+				SpotLightCallbackArgs args{};
 				args.distance = max_distance;
 				args.radius = radius;
 				args.coneAngle = coneAngle;
@@ -937,16 +1006,20 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = &g_DLightShadowTextures[i];
-				args.shadowSize = 256;
+
+				//no static shadow
+				args.ppDynamicShadowTexture = &g_DLightShadowTextures[i];
+				args.dynamicShadowSize = 256;
+
 				args.bVolume = true;
+				args.bStatic = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
 				spotlightCallback(&args, context);
 			}
 			else
 			{
-				SpotLightCallbackArgs args;
+				SpotLightCallbackArgs args{};
 				args.distance = max_distance;
 				args.radius = radius;
 				args.coneAngle = coneAngle;
@@ -964,9 +1037,13 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = &g_DLightShadowTextures[i];
-				args.shadowSize = 256;
+
+				//no static shadow
+				args.ppDynamicShadowTexture = &g_DLightShadowTextures[i];
+				args.dynamicShadowSize = 256;
+
 				args.bVolume = false;
+				args.bStatic = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
 				spotlightCallback(&args, context);
@@ -1001,7 +1078,7 @@ void R_IterateDynamicLights(
 				if (R_CullBox(mins, maxs))
 					continue;
 
-				PointLightCallbackArgs args;
+				PointLightCallbackArgs args{};
 				args.radius = radius;
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
@@ -1010,15 +1087,14 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = nullptr;
-				args.shadowSize = 0;
 				args.bVolume = true;
+				args.bStatic = false;
 
 				pointlightCallback(&args, context);
 			}
 			else
 			{
-				PointLightCallbackArgs args;
+				PointLightCallbackArgs args{};
 				args.radius = radius;
 				VectorCopy(dl->origin, args.origin);
 				VectorCopy(color, args.color);
@@ -1027,9 +1103,8 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = nullptr;
-				args.shadowSize = 0;
 				args.bVolume = false;
+				args.bStatic = false;
 
 				pointlightCallback(&args, context);
 			}
@@ -1098,13 +1173,25 @@ void R_LightShadingPass(void)
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
-			auto pShadowTexture = (*args->ppShadowTexture);
+			std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+			std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 
-			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
+			if (args->ppStaticShadowTexture)
+				pStaticShadowTexture = (*args->ppStaticShadowTexture);
+
+			if (pStaticShadowTexture && pStaticShadowTexture->IsReady() && pStaticShadowTexture->IsCubemap())
 			{
-				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED;
 				DLightProgramState |= DLIGHT_PCF_ENABLED;
-				//DLightProgramState |= DLIGHT_PCSS_ENABLED;
+			}
+
+			if (args->ppDynamicShadowTexture)
+				pDynamicShadowTexture = (*args->ppDynamicShadowTexture);
+
+			if (pDynamicShadowTexture && pDynamicShadowTexture->IsReady() && pDynamicShadowTexture->IsCubemap())
+			{
+				DLightProgramState |= DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_PCF_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1143,21 +1230,36 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
 			{
-				if (prog.u_cubeShadowTexel != -1)
+				if (prog.u_staticCubemapShadowTexel != -1)
 				{
-					glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
+					glUniform2f(prog.u_staticCubemapShadowTexel, (float)pStaticShadowTexture->GetTextureSize(), 1.0f / (float)pStaticShadowTexture->GetTextureSize());
 				}
 
-				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
+				GL_BindTextureUnit(DSHADE_BIND_STATIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pStaticShadowTexture->GetDepthTexture());
+			}
+
+			if ((DLightProgramState & DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
+			{
+				if (prog.u_dynamicCubemapShadowTexel != -1)
+				{
+					glUniform2f(prog.u_dynamicCubemapShadowTexel, (float)pDynamicShadowTexture->GetTextureSize(), 1.0f / (float)pDynamicShadowTexture->GetTextureSize());
+				}
+
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pDynamicShadowTexture->GetDepthTexture());
 			}
 
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
-			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+			}
+
+			if ((DLightProgramState & DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_STATIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
 			}
 
 			GL_UseProgram(0);
@@ -1176,13 +1278,25 @@ void R_LightShadingPass(void)
 
 			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
 
-			auto pShadowTexture = (*args->ppShadowTexture);
+			std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+			std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
+			
+			if (args->ppStaticShadowTexture)
+				pStaticShadowTexture = (*args->ppStaticShadowTexture);
 
-			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
+			if (pStaticShadowTexture && pStaticShadowTexture->IsReady() && pStaticShadowTexture->IsCubemap())
 			{
-				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED;
 				DLightProgramState |= DLIGHT_PCF_ENABLED;
-				//DLightProgramState |= DLIGHT_PCSS_ENABLED;
+			}
+
+			if (args->ppDynamicShadowTexture)
+				pDynamicShadowTexture = (*args->ppDynamicShadowTexture);
+
+			if (pDynamicShadowTexture && pDynamicShadowTexture->IsReady() && pDynamicShadowTexture->IsCubemap())
+			{
+				DLightProgramState |= DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_PCF_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1216,22 +1330,37 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-		if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
-		{
-			if (prog.u_cubeShadowTexel != -1)
+			if ((DLightProgramState & DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
 			{
-				glUniform1f(prog.u_cubeShadowTexel, 1.0f / (float)pShadowTexture->GetTextureSize());
+				if (prog.u_staticCubemapShadowTexel != -1)
+				{
+					glUniform2f(prog.u_staticCubemapShadowTexel, (float)pStaticShadowTexture->GetTextureSize(), 1.0f / (float)pStaticShadowTexture->GetTextureSize());
+				}
+
+				GL_BindTextureUnit(DSHADE_BIND_STATIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pStaticShadowTexture->GetDepthTexture());
 			}
 
-			GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pShadowTexture->GetDepthTexture());
-		}
-
-		const uint32_t indices[] = { 0,1,2,2,3,0 };
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
-
-			if ((DLightProgramState & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				GL_BindTextureUnit(DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+				if (prog.u_dynamicCubemapShadowTexel != -1)
+				{
+					glUniform2f(prog.u_dynamicCubemapShadowTexel, (float)pDynamicShadowTexture->GetTextureSize(), 1.0f / (float)pDynamicShadowTexture->GetTextureSize());
+				}
+
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, pDynamicShadowTexture->GetDepthTexture());
+			}
+
+			const uint32_t indices[] = { 0,1,2,2,3,0 };
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
+
+			if ((DLightProgramState & DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
+			}
+
+			if ((DLightProgramState & DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
+			{
+				GL_BindTextureUnit(DSHADE_BIND_STATIC_CUBEMAP_SHADOW_TEXTURE, GL_TEXTURE_CUBE_MAP, 0);
 			}
 
 			GL_UseProgram(0);
@@ -1269,11 +1398,15 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			auto pShadowTexture = (*args->ppShadowTexture);
+			std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+			std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 
-			if (pShadowTexture && pShadowTexture->IsReady())
+			if(args->ppDynamicShadowTexture)
+				pDynamicShadowTexture = (*args->ppDynamicShadowTexture);
+
+			if (pDynamicShadowTexture && pDynamicShadowTexture->IsReady())
 			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1328,26 +1461,26 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				if (prog.u_shadowtexel != -1)
+				if (prog.u_dynamicShadowTexel != -1)
 				{
-					glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+					glUniform2f(prog.u_dynamicShadowTexel, pDynamicShadowTexture->GetTextureSize(), 1.0f / (float)pDynamicShadowTexture->GetTextureSize());
 				}
 
-				if (prog.u_shadowmatrix != -1)
+				if (prog.u_dynamicShadowMatrix != -1)
 				{
-					glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+					glUniformMatrix4fv(prog.u_dynamicShadowMatrix, 1, false, (float*)pDynamicShadowTexture->GetShadowMatrix(0));
 				}
 
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_SHADOW_TEXTURE, GL_TEXTURE_2D, pDynamicShadowTexture->GetDepthTexture());
 			}
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_SHADOW_TEXTURE, GL_TEXTURE_2D, 0);
 			}
 
 			GL_UseProgram(0);
@@ -1371,11 +1504,15 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			auto pShadowTexture = (*args->ppShadowTexture);
+			std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+			std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 
-			if (pShadowTexture && pShadowTexture->IsReady())
+			if (args->ppDynamicShadowTexture)
+				pDynamicShadowTexture = (*args->ppDynamicShadowTexture);
+
+			if (pDynamicShadowTexture && pDynamicShadowTexture->IsReady())
 			{
-				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1426,27 +1563,27 @@ void R_LightShadingPass(void)
 				glUniform1f(prog.u_lightspecularpow, args->specularpow);
 			}
 
-			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				if (prog.u_shadowtexel != -1)
+				if (prog.u_dynamicShadowTexel != -1)
 				{
-					glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+					glUniform2f(prog.u_dynamicShadowTexel, pDynamicShadowTexture->GetTextureSize(), 1.0f / (float)pDynamicShadowTexture->GetTextureSize());
 				}
 
-				if (prog.u_shadowmatrix != -1)
+				if (prog.u_dynamicShadowMatrix != -1)
 				{
-					glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+					glUniformMatrix4fv(prog.u_dynamicShadowMatrix, 1, false, (float*)pDynamicShadowTexture->GetShadowMatrix(0));
 				}
 
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_SHADOW_TEXTURE, GL_TEXTURE_2D, pDynamicShadowTexture->GetDepthTexture());
 			}
 
 			const uint32_t indices[] = { 0,1,2,2,3,0 };
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
-			if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+			if ((DLightProgramState & DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 			{
-				GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+				GL_BindTextureUnit(DSHADE_BIND_DYNAMIC_SHADOW_TEXTURE, GL_TEXTURE_2D, 0);
 			}
 
 			GL_BindVAO(0);
@@ -1467,18 +1604,23 @@ void R_LightShadingPass(void)
 
 		program_state_t DLightProgramState = DLIGHT_DIRECTIONAL_ENABLED;
 
-		auto pShadowTexture = (*args->ppShadowTexture);
+		std::shared_ptr<IShadowTexture> pStaticShadowTexture;
+		std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 
-		if (pShadowTexture && pShadowTexture->IsReady())
+		if(args->ppStaticShadowTexture)
+			 pStaticShadowTexture = (*args->ppStaticShadowTexture);
+
+		if (pStaticShadowTexture && pStaticShadowTexture->IsSingleLayer() && pStaticShadowTexture->IsReady())
 		{
-			DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+			DLightProgramState |= DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED;
 		}
 
-		auto pCSMShadowTexture = (*args->ppCSMShadowTexture);
+		if(args->ppDynamicShadowTexture)
+			pDynamicShadowTexture = (*args->ppDynamicShadowTexture);
 
-		if (pCSMShadowTexture && pCSMShadowTexture->IsReady())
+		if (pDynamicShadowTexture && pDynamicShadowTexture->IsCascaded() && pDynamicShadowTexture->IsReady())
 		{
-			DLightProgramState |= DLIGHT_CSM_ENABLED;
+			DLightProgramState |= DLIGHT_CSM_SHADOW_TEXTURE_ENABLED;
 		}
 
 		dlight_program_t prog = { 0 };
@@ -1526,57 +1668,57 @@ void R_LightShadingPass(void)
 			glUniform1f(prog.u_lightSize, args->size);
 		}
 
-		if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+		if ((DLightProgramState & DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
 		{
-			if (prog.u_shadowtexel != -1)
+			if (prog.u_staticShadowTexel != -1)
 			{
-				glUniform2f(prog.u_shadowtexel, pShadowTexture->GetTextureSize(), 1.0f / (float)pShadowTexture->GetTextureSize());
+				glUniform2f(prog.u_staticShadowTexel, pStaticShadowTexture->GetTextureSize(), 1.0f / (float)pStaticShadowTexture->GetTextureSize());
 			}
 
-			if (prog.u_shadowmatrix != -1)
+			if (prog.u_staticShadowMatrix != -1)
 			{
-				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, (float*)pShadowTexture->GetShadowMatrix(0));
+				glUniformMatrix4fv(prog.u_staticShadowMatrix, 1, false, (float*)pStaticShadowTexture->GetShadowMatrix(0));
 			}
 
-			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, pShadowTexture->GetDepthTexture());
+			GL_BindTextureUnit(DSHADE_BIND_STATIC_SHADOW_TEXTURE, GL_TEXTURE_2D, pStaticShadowTexture->GetDepthTexture());
 		}
 
-		if ((DLightProgramState & DLIGHT_CSM_ENABLED) && pCSMShadowTexture)
+		if ((DLightProgramState & DLIGHT_CSM_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 		{
 			if (prog.u_csmMatrices != -1)
 			{
-				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)pCSMShadowTexture->GetShadowMatrix(0));
+				glUniformMatrix4fv(prog.u_csmMatrices, 4, GL_FALSE, (float*)pDynamicShadowTexture->GetShadowMatrix(0));
 			}
 
 			if (prog.u_csmDistances != -1)
 			{
 				glUniform4f(prog.u_csmDistances, 
-					pCSMShadowTexture->GetCSMDistance(0),
-					pCSMShadowTexture->GetCSMDistance(1), 
-					pCSMShadowTexture->GetCSMDistance(2), 
-					pCSMShadowTexture->GetCSMDistance(3));
+					pDynamicShadowTexture->GetCSMDistance(0),
+					pDynamicShadowTexture->GetCSMDistance(1),
+					pDynamicShadowTexture->GetCSMDistance(2),
+					pDynamicShadowTexture->GetCSMDistance(3));
 			}
 
 			if (prog.u_csmTexel != -1)
 			{
 				// CSM now uses texture array: 4096x4096x4, each layer is full 4096x4096
-				glUniform2f(prog.u_csmTexel, pCSMShadowTexture->GetTextureSize(), 1.0f / (float)pCSMShadowTexture->GetTextureSize());
+				glUniform2f(prog.u_csmTexel, pDynamicShadowTexture->GetTextureSize(), 1.0f / (float)pDynamicShadowTexture->GetTextureSize());
 			}
 
-			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, pCSMShadowTexture->GetDepthTexture());
+			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, pDynamicShadowTexture->GetDepthTexture());
 		}
 
 		const uint32_t indices[] = { 0,1,2,2,3,0 };
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 
-		if ((DLightProgramState & DLIGHT_CSM_ENABLED) && pCSMShadowTexture)
+		if ((DLightProgramState & DLIGHT_CSM_SHADOW_TEXTURE_ENABLED) && pDynamicShadowTexture)
 		{
 			GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, 0);
 		}
 
-		if ((DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED) && pShadowTexture)
+		if ((DLightProgramState & DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED) && pStaticShadowTexture)
 		{
-			GL_BindTextureUnit(DSHADE_BIND_SHADOWMAP_TEXTURE, GL_TEXTURE_2D, 0);
+			GL_BindTextureUnit(DSHADE_BIND_STATIC_SHADOW_TEXTURE, GL_TEXTURE_2D, 0);
 		}
 
 		GL_UseProgram(0);
