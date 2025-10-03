@@ -1013,6 +1013,8 @@ WEBP (RGB8 / RGBA8)
 }
 ```
 
+obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始地图中提取。从blender导入时使用默认导入规则，导出回obj时需设置向上轴为Z，前进轴为Y。
+
 ## env_deferredlighting_control
 
 `env_deferredlighting_control`是一个点实体，用于控制延迟渲染管线下的特定参数。

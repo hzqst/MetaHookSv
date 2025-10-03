@@ -1032,6 +1032,8 @@ The following snippet is used to load "maps/de_dust2_shadow.obj" as the shadow p
 }
 ```
 
+You can export .obj from de_dust2.bsp via [newbspguy](https://github.com/UnrealKaraulov/newbspguy).
+
 ## env_deferredlighting_control
 
 `env_deferredlighting_control` is a point entity used to control specific parameters under the deferred rendering pipeline.
