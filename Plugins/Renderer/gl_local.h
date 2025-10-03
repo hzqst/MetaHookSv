@@ -429,6 +429,7 @@ void R_Init(void);
 void R_Shutdown(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
+void R_CalcMainViewFov(float& xfov, float& yfov);
 void R_MarkLeaves(void);
 void R_PrepareDrawWorld(void); 
 void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const float projMatrix[4][4]);
@@ -532,9 +533,7 @@ void R_PopProjectionMatrix();
 void R_LoadIdentityForProjectionMatrix();
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
 void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar);
-void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bottom, float top, float zNear, float zFar);
 void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar);
-void R_SetupPerspectiveReversedZ(float fovx, float fovy, float zNear, float zFar);
 
 void GL_BeginDebugGroup(const char* name);
 void GL_BeginDebugGroupFormat(const char* fmt, ...);
@@ -708,6 +707,9 @@ bool R_IsRenderingPreViewModel();
 bool R_IsRenderingViewModel();
 bool R_IsRenderingFlippedViewModel();
 bool R_IsViewmodelAttachment(cl_entity_t* ent);
+
+float R_GetMainViewNearPlane();
+float R_GetMainViewFarPlane();
 
 bool R_IsDeferredRenderingEnabled();
 

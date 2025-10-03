@@ -432,11 +432,11 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto PointLightCallback = [](PointLightCallbackArgs *args, void *context)
 		{
-			if (args->ppShadowTexture)
+			if (args->ppShadowTexture && args->shadowSize > 0)
 			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsCubemap() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != 1024)
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsCubemap() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
 				{
-					(*args->ppShadowTexture) = R_CreateCubemapShadowTexture(1024, false);
+					(*args->ppShadowTexture) = R_CreateCubemapShadowTexture(args->shadowSize, false);
 				}
 
 				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
@@ -545,11 +545,11 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
 		{
-			if (args->ppShadowTexture && args->bIsFromLocalPlayer)
+			if (args->ppShadowTexture && args->shadowSize > 0)
 			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != 1024)
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != false || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
 				{
-					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(1024, false);
+					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(args->shadowSize, false);
 				}
 
 				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
@@ -590,7 +590,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
 
 					R_LoadIdentityForProjectionMatrix();
-					R_SetupPerspective(cone_fov, cone_fov, gl_nearplane->value, args->distance);
+					R_SetupPerspective(cone_fov, cone_fov, R_GetMainViewNearPlane(), args->distance);
 
 					R_SetFrustum(r_xfov_currentpass, r_yfov_currentpass, r_frustum_right, r_frustum_top);
 
@@ -655,11 +655,11 @@ void R_RenderShadowmapForDynamicLights(void)
 
 		const auto DirectionalLightCallback = [](DirectionalLightCallbackArgs* args, void* context)
 		{
-			if (args->ppShadowTexture)
+			if (args->ppShadowTexture && args->shadowSize > 0)
 			{
-				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != true || (*args->ppShadowTexture)->GetTextureSize() != 8192)
+				if ((*args->ppShadowTexture) == nullptr || (*args->ppShadowTexture)->IsSingleLayer() != true || (*args->ppShadowTexture)->IsStatic() != true || (*args->ppShadowTexture)->GetTextureSize() != args->shadowSize)
 				{
-					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(8192, true);
+					(*args->ppShadowTexture) = R_CreateSingleShadowTexture(args->shadowSize, true);
 				}
 
 				if ((*args->ppShadowTexture) && !(*args->ppShadowTexture)->IsReady())
@@ -771,13 +771,14 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					// Calculate cascade distances based on camera frustum
 					// These could be configurable via cvars in the future
-					float nearPlane = r_znear;  // Should match r_nearclip or similar, 4.0 by default
-					float farPlane = r_zfar; // Should match r_farclip or similar, 8192.0 by default
+					float nearPlane = R_GetMainViewNearPlane();  // Should match r_nearclip or similar, 4.0 by default
+					float farPlane = R_GetMainViewFarPlane(); // Should match r_farclip or similar, 8192.0 by default
 
-					float fovY = (r_yfov_currentpass) * (M_PI / 360.0);
-					float fovX = (r_xfov_currentpass) * (M_PI / 360.0);
-					float tanHalfFovY = tanf(0.5f * fovY);
-					float tanHalfFovX = tanf(0.5f * fovX);
+					float xfov = 0, yfov = 0;
+					R_CalcMainViewFov(xfov, yfov);
+
+					float tanHalfFovY = tanf(0.5f * yfov * (M_PI / 360.0));
+					float tanHalfFovX = tanf(0.5f * xfov * (M_PI / 360.0));
 
 					float splits[CSM_LEVELS + 1]{};
 					splits[0] = nearPlane;

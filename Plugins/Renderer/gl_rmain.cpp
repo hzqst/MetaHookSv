@@ -677,6 +677,17 @@ bool R_IsViewmodelAttachment(cl_entity_t* ent)
 	return false;
 }
 
+float R_GetMainViewNearPlane()
+{
+	return gl_nearplane->value;
+}
+
+//TODO: from movevars
+float R_GetMainViewFarPlane()
+{
+	return (r_params.movevars ? r_params.movevars->zmax : 4096);
+}
+
 /*
 	Purpose : Check if we are in SinglePlayer game
 */
@@ -2380,23 +2391,6 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	r_ortho = false;
 }
 
-void R_SetupPerspectiveReversedZ(float fovx, float fovy, float zNear, float zFar)
-{
-	r_xfov_currentpass = fovx;
-	r_yfov_currentpass = fovy;
-
-	auto right = tan(fovx * (M_PI / 360.0)) * zNear;
-	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
-
-	R_SetupFrustumProjectionMatrixReversedZ(-right, right, -top, top, zNear, zFar);
-
-	r_frustum_right = right;
-	r_frustum_top = top;
-	r_znear = zNear;
-	r_zfar = zFar;
-	r_ortho = false;
-}
-
 void GL_FreeFrameBuffers(void)
 {
 	GL_FreeFBO(&s_FinalBufferFBO);
@@ -3832,7 +3826,7 @@ float R_GetDefaultFOV()
 	return 90;
 }
 
-void R_AdjustScopeFOVForViewModel(float* fov)
+void R_AdjustScopeFOVForViewModel(float& fov)
 {
 	if (viewmodel_fov->value > 0)
 	{
@@ -3840,28 +3834,62 @@ void R_AdjustScopeFOVForViewModel(float* fov)
 		{
 			if (default_fov && fabs(viewmodel_fov->value - default_fov->value) > 1)
 			{
-				*fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
+				fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
 
-				if (*fov < 15.0f)
-					*fov = 15.0f;
+				if (fov < 15.0f)
+					fov = 15.0f;
 
-				if (*fov < 1.0f || *fov > 179.0f)
-					*fov = 90.0f;
+				if (fov < 1.0f || fov > 179.0f)
+					fov = 90.0f;
 			}
 		}
 		else
 		{
 			if (fabs(viewmodel_fov->value - 90.0f) > 1)
 			{
-				*fov = (*scrfov) * viewmodel_fov->value / 90.0f;
+				fov = (*scrfov) * viewmodel_fov->value / 90.0f;
 
-				if (*fov < 15.0f)
-					*fov = 15.0f;
+				if (fov < 15.0f)
+					fov = 15.0f;
 
-				if (*fov < 1.0f || *fov > 179.0f)
-					*fov = 90.0f;
+				if (fov < 1.0f || fov > 179.0f)
+					fov = 90.0f;
 			}
 		}
+	}
+}
+
+void R_CalcMainViewFov(float &xfov, float& yfov)
+{
+	if ((int)r_vertical_fov->value > 0)
+	{
+		auto height = (double)(*r_refdef.vrect).height;
+		auto width = (double)(*r_refdef.vrect).width;
+		auto aspect = height / width;
+
+		auto fov = (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
+
+		yfov = fov;
+		xfov = V_CalcFovV(fov, width, height);
+
+		V_AdjustFovV(&xfov, &yfov, width, height);
+	}
+	else
+	{
+		auto width = (double)(*r_refdef.vrect).width;
+		auto height = (double)(*r_refdef.vrect).height;
+		auto aspect = width / height;
+
+		auto fov = (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
+
+		xfov = fov;
+		yfov = V_CalcFovH(fov, width, height);
+
+		V_AdjustFovH(&xfov, &yfov, width, height);
 	}
 }
 
@@ -3879,13 +3907,13 @@ void R_SetupGLForViewModel(void)
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
-		R_AdjustScopeFOVForViewModel(&fov);
+		R_AdjustScopeFOVForViewModel(fov);
 
 		r_yfov_viewmodel = fov;
 		r_xfov_viewmodel = V_CalcFovV(fov, width, height);
 
 		V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, R_GetMainViewNearPlane(), R_GetMainViewFarPlane());
 	}
 	else
 	{
@@ -3897,13 +3925,13 @@ void R_SetupGLForViewModel(void)
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
 
-		R_AdjustScopeFOVForViewModel(&fov);
+		R_AdjustScopeFOVForViewModel(fov);
 
 		r_xfov_viewmodel = fov;
 		r_yfov_viewmodel = V_CalcFovH(fov, width, height);
 
 		V_AdjustFovH(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, R_GetMainViewNearPlane(), R_GetMainViewFarPlane());
 	}
 
 	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
@@ -3964,7 +3992,7 @@ void R_SetupGL(void)
 			if ((*r_refdef.onlyClientDraws))
 			{
 				V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
+				R_SetupPerspective(r_xfov, r_yfov, R_GetMainViewNearPlane(), 16000.0f);
 			}
 			else if (CL_IsDevOverviewMode())
 			{
@@ -3980,7 +4008,7 @@ void R_SetupGL(void)
 			else
 			{
 				V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+				R_SetupPerspective(r_xfov, r_yfov, R_GetMainViewNearPlane(), R_GetMainViewFarPlane());
 			}
 
 			R_LoadIdentityForWorldMatrix();
@@ -4002,7 +4030,7 @@ void R_SetupGL(void)
 			if ((*r_refdef.onlyClientDraws))
 			{
 				V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, 16000.0f);
+				R_SetupPerspective(r_xfov, r_yfov, R_GetMainViewNearPlane(), 16000.0f);
 			}
 			else if (CL_IsDevOverviewMode())
 			{
@@ -4018,7 +4046,7 @@ void R_SetupGL(void)
 			else
 			{
 				V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-				R_SetupPerspective(r_xfov, r_yfov, gl_nearplane->value, (r_params.movevars ? r_params.movevars->zmax : 4096));
+				R_SetupPerspective(r_xfov, r_yfov, R_GetMainViewNearPlane(), R_GetMainViewFarPlane());
 			}
 
 			R_LoadIdentityForWorldMatrix();

@@ -28,6 +28,7 @@ public:
 	float specular{};
 	float specularpow{};
 	int shadow{};
+	int shadow_size{};
 	int follow_player{};
 	std::shared_ptr<IShadowTexture> pShadowTexture;
 	std::shared_ptr<IShadowTexture> pCSMShadowTexture;
@@ -76,7 +77,10 @@ typedef struct PointLightCallbackArgs_s
 	float diffuse;
 	float specular;
 	float specularpow;
+
 	std::shared_ptr<IShadowTexture>* ppShadowTexture;
+	uint32_t shadowSize;
+
 	bool bVolume;
 }PointLightCallbackArgs;
 
@@ -100,7 +104,10 @@ typedef struct SpotLightCallbackArgs_s
 	float diffuse;
 	float specular;
 	float specularpow;
+
 	std::shared_ptr<IShadowTexture>* ppShadowTexture;
+	uint32_t shadowSize;
+
 	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
 	bool bIsFromLocalPlayer;
@@ -121,7 +128,10 @@ typedef struct DirectionalLightCallbackArgs_s
 	float diffuse;
 	float specular;
 	float specularpow;
+
 	std::shared_ptr<IShadowTexture>* ppShadowTexture;
+	uint32_t shadowSize;
+
 	std::shared_ptr<IShadowTexture>* ppCSMShadowTexture;
 	bool bVolume;
 }DirectionalLightCallbackArgs;
@@ -208,6 +218,8 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bo
 #define DLIGHT_DIRECTIONAL_ENABLED				0x20ull
 #define DLIGHT_CSM_ENABLED						0x40ull
 #define DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
+#define DLIGHT_PCF_ENABLED						0x100ull
+#define DLIGHT_PCSS_ENABLED						0x200ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull

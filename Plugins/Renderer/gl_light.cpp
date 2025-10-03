@@ -211,6 +211,12 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 		if (state & DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED)
 			defs << "#define CUBEMAP_SHADOW_TEXTURE_ENABLED\n";
 
+		if (state & DLIGHT_PCF_ENABLED)
+			defs << "#define PCF_ENABLED\n";
+
+		if (state & DLIGHT_PCSS_ENABLED)
+			defs << "#define PCSS_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFile("renderer\\shader\\dlight_shader.vert.glsl", "renderer\\shader\\dlight_shader.frag.glsl", def.c_str(), def.c_str());
@@ -266,6 +272,8 @@ const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_DIRECTIONAL_ENABLED				,"DLIGHT_DIRECTIONAL_ENABLED" },
 { DLIGHT_CSM_ENABLED						,"DLIGHT_CSM_ENABLED" },
 { DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED		,"DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED" },
+{ DLIGHT_PCF_ENABLED						,"DLIGHT_PCF_ENABLED" },
+{ DLIGHT_PCSS_ENABLED						,"DLIGHT_PCSS_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -700,6 +708,7 @@ void R_IterateDynamicLights(
 
 				if (dynlight->shadow > 0) {
 					args.ppShadowTexture = &dynlight->pShadowTexture;
+					args.shadowSize = dynlight->shadow_size;
 				}
 
 				args.bVolume = true;
@@ -720,6 +729,7 @@ void R_IterateDynamicLights(
 
 				if (dynlight->shadow > 0) {
 					args.ppShadowTexture = &dynlight->pShadowTexture;
+					args.shadowSize = dynlight->shadow_size;
 				}
 
 				args.bVolume = false;
@@ -763,6 +773,7 @@ void R_IterateDynamicLights(
 			if (dynlight->shadow > 0) {
 				args.ppShadowTexture = &dynlight->pShadowTexture;
 				args.ppCSMShadowTexture = &dynlight->pCSMShadowTexture;
+				args.shadowSize = dynlight->shadow_size;
 			}
 
 			args.bVolume = false; // DirectionalLight always uses fullscreen
@@ -927,6 +938,7 @@ void R_IterateDynamicLights(
 				args.specular = specular;
 				args.specularpow = specularpow;
 				args.ppShadowTexture = &g_DLightShadowTextures[i];
+				args.shadowSize = 256;
 				args.bVolume = true;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
@@ -953,6 +965,7 @@ void R_IterateDynamicLights(
 				args.specular = specular;
 				args.specularpow = specularpow;
 				args.ppShadowTexture = &g_DLightShadowTextures[i];
+				args.shadowSize = 256;
 				args.bVolume = false;
 				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
 
@@ -997,7 +1010,8 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = &g_DLightShadowTextures[i];
+				args.ppShadowTexture = nullptr;
+				args.shadowSize = 0;
 				args.bVolume = true;
 
 				pointlightCallback(&args, context);
@@ -1013,7 +1027,8 @@ void R_IterateDynamicLights(
 				args.diffuse = diffuse;
 				args.specular = specular;
 				args.specularpow = specularpow;
-				args.ppShadowTexture = &g_DLightShadowTextures[i];
+				args.ppShadowTexture = nullptr;
+				args.shadowSize = 0;
 				args.bVolume = false;
 
 				pointlightCallback(&args, context);
@@ -1088,6 +1103,8 @@ void R_LightShadingPass(void)
 			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
 			{
 				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_PCF_ENABLED;
+				//DLightProgramState |= DLIGHT_PCSS_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1164,6 +1181,8 @@ void R_LightShadingPass(void)
 			if (pShadowTexture && pShadowTexture->IsReady() && pShadowTexture->IsCubemap())
 			{
 				DLightProgramState |= DLIGHT_CUBEMAP_SHADOW_TEXTURE_ENABLED;
+				DLightProgramState |= DLIGHT_PCF_ENABLED;
+				//DLightProgramState |= DLIGHT_PCSS_ENABLED;
 			}
 
 			dlight_program_t prog = { 0 };

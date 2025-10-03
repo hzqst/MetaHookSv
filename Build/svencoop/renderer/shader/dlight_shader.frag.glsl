@@ -23,6 +23,8 @@ layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DArrayShadow csmTex;
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 layout(binding = DSHADE_BIND_CUBEMAP_SHADOW_TEXTURE) uniform samplerCubeShadow cubemapShadowTex;
+// For PCSS blocker search, we need to read actual depth values
+// We use the same texture but cast it appropriately
 #endif
 
 #if defined(SHADOW_TEXTURE_ENABLED)
@@ -39,7 +41,6 @@ uniform vec2 u_csmTexel;
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 uniform float u_cubeShadowTexel;
 #endif
-
 
 #if defined(VOLUME_ENABLED)
 
@@ -285,13 +286,78 @@ float CalcCSMShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection, vec2 vB
 
 #if defined(CUBEMAP_SHADOW_TEXTURE_ENABLED)
 
-float CubeShadowCompareDepth(vec4 basecoord, vec2 offset, float texelSize)
+// Poisson disk sampling pattern for PCF
+const vec3 POISSON_DISK_SAMPLES[20] = vec3[](
+    vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+    vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+    vec3(1, 0, 0), vec3(-1, 0, 0), vec3(0, 1, 0), vec3(0, -1, 0),
+    vec3(0, 0, 1), vec3(0, 0, -1),
+    vec3(0.707, 0.707, 0), vec3(-0.707, 0.707, 0),
+    vec3(0.707, -0.707, 0), vec3(-0.707, -0.707, 0),
+    vec3(0, 0.707, 0.707), vec3(0, -0.707, -0.707)
+);
+
+float CubemapShadowCompareDepth(vec3 sampleDir, float compareDepth)
 {
-    vec4 uv = basecoord;
+    return texture(cubemapShadowTex, vec4(sampleDir, compareDepth));
+}
+
+// Calculate average blocker distance for PCSS
+// We use a simplified approach: sample at multiple depth layers and weight them
+float CubemapShadowFindBlockerDistance(vec3 lightToWorldDir, float receiverDepth, float searchRadius)
+{
+    float blockerSum = 0.0;
+    float weightSum = 0.0;
     
-    uv.xy += basecoord.w * offset * texelSize;
+    const int numSamples = 16;
+    const int numDepthLayers = 4;
     
-    return texture(cubemapShadowTex, uv);
+    // Sample at different depth layers between near plane and receiver
+    for (int depthLayer = 0; depthLayer < numDepthLayers; depthLayer++)
+    {
+        // Sample depth from 0 to receiverDepth
+        float sampleDepth = receiverDepth * (float(depthLayer) + 0.5) / float(numDepthLayers);
+        
+        float layerShadow = 0.0;
+        
+        // Take multiple spatial samples at this depth
+        for (int i = 0; i < numSamples; i++)
+        {
+            vec3 sampleDir = normalize(lightToWorldDir + POISSON_DISK_SAMPLES[i] * searchRadius);
+            layerShadow += texture(cubemapShadowTex, vec4(sampleDir, sampleDepth));
+        }
+        
+        layerShadow /= float(numSamples);
+        
+        // Weight this depth layer by how much it's in shadow
+        // If layerShadow is low (more shadow), this depth likely has blockers
+        float shadowAmount = 1.0 - layerShadow;
+        if (shadowAmount > 0.1)
+        {
+            blockerSum += sampleDepth * shadowAmount;
+            weightSum += shadowAmount;
+        }
+    }
+    
+    if (weightSum < 0.01)
+        return -1.0; // No significant blockers found
+    
+    return blockerSum / weightSum;
+}
+
+// PCF filtering with variable kernel size
+float CubemapShadowPCF(vec3 lightToWorldDir, float compareDepth, float filterRadius)
+{
+    float visibility = 0.0;
+    int sampleCount = 20;
+    
+    for (int i = 0; i < sampleCount; i++)
+    {
+        vec3 sampleDir = normalize(lightToWorldDir + POISSON_DISK_SAMPLES[i] * filterRadius);
+        visibility += CubemapShadowCompareDepth(sampleDir, compareDepth);
+    }
+    
+    return visibility / float(sampleCount);
 }
 
 float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 LightDirection)
@@ -304,20 +370,80 @@ float CalcCubemapShadowIntensity(vec3 World, vec3 LightPos, vec3 Normal, vec3 Li
     float zNear = 0.1;
     float zFar = u_lightradius;
     
-    //We store linearDepth in cubeShadowTex
+    // We store linearDepth in cubeShadowTex
     float linearDepth = distanceLightToWorld / zFar;
 
-    // Calculate bias based on surface angle
+    // Improved bias calculation to eliminate wave artifacts
+    // Use both normal-based and distance-based bias
     float NdotL = max(dot(Normal, -LightDirection), 0.0);
-    float slopeBias = 0.0002 * (1.0 - NdotL);
-    float constBias = 0.0004;
-    float bias = max(slopeBias, constBias);
     
-    // Sample cubemap shadow texture
-    // For cubemap, we use the direction + computed depth
-    vec4 cubeSampleCoord = vec4(lightToWorldDir, linearDepth - bias);
+    // Slope-based bias: larger bias for surfaces at grazing angles
+    // Use smoother falloff to avoid sudden changes
+    float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
+    
+    // Distance-based bias: account for cubemap texel size at different distances
+    // At distance, each texel covers more world space
+    float texelWorldSize = distanceLightToWorld * u_cubeShadowTexel * 2.0;
+    float distanceBias = texelWorldSize * 0.5;
+    
+    // Constant base bias
+    float constBias = 0.0003;
+    
+    // Normal offset bias: push the sample point slightly along the normal
+    // Use square root scaling to reduce offset at far distances
+    float normalOffsetScale = sqrt(distanceLightToWorld) * u_cubeShadowTexel * 0.5;
+    // Clamp offset to prevent excessive values
+    normalOffsetScale = min(normalOffsetScale, 0.1);
+    
+    vec3 offsetWorld = World + Normal * normalOffsetScale;
+    vec3 offsetLightToWorld = offsetWorld - LightPos;
+    float offsetDistance = length(offsetLightToWorld);
+    vec3 offsetDir = offsetLightToWorld / offsetDistance;
+    float offsetLinearDepth = offsetDistance / zFar;
+    
+    // Combine all bias components
+    float bias = constBias + slopeBias + distanceBias;
+    // Clamp bias to prevent over-correction
+    bias = min(bias, 0.01);
+    
+    float compareDepth = offsetLinearDepth - bias;
+    
+    // Clamp depth to valid range
+    compareDepth = clamp(compareDepth, 0.0, 1.0);
+    
+    float visibility = 0.0;
 
-    float visibility = CubeShadowCompareDepth(cubeSampleCoord, vec2(0.0, 0.0), u_cubeShadowTexel);
+#if defined(PCSS_ENABLED)
+    // PCSS: Percentage Closer Soft Shadows
+    // Step 1: Find average blocker distance
+    float lightSizeForPCSS = u_lightradius * 0.02; // Use 5% of light radius as effective light size
+    float searchRadius = lightSizeForPCSS * u_cubeShadowTexel * 1.2;
+    float avgBlockerDepth = CubemapShadowFindBlockerDistance(offsetDir, offsetLinearDepth, searchRadius);
+    
+    if (avgBlockerDepth < 0.0)
+    {
+        // No blockers found, fully lit
+        visibility = 1.0;
+    }
+    else
+    {
+        // Step 2: Estimate penumbra size based on blocker distance
+        // penumbraSize = (receiverDepth - blockerDepth) * lightSize / blockerDepth
+        float penumbraWidth = (offsetLinearDepth - avgBlockerDepth) * lightSizeForPCSS / (avgBlockerDepth + 0.001);
+        float filterRadius = penumbraWidth * u_cubeShadowTexel * 0.5;
+        filterRadius = clamp(filterRadius, u_cubeShadowTexel * 0.5, u_cubeShadowTexel * 2.0);
+        
+        // Step 3: PCF with dynamic filter size
+        visibility = CubemapShadowPCF(offsetDir, compareDepth, filterRadius);
+    }
+#elif defined(PCF_ENABLED)
+    // Standard PCF with fixed kernel size
+    float filterRadius = u_cubeShadowTexel * 1.2;
+    visibility = CubemapShadowPCF(offsetDir, compareDepth, filterRadius);
+#else
+    // No filtering, single sample (fastest but lowest quality)
+    visibility = CubemapShadowCompareDepth(offsetDir, compareDepth);
+#endif
     
     return visibility;
 }

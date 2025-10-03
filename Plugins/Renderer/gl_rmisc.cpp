@@ -1291,50 +1291,6 @@ void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float
 	r_ortho = false;
 }
 
-void R_SetupFrustumProjectionMatrixReversedZ(float left, float right, float bottom, float top, float zNear, float zFar)
-{
-	memset(r_projection_matrix, 0, sizeof(float) * 16);
-
-	// 反向深度透视投影矩阵 (Reversed-Z) with glClipControl(GL_ZERO_TO_ONE)
-	// 
-	// OpenGL透视投影中：
-	//   z_clip = projection[10] * (-z_eye) + projection[14]  (因为输入是view space中的-z)
-	//   w_clip = -z_eye
-	//   z_ndc = z_clip / w_clip = [projection[10] * (-z_eye) + projection[14]] / (-z_eye)
-	//        = projection[10] + projection[14] / z_eye
-	//
-	// 标准投影 (NDC [-1,1], GL_NEGATIVE_ONE_TO_ONE): 
-	//   projection[10] = -(zFar+zNear)/(zFar-zNear)
-	//   projection[14] = -2*zFar*zNear/(zFar-zNear)
-	//   => z_ndc = -(zFar+zNear)/(zFar-zNear) - 2*zFar*zNear/(zFar-zNear)/z_eye
-	//   近平面(z_eye=zNear) -> z_ndc=-1, 远平面(z_eye=zFar) -> z_ndc=1
-	//
-	// 反向投影 (NDC [0,1], GL_ZERO_TO_ONE):
-	//   我们希望：近平面(z_eye=zNear) -> z_ndc=1, 远平面(z_eye=zFar) -> z_ndc=0
-	//   设 z_ndc = A + B/z_eye
-	//   当 z_eye=zNear: 1 = A + B/zNear  => A*zNear + B = zNear
-	//   当 z_eye=zFar:  0 = A + B/zFar   => A*zFar + B = 0
-	//   解得: A = zNear/(zNear-zFar) = -zNear/(zFar-zNear)
-	//         B = -A*zFar = zNear*zFar/(zFar-zNear)
-	//   => projection[10] = -zNear/(zFar-zNear)
-	//      projection[14] = zNear*zFar/(zFar-zNear)
-	
-	float rl = right - left;
-	float tb = top - bottom;
-	float fn = zFar - zNear;
-
-	r_projection_matrix[0] = (2.0f * zNear) / rl;                    // _11
-	r_projection_matrix[5] = (2.0f * zNear) / tb;                    // _22
-	r_projection_matrix[8] = (right + left) / rl;                    // _31
-	r_projection_matrix[9] = (top + bottom) / tb;                    // _32
-	// 反向深度 with GL_ZERO_TO_ONE:
-	r_projection_matrix[10] = -zNear / fn;                           // _33 = -zNear/(zFar-zNear)
-	r_projection_matrix[11] = -1.0f;                                 // _34
-	r_projection_matrix[14] = (zNear * zFar) / fn;                   // _43 = zNear*zFar/(zFar-zNear)
-
-	r_ortho = false;
-}
-
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ)
 {
 	memset(r_projection_matrix, 0, sizeof(float) * 16);
@@ -1364,8 +1320,8 @@ void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float t
 
 	r_frustum_right = 0;
 	r_frustum_top = 0;
-	r_znear = 16000.0 - gDevOverview->z_min;
-	r_zfar = 16000.0 - gDevOverview->z_max;
+	r_znear = zNear;
+	r_zfar = zFar;
 	r_xfov_currentpass = 0;
 	r_yfov_currentpass = 0;
 }
