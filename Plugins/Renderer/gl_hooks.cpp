@@ -6806,7 +6806,7 @@ void Engine_FillAddress_R_GetSpriteFrame(const mh_dll_info_t& DllInfo, const mh_
 			auto R_GetSpriteFrame_Call = Search_Pattern(pattern, DllInfo);
 			if (R_GetSpriteFrame_Call)
 			{
-				R_GetSpriteFrame_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_GetSpriteFrame_Call, 0x300, [](PUCHAR Candidate) {
+				R_GetSpriteFrame_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_GetSpriteFrame_Call, 0x120, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -6817,17 +6817,6 @@ void Engine_FillAddress_R_GetSpriteFrame(const mh_dll_info_t& DllInfo, const mh_
 						Candidate[1] == 0x8B &&
 						Candidate[2] == 0x74 &&
 						Candidate[3] == 0x24)
-						return TRUE;
-
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[3] == 0xA1)
-						return TRUE;
-
-					if (Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[3] >= 0x50 &&
-						Candidate[3] <= 0x57)
 						return TRUE;
 
 					return FALSE;

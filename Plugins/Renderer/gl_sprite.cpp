@@ -11,6 +11,20 @@ int *particletexture = NULL;
 particle_t **active_particles = NULL;
 word **host_basepal = NULL;
 
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
+{
+	if (!pRenderData->vSpriteMaterials[frameIndex]) {
+		pRenderData->vSpriteMaterials[frameIndex] = std::make_shared<CSpriteModelRenderMaterial>();
+	}
+
+	return pRenderData->vSpriteMaterials[frameIndex];
+}
+
+std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
+{
+	return pRenderData->vSpriteMaterials[frameIndex];
+}
+
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 {
 	sprite_program_t prog = { 0 };
@@ -315,8 +329,6 @@ int R_GetSpriteFrameIndex(msprite_t* pSprite, mspriteframe_t *pSpriteFrame)
 
 mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 {
-	mspriteframe_t* pspriteframe = nullptr;
-
 	if (!pSprite)
 	{
 		gEngfuncs.Con_DPrintf("R_GetSpriteFrame: pSprite is NULL!\n");
@@ -338,11 +350,21 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 	if (pSprite->frames[frame].type == SPR_SINGLE)
 	{
 		//TODO: fake our own mspriteframe_t
+		const auto& pRenderData = R_GetSpriteRenderDataFromModel((model_t *)pSprite->cachespot);
 
-		pspriteframe = pSprite->frames[frame].frameptr;
+		if (pRenderData)
+		{
+			const auto& pRenderMaterial = R_SpriteGetMaterial(pRenderData.get(), frame);
+
+			if (pRenderMaterial && pRenderMaterial->textures[SPRITE_REPLACE_TEXTURE].gltexturenum)
+			{
+				return &pRenderMaterial->replaceframe;
+			}
+		}
+		return (mspriteframe_t*)pSprite->frames[frame].frameptr;
 	}
 
-	return pspriteframe;
+	return nullptr;
 }
 
 //Credits to https://github.com/FWGS/xashxt-fwgs/blob/dee61d6cf0a8f681c322e863f8df1d5e6f22443e/client/render/r_sprite.cpp#L126
@@ -438,20 +460,6 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 		return false;
 
 	return true;
-}
-
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteCreateMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
-{
-	if (!pRenderData->vSpriteMaterials[frameIndex]) {
-		pRenderData->vSpriteMaterials[frameIndex] = std::make_shared<CSpriteModelRenderMaterial>();
-	}
-
-	return pRenderData->vSpriteMaterials[frameIndex];
-}
-
-std::shared_ptr<CSpriteModelRenderMaterial> R_SpriteGetMaterial(CSpriteModelRenderData* pRenderData, int frameIndex)
-{
-	return pRenderData->vSpriteMaterials[frameIndex];
 }
 
 void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, CSpriteModelRenderData *pRenderData, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
@@ -979,7 +987,7 @@ std::shared_ptr<CSpriteModelRenderData> R_GetSpriteRenderDataFromModel(model_t* 
 {
 	int modelindex = EngineGetModelIndex(mod);
 
-	if (modelindex >= (int)g_SpriteRenderDataCache.size())
+	if (modelindex < 0 || modelindex >= (int)g_SpriteRenderDataCache.size())
 		return nullptr;
 
 	return g_SpriteRenderDataCache[modelindex];
@@ -1036,6 +1044,8 @@ std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t *mod)
 	
 		R_SpriteLoadExternalFile(mod, pSprite, pRenderData.get());
 
+		pSprite->cachespot = mod;
+
 		return pRenderData;
 	}
 
@@ -1048,6 +1058,8 @@ std::shared_ptr<CSpriteModelRenderData> R_CreateSpriteRenderData(model_t *mod)
 	R_AllocSlotForSpriteRenderData(mod, pSprite, pRenderData);
 
 	R_SpriteLoadExternalFile(mod, pSprite, pRenderData.get());
+
+	pSprite->cachespot = mod;
 
 	return pRenderData;
 }
