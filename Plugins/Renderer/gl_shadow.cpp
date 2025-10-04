@@ -843,6 +843,14 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_LoadIdentityForProjectionMatrix();
 					R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
 
+					r_ortho = true;
+					r_frustum_right = 0;
+					r_frustum_top = 0;
+					r_znear = 2048;
+					r_zfar = -2048;
+					r_xfov_currentpass = 0;
+					r_yfov_currentpass = 0;
+
 					auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 					auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
 
@@ -1008,6 +1016,14 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						R_LoadIdentityForProjectionMatrix();
 						R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
+
+						r_ortho = true;
+						r_frustum_right = 0;
+						r_frustum_top = 0;
+						r_znear = 2048;
+						r_zfar = -2048;
+						r_xfov_currentpass = 0;
+						r_yfov_currentpass = 0;
 
 						auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
 						auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();

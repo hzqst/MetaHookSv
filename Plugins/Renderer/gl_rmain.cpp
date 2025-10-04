@@ -2388,6 +2388,7 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	r_frustum_right = right;
 	r_frustum_top = top;
 	r_znear = zNear;
+
 	r_zfar = zFar;
 	r_ortho = false;
 }
@@ -4020,6 +4021,14 @@ void R_SetupGL(void)
 					16000.0 - gDevOverview->z_min,
 					16000.0 - gDevOverview->z_max,
 					true);
+
+				r_ortho = true;
+				r_frustum_right = 0;
+				r_frustum_top = 0;
+				r_znear = 16000.0 - gDevOverview->z_min;
+				r_zfar = 16000.0 - gDevOverview->z_max;
+				r_xfov_currentpass = 0;
+				r_yfov_currentpass = 0;
 			}
 			else
 			{
@@ -4058,6 +4067,14 @@ void R_SetupGL(void)
 					16000.0 - gDevOverview->z_min,
 					16000.0 - gDevOverview->z_max,
 					true);
+
+				r_ortho = true;
+				r_frustum_right = 0;
+				r_frustum_top = 0;
+				r_znear = 16000.0 - gDevOverview->z_min;
+				r_zfar = 16000.0 - gDevOverview->z_max;
+				r_xfov_currentpass = 0;
+				r_yfov_currentpass = 0;
 			}
 			else
 			{
