@@ -349,7 +349,7 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 
 	if (pSprite->frames[frame].type == SPR_SINGLE)
 	{
-		//TODO: fake our own mspriteframe_t
+		//fake our own mspriteframe_t
 		const auto& pRenderData = R_GetSpriteRenderDataFromModel((model_t *)pSprite->cachespot);
 
 		if (pRenderData)

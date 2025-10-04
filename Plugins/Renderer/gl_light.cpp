@@ -305,18 +305,18 @@ void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 	}
 }
 
-		// #define DLIGHT_SPOT_ENABLED								0x1ull
-		// #define DLIGHT_POINT_ENABLED							0x2ull
-		// #define DLIGHT_VOLUME_ENABLED							0x4ull
-		// #define DLIGHT_CONE_TEXTURE_ENABLED						0x8ull
-		// #define DLIGHT_DIRECTIONAL_ENABLED						0x10ull
-		// #define DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED			0x20ull
-		// #define DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED			0x40ull
-		// #define DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x80ull
-		// #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
-		// #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
-		// #define DLIGHT_PCF_ENABLED								0x400ull
-		// #define DLIGHT_PCSS_ENABLED								0x800ull
+// #define DLIGHT_SPOT_ENABLED								0x1ull
+// #define DLIGHT_POINT_ENABLED								0x2ull
+// #define DLIGHT_VOLUME_ENABLED							0x4ull
+// #define DLIGHT_CONE_TEXTURE_ENABLED						0x8ull
+// #define DLIGHT_DIRECTIONAL_ENABLED						0x10ull
+// #define DLIGHT_STATIC_SHADOW_TEXTURE_ENABLED				0x20ull
+// #define DLIGHT_DYNAMIC_SHADOW_TEXTURE_ENABLED			0x40ull
+// #define DLIGHT_STATIC_CUBEMAP_SHADOW_TEXTURE_ENABLED		0x80ull
+// #define DLIGHT_DYNAMIC_CUBEMAP_SHADOW_TEXTURE_ENABLED	0x100ull
+// #define DLIGHT_CSM_SHADOW_TEXTURE_ENABLED				0x200ull
+// #define DLIGHT_PCF_ENABLED								0x400ull
+// #define DLIGHT_PCSS_ENABLED								0x800ull
 
 const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_SPOT_ENABLED								,"DLIGHT_SPOT_ENABLED"	 },

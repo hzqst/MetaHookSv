@@ -2491,7 +2491,14 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
 
-		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		}
 
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
@@ -2724,7 +2731,14 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
 
-		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+		}
 
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
