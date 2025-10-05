@@ -115,7 +115,7 @@ void main(void)
 	vec3 vertex = vec3(0.0, 0.0, 0.0);
     vec3 normal = vec3(0.0, 0.0, 0.0);
 	vec2 texcoord = vec2(0.0, 0.0);
-	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, SceneUBO.z_far, vertex, normal, texcoord);
+	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, GetCameraZFar(0), vertex, normal, texcoord);
 
 	vec4 normal4 = vec4(normal.xyz, 0.0);
 	v_normal = normalize((normal4).xyz);

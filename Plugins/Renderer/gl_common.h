@@ -299,17 +299,17 @@ typedef struct scene_ubo_s
 	float v_lambert;
 	float v_gamma;
 	float v_texgamma;
-	float z_near;
-	float z_far;
 	float r_alphamin;
 	float r_linear_blend_shift;
 	float r_lightscale;
-	vec4 r_filtercolor;
-	vec4 r_lightstylevalue[256 / 4];
 	float r_linear_fog_shift;
 	float r_linear_fog_shiftz;
+	vec4 r_filtercolor;
+	vec4 r_lightstylevalue[256 / 4];
 	float r_lightmap_scale;
 	float r_lightmap_pow;
+	float padding;
+	float padding2;
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");

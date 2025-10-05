@@ -2639,6 +2639,26 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 		}
 
+		if (WSurfProgramState & WSURF_LIGHTMAP_ENABLED)
+		{
+			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 0))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+			}
+			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 1))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+			}
+			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 2))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+			}
+			if (g_WorldSurfaceRenderer.iLightmapUsedBits & (1 << 3))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+			}
+		}
+
 		if (R_IsRenderingWaterView())
 		{
 			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -2647,6 +2667,21 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 		if (g_bPortalClipPlaneEnabled[0])
 		{
 			WSurfProgramState |= WSURF_CLIP_ENABLED;
+		}
+
+		if (R_IsRenderingShadowView())
+		{
+			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+		}
+
+		if (R_IsRenderingMultiView())
+		{
+			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+		}
+
+		if (R_IsRenderingLinearDepth())
+		{
+			WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
 		}
 
 		if (R_IsRenderingGBuffer())
@@ -2712,21 +2747,6 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 		if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
 		{
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
-		}
-
-		if (R_IsRenderingShadowView())
-		{
-			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
-		}
-
-		if (R_IsRenderingMultiView())
-		{
-			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
-		}
-
-		if (R_IsRenderingLinearDepth())
-		{
-			WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
 		}
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
@@ -4561,8 +4581,6 @@ void R_UploadSceneUBO(void)
 	SceneUBO.v_lambert = v_lambert->value;
 	SceneUBO.v_gamma = v_gamma->value;
 	SceneUBO.v_texgamma = v_texgamma->value;
-	SceneUBO.z_near = r_znear;
-	SceneUBO.z_far = r_zfar;
 	SceneUBO.r_alphamin = gl_alphamin->value;
 	SceneUBO.r_linear_blend_shift = math_clamp(r_linear_blend_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
