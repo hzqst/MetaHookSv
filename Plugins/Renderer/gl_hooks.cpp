@@ -437,6 +437,7 @@ static hook_t* g_phook_R_LoadSkyBox_SvEngine = NULL;
 static hook_t* g_phook_R_LoadSkys = NULL;
 static hook_t* g_phook_R_NewMap = NULL;
 static hook_t* g_phook_R_CullBox = NULL;
+static hook_t* g_phook_R_ForceCVars = NULL;
 static hook_t* g_phook_Mod_PointInLeaf = NULL;
 static hook_t* g_phook_R_BuildLightMap = NULL;
 static hook_t* g_phook_R_AddDynamicLights = NULL;
@@ -12475,6 +12476,8 @@ void Engine_InstallHooks(void)
 		Install_InlineHook(R_LoadSkys);
 	}
 
+	//For Sven
+	Install_InlineHook(R_ForceCVars);
 	Install_InlineHook(R_NewMap);
 	Install_InlineHook(Mod_PointInLeaf);
 	Install_InlineHook(R_GLStudioDrawPoints);
@@ -12555,6 +12558,7 @@ void Engine_UninstallHooks(void)
 		Uninstall_Hook(R_LoadSkys);
 	}
 
+	Uninstall_Hook(R_ForceCVars);
 	Uninstall_Hook(R_NewMap);
 	Uninstall_Hook(Mod_PointInLeaf);
 	Uninstall_Hook(R_GLStudioDrawPoints);
