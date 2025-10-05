@@ -1236,7 +1236,11 @@ std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromStudioHeaderSlo
 				if (mod->cache.data == studiohdr)
 				{
 					if (mod->needload == NL_UNREFERENCED)
+					{
 						mod->needload = NL_PRESENT;
+					}
+
+					studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 
 					auto pRenderData = R_CreateStudioRenderData(mod, studiohdr);
 
