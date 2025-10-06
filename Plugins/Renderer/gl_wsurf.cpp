@@ -2209,11 +2209,6 @@ void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* p
 		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
 	}
 
-	if (R_IsRenderingLinearDepth())
-	{
-		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
-	}
-
 	if (R_IsRenderingWaterView())
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;

@@ -5183,7 +5183,6 @@ void Host_ClearMemory(qboolean bQuite)
 	gPrivateFuncs.Host_ClearMemory(bQuite);
 }
 
-
 #ifndef WGL_ARB_create_context
 #define WGL_ARB_create_context
 #define WGL_CONTEXT_MAJOR_VERSION_ARB          0x2091

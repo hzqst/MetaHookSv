@@ -688,6 +688,7 @@ void R_RenderShadowmapForDynamicLights(void)
 				{
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
+					r_draw_lineardepth = true;
 
 					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
@@ -777,6 +778,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					r_draw_multiview = false;
 					r_draw_shadowview = false;
+					r_draw_lineardepth = false;
 
 					GL_EndDebugGroup();
 
