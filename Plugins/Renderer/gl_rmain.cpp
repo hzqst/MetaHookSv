@@ -2974,11 +2974,7 @@ void R_PostRenderView()
 	}
 	else
 	{
-		if (GL_GetCurrentSceneFBO() == GammaCorrectionTargetFBO)
-		{
-
-		}
-		else if (R_IsRenderingGammaBlending())
+		if (R_IsRenderingGammaBlending())
 		{
 			GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), GammaCorrectionTargetFBO);
 		}

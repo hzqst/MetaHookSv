@@ -801,6 +801,9 @@ void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 */
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst)
 {
+	if (src == dst)
+		return;
+
 	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorOnly - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -816,6 +819,9 @@ void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Containe
 */
 void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst)
 {
+	if (src == dst)
+		return;
+
 	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorDepth - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -831,6 +837,9 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 */
 void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
 {
+	if (src == dst)
+		return;
+
 	GL_BeginDebugGroupFormat("GL_BlitFrameBufferToFrameBufferColorDepthStencil - %s to %s", GL_GetFrameBufferName(src), GL_GetFrameBufferName(dst));
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);

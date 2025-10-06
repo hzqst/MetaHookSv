@@ -1,6 +1,5 @@
 #include "gl_local.h"
 
-// 环形分配器实现
 bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferType)
 {
 	//Already initialized
@@ -15,7 +14,6 @@ bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferT
 	m_CurrFrameSize = 0;
 	m_FrameStartOffset = 0;
 
-	// 清空已完成帧列表
 	m_CompletedFrames.clear();
 
 	if (bufferType == GL_ARRAY_BUFFER)
@@ -69,7 +67,6 @@ bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferT
 
 void CPMBRingBuffer::Shutdown()
 {
-	// 清理所有fence
 	for (auto& frame : m_CompletedFrames)
 	{
 		if (frame.fence)
@@ -118,19 +115,13 @@ void CPMBRingBuffer::Shutdown()
 
 bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation)
 {
-	// 释放已完成的帧
-	//ReleaseCompletedFrames();
-
-	// 验证参数
 	if (size == 0)
 		return false;
 	if (!IsPowerOfTwo(alignment))
 		return false;
 
-	// 对齐size
 	size = AlignUp(size, alignment);
 
-	// 检查是否有足够空间
 	if (m_UsedSize + size > m_BufferSize)
 	{
 		return false;
@@ -140,10 +131,9 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 
 	if (m_Head >= m_Tail)
 	{
-		// 情况1: 正常布局 [----Tail####Head----]
+		// [----Tail####Head----]
 		if (alignedHead + size <= m_BufferSize)
 		{
-			// 在当前位置分配
 			allocation.ptr = (char*)m_MappedPtr + alignedHead;
 			allocation.offset = alignedHead;
 			allocation.size = size;
@@ -157,7 +147,6 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		}
 		else if (size <= m_Tail)
 		{
-			// 环绕到开头分配
 			size_t wastedSpace = m_BufferSize - m_Head;
 
 			allocation.ptr = (char*)m_MappedPtr;
@@ -173,10 +162,9 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 	}
 	else
 	{
-		// 情况2: 环绕布局 [####Head----Tail####]
+		// [####Head----Tail####]
 		if (alignedHead + size <= m_Tail)
 		{
-			// 在 Head 和 Tail 之间分配
 			allocation.ptr = (char*)m_MappedPtr + alignedHead;
 			allocation.offset = alignedHead;
 			allocation.size = size;
@@ -190,11 +178,9 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		}
 		else if (m_Tail + size <= m_BufferSize)
 		{
-			// 新增：尝试在 Tail 之后分配
 			size_t alignedTail = AlignUp(m_Tail, alignment);
 			if (alignedTail + size <= m_BufferSize)
 			{
-				// 浪费掉 Head 到 Tail 之间的空间
 				size_t wastedSpace = m_Tail - m_Head;
 
 				allocation.ptr = (char*)m_MappedPtr + alignedTail;
@@ -210,23 +196,19 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		}
 	}
 
-	// 没有足够空间
 	return false;
 }
 
 void CPMBRingBuffer::BeginFrame()
 {
-	// 释放已完成的帧
 	ReleaseCompletedFrames();
 
-	// 重置当前帧大小
 	m_CurrFrameSize = 0;
 	m_FrameStartOffset = m_Head;
 }
 
 void CPMBRingBuffer::EndFrame()
 {
-	// 只有非零大小的帧才需要创建fence
 	if (m_CurrFrameSize > 0)
 	{
 		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -243,7 +225,6 @@ void CPMBRingBuffer::EndFrame()
 
 void CPMBRingBuffer::Reset()
 {
-	// 等待所有fence完成
 	for (auto& frame : m_CompletedFrames)
 	{
 		if (frame.fence)
@@ -262,17 +243,15 @@ void CPMBRingBuffer::Reset()
 
 void CPMBRingBuffer::ReleaseCompletedFrames()
 {
-	// 保留最近N帧不释放（N取决于GPU pipeline深度）
-	const size_t MIN_FRAMES_TO_KEEP = 0;
+	const size_t MIN_FRAMES_TO_KEEP = 3;
 
 	while (m_CompletedFrames.size() > MIN_FRAMES_TO_KEEP)
 	{
 		const auto& oldestFrame = m_CompletedFrames.front();
 
-		GLenum result = glClientWaitSync(oldestFrame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+		GLenum result = glClientWaitSync(oldestFrame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
 		{
-			// 只有当fence完成且已经过了足够帧数才释放
 			size_t frameEnd = oldestFrame.offset + oldestFrame.size;
 			if (frameEnd > m_BufferSize) {
 				frameEnd = frameEnd - m_BufferSize;
@@ -290,7 +269,6 @@ void CPMBRingBuffer::ReleaseCompletedFrames()
 		}
 	}
 
-	// 如果缓冲区为空，重置Head/Tail指针
 	if (IsEmpty())
 	{
 		m_CompletedFrames.clear();
