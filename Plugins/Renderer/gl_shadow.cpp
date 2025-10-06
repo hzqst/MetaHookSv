@@ -423,7 +423,7 @@ void R_SetupShadowMatrix(float out[4][4], const float worldMatrix[4][4], const f
 
 void R_RenderShadowmapForDynamicLights(void)
 {
-	if (!r_deferred_lighting->value)
+	if (!R_CanRenderGBuffer())
 		return;
 
 	if (R_ShouldRenderShadow())

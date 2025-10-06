@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef GL_STUDIO_H
+#define GL_STUDIO_H
+
 #include "gl_cvar.h"
 #include "gl_draw.h"
 #include <vector>
@@ -14,18 +17,6 @@
 #define STUDIO_PARALLAX_TEXTURE			2
 #define STUDIO_SPECULAR_TEXTURE			3
 #define STUDIO_MAX_TEXTURE				4
-
-#define STUDIO_VBO_BASE		0
-#define STUDIO_VBO_TBN		1
-#define STUDIO_VBO_MAX		2
-
-#define STUDIO_VA_POSITION		0
-#define STUDIO_VA_NORMAL		1
-#define STUDIO_VA_TEXCOORD		2
-#define STUDIO_VA_PACKEDBONE	3
-#define STUDIO_VA_TANGENT		4
-#define STUDIO_VA_BITANGENT		5
-#define STUDIO_VA_SMOOTHNORMAL	6
 
 typedef struct studio_program_s
 {
@@ -59,7 +50,6 @@ typedef struct studio_program_s
 	int r_packed_index{-1};
 	int r_framerate_numframes{-1};
 	int r_nearplaneclip{-1};
-	//int r_viewmodel_scale{-1};
 }studio_program_t;
 
 class studiovertexbase_t
@@ -367,7 +357,7 @@ extern cvar_t* r_studio_celshade_specular;
 
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr);
 std::shared_ptr<CStudioModelRenderData> R_GetStudioRenderDataFromModel(model_t* mod);
-void R_StudioClearVanillaBonesCaches();
+
 void R_StudioClearAllBoneCaches();
 void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
 bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
@@ -408,40 +398,4 @@ void R_StudioSaveBones(void);
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
-#define STUDIO_GBUFFER_ENABLED					0x80000ull
-#define STUDIO_LINEAR_FOG_ENABLED				0x100000ull
-#define STUDIO_EXP_FOG_ENABLED					0x200000ull
-#define STUDIO_EXP2_FOG_ENABLED					0x400000ull
-#define STUDIO_LINEAR_FOG_SHIFT_ENABLED			0x800000ull
-#define STUDIO_SHADOW_CASTER_ENABLED			0x1000000ull
-#define STUDIO_GLOW_SHELL_ENABLED				0x2000000ull
-#define STUDIO_OUTLINE_ENABLED					0x4000000ull
-#define STUDIO_HAIR_SHADOW_ENABLED				0x8000000ull
-#define STUDIO_CLIP_WATER_ENABLED				0x10000000ull
-#define STUDIO_CLIP_ENABLED						0x20000000ull
-#define STUDIO_ALPHA_BLEND_ENABLED				0x40000000ull
-#define STUDIO_ADDITIVE_BLEND_ENABLED			0x80000000ull
-#define STUDIO_OIT_BLEND_ENABLED				0x100000000ull
-#define STUDIO_GAMMA_BLEND_ENABLED				0x200000000ull
-#define STUDIO_ADDITIVE_RENDER_MODE_ENABLED		0x400000000ull
-#define STUDIO_NORMALTEXTURE_ENABLED			0x800000000ull
-#define STUDIO_PARALLAXTEXTURE_ENABLED			0x1000000000ull
-#define STUDIO_SPECULARTEXTURE_ENABLED			0x2000000000ull
-#define STUDIO_PACKED_DIFFUSETEXTURE_ENABLED	0x4000000000ull
-#define STUDIO_PACKED_NORMALTEXTURE_ENABLED		0x8000000000ull
-#define STUDIO_PACKED_PARALLAXTEXTURE_ENABLED	0x10000000000ull
-#define STUDIO_PACKED_SPECULARTEXTURE_ENABLED	0x20000000000ull
-#define STUDIO_ANIMATED_TEXTURE_ENABLED			0x40000000000ull
-#define STUDIO_REVERT_NORMAL_ENABLED			0x80000000000ull
-#define STUDIO_STENCIL_TEXTURE_ENABLED			0x100000000000ull
-#define STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED	0x200000000000ull
-#define STUDIO_CLIP_BONE_ENABLED				0x400000000000ull
-#define STUDIO_LEGACY_DLIGHT_ENABLED			0x800000000000ull
-#define STUDIO_LEGACY_ELIGHT_ENABLED			0x1000000000000ull
-#define STUDIO_CLIP_NEARPLANE_ENABLED			0x2000000000000ull
-#define STUDIO_GLOW_STENCIL_ENABLED				0x4000000000000ull
-#define STUDIO_GLOW_COLOR_ENABLED				0x8000000000000ull
-#define STUDIO_MULTIVIEW_ENABLED				0x10000000000000ull
-#define STUDIO_LINEAR_DEPTH_ENABLED				0x20000000000000ull
-
-#define STUDIO_PACKED_TEXTURE_ALLBITS	(STUDIO_PACKED_DIFFUSETEXTURE_ENABLED | STUDIO_PACKED_NORMALTEXTURE_ENABLED | STUDIO_PACKED_PARALLAXTEXTURE_ENABLED | STUDIO_PACKED_SPECULARTEXTURE_ENABLED)
+#endif //GL_STUDIO_H

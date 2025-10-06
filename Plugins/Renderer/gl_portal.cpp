@@ -1,9 +1,14 @@
 #include "gl_local.h"
 #include <sstream>
 
+void* g_pCurrentClientPortal = nullptr;
+void* g_pClientPortalManager = nullptr;
+
 std::unordered_map<program_state_t, portal_program_t> g_PortalProgramTable;
 
-std::unordered_map<portal_vbo_hash_t, CWorldPortalModel*, portal_vbo_hasher> g_PortalSurfaceModels;
+std::unordered_map<CWorldPortalModelHash, std::shared_ptr<CWorldPortalModel>, CWorldPortalModelHasher> g_PortalSurfaceModels;
+
+std::unordered_map<CPortalTextureCacheHash, std::shared_ptr<CPortalTextureCache>, CPortalTextureCacheHasher> g_PortalTextureCaches;
 
 CWorldPortalModel::~CWorldPortalModel()
 {
@@ -75,7 +80,7 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 }
 
 const program_state_mapping_t s_PortalProgramStateName[] = {
-{ PORTAL_OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
+{ PORTAL_OVERLAY_TEXTURE_ENABLED			, "PORTAL_OVERLAY_TEXTURE_ENABLED"	 },
 { PORTAL_TEXCOORD_ENABLED					, "PORTAL_TEXCOORD_ENABLED"			 },
 { PORTAL_REVERSE_TEXCOORD_ENABLED			, "PORTAL_REVERSE_TEXCOORD_ENABLED"	 },
 };
@@ -101,13 +106,6 @@ void R_LoadPortalProgramStates(void)
 
 void R_FreePortalResouces(void)
 {
-	for (auto& p : g_PortalSurfaceModels)
-	{
-		auto pPortalModel = p.second;
-
-		delete pPortalModel;
-	}
-
 	g_PortalSurfaceModels.clear();
 }
 
@@ -123,12 +121,30 @@ void R_InitPortal(void)
 	
 }
 
-bool ClientPortal_GetPortalTransform(void* ClientPortal, float *outOrigin, float *outAngles)
+int ClientPortal_GetIndex(void* pClientPortal)
+{
+	auto vectorBase = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
+	auto vectorEnd = *(void***)((ULONG_PTR)g_pClientPortalManager + 140);
+	
+	int index = 0;
+
+	for (auto vectorItor = vectorBase; vectorItor < vectorEnd; ++vectorItor, index++)
+	{
+		auto clientPortal = (*vectorItor);
+
+		if (clientPortal == pClientPortal)
+			return index;
+	}
+
+	return -1;
+}
+
+bool ClientPortal_GetPortalTransform(void* pClientPortal, float *outOrigin, float *outAngles)
 {
 	if (g_dwEngineBuildnum >= 10000)//5.26
 	{
-		const auto origin = (const float*)((ULONG_PTR)ClientPortal + 0);
-		const auto angles = (const float*)((ULONG_PTR)ClientPortal + 12);
+		const auto origin = (const float*)((ULONG_PTR)pClientPortal + 0);
+		const auto angles = (const float*)((ULONG_PTR)pClientPortal + 12);
 
 		VectorCopy(origin, outOrigin);
 		VectorCopy(angles, outAngles);
@@ -136,7 +152,7 @@ bool ClientPortal_GetPortalTransform(void* ClientPortal, float *outOrigin, float
 	}
 	if (g_dwEngineBuildnum >= 8948)//5.25
 	{
-		auto ent = *(cl_entity_t**)((ULONG_PTR)ClientPortal + 0x70);
+		auto ent = *(cl_entity_t**)((ULONG_PTR)pClientPortal + 0x70);
 		VectorCopy(ent->origin, outOrigin);
 		VectorCopy(ent->angles, outAngles);
 		return true;
@@ -145,17 +161,44 @@ bool ClientPortal_GetPortalTransform(void* ClientPortal, float *outOrigin, float
 	return false;
 }
 
-int ClientPortal_GetPortalMode(void *ClientPortal)
+int ClientPortal_GetPortalMode(void * pClientPortal)
 {
 	if (g_dwEngineBuildnum >= 10000 )//5.26
 	{
-		return *(int*)((ULONG_PTR)ClientPortal + 0x40);
+		return *(int*)((ULONG_PTR)pClientPortal + 0x40);
 	}
 	if (g_dwEngineBuildnum >= 8948)//5.25
 	{
-		return *(int*)((ULONG_PTR)ClientPortal + 0x28);
+		return *(int*)((ULONG_PTR)pClientPortal + 0x28);
 	}
 
+	return -1;
+}
+
+int ClientPortal_GetTextureId(void* pClientPortal)
+{
+	if (g_dwEngineBuildnum >= 10000)//5.26
+	{
+		return *(int*)((ULONG_PTR)pClientPortal + 204);
+	}
+	return -1;
+}
+
+int ClientPortal_GetTextureWidth(void* pClientPortal)
+{
+	if (g_dwEngineBuildnum >= 10000)//5.26
+	{
+		return *(int*)((ULONG_PTR)pClientPortal + 208);
+	}
+	return -1;
+}
+
+int ClientPortal_GetTextureHeight(void* pClientPortal)
+{
+	if (g_dwEngineBuildnum >= 10000)//5.26
+	{
+		return *(int*)((ULONG_PTR)pClientPortal + 212);
+	}
 	return -1;
 }
 
@@ -174,6 +217,8 @@ void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
 	}
 
 	gPrivateFuncs.ClientPortalManager_ResetAll(pthis, 0);
+
+	g_PortalTextureCaches.clear();
 }
 
 mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pthis, int dummy, msurface_t *surf)
@@ -181,9 +226,9 @@ mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pth
 	return gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture(pthis, dummy, surf);
 }
 
-CWorldPortalModel* R_FindPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
+std::shared_ptr<CWorldPortalModel> R_FindPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
+	CWorldPortalModelHash hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 	auto itor = g_PortalSurfaceModels.find(hash);
 	if (itor == g_PortalSurfaceModels.end())
 	{
@@ -193,7 +238,7 @@ CWorldPortalModel* R_FindPortalSurfaceModel(void *ClientPortalManager, void * Cl
 	return itor->second;
 }
 
-CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
+std::shared_ptr<CWorldPortalModel> R_GetPortalSurfaceModel(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
 	auto worldmodel = R_FindWorldModelBySurface(surf);
 
@@ -225,7 +270,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 
 	if (!pPortalModel)
 	{
-		pPortalModel = new CWorldPortalModel;
+		pPortalModel = std::make_shared<CWorldPortalModel>();
 
 		pPortalModel->texinfo = ClientPortalManager_GetOriginalSurfaceTexture(ClientPortalManager, 0, surf);
 		
@@ -249,7 +294,7 @@ CWorldPortalModel* R_GetPortalSurfaceModel(void *ClientPortalManager, void * Cli
 
 		pPortalModel->m_pWorldModel = pWorldModel;
 
-		portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
+		CWorldPortalModelHash hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 
 		g_PortalSurfaceModels[hash] = pPortalModel;
 	}
@@ -314,9 +359,14 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 	if (!ClientPortal_GetPortalTransform(ClientPortal, origin, angles))
 		return;
 
-	R_RotateForTransform(origin, angles);
+	GL_BeginDebugGroup("R_DrawPortal");
+
+	R_RotateForTransform(origin, angles, r_entity_matrix);
 
 	R_DrawPortalSurfaceModelBegin(pPortalModel);
+
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(-1, -gl_polyoffset->value);
 
 	portal_program_t prog = { 0 };
 
@@ -336,7 +386,11 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 	GL_UseProgram(0);
 
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
 	R_DrawPortalSurfaceModelEnd();
+
+	GL_EndDebugGroup();
 }
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, CWorldPortalModel* pPortalModel)
@@ -359,9 +413,14 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 	if (!ClientPortal_GetPortalTransform(ClientPortal, origin, angles))
 		return;
 
-	R_RotateForTransform(origin, angles);
+	GL_BeginDebugGroup("R_DrawMonitor");
+
+	R_RotateForTransform(origin, angles, r_entity_matrix);
 
 	R_DrawPortalSurfaceModelBegin(pPortalModel);
+
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(-1, -gl_polyoffset->value);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(PortalProgramState, &prog);
@@ -380,7 +439,24 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 
 	GL_UseProgram(0);
 
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
 	R_DrawPortalSurfaceModelEnd();
+
+	GL_EndDebugGroup();
+}
+
+void ClientPortalManager_AngleVectors(const float* a1, float *a2, float* a3, float* a4)
+{
+	g_pCurrentClientPortal = (void*)((ULONG_PTR)a1 - 12);
+
+	AngleVectors(a1, a2, a3, a4);
+}
+
+void __fastcall ClientPortalManager_RenderPortals(void* pthis, int dummy)
+{
+	g_pClientPortalManager = pthis;
+	gPrivateFuncs.ClientPortalManager_RenderPortals(pthis, 0);
 }
 
 void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int index, vec3_t viewangles, vec3_t view, vec4_t plane)
@@ -394,6 +470,8 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
 {
+	GL_BeginDebugGroup("ClientPortalManager_DrawPortalSurface");
+
 	auto pPortalModel = R_GetPortalSurfaceModel(ClientPortalManager, ClientPortal, surf, textureId);
 
 	if (pPortalModel)
@@ -404,12 +482,34 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 		{
 			if (mode == 1)
 			{
-				R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+				R_DrawMonitor(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel.get());
 			}
 			else
 			{
-				R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel);
+				R_DrawPortal(ClientPortalManager, ClientPortal, surf, textureId, pPortalModel.get());
 			}
 		}
 	}
+
+	GL_EndDebugGroup();
+}
+
+std::shared_ptr<CPortalTextureCache> R_GetTextureCacheForPortalTexture(void *pClientPortal, int width, int height)
+{
+	CPortalTextureCacheHash hash(pClientPortal, width, height);
+
+	auto it = g_PortalTextureCaches.find(hash);
+
+	if (it != g_PortalTextureCaches.end())
+		return it->second;
+
+	auto pTextureCache = std::make_shared<CPortalTextureCache>();
+	//pTextureCache->color = GL_GenTextureColorFormat(width, height, GL_RGBA8, true, nullptr, true);
+	pTextureCache->depth_stencil = GL_GenDepthStencilTexture(width, height, true);
+	pTextureCache->width = width;
+	pTextureCache->height = height;
+
+	g_PortalTextureCaches[hash] = pTextureCache;
+
+	return pTextureCache;
 }

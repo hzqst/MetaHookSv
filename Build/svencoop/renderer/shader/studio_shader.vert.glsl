@@ -24,26 +24,6 @@ out vec3 v_tangent;
 out vec3 v_bitangent;
 out vec3 v_smoothnormal;
 
-vec4 R_StudioViewModelProjection(float flScale)
-{
-    vec3 cameraPos = GetCameraViewPos(0);
-    
-    vec4 originalClipPos = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(v_worldpos, 1.0);
-    vec2 originalScreenPos = originalClipPos.xy / originalClipPos.w;
-    
-    vec3 toVertex = v_worldpos - cameraPos;
-    vec3 scaledWorldPos = cameraPos + toVertex * flScale;
-    
-    vec4 scaledClipPos = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(scaledWorldPos, 1.0);
-    
-    vec2 scaledScreenPos = scaledClipPos.xy / scaledClipPos.w;
-    vec2 screenDelta = originalScreenPos - scaledScreenPos;
-    
-    scaledClipPos.xy += screenDelta * scaledClipPos.w;
-    
-    return scaledClipPos;
-}
-
 #if defined(STUDIO_NF_CELSHADE_FACE)
 
 	out vec3 v_headfwd;

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef GL_WATER_H
+#define GL_WATER_H
+
 #include <vector>
 #include <string>
 
@@ -141,16 +144,4 @@ class CWorldSurfaceModel;
 class CWorldSurfaceLeaf;
 void R_DrawWaters(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLeaf, cl_entity_t* ent);
 
-#define WATER_LEGACY_ENABLED				0x1ull
-#define WATER_UNDERWATER_ENABLED			0x2ull
-#define WATER_GBUFFER_ENABLED				0x4ull
-#define WATER_DEPTH_ENABLED					0x8ull
-#define WATER_REFRACT_ENABLED				0x10ull
-#define WATER_LINEAR_FOG_ENABLED			0x20ull
-#define WATER_EXP_FOG_ENABLED				0x40ull
-#define WATER_EXP2_FOG_ENABLED				0x80ull
-#define WATER_ALPHA_BLEND_ENABLED			0x100ull
-#define WATER_ADDITIVE_BLEND_ENABLED		0x200ull
-#define WATER_OIT_BLEND_ENABLED				0x400ull
-#define WATER_GAMMA_BLEND_ENABLED			0x800ull
-#define WATER_LINEAR_FOG_SHIFT_ENABLED		0x1000ull
+#endif // GL_WATER_H

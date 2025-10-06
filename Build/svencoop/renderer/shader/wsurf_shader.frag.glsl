@@ -217,7 +217,7 @@ void main()
 
 	#if defined(PARALLAXTEXTURE_ENABLED)
 
-		vec3 viewDir = normalize(v_worldpos.xyz - GetCameraViewPos(0));
+		vec3 viewDir = normalize(v_worldpos.xyz - GetCameraViewPos(GetCameraViewIndex()));
 
 		vec4 diffuseColor = texture(diffuseTex, ParallaxMapping(v_tangent, v_bitangent, v_normal, viewDir, baseTexcoord));
 
@@ -333,7 +333,7 @@ void main()
 
 vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
-float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
+float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(GetCameraViewIndex()));
 
 #if defined(SHADOW_CASTER_ENABLED)
 
@@ -352,8 +352,6 @@ float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 		vec4 specularColor = vec4(0.0);
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
-
-		flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
 
 		#if defined(SPECULARTEXTURE_ENABLED)
 		

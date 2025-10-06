@@ -328,6 +328,7 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterSurfaceFBO = { 0 };
+FBO_Container_t s_PortalFBO = { 0 };
 
 FBO_Container_t* g_CurrentSceneFBO = nullptr;
 FBO_Container_t* g_CurrentRenderingFBO = nullptr;
@@ -742,15 +743,13 @@ void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset)
 	}
 }
 
-void R_RotateForTransform(const float* in_origin, const float* in_angles)
+void R_RotateForTransform(const float* in_origin, const float* in_angles, float out[4][4])
 {
 	vec3_t angles;
 	vec3_t modelpos;
 
 	VectorCopy(in_origin, modelpos);
 	VectorCopy(in_angles, angles);
-
-	float entity_matrix[4][4];
 
 	const float r_identity_matrix[4][4] = {
 		{1.0f, 0.0f, 0.0f, 0.0f},
@@ -759,8 +758,8 @@ void R_RotateForTransform(const float* in_origin, const float* in_angles)
 		{0.0f, 0.0f, 0.0f, 1.0f}
 	};
 
-	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
+	memcpy(out, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(out, angles, modelpos, 1);
 }
 
 /*
@@ -2431,6 +2430,7 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterSurfaceFBO);
+	GL_FreeFBO(&s_PortalFBO);
 }
 
 void GL_GenerateFrameBuffers(void)
@@ -2559,6 +2559,9 @@ void GL_GenerateFrameBuffers(void)
 
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_WaterSurfaceFBO, "s_WaterSurfaceFBO");
+
+	//Framebuffers that bind no texture
+	GL_GenFrameBuffer(&s_PortalFBO, "s_PortalFBO");
 
 	{
 		//DownSample FBO 1->1/4->1/16
@@ -2889,6 +2892,8 @@ void R_PreRenderView()
 {
 	//Reset statistics
 
+	GL_BeginDebugGroup("R_PreRenderView");
+
 	//Always force GammaBlend to be disabled at very beginning.
 	r_draw_gammablend = false;
 
@@ -2904,6 +2909,12 @@ void R_PreRenderView()
 	{
 		GL_BindFrameBuffer(&s_BackBufferFBO3);
 		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
+		r_draw_gammablend = true;
+	}
+	else if (R_IsRenderingPortal())
+	{
+		GL_BindFrameBuffer(&s_PortalFBO);
+		GL_SetCurrentSceneFBO(&s_PortalFBO);
 		r_draw_gammablend = true;
 	}
 	else
@@ -2930,10 +2941,19 @@ void R_PreRenderView()
 
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0, 1);
+
+	GL_EndDebugGroup();
 }
 
 void R_PostRenderView()
 {
+	GL_BeginDebugGroup("R_PostRenderView");
+
+	auto GammaCorrectionTargetFBO = &s_BackBufferFBO;
+
+	if (R_IsRenderingPortal())
+		GammaCorrectionTargetFBO = &s_PortalFBO;
+
 	if (R_IsHDREnabled())
 	{
 		if (R_IsRenderingGammaBlending())
@@ -2945,29 +2965,33 @@ void R_PostRenderView()
 			GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 		}
 
-		R_HDR(&s_BackBufferFBO2, GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
+		R_HDR(&s_BackBufferFBO2, GL_GetCurrentSceneFBO(), GammaCorrectionTargetFBO);
 
-		if (GL_GetCurrentSceneFBO() != &s_BackBufferFBO)
+		if (GL_GetCurrentSceneFBO() != GammaCorrectionTargetFBO)
 		{
-			GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
+			GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), GammaCorrectionTargetFBO);
 		}
 	}
 	else
 	{
-		if (R_IsRenderingGammaBlending())
+		if (GL_GetCurrentSceneFBO() == GammaCorrectionTargetFBO)
 		{
-			GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
+
+		}
+		else if (R_IsRenderingGammaBlending())
+		{
+			GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), GammaCorrectionTargetFBO);
 		}
 		else
 		{
 			GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
-			R_GammaCorrection(&s_BackBufferFBO2, &s_BackBufferFBO);
+			R_GammaCorrection(&s_BackBufferFBO2, GammaCorrectionTargetFBO);
 		}
 	}
 
 	r_draw_gammablend = false;
-	GL_BindFrameBuffer(&s_BackBufferFBO);
-	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
+	GL_BindFrameBuffer(GammaCorrectionTargetFBO);
+	GL_SetCurrentSceneFBO(GammaCorrectionTargetFBO);
 
 	if (R_IsUnderWaterEffectEnabled())
 	{
@@ -2980,6 +3004,8 @@ void R_PostRenderView()
 		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 		R_FXAA(&s_BackBufferFBO2, &s_BackBufferFBO);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_PreDrawViewModel(void)
@@ -3118,20 +3144,15 @@ void R_ClearPortalClipPlanes(void)
 	{
 		g_bPortalClipPlaneEnabled[i] = false;
 	}
-	memset(g_PortalClipPlane, 0, sizeof(g_PortalClipPlane));
 }
 
 void R_RenderView_SvEngine(int viewIdx)
 {
 	GL_BeginDebugGroup("R_RenderView");
 
-	//Clear texture id cache since SC client dll bind texture id 0 by glBindTexture directly and leave texture id caching system corrupted.
-	//(*currenttexture) = -1;
-
-	//Clear s_FinalBuffer again since SC client dll may draw some portal views on it before the very first pass.
 	if (R_IsRenderingPortal())
 	{
-		GL_FlushFinalBuffer();
+		
 	}
 	else
 	{
@@ -3176,8 +3197,11 @@ void R_RenderView_SvEngine(int viewIdx)
 		R_PostRenderView();
 
 		//This will switch to final framebuffer (RGBA8)
-		R_CopyColor(&s_BackBufferFBO, &s_FinalBufferFBO);
-		GL_SetCurrentSceneFBO(NULL);
+		if (GL_GetCurrentSceneFBO() == &s_BackBufferFBO)
+		{
+			R_CopyColor(&s_BackBufferFBO, &s_FinalBufferFBO);
+			GL_SetCurrentSceneFBO(NULL);
+		}
 
 		if (!(*r_refdef.onlyClientDraws))
 			R_PolyBlend();
@@ -3189,9 +3213,6 @@ void R_RenderView_SvEngine(int viewIdx)
 		GL_BindFrameBuffer(&s_FinalBufferFBO);
 		GL_SetCurrentSceneFBO(NULL);
 	}
-
-	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
-	//(*currenttexture) = -1;
 
 	R_ClearPortalClipPlanes();
 
@@ -3216,6 +3237,7 @@ void R_RenderView(void)
 {
 	//No arg(s) in GoldSrc
 	r_renderview_pass++;
+
 	R_RenderView_SvEngine(r_renderview_pass);
 }
 
@@ -3975,17 +3997,24 @@ void R_SetupGLForViewModel(void)
 
 void R_SetupGL(void)
 {
+	GL_BeginDebugGroup("R_SetupGL");
+
+	auto CurrentFBO = GL_GetCurrentSceneFBO();
+
+	auto SceneWidth = CurrentFBO ? CurrentFBO->iWidth : glwidth;
+	auto SceneHeight = CurrentFBO ? CurrentFBO->iHeight : glheight;
+
 	auto v0 = (*r_refdef.vrect).x;
-	auto v1 = glheight - (*r_refdef.vrect).y;
+	auto v1 = SceneHeight - (*r_refdef.vrect).y;
 	auto v2 = (*r_refdef.vrect).x + (*r_refdef.vrect).width;
-	auto v3 = glheight - (*r_refdef.vrect).height - (*r_refdef.vrect).y;
+	auto v3 = SceneHeight - (*r_refdef.vrect).height - (*r_refdef.vrect).y;
 	if ((*r_refdef.vrect).x > 0)
 		v0 = (*r_refdef.vrect).x - 1;
-	if (v2 < glwidth)
+	if (v2 < SceneWidth)
 		++v2;
 	if (v3 < 0)
 		--v3;
-	if (v1 < glheight)
+	if (v1 < SceneHeight)
 		++v1;
 	auto v4 = v2 - v0;
 	auto v5 = v1 - v3;
@@ -4129,6 +4158,8 @@ void R_SetupGL(void)
 
 		InvertMatrix(gWorldToScreen, gScreenToWorld);
 	}
+
+	GL_EndDebugGroup();
 }
 
 void R_CheckVariables(void)
@@ -4374,10 +4405,8 @@ void ClientDLL_DrawNormalTriangles(void)
 	GL_BeginDebugGroup("ClientDLL_DrawNormalTriangles");
 	//Good news: Stencil write has been completely removed from portal code.
 
-	GL_PushFrameBuffer();
-
-	//SC client dll should have enabled this but they don't
-	//glEnable(GL_POLYGON_OFFSET_FILL);
+	auto CurrentSceneFBO = GL_GetCurrentSceneFBO();
+	//GL_PushFrameBuffer();
 
 	//Call ClientDLL_DrawNormalTriangles instead of HUD_DrawNormalTriangles
 	if (r_draw_classify & DRAW_CLASSIFY_OPAQUE_ENTITIES)
@@ -4385,13 +4414,12 @@ void ClientDLL_DrawNormalTriangles(void)
 		gPrivateFuncs.ClientDLL_DrawNormalTriangles();
 	}
 
-	//glDisable(GL_POLYGON_OFFSET_FILL);
-
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
 	(*currenttexture) = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
-	GL_PopFrameBuffer();
+	//GL_PopFrameBuffer();
+	GL_BindFrameBuffer(CurrentSceneFBO);
 
 	GL_EndDebugGroup();
 }
@@ -5316,6 +5344,9 @@ void __stdcall CoreProfile_glEnable(GLenum cap)
 	if (cap == GL_LIGHTING)
 		return;
 
+	if (cap >= GL_CLIP_PLANE0 && cap <= GL_CLIP_PLANE5)
+		return;
+
 	glEnable(cap);
 }
 
@@ -5333,7 +5364,34 @@ void __stdcall CoreProfile_glDisable(GLenum cap)
 	if (cap == GL_LIGHTING)
 		return;
 
+	if (cap >= GL_CLIP_PLANE0 && cap <= GL_CLIP_PLANE5)
+		return;
+
 	glDisable(cap);
+}
+
+void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	GL_EndDebugGroup();
+
+	g_pCurrentClientPortal = nullptr;
+
+	GL_SetCurrentSceneFBO(nullptr);
+}
+
+void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask)
+{
+	auto portalGLTextureId = ClientPortal_GetTextureId(g_pCurrentClientPortal);
+	auto width = ClientPortal_GetTextureWidth(g_pCurrentClientPortal);
+	auto height = ClientPortal_GetTextureHeight(g_pCurrentClientPortal);
+
+	auto pTextureCache = R_GetTextureCacheForPortalTexture(g_pCurrentClientPortal, width, height);
+
+	GL_BeginDebugGroup("P_RenderPortals");
+
+	GL_BindFrameBufferWithTextures(&s_PortalFBO, portalGLTextureId, 0, pTextureCache->depth_stencil, pTextureCache->width, pTextureCache->height);
+
+	glClear(mask);
 }
 
 void __stdcall CoreProfile_glShadeModel(GLenum mode)

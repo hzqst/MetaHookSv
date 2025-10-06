@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef VGUI2_EXTENSION_INTERFACE_H
+#define VGUI2_EXTENSION_INTERFACE_H
+
 #include <interface.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -240,3 +243,5 @@ public:
 IVGUI2Extension* VGUI2Extension();
 
 #define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_010"
+
+#endif //VGUI2_EXTENSION_INTERFACE_H

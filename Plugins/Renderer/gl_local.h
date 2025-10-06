@@ -294,6 +294,7 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterSurfaceFBO;
+extern FBO_Container_t s_PortalFBO;
 
 extern FBO_Container_t* g_CurrentSceneFBO;
 extern FBO_Container_t *g_CurrentRenderingFBO;
@@ -451,7 +452,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawParticles(void);
 void R_RotateForEntity(cl_entity_t *ent, float out[4][4]);
-void R_RotateForTransform(const float* in_origin, const float* in_angles);
+void R_RotateForTransform(const float* in_origin, const float* in_angles, float out[4][4]);
 void R_SetRenderMode(cl_entity_t *pEntity);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
@@ -559,12 +560,14 @@ void __stdcall CoreProfile_glTexParameterf(GLenum target, GLenum pname, GLfloat 
 GLboolean __stdcall CoreProfile_glIsEnabled(GLenum cap);
 void __stdcall CoreProfile_glBegin(int GLPrimitiveCode);
 void __stdcall CoreProfile_glGenTextures(GLsizei n, GLuint* textures);
+void __stdcall CoreProfile_glCopyTexSubImage2D_RenderPortals(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+void __stdcall CoreProfile_glClear_RenderPortals(GLbitfield mask);
+
 void* __cdecl CoreProfile_SDL_GL_GetProcAddress(const char* proc);
 void* __stdcall CoreProfile_GetProcAddress(HMODULE hModule, const char* proc);
 int __cdecl CoreProfile_GL_SetAttribute(int attr, int value);
 void* __cdecl CoreProfile_SDL_CreateWindow(const char* title, int x, int y, int w, int h, uint32_t flags);
 int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension);
-
 void GL_UnloadTextureByIdentifier(const char* identifier);
 void GL_UnloadTextures(void);
 void GL_LoadFilterTexture(void);

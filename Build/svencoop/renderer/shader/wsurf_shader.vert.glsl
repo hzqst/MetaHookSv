@@ -67,7 +67,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 
 	float width = zFar * flScale;
 	vec3 b = vec3(s * width, t * width, width);
-	vec3 v = GetCameraViewPos(0);
+	vec3 v = GetCameraViewPos( GetCameraViewIndex() );
 
 	for (int j = 0; j < 3; j++)
 	{

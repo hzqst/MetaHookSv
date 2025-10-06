@@ -64,7 +64,7 @@ void main(void)
 
 	vec3 vNormal = normalize(v_normal.xyz);
 	
-	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos( GetCameraViewIndex() ));
 
 #if defined(GBUFFER_ENABLED)
 

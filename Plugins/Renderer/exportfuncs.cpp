@@ -1896,28 +1896,7 @@ void HUD_PlayerMoveInit(struct playermove_s* ppmove)
 void HUD_Frame(double frametime)
 {
 	R_GameFrameStart();
-#if 0//Fix 730
-	auto LocalPlayer = gEngfuncs.GetLocalPlayer();
 
-	if (LocalPlayer)
-	{
-		static int spriteClientPrecacheIndex{ -1 };
-		if (spriteClientPrecacheIndex == -1)
-		{
-			auto mod = gEngfuncs.CL_LoadModel("sprites/lgtning.spr", &spriteClientPrecacheIndex);
-			if (mod)
-			{
-				vec3_t zero{ 0 };
-				gEngfuncs.pEfxAPI->R_BeamEntPoint(LocalPlayer->index | 0x1000, zero, spriteClientPrecacheIndex, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0, 1.0f, 255, 0, 0);
-			}
-		}
-		else
-		{
-			vec3_t zero{ 0 };
-			gEngfuncs.pEfxAPI->R_BeamEntPoint(LocalPlayer->index | 0x1000, zero, spriteClientPrecacheIndex, 0.1f, 1.0f, 1.0f, 1.0f, 1.0f, 0, 1.0f, 255, 0, 0);
-		}
-	}
-#endif
 	gExportfuncs.HUD_Frame(frametime);
 
 	float time = gEngfuncs.GetAbsoluteTime();

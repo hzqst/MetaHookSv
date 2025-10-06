@@ -1137,10 +1137,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	{
 		glEnable(GL_POLYGON_OFFSET_FILL);
 
-		if (gl_ztrick && gl_ztrick->value)
-			glPolygonOffset(1, gl_polyoffset->value);
-		else
-			glPolygonOffset(-1, -gl_polyoffset->value);
+		glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
 	program_state_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;

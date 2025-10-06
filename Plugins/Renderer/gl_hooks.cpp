@@ -489,6 +489,7 @@ static hook_t* g_phook_R_GetSpriteFrame = NULL;
 static hook_t* g_phook_ClientPortalManager_ResetAll = NULL;
 static hook_t* g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 static hook_t* g_phook_ClientPortalManager_EnableClipPlane = NULL;
+static hook_t* g_phook_ClientPortalManager_RenderPortals = NULL;
 static hook_t* g_phook_UpdatePlayerPitch = NULL;
 
 void Engine_FillAddress_HasOfficialFBOSupport(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -12815,7 +12816,7 @@ void R_RedirectSCClientLegacyOpenGLCall_glEnd(const mh_dll_info_t& DllInfo, cons
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glColor4f(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawParticle(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\xF3\x0F\x11\x0C\x24\xFF\x15\x2A\x2A\x2A\x2A\x8D\x45\x98";
 
@@ -12839,7 +12840,33 @@ void R_RedirectSCClientLegacyOpenGLCall_glColor4f(const mh_dll_info_t& DllInfo, 
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glEnable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawPortal(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x80\x3F\xC7\x04\x24\x00\x00\x80\x3F\xFF\x15\x2A\x2A\x2A\x2A\x68";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound +
+				Sig_Length("\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x80\x3F\xC7\x04\x24\x00\x00\x80\x3F")
+				, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glColor4f, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	const char pattern[] = "\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x75\x00\x68\xE1\x0D\x00\x00\xFF\x15";
 
@@ -12863,8 +12890,33 @@ void R_RedirectSCClientLegacyOpenGLCall_glEnable(const mh_dll_info_t& DllInfo, c
 	}
 }
 
-void R_RedirectSCClientLegacyOpenGLCall_glDisable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void R_RedirectSCClientLegacyOpenGLCall_glEnable_GeneratePortalTexture(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	const char pattern[] = "\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x36\x68";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + 13, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glEnable, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glDisable_FOG(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	// glDisable(GL_FOG);
 	const char pattern[] = "\x68\x60\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1";
 
 	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
@@ -12887,6 +12939,108 @@ void R_RedirectSCClientLegacyOpenGLCall_glDisable(const mh_dll_info_t& DllInfo, 
 	}
 }
 
+static void* g_glDisable_ClipPlane = nullptr;
+
+void R_RedirectSCClientLegacyOpenGLCall_glDisable_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	g_glDisable_ClipPlane = CoreProfile_glDisable;
+
+	// glDisable(GL_CLIPPLANE0);
+	const char pattern[] = "\x8B\x35\x2A\x2A\x2A\x2A\x33\xD2\xC6\x05";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PUCHAR pRealCall = (PUCHAR)ConvertDllInfoSpace(pFound, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->WriteDWORD(pRealCall + 2, (ULONG_PTR)&g_glDisable_ClipPlane);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	// glDisable(GL_FOG);
+	const char pattern[] = "\x50\x6A\x00\x6A\x00\x6A\x00\x6A\x00\x68\xE1\x0D\x00\x00\xFF\x15";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 2, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glCopyTexSubImage2D_RenderPortals, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientLegacyOpenGLCall_glClear_ClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\xC7\x44\x24\x0C\x00\x00\x00\x00\xC7\x44\x24\x08\x00\x00\x80\x3F\xC7\x44\x24\x04\x00\x00\x00\x00\xC7\x04\x24\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x40\x00\x00\xFF\x15";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 2, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, CoreProfile_glClear_RenderPortals, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+void R_RedirectSCClientRenderPortalAngleVectors(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	const char pattern[] = "\xC7\x82\xE8\x00\x00\x00\x01\x00\x00\x00\x50\x8D\x42\x18\x50\x51\xE8";
+
+	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
+	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			PVOID pRealCall = ConvertDllInfoSpace(pFound + Sig_Length(pattern) - 1, DllInfo, RealDllInfo);
+
+			g_pMetaHookAPI->InlinePatchRedirectBranch(pRealCall, ClientPortalManager_AngleVectors, nullptr);
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
 void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_bIsSvenCoop)
@@ -12895,9 +13049,15 @@ void R_RedirectClientLegacyOpenGLCall(const mh_dll_info_t& DllInfo, const mh_dll
 		R_RedirectSCClientLegacyOpenGLCall_glTexEnvf(DllInfo, RealDllInfo);
 		R_RedirectSCClientLegacyOpenGLCall_glBegin(DllInfo, RealDllInfo);
 		R_RedirectSCClientLegacyOpenGLCall_glEnd(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glColor4f(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glEnable(DllInfo, RealDllInfo);
-		R_RedirectSCClientLegacyOpenGLCall_glDisable(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawParticle(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glColor4f_DrawPortal(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glEnable_GenerateInvisibleTexture(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glEnable_GeneratePortalTexture(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glDisable_FOG(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glDisable_ClipPlane(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glCopyTexSubImage2D_RenderPortals(DllInfo, RealDllInfo);
+		R_RedirectSCClientLegacyOpenGLCall_glClear_ClipPlane(DllInfo, RealDllInfo);
+		R_RedirectSCClientRenderPortalAngleVectors(DllInfo, RealDllInfo);
 	}
 }
 
@@ -13128,6 +13288,28 @@ void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t&
 	Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
 
 	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
+}
+
+void Client_FillAddress_ClientPortalManager_RenderPoratals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	/*
+.text:1004E4F0                                     ; __unwind { // SEH_1004E4F0
+.text:1004E4F0 55                                                  push    ebp
+.text:1004E4F1 8B EC                                               mov     ebp, esp
+.text:1004E4F3 6A FF                                               push    0FFFFFFFFh
+.text:1004E4F5 68 F5 4B 11 10                                      push    offset SEH_1004E4F0
+.text:1004E4FA 64 A1 00 00 00 00                                   mov     eax, large fs:0
+.text:1004E500 50                                                  push    eax
+.text:1004E501 83 EC 6C                                            sub     esp, 6Ch
+.text:1004E504 53                                                  push    ebx
+.text:1004E505 56                                                  push    esi
+	*/
+	const char pattern[] = "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x6C\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x50";
+	auto addr = Search_Pattern(pattern, DllInfo);
+
+	Sig_AddrNotFound(ClientPortalManager_RenderPortals);
+
+	gPrivateFuncs.ClientPortalManager_RenderPortals = (decltype(gPrivateFuncs.ClientPortalManager_RenderPortals))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
 }
 
 void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -13363,6 +13545,7 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_ResetAll(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
+			Client_FillAddress_ClientPortalManager_RenderPoratals(DllInfo, RealDllInfo);
 			Client_FillAddress_UpdatePlayerPitch(DllInfo, RealDllInfo);
 			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
 			Client_FillAddress_ViewEntityIndex(DllInfo, RealDllInfo);
@@ -13742,25 +13925,11 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 void Client_InstallHooks()
 {
-	if (gPrivateFuncs.ClientPortalManager_ResetAll)
-	{
-		Install_InlineHook(ClientPortalManager_ResetAll);
-	}
-
-	if (gPrivateFuncs.ClientPortalManager_DrawPortalSurface)
-	{
-		Install_InlineHook(ClientPortalManager_DrawPortalSurface);
-	}
-
-	if (gPrivateFuncs.ClientPortalManager_EnableClipPlane)
-	{
-		Install_InlineHook(ClientPortalManager_EnableClipPlane);
-	}
-
-	if (gPrivateFuncs.UpdatePlayerPitch)
-	{
-		Install_InlineHook(UpdatePlayerPitch);
-	}
+	Install_InlineHook(ClientPortalManager_ResetAll);
+	Install_InlineHook(ClientPortalManager_DrawPortalSurface);
+	Install_InlineHook(ClientPortalManager_EnableClipPlane);
+	Install_InlineHook(ClientPortalManager_RenderPortals);
+	Install_InlineHook(UpdatePlayerPitch);
 }
 
 void Client_UninstallHooks()
@@ -13768,6 +13937,7 @@ void Client_UninstallHooks()
 	Uninstall_Hook(ClientPortalManager_ResetAll);
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
+	Uninstall_Hook(ClientPortalManager_RenderPortals);
 	Uninstall_Hook(UpdatePlayerPitch);
 }
 

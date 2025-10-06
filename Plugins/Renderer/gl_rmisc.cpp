@@ -82,7 +82,7 @@ void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint d
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("GL_BindFrameBufferWithTextures: GL_DEPTH_STENCIL_ATTACHMENT and GL_DEPTH_ATTACHMENT can not be used together!");
+		Sys_Error("GL_BindFrameBufferWithTextures: GL_DEPTH_STENCIL_ATTACHMENT and GL_DEPTH_ATTACHMENT can not be used together!");
 	}
 
 	if (width && height)
@@ -96,7 +96,7 @@ void GL_PushFrameBuffer(void)
 {
 	if (save_framebuffer_stack == MAX_SAVESTACK)
 	{
-		g_pMetaHookAPI->SysError("GL_PushFrameBuffer: MAX_SAVESTACK exceed");
+		Sys_Error("GL_PushFrameBuffer: MAX_SAVESTACK exceed");
 		return;
 	}
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &save_readframebuffer[save_framebuffer_stack]);
@@ -108,7 +108,7 @@ void GL_PopFrameBuffer(void)
 {
 	if (save_framebuffer_stack == 0)
 	{
-		g_pMetaHookAPI->SysError("GL_PopFrameBuffer: no framebuffer saved");
+		Sys_Error("GL_PopFrameBuffer: no framebuffer saved");
 		return;
 	}
 
@@ -116,94 +116,6 @@ void GL_PopFrameBuffer(void)
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, save_readframebuffer[save_framebuffer_stack]);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, save_drawframebuffer[save_framebuffer_stack]);
-}
-
-void GL_PushMatrix(void)
-{
-	Sys_Error("NOT AVAILABLE");
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-}
-
-void GL_PopMatrix(void)
-{
-	Sys_Error("NOT AVAILABLE");
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-}
-
-void GL_PushDrawState(void)
-{
-	if (save_drawcontext_stack == MAX_SAVESTACK)
-	{
-		g_pMetaHookAPI->SysError("GL_PushDrawState: MAX_SAVESTACK exceed");
-		return;
-	}
-	glGetBooleanv(GL_CULL_FACE, &save_drawcontext[save_drawcontext_stack].cullface);
-	glGetBooleanv(GL_ALPHA_TEST, &save_drawcontext[save_drawcontext_stack].alphatest);
-	glGetBooleanv(GL_DEPTH_TEST, &save_drawcontext[save_drawcontext_stack].depthtest);
-	glGetBooleanv(GL_DEPTH_WRITEMASK, &save_drawcontext[save_drawcontext_stack].depthmask);
-	glGetBooleanv(GL_BLEND, &save_drawcontext[save_drawcontext_stack].blend);
-	if (save_drawcontext[save_drawcontext_stack].blend)
-	{
-		glGetIntegerv(GL_BLEND_SRC, &save_drawcontext[save_drawcontext_stack].blendsrc);
-		glGetIntegerv(GL_BLEND_DST, &save_drawcontext[save_drawcontext_stack].blenddst);
-	}
-
-	save_drawcontext[save_drawcontext_stack].mtex = *mtexenabled;
-	++save_drawcontext_stack;
-}
-
-void GL_PopDrawState(void)
-{
-	if (save_drawcontext_stack == 0)
-	{
-		g_pMetaHookAPI->SysError("GL_PopDrawState: no drawcontext saved");
-		return;
-	}
-
-	--save_drawcontext_stack;
-
-	if (save_drawcontext[save_drawcontext_stack].mtex && !(*mtexenabled))
-		GL_EnableMultitexture();
-	else if (!save_drawcontext[save_drawcontext_stack].mtex && (*mtexenabled))
-		GL_DisableMultitexture();
-
-	if (save_drawcontext[save_drawcontext_stack].cullface)
-		glEnable(GL_CULL_FACE);
-	else
-		glDisable(GL_CULL_FACE);
-
-	if(save_drawcontext[save_drawcontext_stack].alphatest)
-		glEnable(GL_ALPHA_TEST);
-	else
-		glDisable(GL_ALPHA_TEST);
-
-	if (save_drawcontext[save_drawcontext_stack].depthtest)
-		glEnable(GL_DEPTH_TEST);
-	else
-		glDisable(GL_DEPTH_TEST);
-
-	if (save_drawcontext[save_drawcontext_stack].depthmask)
-		glDepthMask(GL_TRUE);
-	else
-		glDepthMask(GL_FALSE);
-
-	if (save_drawcontext[save_drawcontext_stack].blend)
-		glEnable(GL_BLEND);
-	else
-		glDisable(GL_BLEND);
-
-	if (save_drawcontext[save_drawcontext_stack].blend)
-	{
-		glBlendFunc(save_drawcontext[save_drawcontext_stack].blendsrc, save_drawcontext[save_drawcontext_stack].blenddst);
-	}
 }
 
 void *R_GetRefDef(void)

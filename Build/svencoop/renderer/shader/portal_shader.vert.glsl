@@ -4,9 +4,9 @@
 
 uniform mat4 u_entityMatrix;
 
-layout(location = 0) in vec3 in_vertex;
-layout(location = 1) in vec3 in_normal;
-layout(location = 4) in vec2 in_diffusetexcoord;
+layout(location = WSURF_VA_POSITION) in vec3 in_vertex;
+layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
+layout(location = WSURF_VA_TEXCOORD) in vec2 in_diffusetexcoord;
 
 out vec4 v_projpos;
 out vec3 v_worldpos;

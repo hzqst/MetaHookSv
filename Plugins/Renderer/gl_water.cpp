@@ -812,7 +812,7 @@ void R_RenderWaterReflectView(CWaterReflectCache* ReflectCache)
 	R_PushRefDef();
 
 	float vForward[3], vRight[3], vUp[3];
-	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);
+	AngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);
 
 	float viewplane = DotProduct(ReflectCache->normal, (*r_refdef.vieworg));
 

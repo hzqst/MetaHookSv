@@ -67,7 +67,7 @@ void main()
 	//calculate texcoord
 	vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
-	vec3 vEyeVect = GetCameraViewPos(0) - v_worldpos.xyz;
+	vec3 vEyeVect = GetCameraViewPos( GetCameraViewIndex() ) - v_worldpos.xyz;
 	float flHeight = abs(vEyeVect.z);
 	float dist = length(vEyeVect);
 	float sinX = flHeight / (dist + 0.001);
@@ -107,7 +107,7 @@ void main()
 			float sceneDepthValue = texture(refractDepthTex, vBaseTexCoord).x;
 			vec3 sceneWorldPos = GenerateWorldPositionFromDepth(vBaseTexCoord, sceneDepthValue);
 
-			float flDistanceBetweenWaterSurfaceAndScene = distance(sceneWorldPos.xyz, GetCameraViewPos(0)) - distance(v_worldpos.xyz, GetCameraViewPos(0));
+			float flDistanceBetweenWaterSurfaceAndScene = distance(sceneWorldPos.xyz, GetCameraViewPos( GetCameraViewIndex() )) - distance(v_worldpos.xyz, GetCameraViewPos( GetCameraViewIndex() ));
 			float flRefractEdgeFeathering = clamp(flDistanceBetweenWaterSurfaceAndScene / u_depthfactor.z, 0.0, 1.0);
 			vOffsetTexCoord *= (flRefractEdgeFeathering * flRefractEdgeFeathering);
 
@@ -150,7 +150,7 @@ void main()
 
 #endif
 
-	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos( GetCameraViewIndex() ));
 
 #if defined(GBUFFER_ENABLED)
 

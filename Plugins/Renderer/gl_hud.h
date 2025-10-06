@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef GL_HUD_H
+#define GL_HUD_H
+
 #include "gl_cvar.h"
 #include "gl_common.h"
 #include "enginedef.h"
@@ -193,24 +196,6 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 void R_DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
 void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata);
 
-#define HUD_DEBUG_TEXARRAY 1
-#define HUD_DEBUG_SHADOW 2
-
-void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput);
-
-#define DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED 0x1ull
-#define DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED 0x2ull
-#define DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
-#define DRAW_TEXTURED_RECT_SCISSOR_ENABLED 0x8ull
-#define DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED 0x10ull
-
-#define DRAW_FILLED_RECT_ALPHA_BLEND_ENABLED 0x1ull
-#define DRAW_FILLED_RECT_ADDITIVE_BLEND_ENABLED 0x2ull
-#define DRAW_FILLED_RECT_ALPHA_BASED_ADDITIVE_ENABLED 0x4ull
-#define DRAW_FILLED_RECT_ZERO_SRC_ALPHA_BLEND_ENABLED 0x8ull
-#define DRAW_FILLED_RECT_SCISSOR_ENABLED 0x8ull
-#define DRAW_FILLED_RECT_LINE_ENABLED 0x10ull
-
 void R_SaveDrawTexturedRectProgramStates(void);
 void R_LoadDrawTexturedRectProgramStates(void);
 void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_program_t* progOutput);
@@ -218,3 +203,5 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 void R_SaveDrawFilledRectProgramStates(void);
 void R_LoadDrawFilledRectProgramStates(void);
 void R_UseDrawFilledRectProgram(program_state_t state, drawfilledrect_program_t* progOutput);
+
+#endif //GL_HUD_H

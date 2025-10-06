@@ -808,7 +808,7 @@ void R_IterateDynamicLights(
 			vec3_t dlight_origin;
 
 			vec3_t vforward, vright, vup;
-			gEngfuncs.pfnAngleVectors(dynlight->angles, vforward, vright, vup);
+			AngleVectors(dynlight->angles, vforward, vright, vup);
 
 			if (dynlight->follow_player)
 			{
@@ -880,7 +880,7 @@ void R_IterateDynamicLights(
 			if (bIsFromLocalPlayer && R_IsRenderingFirstPersonView())
 			{
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
-				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
+				AngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
 				bool bUsingAttachment = false;
 
@@ -930,7 +930,7 @@ void R_IterateDynamicLights(
 				VectorCopy(ent->angles, dlight_angle);
 				dlight_angle[0] = dlight_angle[0] * -3.0f;
 
-				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
+				AngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
 				VectorCopy(ent->origin, org);
 				VectorMA(org, 8, dlight_vup, org);

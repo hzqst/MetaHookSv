@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 typedef float vec_t;
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
@@ -126,3 +128,96 @@ inline float anglemod(float a)
 	: \
 		BoxOnPlaneSide((emins), (emaxs), (p)))
 
+
+
+inline float vec2_length(const vec2_t v)
+{
+	return sqrt(v[0] * v[0] + v[1] * v[1]);
+}
+
+inline void vec3_normalize(const vec3_t in, vec3_t out)
+{
+	float length = VectorLength(in);
+	if (length > 0.0001f)
+	{
+		out[0] = in[0] / length;
+		out[1] = in[1] / length;
+		out[2] = in[2] / length;
+	}
+	else
+	{
+		VectorClear(out);
+	}
+}
+
+inline void vec2_normalize(const vec2_t in, vec2_t out)
+{
+	float length = vec2_length(in);
+	if (length > 0.0001f)
+	{
+		out[0] = in[0] / length;
+		out[1] = in[1] / length;
+	}
+	else
+	{
+		out[0] = out[1] = 0.0f;
+	}
+}
+
+inline void vec3_lerp(const vec3_t a, const vec3_t b, float t, vec3_t out)
+{
+	out[0] = a[0] + t * (b[0] - a[0]);
+	out[1] = a[1] + t * (b[1] - a[1]);
+	out[2] = a[2] + t * (b[2] - a[2]);
+}
+
+// Hash combination function
+inline void hash_combine(size_t& seed, size_t value)
+{
+	seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+class CQuantizedVector
+{
+public:
+	CQuantizedVector()
+	{
+
+	}
+	CQuantizedVector(const vec3_t v)
+	{
+		m_x = (int64_t)(v[0] * 1000.0f);
+		m_y = (int64_t)(v[1] * 1000.0f);
+		m_z = (int64_t)(v[2] * 1000.0f);
+	}
+	CQuantizedVector(const vec3_t v, int boneindex)
+	{
+		m_x = (int64_t)(v[0] * 1000.0f);
+		m_y = (int64_t)(v[1] * 1000.0f);
+		m_z = (int64_t)(v[2] * 1000.0f);
+		m_boneindex = boneindex;
+	}
+	int64_t m_x{};
+	int64_t m_y{};
+	int64_t m_z{};
+	int m_boneindex{ -1 };
+
+	bool operator == (const CQuantizedVector& other) const
+	{
+		return m_x == other.m_x && m_y == other.m_y && m_z == other.m_z && m_boneindex == other.m_boneindex;
+	}
+};
+
+class CQuantizedVectorHasher
+{
+public:
+	size_t operator()(const CQuantizedVector& v) const
+	{
+		size_t seed = 0;
+		hash_combine(seed, v.m_x);
+		hash_combine(seed, v.m_y);
+		hash_combine(seed, v.m_z);
+		hash_combine(seed, v.m_boneindex);
+		return seed;
+	}
+};
