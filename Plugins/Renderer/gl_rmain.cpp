@@ -191,6 +191,8 @@ vec4_t g_PortalClipPlane[6] = { 0 };
 
 bool g_bHasLowerBody = false;
 
+vec3_t g_TrustedViewModelAttachments[4]{};
+
 float r_entity_matrix[4][4] = { 0 };
 float r_entity_color[4] = { 0 };
 
@@ -1098,8 +1100,7 @@ void R_DrawParticles(void)
 	gPrivateFuncs.R_TracerDraw();
 	gPrivateFuncs.R_BeamDrawList();
 
-	glDisable(GL_BLEND);
-	GL_UseProgram(0);
+	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 
 	GL_EndDebugGroup();
 }
@@ -1378,7 +1379,7 @@ void triapi_End()
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
 
-		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER) &&
+		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER) &&
 			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
 		{
 			// 使用静态VAO配置（offset=0）
@@ -2181,11 +2182,22 @@ void R_DrawStudioEntity(bool bTransparent)
 			{
 				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 			}
-
-			return;
 		}
+		else
+		{
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+		}
+	}
 
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+	if (R_ShouldDrawViewModel())
+	{
+		if ((*currententity)->index == cl_viewent->index && (*currententity) != cl_viewent)
+		{
+			for (int i = 0; i < 4; i++)
+			{
+				VectorCopy(g_TrustedViewModelAttachments[i], (*currententity)->attachment[i]);
+			}
+		}
 	}
 }
 
@@ -3002,6 +3014,11 @@ void R_PreDrawViewModel(void)
 			}
 
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS);
+
+			for (int i = 0; i < 4; i++)
+			{
+				VectorCopy((*currententity)->attachment[i], g_TrustedViewModelAttachments[i]);
+			}
 
 			break;
 		}
