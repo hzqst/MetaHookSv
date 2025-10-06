@@ -84,14 +84,85 @@ layout(location = 0) out vec4 out_FragColor;
 
 #if defined(STATIC_SHADOW_TEXTURE_ENABLED) || defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
 
-float ShadowCompareDepth(sampler2DShadow tex, vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
+float ShadowCompareDepth(sampler2DShadow tex, vec3 sampleCoord, float compareDepth)
 {
-    vec4 uv = basecoord;
-    uv.xy = floorcoord.xy + basecoord.w * offset * texelSize;
-    
-    return textureProj(tex, uv);
+    return texture(tex, vec3(sampleCoord.xy, compareDepth));
 }
 
+// Linear depth version for Spotlight (uses linear depth like cubemap shadow)
+float CalcShadowIntensityLinear(sampler2DShadow shadowTex, vec3 World, vec3 Norm, vec3 LightDirection, vec3 LightPos, float LightRadius, vec2 shadowTexel, mat4 shadowMatrix)
+{
+    // Transform world position to shadow space
+    vec4 shadowCoords4 = shadowMatrix * vec4(World, 1.0);
+    
+    // Perspective divide to get NDC coordinates
+    vec3 projCoords = shadowCoords4.xyz / shadowCoords4.w;
+    
+    // Calculate linear depth like cubemap shadow
+    // Distance from light to world position
+    vec3 lightToWorld = World - LightPos;
+    float distanceLightToWorld = length(lightToWorld);
+    
+    // Normalize to [0, 1] range using light radius
+    float zNear = 0.1;
+    float zFar = LightRadius;
+    float linearDepth = distanceLightToWorld / zFar;
+    
+    // Improved bias calculation matching cubemap shadow
+    float NdotL = max(dot(Norm, -LightDirection), 0.0);
+    
+    // Slope-based bias: larger bias for surfaces at grazing angles
+    float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
+    
+    float invRes = shadowTexel.y;
+    
+    // Distance-based bias: account for texel size at different distances
+    float texelWorldSize = distanceLightToWorld * invRes * 2.0;
+    float distanceBias = texelWorldSize * 0.5;
+    
+    // Constant base bias
+    float constBias = 0.0003;
+    
+    // Normal offset bias: push the sample point slightly along the normal
+    float normalOffsetScale = sqrt(distanceLightToWorld) * invRes * 0.5;
+    normalOffsetScale = min(normalOffsetScale, 0.1);
+    
+    vec3 offsetWorld = World + Norm * normalOffsetScale;
+    vec3 offsetLightToWorld = offsetWorld - LightPos;
+    float offsetDistance = length(offsetLightToWorld);
+    float offsetLinearDepth = offsetDistance / zFar;
+    
+    // Combine all bias components
+    float bias = constBias + slopeBias + distanceBias;
+    bias = min(bias, 0.01);
+    
+    float compareDepth = offsetLinearDepth - bias;
+    compareDepth = clamp(compareDepth, 0.0, 1.0);
+    
+    float visibility = 0.0;
+    
+    // PCF filtering with 3x3 kernel
+    float texRes = shadowTexel.x;
+    float pcfRadius = 1.0;
+    int pcfSamples = 0;
+    
+    for(int x = -1; x <= 1; x++)
+    {
+        for(int y = -1; y <= 1; y++)
+        {
+            vec2 offset = vec2(float(x), float(y)) * pcfRadius * invRes;
+            vec3 sampleCoord = vec3(projCoords.xy + offset, 0.0);
+            visibility += ShadowCompareDepth(shadowTex, sampleCoord, compareDepth);
+            pcfSamples++;
+        }
+    }
+    
+    visibility /= float(pcfSamples);
+    
+    return visibility;
+}
+
+// Non-linear depth version for Directional Light (traditional shadow mapping)
 float CalcShadowIntensity(sampler2DShadow shadowTex, vec3 World, vec3 Norm, vec3 LightDirection, vec2 shadowTexel, mat4 shadowMatrix)
 {
     vec4 shadowCoords = shadowMatrix * vec4(World, 1.0);
@@ -117,36 +188,6 @@ float CalcShadowIntensity(sampler2DShadow shadowTex, vec3 World, vec3 Norm, vec3
 
         flooredUV *= invRes;
 
-        /*float uw0 = (4.0 - 3.0 * s);
-        float uw1 = 7.0;
-        float uw2 = (1.0 + 3.0 * s);
-
-        float u0 = (3.0 - 2.0 * s) / uw0 - 2.0;
-        float u1 = (3.0 + s) / uw1;
-        float u2 = s / uw2 + 2.0;
-
-        float vw0 = (4.0 - 3.0 * t);
-        float vw1 = 7.0;
-        float vw2 = (1.0 + 3.0 * t);
-
-        float v0 = (3.0 - 2.0 * t) / vw0 - 2.0;
-        float v1 = (3.0 + t) / vw1;
-        float v2 = t / vw2 + 2.0;
-
-        visibility += uw0 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v0), invRes);
-        visibility += uw1 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v0), invRes);
-        visibility += uw2 * vw0 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v0), invRes);
-
-        visibility += uw0 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v1), invRes);
-        visibility += uw1 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v1), invRes);
-        visibility += uw2 * vw1 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v1), invRes);
-
-        visibility += uw0 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u0, v2), invRes);
-        visibility += uw1 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u1, v2), invRes);
-        visibility += uw2 * vw2 * ShadowCompareDepth(shadowCoords, flooredUV, vec2(u2, v2), invRes);
-
-        visibility /= 144.0;*/
-
         float uw0 = (5.0 * s - 6.0);
         float uw1 = (11.0 * s - 28.0);
         float uw2 = -(11.0 * s + 17.0);
@@ -167,25 +208,25 @@ float CalcShadowIntensity(sampler2DShadow shadowTex, vec3 World, vec3 Norm, vec3
         float v2 = -(7.0 * t + 5.0) / vw2 + 1.0;
         float v3 = -t / vw3 + 3.0;
 
-        visibility += uw0 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v0), invRes);
-        visibility += uw1 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v0), invRes);
-        visibility += uw2 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v0), invRes);
-        visibility += uw3 * vw0 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v0), invRes);
+        visibility += uw0 * vw0 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u0, v0) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw1 * vw0 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u1, v0) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw2 * vw0 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u2, v0) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw3 * vw0 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u3, v0) * invRes, shadowCoords.z, shadowCoords.w));
 
-        visibility += uw0 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v1), invRes);
-        visibility += uw1 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v1), invRes);
-        visibility += uw2 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v1), invRes);
-        visibility += uw3 * vw1 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v1), invRes);
+        visibility += uw0 * vw1 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u0, v1) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw1 * vw1 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u1, v1) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw2 * vw1 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u2, v1) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw3 * vw1 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u3, v1) * invRes, shadowCoords.z, shadowCoords.w));
 
-        visibility += uw0 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v2), invRes);
-        visibility += uw1 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v2), invRes);
-        visibility += uw2 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v2), invRes);
-        visibility += uw3 * vw2 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v2), invRes);
+        visibility += uw0 * vw2 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u0, v2) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw1 * vw2 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u1, v2) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw2 * vw2 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u2, v2) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw3 * vw2 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u3, v2) * invRes, shadowCoords.z, shadowCoords.w));
 
-        visibility += uw0 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u0, v3), invRes);
-        visibility += uw1 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u1, v3), invRes);
-        visibility += uw2 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u2, v3), invRes);
-        visibility += uw3 * vw3 * ShadowCompareDepth(shadowTex, shadowCoords, flooredUV, vec2(u3, v3), invRes);
+        visibility += uw0 * vw3 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u0, v3) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw1 * vw3 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u1, v3) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw2 * vw3 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u2, v3) * invRes, shadowCoords.z, shadowCoords.w));
+        visibility += uw3 * vw3 * textureProj(shadowTex, vec4(flooredUV + shadowCoords.w * vec2(u3, v3) * invRes, shadowCoords.z, shadowCoords.w));
 
         visibility /= 2704.0;
     }
@@ -488,13 +529,13 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
         #if defined(STATIC_SHADOW_TEXTURE_ENABLED)
 
-            flStaticShadowIntensity = CalcShadowIntensity(staticShadowTex, World, Normal, u_lightdir.xyz, u_staticShadowTexel, u_staticShadowMatrix);
+            flStaticShadowIntensity = CalcShadowIntensityLinear(staticShadowTex, World, Normal, u_lightdir.xyz, u_lightpos.xyz, u_lightradius, u_staticShadowTexel, u_staticShadowMatrix);
 
         #endif
 
         #if defined(DYNAMIC_SHADOW_TEXTURE_ENABLED)
 
-            flDynamicShadowIntensity = CalcShadowIntensity(dynamicShadowTex, World, Normal, u_lightdir.xyz, u_dynamicShadowTexel, u_dynamicShadowMatrix);
+            flDynamicShadowIntensity = CalcShadowIntensityLinear(dynamicShadowTex, World, Normal, u_lightdir.xyz, u_lightpos.xyz, u_lightradius, u_dynamicShadowTexel, u_dynamicShadowMatrix);
 
         #endif
 
