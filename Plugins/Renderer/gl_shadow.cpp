@@ -723,7 +723,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					float cone_fov = args->coneAngle * 2 * 360 / (M_PI * 2);
 
 					R_LoadIdentityForProjectionMatrix();
-					R_SetupPerspective(cone_fov, cone_fov, R_GetMainViewNearPlane(), args->distance);
+					R_SetupPerspective(cone_fov, cone_fov, 0.1f, args->distance);
 
 					R_SetFrustum(r_xfov_currentpass, r_yfov_currentpass, r_frustum_right, r_frustum_top);
 
