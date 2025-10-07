@@ -291,8 +291,8 @@ CWaterReflectCache* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceModel* 
 
 		if (ReflectCache)
 		{
-			int texwidth = glwidth * 0.5f;
-			int texheight = glheight * 0.5f;
+			int texwidth = glwidth;
+			int texheight = glheight;
 
 			if (ReflectCache->refract_texture && ReflectCache->texwidth != texwidth)
 			{
