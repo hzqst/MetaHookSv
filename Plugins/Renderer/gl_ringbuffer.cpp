@@ -1,6 +1,6 @@
 #include "gl_local.h"
 
-bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferType)
+bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, GLenum bufferTarget)
 {
 	//Already initialized
 	if (m_MappedPtr)
@@ -16,50 +16,24 @@ bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, int bufferT
 
 	m_CompletedFrames.clear();
 
-	if (bufferType == GL_ARRAY_BUFFER)
-	{
-		m_hVBO = GL_GenBuffer();
-	}
-	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
-	{
-		m_hEBO = GL_GenBuffer();
-	}
+	m_GLBufferTarget = bufferTarget;
+	m_hGLBufferObject = GL_GenBuffer();
 
 	GL_BindVAO(0);
 
-	if (bufferType == GL_ARRAY_BUFFER)
+	glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
+
+	glBufferStorage(m_GLBufferTarget, m_BufferSize, nullptr,
+		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+	m_MappedPtr = glMapBufferRange(m_GLBufferTarget, 0, m_BufferSize,
+		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+	glBindBuffer(m_GLBufferTarget, 0);
+
+	if (glObjectLabel)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_hVBO);
-
-		glBufferStorage(GL_ARRAY_BUFFER, m_BufferSize, nullptr,
-			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-		m_MappedPtr = glMapBufferRange(GL_ARRAY_BUFFER, 0, m_BufferSize,
-			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		if (glObjectLabel)
-		{
-			glObjectLabel(GL_BUFFER, m_hVBO, -1, m_BufferName.c_str());
-		}
-	}
-	else if (bufferType == GL_ELEMENT_ARRAY_BUFFER)
-	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_hEBO);
-
-		glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, m_BufferSize, nullptr,
-			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-		m_MappedPtr = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, m_BufferSize,
-			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		if (glObjectLabel)
-		{
-			glObjectLabel(GL_BUFFER, m_hEBO, -1, m_BufferName.c_str());
-		}
+		glObjectLabel(GL_BUFFER, m_hGLBufferObject, -1, m_BufferName.c_str());
 	}
 
 	return m_MappedPtr != nullptr;
@@ -80,31 +54,20 @@ void CPMBRingBuffer::Shutdown()
 	{
 		GL_BindVAO(0);
 
-		if (m_hVBO)
+		if (m_hGLBufferObject)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, m_hVBO);
-			glUnmapBuffer(GL_ARRAY_BUFFER);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-		}
-		else if(m_hEBO)
-		{
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_hEBO);
-			glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
+			glUnmapBuffer(m_GLBufferTarget);
+			glBindBuffer(m_GLBufferTarget, 0);
 		}
 
 		m_MappedPtr = nullptr;
 	}
 
-	if (m_hVBO)
+	if (m_GLBufferTarget)
 	{
-		GL_DeleteBuffer(m_hVBO);
-		m_hVBO = 0;
-	}
-	else if (m_hEBO)
-	{
-		GL_DeleteBuffer(m_hEBO);
-		m_hEBO = 0;
+		GL_DeleteBuffer(m_GLBufferTarget);
+		m_GLBufferTarget = 0;
 	}
 
 	m_Head = 0;
@@ -229,7 +192,7 @@ void CPMBRingBuffer::Reset()
 	{
 		if (frame.fence)
 		{
-			glClientWaitSync(frame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+			glClientWaitSync(frame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
 			glDeleteSync(frame.fence);
 		}
 	}
@@ -253,6 +216,7 @@ void CPMBRingBuffer::ReleaseCompletedFrames()
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
 		{
 			size_t frameEnd = oldestFrame.offset + oldestFrame.size;
+
 			if (frameEnd > m_BufferSize) {
 				frameEnd = frameEnd - m_BufferSize;
 			}

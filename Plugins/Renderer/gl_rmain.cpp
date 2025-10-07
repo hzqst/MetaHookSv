@@ -1223,7 +1223,6 @@ void triapi_End()
 {
 	size_t n = gTriAPICommand.Vertices.size();
 
-	// 如果没有顶点数据，直接返回
 	if (n == 0)
 	{
 		triapi_EndClear();
@@ -1232,7 +1231,6 @@ void triapi_End()
 	
 	if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES)
 	{
-		// 三角形列表 - 直接使用索引
 		if (n < 3)
 		{
 			triapi_EndClear();
@@ -1251,7 +1249,6 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_FAN)
 	{
-		// 三角形扇形 - 转换为三角形列表索引
 		if (n < 3)
 		{
 			triapi_EndClear();
@@ -1260,14 +1257,13 @@ void triapi_End()
 
 		for (size_t i = 1; i < n - 1; ++i)
 		{
-			gTriAPICommand.Indices.push_back(0);           // 扇形中心
+			gTriAPICommand.Indices.push_back(0);
 			gTriAPICommand.Indices.push_back((GLuint)i);
 			gTriAPICommand.Indices.push_back((GLuint)i + 1);
 		}
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_QUADS)
 	{
-		// 四边形 - 转换为三角形列表索引
 		if (n < 4)
 		{
 			triapi_EndClear();
@@ -1278,13 +1274,10 @@ void triapi_End()
 		{
 			if (i + 3 < n)
 			{
-				// 将四边形分解为两个三角形 (0,1,2) 和 (2,3,0)
-				// 第一个三角形
 				gTriAPICommand.Indices.push_back((GLuint)i + 0);
 				gTriAPICommand.Indices.push_back((GLuint)i + 1);
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 
-				// 第二个三角形
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 				gTriAPICommand.Indices.push_back((GLuint)i + 3);
 				gTriAPICommand.Indices.push_back((GLuint)i + 0);
@@ -1303,7 +1296,6 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		// 线段 - 直接使用线段索引
 		for (size_t i = 0; i < n; i++)
 		{
 			gTriAPICommand.Indices.push_back((GLuint)i);
@@ -1311,7 +1303,6 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_STRIP)
 	{
-		// 三角形带 - 转换为三角形列表索引
 		if (n < 3)
 		{
 			triapi_EndClear();
@@ -1320,17 +1311,14 @@ void triapi_End()
 
 		for (size_t i = 0; i < n - 2; ++i)
 		{
-			// 三角形带中每个三角形的顶点顺序需要交替
 			if (i % 2 == 0)
 			{
-				// 偶数索引：正常顺序 (i, i+1, i+2)
 				gTriAPICommand.Indices.push_back((GLuint)i);
 				gTriAPICommand.Indices.push_back((GLuint)i + 1);
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
 			}
 			else
 			{
-				// 奇数索引：反向顺序 (i+1, i, i+2)
 				gTriAPICommand.Indices.push_back((GLuint)i + 1);
 				gTriAPICommand.Indices.push_back((GLuint)i);
 				gTriAPICommand.Indices.push_back((GLuint)i + 2);
@@ -1339,7 +1327,6 @@ void triapi_End()
 	}
 	else if (gTriAPICommand.GLPrimitiveCode == GL_QUAD_STRIP)
 	{
-		// 四边形带 - 转换为三角形列表索引
 		if (n < 4)
 		{
 			triapi_EndClear();
@@ -1348,26 +1335,21 @@ void triapi_End()
 
 		for (size_t i = 0; i + 3 < n; i += 2)
 		{
-			// 四边形带中每个四边形的四个顶点索引
 			GLuint v0 = (GLuint)i;
 			GLuint v1 = (GLuint)i + 1;
 			GLuint v2 = (GLuint)i + 2;
 			GLuint v3 = (GLuint)i + 3;
 
-			// 将四边形分解为两个三角形 (v0,v1,v2) 和 (v2,v3,v0)
-			// 第一个三角形
 			gTriAPICommand.Indices.push_back(v0);
 			gTriAPICommand.Indices.push_back(v1);
 			gTriAPICommand.Indices.push_back(v2);
 
-			// 第二个三角形
 			gTriAPICommand.Indices.push_back(v2);
 			gTriAPICommand.Indices.push_back(v3);
 			gTriAPICommand.Indices.push_back(v0);
 		}
 	}
 
-	// 如果没有生成索引，直接返回
 	if (gTriAPICommand.Indices.size() == 0)
 	{
 		triapi_EndClear();
@@ -1381,7 +1363,6 @@ void triapi_End()
 		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER) &&
 			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
 		{
-			// 使用静态VAO配置（offset=0）
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
 
 				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetVBO());
@@ -1404,7 +1385,6 @@ void triapi_End()
 		}
 	}
 
-	// 尝试使用环形分配器
 	size_t vertexDataSize = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
 	size_t indexDataSize = gTriAPICommand.Indices.size() * sizeof(uint32_t);
 
@@ -1628,7 +1608,6 @@ void triapi_End()
 	triapi_program_t prog{};
 	R_UseTriAPIProgram(ProgramState, &prog);
 
-	// 根据图元类型选择正确的绘制模式
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
 		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
@@ -1640,6 +1619,7 @@ void triapi_End()
 
 	GL_UseProgram(0);
 
+	//Restore pipeline state
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 

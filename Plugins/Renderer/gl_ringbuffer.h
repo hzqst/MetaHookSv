@@ -5,8 +5,8 @@
 class CPMBRingBuffer
 {
 private:
-	GLuint m_hVBO{};
-	GLuint m_hEBO{};
+	GLuint m_hGLBufferObject{};
+	GLenum m_GLBufferTarget{};
 	void* m_MappedPtr{};
 	size_t m_BufferSize{};
 
@@ -37,7 +37,7 @@ public:
 		bool valid{};
 	};
 
-	bool Initialize(const char* name, size_t bufferSize, int bufferType);
+	bool Initialize(const char* name, size_t bufferSize, GLenum bufferTarget);
 	void Shutdown();
 	bool Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation);
 	void BeginFrame();
