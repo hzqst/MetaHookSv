@@ -43,8 +43,7 @@ public:
 	void BeginFrame();
 	void EndFrame();
 	void Reset();
-	GLuint GetVBO() const { return m_hVBO; }
-	GLuint GetEBO() const { return m_hEBO; }
+	GLuint GetGLBufferObject() const { return m_hGLBufferObject; }
 
 	bool IsEmpty() const { return m_UsedSize == 0; }
 	bool IsFull() const { return m_UsedSize == m_BufferSize; }
@@ -52,6 +51,8 @@ public:
 
 private:
 	void ReleaseCompletedFrames();
+	void WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize);
+	bool DoRangesOverlap(size_t start1, size_t size1, size_t start2, size_t size2) const;
 	static bool IsPowerOfTwo(size_t value) { return value && !(value & (value - 1)); }
 	static size_t AlignUp(size_t value, size_t alignment) { return (value + alignment - 1) & ~(alignment - 1); }
 };

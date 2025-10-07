@@ -58,12 +58,13 @@ const float turbsin[] = {
 void main()
 {
 	vec3 vertpos = in_vertex;
+	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(vertpos, 1.0);
 
-#ifdef LEGACY_ENABLED
+#if defined(LEGACY_ENABLED)
 
 	int s1 = int(SceneUBO.cl_time * 160.0 + in_vertex.x + in_vertex.y);
 	int s2 = int(SceneUBO.cl_time * 171.0 + in_vertex.x * 5.0 - in_vertex.y);
-	vertpos.z += ((turbsin[s1 & 255] + 8.0) + (turbsin[s2 & 255] + 8.0) * 0.8) * u_scale;
+	worldpos4.z += ((turbsin[s1 & 255] + 8.0) + (turbsin[s2 & 255] + 8.0) * 0.8) * u_scale;
 
 	int s3 = int((in_diffusetexcoord.y * 0.125 + SceneUBO.cl_time) * TURBSCALE * u_speed);
 	float s = in_diffusetexcoord.x + turbsin[s3 & 255];
@@ -81,10 +82,10 @@ void main()
 
 #endif
 
-	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(vertpos, 1.0);
     v_worldpos = worldpos4.xyz;
 
 	vec4 normal4 = vec4(in_normal, 0.0);
+
 	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
 
 	gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldpos4;

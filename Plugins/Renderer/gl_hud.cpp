@@ -418,7 +418,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 		GL_BindStatesForVAO(
 			g_DrawTexturedRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer.GetVBO());
+				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer.GetGLBufferObject());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, pos));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_POSITION);
@@ -429,7 +429,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribPointer(TEXTUREDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, col));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetVBO());
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetGLBufferObject());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX0, 1);
@@ -447,7 +447,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetEBO());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetGLBufferObject());
 
 			});
 
@@ -574,7 +574,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 		GL_BindStatesForVAO(
 			g_DrawFilledRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ARRAY_BUFFER, g_FilledRectVertexBuffer.GetVBO());
+				glBindBuffer(GL_ARRAY_BUFFER, g_FilledRectVertexBuffer.GetGLBufferObject());
 
 				glVertexAttribPointer(FILLEDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, pos));
 				glEnableVertexAttribArray(FILLEDRECT_VA_POSITION);
@@ -582,7 +582,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribPointer(FILLEDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, col));
 				glEnableVertexAttribArray(FILLEDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetVBO());
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetGLBufferObject());
 
 				glVertexAttribPointer(FILLEDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX0, 1);
@@ -600,7 +600,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(FILLEDRECT_VA_MATRIX3);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetEBO());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetGLBufferObject());
 			});
 
 	}

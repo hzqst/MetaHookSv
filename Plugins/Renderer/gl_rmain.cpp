@@ -1365,7 +1365,7 @@ void triapi_End()
 		{
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetVBO());
+				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetGLBufferObject());
 
 				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
 				glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
@@ -1375,7 +1375,7 @@ void triapi_End()
 				glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
 				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer.GetEBO());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer.GetGLBufferObject());
 
 			});
 		}

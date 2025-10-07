@@ -3259,7 +3259,7 @@ void studioapi_SetupRenderer(int rendermode)
 
 void studioapi_RestoreRenderer(void)
 {
-	glDepthMask(1);
+	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 }
 
