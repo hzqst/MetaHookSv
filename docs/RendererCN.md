@@ -1027,7 +1027,7 @@ obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始
 
 ## env_ssr_control
 
-`env_ssr_control`是一个点实体，用于控制SSR效果的屏幕空间反射。
+`env_ssr_control`是一个点实体，用于覆写控制台参数的SSR效果。
 
 ### 键值
 
@@ -1045,7 +1045,7 @@ obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始
 
 ## env_hdr_control
 
-`env_hdr_control`是一个点实体，用于控制HDR效果。
+`env_hdr_control`是一个点实体，用于覆写控制台参数的HDR设置。
 
 ### 键值
 
@@ -1077,7 +1077,7 @@ obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始
 
 `maxtrans`控制水的最大透明度，必须在0到255之间。例如`"maxtrans" "128"`
 
-`speedrate`控制WATER_LEVEL_LEGACY模式下水湍流的速度，或WATER_LEVEL_LEGACY_RIPPLE模式下波纹效果的速度。例如`"speedrate" "1.0"`。对于WATER_LEVEL_LEGACY_RIPPLE模式的水，500到1000之间的值是合理的。
+`speedrate`控制`WATER_LEVEL_LEGACY`模式下水流的速度，或`WATER_LEVEL_LEGACY_RIPPLE`模式下波纹效果的速度。例如`"speedrate" "1.0"`。对于`WATER_LEVEL_LEGACY_RIPPLE`模式的水，500到1000之间的值是合理的。
 
 `level`控制渲染等级。
 
@@ -1096,7 +1096,7 @@ obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始
 
 ## light_dynamic
 
-`light_dynamic`是一个作为隐形点光源的点实体。
+`light_dynamic`是一个光源实体。
 
 动态光源在游戏中实时计算，这意味着它们具有更高的处理成本，但比静态照明更加灵活。
 

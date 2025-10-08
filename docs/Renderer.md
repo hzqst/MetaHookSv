@@ -1115,7 +1115,7 @@ You can export .obj from de_dust2.bsp via [newbspguy](https://github.com/UnrealK
 
 ## light_dynamic
 
-`light_dynamic` is a point entity as an invisible point light source. 
+`light_dynamic` is a point entity as light source. 
 
 Dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting.
 
@@ -1123,9 +1123,9 @@ Dynamic lights are calculated on the fly in the game, which means they have a hi
 
 `origin` is the light source position. for example `"origin" "123 456 789"`
 
-`color` is the color of the dynamic light, must be between 0 and 255. for example `"color" "192 192 192"`
+`color` is the RGB color of the dynamic light, RGB must be between 0 and 255. for example `"color" "192 192 192"`
 
-`type` can be "point", "spot" or "directional"
+`type` can be either "point", "spot" or "directional"
 
 `size` is the size of dynamic light, in inches. for example `"size" "256"`
 
