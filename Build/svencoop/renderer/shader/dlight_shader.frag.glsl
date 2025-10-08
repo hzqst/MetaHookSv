@@ -106,22 +106,21 @@ float CalcShadowIntensityLinear(sampler2DShadow shadowTex, vec3 World, vec3 Norm
     // Normalize to [0, 1] range using light radius
     float zNear = 0.1;
     float zFar = LightRadius;
-    float linearDepth = distanceLightToWorld / zFar;
     
     // Improved bias calculation matching cubemap shadow
     float NdotL = max(dot(Norm, -LightDirection), 0.0);
     
     // Slope-based bias: larger bias for surfaces at grazing angles
-    float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
+    float slopeBias = 0.0002 * pow(1.0 - NdotL, 2.0);
     
     float invRes = shadowTexel.y;
     
     // Distance-based bias: account for texel size at different distances
-    float texelWorldSize = distanceLightToWorld * invRes * 2.0;
+    float texelWorldSize = LightRadius * invRes * 1.0;
     float distanceBias = texelWorldSize * 0.5;
     
     // Constant base bias
-    float constBias = 0.0003;
+    float constBias = 0.0005;
     
     // Normal offset bias: push the sample point slightly along the normal
     float normalOffsetScale = sqrt(distanceLightToWorld) * invRes * 0.5;
@@ -133,7 +132,7 @@ float CalcShadowIntensityLinear(sampler2DShadow shadowTex, vec3 World, vec3 Norm
     float offsetLinearDepth = offsetDistance / zFar;
     
     // Combine all bias components
-    float bias = constBias + slopeBias + distanceBias;
+    float bias = constBias;// + slopeBias + distanceBias;
     bias = min(bias, 0.01);
     
     float compareDepth = offsetLinearDepth - bias;
