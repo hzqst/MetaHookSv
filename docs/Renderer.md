@@ -945,13 +945,6 @@ This controls how to convert horizontal FOV to vertical FOV :
 
 ## Misc
 
-`r_wsurf_zprepass 0` Disable Z-Prepass optimization.
-`r_wsurf_zprepass 1` Enable Z-Prepass optimization.
-
-* When Z-Prepass optimization enabled. the world will be rendered twice every frame. For the first time it goes with only depth write-in, and the second time it goes with actual fragment color write-in.
-
-* This decreases the fragment shader cost when there are significant overdraws (like when shadow and SSR are calculated for unnecessary fragments) for world rendering.
-
 `r_wsurf_sky_fog 0` : Fog don't affect skybox (Vanilla behavior)
 
 `r_wsurf_sky_fog 1` : Fog affects skybox
