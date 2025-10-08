@@ -70,10 +70,6 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 * 其他游戏也可以按照此种方式安装，只需在点击安装之前选择对应游戏即可。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
-
-* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\install-to-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动安装。
-
 ## 一键安装方式 (Windows批处理脚本)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
