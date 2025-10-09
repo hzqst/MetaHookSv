@@ -278,13 +278,13 @@ void main()
 	
 	lightmapColor *= SceneUBO.r_lightmap_scale;
 
+	lightmapColor *= SceneUBO.r_lightscale;
+
 #if defined(LEGACY_DLIGHT_ENABLED)
 
 	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
 
 #endif
-
-	lightmapColor *= SceneUBO.r_lightscale;
 
 	lightmapColor.a = 1.0;
 
@@ -331,9 +331,9 @@ void main()
 
 #endif
 
-vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
+	vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
 
-float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(GetCameraViewIndex()));
+	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(GetCameraViewIndex()));
 
 #if defined(SHADOW_CASTER_ENABLED)
 

@@ -363,6 +363,7 @@ void R_StudioSaveBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence,
 bool R_StudioLoadBoneCache(studiohdr_t* studiohdr, int modelindex, int sequence, int gaitsequence, float frame, const float* origin, const float* angles);
 void R_FreeStudioRenderData(model_t* mod);
 void R_FreeUnreferencedStudioRenderData(void);
+void R_FreeAllStudioRenderData(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
