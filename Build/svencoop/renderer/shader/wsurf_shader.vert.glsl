@@ -13,8 +13,8 @@ layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec2 in_lightmaptexcoord;
 layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
 layout(location = WSURF_VA_S_TANGENT) in vec3 in_tangent;
 layout(location = WSURF_VA_T_TANGENT) in vec3 in_bitangent;
-layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 layout(location = WSURF_VA_PACKED_MATID) in uint in_packed_matid;
+layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 layout(location = WSURF_VA_DIFFUSESCALE) in float in_diffusescale;
 
 out vec3 v_worldpos;
@@ -99,7 +99,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 void main(void)
 {
 	uint matId = UnpackPackedMatIdAsMatId(in_packed_matid);
-	
+
 #if defined(SKYBOX_ENABLED)
 
 	int vertidx = gl_VertexID % 6;
