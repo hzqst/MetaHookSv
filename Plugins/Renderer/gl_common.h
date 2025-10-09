@@ -98,9 +98,9 @@ public:
 #define WSURF_VA_NORMAL 3
 #define WSURF_VA_S_TANGENT 4
 #define WSURF_VA_T_TANGENT 5
-#define WSURF_VA_TEXTURENUM 6
-#define WSURF_VA_STYLES 7
-#define WSURF_VA_MATID 8
+#define WSURF_VA_STYLES 6
+#define WSURF_VA_PACKED_MATID 7
+#define WSURF_VA_DIFFUSESCALE 8
 
 #define WSURF_BIND_DIFFUSE_TEXTURE 0
 #define WSURF_BIND_DETAIL_TEXTURE 1
@@ -364,13 +364,6 @@ typedef struct decalvertextbn_s
 	vec3_t	t_tangent;
 }decalvertextbn_t;
 
-typedef struct decalinstancedata_s
-{
-	vec2_t	lightmaptexturenum;
-	byte	styles[4];
-	uint32_t matId;
-}decalinstancedata_t;
-
 typedef struct world_material_s
 {
 	vec2_t	diffuseScale;
@@ -396,15 +389,10 @@ typedef struct brushvertextbn_s
 
 typedef struct brushinstancedata_s
 {
-	float	lightmaptexturenum_texcoordscale[2];//lightmaptexcoord[2]=lightmaptexnum //texcoord[2]=1.0f/texwidth, for SURF_DRAWTILED
+	uint16_t packed_matId[2];
 	byte	styles[4];
-	uint32_t matId;
+	float	diffusescale;//1.0f/texwidth, for SURF_DRAWTILED
 }brushinstancedata_t;
-
-typedef struct texture_ssbo_s
-{
-	GLuint64 handles[5 * 1];
-}texture_ssbo_t;
 
 // A fragment node stores rendering information about one specific fragment
 typedef struct FragmentNode_s

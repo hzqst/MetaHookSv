@@ -13,9 +13,9 @@ layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec2 in_lightmaptexcoord;
 layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
 layout(location = WSURF_VA_S_TANGENT) in vec3 in_tangent;
 layout(location = WSURF_VA_T_TANGENT) in vec3 in_bitangent;
-layout(location = WSURF_VA_TEXTURENUM) in vec2 in_lightmaptexturenum_texcoordscale;
 layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
-layout(location = WSURF_VA_MATID) in uint in_matid;
+layout(location = WSURF_VA_PACKED_MATID) in uint in_packed_matid;
+layout(location = WSURF_VA_DIFFUSESCALE) in float in_diffusescale;
 
 out vec3 v_worldpos;
 out vec3 v_normal;
@@ -98,6 +98,8 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 
 void main(void)
 {
+	uint matId = UnpackPackedMatIdAsMatId(in_packed_matid);
+	
 #if defined(SKYBOX_ENABLED)
 
 	int vertidx = gl_VertexID % 6;
@@ -148,18 +150,19 @@ void main(void)
     v_worldpos = worldpos4.xyz;
 
 	#ifdef DIFFUSE_ENABLED
-		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_lightmaptexturenum_texcoordscale.y * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
-		v_diffusetexcoord *= WorldMaterialSSBO[in_matid].diffuseScale;
+		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusescale * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
+		v_diffusetexcoord *= WorldMaterialSSBO[matId].diffuseScale;
 	#endif
 
 #endif
 
 #if defined(LIGHTMAP_ENABLED)
-	v_lightmaptexcoord = vec3(in_lightmaptexcoord.x, in_lightmaptexcoord.y, in_lightmaptexturenum_texcoordscale.x);
+	uint lightmaptexturenum = UnpackPackedMatIdAsLightmapTextureNum(in_packed_matid);
+	v_lightmaptexcoord = vec3(in_lightmaptexcoord.x, in_lightmaptexcoord.y, lightmaptexturenum);
 #endif
 
 #if defined(DETAILTEXTURE_ENABLED)
-	v_detailtexcoord = WorldMaterialSSBO[in_matid].detailScale;
+	v_detailtexcoord = WorldMaterialSSBO[matId].detailScale;
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
@@ -183,15 +186,15 @@ void main(void)
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED)
-	v_normaltexcoord = WorldMaterialSSBO[in_matid].normalScale;
+	v_normaltexcoord = WorldMaterialSSBO[matId].normalScale;
 #endif
 
 #if defined(PARALLAXTEXTURE_ENABLED)
-	v_parallaxtexcoord = WorldMaterialSSBO[in_matid].parallaxScale;
+	v_parallaxtexcoord = WorldMaterialSSBO[matId].parallaxScale;
 #endif
 
 #if defined(SPECULARTEXTURE_ENABLED)
-	v_speculartexcoord = WorldMaterialSSBO[in_matid].specularScale;
+	v_speculartexcoord = WorldMaterialSSBO[matId].specularScale;
 #endif
 
 	#if defined(SKYBOX_ENABLED)

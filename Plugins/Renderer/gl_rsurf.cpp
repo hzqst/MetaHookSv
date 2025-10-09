@@ -947,7 +947,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	std::vector<vertex3f_t> vPolyVertices;
 	std::vector<decalvertex_t> vVertexDataBuffer;
 	std::vector<decalvertextbn_t> vVertexTBNDataBuffer;
-	decalinstancedata_t vInstanceDataBuffer[1];
+	brushinstancedata_t vInstanceDataBuffer[1];
 
 	vPolyVertices.reserve(MAX_DECALVERTS);
 	vVertexDataBuffer.reserve(MAX_DECALVERTS);
@@ -982,14 +982,14 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	decalinstancedata_t tempInstanceData;
+	brushinstancedata_t tempInstanceData;
 
-	tempInstanceData.lightmaptexturenum[0] = surf->lightmaptexturenum;
-	tempInstanceData.lightmaptexturenum[1] = 0;
+	tempInstanceData.packed_matId[0] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId;
+	tempInstanceData.packed_matId[1] = surf->lightmaptexturenum;
 
 	memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
 
-	tempInstanceData.matId = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId;
+	tempInstanceData.diffusescale = 1;
 
 	vInstanceDataBuffer[0] = tempInstanceData;
 
@@ -1006,7 +1006,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEX], sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vVertexDataBuffer.size(), vVertexDataBuffer.data());
 	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN], sizeof(decalvertextbn_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertextbn_t) * vVertexTBNDataBuffer.size(), vVertexTBNDataBuffer.data());
-	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer) * decalIndex, sizeof(decalinstancedata_t) * _countof(vInstanceDataBuffer), vInstanceDataBuffer);
+	GL_UploadSubDataToVBO(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(brushinstancedata_t) * _countof(vInstanceDataBuffer) * decalIndex, sizeof(brushinstancedata_t) * _countof(vInstanceDataBuffer), vInstanceDataBuffer);
 	GL_UploadSubDataToEBO(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * decalIndex, sizeof(uint32_t) * vTriangleListIndices.size(), vTriangleListIndices.data());
 
 	g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex = MAX_DECALINDICES * decalIndex;

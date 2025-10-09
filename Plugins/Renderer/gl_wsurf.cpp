@@ -1934,11 +1934,11 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 		brushinstancedata_t tempInstanceData;
 
-		tempInstanceData.lightmaptexturenum_texcoordscale[0] = surf->lightmaptexturenum;
-		tempInstanceData.lightmaptexturenum_texcoordscale[1] = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+		tempInstanceData.packed_matId[0] = ptexture ? R_FindWorldMaterialId(ptexture->gl_texturenum) : 0;
+		tempInstanceData.packed_matId[1] = surf->lightmaptexturenum;
+		tempInstanceData.diffusescale = (ptexture && (pBrushFace->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 		memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
 
-		tempInstanceData.matId = ptexture ? R_FindWorldMaterialId(ptexture->gl_texturenum) : 0;
 		vInstanceDataBuffer.emplace_back(tempInstanceData);
 
 		pBrushFace->instance_count = 1;
@@ -1984,18 +1984,19 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 		glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_INSTANCE]);
 
-		glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
+		glEnableVertexAttribArray(WSURF_VA_PACKED_MATID);
 		glEnableVertexAttribArray(WSURF_VA_STYLES);
-		glEnableVertexAttribArray(WSURF_VA_MATID);
+		glEnableVertexAttribArray(WSURF_VA_DIFFUSESCALE);
 
-		glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
-		glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
-
+		glVertexAttribIPointer(WSURF_VA_PACKED_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, packed_matId));
+		glVertexAttribDivisor(WSURF_VA_PACKED_MATID, 1);
+		
 		glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
 		glVertexAttribDivisor(WSURF_VA_STYLES, 1);
 		
-		glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
-		glVertexAttribDivisor(WSURF_VA_MATID, 1);
+		glVertexAttribPointer(WSURF_VA_DIFFUSESCALE, 1, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, diffusescale));
+		glVertexAttribDivisor(WSURF_VA_DIFFUSESCALE, 1);
+
 	});
 
 	return pWorldModel;
@@ -2063,7 +2064,7 @@ void R_GenerateSceneUBO(void)
 	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_VERTEXTBN], sizeof(decalvertextbn_t) * MAX_DECALVERTS * MAX_DECALS, nullptr);
 
 	g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE] = GL_GenBuffer();
-	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(decalinstancedata_t) * 1 * MAX_DECALS, nullptr);
+	GL_UploadDataToVBODynamicDraw(g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE], sizeof(brushinstancedata_t) * 1 * MAX_DECALS, nullptr);
 
 	g_WorldSurfaceRenderer.hDecalEBO = GL_GenBuffer();
 	GL_UploadDataToEBODynamicDraw(g_WorldSurfaceRenderer.hDecalEBO, sizeof(uint32_t) * MAX_DECALINDICES * MAX_DECALS, nullptr);
@@ -2100,18 +2101,19 @@ void R_GenerateSceneUBO(void)
 
 			glBindBuffer(GL_ARRAY_BUFFER, g_WorldSurfaceRenderer.hDecalVBO[WSURF_VBO_INSTANCE]);
 
-			glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
+			glEnableVertexAttribArray(WSURF_VA_PACKED_MATID);
 			glEnableVertexAttribArray(WSURF_VA_STYLES);
-			glEnableVertexAttribArray(WSURF_VA_MATID);
+			glEnableVertexAttribArray(WSURF_VA_DIFFUSESCALE);
 
-			glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, lightmaptexturenum));
-			glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
-
-			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalinstancedata_t), OFFSET(decalinstancedata_t, styles));
+			glVertexAttribIPointer(WSURF_VA_PACKED_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, packed_matId));
+			glVertexAttribDivisor(WSURF_VA_PACKED_MATID, 1);
+			
+			glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
 			glVertexAttribDivisor(WSURF_VA_STYLES, 1);
 
-			glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
-			glVertexAttribDivisor(WSURF_VA_MATID, 1);
+			glVertexAttribPointer(WSURF_VA_DIFFUSESCALE, 1, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, diffusescale));
+			glVertexAttribDivisor(WSURF_VA_DIFFUSESCALE, 1);
+
 		}
 	);
 
@@ -4795,15 +4797,15 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 
 		brushinstancedata_t instanceData;
 
-		instanceData.lightmaptexturenum_texcoordscale[0] = 0;
-		instanceData.lightmaptexturenum_texcoordscale[1] = 0;
+		instanceData.packed_matId[0] = 0;
+		instanceData.packed_matId[1] = 0;
 
 		instanceData.styles[0] = 0;
 		instanceData.styles[1] = 0;
 		instanceData.styles[2] = 0;
 		instanceData.styles[3] = 0;
 
-		instanceData.matId = 0;
+		instanceData.diffusescale = 0;
 
 		vInstanceDataBuffer.emplace_back(instanceData);
 
@@ -4914,18 +4916,19 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 
 		glBindBuffer(GL_ARRAY_BUFFER, pShadowProxyModel->hVBO[WSURF_VBO_INSTANCE]);
 
-		glEnableVertexAttribArray(WSURF_VA_TEXTURENUM);
+		glEnableVertexAttribArray(WSURF_VA_PACKED_MATID);
 		glEnableVertexAttribArray(WSURF_VA_STYLES);
-		glEnableVertexAttribArray(WSURF_VA_MATID);
+		glEnableVertexAttribArray(WSURF_VA_DIFFUSESCALE);
 
-		glVertexAttribPointer(WSURF_VA_TEXTURENUM, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, lightmaptexturenum_texcoordscale));
-		glVertexAttribDivisor(WSURF_VA_TEXTURENUM, 1);
-
+		glVertexAttribIPointer(WSURF_VA_PACKED_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, packed_matId));
+		glVertexAttribDivisor(WSURF_VA_PACKED_MATID, 1);
+		
 		glVertexAttribIPointer(WSURF_VA_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, styles));
 		glVertexAttribDivisor(WSURF_VA_STYLES, 1);
 
-		glVertexAttribIPointer(WSURF_VA_MATID, 1, GL_UNSIGNED_INT, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, matId));
-		glVertexAttribDivisor(WSURF_VA_MATID, 1);
+		glVertexAttribPointer(WSURF_VA_DIFFUSESCALE, 2, GL_FLOAT, false, sizeof(brushinstancedata_t), OFFSET(brushinstancedata_t, diffusescale));
+		glVertexAttribDivisor(WSURF_VA_DIFFUSESCALE, 1);
+
 		});
 
 	pShadowProxyModel->hABO = GL_GenBuffer();

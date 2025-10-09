@@ -167,9 +167,9 @@
 #define WSURF_VA_NORMAL 3
 #define WSURF_VA_S_TANGENT 4
 #define WSURF_VA_T_TANGENT 5
-#define WSURF_VA_TEXTURENUM 6
-#define WSURF_VA_STYLES 7
-#define WSURF_VA_MATID 8
+#define WSURF_VA_STYLES 6
+#define WSURF_VA_PACKED_MATID 7
+#define WSURF_VA_DIFFUSESCALE 8
 
 #define TEXTUREDRECT_VA_POSITION		0
 #define TEXTUREDRECT_VA_TEXCOORD		1
@@ -929,4 +929,14 @@ uint UnpackStudioBoneAsVertBone(uint packedBone)
 uint UnpackStudioBoneAsNormBone(uint packedBone)
 {
     return ((packedBone >> 8) & 0xFF);
+}
+
+uint UnpackPackedMatIdAsMatId(uint packedMatId)
+{
+    return (packedMatId & 0xFFFF);
+}
+
+uint UnpackPackedMatIdAsLightmapTextureNum(uint packedMatId)
+{
+    return ((packedMatId >> 16) & 0xFFFF);
 }
