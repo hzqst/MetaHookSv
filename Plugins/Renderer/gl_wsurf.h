@@ -225,7 +225,7 @@ public:
 	GLuint gltexturewidth{};
 	GLuint gltextureheight{};
 	std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial{};
-	uint32_t matId{};
+	int matId{};
 	GLint startIndex{};
 	GLuint indiceCount{};
 	GLint startInstance{};
@@ -344,7 +344,7 @@ void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_DrawDecals(cl_entity_t *ent);
 void R_PrepareDecals(void);
 
-uint32_t R_FindWorldMaterialId(int gl_texturenum);
+int R_FindWorldMaterialId(int gl_texturenum);
 
 std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
 std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);

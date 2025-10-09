@@ -570,16 +570,16 @@ void R_RecursiveLinkTextureChain(model_t* mod, mbasenode_t* basenode, const visn
 
 			if (textureIndex >= 0 && textureIndex < mod->numtextures)
 			{
-				texsurfaces[textureIndex].emplace_back(surf);
+				texsurfaces[textureIndex + 1].emplace_back(surf);
 			}
 			else
 			{
-				texsurfaces[mod->numtextures].emplace_back(surf);
+				texsurfaces[0].emplace_back(surf);
 			}
 		}
 		else
 		{
-			texsurfaces[mod->numtextures].emplace_back(surf);
+			texsurfaces[0].emplace_back(surf);
 		}
 	}
 
@@ -613,16 +613,16 @@ void R_BrushModelLinkTextureChain(model_t* mod, vissurfaces_t& watersurfaces, vi
 
 			if (textureIndex >= 0 && textureIndex < mod->numtextures)
 			{
-				texsurfaces[textureIndex].emplace_back(surf);
+				texsurfaces[textureIndex + 1].emplace_back(surf);
 			}
 			else
 			{
-				texsurfaces[mod->numtextures].emplace_back(surf);
+				texsurfaces[0].emplace_back(surf);
 			}
 		}
 		else
 		{
-			texsurfaces[mod->numtextures].emplace_back(surf);
+			texsurfaces[0].emplace_back(surf);
 		}
 	}
 }
@@ -726,10 +726,10 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 	{
 		texture_t* t = nullptr;
 		
-		if (i == mod->numtextures)
+		if (i == 0)
 			t = R_GetEmptyWorldTexture();
 		else
-			t = mod->textures[i];
+			t = mod->textures[i - 1];
 
 		if (!t)
 			continue;
@@ -1626,14 +1626,14 @@ void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::
     }
 }
 
-uint32_t R_FindWorldMaterialId(int gl_texturenum)
+int R_FindWorldMaterialId(int gl_texturenum)
 {
 	for (size_t i = 0; i < g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.size(); ++i)
 	{
 		if (g_WorldSurfaceRenderer.vWorldMaterialTextureMapping[i] == gl_texturenum)
-			return (uint32_t)i;
+			return (int)i;
 	}
-	return (uint32_t)-1;
+	return -1;
 }
 
 void R_GenerateWorldMaterialForWorldModel(model_t* mod)
@@ -1642,10 +1642,10 @@ void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 	{
 		texture_t* t = nullptr;
 
-		if (i == mod->numtextures)
+		if (i == 0)
 			t = R_GetEmptyWorldTexture();
 		else
-			t = mod->textures[i];
+			t = mod->textures[i - 1];
 
 		if (!t)
 			continue;
@@ -3459,21 +3459,22 @@ void R_LoadDetailTextures(const char* pFileContent)
 		float i_xscale = atof(sz_xscale);
 		float i_yscale = atof(sz_yscale);
 
+		auto textureHash = R_GetWorldTextureHash(base.c_str());
+
 		std::shared_ptr<CWorldSurfaceRenderMaterial> pRenderMaterial;
 
-		for (auto it : g_WorldTextureRenderMaterials)
+		auto it = g_WorldTextureRenderMaterials.find(textureHash);
+
+		if (it != g_WorldTextureRenderMaterials.end())
 		{
-			if (it.second->basetexture == base)
-			{
-				pRenderMaterial = it.second;
-			}
+			pRenderMaterial = it->second;
 		}
 
 		if (!pRenderMaterial)
 		{
 			pRenderMaterial = std::make_shared<CWorldSurfaceRenderMaterial>(base);
 
-			g_WorldTextureRenderMaterials[glt] = pRenderMaterial;
+			g_WorldTextureRenderMaterials[textureHash] = pRenderMaterial;
 		}
 
 		if (pRenderMaterial)

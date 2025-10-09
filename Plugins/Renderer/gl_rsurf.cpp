@@ -861,7 +861,7 @@ void R_UploadDecalTextures(int decalIndex, texture_t* ptexture, const std::share
 
 	auto matId = R_FindWorldMaterialId(ptexture->gl_texturenum);
 
-	if (matId == (uint32_t)-1)
+	if (matId == -1)
 	{
 		world_material_t mat;
 
@@ -905,7 +905,7 @@ void R_UploadDecalTextures(int decalIndex, texture_t* ptexture, const std::share
 			}
 		}
 
-		matId = (uint32_t)g_WorldSurfaceRenderer.vWorldMaterials.size();
+		matId = (int)g_WorldSurfaceRenderer.vWorldMaterials.size();
 
 		g_WorldSurfaceRenderer.vWorldMaterialTextureMapping.emplace_back(ptexture->gl_texturenum);
 		g_WorldSurfaceRenderer.vWorldMaterials.emplace_back(mat);
