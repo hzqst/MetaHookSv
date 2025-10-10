@@ -200,6 +200,8 @@ public:
 	std::atomic_bool bIsClosing{ false };
 
 	std::shared_ptr<CGameResourceAsyncLoadTask> m_pGameResourceAsyncLoadTask;
+
+	uint32_t m_StudioHeaderHash{};
 };
 
 class CStudioSkinCache

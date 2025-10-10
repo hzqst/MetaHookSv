@@ -1008,7 +1008,8 @@ void R_IterateDynamicLights(
 
 				args.bVolume = true;
 				args.bStatic = false;
-				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
+				args.bHideEntitySource = true;
+				args.pHideEntity = ent;
 
 				spotlightCallback(&args, context);
 			}
@@ -1039,7 +1040,8 @@ void R_IterateDynamicLights(
 
 				args.bVolume = false;
 				args.bStatic = false;
-				args.bIsFromLocalPlayer = bIsFromLocalPlayer;
+				args.bHideEntitySource = true;
+				args.pHideEntity = ent;
 
 				spotlightCallback(&args, context);
 			}			

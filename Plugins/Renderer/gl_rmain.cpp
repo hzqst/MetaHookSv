@@ -2192,10 +2192,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		return;
 	}
-	if (!(r_draw_classify & DRAW_CLASSIFY_LOCAL_PLAYER) && (*currententity) == gEngfuncs.GetLocalPlayer())
-	{
-		return;
-	}
 
 	if (bTransparent)
 	{

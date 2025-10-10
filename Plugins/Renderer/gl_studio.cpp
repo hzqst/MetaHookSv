@@ -4793,6 +4793,16 @@ void R_CreateStudioRenderDataAsyncLoadTask(model_t* mod, studiohdr_t* studiohdr,
 	}
 }
 
+uint32_t R_CalcStudioHeaderHash(studiohdr_t* studiohdr)
+{
+	uint32_t seed = 0;
+
+	seed ^= MurmurHash2(&studiohdr->id, (int)offsetof(studiohdr_t, flags), seed);
+	seed ^= MurmurHash2(&studiohdr->numbones, (int)offsetof(studiohdr_t, soundtable) - (int)offsetof(studiohdr_t, numbones), seed);
+
+	return seed;
+}
+
 std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (!studiohdr->numbodyparts)
@@ -4800,7 +4810,7 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 
 	auto pRenderData = R_GetStudioRenderDataFromModel(mod);
 
-	if (pRenderData)
+	if (pRenderData && R_CalcStudioHeaderHash(studiohdr) == pRenderData->m_StudioHeaderHash)
 	{
 		studiohdr->soundtable = EngineGetModelIndex(mod);
 
@@ -4859,6 +4869,8 @@ std::shared_ptr<CStudioModelRenderData> R_CreateStudioRenderData(model_t* mod, s
 
 	R_StudioLoadTextureModel(mod, studiohdr, pRenderData.get());
 	R_StudioLoadExternalFile(mod, studiohdr, pRenderData.get());
+
+	pRenderData->m_StudioHeaderHash = R_CalcStudioHeaderHash(studiohdr);
 
 	R_CreateStudioRenderDataAsyncLoadTask(mod, studiohdr, pRenderData);
 

@@ -459,8 +459,6 @@ void R_RenderShadowmapForDynamicLights(void)
 						glDrawBuffer(GL_NONE);
 						glReadBuffer(GL_NONE);
 
-						glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
 						GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 						R_PushRefDef();
@@ -535,8 +533,6 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						R_PopRefDef();
 
-						glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
 						r_draw_shadowview = false;
 						r_draw_multiview = false;
 						r_draw_nofrustumcull = false;
@@ -577,8 +573,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-					
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 					
 					R_PushRefDef();
@@ -638,7 +632,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					if (args->bStatic)
 					{
 						auto old_draw_classify = r_draw_classify;
-						r_draw_classify = DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER;
+						r_draw_classify = DRAW_CLASSIFY_OPAQUE_ENTITIES;
 
 						R_RenderScene();
 
@@ -647,7 +641,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					else
 					{
 						auto old_draw_classify = r_draw_classify;
-						r_draw_classify = DRAW_CLASSIFY_WORLD | DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER;
+						r_draw_classify = DRAW_CLASSIFY_WORLD | DRAW_CLASSIFY_OPAQUE_ENTITIES;
 
 						R_RenderScene();
 
@@ -655,8 +649,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					}
 
 					R_PopRefDef();
-
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
@@ -702,8 +694,6 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
 					R_PushRefDef();
 
 					VectorCopy(args->origin, (*r_refdef.vieworg));
@@ -743,12 +733,12 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 					{
-						auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
-
-						if (pLocalPlayer->model && args->bIsFromLocalPlayer)
+						if (args->bHideEntitySource && args->pHideEntity && args->pHideEntity->model)
 						{
+							auto pHideEntityModel = args->pHideEntity->model;
+							args->pHideEntity->model = nullptr;
+
 							auto old_draw_classify = r_draw_classify;
-							r_draw_classify &= ~DRAW_CLASSIFY_LOCAL_PLAYER;
 							r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 							r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
 							r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
@@ -757,6 +747,7 @@ void R_RenderShadowmapForDynamicLights(void)
 							R_RenderScene();
 
 							r_draw_classify = old_draw_classify;
+							args->pHideEntity->model = pHideEntityModel;
 						}
 						else
 						{
@@ -773,8 +764,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					}
 
 					R_PopRefDef();
-
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_multiview = false;
 					r_draw_shadowview = false;
@@ -820,8 +809,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					glReadBuffer(GL_NONE);
 
 					GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
-
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
 
@@ -886,8 +873,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					}
 
 					R_PopRefDef();
-
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;
@@ -973,8 +958,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
 					R_PushRefDef();
 
 					// All cascades use same viewangles and vieworg
@@ -1046,7 +1029,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					{
 						auto old_draw_classify = r_draw_classify;
-						r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES | DRAW_CLASSIFY_LOCAL_PLAYER);
+						r_draw_classify = (DRAW_CLASSIFY_OPAQUE_ENTITIES);
 
 						// Render all cascades in a single draw call using multiview geometry shader
 						R_RenderScene();
@@ -1055,8 +1038,6 @@ void R_RenderShadowmapForDynamicLights(void)
 					}
 
 					R_PopRefDef();
-
-					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 					r_draw_shadowview = false;
 					r_draw_multiview = false;

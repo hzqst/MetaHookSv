@@ -982,16 +982,12 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	brushinstancedata_t tempInstanceData;
+	vInstanceDataBuffer[0].packed_matId[0] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId;
+	vInstanceDataBuffer[0].packed_matId[1] = surf->lightmaptexturenum;
 
-	tempInstanceData.packed_matId[0] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].matId;
-	tempInstanceData.packed_matId[1] = surf->lightmaptexturenum;
+	memcpy(&vInstanceDataBuffer[0].styles, surf->styles, sizeof(surf->styles));
 
-	memcpy(&tempInstanceData.styles, surf->styles, sizeof(surf->styles));
-
-	tempInstanceData.diffusescale = 1;
-
-	vInstanceDataBuffer[0] = tempInstanceData;
+	vInstanceDataBuffer[0].diffusescale = 0;
 
 	std::vector<uint32_t> vTriangleListIndices;
 

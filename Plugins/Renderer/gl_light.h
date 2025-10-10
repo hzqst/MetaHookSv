@@ -116,7 +116,8 @@ typedef struct SpotLightCallbackArgs_s
 
 	bool bVolume;
 	bool bStatic;
-	bool bIsFromLocalPlayer;
+	bool bHideEntitySource;
+	cl_entity_t* pHideEntity;
 }SpotLightCallbackArgs;
 
 typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
