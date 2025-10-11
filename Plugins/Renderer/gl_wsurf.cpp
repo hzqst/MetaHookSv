@@ -3630,36 +3630,39 @@ void R_BeginDetailTextureFromRenderMaterial(CWorldSurfaceRenderMaterial* pRender
 		GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DIFFUSE_TEXTURE].gltexturenum);
 	}
 
-	if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
+	if (r_detailtextures && (int)r_detailtextures->value > 0)
 	{
-		GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum);
+		if (pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum)
+		{
+			GL_BindTextureUnit(WSURF_BIND_DETAIL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_DETAIL_TEXTURE].gltexturenum);
 
-		if (WSurfProgramState)
-			(*WSurfProgramState) |= WSURF_DETAILTEXTURE_ENABLED;
-	}
+			if (WSurfProgramState)
+				(*WSurfProgramState) |= WSURF_DETAILTEXTURE_ENABLED;
+		}
 
-	if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
-	{
-		GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum);
+		if (pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum)
+		{
+			GL_BindTextureUnit(WSURF_BIND_NORMAL_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_NORMAL_TEXTURE].gltexturenum);
 
-		if (WSurfProgramState)
-			(*WSurfProgramState) |= WSURF_NORMALTEXTURE_ENABLED;
-	}
+			if (WSurfProgramState)
+				(*WSurfProgramState) |= WSURF_NORMALTEXTURE_ENABLED;
+		}
 
-	if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
-	{
-		GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum);
+		if (pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum)
+		{
+			GL_BindTextureUnit(WSURF_BIND_PARALLAX_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_PARALLAX_TEXTURE].gltexturenum);
 
-		if (WSurfProgramState)
-			(*WSurfProgramState) |= WSURF_PARALLAXTEXTURE_ENABLED;
-	}
+			if (WSurfProgramState)
+				(*WSurfProgramState) |= WSURF_PARALLAXTEXTURE_ENABLED;
+		}
 
-	if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
-	{
-		GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum);
+		if (pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum)
+		{
+			GL_BindTextureUnit(WSURF_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, pRenderMaterial->textures[WSURF_SPECULAR_TEXTURE].gltexturenum);
 
-		if (WSurfProgramState)
-			(*WSurfProgramState) |= WSURF_SPECULARTEXTURE_ENABLED;
+			if (WSurfProgramState)
+				(*WSurfProgramState) |= WSURF_SPECULARTEXTURE_ENABLED;
+		}
 	}
 }
 
