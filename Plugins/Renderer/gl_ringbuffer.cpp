@@ -80,17 +80,15 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 {
 	if (size == 0)
 		return false;
-	if (!IsPowerOfTwo(alignment))
-		return false;
 
-	size = AlignUp(size, alignment);
+	size = alignment ? AlignUp(size, alignment) : size;
 
 	if (m_UsedSize + size > m_BufferSize)
 	{
 		return false;
 	}
 
-	size_t alignedHead = AlignUp(m_Head, alignment);
+	size_t alignedHead = alignment ? AlignUp(m_Head, alignment) : m_Head;
 
 	if (m_Head >= m_Tail)
 	{
@@ -148,7 +146,7 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		}
 		else if (m_Tail + size <= m_BufferSize)
 		{
-			size_t alignedTail = AlignUp(m_Tail, alignment);
+			size_t alignedTail = alignment ? AlignUp(m_Tail, alignment) : m_Tail;
 			if (alignedTail + size <= m_BufferSize)
 			{
 				size_t wastedSpace = m_Tail - m_Head;
@@ -189,7 +187,7 @@ void CPMBRingBuffer::EndFrame()
 			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
 		}
 
-		//gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
+		gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
 
 		m_CurrFrameSize = 0;
 	}

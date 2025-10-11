@@ -1363,19 +1363,20 @@ void triapi_End()
 		gTriAPICommand.hVAO = GL_GenVAO();
 
 		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER) &&
-			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER))
 		{
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
 
 				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetGLBufferObject());
 
-				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
-				glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
-				glEnableVertexAttribArray(TRIAPI_VA_COLOR);
-
 				glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
+				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
+
 				glVertexAttribPointer(TRIAPI_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, texcoord));
+				glEnableVertexAttribArray(TRIAPI_VA_TEXCOORD);
+
 				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
+				glEnableVertexAttribArray(TRIAPI_VA_COLOR);
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer.GetGLBufferObject());
 
@@ -1387,11 +1388,14 @@ void triapi_End()
 		}
 	}
 
-	size_t vertexDataSize = gTriAPICommand.Vertices.size() * sizeof(triapivertex_t);
-	size_t indexDataSize = gTriAPICommand.Indices.size() * sizeof(uint32_t);
+	uint32_t verticesCount = gTriAPICommand.Vertices.size();
+	uint32_t indiceCount = gTriAPICommand.Indices.size();
+
+	size_t vertexDataSize = verticesCount * sizeof(triapivertex_t);
+	size_t indexDataSize = indiceCount * sizeof(uint32_t);
 
 	CPMBRingBuffer::Allocation vertexAllocation;
-	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
+	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
 	{
 		//ring buffer full
 		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIVertexBuffer full!\n");
@@ -1401,16 +1405,14 @@ void triapi_End()
 	}
 
 	CPMBRingBuffer::Allocation indexAllocation;
-	if (!g_TriAPIIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	if (!g_TriAPIIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
 	{
 		//ring buffer full
 		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIIndexBuffer full!\n");
-
+	
 		triapi_EndClear();
 		return;
 	}
-
-	GL_BeginDebugGroup("triapi_End");
 
 	memcpy(vertexAllocation.ptr, gTriAPICommand.Vertices.data(), vertexDataSize);
 
@@ -1419,6 +1421,10 @@ void triapi_End()
 	memcpy(indexAllocation.ptr, gTriAPICommand.Indices.data(), indexDataSize);
 
 	GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
+
+	triapi_EndClear();
+
+	GL_BeginDebugGroup("triapi_End");
 
 	GL_BindVAO(gTriAPICommand.hVAO);
 
@@ -1612,11 +1618,11 @@ void triapi_End()
 
 	if (gTriAPICommand.GLPrimitiveCode == GL_LINES)
 	{
-		glDrawElementsBaseVertex(GL_LINES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
+		glDrawElementsBaseVertex(GL_LINES, indiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
 	}
 	else
 	{
-		glDrawElementsBaseVertex(GL_TRIANGLES, gTriAPICommand.Indices.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
+		glDrawElementsBaseVertex(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), baseVertex);
 	}
 
 	GL_UseProgram(0);
@@ -1628,8 +1634,6 @@ void triapi_End()
 	GL_BindVAO(0);
 
 	GL_EndDebugGroup();
-
-	triapi_EndClear();
 }
 
 void triapi_Color4f(float r, float g, float b, float a)
