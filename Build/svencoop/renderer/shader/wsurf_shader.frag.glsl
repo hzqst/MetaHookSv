@@ -207,8 +207,6 @@ void main()
 {
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 	
-	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
-
 	vec2 baseTexcoord = vec2(0.0, 0.0);
 
 #if defined(DIFFUSE_ENABLED)

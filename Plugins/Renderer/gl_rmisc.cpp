@@ -381,8 +381,8 @@ void GL_CreateCubemapShadowTexture(int texid, int w, int h, bool immutable)
 
 	glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_DEPTH32F_STENCIL8, w, h);
 
-	for (unsigned int i = 0; i < 6; ++i)
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	//for (unsigned int i = 0; i < 6; ++i)
+	//	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
