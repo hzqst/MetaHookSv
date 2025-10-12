@@ -85,4 +85,19 @@
   <data name="MetahookNotInstalled" xml:space="preserve">
     <value>Metahook is not installed, plugin list editing is not available</value>
   </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="UninstallSuccess" xml:space="preserve">
+    <value>Metahook uninstalled successfully. Please verify game file integrity in Steam to restore original game files that were overwritten by Metahook.</value>
+  </data>
+  <data name="UninstallFailed" xml:space="preserve">
+    <value>Metahook uninstallation failed: {0}</value>
+  </data>
+  <data name="MetahookNotInstalledForUninstall" xml:space="preserve">
+    <value>Metahook is not installed</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>Are you sure you want to uninstall Metahook?</value>
+  </data>
 </root> 

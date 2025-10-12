@@ -85,4 +85,19 @@
   <data name="MetahookNotInstalled" xml:space="preserve">
     <value>尚未安装metahook，编辑插件列表功能不可用</value>
   </data>
+  <data name="Uninstall" xml:space="preserve">
+    <value>卸载</value>
+  </data>
+  <data name="UninstallSuccess" xml:space="preserve">
+    <value>Metahook卸载成功。请在Steam中验证游戏文件完整性以还原被Metahook覆盖的游戏原始文件。</value>
+  </data>
+  <data name="UninstallFailed" xml:space="preserve">
+    <value>Metahook卸载失败: {0}</value>
+  </data>
+  <data name="MetahookNotInstalledForUninstall" xml:space="preserve">
+    <value>Metahook尚未安装</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>确定要卸载Metahook吗？</value>
+  </data>
 </root> 

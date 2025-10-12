@@ -216,9 +216,9 @@ namespace MetahookInstaller.ViewModels
         {
             if (SelectedGame == null)
             {
-                MessageBox.Show(LocalizationService.GetString("PleaseSelectGame"), 
-                              LocalizationService.GetString("Error"), 
-                              MessageBoxButton.OK, 
+                MessageBox.Show(LocalizationService.GetString("PleaseSelectGame"),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
                               MessageBoxImage.Error);
                 return;
             }
@@ -234,9 +234,9 @@ namespace MetahookInstaller.ViewModels
             var liblistGamPath = System.IO.Path.Combine(GamePath, ModName, "liblist.gam");
             if (!System.IO.File.Exists(liblistGamPath))
             {
-                MessageBox.Show(string.Format(LocalizationService.GetString("InvalidModDirectory"), GamePath, ModName), 
-                              LocalizationService.GetString("Error"), 
-                              MessageBoxButton.OK, 
+                MessageBox.Show(string.Format(LocalizationService.GetString("InvalidModDirectory"), GamePath, ModName),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
                               MessageBoxImage.Error);
                 return;
             }
@@ -256,16 +256,119 @@ namespace MetahookInstaller.ViewModels
             try
             {
                 _modService.InstallMod(GamePath, ModName, AppId, GameName);
-                MessageBox.Show(LocalizationService.GetString("ModInstallSuccess"), 
-                              LocalizationService.GetString("Success"), 
-                              MessageBoxButton.OK, 
+                MessageBox.Show(LocalizationService.GetString("ModInstallSuccess"),
+                              LocalizationService.GetString("Success"),
+                              MessageBoxButton.OK,
                               MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(LocalizationService.GetString("ModInstallFailed"), ex.Message), 
-                              LocalizationService.GetString("Error"), 
-                              MessageBoxButton.OK, 
+                MessageBox.Show(string.Format(LocalizationService.GetString("ModInstallFailed"), ex.Message),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+            }
+        }
+
+        public void UninstallMod()
+        {
+            if (SelectedGame == null)
+            {
+                MessageBox.Show(LocalizationService.GetString("PleaseSelectGame"),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                return;
+            }
+            if (string.IsNullOrEmpty(GamePath))
+            {
+                MessageBox.Show(LocalizationService.GetString("InvalidGameDirectory"),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                return;
+            }
+
+            // Check if MetaHook is installed
+            var metahookExePath = Path.Combine(GamePath, "MetaHook.exe");
+            var metahookBlobExePath = Path.Combine(GamePath, "MetaHook_blob.exe");
+            var svencoopExePath = Path.Combine(GamePath, "svencoop.exe");
+            var metahookDirPath = Path.Combine(GamePath, ModName, "metahook");
+
+            bool isInstalled = File.Exists(metahookExePath) ||
+                             File.Exists(metahookBlobExePath) ||
+                             File.Exists(svencoopExePath) ||
+                             Directory.Exists(metahookDirPath);
+
+            if (!isInstalled)
+            {
+                MessageBox.Show(LocalizationService.GetString("MetahookNotInstalledForUninstall"),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Error);
+                return;
+            }
+
+            // Confirm uninstallation
+            var result = MessageBox.Show(LocalizationService.GetString("ConfirmUninstall"),
+                                       "MetaHook Installer",
+                                       MessageBoxButton.YesNo,
+                                       MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            string GameName = SelectedGame.Name;
+
+            if (AppId == 0)
+            {
+                var liblistGamPath = Path.Combine(GamePath, ModName, "liblist.gam");
+                if (File.Exists(liblistGamPath))
+                {
+                    string newGameName = _modService.GetGameNameFromLiblist(liblistGamPath);
+                    if (!string.IsNullOrEmpty(newGameName))
+                    {
+                        GameName = newGameName;
+                    }
+                }
+            }
+
+            try
+            {
+                _modService.UninstallMod(GamePath, ModName, AppId, GameName);
+                var successResult = MessageBox.Show(LocalizationService.GetString("UninstallSuccess"),
+                                                  LocalizationService.GetString("Success"),
+                                                  MessageBoxButton.OK,
+                                                  MessageBoxImage.Information);
+                
+                // Open Steam help page after user clicks OK
+                if (successResult == MessageBoxResult.OK)
+                {
+                    try
+                    {
+                        // Use Chinese URL if current culture is Chinese
+                        var url = System.Globalization.CultureInfo.CurrentUICulture.Name == "zh-CN" 
+                            ? "https://help.steampowered.com/zh-cn/faqs/view/0C48-FCBD-DA71-93EB"
+                            : "https://help.steampowered.com/en/faqs/view/0C48-FCBD-DA71-93EB";
+                            
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+                    }
+                    catch
+                    {
+                        // Ignore browser launch failure
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format(LocalizationService.GetString("UninstallFailed"), ex.Message),
+                              LocalizationService.GetString("Error"),
+                              MessageBoxButton.OK,
                               MessageBoxImage.Error);
             }
         }

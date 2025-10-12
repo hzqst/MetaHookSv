@@ -45,6 +45,11 @@ namespace MetahookInstaller.Views
             _viewModel.InstallMod();
         }
 
+        private void UninstallButton_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.UninstallMod();
+        }
+
         private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");

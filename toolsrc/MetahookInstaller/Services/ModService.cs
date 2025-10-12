@@ -213,5 +213,94 @@ namespace MetahookInstaller.Services
                 return false;
             }
         }
+
+        public void UninstallMod(string gamePath, string modName, uint appId, string modFullName)
+        {
+            // Hardcoded uninstall file list
+            // Strings ending with '/' are treated as directories to be deleted
+            // Strings not ending with '/' are treated as files to be deleted
+            var uninstallList = new List<string>();
+
+            // Add mod directory (will be deleted recursively)
+            uninstallList.Add($"{modName}/metahook/");
+            uninstallList.Add($"{modName}/renderer/");
+            uninstallList.Add($"{modName}/scmodeldownloader/");
+            uninstallList.Add($"{modName}/vgui2ext/");
+            uninstallList.Add($"{modName}/captionmod/");
+            uninstallList.Add($"{modName}/bulletphysics/");
+            uninstallList.Add($"{modName}/sprites/radio_external.txt");
+            uninstallList.Add($"{modName}/sprites/voiceicon_external.txt");
+
+            // Add MetaHook executables
+            if (appId == 225840) // Sven Co-op
+            {
+                //Don't remove svencoop.exe, maybe verify the game files integrity from Steam?
+                //uninstallList.Add("svencoop.exe");
+            }
+            else
+            {
+                uninstallList.Add("MetaHook.exe");
+            }
+            uninstallList.Add("MetaHook_blob.exe");
+
+            // Don't remove SDL2 as it's mandatory for vanilla game.
+            //uninstallList.Add("SDL2.dll");
+            //uninstallList.Add("SDL3.dll");
+
+            // Delete files and directories
+            foreach (var item in uninstallList)
+            {
+                if (item.EndsWith("/"))
+                {
+                    // Directory
+                    var dirPath = Path.Combine(gamePath, item.TrimEnd('/'));
+                    if (Directory.Exists(dirPath))
+                    {
+                        try
+                        {
+                            Directory.Delete(dirPath, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Failed to delete directory {dirPath}: {ex.Message}");
+                        }
+                    }
+                }
+                else
+                {
+                    // File
+                    var filePath = Path.Combine(gamePath, item);
+                    if (File.Exists(filePath))
+                    {
+                        try
+                        {
+                            File.Delete(filePath);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Failed to delete file {filePath}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            // Delete desktop shortcut
+            var installerPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            if (installerPath != null)
+            {
+                var shortcutPath = Path.Combine(installerPath, $"MetaHook for {modFullName}.lnk");
+                if (File.Exists(shortcutPath))
+                {
+                    try
+                    {
+                        File.Delete(shortcutPath);
+                    }
+                    catch
+                    {
+                        // Ignore shortcut deletion failure
+                    }
+                }
+            }
+        }
     }
 } 

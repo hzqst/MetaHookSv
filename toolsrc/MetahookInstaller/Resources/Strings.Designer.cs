@@ -291,5 +291,60 @@ namespace MetahookInstaller.Resources
                 return ResourceManager.GetString("MetahookNotInstalled", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Uninstall 的本地化字符串。
+        /// </summary>
+        public static string Uninstall
+        {
+            get
+            {
+                return ResourceManager.GetString("Uninstall", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Metahook uninstalled successfully. Please verify game file integrity in Steam to restore original game files that were overwritten by Metahook. 的本地化字符串。
+        /// </summary>
+        public static string UninstallSuccess
+        {
+            get
+            {
+                return ResourceManager.GetString("UninstallSuccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Metahook uninstallation failed: {0} 的本地化字符串。
+        /// </summary>
+        public static string UninstallFailed
+        {
+            get
+            {
+                return ResourceManager.GetString("UninstallFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Metahook is not installed 的本地化字符串。
+        /// </summary>
+        public static string MetahookNotInstalledForUninstall
+        {
+            get
+            {
+                return ResourceManager.GetString("MetahookNotInstalledForUninstall", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Are you sure you want to uninstall Metahook? 的本地化字符串。
+        /// </summary>
+        public static string ConfirmUninstall
+        {
+            get
+            {
+                return ResourceManager.GetString("ConfirmUninstall", resourceCulture);
+            }
+        }
     }
 } 
