@@ -1020,7 +1020,7 @@ void R_IterateDynamicLights(
 			else
 			{
 				SpotLightCallbackArgs args{};
-				args.distance = max_distance;
+				args.distance = maxDistance;
 				args.radius = radius;
 				args.coneAngle = coneAngle;
 				args.coneCosAngle = coneCosAngle;
