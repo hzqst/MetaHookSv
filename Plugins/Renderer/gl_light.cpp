@@ -874,8 +874,8 @@ void R_IterateDynamicLights(
 			vec3_t org = { 0 };
 			vec3_t end = { 0 };
 
-			float max_distance = r_flashlight_distance->GetValue();
-			float min_distance = r_flashlight_min_distance->GetValue();
+			float maxDistance = r_flashlight_distance->GetValue();
+			float minDistance = r_flashlight_min_distance->GetValue();
 
 			if (bIsFromLocalPlayer && R_IsRenderingFirstPersonView())
 			{
@@ -923,7 +923,7 @@ void R_IterateDynamicLights(
 				}
 
 				VectorCopy(org, dlight_origin);
-				VectorMA(org, max_distance, dlight_vforward, end);
+				VectorMA(org, maxDistance, dlight_vforward, end);
 			}
 			else
 			{
@@ -937,7 +937,7 @@ void R_IterateDynamicLights(
 				VectorMA(org, 10, dlight_vright, org);
 
 				VectorCopy(org, dlight_origin);
-				VectorMA(org, max_distance, dlight_vforward, end);
+				VectorMA(org, maxDistance, dlight_vforward, end);
 			}
 #if 1//Don't do such thing for spotlight
 			struct pmtrace_s trace {};
@@ -948,9 +948,9 @@ void R_IterateDynamicLights(
 				pmove_10152->usehull = 2;
 				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
 
-				float distance = trace.fraction * max_distance;
+				float distance = trace.fraction * maxDistance;
 
-				if (trace.startsolid || distance < min_distance)
+				if (trace.startsolid || distance < minDistance)
 					continue;
 			}
 			else
@@ -959,9 +959,9 @@ void R_IterateDynamicLights(
 				pmove->usehull = 2;
 				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
 
-				float distance = trace.fraction * max_distance;
+				float distance = trace.fraction * maxDistance;
 
-				if (trace.startsolid || distance < min_distance)
+				if (trace.startsolid || distance < minDistance)
 					continue;
 			}
 #endif
@@ -969,7 +969,7 @@ void R_IterateDynamicLights(
 			float coneAngle = acosf(coneCosAngle);
 			float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
 			float coneTanAngle = tanf(coneAngle);
-			float radius = max_distance * coneTanAngle;
+			float radius = maxDistance * coneTanAngle;
 			
 			float ambient = r_flashlight_ambient->GetValue();
 			float diffuse = r_flashlight_diffuse->GetValue();
@@ -981,10 +981,14 @@ void R_IterateDynamicLights(
 			color[1] = (float)dl->color.g / 255.0f;
 			color[2] = (float)dl->color.b / 255.0f;
 
-			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, max_distance))
+			vec3_t adjustedOrigin;
+			VectorMA(dlight_origin, -20.0f, dlight_vforward, adjustedOrigin);
+			float adjustedDistance = maxDistance + 40.0;
+
+			if (!Util_IsOriginInCone((*r_refdef.vieworg), adjustedOrigin, dlight_vforward, coneCosAngle, adjustedDistance))
 			{
 				SpotLightCallbackArgs args{};
-				args.distance = max_distance;
+				args.distance = maxDistance;
 				args.radius = radius;
 				args.coneAngle = coneAngle;
 				args.coneCosAngle = coneCosAngle;
