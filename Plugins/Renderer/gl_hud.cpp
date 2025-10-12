@@ -468,17 +468,17 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	CPMBRingBuffer::Allocation instanceAllocation;
 	CPMBRingBuffer::Allocation indexAllocation;
 
-	if (!g_TexturedRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
+	if (!g_TexturedRectVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 16, instanceAllocation))
+	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 0, instanceAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	if (!g_RectIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
 	{
 		return;
 	}
@@ -620,17 +620,17 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	CPMBRingBuffer::Allocation instanceAllocation;
 	CPMBRingBuffer::Allocation indexAllocation;
 
-	if (!g_FilledRectVertexBuffer.Allocate(vertexDataSize, 16, vertexAllocation))
+	if (!g_FilledRectVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 16, instanceAllocation))
+	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 0, instanceAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectIndexBuffer.Allocate(indexDataSize, 16, indexAllocation))
+	if (!g_RectIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
 	{
 		return;
 	}
