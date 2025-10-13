@@ -1,94 +1,140 @@
 #include "gl_local.h"
 
-bool CPMBRingBuffer::Initialize(const char *name, size_t bufferSize, GLenum bufferTarget)
+#include <deque>
+
+class CPMBRingBuffer : public IPMBRingBuffer
 {
-	//Already initialized
-	if (m_MappedPtr)
-		return true;
+private:
+	GLuint m_hGLBufferObject{};
+	GLenum m_GLBufferTarget{};
+	void* m_MappedPtr{};
+	size_t m_BufferSize{};
 
-	m_BufferName = name;
-	m_BufferSize = bufferSize;
-	m_Head = 0;
-	m_Tail = 0;
-	m_UsedSize = 0;
-	m_CurrFrameSize = 0;
-	m_FrameStartOffset = 0;
+	size_t m_Head{};
+	size_t m_Tail{};
+	size_t m_UsedSize{};
+	size_t m_CurrFrameSize{};
+	size_t m_FrameStartOffset{};
 
-	m_CompletedFrames.clear();
-
-	m_GLBufferTarget = bufferTarget;
-	m_hGLBufferObject = GL_GenBuffer();
-
-	GL_BindVAO(0);
-
-	glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
-
-	glBufferStorage(m_GLBufferTarget, m_BufferSize, nullptr,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-	m_MappedPtr = glMapBufferRange(m_GLBufferTarget, 0, m_BufferSize,
-		GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-
-	glBindBuffer(m_GLBufferTarget, 0);
-
-	if (glObjectLabel)
+	struct FrameHeadAttribs
 	{
-		glObjectLabel(GL_BUFFER, m_hGLBufferObject, -1, m_BufferName.c_str());
-	}
+		GLsync fence;      // OpenGL fence
+		size_t offset;     // offset in current frame
+		size_t size;       // frame size
 
-	return m_MappedPtr != nullptr;
-}
-
-void CPMBRingBuffer::Shutdown()
-{
-	for (auto& frame : m_CompletedFrames)
-	{
-		if (frame.fence)
-		{
-			glDeleteSync(frame.fence);
+		FrameHeadAttribs(GLsync f, size_t off, size_t sz)
+			: fence(f), offset(off), size(sz) {
 		}
-	}
-	m_CompletedFrames.clear();
+	};
 
-	if (m_MappedPtr)
+	std::deque<FrameHeadAttribs> m_CompletedFrames;
+	std::string m_BufferName;
+
+public:
+	
+	CPMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget)
 	{
+		m_BufferName = name;
+		m_BufferSize = bufferSize;
+		m_Head = 0;
+		m_Tail = 0;
+		m_UsedSize = 0;
+		m_CurrFrameSize = 0;
+		m_FrameStartOffset = 0;
+
+		m_CompletedFrames.clear();
+
+		m_GLBufferTarget = bufferTarget;
+		m_hGLBufferObject = GL_GenBuffer();
+
 		GL_BindVAO(0);
 
-		if (m_hGLBufferObject)
+		glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
+
+		glBufferStorage(m_GLBufferTarget, m_BufferSize, nullptr,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+		m_MappedPtr = glMapBufferRange(m_GLBufferTarget, 0, m_BufferSize,
+			GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+
+		glBindBuffer(m_GLBufferTarget, 0);
+
+		if (glObjectLabel)
 		{
-			glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
-			glUnmapBuffer(m_GLBufferTarget);
-			glBindBuffer(m_GLBufferTarget, 0);
+			glObjectLabel(GL_BUFFER, m_hGLBufferObject, -1, m_BufferName.c_str());
+		}
+	}
+
+	~CPMBRingBuffer()
+	{
+		for (auto& frame : m_CompletedFrames)
+		{
+			if (frame.fence)
+			{
+				glDeleteSync(frame.fence);
+			}
+		}
+		m_CompletedFrames.clear();
+
+		if (m_MappedPtr)
+		{
+			GL_BindVAO(0);
+
+			if (m_hGLBufferObject)
+			{
+				glBindBuffer(m_GLBufferTarget, m_hGLBufferObject);
+				glUnmapBuffer(m_GLBufferTarget);
+				glBindBuffer(m_GLBufferTarget, 0);
+			}
+
+			m_MappedPtr = nullptr;
 		}
 
-		m_MappedPtr = nullptr;
+		if (m_GLBufferTarget)
+		{
+			GL_DeleteBuffer(m_GLBufferTarget);
+			m_GLBufferTarget = 0;
+		}
+
+		m_Head = 0;
+		m_Tail = 0;
+		m_UsedSize = 0;
+		m_CurrFrameSize = 0;
 	}
 
-	if (m_GLBufferTarget)
+	void Destroy()  override
 	{
-		GL_DeleteBuffer(m_GLBufferTarget);
-		m_GLBufferTarget = 0;
+		delete this;
 	}
 
-	m_Head = 0;
-	m_Tail = 0;
-	m_UsedSize = 0;
-	m_CurrFrameSize = 0;
-}
+	bool Allocate(size_t size, CPMBRingBufferAllocation& allocation) override;
+	void BeginFrame() override;
+	void EndFrame() override;
+	
+	GLuint GetGLBufferObject() const override { return m_hGLBufferObject; }
 
-bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::Allocation& allocation)
+	bool IsEmpty() const override { return m_UsedSize == 0; }
+	bool IsFull() const override { return m_UsedSize == m_BufferSize; }
+	size_t GetUsedSize() const override { return m_UsedSize; }
+
+private:
+	void ReleaseCompletedFrames();
+	void WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize);
+	bool DoRangesOverlap(size_t start1, size_t size1, size_t start2, size_t size2) const;
+	static bool IsPowerOfTwo(size_t value) { return value && !(value & (value - 1)); }
+};
+
+bool CPMBRingBuffer::Allocate(size_t size, CPMBRingBufferAllocation& allocation)
 {
 	if (size == 0)
 		return false;
-
-	size = alignment ? AlignUp(size, alignment) : size;
 
 	if (m_UsedSize + size > m_BufferSize)
 	{
 		return false;
 	}
 
-	size_t alignedHead = alignment ? AlignUp(m_Head, alignment) : m_Head;
+	size_t alignedHead = m_Head;
 
 	if (m_Head >= m_Tail)
 	{
@@ -146,7 +192,7 @@ bool CPMBRingBuffer::Allocate(size_t size, size_t alignment, CPMBRingBuffer::All
 		}
 		else if (m_Tail + size <= m_BufferSize)
 		{
-			size_t alignedTail = alignment ? AlignUp(m_Tail, alignment) : m_Tail;
+			size_t alignedTail = m_Tail;
 			if (alignedTail + size <= m_BufferSize)
 			{
 				size_t wastedSpace = m_Tail - m_Head;
@@ -187,28 +233,10 @@ void CPMBRingBuffer::EndFrame()
 			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
 		}
 
-		gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
+		//gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
 
 		m_CurrFrameSize = 0;
 	}
-}
-
-void CPMBRingBuffer::Reset()
-{
-	for (auto& frame : m_CompletedFrames)
-	{
-		if (frame.fence)
-		{
-			glClientWaitSync(frame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
-			glDeleteSync(frame.fence);
-		}
-	}
-	m_CompletedFrames.clear();
-
-	m_Head = 0;
-	m_Tail = 0;
-	m_UsedSize = 0;
-	m_CurrFrameSize = 0;
 }
 
 void CPMBRingBuffer::ReleaseCompletedFrames()
@@ -347,3 +375,7 @@ void CPMBRingBuffer::WaitForFrameIfOverlapping(size_t allocStart, size_t allocSi
 	}
 }
 
+IPMBRingBuffer* GL_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget)
+{
+	return new CPMBRingBuffer(name, bufferSize, bufferTarget);
+}

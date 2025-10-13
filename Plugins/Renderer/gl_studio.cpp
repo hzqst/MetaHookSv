@@ -1421,7 +1421,7 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		args.gsdefine = def.c_str();
 		args.fsdefine = def.c_str();
 
-		prog.program = R_CompileShaderFileEx(&args);
+		prog.program = GL_CompileShaderFileEx(&args);
 		
 		if (prog.program)
 		{

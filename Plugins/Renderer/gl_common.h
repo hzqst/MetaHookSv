@@ -4,8 +4,20 @@
 #define GL_COMMON_H
 
 #include "qgl.h"
+#include <stdint.h>
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
+
+class CCompileShaderArgs
+{
+public:
+	const char* vsfile{};
+	const char* gsfile{};
+	const char* fsfile{};
+	const char* vsdefine{};
+	const char* gsdefine{};
+	const char* fsdefine{};
+};
 
 typedef struct FBO_Container_s
 {
@@ -177,7 +189,6 @@ public:
 #define DRAW_FILLED_RECT_ZERO_SRC_ALPHA_BLEND_ENABLED 0x8ull
 #define DRAW_FILLED_RECT_SCISSOR_ENABLED 0x8ull
 #define DRAW_FILLED_RECT_LINE_ENABLED 0x10ull
-
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1
@@ -500,16 +511,5 @@ typedef struct studio_ubo_s
 static_assert((sizeof(studio_ubo_t) % 16) == 0, "Size check");
 
 #pragma pack(pop)
-
-class CGameResourceAsyncLoadTask : public IBaseInterface
-{
-public:
-	ThreadWorkItemHandle_t m_hThreadWorkItem{};
-	std::atomic<bool> m_IsDataReady{};
-
-	virtual void StartAsyncTask() {};
-	virtual bool RunTask() { return false; };
-	virtual void UploadResource() {};
-};
 
 #endif //GL_COMMON_H

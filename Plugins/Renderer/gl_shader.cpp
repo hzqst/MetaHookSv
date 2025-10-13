@@ -5,6 +5,14 @@
 #include <regex>
 #include <ScopeExit/ScopeExit.h>
 
+class CCompileShaderContext
+{
+public:
+	std::string vscode;
+	std::string gscode;
+	std::string fscode;
+};
+
 std::vector<GLuint> g_ShaderTable;
 
 void GL_InitShaders(void)
@@ -210,7 +218,7 @@ void R_CompileShaderAppendDefine(std::string &str, const std::string &def)
 	}
 }
 
-GLuint R_CompileShaderFileEx(const CCompileShaderArgs *args)
+GLuint GL_CompileShaderFileEx(const CCompileShaderArgs *args)
 {
 	CCompileShaderContext context = {};
 
@@ -219,11 +227,11 @@ GLuint R_CompileShaderFileEx(const CCompileShaderArgs *args)
 		auto stage##code = (char *)gEngfuncs.COM_LoadFile(args->stage##file, 5, 0);\
 		if (!stage##code)\
 		{\
-			Sys_Error("R_CompileShaderFileEx: \"%s\" not found!", args->stage##file);\
+			Sys_Error("GL_CompileShaderFileEx: \"%s\" not found!", args->stage##file);\
 			return 0;\
 		}\
 		SCOPE_EXIT{ gEngfuncs.COM_FreeFile(stage##code); };\
-		gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", args->stage##file);\
+		gEngfuncs.Con_DPrintf("GL_CompileShaderFileEx: compiling %s...\n", args->stage##file);\
 		context.stage##code = stage##code;\
 		R_CompileShaderAppendDefine(context.stage##code, macro);\
 		if (args->stage##define)\
@@ -245,7 +253,7 @@ GLuint R_CompileShaderFileEx(const CCompileShaderArgs *args)
 	return R_CompileShader(args, &context);
 }
 
-GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine)
+GLuint GL_CompileShaderFile(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine)
 {
 	CCompileShaderArgs args = {};
 	args.vsfile = vsfile;
@@ -253,7 +261,7 @@ GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, const char *v
 	args.vsdefine = vsdefine;
 	args.fsdefine = fsdefine;
 	
-	return R_CompileShaderFileEx(&args);
+	return GL_CompileShaderFileEx(&args);
 }
 
 void GL_UseProgram(GLuint program)
@@ -265,56 +273,6 @@ void GL_UseProgram(GLuint program)
 		currentprogram = program;
 		glUseProgram(program);
 	}
-}
-
-GLuint GL_GetUniformLoc(GLuint program, const char *name)
-{
-	return glGetUniformLocation(program, name);
-}
-
-GLuint GL_GetAttribLoc(GLuint program, const char *name)
-{
-	return glGetAttribLocation(program, name);
-}
-
-void GL_Uniform1i(GLuint loc, int v0)
-{
-	glUniform1i(loc, v0);
-}
-
-void GL_Uniform2i(GLuint loc, int v0, int v1)
-{
-	glUniform2i(loc, v0, v1);
-}
-
-void GL_Uniform3i(GLuint loc, int v0, int v1, int v2)
-{
-	glUniform3i(loc, v0, v1, v2);
-}
-
-void GL_Uniform4i(GLuint loc, int v0, int v1, int v2, int v3)
-{
-	glUniform4i(loc, v0, v1, v2, v3);
-}
-
-void GL_Uniform1f(GLuint loc, float v0)
-{
-	glUniform1f(loc, v0);
-}
-
-void GL_Uniform2f(GLuint loc, float v0, float v1)
-{
-	glUniform2f(loc, v0, v1);
-}
-
-void GL_Uniform3f(GLuint loc, float v0, float v1, float v2)
-{
-	glUniform3f(loc, v0, v1, v2);
-}
-
-void GL_Uniform4f(GLuint loc, float v0, int v1, int v2, int v3)
-{
-	glUniform4f(loc, v0, v1, v2, v3);
 }
 
 void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size)

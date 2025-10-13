@@ -95,7 +95,7 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		args.vsdefine = def.c_str();
 		args.fsdefine = def.c_str();
 
-		prog.program = R_CompileShaderFileEx(&args);
+		prog.program = GL_CompileShaderFileEx(&args);
 
 		if (prog.program)
 		{
@@ -217,7 +217,7 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 		args.vsdefine = def.c_str();
 		args.fsdefine = def.c_str();
 
-		prog.program = R_CompileShaderFileEx(&args);
+		prog.program = GL_CompileShaderFileEx(&args);
 
 		if (prog.program)
 		{

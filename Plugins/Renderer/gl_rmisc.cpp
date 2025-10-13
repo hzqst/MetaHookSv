@@ -4,21 +4,6 @@ vec3_t save_vieworg[MAX_SAVESTACK] = { 0 };
 vec3_t save_viewang[MAX_SAVESTACK] = { 0 };
 int save_refdef_stack = 0;
 
-typedef struct
-{
-	GLboolean cullface;
-	GLboolean alphatest;
-	GLboolean depthtest;
-	GLboolean depthmask;
-	GLboolean blend;
-	int blendsrc;
-	int blenddst;
-	qboolean mtex;
-}gl_draw_context;
-
-gl_draw_context save_drawcontext[MAX_SAVESTACK] = {0};
-int save_drawcontext_stack = 0;
-
 GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
 int save_framebuffer_stack = 0;
@@ -131,7 +116,7 @@ void R_PushRefDef(void)
 {
 	if (save_refdef_stack == MAX_SAVESTACK)
 	{
-		g_pMetaHookAPI->SysError("R_PushRefDef: MAX_SAVESTACK exceed");
+		Sys_Error("R_PushRefDef: MAX_SAVESTACK exceed");
 		return;
 	}
 	VectorCopy((*r_refdef.vieworg), save_vieworg[save_refdef_stack]);

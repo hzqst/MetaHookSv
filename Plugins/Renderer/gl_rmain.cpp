@@ -1170,14 +1170,22 @@ public:
 };
 
 CTriAPICommand gTriAPICommand;
-CPMBRingBuffer g_TriAPIVertexBuffer;
-CPMBRingBuffer g_TriAPIIndexBuffer;
+IPMBRingBuffer* g_TriAPIVertexBuffer{};
+IPMBRingBuffer* g_TriAPIIndexBuffer{};
 
 void triapi_Shutdown()
 {
-	// 清理环形分配器
-	g_TriAPIVertexBuffer.Shutdown();
-	g_TriAPIIndexBuffer.Shutdown();
+	if (g_TriAPIVertexBuffer)
+	{
+		g_TriAPIVertexBuffer->Destroy();
+		g_TriAPIVertexBuffer = nullptr;
+	}
+
+	if (g_TriAPIIndexBuffer)
+	{
+		g_TriAPIIndexBuffer->Destroy();
+		g_TriAPIIndexBuffer = nullptr;
+	}
 
 	if (gTriAPICommand.hVAO)
 	{
@@ -1362,12 +1370,21 @@ void triapi_End()
 	{
 		gTriAPICommand.hVAO = GL_GenVAO();
 
-		if (g_TriAPIVertexBuffer.Initialize("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER) &&
-			g_TriAPIIndexBuffer.Initialize("TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		if (!g_TriAPIVertexBuffer)
+		{
+			g_TriAPIVertexBuffer = GL_CreatePMBRingBuffer("TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER);
+		}
+
+		if (!g_TriAPIIndexBuffer)
+		{
+			g_TriAPIIndexBuffer = GL_CreatePMBRingBuffer("TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+		}
+
+		if (g_TriAPIVertexBuffer && g_TriAPIIndexBuffer)
 		{
 			GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer->GetGLBufferObject());
 
 				glVertexAttribPointer(TRIAPI_VA_POSITION, 3, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, pos));
 				glEnableVertexAttribArray(TRIAPI_VA_POSITION);
@@ -1378,7 +1395,7 @@ void triapi_End()
 				glVertexAttribPointer(TRIAPI_VA_COLOR, 4, GL_FLOAT, false, sizeof(triapivertex_t), OFFSET(triapivertex_t, color));
 				glEnableVertexAttribArray(TRIAPI_VA_COLOR);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer->GetGLBufferObject());
 
 			});
 		}
@@ -1394,8 +1411,8 @@ void triapi_End()
 	size_t vertexDataSize = verticesCount * sizeof(triapivertex_t);
 	size_t indexDataSize = indiceCount * sizeof(uint32_t);
 
-	CPMBRingBuffer::Allocation vertexAllocation;
-	if (!g_TriAPIVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
+	CPMBRingBufferAllocation vertexAllocation;
+	if (!g_TriAPIVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
 	{
 		//ring buffer full
 		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIVertexBuffer full!\n");
@@ -1404,8 +1421,8 @@ void triapi_End()
 		return;
 	}
 
-	CPMBRingBuffer::Allocation indexAllocation;
-	if (!g_TriAPIIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
+	CPMBRingBufferAllocation indexAllocation;
+	if (!g_TriAPIIndexBuffer->Allocate(indexDataSize, indexAllocation))
 	{
 		//ring buffer full
 		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIIndexBuffer full!\n");
@@ -2729,12 +2746,31 @@ void R_RenderFrameStart()
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
 
-	g_TriAPIVertexBuffer.BeginFrame();
-	g_TriAPIIndexBuffer.BeginFrame();
-	g_TexturedRectVertexBuffer.BeginFrame();
-	g_FilledRectVertexBuffer.BeginFrame();
-	g_RectInstanceBuffer.BeginFrame();
-	g_RectIndexBuffer.BeginFrame();
+	if(g_TriAPIVertexBuffer)
+	{
+		g_TriAPIVertexBuffer->BeginFrame();
+	}
+	if (g_TriAPIIndexBuffer)
+	{
+		g_TriAPIIndexBuffer->BeginFrame();
+	}
+	if (g_TexturedRectVertexBuffer)
+	{
+		g_TexturedRectVertexBuffer->BeginFrame();
+	}
+	if (g_FilledRectVertexBuffer)
+	{
+		g_FilledRectVertexBuffer->BeginFrame();
+	}
+	if (g_RectInstanceBuffer)
+	{
+		g_RectInstanceBuffer->BeginFrame();
+	}
+	if (g_RectIndexBuffer)
+	{
+		g_RectIndexBuffer->BeginFrame();
+	}
+
 	g_PostProcessGlowStencilEntities.clear();
 	g_PostProcessGlowColorEntities.clear();
 	g_ViewModelAttachmentEntities.clear();
@@ -2767,12 +2803,30 @@ void R_RenderEndFrame()
 {
 	R_StudioEndFrame();
 
-	g_TriAPIVertexBuffer.EndFrame();
-	g_TriAPIIndexBuffer.EndFrame();
-	g_TexturedRectVertexBuffer.EndFrame();
-	g_FilledRectVertexBuffer.EndFrame();
-	g_RectInstanceBuffer.EndFrame();
-	g_RectIndexBuffer.EndFrame();
+	if (g_TriAPIVertexBuffer)
+	{
+		g_TriAPIVertexBuffer->EndFrame();
+	}
+	if (g_TriAPIIndexBuffer)
+	{
+		g_TriAPIIndexBuffer->EndFrame();
+	}
+	if (g_TexturedRectVertexBuffer)
+	{
+		g_TexturedRectVertexBuffer->EndFrame();
+	}
+	if (g_FilledRectVertexBuffer)
+	{
+		g_FilledRectVertexBuffer->EndFrame();
+	}
+	if(g_RectInstanceBuffer)
+	{
+		g_RectInstanceBuffer->EndFrame();
+	}
+	if (g_RectIndexBuffer)
+	{
+		g_RectIndexBuffer->EndFrame();
+	}
 }
 
 void GL_Set2DEx(int x, int y, int width, int height)
@@ -6354,3 +6408,68 @@ void D_FillRect(vrect_t* r, unsigned char* color)
 
 	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), programState, "D_FillRect");
 }
+
+class CMetaRenderer : public IMetaRenderer
+{
+public:
+
+	void DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawTexturedRect(gltexturenum, verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
+	}
+
+	void DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawFilledRect(verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
+	}  
+	
+	void DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawTexturedQuad(gltexturenum, x0, y0, x1, y1, color4v, programState, debugMetadata);
+	}
+
+	void DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawFilledQuad(x0, y0, x1, y1, color4v, programState, debugMetadata);
+	}
+
+	uint32_t CompileShaderFile(const char* vsfile, const char* fsfile, const char* vsdefine, const char* fsdefine)  override
+	{
+		return GL_CompileShaderFile(vsfile, fsfile, vsdefine, fsdefine);
+	}
+
+	uint32_t CompileShaderFileEx(const CCompileShaderArgs* args) override
+	{
+		return GL_CompileShaderFileEx(args);
+	}
+
+	IPMBRingBuffer* CreatePMBRingBuffer(const char* name, size_t bufferSize, int OpenGLBufferTarget) override
+	{
+		return GL_CreatePMBRingBuffer(name, bufferSize, OpenGLBufferTarget);
+	}
+
+	void Set2D() override
+	{
+		GL_Set2D();
+	}
+
+	void Set2DEx(int x, int y, int width, int height) override
+	{
+		GL_Set2DEx(x, y, width, height);
+	}
+
+	void Finish2D() override
+	{
+		GL_Finish2D();
+	}
+
+	void Bind(int gltexturenum) override
+	{
+		GL_Bind(gltexturenum);
+	}
+
+	void BindTextureUnit(int OpenGLTextureUnit, int OpenGLTextureTarget, int gltexturenum) override
+	{
+		GL_BindTextureUnit(OpenGLTextureUnit, OpenGLTextureTarget, gltexturenum);
+	}
+};

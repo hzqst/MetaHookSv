@@ -337,6 +337,7 @@ $(SDL2CheckRequirements)</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Build\svencoop\renderer\shader\common.h" />
+    <ClInclude Include="..\..\include\Interface\IMetaRenderer.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimatingImagePanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimationController.h" />

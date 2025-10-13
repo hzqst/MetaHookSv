@@ -115,7 +115,7 @@ void R_UseWaterProgram(program_state_t state, water_program_t* progOutput)
 		args.vsdefine = def.c_str();
 		args.fsdefine = def.c_str();
 
-		prog.program = R_CompileShaderFileEx(&args);
+		prog.program = GL_CompileShaderFileEx(&args);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_watercolor, "u_watercolor");

@@ -39,6 +39,9 @@
     <Filter Include="tinyobjloader">
       <UniqueIdentifier>{104f2efa-1ccc-4536-8d87-1e53bb9db912}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{509b8396-4347-4a0e-a7d8-11fb1cbf0348}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
@@ -789,6 +792,9 @@
     </ClInclude>
     <ClInclude Include="..\..\thirdparty\tinyobjloader\tiny_obj_loader.h">
       <Filter>tinyobjloader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Interface\IMetaRenderer.h">
+      <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

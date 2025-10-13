@@ -17,3 +17,14 @@ public:
 	int numframes{};
 	float framerate{};
 };
+
+class CGameResourceAsyncLoadTask : public IBaseInterface
+{
+public:
+	ThreadWorkItemHandle_t m_hThreadWorkItem{};
+	std::atomic<bool> m_IsDataReady{};
+
+	virtual void StartAsyncTask() {};
+	virtual bool RunTask() { return false; };
+	virtual void UploadResource() {};
+};

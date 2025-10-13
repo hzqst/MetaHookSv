@@ -20,6 +20,8 @@
 #include <IEngineSurface.h>
 #include <IVideoMode.h>
 
+#include <IMetaRenderer.h>
+
 #include <set>
 #include <map>
 #include <atomic>
@@ -113,10 +115,10 @@ extern RECT *window_rect;
 extern EngineSurfaceVertexBuffer_t(*g_VertexBuffer)[MAXVERTEXBUFFERS];;
 extern int(*g_iVertexBufferEntriesUsed);
 
-extern CPMBRingBuffer g_TexturedRectVertexBuffer;
-extern CPMBRingBuffer g_FilledRectVertexBuffer;
-extern CPMBRingBuffer g_RectInstanceBuffer;
-extern CPMBRingBuffer g_RectIndexBuffer;
+extern IPMBRingBuffer* g_TexturedRectVertexBuffer;
+extern IPMBRingBuffer* g_FilledRectVertexBuffer;
+extern IPMBRingBuffer* g_RectInstanceBuffer;
+extern IPMBRingBuffer* g_RectIndexBuffer;
 
 extern std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
 extern std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
@@ -739,12 +741,6 @@ void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 
 void GL_FreeTextureEntry(gltexture_t *glt);
-void GL_PushMatrix(void);
-void GL_PopMatrix(void);
-
-void GL_PushDrawState(void);
-void GL_PopDrawState(void);
-
 void GL_BindTextureUnit(int textureUnit, int target, int gltexturenum);
 
 void GL_ClearColor(vec4_t color);

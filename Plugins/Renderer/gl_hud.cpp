@@ -56,10 +56,10 @@ SHADER_DEFINE(under_water_effect);
 std::unordered_map<program_state_t, drawtexturedrect_program_t> g_DrawTexturedRectProgramTable;
 std::unordered_map<program_state_t, drawfilledrect_program_t> g_DrawFilledRectProgramTable;
 
-CPMBRingBuffer g_TexturedRectVertexBuffer;
-CPMBRingBuffer g_FilledRectVertexBuffer;
-CPMBRingBuffer g_RectInstanceBuffer;
-CPMBRingBuffer g_RectIndexBuffer;
+IPMBRingBuffer* g_TexturedRectVertexBuffer{};
+IPMBRingBuffer* g_FilledRectVertexBuffer{};
+IPMBRingBuffer* g_RectInstanceBuffer{};
+IPMBRingBuffer* g_RectIndexBuffer{};
 
 cvar_t *r_hdr = NULL;
 
@@ -93,7 +93,7 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFile(
+		prog.program = GL_CompileShaderFile(
 			"renderer\\shader\\drawtexturedrect_shader.vert.glsl", 
 			"renderer\\shader\\drawtexturedrect_shader.frag.glsl", 
 			def.c_str(), def.c_str());
@@ -163,7 +163,7 @@ void R_UseDrawFilledRectProgram(program_state_t state, drawfilledrect_program_t*
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFile(
+		prog.program = GL_CompileShaderFile(
 			"renderer\\shader\\drawfilledrect_shader.vert.glsl", 
 			"renderer\\shader\\drawfilledrect_shader.frag.glsl", 
 			def.c_str(), def.c_str());
@@ -267,36 +267,36 @@ void R_InitHUD(void)
 	}
 
 	//FXAA Pass
-	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl");
+	pp_fxaa.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\pp_fxaa.frag.glsl");
 
 	//DownSample Pass
-	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl");
+	pp_downsample.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl");
 	
 	//2x2 Downsample Pass
-	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n");
+	pp_downsample2x2.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n");
 
 	//Luminance Downsample Pass
-	pp_lumindown.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "");
+	pp_lumindown.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "");
 
 	//Log Luminance Downsample Pass
-	pp_luminlog.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n");
+	pp_luminlog.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n");
 
 	//Exp Luminance Downsample Pass
-	pp_luminexp.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n");
+	pp_luminexp.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n");
 
 	//Luminance Adaptation Downsample Pass
-	pp_luminadapt.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "");
+	pp_luminadapt.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "");
 
 	//Bright Pass
-	pp_brightpass.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "", "");
+	pp_brightpass.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "", "");
 
 	//Tone mapping
-	pp_tonemap.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "", "");
+	pp_tonemap.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "", "");
 
 	//SSAO
-	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl");
+	depth_linearize.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl");
 
-	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl");
+	hbao_calc_blur.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl");
 
 	if (hbao_calc_blur.program)
 	{
@@ -316,22 +316,22 @@ void R_InitHUD(void)
 	//OIT Blend
 	if (g_bUseOITBlend)
 	{
-		oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl");
+		oitbuffer_clear.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl");
 
-		blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl");
+		blit_oitblend.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl");
 	}
 
-	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl");
+	gamma_correction.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl");
 
-	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl");
+	gamma_uncorrection.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl");
 
-	copy_color.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl");
+	copy_color.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl");
 
-	copy_color_halo_add.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", "#define HALO_ADD_ENABLED\n", "#define HALO_ADD_ENABLED\n");
+	copy_color_halo_add.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\copy_color.frag.glsl", "#define HALO_ADD_ENABLED\n", "#define HALO_ADD_ENABLED\n");
 
-	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl");
+	under_water_effect.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl");
 
-	hbao_calc_blur_fog.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", "#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n");
+	hbao_calc_blur_fog.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", "#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n");
 
 	if (hbao_calc_blur_fog.program)
 	{
@@ -349,13 +349,13 @@ void R_InitHUD(void)
 		SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
 	}
 
-	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl");
+	hbao_blur.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl");
 
-	hbao_blur2.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", "#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n");
+	hbao_blur2.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", "#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n");
 
-	pp_gaussianblurh.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_HORIZONAL\n");
+	pp_gaussianblurh.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_HORIZONAL\n");
 	
-	pp_gaussianblurv.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n");
+	pp_gaussianblurv.program = GL_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n");
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -397,28 +397,25 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	{
 		g_DrawTexturedRectCommand.hVAO = GL_GenVAO();
 
-		if (!g_TexturedRectVertexBuffer.Initialize("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER))
+		if (!g_TexturedRectVertexBuffer)
 		{
-			Sys_Error("R_DrawTexturedRect: Failed to initialize g_TexturedRectVertexBuffer.\n");
-			return;
+			g_TexturedRectVertexBuffer = GL_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
-		if (!g_RectInstanceBuffer.Initialize("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER))
+		if (!g_RectInstanceBuffer)
 		{
-			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectInstanceBuffer.\n");
-			return;
+			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
-		if (!g_RectIndexBuffer.Initialize("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		if (!g_RectIndexBuffer)
 		{
-			Sys_Error("R_DrawTexturedRect: Failed to initialize g_RectIndexBuffer.\n");
-			return;
+			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
 			g_DrawTexturedRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer->GetGLBufferObject());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, pos));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_POSITION);
@@ -429,7 +426,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribPointer(TEXTUREDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, col));
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer->GetGLBufferObject());
 
 				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX0, 1);
@@ -447,7 +444,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer->GetGLBufferObject());
 
 			});
 
@@ -464,21 +461,21 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	size_t instanceDataSize = sizeof(instanceDataBuffer);
 	size_t indexDataSize = indicesCount * sizeof(uint32_t);
 
-	CPMBRingBuffer::Allocation vertexAllocation;
-	CPMBRingBuffer::Allocation instanceAllocation;
-	CPMBRingBuffer::Allocation indexAllocation;
+	CPMBRingBufferAllocation vertexAllocation;
+	CPMBRingBufferAllocation instanceAllocation;
+	CPMBRingBufferAllocation indexAllocation;
 
-	if (!g_TexturedRectVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
+	if (!g_TexturedRectVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 0, instanceAllocation))
+	if (!g_RectInstanceBuffer->Allocate(instanceDataSize, instanceAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
+	if (!g_RectIndexBuffer->Allocate(indexDataSize, indexAllocation))
 	{
 		return;
 	}
@@ -553,28 +550,25 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	{
 		g_DrawFilledRectCommand.hVAO = GL_GenVAO();
 
-		if (!g_FilledRectVertexBuffer.Initialize("FilledRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER))
+		if (!g_FilledRectVertexBuffer)
 		{
-			Sys_Error("R_DrawFilledRect: Failed to initialize g_FilledRectVertexBuffer.\n");
-			return;
+			g_FilledRectVertexBuffer = GL_CreatePMBRingBuffer("FilledRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
-		if (!g_RectInstanceBuffer.Initialize("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER))
+		if (!g_RectInstanceBuffer)
 		{
-			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectInstanceBuffer.\n");
-			return;
+			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
 		}
 
-		if (!g_RectIndexBuffer.Initialize("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER))
+		if (!g_RectIndexBuffer)
 		{
-			Sys_Error("R_DrawFilledRect: Failed to initialize g_RectIndexBuffer.\n");
-			return;
+			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
 			g_DrawFilledRectCommand.hVAO,
 			[&]() {
-				glBindBuffer(GL_ARRAY_BUFFER, g_FilledRectVertexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ARRAY_BUFFER, g_FilledRectVertexBuffer->GetGLBufferObject());
 
 				glVertexAttribPointer(FILLEDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, pos));
 				glEnableVertexAttribArray(FILLEDRECT_VA_POSITION);
@@ -582,7 +576,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribPointer(FILLEDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(filledrectvertex_t), OFFSET(filledrectvertex_t, col));
 				glEnableVertexAttribArray(FILLEDRECT_VA_COLOR);
 
-				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer->GetGLBufferObject());
 
 				glVertexAttribPointer(FILLEDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX0, 1);
@@ -600,7 +594,7 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 				glVertexAttribDivisor(FILLEDRECT_VA_MATRIX3, 1);
 				glEnableVertexAttribArray(FILLEDRECT_VA_MATRIX3);
 
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer.GetGLBufferObject());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer->GetGLBufferObject());
 			});
 
 	}
@@ -616,21 +610,21 @@ void R_DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCou
 	size_t instanceDataSize = sizeof(instanceDataBuffer);
 	size_t indexDataSize = indicesCount * sizeof(uint32_t);
 
-	CPMBRingBuffer::Allocation vertexAllocation;
-	CPMBRingBuffer::Allocation instanceAllocation;
-	CPMBRingBuffer::Allocation indexAllocation;
+	CPMBRingBufferAllocation vertexAllocation;
+	CPMBRingBufferAllocation instanceAllocation;
+	CPMBRingBufferAllocation indexAllocation;
 
-	if (!g_FilledRectVertexBuffer.Allocate(vertexDataSize, 0, vertexAllocation))
+	if (!g_FilledRectVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectInstanceBuffer.Allocate(instanceDataSize, 0, instanceAllocation))
+	if (!g_RectInstanceBuffer->Allocate(instanceDataSize, instanceAllocation))
 	{
 		return;
 	}
 
-	if (!g_RectIndexBuffer.Allocate(indexDataSize, 0, indexAllocation))
+	if (!g_RectIndexBuffer->Allocate(indexDataSize, indexAllocation))
 	{
 		return;
 	}
@@ -1789,8 +1783,24 @@ void R_CopyColorHaloAdd(FBO_Container_t* src, FBO_Container_t* dst)
 
 void R_ShutdownHUD(void)
 {
-	g_TexturedRectVertexBuffer.Shutdown();
-	g_FilledRectVertexBuffer.Shutdown();
-	g_RectInstanceBuffer.Shutdown();
-	g_RectIndexBuffer.Shutdown();
+	if (g_TexturedRectVertexBuffer)
+	{
+		g_TexturedRectVertexBuffer->Destroy();
+		g_TexturedRectVertexBuffer = nullptr;
+	}
+	if (g_FilledRectVertexBuffer)
+	{
+		g_FilledRectVertexBuffer->Destroy();
+		g_FilledRectVertexBuffer = nullptr;
+	}
+	if (g_RectInstanceBuffer)
+	{
+		g_RectInstanceBuffer->Destroy();
+		g_RectInstanceBuffer = nullptr;
+	}
+	if (g_RectIndexBuffer)
+	{
+		g_RectIndexBuffer->Destroy();
+		g_RectIndexBuffer = nullptr;
+	}
 }
