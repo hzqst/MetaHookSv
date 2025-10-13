@@ -1854,64 +1854,26 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 
 				float* v = poly->verts[0];
 
-				vertex3f_t tempVertex[3];
-				brushvertex_t tempVertexData[3];
-				brushvertextbn_t tempVertexTBNData[3];
-
-				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
+				for (int j = 0; j < poly->numverts; j++, v += VERTEXSIZE)
 				{
-					VectorCopy(v, tempVertex[j].v);
+					vertex3f_t tempVertex;
+					VectorCopy(v, tempVertex.v);
 
-					VectorCopy(v, tempVertexData[j].pos);
+					brushvertex_t tempVertexData;
+					VectorCopy(v, tempVertexData.pos);
+					tempVertexData.texcoord[0] = v[3];
+					tempVertexData.texcoord[1] = v[4];
+					tempVertexData.lightmaptexcoord[0] = v[5];
+					tempVertexData.lightmaptexcoord[1] = v[6];
 
-					tempVertexData[j].texcoord[0] = v[3];
-					tempVertexData[j].texcoord[1] = v[4];
+					brushvertextbn_t tempVertexTBNData;
+					VectorCopy(pBrushFace->normal, tempVertexTBNData.normal);
+					VectorCopy(pBrushFace->s_tangent, tempVertexTBNData.s_tangent);
+					VectorCopy(pBrushFace->t_tangent, tempVertexTBNData.t_tangent);
 
-					tempVertexData[j].lightmaptexcoord[0] = v[5];
-					tempVertexData[j].lightmaptexcoord[1] = v[6];
-
-					VectorCopy(pBrushFace->normal, tempVertexTBNData[j].normal);
-					VectorCopy(pBrushFace->s_tangent, tempVertexTBNData[j].s_tangent);
-					VectorCopy(pBrushFace->t_tangent, tempVertexTBNData[j].t_tangent);
-				}
-
-				vPolyVertices.emplace_back(tempVertex[0]);
-				vPolyVertices.emplace_back(tempVertex[1]);
-				vPolyVertices.emplace_back(tempVertex[2]);
-				vVertexDataBuffer.emplace_back(tempVertexData[0]);
-				vVertexDataBuffer.emplace_back(tempVertexData[1]);
-				vVertexDataBuffer.emplace_back(tempVertexData[2]);
-				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[0]);
-				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[1]);
-				vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[2]);
-
-				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
-				{
-					memcpy(&tempVertex[1], &tempVertex[2], sizeof(vertex3f_t));
-					memcpy(&tempVertexData[1], &tempVertexData[2], sizeof(brushvertex_t));
-
-					VectorCopy(v, tempVertex[2].v);
-
-					VectorCopy(v, tempVertexData[2].pos);
-
-					tempVertexData[2].texcoord[0] = v[3];
-					tempVertexData[2].texcoord[1] = v[4];
-					tempVertexData[2].lightmaptexcoord[0] = v[5];
-					tempVertexData[2].lightmaptexcoord[1] = v[6];
-
-					VectorCopy(pBrushFace->normal, tempVertexTBNData[2].normal);
-					VectorCopy(pBrushFace->s_tangent, tempVertexTBNData[2].s_tangent);
-					VectorCopy(pBrushFace->t_tangent, tempVertexTBNData[2].t_tangent);
-
-					vPolyVertices.emplace_back(tempVertex[0]);
-					vPolyVertices.emplace_back(tempVertex[1]);
-					vPolyVertices.emplace_back(tempVertex[2]);
-					vVertexDataBuffer.emplace_back(tempVertexData[0]);
-					vVertexDataBuffer.emplace_back(tempVertexData[1]);
-					vVertexDataBuffer.emplace_back(tempVertexData[2]);
-					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[0]);
-					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[1]);
-					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData[2]);
+					vPolyVertices.emplace_back(tempVertex);
+					vVertexDataBuffer.emplace_back(tempVertexData);
+					vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
 				}
 
 				std::vector<uint32_t> vTriangleListIndices;
