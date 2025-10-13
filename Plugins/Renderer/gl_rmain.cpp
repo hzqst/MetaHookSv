@@ -6473,3 +6473,5 @@ public:
 		GL_BindTextureUnit(OpenGLTextureUnit, OpenGLTextureTarget, gltexturenum);
 	}
 };
+
+EXPOSE_SINGLE_INTERFACE(CMetaRenderer, IMetaRenderer, METARENDERER_INTERFACE_VERSION);

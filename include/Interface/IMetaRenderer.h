@@ -71,7 +71,7 @@ public:
     /*
          Purpose: bind gltexturenum at texture unit 0.
      */
-    void Bind(int gltexturenum);
+    virtual void Bind(int gltexturenum) = 0;
 
     /*
         Purpose: bind gltexturenum at OpenGLTextureUnit, and revert back to texture unit 0.
