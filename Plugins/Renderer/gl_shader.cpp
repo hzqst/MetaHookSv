@@ -266,6 +266,7 @@ GLuint GL_CompileShaderFile(const char *vsfile, const char *fsfile, const char *
 
 void GL_UseProgram(GLuint program)
 {
+#if 0
 	static int currentprogram = -1;
 
 	if (currentprogram != program)
@@ -273,6 +274,10 @@ void GL_UseProgram(GLuint program)
 		currentprogram = program;
 		glUseProgram(program);
 	}
+#else
+	//Best compatibility with other guys
+	glUseProgram(program);
+#endif
 }
 
 void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size)
