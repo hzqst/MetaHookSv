@@ -252,8 +252,12 @@ https://github.com/ollerjoaco/Trinity-EngineSv
 
 ### Better Spray
 
-BetterSpray is a plugin that enhances Sven Co-op and GoldSrc’s spray system.
+BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
 
 https://github.com/hzqst/BetterSpray
+
+### Better Spray (third-party)
+
+BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op’s spray system with support for multiple images, true aspect ratios, and dynamic reloading.
 
 https://github.com/KazamiiSC/BetterSpray-Sven-Coop
