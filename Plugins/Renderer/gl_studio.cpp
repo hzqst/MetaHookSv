@@ -2045,7 +2045,27 @@ void PaletteHueReplace(byte* palette, int newHue, int start, int end)
 	}
 }
 
-void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext*context)
+int R_GetStudioRemapKey(cl_entity_t* e, model_t *mod)
+{
+	//v_ model
+	if (e->index > 0)
+	{
+		if (R_IsRenderingViewModel() && e == cl_viewent)
+		{
+			return e->index | 0x80000000;
+		}
+
+		//p_ model
+		if (e->player && 0 != strncmp(mod->name, "models/player/", sizeof("models/player/") - 1))
+		{
+			return e->index | 0x80000000;
+		}
+	}
+
+	return e->index;
+}
+
+void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext* context)
 {
 	if (R_IsRenderingGlowShell())
 		return;
@@ -2057,7 +2077,12 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 
 	auto ptexture = ptexturebase + index;
 
-	if ((*currententity)->index > 0)
+	int remapKey = R_GetStudioRemapKey((*currententity), pRenderData->BodyModel);
+
+	/*
+		Network entity or viewent?
+	*/
+	if (remapKey != 0)
 	{
 		int h = 223;
 		int l = 160;
@@ -2065,28 +2090,28 @@ void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t*
 
 		if (!stricmp(ptexture->name, "DM_Base.bmp") || R_ParseRemapSkin(ptexture->name, &l, &m, &h))
 		{
-			auto pskin = R_StudioGetSkin((*currententity)->index, index);
+			auto pskin = R_StudioGetSkin(remapKey, index);
 
 			if (pskin)
 			{
-				if (pskin->model != (*r_model) || pskin->topcolor != (*r_topcolor) || pskin->bottomcolor != (*r_bottomcolor))
+				if (pskin->model != pRenderData->BodyModel || pskin->topcolor != (*r_topcolor) || pskin->bottomcolor != (*r_bottomcolor))
 				{
 					if (pskin->model)
-						R_StudioFlushSkins((*currententity)->index);
+						R_StudioFlushSkins(remapKey);
 
-					auto pTextureData = R_StudioReloadSkin((*r_model), index, pskin);
+					auto pTextureData = R_StudioReloadSkin(pRenderData->BodyModel, index, pskin);
 
 					if (pTextureData)
 					{
 						char fullname[1024];
-						snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture->name, (*currententity)->index);
+						snprintf(fullname, sizeof(fullname), "%s_%s_%X", ptexturehdr->name, ptexture->name, remapKey);
 
 						byte* orig_palette = pTextureData + (ptexture->height * ptexture->width);
 
 						byte tmp_palette[768];
 						memcpy(tmp_palette, orig_palette, 768);
 
-						pskin->model = (*r_model);
+						pskin->model = pRenderData->BodyModel;
 						pskin->bottomcolor = (*r_bottomcolor);
 						pskin->topcolor = (*r_topcolor);
 

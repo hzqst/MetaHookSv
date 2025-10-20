@@ -201,7 +201,7 @@ void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstud
 			{
 				/*
 .text:101F3A90 ; int __cdecl SetupPlayerModel(int)
-.text:101F3A90 SetupPlayerModel proc near              ; DATA XREF: .data:1031C25C¡ýo
+.text:101F3A90 SetupPlayerModel proc near              ; DATA XREF: .data:1031C25Cï¿½ï¿½o
 .text:101F3A90
 .text:101F3A90 arg_0           = dword ptr  8
 .text:101F3A90
@@ -229,7 +229,7 @@ void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstud
 				}
 
 				/*
-.text:01D92A00 SetupPlayerModel proc near              ; DATA XREF: .data:01EE2914¡ýo
+.text:01D92A00 SetupPlayerModel proc near              ; DATA XREF: .data:01EE2914ï¿½ï¿½o
 .text:01D92A00
 .text:01D92A00 arg_0           = dword ptr  4
 .text:01D92A00
