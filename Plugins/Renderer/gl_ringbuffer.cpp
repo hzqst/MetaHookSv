@@ -233,7 +233,8 @@ void CPMBRingBuffer::EndFrame()
 			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
 		}
 
-		gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
+		//Don't print stats
+		//gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
 
 		m_CurrFrameSize = 0;
 	}
