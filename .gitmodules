@@ -34,9 +34,6 @@
 [submodule "thirdparty/curl"]
 	path = thirdparty/curl
 	url = https://github.com/curl/curl
-[submodule "thirdparty/csv-parser"]
-	path = thirdparty/csv-parser
-	url = https://github.com/vincentlaucsb/csv-parser
 [submodule "thirdparty/SDL3_fork"]
 	path = thirdparty/SDL3_fork
 	url = https://github.com/hzqst/SDL
@@ -45,3 +42,6 @@
 	path = thirdparty/zlib-fork
 	url = https://github.com/hzqst/zlib-fork
 	branch = VC-LTL
+[submodule "thirdparty/csv-parser-fork"]
+	path = thirdparty/csv-parser-fork
+	url = https://github.com/hzqst/csv-parser-fork
