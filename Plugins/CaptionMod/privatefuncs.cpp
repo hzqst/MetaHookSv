@@ -160,7 +160,7 @@ void Engine_FillAddress_S_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 	if (1)
 	{
 		/*
-.text:01D96050                                     S_Init          proc near               ; CODE XREF: sub_1D65260+32B¡üp
+.text:01D96050                                     S_Init          proc near               ; CODE XREF: sub_1D65260+32B
 .text:01D96050 68 08 CE E6 01                                      push    offset aSoundInitializ ; "Sound Initialization\n"
 .text:01D96055 E8 76 DB F6 FF                                      call    sub_1D03BD0
 .text:01D9605A E8 E1 3A 00 00                                      call    sub_1D99B40
@@ -178,7 +178,7 @@ void Engine_FillAddress_S_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			auto Sound_Init_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (Sound_Init_PushString)
 			{
-				S_Init_VA = Sound_Init_PushString;
+				S_Init_VA = g_pMetaHookAPI->ReverseSearchFunctionBegin(Sound_Init_PushString, 0x30);
 			}
 		}
 	}
@@ -196,6 +196,8 @@ void Engine_FillAddress_S_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
 			S_Init_VA = Search_Pattern(S_INIT_SIG_NEW, DllInfo);
+			if (!S_Init_VA)
+				S_Init_VA = Search_Pattern(S_INIT_SIG_BLOB, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
