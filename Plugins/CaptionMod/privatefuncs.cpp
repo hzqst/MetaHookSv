@@ -27,6 +27,7 @@
 #define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
 #define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05\x00\x00\xA1"
 #define S_LOADSOUND_SIG_8308 "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
+#define S_LOADSOUND_SIG_NEW2 "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
 #define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
 #define S_LOADSOUND_SIG_BLOB "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
 
@@ -481,7 +482,9 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 		{
 			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW, DllInfo);
 			if (!S_LoadSound_VA)
-				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_8308, DllInfo);
+				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW2, DllInfo);
+			if (!S_LoadSound_VA)
+				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_BLOB, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
