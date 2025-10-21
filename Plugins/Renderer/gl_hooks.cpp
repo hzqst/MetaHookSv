@@ -4634,7 +4634,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, cons
 
 			if (NonSprite_Call)
 			{
-				R_DrawTEntitiesOnList_VA = (ULONG_PTR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(NonSprite_Call, 0x500, [](PUCHAR Candidate) {
+				R_DrawTEntitiesOnList_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(NonSprite_Call, 0x500, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0xD9 &&
 						Candidate[1] == 0x05 &&
