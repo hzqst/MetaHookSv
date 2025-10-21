@@ -667,6 +667,8 @@ void Engine_FillAddress_SequenceGetSentenceByIndex(const mh_dll_info_t& DllInfo,
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
 			SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW, DllInfo);
+			if(!SequenceGetSentenceByIndex_VA)
+				SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
