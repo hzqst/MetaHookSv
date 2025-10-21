@@ -60,7 +60,9 @@ namespace MetahookInstaller.Views
         {
             if (_viewModel.SelectedGame != null)
             {
-                var dialog = new PluginEditorDialog(_viewModel.GamePath, _viewModel.SelectedGame.ModName);
+                // 对于自定义游戏，使用用户输入的ModName；对于预定义游戏，使用SelectedGame.ModName
+                var modName = _viewModel.IsCustomGame ? _viewModel.ModName : _viewModel.SelectedGame.ModName;
+                var dialog = new PluginEditorDialog(_viewModel.GamePath, modName);
                 dialog.Owner = this;
                 dialog.ShowDialog();
             }
