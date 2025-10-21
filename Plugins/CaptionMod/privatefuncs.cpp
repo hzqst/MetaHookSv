@@ -151,6 +151,11 @@ void Engine_FillAddress_RealTime(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 void Engine_FillAddress_S_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.S_Init)
+		return;
+
+	PVOID S_Init_VA = nullptr;
+
 	if (1)
 	{
 		/*
@@ -172,39 +177,42 @@ void Engine_FillAddress_S_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t
 			auto Sound_Init_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (Sound_Init_PushString)
 			{
-				gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(Sound_Init_PushString, DllInfo, RealDllInfo);
+				S_Init_VA = Sound_Init_PushString;
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.S_Init)
+	if (!S_Init_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID S_Init_VA = Search_Pattern(S_INIT_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(S_Init_VA, DllInfo, RealDllInfo);
+			S_Init_VA = Search_Pattern(S_INIT_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID S_Init_VA = Search_Pattern(S_INIT_SIG_HL25, DllInfo);
-			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(S_Init_VA, DllInfo, RealDllInfo);
+			S_Init_VA = Search_Pattern(S_INIT_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID S_Init_VA = Search_Pattern(S_INIT_SIG_NEW, DllInfo);
-			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(S_Init_VA, DllInfo, RealDllInfo);
+			S_Init_VA = Search_Pattern(S_INIT_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID S_Init_VA = Search_Pattern(S_INIT_SIG_BLOB, DllInfo);
-			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(S_Init_VA, DllInfo, RealDllInfo);
+			S_Init_VA = Search_Pattern(S_INIT_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))ConvertDllInfoSpace(S_Init_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(S_Init);
 }
 
 void Engine_FillAddress_S_FindName(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.S_FindName)
+		return;
+
+	PVOID S_FindName_VA = nullptr;
+
 	if (1)
 	{
 		/*
@@ -235,41 +243,43 @@ void Engine_FillAddress_S_FindName(const mh_dll_info_t& DllInfo, const mh_dll_in
 				auto S_FindName_Call = (PUCHAR)Search_Pattern_From_Size((S_Say_Reliable_PushString - 0x60), 0x60, pattern2);
 				if (S_FindName_Call)
 				{
-					PVOID S_FindName_VA = GetCallAddress(S_FindName_Call + 3);
-					gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
+					S_FindName_VA = GetCallAddress(S_FindName_Call + 3);
 				}
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.S_FindName)
+	if (!S_FindName_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
+			S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_HL25, DllInfo);
-			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
+			S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_NEW, DllInfo);
-			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
+			S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_BLOB, DllInfo);
-			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
+			S_FindName_VA = Search_Pattern(S_FINDNAME_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))ConvertDllInfoSpace(S_FindName_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(S_FindName);
 }
 
 void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.S_StartDynamicSound)
+		return;
+
+	PVOID S_StartDynamicSound_VA = nullptr;
+
 	if (1)
 	{
 		/*
@@ -288,7 +298,7 @@ void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const 
 			auto S_StartDynamicSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_StartDynamicSound_PushString)
 			{
-				PVOID S_StartDynamicSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartDynamicSound_PushString, 0x300, [](PUCHAR Candidate) {
+				S_StartDynamicSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartDynamicSound_PushString, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -304,41 +314,42 @@ void Engine_FillAddress_S_StartDynamicSound(const mh_dll_info_t& DllInfo, const 
 					}
 
 					return FALSE;
-					});
-
-				gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
+				});
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.S_StartDynamicSound)
+	if (!S_StartDynamicSound_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
+			S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_HL25, DllInfo);
-			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
+			S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_NEW, DllInfo);
-			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
+			S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_BLOB, DllInfo);
-			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
+			S_StartDynamicSound_VA = Search_Pattern(S_STARTDYNAMICSOUND_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))ConvertDllInfoSpace(S_StartDynamicSound_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(S_StartDynamicSound);
 }
 
 void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.S_StartStaticSound)
+		return;
+
+	PVOID S_StartStaticSound_VA = nullptr;
+
 	if (1)
 	{
 		/*
@@ -357,7 +368,7 @@ void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const m
 			auto S_StartStaticSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_StartStaticSound_PushString)
 			{
-				PVOID S_StartStaticSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartStaticSound_PushString, 0x300, [](PUCHAR Candidate) {
+				S_StartStaticSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartStaticSound_PushString, 0x300, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -374,39 +385,40 @@ void Engine_FillAddress_S_StartStaticSound(const mh_dll_info_t& DllInfo, const m
 
 					return FALSE;
 				});
-				gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.S_StartStaticSound)
+	if (!S_StartStaticSound_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
+			S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_HL25, DllInfo);
-			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
+			S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_NEW, DllInfo);
-			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
+			S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_BLOB, DllInfo);
-			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
+			S_StartStaticSound_VA = Search_Pattern(S_STARTSTATICSOUND_SIG_BLOB, DllInfo);
 		}
 	}
+	gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))ConvertDllInfoSpace(S_StartStaticSound_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(S_StartStaticSound);
 }
 
 void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.S_LoadSound)
+		return;
+
+	PVOID S_LoadSound_VA = nullptr;
+
 	if (1)
 	{
 		/*
@@ -425,7 +437,7 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 			auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (S_LoadSound_PushString)
 			{
-				PVOID S_LoadSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
+				S_LoadSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
 
 					if (Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
@@ -450,43 +462,44 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 					}
 
 					return FALSE;
-					});
-				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
+				});
 			}
 		}
-
 	}
 
-	if (!gPrivateFuncs.S_LoadSound)
+	if (!S_LoadSound_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_HL25, DllInfo);
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW, DllInfo);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW, DllInfo);
 			if (!S_LoadSound_VA)
 				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_8308, DllInfo);
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_BLOB, DllInfo);
-			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
+			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(S_LoadSound);
 }
 
 void Engine_FillAddress_TextMessageParse(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.TextMessageParse)
+		return;
+
+	PVOID TextMessageParse_VA = nullptr;
+
 	/*
 	.text:10226B8A 68 44 7F 2C 10                                      push    offset aTmessageTextme ; "tmessage::TextMessageParse : messageCou"...
 	.text:10226B8F E8 9C 8C FF FF                                      call    Sys_Error
@@ -504,7 +517,7 @@ void Engine_FillAddress_TextMessageParse(const mh_dll_info_t& DllInfo, const mh_
 		auto TextMessageParse_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
 		if (TextMessageParse_PushString)
 		{
-			auto TextMessageParse_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(TextMessageParse_PushString, 0x500, [](PUCHAR Candidate) {
+			TextMessageParse_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(TextMessageParse_PushString, 0x500, [](PUCHAR Candidate) {
 
 				if (Candidate[0] == 0x55 &&
 					Candidate[1] == 0x8B &&
@@ -524,9 +537,10 @@ void Engine_FillAddress_TextMessageParse(const mh_dll_info_t& DllInfo, const mh_
 				return FALSE;
 				});
 			
-			gPrivateFuncs.TextMessageParse = (decltype(gPrivateFuncs.TextMessageParse))ConvertDllInfoSpace(TextMessageParse_VA, DllInfo, RealDllInfo);
 		}
 	}
+
+	gPrivateFuncs.TextMessageParse = (decltype(gPrivateFuncs.TextMessageParse))ConvertDllInfoSpace(TextMessageParse_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(TextMessageParse);
 }
 // End of Selection
@@ -613,14 +627,18 @@ void Engine_FillAddress_COM_ExplainDisconnection(const mh_dll_info_t& DllInfo, c
 
 void Engine_FillAddress_SequenceGetSentenceByIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	if (gPrivateFuncs.SequenceGetSentenceByIndex)
+		return;
+
+	PVOID SequenceGetSentenceByIndex_VA = nullptr;
+
 	if (1)
 	{
 		const char pattern[] = "\x50\xFF\x15\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
 		auto SequenceGetSentenceByIndex_Call = (PUCHAR)Search_Pattern(pattern, DllInfo);
 		if (SequenceGetSentenceByIndex_Call)
 		{
-			PVOID SequenceGetSentenceByIndex_VA = GetCallAddress(SequenceGetSentenceByIndex_Call + 8);
-			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+			SequenceGetSentenceByIndex_VA = GetCallAddress(SequenceGetSentenceByIndex_Call + 8);
 		}
 		else
 		{
@@ -628,35 +646,32 @@ void Engine_FillAddress_SequenceGetSentenceByIndex(const mh_dll_info_t& DllInfo,
 			auto SequenceGetSentenceByIndex_Call = (PUCHAR)Search_Pattern(pattern, DllInfo);
 			if (SequenceGetSentenceByIndex_Call)
 			{
-				PVOID SequenceGetSentenceByIndex_VA = GetCallAddress(SequenceGetSentenceByIndex_Call + 7);
-				gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+				SequenceGetSentenceByIndex_VA = GetCallAddress(SequenceGetSentenceByIndex_Call + 7);
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.SequenceGetSentenceByIndex)
+	if (!SequenceGetSentenceByIndex_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			PVOID SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+			SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25, DllInfo);
-			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+			SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			PVOID SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW, DllInfo);
-			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+			SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			PVOID SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB, DllInfo);
-			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
+			SequenceGetSentenceByIndex_VA = Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))ConvertDllInfoSpace(SequenceGetSentenceByIndex_VA, DllInfo, RealDllInfo);
 	Sig_FuncNotFound(SequenceGetSentenceByIndex);
 }
 
