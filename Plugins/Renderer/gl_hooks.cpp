@@ -4618,8 +4618,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, cons
 	if (gPrivateFuncs.R_DrawTEntitiesOnList)
 		return;
 
-	ULONG_PTR R_DrawTEntitiesOnList_VA = 0;
-	ULONG R_DrawTEntitiesOnList_RVA = 0;
+	PVOID R_DrawTEntitiesOnList_VA = 0;
 
 	{
 		const char sigs[] = "Non-sprite set to glow";
@@ -4649,38 +4648,34 @@ void Engine_FillAddress_R_DrawTEntitiesOnList(const mh_dll_info_t& DllInfo, cons
 
 					return FALSE;
 					});
-				gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 			}
 		}
 	}
 
-	if (!gPrivateFuncs.R_DrawTEntitiesOnList)
+	if (!R_DrawTEntitiesOnList_VA)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
+			R_DrawTEntitiesOnList_VA = Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25, DllInfo);
-			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
+			R_DrawTEntitiesOnList_VA = Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW, DllInfo);
+			R_DrawTEntitiesOnList_VA = Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW, DllInfo);
 
 			if (!R_DrawTEntitiesOnList_VA)
-				R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW2, DllInfo);
-
-			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
+				R_DrawTEntitiesOnList_VA = Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW2, DllInfo);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			R_DrawTEntitiesOnList_VA = (ULONG_PTR)Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB, DllInfo);
-			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace((PVOID)R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
+			R_DrawTEntitiesOnList_VA = Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB, DllInfo);
 		}
 	}
+
+	gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))ConvertDllInfoSpace(R_DrawTEntitiesOnList_VA, DllInfo, RealDllInfo);
 
 	Sig_FuncNotFound(R_DrawTEntitiesOnList);
 }
