@@ -228,6 +228,16 @@ public:
     virtual void PopFrameBuffer() = 0;
 
     /*
+        Purpose: Copy viewangles to r_refdef.viewangles
+    */
+    virtual void SetRefDefViewAngles(const float* viewangles) = 0;
+
+    /*
+        Purpose: Copy vieworg to r_refdef.vieworg
+    */
+    virtual void SetRefDefViewOrigin(const float* vieworg) = 0;
+
+    /*
         Purpose: Get the rendering definition structure pointer
     */
     virtual void* GetRefDef() = 0;

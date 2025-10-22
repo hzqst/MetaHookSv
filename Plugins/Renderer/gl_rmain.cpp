@@ -3954,6 +3954,16 @@ void CL_SetDevOverView(void* a1)
 	return gPrivateFuncs.CL_SetDevOverView(a1);
 }
 
+void R_SetRefDefViewAngles(const float* viewangles)
+{
+	VectorCopy(viewangles, (*r_refdef.vieworg));
+}
+
+void R_SetRefDefViewOrigin(const float* vieworg)
+{
+	VectorCopy(vieworg, (*r_refdef.vieworg));
+}
+
 void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
 {
 	auto yMax = zNear * tan(yfov * M_PI / 360.0f);
@@ -6662,6 +6672,23 @@ public:
 	{
 		GL_PopFrameBuffer();
 	}
+
+	/*
+	Purpose: Copy viewangles to r_refdef.viewangles
+	*/
+	void SetRefDefViewAngles(const float* viewangles) override
+	{
+		R_SetRefDefViewAngles(viewangles);
+	}
+
+	/*
+		Purpose: Copy vieworg to r_refdef.vieworg
+	*/
+	void SetRefDefViewOrigin(const float* vieworg) override
+	{
+		R_SetRefDefViewOrigin(vieworg);
+	}
+
 
 	void* GetRefDef() override
 	{
