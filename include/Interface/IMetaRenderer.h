@@ -410,6 +410,16 @@ public:
     virtual void SetupPlayerViewWorldMatrix(const float* origin, const float* viewangles) = 0;
 
     /*
+        Purpose: Setup Perspective projection matrix
+    */
+    virtual void SetupPerspective(float fovx, float fovy, float zNear, float zFar) = 0;
+
+    /*
+        Purpose: Setup OpenGL viewport
+    */
+    virtual void SetViewport(float x, float y, float w, float h) = 0;
+
+    /*
         Purpose: Push current projection matrix onto the stack
     */
     virtual void PushProjectionMatrix() = 0;

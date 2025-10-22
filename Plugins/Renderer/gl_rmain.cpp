@@ -2406,6 +2406,14 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	r_ortho = false;
 }
 
+void R_SetViewport(float x, float y, float w, float h)
+{
+	r_viewport[0] = x;
+	r_viewport[1] = y;
+	r_viewport[2] = w;
+	r_viewport[3] = h;
+}
+
 void GL_FreeFrameBuffers(void)
 {
 	GL_FreeFBO(&s_FinalBufferFBO);
@@ -4142,7 +4150,11 @@ void R_SetupGL(void)
 		r_viewport[2] = v4;
 		r_viewport[3] = v5;
 
-		glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+		R_SetViewport(
+			v0 + glx,
+			v3 + gly,
+			v4,
+			v5);
 
 		R_LoadIdentityForProjectionMatrix();
 
@@ -6851,6 +6863,16 @@ public:
 	void SetupPlayerViewWorldMatrix(const float* origin, const float* viewangles) override
 	{
 		R_SetupPlayerViewWorldMatrix(origin, viewangles);
+	}
+
+	void SetupPerspective(float fovx, float fovy, float zNear, float zFar) override
+	{
+		R_SetupPerspective(fovx, fovy, zNear, zFar);
+	}
+
+	void SetViewport(float x, float y, float w, float h)  override
+	{
+		R_SetViewport(x, y, w, h);
 	}
 
 	void PushProjectionMatrix() override

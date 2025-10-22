@@ -463,12 +463,11 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						R_PushRefDef();
 
-						r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-						r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-						r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-						r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-
-						glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+						R_SetViewport(
+							g_pCurrentShadowTexture->GetViewport()[0],
+							g_pCurrentShadowTexture->GetViewport()[1],
+							g_pCurrentShadowTexture->GetViewport()[2], 
+							g_pCurrentShadowTexture->GetViewport()[3]);
 
 						// Calculate 6 faces for cubemap shadow mapping
 						// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
@@ -577,12 +576,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					
 					R_PushRefDef();
 
-					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-
-					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+					R_SetViewport(
+						g_pCurrentShadowTexture->GetViewport()[0],
+						g_pCurrentShadowTexture->GetViewport()[1],
+						g_pCurrentShadowTexture->GetViewport()[2],
+						g_pCurrentShadowTexture->GetViewport()[3]);
 
 					// Calculate 6 faces for cubemap shadow mapping
 					// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
@@ -700,12 +698,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 					R_UpdateRefDef();
 
-					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-
-					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+					R_SetViewport(
+						g_pCurrentShadowTexture->GetViewport()[0],
+						g_pCurrentShadowTexture->GetViewport()[1],
+						g_pCurrentShadowTexture->GetViewport()[2],
+						g_pCurrentShadowTexture->GetViewport()[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -816,12 +813,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					VectorCopy(args->angle, (*r_refdef.viewangles));
 					R_UpdateRefDef();
 
-					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-
-					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+					R_SetViewport(
+						g_pCurrentShadowTexture->GetViewport()[0],
+						g_pCurrentShadowTexture->GetViewport()[1],
+						g_pCurrentShadowTexture->GetViewport()[2],
+						g_pCurrentShadowTexture->GetViewport()[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -968,12 +964,11 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
-					r_viewport[0] = g_pCurrentShadowTexture->GetViewport()[0];
-					r_viewport[1] = g_pCurrentShadowTexture->GetViewport()[1];
-					r_viewport[2] = g_pCurrentShadowTexture->GetViewport()[2];
-					r_viewport[3] = g_pCurrentShadowTexture->GetViewport()[3];
-
-					glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+					R_SetViewport(
+						g_pCurrentShadowTexture->GetViewport()[0],
+						g_pCurrentShadowTexture->GetViewport()[1],
+						g_pCurrentShadowTexture->GetViewport()[2],
+						g_pCurrentShadowTexture->GetViewport()[3]);
 
 					// Setup camera UBO with all cascade views
 					camera_ubo_t CameraUBO;

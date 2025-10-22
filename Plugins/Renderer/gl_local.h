@@ -544,6 +544,7 @@ void R_LoadIdentityForProjectionMatrix();
 void R_SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ);
 void R_SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar);
 void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar);
+void R_SetViewport(float x, float y, float w, float h);
 
 void GL_BeginDebugGroup(const char* name);
 void GL_BeginDebugGroupFormat(const char* fmt, ...);
