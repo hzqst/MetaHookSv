@@ -378,6 +378,11 @@ void R_ShutdownLight(void)
 	}
 }
 
+GLuint R_GetEmptyVAO()
+{
+	return r_empty_vao;
+}
+
 void R_InitLight(void)
 {
 	r_empty_vao = GL_GenVAO();

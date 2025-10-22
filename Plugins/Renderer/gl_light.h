@@ -202,3 +202,4 @@ void R_SaveDFinalProgramStates(void);
 void R_LoadDLightProgramStates(void);
 void R_LoadDFinalProgramStates(void);
 void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bool stencil);
+GLuint R_GetEmptyVAO();

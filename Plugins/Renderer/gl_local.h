@@ -531,6 +531,7 @@ void R_PushWorldMatrix();
 void R_PopWorldMatrix();
 void R_LoadIdentityForWorldMatrix();
 void R_TranslateWorldMatrix(float x, float y, float z);
+void R_RotateWorldMatrix(float angle, float x, float y, float z);
 void R_SetupPlayerViewWorldMatrix(const vec3_t origin, const vec3_t viewangles);
 
 float* R_GetProjectionMatrix();

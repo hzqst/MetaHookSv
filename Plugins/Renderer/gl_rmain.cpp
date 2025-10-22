@@ -4,6 +4,7 @@
 #include "CounterStrike.h"
 #include <event_api.h>
 
+#include <algorithm>
 #include <intrin.h>
 #include <sstream>
 #include <set>
@@ -305,6 +306,8 @@ int r_renderview_pass = 0;
 std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
 std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 std::vector<cl_entity_t*> g_ViewModelAttachmentEntities;
+
+std::vector<IMetaRendererCallbacks*> g_RenderCallbacks;
 
 int glx = 0;
 int gly = 0;
@@ -2430,6 +2433,11 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterSurfaceFBO);
 	GL_FreeFBO(&s_PortalFBO);
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnFreeFrameBuffers();
+	}
 }
 
 void GL_GenerateFrameBuffers(void)
@@ -2442,7 +2450,6 @@ void GL_GenerateFrameBuffers(void)
 		GL_GenFrameBuffer(&s_FinalBufferFBO, "s_FinalBufferFBO");
 		GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
 		GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -2705,6 +2712,11 @@ void GL_GenerateFrameBuffers(void)
 		}
 	}
 
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnGenerateFrameBuffers();
+	}
+
 	GL_BindFrameBuffer(NULL);
 }
 
@@ -2781,6 +2793,11 @@ void R_RenderFrameStart()
 	R_CheckVariables();
 	R_AnimateLight();
 
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnRenderFrameStart();
+	}
+
 	r_draw_classify = DRAW_CLASSIFY_ALL;
 
 	if ((int)r_drawentities->value <= 0)
@@ -2826,6 +2843,11 @@ void R_RenderEndFrame()
 	if (g_RectIndexBuffer)
 	{
 		g_RectIndexBuffer->EndFrame();
+	}
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnRenderEndFrame();
 	}
 }
 
@@ -2882,6 +2904,11 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 		}
 	*/
 
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnBeginRendering(x, y, width, height);
+	}
+
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
 	if ((*width) != glwidth || (*height) != glheight)
@@ -2916,6 +2943,11 @@ void GL_BeginRendering(int* x, int* y, int* width, int* height)
 	r_renderview_pass = 0;
 	(*c_alias_polys) = 0;
 	(*c_brush_polys) = 0;
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnBeginRendering(x, y, width, height);
+	}
 }
 
 /*
@@ -2932,6 +2964,11 @@ void R_PreRenderView()
 
 	//Always force GammaBlend to be disabled at very beginning.
 	r_draw_gammablend = false;
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnPreRenderView();
+	}
 
 	//Currently unused
 	R_RenderViewStart();
@@ -2978,12 +3015,22 @@ void R_PreRenderView()
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0, 1);
 
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnPreRenderViewPost();
+	}
+
 	GL_EndDebugGroup();
 }
 
 void R_PostRenderView()
 {
 	GL_BeginDebugGroup("R_PostRenderView");
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnPostRenderView();
+	}
 
 	auto GammaCorrectionTargetFBO = &s_BackBufferFBO;
 
@@ -3035,6 +3082,11 @@ void R_PostRenderView()
 	{
 		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 		R_FXAA(&s_BackBufferFBO2, &s_BackBufferFBO);
+	}
+
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnPostRenderViewPost();
 	}
 
 	GL_EndDebugGroup();
@@ -3608,6 +3660,8 @@ void R_Init(void)
 
 void R_Shutdown(void)
 {
+	g_RenderCallbacks.clear();
+
 	R_ShutdownWater();
 	R_ShutdownStudio();
 	R_ShutdownShadow();
@@ -6471,6 +6525,468 @@ public:
 	void BindTextureUnit(int OpenGLTextureUnit, int OpenGLTextureTarget, int gltexturenum) override
 	{
 		GL_BindTextureUnit(OpenGLTextureUnit, OpenGLTextureTarget, gltexturenum);
+	}
+
+	void UseProgram(int glprogram) override
+	{
+		GL_UseProgram(glprogram);
+	}
+
+	void SetCurrentSceneFBO(FBO_Container_t* src) override
+	{
+		GL_SetCurrentSceneFBO(src);
+	}
+
+	FBO_Container_t* GetCurrentSceneFBO() override
+	{
+		return GL_GetCurrentSceneFBO();
+	}
+
+	FBO_Container_t* GetCurrentRenderingFBO() override
+	{
+		return GL_GetCurrentRenderingFBO();
+	}
+
+	void BindFrameBuffer(FBO_Container_t* fbo) override
+	{
+		GL_BindFrameBuffer(fbo);
+	}
+
+	void BindFrameBufferWithTextures(FBO_Container_t* fbo, unsigned int color, unsigned int depth, unsigned int depth_stencil, int width, int height) override
+	{
+		GL_BindFrameBufferWithTextures(fbo, color, depth, depth_stencil, width, height);
+	}
+
+	void PushFrameBuffer() override
+	{
+		GL_PushFrameBuffer();
+	}
+
+	void PopFrameBuffer() override
+	{
+		GL_PopFrameBuffer();
+	}
+
+	void* GetRefDef() override
+	{
+		return R_GetRefDef();
+	}
+
+	void PushRefDef() override
+	{
+		R_PushRefDef();
+	}
+
+	void UpdateRefDef() override
+	{
+		R_UpdateRefDef();
+	}
+
+	void PopRefDef() override
+	{
+		R_PopRefDef();
+	}
+
+	unsigned int GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float* borderColor, bool immutable) override
+	{
+		return GL_GenTextureColorFormat(w, h, iInternalFormat, filter, borderColor, immutable);
+	}
+
+	unsigned int GenTextureArrayColorFormat(int w, int h, int depth, int iInternalFormat, bool filter, float* borderColor, bool immutable) override
+	{
+		return GL_GenTextureArrayColorFormat(w, h, depth, iInternalFormat, filter, borderColor, immutable);
+	}
+
+	unsigned int GenTextureRGBA8(int w, int h, bool immutable) override
+	{
+		return GL_GenTextureRGBA8(w, h, immutable);
+	}
+
+	unsigned int GenDepthTexture(int w, int h, bool immutable) override
+	{
+		return GL_GenDepthTexture(w, h, immutable);
+	}
+
+	unsigned int GenDepthStencilTexture(int w, int h, bool immutable) override
+	{
+		return GL_GenDepthStencilTexture(w, h, immutable);
+	}
+
+	unsigned int CreateDepthViewForDepthTexture(int texId) override
+	{
+		return GL_CreateDepthViewForDepthTexture(texId);
+	}
+
+	unsigned int CreateStencilViewForDepthTexture(int texId) override
+	{
+		return GL_CreateStencilViewForDepthTexture(texId);
+	}
+
+	void GenFrameBuffer(FBO_Container_t* s, const char* szFrameBufferName) override
+	{
+		GL_GenFrameBuffer(s, szFrameBufferName);
+	}
+
+	const char* GetFrameBufferName(FBO_Container_t* s) override
+	{
+		return GL_GetFrameBufferName(s);
+	}
+
+	void FrameBufferColorTexture(FBO_Container_t* s, unsigned int iInternalFormat) override
+	{
+		GL_FrameBufferColorTexture(s, iInternalFormat);
+	}
+
+	void FrameBufferDepthTexture(FBO_Container_t* s, unsigned int iInternalFormat) override
+	{
+		GL_FrameBufferDepthTexture(s, iInternalFormat);
+	}
+
+	void ClearColor(float* color) override
+	{
+		GL_ClearColor(color);
+	}
+
+	void ClearDepth(float depth) override
+	{
+		GL_ClearDepth(depth);
+	}
+
+	void ClearDepthStencil(float depth, int stencilref, int stencilmask) override
+	{
+		GL_ClearDepthStencil(depth, stencilref, stencilmask);
+	}
+
+	void ClearColorDepthStencil(float* color, float depth, int stencilref, int stencilmask) override
+	{
+		GL_ClearColorDepthStencil(color, depth, stencilref, stencilmask);
+	}
+
+	void ClearStencil(int mask) override
+	{
+		GL_ClearStencil(mask);
+	}
+
+	void BeginStencilCompareEqual(int ref, int mask) override
+	{
+		GL_BeginStencilCompareEqual(ref, mask);
+	}
+
+	void BeginStencilCompareNotEqual(int ref, int mask) override
+	{
+		GL_BeginStencilCompareNotEqual(ref, mask);
+	}
+
+	void BeginStencilWrite(int ref, int write_mask) override
+	{
+		GL_BeginStencilWrite(ref, write_mask);
+	}
+
+	void EndStencil() override
+	{
+		GL_EndStencil();
+	}
+
+	void ClearFBO(FBO_Container_t* s) override
+	{
+		GL_ClearFBO(s);
+	}
+
+	void FreeFBO(FBO_Container_t* s) override
+	{
+		GL_FreeFBO(s);
+	}
+
+	float* GetWorldMatrix() override
+	{
+		return R_GetWorldMatrix();
+	}
+
+	void PushWorldMatrix() override
+	{
+		R_PushWorldMatrix();
+	}
+
+	void PopWorldMatrix() override
+	{
+		R_PopWorldMatrix();
+	}
+
+	void LoadIdentityForWorldMatrix() override
+	{
+		R_LoadIdentityForWorldMatrix();
+	}
+
+	void RotateWorldMatrix(float angle, float x, float y, float z) override
+	{
+		R_RotateWorldMatrix(angle, x, y, z);
+	}
+
+	void TranslateWorldMatrix(float x, float y, float z) override
+	{
+		R_TranslateWorldMatrix(x, y, z);
+	}
+
+	void SetupPlayerViewWorldMatrix(const float* origin, const float* viewangles) override
+	{
+		R_SetupPlayerViewWorldMatrix(origin, viewangles);
+	}
+
+	void PushProjectionMatrix() override
+	{
+		R_PushProjectionMatrix();
+	}
+
+	void PopProjectionMatrix() override
+	{
+		R_PopProjectionMatrix();
+	}
+
+	float* GetProjectionMatrix() override
+	{
+		return R_GetProjectionMatrix();
+	}
+
+	void LoadIdentityForProjectionMatrix() override
+	{
+		R_LoadIdentityForProjectionMatrix();
+	}
+
+	void SetupFrustumProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar) override
+	{
+		R_SetupFrustumProjectionMatrix(left, right, bottom, top, zNear, zFar);
+	}
+
+	void SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ) override
+	{
+		R_SetupOrthoProjectionMatrix(left, right, bottom, top, zNear, zFar, NegativeOneToOneZ);
+	}
+
+	void BeginDebugGroup(const char* name) override
+	{
+		GL_BeginDebugGroup(name);
+	}
+
+	void BeginDebugGroupFormat(const char* fmt, ...) override
+	{
+#if defined(_DEBUG)
+		char buf[256]{};
+
+		va_list argptr;
+
+		va_start(argptr, fmt);
+		_vsnprintf(buf, sizeof(buf) - 1, fmt, argptr);
+		va_end(argptr);
+
+		buf[sizeof(buf) - 1] = 0;
+
+		if (glPushDebugGroup)
+			glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, buf);
+#endif
+	}
+
+	void EndDebugGroup() override
+	{
+		GL_EndDebugGroup();
+	}
+
+	void SetTextureDebugName(unsigned int textureId, const char* name) override
+	{
+		GL_SetTextureDebugName(textureId, name);
+	}
+
+	void SetFrameBufferDebugName(unsigned int framebufferId, const char* name) override
+	{
+		GL_SetFrameBufferDebugName(framebufferId, name);
+	}
+
+	unsigned int GenTexture() override
+	{
+		return GL_GenTexture();
+	}
+
+	unsigned int GenBuffer() override
+	{
+		return GL_GenBuffer();
+	}
+
+	unsigned int GenVAO() override
+	{
+		return GL_GenVAO();
+	}
+
+	void DeleteBuffer(unsigned int buf) override
+	{
+		GL_DeleteBuffer(buf);
+	}
+
+	void DeleteVAO(unsigned int VAO) override
+	{
+		GL_DeleteVAO(VAO);
+	}
+
+	void DeleteTexture(unsigned int texid) override
+	{
+		GL_DeleteTexture(texid);
+	}
+
+	void BindVAO(unsigned int VAO) override
+	{
+		GL_BindVAO(VAO);
+	}
+
+	void BindABO(unsigned int ABO) override
+	{
+		GL_BindABO(ABO);
+	}
+
+	void UploadDataToUBODynamicDraw(unsigned int UBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToUBODynamicDraw(UBO, size, data);
+	}
+
+	void UploadSubDataToUBO(unsigned int UBO, size_t offset, size_t size, const void* data) override
+	{
+		GL_UploadSubDataToUBO(UBO, offset, size, data);
+	}
+
+	void UploadDataToVBOStaticDraw(unsigned int VBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToVBOStaticDraw(VBO, size, data);
+	}
+
+	void UploadDataToVBODynamicDraw(unsigned int VBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToVBODynamicDraw(VBO, size, data);
+	}
+
+	void UploadDataToVBOStreamDraw(unsigned int VBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToVBOStreamDraw(VBO, size, data);
+	}
+
+	void UploadDataToVBOStreamMap(unsigned int VBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToVBOStreamMap(VBO, size, data);
+	}
+
+	void UploadSubDataToVBO(unsigned int VBO, size_t offset, size_t size, const void* data) override
+	{
+		GL_UploadSubDataToVBO(VBO, offset, size, data);
+	}
+
+	void UploadDataToEBOStaticDraw(unsigned int EBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToEBOStaticDraw(EBO, size, data);
+	}
+
+	void UploadDataToEBODynamicDraw(unsigned int EBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToEBODynamicDraw(EBO, size, data);
+	}
+
+	void UploadDataToEBOStreamDraw(unsigned int EBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToEBOStreamDraw(EBO, size, data);
+	}
+
+	void UploadDataToEBOStreamMap(unsigned int EBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToEBOStreamMap(EBO, size, data);
+	}
+
+	void UploadSubDataToEBO(unsigned int EBO, size_t offset, size_t size, const void* data) override
+	{
+		GL_UploadSubDataToEBO(EBO, offset, size, data);
+	}
+
+	void UploadDataToABOStaticDraw(unsigned int ABO, size_t size, const void* data) override
+	{
+		GL_UploadDataToABOStaticDraw(ABO, size, data);
+	}
+
+	void UploadDataToABODynamicDraw(unsigned int ABO, size_t size, const void* data) override
+	{
+		GL_UploadDataToABODynamicDraw(ABO, size, data);
+	}
+
+	void UploadDataToSSBOStaticDraw(unsigned int SSBO, size_t size, const void* data) override
+	{
+		GL_UploadDataToSSBOStaticDraw(SSBO, size, data);
+	}
+
+	unsigned int GetEmptyVAO() override
+	{
+		return R_GetEmptyVAO();
+	}
+
+	void CopyColor(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		R_CopyColor(src, dst);
+	}
+
+	void BlurPass(FBO_Container_t* src, FBO_Container_t* dst, float scale, bool vertical) override
+	{
+		R_BlurPass(src, dst, scale, vertical);
+	}
+
+	void FXAA(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		R_FXAA(src, dst);
+	}
+
+	void DownSample(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t* dst, bool bUseFilter2x2, bool bUseStencilFilter) override
+	{
+		R_DownSample(src_color, src_stencil, dst, bUseFilter2x2, bUseStencilFilter);
+	}
+
+	void BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferDepthStencil(src, dst);
+	}
+
+	void BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferStencilOnly(src, dst);
+	}
+
+	void BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferDepthOnly(src, dst);
+	}
+
+	void BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferColorDepthStencil(src, dst);
+	}
+
+	void BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferColorDepth(src, dst);
+	}
+
+	void BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t* src, FBO_Container_t* dst) override
+	{
+		GL_BlitFrameBufferToFrameBufferColorOnly(src, dst);
+	}
+
+	void BlitFrameBufferToScreen(FBO_Container_t* src) override
+	{
+		GL_BlitFrameFufferToScreen(src);
+	}
+
+	void RegisterRenderCallbacks(IMetaRendererCallbacks* RenderCallbacks) override
+	{
+		g_RenderCallbacks.emplace_back(RenderCallbacks);
+	}
+
+	void UnregisterRenderCallbacks(IMetaRendererCallbacks* RenderCallbacks) override
+	{
+		auto it = std::find(g_RenderCallbacks.begin(), g_RenderCallbacks.end(), RenderCallbacks);
+		if (it != g_RenderCallbacks.end())
+		{
+			g_RenderCallbacks.erase(it);
+		}
 	}
 };
 
