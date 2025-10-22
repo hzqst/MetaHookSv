@@ -40,6 +40,10 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 #undef GetCurrentDirectory
 #endif
 
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__
