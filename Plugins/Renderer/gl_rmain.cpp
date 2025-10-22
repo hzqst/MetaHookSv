@@ -6883,6 +6883,16 @@ public:
 		R_SetupOrthoProjectionMatrix(left, right, bottom, top, zNear, zFar, NegativeOneToOneZ);
 	}
 
+	void SetupCameraView(camera_view_t* view) override
+	{
+		R_SetupCameraView(view);
+	}
+
+	void UploadCameraUBOData(const camera_ubo_t* CameraUBO) override
+	{
+		R_UploadCameraUBOData(CameraUBO);
+	}
+
 	void BeginDebugGroup(const char* name) override
 	{
 		GL_BeginDebugGroup(name);

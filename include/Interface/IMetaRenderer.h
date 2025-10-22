@@ -9,6 +9,7 @@
 //You should #include "gl_common.h" to get those type definitions
 typedef struct texturedrectvertex_s texturedrectvertex_t;
 typedef struct filledrectvertex_s filledrectvertex_t;
+typedef struct camera_view_s camera_view_t;
 
 class CCompileShaderArgs;
 
@@ -436,6 +437,16 @@ public:
         Purpose: Setup orthographic projection matrix
     */
     virtual void SetupOrthoProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar, bool NegativeOneToOneZ) = 0;
+
+    /*
+        Purpose: Setup camera view data
+    */
+    virtual void SetupCameraView(camera_view_t* view) = 0;
+
+    /*
+        Purpose: Upload CameraUBO data to GPU
+    */
+    virtual void UploadCameraUBOData(const camera_ubo_t* CameraUBO) = 0;
 
     /*
         Purpose: Begin a debug group for OpenGL debugging tools

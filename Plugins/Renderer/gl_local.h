@@ -448,6 +448,7 @@ void R_SetFrustum(void);
 void R_SetFrustum(float xfov, float yfov, float right, float top);
 void R_UploadSceneUBO(void);
 void R_UploadCameraUBO(void);
+void R_UploadCameraUBOData(const camera_ubo_t* CameraUBO);
 void R_SetupCameraView(camera_view_t* view);
 void R_GameFrameStart();
 void R_RenderFrameStart();

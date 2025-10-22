@@ -4464,6 +4464,11 @@ void R_SetupCameraView(camera_view_t *view)
 	view->vup_zfar[3] = r_zfar;
 }
 
+void R_UploadCameraUBOData(const camera_ubo_t *CameraUBO)
+{
+	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(*CameraUBO), CameraUBO);
+}
+
 void R_UploadCameraUBO()
 {
 	if (R_IsRenderingMultiView())
@@ -4475,7 +4480,7 @@ void R_UploadCameraUBO()
 
 	CameraUBO.numViews = 1;
 
-	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
+	R_UploadCameraUBOData(&CameraUBO);
 }
 
 void R_UploadSceneUBO(void)
