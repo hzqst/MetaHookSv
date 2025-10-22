@@ -679,10 +679,12 @@ bool R_CanRenderGBuffer(void)
 	return true;
 }
 
-bool R_BeginRenderGBuffer(void)
+void R_BeginRenderGBuffer(void)
 {
 	if (!R_CanRenderGBuffer())
-		return false;
+		return;
+
+	GL_BeginDebugGroup("R_BeginRenderGBuffer");
 
 	r_draw_gbuffer = true;
 	gbuffer_mask = -1;
@@ -697,7 +699,7 @@ bool R_BeginRenderGBuffer(void)
 
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
-	return true;
+	GL_EndDebugGroup();
 }
 
 bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, float cone_cosine, float cone_distance)

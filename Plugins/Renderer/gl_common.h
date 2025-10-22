@@ -8,6 +8,27 @@
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
 
+#define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
+
+#define DRAW_CLASSIFY_WORLD				0x1
+#define DRAW_CLASSIFY_SKYBOX			0x2
+#define DRAW_CLASSIFY_OPAQUE_ENTITIES	0x4
+#define DRAW_CLASSIFY_TRANS_ENTITIES	0x8
+#define DRAW_CLASSIFY_PARTICLES			0x10
+#define DRAW_CLASSIFY_DECAL				0x20
+#define DRAW_CLASSIFY_WATER				0x40
+#define DRAW_CLASSIFY_LIGHTMAP			0x80
+
+#define DRAW_CLASSIFY_ALL				(DRAW_CLASSIFY_WORLD |\
+										DRAW_CLASSIFY_SKYBOX | \
+										DRAW_CLASSIFY_OPAQUE_ENTITIES | \
+										DRAW_CLASSIFY_TRANS_ENTITIES |\
+										DRAW_CLASSIFY_PARTICLES |\
+										DRAW_CLASSIFY_DECAL | \
+										DRAW_CLASSIFY_WATER | \
+										DRAW_CLASSIFY_LIGHTMAP\
+)
+
 #define LUMIN1x1_BUFFERS 3
 #define DOWNSAMPLE_BUFFERS 2
 #define LUMIN_BUFFERS 3

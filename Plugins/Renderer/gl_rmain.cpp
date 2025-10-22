@@ -7109,6 +7109,16 @@ public:
 			g_RenderCallbacks.erase(it);
 		}
 	}
+
+	void SetDrawClassify(int drawClassify) override
+	{
+		r_draw_classify = drawClassify;
+	}
+
+	int GetDrawClassify() const override
+	{
+		return r_draw_classify;
+	}
 };
 
 EXPOSE_SINGLE_INTERFACE(CMetaRenderer, IMetaRenderer, METARENDERER_INTERFACE_VERSION);

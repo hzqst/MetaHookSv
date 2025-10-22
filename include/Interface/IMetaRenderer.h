@@ -645,6 +645,14 @@ public:
         Purpose: Unregister render callbacks
     */
     virtual void UnregisterRenderCallbacks(IMetaRendererCallbacks* RenderCallbacks) = 0;
+
+    /*
+        Purpose: Set/Get draw classify
+    */
+    virtual void SetDrawClassify(int drawClassify) = 0;
+
+    virtual int GetDrawClassify() const = 0;
+
 };
 
 IMetaRenderer* MetaRenderer();
