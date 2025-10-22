@@ -787,7 +787,7 @@ void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, R_GetSwapChainWidth(), R_GetSwapChainHeight(), GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 /*
@@ -1630,7 +1630,7 @@ void R_AmbientOcclusion_BlurPass(FBO_Container_t* src, FBO_Container_t* dst, flo
 
 	GL_UseProgram(hbao_blur.program);
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
-	glUniform2f(1, 1.0f / float(glwidth), 0);
+	glUniform2f(1, 1.0f / (float)(src->iWidth), 0);
 
 	GL_BindVAO(r_empty_vao);
 

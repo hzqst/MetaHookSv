@@ -291,8 +291,8 @@ CWaterReflectCache* R_PrepareReflectCache(cl_entity_t* ent, CWaterSurfaceModel* 
 
 		if (ReflectCache)
 		{
-			int texwidth = glwidth;
-			int texheight = glheight;
+			int texwidth = R_GetSwapChainWidth();
+			int texheight = R_GetSwapChainHeight();
 
 			if (ReflectCache->refract_texture && ReflectCache->texwidth != texwidth)
 			{
@@ -722,9 +722,6 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 void R_RenderWaterRefractView(CWaterReflectCache* ReflectCache)
 {
 	GL_BeginDebugGroup("R_RenderWaterRefractView");
-
-	int texwidth = glwidth * 0.5f;
-	int texheight = glheight * 0.5f;
 
 	r_draw_refractview = true;
 	g_CurrentReflectCache = ReflectCache;

@@ -2081,7 +2081,7 @@ void R_GenerateSceneUBO(void)
 
 	if (g_bUseOITBlend)
 	{
-		size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
+		size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * R_GetSwapChainWidth() * R_GetSwapChainHeight();
 
 		g_WorldSurfaceRenderer.hOITFragmentSSBO = GL_GenBuffer();
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_WorldSurfaceRenderer.hOITFragmentSSBO);
@@ -2089,7 +2089,7 @@ void R_GenerateSceneUBO(void)
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_FRAGMENT_SSBO, g_WorldSurfaceRenderer.hOITFragmentSSBO);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-		size_t numFragmentBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
+		size_t numFragmentBufferSizeBytes = sizeof(uint32_t) * R_GetSwapChainWidth() * R_GetSwapChainHeight();
 
 		g_WorldSurfaceRenderer.hOITNumFragmentSSBO = GL_GenBuffer();
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, g_WorldSurfaceRenderer.hOITNumFragmentSSBO);

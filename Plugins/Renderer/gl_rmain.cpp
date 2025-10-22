@@ -2362,7 +2362,7 @@ void R_PolyBlend(void)
 
 		GL_Set2D();
 
-		R_DrawFilledQuad(0, 0, glwidth, glheight, drawColor4v, ProgramState, "R_PolyBlend");
+		R_DrawFilledQuad(0, 0, R_GetSwapChainWidth(), R_GetSwapChainHeight(), drawColor4v, ProgramState, "R_PolyBlend");
 
 		GL_Finish2D();
 	}
@@ -2445,8 +2445,8 @@ void GL_GenerateFrameBuffers(void)
 	GL_FreeFrameBuffers();
 
 	{
-		s_FinalBufferFBO.iWidth = glwidth;
-		s_FinalBufferFBO.iHeight = glheight;
+		s_FinalBufferFBO.iWidth = R_GetSwapChainWidth();
+		s_FinalBufferFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_FinalBufferFBO, "s_FinalBufferFBO");
 		GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
 		GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
@@ -2459,8 +2459,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_BackBufferFBO.iWidth = glwidth;
-		s_BackBufferFBO.iHeight = glheight;
+		s_BackBufferFBO.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_BackBufferFBO, "s_BackBufferFBO");
 		GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
 		GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
@@ -2473,8 +2473,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_BackBufferFBO2.iWidth = glwidth;
-		s_BackBufferFBO2.iHeight = glheight;
+		s_BackBufferFBO2.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO2.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_BackBufferFBO2, "s_BackBufferFBO2");
 		GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
 		GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
@@ -2487,8 +2487,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_BackBufferFBO3.iWidth = glwidth;
-		s_BackBufferFBO3.iHeight = glheight;
+		s_BackBufferFBO3.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO3.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_BackBufferFBO3, "s_BackBufferFBO3");
 		GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA8);
 		GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
@@ -2501,8 +2501,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_BackBufferFBO4.iWidth = glwidth;
-		s_BackBufferFBO4.iHeight = glheight;
+		s_BackBufferFBO4.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO4.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_BackBufferFBO4, "s_BackBufferFBO4");
 		GL_FrameBufferColorTexture(&s_BackBufferFBO4, GL_RGBA8);
 		GL_FrameBufferDepthTexture(&s_BackBufferFBO4, GL_DEPTH24_STENCIL8);
@@ -2515,8 +2515,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_GBufferFBO.iWidth = glwidth;
-		s_GBufferFBO.iHeight = glheight;
+		s_GBufferFBO.iWidth = R_GetSwapChainWidth();
+		s_GBufferFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_GBufferFBO, "s_GBufferFBO");
 
 		GL_FrameBufferColorTextureDeferred(&s_GBufferFBO,
@@ -2535,8 +2535,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_DepthLinearFBO.iWidth = glwidth;
-		s_DepthLinearFBO.iHeight = glheight;
+		s_DepthLinearFBO.iWidth = R_GetSwapChainWidth();
+		s_DepthLinearFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_DepthLinearFBO, "s_DepthLinearFBO");
 		GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
 
@@ -2548,8 +2548,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_HBAOCalcFBO.iWidth = glwidth;
-		s_HBAOCalcFBO.iHeight = glheight;
+		s_HBAOCalcFBO.iWidth = R_GetSwapChainWidth();
+		s_HBAOCalcFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_HBAOCalcFBO, "s_HBAOCalcFBO");
 		GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
 
@@ -2573,8 +2573,8 @@ void GL_GenerateFrameBuffers(void)
 		//DownSample FBO 1->1/4->1/16
 		int downW, downH;
 
-		downW = glwidth;
-		downH = glheight;
+		downW = R_GetSwapChainWidth();
+		downH = R_GetSwapChainHeight();
 		for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		{
 			downW >>= 1;
@@ -2596,8 +2596,8 @@ void GL_GenerateFrameBuffers(void)
 	{
 		int downW, downH;
 		//Luminance FBO
-		downW = glwidth;
-		downH = glheight;
+		downW = R_GetSwapChainWidth();
+		downH = R_GetSwapChainHeight();
 		while ((downH >> 1) >= 256)
 		{
 			downW >>= 1;
@@ -2649,8 +2649,8 @@ void GL_GenerateFrameBuffers(void)
 
 	{
 		//Bright Pass FBO
-		s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
-		s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
+		s_BrightPassFBO.iWidth = (R_GetSwapChainWidth() >> DOWNSAMPLE_BUFFERS);
+		s_BrightPassFBO.iHeight = (R_GetSwapChainHeight() >> DOWNSAMPLE_BUFFERS);
 		GL_GenFrameBuffer(&s_BrightPassFBO, "s_BrightPassFBO");
 		GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
 
@@ -2664,8 +2664,8 @@ void GL_GenerateFrameBuffers(void)
 	{
 		int downW, downH;
 		//Blur FBO
-		downW = glwidth >> DOWNSAMPLE_BUFFERS;
-		downH = glheight >> DOWNSAMPLE_BUFFERS;
+		downW = R_GetSwapChainWidth() >> DOWNSAMPLE_BUFFERS;
+		downH = R_GetSwapChainHeight() >> DOWNSAMPLE_BUFFERS;
 
 		for (int i = 0; i < BLUR_BUFFERS; ++i)
 		{
@@ -2689,8 +2689,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
-		s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
+		s_BrightAccumFBO.iWidth = R_GetSwapChainWidth() >> DOWNSAMPLE_BUFFERS;
+		s_BrightAccumFBO.iHeight = R_GetSwapChainHeight() >> DOWNSAMPLE_BUFFERS;
 		GL_GenFrameBuffer(&s_BrightAccumFBO, "s_BrightAccumFBO");
 		GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2701,8 +2701,8 @@ void GL_GenerateFrameBuffers(void)
 	}
 
 	{
-		s_ToneMapFBO.iWidth = glwidth;
-		s_ToneMapFBO.iHeight = glheight;
+		s_ToneMapFBO.iWidth = R_GetSwapChainWidth();
+		s_ToneMapFBO.iHeight = R_GetSwapChainHeight();
 		GL_GenFrameBuffer(&s_ToneMapFBO, "s_ToneMapFBO");
 		GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -2867,10 +2867,10 @@ void GL_Set2DEx(int x, int y, int width, int height)
 
 void GL_Set2D()
 {
-	glViewport(glx, gly, glwidth, glheight);
+	glViewport(glx, gly, R_GetSwapChainWidth(), R_GetSwapChainHeight());
 
 	R_PushProjectionMatrix();
-	R_SetupOrthoProjectionMatrix(0, glwidth, glheight, 0, -99999, 99999, true);
+	R_SetupOrthoProjectionMatrix(0, R_GetSwapChainWidth(), R_GetSwapChainHeight(), 0, -99999, 99999, true);
 
 	R_PushWorldMatrix();
 	R_LoadIdentityForWorldMatrix();
@@ -6463,9 +6463,105 @@ void D_FillRect(vrect_t* r, unsigned char* color)
 	R_DrawFilledRect(vertices, _countof(vertices), indices, _countof(indices), programState, "D_FillRect");
 }
 
+uint32_t R_GetSwapChainWidth()
+{
+	return glwidth;
+}
+
+uint32_t R_GetSwapChainHeight()
+{
+	return glheight;
+}
+
 class CMetaRenderer : public IMetaRenderer
 {
 public:
+
+	/*
+		Counterpart of glwidth
+	*/
+	unsigned int GetSwapChainWidth() const override
+	{
+		return R_GetSwapChainWidth();
+	}
+
+	/*
+		Counterpart of glheight
+	*/
+	unsigned int GetSwapChainHeight() const override
+	{
+		return R_GetSwapChainHeight();
+	}
+
+	FBO_Container_t* GetFinalBufferFBO() const override
+	{
+		return &s_FinalBufferFBO;
+	}
+
+	FBO_Container_t* GetBackBufferFBO() const override
+	{
+		return &s_BackBufferFBO;
+	}
+
+	FBO_Container_t* GetBackBufferFBO2() const override
+	{
+		return &s_BackBufferFBO2;
+	}
+
+	FBO_Container_t* GetBackBufferFBO3() const override
+	{
+		return &s_BackBufferFBO3;
+	}
+
+	FBO_Container_t* GetBackBufferFBO4() const override
+	{
+		return &s_BackBufferFBO4;
+	}
+
+	FBO_Container_t* GetBlurPassFBO(int passIndex, int vertical) const override
+	{
+		if (passIndex < 0)
+		{
+			Sys_Error("GetBlurPassFBO: passIndex must be >= 0");
+			return nullptr;
+		}
+
+		if (passIndex >= BLUR_BUFFERS)
+		{
+			Sys_Error("GetBlurPassFBO: passIndex must be < %d", BLUR_BUFFERS);
+			return nullptr;
+		}
+		if (vertical < 0)
+		{
+			Sys_Error("GetBlurPassFBO: vertical must be >= 0");
+			return nullptr;
+		}
+
+		if (vertical >= 2)
+		{
+			Sys_Error("GetBlurPassFBO: vertical must be < %d", 2);
+			return nullptr;
+		}
+
+		return &s_BlurPassFBO[passIndex][vertical];
+	}
+
+	FBO_Container_t* GetDownSampleFBO(int passIndex) const override
+	{
+		if (passIndex < 0)
+		{
+			Sys_Error("GetDownSampleFBO: passIndex must be >= 0");
+			return nullptr;
+		}
+
+		if (passIndex >= DOWNSAMPLE_BUFFERS)
+		{
+			Sys_Error("GetDownSampleFBO: passIndex must be < %d", DOWNSAMPLE_BUFFERS);
+			return nullptr;
+		}
+
+		return &s_DownSampleFBO[passIndex];
+	}
 
 	void DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
 	{

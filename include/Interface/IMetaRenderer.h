@@ -76,6 +76,58 @@ class IMetaRenderer : public IBaseInterface
 public:
 
     /*
+        Counterpart of glwidth
+    */
+    virtual unsigned int GetSwapChainWidth() const = 0;
+
+    /*
+        Counterpart of glheight
+    */
+    virtual unsigned int GetSwapChainHeight() const = 0;
+
+    /*
+        return s_FinalBufferFBO, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t *GetFinalBufferFBO() const = 0;
+
+    /*
+        return s_FinalBufferFBO, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t *GetBackBufferFBO() const = 0;
+
+    /*
+        return s_FinalBufferFBO, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t *GetBackBufferFBO2() const = 0;
+
+    /*
+        return s_FinalBufferFBO, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t *GetBackBufferFBO3() const = 0;
+
+    /*
+        return s_FinalBufferFBO, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t *GetBackBufferFBO4() const = 0;
+
+    /*
+        return s_BlurPassFBO[passIndex][vertical], which is RGB16F, 
+        passIndex must be 0~2, vertical must be 0~1
+        GetBlurPassFBO(0, 0) = (SwapChainWidth / 4) x (SwapChainHeight / 4) 
+        GetBlurPassFBO(1, 0) = (SwapChainWidth / 8) x (SwapChainHeight / 8)
+        GetBlurPassFBO(2, 0) = (SwapChainWidth / 16) x (SwapChainHeight / 16),
+    */
+    virtual FBO_Container_t* GetBlurPassFBO(int passIndex, int vertical) const = 0;
+
+    /*
+        return s_DownSampleFBO[passIndex], which is RGB16F D24S8,
+        passIndex must be 0~1
+        GetDownSampleFBO(0) = (SwapChainWidth / 2) x (SwapChainHeight / 2)
+        GetDownSampleFBO(1) = (SwapChainWidth / 4) x (SwapChainHeight / 4)
+    */
+    virtual FBO_Container_t* GetDownSampleFBO(int passIndex) const = 0;
+
+    /*
         Purpose: draw textured triangle list with OpenGL textureid: "gltexturenum", indicesCount must be multiple of 3, available programState can be found in "gl_common.h"
     */
     virtual void DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) = 0;

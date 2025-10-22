@@ -479,6 +479,8 @@ void GL_Finish2D();
 void GL_Set2DEx(int x, int y, int width, int height);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
+uint32_t R_GetSwapChainWidth();
+uint32_t R_GetSwapChainHeight();
 GLuint GL_GenTexture(void);
 GLuint GL_GenBuffer(void);
 GLuint GL_GenVAO(void);
