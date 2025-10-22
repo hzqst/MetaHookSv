@@ -7119,6 +7119,16 @@ public:
 	{
 		return r_draw_classify;
 	}
+
+	void SetMultiviewEnabled(bool b) override
+	{
+		r_draw_multiview = b;
+	}
+
+	bool IsMultiviewEnabled() const override
+	{
+		return R_IsRenderingMultiView();
+	}
 };
 
 EXPOSE_SINGLE_INTERFACE(CMetaRenderer, IMetaRenderer, METARENDERER_INTERFACE_VERSION);

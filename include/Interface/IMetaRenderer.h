@@ -653,6 +653,9 @@ public:
 
     virtual int GetDrawClassify() const = 0;
 
+    virtual void SetMultiviewEnabled(bool b) = 0;
+
+    virtual bool IsMultiviewEnabled() const = 0;
 };
 
 IMetaRenderer* MetaRenderer();
