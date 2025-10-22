@@ -10,6 +10,7 @@
 typedef struct texturedrectvertex_s texturedrectvertex_t;
 typedef struct filledrectvertex_s filledrectvertex_t;
 typedef struct camera_view_s camera_view_t;
+typedef struct camera_ubo_s camera_ubo_t;
 
 class CCompileShaderArgs;
 
