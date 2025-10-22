@@ -253,6 +253,11 @@ public:
     virtual void UpdateRefDef() = 0;
 
     /*
+        Purpose: call R_RenderScene under the hood
+    */
+    virtual void RenderScene() = 0;
+
+    /*
         Purpose: Pop view origin and view angles from the stack
     */
     virtual void PopRefDef() = 0;

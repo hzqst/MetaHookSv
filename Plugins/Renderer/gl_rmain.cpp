@@ -6673,22 +6673,15 @@ public:
 		GL_PopFrameBuffer();
 	}
 
-	/*
-	Purpose: Copy viewangles to r_refdef.viewangles
-	*/
 	void SetRefDefViewAngles(const float* viewangles) override
 	{
 		R_SetRefDefViewAngles(viewangles);
 	}
 
-	/*
-		Purpose: Copy vieworg to r_refdef.vieworg
-	*/
 	void SetRefDefViewOrigin(const float* vieworg) override
 	{
 		R_SetRefDefViewOrigin(vieworg);
 	}
-
 
 	void* GetRefDef() override
 	{
@@ -6703,6 +6696,11 @@ public:
 	void UpdateRefDef() override
 	{
 		R_UpdateRefDef();
+	}
+
+	void RenderScene() override
+	{
+		R_RenderScene();
 	}
 
 	void PopRefDef() override
