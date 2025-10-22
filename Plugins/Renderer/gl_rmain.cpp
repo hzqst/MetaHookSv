@@ -2412,6 +2412,8 @@ void R_SetViewport(float x, float y, float w, float h)
 	r_viewport[1] = y;
 	r_viewport[2] = w;
 	r_viewport[3] = h;
+
+	glViewport(x, y, w, h);
 }
 
 void GL_FreeFrameBuffers(void)
