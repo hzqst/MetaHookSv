@@ -678,6 +678,10 @@ public:
     virtual void SetMultiviewEnabled(bool b) = 0;
 
     virtual bool IsMultiviewEnabled() const = 0;
+
+    virtual void SetDrawGammaBlendEnabled(bool b) = 0;
+
+    virtual bool IsDrawGammaBlendEnabled() const = 0;
 };
 
 IMetaRenderer* MetaRenderer();

@@ -3964,7 +3964,7 @@ void CL_SetDevOverView(void* a1)
 
 void R_SetRefDefViewAngles(const float* viewangles)
 {
-	VectorCopy(viewangles, (*r_refdef.vieworg));
+	VectorCopy(viewangles, (*r_refdef.viewangles));
 }
 
 void R_SetRefDefViewOrigin(const float* vieworg)
@@ -7160,6 +7160,16 @@ public:
 	bool IsMultiviewEnabled() const override
 	{
 		return R_IsRenderingMultiView();
+	}
+
+	void SetDrawGammaBlendEnabled(bool b) override
+	{
+		r_draw_gammablend = b;
+	}
+
+	bool IsDrawGammaBlendEnabled() const  override
+	{
+		return R_IsRenderingGammaBlending();
 	}
 };
 
