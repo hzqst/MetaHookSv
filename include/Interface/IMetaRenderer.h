@@ -135,6 +135,11 @@ public:
     virtual void DrawTexturedRect(int gltexturenum, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) = 0;
 
     /*
+        Purpose: draw textured triangle list with OpenGL texture unit 0: "baseTextureId", texture unit 1: "maskTextureId" , indicesCount must be multiple of 3, available programState can be found in "gl_common.h"
+    */
+    virtual void DrawTexturedRectMask(int baseTextureId, int maskTextureId, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) = 0;
+
+    /*
         Purpose: draw colored triangle list with OpenGL textureid: "gltexturenum", indicesCount must be multiple of 3, available programState can be found in "gl_common.h"
     */
     virtual void DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) = 0;

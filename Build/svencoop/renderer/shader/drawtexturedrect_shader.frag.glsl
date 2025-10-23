@@ -4,6 +4,10 @@
 
 layout(binding = 0) uniform sampler2D diffuseTex;
 
+#if defined(MASK_TEXTURE_ENABLED)
+layout(binding = 1) uniform sampler2D maskTex;
+#endif
+
 in vec2 v_diffusetexcoord;
 in vec4 v_color;
 
@@ -20,6 +24,12 @@ void main()
 	#endif
 
 	vec4 finalColor = baseColor * v_color;
+	
+	#if defined(MASK_TEXTURE_ENABLED)
+		vec4 maskColor = texture(maskTex, v_diffusetexcoord.xy);
+
+		finalColor.a *= maskColor.r;
+	#endif
 
 	out_Diffuse = finalColor;
 }

@@ -91,6 +91,11 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 	{
 		std::stringstream defs;
 
+		if (state & DRAW_TEXTURED_RECT_MASK_TEXTURE_ENABLED)
+		{
+			defs << "MASK_TEXTURE_ENABLED\n";
+		}
+
 		auto def = defs.str();
 
 		prog.program = GL_CompileShaderFile(
@@ -129,6 +134,7 @@ const program_state_mapping_t s_DrawTexturedRectProgramStateName[] = {
 	{ DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED	 ,"DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED"		},
 	{ DRAW_TEXTURED_RECT_SCISSOR_ENABLED				 ,"DRAW_TEXTURED_RECT_SCISSOR_ENABLED"					},
 	{ DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED				 ,"DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED"				},
+	{ DRAW_TEXTURED_RECT_MASK_TEXTURE_ENABLED			 ,"DRAW_TEXTURED_RECT_MASK_TEXTURE_ENABLED"				},
 };
 
 void R_SaveDrawTexturedRectProgramStates(void)
@@ -489,8 +495,6 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 		GL_BeginDebugGroup("R_DrawTexturedRect");
 	}
 
-	glDisable(GL_DEPTH_TEST);
-
 	if(gltexturenum > 0)
 		glBindTexture(GL_TEXTURE_2D, gltexturenum);
 
@@ -525,6 +529,8 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 		glDisable(GL_BLEND);
 	}
 
+	glDisable(GL_DEPTH_TEST);
+
 	drawtexturedrect_program_t prog{};
 	R_UseDrawTexturedRectProgram(programState, &prog);
 
@@ -538,6 +544,157 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 	if (gltexturenum > 0)
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+	GL_EndDebugGroup();
+}
+
+void R_DrawTexturedRectMask(int baseTextureId, int maskTextureId, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata)
+{
+	if (!g_DrawTexturedRectCommand.hVAO)
+	{
+		g_DrawTexturedRectCommand.hVAO = GL_GenVAO();
+
+		if (!g_TexturedRectVertexBuffer)
+		{
+			g_TexturedRectVertexBuffer = GL_CreatePMBRingBuffer("TexturedRectVertexBuffer", 16 * 1024 * 1024, GL_ARRAY_BUFFER);
+		}
+
+		if (!g_RectInstanceBuffer)
+		{
+			g_RectInstanceBuffer = GL_CreatePMBRingBuffer("RectInstanceBuffer", 8 * 1024 * 1024, GL_ARRAY_BUFFER);
+		}
+
+		if (!g_RectIndexBuffer)
+		{
+			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+		}
+
+		GL_BindStatesForVAO(
+			g_DrawTexturedRectCommand.hVAO,
+			[&]() {
+				glBindBuffer(GL_ARRAY_BUFFER, g_TexturedRectVertexBuffer->GetGLBufferObject());
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_POSITION, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, pos));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_POSITION);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_TEXCOORD, 2, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, texcoord));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_TEXCOORD);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_COLOR, 4, GL_FLOAT, false, sizeof(texturedrectvertex_t), OFFSET(texturedrectvertex_t, col));
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_COLOR);
+
+				glBindBuffer(GL_ARRAY_BUFFER, g_RectInstanceBuffer->GetGLBufferObject());
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX0, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[0]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX0, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX0);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX1, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[1]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX1, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX1);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX2, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[2]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX2, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX2);
+
+				glVertexAttribPointer(TEXTUREDRECT_VA_MATRIX3, 4, GL_FLOAT, false, sizeof(rect_instance_data_t), OFFSET(rect_instance_data_t, matrix[3]));
+				glVertexAttribDivisor(TEXTUREDRECT_VA_MATRIX3, 1);
+				glEnableVertexAttribArray(TEXTUREDRECT_VA_MATRIX3);
+
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_RectIndexBuffer->GetGLBufferObject());
+
+			});
+
+	}
+
+	rect_instance_data_t instanceDataBuffer[1]{};
+
+	auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+	auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+	Matrix4x4_Multiply(instanceDataBuffer[0].matrix, (*worldMatrix), (*projMatrix));
+
+	size_t vertexDataSize = verticeCount * sizeof(texturedrectvertex_t);
+	size_t instanceDataSize = sizeof(instanceDataBuffer);
+	size_t indexDataSize = indicesCount * sizeof(uint32_t);
+
+	CPMBRingBufferAllocation vertexAllocation;
+	CPMBRingBufferAllocation instanceAllocation;
+	CPMBRingBufferAllocation indexAllocation;
+
+	if (!g_TexturedRectVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
+	{
+		return;
+	}
+
+	if (!g_RectInstanceBuffer->Allocate(instanceDataSize, instanceAllocation))
+	{
+		return;
+	}
+
+	if (!g_RectIndexBuffer->Allocate(indexDataSize, indexAllocation))
+	{
+		return;
+	}
+
+	if (debugMetadata)
+	{
+		GL_BeginDebugGroupFormat("R_DrawTexturedRectMask - %s", debugMetadata);
+	}
+	else
+	{
+		GL_BeginDebugGroup("R_DrawTexturedRectMask");
+	}
+
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, baseTextureId);
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, maskTextureId);
+
+	memcpy(vertexAllocation.ptr, verticeBuffer, vertexDataSize);
+	GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(texturedrectvertex_t));
+
+	memcpy(instanceAllocation.ptr, instanceDataBuffer, sizeof(instanceDataBuffer));
+	GLuint baseInstance = (GLuint)(instanceAllocation.offset / sizeof(rect_instance_data_t));
+
+	memcpy(indexAllocation.ptr, indices, indexDataSize);
+	GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
+
+	GL_BindVAO(g_DrawTexturedRectCommand.hVAO);
+
+	if (programState & DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+	else if (programState & DRAW_TEXTURED_RECT_ADDITIVE_BLEND_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+	}
+	else if (programState & DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+
+	glDisable(GL_DEPTH_TEST);
+
+	drawtexturedrect_program_t prog{};
+	R_UseDrawTexturedRectProgram(programState, &prog);
+
+	glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(baseIndex), 1, baseVertex, baseInstance);
+
+	GL_UseProgram(0);
+
+	glDisable(GL_BLEND);
+
+	GL_BindVAO(0);
+
+	GL_BindTextureUnit(1, GL_TEXTURE_2D, 0);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, 0);
 
 	GL_EndDebugGroup();
 }
