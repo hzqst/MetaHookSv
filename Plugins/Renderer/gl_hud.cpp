@@ -548,7 +548,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 	GL_EndDebugGroup();
 }
 
-void R_DrawTexturedRectMask(int baseTextureId, int maskTextureId, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata)
+void R_DrawTexturedRectMask(int gltexturenum, int maskTextureId, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata)
 {
 	if (!g_DrawTexturedRectCommand.hVAO)
 	{
@@ -646,7 +646,7 @@ void R_DrawTexturedRectMask(int baseTextureId, int maskTextureId, const textured
 		GL_BeginDebugGroup("R_DrawTexturedRectMask");
 	}
 
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, baseTextureId);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, gltexturenum);
 	GL_BindTextureUnit(1, GL_TEXTURE_2D, maskTextureId);
 
 	memcpy(vertexAllocation.ptr, verticeBuffer, vertexDataSize);
@@ -897,6 +897,51 @@ void R_DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const 
 	const uint32_t indices[] = { 0,1,2,2,3,0 };
 
 	R_DrawTexturedRect(gltexturenum, vertices, _countof(vertices), indices, _countof(indices), programState, debugMetadata);
+}
+
+void R_DrawTexturedQuadMask(int gltexturenum, int maskTextureId, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata)
+{
+	texturedrectvertex_t vertices[4];
+
+	vertices[0].col[0] = color4v[0];
+	vertices[0].col[1] = color4v[1];
+	vertices[0].col[2] = color4v[2];
+	vertices[0].col[3] = color4v[3];
+	vertices[0].texcoord[0] = 0;
+	vertices[0].texcoord[1] = 1;
+	vertices[0].pos[0] = x0;
+	vertices[0].pos[1] = y1;
+
+	vertices[1].col[0] = color4v[0];
+	vertices[1].col[1] = color4v[1];
+	vertices[1].col[2] = color4v[2];
+	vertices[1].col[3] = color4v[3];
+	vertices[1].texcoord[0] = 1;
+	vertices[1].texcoord[1] = 1;
+	vertices[1].pos[0] = x1;
+	vertices[1].pos[1] = y1;
+
+	vertices[2].col[0] = color4v[0];
+	vertices[2].col[1] = color4v[1];
+	vertices[2].col[2] = color4v[2];
+	vertices[2].col[3] = color4v[3];
+	vertices[2].texcoord[0] = 1;
+	vertices[2].texcoord[1] = 0;
+	vertices[2].pos[0] = x1;
+	vertices[2].pos[1] = y0;
+
+	vertices[3].col[0] = color4v[0];
+	vertices[3].col[1] = color4v[1];
+	vertices[3].col[2] = color4v[2];
+	vertices[3].col[3] = color4v[3];
+	vertices[3].texcoord[0] = 0;
+	vertices[3].texcoord[1] = 0;
+	vertices[3].pos[0] = x0;
+	vertices[3].pos[1] = y0;
+
+	const uint32_t indices[] = { 0,1,2,2,3,0 };
+
+	R_DrawTexturedRectMask(gltexturenum, maskTextureId, vertices, _countof(vertices), indices, _countof(indices), programState, debugMetadata);
 }
 
 void R_DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata)

@@ -6592,6 +6592,11 @@ public:
 		R_DrawTexturedRect(gltexturenum, verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
 	}
 
+	void DrawTexturedRectMask(int gltexturenum, int maskTextureId, const texturedrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawTexturedRectMask(gltexturenum, maskTextureId, verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
+	}
+
 	void DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
 	{
 		R_DrawFilledRect(verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
@@ -6602,12 +6607,17 @@ public:
 		R_DrawTexturedQuad(gltexturenum, x0, y0, x1, y1, color4v, programState, debugMetadata);
 	}
 
+	void DrawTexturedQuadMask(int gltexturenum, int maskTextureId, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata) override
+	{
+		R_DrawTexturedQuadMask(gltexturenum, maskTextureId, x0, y0, x1, y1, color4v, programState, debugMetadata);
+	}
+
 	void DrawFilledQuad(int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata) override
 	{
 		R_DrawFilledQuad(x0, y0, x1, y1, color4v, programState, debugMetadata);
 	}
 
-	uint32_t CompileShaderFile(const char* vsfile, const char* fsfile, const char* vsdefine, const char* fsdefine)  override
+	uint32_t CompileShaderFile(const char* vsfile, const char* fsfile, const char* vsdefine, const char* fsdefine) override
 	{
 		return GL_CompileShaderFile(vsfile, fsfile, vsdefine, fsdefine);
 	}
