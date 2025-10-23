@@ -93,7 +93,7 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 
 		if (state & DRAW_TEXTURED_RECT_MASK_TEXTURE_ENABLED)
 		{
-			defs << "MASK_TEXTURE_ENABLED\n";
+			defs << "#define MASK_TEXTURE_ENABLED\n";
 		}
 
 		auto def = defs.str();
