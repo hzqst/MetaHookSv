@@ -28,7 +28,7 @@ void main()
 	#if defined(MASK_TEXTURE_ENABLED)
 		vec4 maskColor = texture(maskTex, v_diffusetexcoord.xy);
 
-		finalColor.a *= maskColor.r;
+		finalColor.a *= maskColor.a;
 	#endif
 
 	out_Diffuse = finalColor;

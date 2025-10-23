@@ -29,12 +29,6 @@ extern "C"
 	void MH_SysError(const char* fmt, ...);
 }
 
-#if 0
-#include <dbghelp.h>
-#include <shlobj.h>
-#pragma comment(lib,"dbghelp.lib")
-#endif
-
 extern "C"
 {
 	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
@@ -44,36 +38,13 @@ extern "C"
 	);
 }
 
-#if 0
-
-LONG WINAPI MinidumpCallback(EXCEPTION_POINTERS* pException)
-{
-	HANDLE hDumpFile = CreateFile("minidump.dmp", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hDumpFile != INVALID_HANDLE_VALUE) {
-
-		MINIDUMP_EXCEPTION_INFORMATION dumpInfo;
-		dumpInfo.ExceptionPointers = pException;
-		dumpInfo.ThreadId = GetCurrentThreadId();
-		dumpInfo.ClientPointers = TRUE;
-
-		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile, (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithFullMemory | MiniDumpWithProcessThreadData | MiniDumpWithThreadInfo), &dumpInfo, NULL, NULL);
-		CloseHandle(hDumpFile);
-	}
-
-	MessageBoxW(NULL, L"A fatal error occured, sorry but we have to terminate this program.", L"MetaHook Fatal Error", MB_ICONWARNING);
-	TerminateProcess((HANDLE)(-1), 0);
-
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-#endif
-
 HINTERFACEMODULE LoadFileSystemModule(void)
 {
 	HINTERFACEMODULE hModule = Sys_LoadModule("filesystem_stdio.dll");
 
 	if (!hModule)
 	{
-		MessageBox(NULL, "Could not load filesystem dll.\nFileSystem crashed during construction.", "Fatal Error", MB_ICONERROR);
+		MessageBoxA(NULL, "Could not load filesystem dll.\nFileSystem crashed during construction.", "Fatal Error", MB_ICONERROR);
 		return NULL;
 	}
 
@@ -250,7 +221,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (dwStatus && dwStatus != WAIT_ABANDONED)
 		{
-			MessageBox(NULL, "Could not launch game.\nOnly one instance of this game can be run at a time.", "Error", MB_ICONERROR);
+			MessageBoxA(NULL, "Could not launch game.\nOnly one instance of this game can be run at a time.", "Error", MB_ICONERROR);
 			return 0;
 		}
 	}
@@ -316,14 +287,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{
 				registry->WriteInt("EngineD3D", FALSE);
 
-				if (MessageBox(NULL, "The game has detected that the previous attempt to start in D3D video mode failed.\nThe game will now run attempt to run in openGL mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK)
+				if (MessageBoxA(NULL, "The game has detected that the previous attempt to start in D3D video mode failed.\nThe game will now run attempt to run in openGL mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK)
 					return 0;
 			}
 			else
 			{
 				registry->WriteString("EngineDLL", "sw.dll");
 
-				if (MessageBox(NULL, "The game has detected that the previous attempt to start in openGL video mode failed.\nThe game will now run in software mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK)
+				if (MessageBoxA(NULL, "The game has detected that the previous attempt to start in openGL video mode failed.\nThe game will now run in software mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK)
 					return 0;
 			}
 
@@ -474,7 +445,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				registry->WriteInt("ScreenBPP", 16);
 				registry->WriteString("EngineDLL", "sw.dll");
 
-				bContinue = MessageBox(NULL, "The specified video mode is not supported.\nThe game will now run in software mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK;
+				bContinue = MessageBoxA(NULL, "The specified video mode is not supported.\nThe game will now run in software mode.", "Video mode change failure", MB_OKCANCEL | MB_ICONWARNING) != IDOK;
 				break;
 			}
 		}
