@@ -201,4 +201,10 @@
   <data name="SaveDone" xml:space="preserve">
     <value>列表已保存。</value>
   </data>
+  <data name="Lang_US" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lang_CN" xml:space="preserve">
+    <value>中文</value>
+  </data>
 </root>

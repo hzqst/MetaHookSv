@@ -8,6 +8,7 @@ using ShellLink;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -494,7 +495,7 @@ public class MainViewModel : ViewModelBase
             }
         }
 
-        return libraryFolders.ToArray();
+        return [.. libraryFolders];
     }
     private static string? GetInstallDirFromManifest(string manifest)
     {
@@ -701,7 +702,7 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
-        using StreamWriter sw = new StreamWriter(pluginsLstPath);
+        using StreamWriter sw = new(pluginsLstPath);
         foreach (var p in _plugins)
         {
             string text = $"{(p.Enabled ? "" : ';')}{p.Name}";
@@ -720,6 +721,9 @@ public class MainViewModel : ViewModelBase
     private readonly ICommand _reset;
     public ICommand ResetCommand => _reset;
     #endregion
+
+    private readonly ICommand _changeLanguage;
+    public ICommand ChangeLanguageCommand => _changeLanguage;
 
     public MainViewModel()
     {
@@ -759,7 +763,7 @@ public class MainViewModel : ViewModelBase
             .Subscribe(_ =>
             {
                 this.RaisePropertyChanged(nameof(EditorUsable));
-               _pluginListInitialized = false;
+                _pluginListInitialized = false;
             });
         this.WhenAnyValue(x => x.SelectedTabIndex)
             .Where(idx => idx == 1) // 第二个 Tab 的索引为 1
@@ -830,8 +834,34 @@ public class MainViewModel : ViewModelBase
             },
             _ => true
             );
+        _changeLanguage = new Command(
+           obj =>
+           {
+               if (obj is string lang)
+               {
+                   var settingPath = Path.Combine(".", "lang");
+                   using StreamWriter sw = new(settingPath);
+                   sw.Write(lang);
+                   sw.Flush();
+                   string? currentExePath = Process.GetCurrentProcess().MainModule?.FileName;
+                   if (currentExePath == null || string.IsNullOrEmpty(currentExePath))
+                   {
+                       currentExePath = Environment.GetCommandLineArgs()[0];
+                   }
+                   string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+                   string arguments = string.Join(" ", args);
+                   var startInfo = new ProcessStartInfo
+                   {
+                       FileName = currentExePath,
+                       Arguments = arguments,
+                       UseShellExecute = true
+                   };
+                   Process.Start(startInfo);
+                   Environment.Exit(0);
+               }
+           },
+           _ => true
+       );
         #endregion
     }
-
-
 }
