@@ -1,0 +1,222 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
+    xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
+    xmlns:u="https://irihi.tech/ursa"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MetahookInstallerAvalonia.Views.MainView"
+             x:DataType="vm:MainViewModel">
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+    <!-- 资源定义 -->
+    <UserControl.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="TabItem">
+            <Setter Property="Padding" Value="15 20"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Margin" Value="0 2 0 0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#00000000"/>
+            <Setter Property="Foreground" Value="#555555"/>
+        </Style>
+        <Style Selector="TabItem:selected">
+            <Setter Property="Background" Value="#00000000"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="ComboBox">
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+            <Setter Property="Margin" Value="0 15 0 5"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="Margin" Value="0 0 0 5"/>
+        </Style>
+    </UserControl.Styles>
+    <Border CornerRadius="8" BorderBrush="#EEEEEE" BorderThickness="1">
+        <Grid Background="#DDF9F9F9">
+            <TabControl TabStripPlacement="Left" Background="Transparent" CornerRadius="8" Margin="10" SelectedIndex="{CompiledBinding SelectedTabIndex}">
+                <!-- 安装标签页 -->
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource install_app_list}" Width="16" Height="16"/>
+                            <Label Content="{x:Static lang:Resources.Tab_Install}"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="15">
+                            <!-- 游戏选择区域 -->
+                            <Grid ColumnDefinitions="*,3*,*,*">
+                                <TextBlock Classes="header" Text="{x:Static lang:Resources.SelectGame}" Grid.Column="0"/>
+                                <ComboBox ItemsSource="{CompiledBinding ModInfos}" SelectedItem="{CompiledBinding Selected}"
+                          Height="36" HorizontalContentAlignment="Left" Grid.Column="1">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{CompiledBinding Name}" Padding="2"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <u:IconButton Grid.Column="2" Icon="{StaticResource install_app_regular}" Content="{x:Static lang:Resources.Install}" Command="{CompiledBinding InstallCommand}"/>
+                                <u:IconButton Grid.Column="3" Icon="{StaticResource uninstall_app_regular}" Content="{x:Static lang:Resources.Uninstall}" Command="{CompiledBinding UninstallCommand}"/>
+                            </Grid>
+                            <Border Background="#22222222" Padding="15" BoxShadow="0 2 5 0 DarkGray">
+                                <StackPanel Spacing="15">
+                                    <!-- 游戏路径 -->
+                                    <StackPanel>
+                                        <TextBlock Classes="label" Text="{x:Static lang:Resources.GamePath}"/>
+                                        <u:PathPicker Height="36" AllowMultiple="False" SelectedPathsText="{CompiledBinding Selected.GamePath}" Title="{x:Static lang:Resources.OpenView}" UsePickerType="OpenFolder"/>
+                                    </StackPanel>
+                                    <!-- 详细信息网格 -->
+                                    <Grid ColumnDefinitions="* 2*" RowDefinitions="* *">
+                                        <!-- 图标预览 -->
+                                        <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
+                            Background="#F5F5F5" CornerRadius="6"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                            <Image Source="{CompiledBinding Selected.GameIcon}"
+                             Stretch="Uniform" Margin="10"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <!-- Steam AppId -->
+                                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="10">
+                                            <TextBlock Classes="label" Text="{x:Static lang:Resources.SteamAppId}"/>
+                                            <u:NumericUIntUpDown
+                                                InnerLeftContent="{x:Static lang:Resources.SteamAppId}"
+                                                Step="1" Value="{CompiledBinding Selected.AppID}" IsReadOnly="{CompiledBinding Selected.ReadOnly}" Height="36"/>
+                                        </StackPanel>
+                                        <!-- Mod目录 -->
+                                        <StackPanel Grid.Column="1" Grid.Row="1"  Margin="10">
+                                            <TextBlock Classes="label" Text="{x:Static lang:Resources.ModPath}"/>
+                                            <TextBox Text="{CompiledBinding Selected.Directory}" IsReadOnly="{CompiledBinding Selected.ReadOnly}" Height="36"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                <!-- 编辑标签页 -->
+                <TabItem IsEnabled="{CompiledBinding EditorUsable}">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource edit_regular}" Width="16" Height="16"/>
+                            <Label Content="{x:Static lang:Resources.Tab_Edit}"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel Spacing="20">
+                        <!-- 核心布局：左右列表 + 中间按钮 -->
+                        <Grid ColumnDefinitions="* 80 *" RowDefinitions="Auto">
+                            <!-- 左侧已启用插件列表 -->
+                            <Border Grid.Column="0" Background="White" CornerRadius="8"
+                        BorderBrush="#EEEEEE" BorderThickness="1" BoxShadow="0 2 8 0 #11000000">
+                                <StackPanel>
+                                    <Label Padding="12" FontSize="13" FontWeight="Medium" Foreground="#2C3E50"
+                               Background="#F5F7FA" Content="{x:Static lang:Resources.EnabledPlugins}"/>
+                                    <ListBox x:Name="PluginListBox"
+                             Margin="0" Padding="10"
+                             BorderThickness="0" Background="Transparent"
+                             ItemsSource="{CompiledBinding Plugins}"
+                             SelectedItem="{CompiledBinding SelectedPlugin}"
+                             SelectionMode="Single"
+                             Height="280">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0" Padding="5" Background="#F9F9F9" CornerRadius="3">
+                                                    <CheckBox IsChecked="{CompiledBinding Enabled}" Content="{CompiledBinding Name}"
+                                      Foreground="#333333" FontSize="14">
+                                                        <CheckBox.Styles>
+                                                            <Style Selector="CheckBox">
+                                                                <Setter Property="Padding" Value="4 0"/>
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </Style>
+                                                            <Style Selector="CheckBox:checked">
+                                                                <Setter Property="Foreground" Value="#3498DB"/>
+                                                            </Style>
+                                                        </CheckBox.Styles>
+                                                    </CheckBox>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+                            <!-- 中间操作按钮 -->
+                            <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="15"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <u:IconButton Icon="{StaticResource arrow_right_regular}"
+                                              Command="{CompiledBinding ToAvaliableCommand}"
+                                              Width="40" Height="40" CornerRadius="20"
+                          Background="#E6F4FF" Foreground="#3498DB"/>
+                                 <u:IconButton Icon="{StaticResource arrow_left_regular}"
+                                              Command="{CompiledBinding ToPluginsCommand}"
+                                              Width="40" Height="40" CornerRadius="20"
+                          Background="#E6F4FF" Foreground="#3498DB"/>
+                            </StackPanel>
+                            <!-- 右侧可用插件列表 -->
+                            <Border Grid.Column="2" Background="White" CornerRadius="8"
+                        BorderBrush="#EEEEEE" BorderThickness="1" BoxShadow="0 2 8 0 #11000000">
+                                <StackPanel>
+                                    <Label Padding="12" FontSize="13" FontWeight="Medium" Foreground="#2C3E50"
+                               Background="#F5F7FA" Content="{x:Static lang:Resources.AvailablePlugins}"/>
+                                    <ListBox x:Name="AvaliableListBox"
+                             Margin="0" Padding="5"
+                             BorderThickness="0" Background="Transparent"
+                             ItemsSource="{CompiledBinding Avaliable}"
+                             SelectedItem="{CompiledBinding SelectedAvaliable}"
+                             SelectionMode="Single"
+                             Height="280">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0" Padding="10" Background="#F9F9F9" CornerRadius="3"
+                                  Cursor="Hand">
+                                                    <Label Content="{CompiledBinding Name}" Foreground="#333333" FontSize="14"
+                                   Padding="4 0"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                        <!-- 列表项选中样式 -->
+                                        <ListBox.Styles>
+                                            <Style Selector="ListBoxItem:selected /template/ Border">
+                                                <Setter Property="Background" Value="#E6F4FF"/>
+                                                <Setter Property="BorderBrush" Value="#3498DB"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </Style>
+                                        </ListBox.Styles>
+                                    </ListBox>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <!-- 底部操作按钮 -->
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                            <u:IconButton Icon="{StaticResource reset_regular}" Content="{x:Static lang:Resources.Reset}" Command="{CompiledBinding ResetCommand}"/>
+                            <u:IconButton Icon="{StaticResource save_regular}" Content="{x:Static lang:Resources.Save}" Command="{CompiledBinding SaveCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Border>
+</UserControl>

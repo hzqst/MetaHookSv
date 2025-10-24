@@ -75,8 +75,9 @@ jobs:
       - name: Build and Publish MetahookInstaller
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          dotnet publish toolsrc/MetahookInstaller/MetahookInstaller.csproj -c Release --self-contained false
-          xcopy "toolsrc\MetahookInstaller\bin\Release\net8.0-windows\publish\*" "Build-Output\" /y /e
+          dotnet publish toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj -p:PublishProfile=FolderProfile
+          echo .pdb > exclude.txt
+          xcopy "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\*" "Build-Output\" /y /e /EXCLUDE:exclude.txt
         shell: cmd
 
       - name: Copy SteamAppsLocation to Build-Output
