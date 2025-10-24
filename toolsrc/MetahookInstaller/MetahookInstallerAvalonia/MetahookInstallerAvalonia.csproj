@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8" />
+    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.8" />
+    <PackageReference Include="Irihi.Ursa" Version="1.13.0" />
+    <PackageReference Include="Irihi.Ursa.ReactiveUIExtension" Version="1.1.0" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.13.0" />
+    <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.0" />
+    <PackageReference Include="securifybv.ShellLink" Version="0.1.0" />
+    <PackageReference Include="Semi.Avalonia" Version="11.3.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Lang\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Lang\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

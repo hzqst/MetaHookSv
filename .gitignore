@@ -11,8 +11,10 @@ Build/MetaHook_blob.exe
 Build/SDL2.dll
 Build/SDL3.dll
 
-toolsrc/MetahookInstaller/bin/
-toolsrc/MetahookInstaller/obj/
+toolsrc/MetahookInstaller/MetahookInstallerAvalonia/bin
+toolsrc/MetahookInstaller/MetahookInstallerAvalonia/obj
+toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/bin
+toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/obj
 
 .vs/
 
