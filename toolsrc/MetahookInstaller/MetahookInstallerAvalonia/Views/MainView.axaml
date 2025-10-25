@@ -7,6 +7,7 @@
     xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:behaviors="using:MetahookInstallerAvalonia.Behavior"
+    xmlns:conv="clr-namespace:MetahookInstallerAvalonia.Converters"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     x:Class="MetahookInstallerAvalonia.Views.MainView"
     x:DataType="vm:MainViewModel">
@@ -44,6 +45,7 @@
         <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
 
         <behaviors:ItemsListBoxDropHandler x:Key="ItemsDropHandler" />
+        <conv:ItemIndexConverter x:Key="ItemIndexConverter" />
     </UserControl.Resources>
     <UserControl.Styles>
         <!-- 基础样式 -->
@@ -94,12 +96,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8 12"/>
             <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="u|IconButton:hover">
-            <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
         </Style>
         <StyleInclude Source="avares://Xaml.Behaviors.Interactions.DragAndDrop/Styles.axaml" />
         <Style Selector="ListBox.ItemsDragAndDrop">
@@ -236,7 +233,7 @@
                         </TabItem.Header>
                         <StackPanel Spacing="20">
                             <!-- 核心布局：左右列表 + 中间按钮 -->
-                            <Grid ColumnDefinitions="* 80 *" RowDefinitions="Auto">
+                            <Grid ColumnDefinitions="* 70 *" RowDefinitions="Auto">
                                 <!-- 左侧已启用插件列表 -->
                                 <Border Grid.Column="0" 
                                         Background="{DynamicResource SurfaceBrush}" 
@@ -245,7 +242,7 @@
                                         BorderThickness="1" 
                                         Effect="{DynamicResource SmallShadow}">
                                     <StackPanel>
-                                        <Label Padding="12" 
+                                        <Label Padding="5" 
                                                FontSize="13" 
                                                FontWeight="Medium" 
                                                Foreground="{DynamicResource TextPrimaryBrush}"
@@ -253,35 +250,55 @@
                                                Content="{x:Static lang:Resources.EnabledPlugins}"/>
                                         <ListBox x:Name="PluginListBox"
                                                  Margin="0" 
-                                                 Padding="10"
+                                                 Padding="0"
                                                  BorderThickness="0" 
                                                  Background="Transparent"
                                                  ItemsSource="{CompiledBinding Plugins}"
                                                  SelectedItem="{CompiledBinding SelectedPlugin}"
                                                  SelectionMode="Single"
                                                  Classes="ItemsDragAndDrop"
-                                                 Height="280">
+                                                 Height="340">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate DataType="vm:PluginInfo">
-                                                    <Border Margin="0" 
-                                                            Padding="5" 
-                                                            Background="{DynamicResource SurfaceLightBrush}" 
-                                                            CornerRadius="3">
-                                                        <CheckBox IsChecked="{CompiledBinding Enabled}" 
-                                                                  Content="{CompiledBinding Name}"
-                                                                  Foreground="{DynamicResource TextSecondaryBrush}" 
-                                                                  FontSize="14">
-                                                            <CheckBox.Styles>
-                                                                <Style Selector="CheckBox">
-                                                                    <Setter Property="Padding" Value="4 0"/>
-                                                                    <Setter Property="Cursor" Value="Hand"/>
-                                                                </Style>
-                                                                <Style Selector="CheckBox:checked">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
-                                                                </Style>
-                                                            </CheckBox.Styles>
-                                                        </CheckBox>
-                                                    </Border>
+                                                    <DockPanel VerticalAlignment="Center">
+                                                        <PathIcon Width="10" Data="{StaticResource dotmatrix_4x6}"
+                                                                Margin="0 0 5 0" Cursor="Hand"
+                                                                HorizontalAlignment="Center"/>
+                                                        <Border Margin="0" Padding="5"
+                                                                Background="{DynamicResource SurfaceLightBrush}" 
+                                                                CornerRadius="3">
+                                                            <DockPanel VerticalAlignment="Center">
+                                                               <Border CornerRadius="10" Width="20" Height="20" 
+                                                                       Background="{DynamicResource PrimaryLightBrush}" Margin="0 0 8 0"
+                                                                       VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                                <TextBlock FontSize="12" TextAlignment="Center" VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}">
+                                                                    <TextBlock.Text>
+                                                                        <MultiBinding Converter="{StaticResource ItemIndexConverter}">
+                                                                            <Binding ElementName="PluginListBox" Path="ItemsSource"/>
+                                                                            <Binding />
+                                                                        </MultiBinding>
+                                                                    </TextBlock.Text>
+                                                                </TextBlock>
+                                                            </Border>
+															    <CheckBox 
+                                                                    IsChecked="{CompiledBinding Enabled}" 
+                                                                      Content="{CompiledBinding Name}"
+                                                                      Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                                      FontSize="14">
+                                                                <CheckBox.Styles>
+                                                                    <Style Selector="CheckBox">
+                                                                        <Setter Property="Padding" Value="4 0"/>
+                                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                                    </Style>
+                                                                    <Style Selector="CheckBox:checked">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                                                    </Style>
+                                                                </CheckBox.Styles>
+                                                            </CheckBox>
+                                                            </DockPanel>
+                                                        </Border>
+                                                    </DockPanel>
                                                 </DataTemplate>
                                             </ListBox.ItemTemplate>
                                         </ListBox>
@@ -316,7 +333,7 @@
                                         BorderThickness="1" 
                                         Effect="{DynamicResource SmallShadow}">
                                     <StackPanel>
-                                        <Label Padding="12" 
+                                        <Label Padding="5" 
                                                FontSize="13" 
                                                FontWeight="Medium" 
                                                Foreground="{DynamicResource TextPrimaryBrush}"
@@ -330,7 +347,7 @@
                                                  ItemsSource="{CompiledBinding Avaliable}"
                                                  SelectedItem="{CompiledBinding SelectedAvaliable}"
                                                  SelectionMode="Single"
-                                                 Height="280">
+                                                 Height="340">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Margin="0" 
@@ -358,14 +375,15 @@
                                 </Border>
                             </Grid>
                             <!-- 底部操作按钮 -->
-                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                                <u:IconButton Icon="{StaticResource reset_regular}" 
+                            <DockPanel HorizontalAlignment="Right">
+								<u:IconButton Icon="{StaticResource reload_regular}" 
                                               Content="{x:Static lang:Resources.Reset}" 
                                               Command="{CompiledBinding ResetCommand}"/>
+
                                 <u:IconButton Icon="{StaticResource save_regular}" 
                                               Content="{x:Static lang:Resources.Save}" 
                                               Command="{CompiledBinding SaveCommand}"/>
-                            </StackPanel>
+                            </DockPanel>
                         </StackPanel>
                     </TabItem>
                 </TabControl>
