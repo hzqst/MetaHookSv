@@ -160,6 +160,114 @@ namespace MetahookInstallerAvalonia.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Source files 的本地化字符串。
+        /// </summary>
+        public static string Folder_Build {
+            get {
+                return ResourceManager.GetString("Folder_Build", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Metahook Config 的本地化字符串。
+        /// </summary>
+        public static string Folder_Config {
+            get {
+                return ResourceManager.GetString("Folder_Config", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Game 的本地化字符串。
+        /// </summary>
+        public static string Folder_Game {
+            get {
+                return ResourceManager.GetString("Folder_Game", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Game Contents 的本地化字符串。
+        /// </summary>
+        public static string Folder_GameContent {
+            get {
+                return ResourceManager.GetString("Folder_GameContent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Installed 的本地化字符串。
+        /// </summary>
+        public static string Folder_Installed {
+            get {
+                return ResourceManager.GetString("Folder_Installed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Metahook 的本地化字符串。
+        /// </summary>
+        public static string Folder_Mod {
+            get {
+                return ResourceManager.GetString("Folder_Mod", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Metahook Contents 的本地化字符串。
+        /// </summary>
+        public static string Folder_ModContent {
+            get {
+                return ResourceManager.GetString("Folder_ModContent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Models 的本地化字符串。
+        /// </summary>
+        public static string Folder_Models {
+            get {
+                return ResourceManager.GetString("Folder_Models", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Player Models 的本地化字符串。
+        /// </summary>
+        public static string Folder_Player {
+            get {
+                return ResourceManager.GetString("Folder_Player", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Scripts 的本地化字符串。
+        /// </summary>
+        public static string Folder_Scripts {
+            get {
+                return ResourceManager.GetString("Folder_Scripts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Sound 的本地化字符串。
+        /// </summary>
+        public static string Folder_Sound {
+            get {
+                return ResourceManager.GetString("Folder_Sound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Sprites 的本地化字符串。
+        /// </summary>
+        public static string Folder_Sprites {
+            get {
+                return ResourceManager.GetString("Folder_Sprites", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Game Path: 的本地化字符串。
         /// </summary>
         public static string GamePath {

@@ -412,7 +412,7 @@ public class MainViewModel : ViewModelBase
                     {
                         NotificationManager?.Show(new Notification(
                                 Resources.Warning,
-                                string.Format(Resources.DeleteFailed, filePath, ex.Message)), 
+                                string.Format(Resources.DeleteFailed, filePath, ex.Message)),
                             NotificationType.Warning,
                             new TimeSpan(0, 0, 5), true,
                             classes: ["Light"]);
@@ -606,7 +606,7 @@ public class MainViewModel : ViewModelBase
 
     public void RecaculatePluginIndex()
     {
-        for(var i  = 0; i < _plugins.Count; i++)
+        for (var i = 0; i < _plugins.Count; i++)
         {
             _plugins[i].Index = i + 1;
         }
@@ -732,6 +732,9 @@ public class MainViewModel : ViewModelBase
 
     private readonly ICommand _toastWarning;
     public ICommand ToastWarningCommand => _toastWarning;
+
+    private readonly ICommand _openFolder;
+    public ICommand OpenFolderCommand => _openFolder;
 
     public MainViewModel()
     {
@@ -878,15 +881,38 @@ public class MainViewModel : ViewModelBase
                if (arg is not string msg)
                    return;
                ToastManager?.Show(new Toast(
-                   msg), 
+                   msg),
                    showIcon: true,
                    showClose: false,
                    type: NotificationType.Warning,
-                   expiration: new TimeSpan(0,0,3),
+                   expiration: new TimeSpan(0, 0, 3),
                    classes: ["Light"]
                );
            },
            _ => true
+        );
+        _openFolder = new Command(
+            arg =>
+            {
+                if (arg is not string target || Selected == null)
+                    return;
+                target = target.Replace("{GAME}", Selected.GamePath);
+                target = target.Replace("{INSTALLED}", Selected.InstallPath);
+                if (!Directory.Exists(target))
+                {
+                    ToastManager?.Show(new Toast(
+                       string.Format(Resources.FileNotFound, target)),
+                       showIcon: true,
+                       showClose: false,
+                       type: NotificationType.Warning,
+                       expiration: new TimeSpan(0, 0, 3),
+                       classes: ["Light"]
+                   );
+                    return;
+                }
+                Process.Start("explorer.exe", Path.GetFullPath(target));
+            },
+            _ => true
         );
         #endregion
     }

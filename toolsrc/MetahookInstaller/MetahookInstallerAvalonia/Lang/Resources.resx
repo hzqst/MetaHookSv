@@ -222,4 +222,40 @@
   <data name="Tab_Open" xml:space="preserve">
     <value>Open</value>
   </data>
+  <data name="Folder_Mod" xml:space="preserve">
+    <value>Metahook</value>
+  </data>
+  <data name="Folder_Game" xml:space="preserve">
+    <value>Game</value>
+  </data>
+  <data name="Folder_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Folder_Build" xml:space="preserve">
+    <value>Source files</value>
+  </data>
+  <data name="Folder_Player" xml:space="preserve">
+    <value>Player Models</value>
+  </data>
+  <data name="Folder_Sprites" xml:space="preserve">
+    <value>Sprites</value>
+  </data>
+  <data name="Folder_Sound" xml:space="preserve">
+    <value>Sound</value>
+  </data>
+  <data name="Folder_Models" xml:space="preserve">
+    <value>Models</value>
+  </data>
+  <data name="Folder_Scripts" xml:space="preserve">
+    <value>Scripts</value>
+  </data>
+  <data name="Folder_GameContent" xml:space="preserve">
+    <value>Game Contents</value>
+  </data>
+  <data name="Folder_ModContent" xml:space="preserve">
+    <value>Metahook Contents</value>
+  </data>
+  <data name="Folder_Config" xml:space="preserve">
+    <value>Metahook Config</value>
+  </data>
 </root>

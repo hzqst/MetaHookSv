@@ -220,6 +220,42 @@
     <value>已取消</value>
   </data>
   <data name="Tab_Open" xml:space="preserve">
-    <value>打开Mod文件夹</value>
+    <value>打开</value>
+  </data>
+  <data name="Folder_Mod" xml:space="preserve">
+    <value>Metahook</value>
+  </data>
+  <data name="Folder_Game" xml:space="preserve">
+    <value>游戏文件夹</value>
+  </data>
+  <data name="Folder_Installed" xml:space="preserve">
+    <value>安装文件夹</value>
+  </data>
+  <data name="Folder_Build" xml:space="preserve">
+    <value>Mod下载路径</value>
+  </data>
+  <data name="Folder_Player" xml:space="preserve">
+    <value>人物模型文件夹</value>
+  </data>
+  <data name="Folder_Sprites" xml:space="preserve">
+    <value>精灵图文件夹</value>
+  </data>
+  <data name="Folder_Sound" xml:space="preserve">
+    <value>音效文件夹</value>
+  </data>
+  <data name="Folder_Models" xml:space="preserve">
+    <value>模型文件夹</value>
+  </data>
+  <data name="Folder_Scripts" xml:space="preserve">
+    <value>脚本文件夹</value>
+  </data>
+  <data name="Folder_GameContent" xml:space="preserve">
+    <value>游戏内容</value>
+  </data>
+  <data name="Folder_ModContent" xml:space="preserve">
+    <value>Metahook内容</value>
+  </data>
+  <data name="Folder_Config" xml:space="preserve">
+    <value>Metahook配置</value>
   </data>
 </root>
