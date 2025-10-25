@@ -207,4 +207,19 @@
   <data name="Lang_CN" xml:space="preserve">
     <value>中文</value>
   </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>确定是否要应用此修改？</value>
+  </data>
+  <data name="ConfirmInstall" xml:space="preserve">
+    <value>安装新文件将替换原有文件，且此操作不可逆。</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>卸载将删除包括metahook文件夹在内的所有metahook相关文件，且此操纵不可逆。</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="Tab_Open" xml:space="preserve">
+    <value>打开Mod文件夹</value>
+  </data>
 </root>

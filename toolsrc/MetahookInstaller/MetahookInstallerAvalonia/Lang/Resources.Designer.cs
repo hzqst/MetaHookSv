@@ -79,6 +79,42 @@ namespace MetahookInstallerAvalonia.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Cancelled 的本地化字符串。
+        /// </summary>
+        public static string Cancelled {
+            get {
+                return ResourceManager.GetString("Cancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Installing the new file will replace the original file, and this operation cannot be reversed. 的本地化字符串。
+        /// </summary>
+        public static string ConfirmInstall {
+            get {
+                return ResourceManager.GetString("ConfirmInstall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Confirmed to apply modification? 的本地化字符串。
+        /// </summary>
+        public static string ConfirmTitle {
+            get {
+                return ResourceManager.GetString("ConfirmTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Uninstalling will remove all Metahook-related files, including the metahook folder, and this action cannot be reversed. 的本地化字符串。
+        /// </summary>
+        public static string ConfirmUninstall {
+            get {
+                return ResourceManager.GetString("ConfirmUninstall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Critical Error 的本地化字符串。
         /// </summary>
         public static string CriticalError {
@@ -291,6 +327,15 @@ namespace MetahookInstallerAvalonia.Lang {
         public static string Tab_Install {
             get {
                 return ResourceManager.GetString("Tab_Install", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Open 的本地化字符串。
+        /// </summary>
+        public static string Tab_Open {
+            get {
+                return ResourceManager.GetString("Tab_Open", resourceCulture);
             }
         }
         

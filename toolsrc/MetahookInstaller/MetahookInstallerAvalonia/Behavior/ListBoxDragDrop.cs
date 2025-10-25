@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactions.DragAndDrop;
 using MetahookInstallerAvalonia.ViewModels;
+using System.Collections.ObjectModel;
 
 namespace MetahookInstallerAvalonia.Behavior;
 
@@ -35,6 +36,7 @@ public class ItemsListBoxDropHandler : DropHandlerBase
                     {
                         var clone = sourceItem.Clone();
                         InsertItem(items, clone, targetIndex + 1);
+                        vm.RecaculatePluginIndex();
                     }
                     return true;
                 }
@@ -43,6 +45,7 @@ public class ItemsListBoxDropHandler : DropHandlerBase
                     if (bExecute)
                     {
                         MoveItem(items, sourceIndex, targetIndex);
+                        vm.RecaculatePluginIndex();
                     }
                     return true;
                 }
@@ -51,6 +54,7 @@ public class ItemsListBoxDropHandler : DropHandlerBase
                     if (bExecute)
                     {
                         SwapItem(items, sourceIndex, targetIndex);
+                        vm.RecaculatePluginIndex();
                     }
                     return true;
                 }

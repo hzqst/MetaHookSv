@@ -207,4 +207,19 @@
   <data name="Lang_CN" xml:space="preserve">
     <value>中文</value>
   </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>Confirmed to apply modification?</value>
+  </data>
+  <data name="ConfirmInstall" xml:space="preserve">
+    <value>Installing the new file will replace the original file, and this operation cannot be reversed.</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>Uninstalling will remove all Metahook-related files, including the metahook folder, and this action cannot be reversed.</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Tab_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
 </root>

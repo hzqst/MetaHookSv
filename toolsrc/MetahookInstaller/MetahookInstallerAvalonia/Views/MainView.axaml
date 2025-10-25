@@ -7,7 +7,6 @@
     xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:behaviors="using:MetahookInstallerAvalonia.Behavior"
-    xmlns:conv="clr-namespace:MetahookInstallerAvalonia.Converters"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     x:Class="MetahookInstallerAvalonia.Views.MainView"
     x:DataType="vm:MainViewModel">
@@ -45,7 +44,6 @@
         <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
 
         <behaviors:ItemsListBoxDropHandler x:Key="ItemsDropHandler" />
-        <conv:ItemIndexConverter x:Key="ItemIndexConverter" />
     </UserControl.Resources>
     <UserControl.Styles>
         <!-- 基础样式 -->
@@ -160,14 +158,30 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
-                                    <u:IconButton Grid.Column="2" 
+                                    
+                                    <u:PopConfirm Grid.Column="2" 
+                                        PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
+                                              HorizontalAlignment="Left"
+                                              PopupContent="{x:Static lang:Resources.ConfirmInstall}"
+                                              ConfirmCommand="{CompiledBinding InstallCommand}"
+                                              CancelCommand="{CompiledBinding ToastWarningCommand}"
+                                              CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
+                                            <u:IconButton
                                                   Icon="{StaticResource install_app_regular}" 
-                                                  Content="{x:Static lang:Resources.Install}" 
-                                                  Command="{CompiledBinding InstallCommand}"/>
-                                    <u:IconButton Grid.Column="3" 
+                                                  Content="{x:Static lang:Resources.Install}"/>
+                                    </u:PopConfirm>
+                                    <u:PopConfirm Grid.Column="3" 
+                                        PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
+                                              HorizontalAlignment="Left"
+                                              PopupContent="{x:Static lang:Resources.ConfirmUninstall}"
+                                              ConfirmCommand="{CompiledBinding UninstallCommand}"
+                                              CancelCommand="{CompiledBinding ToastWarningCommand}"
+                                              CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
+                                           <u:IconButton
                                                   Icon="{StaticResource uninstall_app_regular}" 
-                                                  Content="{x:Static lang:Resources.Uninstall}" 
-                                                  Command="{CompiledBinding UninstallCommand}"/>
+                                                  Content="{x:Static lang:Resources.Uninstall}"/>
+                                    </u:PopConfirm>
+                                    
                                 </Grid>
                                 <!-- 亚克力卡片容器 -->
                                 <Border Background="{DynamicResource SurfaceAcrylicBrush}" 
@@ -272,14 +286,8 @@
                                                                        Background="{DynamicResource PrimaryLightBrush}" Margin="0 0 8 0"
                                                                        VerticalAlignment="Center" HorizontalAlignment="Center">
                                                                 <TextBlock FontSize="12" TextAlignment="Center" VerticalAlignment="Center"
-                                                                           Foreground="{DynamicResource TextSecondaryBrush}">
-                                                                    <TextBlock.Text>
-                                                                        <MultiBinding Converter="{StaticResource ItemIndexConverter}">
-                                                                            <Binding ElementName="PluginListBox" Path="ItemsSource"/>
-                                                                            <Binding />
-                                                                        </MultiBinding>
-                                                                    </TextBlock.Text>
-                                                                </TextBlock>
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                           Text="{CompiledBinding Index}"/>
                                                             </Border>
 															    <CheckBox 
                                                                     IsChecked="{CompiledBinding Enabled}" 
@@ -385,6 +393,16 @@
                                               Command="{CompiledBinding SaveCommand}"/>
                             </DockPanel>
                         </StackPanel>
+                    </TabItem>
+                    <!-- 打开安装位置 -->
+                    <TabItem IsEnabled="{CompiledBinding EditorUsable}">
+                        <TabItem.Header>
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource edit_regular}" Width="16" Height="16"/>
+                                <Label Content="{x:Static lang:Resources.Tab_Open}"/>
+                            </StackPanel>
+                        </TabItem.Header>
+						
                     </TabItem>
                 </TabControl>
             </Grid>

@@ -23,5 +23,15 @@ public partial class MainView : UserControl
             : new WindowNotificationManager(topLevel);
         if (vm.NotificationManager != null)
             vm.NotificationManager.Position = Avalonia.Controls.Notifications.NotificationPosition.BottomLeft;
+        vm.ToastManager = new WindowToastManager(TopLevel.GetTopLevel(this)) { MaxItems = 3 };
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        if (DataContext is not MainViewModel vm)
+            return;
+        vm?.ToastManager?.Uninstall();
+        vm?.NotificationManager?.Uninstall();
     }
 }

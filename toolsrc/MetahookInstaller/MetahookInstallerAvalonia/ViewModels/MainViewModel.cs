@@ -23,6 +23,7 @@ namespace MetahookInstallerAvalonia.ViewModels;
 public class MainViewModel : ViewModelBase
 {
     public WindowNotificationManager? NotificationManager { get; set; }
+    public WindowToastManager? ToastManager { get; set; }
     #region Page 1
     private static string? FindBuildPath()
     {
@@ -345,10 +346,10 @@ public class MainViewModel : ViewModelBase
         lnk.WriteToFile(shortcutPath);
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.InstallDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.InstallDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
         _pluginListInitialized = false;
         this.RaisePropertyChanged(nameof(EditorUsable));
     }
@@ -390,10 +391,11 @@ public class MainViewModel : ViewModelBase
                     catch (Exception ex)
                     {
                         NotificationManager?.Show(new Notification(
-                            Resources.Warning,
-                            string.Format(Resources.DeleteFailed, dirPath, ex.Message),
-                            NotificationType.Warning
-                            ));
+                                Resources.Warning,
+                                string.Format(Resources.DeleteFailed, dirPath, ex.Message)),
+                            NotificationType.Warning,
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
                     }
                 }
             }
@@ -409,10 +411,11 @@ public class MainViewModel : ViewModelBase
                     catch (Exception ex)
                     {
                         NotificationManager?.Show(new Notification(
-                            Resources.Warning,
-                            string.Format(Resources.DeleteFailed, filePath, ex.Message),
-                            NotificationType.Warning
-                            ));
+                                Resources.Warning,
+                                string.Format(Resources.DeleteFailed, filePath, ex.Message)), 
+                            NotificationType.Warning,
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
                     }
                 }
             }
@@ -436,11 +439,12 @@ public class MainViewModel : ViewModelBase
         }
 
         NotificationManager?.Show(new Notification(
-                            Resources.Success,
-                            Resources.UninstallDone,
+                                Resources.Success,
+                                Resources.UninstallDone
+                            ),
                             NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
         _pluginListInitialized = false;
         this.RaisePropertyChanged(nameof(EditorUsable));
     }
@@ -600,6 +604,14 @@ public class MainViewModel : ViewModelBase
     public ICommand ToAvaliableCommand => _toAvaliable;
     public ICommand ToPluginsCommand => _toPlugins;
 
+    public void RecaculatePluginIndex()
+    {
+        for(var i  = 0; i < _plugins.Count; i++)
+        {
+            _plugins[i].Index = i + 1;
+        }
+    }
+
     private bool IsEditorUsable()
     {
         if (Selected == null || Selected.GamePath == null)
@@ -669,12 +681,13 @@ public class MainViewModel : ViewModelBase
         {
             _avaliable.Add(p);
         }
+        RecaculatePluginIndex();
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.ResetDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.ResetDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
         return true;
     }
     private void SavePluginList()
@@ -702,10 +715,10 @@ public class MainViewModel : ViewModelBase
         }
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.SaveDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.SaveDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
     }
     private readonly ICommand _save;
     public ICommand SaveCommand => _save;
@@ -716,6 +729,9 @@ public class MainViewModel : ViewModelBase
 
     private readonly ICommand _changeLanguage;
     public ICommand ChangeLanguageCommand => _changeLanguage;
+
+    private readonly ICommand _toastWarning;
+    public ICommand ToastWarningCommand => _toastWarning;
 
     public MainViewModel()
     {
@@ -797,6 +813,7 @@ public class MainViewModel : ViewModelBase
                 {
                     Plugins.Remove(plugin);
                     Avaliable.Add(plugin);
+                    RecaculatePluginIndex();
                 }
             },
             _ => true
@@ -808,6 +825,7 @@ public class MainViewModel : ViewModelBase
                 {
                     Avaliable.Remove(plugin);
                     Plugins.Add(plugin);
+                    RecaculatePluginIndex();
                 }
             },
             _ => true
@@ -825,7 +843,7 @@ public class MainViewModel : ViewModelBase
                 InitPluginList();
             },
             _ => true
-            );
+        );
         _changeLanguage = new Command(
            obj =>
            {
@@ -853,7 +871,23 @@ public class MainViewModel : ViewModelBase
                }
            },
            _ => true
-       );
+        );
+        _toastWarning = new Command(
+           arg =>
+           {
+               if (arg is not string msg)
+                   return;
+               ToastManager?.Show(new Toast(
+                   msg), 
+                   showIcon: true,
+                   showClose: false,
+                   type: NotificationType.Warning,
+                   expiration: new TimeSpan(0,0,3),
+                   classes: ["Light"]
+               );
+           },
+           _ => true
+        );
         #endregion
     }
 }
