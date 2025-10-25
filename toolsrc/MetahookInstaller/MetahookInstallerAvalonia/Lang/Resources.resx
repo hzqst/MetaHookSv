@@ -201,4 +201,61 @@
   <data name="SaveDone" xml:space="preserve">
     <value>Saved.</value>
   </data>
+  <data name="Lang_US" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lang_CN" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>Confirmed to apply modification?</value>
+  </data>
+  <data name="ConfirmInstall" xml:space="preserve">
+    <value>Installing the new file will replace the original file, and this operation cannot be reversed.</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>Uninstalling will remove all Metahook-related files, including the metahook folder, and this action cannot be reversed.</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Tab_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Folder_Mod" xml:space="preserve">
+    <value>Metahook</value>
+  </data>
+  <data name="Folder_Game" xml:space="preserve">
+    <value>Game</value>
+  </data>
+  <data name="Folder_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Folder_Build" xml:space="preserve">
+    <value>Source files</value>
+  </data>
+  <data name="Folder_Player" xml:space="preserve">
+    <value>Player Models</value>
+  </data>
+  <data name="Folder_Sprites" xml:space="preserve">
+    <value>Sprites</value>
+  </data>
+  <data name="Folder_Sound" xml:space="preserve">
+    <value>Sound</value>
+  </data>
+  <data name="Folder_Models" xml:space="preserve">
+    <value>Models</value>
+  </data>
+  <data name="Folder_Scripts" xml:space="preserve">
+    <value>Scripts</value>
+  </data>
+  <data name="Folder_GameContent" xml:space="preserve">
+    <value>Game Contents</value>
+  </data>
+  <data name="Folder_ModContent" xml:space="preserve">
+    <value>Metahook Contents</value>
+  </data>
+  <data name="Folder_Config" xml:space="preserve">
+    <value>Metahook Config</value>
+  </data>
 </root>

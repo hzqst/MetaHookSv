@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Input;
+using System.Diagnostics;
 
 namespace MetahookInstallerAvalonia.Views;
 
@@ -27,5 +28,10 @@ public partial class MainWindow : Window
     private void CloseButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void GithubButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo("https://github.com/hzqst/MetaHookSv") { UseShellExecute = true });
     }
 }

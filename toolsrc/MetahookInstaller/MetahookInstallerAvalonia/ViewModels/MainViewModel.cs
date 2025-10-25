@@ -8,6 +8,7 @@ using ShellLink;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -22,6 +23,7 @@ namespace MetahookInstallerAvalonia.ViewModels;
 public class MainViewModel : ViewModelBase
 {
     public WindowNotificationManager? NotificationManager { get; set; }
+    public WindowToastManager? ToastManager { get; set; }
     #region Page 1
     private static string? FindBuildPath()
     {
@@ -344,10 +346,10 @@ public class MainViewModel : ViewModelBase
         lnk.WriteToFile(shortcutPath);
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.InstallDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.InstallDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
         _pluginListInitialized = false;
         this.RaisePropertyChanged(nameof(EditorUsable));
     }
@@ -389,10 +391,11 @@ public class MainViewModel : ViewModelBase
                     catch (Exception ex)
                     {
                         NotificationManager?.Show(new Notification(
-                            Resources.Warning,
-                            string.Format(Resources.DeleteFailed, dirPath, ex.Message),
-                            NotificationType.Warning
-                            ));
+                                Resources.Warning,
+                                string.Format(Resources.DeleteFailed, dirPath, ex.Message)),
+                            NotificationType.Warning,
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
                     }
                 }
             }
@@ -408,10 +411,11 @@ public class MainViewModel : ViewModelBase
                     catch (Exception ex)
                     {
                         NotificationManager?.Show(new Notification(
-                            Resources.Warning,
-                            string.Format(Resources.DeleteFailed, filePath, ex.Message),
-                            NotificationType.Warning
-                            ));
+                                Resources.Warning,
+                                string.Format(Resources.DeleteFailed, filePath, ex.Message)),
+                            NotificationType.Warning,
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
                     }
                 }
             }
@@ -435,11 +439,12 @@ public class MainViewModel : ViewModelBase
         }
 
         NotificationManager?.Show(new Notification(
-                            Resources.Success,
-                            Resources.UninstallDone,
+                                Resources.Success,
+                                Resources.UninstallDone
+                            ),
                             NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            new TimeSpan(0, 0, 5), true,
+                            classes: ["Light"]);
         _pluginListInitialized = false;
         this.RaisePropertyChanged(nameof(EditorUsable));
     }
@@ -494,7 +499,7 @@ public class MainViewModel : ViewModelBase
             }
         }
 
-        return libraryFolders.ToArray();
+        return [.. libraryFolders];
     }
     private static string? GetInstallDirFromManifest(string manifest)
     {
@@ -552,14 +557,6 @@ public class MainViewModel : ViewModelBase
 
 
     #region Page 2
-    public class PluginInfo(string name, bool enabled)
-    {
-        private readonly string _name = name;
-        private bool _enabled = enabled;
-
-        public string Name { get => _name; }
-        public bool Enabled { get => _enabled; set => _enabled = value; }
-    }
     public class PluginInfoComparer : IEqualityComparer<PluginInfo>
     {
         public bool Equals(PluginInfo? x, PluginInfo? y)
@@ -606,6 +603,14 @@ public class MainViewModel : ViewModelBase
     private readonly ICommand _toPlugins;
     public ICommand ToAvaliableCommand => _toAvaliable;
     public ICommand ToPluginsCommand => _toPlugins;
+
+    public void RecaculatePluginIndex()
+    {
+        for (var i = 0; i < _plugins.Count; i++)
+        {
+            _plugins[i].Index = i + 1;
+        }
+    }
 
     private bool IsEditorUsable()
     {
@@ -676,12 +681,13 @@ public class MainViewModel : ViewModelBase
         {
             _avaliable.Add(p);
         }
+        RecaculatePluginIndex();
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.ResetDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.ResetDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
         return true;
     }
     private void SavePluginList()
@@ -701,7 +707,7 @@ public class MainViewModel : ViewModelBase
             return;
         }
 
-        using StreamWriter sw = new StreamWriter(pluginsLstPath);
+        using StreamWriter sw = new(pluginsLstPath);
         foreach (var p in _plugins)
         {
             string text = $"{(p.Enabled ? "" : ';')}{p.Name}";
@@ -709,10 +715,10 @@ public class MainViewModel : ViewModelBase
         }
         NotificationManager?.Show(new Notification(
                             Resources.Success,
-                            Resources.SaveDone,
-                            NotificationType.Success,
-                            new TimeSpan(0, 0, 5)
-                            ));
+                            Resources.SaveDone),
+                        NotificationType.Success,
+                        new TimeSpan(0, 0, 5), true,
+                        classes: ["Light"]);
     }
     private readonly ICommand _save;
     public ICommand SaveCommand => _save;
@@ -720,6 +726,15 @@ public class MainViewModel : ViewModelBase
     private readonly ICommand _reset;
     public ICommand ResetCommand => _reset;
     #endregion
+
+    private readonly ICommand _changeLanguage;
+    public ICommand ChangeLanguageCommand => _changeLanguage;
+
+    private readonly ICommand _toastWarning;
+    public ICommand ToastWarningCommand => _toastWarning;
+
+    private readonly ICommand _openFolder;
+    public ICommand OpenFolderCommand => _openFolder;
 
     public MainViewModel()
     {
@@ -759,7 +774,7 @@ public class MainViewModel : ViewModelBase
             .Subscribe(_ =>
             {
                 this.RaisePropertyChanged(nameof(EditorUsable));
-               _pluginListInitialized = false;
+                _pluginListInitialized = false;
             });
         this.WhenAnyValue(x => x.SelectedTabIndex)
             .Where(idx => idx == 1) // 第二个 Tab 的索引为 1
@@ -801,6 +816,7 @@ public class MainViewModel : ViewModelBase
                 {
                     Plugins.Remove(plugin);
                     Avaliable.Add(plugin);
+                    RecaculatePluginIndex();
                 }
             },
             _ => true
@@ -812,6 +828,7 @@ public class MainViewModel : ViewModelBase
                 {
                     Avaliable.Remove(plugin);
                     Plugins.Add(plugin);
+                    RecaculatePluginIndex();
                 }
             },
             _ => true
@@ -829,9 +846,74 @@ public class MainViewModel : ViewModelBase
                 InitPluginList();
             },
             _ => true
-            );
+        );
+        _changeLanguage = new Command(
+           obj =>
+           {
+               if (obj is string lang)
+               {
+                   var settingPath = Path.Combine(".", "lang");
+                   using StreamWriter sw = new(settingPath);
+                   sw.Write(lang);
+                   sw.Flush();
+                   string? currentExePath = Process.GetCurrentProcess().MainModule?.FileName;
+                   if (currentExePath == null || string.IsNullOrEmpty(currentExePath))
+                   {
+                       currentExePath = Environment.GetCommandLineArgs()[0];
+                   }
+                   string[] args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+                   string arguments = string.Join(" ", args);
+                   var startInfo = new ProcessStartInfo
+                   {
+                       FileName = currentExePath,
+                       Arguments = arguments,
+                       UseShellExecute = true
+                   };
+                   Process.Start(startInfo);
+                   Environment.Exit(0);
+               }
+           },
+           _ => true
+        );
+        _toastWarning = new Command(
+           arg =>
+           {
+               if (arg is not string msg)
+                   return;
+               ToastManager?.Show(new Toast(
+                   msg),
+                   showIcon: true,
+                   showClose: false,
+                   type: NotificationType.Warning,
+                   expiration: new TimeSpan(0, 0, 3),
+                   classes: ["Light"]
+               );
+           },
+           _ => true
+        );
+        _openFolder = new Command(
+            arg =>
+            {
+                if (arg is not string target || Selected == null)
+                    return;
+                target = target.Replace("{GAME}", Selected.GamePath);
+                target = target.Replace("{INSTALLED}", Selected.InstallPath);
+                if (!Directory.Exists(target))
+                {
+                    ToastManager?.Show(new Toast(
+                       string.Format(Resources.FileNotFound, target)),
+                       showIcon: true,
+                       showClose: false,
+                       type: NotificationType.Warning,
+                       expiration: new TimeSpan(0, 0, 3),
+                       classes: ["Light"]
+                   );
+                    return;
+                }
+                Process.Start("explorer.exe", Path.GetFullPath(target));
+            },
+            _ => true
+        );
         #endregion
     }
-
-
 }

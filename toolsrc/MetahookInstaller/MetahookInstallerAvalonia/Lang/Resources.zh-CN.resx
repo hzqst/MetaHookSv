@@ -201,4 +201,61 @@
   <data name="SaveDone" xml:space="preserve">
     <value>列表已保存。</value>
   </data>
+  <data name="Lang_US" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lang_CN" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="ConfirmTitle" xml:space="preserve">
+    <value>确定是否要应用此修改？</value>
+  </data>
+  <data name="ConfirmInstall" xml:space="preserve">
+    <value>安装新文件将替换原有文件，且此操作不可逆。</value>
+  </data>
+  <data name="ConfirmUninstall" xml:space="preserve">
+    <value>卸载将删除包括metahook文件夹在内的所有metahook相关文件，且此操纵不可逆。</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="Tab_Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Folder_Mod" xml:space="preserve">
+    <value>Metahook</value>
+  </data>
+  <data name="Folder_Game" xml:space="preserve">
+    <value>游戏文件夹</value>
+  </data>
+  <data name="Folder_Installed" xml:space="preserve">
+    <value>安装文件夹</value>
+  </data>
+  <data name="Folder_Build" xml:space="preserve">
+    <value>Mod下载路径</value>
+  </data>
+  <data name="Folder_Player" xml:space="preserve">
+    <value>人物模型文件夹</value>
+  </data>
+  <data name="Folder_Sprites" xml:space="preserve">
+    <value>精灵图文件夹</value>
+  </data>
+  <data name="Folder_Sound" xml:space="preserve">
+    <value>音效文件夹</value>
+  </data>
+  <data name="Folder_Models" xml:space="preserve">
+    <value>模型文件夹</value>
+  </data>
+  <data name="Folder_Scripts" xml:space="preserve">
+    <value>脚本文件夹</value>
+  </data>
+  <data name="Folder_GameContent" xml:space="preserve">
+    <value>游戏内容</value>
+  </data>
+  <data name="Folder_ModContent" xml:space="preserve">
+    <value>Metahook内容</value>
+  </data>
+  <data name="Folder_Config" xml:space="preserve">
+    <value>Metahook配置</value>
+  </data>
 </root>

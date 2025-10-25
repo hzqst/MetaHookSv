@@ -22,6 +22,7 @@
     <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.0" />
     <PackageReference Include="securifybv.ShellLink" Version="0.1.0" />
     <PackageReference Include="Semi.Avalonia" Version="11.3.7" />
+    <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.6.6" />
   </ItemGroup>
 
   <ItemGroup>
