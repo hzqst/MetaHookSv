@@ -553,14 +553,6 @@ public class MainViewModel : ViewModelBase
 
 
     #region Page 2
-    public class PluginInfo(string name, bool enabled)
-    {
-        private readonly string _name = name;
-        private bool _enabled = enabled;
-
-        public string Name { get => _name; }
-        public bool Enabled { get => _enabled; set => _enabled = value; }
-    }
     public class PluginInfoComparer : IEqualityComparer<PluginInfo>
     {
         public bool Equals(PluginInfo? x, PluginInfo? y)

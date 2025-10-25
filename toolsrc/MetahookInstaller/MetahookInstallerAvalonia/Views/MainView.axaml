@@ -6,15 +6,14 @@
     xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
     xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
     xmlns:u="https://irihi.tech/ursa"
+    xmlns:behaviors="using:MetahookInstallerAvalonia.Behavior"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     x:Class="MetahookInstallerAvalonia.Views.MainView"
     x:DataType="vm:MainViewModel">
     <Design.DataContext>
         <vm:MainViewModel />
     </Design.DataContext>
-    <!-- 资源定义 - 支持主题切换 -->
     <UserControl.Resources>
-        <!-- 基础颜色 - 可根据主题切换 -->
         <Color x:Key="BackgroundColor">#00000000</Color>
         <Color x:Key="BackgroundAcrylicColor">#11F9F9F9</Color>
         <Color x:Key="SurfaceColor">#11FFFFFF</Color>
@@ -43,6 +42,8 @@
         <DropShadowEffect x:Key="SmallShadow" BlurRadius="5" Color="{DynamicResource ShadowColor}"/>
         <DropShadowEffect x:Key="MediumShadow" BlurRadius="8" Color="{DynamicResource ShadowColor}"/>
         <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
+
+        <behaviors:ItemsListBoxDropHandler x:Key="ItemsDropHandler" />
     </UserControl.Resources>
     <UserControl.Styles>
         <!-- 基础样式 -->
@@ -100,6 +101,29 @@
             <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
         </Style>
+        <StyleInclude Source="avares://Xaml.Behaviors.Interactions.DragAndDrop/Styles.axaml" />
+        <Style Selector="ListBox.ItemsDragAndDrop">
+          <Style.Resources>
+            <behaviors:ItemsListBoxDropHandler x:Key="ItemsListBoxDropHandler" />
+          </Style.Resources>
+          <Setter Property="(Interaction.Behaviors)">
+            <BehaviorCollectionTemplate>
+              <BehaviorCollection>
+                <ContextDropBehavior Handler="{StaticResource ItemsListBoxDropHandler}" />
+              </BehaviorCollection>
+            </BehaviorCollectionTemplate>
+          </Setter>
+        </Style>
+        <Style Selector="ListBox.ItemsDragAndDrop ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="(Interaction.Behaviors)">
+        <BehaviorCollectionTemplate>
+          <BehaviorCollection>
+            <ContextDragBehavior HorizontalDragThreshold="3" VerticalDragThreshold="3" />
+          </BehaviorCollection>
+        </BehaviorCollectionTemplate>
+      </Setter>
+    </Style>
     </UserControl.Styles>
     <!-- 主亚克力背景容器 -->
     <Border Background="{DynamicResource BackgroundBrush}">
@@ -235,9 +259,10 @@
                                                  ItemsSource="{CompiledBinding Plugins}"
                                                  SelectedItem="{CompiledBinding SelectedPlugin}"
                                                  SelectionMode="Single"
+                                                 Classes="ItemsDragAndDrop"
                                                  Height="280">
                                             <ListBox.ItemTemplate>
-                                                <DataTemplate>
+                                                <DataTemplate DataType="vm:PluginInfo">
                                                     <Border Margin="0" 
                                                             Padding="5" 
                                                             Background="{DynamicResource SurfaceLightBrush}" 

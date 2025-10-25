@@ -1,6 +1,11 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
+using MetahookInstallerAvalonia.ViewModels;
+using ShellLink.Structures;
 using System.Diagnostics;
+using static MetahookInstallerAvalonia.ViewModels.MainViewModel;
 
 namespace MetahookInstallerAvalonia.Views;
 
