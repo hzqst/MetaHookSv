@@ -20,5 +20,7 @@ typedef struct
 	void (*Sys_InitMemory)(void);	
 }private_funcs_t;
 
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks();
 void Engine_UninstallHooks();
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
