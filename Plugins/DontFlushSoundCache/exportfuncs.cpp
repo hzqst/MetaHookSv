@@ -9,13 +9,13 @@
 #include "entity_types.h"
 #include "parsemsg.h"
 
+#include "privatehook.h"
+
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
 int g_iRetryState = 0;
-
-private_funcs_t gPrivateFuncs = {0};
 
 int NewClientCmd(const char *szCmdString)
 {
@@ -30,14 +30,6 @@ int NewClientCmd(const char *szCmdString)
 	}
 
 	return gPrivateFuncs.pfnClientCmd(szCmdString);
-}
-
-void __fastcall CClient_SoundEngine_FlushCache(int pthis, int dummy, qboolean including_local)
-{
-	if (g_iRetryState == 2)
-		return;
-
-	return gPrivateFuncs.CClient_SoundEngine_FlushCache(pthis, dummy, including_local);
 }
 
 void NewConnect_f(void)

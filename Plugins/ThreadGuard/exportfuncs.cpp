@@ -19,7 +19,7 @@ static xcommand_t g_pfn_Host_KillServer_f;
 static xcommand_t g_pfn_Host_Quit_Restart_f;
 
 /*
-	Purpose: This fixed a bug from Valve that command "_restart" didn't shutdown server correctly, causing resources like CSteam3Server and such things to be leaked.
+	Purpose: This fixed a bug from Valve that command "_restart" didn't shutdown server correctly, causing resources like CSteam3Server and such things to leak.
 */
 
 void Host_Quit_Restart_f(void)

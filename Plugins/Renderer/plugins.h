@@ -1,5 +1,7 @@
 #pragma once
 
+#include <metahook.h>
+
 class IFileSystem;
 class IFileSystem_HL25;
 

@@ -33,7 +33,13 @@ void FS_Dump_Precaches(void)
 
 	filename = filename + ".dump.res";
 
-	auto FileHandle = g_pFileSystem->Open(filename.c_str(), "wt");
+	auto FileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "wt");
+
+	if (!FileHandle)
+	{
+		gEngfuncs.Con_Printf("FS_Dump_Precaches: Could not open \"%s\" for writing!\n", filename.c_str());
+		return;
+	}
 
 	resource_t *pResource;
 	resource_t *next;
@@ -50,8 +56,8 @@ void FS_Dump_Precaches(void)
 			{
 			case t_sound:
 			{
-				g_pFileSystem->Write(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
-				g_pFileSystem->Write("\n", 1, FileHandle);
+				FILESYSTEM_ANY_WRITE(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
+				FILESYSTEM_ANY_WRITE("\n", 1, FileHandle);
 				break;
 			}
 
@@ -59,16 +65,16 @@ void FS_Dump_Precaches(void)
 			{
 				if (pResource->szFileName[0] != '*')
 				{
-					g_pFileSystem->Write(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
-					g_pFileSystem->Write("\n", 1, FileHandle);
+					FILESYSTEM_ANY_WRITE(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
+					FILESYSTEM_ANY_WRITE("\n", 1, FileHandle);
 				}
 
 				break;
 			}
 			case t_generic:
 			{
-				g_pFileSystem->Write(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
-				g_pFileSystem->Write("\n", 1, FileHandle);
+				FILESYSTEM_ANY_WRITE(pResource->szFileName, strlen(pResource->szFileName), FileHandle);
+				FILESYSTEM_ANY_WRITE("\n", 1, FileHandle);
 				break;
 			}
 			}
@@ -76,7 +82,7 @@ void FS_Dump_Precaches(void)
 		pResource = next;
 	}
 
-	g_pFileSystem->Close(FileHandle);
+	FILESYSTEM_ANY_CLOSE(FileHandle);
 
 	gEngfuncs.Con_Printf("FS_Dump_Precaches: Precached resources dumpped into %s.\n", filename.c_str());
 }

@@ -178,7 +178,7 @@ void GL_InitCapture()
 {
 	g_pMetaHookAPI->GetVideoMode(&g_CaptureImageWidth, &g_CaptureImageHeight, NULL, NULL);
 
-	if (GLEW_VERSION_3_2)
+	if (GLEW_VERSION_3_2 && glFenceSync && glClientWaitSync)
 	{
 		GL_InitCapturePBO(g_CaptureImageWidth, g_CaptureImageHeight);
 		g_pfnBeginCapture = GL_BeginAsyncCapture;

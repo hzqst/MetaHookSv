@@ -15,8 +15,6 @@ DWORD g_dwEngineBuildnum = 0;
 
 mh_dll_info_t g_EngineDLLInfo = { 0 };
 mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
-mh_dll_info_t g_ClientDLLInfo = { 0 };
-mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {

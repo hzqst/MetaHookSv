@@ -39,8 +39,6 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     
     MSBuild.exe MetaHook.sln "/target:Plugins\CaptionMod" /p:Configuration="Release" /p:Platform="Win32"
     
-    MSBuild.exe MetaHook.sln "/target:Plugins\CommunicationDemo" /p:Configuration="Release" /p:Platform="Win32"
-    
     MSBuild.exe MetaHook.sln "/target:Plugins\PrecacheManager" /p:Configuration="Release" /p:Platform="Win32"
     
     MSBuild.exe MetaHook.sln "/target:Plugins\SCModelDownloader" /p:Configuration="Release" /p:Platform="Win32"

@@ -26,12 +26,18 @@
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
+    <ClCompile Include="privatehook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="privatehook.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

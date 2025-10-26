@@ -48,4 +48,10 @@ extern struct event_api_s** g_pClientDLLEventAPI;
 
 //extern pitchdrift_t* g_pitchdrift; //not used
 
+void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_InstallHooks(void);
+void Client_UninstallHooks(void);
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
+
 void V_CalcNormalRefdef(ref_params_t* pparams);

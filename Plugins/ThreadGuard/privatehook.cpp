@@ -65,6 +65,80 @@ void Engine_WaitForShutdown(HMODULE hModule, BlobHandle_t hBlobModule)
 	}
 }
 
+void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+{
+	if (1)
+	{
+		const char sigs1[] = "Sys_InitArgv( OrigCmd )";
+		auto Sys_InitArgv_String = Search_Pattern_Data(sigs1, DllInfo);
+		if (!Sys_InitArgv_String)
+			Sys_InitArgv_String = Search_Pattern_Rdata(sigs1, DllInfo);
+		if (Sys_InitArgv_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 1) = (DWORD)Sys_InitArgv_String;
+			auto Sys_InitArgv_PushString_VA = (PUCHAR)Search_Pattern(pattern, DllInfo);
+			if (!Sys_InitArgv_PushString_VA)
+			{
+				//Build 4554
+				/*
+.text:01DC57DE 68 84 C6 E8 01                                      push    offset aSysInitargvOri ; "Sys_InitArgv( OrigCmd )"
+.text:01DC57E3 83 E1 03                                            and     ecx, 3
+.text:01DC57E6 F3 A4                                               rep movsb
+				*/
+				char pattern2[] = "\x68\x2A\x2A\x2A\x2A";
+				*(DWORD*)(pattern2 + 1) = (DWORD)Sys_InitArgv_String;
+				Sys_InitArgv_PushString_VA = (PUCHAR)Search_Pattern(pattern2, DllInfo);
+			}
+			if (Sys_InitArgv_PushString_VA)
+			{
+				typedef struct Sys_InitArgv_SearchContext_s
+				{
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+				}Sys_InitArgv_SearchContext;
+
+				Sys_InitArgv_SearchContext SearchContext = { DllInfo, RealDllInfo };
+
+				g_pMetaHookAPI->DisasmRanges(Sys_InitArgv_PushString_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (Sys_InitArgv_SearchContext*)context;
+
+						if (!engine &&
+							pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].mem.base == 0)
+						{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
+							PVOID imm = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+
+							if (imm >= (PUCHAR)ctx->DllInfo.DataBase && imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+							{
+								engine = (decltype(engine))ConvertDllInfoSpace(imm, ctx->DllInfo, ctx->RealDllInfo);
+								return TRUE;
+							}
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, 0, &SearchContext);
+			}
+		}
+	}
+
+	if (!engine)
+	{
+		Sys_Error("CEngine not found");
+	}
+}
+
 void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 {
 	if (hModule)
@@ -81,67 +155,6 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 	{
 		g_ThreadManager_Engine = CreateThreadManagerForBlob(hBlobModule);
 		g_ThreadManager_Engine->InstallHook(hookflag_CreateThread | hookflag_WaitForSingleObject | hookflag_Sleep);
-	}
-
-	if (1)
-	{
-		const char sigs1[] = "Sys_InitArgv( OrigCmd )";
-		auto Sys_InitArgv_String = Search_Pattern_Data(sigs1);
-		if (!Sys_InitArgv_String)
-			Sys_InitArgv_String = Search_Pattern_Rdata(sigs1);
-		if (Sys_InitArgv_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-			*(DWORD*)(pattern + 1) = (DWORD)Sys_InitArgv_String;
-			auto Sys_InitArgv_PushString = (PUCHAR)Search_Pattern(pattern);
-			if (!Sys_InitArgv_PushString)
-			{
-				//Build 4554
-				/*
-.text:01DC57DE 68 84 C6 E8 01                                      push    offset aSysInitargvOri ; "Sys_InitArgv( OrigCmd )"
-.text:01DC57E3 83 E1 03                                            and     ecx, 3
-.text:01DC57E6 F3 A4                                               rep movsb
-				*/
-				char pattern2[] = "\x68\x2A\x2A\x2A\x2A";
-				*(DWORD*)(pattern2 + 1) = (DWORD)Sys_InitArgv_String;
-				Sys_InitArgv_PushString = (PUCHAR)Search_Pattern(pattern2);
-			}
-			if (Sys_InitArgv_PushString)
-			{
-				g_pMetaHookAPI->DisasmRanges(Sys_InitArgv_PushString, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
-					auto pinst = (cs_insn*)inst;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0)
-					{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
-						ULONG_PTR imm = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-
-						if (imm >= (ULONG_PTR)g_dwEngineDataBase && imm < (ULONG_PTR)g_dwEngineDataBase + g_dwEngineDataSize)
-						{
-							engine = (decltype(engine))imm;
-							return TRUE;
-						}
-					}
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-				}, 0, NULL);
-			}
-		}
-	}
-
-	if (!engine)
-	{
-		Sys_Error("CEngine not found");
 	}
 }
 
@@ -292,4 +305,41 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 			ServerDLL_UninstallHook(ctx->hModule);
 		}
 	}
+}
+
+PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)
+{
+	if ((ULONG_PTR)addr > (ULONG_PTR)SrcDllInfo.ImageBase && (ULONG_PTR)addr < (ULONG_PTR)SrcDllInfo.ImageBase + SrcDllInfo.ImageSize)
+	{
+		auto addr_VA = (ULONG_PTR)addr;
+		auto addr_RVA = RVA_from_VA(addr, SrcDllInfo);
+
+		return (PVOID)VA_from_RVA(addr, TargetDllInfo);
+	}
+
+	return nullptr;
+}
+
+PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo)
+{
+	if ((ULONG_PTR)vftable > (ULONG_PTR)RealDllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)RealDllInfo.ImageBase + RealDllInfo.ImageSize)
+	{
+		ULONG_PTR vftable_VA = (ULONG_PTR)vftable;
+		ULONG vftable_RVA = RVA_from_VA(vftable, RealDllInfo);
+		auto vftable_DllInfo = (decltype(vftable))VA_from_RVA(vftable, DllInfo);
+
+		auto vf_VA = (ULONG_PTR)vftable_DllInfo[index];
+		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
+
+		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
+	}
+	else if ((ULONG_PTR)vftable > (ULONG_PTR)DllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)DllInfo.ImageBase + DllInfo.ImageSize)
+	{
+		auto vf_VA = (ULONG_PTR)vftable[index];
+		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
+
+		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
+	}
+
+	return vftable[index];
 }

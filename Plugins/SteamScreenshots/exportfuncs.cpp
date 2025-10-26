@@ -80,8 +80,8 @@ int __MsgFunc_ServerName(const char *pszName, int iSize, void *pbuf)
 
 	char *szServerName = READ_STRING();
 
-	strncpy(g_szServerName, szServerName, 255);
-	g_szServerName[255] = 0;
+	strncpy(g_szServerName, szServerName, sizeof(g_szServerName) - 1);
+	g_szServerName[sizeof(g_szServerName) - 1] = 0;
 
 	return m_pfnServerName(pszName, iSize, pbuf);
 }

@@ -4,8 +4,8 @@ Renderer.dll
 BulletPhysics.dll
 StudioEvents.dll
 PrecacheManager.dll
-CommunicationDemo.dll
 SCModelDownloader.dll
 SteamScreenshots.dll
 ThreadGuard.dll
 SCCameraFix.dll
+HeapPatch.dll
