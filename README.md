@@ -166,7 +166,7 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 [DOC](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
 
-### SteamScreenshots (Sven Co-op only)
+### SteamScreenshots (Sven Co-op / GoldSrc post-25th update)
 
 This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
 
@@ -177,10 +177,6 @@ This plugin downloads missing player models from https://wootguy.github.io/scmod
 Cvar : `scmodel_autodownload 0 / 1` Automatically download missing model from scmodel database.
 
 Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if there are multiple ones with different version.
-
-### CommunicationDemo (Sven Co-op only)
-
-This plugin exposes an interface to communicate with Sven Co-op server.
 
 ### PrecacheManager
 
@@ -207,6 +203,12 @@ This plugin replaces in-game resources (mainly model and sound files) at runtime
 This plugin fixes camera glitching in spectator-view for Sven Co-op.
 
 The updated spectator-view code credits to [halflife-updated](https://github.com/SamVanheer/halflife-updated)
+
+### Better Spray (Sven Co-op / GoldSrc post-25th update)
+
+BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
+
+https://github.com/hzqst/BetterSpray
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
@@ -249,12 +251,6 @@ Client-Side part of the mod it´s introduced as a metahook plugin.
 Server-Side part of the mod it´s done with a modifidied reGame dll.
 
 https://github.com/ollerjoaco/Trinity-EngineSv
-
-### Better Spray
-
-BetterSpray is a plugin for MetaHookSV that enhances Sven Co-op and GoldSrc’s spray system with support for high-res images, dynamic reloading and cloud sharing.
-
-https://github.com/hzqst/BetterSpray
 
 ### Better Spray (third-party)
 
