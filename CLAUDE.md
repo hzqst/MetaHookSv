@@ -167,3 +167,5 @@ Example:
 [MetahookInstaller] 修复了 "编辑插件列表" 的一个问题 , 该问题曾导致当选择Custom Game时，编辑插件列表会报错提示没有安装metahook
 
 [SDL] 修复 #740, which broke the IME input system.
+
+```
