@@ -415,7 +415,7 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 		if (!g_RectIndexBuffer)
 		{
-			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
@@ -473,16 +473,19 @@ void R_DrawTexturedRect(int gltexturenum, const texturedrectvertex_t *verticeBuf
 
 	if (!g_TexturedRectVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for vertexData.\n", vertexDataSize);
 		return;
 	}
 
 	if (!g_RectInstanceBuffer->Allocate(instanceDataSize, instanceAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for instanceData.\n", instanceDataSize);
 		return;
 	}
 
 	if (!g_RectIndexBuffer->Allocate(indexDataSize, indexAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for indexData.\n", indexDataSize);
 		return;
 	}
 
@@ -566,7 +569,7 @@ void R_DrawTexturedRectMask(int gltexturenum, int maskTextureId, const texturedr
 
 		if (!g_RectIndexBuffer)
 		{
-			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 256 * 1024, GL_ELEMENT_ARRAY_BUFFER);
+			g_RectIndexBuffer = GL_CreatePMBRingBuffer("RectIndexBuffer", 1 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
 		}
 
 		GL_BindStatesForVAO(
@@ -624,16 +627,19 @@ void R_DrawTexturedRectMask(int gltexturenum, int maskTextureId, const texturedr
 
 	if (!g_TexturedRectVertexBuffer->Allocate(vertexDataSize, vertexAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for vertexData.\n", vertexDataSize);
 		return;
 	}
 
 	if (!g_RectInstanceBuffer->Allocate(instanceDataSize, instanceAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for instanceData.\n", instanceDataSize);
 		return;
 	}
 
 	if (!g_RectIndexBuffer->Allocate(indexDataSize, indexAllocation))
 	{
+		gEngfuncs.Con_DPrintf("R_DrawTexturedRect: warning - failed to allocate %d bytes for indexData.\n", indexDataSize);
 		return;
 	}
 
