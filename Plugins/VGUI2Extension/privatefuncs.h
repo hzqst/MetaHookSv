@@ -25,6 +25,10 @@ typedef struct walk_context_s
 
 typedef struct
 {
+	int index_enginesurface_pushMakeCurrent;
+
+	void(__fastcall* enginesurface_pushMakeCurrent)(void* pthis, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace);
+
 	//Engine Screen
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 
@@ -157,6 +161,7 @@ typedef struct
 	void* (__fastcall* CCareerMapFrame_ctor)(void* pthis, int dummy, void* parent);
 	void* (__fastcall* CCareerBotFrame_ctor)(void* pthis, int dummy, void* parent);
 
+
 	//SDL2
 	void (__cdecl*SDL_GetWindowPosition)(void* window, int* x, int* y);
 	void (__cdecl*SDL_GetWindowSize)(void* window, int* w, int* h);
@@ -189,6 +194,8 @@ extern char m_szCurrentGameLanguage[128];
 //VGUI1 engineSurfaceWrapper
 extern void* staticEngineSurface;
 
+extern void** (*pmainwindow);
+
 extern private_funcs_t gPrivateFuncs;
 
 const char* GetCurrentGameLanguage();
@@ -200,6 +207,8 @@ extern mh_dll_info_t g_GameUIDllInfo;
 extern mh_dll_info_t g_ServerBrowserDllInfo;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
+
+void* Sys_GetMainWindow();
 
 bool SCR_IsLoadingVisible(void);
 
@@ -214,6 +223,7 @@ void SDL2_FillAddress(void);
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_VGUIClient001(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_PatchAddress_LanguageStrncpy(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void EngineSurface_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHooks(void);

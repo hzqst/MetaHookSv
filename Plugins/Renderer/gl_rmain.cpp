@@ -5969,17 +5969,17 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 			float topv = 1.0;
 			float topu = 1.0;
 
-			if (engineSurface_HL25)
+			if (staticSurface_HL25)
 			{
-				auto gltexturenum = enginesurface_createNewTextureID(engineSurface_HL25, 0);
-				enginesurface_drawSetTextureRGBA(engineSurface_HL25, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
+				auto gltexturenum = enginesurface_createNewTextureID(staticSurface_HL25, 0);
+				enginesurface_drawSetTextureRGBA(staticSurface_HL25, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
 
 				GLStartupTextures.push_back(gltexturenum);
 			}
 			else
 			{
-				auto gltexturenum = enginesurface_createNewTextureID(engineSurface, 0);
-				enginesurface_drawSetTextureRGBA(engineSurface, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
+				auto gltexturenum = enginesurface_createNewTextureID(staticSurface, 0);
+				enginesurface_drawSetTextureRGBA(staticSurface, 0, gltexturenum, (const char*)bimage.buffer, bimage.width, bimage.height, true, false);
 
 				GLStartupTextures.push_back(gltexturenum);
 			}

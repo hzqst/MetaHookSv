@@ -126,8 +126,8 @@ extern std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 extern RECT* g_ScissorRect;
 extern bool* g_bScissor;
 
-extern IEngineSurface* engineSurface;
-extern IEngineSurface_HL25* engineSurface_HL25;
+extern IEngineSurface* staticSurface;
+extern IEngineSurface_HL25* staticSurface_HL25;
 
 extern float * s_fXMouseAspectAdjustment;
 extern float * s_fYMouseAspectAdjustment;

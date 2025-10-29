@@ -42,6 +42,11 @@ bool SCR_IsLoadingVisible(void)
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
+void* Sys_GetMainWindow()
+{
+	return (**pmainwindow);
+}
+
 void SDL2_FillAddress(void)
 {
 	auto SDL2 = GetModuleHandleA("sdl2.dll");

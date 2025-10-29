@@ -651,34 +651,20 @@ static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks_IMEHandler;
 
 void InitWindowStuffs(void)
 {
-	auto win = SDL_GL_GetCurrentWindow();
-	if (win)
-	{
-		auto hWnd = SDL_GetWindowWin32HWND(win);
+	HWND Win32Hwnd = NULL;
 
-		if (hWnd)
-		{
-			DpiManagerInternal()->InitFromHwnd(hWnd);
-		}
+	if (gPrivateFuncs.SDL_GetWindowWMInfo)
+	{
+		//SDL2 branch, Sys_GetMainWindow returns SDL_Window *
+		Win32Hwnd = SDL_GetWindowWin32HWND((SDL_Window *)Sys_GetMainWindow());
 	}
 	else
 	{
-		EnumWindows([](HWND hwnd, LPARAM lParam) {
-			DWORD pid = 0;
-			if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
-			{
-				char windowClass[256] = { 0 };
-				RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
-				if (!strcmp(windowClass, "Valve001"))
-				{
-					DpiManagerInternal()->InitFromHwnd(hwnd);
-
-					return FALSE;
-				}
-			}
-			return TRUE;
-			}, NULL);
+		//non-SDL2 branch
+		Win32Hwnd = (decltype(Win32Hwnd))Sys_GetMainWindow();
 	}
+
+	DpiManagerInternal()->InitFromHwnd(Win32Hwnd);
 
 	VGUI2ExtensionInternal()->RegisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
 }
