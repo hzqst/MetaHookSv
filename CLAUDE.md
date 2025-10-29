@@ -139,3 +139,31 @@ The MetaHook API (`include/metahook.h`) provides:
 
 ### Plugin Load Order
 Plugin load order in `plugins.lst` is critical for proper dependency resolution and hook installation.
+
+### Changelog rules
+
+Changelog must follow the following format:
+
+Example:
+
+```
+
+**changes**
+
+[Renderer] Fix #741, which caused unexpected per-frame texture reloading
+
+[CaptionMod] Fixed a crash in engine buildnum 4554
+
+[MetahookInstaller] Fixed an issue with "EditPlugin" , when it failed to open the EditPluginDialog for custom game and error out "metahook not installed".
+
+[SDL] Fix #740, which broke the IME input system.
+
+**改动**
+
+[Renderer] 修复 #741，该问题曾导致引擎每帧都会触发重新加载贴图的逻辑
+
+[CaptionMod] 修复了一个在4554版本引擎下导致游戏崩溃的问题
+
+[MetahookInstaller] 修复了 "编辑插件列表" 的一个问题 , 该问题曾导致当选择Custom Game时，编辑插件列表会报错提示没有安装metahook
+
+[SDL] 修复 #740, which broke the IME input system.
