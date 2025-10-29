@@ -649,6 +649,16 @@ public:
 
 static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks_IMEHandler;
 
+BOOL WINAPI NewSystemParametersInfoA(_In_ UINT uiAction, _In_ UINT uiParam, _Pre_maybenull_ _Post_valid_ PVOID pvParam, _In_ UINT fWinIni)
+{
+	if (SPI_SETMOUSE == uiParam)
+	{
+		return TRUE;
+	}
+
+	return SystemParametersInfoA(uiAction, uiParam, pvParam, fWinIni);
+}
+
 void InitWindowStuffs(void)
 {
 	HWND Win32Hwnd = NULL;
@@ -665,6 +675,18 @@ void InitWindowStuffs(void)
 	}
 
 	DpiManagerInternal()->InitFromHwnd(Win32Hwnd);
+
+	if (gEngfuncs.CheckParm("-nomousespi", nullptr))
+	{
+		if (g_pMetaHookAPI->GetClientModule())
+		{
+			g_pMetaHookAPI->IATHook(g_pMetaHookAPI->GetClientModule(), "user32.dll", "SystemParametersInfoA", NewSystemParametersInfoA, nullptr);
+		}
+		else if (g_pMetaHookAPI->GetBlobClientModule())
+		{
+			g_pMetaHookAPI->BlobIATHook(g_pMetaHookAPI->GetBlobClientModule(), "user32.dll", "SystemParametersInfoA", NewSystemParametersInfoA, nullptr);
+		}
+	}
 
 	VGUI2ExtensionInternal()->RegisterBaseUICallbacks(&s_BaseUICallbacks_IMEHandler);
 }
