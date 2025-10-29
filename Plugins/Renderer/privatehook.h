@@ -10,6 +10,11 @@
 
 typedef void(*ExtraShaderStageCallback)(GLuint* objs, int* used);
 
+namespace vgui
+{
+	class VGuiVertex;
+};
+
 typedef struct
 {
 	void (*BuildGammaTable)(float gamma);
@@ -137,6 +142,7 @@ typedef struct
 	void(__fastcall* enginesurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawLine)(void* pthis, int, int x0, int y0, int x1, int y1);
 	void(__fastcall* enginesurface_drawPolyLine)(void* pthis, int, int* px, int* py, int numPoints);
+	void(__fastcall* enginesurface_drawTexturedPolygon)(void* pthis, int, vgui::VGuiVertex* pVertices, int n);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);
 	void(__fastcall* enginesurface_drawTexturedRect)(void* pthis, int, int x0, int y0, int x1, int y1);

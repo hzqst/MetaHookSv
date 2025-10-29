@@ -4,6 +4,8 @@
 #include "privatehook.h"
 #include "plugins.h"
 
+#include <VGUI/VGuiVertex.h>
+
 #include <cstdlib>
 
 IEngineSurface * engineSurface = nullptr;
@@ -26,6 +28,7 @@ static void(__fastcall* m_pfnEngineSurface_drawFilledRect)(void* pthis, int, int
 static void(__fastcall* m_pfnEngineSurface_drawOutlinedRect)(void* pthis, int, int x0, int y0, int x1, int y1) = NULL;
 static void(__fastcall* m_pfnEngineSurface_drawLine)(void* pthis, int, int x0, int y0, int x1, int y1) = NULL;
 static void(__fastcall* m_pfnEngineSurface_drawPolyLine)(void* pthis, int, int* px, int* py, int numPoints) = NULL;
+static void(__fastcall* m_pfnEngineSurface_drawTexturedPolygon)(void* pthis, int, vgui::VGuiVertex* pVertices, int n) = NULL;
 static void(__fastcall* m_pfnEngineSurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel) = NULL;
 static void(__fastcall* m_pfnEngineSurface_drawSetTexture)(void* pthis, int, int textureId) = NULL;
 static void(__fastcall* m_pfnEngineSurface_drawTexturedRect)(void* pthis, int, int x0, int y0, int x1, int y1) = NULL;
@@ -734,6 +737,60 @@ void __fastcall enginesurface_drawTexturedRectAdd(void* pthis, int, int x0, int 
 	(*currenttexture) = staticTextureCurrent->_id;
 
 	R_DrawTexturedRect(staticTextureCurrent->_id, vertices, _countof(vertices), indices, _countof(indices), DRAW_TEXTURED_RECT_ALPHA_BASED_ADDITIVE_ENABLED, "drawTexturedRectAdd");
+}
+
+void __fastcall enginesurface_drawTexturedPolygon(void* pthis, int, vgui::VGuiVertex* pVertices, int n)
+{
+	if (!staticTextureCurrent)
+		return;
+
+	if (n < 3)
+		return;
+
+	// 获取 drawColor
+	int (*_drawColor)[4] = (decltype(_drawColor))((ULONG_PTR)pthis + gPrivateFuncs.offset_enginesurface_drawColor);
+
+	if ((*_drawColor)[3] == 255)
+		return;
+
+	// 将 VGuiVertex 顶点转换为 vertex3f_t 用于三角化
+	std::vector<texturedrectvertex_t> polyVerticesFull;
+	polyVerticesFull.reserve(n);
+
+	std::vector<vertex3f_t> polyVertices;
+	polyVertices.reserve(n);
+
+	for (int i = 0; i < n; ++i)
+	{
+		texturedrectvertex_t vertexFull;
+		vertexFull.pos[0] = (float)pVertices[i].GetX();
+		vertexFull.pos[1] = (float)pVertices[i].GetY();
+		vertexFull.texcoord[0] = pVertices[i].GetU();
+		vertexFull.texcoord[1] = pVertices[i].GetV();
+		vertexFull.col[0] = (*_drawColor)[0] / 255.0f;
+		vertexFull.col[1] = (*_drawColor)[1] / 255.0f;
+		vertexFull.col[2] = (*_drawColor)[2] / 255.0f;
+		vertexFull.col[3] = 1.0f - ((*_drawColor)[3] / 255.0f);
+
+		vertex3f_t vertex;
+		vertex.v[0] = (float)pVertices[i].GetX();
+		vertex.v[1] = (float)pVertices[i].GetY();
+		vertex.v[2] = 0;
+
+		polyVerticesFull.emplace_back(vertexFull);
+		polyVertices.emplace_back(vertex);
+	}
+
+	// 使用 R_PolygonToTriangleList 将多边形转换为三角形索引列表
+	std::vector<uint32_t> indices;
+	R_PolygonToTriangleList(polyVertices, indices);
+
+	if (indices.empty())
+		return;
+
+	(*currenttexture) = staticTextureCurrent->_id;
+
+	R_DrawTexturedRect(staticTextureCurrent->_id, polyVerticesFull.data(), polyVerticesFull.size(), indices.data(), indices.size(), DRAW_TEXTURED_RECT_ALPHA_BLEND_ENABLED, "drawTexturedPolygon");
 }
 
 void __fastcall enginesurface_drawPrintCharAdd(void* pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
@@ -1550,6 +1607,7 @@ void EngineSurface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawOutlinedRect, (void*)enginesurface_drawOutlinedRect, (void**)&m_pfnEngineSurface_drawOutlinedRect);
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawLine, (void*)enginesurface_drawLine, (void**)&m_pfnEngineSurface_drawLine);
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawPolyLine, (void*)enginesurface_drawPolyLine, (void**)&m_pfnEngineSurface_drawPolyLine);
+		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawTexturedPolygon, (void*)enginesurface_drawTexturedPolygon, (void**)&m_pfnEngineSurface_drawTexturedPolygon);
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawSetTextureRGBA, (void*)enginesurface_drawSetTextureRGBA, (void**)&m_pfnEngineSurface_drawSetTextureRGBA);
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawSetTexture, (void*)enginesurface_drawSetTexture, (void**)&m_pfnEngineSurface_drawSetTexture);
 		g_pMetaHookAPI->VFTHook(engineSurface_HL25, 0, gPrivateFuncs.index_enginesurface_drawTexturedRect, (void*)enginesurface_drawTexturedRect, (void**)&m_pfnEngineSurface_drawTexturedRect);
@@ -1572,6 +1630,7 @@ void EngineSurface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawOutlinedRect, (void*)enginesurface_drawOutlinedRect, (void**)&m_pfnEngineSurface_drawOutlinedRect);
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawLine, (void*)enginesurface_drawLine, (void**)&m_pfnEngineSurface_drawLine);
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawPolyLine, (void*)enginesurface_drawPolyLine, (void**)&m_pfnEngineSurface_drawPolyLine);
+		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawTexturedPolygon, (void*)enginesurface_drawTexturedPolygon, (void**)&m_pfnEngineSurface_drawTexturedPolygon);
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawSetTextureRGBA, (void*)enginesurface_drawSetTextureRGBA, (void**)&m_pfnEngineSurface_drawSetTextureRGBA);
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawSetTexture, (void*)enginesurface_drawSetTexture, (void**)&m_pfnEngineSurface_drawSetTexture);
 		g_pMetaHookAPI->VFTHook(engineSurface, 0, gPrivateFuncs.index_enginesurface_drawTexturedRect, (void*)enginesurface_drawTexturedRect, (void**)&m_pfnEngineSurface_drawTexturedRect);
