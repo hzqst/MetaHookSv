@@ -1,0 +1,5 @@
+{
+  "classname" "sprite_frame_texture"
+  "frame" "0"
+  "replacetexture" "sprites/laserbeam_Frame_0.hdr"
+}
