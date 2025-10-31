@@ -245,7 +245,7 @@ The following snippet replaces frame[0] of current sprite with `sprites/test.png
 {
   "classname" "sprite_frame_texture"
   "frame" "0"
-  “replacetexture” "sprites/test.png"
+  "replacetexture" "sprites/test.png"
 }
 ```
 

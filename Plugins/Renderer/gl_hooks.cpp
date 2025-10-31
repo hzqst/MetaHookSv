@@ -12321,6 +12321,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_Draw_DecalTexture(DllInfo, RealDllInfo);
 
+	Engine_FillAddress_R_GetSpriteFrame(DllInfo, RealDllInfo);
+
 	Engine_FillAddress_R_DrawSpriteModel(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_R_LightStrength(DllInfo, RealDllInfo);
