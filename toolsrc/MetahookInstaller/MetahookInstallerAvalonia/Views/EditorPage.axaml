@@ -5,7 +5,7 @@
              xmlns:u="https://irihi.tech/ursa"
              xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
              xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
              x:Class="MetahookInstallerAvalonia.Views.EditorPage"
              x:DataType="vm:MainViewModel">
         <Design.DataContext>
@@ -37,7 +37,7 @@
                                                  SelectedItem="{CompiledBinding SelectedPlugin}"
                                                  SelectionMode="Single"
                                                  Classes="ItemsDragAndDrop"
-                                                 Height="340">
+                                                 Height="295">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate DataType="vm:PluginInfo">
                                                     <DockPanel VerticalAlignment="Center">
@@ -121,7 +121,7 @@
                                                  ItemsSource="{CompiledBinding Avaliable}"
                                                  SelectedItem="{CompiledBinding SelectedAvaliable}"
                                                  SelectionMode="Single"
-                                                 Height="340">
+                                                  Height="295">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border Margin="0" 
