@@ -1,109 +1,107 @@
 <UserControl
-    xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
-    xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
-    xmlns:u="https://irihi.tech/ursa"
-    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-    x:Class="MetahookInstallerAvalonia.Views.InstallerPage"
-    x:DataType="vm:MainViewModel">
-    <Design.DataContext>
-        <vm:MainViewModel />
-    </Design.DataContext>
-                        <ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto" Background="Transparent">
-                            <StackPanel Spacing="15">
-                                <!-- 游戏选择区域 -->
-                                <Grid ColumnDefinitions="*,3*,*,*">
-                                    <TextBlock Classes="header" Text="{x:Static lang:Resources.SelectGame}" Grid.Column="0"/>
-                                    <ComboBox ItemsSource="{CompiledBinding ModInfos}" 
-                                              SelectedItem="{CompiledBinding Selected}"
-                                              Height="36" 
-                                              HorizontalContentAlignment="Left" 
-                                              Grid.Column="1">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{CompiledBinding Name}" Padding="2"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                    
-                                    <u:PopConfirm Grid.Column="2" 
-                                        PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
-                                              HorizontalAlignment="Left"
-                                              PopupContent="{x:Static lang:Resources.ConfirmInstall}"
-                                              ConfirmCommand="{CompiledBinding InstallCommand}"
-                                              CancelCommand="{CompiledBinding ToastWarningCommand}"
-                                              CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
-                                            <u:IconButton
-                                                  Icon="{StaticResource install_app_regular}" 
-                                                  Content="{x:Static lang:Resources.Install}"/>
-                                    </u:PopConfirm>
-                                    <u:PopConfirm Grid.Column="3" 
-                                        PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
-                                              HorizontalAlignment="Left"
-                                              PopupContent="{x:Static lang:Resources.ConfirmUninstall}"
-                                              ConfirmCommand="{CompiledBinding UninstallCommand}"
-                                              CancelCommand="{CompiledBinding ToastWarningCommand}"
-                                              CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
-                                           <u:IconButton
-                                                  Icon="{StaticResource uninstall_app_regular}" 
-                                                  Content="{x:Static lang:Resources.Uninstall}"/>
-                                    </u:PopConfirm>
-                                    
-                                </Grid>
-                                <!-- 亚克力卡片容器 -->
-                                <Border Background="{DynamicResource SurfaceAcrylicBrush}" 
-                                        Padding="15" 
-                                        CornerRadius="8"
-                                        BorderBrush="{DynamicResource BorderBrush}"
-                                        BorderThickness="1"
-                                        Effect="{DynamicResource SmallShadow}">
-                                    <StackPanel Spacing="15">
-                                        <!-- 游戏路径 -->
-                                        <StackPanel>
-                                            <TextBlock Classes="label" Text="{x:Static lang:Resources.GamePath}"/>
-                                            <u:PathPicker Height="36" 
-                                                          AllowMultiple="False" 
-                                                          SelectedPathsText="{CompiledBinding Selected.GamePath}" 
-                                                          Title="{x:Static lang:Resources.OpenView}" 
-                                                          UsePickerType="OpenFolder"/>
-                                        </StackPanel>
-                                        <!-- 详细信息网格 -->
-                                        <Grid ColumnDefinitions="* 2*" RowDefinitions="* *">
-                                            <!-- 图标预览 -->
-                                            <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
-                                                    Background="{DynamicResource SurfaceLightBrush}" 
-                                                    CornerRadius="6"
-                                                    HorizontalAlignment="Stretch" 
-                                                    VerticalAlignment="Stretch">
-                                                <Image Source="{CompiledBinding Selected.GameIcon}"
-                                                       Stretch="Uniform" 
-                                                       Margin="10"
-                                                       HorizontalAlignment="Center" 
-                                                       VerticalAlignment="Center"/>
-                                            </Border>
-                                            <!-- Steam AppId -->
-                                            <StackPanel Grid.Column="1" Grid.Row="0" Margin="10">
-                                                <TextBlock Classes="label" Text="{x:Static lang:Resources.SteamAppId}"/>
-                                                <u:NumericUIntUpDown
-                                                    InnerLeftContent="{x:Static lang:Resources.SteamAppId}"
-                                                    Step="1" 
-                                                    Value="{CompiledBinding Selected.AppID}" 
-                                                    IsReadOnly="{CompiledBinding Selected.ReadOnly}" 
-                                                    Height="36"/>
-                                            </StackPanel>
-                                            <!-- Mod目录 -->
-                                            <StackPanel Grid.Column="1" Grid.Row="1"  Margin="10">
-                                                <TextBlock Classes="label" Text="{x:Static lang:Resources.ModPath}"/>
-                                                <TextBox Text="{CompiledBinding Selected.Directory}" 
-                                                         IsReadOnly="{CompiledBinding Selected.ReadOnly}" 
-                                                         Height="36"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </ScrollViewer>
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
+xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
+xmlns:u="https://irihi.tech/ursa"
+mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+x:Class="MetahookInstallerAvalonia.Views.InstallerPage"
+x:DataType="vm:MainViewModel">
+<Design.DataContext>
+  <vm:MainViewModel />
+</Design.DataContext>
+<ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto" Background="Transparent">
+  <StackPanel Spacing="15">
+    <!-- 游戏选择区域 -->
+    <Grid ColumnDefinitions="*,3*,*,*">
+      <TextBlock Classes="header" Text="{x:Static lang:Resources.SelectGame}" Grid.Column="0"/>
+      <ComboBox ItemsSource="{CompiledBinding ModInfos}"
+      SelectedItem="{CompiledBinding Selected}"
+      Height="36"
+      HorizontalContentAlignment="Left"
+      Grid.Column="1">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <TextBlock Text="{CompiledBinding Name}" Padding="2"/>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+    <u:PopConfirm Grid.Column="2"
+    PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
+    HorizontalAlignment="Left"
+    PopupContent="{x:Static lang:Resources.ConfirmInstall}"
+    ConfirmCommand="{CompiledBinding InstallCommand}"
+    CancelCommand="{CompiledBinding ToastWarningCommand}"
+    CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
+    <u:IconButton
+    Icon="{StaticResource install_app_regular}"
+    Content="{x:Static lang:Resources.Install}"/>
+  </u:PopConfirm>
+  <u:PopConfirm Grid.Column="3"
+  PopupHeader="{x:Static lang:Resources.ConfirmTitle}"
+  HorizontalAlignment="Left"
+  PopupContent="{x:Static lang:Resources.ConfirmUninstall}"
+  ConfirmCommand="{CompiledBinding UninstallCommand}"
+  CancelCommand="{CompiledBinding ToastWarningCommand}"
+  CancelCommandParameter="{x:Static lang:Resources.Cancelled}">
+  <u:IconButton
+  Icon="{StaticResource uninstall_app_regular}"
+  Content="{x:Static lang:Resources.Uninstall}"/>
+</u:PopConfirm>
+</Grid>
+<!-- 亚克力卡片容器 -->
+<Border Background="{DynamicResource SurfaceAcrylicBrush}"
+Padding="15"
+CornerRadius="8"
+BorderBrush="{DynamicResource BorderBrush}"
+BorderThickness="1"
+Effect="{DynamicResource SmallShadow}">
+<StackPanel Spacing="15">
+  <!-- 游戏路径 -->
+  <StackPanel>
+    <TextBlock Classes="label" Text="{x:Static lang:Resources.GamePath}"/>
+    <u:PathPicker Height="36"
+    AllowMultiple="False"
+    SelectedPathsText="{CompiledBinding Selected.GamePath}"
+    Title="{x:Static lang:Resources.OpenView}"
+    UsePickerType="OpenFolder"/>
+  </StackPanel>
+  <!-- 详细信息网格 -->
+  <Grid ColumnDefinitions="* 2*" RowDefinitions="* *">
+    <!-- 图标预览 -->
+    <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
+    Background="{DynamicResource SurfaceLightBrush}"
+    CornerRadius="6"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch">
+    <Image Source="{CompiledBinding Selected.GameIcon}"
+    Stretch="Uniform"
+    Margin="10"
+    HorizontalAlignment="Center"
+    VerticalAlignment="Center"/>
+  </Border>
+  <!-- Steam AppId -->
+  <StackPanel Grid.Column="1" Grid.Row="0" Margin="10">
+    <TextBlock Classes="label" Text="{x:Static lang:Resources.SteamAppId}"/>
+    <u:NumericUIntUpDown
+    InnerLeftContent="{x:Static lang:Resources.SteamAppId}"
+    Step="1"
+    Value="{CompiledBinding Selected.AppID}"
+    IsReadOnly="{CompiledBinding Selected.ReadOnly}"
+    Height="36"/>
+  </StackPanel>
+  <!-- Mod目录 -->
+  <StackPanel Grid.Column="1" Grid.Row="1"  Margin="10">
+    <TextBlock Classes="label" Text="{x:Static lang:Resources.ModPath}"/>
+    <TextBox Text="{CompiledBinding Selected.Directory}"
+    IsReadOnly="{CompiledBinding Selected.ReadOnly}"
+    Height="36"/>
+  </StackPanel>
+</Grid>
+</StackPanel>
+</Border>
+</StackPanel>
+</ScrollViewer>
 </UserControl>
