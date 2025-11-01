@@ -1,0 +1,162 @@
+<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:u="https://irihi.tech/ursa"
+xmlns:vm="clr-namespace:MetahookInstallerAvalonia.ViewModels"
+xmlns:lang="clr-namespace:MetahookInstallerAvalonia.Lang"
+mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+x:Class="MetahookInstallerAvalonia.Views.EditorPage"
+x:DataType="vm:MainViewModel">
+<Design.DataContext>
+  <vm:MainViewModel />
+</Design.DataContext>
+<StackPanel Spacing="20">
+  <!-- 核心布局：左右列表 + 中间按钮 -->
+  <Grid ColumnDefinitions="* 70 *" RowDefinitions="Auto">
+    <!-- 左侧已启用插件列表 -->
+    <Border Grid.Column="0"
+    Background="{DynamicResource SurfaceBrush}"
+    CornerRadius="8"
+    BorderBrush="{DynamicResource BorderBrush}"
+    BorderThickness="1"
+    Effect="{DynamicResource SmallShadow}">
+    <StackPanel>
+      <Label Padding="5"
+      FontSize="13"
+      FontWeight="Medium"
+      Foreground="{DynamicResource TextPrimaryBrush}"
+      Background="{DynamicResource SurfaceLightBrush}"
+      Content="{x:Static lang:Resources.EnabledPlugins}"/>
+      <ListBox x:Name="PluginListBox"
+      Margin="0"
+      Padding="0"
+      BorderThickness="0"
+      Background="Transparent"
+      ItemsSource="{CompiledBinding Plugins}"
+      SelectedItem="{CompiledBinding SelectedPlugin}"
+      SelectionMode="Single"
+      Classes="ItemsDragAndDrop"
+      Height="295">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="vm:PluginInfo">
+          <DockPanel VerticalAlignment="Center">
+            <PathIcon Width="10" Data="{StaticResource dotmatrix_4x6}"
+            Margin="0 0 5 0" Cursor="Hand"
+            HorizontalAlignment="Center"/>
+            <Border Margin="0" Padding="5"
+            Background="{DynamicResource SurfaceLightBrush}"
+            CornerRadius="3">
+            <DockPanel VerticalAlignment="Center">
+              <Border CornerRadius="10" Width="20" Height="20"
+              Background="{DynamicResource PrimaryLightBrush}" Margin="0 0 8 0"
+              VerticalAlignment="Center" HorizontalAlignment="Center">
+              <TextBlock FontSize="12" TextAlignment="Center" VerticalAlignment="Center"
+              Foreground="{DynamicResource TextSecondaryBrush}"
+              Text="{CompiledBinding Index}"/>
+            </Border>
+            <CheckBox
+            IsChecked="{CompiledBinding Enabled}"
+            Content="{CompiledBinding Name}"
+            Foreground="{DynamicResource TextSecondaryBrush}"
+            FontSize="14">
+            <CheckBox.Styles>
+              <Style Selector="CheckBox">
+                <Setter Property="Padding" Value="4 0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+              </Style>
+              <Style Selector="CheckBox:checked">
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+              </Style>
+            </CheckBox.Styles>
+          </CheckBox>
+        </DockPanel>
+      </Border>
+    </DockPanel>
+  </DataTemplate>
+</ListBox.ItemTemplate>
+</ListBox>
+</StackPanel>
+</Border>
+<!-- 中间操作按钮 -->
+<StackPanel Grid.Column="1"
+Orientation="Vertical"
+Spacing="15"
+HorizontalAlignment="Center"
+VerticalAlignment="Center">
+<u:IconButton Icon="{StaticResource arrow_right_regular}"
+Command="{CompiledBinding ToAvaliableCommand}"
+Width="40"
+Height="40"
+CornerRadius="20"
+Background="{DynamicResource PrimaryLightBrush}"
+Foreground="{DynamicResource PrimaryBrush}"/>
+<u:IconButton Icon="{StaticResource arrow_left_regular}"
+Command="{CompiledBinding ToPluginsCommand}"
+Width="40"
+Height="40"
+CornerRadius="20"
+Background="{DynamicResource PrimaryLightBrush}"
+Foreground="{DynamicResource PrimaryBrush}"/>
+</StackPanel>
+<!-- 右侧可用插件列表 -->
+<Border Grid.Column="2"
+Background="{DynamicResource SurfaceBrush}"
+CornerRadius="8"
+BorderBrush="{DynamicResource BorderBrush}"
+BorderThickness="1"
+Effect="{DynamicResource SmallShadow}">
+<StackPanel>
+  <Label Padding="5"
+  FontSize="13"
+  FontWeight="Medium"
+  Foreground="{DynamicResource TextPrimaryBrush}"
+  Background="{DynamicResource SurfaceLightBrush}"
+  Content="{x:Static lang:Resources.AvailablePlugins}"/>
+  <ListBox x:Name="AvaliableListBox"
+  Margin="0"
+  Padding="5"
+  BorderThickness="0"
+  Background="Transparent"
+  ItemsSource="{CompiledBinding Avaliable}"
+  SelectedItem="{CompiledBinding SelectedAvaliable}"
+  SelectionMode="Single"
+  Height="295">
+  <ListBox.ItemTemplate>
+    <DataTemplate>
+      <Border Margin="0"
+      Padding="10"
+      Background="{DynamicResource SurfaceLightBrush}"
+      CornerRadius="3"
+      Cursor="Hand">
+      <Label Content="{CompiledBinding Name}"
+      Foreground="{DynamicResource TextSecondaryBrush}"
+      FontSize="14"
+      Padding="4 0"/>
+    </Border>
+  </DataTemplate>
+</ListBox.ItemTemplate>
+<!-- 列表项选中样式 -->
+<ListBox.Styles>
+  <Style Selector="ListBoxItem:selected /template/ Border">
+    <Setter Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+  </Style>
+</ListBox.Styles>
+</ListBox>
+</StackPanel>
+</Border>
+</Grid>
+<!-- 底部操作按钮 -->
+<DockPanel HorizontalAlignment="Right">
+  <u:IconButton Icon="{StaticResource reload_regular}"
+  Content="{x:Static lang:Resources.Reset}"
+  Command="{CompiledBinding ResetCommand}"/>
+  <u:IconButton Icon="{StaticResource save_regular}"
+  Content="{x:Static lang:Resources.Save}"
+  Command="{CompiledBinding SaveCommand}"/>
+</DockPanel>
+</StackPanel>
+</UserControl>
