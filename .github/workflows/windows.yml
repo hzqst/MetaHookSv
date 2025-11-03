@@ -77,6 +77,7 @@ jobs:
         run: |
           dotnet publish toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj -p:PublishProfile=FolderProfile
           echo .pdb > exclude.txt
+          ren "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\MetahookInstallerAvalonia.Desktop.exe" "MetahookInstaller.exe"
           xcopy "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\*" "Build-Output\" /y /e /EXCLUDE:exclude.txt
         shell: cmd
 
