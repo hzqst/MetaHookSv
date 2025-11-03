@@ -71,18 +71,12 @@ jobs:
           if exist "Build-Output\Build\svencoop\metahook\dlls\.placeholder" del "Build-Output\Build\svencoop\metahook\dlls\.placeholder"
           if exist "Build-Output\Build\svencoop\metahook\plugins\.placeholder" del "Build-Output\Build\svencoop\metahook\plugins\.placeholder"
         shell: cmd
-
-      - name: Install UPX
-        uses: crazy-max/ghaction-upx@v3
-        with:
-          install-only: true
         
       - name: Build and Publish MetahookInstaller
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           dotnet publish toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj -p:PublishProfile=FolderProfile
           echo .pdb > exclude.txt
-          upx "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\MetahookInstallerAvalonia.Desktop.exe"
           ren "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\MetahookInstallerAvalonia.Desktop.exe" "MetahookInstaller.exe"
           xcopy "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\bin\Release\net8.0\publish\win-x64\*" "Build-Output\" /y /e /EXCLUDE:exclude.txt
         shell: cmd
