@@ -258,4 +258,10 @@
   <data name="Folder_Config" xml:space="preserve">
     <value>Metahook Config</value>
   </data>
+  <data name="InstallationFailed" xml:space="preserve">
+    <value>Installation failed due to an error.</value>
+  </data>
+  <data name="UninstallationFailed" xml:space="preserve">
+    <value>Uninstallation failed due to an error.</value>
+  </data>
 </root>

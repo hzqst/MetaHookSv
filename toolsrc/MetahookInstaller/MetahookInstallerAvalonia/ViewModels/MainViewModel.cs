@@ -795,20 +795,50 @@ public class MainViewModel : ViewModelBase
         _install = new Command(
             _ =>
             {
-                var buildPath = FindBuildPath();
-                if (string.IsNullOrEmpty(buildPath))
+                try
                 {
-                    MessageBox.ShowAsync(Resources.BuildDirectoryNotFound, Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
-                    return;
+                    var buildPath = FindBuildPath();
+                    if (string.IsNullOrEmpty(buildPath))
+                    {
+                        MessageBox.ShowAsync(Resources.BuildDirectoryNotFound, Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                        return;
+                    }
+                    InstallMod(buildPath);
                 }
-                InstallMod(buildPath);
+                catch (IOException ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.InstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.InstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.InstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
             },
             _ => true
         );
         _uninstall = new Command(
             _ =>
             {
-                UninstallMod();
+                try
+                {
+                    UninstallMod();
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.UninstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.UninstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ShowAsync($"{Resources.UninstallationFailed}\n\n{ex.Message}", Resources.CriticalError, MessageBoxIcon.Error, MessageBoxButton.OK);
+                }
             },
             _ => true
         );

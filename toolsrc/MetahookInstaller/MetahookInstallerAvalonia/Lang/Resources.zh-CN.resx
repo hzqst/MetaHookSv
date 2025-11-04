@@ -258,4 +258,10 @@
   <data name="Folder_Config" xml:space="preserve">
     <value>Metahook配置</value>
   </data>
+  <data name="InstallationFailed" xml:space="preserve">
+    <value>安装失败，发生错误。</value>
+  </data>
+  <data name="UninstallationFailed" xml:space="preserve">
+    <value>卸载失败，发生错误。</value>
+  </data>
 </root>
