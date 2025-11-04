@@ -757,7 +757,10 @@ public class MainViewModel : ViewModelBase
         {
             if (GetGameInstallPath(m.Item3) is string path)
             {
-                var info = new ModInfo(m.Item1, m.Item2, m.Item3, path);
+                // Normalize the path to ensure consistent directory separators
+                // This fixes the issue where mixed forward and backward slashes break shortcuts
+                var normalizedPath = Path.GetFullPath(path);
+                var info = new ModInfo(m.Item1, m.Item2, m.Item3, normalizedPath);
                 if (Directory.Exists(info.InstallPath))
                 {
                     _modInfos.Add(info);
