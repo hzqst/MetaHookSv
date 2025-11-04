@@ -597,9 +597,40 @@ void SubtitlePanel::StartSubtitle(const std::shared_ptr<CDictionary>& dict, floa
 			//It's out of range? Go back to last position and make it a new line
 			if(nWide > iMaxTextWidth)
 			{
-				nWide = nLastWide;
-				nCharNum = nLastCharNum;
-				p = LastP;
+				// Find a proper break point - go back to last space or breakable character
+				if (nLastCharNum > 0)
+				{
+					// Check if we're in the middle of a word
+					wchar_t* breakPoint = LastP;
+					int breakCharNum = nLastCharNum;
+					int breakWide = nLastWide;
+
+					// Search backwards for a space or breakable character
+					while (breakCharNum > 0 && IsNonBreakableCharacter(szBuf[breakCharNum - 1]))
+					{
+						breakCharNum--;
+						breakPoint--;
+					}
+
+					// If we found a better break point (not at the start), use it
+					if (breakCharNum > 0)
+					{
+						szBuf[breakCharNum] = L'\0';
+						surface()->GetTextSize(m_hTextFont, szBuf, breakWide, nTall);
+
+						nWide = breakWide;
+						nCharNum = breakCharNum;
+						p = breakPoint;
+					}
+					else
+					{
+						// No good break point found, use the last measured position
+						nWide = nLastWide;
+						nCharNum = nLastCharNum;
+						p = LastP;
+					}
+				}
+
 				nAddedCharNum += nCharNum;
 				break;
 			}
