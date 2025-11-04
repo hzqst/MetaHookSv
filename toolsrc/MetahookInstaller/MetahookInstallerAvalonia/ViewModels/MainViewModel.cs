@@ -36,7 +36,8 @@ public class MainViewModel : ViewModelBase
                 Path.GetFullPath(Path.Combine("..", "..", "Build")),
                 Path.GetFullPath(Path.Combine("..", "..", "..", "Build")),
                 Path.GetFullPath(Path.Combine("..", "..", "..", "..", "Build")),
-                Path.GetFullPath(Path.Combine("..", "..", "..", "..", "..", "Build"))
+                Path.GetFullPath(Path.Combine("..", "..", "..", "..", "..", "Build")),
+                Path.GetFullPath(Path.Combine("..", "..", "..", "..", "..", "..","Build"))
             };
 #else
             var possiblePaths = new[]
