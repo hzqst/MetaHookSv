@@ -482,5 +482,23 @@ namespace MetahookInstallerAvalonia.Lang {
                 return ResourceManager.GetString("Warning", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Installation failed due to an error. 的本地化字符串。
+        /// </summary>
+        public static string InstallationFailed {
+            get {
+                return ResourceManager.GetString("InstallationFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Uninstallation failed due to an error. 的本地化字符串。
+        /// </summary>
+        public static string UninstallationFailed {
+            get {
+                return ResourceManager.GetString("UninstallationFailed", resourceCulture);
+            }
+        }
     }
 }
