@@ -546,12 +546,19 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(CONE_TEXTURE_ENABLED)
 
-        float flConeProjX = dot(u_lightright, LightToPixel);
-        float flConeProjY = dot(u_lightup, LightToPixel);
+        // Project LightToPixel onto the plane perpendicular to light direction
+        // Remove the component along the light direction to get the radial offset
+        vec3 radialOffset = LightToPixel - u_lightdir.xyz * SpotCosine;
+        
+        // Get the projections on right and up vectors
+        float flConeProjX = dot(u_lightright, radialOffset);
+        float flConeProjY = dot(u_lightup, radialOffset);
 
-        //map from (-LimitSine, LimitSine) to (0, 1)
-        float flConeProjU = (flConeProjX * 1.0 / LimitSine + 1.0) * 0.5;
-        float flConeProjV = (flConeProjY * 1.0 / LimitSine + 1.0) * 0.5;
+        // The length of radialOffset is sin(angle), which equals sqrt(1 - SpotCosine^2)
+        // At the cone edge, this equals LimitSine
+        // Map from (-LimitSine, LimitSine) to (0, 1)
+        float flConeProjU = (flConeProjX / LimitSine + 1.0) * 0.5;
+        float flConeProjV = (flConeProjY / LimitSine + 1.0) * 0.5;
 
         vec4 vConeColor = texture(coneTex, vec2(flConeProjU, flConeProjV));
 
