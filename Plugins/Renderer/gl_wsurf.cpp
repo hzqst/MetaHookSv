@@ -8,6 +8,8 @@
 #include "UtilThreadTask.h"
 #include "LambdaThreadedTask.h"
 
+#include <ScopeExit/ScopeExit.h>
+
 CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
 float r_shadow_matrix[3][16] = { 0 };
@@ -4704,19 +4706,12 @@ extern IFileSystem_HL25* g_pFileSystem_HL25;
 
 class CFileStreamBuffer : public std::streambuf {
 public:
-	CFileStreamBuffer(const std::string& filename) {
-
-		auto hFileHandle = FILESYSTEM_ANY_OPEN(filename.c_str(), "rb");
-
-		if (!hFileHandle) {
-			throw std::runtime_error("Failed to open file: " + filename);
-		}
+	CFileStreamBuffer(FileHandle_t hFileHandle) {
 
 		size_t fileSize = FILESYSTEM_ANY_SIZE(hFileHandle);
 		buffer_.resize(fileSize);
 
 		FILESYSTEM_ANY_READ(buffer_.data(), fileSize, hFileHandle);
-		FILESYSTEM_ANY_CLOSE(hFileHandle);
 
 		setg(buffer_.data(), buffer_.data(), buffer_.data() + buffer_.size());
 	}
@@ -4727,7 +4722,7 @@ private:
 
 class CFileSystemStream : public std::istream {
 public:
-	CFileSystemStream(const std::string& filename) : std::istream(&fileStreamBuffer_), fileStreamBuffer_(filename) {}
+	CFileSystemStream(FileHandle_t hFileHandle) : std::istream(&fileStreamBuffer_), fileStreamBuffer_(hFileHandle) {}
 
 private:
 	CFileStreamBuffer fileStreamBuffer_;
@@ -4735,13 +4730,21 @@ private:
 
 std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(const char * resourcePath)
 {
-	
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 
-	CFileSystemStream fileStream(resourcePath);
+	auto hFileHandle = FILESYSTEM_ANY_OPEN(resourcePath, "rb");
+
+	if (!hFileHandle) {
+		gEngfuncs.Con_Printf("R_LoadWorldSurfaceShadowProxyModel: failed to open \"%s\".", resourcePath);
+		return nullptr;
+	}
+
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandle); };
+
+	CFileSystemStream fileStream(hFileHandle);
 
 	bool ret = tinyobj::LoadObj(
 		&attrib,
