@@ -844,6 +844,8 @@ void R_IterateDynamicLights(
 				args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
 				args.dynamicShadowSize = dynlight->dynamic_shadow_size;
 				args.staticShadowSize = dynlight->static_shadow_size;
+				args.csmLambda = dynlight->csm_lambda;
+				args.csmMargin = dynlight->csm_margin;
 			}
 
 			args.bVolume = false; // DirectionalLight always uses fullscreen

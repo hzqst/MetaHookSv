@@ -27,10 +27,12 @@ public:
 	float diffuse{};
 	float specular{};
 	float specularpow{};
-	int shadow{};
-	int dynamic_shadow_size{};
+	int shadow{ 0 };
+	int dynamic_shadow_size{ 0 };
 	int static_shadow_size{};
-	int follow_player{};
+	float csm_lambda{ 0.5f };
+	float csm_margin{ 0.15f };
+	int follow_player{ 0 };
 	std::shared_ptr<IShadowTexture> pStaticShadowTexture;
 	std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 };
@@ -140,6 +142,8 @@ typedef struct DirectionalLightCallbackArgs_s
 	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
 	uint32_t dynamicShadowSize;
 	uint32_t staticShadowSize;
+	float csmLambda;//0.5 by default
+	float csmMargin;//0.15 by default
 
 	bool bVolume;
 	bool bStatic;

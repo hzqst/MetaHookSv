@@ -884,7 +884,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 			if (args->ppDynamicShadowTexture)
 			{
-				// Allocate 4096x4096 CSM texture if not already allocated
+				// Allocate dynamicShadowSize x dynamicShadowSize CSM texture if not already allocated
 				if ((*args->ppDynamicShadowTexture) == nullptr || 
 					(*args->ppDynamicShadowTexture)->IsCascaded() != true ||
 					(*args->ppDynamicShadowTexture)->IsStatic() != false ||
@@ -901,8 +901,8 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 
-					const float lambda = 0.5f; // 例如0.8，也可来自cvar
-					const float orthoMargin = 1.15f; // 15% 外扩，避免裁边
+					const float lambda = args->csmLambda; // 例如0.8，也可来自cvar
+					const float orthoMargin = 1.0f + args->csmMargin; // 15% 外扩，避免裁边
 
 					// Calculate cascade distances based on camera frustum
 					// These could be configurable via cvars in the future
@@ -992,10 +992,10 @@ void R_RenderShadowmapForDynamicLights(void)
 						float radius = sqrtf(halfW_far * halfW_far + halfH_far * halfH_far + halfDepth * halfDepth);
 
 						// 正交投影尺寸（正方形），加一点margin避免抖动时裁边
-						float orthoSize = 2.0f * radius * orthoMargin;
+						float orthoSize = radius * orthoMargin;
 
 						R_LoadIdentityForProjectionMatrix();
-						R_SetupOrthoProjectionMatrix(-orthoSize / 2, orthoSize / 2, -orthoSize / 2, orthoSize / 2, 2048, -2048, true);
+						R_SetupOrthoProjectionMatrix(-orthoSize, orthoSize, -orthoSize, orthoSize, 2048, -2048, true);
 
 						r_ortho = true;
 						r_frustum_right = 0;
