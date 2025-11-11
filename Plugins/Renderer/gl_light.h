@@ -73,80 +73,80 @@ extern bool r_draw_gbuffer;
 
 typedef struct PointLightCallbackArgs_s
 {
-	float radius;
-	vec3_t origin;
-	vec3_t color;
-	float ambient;
-	float diffuse;
-	float specular;
-	float specularpow;
+	float radius{};
+	vec3_t origin{};
+	vec3_t color{};
+	float ambient{};
+	float diffuse{};
+	float specular{};
+	float specularpow{};
 
-	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
-	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
-	uint32_t dynamicShadowSize;
-	uint32_t staticShadowSize;
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{};
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{};
+	uint32_t dynamicShadowSize{0};
+	uint32_t staticShadowSize{0};
 
-	bool bVolume;
-	bool bStatic;
+	bool bVolume{};
+	bool bStatic{};
 }PointLightCallbackArgs;
 
 typedef void(*fnPointLightCallback)(PointLightCallbackArgs *args, void *context);
 
 typedef struct SpotLightCallbackArgs_s
 {
-	float distance;
-	float radius;
-	float coneAngle;
-	float coneCosAngle;
-	float coneSinAngle;
-	float coneTanAngle;
-	vec3_t origin;
-	vec3_t angle;
-	vec3_t vforward;
-	vec3_t vright;
-	vec3_t vup;
-	vec3_t color;
-	float ambient;
-	float diffuse;
-	float specular;
-	float specularpow;
+	float distance{};
+	float radius{};
+	float coneAngle{};
+	float coneCosAngle{};
+	float coneSinAngle{};
+	float coneTanAngle{};
+	vec3_t origin{};
+	vec3_t angle{};
+	vec3_t vforward{};
+	vec3_t vright{};
+	vec3_t vup{};
+	vec3_t color{};
+	float ambient{};
+	float diffuse{};
+	float specular{};
+	float specularpow{};
 
-	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
-	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
-	uint32_t dynamicShadowSize;
-	uint32_t staticShadowSize;
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{};
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{};
+	uint32_t dynamicShadowSize{0};
+	uint32_t staticShadowSize{0};
 
-	bool bVolume;
-	bool bStatic;
-	bool bHideEntitySource;
-	cl_entity_t* pHideEntity;
+	bool bVolume{};
+	bool bStatic{};
+	bool bHideEntitySource{};
+	cl_entity_t* pHideEntity{};
 }SpotLightCallbackArgs;
 
 typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
 
 typedef struct DirectionalLightCallbackArgs_s
 {
-	vec3_t origin;
-	vec3_t angle;
-	vec3_t vforward;
-	vec3_t vright;
-	vec3_t vup;
-	float size;
-	vec3_t color;
-	float ambient;
-	float diffuse;
-	float specular;
-	float specularpow;
+	vec3_t origin{};
+	vec3_t angle{};
+	vec3_t vforward{};
+	vec3_t vright{};
+	vec3_t vup{};
+	float size{};
+	vec3_t color{};
+	float ambient{};
+	float diffuse{};
+	float specular{};
+	float specularpow{};
 
-	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture;
-	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture;
-	uint32_t dynamicShadowSize;
-	uint32_t staticShadowSize;
-	float csmLambda;//0.5 by default
-	float csmMargin;//0.15 by default
+	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{ };
+	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{ };
+	uint32_t dynamicShadowSize{ 0 };
+	uint32_t staticShadowSize{ 0 };
+	float csmLambda{ 0.5f };//0.5 by default
+	float csmMargin{ 0.15f };//0.15 by default
 
-	bool bVolume;
-	bool bStatic;
+	bool bVolume{false};
+	bool bStatic{false};
 }DirectionalLightCallbackArgs;
 
 typedef void(*fnDirectionalLightCallback)(DirectionalLightCallbackArgs* args, void* context);
