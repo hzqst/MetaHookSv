@@ -1346,20 +1346,26 @@ void triapi_End()
 			return;
 		}
 
-		for (size_t i = 0; i + 3 < n; i += 2)
-		{
-			GLuint v0 = (GLuint)i;
-			GLuint v1 = (GLuint)i + 1;
-			GLuint v2 = (GLuint)i + 2;
-			GLuint v3 = (GLuint)i + 3;
+		for (size_t i = 0; i + 3 < n; i += 2) {
+			// GL_QUAD_STRIP 顶点排列: v0-v1 为第一条边, v2-v3 为第二条边
+			// 形成四边形: v0, v1, v3, v2 (注意顺序)
+			uint32_t v0 = i;
+			uint32_t v1 = i + 1;
+			uint32_t v2 = i + 2;
+			uint32_t v3 = i + 3;
+
+			// 将四边形 (v0, v1, v3, v2) 分解为两个三角形
+			// 三角形1: v0, v1, v3
+			// 三角形2: v0, v3, v2
+			uint32_t indices[6] = { v0, v1, v3, v0, v3, v2 };
 
 			gTriAPICommand.Indices.push_back(v0);
 			gTriAPICommand.Indices.push_back(v1);
-			gTriAPICommand.Indices.push_back(v2);
-
-			gTriAPICommand.Indices.push_back(v2);
 			gTriAPICommand.Indices.push_back(v3);
+
 			gTriAPICommand.Indices.push_back(v0);
+			gTriAPICommand.Indices.push_back(v3);
+			gTriAPICommand.Indices.push_back(v2);
 		}
 	}
 
