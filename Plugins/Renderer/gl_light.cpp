@@ -1615,7 +1615,7 @@ void R_LightShadingPass(void)
 		std::shared_ptr<IShadowTexture> pStaticShadowTexture;
 		std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
 
-		if(args->ppStaticShadowTexture)
+		if (args->ppStaticShadowTexture)
 			 pStaticShadowTexture = (*args->ppStaticShadowTexture);
 
 		if (pStaticShadowTexture && pStaticShadowTexture->IsSingleLayer() && pStaticShadowTexture->IsReady())

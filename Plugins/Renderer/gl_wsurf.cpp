@@ -722,6 +722,8 @@ void R_GenerateResourceForWaterModels(model_t* mod, CWorldSurfaceWorldModel* pWo
 
 void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf, int iTexChainPass, std::vector<CDrawIndexAttrib>& vDrawAttribBuffer)
 {
+	int totalPolyCount = 0;
+
 	for (int i = 0; i < mod->numtextures + 1; i++)
 	{
 		texture_t* t = nullptr;
@@ -761,6 +763,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				if (texchain.drawCount > 0)
 					pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SKY] = texchain;
+
+				totalPolyCount += texchain.polyCount;
 			}
 
 			//End construction
@@ -832,6 +836,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 							if (texchain.drawCount > 0)
 								pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
+
+							totalPolyCount += texchain.polyCount;
 						}
 					}
 
@@ -868,6 +874,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 					if (texchain.drawCount > 0)
 						pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_ANIM].emplace_back(texchain);
+
+					totalPolyCount += texchain.polyCount;
 				}
 
 				//End construction
@@ -900,6 +908,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				if (texchain.drawCount > 0)
 					pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
+
+				totalPolyCount += texchain.polyCount;
 			}
 
 			//Construct texchain for scroll textures
@@ -925,6 +935,8 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 
 				if (texchain.drawCount > 0)
 					pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC].emplace_back(texchain);
+
+				totalPolyCount += texchain.polyCount;
 			}
 
 			//End construction
@@ -940,7 +952,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 		texchain.texture = nullptr;
 		texchain.pRenderMaterial = nullptr;
 		texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
-		texchain.polyCount = 0;
+		texchain.polyCount = totalPolyCount;
 		texchain.startDrawOffset = 0;
 
 		pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID] = texchain;
@@ -953,7 +965,7 @@ void R_GenerateTexChain(model_t* mod, const texsurfaces_t* texsurfaces, CWorldSu
 		texchain.texture = nullptr;
 		texchain.pRenderMaterial = nullptr;
 		texchain.drawCount = (uint32_t)vDrawAttribBuffer.size();
-		texchain.polyCount = 0;
+		texchain.polyCount = totalPolyCount;
 		texchain.startDrawOffset = 0;
 
 		pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] = texchain;
