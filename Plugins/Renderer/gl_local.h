@@ -444,6 +444,7 @@ void R_DrawSkyBox(void);
 void R_CheckVariables(void);
 void R_AnimateLight(void);
 void R_SetupFrame(void);
+void R_ProcessEngineDynamicLights();
 void R_SetFrustum(void);
 void R_SetFrustum(float xfov, float yfov, float right, float top);
 void R_UploadSceneUBO(void);
@@ -703,7 +704,7 @@ void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
-bool R_IsRenderingDeferredLightingScene();
+bool R_IsRenderingManipulatedLightmap();
 bool R_IsRenderingGammaBlending();
 bool R_IsRenderingShadowView();
 bool R_IsRenderingWaterView();
@@ -815,6 +816,9 @@ extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;
 extern bool r_draw_reflectview;
 extern bool r_draw_refractview;
+extern bool r_draw_hide_entity;
+extern int r_draw_hide_entity_index;
+
 extern int r_draw_classify;
 
 extern int r_renderview_pass;

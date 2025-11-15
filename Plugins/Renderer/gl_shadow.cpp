@@ -2,8 +2,6 @@
 #include <sstream>
 #include <math.h>
 
-std::shared_ptr<IShadowTexture> g_DLightShadowTextures[MAX_DLIGHTS_SVENGINE]{};
-
 std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture{};
 
 //cvar
@@ -315,11 +313,6 @@ void R_InitShadow(void)
 void R_ShutdownShadow(void)
 {
 	g_pCurrentShadowTexture = nullptr;
-
-	for (int i = 0; i < _countof(g_DLightShadowTextures); ++i)
-	{
-		g_DLightShadowTextures[i].reset();
-	}
 }
 
 bool R_ShouldRenderShadow(void)
@@ -522,10 +515,17 @@ void R_RenderShadowmapForDynamicLights(void)
 							auto old_draw_classify = r_draw_classify;
 							r_draw_classify = DRAW_CLASSIFY_WORLD;
 
+							if (args->sourceEntityIndex != 0)
+							{
+								r_draw_hide_entity = true;
+								r_draw_hide_entity_index = args->sourceEntityIndex;
+							}
+
 							R_RenderScene();
 
 							bAnyPolyRendered = (*c_brush_polys) > 0 ? true : false;
 
+							r_draw_hide_entity = false;
 							r_draw_classify = old_draw_classify;
 							(*c_brush_polys) = old_brush_polys;
 						}
@@ -627,12 +627,20 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 					//Only draw non-world stuffs when we have static shadow
-					if (args->bStatic)
+					if (args->staticShadowSize > 0)
 					{
 						auto old_draw_classify = r_draw_classify;
 						r_draw_classify = DRAW_CLASSIFY_OPAQUE_ENTITIES;
 
+						if (args->sourceEntityIndex != 0)
+						{
+							r_draw_hide_entity = true;
+							r_draw_hide_entity_index = args->sourceEntityIndex;
+						}
+
 						R_RenderScene();
+
+						r_draw_hide_entity = false;
 
 						r_draw_classify = old_draw_classify;
 					}
@@ -695,7 +703,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PushRefDef();
 
 					VectorCopy(args->origin, (*r_refdef.vieworg));
-					VectorCopy(args->angle, (*r_refdef.viewangles));
+					VectorCopy(args->angles, (*r_refdef.viewangles));
 					R_UpdateRefDef();
 
 					R_SetViewport(
@@ -730,34 +738,23 @@ void R_RenderShadowmapForDynamicLights(void)
 					GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 					{
-						if (args->bHideEntitySource && args->pHideEntity && args->pHideEntity->model)
+						auto old_draw_classify = r_draw_classify;
+						r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
+						r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
+						r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
+						r_draw_classify &= ~DRAW_CLASSIFY_WATER;
+
+						if (args->sourceEntityIndex != 0)
 						{
-							auto pHideEntityModel = args->pHideEntity->model;
-							args->pHideEntity->model = nullptr;
-
-							auto old_draw_classify = r_draw_classify;
-							r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-							r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
-							r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
-							r_draw_classify &= ~DRAW_CLASSIFY_WATER;
-
-							R_RenderScene();
-
-							r_draw_classify = old_draw_classify;
-							args->pHideEntity->model = pHideEntityModel;
+							r_draw_hide_entity = true;
+							r_draw_hide_entity_index = args->sourceEntityIndex;
 						}
-						else
-						{
-							auto old_draw_classify = r_draw_classify;
-							r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
-							r_draw_classify &= ~DRAW_CLASSIFY_PARTICLES;
-							r_draw_classify &= ~DRAW_CLASSIFY_DECAL;
-							r_draw_classify &= ~DRAW_CLASSIFY_WATER;
 
-							R_RenderScene();
+						R_RenderScene();
 
-							r_draw_classify = old_draw_classify;
-						}
+						r_draw_hide_entity = false;
+
+						r_draw_classify = old_draw_classify;
 					}
 
 					R_PopRefDef();
@@ -810,7 +807,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PushRefDef();
 
 					VectorCopy(args->origin, (*r_refdef.vieworg));
-					VectorCopy(args->angle, (*r_refdef.viewangles));
+					VectorCopy(args->angles, (*r_refdef.viewangles));
 					R_UpdateRefDef();
 
 					R_SetViewport(
@@ -957,7 +954,7 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PushRefDef();
 
 					// All cascades use same viewangles and vieworg
-					VectorCopy(args->angle, (*r_refdef.viewangles));
+					VectorCopy(args->angles, (*r_refdef.viewangles));
 					R_UpdateRefDef();
 
 					// All cascades use same worldmatrix
@@ -1047,7 +1044,7 @@ void R_RenderShadowmapForDynamicLights(void)
 			}
 		};
 
-		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
+		R_IterateVisibleDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
 
 		GL_EndDebugGroup();
 	}
@@ -1055,27 +1052,18 @@ void R_RenderShadowmapForDynamicLights(void)
 
 /*
 
-	Purpose : Clear shadow related vars which might be accessed later by deferred lighting pass.
-
+	Purpose : Reset shadow textures as unprepared so we will clear and render it this frame later.
 */
 
-void R_RenderShadowMap_Start(void)
+void R_ResetShadowTextures(void)
 {
-	for (int i = 0; i < _countof(g_DLightShadowTextures); ++i)
+	for (size_t i = 0; i < g_VisibleDynamicLights.size(); ++i)
 	{
-		if (g_DLightShadowTextures[i] && !g_DLightShadowTextures[i]->IsStatic())
-		{
-			g_DLightShadowTextures[i]->SetReady(false);
-		}
-	}
+		auto& entry = g_VisibleDynamicLights[i];
 
-	for (size_t i = 0; i < g_DynamicLights.size(); ++i)
-	{
-		const auto& pDynamicLight = g_DynamicLights[i];
-
-		if (pDynamicLight->pDynamicShadowTexture)
+		if (entry.m_pDynamicLight && entry.m_pDynamicLight->pDynamicShadowTexture)
 		{
-			pDynamicLight->pDynamicShadowTexture->SetReady(false);
+			entry.m_pDynamicLight->pDynamicShadowTexture->SetReady(false);
 		}
 	}
 }
@@ -1088,10 +1076,10 @@ void R_RenderShadowMap_Start(void)
 
 void R_RenderShadowMap(void)
 {
-	R_RenderShadowMap_Start();
+	R_ResetShadowTextures();
 
-	if (!r_shadow->value)
-		return;
-
-	R_RenderShadowmapForDynamicLights();
+	if ((int)r_shadow->value > 0)
+	{
+		R_RenderShadowmapForDynamicLights();
+	}
 }

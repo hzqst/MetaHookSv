@@ -3070,7 +3070,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 
 void R_InitWSurf(void)
 {
-	R_ClearBSPEntities();
+	
 }
 
 void R_FreeWorldResources(void)
@@ -3734,7 +3734,7 @@ void R_ClearBSPEntities()
 	g_WorldSurfaceShadowProxyModels.clear();
 	r_flashlight_cone_texture_name.clear();
 	g_EnvWaterControls.clear();
-	g_DynamicLights.clear();
+	g_BSPDynamicLights.clear();
 }
 
 static bspentity_t* current_parse_entity = NULL;
@@ -4051,6 +4051,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 	auto dynlight = std::make_shared<CDynamicLight>();
 
 	auto type_string = ValueForKey(ent, "type");
+
 	if (type_string)
 	{
 		if (!strcmp(type_string, "point"))
@@ -4113,7 +4114,6 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 	PARSE_KEY_VALUE_STRING_WRITEINT(shadow);
 	PARSE_KEY_VALUE_STRING_WRITEINT(static_shadow_size);
 	PARSE_KEY_VALUE_STRING_WRITEINT(dynamic_shadow_size);
-	PARSE_KEY_VALUE_STRING_WRITEINT(follow_player);
 
 	PARSE_KEY_VALUE_STRING_WRITEREF(csm_lambda, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(csm_margin, UTIL_ParseStringAsVector1);
@@ -4122,7 +4122,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 #undef PARSE_KEY_VALUE_STRING_WRITEREF
 #undef PARSE_KEY_VALUE_STRING_WRITEINT
 
-	g_DynamicLights.emplace_back(dynlight);
+	g_BSPDynamicLights.emplace_back(dynlight);
 }
 
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
@@ -4277,7 +4277,7 @@ void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t* ent)
 	R_ParseMapCvarSetMapValue(r_flashlight_specularpow, ValueForKey(ent, "specularpow"));
 	R_ParseMapCvarSetMapValue(r_flashlight_attachment, ValueForKey(ent, "attachment"));
 	R_ParseMapCvarSetMapValue(r_flashlight_distance, ValueForKey(ent, "distance"));
-	R_ParseMapCvarSetMapValue(r_flashlight_cone_cosine, ValueForKey(ent, "cone_cosine"));
+	R_ParseMapCvarSetMapValue(r_flashlight_cone_degree, ValueForKey(ent, "cone_degree"));
 
 	auto cone_texture = ValueForKey(ent, "cone_texture");
 
@@ -4571,7 +4571,7 @@ void R_UploadSceneUBO(void)
 	SceneUBO.r_linear_fog_shift = math_clamp(r_linear_fog_shift->value, 0, 1);
 	SceneUBO.r_linear_fog_shiftz = math_clamp(r_linear_fog_shiftz->value, 0, 1);
 
-	if (R_IsRenderingDeferredLightingScene())
+	if (R_IsRenderingManipulatedLightmap())
 	{
 		SceneUBO.r_lightmap_pow = r_deferred_lightmap_pow->GetValue();
 		SceneUBO.r_lightmap_scale = r_deferred_lightmap_scale->GetValue();
@@ -4637,7 +4637,7 @@ void R_UploadDLightUBO(void)
 			//Pass nothing to dlight ubo
 		};
 
-		R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, &DLightUBO);
+		R_IterateVisibleDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, &DLightUBO);
 	}
 
 	DLightUBO.active_dlights[0] = g_WorldSurfaceRenderer.iNumLegacyDLights;

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <stdint.h>
 #include <memory>
+#include <qgl.h>
 
 class IShadowTexture
 {
@@ -58,8 +60,6 @@ public:
 	virtual float GetCSMDistance(int index) const = 0;
 };
 
-extern std::shared_ptr<IShadowTexture> g_DLightShadowTextures[MAX_DLIGHTS_SVENGINE];
-
 extern std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture;
 
 //cvar
@@ -70,4 +70,3 @@ bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void); 
 void R_InitShadow(void);
 void R_ShutdownShadow(void);
-std::shared_ptr<IShadowTexture> R_CreateBaseShadowTexture(uint32_t size);

@@ -15,14 +15,13 @@ class IShadowTexture;
 class CDynamicLight
 {
 public:
-	~CDynamicLight();
-
 	DynamicLightType type{ DynamicLightType_Unknown };
 	vec3_t origin{};
 	vec3_t angles{};
 	float size{}; // Orthographic projection width/height for DirectionalLight, or radius for point light
 	float color[3]{};
-	float distance{};//Spotlight range
+	float distance{};//Spotlight distance
+	float coneAngle{};//Spotlight
 	float ambient{};
 	float diffuse{};
 	float specular{};
@@ -32,12 +31,29 @@ public:
 	int static_shadow_size{};
 	float csm_lambda{ 0.5f };
 	float csm_margin{ 0.15f };
-	int follow_player{ 0 };
 	std::shared_ptr<IShadowTexture> pStaticShadowTexture;
 	std::shared_ptr<IShadowTexture> pDynamicShadowTexture;
+	int source_entity_index{};
 };
 
-extern std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
+class CVisibleDynamicLightEntry
+{
+public:
+	CVisibleDynamicLightEntry(const std::shared_ptr<CDynamicLight>& dynamicLight, bool volume)
+		:
+		m_pDynamicLight(dynamicLight),
+		m_bVolume(volume)
+	{
+
+	}
+
+	std::shared_ptr<CDynamicLight> m_pDynamicLight;
+	bool m_bVolume{};
+};
+
+extern std::vector<std::shared_ptr<CDynamicLight>> g_EngineDynamicLights;
+extern std::vector<std::shared_ptr<CDynamicLight>> g_BSPDynamicLights;
+extern std::vector<CVisibleDynamicLightEntry> g_VisibleDynamicLights;
 
 extern cvar_t * r_deferred_lighting;
 
@@ -51,7 +67,7 @@ extern MapConVar *r_flashlight_specular;
 extern MapConVar *r_flashlight_specularpow;
 extern MapConVar *r_flashlight_attachment;
 extern MapConVar *r_flashlight_distance;
-extern MapConVar *r_flashlight_cone_cosine;
+extern MapConVar *r_flashlight_cone_degree;
 extern GLuint r_flashlight_cone_texture;
 extern std::string r_flashlight_cone_texture_name;
 
@@ -73,8 +89,9 @@ extern bool r_draw_gbuffer;
 
 typedef struct PointLightCallbackArgs_s
 {
-	float radius{};
 	vec3_t origin{};
+	float radius{};
+
 	vec3_t color{};
 	float ambient{};
 	float diffuse{};
@@ -83,28 +100,24 @@ typedef struct PointLightCallbackArgs_s
 
 	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{};
 	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{};
-	uint32_t dynamicShadowSize{0};
+
 	uint32_t staticShadowSize{0};
+	uint32_t dynamicShadowSize{ 0 };
 
 	bool bVolume{};
-	bool bStatic{};
+	int sourceEntityIndex{};
 }PointLightCallbackArgs;
 
 typedef void(*fnPointLightCallback)(PointLightCallbackArgs *args, void *context);
 
 typedef struct SpotLightCallbackArgs_s
 {
-	float distance{};
-	float radius{};
-	float coneAngle{};
-	float coneCosAngle{};
-	float coneSinAngle{};
-	float coneTanAngle{};
 	vec3_t origin{};
-	vec3_t angle{};
-	vec3_t vforward{};
-	vec3_t vright{};
-	vec3_t vup{};
+	vec3_t angles{};
+	float radius{};
+	float distance{};
+	float coneAngle{};
+
 	vec3_t color{};
 	float ambient{};
 	float diffuse{};
@@ -113,13 +126,12 @@ typedef struct SpotLightCallbackArgs_s
 
 	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{};
 	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{};
-	uint32_t dynamicShadowSize{0};
+
 	uint32_t staticShadowSize{0};
+	uint32_t dynamicShadowSize{ 0 };
 
 	bool bVolume{};
-	bool bStatic{};
-	bool bHideEntitySource{};
-	cl_entity_t* pHideEntity{};
+	int sourceEntityIndex{};
 }SpotLightCallbackArgs;
 
 typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
@@ -127,10 +139,7 @@ typedef void(*fnSpotLightCallback)(SpotLightCallbackArgs *args, void *context);
 typedef struct DirectionalLightCallbackArgs_s
 {
 	vec3_t origin{};
-	vec3_t angle{};
-	vec3_t vforward{};
-	vec3_t vright{};
-	vec3_t vup{};
+	vec3_t angles{};
 	float size{};
 	vec3_t color{};
 	float ambient{};
@@ -140,22 +149,26 @@ typedef struct DirectionalLightCallbackArgs_s
 
 	std::shared_ptr<IShadowTexture>* ppStaticShadowTexture{ };
 	std::shared_ptr<IShadowTexture>* ppDynamicShadowTexture{ };
-	uint32_t dynamicShadowSize{ 0 };
+
 	uint32_t staticShadowSize{ 0 };
+	uint32_t dynamicShadowSize{ 0 };
+
 	float csmLambda{ 0.5f };//0.5 by default
 	float csmMargin{ 0.15f };//0.15 by default
 
 	bool bVolume{false};
-	bool bStatic{false};
+	int sourceEntityIndex{};
 }DirectionalLightCallbackArgs;
 
 typedef void(*fnDirectionalLightCallback)(DirectionalLightCallbackArgs* args, void* context);
 
-void R_IterateDynamicLights(
+void R_IterateVisibleDynamicLights(
 	fnPointLightCallback pointlightCallback,
 	fnSpotLightCallback spotlightCallback,
 	fnDirectionalLightCallback directionalLightCallback,
 	void* context);
+
+void R_AddVisibleDynamicLight(const std::shared_ptr<CDynamicLight>& dynamicLight);
 
 typedef struct
 {

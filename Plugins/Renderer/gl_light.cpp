@@ -15,7 +15,7 @@ MapConVar *r_flashlight_specularpow = nullptr;
 MapConVar *r_flashlight_attachment = nullptr;
 MapConVar *r_flashlight_distance = nullptr;
 MapConVar* r_flashlight_min_distance = nullptr;
-MapConVar *r_flashlight_cone_cosine = nullptr;
+MapConVar * r_flashlight_cone_degree = nullptr;
 
 MapConVar *r_dynlight_ambient = nullptr;
 MapConVar *r_dynlight_diffuse = nullptr;
@@ -47,18 +47,23 @@ GLuint r_flashlight_cone_texture = 0;
 std::string r_flashlight_cone_texture_name;
 
 /*
-	Purpose: Store dynamic lights from "[mapname]_entity.txt"
+	Purpose: Map dynamic lights from cl_dlights to array of CDynamicLight
 */
-std::vector<std::shared_ptr<CDynamicLight>> g_DynamicLights;
+std::vector<std::shared_ptr<CDynamicLight>> g_EngineDynamicLights;
+
+/*
+	Purpose: Stores "light_dynamic" from "[mapname]_entity.txt"
+*/
+std::vector<std::shared_ptr<CDynamicLight>> g_BSPDynamicLights;
+
+/*
+	Purpose: visible dynamic lights current frame
+*/
+std::vector<CVisibleDynamicLightEntry> g_VisibleDynamicLights;
 
 std::unordered_map<program_state_t, dfinal_program_t> g_DFinalProgramTable;
 
 std::unordered_map<program_state_t, dlight_program_t> g_DLightProgramTable;
-
-CDynamicLight::~CDynamicLight()
-{
-	
-}
 
 void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 {
@@ -353,10 +358,11 @@ void R_LoadDLightProgramStates(void)
 
 void R_ShutdownLight(void)
 {
-	g_DynamicLights.clear();
+	g_BSPDynamicLights.clear();
+	g_EngineDynamicLights.clear();
+	g_VisibleDynamicLights.clear();
 
 	g_DFinalProgramTable.clear();
-
 	g_DLightProgramTable.clear();
 
 	if (r_sphere_vbo)
@@ -411,7 +417,7 @@ void R_InitLight(void)
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_distance = R_RegisterMapCvar("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_min_distance = R_RegisterMapCvar("r_flashlight_min_distance", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_flashlight_cone_cosine = R_RegisterMapCvar("r_flashlight_cone_cosine", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_cone_degree = R_RegisterMapCvar("r_flashlight_cone_degree", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_ray_step = R_RegisterMapCvar("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -568,6 +574,9 @@ cl_entity_t *R_GetDLightBindingEntity(dlight_t* dl)
 	return nullptr;
 }
 
+/*
+	Purpose: determine if dl is an engine flashlight.
+*/
 bool R_IsDLightFlashlight(dlight_t *dl)
 {
 	if (!r_flashlight_enable || r_flashlight_enable->GetValue() < 1)
@@ -702,10 +711,10 @@ void R_BeginRenderGBuffer(void)
 	GL_EndDebugGroup();
 }
 
-bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, float cone_cosine, float cone_distance)
+bool Util_IsOriginInCone(const float *origin, const float *cone_origin, const float *cone_vforward, float cone_cosine, float cone_distance)
 {
 	float dir[3];
-	VectorSubtract(org, cone_origin, dir);
+	VectorSubtract(origin, cone_origin, dir);
 
 	float dist = VectorLength(dir);
 
@@ -714,410 +723,173 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 
 	VectorNormalize(dir);
 
-	auto dot = DotProduct(cone_forward, dir);
+	auto dot = DotProduct(cone_vforward, dir);
 
 	return dot > cone_cosine;
 }
 
-void R_IterateDynamicLights(
+void R_AddVisibleDynamicLight(const std::shared_ptr<CDynamicLight>& dynamicLight)
+{
+	if (dynamicLight->type == DynamicLightType_Point)
+	{
+		float radius = dynamicLight->size;
+
+		if (VectorDistance((*r_refdef.vieworg), dynamicLight->origin) > radius + 32)
+		{
+			//outside sphere ? do AABB check
+			vec3_t mins, maxs;
+			for (int j = 0; j < 3; j++)
+			{
+				mins[j] = dynamicLight->origin[j] - radius;
+				maxs[j] = dynamicLight->origin[j] + radius;
+			}
+
+			if (R_CullBox(mins, maxs))
+				return;
+
+			g_VisibleDynamicLights.emplace_back(dynamicLight, true);
+		}
+		else
+		{
+			g_VisibleDynamicLights.emplace_back(dynamicLight, false);
+		}
+	}
+	else if (dynamicLight->type == DynamicLightType_Spot)
+	{
+		float maxRadius = max(dynamicLight->size, dynamicLight->distance);
+
+		//outside sphere ? do AABB check
+		vec3_t mins, maxs;
+		for (int j = 0; j < 3; j++)
+		{
+			mins[j] = dynamicLight->origin[j] - maxRadius;
+			maxs[j] = dynamicLight->origin[j] + maxRadius;
+		}
+
+		if (R_CullBox(mins, maxs))
+			return;
+
+		vec3_t dlight_vforward;
+		vec3_t dlight_vright;
+		vec3_t dlight_vup;
+		AngleVectors(dynamicLight->angles, dlight_vforward, dlight_vright, dlight_vup);
+
+		vec3_t adjustedOrigin;
+		VectorMA(dynamicLight->origin, -24.0f, dlight_vforward, adjustedOrigin);
+		float adjustedDistance = dynamicLight->distance + 64.0f;
+
+		float coneAngle = dynamicLight->coneAngle;
+		float coneCosAngle = cosf(coneAngle);
+
+		if (!Util_IsOriginInCone((*r_refdef.vieworg), adjustedOrigin, dlight_vforward, coneCosAngle, adjustedDistance))
+		{
+			g_VisibleDynamicLights.emplace_back(dynamicLight, true);
+		}
+		else
+		{
+			g_VisibleDynamicLights.emplace_back(dynamicLight, false);
+		}
+	}
+	else if (dynamicLight->type == DynamicLightType_Directional)
+	{
+		//No vis check, always visible
+		g_VisibleDynamicLights.emplace_back(dynamicLight, false);
+	}
+}
+
+/*
+	Purpose: iterate through all visible dynamic lights
+*/
+void R_IterateVisibleDynamicLights(
 	fnPointLightCallback pointlightCallback, 
 	fnSpotLightCallback spotlightCallback,
 	fnDirectionalLightCallback directionalLightCallback,
 	void *context)
 {
-	for (size_t i = 0; i < g_DynamicLights.size(); i++)
+	for (size_t i = 0; i < g_VisibleDynamicLights.size(); i++)
 	{
-		const auto &dynlight = g_DynamicLights[i];
+		const auto &entry = g_VisibleDynamicLights[i];
 
-		if (dynlight->type == DynamicLightType_Point)
+		const auto& dynamicLight = entry.m_pDynamicLight;
+
+		if (dynamicLight->type == DynamicLightType_Point)
 		{
-			float radius = max(dynlight->size, 0);
+			PointLightCallbackArgs args{};
 
-			vec3_t dlight_origin;
+			args.radius = dynamicLight->size;
+			VectorCopy(dynamicLight->origin, args.origin);
 
-			if (dynlight->follow_player)
-			{
-				VectorCopy((*r_refdef.vieworg), dlight_origin);
+			VectorCopy(dynamicLight->color, args.color);
+			args.ambient = dynamicLight->ambient;
+			args.diffuse = dynamicLight->diffuse;
+			args.specular = dynamicLight->specular;
+			args.specularpow = dynamicLight->specularpow;
+
+			if (dynamicLight->shadow > 0) {
+				args.ppDynamicShadowTexture = &dynamicLight->pDynamicShadowTexture;
+				args.ppStaticShadowTexture = &dynamicLight->pStaticShadowTexture;
+				args.staticShadowSize = dynamicLight->static_shadow_size;
+				args.dynamicShadowSize = dynamicLight->dynamic_shadow_size;
 			}
-			else
-			{
-				VectorCopy(dynlight->origin, dlight_origin);
-			}
 
-			vec3_t distToLight;
-			VectorSubtract((*r_refdef.vieworg), dlight_origin, distToLight);
+			args.bVolume = entry.m_bVolume;
 
-			if (VectorLength(distToLight) > radius + 32)
-			{
-				vec3_t mins, maxs;
-				for (int j = 0; j < 3; j++)
-				{
-					mins[j] = dlight_origin[j] - radius;
-					maxs[j] = dlight_origin[j] + radius;
-				}
-
-				if (R_CullBox(mins, maxs))
-					continue;
-
-				PointLightCallbackArgs args{};
-				args.radius = radius;
-				VectorCopy(dlight_origin, args.origin);
-				VectorCopy(dynlight->color, args.color);
-
-				args.ambient = dynlight->ambient;
-				args.diffuse = dynlight->diffuse;
-				args.specular = dynlight->specular;
-				args.specularpow = dynlight->specularpow;
-
-				if (dynlight->shadow > 0) {
-					args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
-					args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
-					args.staticShadowSize = dynlight->static_shadow_size;
-					args.dynamicShadowSize = dynlight->dynamic_shadow_size;
-				}
-
-				args.bVolume = true;
-				args.bStatic = true;
-
-				pointlightCallback(&args, context);
-			}
-			else
-			{
-				PointLightCallbackArgs args{};
-				args.radius = radius;
-				VectorCopy(dynlight->origin, args.origin);
-				VectorCopy(dynlight->color, args.color);
-
-				args.ambient = dynlight->ambient;
-				args.diffuse = dynlight->diffuse;
-				args.specular = dynlight->specular;
-				args.specularpow = dynlight->specularpow; 
-
-				if (dynlight->shadow > 0) {
-					args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
-					args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
-					args.staticShadowSize = dynlight->static_shadow_size;
-					args.dynamicShadowSize = dynlight->dynamic_shadow_size;
-				}
-
-				args.bVolume = false;
-				args.bStatic = true;
-
-				pointlightCallback(&args, context);
-			}
+			pointlightCallback(&args, context);
 		}
-		else if (dynlight->type == DynamicLightType_Spot)
+		else if (dynamicLight->type == DynamicLightType_Spot)
 		{
-			//not implemented yet
+			SpotLightCallbackArgs args{};
+
+			args.radius = dynamicLight->size;
+			args.distance = dynamicLight->distance;
+			args.coneAngle = dynamicLight->coneAngle;
+			VectorCopy(dynamicLight->origin, args.origin);
+			VectorCopy(dynamicLight->angles, args.angles);
+
+			VectorCopy(dynamicLight->color, args.color);
+			args.ambient = dynamicLight->ambient;
+			args.diffuse = dynamicLight->diffuse;
+			args.specular = dynamicLight->specular;
+			args.specularpow = dynamicLight->specularpow;
+
+			if (dynamicLight->shadow > 0) {
+				args.ppDynamicShadowTexture = &dynamicLight->pDynamicShadowTexture;
+				args.ppStaticShadowTexture = &dynamicLight->pStaticShadowTexture;
+				args.staticShadowSize = dynamicLight->static_shadow_size;
+				args.dynamicShadowSize = dynamicLight->dynamic_shadow_size;
+			}
+
+			args.bVolume = entry.m_bVolume;
+			args.bHideEntitySource = entry.m_bHideEntitySource;
+			args.pHideEntity = entry.m_pHideEntity;
+
+			spotlightCallback(&args, context);
 		}
-		else if (dynlight->type == DynamicLightType_Directional)
+		else if (dynamicLight->type == DynamicLightType_Directional)
 		{
-			vec3_t dlight_origin;
+			DirectionalLightCallbackArgs args{};
+			VectorCopy(dynamicLight->origin, args.origin);
+			VectorCopy(dynamicLight->angles, args.angles);
+			args.size = dynamicLight->size;
 
-			vec3_t vforward, vright, vup;
-			AngleVectors(dynlight->angles, vforward, vright, vup);
+			VectorCopy(dynamicLight->color, args.color);
+			args.ambient = dynamicLight->ambient;
+			args.diffuse = dynamicLight->diffuse;
+			args.specular = dynamicLight->specular;
+			args.specularpow = dynamicLight->specularpow;
 
-			if (dynlight->follow_player)
-			{
-				VectorCopy((*r_refdef.vieworg), dlight_origin);
-			}
-			else
-			{
-				VectorCopy(dynlight->origin, dlight_origin);
-			}
-
-			DirectionalLightCallbackArgs args;
-			VectorCopy(dlight_origin, args.origin);
-			VectorCopy(dynlight->angles, args.angle);
-			VectorCopy(vforward, args.vforward);
-			VectorCopy(vright, args.vright);
-			VectorCopy(vup, args.vup);
-			VectorCopy(dynlight->color, args.color);
-			args.size = dynlight->size;
-			args.ambient = dynlight->ambient;
-			args.diffuse = dynlight->diffuse;
-			args.specular = dynlight->specular;
-			args.specularpow = dynlight->specularpow;
-
-			if (dynlight->shadow > 0) {
-				args.ppStaticShadowTexture = &dynlight->pStaticShadowTexture;
-				args.ppDynamicShadowTexture = &dynlight->pDynamicShadowTexture;
-				args.dynamicShadowSize = dynlight->dynamic_shadow_size;
-				args.staticShadowSize = dynlight->static_shadow_size;
-				args.csmLambda = dynlight->csm_lambda;
-				args.csmMargin = dynlight->csm_margin;
+			if (dynamicLight->shadow > 0) {
+				args.ppStaticShadowTexture = &dynamicLight->pStaticShadowTexture;
+				args.ppDynamicShadowTexture = &dynamicLight->pDynamicShadowTexture;
+				args.dynamicShadowSize = dynamicLight->dynamic_shadow_size;
+				args.staticShadowSize = dynamicLight->static_shadow_size;
+				args.csmLambda = dynamicLight->csm_lambda;
+				args.csmMargin = dynamicLight->csm_margin;
 			}
 
-			args.bVolume = false; // DirectionalLight always uses fullscreen
-			args.bStatic = true;
+			args.bVolume = entry.m_bVolume;
 
 			directionalLightCallback(&args, context);
-		}
-	}
-
-	int max_dlight = EngineGetMaxDLights();
-	
-	dlight_t *dl = cl_dlights;
-	float curtime = (*cl_time);
-
-	for (int i = 0; i < max_dlight; i++, dl++)
-	{
-		if (dl->die < curtime || !dl->radius)
-			continue;
-
-		if (R_IsDLightFlashlight(dl))
-		{
-			vec3_t dlight_origin;
-			vec3_t dlight_angle;
-			vec3_t dlight_vforward;
-			vec3_t dlight_vright;
-			vec3_t dlight_vup;
-
-			auto ent = R_GetDLightBindingEntity(dl);
-
-			if (!ent)
-				continue;
-
-			bool bIsFromLocalPlayer = (ent == gEngfuncs.GetLocalPlayer()) ? true : false;
-
-			vec3_t org = { 0 };
-			vec3_t end = { 0 };
-
-			float maxDistance = r_flashlight_distance->GetValue();
-			float minDistance = r_flashlight_min_distance->GetValue();
-
-			if (bIsFromLocalPlayer && R_IsRenderingFirstPersonView())
-			{
-				VectorCopy((*r_refdef.viewangles), dlight_angle);
-				AngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
-
-				bool bUsingAttachment = false;
-
-				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
-				{
-					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
-
-					attachmentIndex = math_clamp(attachmentIndex, 1, 4) - 1;
-
-					if (cl_viewent->model)
-					{
-						auto pstudiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(cl_viewent->model);
-
-						if (pstudiohdr)
-						{
-							auto numattachments = pstudiohdr->numattachments;
-
-							if (attachmentIndex < numattachments)
-							{
-								bUsingAttachment = true;
-
-								VectorCopy(cl_viewent->attachment[attachmentIndex], org);
-							}
-						}
-					}
-				}
-
-				if (!bUsingAttachment)
-				{
-					VectorCopy((*r_refdef.vieworg), org);
-					VectorMA(org, 2, dlight_vup, org);
-					if (cl_righthand && cl_righthand->value > 0)
-					{
-						VectorMA(org, 10, dlight_vright, org);
-					}
-					else
-					{
-						VectorMA(org, -10, dlight_vright, org);
-					}
-				}
-
-				VectorCopy(org, dlight_origin);
-				VectorMA(org, maxDistance, dlight_vforward, end);
-			}
-			else
-			{
-				VectorCopy(ent->angles, dlight_angle);
-				dlight_angle[0] = dlight_angle[0] * -3.0f;
-
-				AngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
-
-				VectorCopy(ent->origin, org);
-				VectorMA(org, 8, dlight_vup, org);
-				VectorMA(org, 10, dlight_vright, org);
-
-				VectorCopy(org, dlight_origin);
-				VectorMA(org, maxDistance, dlight_vforward, end);
-			}
-#if 1//Don't do such thing for spotlight
-			struct pmtrace_s trace {};
-
-			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
-			{
-				// Trace a line outward, don't use hitboxes (too slow)
-				pmove_10152->usehull = 2;
-				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
-
-				float distance = trace.fraction * maxDistance;
-
-				if (trace.startsolid || distance < minDistance)
-					continue;
-			}
-			else
-			{
-				// Trace a line outward, don't use hitboxes (too slow)
-				pmove->usehull = 2;
-				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
-
-				float distance = trace.fraction * maxDistance;
-
-				if (trace.startsolid || distance < minDistance)
-					continue;
-			}
-#endif
-			float coneCosAngle = r_flashlight_cone_cosine->GetValue();
-			float coneAngle = acosf(coneCosAngle);
-			float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
-			float coneTanAngle = tanf(coneAngle);
-			float radius = maxDistance * coneTanAngle;
-			
-			float ambient = r_flashlight_ambient->GetValue();
-			float diffuse = r_flashlight_diffuse->GetValue();
-			float specular = r_flashlight_specular->GetValue();
-			float specularpow = r_flashlight_specularpow->GetValue();
-
-			vec3_t color;
-			color[0] = (float)dl->color.r / 255.0f;
-			color[1] = (float)dl->color.g / 255.0f;
-			color[2] = (float)dl->color.b / 255.0f;
-
-			vec3_t adjustedOrigin;
-			VectorMA(dlight_origin, -20.0f, dlight_vforward, adjustedOrigin);
-			float adjustedDistance = maxDistance + 40.0;
-
-			if (!Util_IsOriginInCone((*r_refdef.vieworg), adjustedOrigin, dlight_vforward, coneCosAngle, adjustedDistance))
-			{
-				SpotLightCallbackArgs args{};
-				args.distance = maxDistance;
-				args.radius = radius;
-				args.coneAngle = coneAngle;
-				args.coneCosAngle = coneCosAngle;
-				args.coneSinAngle = coneSinAngle;
-				args.coneTanAngle = coneTanAngle;
-				VectorCopy(dlight_origin, args.origin);
-				VectorCopy(dlight_angle, args.angle);
-				VectorCopy(dlight_vforward, args.vforward);
-				VectorCopy(dlight_vright, args.vright);
-				VectorCopy(dlight_vup, args.vup);
-				VectorCopy(color, args.color);
-
-				args.ambient = ambient;
-				args.diffuse = diffuse;
-				args.specular = specular;
-				args.specularpow = specularpow;
-
-				//no static shadow
-				args.ppDynamicShadowTexture = &g_DLightShadowTextures[i];
-				args.dynamicShadowSize = 256;
-
-				args.bVolume = true;
-				args.bStatic = false;
-				args.bHideEntitySource = true;
-				args.pHideEntity = ent;
-
-				spotlightCallback(&args, context);
-			}
-			else
-			{
-				SpotLightCallbackArgs args{};
-				args.distance = maxDistance;
-				args.radius = radius;
-				args.coneAngle = coneAngle;
-				args.coneCosAngle = coneCosAngle;
-				args.coneSinAngle = coneSinAngle;
-				args.coneTanAngle = coneTanAngle;
-				VectorCopy(dlight_origin, args.origin);
-				VectorCopy(dlight_angle, args.angle);
-				VectorCopy(dlight_vforward, args.vforward);
-				VectorCopy(dlight_vright, args.vright);
-				VectorCopy(dlight_vup, args.vup);
-				VectorCopy(color, args.color);
-
-				args.ambient = ambient;
-				args.diffuse = diffuse;
-				args.specular = specular;
-				args.specularpow = specularpow;
-
-				//no static shadow
-				args.ppDynamicShadowTexture = &g_DLightShadowTextures[i];
-				args.dynamicShadowSize = 256;
-
-				args.bVolume = false;
-				args.bStatic = false;
-				args.bHideEntitySource = true;
-				args.pHideEntity = ent;
-
-				spotlightCallback(&args, context);
-			}			
-		}
-		else
-		{
-			vec3_t color;
-			color[0] = (float)dl->color.r / 255.0f;
-			color[1] = (float)dl->color.g / 255.0f;
-			color[2] = (float)dl->color.b / 255.0f;
-
-			float ambient = r_dynlight_ambient->GetValue();
-			float diffuse = r_dynlight_diffuse->GetValue();
-			float specular = r_dynlight_specular->GetValue();
-			float specularpow = r_dynlight_specularpow->GetValue();
-
-			float radius = math_clamp(dl->radius, 0, 999999);
-
-			vec3_t distToLight;
-			VectorSubtract((*r_refdef.vieworg), dl->origin, distToLight);
-
-			if (VectorLength(distToLight) > radius + 32)
-			{
-				vec3_t mins, maxs;
-				for (int j = 0; j < 3; j++)
-				{
-					mins[j] = dl->origin[j] - radius;
-					maxs[j] = dl->origin[j] + radius;
-				}
-
-				if (R_CullBox(mins, maxs))
-					continue;
-
-				PointLightCallbackArgs args{};
-				args.radius = radius;
-				VectorCopy(dl->origin, args.origin);
-				VectorCopy(color, args.color);
-
-				args.ambient = ambient;
-				args.diffuse = diffuse;
-				args.specular = specular;
-				args.specularpow = specularpow;
-				args.bVolume = true;
-				args.bStatic = false;
-
-				pointlightCallback(&args, context);
-			}
-			else
-			{
-				PointLightCallbackArgs args{};
-				args.radius = radius;
-				VectorCopy(dl->origin, args.origin);
-				VectorCopy(color, args.color);
-
-				args.ambient = ambient;
-				args.diffuse = diffuse;
-				args.specular = specular;
-				args.specularpow = specularpow;
-				args.bVolume = false;
-				args.bStatic = false;
-
-				pointlightCallback(&args, context);
-			}
 		}
 	}
 }
@@ -1385,15 +1157,18 @@ void R_LightShadingPass(void)
 
 	const auto SpotLightCallback = [](SpotLightCallbackArgs *args, void *context)
 	{
+		vec3_t angles = { args->angles[0], args->angles[1], args->angles[2] };
+		vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+		vec3_t scales = { args->distance, args->radius, args->radius };
+
+		vec3_t v_forward{}, v_right{}, v_up{};
+		AngleVectors(angles, v_forward, v_right, v_up);
+
 		if (args->bVolume)
 		{
 			GL_BeginDebugGroup("R_LightShadingPass - DrawConeSpotLight");
 
 			GL_BindVAO(r_cone_vao);
-
-			vec3_t angles = { args->angle[0], args->angle[1], args->angle[2] };
-			vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
-			vec3_t scales = { args->distance, args->radius, args->radius };
 
 			float modelmatrix[4][4];
 			Matrix4x4_CreateFromEntityEx(modelmatrix, angles, origin, scales);
@@ -1428,15 +1203,15 @@ void R_LightShadingPass(void)
 			}
 			if (prog.u_lightdir != -1)
 			{
-				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+				glUniform3f(prog.u_lightdir, v_forward[0], v_forward[1], v_forward[2]);
 			}
 			if (prog.u_lightright != -1)
 			{
-				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+				glUniform3f(prog.u_lightright, v_right[0], v_right[1], v_right[2]);
 			}
 			if (prog.u_lightup != -1)
 			{
-				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+				glUniform3f(prog.u_lightup, v_up[0], v_up[1], v_up[2]);
 			}
 			if (prog.u_lightpos != -1)
 			{
@@ -1448,7 +1223,9 @@ void R_LightShadingPass(void)
 			}
 			if (prog.u_lightcone != -1)
 			{
-				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+				float coneCosAngle = cosf(args->coneAngle);
+				float coneSinAngle = sinf(args->coneAngle);
+				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
 			}
 			if (prog.u_lightradius != -1)
 			{
@@ -1530,15 +1307,15 @@ void R_LightShadingPass(void)
 
 			if (prog.u_lightdir != -1)
 			{
-				glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+				glUniform3f(prog.u_lightdir, v_forward[0], v_forward[1], v_forward[2]);
 			}
 			if (prog.u_lightright != -1)
 			{
-				glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+				glUniform3f(prog.u_lightright, v_right[0], v_right[1], v_right[2]);
 			}
 			if (prog.u_lightup != -1)
 			{
-				glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+				glUniform3f(prog.u_lightup, v_up[0], v_up[1], v_up[2]);
 			}
 			if (prog.u_lightpos != -1)
 			{
@@ -1550,7 +1327,9 @@ void R_LightShadingPass(void)
 			}
 			if (prog.u_lightcone != -1)
 			{
-				glUniform2f(prog.u_lightcone, args->coneCosAngle, args->coneSinAngle);
+				float coneCosAngle = cosf(args->coneAngle);
+				float coneSinAngle = sinf(args->coneAngle);
+				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
 			}
 			if (prog.u_lightradius != -1)
 			{
@@ -1633,20 +1412,26 @@ void R_LightShadingPass(void)
 			DLightProgramState |= DLIGHT_CSM_SHADOW_TEXTURE_ENABLED;
 		}
 
+		vec3_t angles = { args->angles[0], args->angles[1], args->angles[2] };
+		vec3_t origin = { args->origin[0], args->origin[1], args->origin[2] };
+
+		vec3_t v_forward{}, v_right{}, v_up{};
+		AngleVectors(angles, v_forward, v_right, v_up);
+
 		dlight_program_t prog = { 0 };
 		R_UseDLightProgram(DLightProgramState, &prog);
 
 		if (prog.u_lightdir != -1)
 		{
-			glUniform3f(prog.u_lightdir, args->vforward[0], args->vforward[1], args->vforward[2]);
+			glUniform3f(prog.u_lightdir, v_forward[0], v_forward[1], v_forward[2]);
 		}
 		if (prog.u_lightright != -1)
 		{
-			glUniform3f(prog.u_lightright, args->vright[0], args->vright[1], args->vright[2]);
+			glUniform3f(prog.u_lightright, v_right[0], v_right[1], v_right[2]);
 		}
 		if (prog.u_lightup != -1)
 		{
-			glUniform3f(prog.u_lightup, args->vup[0], args->vup[1], args->vup[2]);
+			glUniform3f(prog.u_lightup, v_up[0], v_up[1], v_up[2]);
 		}
 		if (prog.u_lightpos != -1)
 		{
@@ -1740,7 +1525,7 @@ void R_LightShadingPass(void)
 		GL_EndDebugGroup();
 	};
 
-	R_IterateDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
+	R_IterateVisibleDynamicLights(PointLightCallback, SpotLightCallback, DirectionalLightCallback, nullptr);
 
 	glDisable(GL_BLEND);
 
@@ -1960,5 +1745,231 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 		GL_BindVAO(0);
 
 		GL_UseProgram(0);
+	}
+}
+
+/*
+	Purpose: Get CDynamicLight at given slot, allocate one if no dynamic light is available.
+*/
+std::shared_ptr<CDynamicLight> R_GetEngineDynamicLight(int index)
+{
+	if (g_EngineDynamicLights[index]) {
+		return g_EngineDynamicLights[index];
+	}
+
+	std::shared_ptr<CDynamicLight> dynamicLight = std::make_shared<CDynamicLight>();
+
+	g_EngineDynamicLights[index] = dynamicLight;
+
+	return dynamicLight;
+}
+
+/*
+	Purpose: Map cl_dlights array to g_EngineDynamicLights
+*/
+void R_ProcessEngineDynamicLights()
+{
+	int max_dlight = EngineGetMaxDLights();
+
+	if (g_EngineDynamicLights.size() < max_dlight)
+	{
+		g_EngineDynamicLights.resize(max_dlight);
+	}
+
+	dlight_t* dl = cl_dlights;
+	float curtime = (*cl_time);
+
+	for (int i = 0; i < max_dlight; i++, dl++)
+	{
+		std::shared_ptr<CDynamicLight> dynamicLight = R_GetEngineDynamicLight(i);
+
+		if (dl->die < curtime || !dl->radius)
+		{
+			dynamicLight->type = DynamicLightType_Unknown;
+			continue;
+		}
+
+		if (R_IsDLightFlashlight(dl))
+		{
+			vec3_t dlight_origin;
+			vec3_t dlight_angles;
+			vec3_t dlight_vforward;
+			vec3_t dlight_vright;
+			vec3_t dlight_vup;
+
+			auto ent = R_GetDLightBindingEntity(dl);
+
+			if (!ent)
+			{
+				dynamicLight->type = DynamicLightType_Unknown;
+				continue;
+			}
+
+			dynamicLight->source_entity_index = ent->index;
+
+			bool bIsFromLocalPlayer = (ent == gEngfuncs.GetLocalPlayer()) ? true : false;
+
+			vec3_t org = { 0 };
+			vec3_t end = { 0 };
+
+			float maxDistance = r_flashlight_distance->GetValue();
+			float minDistance = r_flashlight_min_distance->GetValue();
+
+			if (bIsFromLocalPlayer && R_IsRenderingFirstPersonView())
+			{
+				VectorCopy((*r_refdef.viewangles), dlight_angles);
+				AngleVectors(dlight_angles, dlight_vforward, dlight_vright, dlight_vup);
+
+				bool bUsingAttachment = false;
+
+				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
+				{
+					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
+
+					attachmentIndex = math_clamp(attachmentIndex, 1, 4) - 1;
+
+					if (cl_viewent->model)
+					{
+						auto pstudiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(cl_viewent->model);
+
+						if (pstudiohdr)
+						{
+							auto numattachments = pstudiohdr->numattachments;
+
+							if (attachmentIndex < numattachments)
+							{
+								bUsingAttachment = true;
+
+								VectorCopy(cl_viewent->attachment[attachmentIndex], org);
+							}
+						}
+					}
+				}
+
+				if (!bUsingAttachment)
+				{
+					VectorCopy((*r_refdef.vieworg), org);
+					VectorMA(org, 2, dlight_vup, org);
+					if (cl_righthand && cl_righthand->value > 0)
+					{
+						VectorMA(org, 10, dlight_vright, org);
+					}
+					else
+					{
+						VectorMA(org, -10, dlight_vright, org);
+					}
+				}
+
+				VectorCopy(org, dlight_origin);
+				VectorMA(org, maxDistance, dlight_vforward, end);
+			}
+			else
+			{
+				VectorCopy(ent->angles, dlight_angles);
+				dlight_angles[0] = dlight_angles[0] * -3.0f;
+
+				AngleVectors(dlight_angles, dlight_vforward, dlight_vright, dlight_vup);
+
+				VectorCopy(ent->origin, org);
+				VectorMA(org, 8, dlight_vup, org);
+				VectorMA(org, 10, dlight_vright, org);
+
+				VectorCopy(org, dlight_origin);
+				VectorMA(org, maxDistance, dlight_vforward, end);
+			}
+#if 1//Don't do such thing for spotlight
+			struct pmtrace_s trace {};
+
+			if (g_iEngineType == ENGINE_SVENGINE && g_dwEngineBuildnum >= 10152)
+			{
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove_10152->usehull = 2;
+				trace = pmove_10152->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
+
+				float distance = trace.fraction * maxDistance;
+
+				if (trace.startsolid || distance < minDistance) {
+					dynamicLight->type = DynamicLightType_Unknown;
+					continue;
+				}
+			}
+			else
+			{
+				// Trace a line outward, don't use hitboxes (too slow)
+				pmove->usehull = 2;
+				trace = pmove->PM_PlayerTrace(dlight_origin, end, PM_GLASS_IGNORE, -1);
+
+				float distance = trace.fraction * maxDistance;
+
+				if (trace.startsolid || distance < minDistance) {
+					dynamicLight->type = DynamicLightType_Unknown;
+					continue;
+				}
+			}
+#endif
+			float coneAngle = r_flashlight_cone_degree->GetValue() * M_PI / 360;
+			float coneTanAngle = tanf(coneAngle);
+			float radius = maxDistance * coneTanAngle;
+
+			float ambient = r_flashlight_ambient->GetValue();
+			float diffuse = r_flashlight_diffuse->GetValue();
+			float specular = r_flashlight_specular->GetValue();
+			float specularpow = r_flashlight_specularpow->GetValue();
+
+			vec3_t dlight_color;
+			dlight_color[0] = (float)dl->color.r / 255.0f;
+			dlight_color[1] = (float)dl->color.g / 255.0f;
+			dlight_color[2] = (float)dl->color.b / 255.0f;
+
+			dynamicLight->type = DynamicLightType_Spot;
+
+			dynamicLight->distance = maxDistance;
+			dynamicLight->size = radius;
+			dynamicLight->coneAngle = coneAngle;
+			VectorCopy(dlight_origin, dynamicLight->origin);
+			VectorCopy(dlight_angles, dynamicLight->angles);
+			VectorCopy(dlight_color, dynamicLight->color);
+
+			dynamicLight->ambient = ambient;
+			dynamicLight->diffuse = diffuse;
+			dynamicLight->specular = specular;
+			dynamicLight->specularpow = specularpow;
+
+			dynamicLight->static_shadow_size = 0;
+			dynamicLight->dynamic_shadow_size = 256;
+			dynamicLight->shadow = 1;
+		}
+		else
+		{
+			dynamicLight->type = DynamicLightType_Point;
+
+			vec3_t dlight_color;
+			dlight_color[0] = (float)dl->color.r / 255.0f;
+			dlight_color[1] = (float)dl->color.g / 255.0f;
+			dlight_color[2] = (float)dl->color.b / 255.0f;
+
+			float ambient = r_dynlight_ambient->GetValue();
+			float diffuse = r_dynlight_diffuse->GetValue();
+			float specular = r_dynlight_specular->GetValue();
+			float specularpow = r_dynlight_specularpow->GetValue();
+
+			float radius = math_clamp(dl->radius, 0, 999999);
+
+			vec3_t distToLight;
+			VectorSubtract((*r_refdef.vieworg), dl->origin, distToLight);
+
+			dynamicLight->size = radius;
+			VectorCopy(dl->origin, dynamicLight->origin);
+			VectorCopy(dlight_color, dynamicLight->color);
+
+			dynamicLight->ambient = ambient;
+			dynamicLight->diffuse = diffuse;
+			dynamicLight->specular = specular;
+			dynamicLight->specularpow = specularpow;
+
+			dynamicLight->static_shadow_size = 0;
+			dynamicLight->dynamic_shadow_size = 0;
+			dynamicLight->shadow = 0;
+		}
 	}
 }

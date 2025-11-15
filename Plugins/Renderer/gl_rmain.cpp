@@ -244,18 +244,18 @@ bool r_draw_hashair = false;
 bool r_draw_hasoutline = false;
 
 /*
-	Purpose: Indicates that we are in drawing shadow view using "g_pCurrentShadowTexture->viewport" as viewport and g_pCurrentShadowTexture->proj/worldmatrix as proj/worldmatrix. 
+	Purpose: Indicates that we are in drawing shadow view using "g_pCurrentShadowTexture->viewport" as viewport and g_pCurrentShadowTexture->proj/worldmatrix as proj/worldmatrix.
 	Note that transparent objects are skipped.
 */
 bool r_draw_shadowview = false;
 
 /*
-	Purpose: Drawing multi viewport, 
+	Purpose: Drawing multi viewport,
 */
 bool r_draw_multiview = false;
 
 /*
-	Purpose: Skips R_CullBox (frustum culling) check 
+	Purpose: Skips R_CullBox (frustum culling) check
 */
 bool r_draw_nofrustumcull = false;
 
@@ -298,6 +298,12 @@ bool r_draw_reflectview = false;
 	Purpose: Indicates that we are in drawing water refract view
 */
 bool r_draw_refractview = false;
+
+/*
+	Purpose: Indicates that we are temporary hiding specified entity
+*/
+bool r_draw_hide_entity = false;
+int r_draw_hide_entity_index = 0;
 
 int r_draw_classify = 0;
 
@@ -460,7 +466,7 @@ cvar_t* r_wsurf_sky_fog = nullptr;
 
 cvar_t* gl_nearplane = nullptr;
 
-cvar_t* r_glow_bloomscale = nullptr; 
+cvar_t* r_glow_bloomscale = nullptr;
 
 void* Sys_GetMainWindow()
 {
@@ -501,12 +507,15 @@ bool R_IsRenderingGBuffer()
 }
 
 /*
-	Purpose : Check if we are rendering scene with deferred lighting pipeline, lightmap should be off
+	Purpose : Check if we are rendering manipulated lightmap.
+
+	Currently, at least 1 "light_dynamic" should be added to enable manipulated lightmap.
+
 */
 
-bool R_IsRenderingDeferredLightingScene()
+bool R_IsRenderingManipulatedLightmap()
 {
-	return R_IsRenderingGBuffer() && g_DynamicLights.size() > 0;
+	return R_IsRenderingGBuffer() && g_BSPDynamicLights.size() > 0;
 }
 
 /*
@@ -1241,7 +1250,7 @@ void triapi_End()
 		triapi_EndClear();
 		return;
 	}
-	
+
 	if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES)
 	{
 		if (n < 3)
@@ -1406,7 +1415,7 @@ void triapi_End()
 
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_TriAPIIndexBuffer->GetGLBufferObject());
 
-			});
+				});
 		}
 		else
 		{
@@ -1435,7 +1444,7 @@ void triapi_End()
 	{
 		//ring buffer full
 		gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIIndexBuffer full!\n");
-	
+
 		triapi_EndClear();
 		return;
 	}
@@ -2753,6 +2762,10 @@ bool SCR_IsLoadingVisible()
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
+/*
+	Purpose: Called once per frame, before running phys simulation
+*/
+
 void R_GameFrameStart()
 {
 	g_bHasLowerBody = false;
@@ -2760,13 +2773,31 @@ void R_GameFrameStart()
 	R_EntityComponents_StartFrame();
 }
 
+/*
+	Purpose: Called once per view, before rendering shadow pass and water pass.
+*/
+
 void R_RenderViewStart()
 {
+	g_VisibleDynamicLights.clear();
 
+	for (const auto& dynamicLight : g_BSPDynamicLights)
+	{
+		if (dynamicLight) {
+			R_AddVisibleDynamicLight(dynamicLight);
+		}
+	}
+
+	for (const auto& dynamicLight : g_EngineDynamicLights)
+	{
+		if (dynamicLight) {
+			R_AddVisibleDynamicLight(dynamicLight);
+		}
+	}
 }
 
 /*
-	Purpose: Called once per frame, before running any render pass, but after physics and networking
+	Purpose: Called once per frame, before running any render pass, but after phys simulation and networking
 */
 
 void R_RenderFrameStart()
@@ -2774,7 +2805,7 @@ void R_RenderFrameStart()
 	//Make sure r_framecount be advanced once per frame
 	++(*r_framecount);
 
-	if(g_TriAPIVertexBuffer)
+	if (g_TriAPIVertexBuffer)
 	{
 		g_TriAPIVertexBuffer->BeginFrame();
 	}
@@ -2808,6 +2839,7 @@ void R_RenderFrameStart()
 	R_StudioStartFrame();
 	R_CheckVariables();
 	R_AnimateLight();
+	R_ProcessEngineDynamicLights();
 
 	for (const auto& cb : g_RenderCallbacks)
 	{
@@ -2852,7 +2884,7 @@ void R_RenderEndFrame()
 	{
 		g_FilledRectVertexBuffer->EndFrame();
 	}
-	if(g_RectInstanceBuffer)
+	if (g_RectInstanceBuffer)
 	{
 		g_RectInstanceBuffer->EndFrame();
 	}
@@ -2986,7 +3018,6 @@ void R_PreRenderView()
 		cb->OnPreRenderView();
 	}
 
-	//Currently unused
 	R_RenderViewStart();
 
 	R_RenderShadowMap();
@@ -3252,7 +3283,7 @@ void R_RenderView_SvEngine(int viewIdx)
 
 	if (R_IsRenderingPortal())
 	{
-		
+
 	}
 	else
 	{
@@ -3741,7 +3772,7 @@ void R_NewMap(void)
 	{
 		R_FreeAllStudioRenderData();
 	}
-	else if((int)r_studio_unload->value == 1)
+	else if ((int)r_studio_unload->value == 1)
 	{
 		//Free GPU resources after one seconds...
 		auto pWorldSurfaceWorldModel = R_GetWorldSurfaceModel((*cl_worldmodel));
@@ -4039,7 +4070,7 @@ void R_AdjustScopeFOVForViewModel(float& fov)
 	}
 }
 
-void R_CalcMainViewFov(float &xfov, float& yfov)
+void R_CalcMainViewFov(float& xfov, float& yfov)
 {
 	if ((int)r_vertical_fov->value > 0)
 	{
@@ -4665,7 +4696,7 @@ int EngineGetMaxELights(void)
 int EngineGetMaxLightmapTextures(void)
 {
 	//if (g_iEngineType == ENGINE_SVENGINE)
-		return MAX_LIGHTMAPS_SVENGINE;
+	return MAX_LIGHTMAPS_SVENGINE;
 
 	//return MAX_LIGHTMAPS;
 }
@@ -5297,14 +5328,6 @@ void R_Reload_f(void)
 		}
 	}
 
-	for (const auto& pDynamicLight : g_DynamicLights)
-	{
-		if (pDynamicLight->pDynamicShadowTexture)
-		{
-			pDynamicLight->pDynamicShadowTexture->SetReady(false);
-		}
-	}
-
 	gEngfuncs.Con_Printf("Map entities reloaded\n");
 }
 
@@ -5678,7 +5701,7 @@ int __cdecl CoreProfile_SDL_GL_ExtensionSupported(const char* extension)
 	return gPrivateFuncs.SDL_GL_ExtensionSupported(extension);
 }
 
-void InitializeGraphicEngine(void *window)
+void InitializeGraphicEngine(void* window)
 {
 	if (!gPrivateFuncs.SDL_GL_SetAttribute)
 	{
@@ -5817,7 +5840,7 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 
 	if (r)
 	{
-		
+
 	}
 
 	return r;
@@ -5829,7 +5852,7 @@ qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, 
 
 	if (r)
 	{
-		
+
 	}
 
 	return r;
@@ -6165,7 +6188,7 @@ static void AdjustSubRect(mspriteframe_t* pFrame, float* pfLeft, float* pfRight,
 	return;
 }
 
-void DrawFrameInternal(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, uint64_t programState, const char *szDebugName)
+void DrawFrameInternal(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect, uint64_t programState, const char* szDebugName)
 {
 	float fLeft = 0;
 	float fRight = 1;
@@ -6343,7 +6366,7 @@ void Draw_FillRGBA(int x, int y, int w, int h, int r, int g, int b, int a)
 	// Convert RGBA values from 0-255 to 0.0-1.0 range
 	float color[4] = {
 		r / 255.0f,
-		g / 255.0f, 
+		g / 255.0f,
 		b / 255.0f,
 		a / 255.0f
 	};
@@ -6606,8 +6629,8 @@ public:
 	void DrawFilledRect(const filledrectvertex_t* verticeBuffer, size_t verticeCount, const uint32_t* indices, size_t indicesCount, uint64_t programState, const char* debugMetadata) override
 	{
 		R_DrawFilledRect(verticeBuffer, verticeCount, indices, indicesCount, programState, debugMetadata);
-	}  
-	
+	}
+
 	void DrawTexturedQuad(int gltexturenum, int x0, int y0, int x1, int y1, const float* color4v, uint64_t programState, const char* debugMetadata) override
 	{
 		R_DrawTexturedQuad(gltexturenum, x0, y0, x1, y1, color4v, programState, debugMetadata);
