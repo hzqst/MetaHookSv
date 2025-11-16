@@ -2177,11 +2177,22 @@ bool R_WorldSurfaceLeafHasSky(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* pLe
 	return true;
 }
 
-void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw* pShadowProxyDraw)
+void R_DrawWorldSurfaceModelShadowProxyMesh(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw* pShadowProxyDraw)
 {
-	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxyInternal");
+	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxyMesh");
 
 	program_state_t WSurfProgramState = 0;
+
+	if (pShadowProxyDraw->texture)
+	{
+		WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+
+		GL_Bind(pShadowProxyDraw->texture->gl_texturenum);
+	}
+	else
+	{
+		GL_Bind(0);
+	}
 
 	if (R_IsRenderingGBuffer())
 	{
@@ -2210,6 +2221,11 @@ void R_DrawWorldSurfaceModelShadowProxyInternal(CWorldSurfaceShadowProxyModel* p
 	else if (g_bPortalClipPlaneEnabled[0])
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
+	}
+
+	if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+	{
+		WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 	}
 
 	GL_BindVAO(pShadowProxyModel->hVAO);
@@ -2249,7 +2265,7 @@ void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceModel* pModel)
 		if (!pShadowProxyDraw->drawCount)
 			return;
 
-		R_DrawWorldSurfaceModelShadowProxyInternal(pShadowProxyModel.get(), pShadowProxyDraw.get());
+		R_DrawWorldSurfaceModelShadowProxyMesh(pShadowProxyModel.get(), pShadowProxyDraw.get());
 	}
 
 	GL_EndDebugGroup();
@@ -2326,15 +2342,15 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 	{
 		const auto& texchain = vTexChainList[i];
 
-		auto base = texchain.texture;
+		auto texture = texchain.texture;
 
 		program_state_t WSurfProgramState = 0;
 
-		if (g_WorldSurfaceRenderer.bDiffuseTexture)
+		if (g_WorldSurfaceRenderer.bDiffuseTexture && texture)
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, base->gl_texturenum);
+			GL_BindTextureUnit(WSURF_BIND_DIFFUSE_TEXTURE, GL_TEXTURE_2D, texture->gl_texturenum);
 
 			if (texchain.pRenderMaterial)
 			{
@@ -2592,7 +2608,7 @@ void R_DrawWorldSurfaceLeafAnim(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf* p
 
 		program_state_t WSurfProgramState = 0;
 
-		if (g_WorldSurfaceRenderer.bDiffuseTexture)
+		if (g_WorldSurfaceRenderer.bDiffuseTexture && texture)
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
@@ -4956,17 +4972,23 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 				vDrawAttribBuffer.emplace_back(drawAttrib);
 
 				// Get material name for texture lookup
-				const char* materialName = nullptr;
+				std::string materialName;
 				texture_t* texture = nullptr;
 				
 				if (material_id >= 0 && material_id < materials.size()) {
-					materialName = materials[material_id].name.c_str();
-					texture = R_FindTextureByTextureName(mod, materialName);
+					materialName = materials[material_id].name;
+					
+					// Remove ".001" suffix if present
+					if (materialName.size() >= 4 && materialName.substr(materialName.size() - 4) == ".001") {
+						materialName = materialName.substr(0, materialName.size() - 4);
+					}
+
+					texture = R_FindTextureByTextureName(mod, materialName.c_str());
 				}
 
 				// Create mesh name: shape_name + material_name
 				std::string meshName = shape.name;
-				if (materialName && materialName[0]) {
+				if (!materialName.empty()) {
 					meshName += "_";
 					meshName += materialName;
 				}
