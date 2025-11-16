@@ -546,6 +546,9 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(CONE_TEXTURE_ENABLED)
 
+        if(length(v_fragpos - World) < 0.15)
+            discard;
+
         // Project LightToPixel onto the plane perpendicular to light direction
         // Remove the component along the light direction to get the radial offset
         vec3 radialOffset = LightToPixel - u_lightdir.xyz * SpotCosine;
