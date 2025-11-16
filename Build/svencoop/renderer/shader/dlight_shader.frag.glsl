@@ -379,48 +379,53 @@ float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 L
     vec3 lightToWorldDir = lightToWorld / distanceLightToWorld;
     
     // Shadow parameters matching the shadow pass
-    float zNear = 0.1;
     float zFar = u_lightradius;
     
-    // We store linearDepth in cubeShadowTex
+    // Calculate linear depth directly from original world position
+    // NO normal offset - it causes light leaking at 90-degree corners
     float linearDepth = distanceLightToWorld / zFar;
 
-    // Improved bias calculation to eliminate wave artifacts
-    // Use both normal-based and distance-based bias
-    float NdotL = max(dot(Normal, -LightDirection), 0.0);
+    // Detect cubemap edge/corner proximity
+    // When sampling direction is close to cubemap face boundaries (45 degrees between axes),
+    // we're near edges/corners where artifacts are more likely
+    vec3 absDir = abs(lightToWorldDir);
+    float maxComponent = max(max(absDir.x, absDir.y), absDir.z);
+    float secondMaxComponent = max(
+        min(max(absDir.x, absDir.y), absDir.z),
+        min(absDir.x, min(absDir.y, absDir.z))
+    );
+    
+    // Edge factor: 0.0 at face center, 1.0 at edges/corners
+    // When secondMaxComponent approaches maxComponent, we're near an edge
+    float edgeFactor = secondMaxComponent / max(maxComponent, 0.001);
+    edgeFactor = smoothstep(0.5, 0.9, edgeFactor); // Smooth transition
+    
+    // Improved bias calculation using correct light direction
+    // Use lightToWorldDir (actual direction from light to surface) instead of parameter
+    float NdotL = max(dot(Normal, -lightToWorldDir), 0.0);
     
     // Slope-based bias: larger bias for surfaces at grazing angles
-    // Use smoother falloff to avoid sudden changes
     float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
 
     float invRes = shadowTexel.y;
     
     // Distance-based bias: account for cubemap texel size at different distances
-    // At distance, each texel covers more world space
     float texelWorldSize = distanceLightToWorld * invRes * 2.0;
-    float distanceBias = texelWorldSize * 0.5;
+    float distanceBias = texelWorldSize * 0.1;
     
-    // Constant base bias
-    float constBias = 0.0003;
+    // Constant base bias - increased for better shadow acne prevention
+    float constBias = 0.0005;
     
-    // Normal offset bias: push the sample point slightly along the normal
-    // Use square root scaling to reduce offset at far distances
-    float normalOffsetScale = sqrt(distanceLightToWorld) * invRes * 0.5;
-    // Clamp offset to prevent excessive values
-    normalOffsetScale = min(normalOffsetScale, 0.1);
-    
-    vec3 offsetWorld = World + Normal * normalOffsetScale;
-    vec3 offsetLightToWorld = offsetWorld - LightPos;
-    float offsetDistance = length(offsetLightToWorld);
-    vec3 offsetDir = offsetLightToWorld / offsetDistance;
-    float offsetLinearDepth = offsetDistance / zFar;
-    
-    // Combine all bias components
+    // Combine all bias components with more aggressive scaling at grazing angles
     float bias = constBias + slopeBias + distanceBias;
-    // Clamp bias to prevent over-correction
-    bias = min(bias, 0.01);
     
-    float compareDepth = offsetLinearDepth - bias;
+    // Increase bias at grazing angles to prevent acne
+    bias *= (1.0 + (1.0 - NdotL) * 2.0);
+    
+    // Clamp bias to reasonable range
+    bias = clamp(bias, 0.0005, 0.005);
+    
+    float compareDepth = linearDepth - bias;
     
     // Clamp depth to valid range
     compareDepth = clamp(compareDepth, 0.0, 1.0);
@@ -428,12 +433,14 @@ float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 L
     float visibility = 0.0;
 
 #if defined(PCF_ENABLED)
-    // Standard PCF with fixed kernel size
-    float filterRadius = invRes * 1.2;
-    visibility = CubemapShadowPCF(shadowTex, offsetDir, compareDepth, filterRadius);
+    // Adaptive PCF: reduce filter radius at edges/corners to avoid cross-face sampling
+    float baseFilterRadius = invRes * 1.2;
+    // At edges, reduce PCF radius by up to 70%
+    float filterRadius = baseFilterRadius * (1.0 - edgeFactor * 0.7);
+    visibility = CubemapShadowPCF(shadowTex, lightToWorldDir, compareDepth, filterRadius);
 #else
     // No filtering, single sample (fastest but lowest quality)
-    visibility = CubemapShadowCompareDepth(shadowTex, offsetDir, compareDepth);
+    visibility = CubemapShadowCompareDepth(shadowTex, lightToWorldDir, compareDepth);
 #endif
     
     return visibility;
