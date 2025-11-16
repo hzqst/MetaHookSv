@@ -4839,93 +4839,148 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
 
 	/*
-		All meshes under shape are combined into one large mesh as shadow proxy
+		Each mesh (grouped by material) corresponds to one CDrawIndexAttrib and one pShadowProxyDraw
 	*/
 
 	for (const auto& shape : shapes) {
 
-		uint32_t instanceIndex = (uint32_t)vInstanceDataBuffer.size();
-
-		brushinstancedata_t instanceData;
-
-		instanceData.packed_matId[0] = 0;
-		instanceData.packed_matId[1] = 0;
-
-		instanceData.styles[0] = 0;
-		instanceData.styles[1] = 0;
-		instanceData.styles[2] = 0;
-		instanceData.styles[3] = 0;
-
-		instanceData.diffusescale = 0;
-
-		vInstanceDataBuffer.emplace_back(instanceData);
-
-		uint32_t baseVertex = (uint32_t)vVertexDataBuffer.size();
-		uint32_t baseIndex = (uint32_t)vIndiceBuffer.size();
-		size_t indiceCount = shape.mesh.indices.size();
-
-		for (size_t j = 0; j < indiceCount; j ++) {
-
-			const auto& index = shape.mesh.indices[j];
-
-			brushvertex_t tempVertexData;
-
-			tempVertexData.pos[0] = attrib.vertices[3 * index.vertex_index + 0];
-			tempVertexData.pos[1] = attrib.vertices[3 * index.vertex_index + 1];
-			tempVertexData.pos[2] = attrib.vertices[3 * index.vertex_index + 2];
-
-			tempVertexData.texcoord[0] = attrib.texcoords[2 * index.texcoord_index + 0];
-			tempVertexData.texcoord[1] = attrib.texcoords[2 * index.texcoord_index + 1];
-
-			brushvertextbn_t tempVertexTBNData;
-
-			tempVertexTBNData.normal[0] = attrib.normals[3 * index.normal_index + 0];
-			tempVertexTBNData.normal[1] = attrib.normals[3 * index.normal_index + 1];
-			tempVertexTBNData.normal[2] = attrib.normals[3 * index.normal_index + 2];
-
-			tempVertexTBNData.s_tangent[0] = 0;
-			tempVertexTBNData.s_tangent[1] = 0;
-			tempVertexTBNData.s_tangent[2] = 0;
-
-			tempVertexTBNData.t_tangent[0] = 0;
-			tempVertexTBNData.t_tangent[1] = 0;
-			tempVertexTBNData.t_tangent[2] = 0;
-
-			vVertexDataBuffer.emplace_back(tempVertexData);
-			vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
-			vIndiceBuffer.emplace_back(baseVertex + j);
-		}
-
-		uint32_t startOffset = sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size();
-		uint32_t drawCount = 0;
-		uint32_t numIndices = 0;
-
-		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
-
-			int fv = shape.mesh.num_face_vertices[f];
+		// Group faces by material_id
+		std::map<int, std::vector<size_t>> materialFaceMap;
 		
-			numIndices += fv;
+		for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+			int material_id = -1;
+			if (f < shape.mesh.material_ids.size()) {
+				material_id = shape.mesh.material_ids[f];
+			}
+			materialFaceMap[material_id].push_back(f);
 		}
 
-		CDrawIndexAttrib drawAttrib;
+		// Process each material (mesh) separately
+		for (const auto& materialFacePair : materialFaceMap) {
+			int material_id = materialFacePair.first;
+			const auto& faces = materialFacePair.second;
 
-		drawAttrib.FirstIndexLocation = baseIndex;
-		drawAttrib.NumIndices = numIndices;
-		drawAttrib.FirstInstanceLocation = instanceIndex;
-		drawAttrib.NumInstances = 1;
-		drawAttrib.BaseVertex = 0;
+			// Create instance data for this mesh
+			uint32_t instanceIndex = (uint32_t)vInstanceDataBuffer.size();
 
-		vDrawAttribBuffer.emplace_back(drawAttrib);
-		drawCount++;
+			brushinstancedata_t instanceData;
 
-		auto pShadowProxyDraw = std::make_shared<CWorldSurfaceShadowProxyDraw>(shape.name);
+			instanceData.packed_matId[0] = 0;
+			instanceData.packed_matId[1] = 0;
 
-		pShadowProxyDraw->startOffset = startOffset;
-		pShadowProxyDraw->drawCount = drawCount;
-		pShadowProxyDraw->polyCount = numIndices / 3;
-		pShadowProxyDraw->texture = R_FindTextureByTextureName(mod, textureName);
+			instanceData.styles[0] = 0;
+			instanceData.styles[1] = 0;
+			instanceData.styles[2] = 0;
+			instanceData.styles[3] = 0;
 
-		pShadowProxyModel->DrawList.emplace_back(pShadowProxyDraw);
+			instanceData.diffusescale = 0;
+
+			vInstanceDataBuffer.emplace_back(instanceData);
+
+			uint32_t baseVertex = (uint32_t)vVertexDataBuffer.size();
+			uint32_t baseIndex = (uint32_t)vIndiceBuffer.size();
+			uint32_t numIndices = 0;
+
+			// Calculate index offset for each face in the shape
+			size_t index_offset = 0;
+			for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+				int fv = shape.mesh.num_face_vertices[f];
+				
+				// Check if this face belongs to current material
+				if (std::find(faces.begin(), faces.end(), f) != faces.end()) {
+					// Process vertices for this face
+					for (int v = 0; v < fv; v++) {
+						const auto& index = shape.mesh.indices[index_offset + v];
+
+						brushvertex_t tempVertexData;
+
+						tempVertexData.pos[0] = attrib.vertices[3 * index.vertex_index + 0];
+						tempVertexData.pos[1] = attrib.vertices[3 * index.vertex_index + 1];
+						tempVertexData.pos[2] = attrib.vertices[3 * index.vertex_index + 2];
+
+						if (index.texcoord_index >= 0) {
+							tempVertexData.texcoord[0] = attrib.texcoords[2 * index.texcoord_index + 0];
+							tempVertexData.texcoord[1] = attrib.texcoords[2 * index.texcoord_index + 1];
+						}
+						else {
+							tempVertexData.texcoord[0] = 0;
+							tempVertexData.texcoord[1] = 0;
+						}
+
+						tempVertexData.lightmaptexcoord[0] = 0;
+						tempVertexData.lightmaptexcoord[1] = 0;
+
+						brushvertextbn_t tempVertexTBNData;
+
+						if (index.normal_index >= 0) {
+							tempVertexTBNData.normal[0] = attrib.normals[3 * index.normal_index + 0];
+							tempVertexTBNData.normal[1] = attrib.normals[3 * index.normal_index + 1];
+							tempVertexTBNData.normal[2] = attrib.normals[3 * index.normal_index + 2];
+						}
+						else {
+							tempVertexTBNData.normal[0] = 0;
+							tempVertexTBNData.normal[1] = 0;
+							tempVertexTBNData.normal[2] = 1;
+						}
+
+						tempVertexTBNData.s_tangent[0] = 0;
+						tempVertexTBNData.s_tangent[1] = 0;
+						tempVertexTBNData.s_tangent[2] = 0;
+
+						tempVertexTBNData.t_tangent[0] = 0;
+						tempVertexTBNData.t_tangent[1] = 0;
+						tempVertexTBNData.t_tangent[2] = 0;
+
+						vVertexDataBuffer.emplace_back(tempVertexData);
+						vVertexTBNDataBuffer.emplace_back(tempVertexTBNData);
+						vIndiceBuffer.emplace_back(baseVertex + numIndices);
+						numIndices++;
+					}
+				}
+				
+				index_offset += fv;
+			}
+
+			// Create draw attrib for this mesh
+			if (numIndices > 0) {
+				uint32_t startOffset = sizeof(CDrawIndexAttrib) * vDrawAttribBuffer.size();
+
+				CDrawIndexAttrib drawAttrib;
+
+				drawAttrib.FirstIndexLocation = baseIndex;
+				drawAttrib.NumIndices = numIndices;
+				drawAttrib.FirstInstanceLocation = instanceIndex;
+				drawAttrib.NumInstances = 1;
+				drawAttrib.BaseVertex = 0;
+
+				vDrawAttribBuffer.emplace_back(drawAttrib);
+
+				// Get material name for texture lookup
+				const char* materialName = nullptr;
+				texture_t* texture = nullptr;
+				
+				if (material_id >= 0 && material_id < materials.size()) {
+					materialName = materials[material_id].name.c_str();
+					texture = R_FindTextureByTextureName(mod, materialName);
+				}
+
+				// Create mesh name: shape_name + material_name
+				std::string meshName = shape.name;
+				if (materialName && materialName[0]) {
+					meshName += "_";
+					meshName += materialName;
+				}
+
+				auto pShadowProxyDraw = std::make_shared<CWorldSurfaceShadowProxyDraw>(meshName);
+
+				pShadowProxyDraw->startOffset = startOffset;
+				pShadowProxyDraw->drawCount = 1;
+				pShadowProxyDraw->polyCount = numIndices / 3;
+				pShadowProxyDraw->texture = texture;
+
+				pShadowProxyModel->DrawList.emplace_back(pShadowProxyDraw);
+			}
+		}
 	}
 
 	pShadowProxyModel->hEBO = GL_GenBuffer();
