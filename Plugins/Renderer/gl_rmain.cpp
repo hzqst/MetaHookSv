@@ -4745,13 +4745,13 @@ bool R_LoadLegacySkyTextures(const char* name)
 		if (!bLoaded)
 		{
 			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.tga", name, suf[i]);
-			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, 0, &loadResult);
 		}
 
 		if (!bLoaded)
 		{
 			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.bmp", name, suf[i]);
-			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, 0, &loadResult);
 		}
 
 		if (!bLoaded)
@@ -4779,13 +4779,13 @@ bool R_LoadDetailSkyTextures(const char* name)
 		if (!bLoaded)
 		{
 			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.dds", name, suf[i]);
-			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, 0, &loadResult);
 		}
 
 		if (!bLoaded)
 		{
 			snprintf(fullPath, sizeof(fullPath), "renderer/texture/skybox/%s%s.dds", name, suf[i]);
-			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, 0, &loadResult);
 		}
 
 		if (!bLoaded)

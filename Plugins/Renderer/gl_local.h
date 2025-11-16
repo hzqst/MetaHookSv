@@ -678,7 +678,7 @@ void GL_FrameBufferColorTextureDeferred(
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 
 gltexture_t *GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t* context);
-bool R_LoadTextureFromFile(const char* filename, const char* identifier, GL_TEXTURETYPE textureType, bool mipmap, gl_loadtexture_result_t* result);
+bool R_LoadTextureFromFile(const char* filename, const char* identifier, GL_TEXTURETYPE textureType, bool mipmap, GLuint wrap, gl_loadtexture_result_t* result);
 int R_LoadRGBA8TextureFromMemory(const char* identifier, const void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
 bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t* context);

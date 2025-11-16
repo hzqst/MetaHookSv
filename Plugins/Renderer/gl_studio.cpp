@@ -4151,7 +4151,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)
@@ -4162,7 +4162,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)
@@ -4173,7 +4173,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_STUDIO, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)

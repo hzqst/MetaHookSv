@@ -3372,7 +3372,7 @@ bool LoadVideoFrames(const char* filename, const char* pathId, gl_loadtexture_co
 
 #endif
 
-bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEXTURETYPE textureType, bool mipmap, gl_loadtexture_result_t* loadResult)
+bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEXTURETYPE textureType, bool mipmap, GLuint wrap, gl_loadtexture_result_t* loadResult)
 {
 	auto glt = GL_FindTextureEntry(identifier, textureType);
 
@@ -3398,6 +3398,7 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 
 	gl_loadtexture_context_t loadContext;
 
+	loadContext.wrap = wrap;
 	loadContext.mipmap = mipmap;
 	loadContext.callback = [&glt, identifier, textureType, loadResult](gl_loadtexture_context_t *ctx) {
 

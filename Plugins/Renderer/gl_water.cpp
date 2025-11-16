@@ -632,7 +632,7 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 			if (pWaterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && pWaterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
 				gl_loadtexture_result_t loadResult;
-				if (R_LoadTextureFromFile(pWaterControl->normalmap.c_str(), pWaterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
+				if (R_LoadTextureFromFile(pWaterControl->normalmap.c_str(), pWaterControl->normalmap.c_str(), GLT_WORLD, true, 0, &loadResult))
 				{
 					pWaterModel->normalmap = loadResult.gltexturenum;
 				}

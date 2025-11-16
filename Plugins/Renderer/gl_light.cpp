@@ -546,7 +546,7 @@ void R_LoadLightResources()
 	{
 		gl_loadtexture_result_t loadResult;
 
-		if (R_LoadTextureFromFile(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), GLT_WORLD, true, &loadResult))
+		if (R_LoadTextureFromFile(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), GLT_WORLD, true, GL_CLAMP_TO_EDGE, &loadResult))
 		{
 			r_flashlight_cone_texture = loadResult.gltexturenum;
 		}

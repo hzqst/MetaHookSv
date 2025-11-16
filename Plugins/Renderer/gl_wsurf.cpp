@@ -3272,7 +3272,7 @@ void R_LoadDecalTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			//Search under gfx
@@ -3283,7 +3283,7 @@ void R_LoadDecalTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			//Search under renderer/texture
@@ -3294,7 +3294,7 @@ void R_LoadDecalTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			if (!bLoaded)
@@ -3474,7 +3474,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			//Search under gfx
@@ -3485,7 +3485,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			//Search under renderer/texture
@@ -3496,7 +3496,7 @@ void R_LoadDetailTextures(const char* pFileContent)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, true, 0, &loadResult);
 			}
 
 			if (!bLoaded)

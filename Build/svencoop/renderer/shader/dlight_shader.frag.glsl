@@ -523,6 +523,34 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
         vec4 Color = CalcPointLight(World, Normal, vBaseTexCoord);
 
+#if defined(CONE_TEXTURE_ENABLED)
+        // Depth discontinuity detection to fix edge artifacts
+        // Sample neighboring depths to detect if we're at a geometric edge
+        vec2 texelSize = vec2(dFdx(vBaseTexCoord.x), dFdy(vBaseTexCoord.y));
+        
+        // Sample depths at neighboring pixels
+        float centerDepth = texture(gbufferWorldNorm, vBaseTexCoord).z;
+        float depthRight = texture(gbufferWorldNorm, vBaseTexCoord + vec2(texelSize.x, 0.0)).z;
+        float depthLeft = texture(gbufferWorldNorm, vBaseTexCoord - vec2(texelSize.x, 0.0)).z;
+        float depthUp = texture(gbufferWorldNorm, vBaseTexCoord + vec2(0.0, texelSize.y)).z;
+        float depthDown = texture(gbufferWorldNorm, vBaseTexCoord - vec2(0.0, texelSize.y)).z;
+        
+        // Calculate depth gradient to detect discontinuities
+        float depthDiffX = abs(depthRight - depthLeft);
+        float depthDiffY = abs(depthUp - depthDown);
+        float maxDepthDiff = max(depthDiffX, depthDiffY);
+        
+        // If we're at a depth discontinuity (edge), reduce or eliminate the light contribution
+        // Threshold should be tuned based on your scene scale
+        float depthThreshold = 5.0; // Adjust this value based on your world units
+        if (maxDepthDiff > depthThreshold)
+        {
+            // We're at a geometric edge - attenuate or discard the contribution
+            float edgeFactor = 1.0 - clamp(maxDepthDiff / (depthThreshold * 2.0), 0.0, 1.0);
+            Color *= edgeFactor;
+        }
+#endif
+
         float flStaticShadowIntensity = 1.0;
         float flDynamicShadowIntensity = 1.0;
 
@@ -546,9 +574,6 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #if defined(CONE_TEXTURE_ENABLED)
 
-        if(length(v_fragpos - World) < 0.15)
-            discard;
-
         // Project LightToPixel onto the plane perpendicular to light direction
         // Remove the component along the light direction to get the radial offset
         vec3 radialOffset = LightToPixel - u_lightdir.xyz * SpotCosine;
@@ -564,6 +589,15 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
         float flConeProjV = (flConeProjY / LimitSine + 1.0) * 0.5;
 
         vec4 vConeColor = texture(coneTex, vec2(flConeProjU, flConeProjV));
+
+        float flDistanceLightConePixelToTerrain = length(v_fragpos - World);
+        float flDistanceLightConePixelToTerrainFadeoutLimit = 2.0;
+        if (flDistanceLightConePixelToTerrain < flDistanceLightConePixelToTerrainFadeoutLimit)
+        {
+            //discard;
+            //vConeColor *= pow((flDistanceLightConePixelToTerrain / flDistanceLightConePixelToTerrainFadeoutLimit), 8.0);
+        }
+
 
         Color = Color * vConeColor;
 #else

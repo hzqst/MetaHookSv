@@ -843,7 +843,7 @@ void R_SpriteLoadExternalFile_FrameTextureLoad(bspentity_t* ent, msprite_t* pSpr
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)
@@ -854,7 +854,7 @@ void R_SpriteLoadExternalFile_FrameTextureLoad(bspentity_t* ent, msprite_t* pSpr
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)
@@ -865,7 +865,7 @@ void R_SpriteLoadExternalFile_FrameTextureLoad(bspentity_t* ent, msprite_t* pSpr
 				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
-				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, &loadResult);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_SPRITE, bHasMipmaps, 0, &loadResult);
 			}
 
 			if (!bLoaded)
