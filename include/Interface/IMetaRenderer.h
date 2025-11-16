@@ -685,12 +685,24 @@ public:
 
     virtual int GetDrawClassify() const = 0;
 
+    /*
+        Purpose: Enable/disable multiview rendering
+    */
     virtual void SetMultiviewEnabled(bool b) = 0;
 
+    /*
+        Purpose: Check if multiview rendering is enabled or not
+    */
     virtual bool IsMultiviewEnabled() const = 0;
 
+    /*
+        Purpose: Enable/disable gamma blending
+    */
     virtual void SetDrawGammaBlendEnabled(bool b) = 0;
-
+   
+    /*
+        Purpose: Check if gamma blending is enabled or not
+    */
     virtual bool IsDrawGammaBlendEnabled() const = 0;
 };
 
