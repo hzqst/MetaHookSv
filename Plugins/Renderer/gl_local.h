@@ -723,6 +723,7 @@ bool R_IsRenderingPreViewModel();
 bool R_IsRenderingViewModel();
 bool R_IsRenderingFlippedViewModel();
 bool R_IsViewmodelAttachment(cl_entity_t* ent);
+bool R_IsHidingEntity(cl_entity_t* ent);
 
 float R_GetMainViewNearPlane();
 float R_GetMainViewFarPlane();

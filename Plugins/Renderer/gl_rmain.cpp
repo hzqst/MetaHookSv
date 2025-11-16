@@ -695,6 +695,15 @@ bool R_IsViewmodelAttachment(cl_entity_t* ent)
 	return false;
 }
 
+bool R_IsHidingEntity(cl_entity_t* ent)
+{
+	if (!r_draw_hide_entity)
+		return false;
+
+	//TODO: what if ent is a tempent?
+	return r_draw_hide_entity_index == ent->index;
+}
+
 float R_GetMainViewNearPlane()
 {
 	return gl_nearplane->value;
@@ -2224,13 +2233,13 @@ void R_DrawStudioEntity(bool bTransparent)
 void R_DrawCurrentEntity(bool bTransparent)
 {
 	if (!(r_draw_classify & DRAW_CLASSIFY_OPAQUE_ENTITIES) && !bTransparent)
-	{
 		return;
-	}
+
 	if (!(r_draw_classify & DRAW_CLASSIFY_TRANS_ENTITIES) && bTransparent)
-	{
 		return;
-	}
+
+	if (R_IsHidingEntity((*currententity)))
+		return;
 
 	if (bTransparent)
 	{

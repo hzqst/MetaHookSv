@@ -833,6 +833,7 @@ void R_IterateVisibleDynamicLights(
 			}
 
 			args.bVolume = entry.m_bVolume;
+			args.sourceEntityIndex = dynamicLight->source_entity_index;
 
 			pointlightCallback(&args, context);
 		}
@@ -860,8 +861,7 @@ void R_IterateVisibleDynamicLights(
 			}
 
 			args.bVolume = entry.m_bVolume;
-			args.bHideEntitySource = entry.m_bHideEntitySource;
-			args.pHideEntity = entry.m_pHideEntity;
+			args.sourceEntityIndex = dynamicLight->source_entity_index;
 
 			spotlightCallback(&args, context);
 		}
@@ -888,6 +888,7 @@ void R_IterateVisibleDynamicLights(
 			}
 
 			args.bVolume = entry.m_bVolume;
+			args.sourceEntityIndex = dynamicLight->source_entity_index;
 
 			directionalLightCallback(&args, context);
 		}
