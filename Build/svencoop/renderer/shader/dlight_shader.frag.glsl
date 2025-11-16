@@ -380,14 +380,12 @@ float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 L
     
     // Shadow parameters matching the shadow pass
     float zFar = u_lightradius;
-    
-    // Calculate linear depth directly from original world position
-    // NO normal offset - it causes light leaking at 90-degree corners
-    float linearDepth = distanceLightToWorld / zFar;
 
+    // Improved bias calculation using correct light direction
+    float NdotL = max(dot(Normal, -lightToWorldDir), 0.0);
+    
     // Detect cubemap edge/corner proximity
-    // When sampling direction is close to cubemap face boundaries (45 degrees between axes),
-    // we're near edges/corners where artifacts are more likely
+    // When sampling direction is close to cubemap face boundaries, we're near edges/corners
     vec3 absDir = abs(lightToWorldDir);
     float maxComponent = max(max(absDir.x, absDir.y), absDir.z);
     float secondMaxComponent = max(
@@ -396,34 +394,59 @@ float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 L
     );
     
     // Edge factor: 0.0 at face center, 1.0 at edges/corners
-    // When secondMaxComponent approaches maxComponent, we're near an edge
     float edgeFactor = secondMaxComponent / max(maxComponent, 0.001);
-    edgeFactor = smoothstep(0.5, 0.9, edgeFactor); // Smooth transition
+    edgeFactor = smoothstep(0.6, 0.95, edgeFactor);
     
-    // Improved bias calculation using correct light direction
-    // Use lightToWorldDir (actual direction from light to surface) instead of parameter
-    float NdotL = max(dot(Normal, -lightToWorldDir), 0.0);
+    float invRes = shadowTexel.y;
+    
+    // Adaptive normal offset strategy:
+    // - Use offset for surfaces facing the light to prevent shadow acne and projection artifacts
+    // - Significantly reduce offset at cubemap edges to prevent 90-degree corner light leaking
+    // - Scale offset based on lighting angle
+    float normalOffsetScale = 0.0;
+    
+    // Apply offset when surface faces the light (NdotL > 0.1)
+    if (NdotL > 0.1)
+    {
+        // Increased base offset to fix projection edge artifacts
+        normalOffsetScale = sqrt(distanceLightToWorld) * invRes * 0.5;
+        normalOffsetScale = min(normalOffsetScale, 0.08);
+        
+        // CRITICAL: Aggressively reduce offset at cubemap edges (where 90-degree corners occur)
+        // At edges (edgeFactor = 1.0), reduce to only 5% of normal offset
+        normalOffsetScale *= (1.0 - edgeFactor * 0.95);
+        
+        // Smooth scaling based on lighting angle
+        // Full offset when NdotL > 0.5, reduced at grazing angles
+        normalOffsetScale *= smoothstep(0.1, 0.5, NdotL);
+    }
+    
+    // Calculate depth with adaptive offset
+    vec3 offsetWorld = World + Normal * normalOffsetScale;
+    vec3 offsetLightToWorld = offsetWorld - LightPos;
+    float offsetDistance = length(offsetLightToWorld);
+    vec3 offsetDir = normalize(offsetLightToWorld);
+    float linearDepth = offsetDistance / zFar;
     
     // Slope-based bias: larger bias for surfaces at grazing angles
-    float slopeBias = 0.002 * pow(1.0 - NdotL, 2.0);
-
-    float invRes = shadowTexel.y;
+    float slopeBias = 0.0015 * pow(1.0 - NdotL, 2.0);
     
     // Distance-based bias: account for cubemap texel size at different distances
     float texelWorldSize = distanceLightToWorld * invRes * 2.0;
-    float distanceBias = texelWorldSize * 0.1;
+    float distanceBias = texelWorldSize * 0.15;
     
-    // Constant base bias - increased for better shadow acne prevention
-    float constBias = 0.0005;
+    // Constant base bias - slightly increased to work with larger offset
+    float constBias = 0.0004;
     
-    // Combine all bias components with more aggressive scaling at grazing angles
+    // Combine all bias components
     float bias = constBias + slopeBias + distanceBias;
     
-    // Increase bias at grazing angles to prevent acne
-    bias *= (1.0 + (1.0 - NdotL) * 2.0);
+    // Increase bias at grazing angles and at cubemap edges
+    bias *= (1.0 + (1.0 - NdotL) * 1.5);
+    bias *= (1.0 + edgeFactor * 0.5); // Extra bias at edges for safety
     
     // Clamp bias to reasonable range
-    bias = clamp(bias, 0.0005, 0.005);
+    bias = clamp(bias, 0.0004, 0.004);
     
     float compareDepth = linearDepth - bias;
     
@@ -437,10 +460,10 @@ float CalcCubemapShadowIntensity(samplerCubeShadow shadowTex, vec3 World, vec3 L
     float baseFilterRadius = invRes * 1.2;
     // At edges, reduce PCF radius by up to 70%
     float filterRadius = baseFilterRadius * (1.0 - edgeFactor * 0.7);
-    visibility = CubemapShadowPCF(shadowTex, lightToWorldDir, compareDepth, filterRadius);
+    visibility = CubemapShadowPCF(shadowTex, offsetDir, compareDepth, filterRadius);
 #else
     // No filtering, single sample (fastest but lowest quality)
-    visibility = CubemapShadowCompareDepth(shadowTex, lightToWorldDir, compareDepth);
+    visibility = CubemapShadowCompareDepth(shadowTex, offsetDir, compareDepth);
 #endif
     
     return visibility;
