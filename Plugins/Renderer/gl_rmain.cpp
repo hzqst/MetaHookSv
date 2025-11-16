@@ -4682,6 +4682,21 @@ model_t* EngineGetModelByIndex(int index)
 	return NULL;
 }
 
+model_t* EngineFindKnownModel(modtype_t type, const char *name)
+{
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod && mod->type == type && !strcmp(mod->name, name))
+		{
+			return mod;
+		}
+	}
+
+	return nullptr;
+}
+
 int EngineGetMaxDLights(void)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)

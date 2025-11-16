@@ -9,6 +9,7 @@
 #include "LambdaThreadedTask.h"
 
 #include <ScopeExit/ScopeExit.h>
+#include <strtools.h>
 
 CWorldSurfaceRenderer g_WorldSurfaceRenderer;
 
@@ -1159,7 +1160,6 @@ void R_LinkShadowProxyForWorldSurfaceModel(CWorldSurfaceModel* pModel)
 	}
 	else
 	{
-		
 		it = g_WorldSurfaceShadowProxyModels.find(worldmodel->name);
 
 		if (it != g_WorldSurfaceShadowProxyModels.end())
@@ -1280,7 +1280,9 @@ std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod)
 
 	return pModel;
 }
-
+/*
+	Purpose: find index of given texture_t pointer
+*/
 int R_FindTextureIdByTexture(model_t* mod, texture_t* ptex)
 {
 	for (int i = 0; i < mod->numtextures; ++i)
@@ -1290,6 +1292,20 @@ int R_FindTextureIdByTexture(model_t* mod, texture_t* ptex)
 	}
 
 	return -1;
+}
+
+/*
+	Purpose: find texture_t pointer by texture name
+*/
+texture_t* R_FindTextureByTextureName(model_t* mod, const char *name)
+{
+	for (int i = 0; i < mod->numtextures; ++i)
+	{
+		if (mod->textures[i] && !strcmp(mod->textures[i]->name, name))
+			return mod->textures[i];
+	}
+
+	return nullptr;
 }
 
 msurface_t* R_GetWorldSurfaceByIndex(model_t* mod, int index)
@@ -4227,8 +4243,6 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t* ent)
 	}
 }
 
-std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(const char* resourcePath);
-
 void R_ParseBSPEntity_Env_Shadow_Proxy(bspentity_t* ent)
 {
 	/*
@@ -4239,11 +4253,19 @@ void R_ParseBSPEntity_Env_Shadow_Proxy(bspentity_t* ent)
 			"objpath" "maps/de_dust2_shadow.obj"
 		}
 	*/
-	std::string model = ValueForKey(ent, "model");
+	std::string modelName = ValueForKey(ent, "model");
 
-	if (model.empty())
+	if (modelName.empty())
 	{
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"model\" in entity \"env_shadow_proxy\"\n"); 
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"model\" in \"env_shadow_proxy\"\n"); 
+		return;
+	}
+
+	auto mod = EngineFindKnownModel(mod_brush, modelName.c_str());
+
+	if (!mod)
+	{
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to find brush model \"%s\" for \"env_shadow_proxy\"\n", modelName.c_str());
 		return;
 	}
 
@@ -4251,7 +4273,7 @@ void R_ParseBSPEntity_Env_Shadow_Proxy(bspentity_t* ent)
 
 	if (objpath_string)
 	{
-		g_WorldSurfaceShadowProxyModels[model] = R_LoadWorldSurfaceShadowProxyModel(objpath_string);
+		g_WorldSurfaceShadowProxyModels[modelName] = R_LoadWorldSurfaceShadowProxyModel(mod, objpath_string);
 	}
 	else
 	{
@@ -4731,7 +4753,11 @@ private:
 	CFileStreamBuffer fileStreamBuffer_;
 };
 
-std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(const char * resourcePath)
+/*
+	Purpose: Load {resourcePath} as obj and convert into a CWorldSurfaceShadowProxyModel
+*/
+
+std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(model_t *mod, const char * resourcePath)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -4740,29 +4766,61 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 
 	auto hFileHandle = FILESYSTEM_ANY_OPEN(resourcePath, "rb");
 
-	if (!hFileHandle) {
+	if (!hFileHandle)
+	{
 		gEngfuncs.Con_Printf("R_LoadWorldSurfaceShadowProxyModel: failed to open \"%s\".", resourcePath);
 		return nullptr;
 	}
 
-	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(hFileHandle); };
+	SCOPE_EXIT{ if (hFileHandle) FILESYSTEM_ANY_CLOSE(hFileHandle); };
 
-	CFileSystemStream fileStream(hFileHandle);
+	std::string mtlFileName = resourcePath;
+	RemoveFileExtension(mtlFileName);
+	mtlFileName += ".mtl";
 
-	bool ret = tinyobj::LoadObj(
-		&attrib,
-		&shapes,
-		&materials,
-		&warn,
-		&err,
-		&fileStream,
-		nullptr,
-		true,
-		false
-	);
+	auto hMatFileHandle = FILESYSTEM_ANY_OPEN(mtlFileName.c_str(), "rb");
+
+	SCOPE_EXIT{ if(hMatFileHandle) FILESYSTEM_ANY_CLOSE(hMatFileHandle); };
+
+	CFileSystemStream objFileStream(hFileHandle);
+
+	bool ret = false;
+
+	if (hMatFileHandle)
+	{
+		CFileSystemStream matFileStream(hMatFileHandle);
+
+		tinyobj::MaterialStreamReader matStreamReader(matFileStream);
+
+		ret = tinyobj::LoadObj(
+			&attrib,
+			&shapes,
+			&materials,
+			&warn,
+			&err,
+			&objFileStream,
+			&matStreamReader,
+			true,
+			false
+		);
+	}
+	else
+	{
+		ret = tinyobj::LoadObj(
+			&attrib,
+			&shapes,
+			&materials,
+			&warn,
+			&err,
+			&objFileStream,
+			nullptr,
+			true,
+			false
+		);
+	}
 
 	if (!warn.empty()) {
-		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: (warning) %s.\n", err.c_str());
+		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: (warning) %s.\n", warn.c_str());
 	}
 	if (!err.empty()) {
 		gEngfuncs.Con_DPrintf("R_LoadWorldSurfaceShadowProxyModel: (error) %s.\n", err.c_str());
@@ -4779,6 +4837,10 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 	std::vector<brushinstancedata_t> vInstanceDataBuffer;
 	std::vector<uint32_t> vIndiceBuffer;
 	std::vector<CDrawIndexAttrib> vDrawAttribBuffer;
+
+	/*
+		All meshes under shape are combined into one large mesh as shadow proxy
+	*/
 
 	for (const auto& shape : shapes) {
 
@@ -4861,6 +4923,7 @@ std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyMode
 		pShadowProxyDraw->startOffset = startOffset;
 		pShadowProxyDraw->drawCount = drawCount;
 		pShadowProxyDraw->polyCount = numIndices / 3;
+		pShadowProxyDraw->texture = R_FindTextureByTextureName(mod, textureName);
 
 		pShadowProxyModel->DrawList.emplace_back(pShadowProxyDraw);
 	}

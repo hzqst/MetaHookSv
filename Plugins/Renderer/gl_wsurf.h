@@ -76,6 +76,7 @@ public:
 	size_t startOffset{};
 	size_t drawCount{};
 	size_t polyCount{};
+	texture_t* texture{};
 };
 
 class CWorldSurfaceShadowProxyModel
@@ -321,6 +322,7 @@ model_t* R_FindWorldModelBySurface(msurface_t* psurf);
 model_t* R_FindWorldModelByNode(mnode_t* pnode);
 model_t* R_FindWorldModelByModel(model_t* m);
 int R_FindTextureIdByTexture(model_t* mod, texture_t* ptex);
+texture_t* R_FindTextureByTextureName(model_t* mod, const char* name);
 
 class bspentity_t;
 
@@ -348,6 +350,8 @@ int R_FindWorldMaterialId(int gl_texturenum);
 
 std::shared_ptr<CWorldSurfaceWorldModel> R_GetWorldSurfaceWorldModel(model_t* mod);
 std::shared_ptr<CWorldSurfaceModel> R_GetWorldSurfaceModel(model_t* mod);
+
+std::shared_ptr<CWorldSurfaceShadowProxyModel> R_LoadWorldSurfaceShadowProxyModel(model_t* mod, const char* resourcePath);
 
 uint32_t R_GetWorldTextureHash(const char* name);
 uint32_t R_GetWorldTextureHash(texture_t* ptexture);

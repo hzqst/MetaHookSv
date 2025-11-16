@@ -777,6 +777,7 @@ int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
+model_t* EngineFindKnownModel(modtype_t type, const char* name);
 int EngineGetMaxDLights(void);
 int EngineGetMaxELights(void);
 int EngineGetMaxClientModels(void); 
