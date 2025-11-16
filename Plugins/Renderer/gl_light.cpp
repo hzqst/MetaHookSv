@@ -747,6 +747,9 @@ void R_AddVisibleDynamicLight(const std::shared_ptr<CDynamicLight>& dynamicLight
 			if (R_CullBox(mins, maxs))
 				return;
 
+			if (!triapi_BoxInPVS(mins, maxs))
+				return;
+
 			g_VisibleDynamicLights.emplace_back(dynamicLight, true);
 		}
 		else
@@ -767,6 +770,9 @@ void R_AddVisibleDynamicLight(const std::shared_ptr<CDynamicLight>& dynamicLight
 		}
 
 		if (R_CullBox(mins, maxs))
+			return;
+
+		if (!triapi_BoxInPVS(mins, maxs))
 			return;
 
 		vec3_t dlight_vforward;
