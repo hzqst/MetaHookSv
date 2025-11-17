@@ -448,6 +448,38 @@
     "follow_player" "0"
 }
 {
+    "origin" "680 2206 82"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "255 200 0" //door
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.1"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
+    "follow_player" "0"
+}
+{
+    "origin" "712 2206 82"
+    "angles" "0 0 0"
+    "size" "256"
+    "color" "255 200 0" //door
+    "classname" "light_dynamic"
+    "type" "point"
+    "ambient" "0.0"
+    "diffuse" "0.1"
+    "specular" "1.0"
+    "specularpow" "10.0"
+    "shadow" "1"
+    "static_shadow_size" "256"
+    "dynamic_shadow_size" "256"
+    "follow_player" "0"
+}
+{
     "classname" "env_shadow_proxy"
     "model" "maps/cs_assault.bsp"
     "objpath" "maps/cs_assault_shadow.obj"
