@@ -312,6 +312,7 @@ int r_renderview_pass = 0;
 std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
 std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 std::vector<cl_entity_t*> g_ViewModelAttachmentEntities;
+std::set<mbasenode_t*> g_VisibleBSPNodes;
 
 std::vector<IMetaRendererCallbacks*> g_RenderCallbacks;
 
@@ -1135,6 +1136,9 @@ mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 
 	//if (basenode->visframe != (*r_visframecount))
 	//	return NULL;
+
+	if (g_VisibleBSPNodes.find(basenode) == g_VisibleBSPNodes.end())
+		return NULL;
 
 	// add an efrag if the node is a leaf
 
@@ -4383,6 +4387,8 @@ void R_MarkLeaves(void)
 	if ((*r_oldviewleaf) == (*r_viewleaf) && !r_novis->value)
 		return;
 
+	g_VisibleBSPNodes.clear();
+
 	(*r_visframecount)++;
 	(*r_oldviewleaf) = (*r_viewleaf);
 
@@ -4409,6 +4415,9 @@ void R_MarkLeaves(void)
 					break;
 
 				basenode->visframe = (*r_visframecount);
+
+				g_VisibleBSPNodes.emplace(basenode);
+
 				basenode = basenode->parent;
 
 			} while (basenode);
