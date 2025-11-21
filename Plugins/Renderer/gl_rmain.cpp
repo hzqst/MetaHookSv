@@ -7245,6 +7245,11 @@ public:
 	{
 		return R_IsRenderingGammaBlending();
 	}
+
+	cl_entity_t** GetCurrentRenderingEntity() const override
+	{
+		return currententity;
+	}
 };
 
 EXPOSE_SINGLE_INTERFACE(CMetaRenderer, IMetaRenderer, METARENDERER_INTERFACE_VERSION);

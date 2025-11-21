@@ -11,6 +11,8 @@ typedef struct texturedrectvertex_s texturedrectvertex_t;
 typedef struct filledrectvertex_s filledrectvertex_t;
 typedef struct camera_view_s camera_view_t;
 typedef struct camera_ubo_s camera_ubo_t;
+// "cl_entity.h"
+typedef struct cl_entity_s cl_entity_t;
 
 class CCompileShaderArgs;
 
@@ -704,6 +706,10 @@ public:
         Purpose: Check if gamma blending is enabled or not
     */
     virtual bool IsDrawGammaBlendEnabled() const = 0;
+    /*
+		Purpose: Get current rendering entity
+    */
+	virtual cl_entity_t** GetCurrentRenderingEntity() const = 0;
 };
 
 IMetaRenderer* MetaRenderer();
