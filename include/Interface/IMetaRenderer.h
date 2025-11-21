@@ -707,9 +707,9 @@ public:
     */
     virtual bool IsDrawGammaBlendEnabled() const = 0;
     /*
-		Purpose: Get current rendering entity
+        Purpose: Set current rendering entity
     */
-	virtual cl_entity_t* GetCurrentRenderingEntity() const = 0;
+    virtual void SetCurrentEntity(cl_entity_t* entity) const = 0;
 };
 
 IMetaRenderer* MetaRenderer();

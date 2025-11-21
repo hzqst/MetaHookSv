@@ -7246,9 +7246,9 @@ public:
 		return R_IsRenderingGammaBlending();
 	}
 
-	cl_entity_t* GetCurrentRenderingEntity() const override
+	void SetCurrentEntity(cl_entity_t* entity) const override 
 	{
-		return (*currententity);
+		(*currententity) = entity;
 	}
 };
 
