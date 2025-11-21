@@ -709,7 +709,7 @@ public:
     /*
 		Purpose: Get current rendering entity
     */
-	virtual cl_entity_t** GetCurrentRenderingEntity() const = 0;
+	virtual cl_entity_t* GetCurrentRenderingEntity() const = 0;
 };
 
 IMetaRenderer* MetaRenderer();
