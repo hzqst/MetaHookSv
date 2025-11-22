@@ -15,7 +15,6 @@ extern mh_dll_info_t g_MirrorEngineDLLInfo;
 extern mh_dll_info_t g_ClientDLLInfo;
 extern mh_dll_info_t g_MirrorClientDLLInfo;
 
-
 #define MHPluginName "BulletPhysics"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);
 #define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);

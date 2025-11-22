@@ -1,5 +1,6 @@
 #include <metahook.h>
 #include "exportfuncs.h"
+#include "privatehook.h"
 
 cl_exportfuncs_t gExportfuncs = { 0 };
 mh_interface_t* g_pInterface = NULL;
@@ -10,6 +11,11 @@ IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 int g_iEngineType = 0;
 DWORD g_dwEngineBuildnum = 0;
+
+mh_dll_info_t g_EngineDLLInfo = { 0 };
+mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
+mh_dll_info_t g_ClientDLLInfo = { 0 };
+mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -33,7 +39,26 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 
+	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
+	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
+	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
+	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
+	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
+
+	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
+	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
+
+	if (g_MirrorEngineDLLInfo.ImageBase)
+	{
+		g_MirrorEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirrorEngineDLLInfo.TextSize);
+		g_MirrorEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirrorEngineDLLInfo.DataSize);
+		g_MirrorEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirrorEngineDLLInfo.RdataSize);
+	}
+
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
+
+	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_InstallHooks();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)

@@ -1,17 +1,20 @@
 #include <metahook.h>
 #include <studio.h>
 #include <r_studioint.h>
-#include "cl_entity.h"
-#include "com_model.h"
-#include "triangleapi.h"
-#include "cvardef.h"
-#include "exportfuncs.h"
-#include "entity_types.h"
-#include "plugins.h"
+#include <cl_entity.h>
+#include <com_model.h>
+#include <triangleapi.h>
+#include <cvardef.h>
+#include <entity_types.h>
+
 #include <vector>
 #include <algorithm>
 #include <string>
 #include <string_view>
+
+#include "plugins.h"
+#include "privatehook.h"
+#include "exportfuncs.h"
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
@@ -43,13 +46,14 @@ static std::vector<studio_event_sound_t> g_StudioEventSoundPlayed;
 static std::vector<studio_event_sound_t> g_StudioEventSoundDelayed;
 
 static std::vector<std::string> g_StudioEventSoundWhitelist;
+static std::vector<std::string> g_StudioEventSourceModelWhitelist;
 
-static void LoadWhitelist(const char* filePath)
+static void LoadWhitelist(std::vector<std::string>& whitelist, const char* filePath, const char* whitelistName)
 {
 	auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "rt");
 	if (hFileHandle)
 	{
-		g_StudioEventSoundWhitelist.clear();
+		whitelist.clear();
 		
 		char szReadLine[256];
 		while (!FILESYSTEM_ANY_EOF(hFileHandle))
@@ -57,7 +61,7 @@ static void LoadWhitelist(const char* filePath)
 			FILESYSTEM_ANY_READLINE(szReadLine, sizeof(szReadLine) - 1, hFileHandle);
 			szReadLine[sizeof(szReadLine) - 1] = 0;
 			
-			// Parse line and extract sound name
+			// Parse line and extract name
 			bool quoted = false;
 			char token[256];
 			char* p = szReadLine;
@@ -65,26 +69,26 @@ static void LoadWhitelist(const char* filePath)
 			p = FILESYSTEM_ANY_PARSEFILE(p, token, &quoted);
 			if (token[0])
 			{
-				std::string soundName(token);
+				std::string itemName(token);
 				
 				// Avoid duplicates
-				const auto &itor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
-					return item.compare(soundName) == 0;
+				const auto &itor = std::find_if(whitelist.begin(), whitelist.end(), [&itemName](const std::string& item) {
+					return item.compare(itemName) == 0;
 				});
-				if (itor == g_StudioEventSoundWhitelist.end())
+				if (itor == whitelist.end())
 				{
-					g_StudioEventSoundWhitelist.emplace_back(soundName);
+					whitelist.emplace_back(itemName);
 				}
 			}
 		}
 		
 		FILESYSTEM_ANY_CLOSE(hFileHandle);
 		
-		gEngfuncs.Con_DPrintf("[StudioEvents] Loaded %d whitelisted sounds from \"%s\".\n", g_StudioEventSoundWhitelist.size(), filePath);
+		gEngfuncs.Con_DPrintf("[StudioEvents] Loaded %d %s from \"%s\".\n", whitelist.size(), whitelistName, filePath);
 	}
 	else
 	{
-		gEngfuncs.Con_DPrintf("[StudioEvents] Whitelist file \"%s\" not found.\n", filePath);
+		gEngfuncs.Con_DPrintf("[StudioEvents] %s file \"%s\" not found.\n", whitelistName, filePath);
 	}
 }
 
@@ -100,7 +104,8 @@ void HUD_Init(void)
 
 	g_StudioEventSoundPlayed.clear();
 	
-	LoadWhitelist("studioevents/whitelist.txt");
+	LoadWhitelist(g_StudioEventSoundWhitelist, "studioevents/sound_whitelist.txt", "whitelisted sounds");
+	LoadWhitelist(g_StudioEventSourceModelWhitelist, "studioevents/sourcemodel_whitelist.txt", "whitelisted source models");
 }
 
 int HUD_VidInit(void)
@@ -151,20 +156,41 @@ void HUD_Frame(double a1)
 	}
 }
 
+const char* EngineStudio_GetCurrentRenderModelName()
+{
+	return (*r_model) ? (*r_model)->name : "";
+}
+
 void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* ent)
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
-		// Check whitelist first - whitelisted sounds bypass all checks
+		// Check whitelist first - whitelisted sounds or source models bypass all checks
+
+		std::string_view soundSourceModelName(EngineStudio_GetCurrentRenderModelName());
 		std::string_view soundName(ev->options);
 		
-		const auto &whitelistItor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
+		// Check sound name whitelist
+		const auto &soundWhitelistItor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
 			return item.compare(soundName) == 0;
 		});
-		if (whitelistItor != g_StudioEventSoundWhitelist.end())
+		if (soundWhitelistItor != g_StudioEventSoundWhitelist.end())
 		{
 			if (cl_studiosnd_debug->value)
-				gEngfuncs.Con_Printf("[StudioEvents] Whitelisted %s\n", ev->options);
+				gEngfuncs.Con_Printf("[StudioEvents] Sound whitelisted: %s\n", ev->options);
+			
+			gExportfuncs.HUD_StudioEvent(ev, ent);
+			return;
+		}
+		
+		// Check source model whitelist
+		const auto &modelWhitelistItor = std::find_if(g_StudioEventSourceModelWhitelist.begin(), g_StudioEventSourceModelWhitelist.end(), [&soundSourceModelName](const std::string& item) {
+			return item.compare(soundSourceModelName) == 0;
+		});
+		if (modelWhitelistItor != g_StudioEventSourceModelWhitelist.end())
+		{
+			if (cl_studiosnd_debug->value)
+				gEngfuncs.Con_Printf("[StudioEvents] Source model whitelisted: %s (sound: %s)\n", soundSourceModelName.data(), ev->options);
 			
 			gExportfuncs.HUD_StudioEvent(ev, ent);
 			return;
@@ -248,4 +274,17 @@ void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* 
 	}
 
 	gExportfuncs.HUD_StudioEvent(ev, ent);
+}
+
+int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s** ppinterface, struct engine_studio_api_s* pstudio)
+{
+	EngineStudio_FillAddress(pstudio, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	EngineStudio_InstalHooks();
+
+	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
+	gpStudioInterface = ppinterface;
+
+	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
+
+	return result;
 }
