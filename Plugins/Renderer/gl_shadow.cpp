@@ -2,8 +2,6 @@
 #include <sstream>
 #include <math.h>
 
-std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture{};
-
 //cvar
 cvar_t* r_shadow = NULL;
 
@@ -312,7 +310,7 @@ void R_InitShadow(void)
 
 void R_ShutdownShadow(void)
 {
-	g_pCurrentShadowTexture = nullptr;
+	
 }
 
 bool R_ShouldRenderShadow(void)
@@ -442,13 +440,13 @@ void R_RenderShadowmapForDynamicLights(void)
 						r_draw_nofrustumcull = true;
 						r_draw_lineardepth = true;
 
-						g_pCurrentShadowTexture = (*args->ppStaticShadowTexture);
+						const auto& pCurrentShadowTexture = (*args->ppStaticShadowTexture);
 
-						g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+						pCurrentShadowTexture->SetViewport(0, 0, pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 
 						GL_BeginDebugGroup("PointlightStaticShadowPass");
 
-						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+						GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, pCurrentShadowTexture->GetDepthTexture(), pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 						glDrawBuffer(GL_NONE);
 						glReadBuffer(GL_NONE);
 
@@ -457,10 +455,10 @@ void R_RenderShadowmapForDynamicLights(void)
 						R_PushRefDef();
 
 						R_SetViewport(
-							g_pCurrentShadowTexture->GetViewport()[0],
-							g_pCurrentShadowTexture->GetViewport()[1],
-							g_pCurrentShadowTexture->GetViewport()[2], 
-							g_pCurrentShadowTexture->GetViewport()[3]);
+							pCurrentShadowTexture->GetViewport()[0],
+							pCurrentShadowTexture->GetViewport()[1],
+							pCurrentShadowTexture->GetViewport()[2], 
+							pCurrentShadowTexture->GetViewport()[3]);
 
 						// Calculate 6 faces for cubemap shadow mapping
 						// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
@@ -497,9 +495,9 @@ void R_RenderShadowmapForDynamicLights(void)
 							mat4 shadowMatrix;
 							R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-							g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
-							g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
-							g_pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
+							pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
+							pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
+							pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
 
 							R_SetupCameraView(&CameraUBO.views[i]);
 						}
@@ -539,9 +537,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 						GL_EndDebugGroup();
 
-						g_pCurrentShadowTexture->SetReady(bAnyPolyRendered);
-
-						g_pCurrentShadowTexture = nullptr;
+						pCurrentShadowTexture->SetReady(bAnyPolyRendered);
 					}
 				}
 
@@ -562,13 +558,13 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_nofrustumcull = true;
 					r_draw_lineardepth = true;
 
-					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
+					const auto& pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					pCurrentShadowTexture->SetViewport(0, 0, pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 
 					GL_BeginDebugGroup("PointlightDynamicShadowPass");
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, pCurrentShadowTexture->GetDepthTexture(), pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
@@ -577,10 +573,10 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_PushRefDef();
 
 					R_SetViewport(
-						g_pCurrentShadowTexture->GetViewport()[0],
-						g_pCurrentShadowTexture->GetViewport()[1],
-						g_pCurrentShadowTexture->GetViewport()[2],
-						g_pCurrentShadowTexture->GetViewport()[3]);
+						pCurrentShadowTexture->GetViewport()[0],
+						pCurrentShadowTexture->GetViewport()[1],
+						pCurrentShadowTexture->GetViewport()[2],
+						pCurrentShadowTexture->GetViewport()[3]);
 
 					// Calculate 6 faces for cubemap shadow mapping
 					// OpenGL cubemap face order: +X, -X, +Y, -Y, +Z, -Z
@@ -617,9 +613,9 @@ void R_RenderShadowmapForDynamicLights(void)
 						mat4 shadowMatrix;
 						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-						g_pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
-						g_pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
-						g_pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
+						pCurrentShadowTexture->SetWorldMatrix(i, worldMatrix);
+						pCurrentShadowTexture->SetProjectionMatrix(i, projMatrix);
+						pCurrentShadowTexture->SetShadowMatrix(i, &shadowMatrix);
 
 						R_SetupCameraView(&CameraUBO.views[i]);
 					}
@@ -663,9 +659,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_EndDebugGroup();
 
-					g_pCurrentShadowTexture->SetReady(true);
-
-					g_pCurrentShadowTexture = nullptr;
+					pCurrentShadowTexture->SetReady(true);
 				}
 			}
 		};
@@ -688,13 +682,13 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_multiview = true;
 					r_draw_lineardepth = true;
 
-					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
+					const auto& pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					pCurrentShadowTexture->SetViewport(0, 0, pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 
 					GL_BeginDebugGroup("DrawSpotlightDynamicShadowPass");
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, pCurrentShadowTexture->GetDepthTexture(), pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
@@ -707,10 +701,10 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_UpdateRefDef();
 
 					R_SetViewport(
-						g_pCurrentShadowTexture->GetViewport()[0],
-						g_pCurrentShadowTexture->GetViewport()[1],
-						g_pCurrentShadowTexture->GetViewport()[2],
-						g_pCurrentShadowTexture->GetViewport()[3]);
+						pCurrentShadowTexture->GetViewport()[0],
+						pCurrentShadowTexture->GetViewport()[1],
+						pCurrentShadowTexture->GetViewport()[2],
+						pCurrentShadowTexture->GetViewport()[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -728,9 +722,9 @@ void R_RenderShadowmapForDynamicLights(void)
 					mat4 shadowMatrix;
 					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
-					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
-					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
+					pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
+					pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
+					pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
 
 					camera_ubo_t CameraUBO;
 					R_SetupCameraView(&CameraUBO.views[0]);
@@ -765,9 +759,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_EndDebugGroup();
 
-					g_pCurrentShadowTexture->SetReady(true);
-
-					g_pCurrentShadowTexture = nullptr;
+					pCurrentShadowTexture->SetReady(true);
 				}
 			}
 		};
@@ -792,13 +784,13 @@ void R_RenderShadowmapForDynamicLights(void)
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 
-					g_pCurrentShadowTexture = (*args->ppStaticShadowTexture);
+					const auto& pCurrentShadowTexture = (*args->ppStaticShadowTexture);
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					pCurrentShadowTexture->SetViewport(0, 0, pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 
 					GL_BeginDebugGroup("DrawDirectionalLightStaticShadow");
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, g_pCurrentShadowTexture->GetDepthTexture(), g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, pCurrentShadowTexture->GetDepthTexture(), pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
 
@@ -811,10 +803,10 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_UpdateRefDef();
 
 					R_SetViewport(
-						g_pCurrentShadowTexture->GetViewport()[0],
-						g_pCurrentShadowTexture->GetViewport()[1],
-						g_pCurrentShadowTexture->GetViewport()[2],
-						g_pCurrentShadowTexture->GetViewport()[3]);
+						pCurrentShadowTexture->GetViewport()[0],
+						pCurrentShadowTexture->GetViewport()[1],
+						pCurrentShadowTexture->GetViewport()[2],
+						pCurrentShadowTexture->GetViewport()[3]);
 
 					R_LoadIdentityForWorldMatrix();
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
@@ -839,9 +831,9 @@ void R_RenderShadowmapForDynamicLights(void)
 					mat4 shadowMatrix;
 					R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-					g_pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
-					g_pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
-					g_pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
+					pCurrentShadowTexture->SetWorldMatrix(0, worldMatrix);
+					pCurrentShadowTexture->SetProjectionMatrix(0, projMatrix);
+					pCurrentShadowTexture->SetShadowMatrix(0, &shadowMatrix);
 
 					camera_ubo_t CameraUBO;
 					R_SetupCameraView(&CameraUBO.views[0]);
@@ -873,9 +865,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_EndDebugGroup();
 
-					g_pCurrentShadowTexture->SetReady(bAnyPolyRendered);
-
-					g_pCurrentShadowTexture = nullptr;
+					pCurrentShadowTexture->SetReady(bAnyPolyRendered);
 				}
 			}
 
@@ -892,14 +882,14 @@ void R_RenderShadowmapForDynamicLights(void)
 
 				if ((*args->ppDynamicShadowTexture) && !(*args->ppDynamicShadowTexture)->IsReady())
 				{
-					g_pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
+					const auto& pCurrentShadowTexture = (*args->ppDynamicShadowTexture);
 
 					r_draw_shadowview = true;
 					r_draw_multiview = true;
 					r_draw_nofrustumcull = true;
 
 					const float lambda = args->csmLambda; // 例如0.8，也可来自cvar
-					const float orthoMargin = 1.0f + args->csmMargin; // 15% 外扩，避免裁边
+					const float orthoMargin = 1.0f + args->csmMargin; // 外扩，避免裁边
 
 					// Calculate cascade distances based on camera frustum
 					// These could be configurable via cvars in the future
@@ -927,10 +917,10 @@ void R_RenderShadowmapForDynamicLights(void)
 					for (int i = 0; i < CSM_LEVELS; ++i)
 					{
 						float csmFar = splits[i + 1];
-						g_pCurrentShadowTexture->SetCSMDistance(i, csmFar);
+						pCurrentShadowTexture->SetCSMDistance(i, csmFar);
 					}
 
-					g_pCurrentShadowTexture->SetViewport(0, 0, g_pCurrentShadowTexture->GetTextureSize(), g_pCurrentShadowTexture->GetTextureSize());
+					pCurrentShadowTexture->SetViewport(0, 0, pCurrentShadowTexture->GetTextureSize(), pCurrentShadowTexture->GetTextureSize());
 
 					GL_BeginDebugGroup("DrawDirectionalLightDynamicCSM");
 
@@ -941,12 +931,12 @@ void R_RenderShadowmapForDynamicLights(void)
 					// but clearing needs to be done per-layer in a loop
 					for (int i = 0; i < CSM_LEVELS; ++i)
 					{
-						glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0, i);
+						glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, pCurrentShadowTexture->GetDepthTexture(), 0, i);
 						GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 					}
 
 					// Now bind all layers for rendering
-					glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, g_pCurrentShadowTexture->GetDepthTexture(), 0);
+					glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, pCurrentShadowTexture->GetDepthTexture(), 0);
 
 					glDrawBuffer(GL_NONE);
 					glReadBuffer(GL_NONE);
@@ -962,10 +952,10 @@ void R_RenderShadowmapForDynamicLights(void)
 					R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
 
 					R_SetViewport(
-						g_pCurrentShadowTexture->GetViewport()[0],
-						g_pCurrentShadowTexture->GetViewport()[1],
-						g_pCurrentShadowTexture->GetViewport()[2],
-						g_pCurrentShadowTexture->GetViewport()[3]);
+						pCurrentShadowTexture->GetViewport()[0],
+						pCurrentShadowTexture->GetViewport()[1],
+						pCurrentShadowTexture->GetViewport()[2],
+						pCurrentShadowTexture->GetViewport()[3]);
 
 					// Setup camera UBO with all cascade views
 					camera_ubo_t CameraUBO;
@@ -1008,9 +998,9 @@ void R_RenderShadowmapForDynamicLights(void)
 						mat4 shadowMatrix;
 						R_SetupShadowMatrix(shadowMatrix, (*worldMatrix), (*projMatrix));
 
-						g_pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
-						g_pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);
-						g_pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
+						pCurrentShadowTexture->SetWorldMatrix(cascadeIndex, worldMatrix);
+						pCurrentShadowTexture->SetProjectionMatrix(cascadeIndex, projMatrix);
+						pCurrentShadowTexture->SetShadowMatrix(cascadeIndex, &shadowMatrix);
 
 						// Setup camera view for this cascade in the UBO
 						R_SetupCameraView(&CameraUBO.views[cascadeIndex]);
@@ -1037,9 +1027,7 @@ void R_RenderShadowmapForDynamicLights(void)
 
 					GL_EndDebugGroup();
 
-					g_pCurrentShadowTexture->SetReady(true);
-
-					g_pCurrentShadowTexture = nullptr;
+					pCurrentShadowTexture->SetReady(true);
 				}
 			}
 		};

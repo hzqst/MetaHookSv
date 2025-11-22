@@ -706,10 +706,18 @@ public:
         Purpose: Check if gamma blending is enabled or not
     */
     virtual bool IsDrawGammaBlendEnabled() const = 0;
+
     /*
         Purpose: Set current rendering entity
     */
     virtual void SetCurrentEntity(cl_entity_t* entity) const = 0;
+
+    /*
+        Purpose: call R_DrawCurrentEntity under the hood, 
+            note that DrawClassify and HideEntity will be checked before actual draw.
+            note that bTransparent must be true for transparent object.
+    */
+    virtual void DrawCurrentEntity(bool bTransparent) = 0;
 };
 
 IMetaRenderer* MetaRenderer();

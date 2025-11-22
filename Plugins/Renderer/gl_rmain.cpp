@@ -7250,6 +7250,11 @@ public:
 	{
 		(*currententity) = entity;
 	}
+
+	void DrawCurrentEntity(bool bTransparent) override
+	{
+		R_DrawCurrentEntity(bTransparent);
+	}
 };
 
 EXPOSE_SINGLE_INTERFACE(CMetaRenderer, IMetaRenderer, METARENDERER_INTERFACE_VERSION);

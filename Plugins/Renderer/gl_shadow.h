@@ -60,8 +60,6 @@ public:
 	virtual float GetCSMDistance(int index) const = 0;
 };
 
-extern std::shared_ptr<IShadowTexture> g_pCurrentShadowTexture;
-
 //cvar
 extern cvar_t *r_shadow;
 
