@@ -99,6 +99,7 @@ typedef struct mh_plugininfo_s
 	int InterfaceVersion;
 	void *PluginModuleBase;
 	size_t PluginModuleSize;
+	HINTERFACEMODULE PluginModuleHandle;
 }mh_plugininfo_t;
 
 #include <cdll_export.h>
@@ -369,7 +370,7 @@ typedef struct metahook_api_s
 		Usage:
 
 		mh_plugininfo_t info;
-		if(g_pMetaHookAPI->GetPluginInfo("PluginName.dll", &info))//"PluginName.dll" is case-insensitive
+		if(g_pMetaHookAPI->GetPluginInfo("PluginName_AVX2.dll", &info)) //"PluginName_AVX2.dll" is case-insensitive
 		{
 
 		}
@@ -613,18 +614,39 @@ typedef struct metahook_api_s
 
 	ULONG (*GetMirrorDLLSize)(HMEMORYMODULE hMemoryModule);
 
+	/*
+		Purpose: Get global thread pool pre-allocated by metahook launcher
+	*/
 	ThreadPoolHandle_t(*GetGlobalThreadPool)(void);
 
+	/*
+		Purpose: Create a private thread pool managed by the plugin.
+	*/
 	ThreadPoolHandle_t(*CreateThreadPool)(ULONG minThreads, ULONG maxThreads);
 
+	/*
+		Purpose: Create a workitem from given thread pool.
+	*/
 	ThreadWorkItemHandle_t (*CreateWorkItem)(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void *ctx);
 
+	/*
+		Purpose: Queue the workitem into thread pool. a workitem must be queued into the same pool it was created from.
+	*/
 	void (*QueueWorkItem)(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
 
+	/*
+		Purpose: Blocked until the queued workitem to complete. 
+	*/
 	void (*WaitForWorkItemToComplete)(ThreadWorkItemHandle_t hWorkItem);
 
+	/*
+		Purpose: Delete the private thread pool created with CreateThreadPool
+	*/
 	void (*DeleteThreadPool)(ThreadWorkItemHandle_t hThreadPool);
 
+	/*
+		Purpose: Delete the workitem created with CreateWorkItem.
+	*/
 	void (*DeleteWorkItem)(ThreadWorkItemHandle_t hWorkItem);
 
 	/*
@@ -635,7 +657,22 @@ typedef struct metahook_api_s
 	/*
 		Purpose: return "IVideoMode* videomode";
 	*/
-	void*(*VideoMode)();
+	void* (*VideoMode)();
+
+	/*
+		Purpose: Get plugin info by basefilename. i.e. "Renderer", "BulletPhysics"
+	*/
+	BOOL(*GetPluginInfoByBaseFileName)(const char* basefilename, mh_plugininfo_t* info);
+
+	/*
+		Purpose: wrapper around MH_GetPluginInfo, return HINTERFACEMODULE
+	*/
+	HINTERFACEMODULE(*GetPluginModuleHandle)(const char* filename);
+
+	/*
+		Purpose: wrapper around MH_GetPluginInfoByBaseFileName, return HINTERFACEMODULE
+	*/
+	HINTERFACEMODULE(*GetPluginModuleHandleByBaseFileName)(const char* basefilename);
 
 	//Always terminate with a NULL
 	PVOID Terminator;

@@ -187,6 +187,7 @@ typedef struct plugin_s
 {
 	std::string filename;
 	std::string filepath;
+	std::string basefilename;
 	HINTERFACEMODULE module;
 	size_t modulesize;
 	IBaseInterface *pPluginAPI;
@@ -584,13 +585,18 @@ void MH_PrintPluginList(void)
 	}
 }
 
-int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
+int MH_LoadPlugin(const std::string &filepath, const std::string &filename, const std::string& basefilename)
 {
 	bool bIsDuplicatePlugin = false;
 
 	for (plugin_t *p = g_pPluginBase; p; p = p->next)
 	{
 		if (!stricmp(p->filename.c_str(), filename.c_str()))
+		{
+			bIsDuplicatePlugin = true;
+			break;
+		}
+		if (!stricmp(p->basefilename.c_str(), basefilename.c_str()))
 		{
 			bIsDuplicatePlugin = true;
 			break;
@@ -637,7 +643,61 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		return PLUGIN_LOAD_INVALID;
 	}
 
-	plugin_t *plug = new (std::nothrow) plugin_t;
+	int iInterfaceVersion = 0;
+	IBaseInterface* pPluginAPI = nullptr;
+	do
+	{
+		pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V4, NULL);
+
+		if (pPluginAPI)
+		{
+			iInterfaceVersion = 4;
+			auto pPluginAPIV4 = (IPluginsV4*)pPluginAPI;
+
+			pPluginAPIV4->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+			break;
+		}
+
+		pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V3, NULL);
+
+		if (pPluginAPI)
+		{
+			iInterfaceVersion = 3;
+			auto pPluginAPIV3 = (IPluginsV3*)pPluginAPI;
+
+			pPluginAPIV3->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+			break;
+		}
+
+		pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V2, NULL);
+
+		if (pPluginAPI)
+		{
+			iInterfaceVersion = 2;
+			auto pPluginAPIV2 = (IPluginsV2*)pPluginAPI;
+
+			pPluginAPIV2->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
+			break;
+		}
+
+		pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
+
+		if (pPluginAPI)
+		{
+			iInterfaceVersion = 1;
+			auto pPluginAPIV1 = (IPluginsV1*)pPluginAPI;
+
+			//There is no such thing
+			break;
+		}
+		
+		Sys_FreeModule(hModule);
+
+		return PLUGIN_LOAD_INVALID;
+
+	} while (0);
+
+	plugin_t* plug = new (std::nothrow) plugin_t;
 
 	if (!plug)
 	{
@@ -645,53 +705,13 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		return PLUGIN_LOAD_NOMEM;
 	}
 
+	plug->pPluginAPI = pPluginAPI;
+	plug->iInterfaceVersion = iInterfaceVersion;
 	plug->module = hModule;
 	plug->modulesize = MH_GetModuleSize(hModule);
-	plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V4, NULL);
-	if (plug->pPluginAPI)
-	{
-		plug->iInterfaceVersion = 4;
-		((IPluginsV4 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
-	}
-	else
-	{
-		plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V3, NULL);
-		if (plug->pPluginAPI)
-		{
-			plug->iInterfaceVersion = 3;
-			((IPluginsV3 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
-		}
-		else
-		{
-			plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V2, NULL);
-
-			if (plug->pPluginAPI)
-			{
-				plug->iInterfaceVersion = 2;
-
-				((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
-			}
-			else
-			{
-				plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
-
-				if (plug->pPluginAPI)
-				{
-					plug->iInterfaceVersion = 1;
-				}
-				else
-				{
-					delete plug;
-					Sys_FreeModule(hModule);
-
-					return PLUGIN_LOAD_INVALID;
-				}
-			}
-		}
-	}
-
 	plug->filename = filename;
 	plug->filepath = filepath;
+	plug->basefilename = basefilename;
 	plug->next = g_pPluginBase;
 	g_pPluginBase = plug;
 	return PLUGIN_LOAD_SUCCEEDED;
@@ -922,7 +942,7 @@ void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
 			aPluginPath += szGameName;
 			aPluginPath += "\\metahook\\plugins\\";
 
-			std::string aFileName;
+			std::string baseFileName;
 
 			if (stringLine.size() > 4 &&
 				tolower(stringLine[stringLine.length() - 1]) == 'l' &&
@@ -930,21 +950,21 @@ void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
 				tolower(stringLine[stringLine.length() - 3]) == 'd' &&
 				tolower(stringLine[stringLine.length() - 4]) == '.')
 			{
-				aFileName = stringLine.substr(0, stringLine.length() - 4);
-				aPluginPath += aFileName;
+				baseFileName = stringLine.substr(0, stringLine.length() - 4);
+				aPluginPath += baseFileName;
 			}
 			else
 			{
-				aFileName = stringLine;
-				aPluginPath += aFileName;
+				baseFileName = stringLine;
+				aPluginPath += baseFileName;
 			}
 
 			do
 			{
 #define MH_LOAD_PLUGIN_TEMPLATE(check, suffix) if (check)\
 				{\
-					std::string fileName = aFileName + suffix;\
-					int result = MH_LoadPlugin(aPluginPath + suffix, fileName);\
+					std::string fileName = baseFileName + suffix;\
+					int result = MH_LoadPlugin(aPluginPath + suffix, fileName, baseFileName);\
 					int win32err = GetLastError();\
 					if (PLUGIN_LOAD_SUCCEEDED == result)\
 					{\
@@ -957,8 +977,8 @@ void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
 				}
 
 #define MH_LOAD_PLUGIN_TEMPLATE2(check, suffix) if (check) {\
-				std::string fileName = aFileName + suffix;\
-				int result = MH_LoadPlugin(aPluginPath + suffix, fileName);\
+				std::string fileName = baseFileName + suffix;\
+				int result = MH_LoadPlugin(aPluginPath + suffix, fileName, baseFileName);\
 				int win32err = GetLastError();\
 				if (PLUGIN_LOAD_SUCCEEDED == result)\
 				{\
@@ -4313,11 +4333,74 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 				info->PluginName = plug->filename.c_str();
 				info->PluginPath = plug->filepath.c_str();
 				info->PluginVersion = version;
+				info->PluginModuleHandle = plug->module;
 			}
 			return TRUE;
 		}
 	}
 	return FALSE;
+}
+
+BOOL MH_GetPluginInfoByBaseFileName(const char* basefilename, mh_plugininfo_t* info)
+{
+	int index = 0;
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next, index++)
+	{
+		if (!stricmp(basefilename, plug->basefilename.c_str()))
+		{
+			const char* version = "";
+			switch (plug->iInterfaceVersion)
+			{
+			case 4:
+				version = ((IPluginsV4*)plug->pPluginAPI)->GetVersion();
+				break;
+			default:
+				break;
+			}
+
+			if (info)
+			{
+				info->Index = index;
+				info->InterfaceVersion = plug->iInterfaceVersion;
+				info->PluginModuleBase = plug->module;
+				info->PluginModuleSize = plug->modulesize;
+				info->PluginName = plug->filename.c_str();
+				info->PluginPath = plug->filepath.c_str();
+				info->PluginVersion = version;
+				info->PluginModuleHandle = plug->module;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+HINTERFACEMODULE MH_GetPluginModuleHandle(const char* name)
+{
+	mh_plugininfo_t info{};
+
+	auto bFound = MH_GetPluginInfo(name, &info);
+
+	if (bFound)
+	{
+		return info.PluginModuleHandle;
+	}
+
+	return NULL;
+}
+
+HINTERFACEMODULE MH_GetPluginModuleHandleByBaseFileName(const char* basefilename)
+{
+	mh_plugininfo_t info{};
+
+	auto bFound = MH_GetPluginInfoByBaseFileName(basefilename, &info);
+
+	if (bFound)
+	{
+		return info.PluginModuleHandle;
+	}
+
+	return NULL;
 }
 
 const char* MH_GetGameDirectory()
@@ -4650,6 +4733,9 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_DeleteWorkItem,
 	MH_VideoModeIsWindowed,
 	MH_VideoMode,
+	MH_GetPluginInfoByBaseFileName,
+	MH_GetPluginModuleHandle,
+	MH_GetPluginModuleHandleByBaseFileName,
 	NULL
 };
 
@@ -4746,5 +4832,8 @@ metahook_api_t gMetaHookAPI =
 	MH_DeleteWorkItem,
 	MH_VideoModeIsWindowed,
 	MH_VideoMode,
+	MH_GetPluginInfoByBaseFileName,
+	MH_GetPluginModuleHandle,
+	MH_GetPluginModuleHandleByBaseFileName,
 	NULL
 };
