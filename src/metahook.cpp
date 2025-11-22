@@ -4333,7 +4333,6 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 				info->PluginName = plug->filename.c_str();
 				info->PluginPath = plug->filepath.c_str();
 				info->PluginVersion = version;
-				info->PluginModuleHandle = plug->module;
 			}
 			return TRUE;
 		}
@@ -4367,7 +4366,6 @@ BOOL MH_GetPluginInfoByBaseFileName(const char* basefilename, mh_plugininfo_t* i
 				info->PluginName = plug->filename.c_str();
 				info->PluginPath = plug->filepath.c_str();
 				info->PluginVersion = version;
-				info->PluginModuleHandle = plug->module;
 			}
 			return TRUE;
 		}
@@ -4383,7 +4381,7 @@ HINTERFACEMODULE MH_GetPluginModuleHandle(const char* name)
 
 	if (bFound)
 	{
-		return info.PluginModuleHandle;
+		return (HINTERFACEMODULE)info.PluginModuleBase;
 	}
 
 	return NULL;
@@ -4397,7 +4395,7 @@ HINTERFACEMODULE MH_GetPluginModuleHandleByBaseFileName(const char* basefilename
 
 	if (bFound)
 	{
-		return info.PluginModuleHandle;
+		return (HINTERFACEMODULE)info.PluginModuleBase;
 	}
 
 	return NULL;

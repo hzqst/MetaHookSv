@@ -99,7 +99,6 @@ typedef struct mh_plugininfo_s
 	int InterfaceVersion;
 	void *PluginModuleBase;
 	size_t PluginModuleSize;
-	HINTERFACEMODULE PluginModuleHandle;
 }mh_plugininfo_t;
 
 #include <cdll_export.h>
@@ -109,7 +108,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 107
+#define METAHOOK_API_VERSION 108
 
 typedef struct hook_s hook_t;
 
