@@ -118,7 +118,7 @@ Renderer 插件是 MetaHookSv 的核心图形增强插件，为 GoldSrc 引擎�
 
 #### 几何着色器
 - `studio_shader.geom.glsl` - Studio 模型几何着色器
-- `wsurf_shader.geom.glsl` - WSurface 几何着色器
+- `wsurf_shader.geom.glsl` - WorldSurface 几何着色器
 
 #### 延迟渲染
 - `dlight_shader.vert.glsl/.frag.glsl` - 延迟光照

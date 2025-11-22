@@ -74,9 +74,6 @@
     <ClCompile Include="gl_studio.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="gl_warp.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="gl_water.cpp">
       <Filter>Source</Filter>
     </ClCompile>

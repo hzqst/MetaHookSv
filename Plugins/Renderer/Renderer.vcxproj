@@ -321,7 +321,6 @@ $(SDL2CheckRequirements)</Command>
     <ClCompile Include="gl_shadow.cpp" />
     <ClCompile Include="gl_sprite.cpp" />
     <ClCompile Include="gl_studio.cpp" />
-    <ClCompile Include="gl_warp.cpp" />
     <ClCompile Include="gl_water.cpp" />
     <ClCompile Include="gl_wsurf.cpp" />
     <ClCompile Include="LambdaThreadedTask.cpp" />
