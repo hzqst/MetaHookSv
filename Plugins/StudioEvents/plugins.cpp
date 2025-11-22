@@ -69,6 +69,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_StudioEvent = HUD_StudioEvent;
+	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
+
 }
 
 void IPluginsV4::ExitGame(int iResult)

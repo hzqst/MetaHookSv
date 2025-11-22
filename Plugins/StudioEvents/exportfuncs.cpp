@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <string>
 #include <string_view>
+#include <unordered_set>
+
+#include "MurmurHash2.h"
 
 #include "plugins.h"
 #include "privatehook.h"
@@ -42,13 +45,31 @@ typedef struct studio_event_sound_s
 }studio_event_sound_t;
 
 static std::vector<studio_event_sound_t> g_StudioEventSoundPlayed;
-
 static std::vector<studio_event_sound_t> g_StudioEventSoundDelayed;
 
-static std::vector<std::string> g_StudioEventSoundWhitelist;
-static std::vector<std::string> g_StudioEventSourceModelWhitelist;
+static std::unordered_set<uint32_t> g_StudioEventSoundWhitelist;
+static std::unordered_set<uint32_t> g_StudioEventSourceModelWhitelist;
 
-static void LoadWhitelist(std::vector<std::string>& whitelist, const char* filePath, const char* whitelistName)
+const char* EngineStudio_GetCurrentRenderModelName()
+{
+	if (!r_model)
+		return "";
+
+	if (!(*r_model))
+		return "";
+
+	return (*r_model)->name;
+}
+
+uint32_t CalcSoundNameHash(const char* name)
+{
+	uint32_t seed = 0;
+	uint32_t result = MurmurHash2(name, strlen(name), seed);
+
+	return result;
+}
+
+static void LoadWhitelist(std::unordered_set<uint32_t>& whitelist, const char* filePath, const char* whitelistName)
 {
 	auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "rt");
 	if (hFileHandle)
@@ -69,16 +90,9 @@ static void LoadWhitelist(std::vector<std::string>& whitelist, const char* fileP
 			p = FILESYSTEM_ANY_PARSEFILE(p, token, &quoted);
 			if (token[0])
 			{
-				std::string itemName(token);
-				
-				// Avoid duplicates
-				const auto &itor = std::find_if(whitelist.begin(), whitelist.end(), [&itemName](const std::string& item) {
-					return item.compare(itemName) == 0;
-				});
-				if (itor == whitelist.end())
-				{
-					whitelist.emplace_back(itemName);
-				}
+				// Calculate hash and insert into set (set automatically handles duplicates)
+				uint32_t hash = CalcSoundNameHash(token);
+				whitelist.insert(hash);
 			}
 		}
 		
@@ -156,25 +170,18 @@ void HUD_Frame(double a1)
 	}
 }
 
-const char* EngineStudio_GetCurrentRenderModelName()
-{
-	return (*r_model) ? (*r_model)->name : "";
-}
-
 void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* ent)
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
 		// Check whitelist first - whitelisted sounds or source models bypass all checks
 
-		std::string_view soundSourceModelName(EngineStudio_GetCurrentRenderModelName());
-		std::string_view soundName(ev->options);
+		const char* soundSourceModelName = EngineStudio_GetCurrentRenderModelName();
+		const char* soundName = ev->options;
 		
 		// Check sound name whitelist
-		const auto &soundWhitelistItor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
-			return item.compare(soundName) == 0;
-		});
-		if (soundWhitelistItor != g_StudioEventSoundWhitelist.end())
+		uint32_t soundHash = CalcSoundNameHash(soundName);
+		if (g_StudioEventSoundWhitelist.find(soundHash) != g_StudioEventSoundWhitelist.end())
 		{
 			if (cl_studiosnd_debug->value)
 				gEngfuncs.Con_Printf("[StudioEvents] Sound whitelisted: %s\n", ev->options);
@@ -184,13 +191,11 @@ void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* 
 		}
 		
 		// Check source model whitelist
-		const auto &modelWhitelistItor = std::find_if(g_StudioEventSourceModelWhitelist.begin(), g_StudioEventSourceModelWhitelist.end(), [&soundSourceModelName](const std::string& item) {
-			return item.compare(soundSourceModelName) == 0;
-		});
-		if (modelWhitelistItor != g_StudioEventSourceModelWhitelist.end())
+		uint32_t modelHash = CalcSoundNameHash(soundSourceModelName);
+		if (g_StudioEventSourceModelWhitelist.find(modelHash) != g_StudioEventSourceModelWhitelist.end())
 		{
 			if (cl_studiosnd_debug->value)
-				gEngfuncs.Con_Printf("[StudioEvents] Source model whitelisted: %s (sound: %s)\n", soundSourceModelName.data(), ev->options);
+				gEngfuncs.Con_Printf("[StudioEvents] Source model whitelisted: %s (sound: %s)\n", soundSourceModelName, ev->options);
 			
 			gExportfuncs.HUD_StudioEvent(ev, ent);
 			return;
