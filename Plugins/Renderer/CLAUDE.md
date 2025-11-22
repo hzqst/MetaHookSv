@@ -32,24 +32,17 @@ Renderer 插件是 MetaHookSv 的核心图形增强插件，为 GoldSrc 引擎�
 
 #### 主要渲染模块
 - `gl_rmain.cpp` - 主渲染循环和场景管理
-- `gl_rmisc.cpp` - 杂项渲染功能
-- `gl_rsurf.cpp` - 表面渲染
+- `gl_rmisc.cpp` `gl_draw.cpp` - OpenGL相关API调用封装
 - `gl_studio.cpp` - Studio 模型渲染 (角色/武器)
 - `gl_sprite.cpp` - Sprite 渲染
-- `gl_entity.cpp` - 实体渲染
-- `gl_water.cpp` - 水面和液体渲染
-- `gl_warp.cpp` - 扭曲效果
-- `gl_wsurf.cpp` - 可变形表面渲染
-
-#### 高级特性
+- `gl_entity.cpp` - 实体相关渲染专用数据结构管理
+- `gl_water.cpp` - 水面渲染
+- `gl_rsurf.cpp` `gl_wsurf.cpp` - BSP地形渲染，wsurf for WorldSurface.
 - `gl_light.cpp` - 动态光照系统
 - `gl_shadow.cpp` - 阴影投射和接收
 - `gl_portal.cpp` - 传送门渲染
 - `gl_shader.cpp` - 着色器程序管理
-- `gl_ringbuffer.cpp` - GPU 命令环形缓冲区
-
-#### UI 和绘制
-- `gl_draw.cpp` - 2D 绘制函数
+- `gl_ringbuffer.cpp` - 环形缓冲区
 - `gl_hud.cpp` - HUD 元素渲染
 - `BaseUI.cpp` - 基础 UI 组件
 - `EngineSurfaceHook.cpp` - 引擎表面钩子
