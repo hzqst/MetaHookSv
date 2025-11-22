@@ -7,7 +7,11 @@
 #include "cvardef.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
+#include "plugins.h"
 #include <vector>
+#include <algorithm>
+#include <string>
+#include <string_view>
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
@@ -34,9 +38,55 @@ typedef struct studio_event_sound_s
 	float time;
 }studio_event_sound_t;
 
-std::vector<studio_event_sound_t> g_StudioEventSoundPlayed;
+static std::vector<studio_event_sound_t> g_StudioEventSoundPlayed;
 
-std::vector<studio_event_sound_t> g_StudioEventSoundDelayed;
+static std::vector<studio_event_sound_t> g_StudioEventSoundDelayed;
+
+static std::vector<std::string> g_StudioEventSoundWhitelist;
+
+static void LoadWhitelist(const char* filePath)
+{
+	auto hFileHandle = FILESYSTEM_ANY_OPEN(filePath, "rt");
+	if (hFileHandle)
+	{
+		g_StudioEventSoundWhitelist.clear();
+		
+		char szReadLine[256];
+		while (!FILESYSTEM_ANY_EOF(hFileHandle))
+		{
+			FILESYSTEM_ANY_READLINE(szReadLine, sizeof(szReadLine) - 1, hFileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+			
+			// Parse line and extract sound name
+			bool quoted = false;
+			char token[256];
+			char* p = szReadLine;
+			
+			p = FILESYSTEM_ANY_PARSEFILE(p, token, &quoted);
+			if (token[0])
+			{
+				std::string soundName(token);
+				
+				// Avoid duplicates
+				const auto &itor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
+					return item.compare(soundName) == 0;
+				});
+				if (itor == g_StudioEventSoundWhitelist.end())
+				{
+					g_StudioEventSoundWhitelist.emplace_back(soundName);
+				}
+			}
+		}
+		
+		FILESYSTEM_ANY_CLOSE(hFileHandle);
+		
+		gEngfuncs.Con_DPrintf("[StudioEvents] Loaded %d whitelisted sounds from \"%s\".\n", g_StudioEventSoundWhitelist.size(), filePath);
+	}
+	else
+	{
+		gEngfuncs.Con_DPrintf("[StudioEvents] Whitelist file \"%s\" not found.\n", filePath);
+	}
+}
 
 void HUD_Init(void)
 {
@@ -49,6 +99,8 @@ void HUD_Init(void)
 	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
 
 	g_StudioEventSoundPlayed.clear();
+	
+	LoadWhitelist("studioevents/whitelist.txt");
 }
 
 int HUD_VidInit(void)
@@ -103,6 +155,21 @@ void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* 
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
+		// Check whitelist first - whitelisted sounds bypass all checks
+		std::string_view soundName(ev->options);
+		
+		const auto &whitelistItor = std::find_if(g_StudioEventSoundWhitelist.begin(), g_StudioEventSoundWhitelist.end(), [&soundName](const std::string& item) {
+			return item.compare(soundName) == 0;
+		});
+		if (whitelistItor != g_StudioEventSoundWhitelist.end())
+		{
+			if (cl_studiosnd_debug->value)
+				gEngfuncs.Con_Printf("[StudioEvents] Whitelisted %s\n", ev->options);
+			
+			gExportfuncs.HUD_StudioEvent(ev, ent);
+			return;
+		}
+		
 		if (cl_studiosnd_block_player->value > 0 && ent->player)
 		{
 			if (cl_studiosnd_debug->value)

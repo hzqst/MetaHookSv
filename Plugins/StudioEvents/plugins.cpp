@@ -25,6 +25,11 @@ void IPluginsV4::Shutdown(void)
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
+	if (!g_pFileSystem)
+	{
+		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+	}
+	
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 

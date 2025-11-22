@@ -3,7 +3,10 @@
 #include <metahook.h>
 
 class IFileSystem;
+class IFileSystem_HL25;
+
 extern IFileSystem* g_pFileSystem;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
 
 extern int g_iEngineType;
 extern DWORD g_dwEngineBuildnum;
