@@ -2404,54 +2404,77 @@ void R_DrawWorldSurfaceModelShadowProxy(CWorldSurfaceModel* pModel)
 
 void R_DrawWorldSurfaceLeafShadow(CWorldSurfaceLeaf* pLeaf, bool bWithSky)
 {
-	const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
+	//const auto& texchain = bWithSky ? pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID_WITH_SKY] : pLeaf->TextureChainSpecial[WSURF_TEXCHAIN_SPECIAL_SOLID];
 
-	if (!texchain.drawCount)
-		return;
+	//if (!texchain.drawCount)
+	//	return;
 
 	GL_BeginDebugGroup("R_DrawWorldSurfaceLeafShadow");
 
-	program_state_t WSurfProgramState = 0;
-
-	if (R_IsRenderingGBuffer())
-	{
-		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-	}
-
-	if (R_IsRenderingShadowView())
-	{
-		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
-	}
-
-	if (R_IsRenderingMultiView())
-	{
-		WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
-	}
-
-	if (R_IsRenderingLinearDepth())
-	{
-		WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
-	}
-
-	if (R_IsRenderingWaterView())
-	{
-		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
-	}
-	else if (g_bPortalClipPlaneEnabled[0])
-	{
-		WSurfProgramState |= WSURF_CLIP_ENABLED;
-	}
+	R_DrawWorldSurfaceLeafBegin(pLeaf);
 
 	glDisable(GL_CULL_FACE);
 
-	R_DrawWorldSurfaceLeafBegin(pLeaf);
+	const auto& vTexChainList = pLeaf->vTextureChainList[WSURF_TEXCHAIN_LIST_STATIC];
 
-	wsurf_program_t prog = { 0 };
-	R_UseWSurfProgram(WSurfProgramState, &prog);
+	for (size_t i = 0; i < vTexChainList.size(); ++i)
+	{
+		const auto& texchain = vTexChainList[i];
 
-	glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+		program_state_t WSurfProgramState = 0;
 
-	(*c_brush_polys) += texchain.polyCount;
+		if (texchain.texture)
+		{
+			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+
+			GL_Bind(texchain.texture->gl_texturenum);
+		}
+		else
+		{
+			GL_Bind(0);
+		}
+
+		if (R_IsRenderingGBuffer())
+		{
+			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		}
+
+		if (R_IsRenderingShadowView())
+		{
+			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+		}
+
+		if (R_IsRenderingMultiView())
+		{
+			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
+		}
+
+		if (R_IsRenderingLinearDepth())
+		{
+			WSurfProgramState |= WSURF_LINEAR_DEPTH_ENABLED;
+		}
+
+		if (R_IsRenderingWaterView())
+		{
+			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+		}
+		else if (g_bPortalClipPlaneEnabled[0])
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
+		}
+
+		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+		{
+			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
+		}
+
+		wsurf_program_t prog = { 0 };
+		R_UseWSurfProgram(WSurfProgramState, &prog);
+
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)(texchain.startDrawOffset), texchain.drawCount, 0);
+
+		(*c_brush_polys) += texchain.polyCount;
+	}
 
 	GL_UseProgram(0);
 
