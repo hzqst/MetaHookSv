@@ -13530,7 +13530,7 @@ void Client_FillAddress_ViewEntityIndex(const mh_dll_info_t& DllInfo, const mh_d
 
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	gPrivateFuncs.SCClientDLL_glewInit = (decltype(gPrivateFuncs.SCClientDLL_glewInit))GetProcAddress(g_pMetaHookAPI->GetClientModule(), "glewInit");
+	gPrivateFuncs.SCClientDLL_glewInit = (decltype(gPrivateFuncs.SCClientDLL_glewInit))GetProcAddress(g_pMetaHookAPI->GetClientModule(), "_glewInit@0");
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
