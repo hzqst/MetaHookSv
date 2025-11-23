@@ -204,17 +204,18 @@ int ClientPortal_GetTextureHeight(void* pClientPortal)
 
 void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
 {
+#if 0
 	portal_texture_t *ptextures = *(portal_texture_t **)((ULONG_PTR)pthis + 0x9C);
 
 	if (ptextures->next != ptextures)
 	{
 		do
 		{
-			//glDeleteTextures(1, &ptextures->gl_texturenum2);
 			ptextures->gl_texturenum2 = 0;
 			ptextures = ptextures->next;
 		} while (ptextures != *(portal_texture_t **)((ULONG_PTR)pthis + 0x9C));
 	}
+#endif
 
 	gPrivateFuncs.ClientPortalManager_ResetAll(pthis, 0);
 
