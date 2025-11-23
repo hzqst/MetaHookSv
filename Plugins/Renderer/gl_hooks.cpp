@@ -13530,6 +13530,8 @@ void Client_FillAddress_ViewEntityIndex(const mh_dll_info_t& DllInfo, const mh_d
 
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	gPrivateFuncs.SCClientDLL_glewInit = (decltype(gPrivateFuncs.SCClientDLL_glewInit))GetProcAddress(g_pMetaHookAPI->GetClientModule(), "glewInit");
+
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
 	if (pfnClientFactory)
@@ -13921,16 +13923,19 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 
 void Client_InstallHooks()
 {
-	Install_InlineHook(ClientPortalManager_ResetAll);
+	//Install_InlineHook(ClientPortalManager_ResetAll);
 	Install_InlineHook(ClientPortalManager_DrawPortalSurface);
 	Install_InlineHook(ClientPortalManager_EnableClipPlane);
 	Install_InlineHook(ClientPortalManager_RenderPortals);
 	Install_InlineHook(UpdatePlayerPitch);
+
+	//Sniber jiali siren le
+	gPrivateFuncs.SCClientDLL_glewInit();
 }
 
 void Client_UninstallHooks()
 {
-	Uninstall_Hook(ClientPortalManager_ResetAll);
+	//Uninstall_Hook(ClientPortalManager_ResetAll);
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
 	Uninstall_Hook(ClientPortalManager_RenderPortals);

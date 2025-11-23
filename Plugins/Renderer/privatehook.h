@@ -207,6 +207,8 @@ typedef struct
 	void(__fastcall* ClientPortalManager_RenderPortals)(void* pthis, int dummy);
 	void(__cdecl* UpdatePlayerPitch)(cl_entity_t* a1, float a2);
 
+	decltype(glewInit)* SCClientDLL_glewInit;
+
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
 	void (*R_LightStrength)(int bone, float* vert, float (*light)[4]);
