@@ -13930,7 +13930,8 @@ void Client_InstallHooks()
 	Install_InlineHook(UpdatePlayerPitch);
 
 	//Sniber jiali siren le
-	gPrivateFuncs.SCClientDLL_glewInit();
+	if(gPrivateFuncs.SCClientDLL_glewInit)
+		gPrivateFuncs.SCClientDLL_glewInit();
 }
 
 void Client_UninstallHooks()
