@@ -440,9 +440,11 @@ std::shared_ptr<CSubLine> SubtitlePanel::AddLine(const std::shared_ptr<CDictiona
 
 static bool IsNonBreakableCharacter(wchar_t ch)
 {
-	return ((ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') || ch == L'Ç' || ch == L'ç' || ch == L'Ğ' || ch == L'ğ' || ch == L'İ' || ch == L'ı' || ch == L'Ö' || ch == L'ö' || ch == L'Ş' || ch == L'ş' || ch == L'Ü' || ch == L'ü' || ch == L'â' || ch == L'Â' || ch == L':' || ch == L'-' || ch == L'\'' || ch == L'"' || ch == L',' || ch == L'.' || ch == L'!' || ch == L'?' || ch == L';' || ch == '%' || (ch >= L'0' && ch <= L'9')) ? true : false;
-}
+    if (ch == L'\0') 
+        return false;
 
+    return (ch != L' ' && ch != L'\t' && ch != L'\r' && ch != L'\n');
+}
 //2015-11-26 added htimescale for SubtitlePanel
 void SubtitlePanel::StartSubtitle(const std::shared_ptr<CDictionary>& dict, float flDurationTime, float flStartTime, const CStartSubtitleContext* pStartSubtitleContext)
 {
