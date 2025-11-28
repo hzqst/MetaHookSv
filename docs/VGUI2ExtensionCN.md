@@ -12,7 +12,7 @@
 | SvEngine       (8832 ~)     | √    |
 | GoldSrc_HL25   (>= 9884)    | √    |
 
-* 注意： [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) 使用了不同的`KeyValues`布局, 因此无法兼容 `VGUI2Extension.dll` 。
+* 注意： [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) 使用了不同的VGUI2对象布局, 因此无法兼容 `VGUI2Extension.dll` 。
 
 ## 功能
 

@@ -14,6 +14,8 @@
 
 * Since this plugin heavily relies on modifying the VGUI2 subsystem, it must be used together with `VGUI2Extension.dll`.
 
+* Note that since [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a different VGUI2 component layout, it's not gonna be working with `CaptionMod.dll`
+
 ## Features
 
 ### VGUI2-based Subtitle System
