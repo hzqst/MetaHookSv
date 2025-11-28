@@ -12,7 +12,7 @@
 | SvEngine       (8832 ~)     | √    |
 | GoldSrc_HL25   (>= 9884)    | √    |
 
-* Note that since [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a different VGUI2 component layout, it's not gonna be working with `VGUI2Extension.dll`
+* Note that since [BugFixedHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a different VGUI2 component layout, it's not gonna be working with `VGUI2Extension.dll`
 
 ## Features
 

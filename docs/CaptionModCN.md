@@ -14,7 +14,7 @@
 
 * 由于该插件高度依赖修改VGUI2子系统，所以必须和`VGUI2Extension.dll`配合使用。
 
-* 注意： [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) 使用了不同的VGUI2对象布局, 因此无法兼容 `CaptionMod.dll` 。
+* 注意： [BugFixedHL](https://github.com/tmp64/BugfixedHL-Rebased) 使用了不同的VGUI2对象布局, 因此无法兼容 `CaptionMod.dll` 。
 
 ## 功能
 
