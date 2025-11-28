@@ -145,7 +145,7 @@ void Border::ParseSideSettings(int side_index, KeyValues *inResourceData, ISchem
 		return;
 
 	int count = 0;
-	KeyValues *kv;
+	KeyValues *kv = nullptr;
 
 	for (kv = inResourceData->GetFirstSubKey(); kv != NULL; kv = kv->GetNextKey())
 		count++;
