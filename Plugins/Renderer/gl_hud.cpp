@@ -91,6 +91,11 @@ void R_UseDrawTexturedRectProgram(program_state_t state, drawtexturedrect_progra
 	{
 		std::stringstream defs;
 
+		if (state & DRAW_TEXTURED_RECT_ALPHA_TEST_ENABLED)
+		{
+			defs << "#define ALPHA_TEST_ENABLED\n";
+		}
+
 		if (state & DRAW_TEXTURED_RECT_MASK_TEXTURE_ENABLED)
 		{
 			defs << "#define MASK_TEXTURE_ENABLED\n";

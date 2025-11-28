@@ -2867,7 +2867,7 @@ void R_RenderFrameStart()
 		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 	}
 
-	if ((int)r_lightmap->value <= 0)
+	if ((int)r_lightmap->value <= 0 && AllowCheats())
 	{
 		r_draw_classify &= ~DRAW_CLASSIFY_LIGHTMAP;
 	}
