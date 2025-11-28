@@ -62,16 +62,18 @@ void SDL2_FillAddress(void)
 	}
 }
 
-bool VGUI2_IsPanelInit(PVOID Candidate)
+bool VGUI2_IsPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, PVOID Candidate_VA)
 {
-	typedef struct
+	typedef struct VGUI2_IsPanelInit_SearchContext_s
 	{
-		bool bFoundMov2;//C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
+		const mh_dll_info_t& DllInfo;
+		const mh_dll_info_t& RealDllInfo;
+		bool bFoundMov2{};//C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
 	}VGUI2_IsPanelInit_SearchContext;
 
-	VGUI2_IsPanelInit_SearchContext ctx = { 0 };
+	VGUI2_IsPanelInit_SearchContext ctx = { DllInfo, RealDllInfo };
 
-	g_pMetaHookAPI->DisasmRanges(Candidate, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+	g_pMetaHookAPI->DisasmRanges(Candidate_VA, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 		auto pinst = (cs_insn*)inst;
 		auto ctx = (VGUI2_IsPanelInit_SearchContext*)context;
@@ -103,7 +105,7 @@ bool VGUI2_IsPanelInit(PVOID Candidate)
 
 PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID Panel_Init = NULL;
+	PVOID Panel_Init_VA = NULL;
 
 	if (1)
 	{
@@ -113,10 +115,12 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 		{
 			typedef struct VGUI2_FindPanelInit_SearchContext_s
 			{
-				PVOID& Panel_Init;
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+				PVOID& Panel_Init_VA;
 			}VGUI2_FindPanelInit_SearchContext;
 
-			VGUI2_FindPanelInit_SearchContext ctx = { Panel_Init };
+			VGUI2_FindPanelInit_SearchContext ctx = { DllInfo, RealDllInfo, Panel_Init_VA };
 
 			g_pMetaHookAPI->DisasmRanges(Panel_Init_Push + Sig_Length(sigs), 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -125,11 +129,11 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 
 				if (address[0] == 0xE8 && instCount <= 15)
 				{
-					auto Candidate = GetCallAddress(address);
+					auto Candidate_VA = GetCallAddress(address);
 
-					if (VGUI2_IsPanelInit(Candidate))
+					if (VGUI2_IsPanelInit(ctx->DllInfo, ctx->RealDllInfo, Candidate_VA))
 					{
-						ctx->Panel_Init = Candidate;
+						ctx->Panel_Init_VA = Candidate_VA;
 					}
 
 					return TRUE;
@@ -147,7 +151,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 		}
 	}
 
-	if (!Panel_Init)
+	if (!Panel_Init_VA)
 	{
 		//  mov     dword ptr [ebx+24h], 2
 		/* 8684 engine
@@ -180,14 +184,16 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 			{
 				typedef struct VGUI2_FindPanelInit_SearchContext_s
 				{
-					PVOID& Panel_Init;
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+					PVOID& Panel_Init_VA;
 					int instCount_push40h{};
 					int reg_pushReg{};
 					int instCount_pushReg{};
 					int instCount_pushReg2{};
 				}VGUI2_FindPanelInit_SearchContext;
 
-				VGUI2_FindPanelInit_SearchContext ctx = { Panel_Init };
+				VGUI2_FindPanelInit_SearchContext ctx = { DllInfo, RealDllInfo, Panel_Init_VA };
 
 				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -233,11 +239,11 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 							instCount > ctx->instCount_pushReg2 &&
 							instCount < ctx->instCount_pushReg2 + 6)
 						{
-							auto Candidate = GetCallAddress(address);
+							auto Candidate_VA = GetCallAddress(address);
 
-							if (VGUI2_IsPanelInit(Candidate))
+							if (VGUI2_IsPanelInit(ctx->DllInfo, ctx->RealDllInfo, Candidate_VA))
 							{
-								ctx->Panel_Init = Candidate;
+								ctx->Panel_Init_VA = Candidate_VA;
 							}
 						}
 						return TRUE;
@@ -253,7 +259,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 
 				}, 0, &ctx);
 
-				if (Panel_Init)
+				if (Panel_Init_VA)
 				{
 					break;
 				}
@@ -267,7 +273,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 		}
 	}
 
-	if (!Panel_Init)
+	if (!Panel_Init_VA)
 	{
 		//  mov     dword ptr [ebx+24h], 2
 		/* 8684 serverbrowser.dll
@@ -286,14 +292,16 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 			{
 				typedef struct VGUI2_FindPanelInit_SearchContext_s
 				{
-					PVOID& Panel_Init;
+					const mh_dll_info_t& DllInfo;
+					const mh_dll_info_t& RealDllInfo;
+					PVOID& Panel_Init_VA;
 					int instCount_push40h{};
 					int reg_pushReg{};
 					int instCount_pushReg{};
 					int instCount_pushReg2{};
 				}VGUI2_FindPanelInit_SearchContext;
 
-				VGUI2_FindPanelInit_SearchContext ctx = { Panel_Init };
+				VGUI2_FindPanelInit_SearchContext ctx = { DllInfo, RealDllInfo, Panel_Init_VA };
 
 				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -339,11 +347,11 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 							instCount > ctx->instCount_pushReg2 &&
 							instCount < ctx->instCount_pushReg2 + 6)
 						{
-							auto Candidate = GetCallAddress(address);
+							auto Candidate_VA = GetCallAddress(address);
 
-							if (VGUI2_IsPanelInit(Candidate))
+							if (VGUI2_IsPanelInit(ctx->DllInfo, ctx->RealDllInfo, Candidate_VA))
 							{
-								ctx->Panel_Init = Candidate;
+								ctx->Panel_Init_VA = Candidate_VA;
 							}
 						}
 						return TRUE;
@@ -359,7 +367,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 
 				}, 0, &ctx);
 
-				if (Panel_Init)
+				if (Panel_Init_VA)
 				{
 					break;
 				}
@@ -373,7 +381,7 @@ PVOID VGUI2_FindPanelInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& Rea
 		}
 	}
 
-	return ConvertDllInfoSpace(Panel_Init, DllInfo, RealDllInfo);
+	return ConvertDllInfoSpace(Panel_Init_VA, DllInfo, RealDllInfo);
 }
 
 PVOID *VGUI2_FindMenuVFTable(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
