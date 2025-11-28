@@ -12,6 +12,8 @@
 | SvEngine       (8832 ~)     | √    |
 | GoldSrc_HL25   (>= 9884)    | √    |
 
+* Note that since [BugFixHL](https://github.com/tmp64/BugfixedHL-Rebased) uses a difference VGUI2 KeyValues layout, it's not gonna be working with `VGUI2Extension.dll`
+
 ## Features
 
 ### VGUI2 modding framework
