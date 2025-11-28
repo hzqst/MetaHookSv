@@ -308,6 +308,9 @@ typedef struct alight_s
 //This is the renderfx for rendering post-process glow (wallhack)
 #define kRenderFxPostProcessGlowWallHack 31
 
+//This is the renderfx for rendering post-process glow (wallhack only visible behind wall)
+#define kRenderFxPostProcessGlowWallHackBehindWall 32
+
 //gl_model
 
 #include "modelgen.h"
