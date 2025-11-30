@@ -429,6 +429,10 @@ public:
 
 using CFaceNormalHashMap = std::unordered_map<CQuantizedVector, std::shared_ptr<CFaceNormalStorage>, CQuantizedVectorHasher>;
 
+/*
+	Purpose: Prepare tangent and bitangent for render mesh
+*/
+
 void R_PrepareTBNForRenderMesh(
 	model_t* mod,
 	studiohdr_t* studiohdr,
@@ -616,6 +620,9 @@ void R_PrepareTBNForRenderMesh(
 	}
 }
 
+/*
+	Purpose: Calculate face normal hash map and store face-normal in FaceNormalHashMap
+*/
 void CalculateFaceNormalHashMap(
 	CStudioModelRenderData* pRenderData,
 	const std::vector<studiovertexbase_t>& vVertexPosBuffer,
@@ -745,6 +752,9 @@ void CalculateFaceNormalHashMap(
 	}
 }
 
+/*
+	Purpose: Calculate average normal from face-normal using FaceNormalHashMap
+*/
 void CalculateAverageNormal(CStudioModelRenderData* pRenderData, CFaceNormalHashMap& FaceNormalHashMap)
 {
 	for (auto it = FaceNormalHashMap.begin(); it != FaceNormalHashMap.end(); it++)
@@ -803,6 +813,9 @@ void CalculateAverageNormal(CStudioModelRenderData* pRenderData, CFaceNormalHash
 	}
 }
 
+/*
+	Purpose: Get smooth normal from given vertex
+*/
 void GetSmoothNormal(
 	CStudioModelRenderData* pRenderData,
 	const vec3_t VertexPos,
@@ -850,6 +863,9 @@ void GetSmoothNormal(
 	VectorCopy(VertexNorm, outNormal);
 }
 
+/*
+	Purpose: Prepare smooth normal for render mesh, store in vVertexTBNBuffer[].smoothnormal
+*/
 void R_PrepareSmoothNormalForRenderMesh(
 	model_t* mod,
 	studiohdr_t* studiohdr,
