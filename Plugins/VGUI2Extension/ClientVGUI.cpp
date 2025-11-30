@@ -1403,10 +1403,11 @@ void NativeClientUI_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	if (1)
 	{
 		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_Panel_Init);
+		Sig_FuncNotFound(ClientVGUI_Panel_Init);
 
 		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(DllInfo, RealDllInfo);
-		//Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
+		Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
+
 		if (gPrivateFuncs.ClientVGUI_KeyValues_vftable)
 		{
 			gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))gPrivateFuncs.ClientVGUI_KeyValues_vftable[2];
