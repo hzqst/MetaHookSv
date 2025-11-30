@@ -1969,7 +1969,7 @@ void R_CopyColorHaloAdd(FBO_Container_t* src, FBO_Container_t* dst)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW, STENCIL_MASK_NO_GLOW);
+	GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW_BLUR, STENCIL_MASK_NO_GLOW_BLUR);
 
 	GL_UseProgram(copy_color_halo_add.program);
 

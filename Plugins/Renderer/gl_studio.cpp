@@ -181,7 +181,7 @@ bool R_StudioShouldDrawGlowStencil()
 }
 
 /*
-	Purpose: Check if we should draw wall-hack glow stencil for this entity
+	Purpose: Check if we should draw stencil for this entity
 */
 bool R_StudioShouldDrawGlowStencilWallHack()
 {
@@ -189,6 +189,25 @@ bool R_StudioShouldDrawGlowStencilWallHack()
 		return false;
 
 	return R_IsRenderingGlowStencil() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack;
+}
+
+bool R_StudioShouldDrawGlowStencilWallHackBehindWallOnly()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencil() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly;
+}
+
+/*
+	Purpose: Check if we should draw stencil for this entity, enable depth test
+*/
+bool R_StudioShouldDrawGlowStencilEnableDepthTest()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencilEnableDepthTest() && ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly);
 }
 
 /*
@@ -205,6 +224,14 @@ bool R_StudioShouldDrawGlowColor()
 bool R_StudioShouldDrawGlowColorWallHack()
 {
 	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack;
+}
+
+/*
+	Purpose: Check if we should draw behind-wall-only wall-hack glow color for this entity
+*/
+bool R_StudioShouldDrawGlowColorWallHackBehindWallOnly()
+{
+	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly;
 }
 
 bool R_IsRenderingGlowShell()
@@ -1398,8 +1425,11 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_CLIP_NEARPLANE_ENABLED)
 			defs << "#define CLIP_NEARPLANE_ENABLED\n";
 
-		if (state & STUDIO_GLOW_STENCIL_ENABLED)
-			defs << "#define GLOW_STENCIL_ENABLED\n";
+		if (state & STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED)
+			defs << "#define STENCIL_NO_GLOW_BLUR_ENABLED\n";
+
+		if (state & STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED)
+			defs << "#define STENCIL_NO_GLOW_COLOR_ENABLED\n";
 
 		if (state & STUDIO_GLOW_COLOR_ENABLED)
 			defs << "#define GLOW_COLOR_ENABLED\n";
@@ -1508,7 +1538,8 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
 { STUDIO_CLIP_NEARPLANE_ENABLED			,"STUDIO_CLIP_NEARPLANE_ENABLED"			},
-{ STUDIO_GLOW_STENCIL_ENABLED			,"STUDIO_GLOW_STENCIL_ENABLED"				},
+{ STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED	,"STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED"		},
+{ STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED	,"STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED"		},
 { STUDIO_GLOW_COLOR_ENABLED				,"STUDIO_GLOW_COLOR_ENABLED"				},
 { STUDIO_MULTIVIEW_ENABLED				,"STUDIO_MULTIVIEW_ENABLED"					},
 { STUDIO_LINEAR_DEPTH_ENABLED			,"STUDIO_LINEAR_DEPTH_ENABLED"				},
@@ -2158,6 +2189,8 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 	StudioUBO.r_origin[1] = r_origin[1];
 	StudioUBO.r_origin[2] = r_origin[2];
 
+	StudioUBO.r_scale = 0;
+
 	if (R_IsRenderingGlowShell())
 	{
 		StudioUBO.r_origin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
@@ -2168,8 +2201,13 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
 		StudioUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
 		StudioUBO.r_color[3] = 1;
+
+		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
 	}
-	else if (R_StudioShouldDrawGlowColor() || R_StudioShouldDrawGlowColorWallHack())
+	else if (
+		R_StudioShouldDrawGlowColor() || 
+		R_StudioShouldDrawGlowColorWallHack() || 
+		R_StudioShouldDrawGlowColorWallHackBehindWallOnly())
 	{
 		StudioUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
 		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
@@ -2177,6 +2215,11 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 		StudioUBO.r_color[3] = (*r_blend);
 
 		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
+	}
+	else if (R_StudioShouldDrawGlowStencilEnableDepthTest())
+	{
+		//Same size as DrawGlowColor
+		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f) + 0.05f;
 	}
 	else if ((*currententity)->curstate.rendermode == kRenderTransColor)
 	{
@@ -2200,19 +2243,13 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 		StudioUBO.r_color[3] = (*r_blend);
 	}
 
-	StudioUBO.r_ambientlight = (float)(*r_ambientlight);
-	StudioUBO.r_shadelight = (*r_shadelight);
-
-	StudioUBO.r_scale = 0;
-
-	if (R_IsRenderingGlowShell())
-	{
-		StudioUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
-	}
-	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
+	if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
 		StudioUBO.r_scale = max(pRenderData->CelshadeControl.outline_size.GetValue() * 0.05f, 0.05f);
 	}
+
+	StudioUBO.r_ambientlight = (float)(*r_ambientlight);
+	StudioUBO.r_shadelight = (*r_shadelight);
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
 
@@ -2412,17 +2449,32 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 	}
+	else if (R_StudioShouldDrawGlowStencilEnableDepthTest())
+	{
+		//Don't draw color, double side
+		StudioProgramState |= STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED | STUDIO_NF_DOUBLE_FACE | STUDIO_SHADOW_CASTER_ENABLED;
+	}
+	else if (R_StudioShouldDrawGlowStencilWallHackBehindWallOnly())
+	{
+		//Don't draw color
+		StudioProgramState |= STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED | STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED | STUDIO_SHADOW_CASTER_ENABLED;
+	}
 	else if (R_StudioShouldDrawGlowStencilWallHack())
 	{
-		StudioProgramState |= STUDIO_GLOW_STENCIL_ENABLED | STUDIO_SHADOW_CASTER_ENABLED;
+		//Don't draw color
+		StudioProgramState |= STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED | STUDIO_SHADOW_CASTER_ENABLED;
 	}
 	else if (R_StudioShouldDrawGlowStencil())
 	{
-		StudioProgramState |= STUDIO_GLOW_STENCIL_ENABLED;
+		StudioProgramState |= STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED;
 	}
 	else if (R_StudioShouldDrawGlowColor() || R_StudioShouldDrawGlowColorWallHack())
 	{
 		StudioProgramState |= STUDIO_GLOW_COLOR_ENABLED;
+	}
+	else if (R_StudioShouldDrawGlowColorWallHackBehindWallOnly())
+	{
+		StudioProgramState |= STUDIO_GLOW_COLOR_ENABLED | STUDIO_NF_DOUBLE_FACE;
 	}
 	else if (R_IsRenderingGlowShell())
 	{
@@ -2733,7 +2785,19 @@ void R_StudioDrawMesh_DrawPass(
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	if (StudioProgramState & STUDIO_OUTLINE_ENABLED)
+	if (R_StudioShouldDrawGlowColorWallHackBehindWallOnly())
+	{
+		GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW_COLOR, STENCIL_MASK_NO_GLOW_COLOR);
+	}
+	else if (R_StudioShouldDrawGlowColorWallHack())
+	{
+		
+	}
+	else if (R_StudioShouldDrawGlowColor())
+	{
+
+	}
+	else if (StudioProgramState & STUDIO_OUTLINE_ENABLED)
 	{
 		//Writing outline...
 		GL_BeginStencilCompareNotEqual(STENCIL_MASK_HAS_OUTLINE, STENCIL_MASK_HAS_OUTLINE);
@@ -2763,10 +2827,13 @@ void R_StudioDrawMesh_DrawPass(
 			if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
 				iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
 
-			if(StudioProgramState & STUDIO_GLOW_STENCIL_ENABLED)
-				iStencilRef |= STENCIL_MASK_NO_GLOW;
+			if (StudioProgramState & STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED)
+				iStencilRef |= STENCIL_MASK_NO_GLOW_BLUR;
 
-			if((*pstudiohdr)->flags & FMODEL_NOBLOOM)
+			if (StudioProgramState & STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED)
+				iStencilRef |= STENCIL_MASK_NO_GLOW_COLOR;
+
+			if ((*pstudiohdr)->flags & FMODEL_NOBLOOM)
 				iStencilRef |= STENCIL_MASK_NO_BLOOM;
 
 			GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
@@ -2788,10 +2855,16 @@ void R_StudioDrawMesh_DrawPass(
 				iStencilMask |= STENCIL_MASK_HAS_FLATSHADE;
 			}
 
-			if (StudioProgramState & STUDIO_GLOW_STENCIL_ENABLED)
+			if (StudioProgramState & STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED)
 			{
-				iStencilRef |= STENCIL_MASK_NO_GLOW;
-				iStencilMask |= STENCIL_MASK_NO_GLOW;
+				iStencilRef |= STENCIL_MASK_NO_GLOW_BLUR;
+				iStencilMask |= STENCIL_MASK_NO_GLOW_BLUR;
+			}
+
+			if (StudioProgramState & STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED)
+			{
+				iStencilRef |= STENCIL_MASK_NO_GLOW_COLOR;
+				iStencilMask |= STENCIL_MASK_NO_GLOW_COLOR;
 			}
 
 			if ((*pstudiohdr)->flags & FMODEL_NOBLOOM)
@@ -2812,18 +2885,34 @@ void R_StudioDrawMesh_DrawPass(
 		glDisable(GL_CULL_FACE);
 	}
 
-	if (R_StudioShouldDrawGlowStencilWallHack())
+	if (R_StudioShouldDrawGlowStencilEnableDepthTest())
 	{
+		//Draw Stencil, Enable DepthTest, No DepthWrite
+		glDisable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+	}
+	else if (R_StudioShouldDrawGlowStencilWallHack() || R_StudioShouldDrawGlowStencilWallHackBehindWallOnly())
+	{
+		//Draw Stencil, Disable DepthTest
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 	}
 	else if (R_StudioShouldDrawGlowColorWallHack())
 	{
+		//Draw Color, No DepthTest
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
 	}
+	else if (R_StudioShouldDrawGlowColorWallHackBehindWallOnly())
+	{
+		//Draw Color, Enable DepthTest, No DepthWrite, DepthGreaterEqual
+		glDisable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_GEQUAL);
+	}
 	else if (R_StudioShouldDrawGlowColor())
 	{
+		//Draw Color, Enable DepthTest, No DepthWrite
 		glDisable(GL_BLEND);
 		glDepthMask(GL_FALSE);
 	}
@@ -3101,6 +3190,7 @@ void R_StudioDrawMesh_DrawPass(
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
 	GL_EndStencil();
 }
@@ -3119,8 +3209,6 @@ void R_StudioDrawMesh(
 
 	if (uskinref > ptexturehdr->numtextures)
 		return;
-
-	GL_BeginDebugGroup("R_StudioDrawMesh");
 
 	int flags = ptexture[uskinref].flags;
 
@@ -3166,6 +3254,8 @@ void R_StudioDrawMesh(
 	}
 	else
 	{
+		GL_BeginDebugGroup("R_StudioDrawMesh");
+
 		R_StudioDrawMesh_DrawPass(
 			pRenderData,
 			pRenderSubmodel,
@@ -3175,9 +3265,9 @@ void R_StudioDrawMesh(
 			ptexture,
 			pskinref,
 			flags);
-	}
 
-	GL_EndDebugGroup();
+		GL_EndDebugGroup();
+	}
 }
 
 void R_StudioDrawSubmodel(
@@ -3252,15 +3342,22 @@ void R_GLStudioDrawPoints(void)
 		return;
 	}
 
-	GL_BeginDebugGroupFormat("R_GLStudioDrawPoints - %s", (*pstudiohdr)->name);
+	if (r_draw_analyzingstudio)
+	{
+		R_StudioDrawSubmodel((*pstudiohdr), (*psubmodel), pRenderData.get());
+	}
+	else
+	{
+		GL_BeginDebugGroupFormat("R_GLStudioDrawPoints - %s", (*pstudiohdr)->name);
 
-	R_StudioDrawRenderDataBegin(pRenderData);
+		R_StudioDrawRenderDataBegin(pRenderData);
 
-	R_StudioDrawSubmodel((*pstudiohdr),(*psubmodel), pRenderData.get());
+		R_StudioDrawSubmodel((*pstudiohdr), (*psubmodel), pRenderData.get());
 
-	R_StudioDrawRenderDataEnd();
+		R_StudioDrawRenderDataEnd();
 
-	GL_EndDebugGroup();
+		GL_EndDebugGroup();
+	}
 }
 
 void R_StudioTransformVector(vec3_t in, vec3_t out)
@@ -3510,11 +3607,11 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	r_draw_analyzingstudio = true;
 
 	{
-		GL_BeginDebugGroup("R_StudioRenderModel - AnalysisPass");
+		//GL_BeginDebugGroup("R_StudioRenderModel - AnalysisPass");
 
 		pfnRenderModel(pthis, dummy);
 
-		GL_EndDebugGroup();
+		//GL_EndDebugGroup();
 	}
 
 	if (!r_draw_hasoutline && R_StudioHasOutline())
@@ -3648,16 +3745,21 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 	}
 	else
 	{
-		if (!R_IsRenderingGlowColor() && !R_IsRenderingGlowStencil())
+		if (!R_IsRenderingGlowColor() && !R_IsRenderingGlowStencil() && !R_IsRenderingGlowStencilEnableDepthTest())
 		{
 			if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlow)
 			{
 				g_PostProcessGlowColorEntities.emplace_back((*currententity));
 			}
-
-			if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack)
+			else if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack)
 			{
 				g_PostProcessGlowStencilEntities.emplace_back((*currententity));
+				g_PostProcessGlowColorEntities.emplace_back((*currententity));
+			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly)
+			{
+				g_PostProcessGlowStencilEntities.emplace_back((*currententity));
+				g_PostProcessGlowEnableDepthTestStencilEntities.emplace_back((*currententity));
 				g_PostProcessGlowColorEntities.emplace_back((*currententity));
 			}
 		}

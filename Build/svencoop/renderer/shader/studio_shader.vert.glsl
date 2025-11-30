@@ -78,17 +78,12 @@ void main(void)
 		dot(in_smoothnormal, normbone_matrix_2)
 	));
 
+	outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
+	v_worldpos = outvert;
+
 #if !defined(SHADOW_CASTER_ENABLED)
 
-	#if defined(OUTLINE_ENABLED)
-
-		outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
-		v_worldpos = outvert;
-
-	#elif defined(STUDIO_NF_CHROME)
-
-		outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
-		v_worldpos = outvert;
+	#if defined(STUDIO_NF_CHROME)
 
 		vec3 tmp = vec3(
 			normbone_matrix[0][3] - StudioUBO.r_origin.x,

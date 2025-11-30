@@ -203,6 +203,11 @@ float r_entity_color[4] = { 0 };
 bool r_draw_glowstencil = false;
 
 /*
+	Purpose: Indicates that we are rendering glow stencil, disable color write-in, enable depth test
+*/
+bool r_draw_glowstencil_enabledepthtest = false;
+
+/*
 	Purpose: Indicates that we are rendering glow color, disable depth write-in
 */
 bool r_draw_glowcolor = false;
@@ -310,6 +315,7 @@ int r_draw_classify = 0;
 int r_renderview_pass = 0;
 
 std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
+std::vector<cl_entity_t*> g_PostProcessGlowEnableDepthTestStencilEntities;
 std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 std::vector<cl_entity_t*> g_ViewModelAttachmentEntities;
 std::set<mbasenode_t*> g_VisibleBSPNodes;
@@ -572,6 +578,15 @@ bool R_IsRenderingPortal()
 bool R_IsRenderingGlowStencil()
 {
 	return r_draw_glowstencil;
+}
+
+/*
+	Purpose: Check if we are rendering glow stencil, disable color write-in, enable depth test
+*/
+
+bool R_IsRenderingGlowStencilEnableDepthTest()
+{
+	return r_draw_glowstencil_enabledepthtest;
 }
 
 /*
@@ -1864,23 +1879,49 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void R_DrawGlowStencil()
 {
-	if (g_PostProcessGlowStencilEntities.empty())
-		return;
-
-	r_draw_glowstencil = true;
-
-	glColorMask(0, 0, 0, 0);
-
-	for (auto ent : g_PostProcessGlowStencilEntities)
+	if (g_PostProcessGlowStencilEntities.size() > 0)
 	{
-		(*currententity) = ent;
+		GL_BeginDebugGroup("R_DrawGlowStencil");
 
-		R_DrawCurrentEntity(true);
+		r_draw_glowstencil = true;
+
+		glColorMask(0, 0, 0, 0);
+
+		for (auto ent : g_PostProcessGlowStencilEntities)
+		{
+			(*currententity) = ent;
+
+			R_DrawCurrentEntity(true);
+		}
+
+		glColorMask(1, 1, 1, 1);
+
+		r_draw_glowstencil = false;
+
+		GL_EndDebugGroup();
 	}
 
-	glColorMask(1, 1, 1, 1);
+	if (g_PostProcessGlowEnableDepthTestStencilEntities.size() > 0)
+	{
+		GL_BeginDebugGroup("R_DrawGlowStencil_EnableDepthTest");
 
-	r_draw_glowstencil = false;
+		r_draw_glowstencil_enabledepthtest = true;
+
+		glColorMask(0, 0, 0, 0);
+
+		for (auto ent : g_PostProcessGlowEnableDepthTestStencilEntities)
+		{
+			(*currententity) = ent;
+
+			R_DrawCurrentEntity(true);
+		}
+
+		glColorMask(1, 1, 1, 1);
+
+		r_draw_glowstencil_enabledepthtest = false;
+
+		GL_EndDebugGroup();
+	}
 }
 
 void R_DrawPostProcessGlow()
@@ -2209,16 +2250,23 @@ void R_DrawStudioEntity(bool bTransparent)
 
 			if ((*currententity)->player)
 			{
+				GL_BeginDebugGroupFormat("StudioDrawPlayer - %s", (*currententity)->model->name);
 				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+				GL_EndDebugGroup();
 			}
 			else
 			{
+				GL_BeginDebugGroupFormat("StudioDrawModel - %s", (*currententity)->model->name);
 				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+				GL_EndDebugGroup();
 			}
+
 		}
 		else
 		{
+			GL_BeginDebugGroupFormat("StudioDrawModel - %s", (*currententity)->model->name);
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+			GL_EndDebugGroup();
 		}
 	}
 
@@ -2844,6 +2892,7 @@ void R_RenderFrameStart()
 	}
 
 	g_PostProcessGlowStencilEntities.clear();
+	g_PostProcessGlowEnableDepthTestStencilEntities.clear();
 	g_PostProcessGlowColorEntities.clear();
 	g_ViewModelAttachmentEntities.clear();
 
@@ -3679,7 +3728,7 @@ void R_InitCvars(void)
 	gl_nearplane = gEngfuncs.pfnRegisterVariable("gl_nearplane", "4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	/*
-		Scale to renderfx=kRenderFxPostProcessGlow(30) and renderfx=kRenderFxPostProcessGlowWallHack(31) bloom
+		Scale to renderfx=kRenderFxPostProcessGlow(30), kRenderFxPostProcessGlowWallHack(31), kRenderFxPostProcessGlowWallHackBehindWallOnly(32) bloom
 	*/
 	r_glow_bloomscale = gEngfuncs.pfnRegisterVariable("r_glow_bloomscale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 

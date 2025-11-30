@@ -121,6 +121,7 @@ extern IPMBRingBuffer* g_RectInstanceBuffer;
 extern IPMBRingBuffer* g_RectIndexBuffer;
 
 extern std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
+extern std::vector<cl_entity_t*> g_PostProcessGlowEnableDepthTestStencilEntities;
 extern std::vector<cl_entity_t*> g_PostProcessGlowColorEntities;
 
 extern RECT* g_ScissorRect;
@@ -715,6 +716,7 @@ bool R_IsRenderingLowerBody();
 bool R_IsRenderingClippedLowerBody();
 bool R_IsRenderingPortal();
 bool R_IsRenderingGlowStencil();
+bool R_IsRenderingGlowStencilEnableDepthTest();
 bool R_IsRenderingGlowColor();
 bool R_IsRenderingMultiView();
 bool R_IsRenderingLinearDepth();
