@@ -815,6 +815,18 @@ All you need to do is :
 
 <img width="1040" height="969" alt="image" src="https://github.com/user-attachments/assets/7986cd52-d837-40d6-b81d-83aa1b500695" />
 
+## Entity Glow Effects
+
+`renderfx=kRenderFxPostProcessGlow (30)` : glow effects will be occluded by other opaque objects
+
+`renderfx=kRenderFxPostProcessGlowWallHack (31)` : glow effects will *NOT* be occluded by other opaque objects
+
+<img width="1447" height="878" alt="6c704fb90329044aeea4b3951e4b2df4" src="https://github.com/user-attachments/assets/42f4a6c9-16ff-43cb-a9e0-4b572f8fccb2" />
+
+`renderfx = kRenderFxPostProcessGlowWallHackBehindWallOnly (32)` : Only *occluded parts* of entity have glow effects
+
+<img width="984" height="801" alt="00c229b1ae9dada9c9d9fba2ef6b75a4" src="https://github.com/user-attachments/assets/2e9bf5d9-2c39-4bcb-bad3-c4a05c173eca" />
+
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
 Brush surfaces, studio models and decals are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the geometry data reside in video memory rather than system memory and so it can be rendered directly by the video device.
