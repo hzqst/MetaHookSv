@@ -817,15 +817,21 @@ All you need to do is :
 
 ## Entity Glow Effects
 
-`renderfx=kRenderFxPostProcessGlow (30)` : glow effects will be occluded by other opaque objects
+`pev.renderfx=kRenderFxPostProcessGlow (30)` : glow effects will be occluded by other opaque objects
 
-`renderfx=kRenderFxPostProcessGlowWallHack (31)` : glow effects will *NOT* be occluded by other opaque objects
+`pev.renderfx=kRenderFxPostProcessGlowWallHack (31)` : glow effects will *NOT* be occluded by other opaque objects
 
 <img width="1447" height="878" alt="6c704fb90329044aeea4b3951e4b2df4" src="https://github.com/user-attachments/assets/42f4a6c9-16ff-43cb-a9e0-4b572f8fccb2" />
 
-`renderfx = kRenderFxPostProcessGlowWallHackBehindWallOnly (32)` : Only *occluded parts* of entity have glow effects
+`pev.renderfx = kRenderFxPostProcessGlowWallHackBehindWallOnly (32)` : Only *occluded parts* of entity have glow effects
 
 <img width="984" height="801" alt="00c229b1ae9dada9c9d9fba2ef6b75a4" src="https://github.com/user-attachments/assets/2e9bf5d9-2c39-4bcb-bad3-c4a05c173eca" />
+
+`pev.rendercolor` is the color of glow effects.
+
+`pev.renderamt` is the size of glow effects.
+
+* Note that `pev.rendermode` should always be `kRenderNormal(0)`, any value other than `kRenderNormal(0)` will lead to undefined render result.
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 

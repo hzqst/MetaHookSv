@@ -798,6 +798,24 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * `svencoop/delta.lst`中的默认值是`DEFINE_DELTA( effects, DT_INTEGER, 16, 1.0 ),`，这意味着它可以传输到客户端的最大值是2^16=63356。所以16384是好的。
 
+## 实体发光效果
+
+`pev.renderfx=kRenderFxPostProcessGlow (30)` : 发光效果会被不透明物体遮挡
+
+`pev.renderfx=kRenderFxPostProcessGlowWallHack (31)` : 发光效果*不会*被不透明物体遮挡
+
+<img width="1447" height="878" alt="6c704fb90329044aeea4b3951e4b2df4" src="https://github.com/user-attachments/assets/42f4a6c9-16ff-43cb-a9e0-4b572f8fccb2" />
+
+`pev.renderfx = kRenderFxPostProcessGlowWallHackBehindWallOnly (32)` : 只有被遮挡部分会发光
+
+<img width="984" height="801" alt="00c229b1ae9dada9c9d9fba2ef6b75a4" src="https://github.com/user-attachments/assets/2e9bf5d9-2c39-4bcb-bad3-c4a05c173eca" />
+
+`pev.rendercolor` 用于控制发光颜色
+
+`pev.renderamt` 用于控制发光光晕大小
+
+* 需要注意 `pev.rendermode` 必须设置为 `kRenderNormal(0)`，使用 `kRenderNormal(0)` 以外的设置会导致未定义的渲染结果。
+
 ## 顶点缓冲对象 (又称 VBO) 批量绘制优化
 
 固体、模型、印花和Sprite均使用VBO进行渲染。渲染所需的顶点数据等信息都会提前保存在显存中，而非像原版一样每帧都从内存中重新提交到GPU，极大提升了绘制效率。
