@@ -316,7 +316,7 @@ void main()
 
 #if defined(DETAILTEXTURE_ENABLED)
 
-	vec2 detailTexCoord = vec2(baseTexcoord.x * v_detailtexcoord.x, baseTexcoord.y * v_detailtexcoord.y);
+	vec2 detailTexCoord = vec2(baseTexcoord.x * v_detailtexcoord.x, -baseTexcoord.y * v_detailtexcoord.y);
 	vec4 detailColor = texture(detailTex, detailTexCoord);
     detailColor.xyz *= 2.0;
     detailColor.a = 1.0;
