@@ -21,7 +21,7 @@
 |      最低       | Intel Haswell 系列 HD4600         |      Geforce GTX 650            |  AMD Radeon HD 7000 系列 |
 |     推荐        |           ----                   |      Geforce GTX 1060 或更高     |   AMD Radeon RX 560 或更高        |
 
-* 该插件需要支持OpenGL4.3或支持更高版本OpenGL的GPU才能运行。
+* 该插件需要支持OpenGL4.4或支持更高版本OpenGL的GPU才能运行。
 
 * 运行该插件推荐使用拥有最少4GB独立显存的GPU，否则可能会出现显存带宽瓶颈导致帧数过低，或显存不足导致游戏崩溃等问题。
 
@@ -51,14 +51,13 @@ HDR (高动态范围) 模拟了超出显示器所能显示的亮度范围，将�
 
 所有水面分为两种类型：反射水面和传统水面。
 
-反射水面使用平面反射技术实时反射和折射整个世界，基本上需要渲染整个场景两次，而传统水面只使用基础纹理进行渲染，就像原版GoldSrc中的一样。
+反射水面使用平面反射技术实时反射和折射整个世界，基本上需要额外渲染整个场景两次（一次用于折射一次用于反射），而传统水面只使用基础纹理进行渲染，就像原版GoldSrc中的一样。
 
 反射等级和着色器参数可以使用[env_water_control](RendererCN.md#env_water_control)进行配置。
 
 ### 控制台参数
 
 `r_water` 设为1启用水面着色器。
-
 
 ## 屏幕空间环境光遮蔽
 
@@ -84,7 +83,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 [延迟着色](https://en.wikipedia.org/wiki/Deferred_shading) 渲染管线被用来渲染不透明物体
 
-并且引入了使用 [Blinn-Phong](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) 模型进行计算的实时光照
+并且引入了使用 [Blinn-Phong](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) 光照模型进行实时光照计算
 
 ### 控制台参数
 
@@ -966,11 +965,9 @@ WEBP (RGB8 / RGBA8)
 
 现在绘制bsp模型所需的GPU资源会在工作线程中异步并行地加载，不会阻塞游戏线程。
 
-`r_leaf_lazy_load 0` (默认): 绘制bsp模型所需的所有GPU资源会在加载地图时一次性送入加载队列。(可能会占用更多显存和系统内存)
+`r_leaf_lazy_load 0`: 绘制bsp模型所需的所有GPU资源会在加载地图时一次性送入加载队列。(可能会占用更多显存和系统内存)
 
-`r_leaf_lazy_load 1`: 绘制bsp叶子节点所需GPU资源会在首次进入该节点时被送入加载队列。绘制bsp模型（固体实体）所需GPU资源会在首次绘制该模型时被送入加载队列。(可以节约显存和系统内存占用)
-
-* 需要注意的是启用懒加载( `r_leaf_lazy_load 1`)，会使得在首次进入新的叶子节点时出现闪烁
+`r_leaf_lazy_load 1` (默认): 绘制bsp叶子节点所需GPU资源会在首次进入该节点时被送入加载队列。绘制bsp模型（固体实体）所需GPU资源会在首次绘制该模型时被送入加载队列。(可以节约显存和系统内存占用)
 
 * 所需GPU资源未加载完成时，对应的bsp模型不会被渲染。
 
@@ -982,7 +979,7 @@ WEBP (RGB8 / RGBA8)
 
 现在模型使用的资源会在工作线程中被异步并行加载，意味着现在在加载阶段可以利用更多cpu核心。
 
-* 需要注意的是启用懒加载( `r_studio_lazy_load 1`)，会使得模型在首次渲染的最初的几帧内不可见，直到该模型所用到的资源全部上传至GPU。
+* 需要注意的是启用懒加载(`r_studio_lazy_load 1`)，会使得模型在首次渲染的最初的几帧内不可见，直到该模型所用到的资源全部上传至GPU。
 
 * 需要注意的是如果禁用懒加载( `r_studio_lazy_load 0`)，那么在服务器预缓存了大量模型的情况下，即便服务器根本没有使用这些模型，这些模型也会被预先加载至GPU。这会极大增加显存和系统内存消耗，甚至导致内存不足错误。
 
@@ -1024,7 +1021,15 @@ WEBP (RGB8 / RGBA8)
 }
 ```
 
-obj可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)从原始地图中提取。从blender导入时使用默认导入规则，导出回obj时需设置向上轴为Z，前进轴为Y。
+如果需要将obj作为阴影代理几何体使用，应遵循以下步骤：
+
+可以使用[newbspguy](https://github.com/UnrealKaraulov/newbspguy)将原始地图导出为obj
+
+从blender导入obj时使用默认导入规则
+
+需要删除"sky"贴图、将所有mesh赋予至少8单位厚度的Solidify(实体化)修改器并应用。
+
+导出回obj时需设置向上轴为Z，前进轴为Y。
 
 ## env_deferredlighting_control
 

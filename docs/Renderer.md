@@ -985,11 +985,9 @@ This controls how to convert horizontal FOV to vertical FOV :
 
 GPU resources for brushmodels and world are streamed in worker thread instead of main thread in asynchronous & in parallel too.
 
-`r_leaf_lazy_load 0` (default) : All GPU resources for brushmodels and world are queued to worker thread and loaded asynchronously at level loading. (May comsume more VRAM and system memory)
+`r_leaf_lazy_load 0`: All GPU resources for brushmodels and world are queued to worker thread and loaded asynchronously at level loading. (May comsume more VRAM and system memory)
 
-`r_leaf_lazy_load 1` : GPU resources for world leaf are loaded only at the time you enter a new leaf. GPU resources for brushmodel are loaded only when it's being rendered.  (Comsume less VRAM and system memory)
-
-* Note that `r_leaf_lazy_load 1` may lead to flickering at the first time you enter a new leaf.
+`r_leaf_lazy_load 1` (default) : GPU resources for world leaf are loaded only at the time you enter a new leaf. GPU resources for brushmodel are loaded only when it's being rendered.  (Comsume less VRAM and system memory)
 
 * Note that the corresponding BSP model (including world) will be invisible until necessary GPU resouces arrive.
 
