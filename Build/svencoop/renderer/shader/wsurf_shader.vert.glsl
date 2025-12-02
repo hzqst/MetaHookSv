@@ -13,6 +13,8 @@ layout(location = WSURF_VA_LIGHTMAP_TEXCOORD) in vec2 in_lightmaptexcoord;
 layout(location = WSURF_VA_NORMAL) in vec3 in_normal;
 layout(location = WSURF_VA_S_TANGENT) in vec3 in_tangent;
 layout(location = WSURF_VA_T_TANGENT) in vec3 in_bitangent;
+layout(location = WSURF_VA_SMOOTHNORMAL) in vec3 in_smoothnormal;
+
 layout(location = WSURF_VA_PACKED_MATID) in uint in_packed_matid;
 layout(location = WSURF_VA_STYLES) in uvec4 in_styles;
 layout(location = WSURF_VA_DIFFUSESCALE) in float in_diffusescale;
@@ -128,7 +130,7 @@ void main(void)
 
 	vec4 worldpos4 = vec4(vertex, 1.0);
 
-	worldpos4.xyz += v_normal.xyz * EntityUBO.scale;
+	worldpos4.xyz += v_normal.xyz * EntityUBO.r_scale;
 
     v_worldpos = worldpos4.xyz;
 
@@ -137,20 +139,25 @@ void main(void)
 #else
 
 	vec4 normal4 = vec4(in_normal.xyz, 0.0);
-	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
+	v_normal = normalize((EntityUBO.r_entityMatrix * normal4).xyz);
 
 	#if defined(REVERT_NORMAL_ENABLED)
 		v_normal = v_normal * -1.0;
 	#endif
 
-	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
+	vec4 worldpos4 = EntityUBO.r_entityMatrix * vec4(in_vertex.xyz, 1.0);
 
-	worldpos4.xyz += v_normal.xyz * EntityUBO.scale;
+#if 1//Use smooth normal for vertex scaling
+	vec4 smoothnormal4 = vec4(in_smoothnormal.xyz, 0.0);
+	smoothnormal3 = normalize((EntityUBO.r_entityMatrix * smoothnormal4).xyz);
+
+	worldpos4.xyz += smoothnormal3.xyz * EntityUBO.r_scale;
+#endif
 
     v_worldpos = worldpos4.xyz;
 
 	#ifdef DIFFUSE_ENABLED
-		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusescale * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
+		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusescale * EntityUBO.r_scrollSpeed, in_diffusetexcoord.y);
 		v_diffusetexcoord *= WorldMaterialSSBO[matId].diffuseScale;
 	#endif
 
@@ -173,7 +180,7 @@ void main(void)
 		tangent4 = tangent4 * -1.0;
 	#endif
 
-    v_tangent = normalize((EntityUBO.entityMatrix * tangent4).xyz);
+    v_tangent = normalize((EntityUBO.r_entityMatrix * tangent4).xyz);
 
 	vec4 bitangent4 = vec4(in_bitangent, 0.0);
 	
@@ -181,7 +188,7 @@ void main(void)
 		bitangent4 = bitangent4 * -1.0;
 	#endif
 
-    v_bitangent = normalize((EntityUBO.entityMatrix * bitangent4).xyz);
+    v_bitangent = normalize((EntityUBO.r_entityMatrix * bitangent4).xyz);
 
 #endif
 

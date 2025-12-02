@@ -617,6 +617,80 @@ bool R_IsRenderingLinearDepth()
 }
 
 /*
+	Purpose: Check if we should draw glow stencil for this entity
+*/
+bool R_ShouldDrawGlowStencil()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencil() || (*currententity)->curstate.renderfx == kRenderFxPostProcessGlow;
+}
+
+/*
+	Purpose: Check if we should draw stencil for this entity
+*/
+bool R_ShouldDrawGlowStencilWallHack()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencil() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack;
+}
+
+bool R_ShouldDrawGlowStencilWallHackBehindWallOnly()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencil() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly;
+}
+
+/*
+	Purpose: Check if we should draw stencil for this entity, enable depth test
+*/
+bool R_ShouldDrawGlowStencilEnableDepthTest()
+{
+	if (R_IsRenderingGlowColor())
+		return false;
+
+	return R_IsRenderingGlowStencilEnableDepthTest() && ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly);
+}
+
+/*
+	Purpose: Check if we should draw glow color for this entity
+*/
+bool R_ShouldDrawGlowColor()
+{
+	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlow;
+}
+
+/*
+	Purpose: Check if we should draw wall-hack glow color for this entity
+*/
+bool R_ShouldDrawGlowColorWallHack()
+{
+	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack;
+}
+
+/*
+	Purpose: Check if we should draw behind-wall-only wall-hack glow color for this entity
+*/
+bool R_ShouldDrawGlowColorWallHackBehindWallOnly()
+{
+	return R_IsRenderingGlowColor() && (*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly;
+}
+
+/*
+	Purpose: Check if we are rendering glow shell
+*/
+
+bool R_IsRenderingGlowShell()
+{
+	return ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) || (*currententity)->curstate.renderfx == kRenderFxDrawGlowShell;
+}
+
+/*
 	Purpose: Check if we are rendering lowerbody entity
 */
 

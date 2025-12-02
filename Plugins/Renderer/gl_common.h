@@ -136,9 +136,10 @@ public:
 #define WSURF_VA_LIGHTMAP_TEXCOORD 3
 #define WSURF_VA_S_TANGENT 4
 #define WSURF_VA_T_TANGENT 5
-#define WSURF_VA_PACKED_MATID 6
-#define WSURF_VA_STYLES 7
-#define WSURF_VA_DIFFUSESCALE 8
+#define WSURF_VA_SMOOTHNORMAL 6
+#define WSURF_VA_PACKED_MATID 7
+#define WSURF_VA_STYLES 8
+#define WSURF_VA_DIFFUSESCALE 9
 
 #define WSURF_BIND_DIFFUSE_TEXTURE 0
 #define WSURF_BIND_DETAIL_TEXTURE 1
@@ -425,6 +426,7 @@ typedef struct brushvertextbn_s
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
+	vec3_t	smoothnormal;
 }brushvertextbn_t;
 
 typedef struct brushinstancedata_s
@@ -511,10 +513,10 @@ static_assert((sizeof(dlight_ubo_t) % 16) == 0, "Size check");
 
 typedef struct entity_ubo_s
 {
-	mat4 entityMatrix;
-	vec4 color;
-	float scrollSpeed;
-	float scale;
+	mat4 r_entityMatrix;
+	vec4 r_color;
+	float r_scrollSpeed;
+	float r_scale;
 	float padding2;
 	float padding3;
 }entity_ubo_t;

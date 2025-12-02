@@ -329,7 +329,7 @@ void main()
 
 #endif
 
-	vec4 entityColor = ProcessOtherGammaColor(EntityUBO.color);
+	vec4 entityColor = ProcessOtherGammaColor(EntityUBO.r_color);
 
 	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(GetCameraViewIndex()));
 

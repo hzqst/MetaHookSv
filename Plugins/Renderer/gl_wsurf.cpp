@@ -1418,6 +1418,9 @@ model_t* R_FindWorldModelByNode(mnode_t* pnode)
 	return nullptr;
 }
 
+/*
+	Ear-Cut algorithm from Diligent Core
+*/
 void R_PolygonToTriangleList(const std::vector<vertex3f_t>& vPolyVertices, std::vector<uint32_t>& vOutIndiceBuffer)
 {
     // 严格遵循 AdvancedMath.hpp 中 Polygon3DTriangulator 的流程：
@@ -1671,6 +1674,9 @@ int R_FindWorldMaterialId(int gl_texturenum)
 	return -1;
 }
 
+/*
+	Purpose: Generate WorldMaterial array for later WorldMaterialSSBO usage, WorldMaterial[0] is always empty texture
+*/
 void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 {
 	for (int i = 0; i < mod->numtextures + 1; ++i)
@@ -1737,6 +1743,278 @@ void R_GenerateWorldMaterialForWorldModel(model_t* mod)
 	}
 }
 
+/*
+	Purpose: Storage for face normal data used in smooth normal calculation
+*/
+using CBrushVector3List = std::vector<vertex3f_t>;
+
+class CBrushFaceNormalStorage
+{
+public:
+	CBrushVector3List weightedNormals;
+	float normalTotalFactor{ 0 };
+	vec3_t averageNormal{};
+
+	CBrushVector3List edges;
+	vec3_t averageEdge{};
+	bool bHasAverageEdge{ false };
+};
+
+using CBrushFaceNormalHashMap = std::unordered_map<CQuantizedVector, std::shared_ptr<CBrushFaceNormalStorage>, CQuantizedVectorHasher>;
+
+/*
+	Purpose: Calculate face normal hash map and store face-normal in FaceNormalHashMap for brush geometry
+*/
+void CalculateBrushFaceNormalHashMap(
+	const std::vector<brushvertex_t>& vVertexDataBuffer,
+	const std::vector<brushvertextbn_t>& vVertexTBNDataBuffer,
+	const std::vector<uint32_t>& vIndicesBuffer,
+	CBrushFaceNormalHashMap& FaceNormalHashMap
+)
+{
+	// 定义下一个顶点索引的映射，用于计算角度
+	int nextId[4] = { 1, 2, 0, 1 };
+
+	for (size_t i = 0; i < vIndicesBuffer.size(); i += 3)
+	{
+		// CCW
+		int idx0 = vIndicesBuffer[i + 2];
+		int idx1 = vIndicesBuffer[i + 1];
+		int idx2 = vIndicesBuffer[i + 0];
+
+		// 获取三角形的三个顶点位置
+		vec3_t vTrianglePos[3];
+		VectorCopy(vVertexDataBuffer[idx0].pos, vTrianglePos[0]);
+		VectorCopy(vVertexDataBuffer[idx1].pos, vTrianglePos[1]);
+		VectorCopy(vVertexDataBuffer[idx2].pos, vTrianglePos[2]);
+
+		vec3_t vTriangleNorm[3];
+		VectorCopy(vVertexTBNDataBuffer[idx0].normal, vTriangleNorm[0]);
+		VectorCopy(vVertexTBNDataBuffer[idx1].normal, vTriangleNorm[1]);
+		VectorCopy(vVertexTBNDataBuffer[idx2].normal, vTriangleNorm[2]);
+
+		// 计算面法线（保留面积信息用于加权）
+		vec3_t edge1, edge2;
+		VectorSubtract(vTrianglePos[1], vTrianglePos[0], edge1);
+		VectorSubtract(vTrianglePos[2], vTrianglePos[0], edge2);
+
+		// 叉积的长度代表三角形面积的两倍
+		vec3_t faceNormalWeighted;
+		CrossProduct(edge1, edge2, faceNormalWeighted);
+		float triangleArea = VectorLength(faceNormalWeighted);
+
+		if (triangleArea < 0.0001f)
+		{
+			// 退化三角形，跳过
+			continue;
+		}
+
+		vec3_t faceNormal;
+		VectorScale(faceNormalWeighted, 1.0f / triangleArea, faceNormal);
+
+		// 为三角形的每个顶点计算加权法线
+		for (int j = 0; j < 3; j++)
+		{
+			// 计算当前顶点的两条边
+			vec3_t edgeA, edgeB;
+			VectorSubtract(vTrianglePos[nextId[j]], vTrianglePos[j], edgeA);
+			VectorSubtract(vTrianglePos[nextId[j + 1]], vTrianglePos[j], edgeB);
+
+			float edgeALength = VectorLength(edgeA);
+			float edgeBLength = VectorLength(edgeB);
+
+			if (edgeALength < 0.0001f || edgeBLength < 0.0001f)
+			{
+				// 退化边，跳过这个顶点
+				continue;
+			}
+
+			// 归一化边向量用于计算角度
+			vec3_t edgeANorm, edgeBNorm;
+			VectorScale(edgeA, 1.0f / edgeALength, edgeANorm);
+			VectorScale(edgeB, 1.0f / edgeBLength, edgeBNorm);
+
+			// 计算角度作为权重因子
+			float dotProduct = DotProduct(edgeANorm, edgeBNorm);
+			// 限制点积值在有效范围内，避免数值误差
+			dotProduct = math_clamp(dotProduct, -1.0f, 1.0f);
+			float angle = std::acos(dotProduct);
+
+			// 使用角度和面积的组合权重：角度权重 * 面积权重
+			float combinedWeight = angle * triangleArea;
+
+			// 计算加权法线
+			vertex3f_t vWeightedNormal{};
+			vertex3f_t negEdgeA{}, negEdgeB{};
+
+			VectorScale(faceNormal, combinedWeight, vWeightedNormal.v);
+
+			// 将加权法线添加到对应顶点位置的列表中
+			// BSP 几何体没有骨骼系统，m_boneindex 固定为 -1
+			CQuantizedVector quantizedVertexPos(vTrianglePos[j]);
+
+			auto it = FaceNormalHashMap.find(quantizedVertexPos);
+
+			std::shared_ptr<CBrushFaceNormalStorage> faceNormalStorage;
+
+			if (it == FaceNormalHashMap.end())
+			{
+				faceNormalStorage = std::make_shared<CBrushFaceNormalStorage>();
+				VectorScale(edgeANorm, -1.0f, negEdgeA.v);
+				VectorScale(edgeBNorm, -1.0f, negEdgeB.v);
+				faceNormalStorage->weightedNormals.emplace_back(vWeightedNormal);
+				faceNormalStorage->normalTotalFactor += combinedWeight;
+				faceNormalStorage->edges.emplace_back(negEdgeA);
+				faceNormalStorage->edges.emplace_back(negEdgeB);
+				FaceNormalHashMap[quantizedVertexPos] = faceNormalStorage;
+			}
+			else
+			{
+				faceNormalStorage = it->second;
+				VectorScale(edgeANorm, -1.0f, negEdgeA.v);
+				VectorScale(edgeBNorm, -1.0f, negEdgeB.v);
+				faceNormalStorage->weightedNormals.emplace_back(vWeightedNormal);
+				faceNormalStorage->normalTotalFactor += combinedWeight;
+				faceNormalStorage->edges.emplace_back(negEdgeA);
+				faceNormalStorage->edges.emplace_back(negEdgeB);
+			}
+		}
+	}
+}
+
+/*
+	Purpose: Calculate average normal from face-normal using FaceNormalHashMap for brush geometry
+*/
+void CalculateBrushAverageNormal(CBrushFaceNormalHashMap& FaceNormalHashMap)
+{
+	for (auto it = FaceNormalHashMap.begin(); it != FaceNormalHashMap.end(); it++)
+	{
+		const auto& FaceNormalStorage = it->second;
+
+		vec3_t averageNormal = { 0, 0, 0 };
+
+		// 直接累加加权法线
+		for (const auto& weightedNormal : FaceNormalStorage->weightedNormals)
+		{
+			VectorAdd(averageNormal, weightedNormal.v, averageNormal);
+		}
+
+		// 归一化得到最终的平均法线
+		float averageNormalLength = VectorLength(averageNormal);
+
+		if (averageNormalLength < 0.001f)
+		{
+			//无厚度的面片或退化情况，使用averageEdge作为法线
+
+			vec3_t averageEdge = { 0, 0, 0 };
+
+			for (const auto& edge : FaceNormalStorage->edges)
+			{
+				VectorAdd(averageEdge, edge.v, averageEdge);
+			}
+
+			if (FaceNormalStorage->edges.size() > 0)
+			{
+				VectorScale(averageEdge, 1.0f / (float)FaceNormalStorage->edges.size(), averageEdge);
+			}
+
+			float averageEdgeLength = VectorLength(averageEdge);
+			if (averageEdgeLength > 0.001f)
+			{
+				VectorScale(averageEdge, 1.0f / averageEdgeLength, FaceNormalStorage->averageEdge);
+				FaceNormalStorage->bHasAverageEdge = true;
+			}
+			else
+			{
+				// 连边向量也退化了，使用零向量
+				VectorClear(FaceNormalStorage->averageEdge);
+				FaceNormalStorage->bHasAverageEdge = true;
+			}
+		}
+
+		if (averageNormalLength > 0.001f)
+		{
+			VectorScale(averageNormal, (1.0f / averageNormalLength), FaceNormalStorage->averageNormal);
+		}
+		else
+		{
+			VectorClear(FaceNormalStorage->averageNormal);
+		}
+	}
+}
+
+/*
+	Purpose: Get smooth normal from given vertex for brush geometry
+*/
+void GetBrushSmoothNormal(
+	const vec3_t VertexPos,
+	const vec3_t VertexNorm,
+	const CBrushFaceNormalHashMap& FaceNormalHashMap,
+	vec3_t outNormal)
+{
+	CQuantizedVector quantizedVertexPos(VertexPos);
+
+	auto it = FaceNormalHashMap.find(quantizedVertexPos);
+
+	if (it != FaceNormalHashMap.end())
+	{
+		const auto& FaceNormalStorage = it->second;
+
+		if (FaceNormalStorage->bHasAverageEdge)
+		{
+			// 对于无厚度面片，使用边向量作为法线
+			VectorCopy(FaceNormalStorage->averageEdge, outNormal);
+			return;
+		}
+
+		// 检查计算出的平均法线是否与原始法线差异过大
+		float dotProduct = DotProduct(FaceNormalStorage->averageNormal, VertexNorm);
+
+		// 如果两个法线的夹角超过60度（cos(60°) = 0.5），则认为差异过大
+		if (dotProduct < 0.5f)
+		{
+			// 差异过大，使用原始法线
+			VectorCopy(VertexNorm, outNormal);
+			return;
+		}
+
+		// 使用插值来平滑过渡，避免突变
+		float blendFactor = math_clamp((dotProduct - 0.5f) / 0.5f, 0.0f, 1.0f);
+		vec3_t lerpResult;
+		vec3_lerp(VertexNorm, FaceNormalStorage->averageNormal, blendFactor, lerpResult);
+		VectorNormalize(lerpResult);
+		VectorCopy(lerpResult, outNormal);
+		return;
+	}
+
+	// 找不到对应的平均法线，使用原始法线
+	VectorCopy(VertexNorm, outNormal);
+}
+
+/*
+	Purpose: Prepare smooth normal for brush geometry, store in vVertexTBNDataBuffer[].smoothnormal
+*/
+void R_PrepareSmoothNormalForBrushModel(
+	const std::vector<brushvertex_t>& vVertexDataBuffer,
+	const std::vector<uint32_t>& vIndicesBuffer,
+	std::vector<brushvertextbn_t>& vVertexTBNDataBuffer
+)
+{
+	CBrushFaceNormalHashMap FaceNormalHashMap;
+
+	CalculateBrushFaceNormalHashMap(vVertexDataBuffer, vVertexTBNDataBuffer, vIndicesBuffer, FaceNormalHashMap);
+
+	CalculateBrushAverageNormal(FaceNormalHashMap);
+
+	for (size_t i = 0; i < vVertexTBNDataBuffer.size(); ++i)
+	{
+		GetBrushSmoothNormal(vVertexDataBuffer[i].pos, vVertexTBNDataBuffer[i].normal, FaceNormalHashMap, vVertexTBNDataBuffer[i].smoothnormal);
+	}
+}
+
+/*
+	Purpose: Organize vertex buffer and index buffer for WorldSurfaceModel (aka world geometry), and upload buffers to GPU
+*/
 std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_t* mod)
 {
 	std::vector<brushvertex_t> vVertexDataBuffer;
@@ -1941,6 +2219,9 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		pBrushFace->instance_count = 1;
 	}
 
+	// Calculate smooth normals for all vertices
+	R_PrepareSmoothNormalForBrushModel(vVertexDataBuffer, vIndiceBuffer, vVertexTBNDataBuffer);
+
 	pWorldModel->hEBO = GL_GenBuffer();
 	GL_UploadDataToEBOStaticDraw(pWorldModel->hEBO, sizeof(uint32_t) * vIndiceBuffer.size(), vIndiceBuffer.data());
 
@@ -1974,10 +2255,12 @@ std::shared_ptr<CWorldSurfaceWorldModel> R_GenerateWorldSurfaceWorldModel(model_
 		glEnableVertexAttribArray(WSURF_VA_NORMAL);
 		glEnableVertexAttribArray(WSURF_VA_S_TANGENT);
 		glEnableVertexAttribArray(WSURF_VA_T_TANGENT);
+		glEnableVertexAttribArray(WSURF_VA_SMOOTHNORMAL);
 
 		glVertexAttribPointer(WSURF_VA_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, normal));
 		glVertexAttribPointer(WSURF_VA_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, s_tangent));
 		glVertexAttribPointer(WSURF_VA_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, t_tangent));
+		glVertexAttribPointer(WSURF_VA_SMOOTHNORMAL, 3, GL_FLOAT, false, sizeof(brushvertextbn_t), OFFSET(brushvertextbn_t, smoothnormal));
 
 		glBindBuffer(GL_ARRAY_BUFFER, pWorldModel->hVBO[WSURF_VBO_INSTANCE]);
 
@@ -2201,10 +2484,10 @@ void R_DrawSkyBox(void)
 
 	entity_ubo_t EntityUBO;
 
-	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
-	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
-	EntityUBO.scrollSpeed = 0;
-	EntityUBO.scale = 0;
+	Matrix4x4_Transpose(EntityUBO.r_entityMatrix, r_entity_matrix);
+	memcpy(EntityUBO.r_color, r_entity_color, sizeof(vec4));
+	EntityUBO.r_scrollSpeed = 0;
+	EntityUBO.r_scale = 0;
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
@@ -3084,10 +3367,37 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	GL_BeginDebugGroupFormat("R_DrawWorldSurfaceModel - %s", ent->model ? ent->model->name : "<empty>");
 
 	entity_ubo_t EntityUBO;
-	Matrix4x4_Transpose(EntityUBO.entityMatrix, r_entity_matrix);
-	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
-	EntityUBO.scrollSpeed = R_ScrollSpeed();
-	EntityUBO.scale = 0;
+	Matrix4x4_Transpose(EntityUBO.r_entityMatrix, r_entity_matrix);
+	memcpy(EntityUBO.r_color, r_entity_color, sizeof(vec4));
+	EntityUBO.r_scrollSpeed = R_ScrollSpeed();
+	EntityUBO.r_scale = 0;
+
+	if (R_IsRenderingGlowShell())
+	{
+		EntityUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+		EntityUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+		EntityUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		EntityUBO.r_color[3] = 1;
+
+		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
+	}
+	else if (
+		R_ShouldDrawGlowColor() ||
+		R_ShouldDrawGlowColorWallHack() ||
+		R_ShouldDrawGlowColorWallHackBehindWallOnly())
+	{
+		EntityUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+		EntityUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+		EntityUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		EntityUBO.r_color[3] = (*r_blend);
+
+		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
+	}
+	else if (R_ShouldDrawGlowStencilEnableDepthTest())
+	{
+		//Same size as DrawGlowColor
+		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f) + 0.05f;
+	}
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 

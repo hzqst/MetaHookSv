@@ -221,7 +221,7 @@ Renderer 插件是 MetaHookSv 的核心图形增强插件，为 GoldSrc 引擎�
 3. 在 `gl_hooks.cpp` 中添加必要的钩子
 
 #### 需要添加新的着色器时
-1. 在 `Build\svencoop\renderer\shader/` 目录添加 .glsl 文件
+1. 在 `Build/svencoop/renderer/shader/` 目录添加 .glsl 文件
 2. 在 `gl_shader.cpp` 中加载和编译着色器
 3. 创建对应的渲染函数
 
