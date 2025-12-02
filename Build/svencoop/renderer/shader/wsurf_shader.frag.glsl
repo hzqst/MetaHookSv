@@ -203,17 +203,10 @@ vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld, vec2 baseTexcoor
 
 #endif
 
-void main()
+vec4 SampleDiffuseTexture(vec2 baseTexcoord)
 {
-	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
-	
-	vec2 baseTexcoord = vec2(0.0, 0.0);
 
-#if defined(DIFFUSE_ENABLED)
-
-	baseTexcoord = v_diffusetexcoord.xy;
-
-	#if defined(PARALLAXTEXTURE_ENABLED)
+#if defined(PARALLAXTEXTURE_ENABLED)
 
 		vec3 viewDir = normalize(v_worldpos.xyz - GetCameraViewPos(GetCameraViewIndex()));
 
@@ -237,6 +230,19 @@ void main()
 			discard;
 
 	#endif
+
+	return diffuseColor;
+}
+
+void main()
+{
+	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+	
+	vec2 baseTexcoord = v_diffusetexcoord.xy;
+
+#if defined(DIFFUSE_ENABLED)
+
+	vec4 diffuseColor = SampleDiffuseTexture(baseTexcoord);
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
@@ -342,6 +348,17 @@ void main()
 	#endif
 
 	out_Diffuse = vec4(flDistanceToFragment, 0.0, 0.0, 1.0);
+
+#elif defined(GLOW_COLOR_ENABLED)
+
+	#if defined(ALPHA_SOLID_ENABLED)
+		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
+
+		if(diffuseColor.a < 0.5)
+			discard;
+	#endif
+
+	out_Diffuse = vec4(EntityUBO.r_color.xyz, 1.0);
 
 #else
 

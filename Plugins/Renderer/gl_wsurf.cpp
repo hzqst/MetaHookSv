@@ -2857,6 +2857,34 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
+		else if (R_ShouldDrawGlowStencilEnableDepthTest())
+		{
+			//Don't draw color, double side
+			WSurfProgramState |= WSURF_STENCIL_NO_GLOW_COLOR_ENABLED | WSURF_DOUBLE_FACE_ENABLED | WSURF_SHADOW_CASTER_ENABLED;
+		}
+		else if (R_ShouldDrawGlowStencilWallHackBehindWallOnly())
+		{
+			//Don't draw color
+			WSurfProgramState |= WSURF_STENCIL_NO_GLOW_COLOR_ENABLED | WSURF_STENCIL_NO_GLOW_BLUR_ENABLED | WSURF_SHADOW_CASTER_ENABLED;
+		}
+		else if (R_ShouldDrawGlowStencilWallHack())
+		{
+			//Don't draw color
+			WSurfProgramState |= WSURF_STENCIL_NO_GLOW_BLUR_ENABLED | WSURF_SHADOW_CASTER_ENABLED;
+		}
+		else if (R_ShouldDrawGlowStencil())
+		{
+			WSurfProgramState |= WSURF_STENCIL_NO_GLOW_BLUR_ENABLED;
+		}
+		else if (R_ShouldDrawGlowColor() || R_ShouldDrawGlowColorWallHack())
+		{
+			WSurfProgramState |= WSURF_GLOW_COLOR_ENABLED;
+		}
+		else if (R_ShouldDrawGlowColorWallHackBehindWallOnly())
+		{
+			WSurfProgramState |= WSURF_GLOW_COLOR_ENABLED | WSURF_DOUBLE_FACE_ENABLED;
+		}
+
 		if (R_IsRenderingMultiView())
 		{
 			WSurfProgramState |= WSURF_MULTIVIEW_ENABLED;
@@ -2933,13 +2961,57 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 
 		R_DrawWorldSurfaceLeafBegin(pLeaf);
 
-		if (r_draw_opaque)
+		if (R_ShouldDrawGlowColorWallHackBehindWallOnly())
 		{
-			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+			GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_GLOW_COLOR, STENCIL_MASK_NO_GLOW_COLOR);
+		}
+		else if (R_ShouldDrawGlowColorWallHack())
+		{
+
+		}
+		else if (R_ShouldDrawGlowColor())
+		{
+
 		}
 		else
 		{
-			GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+			if (r_draw_opaque)
+			{
+				int iStencilRef = STENCIL_MASK_HAS_DECAL;
+				int iStencilMask = STENCIL_MASK_ALL;
+
+				if (WSurfProgramState & WSURF_STENCIL_NO_GLOW_BLUR_ENABLED)
+					iStencilRef |= STENCIL_MASK_NO_GLOW_BLUR;
+
+				if (WSurfProgramState & WSURF_STENCIL_NO_GLOW_COLOR_ENABLED)
+					iStencilRef |= STENCIL_MASK_NO_GLOW_COLOR;
+
+				GL_BeginStencilWrite(iStencilRef, iStencilMask);
+			}
+			else
+			{
+				int iStencilRef = STENCIL_MASK_HAS_DECAL;
+				int iStencilMask = STENCIL_MASK_HAS_DECAL;
+
+				if (WSurfProgramState & WSURF_STENCIL_NO_GLOW_BLUR_ENABLED)
+				{
+					iStencilRef |= STENCIL_MASK_NO_GLOW_BLUR;
+					iStencilMask |= STENCIL_MASK_NO_GLOW_BLUR;
+				}
+
+				if (WSurfProgramState & WSURF_STENCIL_NO_GLOW_COLOR_ENABLED)
+				{
+					iStencilRef |= STENCIL_MASK_NO_GLOW_COLOR;
+					iStencilMask |= STENCIL_MASK_NO_GLOW_COLOR;
+				}
+
+				GL_BeginStencilWrite(iStencilRef, iStencilMask);
+			}
+		}
+
+		if (WSurfProgramState & WSURF_DOUBLE_FACE_ENABLED)
+		{
+			glDisable(GL_CULL_FACE);
 		}
 
 		wsurf_program_t prog = { 0 };
@@ -2952,6 +3024,8 @@ void R_DrawWorldSurfaceLeafStatic(CWorldSurfaceModel* pModel, CWorldSurfaceLeaf*
 		R_EndDetailTexture(WSurfProgramState);
 
 		GL_UseProgram(0);
+
+		glEnable(GL_CULL_FACE);
 
 		R_DrawWorldSurfaceLeafEnd();
 	}
@@ -3366,6 +3440,9 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 {
 	GL_BeginDebugGroupFormat("R_DrawWorldSurfaceModel - %s", ent->model ? ent->model->name : "<empty>");
 
+	bool bOriginalDiffuseTexture = g_WorldSurfaceRenderer.bDiffuseTexture;
+	bool bOriginalLightmapTexture = g_WorldSurfaceRenderer.bLightmapTexture;
+
 	entity_ubo_t EntityUBO;
 	Matrix4x4_Transpose(EntityUBO.r_entityMatrix, r_entity_matrix);
 	memcpy(EntityUBO.r_color, r_entity_color, sizeof(vec4));
@@ -3380,6 +3457,8 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		EntityUBO.r_color[3] = 1;
 
 		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
+
+		//TODO bind shellchrome?
 	}
 	else if (
 		R_ShouldDrawGlowColor() ||
@@ -3392,11 +3471,17 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 		EntityUBO.r_color[3] = (*r_blend);
 
 		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f);
+
+		g_WorldSurfaceRenderer.bDiffuseTexture = false;
+		g_WorldSurfaceRenderer.bLightmapTexture = false;
 	}
 	else if (R_ShouldDrawGlowStencilEnableDepthTest())
 	{
 		//Same size as DrawGlowColor
 		EntityUBO.r_scale = max((*currententity)->curstate.renderamt * 0.05f, 0.05f) + 0.05f;
+
+		g_WorldSurfaceRenderer.bDiffuseTexture = false;
+		g_WorldSurfaceRenderer.bLightmapTexture = false;
 	}
 
 	GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
@@ -3541,6 +3626,25 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 				R_DrawWorldSurfaceLeafAnim(pModel.get(), pLeaf.get());
 			}
 		}
+
+		if (!R_IsRenderingGlowColor() && !R_IsRenderingGlowStencil() && !R_IsRenderingGlowStencilEnableDepthTest())
+		{
+			if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlow)
+			{
+				g_PostProcessGlowColorEntities.emplace_back((*currententity));
+			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHack)
+			{
+				g_PostProcessGlowStencilEntities.emplace_back((*currententity));
+				g_PostProcessGlowColorEntities.emplace_back((*currententity));
+			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxPostProcessGlowWallHackBehindWallOnly)
+			{
+				g_PostProcessGlowStencilEntities.emplace_back((*currententity));
+				g_PostProcessGlowEnableDepthTestStencilEntities.emplace_back((*currententity));
+				g_PostProcessGlowColorEntities.emplace_back((*currententity));
+			}
+		}
 	}
 
 	R_DrawDecals(ent);
@@ -3555,6 +3659,9 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			}
 		}
 	}
+
+	g_WorldSurfaceRenderer.bDiffuseTexture = bOriginalDiffuseTexture;
+	g_WorldSurfaceRenderer.bLightmapTexture = bOriginalLightmapTexture;
 
 	if (pLeaf)
 	{
