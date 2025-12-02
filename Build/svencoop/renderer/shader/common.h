@@ -105,15 +105,15 @@
 #define STENCIL_MASK_ALL						0xFF
 #define STENCIL_MASK_NONE						0
 
-//Main view
+		//Main view
 #define STENCIL_MASK_NO_FOG						0x1
 #define STENCIL_MASK_NO_LIGHTING				0x2
 #define STENCIL_MASK_NO_BLOOM					0x4
 #define STENCIL_MASK_NO_GLOW_BLUR				0x8
 #define STENCIL_MASK_HAS_FLATSHADE				0x10
 #define STENCIL_MASK_HAS_DECAL					0x20
-#define STENCIL_MASK_NO_GLOW_COLOR				0x20
 #define STENCIL_MASK_HAS_OUTLINE				0x40
+#define STENCIL_MASK_NO_GLOW_COLOR				0x40
 
 //Studio view
 #define STENCIL_MASK_HAS_SHADOW					0x1

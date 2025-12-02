@@ -58,7 +58,7 @@ const float turbsin[] = {
 void main()
 {
 	vec3 vertpos = in_vertex;
-	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(vertpos, 1.0);
+	vec4 worldpos4 = EntityUBO.r_entityMatrix * vec4(vertpos, 1.0);
 
 #if defined(LEGACY_ENABLED)
 
@@ -86,7 +86,7 @@ void main()
 
 	vec4 normal4 = vec4(in_normal, 0.0);
 
-	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
+	v_normal = normalize((EntityUBO.r_entityMatrix * normal4).xyz);
 
 	gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldpos4;
 

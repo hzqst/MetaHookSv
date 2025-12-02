@@ -4288,7 +4288,7 @@ void R_SetupGLForViewModel(void)
 
 void R_SetupGL(void)
 {
-	GL_BeginDebugGroup("R_SetupGL");
+//	GL_BeginDebugGroup("R_SetupGL");
 
 	auto CurrentFBO = GL_GetCurrentSceneFBO();
 
@@ -4454,7 +4454,7 @@ void R_SetupGL(void)
 		InvertMatrix(gWorldToScreen, gScreenToWorld);
 	}
 
-	GL_EndDebugGroup();
+//	GL_EndDebugGroup();
 }
 
 void R_CheckVariables(void)

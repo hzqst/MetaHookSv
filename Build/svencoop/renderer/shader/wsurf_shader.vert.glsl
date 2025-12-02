@@ -149,7 +149,7 @@ void main(void)
 
 #if 1//Use smooth normal for vertex scaling
 	vec4 smoothnormal4 = vec4(in_smoothnormal.xyz, 0.0);
-	smoothnormal3 = normalize((EntityUBO.r_entityMatrix * smoothnormal4).xyz);
+	vec3 smoothnormal3 = normalize((EntityUBO.r_entityMatrix * smoothnormal4).xyz);
 
 	worldpos4.xyz += smoothnormal3.xyz * EntityUBO.r_scale;
 #endif
