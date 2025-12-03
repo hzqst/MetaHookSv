@@ -207,6 +207,10 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_REVERT_NORMAL_ENABLED		,"WSURF_REVERT_NORMAL_ENABLED"},
 { WSURF_MULTIVIEW_ENABLED			,"WSURF_MULTIVIEW_ENABLED"},
 { WSURF_LINEAR_DEPTH_ENABLED		,"WSURF_LINEAR_DEPTH_ENABLED"},
+{ WSURF_GLOW_COLOR_ENABLED		,"WSURF_GLOW_COLOR_ENABLED"},
+{ WSURF_STENCIL_NO_GLOW_BLUR_ENABLED	,"WSURF_STENCIL_NO_GLOW_BLUR_ENABLED"},
+{ WSURF_STENCIL_NO_GLOW_COLOR_ENABLED	,"WSURF_STENCIL_NO_GLOW_COLOR_ENABLED"},
+{ WSURF_DOUBLE_FACE_ENABLED		,"WSURF_DOUBLE_FACE_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -330,6 +334,18 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 		if (state & WSURF_LINEAR_DEPTH_ENABLED)
 			defs << "#define LINEAR_DEPTH_ENABLED\n";
 
+		if (state & WSURF_GLOW_COLOR_ENABLED)
+			defs << "#define GLOW_COLOR_ENABLED\n";
+
+		if (state & WSURF_STENCIL_NO_GLOW_BLUR_ENABLED)
+			defs << "#define STENCIL_NO_GLOW_BLUR_ENABLED\n";
+
+		if (state & WSURF_STENCIL_NO_GLOW_COLOR_ENABLED)
+			defs << "#define STENCIL_NO_GLOW_COLOR_ENABLED\n";
+
+		if (state & WSURF_DOUBLE_FACE_ENABLED)
+			defs << "#define DOUBLE_FACE_ENABLED\n";
+
 	auto def = defs.str();
 
 	CCompileShaderArgs args;
@@ -367,7 +383,7 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t* progOutput)
 	}
 	else
 	{
-		g_pMetaHookAPI->SysError("R_UseWSurfProgram: Failed to load program!");
+		Sys_Error("R_UseWSurfProgram: Failed to load program!");
 	}
 }
 
