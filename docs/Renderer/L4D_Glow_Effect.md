@@ -453,3 +453,363 @@ entity->curstate.renderfx = kRenderFxPostProcessGlowWallHackBehindWallOnly;
 - `studio_shader.frag.glsl` - Studio Model Fragment Shader
 - `wsurf_shader.frag.glsl` - World Surface Fragment Shader
 - `copy_color.frag.glsl` - Halo Add Shader
+
+---
+
+## 附录：各特效详细渲染流程
+
+### kRenderFxPostProcessGlow (30) - 基础发光效果
+
+#### 渲染时序
+
+```
+场景正常渲染 (收集实体)
+    ↓
+R_DrawPostProcessGlow (r_draw_glowcolor = true)
+    ↓
+后处理 (DownSample + Blur)
+    ↓
+R_CopyColorHaloAdd (合成到场景)
+```
+
+#### 实体收集阶段
+
+将实体添加到：
+- `g_PostProcessGlowColorEntities` ✓
+
+#### 场景正常渲染阶段 (渲染本体)
+
+本体正常渲染，不需要特殊处理。
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | 正常渲染状态 |
+| Stencil Ref | 正常值 (根据 outline/flatshade 等确定) |
+| Stencil Mask | `STENCIL_MASK_ALL` (opaque) 或按需设置 (transparent) |
+| Depth Test | 启用 |
+| Depth Write | 启用 |
+| Cull Face | 启用 (GL_FRONT) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | 正常渲染状态 |
+| Stencil Ref | `STENCIL_MASK_HAS_DECAL` + 其他标记 |
+| Stencil Mask | `STENCIL_MASK_ALL` (opaque) 或按需设置 (transparent) |
+| Depth Test | 启用 |
+| Depth Write | 启用 |
+| Cull Face | 启用 |
+
+#### Stencil 标记阶段
+
+**不需要 Stencil 标记阶段**（`R_ShouldDrawGlowStencil()` 在 `r_draw_glowstencil` 为 false 时返回 true，但该实体不会被加入 `g_PostProcessGlowStencilEntities`）
+
+#### Glow Color 绘制阶段 (r_draw_glowcolor = true)
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_GLOW_COLOR_ENABLED` |
+| Stencil | 无 Stencil 测试 |
+| Depth Test | 启用 |
+| Depth Write | 禁用 (`glDepthMask(GL_FALSE)`) |
+| Blend | 禁用 |
+| Cull Face | 启用 (GL_FRONT) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_GLOW_COLOR_ENABLED` |
+| Stencil | 无 Stencil 测试 |
+| Depth Test | 启用 |
+| Depth Write | 禁用 |
+| Blend | 禁用 |
+| Cull Face | 启用 |
+
+#### 后处理合成阶段 (R_CopyColorHaloAdd)
+
+| 项目 | 值 |
+|------|-----|
+| Stencil Func | `GL_NOTEQUAL` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Blend | `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA` |
+
+**效果说明：** 只要 Stencil 中的 `NO_GLOW_BLUR` 位未被标记，就绘制 Glow Blur。由于 PostProcessGlow 不标记任何 Stencil，所以全屏都会应用 Blur 效果。
+
+---
+
+### kRenderFxPostProcessGlowWallHack (31) - 穿墙发光效果
+
+#### 渲染时序
+
+```
+场景正常渲染 (收集实体)
+    ↓
+R_DrawGlowStencil (r_draw_glowstencil = true, 禁用深度测试)
+    ↓
+R_DrawPostProcessGlow (r_draw_glowcolor = true)
+    ↓
+后处理 (DownSample + Blur)
+    ↓
+R_CopyColorHaloAdd (合成到场景, 排除已标记区域)
+```
+
+#### 实体收集阶段
+
+将实体添加到：
+- `g_PostProcessGlowStencilEntities` ✓
+- `g_PostProcessGlowColorEntities` ✓
+
+#### 场景正常渲染阶段 (渲染本体)
+
+本体正常渲染，不需要特殊处理。（同 PostProcessGlow）
+
+#### Stencil 标记阶段 (r_draw_glowstencil = true)
+
+**全局状态：**
+- `glColorMask(0, 0, 0, 0)` - 禁止颜色写入
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED \| STUDIO_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **禁用** (`glDisable(GL_DEPTH_TEST)`) |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 (GL_FRONT) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_STENCIL_NO_GLOW_BLUR_ENABLED \| WSURF_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_HAS_DECAL \| STENCIL_MASK_NO_GLOW_BLUR` |
+| Stencil Mask | 按需设置 |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **禁用** |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 |
+
+**效果说明：** 禁用深度测试意味着实体的所有像素（无论是否被遮挡）都会标记 `NO_GLOW_BLUR`。
+
+#### Glow Color 绘制阶段 (r_draw_glowcolor = true)
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_GLOW_COLOR_ENABLED` |
+| Stencil | 无 Stencil 测试 |
+| Depth Test | **禁用** (`glDisable(GL_DEPTH_TEST)`) |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 (GL_FRONT) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_GLOW_COLOR_ENABLED` |
+| Stencil | 无 Stencil 测试 |
+| Depth Test | **禁用** |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 |
+
+**效果说明：** 禁用深度测试，绘制完整的实体颜色（无论是否被遮挡）。
+
+#### 后处理合成阶段 (R_CopyColorHaloAdd)
+
+| 项目 | 值 |
+|------|-----|
+| Stencil Func | `GL_NOTEQUAL` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Blend | `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA` |
+
+**效果说明：** 由于实体所有像素都已标记 `NO_GLOW_BLUR`，Stencil 测试 `GL_NOTEQUAL` 会排除这些区域。这意味着 **Blur 不会叠加在实体本身上**，但会在实体周围形成发光轮廓（因为 Blur 扩散到了未标记的区域）。
+
+---
+
+### kRenderFxPostProcessGlowWallHackBehindWallOnly (32) - 仅穿墙部分发光效果
+
+#### 渲染时序
+
+```
+场景正常渲染 (收集实体)
+    ↓
+R_DrawGlowStencil Pass 1 (r_draw_glowstencil = true, 禁用深度测试)
+    ↓
+R_DrawGlowStencil Pass 2 (r_draw_glowstencil_enabledepthtest = true, 启用深度测试)
+    ↓
+R_DrawPostProcessGlow (r_draw_glowcolor = true, 使用 Stencil 测试)
+    ↓
+后处理 (DownSample + Blur)
+    ↓
+R_CopyColorHaloAdd (合成到场景, 排除已标记区域)
+```
+
+#### 实体收集阶段
+
+将实体添加到：
+- `g_PostProcessGlowStencilEntities` ✓
+- `g_PostProcessGlowEnableDepthTestStencilEntities` ✓
+- `g_PostProcessGlowColorEntities` ✓
+
+#### 场景正常渲染阶段 (渲染本体)
+
+本体正常渲染，不需要特殊处理。（同 PostProcessGlow）
+
+#### Stencil 标记阶段 Pass 1 (r_draw_glowstencil = true)
+
+**全局状态：**
+- `glColorMask(0, 0, 0, 0)` - 禁止颜色写入
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED \| STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED \| STUDIO_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR \| STENCIL_MASK_NO_GLOW_COLOR` (0x48) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR \| STENCIL_MASK_NO_GLOW_COLOR` (0x48) |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **禁用** (`glDisable(GL_DEPTH_TEST)`) |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 (GL_FRONT) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_STENCIL_NO_GLOW_COLOR_ENABLED \| WSURF_STENCIL_NO_GLOW_BLUR_ENABLED \| WSURF_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_HAS_DECAL \| STENCIL_MASK_NO_GLOW_BLUR \| STENCIL_MASK_NO_GLOW_COLOR` |
+| Stencil Mask | 按需设置 |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **禁用** |
+| Depth Write | 保持 |
+| Blend | 禁用 |
+| Cull Face | 启用 |
+
+**效果说明：** 禁用深度测试，标记实体的 **所有像素**（包括被遮挡和可见部分）为 `NO_GLOW_BLUR | NO_GLOW_COLOR`。
+
+#### Stencil 标记阶段 Pass 2 (r_draw_glowstencil_enabledepthtest = true)
+
+**全局状态：**
+- `glColorMask(0, 0, 0, 0)` - 禁止颜色写入
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED \| STUDIO_NF_DOUBLE_FACE \| STUDIO_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **启用** |
+| Depth Write | **禁用** (`glDepthMask(GL_FALSE)`) |
+| Blend | 禁用 |
+| Cull Face | **禁用** (双面渲染) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_STENCIL_NO_GLOW_COLOR_ENABLED \| WSURF_DOUBLE_FACE_ENABLED \| WSURF_SHADOW_CASTER_ENABLED` |
+| Stencil Func | `GL_ALWAYS` |
+| Stencil Ref | `STENCIL_MASK_HAS_DECAL \| STENCIL_MASK_NO_GLOW_COLOR` |
+| Stencil Mask | 按需设置 |
+| Stencil Op | `GL_KEEP, GL_KEEP, GL_REPLACE` |
+| Depth Test | **启用** |
+| Depth Write | **禁用** |
+| Blend | 禁用 |
+| Cull Face | **禁用** (双面渲染) |
+
+**效果说明：** 启用深度测试，只有 **可见像素** 才会通过深度测试并标记 `NO_GLOW_COLOR`。本次绘制Stencil时使用的r_scale与后面绘制GlowColor时使用的r_scale一致，所以“包含在GlowColor区域内”且未被墙体遮挡区域会被标记上`NO_GLOW_COLOR`，因此在后面GlowColor阶段这部分区域不会被绘制。
+
+#### Glow Color 绘制阶段 (r_draw_glowcolor = true)
+
+**Studio Model:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `STUDIO_GLOW_COLOR_ENABLED \| STUDIO_NF_DOUBLE_FACE` |
+| Stencil Func | **`GL_NOTEQUAL`** |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Depth Test | 启用 |
+| Depth Func | **`GL_GEQUAL`** (反向深度测试) |
+| Depth Write | **禁用** (`glDepthMask(GL_FALSE)`) |
+| Blend | 禁用 |
+| Cull Face | **禁用** (双面渲染) |
+
+**World Surface:**
+| 项目 | 值 |
+|------|-----|
+| ProgramState | `WSURF_GLOW_COLOR_ENABLED \| WSURF_DOUBLE_FACE_ENABLED` |
+| Stencil Func | **`GL_NOTEQUAL`** |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_COLOR` (0x40) |
+| Depth Test | 启用 |
+| Depth Func | **`GL_GEQUAL`** |
+| Depth Write | **禁用** |
+| Blend | 禁用 |
+| Cull Face | **禁用** (双面渲染) |
+
+**效果说明：** 
+1. **Stencil 测试 `GL_NOTEQUAL`**：只有 `NO_GLOW_COLOR` 位 **未被标记** 的像素才通过测试。但由于 Pass 1 和 Pass 2 都标记了所有/可见像素，这里需要结合 Depth 来理解。
+2. **Depth Func `GL_GEQUAL`**：只有深度 **大于等于** 当前深度缓冲值的像素才通过深度测试，即被其他物体遮挡的部分。
+
+**实际效果：** 只绘制被其他物体遮挡的实体像素（穿墙部分）。
+
+#### 后处理合成阶段 (R_CopyColorHaloAdd)
+
+| 项目 | 值 |
+|------|-----|
+| Stencil Func | `GL_NOTEQUAL` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Blend | `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA` |
+
+**效果说明：** 由于 Pass 1 标记了所有像素的 `NO_GLOW_BLUR` 位，Blur 效果不会叠加在实体本身上，但会在被遮挡部分的边缘形成发光轮廓。
+
+---
+
+### 总结对比表
+
+#### 实体收集
+
+| 特效 | GlowColorEntities | GlowStencilEntities | GlowEnableDepthTestStencilEntities |
+|------|-------------------|---------------------|-----------------------------------|
+| PostProcessGlow | ✓ | - | - |
+| PostProcessGlowWallHack | ✓ | ✓ | - |
+| PostProcessGlowWallHackBehindWallOnly | ✓ | ✓ | ✓ |
+
+#### Stencil Pass 配置
+
+| 特效 | Pass | Depth Test | Stencil Ref | ProgramState (Studio) |
+|------|------|------------|-------------|----------------------|
+| PostProcessGlow | - | - | - | - |
+| PostProcessGlowWallHack | 1 | 禁用 | `NO_GLOW_BLUR` | `STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED` |
+| PostProcessGlowWallHackBehindWallOnly | 1 | 禁用 | `NO_GLOW_BLUR \| NO_GLOW_COLOR` | `STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED \| STUDIO_STENCIL_NO_GLOW_BLUR_ENABLED` |
+| PostProcessGlowWallHackBehindWallOnly | 2 | 启用 | `NO_GLOW_COLOR` | `STUDIO_STENCIL_NO_GLOW_COLOR_ENABLED \| STUDIO_NF_DOUBLE_FACE` |
+
+#### Glow Color 绘制配置
+
+| 特效 | Depth Test | Depth Func | Stencil Test | ProgramState (Studio) |
+|------|------------|------------|--------------|----------------------|
+| PostProcessGlow | 启用 | `GL_LESS` | 无 | `STUDIO_GLOW_COLOR_ENABLED` |
+| PostProcessGlowWallHack | 禁用 | - | 无 | `STUDIO_GLOW_COLOR_ENABLED` |
+| PostProcessGlowWallHackBehindWallOnly | 启用 | `GL_GEQUAL` | `GL_NOTEQUAL, NO_GLOW_COLOR` | `STUDIO_GLOW_COLOR_ENABLED \| STUDIO_NF_DOUBLE_FACE` |
+
+#### Halo Add 阶段 (统一)
+
+| 项目 | 值 |
+|------|-----|
+| Stencil Func | `GL_NOTEQUAL` |
+| Stencil Ref | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| Stencil Mask | `STENCIL_MASK_NO_GLOW_BLUR` (0x8) |
+| 效果 | 排除标记了 `NO_GLOW_BLUR` 的区域 |
