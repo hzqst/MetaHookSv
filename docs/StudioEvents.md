@@ -20,12 +20,18 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 ### Console Vars
 
-cl_studiosnd_debug 0 / 1 : To output debug message to the game console when there is a studio-event sound playing or blocked.
+`cl_studiosnd_debug 0 / 1` : Whether to output debug message to the game console when there is a studio-event sound playing or blocked.
 
-cl_studiosnd_anti_spam_diff (duration) : Any studio-event sound will be blocked or delayed if another different studio-event sound was played within this duration before.
+`cl_studiosnd_anti_spam_diff (duration, seconds)` : Any studio-event sound will be blocked or delayed if another different studio-event sound was played within this duration before.
 
-cl_studiosnd_anti_spam_same (duration) : Any studio-event sound will be blocked or delayed if another studio-event sound with same name was played within this duration before.
+`cl_studiosnd_anti_spam_same (duration, seconds)` : Any studio-event sound will be blocked or delayed if another studio-event sound with same name was played within this duration before.
 
-cl_studiosnd_anti_spam_delay 0 / 1 : When set to 1, studio-event sound will be delayed instead of blocked for anti-spam.
+`cl_studiosnd_anti_spam_delay 0 / 1` : When set to 1, studio-event sound will be delayed instead of blocked for anti-spam.
 
-cl_studiosnd_block_player 0 / 1 : When set to 1, studio-event sound from players will be completely blocked.
+`cl_studiosnd_block_player 0 / 1` : When set to 1, studio-event sound from players will be completely blocked.
+
+### Whitelist
+
+`studioevents/sound_whitelist.txt` : for whitelisting specific sound file names. Sounds in the whitelist whitelists bypass all anti-spam checks. Sound name must be full-matched (case-sensitive).
+
+`studioevents/sourcemodel_whitelist.txt` : for whitelisting source model names. Models in the whitelist bypass all anti-spam checks. Model name must be full-matched (case-sensitive).
