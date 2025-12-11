@@ -30,7 +30,7 @@
 
 `cl_studiosnd_block_player 0 / 1` : 设为1之后所有来自玩家的模型自带音效会被阻止播放（不包括viewmodel）。
 
-### Whitelist
+### 白名单
 
 `studioevents/sound_whitelist.txt` : 对音频文件名进行白名单匹配，匹配的音频将会完全绕过anti-spam检查，声音文件名必须完全匹配（大小写敏感）.
 
