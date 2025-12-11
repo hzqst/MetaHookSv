@@ -34,15 +34,17 @@ MetaHookSv Renderer 插件实现了三种类似《Left 4 Dead》（求生之路�
 ```
 正常渲染场景
     ↓
-收集 Glow 实体到列表
+渲染实体本体时：收集 Glow 实体到列表
     ↓
-绘制 Glow Stencil (标记遮挡区域)
+渲染完所有透明实体（R_DrawTEntitiesOnList），在ClientDLL_DrawTransparentTriangles阶段，先调用原始ClientDLL_DrawTransparentTriangles
     ↓
-绘制 Glow Color (绘制发光颜色)
+绘制 Glow Stencil (在当前场景上标记遮挡区域，不绘制颜色)
     ↓
-DownSample + Blur (后处理模糊)
+绘制 Glow Color (在一张单独的全新黑色texture上绘制发光颜色)
     ↓
-Halo Add (叠加到场景)
+DownSample + Blur (对上述texture进行模糊后处理)
+    ↓
+Halo Add (将上述texture叠加到当前场景)
 ```
 
 ### Phase 1: 收集实体
