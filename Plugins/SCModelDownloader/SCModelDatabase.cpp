@@ -889,11 +889,13 @@ public:
 	{
 		CSCModelQueryBase::StartQuery();
 
-		m_Url = "https://raw.githubusercontent.com/wootguy/scmodels/master/database/sc/models.json";
+		//Deprecated: "https://raw.githubusercontent.com/wootguy/scmodels/master/database/sc/models.json";
+
+		m_Url = "https://raw.githubusercontent.com/wootguy/pmodels/master/database/sc/models.json";
 
 		if (SCModel_CDN() == 1)
 		{
-			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/sc/models.json";
+			m_Url = "https://cdn.jsdelivr.net/gh/wootguy/pmodels@master/database/sc/models.json";
 		}
 
 		auto pRequestInstance = UtilHTTPClient()->CreateAsyncStreamRequest(m_Url.c_str(), UtilHTTPMethod::Get, new CUtilHTTPCallbacks(this));
