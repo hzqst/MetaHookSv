@@ -122,7 +122,7 @@ void main(void)
 	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, GetCameraZFar(0), vertex, normal, texcoord);
 
 	vec4 normal4 = vec4(normal.xyz, 0.0);
-	v_normal = normalize((normal4).xyz);
+	v_normal = normal4.xyz;
 
 	#if defined(REVERT_NORMAL_ENABLED)
 		v_normal = v_normal * -1.0;
@@ -139,7 +139,7 @@ void main(void)
 #else
 
 	vec4 normal4 = vec4(in_normal.xyz, 0.0);
-	v_normal = normalize((EntityUBO.r_entityMatrix * normal4).xyz);
+	v_normal = (EntityUBO.r_entityMatrix * normal4).xyz;
 
 	#if defined(REVERT_NORMAL_ENABLED)
 		v_normal = v_normal * -1.0;
@@ -149,7 +149,7 @@ void main(void)
 
 #if 1//Use smooth normal for vertex scaling
 	vec4 smoothnormal4 = vec4(in_smoothnormal.xyz, 0.0);
-	vec3 smoothnormal3 = normalize((EntityUBO.r_entityMatrix * smoothnormal4).xyz);
+	vec3 smoothnormal3 = (EntityUBO.r_entityMatrix * smoothnormal4).xyz;
 
 	worldpos4.xyz += smoothnormal3.xyz * EntityUBO.r_scale;
 #endif
@@ -180,7 +180,7 @@ void main(void)
 		tangent4 = tangent4 * -1.0;
 	#endif
 
-    v_tangent = normalize((EntityUBO.r_entityMatrix * tangent4).xyz);
+    v_tangent = (EntityUBO.r_entityMatrix * tangent4).xyz;
 
 	vec4 bitangent4 = vec4(in_bitangent, 0.0);
 	
@@ -188,7 +188,7 @@ void main(void)
 		bitangent4 = bitangent4 * -1.0;
 	#endif
 
-    v_bitangent = normalize((EntityUBO.r_entityMatrix * bitangent4).xyz);
+    v_bitangent = (EntityUBO.r_entityMatrix * bitangent4).xyz;
 
 #endif
 
