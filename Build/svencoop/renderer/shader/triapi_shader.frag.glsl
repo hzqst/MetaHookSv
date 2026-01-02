@@ -42,11 +42,11 @@ void main()
 	);
 
 	#if defined(OIT_BLEND_ENABLED)
-		
+
 		GatherFragment(finalColor);
 
 	#endif
 
-	out_Diffuse = finalColor;
+	out_Diffuse = clamp(finalColor, 0.0, 64.0);
 	
 }
