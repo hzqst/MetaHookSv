@@ -6108,7 +6108,7 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 
 	float fSrcAspect, fDstAspect;
 	int srcWide, srcTall;
-	float flXDiff, flYDiff;
+	float flXDiff = 0, flYDiff = 0;
 
 	g_pMetaHookAPI->GetVideoMode(&srcWide, &srcTall, nullptr, nullptr);
 
@@ -6122,13 +6122,13 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 		{
 			float fDesiredWidth = width * (1 / fSrcAspect);
 			flYDiff = height - fDesiredWidth;
-			height = height - flYDiff;
+			height = height - (int)flYDiff;
 		}
 		else
 		{
 			float fDesiredHeight = height / (1 / fSrcAspect);
 			flXDiff = width - fDesiredHeight;
-			width = width - flXDiff;
+			width = width - (int)flXDiff;
 		}
 	}
 
@@ -6181,8 +6181,8 @@ void __fastcall CVideoMode_Common_DrawStartupGraphic(void* pthis, int dummy, voi
 	}
 
 	{
-		glx = 0;
-		gly = 0;
+		glx = (int)(flXDiff / 2);
+		gly = (int)(flYDiff / 2);
 		glwidth = width;
 		glheight = height;
 		GL_Set2D();
