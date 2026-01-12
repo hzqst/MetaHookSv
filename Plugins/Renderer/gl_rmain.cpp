@@ -3529,15 +3529,6 @@ void GL_EndRendering(void)
 {
 	R_RenderEndFrame();
 
-	//Disable engine's framebuffer
-	GLuint save_backbuffer_fbo = 0;
-
-	if (gl_backbuffer_fbo)
-	{
-		save_backbuffer_fbo = *gl_backbuffer_fbo;
-		*gl_backbuffer_fbo = 0;
-	}
-
 	int srcWide = s_FinalBufferFBO.iWidth, srcTall = s_FinalBufferFBO.iHeight;
 
 	int dstX1 = 0;
@@ -3581,11 +3572,6 @@ void GL_EndRendering(void)
 
 	//Let engine call VID_FlipScreen for us.
 	gPrivateFuncs.GL_EndRendering();
-
-	if (gl_backbuffer_fbo)
-	{
-		*gl_backbuffer_fbo = save_backbuffer_fbo;
-	}
 }
 
 #if 0
