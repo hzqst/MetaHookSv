@@ -272,7 +272,7 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern bool g_bNoStretchAspect;
+extern bool g_bEnforceAspect;
 extern bool g_bUseOITBlend;
 //extern bool bVerticalFov;//unused
 extern bool g_bUseLegacyTextureLoader;

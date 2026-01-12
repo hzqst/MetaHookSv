@@ -349,7 +349,7 @@ FBO_Container_t s_PortalFBO = { 0 };
 FBO_Container_t* g_CurrentSceneFBO = nullptr;
 FBO_Container_t* g_CurrentRenderingFBO = nullptr;
 
-bool g_bNoStretchAspect = true;
+bool g_bEnforceAspect = true;
 bool g_bUseOITBlend = false;
 bool g_bUseLegacyTextureLoader = false;
 bool g_bHasOfficialFBOSupport = false;
@@ -3536,7 +3536,7 @@ void GL_EndRendering(void)
 		*gl_backbuffer_fbo = 0;
 	}
 
-	int srcW = s_FinalBufferFBO.iWidth, srcH = s_FinalBufferFBO.iHeight;
+	int srcWide = s_FinalBufferFBO.iWidth, srcTall = s_FinalBufferFBO.iHeight;
 
 	int dstX1 = 0;
 	int dstY1 = 0;
@@ -3544,10 +3544,10 @@ void GL_EndRendering(void)
 	int dstY2 = window_rect->bottom - window_rect->top;
 	(*s_fXMouseAspectAdjustment) = (*s_fYMouseAspectAdjustment) = 1;
 
-	float fSrcAspect = (float)srcW / (float)srcH;
+	float fSrcAspect = (float)srcWide / (float)srcTall;
 	float fDstAspect = (float)dstX2 / (float)dstY2;
 
-	if (g_bNoStretchAspect)
+	if (g_bEnforceAspect)
 	{
 		if (fSrcAspect > fDstAspect)
 		{
@@ -3574,7 +3574,7 @@ void GL_EndRendering(void)
 	vec4_t vecClearColor = { 0, 0, 0, 0 };
 	GL_ClearColor(vecClearColor);
 
-	glBlitFramebuffer(0, 0, srcW, srcH, dstX1, dstY1, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	glBlitFramebuffer(0, 0, srcWide, srcTall, dstX1, dstY1, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
 	//Let engine call VID_FlipScreen for us.
@@ -5996,7 +5996,7 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 
 	if (r)
 	{
-
+		
 	}
 
 	return r;
@@ -6044,7 +6044,7 @@ void GL_Init(void)
 
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
 
-	g_bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+	g_bEnforceAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
 	if (gEngfuncs.CheckParm("-oitblend", NULL))
 		g_bUseOITBlend = true;
