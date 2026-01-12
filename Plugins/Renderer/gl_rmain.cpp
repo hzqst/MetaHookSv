@@ -186,6 +186,8 @@ void** (*pmainwindow) = nullptr;
 
 float* vid_d3d = nullptr;
 
+const char** gl_extensions = nullptr;
+
 bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = { 0 };
@@ -5992,14 +5994,30 @@ qboolean GL_SelectPixelFormat(HDC hDC)
 
 qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 {
+#if 1
+
+	if (gPrivateFuncs.SvEngine_glewInit)
+	{
+		auto err = gPrivateFuncs.SvEngine_glewInit();
+
+		if (GLEW_OK != err)
+		{
+			Sys_Error("SvEngine_glewInit failed, %s", glewGetErrorString(err));
+			return 0;
+		}
+	}
+
+	(*gl_extensions) = "";
+	return 1;
+#else
 	auto r = gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
 
 	if (r)
 	{
 		
 	}
-
 	return r;
+#endif
 }
 
 qboolean GL_SetModeLegacy(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)

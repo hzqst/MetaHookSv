@@ -728,17 +728,9 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		Sig_FuncNotFound(GL_SetModeLegacy);
 	}
 
-	if (g_iEngineType != ENGINE_SVENGINE)
+	if (GL_SetMode_VA)
 	{
-		/*
-		float* r_shadelight = NULL;
-		int* r_ambientlight = NULL;
-		vec3_t* r_blightvec = NULL;
-		vec3_t* r_plightvec = NULL;
-		int* lightgammatable = NULL;
-	*/
-
-		typedef struct R_StudioLighting_SearchContext_s
+		typedef struct GL_SetMode_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
 			const mh_dll_info_t& RealDllInfo;
@@ -751,9 +743,16 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 			PUCHAR mov_reg_mem_address{};
 			int mov_reg_mem_instCount{};
 			int mov_reg{};
-		} R_StudioLighting_SearchContext;
+			// 用于定位 gl_extensions 和 SDL_InitGL
+			PUCHAR push_GL_EXTENSIONS_address{};
+			int push_GL_EXTENSIONS_instCount{};
+			// 记录最近的直接 call 指令（E8 rel32），用于定位 SDL_InitGL
+			PUCHAR last_direct_call_address{};
+			int last_direct_call_instCount{};
+			PVOID last_direct_call_target{};
+		} GL_SetMode_SearchContext;
 
-		R_StudioLighting_SearchContext ctx = { DllInfo, RealDllInfo };
+		GL_SetMode_SearchContext ctx = { DllInfo, RealDllInfo };
 		ctx.base = GL_SetMode_VA;
 		ctx.max_insts = 500;
 		ctx.max_depth = 16;
@@ -766,9 +765,9 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 				auto pinst = (cs_insn*)inst;
-				auto ctx = (R_StudioLighting_SearchContext*)context;
+				auto ctx = (GL_SetMode_SearchContext*)context;
 
-				if (gPrivateFuncs.GL_SetMode_call_qwglCreateContext)
+				if (gPrivateFuncs.GL_SetMode_call_qwglCreateContext && gl_extensions)
 					return TRUE;
 
 				if (ctx->code.size() > ctx->max_insts)
@@ -779,6 +778,7 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 				ctx->code.emplace(address);
 
+				// 定位 vid_d3d (仅 Legacy 引擎)
 				if (instCount < 10 &&
 					!vid_d3d &&
 					gPrivateFuncs.GL_SetModeLegacy &&
@@ -793,37 +793,99 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 					vid_d3d = (decltype(vid_d3d))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
 
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base != 0 &&
-					pinst->detail->x86.operands[1].mem.disp == 0)
+				// 定位 GL_SetMode_call_qwglCreateContext (仅非 SVEngine)
+				if (g_iEngineType != ENGINE_SVENGINE && !gPrivateFuncs.GL_SetMode_call_qwglCreateContext)
 				{
-					ctx->mov_reg = pinst->detail->x86.operands[0].reg;
-					ctx->mov_reg_mem_address = address;
-					ctx->mov_reg_mem_instCount = instCount;
-				}
-
-				if (ctx->mov_reg_mem_address &&
-					address > ctx->mov_reg_mem_address + 0 &&
-					address < ctx->mov_reg_mem_address + 10 &&
-					instCount > ctx->mov_reg_mem_instCount + 0 &&
-					instCount < ctx->mov_reg_mem_instCount + 3 &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == ctx->mov_reg)
-				{
-					auto nextaddr = address + instLen;
-
-					if (nextaddr[0] == 0xFF && nextaddr[1] == 0x15)
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base != 0 &&
+						pinst->detail->x86.operands[1].mem.disp == 0)
 					{
-						gPrivateFuncs.GL_SetMode_call_qwglCreateContext = ConvertDllInfoSpace(nextaddr, ctx->DllInfo, ctx->RealDllInfo);
-						return TRUE;
+						ctx->mov_reg = pinst->detail->x86.operands[0].reg;
+						ctx->mov_reg_mem_address = address;
+						ctx->mov_reg_mem_instCount = instCount;
+					}
+
+					if (ctx->mov_reg_mem_address &&
+						address > ctx->mov_reg_mem_address + 0 &&
+						address < ctx->mov_reg_mem_address + 10 &&
+						instCount > ctx->mov_reg_mem_instCount + 0 &&
+						instCount < ctx->mov_reg_mem_instCount + 3 &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == ctx->mov_reg)
+					{
+						auto nextaddr = address + instLen;
+
+						if (nextaddr[0] == 0xFF && nextaddr[1] == 0x15)
+						{
+							gPrivateFuncs.GL_SetMode_call_qwglCreateContext = ConvertDllInfoSpace(nextaddr, ctx->DllInfo, ctx->RealDllInfo);
+						}
 					}
 				}
 
+				// 记录最近的直接 call 指令 (E8 rel32)，用于定位 SDL_InitGL
+				if (pinst->id == X86_INS_CALL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					ctx->last_direct_call_address = address;
+					ctx->last_direct_call_instCount = instCount;
+					ctx->last_direct_call_target = (PVOID)pinst->detail->x86.operands[0].imm;
+				}
+
+				// 定位 gl_extensions 和 SDL_InitGL
+				// 模式: call SDL_InitGL -> add esp, 8 -> push 0x1F03 -> call glGetString -> mov [imm32], eax
+				if (!gl_extensions || !gPrivateFuncs.SDL_InitGL)
+				{
+					// 检测 push 0x1F03 (GL_EXTENSIONS)
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x1F03)
+					{
+						ctx->push_GL_EXTENSIONS_address = address;
+						ctx->push_GL_EXTENSIONS_instCount = instCount;
+
+						// 定位 SDL_InitGL (仅 GOLDSRC/GOLDSRC_HL25 且使用 SDL2)
+						// 模式: call SDL_InitGL -> add esp, 8 -> push 0x1F03
+						if (!gPrivateFuncs.SDL_InitGL &&
+							(g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25) &&
+							gPrivateFuncs.SDL_GL_GetProcAddress &&
+							ctx->last_direct_call_address &&
+							address > ctx->last_direct_call_address &&
+							address < ctx->last_direct_call_address + 0x20 &&
+							instCount > ctx->last_direct_call_instCount &&
+							instCount < ctx->last_direct_call_instCount + 5)
+						{
+							gPrivateFuncs.SDL_InitGL = (decltype(gPrivateFuncs.SDL_InitGL))ConvertDllInfoSpace(ctx->last_direct_call_target, ctx->DllInfo, ctx->RealDllInfo);
+						}
+					}
+
+					// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
+					if (ctx->push_GL_EXTENSIONS_address &&
+						address > ctx->push_GL_EXTENSIONS_address &&
+						address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
+						instCount > ctx->push_GL_EXTENSIONS_instCount &&
+						instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
+						pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index == 0 &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+					{
+						gl_extensions = (decltype(gl_extensions))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					}
+				}
+
+				// 分支处理
 				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM)
@@ -852,7 +914,17 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 				}, walk.depth, &ctx);
 		}
 
-		Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
+		if (g_iEngineType != ENGINE_SVENGINE)
+		{
+			Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
+		}
+		Sig_VarNotFound(gl_extensions);
+
+		if ((g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25) &&
+			(gPrivateFuncs.SDL_GL_GetProcAddress || gPrivateFuncs.GL_SetMode))
+		{
+			Sig_FuncNotFound(SDL_InitGL);
+		}
 	}
 
 	if (gPrivateFuncs.GL_SetModeLegacy)
@@ -12200,6 +12272,13 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 		gPrivateFuncs.SDL_GL_ExtensionSupported = (decltype(gPrivateFuncs.SDL_GL_ExtensionSupported))GetProcAddress(hSDL2, "SDL_GL_ExtensionSupported");
 	}
 
+	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
+
+	if (engineFactory("SCEngineClient002", nullptr))
+	{
+		gPrivateFuncs.SvEngine_glewInit = (decltype(gPrivateFuncs.SvEngine_glewInit))GetProcAddress(g_pMetaHookAPI->GetEngineModule(), "_glewInit@0");
+	}
+
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_Begin = gEngfuncs.pTriAPI->Begin;
 	gPrivateFuncs.triapi_End = gEngfuncs.pTriAPI->End;
@@ -13929,7 +14008,7 @@ void Client_InstallHooks()
 	Install_InlineHook(ClientPortalManager_RenderPortals);
 	Install_InlineHook(UpdatePlayerPitch);
 
-	//Sniber jiali siren le
+	//Fuck Sniber
 	if(gPrivateFuncs.SCClientDLL_glewInit)
 		gPrivateFuncs.SCClientDLL_glewInit();
 }

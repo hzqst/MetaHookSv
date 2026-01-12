@@ -221,6 +221,8 @@ extern void** (*pmainwindow);
 
 extern float* vid_d3d;
 
+extern const char** gl_extensions;
+
 extern bool g_bPortalClipPlaneEnabled[6];
 
 extern vec4_t g_PortalClipPlane[6];

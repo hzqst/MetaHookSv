@@ -268,6 +268,10 @@ typedef struct
 	void* (__cdecl* SDL_CreateWindow)(const char* title, int x, int y, int w,int h, uint32_t flags);
 	int(__cdecl* SDL_GL_ExtensionSupported)(const char* extension);
 
+	//Engine's SDL2 wrapper
+	void(__cdecl* SDL_InitGL)();
+	decltype(glewInit)* SvEngine_glewInit;
+
 	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;
 	bool R_RenderScene_inlined;
