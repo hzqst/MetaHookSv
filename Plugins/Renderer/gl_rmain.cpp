@@ -6007,6 +6007,11 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 		}
 	}
 
+	if (gPrivateFuncs.SDL_InitGL)
+	{
+		gPrivateFuncs.SDL_InitGL();
+	}
+
 	(*gl_extensions) = "";
 	return 1;
 #else
