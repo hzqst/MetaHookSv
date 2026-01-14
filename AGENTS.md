@@ -142,5 +142,5 @@ Plugin load order in `plugins.lst` is critical for proper dependency resolution 
 
 ### Workflow
  -- On startup, **ALWAYS** Activate the current dir as project using serena.
- -- Prefer serena tools to explore the code base.
- -- Prefer context7 tools to fetch extern docs for API(s).
+ -- Prefer **serena** tools to explore the code base.
+ -- Prefer **context7** tools to fetch extern docs for API(s).
