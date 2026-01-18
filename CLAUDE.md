@@ -1,146 +1,28 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件用于指导在本仓库内以“渐进式披露”的方式进行 Agent Coding：优先从 Serena memories 获取高层信息，只在需要时再按需定位并读取具体文件/符号，避免一次性展开大量上下文。
 
-## Project Overview
+## Serena memories（保持上下文精简）
+1. 优先使用 `list_memories` 浏览当前项目已有 memories（不要默认全读）。
+2. 仅在需要时，用 `read_memory` 精确读取某个 memory（按需加载）。
+3. 如果 memory 信息不足/过期，再回退到读取仓库文件或用 Serena 的符号/搜索能力定点定位，并用 `write_memory` / `edit_memory` / `delete_memory` 维护记忆内容。
 
-MetaHookSv is a client-side modding framework for GoldSrc engine based games, specifically designed for Sven Co-op and other GoldSrc games. It is a porting of the original MetaHook project to support SvEngine (GoldSrc engine modified by Sven Co-op Team).
+## 本仓库的高层信息（优先读对应 memories）
+- 项目概览，代码库入口点：`project_overview`
+- 插件系统与开发流程：`plugin_system`
+- 重要注意事项：`metahooksv_notes`
 
-## Build System
+## 当 memories 不足时的“源文件入口”（按需查询与读取）
+- 解决方案与构建：`MetaHook.sln`、`scripts/`
+- Loader 与核心逻辑：`src/`
+- 公共 API / 接口：`include/metahook.h`、`include/Interface/`
+- 插件与通用库：`Plugins/`、`PluginLibs/`
+- 插件加载配置：`plugins.lst`
 
-### Requirements
-- Visual Studio 2022 with vc143 toolset
-- CMake
-- Git for Windows
+## 渐进式披露要点
+- 先读 memories，再定位“单文件/单符号”；不要一次性读全仓库。
+- 探索代码优先用 Serena（符号总览/引用/搜索），只在必要时读取文件内容。
+- 外部依赖/库的用法优先用 Context7（按需查询）。
 
-### Build Commands
-
-#### Build MetaHook Loader
-```bash
-scripts\build-MetaHook.bat
-```
-This builds the main MetaHook.exe (and MetaHook_blob.exe for legacy engines) loader executable.
-
-#### Build All Plugins
-```bash
-scripts\build-Plugins.bat
-```
-This builds all plugin DLLs and utility libraries in the correct dependency order.
-
-#### Debug Configuration
-For debugging specific games, use the corresponding debug script:
-- `scripts\debug-SvenCoop.bat` - Sets up debugging environment for Sven Co-op
-- `scripts\debug-CounterStrike.bat` - Sets up debugging environment for Counter-Strike
-- `scripts\debug-HalfLife.bat` - Sets up debugging environment for Half-Life
-- And other game-specific scripts
-
-### Visual Studio Solution
-The main solution file is `MetaHook.sln` which contains all projects organized into logical folders:
-- **MetaHook** - Main loader executable
-- **Plugins** - All plugin projects
-- **PluginLibs** - Utility libraries used by plugins
-- **Tools** - Utility tools for installation and management
-- **Libs** - Third-party library dependencies
-
-### Build Configurations
-- **Debug** - Debug builds with debugging information
-- **Release** - Optimized release builds
-- **Release_AVX2** - Release builds with AVX2 optimizations (for Renderer and BulletPhysics)
-- **Release_blob** - Release builds for legacy blob engines
-
-## Architecture
-
-### Core Components
-
-#### MetaHook Loader (`src/`)
-The main executable that bootstraps the entire plugin system. Key files:
-- `metahook.cpp` - Core MetaHook API implementation
-- `launcher.cpp` - Game launcher and process management
-- `LoadBlob.cpp` - Legacy blob engine loader support
-- `LoadDllNotification.cpp` - DLL load monitoring system
-
-#### Plugin System
-Plugins are organized in the `Plugins/` directory, each implementing specific functionality:
-
-**Core Plugins:**
-- **VGUI2Extension** - VGUI2 modding framework, base for other UI plugins
-- **Renderer** - Graphics enhancement engine with advanced rendering features
-- **BulletPhysics** - Physics simulation using Bullet Physics engine
-- **CaptionMod** - Subtitles, translations, and HiDPI support
-
-**Utility Plugins:**
-- **ResourceReplacer** - Runtime resource replacement system
-- **ThreadGuard** - Thread management and cleanup
-- **PrecacheManager** - Resource precaching management
-- **SteamScreenshots** - Steam screenshot integration (Sven Co-op only)
-
-#### Plugin Libraries (`PluginLibs/`)
-Shared utility libraries:
-- **UtilHTTPClient_SteamAPI** - HTTP client using Steam API
-- **UtilHTTPClient_libcurl** - HTTP client using libcurl
-- **UtilAssetsIntegrity** - Asset integrity verification
-- **UtilThreadTask** - Threading utilities
-
-#### Interface System (`include/Interface/`)
-Defines plugin interfaces:
-- `IPlugins.h` - Plugin management interface
-- `IEngine.h` - Engine interface abstraction
-- `IVGUI2Extension.h` - VGUI2 extension interface
-- `IUtilHTTPClient.h` - HTTP client interface
-
-### Engine Compatibility
-MetaHookSv supports multiple engine types:
-- **GoldSrc_blob** (buildnum 3248~4554) - Legacy encrypted format
-- **GoldSrc_legacy** (< 6153) - Standard GoldSrc
-- **GoldSrc_new** (8684+) - Modern GoldSrc
-- **SvEngine** (8832+) - Sven Co-op modified engine
-- **GoldSrc_HL25** (≥9884) - Half-Life 25th Anniversary Update
-
-### API Architecture
-The MetaHook API (`include/metahook.h`) provides:
-- **Hook System** - Inline hooks, VFT hooks, IAT hooks
-- **Memory Management** - Pattern searching, memory patching
-- **Engine Integration** - Engine type detection, module management
-- **Plugin Communication** - Inter-plugin interfaces and messaging
-- **Misc** - Some other utils like ThreadPool and Cvar Registration...
-
-## Development Workflow
-
-### Adding New Plugins
-1. Create new project in appropriate solution folder
-2. Reference required PluginLibs dependencies
-3. Implement plugin interface in `exportfuncs.cpp`
-4. Add plugin to build scripts
-5. Update plugin load list in configs
-
-### Testing and Debugging
-1. Use debug scripts to set up proper environment
-2. Open `MetaHook.sln` in Visual Studio
-3. Set target plugin as startup project
-4. Use F5 to start debugging with proper game environment
-
-### Plugin Development Patterns
-- All plugins export standard entry points via `exportfuncs.h`
-- Use MetaHook API for engine interaction and hooking
-- Follow existing plugin structure and naming conventions
-- Leverage PluginLibs for common functionality
-
-## Important Notes
-
-### Security and Safety
-- This is a defensive security tool for game modification
-- All hooks and patches are for legitimate game enhancement
-- No malicious code or exploits should be introduced
-
-### Engine Compatibility
-- Check engine type using `g_pMetaHookAPI->GetEngineType()` before engine-specific operations
-- Use blob-specific APIs for legacy blob engines
-- Some features may not be available on all engine types
-
-### Plugin Load Order
-Plugin load order in `plugins.lst` is critical for proper dependency resolution and hook installation.
-
-### Workflow
- -- On startup, **ALWAYS** Activate the current dir as project using serena.
- -- Prefer **serena** tools to explore the code base.
- -- Prefer **context7** tools to fetch extern docs for API(s).
+## Misc rules
+- Agent 启动时总是先 `activate_project`（Serena）。

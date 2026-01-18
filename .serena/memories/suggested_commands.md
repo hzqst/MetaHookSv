@@ -1,5 +1,16 @@
 # Suggested Commands for MetaHookSv Development
 
+## Build Requirements
+- Visual Studio 2022 (vc143 toolset)
+- CMake
+- Git for Windows
+
+## Build Configurations
+- `Debug`
+- `Release`
+- `Release_AVX2` (Renderer and BulletPhysics AVX2 builds)
+- `Release_blob` (legacy blob engines)
+
 ## Build Commands
 
 ### Build MetaHook Loader
@@ -20,6 +31,8 @@ MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release" /
 ```
 
 ## Debug Commands
+
+(Other game debug scripts live under `scripts/` as `debug-*.bat`.)
 
 ### Debug with Sven Co-op
 ```batch
@@ -71,7 +84,6 @@ rmdir <dir>            # Remove directory
 ```
 
 ## Visual Studio Commands
-- Open `MetaHook.sln` in Visual Studio
 - Set target plugin as startup project
 - Press F5 to start debugging
 - Ctrl+Shift+B to build solution
