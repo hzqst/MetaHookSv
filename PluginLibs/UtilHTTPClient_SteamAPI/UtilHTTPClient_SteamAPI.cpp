@@ -107,6 +107,7 @@ IURLParsedResult* ParseUrlInternal(const std::string& url)
 			std::string target = (url_match_result.size() >= 5) ? url_match_result[4].str() : "";
 
 			unsigned port_us = 0;
+			bool secure = false;
 
 			if (!port_str.empty()) {
 				try {
@@ -130,22 +131,25 @@ IURLParsedResult* ParseUrlInternal(const std::string& url)
 				}
 				else if (scheme == "https") {
 					port_us = 443;
+					secure = true;
 				}
 				else if (scheme == "ws") {
 					port_us = 80;
 				}
 				else if (scheme == "wss") {
 					port_us = 443;
+					secure = true;
 				}
 				else if (scheme == "mqtt") {
 					port_us = 1883;
 				}
 				else if (scheme == "mqtts") {
 					port_us = 8883;
+					secure = true;
 				}
 			}
 
-			return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
+			return new CURLParsedResult(scheme, host, port_us, target, secure);
 		}
 	}
 

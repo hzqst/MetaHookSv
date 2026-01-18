@@ -3,6 +3,27 @@
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
+#include <cctype>
+
+static std::string ToLowerCase(const char* str)
+{
+	std::string result(str);
+	for (auto& c : result)
+	{
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+	return result;
+}
+
+static std::string ToLowerCase(const std::string_view& sv)
+{
+	std::string result(sv);
+	for (auto& c : result)
+	{
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+	return result;
+}
 
 #include <IUtilHTTPClient.h>
 
@@ -87,6 +108,7 @@ IURLParsedResult* ParseUrlInternal(const std::string& url)
 			std::string target = (url_match_result.size() >= 5) ? url_match_result[4].str() : "";
 
 			unsigned port_us = 0;
+			bool secure = false;
 
 			if (!port_str.empty()) {
 				try {
@@ -110,22 +132,25 @@ IURLParsedResult* ParseUrlInternal(const std::string& url)
 				}
 				else if (scheme == "https") {
 					port_us = 443;
+					secure = true;
 				}
 				else if (scheme == "ws") {
 					port_us = 80;
 				}
 				else if (scheme == "wss") {
 					port_us = 443;
+					secure = true;
 				}
 				else if (scheme == "mqtt") {
 					port_us = 1883;
 				}
 				else if (scheme == "mqtts") {
 					port_us = 8883;
+					secure = true;
 				}
 			}
 
-			return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
+			return new CURLParsedResult(scheme, host, port_us, target, secure);
 		}
 	}
 
@@ -210,7 +235,8 @@ public:
 
 	bool GetHeaderSize(const char* name, size_t* buflen) override
 	{
-		auto it = m_headers.find(name);
+		auto lowerName = ToLowerCase(name);
+		auto it = m_headers.find(lowerName);
 		if (it != m_headers.end()) {
 			*buflen = it->second->length() + 1;
 			return true;
@@ -220,7 +246,8 @@ public:
 
 	bool GetHeader(const char* name, char* buf, size_t buflen) override
 	{
-		auto it = m_headers.find(name);
+		auto lowerName = ToLowerCase(name);
+		auto it = m_headers.find(lowerName);
 		if (it != m_headers.end()) {
 			strncpy(buf, it->second->c_str(), buflen);
 			buf[buflen - 1] = 0;
@@ -234,7 +261,8 @@ public:
 		if (!name)
 			return nullptr;
 
-		auto it = m_headers.find(name);
+		auto lowerName = ToLowerCase(name);
+		auto it = m_headers.find(lowerName);
 		if (it != m_headers.end())
 		{
 			return it->second->c_str();
@@ -315,7 +343,7 @@ public:
 
 					// Only store if both key and value are not empty
 					if (!key.empty()) {
-						std::string k(key);
+						std::string k = ToLowerCase(key);
 						auto it = m_headers.find(k);
 						if (it != m_headers.end())
 						{
@@ -336,18 +364,28 @@ public:
 		m_bIsHeaderProcessed = true;
 	}
 
-	void FinalizePayload()
+	void FinalizePayload(CURLcode curlResult = CURLE_OK)
 	{
 		m_pResponsePayload->Finalize();
 
 		auto code = curl_easy_getinfo(m_CurlEasyHandle, CURLINFO_RESPONSE_CODE, &m_iResponseStatusCode);
 
-		if (code != CURLE_OK || m_iResponseStatusCode >= 400 || !m_iResponseStatusCode)
+		// 优先使用 curl 结果码判断网络层错误
+		if (curlResult != CURLE_OK)
+		{
+			m_bResponseError = true;
+			m_ResponseErrorMessage = curl_easy_strerror(curlResult);
+		}
+		else if (code != CURLE_OK || m_iResponseStatusCode >= 400 || !m_iResponseStatusCode)
 		{
 			m_bResponseError = true;
 
-			if(code != CURLE_OK)
+			if (code != CURLE_OK)
 				m_ResponseErrorMessage = curl_easy_strerror(code);
+			else if (m_iResponseStatusCode >= 400)
+				m_ResponseErrorMessage = std::format("HTTP error {}", m_iResponseStatusCode);
+			else
+				m_ResponseErrorMessage = "No response received";
 		}
 
 		m_bResponseCompleted = true;
@@ -511,10 +549,10 @@ public:
 		}
 	}
 
-	virtual void OnHTTPComplete()
+	virtual void OnHTTPComplete(CURLcode curlResult = CURLE_OK)
 	{
 		m_pResponse->FinalizeHeaders();
-		m_pResponse->FinalizePayload();
+		m_pResponse->FinalizePayload(curlResult);
 
 		if (m_pResponse->IsResponseError())
 		{
@@ -658,7 +696,7 @@ public:
 
 	void SetFollowLocation(bool b) override
 	{
-		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_FOLLOWLOCATION, 1);
+		curl_easy_setopt(m_CurlEasyHandle, CURLOPT_FOLLOWLOCATION, b ? 1L : 0L);
 	}
 };
 
@@ -746,7 +784,7 @@ public:
 		:
 		CUtilHTTPRequest(method, host, port, secure, target, callbacks, CurlMultiHandle, CurlCookieHandle)
 	{
-		
+		m_bAutoDestroyOnFinish = true;
 	}
 
 	bool IsAsync() const override
@@ -934,7 +972,7 @@ public:
 
 					if (pRequest)
 					{
-						pRequest->OnHTTPComplete();
+						pRequest->OnHTTPComplete(msg->data.result);
 					}
 				}
 			} while (msg);
