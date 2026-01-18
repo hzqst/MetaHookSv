@@ -25,4 +25,4 @@
 - 外部依赖/库的用法优先用 Context7（按需查询）。
 
 ## Misc rules
-- Agent 启动时总是先 `activate_project`（Serena）。
+- **ALWAYS** call Serena's `activate_project` on agent startup
