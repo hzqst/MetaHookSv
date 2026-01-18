@@ -1,7 +1,7 @@
 # UtilHTTPClient_libcurl（源码级分析）
 
 ## 概述
-`PluginLibs/UtilHTTPClient_libcurl` 是一个基于 **libcurl（multi/easy）** 的 HTTP 客户端实现，作为 MetaHookSv 的“工具库”以 DLL 形式导出 `IUtilHTTPClient` 与 `IUtilHTTPClientFactory` 接口（见 `PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
+`PluginLibs/UtilHTTPClient_libcurl` 是一个基于 **libcurl（multi/easy）** 的 HTTP 客户端实现，作为 MetaHookSv 的“工具库”以 DLL 形式导出 `IUtilHTTPClient` 与 `IUtilHTTPClientFactory` 接口（见 `PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 
 该实现的设计目标是：
 - 在引擎/插件主循环里每帧驱动网络请求（`IUtilHTTPClient::RunFrame()`）。
@@ -33,7 +33,7 @@
   - header/body 各自一份 `CUtilHTTPPayload` 缓冲；`FinalizeHeaders()` 解析 header 行写入 `m_headers`。
 - `CUtilHTTPPayload`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）：
   - 用 `stringstream` 聚合数据，`Finalize()` 后将其固化到 `std::string m_payload`。
-- `CURLParsedResult`/`ParseUrlInternal`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）：
+- `CURLParsedResult`/`ParseUrlInternal`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）：
   - URL 解析结果对象（实现 `IURLParsedResult`）。
 
 接口定义见：`include/Interface/IUtilHTTPClient.h`。
@@ -72,12 +72,12 @@
 - Header 回调：`WriteHeaderCallback()` 会先 `pRequest->OnRespondStart()`（状态置 Responding，并 `OnUpdateState(..., Responding)`），再写 header（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 - Body 回调：
   - 普通请求：`WritePayloadCallback()` 将 chunk 写入 `CUtilHTTPResponse::WritePayload()`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
-  - 流式请求：`WritePayloadStreamCallback()` 直接 `OnReceiveData()`；并在第一次数据到来前调用 `FinalizeHeaders()` 确保 header 可查（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
+  - 流式请求：`WritePayloadStreamCallback()` 直接 `OnReceiveData()`；并在第一次数据到来前调用 `FinalizeHeaders()` 确保 header 可查（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 - 完成：`CUtilHTTPRequest::OnHTTPComplete()` 调用 `FinalizeHeaders()`、`FinalizePayload()`，随后 `OnResponseComplete()`，最后 `OnRespondFinish()` -> `OnUpdateState(..., Finished)`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 
 ### 6) 请求池（id 生命周期）
 - `AddToRequestPool()` 给 request 分配自增 id，并写入 `m_RequestPool`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
-- `GetRequestById()`/`DestroyRequestById()` 提供跨帧检索与销毁（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
+- `GetRequestById()`/`DestroyRequestById()` 提供跨帧检索与销毁（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 
 ## 依赖
 ### 代码/编译期依赖
@@ -87,17 +87,17 @@
 - libcurl：`#include <curl/curl.h>`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。
 
 ### 工程配置依赖（vcxproj）
-- 通过 MSBuild 属性注入：`$(LibCurlIncludeDirectory)`、`$(LibCurlLibrariesDirectory)`、`$(LibCurlLibraryFiles)`，并在 PostBuild 中拷贝 bin（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.vcxproj`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.vcxproj`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.vcxproj`）。
+- 通过 MSBuild 属性注入：`$(LibCurlIncludeDirectory)`、`$(LibCurlLibrariesDirectory)`、`$(LibCurlLibraryFiles)`，并在 PostBuild 中拷贝 bin（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.vcxproj`）。
 
 ## 注意事项 / 已知问题（源码现状）
 
-2) “SyncRequest” 并非自驱动
-- `CUtilHTTPSyncRequest::WaitForComplete()` 只是等待条件变量；完成信号来自 `CUtilHTTPClient::RunFrame()` 的 multi pump（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。因此需要：
+1) “SyncRequest” 并非自驱动
+- `CUtilHTTPSyncRequest::WaitForComplete()` 只是等待条件变量；完成信号来自 `CUtilHTTPClient::RunFrame()` 的 multi pump（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`）。因此需要：
   - 另一线程持续调用 `RunFrame()`，或
   - 不使用阻塞 Wait，改为轮询 `IsFinished()`。
   - 这是符合预期的行为
 
-7) 回调对象所有权
+2) 回调对象所有权
 - `CUtilHTTPRequest` 析构会调用 `m_Callbacks->Destroy()`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp`），意味着回调对象的生命周期由 request 接管；调用方需要按此约定分配/实现 callbacks。
 
 ## 关联（调用方集成线索）
