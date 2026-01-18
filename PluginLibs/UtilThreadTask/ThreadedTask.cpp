@@ -94,11 +94,10 @@ public:
 	{
 		std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-		for (auto itor = m_tasks.begin(); itor != m_tasks.end(); )
+		for (auto& pTask : m_tasks)
 		{
-			auto pTask = (*itor);
-
 			pTask->Run(FLT_MAX);
+			pTask->Destroy();
 		}
 		m_tasks.clear();
 	}
