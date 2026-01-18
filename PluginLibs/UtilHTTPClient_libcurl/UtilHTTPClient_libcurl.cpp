@@ -964,59 +964,6 @@ public:
 		}
 	}
 
-	IURLParsedResult* ParseUrlInternal(const std::string& url)
-	{
-		std::regex url_regex(
-			R"((http|https)://([^/]+)(:?(\d+)?)?(/.*)?)",
-			std::regex_constants::icase
-		);
-
-		std::smatch url_match_result;
-
-		if (std::regex_match(url, url_match_result, url_regex)) {
-			// If we found a match
-			if (url_match_result.size() >= 4) {
-				// Extract the matched groups
-				std::string scheme = url_match_result[1].str();
-				std::string host = url_match_result[2].str();
-				std::string port_str = url_match_result[3].str();
-				std::string target = (url_match_result.size() >= 6) ? url_match_result[5].str() : "";
-
-				unsigned port_us = 0;
-
-				if (!port_str.empty()) {
-
-					try {
-						size_t pos;
-						int port = std::stoi(port_str, &pos);
-						if (pos != port_str.size() || port < 0 || port > 65535) {
-							return nullptr;
-						}
-						port_us = static_cast<unsigned short>(port);
-					}
-					catch (const std::invalid_argument&) {
-						return nullptr;
-					}
-					catch (const std::out_of_range&) {
-						return nullptr;
-					}
-				}
-				else {
-					if (scheme == "http") {
-						port_us = 80;
-					}
-					else if (scheme == "https") {
-						port_us = 443;
-					}
-				}
-
-				return new CURLParsedResult(scheme, host, port_us, target, (scheme == "https") ? true : false);
-			}
-		}
-
-		return nullptr;
-	}
-
 	IURLParsedResult *ParseUrl(const char *url) override
 	{
 		return ParseUrlInternal(url);
