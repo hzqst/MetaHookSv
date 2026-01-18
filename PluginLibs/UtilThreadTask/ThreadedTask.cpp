@@ -79,14 +79,10 @@ public:
 
 	void RunTasks(float time, int maxTasks) override
 	{
-		int nRunTask = 0;
-
-		while (1)
+		for (int nRunTask = 0; maxTasks <= 0 || nRunTask < maxTasks; nRunTask++)
 		{
-			if (!RunTask(time) || (maxTasks > 0 && nRunTask >= maxTasks))
+			if (!RunTask(time))
 				return;
-
-			nRunTask++;
 		}
 	}
 
