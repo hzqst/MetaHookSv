@@ -97,17 +97,8 @@
   - 不使用阻塞 Wait，改为轮询 `IsFinished()`。
   - 这是符合预期的行为
 
-4) `SetFollowLocation(bool b)` 忽略参数
-- 实现无论 `b` 为何都设置 `CURLOPT_FOLLOWLOCATION` 为 1（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:658`）。
-
-5) 错误判定/错误信息较弱
-- `FinalizePayload()` 只通过 `curl_easy_getinfo(CURLINFO_RESPONSE_CODE, ...)` + `status>=400` 或 `status==0` 来判断错误；未使用 `CURLMSG_DONE` 的 `msg->data.result`，因此网络层错误时错误信息可能为空（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:338`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:915`）。
-
 7) 回调对象所有权
 - `CUtilHTTPRequest` 析构会调用 `m_Callbacks->Destroy()`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:476`），意味着回调对象的生命周期由 request 接管；调用方需要按此约定分配/实现 callbacks。
-
-8) 全局初始化粒度
-- `CUtilHTTPClient` 构造/析构里调用 `curl_global_init/cleanup`（`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:859`、`PluginLibs/UtilHTTPClient_libcurl/UtilHTTPClient_libcurl.cpp:870`）。若系统可能创建多个 `CUtilHTTPClient` 实例，需注意 libcurl global init 的调用约束（通常建议进程级一次）。
 
 ## 关联（调用方集成线索）
 - `Plugins/SCModelDownloader/UtilHTTPClient.cpp` 存在同时加载 `UtilHTTPClient_libcurl.dll` 与 `UtilHTTPClient_SteamAPI.dll` 的逻辑（通过接口版本字符串取 factory），可作为该库在插件侧的实际集成入口参考。
