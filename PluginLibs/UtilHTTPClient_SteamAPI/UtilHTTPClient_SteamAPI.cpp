@@ -3,6 +3,7 @@
 #include <regex>
 #include <mutex>
 #include <unordered_map>
+#include <cctype>
 
 #include <IUtilHTTPClient.h>
 
@@ -151,6 +152,16 @@ IURLParsedResult* ParseUrlInternal(const std::string& url)
 	return nullptr;
 }
 
+static std::string ToLowerCase(const char* str)
+{
+	std::string result(str);
+	for (auto& c : result)
+	{
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+	return result;
+}
+
 class CUtilHTTPPayload : public IUtilHTTPPayload
 {
 private:
@@ -268,7 +279,9 @@ public:
 
 	const char* GetHeaderValue(const char* name) override
 	{
-		auto it = m_headers.find(name);
+		auto lowerName = ToLowerCase(name);
+
+		auto it = m_headers.find(lowerName);
 		if (it != m_headers.end())
 		{
 			return it->second->c_str();
@@ -280,13 +293,9 @@ public:
 			std::string value(valueLength, '\0');
 			if (GetHeader(name, value.data(), valueLength))
 			{
-				m_headers[name] = std::make_shared<std::string>(value);
+				m_headers[lowerName] = std::make_shared<std::string>(value);
 
-				auto it = m_headers.find(name);
-				if (it != m_headers.end())
-				{
-					return it->second->c_str();
-				}
+				return m_headers[lowerName]->c_str();
 			}
 		}
 
@@ -659,8 +668,6 @@ private:
 	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestHeadersReceived_t> m_HeaderReceivedCallResult{};
 	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestDataReceived_t> m_DataReceivedCallResult{};
 
-	//IUtilHTTPCallbacks* m_StreamCallbacks{};
-
 public:
 	CUtilHTTPAsyncStreamRequest(
 		const UtilHTTPMethod method,
@@ -670,7 +677,7 @@ public:
 		const std::string& target,
 		IUtilHTTPCallbacks* StreamCallbacks,
 		HTTPCookieContainerHandle hCookieHandle) :
-		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle)//, m_StreamCallbacks(StreamCallbacks)
+		CUtilHTTPAsyncRequest(method, host, port, secure, target, StreamCallbacks, hCookieHandle)
 	{
 		m_pResponse->SetStreamPayload(true);
 	}
