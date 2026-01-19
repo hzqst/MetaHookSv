@@ -2906,8 +2906,6 @@ bool SCR_IsLoadingVisible()
 void R_GameFrameStart()
 {
 	g_bHasLowerBody = false;
-
-	R_EntityComponents_StartFrame();
 }
 
 /*
@@ -2972,11 +2970,14 @@ void R_RenderFrameStart()
 	g_PostProcessGlowColorEntities.clear();
 	g_ViewModelAttachmentEntities.clear();
 
+	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
-	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioStartFrame();
+	
+	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_CheckVariables();
 	R_AnimateLight();
+
 	R_ProcessEngineDynamicLights();
 
 	for (const auto& cb : g_RenderCallbacks)
