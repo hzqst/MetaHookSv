@@ -95,22 +95,22 @@ public:
     virtual FBO_Container_t *GetFinalBufferFBO() const = 0;
 
     /*
-        return s_FinalBufferFBO, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
+        return s_BackBufferFBO, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
     */
     virtual FBO_Container_t *GetBackBufferFBO() const = 0;
 
     /*
-        return s_FinalBufferFBO, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
+        return s_BackBufferFBO2, which is RGBA16F D24S8, W x H = SwapChainWidth x SwapChainHeight
     */
     virtual FBO_Container_t *GetBackBufferFBO2() const = 0;
 
     /*
-        return s_FinalBufferFBO, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+        return s_BackBufferFBO3, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
     */
     virtual FBO_Container_t *GetBackBufferFBO3() const = 0;
 
     /*
-        return s_FinalBufferFBO, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+        return s_BackBufferFBO4, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
     */
     virtual FBO_Container_t *GetBackBufferFBO4() const = 0;
 
