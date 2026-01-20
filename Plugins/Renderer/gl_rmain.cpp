@@ -801,10 +801,9 @@ float R_GetMainViewNearPlane()
 	return gl_nearplane->value;
 }
 
-//TODO: from movevars
 float R_GetMainViewFarPlane()
 {
-	return (r_params.movevars ? r_params.movevars->zmax : 4096);
+	return pmovevars->zmax;// (r_params.movevars ? r_params.movevars->zmax : 4096);
 }
 
 /*
