@@ -2,7 +2,7 @@
 
 ## 入口函数: R_RenderScene
 
-位置: `Plugins/Renderer/gl_rmain.cpp:4726-4773`
+位置: `Plugins/Renderer/gl_rmain.cpp`
 
 ### 完整渲染流程
 
@@ -26,7 +26,7 @@ R_RenderScene()
 ## 详细流程分析
 
 ### 1. R_SetupFrame() - 帧设置
-**位置**: `gl_rmain.cpp:4473-4505`
+**位置**: `gl_rmain.cpp`
 
 **功能**:
 - 更新RefDef (参考定义)
@@ -58,7 +58,7 @@ R_RenderWaterFog() / R_RenderSvenFog() / R_RenderUserFog();
 ---
 
 ### 5. R_BeginRenderGBuffer() - 开始G-Buffer渲染
-**位置**: `gl_light.cpp:690-711`
+**位置**: `gl_light.cpp`
 
 **功能**: 初始化延迟渲染的G-Buffer
 
@@ -85,7 +85,7 @@ GL_ClearColorDepthStencil(...);
 ---
 
 ### 7. R_DrawWorld() - 绘制世界几何体
-**位置**: `gl_wsurf.cpp:5285-5322`
+**位置**: `gl_wsurf.cpp`
 
 **功能**: 绘制BSP世界模型
 
@@ -108,7 +108,7 @@ R_DrawWorld()
 ---
 
 ### 8. R_DrawEntitiesOnList() - 绘制不透明实体
-**位置**: `gl_rmain.cpp:4555-4598`
+**位置**: `gl_rmain.cpp`
 
 **功能**: 遍历可见实体列表，绘制不透明实体
 
@@ -140,7 +140,7 @@ for (int i = 0; i < (*cl_numvisedicts); ++i) {
 ---
 
 ### 9. R_EndRenderOpaque() - 结束不透明物体渲染
-**位置**: `gl_rmain.cpp:4691-4700`
+**位置**: `gl_rmain.cpp`
 
 **功能**: 完成G-Buffer渲染，执行延迟光照计算
 
@@ -165,7 +165,7 @@ if (R_IsRenderingGBuffer()) {
 ---
 
 ### 11. R_DrawTransEntities() - 绘制透明实体
-**位置**: `gl_rmain.cpp:2059-2120`
+**位置**: `gl_rmain.cpp`
 
 **功能**: 绘制所有透明物体
 
