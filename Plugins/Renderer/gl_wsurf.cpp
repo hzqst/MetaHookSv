@@ -2608,6 +2608,7 @@ void R_DrawSkyBox(void)
 
 	GL_EndDebugGroup();
 }
+
 void R_DrawWorldSurfaceModelShadowProxyMesh(CWorldSurfaceShadowProxyModel* pShadowProxyModel, CWorldSurfaceShadowProxyDraw* pShadowProxyDraw)
 {
 	GL_BeginDebugGroup("R_DrawWorldSurfaceModelShadowProxyMesh");
@@ -3539,15 +3540,12 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 			pLeaf = g_WorldSurfaceRenderer.pCurrentWorldLeaf.lock();
 		}
 
-		//Always draw skybox before world, when rendering water view
-		if (R_IsRenderingWaterView())
+		//Always draw skybox before world
+		if (pLeaf)
 		{
-			if (pLeaf)
+			if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
 			{
-				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
-				{
-					R_DrawSkyBox();
-				}
+				R_DrawSkyBox();
 			}
 		}
 
@@ -3603,17 +3601,6 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 				}
 
 				g_WorldSurfaceRenderer.pCurrentWorldLeaf = pLeaf;
-			}
-		}
-
-		if (!R_IsRenderingWaterView())
-		{
-			if (pLeaf)
-			{
-				if (R_WorldSurfaceLeafHasSky(pModel.get(), pLeaf.get()))
-				{
-					R_DrawSkyBox();
-				}
 			}
 		}
 	}
