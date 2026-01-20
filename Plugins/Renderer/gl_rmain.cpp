@@ -3199,6 +3199,7 @@ void R_PreRenderView()
 
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0, 1);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 
 	for (const auto& cb : g_RenderCallbacks)
 	{
@@ -4077,25 +4078,25 @@ void R_SetFrustum(float xfov, float yfov, float right, float top)
 		frustum[i].signbits = SignbitsForPlane(&frustum[i]);
 	}
 
-	vec3_t farplane;
-	VectorMA((*r_refdef.vieworg), r_znear, vpn, farplane);
+	vec3_t nearplane;
+	VectorMA((*r_refdef.vieworg), r_znear, vpn, nearplane);
 
-	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
+	VectorMA(nearplane, -right, vright, r_frustum_origin[0]);
 	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
 	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
 	VectorNormalize(r_frustum_vec[0]);
 
-	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
+	VectorMA(nearplane, -right, vright, r_frustum_origin[1]);
 	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
 	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
 	VectorNormalize(r_frustum_vec[1]);
 
-	VectorMA(farplane, right, vright, r_frustum_origin[2]);
+	VectorMA(nearplane, right, vright, r_frustum_origin[2]);
 	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
 	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
 	VectorNormalize(r_frustum_vec[2]);
 
-	VectorMA(farplane, right, vright, r_frustum_origin[3]);
+	VectorMA(nearplane, right, vright, r_frustum_origin[3]);
 	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
 	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
 	VectorNormalize(r_frustum_vec[3]);
