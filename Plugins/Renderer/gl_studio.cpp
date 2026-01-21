@@ -2529,7 +2529,7 @@ void R_StudioDrawMesh_DrawPass(
 	}
 
 	//Disable shadow for transparent objects.
-	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
+	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_NF_ALPHA)))
 	{
 		return;
 	}
@@ -2615,7 +2615,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_GAMMA_BLEND_ENABLED;
 	}
 
-	if (r_draw_oitblend && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
+	if (r_draw_oitblend && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_NF_ALPHA)))
 	{
 		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
 	}
@@ -2885,7 +2885,7 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		//Transparent pass
 
-		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
+		if (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_NF_ALPHA))
 		{
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_BLEND);
@@ -2894,7 +2894,7 @@ void R_StudioDrawMesh_DrawPass(
 
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
-		else if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
+		else if (StudioProgramState & (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE))
 		{
 			glBlendFunc(GL_ONE, GL_ONE);
 			glEnable(GL_BLEND);
