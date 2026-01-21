@@ -867,7 +867,10 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	gl_loadtexture_context_t loadContext;
 	loadContext.wrap = GL_CLAMP_TO_EDGE;
 	loadContext.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-	loadContext.ignore_direction_LoadTGA = true;
+
+	//GoldSrc engine buildnum 3266 has bug with LoadTGA that don't take TGA's direction flags into account.
+	if (g_dwEngineBuildnum <= 3266)
+		loadContext.ignore_direction_LoadTGA = true;
 
 	loadContext.callback = [pthis, textureId, hardwareFilter, filename](gl_loadtexture_context_t* ctx) {
 
