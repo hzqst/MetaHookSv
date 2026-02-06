@@ -30,7 +30,7 @@ out vec3 v_smoothnormal;
 	out vec3 v_headup;
 	out vec3 v_headorigin;
 
-	#if defined(DEBUG_ENABLED)
+	#if defined(CELSHADE_DEBUG_ENABLED)
 
 		out vec4 v_headorigin_proj;
 
@@ -164,7 +164,7 @@ void main(void)
 			dot(r_celshade_head_offset, vertbone_matrix_2) + vertbone_matrix[2][3]
 		);
 
-		#if defined(DEBUG_ENABLED)
+		#if defined(CELSHADE_DEBUG_ENABLED)
 
 			v_headorigin_proj = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(v_headorigin, 1.0);
 

@@ -87,7 +87,7 @@ uniform vec2 r_nearplaneclip;
 		in vec3 v_headup;
 		in vec3 v_headorigin;
 			
-		#if defined(DEBUG_ENABLED)
+		#if defined(CELSHADE_DEBUG_ENABLED)
 
 			in vec4 v_headorigin_proj;
 
@@ -738,10 +738,13 @@ bool IsBoneClipped(uint boneindex)
 
 #endif
 
-#if defined(DEBUG_ENABLED)
+#if defined(CELSHADE_DEBUG_ENABLED)
 
-vec4 R_RenderDebugPoint(vec4 baseColor)
+vec4 R_RenderCelshadeDebugColor(vec4 diffuseColor)
 { 
+	diffuseColor.r = specularColor.r;
+	diffuseColor.b = specularColor.b;
+
 	// Convert to normalized device coordinates (NDC) by dividing by the w component
     vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
     vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
@@ -755,7 +758,7 @@ vec4 R_RenderDebugPoint(vec4 baseColor)
 		return vec4(1.0, 0.0, 0.0, 1.0);
 	}
 
-	return baseColor;
+	return diffuseColor;
 }
 
 #endif
@@ -856,12 +859,9 @@ void main(void)
 
 	//Some meshes has STUDIO_NF_CELSHADE_FACE but has no STUDIO_NF_CELSHADE, why ???
 
-	#if defined(DEBUG_ENABLED)
+	#if defined(CELSHADE_DEBUG_ENABLED)
 
-		diffuseColor.r = rawSpecularColor.r;
-		diffuseColor.b = rawSpecularColor.b;
-
-		diffuseColor = R_RenderDebugPoint(diffuseColor);
+		diffuseColor = R_RenderCelshadeDebugColor(diffuseColor, specularColor);
 
 	#endif
 
