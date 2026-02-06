@@ -28,7 +28,7 @@
     "celshade_midpoint" "-0.1"
     "celshade_softness" "0.05"
     "celshade_shadow_color" "160 150 150"
-    "celshade_head_offset" "2 1.5 0"
+    "celshade_head_offset" "2 1 0"
     "celshade_light_adjust" "0.01 0.001"
     "outline_size" "2.0"
     "outline_dark" "0.5"
