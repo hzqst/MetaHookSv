@@ -9,6 +9,7 @@ layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
 layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
 layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_BIND_TEXTURE_MIX_DIFFUSE) uniform sampler2D mixDiffuseTex;
+layout(binding = STUDIO_BIND_TEXTURE_DEPTH) uniform sampler2D depthTex;
 
 /* celshade */
 
@@ -811,9 +812,16 @@ void main(void)
 	//Mix hair color with face color
 	#if defined(STUDIO_NF_CELSHADE_HAIR) && defined(MIX_DIFFUSE_TEXTURE_ENABLED)
 		
-		vec4 mixDiffuseColor = texture(mixDiffuseTex, screenTexCoord);
+		float sceneDepthValue = texture(depthTex, screenTexCoord).r;
 
-		diffuseColor.rgb = mix(mixDiffuseColor.rgb, diffuseColor.rgb, mixDiffuseColor.a);
+		vec3 sceneWorldPos = GenerateWorldPositionFromDepth(screenTexCoord, sceneDepthValue);
+
+		if (distance(sceneWorldPos, vWorldPos) < 3.0 * StudioUBO.r_scale){
+
+			vec4 mixDiffuseColor = texture(mixDiffuseTex, screenTexCoord);
+
+			diffuseColor.rgb = mix(mixDiffuseColor.rgb, diffuseColor.rgb, mixDiffuseColor.a);
+		}
 
 	#endif
 

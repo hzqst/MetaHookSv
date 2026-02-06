@@ -1364,6 +1364,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED)
 			defs << "#define MIX_DIFFUSE_TEXTURE_ENABLED\n";
 
+		if (state & STUDIO_DEPTH_TEXTURE_ENABLED)
+			defs << "#define DEPTH_TEXTURE_ENABLED\n";
+
 		if (state & STUDIO_CLIP_BONE_ENABLED)
 			defs << "#define CLIP_BONE_ENABLED\n";
 
@@ -1486,6 +1489,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"				},
 { STUDIO_STENCIL_TEXTURE_ENABLED		,"STUDIO_STENCIL_TEXTURE_ENABLED"			},
 { STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED	,"STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED"		},
+{ STUDIO_DEPTH_TEXTURE_ENABLED			,"STUDIO_DEPTH_TEXTURE_ENABLED"				},
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
@@ -2679,6 +2683,23 @@ void R_StudioDrawMesh_DrawPass(
 					StudioProgramState |= STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED;
 				}
 			}
+			//Texture unit 8 = Depth texture
+			if (R_StudioHasHairFaceColorMix() && 
+				!(StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO4)
+			{
+				if (s_BackBufferFBO4.s_hBackBufferDepthView)
+				{
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferDepthView);
+
+					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
+				}
+				else if (s_BackBufferFBO4.s_hBackBufferDepthTex)
+				{
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferDepthTex);
+
+					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
+				}
+			}
 		}
 	}
 
@@ -3107,9 +3128,15 @@ void R_StudioDrawMesh_DrawPass(
 
 	//Restore texture state
 
+	if (StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED)
+	{
+		//Texture unit 8 = Depth texture
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, 0);
+	}
+
 	if (StudioProgramState & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED)
 	{
-		//Texture unit 7 = Shadow Diffuse texture
+		//Texture unit 7 = Mix Diffuse texture
 		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_MIX_DIFFUSE, GL_TEXTURE_2D, 0);
 	}
 
