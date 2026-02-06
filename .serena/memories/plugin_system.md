@@ -1,7 +1,8 @@
-# MetaHookSv：插件系统与开发流程（来自仓库根目录原 `CLAUDE.md` 的迁移）
+# MetaHookSv：插件系统与开发流程
 
-## 插件分布
+## 关键目录
 - 插件目录：`Plugins/`
+- 插件文档：`docs/`
 
 ### 核心插件（示例）
 - `VGUI2Extension`：VGUI2 modding framework，许多 UI 相关插件的基础

@@ -1,4 +1,4 @@
-# 重要注意事项
+# Important Notes
 
 ## 安全与边界
 - 该项目用于合法的游戏增强/Modding（防御性安全工具定位）。
@@ -20,5 +20,5 @@ MetaHookSv 支持多种 GoldSrc / SvEngine 变体，常见类型与版本范围�
 - `GoldSrc_HL25`（>= 9884）：Half-Life 25th Anniversary Update
 
 注意点：
-- 做引擎特定逻辑前，先用 `g_pMetaHookAPI->GetEngineType()` 判断引擎类型。
-- legacy blob engines 需要使用 blob-specific APIs。
+- 做特定引擎相关的逻辑之前，应当先用 `g_pMetaHookAPI->GetEngineType()` 判断引擎类型。
+- legacy blob engines （非正常PE文件，直接以二进制形式内存加载） 需要使用 blob-specific APIs。
