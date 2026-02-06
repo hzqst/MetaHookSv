@@ -24,5 +24,5 @@
 - 探索代码优先用 Serena（符号总览/引用/搜索），只在必要时读取文件内容。
 - 外部依赖/库的用法优先用 Context7（按需查询）。
 
-## Misc rules
+## Important rules
 - **ALWAYS** call Serena's `activate_project` on agent startup

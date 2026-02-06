@@ -1,4 +1,4 @@
-#version 430
+#version 430 core
 
 #include "common.h"
 
@@ -6,9 +6,10 @@ layout(binding = STUDIO_BIND_TEXTURE_DIFFUSE) uniform sampler2D diffuseTex;
 layout(binding = STUDIO_BIND_TEXTURE_NORMAL) uniform sampler2D normalTex;
 layout(binding = STUDIO_BIND_TEXTURE_PARALLAX) uniform sampler2D parallaxTex;
 layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
-layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
+layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
 layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
+layout(binding = STUDIO_BIND_TEXTURE_DEPTH) uniform sampler2D depthTex;
 
 /* celshade */
 
@@ -730,16 +731,21 @@ bool IsBoneClipped(uint boneindex)
 
 #endif
 
+//Sample the s_BackBuffer2 where the hair color was stored.
 vec4 R_CelshadeShadowDiffuseColor(vec4 diffuseColor, vec2 screenTexCoord)
 {
-	vec4 shadowDiffuseColor = texture(shadowDiffuseTex, screenTexCoord);
+	//gl_FragDepth = gl_FragCoord.z;
 
-	uint stencilValue = LoadStencilValueFromStencilTexture(stencilTex, screenTexCoord);
+	#if defined(DEPTH_TEXTURE_ENABLED)
+		if (diffuseColor.a < 1.0){
 
-	if((stencilValue & STENCIL_MASK_HAS_FACE) == STENCIL_MASK_HAS_FACE)
-	{
-		diffuseColor = mix(shadowDiffuseColor, diffuseColor, shadowDiffuseColor.a);
-	}
+			vec4 shadowDiffuseColor = texture(shadowDiffuseTex, screenTexCoord);
+
+			diffuseColor.rgb = mix(shadowDiffuseColor.rgb, diffuseColor.rgb, diffuseColor.a);
+
+			gl_FragDepth = texture(depthTex, screenTexCoord).r - 0.003;
+		}
+	#endif
 
 	return diffuseColor;
 }
@@ -756,8 +762,6 @@ void main(void)
 	#endif
 	
 	float flDistanceToFragment = distance(v_worldpos.xyz, GetCameraViewPos(0));
-
-#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED) && !defined(GLOW_COLOR_ENABLED)
 
 	vec3 vWorldPos = v_worldpos.xyz;
 
@@ -782,13 +786,33 @@ void main(void)
 			discard;
 	#endif
 
-	diffuseColor = ProcessDiffuseColor(diffuseColor);
+#if defined(SHADOW_CASTER_ENABLED) //only depth output
 
-	#if (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H)) && defined(SHADOW_DIFFUSE_TEXTURE_ENABLED)
+	#if defined(LINEAR_DEPTH_ENABLED)
+		float newDepth = flDistanceToFragment / GetCameraZFar(GetCameraViewIndex());
+
+		gl_FragDepth = newDepth;
+	#endif
+
+	out_Diffuse = vec4(flDistanceToFragment, 0.0, 0.0, 1.0);
+
+#elif defined(GLOW_COLOR_ENABLED) //only color output
+
+	out_Diffuse = vec4(StudioUBO.r_color.xyz, 1.0);
+
+#elif defined(HAIR_SHADOW_ENABLED) //depth+color output
+
+	out_Diffuse = diffuseColor;
+
+#else
+
+	#if defined(STUDIO_NF_CELSHADE_FACE) && defined(SHADOW_DIFFUSE_TEXTURE_ENABLED)
 
 		diffuseColor = R_CelshadeShadowDiffuseColor(diffuseColor, screenTexCoord);
 
 	#endif
+
+	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
 	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
@@ -846,71 +870,6 @@ void main(void)
 	//lightmapColor.z = pow(lightmapColor.z, SceneUBO.r_lightmap_pow);
 	
 	lightmapColor *= SceneUBO.r_lightmap_scale;
-
-#endif
-
-#if defined(SHADOW_CASTER_ENABLED)
-
-	#if defined(STUDIO_NF_MASKED)
-		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
-
-		if(diffuseColor.a < 0.5)
-			discard;
-	#endif
-
-	#if defined(LINEAR_DEPTH_ENABLED)
-		float newDepth = flDistanceToFragment / GetCameraZFar(GetCameraViewIndex());
-
-		gl_FragDepth = newDepth;
-	#endif
-
-	out_Diffuse = vec4(flDistanceToFragment, 0.0, 0.0, 1.0);
-
-#elif defined(GLOW_COLOR_ENABLED)
-
-	#if defined(STUDIO_NF_MASKED)
-		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
-
-		if(diffuseColor.a < 0.5)
-			discard;
-	#endif
-
-	out_Diffuse = vec4(StudioUBO.r_color.xyz, 1.0);
-
-#elif defined(HAIR_SHADOW_ENABLED)
-
-	#if defined(STUDIO_NF_CELSHADE_FACE)
-
-		vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
-
-		#if defined(STUDIO_NF_MASKED)
-			if(diffuseColor.a < 0.5)
-				discard;
-		#endif
-
-		//当flDepthModifier>0时，将当前像素深度修改为离屏幕更近一些，flDepthModifier越接近1，当前像素越接近屏幕
-		{
-			float flDepthModifier = 1.0 - diffuseColor.a;
-
-			float currentDepth = gl_FragCoord.z;
-			
-			// 计算新的深度值：flDepthModifier越大，深度值越小（越接近屏幕）
-			// 使用线性插值，flDepthModifier=0时保持原深度，flDepthModifier=1时深度为0
-			float newDepth = mix(currentDepth, 0.0, flDepthModifier);
-			
-			// 设置新的深度值
-			gl_FragDepth = newDepth;
-		}
-
-		out_Diffuse = diffuseColor;
-
-	#else
-
-		out_Diffuse = vec4(0.0, 0.0, 0.0, 1.0);
-
-	#endif
-
-#else
 
 	#if defined(GBUFFER_ENABLED)
 

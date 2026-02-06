@@ -1890,6 +1890,9 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 	}
 }
 
+/*
+	Purpose: Load DDS from FileSystem and populate data into gl_loadtexture_context_t
+*/
 bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t * context)
 {
 	byte* buf = texloader_buffer;

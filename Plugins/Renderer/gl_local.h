@@ -668,6 +668,7 @@ void GL_BindFrameBuffer(FBO_Container_t *fbo);
 void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
 
 const char* GL_GetFrameBufferName(FBO_Container_t* s);
+GLuint GL_GetFrameBufferDepthTexture(FBO_Container_t* s);
 void GL_GenFrameBuffer(FBO_Container_t* s, const char* szFrameBufferName);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);

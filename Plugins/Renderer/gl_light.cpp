@@ -928,7 +928,7 @@ void R_LightShadingPass(void)
 	GL_BindTextureUnit(DSHADE_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DSHADE_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, GL_GetFrameBufferDepthTexture(&s_GBufferFBO));
 
 	//Texture unit 5 = Stencil texture
 	if (s_GBufferFBO.s_hBackBufferStencilView)
@@ -1630,7 +1630,7 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 	GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 	//Texture unit 4 = Depth texture
-	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+	GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, GL_GetFrameBufferDepthTexture(&s_GBufferFBO));
 
 	//Texture unit 5 = Stencil texture
 	GL_BindTextureUnit(DFINAL_BIND_STENCIL_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
@@ -1730,7 +1730,7 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bo
 		GL_BindTextureUnit(DFINAL_BIND_SPECULAR_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
 
 		//Texture unit 4 = GBuffer depth texture
-		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+		GL_BindTextureUnit(DFINAL_BIND_DEPTH_TEXTURE, GL_TEXTURE_2D, GL_GetFrameBufferDepthTexture(&s_GBufferFBO));
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 

@@ -1692,7 +1692,7 @@ void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 	
 	GL_BindVAO(r_empty_vao);
 
-	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferDepthTex);
+	GL_BindTextureUnit(0, GL_TEXTURE_2D, GL_GetFrameBufferDepthTexture(src));
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

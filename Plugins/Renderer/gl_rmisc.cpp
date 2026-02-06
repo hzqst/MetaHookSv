@@ -501,6 +501,11 @@ const char* GL_GetFrameBufferName(FBO_Container_t* s)
 	return s->szFrameBufferName;
 }
 
+GLuint GL_GetFrameBufferDepthTexture(FBO_Container_t* s)
+{
+	return s->s_hBackBufferDepthView ? s->s_hBackBufferDepthView : s->s_hBackBufferDepthTex;
+}
+
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 {
 	int tex2D = GL_TEXTURE_2D;
@@ -569,35 +574,64 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	s->iTextureDepthFormat = iInternalFormat;
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8 && glTextureView)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8)
 	{
-		s->s_hBackBufferStencilView = GL_GenTexture();
-		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
-		
-		glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
-		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		{
+			s->s_hBackBufferDepthView = GL_GenTexture();
+			glTextureView(s->s_hBackBufferDepthView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
 
-		GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferDepthView);
+			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+			GL_SetTextureDebugNameFormat(s->s_hBackBufferDepthView, "%s - s_hBackBufferDepthView", GL_GetFrameBufferName(s));
+		}
+		{
+			s->s_hBackBufferStencilView = GL_GenTexture();
+			glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
+
+			glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
+			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+			GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+		}
 	}
-	else if (iInternalFormat == GL_DEPTH32F_STENCIL8 && glTextureView)
+	else if (iInternalFormat == GL_DEPTH32F_STENCIL8)
 	{
-		s->s_hBackBufferStencilView = GL_GenTexture();
-		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
+		{
+			s->s_hBackBufferDepthView = GL_GenTexture();
+			glTextureView(s->s_hBackBufferDepthView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
 
-		glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
-		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, 0);
+			glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferDepthView);
+			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
 
-		GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+			GL_SetTextureDebugNameFormat(s->s_hBackBufferDepthView, "%s - s_hBackBufferDepthView", GL_GetFrameBufferName(s));
+		}
+		{
+			s->s_hBackBufferStencilView = GL_GenTexture();
+			glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
+
+			glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
+			glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+
+			GL_SetTextureDebugNameFormat(s->s_hBackBufferStencilView, "%s - s_hBackBufferStencilView", GL_GetFrameBufferName(s));
+		}
 	}
 	else
 	{
-		//Texture view not supported!
+		//Texture view not available!
+		s->s_hBackBufferDepthView = 0;
 		s->s_hBackBufferStencilView = 0;
 	}
 }
@@ -877,11 +911,11 @@ void COM_FileBase(const char *in, char *out)
 void GL_ClearFBO(FBO_Container_t* s)
 {
 	s->s_hBackBufferFBO = 0;
-	s->s_hBackBufferCB = 0;
-	s->s_hBackBufferDB = 0;
 	s->s_hBackBufferTex = 0;
 	s->s_hBackBufferTex2 = 0;
 	s->s_hBackBufferDepthTex = 0;
+	s->s_hBackBufferDepthView = 0;
+	s->s_hBackBufferStencilView = 0;
 	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
 }
 
@@ -889,12 +923,6 @@ void GL_FreeFBO(FBO_Container_t* s)
 {
 	if (s->s_hBackBufferFBO)
 		glDeleteFramebuffers(1, &s->s_hBackBufferFBO);
-
-	if (s->s_hBackBufferCB)
-		glDeleteRenderbuffers(1, &s->s_hBackBufferCB);
-
-	if (s->s_hBackBufferDB)
-		glDeleteRenderbuffers(1, &s->s_hBackBufferDB);
 
 	if (s->s_hBackBufferTex)
 		glDeleteTextures(1, &s->s_hBackBufferTex);
@@ -908,11 +936,14 @@ void GL_FreeFBO(FBO_Container_t* s)
 	if (s->s_hBackBufferTex4)
 		glDeleteTextures(1, &s->s_hBackBufferTex4);
 
-	if (s->s_hBackBufferDepthTex)
-		glDeleteTextures(1, &s->s_hBackBufferDepthTex);
-
 	if (s->s_hBackBufferStencilView)
 		glDeleteTextures(1, &s->s_hBackBufferStencilView);
+
+	if (s->s_hBackBufferDepthView)
+		glDeleteTextures(1, &s->s_hBackBufferDepthView);
+
+	if (s->s_hBackBufferDepthTex)
+		glDeleteTextures(1, &s->s_hBackBufferDepthTex);
 
 	GL_ClearFBO(s);
 }
