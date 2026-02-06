@@ -809,7 +809,7 @@ void main(void)
 	#endif
 
 	//Mix hair color with face color
-	#if (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H)) && defined(MIX_DIFFUSE_TEXTURE_ENABLED)
+	#if defined(STUDIO_NF_CELSHADE_HAIR) && defined(MIX_DIFFUSE_TEXTURE_ENABLED)
 		
 		vec4 mixDiffuseColor = texture(mixDiffuseTex, screenTexCoord);
 
