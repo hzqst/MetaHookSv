@@ -518,7 +518,7 @@ You will be able to see eyebrow through hair if both 1, 2 and 3 are matched:
 
 ![](/img/9.png)
 
-* Note that lower the alpha value of eyebrow pixel is, lower the visibility of eyebrow through hair will be.
+* Note that lower the alpha value of eyebrow pixel is, higher the visibility of eyebrow through hair will be.
 
 ### Draw lower body
 
