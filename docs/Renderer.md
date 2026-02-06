@@ -510,9 +510,11 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 }
 ```
 
-3. Eyebrow pixels must be marked with alpha < 255, which can be done by taking advantage of `replacetexture` with a PNG / BC7-DDS texture:
+3. Eyebrow pixels should be marked with alpha < 255, which can be done by taking advantage of `replacetexture` with a PNG / BC7-DDS texture:
 
 ![](/img/10.png)
+
+* If the texture contains eyebrow comes with a specular texture, the alpha channel of specular texture will be mixed with diffuse texture. This is useful when `replacetexture` comes with an HDR texture which do not support alpha channel.
 
 You will be able to see eyebrow through hair if both 1, 2 and 3 are matched:
 
