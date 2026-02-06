@@ -70,6 +70,7 @@ typedef struct gl_loadtexture_context_s
 
 	bool mipmap{};
 	bool compressed{ false };
+	bool linear{ false };
 
 	//Valve's LoadTGA ignores the direction bits
 	bool ignore_direction_LoadTGA{};
@@ -112,6 +113,7 @@ typedef struct gl_loadtexture_result_s
 #define SIZE_OF_DXT1(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 8 )
 #define SIZE_OF_DXT2(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
 #define SIZE_OF_BC7(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
+#define SIZE_OF_BC6H(width, height)   ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
 
 typedef struct {
 	DWORD dwSize;

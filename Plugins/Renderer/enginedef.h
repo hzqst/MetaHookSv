@@ -227,13 +227,12 @@ typedef struct alight_s
 #define STUDIO_NF_CELSHADE					0x1000
 #define STUDIO_NF_CELSHADE_FACE				0x2000
 #define STUDIO_NF_CELSHADE_HAIR				0x4000
-#define STUDIO_NF_CELSHADE_HAIR_H			0x8000
 #define STUDIO_NF_DOUBLE_FACE				0x10000
 #define STUDIO_NF_NOOUTLINE					0x40000
 #define STUDIO_NF_RENDERER_ALLOWBITS		0x7FFFF
 
 #define STUDIO_NF_FULLBRIGHT_ALLOWBITS		(STUDIO_NF_RENDERER_ALLOWBITS & ~(STUDIO_NF_FLATSHADE))
-#define STUDIO_NF_CELSHADE_EXTENSIONBITS	(STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H)
+#define STUDIO_NF_CELSHADE_EXTENSIONBITS	(STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR)
 #define STUDIO_NF_CELSHADE_ALLBITS	(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_EXTENSIONBITS)
 
 
@@ -299,8 +298,11 @@ typedef struct alight_s
 //This is the pass that draw meshes with STUDIO_NF_ALPHA flags
 #define kRenderFxDrawAlphaMeshes 0x80000004
 
-//This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
-#define kRenderFxDrawShadowHair 0x80000005
+//This is the pass that draw hair shadow geometry (only depth stencil write-in)
+#define kRenderFxDrawHairShadowGeometry 0x80000005
+
+//This is the pass that draw hair color geometry (both color & depth stencil write-in)
+#define kRenderFxDrawHairFaceColorMixGeometry 0x80000006
 
 //This is the renderfx for rendering post-process glow
 #define kRenderFxPostProcessGlow 30

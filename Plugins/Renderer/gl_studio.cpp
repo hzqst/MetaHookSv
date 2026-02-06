@@ -169,6 +169,11 @@ bool R_StudioHasHairShadow()
 	return r_draw_hashair && r_draw_hasface && (int)r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
 }
 
+bool R_StudioHasHairFaceColorMix()
+{
+	return r_draw_hashair && r_draw_hasface && !R_IsRenderingShadowView();
+}
+
 void R_FreeStudioBoneCache(CStudioBoneCache* pStudioBoneCache)
 {
 	pStudioBoneCache->m_next = g_pStudioBoneFreeCaches;
@@ -1269,9 +1274,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_NF_CELSHADE_HAIR)
 			defs << "#define STUDIO_NF_CELSHADE_HAIR\n";
 
-		if (state & STUDIO_NF_CELSHADE_HAIR_H)
-			defs << "#define STUDIO_NF_CELSHADE_HAIR_H\n";
-
 		if (state & STUDIO_NF_DOUBLE_FACE)
 			defs << "#define STUDIO_NF_DOUBLE_FACE\n";
 
@@ -1304,6 +1306,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (state & STUDIO_HAIR_SHADOW_ENABLED)
 			defs << "#define HAIR_SHADOW_ENABLED\n";
+
+		if (state & STUDIO_HAIR_FACE_COLOR_MIX_ENABLED)
+			defs << "#define HAIR_FACE_COLOR_MIX_ENABLED\n";
 
 		if (state & STUDIO_CLIP_WATER_ENABLED)
 			defs << "#define CLIP_WATER_ENABLED\n";
@@ -1356,11 +1361,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_STENCIL_TEXTURE_ENABLED)
 			defs << "#define STENCIL_TEXTURE_ENABLED\n";
 
-		if (state & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
-			defs << "#define SHADOW_DIFFUSE_TEXTURE_ENABLED\n";
-
-		if (state & STUDIO_DEPTH_TEXTURE_ENABLED)
-			defs << "#define DEPTH_TEXTURE_ENABLED\n";
+		if (state & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED)
+			defs << "#define MIX_DIFFUSE_TEXTURE_ENABLED\n";
 
 		if (state & STUDIO_CLIP_BONE_ENABLED)
 			defs << "#define CLIP_BONE_ENABLED\n";
@@ -1465,6 +1467,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
 { STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
 { STUDIO_HAIR_SHADOW_ENABLED			,"STUDIO_HAIR_SHADOW_ENABLED"				},
+{ STUDIO_HAIR_FACE_COLOR_MIX_ENABLED	,"STUDIO_HAIR_FACE_COLOR_MIX_ENABLED"		},
 { STUDIO_CLIP_WATER_ENABLED				,"STUDIO_CLIP_WATER_ENABLED"				},
 { STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
 { STUDIO_ALPHA_BLEND_ENABLED			,"STUDIO_ALPHA_BLEND_ENABLED"				},
@@ -1482,8 +1485,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_ANIMATED_TEXTURE_ENABLED		,"STUDIO_ANIMATED_TEXTURE_ENABLED"			},
 { STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"				},
 { STUDIO_STENCIL_TEXTURE_ENABLED		,"STUDIO_STENCIL_TEXTURE_ENABLED"			},
-{ STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED	,"STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED"	},
-{ STUDIO_DEPTH_TEXTURE_ENABLED			,"STUDIO_DEPTH_TEXTURE_ENABLED"				},
+{ STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED	,"STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED"		},
 { STUDIO_CLIP_BONE_ENABLED				,"STUDIO_CLIP_BONE_ENABLED"					},
 { STUDIO_LEGACY_DLIGHT_ENABLED			,"STUDIO_LEGACY_DLIGHT_ENABLED"				},
 { STUDIO_LEGACY_ELIGHT_ENABLED			,"STUDIO_LEGACY_ELIGHT_ENABLED"				},
@@ -1504,7 +1506,6 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_NF_CELSHADE					,"STUDIO_NF_CELSHADE"		},
 { STUDIO_NF_CELSHADE_FACE				,"STUDIO_NF_CELSHADE_FACE"	},
 { STUDIO_NF_CELSHADE_HAIR				,"STUDIO_NF_CELSHADE_HAIR"	},
-{ STUDIO_NF_CELSHADE_HAIR_H				,"STUDIO_NF_CELSHADE_HAIR_H"},
 { STUDIO_NF_DOUBLE_FACE					,"STUDIO_NF_DOUBLE_FACE"	},
 { STUDIO_NF_NOOUTLINE					,"STUDIO_NF_NOOUTLINE"		},
 };
@@ -2352,7 +2353,11 @@ void R_StudioDrawMesh_AnalysisPass(
 	{
 
 	}
-	else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairShadowGeometry)
+	{
+
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairFaceColorMixGeometry)
 	{
 
 	}
@@ -2373,7 +2378,7 @@ void R_StudioDrawMesh_AnalysisPass(
 			r_draw_hasface = true;
 		}
 
-		if (flags & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
+		if (flags & STUDIO_NF_CELSHADE_HAIR)
 		{
 			r_draw_hashair = true;
 		}
@@ -2444,7 +2449,7 @@ void R_StudioDrawMesh_DrawPass(
 		}
 
 		StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-		StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ALPHA | STUDIO_NF_ADDITIVE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H | STUDIO_NF_FULLBRIGHT);
+		StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ALPHA | STUDIO_NF_ADDITIVE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_FULLBRIGHT);
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAlphaMeshes)
 	{
@@ -2479,11 +2484,22 @@ void R_StudioDrawMesh_DrawPass(
 			return;
 		}
 	}
-	else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairShadowGeometry)
 	{
-		if ((flags & STUDIO_NF_CELSHADE_HAIR) || (flags & STUDIO_NF_CELSHADE_HAIR_H) || (flags & STUDIO_NF_CELSHADE_FACE))
+		if ((flags & STUDIO_NF_CELSHADE_HAIR) || (flags & STUDIO_NF_CELSHADE_FACE))
 		{
 			StudioProgramState |= STUDIO_HAIR_SHADOW_ENABLED;
+		}
+		else
+		{
+			return;
+		}
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairFaceColorMixGeometry)
+	{
+		if (flags & STUDIO_NF_CELSHADE_FACE)
+		{
+			StudioProgramState |= STUDIO_HAIR_FACE_COLOR_MIX_ENABLED;
 		}
 		else
 		{
@@ -2634,59 +2650,33 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_CLIP_BONE_ENABLED;
 	}
 
-	//Bind s_BackBufferFBO2's textures
-	if (GL_GetCurrentRenderingFBO() != &s_BackBufferFBO2)
+	if (!(StudioProgramState & STUDIO_HAIR_SHADOW_ENABLED) && !(StudioProgramState & STUDIO_HAIR_FACE_COLOR_MIX_ENABLED))
 	{
 		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
 		{
 			//Texture unit 6 = Stencil texture
-			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO3)
 			{
-				if (s_BackBufferFBO2.s_hBackBufferStencilView)
+				if (s_BackBufferFBO3.s_hBackBufferStencilView)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, s_BackBufferFBO3.s_hBackBufferStencilView);
 
 					StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
-				}
-			}
-			if (!(StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED))
-			{
-				//Texture unit 7 = Shadow diffuse texture
-				if (s_BackBufferFBO2.s_hBackBufferTex)
-				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE, GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
-
-					StudioProgramState |= STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED;
-				}
-			}
-			//Texture unit 8 = Depth texture
-			if (!(StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED))
-			{
-				if (s_BackBufferFBO2.s_hBackBufferDepthView)
-				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferDepthView);
-
-					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
-				}
-				else if (s_BackBufferFBO2.s_hBackBufferDepthTex)
-				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferDepthTex);
-
-					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
 				}
 			}
 		}
-
-		if (StudioProgramState & (STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H))
+		
+		if (StudioProgramState & STUDIO_NF_CELSHADE_HAIR)
 		{
-			//Texture unit 6 = Stencil texture
-			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED))
+			//Texture unit 7 = Mix diffuse texture
+			if (R_StudioHasHairFaceColorMix() && 
+				!(StudioProgramState & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO4)
 			{
-				if (s_BackBufferFBO2.s_hBackBufferStencilView)
+				if (s_BackBufferFBO4.s_hBackBufferTex)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_MIX_DIFFUSE, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferTex);
 
-					StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
+					StudioProgramState |= STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED;
 				}
 			}
 		}
@@ -2768,14 +2758,18 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
 		{
-			//Remove shadow inside face, and mark face as face
+			//Make sure face in-front of back-hair occludes shadow from back-hair.
 			GL_BeginStencilWrite(STENCIL_MASK_HAS_FACE, STENCIL_MASK_HAS_FACE | STENCIL_MASK_HAS_SHADOW);
 		}
 		else
 		{
-			//Mark hair as shadow, also no depth write-in
+			//Mark hair as shadow, the hair geometry is slightly offset from original position
 			GL_BeginStencilWrite(STENCIL_MASK_HAS_SHADOW, STENCIL_MASK_HAS_SHADOW);
 		}
+	}
+	else if (StudioProgramState & STUDIO_HAIR_FACE_COLOR_MIX_ENABLED)
+	{
+		//No need to write stencil here
 	}
 	else
 	{
@@ -2887,8 +2881,12 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if (StudioProgramState & STUDIO_HAIR_SHADOW_ENABLED)
 	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_BLEND);
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	}
+	else if (StudioProgramState & STUDIO_HAIR_FACE_COLOR_MIX_ENABLED)
+	{
+		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);
 	}
 	else if (r_draw_opaque)
@@ -3109,28 +3107,22 @@ void R_StudioDrawMesh_DrawPass(
 
 	//Restore texture state
 
-	if (StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED)
-	{
-		//Texture unit 8 = Depth texture
-		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, 0);
-	}
-
-	if (StudioProgramState & STUDIO_SHADOW_DIFFUSE_TEXTURE_ENABLED)
+	if (StudioProgramState & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED)
 	{
 		//Texture unit 7 = Shadow Diffuse texture
-		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE, GL_TEXTURE_2D, 0);
-	}
-
-	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
-	{
-		//Texture unit 6 = Animated texture 
-		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, 0);
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_MIX_DIFFUSE, GL_TEXTURE_2D, 0);
 	}
 
 	if (StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED)
 	{
-		//Texture unit 5 = Stencil texture
+		//Texture unit 6 = Stencil texture
 		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, 0);
+	}
+
+	if (StudioProgramState & STUDIO_ANIMATED_TEXTURE_ENABLED)
+	{
+		//Texture unit 5 = Animated texture 
+		GL_BindTextureUnit(STUDIO_BIND_TEXTURE_ANIMATED, GL_TEXTURE_2D_ARRAY, 0);
 	}
 
 	if (StudioProgramState & STUDIO_SPECULARTEXTURE_ENABLED)
@@ -3615,23 +3607,56 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		r_draw_deferredtrans = true;
 	}
 
-	//Hair pass, draw within s_BackBufferFBO2
+	//Hair shadow pass, draw hair && face geometry onto s_BackBufferFBO3
 	if (R_StudioHasHairShadow())
 	{
-		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHairPass");
+		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHairGeometryPass");
 
 		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
 
-		GL_BindFrameBuffer(&s_BackBufferFBO2);
+		GL_BindFrameBuffer(&s_BackBufferFBO3);
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
+		GL_ClearColor(clearcolor);
+		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
+
+		glDrawBuffer(GL_NONE);
+
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawHairShadowGeometry;
+		(*currententity)->curstate.renderamt = 0;
+
+		pfnRenderModel(pthis, dummy);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		GL_BindFrameBuffer(CurrentFBO);
+
+		GL_EndDebugGroup();
+	}
+
+	//HairFace color mix pass, draw face geometry onto s_BackBufferFBO4
+	if (R_StudioHasHairFaceColorMix())
+	{
+		GL_BeginDebugGroup("R_StudioRenderModel - DrawHairFaceColorMixGeometryPass");
+
+		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
+
+		GL_BindFrameBuffer(&s_BackBufferFBO4);
+
+		vec4_t clearcolor = { 0, 0, 0, 1 };
 		GL_ClearColor(clearcolor);
 		GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
 
 		int saved_renderfx = (*currententity)->curstate.renderfx;
 		int saved_renderamt = (*currententity)->curstate.renderamt;
 
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
+		(*currententity)->curstate.renderfx = kRenderFxDrawHairFaceColorMixGeometry;
 		(*currententity)->curstate.renderamt = 0;
 
 		pfnRenderModel(pthis, dummy);
@@ -4310,7 +4335,6 @@ void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studio
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE_FACE);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE_HAIR);
-	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_CELSHADE_HAIR_H);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_DOUBLE_FACE);
 	REGISTER_TEXTURE_FLAGS_KEY_VALUE(STUDIO_NF_NOOUTLINE);
 

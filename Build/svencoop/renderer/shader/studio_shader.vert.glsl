@@ -127,8 +127,8 @@ void main(void)
 
 #endif
 
-	//Offset the shadow a little bit
-#if defined(HAIR_SHADOW_ENABLED) && (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H))
+	//Offset the hair geometry a little bit, but no the face geometry
+#if defined(HAIR_SHADOW_ENABLED) && defined(STUDIO_NF_CELSHADE_HAIR)
 	vec3 vecLight = StudioUBO.r_plightvec.xyz;
 	vecLight.z *= 0.0001;
 	vecLight = normalize(vecLight);

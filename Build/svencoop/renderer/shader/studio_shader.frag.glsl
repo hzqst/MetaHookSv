@@ -8,8 +8,7 @@ layout(binding = STUDIO_BIND_TEXTURE_PARALLAX) uniform sampler2D parallaxTex;
 layout(binding = STUDIO_BIND_TEXTURE_SPECULAR) uniform sampler2D specularTex;
 layout(binding = STUDIO_BIND_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
 layout(binding = STUDIO_BIND_TEXTURE_STENCIL) uniform usampler2D stencilTex;
-layout(binding = STUDIO_BIND_TEXTURE_SHADOW_DIFFUSE) uniform sampler2D shadowDiffuseTex;
-layout(binding = STUDIO_BIND_TEXTURE_DEPTH) uniform sampler2D depthTex;
+layout(binding = STUDIO_BIND_TEXTURE_MIX_DIFFUSE) uniform sampler2D mixDiffuseTex;
 
 /* celshade */
 
@@ -731,25 +730,6 @@ bool IsBoneClipped(uint boneindex)
 
 #endif
 
-//Sample the s_BackBuffer2 where the hair color was stored.
-vec4 R_CelshadeShadowDiffuseColor(vec4 diffuseColor, vec2 screenTexCoord)
-{
-	//gl_FragDepth = gl_FragCoord.z;
-
-	#if defined(DEPTH_TEXTURE_ENABLED)
-		if (diffuseColor.a < 1.0){
-
-			vec4 shadowDiffuseColor = texture(shadowDiffuseTex, screenTexCoord);
-
-			diffuseColor.rgb = mix(shadowDiffuseColor.rgb, diffuseColor.rgb, diffuseColor.a);
-
-			gl_FragDepth = texture(depthTex, screenTexCoord).r - 0.003;
-		}
-	#endif
-
-	return diffuseColor;
-}
-
 void main(void)
 {
 	#if defined(CLIP_BONE_ENABLED)
@@ -767,9 +747,9 @@ void main(void)
 
 	vec3 vSimpleNormal = R_GenerateSimplifiedNormal();
 
-	vec4 specularColor = vec4(0.0);
+	vec4 specularColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-	float flNormalMask = 0.0;
+	float flNormalAdjustment = 0.0;
 	
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
@@ -800,31 +780,46 @@ void main(void)
 
 	out_Diffuse = vec4(StudioUBO.r_color.xyz, 1.0);
 
-#elif defined(HAIR_SHADOW_ENABLED) //depth+color output
+#elif defined(HAIR_SHADOW_ENABLED) //only depth output
+
+	out_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
+
+#elif defined(HAIR_FACE_COLOR_MIX_ENABLED) //only color output, diffuse.a will be mixed with specular.a
+
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
+
+		diffuseColor.a *= rawSpecularColor.a;
+
+	#endif
 
 	out_Diffuse = diffuseColor;
 
 #else
 
-	#if defined(STUDIO_NF_CELSHADE_FACE) && defined(SHADOW_DIFFUSE_TEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		diffuseColor = R_CelshadeShadowDiffuseColor(diffuseColor, screenTexCoord);
+		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
+		specularColor = rawSpecularColor;
+		specularColor.b = 0.0;//Don't write to GBuffer
+		
+		flNormalAdjustment = rawSpecularColor.b;
+
+	#endif
+
+	//Mix hair color with face color
+	#if (defined(STUDIO_NF_CELSHADE_HAIR) || defined(STUDIO_NF_CELSHADE_HAIR_H)) && defined(MIX_DIFFUSE_TEXTURE_ENABLED)
+		
+		vec4 mixDiffuseColor = texture(mixDiffuseTex, screenTexCoord);
+
+		diffuseColor.rgb = mix(mixDiffuseColor.rgb, diffuseColor.rgb, mixDiffuseColor.a);
 
 	#endif
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
-	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
-
-		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
-		specularColor = rawSpecularColor;
-		specularColor.z = 0.0;//Don't write to GBuffer
-		
-		flNormalMask = rawSpecularColor.z;
-
-	#endif
-
-	vec3 vNormal = R_GenerateAdjustedNormal(vWorldPos, flNormalMask);
+	vec3 vNormal = R_GenerateAdjustedNormal(vWorldPos, flNormalAdjustment);
 
 	#if defined(ADDITIVE_RENDER_MODE_ENABLED) || defined(GLOW_SHELL_ENABLED)
 

@@ -785,6 +785,8 @@ bool GL_IsSupportedInternalFormat(GLuint internalFormat)
 		return true;
 	case GL_RGB32F:
 		return true;
+	case GL_RGBA16F:
+		return true;
 	}
 
 	return false;
@@ -802,6 +804,8 @@ GLuint GL_GetTextureFormatFromInternalFormat(GLuint internalFormat)
 		return GL_RGBA;
 	case GL_RGB32F:
 		return GL_RGB;
+	case GL_RGBA16F:
+		return GL_RGBA;
 	}
 
 	return 0;
@@ -819,6 +823,8 @@ GLuint GL_GetTextureColorTypeFromInternalFormat(GLuint internalFormat)
 		return GL_FLOAT;
 	case GL_RGB32F:
 		return GL_FLOAT;
+	case GL_RGBA16F:
+		return GL_HALF_FLOAT;
 	}
 
 	return 0;
@@ -919,7 +925,6 @@ void GL_UploadTexturePostCommon(gl_loadtexture_context_t* context, int iTextureT
 		//Generate mipmaps if there isn't one
 		if (context->mipmaps.size() == 1 && context->mipmap)
 		{
-			//available since OpenGL 3.0
 			glGenerateMipmap(iTextureTarget);
 		}
 	}
@@ -1951,7 +1956,7 @@ bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t 
 		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_BC7 &&
 		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DX10)
 	{
-		gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
+		gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported FourCC format! Only DXT1/3/5, BC7 and DX10 extension supported!\n", filename);
 		return false;
 	}
 
@@ -2172,9 +2177,129 @@ bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t 
 				w = w >> 1;
 				h = h >> 1;
 			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC6H_UF16 && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_BC6H(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					return false;
+				}
+
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					return false;
+				}
+
+				context->internalformat = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
+				context->compressed = true;
+
+				{
+					std::string fullPath = filename;
+
+					RemoveFileExtension(fullPath);
+
+					if (fullPath.ends_with(".linear"))
+					{
+						context->linear = true;
+					}
+				}
+
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC6H_SF16 && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_BC6H(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					return false;
+				}
+
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					return false;
+				}
+
+				context->internalformat = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT;
+				context->compressed = true;
+
+				{
+					std::string fullPath = filename;
+
+					RemoveFileExtension(fullPath);
+
+					if (fullPath.ends_with(".linear"))
+					{
+						context->linear = true;
+					}
+				}
+
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_R16G16B16A16_FLOAT && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = w * h * 8;
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					return false;
+				}
+
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					return false;
+				}
+
+				context->internalformat = GL_RGBA16F;
+				context->compressed = false;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_R32G32B32A32_FLOAT && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = w * h * 16;
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					return false;
+				}
+
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					return false;
+				}
+
+				context->internalformat = GL_RGBA32F;
+				context->compressed = false;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
 			else
 			{
-				gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
+				gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported DX10 texture format (dxgiFormat=%d)!\n", filename, (int)fileHeader10.Header10.dxgiFormat);
 				return false;
 			}
 			break;
@@ -2338,20 +2463,22 @@ bool LoadImageGenericRGBA32F(FIBITMAP* fiB, gl_loadtexture_context_t* context)
 	size_t rowSize = w * sizeof(vec4_t);
 
 	FreeImage_FlipVertical(fiB);
+#if 0
+	if (!context->linear)
+	{
+		float r_texgamma = 1.0f / v_texgamma->value;
 
-	//Assume the texture to be SRGB
-	float r_texgamma = 1.0f / v_texgamma->value;
+		for (unsigned int y = 0; y < h; ++y) {
+			for (unsigned int x = 0; x < w; ++x) {
+				float* row = (float*)(imageData + y * rowSize + x * sizeof(vec4_t));
 
-	for (unsigned int y = 0; y < h; ++y) {
-		for (unsigned int x = 0; x < w; ++x) {
-			float* row = (float*)(imageData + y * rowSize + x * sizeof(vec4_t));
-
-			row[0] = pow(row[0], r_texgamma);
-			row[1] = pow(row[1], r_texgamma);
-			row[2] = pow(row[2], r_texgamma);
+				row[0] = pow(row[0], r_texgamma);
+				row[1] = pow(row[1], r_texgamma);
+				row[2] = pow(row[2], r_texgamma);
+			}
 		}
 	}
-
+#endif
 	context->internalformat = GL_RGBA32F;
 	context->compressed = false;
 	context->width = w;
@@ -2373,19 +2500,22 @@ bool LoadImageGenericRGB32F(FIBITMAP* fiB, gl_loadtexture_context_t* context)
 	size_t rowSize = w * sizeof(vec3_t);
 
 	FreeImage_FlipVertical(fiB);
+#if 0
+	if (!context->linear)
+	{
+		float r_texgamma = 1.0f / v_texgamma->value;
 
-	//Assume the texture to be SRGB
-	float r_texgamma = 1.0f / v_gamma->value;
+		for (unsigned int y = 0; y < h; ++y) {
+			for (unsigned int x = 0; x < w; ++x) {
+				float* row = (float*)(imageData + y * rowSize + x * sizeof(vec4_t));
 
-	for (unsigned int y = 0; y < h; ++y) {
-		for (unsigned int x = 0; x < w; ++x) {
-			float* row = (float*)(imageData + y * rowSize + x * sizeof(vec3_t));
-
-			row[0] = pow(row[0], r_texgamma);
-			row[1] = pow(row[1], r_texgamma);
-			row[2] = pow(row[2], r_texgamma);
+				row[0] = pow(row[0], r_texgamma);
+				row[1] = pow(row[1], r_texgamma);
+				row[2] = pow(row[2], r_texgamma);
+			}
 		}
 	}
+#endif
 
 	context->internalformat = GL_RGB32F;
 	context->compressed = false;
@@ -2813,6 +2943,15 @@ bool LoadImageGenericFileIO(const char *filename, const char* pathId, gl_loadtex
 
 			SCOPE_EXIT{ FreeImage_Unload(fiBFloat); };
 
+			std::string fullPath = filename;
+
+			RemoveFileExtension(fullPath);
+
+			if (fullPath.ends_with(".linear"))
+			{
+				context->linear = true;
+			}
+
 			if (LoadImageGenericRGBA32F(fiBFloat, context))
 			{
 				return true;
@@ -2829,6 +2968,15 @@ bool LoadImageGenericFileIO(const char *filename, const char* pathId, gl_loadtex
 			}
 
 			SCOPE_EXIT{ FreeImage_Unload(fiBFloat); };
+
+			std::string fullPath = filename;
+
+			RemoveFileExtension(fullPath);
+
+			if (fullPath.ends_with(".linear"))
+			{
+				context->linear = true;
+			}
 
 			if (LoadImageGenericRGB32F(fiBFloat, context))
 			{
@@ -3444,7 +3592,7 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 	}
 #endif
 
-	if(!stricmp(extension, "dds"))
+	if (!stricmp(extension, "dds"))
 	{
 		if(LoadDDS(filename, NULL, &loadContext))
 		{
@@ -3452,7 +3600,7 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 		}
 	}
 
-	if(LoadImageGenericFileIO(filename, NULL, &loadContext))
+	if (LoadImageGenericFileIO(filename, NULL, &loadContext))
 	{
 		return true;
 	}
