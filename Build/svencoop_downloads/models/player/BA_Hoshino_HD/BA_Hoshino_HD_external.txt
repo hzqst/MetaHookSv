@@ -8,56 +8,52 @@
     "basetexture" "T_BA_hsn_001_eye_L_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
     "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C.hdr"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C_specular.png"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C_specular.dds"
 }
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_eye_R_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
     "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C.hdr"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C_specular.png"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C_specular.dds"
 }
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_face_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
-    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.png"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.png"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "T_BA_hsn_001_hair_C.bmp"
-    "flags" "STUDIO_NF_CELSHADE_HAIR"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "T_BA_hsn_001_hair_C.bmp"
-    "flags" "STUDIO_NF_NOOUTLINE"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "skin_outline.bmp"
-    "flags" "STUDIO_NF_CELSHADE_HAIR"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "skin_outline.bmp"
-    "flags" "STUDIO_NF_NOOUTLINE"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.dds"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.dds"
 }
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_ring_C.bmp"
     "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_ring_C.hdr"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "T_BA_hsn_001_ring_C.bmp"
     "flags" "STUDIO_NF_NOOUTLINE"
 }
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_naked_lower_C.bmp"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_naked_lower_C_specular.png"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_naked_lower_C_specular.dds"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_hair_C.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_hair_C.bmp"
+    "flags" "STUDIO_NF_NOOUTLINE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "skin_outline.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "skin_outline.bmp"
+    "flags" "STUDIO_NF_NOOUTLINE"
 }
 {
     "classname" "studio_efx"
