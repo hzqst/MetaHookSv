@@ -86,6 +86,13 @@ uniform vec2 r_nearplaneclip;
 		in vec3 v_headfwd;
 		in vec3 v_headup;
 		in vec3 v_headorigin;
+			
+		#if defined(DEBUG_ENABLED)
+
+			in vec4 v_headorigin_proj;
+
+		#endif
+
 	#endif
 #endif
 
@@ -731,6 +738,27 @@ bool IsBoneClipped(uint boneindex)
 
 #endif
 
+#if defined(DEBUG_ENABLED)
+
+vec4 R_RenderDebugPoint(vec4 baseColor)
+{ 
+	// Convert to normalized device coordinates (NDC) by dividing by the w component
+    vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
+    vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
+
+	point_ndc.x = point_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
+	vertex_ndc.x = vertex_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
+
+	if(distance(point_ndc.xy, vertex_ndc.xy) < 0.01)
+	{
+		return vec4(1.0, 0.0, 0.0, 1.0);
+	}
+
+	return baseColor;
+}
+
+#endif
+
 void main(void)
 {
 	#if defined(CLIP_BONE_ENABLED)
@@ -822,6 +850,16 @@ void main(void)
 
 			diffuseColor.rgb = mix(mixDiffuseColor.rgb, diffuseColor.rgb, mixDiffuseColor.a);
 		}
+
+	#endif
+
+	//Some meshes has STUDIO_NF_CELSHADE_FACE but has no STUDIO_NF_CELSHADE, why ???
+
+	#if defined(DEBUG_ENABLED)
+
+		diffuseColor.b = flNormalMask;
+
+		diffuseColor = R_RenderDebugPoint(diffuseColor);
 
 	#endif
 

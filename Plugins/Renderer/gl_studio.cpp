@@ -126,6 +126,8 @@ cvar_t* r_studio_legacy_elight = NULL;
 
 cvar_t* r_studio_bone_caches = NULL;
 
+cvar_t* r_studio_debug = NULL;
+
 cvar_t* r_lowerbody_model_scale = NULL;
 cvar_t* r_lowerbody_model_offset = NULL;
 cvar_t* r_lowerbody_duck_model_offset = NULL;
@@ -1394,6 +1396,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_LINEAR_DEPTH_ENABLED)
 			defs << "#define LINEAR_DEPTH_ENABLED\n";
 
+		if (state & STUDIO_DEBUG_ENABLED)
+			defs << "#define DEBUG_ENABLED\n";
+
 		auto def = defs.str();
 
 		CCompileShaderArgs args;
@@ -1499,6 +1504,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_GLOW_COLOR_ENABLED				,"STUDIO_GLOW_COLOR_ENABLED"				},
 { STUDIO_MULTIVIEW_ENABLED				,"STUDIO_MULTIVIEW_ENABLED"					},
 { STUDIO_LINEAR_DEPTH_ENABLED			,"STUDIO_LINEAR_DEPTH_ENABLED"				},
+{ STUDIO_DEBUG_ENABLED					,"STUDIO_DEBUG_ENABLED"						},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -1599,6 +1605,8 @@ void R_InitStudio(void)
 
 	//Cache bones to save CPU resources?
 	r_studio_bone_caches = gEngfuncs.pfnRegisterVariable("r_studio_bone_caches", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
 
 	r_studio_base_specular = gEngfuncs.pfnRegisterVariable("r_studio_base_specular", "1.0 2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_specular = gEngfuncs.pfnRegisterVariable("r_studio_celshade_specular", "1.0  36.0  0.4  0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -2534,6 +2542,11 @@ void R_StudioDrawMesh_DrawPass(
 			{
 				return;
 			}
+		}
+
+		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE) && (int)r_studio_debug->value > 0 && AllowCheats())
+		{
+			StudioProgramState |= STUDIO_DEBUG_ENABLED;
 		}
 	}
 
