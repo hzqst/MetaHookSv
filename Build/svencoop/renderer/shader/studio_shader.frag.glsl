@@ -848,7 +848,7 @@ void main(void)
 
 		vec3 sceneWorldPos = GenerateWorldPositionFromDepth(screenTexCoord, sceneDepthValue);
 
-		if (distance(sceneWorldPos, vWorldPos) < 3.0 * StudioUBO.r_scale){
+		if (distance(sceneWorldPos, vWorldPos) < 4.0 * StudioUBO.r_scale){
 
 			vec4 mixDiffuseColor = texture(mixDiffuseTex, screenTexCoord);
 
