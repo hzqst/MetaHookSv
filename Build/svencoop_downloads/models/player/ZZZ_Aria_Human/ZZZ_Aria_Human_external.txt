@@ -9,14 +9,18 @@
 }
 {
     "classname" "studio_texture"
-    "basetexture" "NangongYu_Face_D.bmp"
-    "replacetexture" "models/player/ZZZ_Rokudo/NangongYu_Face_D.dds"
-    "speculartexture"  "models/player/ZZZ_Rokudo/NangongYu_Face_D_specular.dds"
+    "basetexture" "body2.bmp"
+    "speculartexture" "models/player/ZZZ_Aria_Human/body2_specular.dds"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "face.bmp"
+    "speculartexture"  "models/player/ZZZ_Aria_Human/face_specular.dds"
     "flags" "STUDIO_NF_CELSHADE_FACE"
 }
 {
     "classname" "studio_texture"
-    "basetexture" "NangongYu_Hair_D.bmp"
+    "basetexture" "body2.bmp"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
 }
 {
@@ -38,8 +42,8 @@
     "rimdark_color" "50 50 50"
     "hair_specular_exp" "256"
     "hair_specular_exp2" "8"
-    "hair_specular_intensity" "0.3 0.3 0.3"
-    "hair_specular_intensity2" "0.1 0.1 0.1"
+    "hair_specular_intensity" "0.0 0.0 0.0"
+    "hair_specular_intensity2" "0.0 0.0 0.0"
     "hair_specular_noise" "500 600 0.004 0.005"
     "hair_specular_noise2" "100 120 0.006 0.0.005"
     "hair_specular_smooth" "0.0 0.3"
