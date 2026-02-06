@@ -26,3 +26,4 @@
 
 ## Important rules
 - **ALWAYS** call Serena's `activate_project` on agent startup
+- **ALWAYS** use Serena's mcp tools to read or edit code.
