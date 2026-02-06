@@ -7,15 +7,21 @@
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_eye_L_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
-    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C.hdr"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C_specular.dds"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C.dds"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_L_C_specular.srgb.dds"
 }
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_eye_R_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
-    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C.hdr"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C_specular.dds"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C.dds"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_eye_R_C_specular.srgb.dds"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_ring_C.bmp"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_ring_C.srgb.dds"
+    "flags" "STUDIO_NF_NOOUTLINE"
 }
 {
     "classname" "studio_texture"
@@ -23,12 +29,6 @@
     "flags" "STUDIO_NF_CELSHADE_FACE"
     "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.dds"
     "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.dds"
-}
-{
-    "classname" "studio_texture"
-    "basetexture" "T_BA_hsn_001_ring_C.bmp"
-    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_ring_C.hdr"
-    "flags" "STUDIO_NF_NOOUTLINE"
 }
 {
     "classname" "studio_texture"
