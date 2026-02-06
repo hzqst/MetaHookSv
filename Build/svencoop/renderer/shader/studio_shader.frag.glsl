@@ -740,7 +740,7 @@ bool IsBoneClipped(uint boneindex)
 
 #if defined(CELSHADE_DEBUG_ENABLED)
 
-vec4 R_RenderCelshadeDebugColor(vec4 diffuseColor)
+vec4 R_RenderCelshadeDebugColor(vec4 diffuseColor, vec4 specularColor)
 { 
 	diffuseColor.r = specularColor.r;
 	diffuseColor.b = specularColor.b;
