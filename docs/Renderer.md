@@ -873,6 +873,8 @@ PNG (RGB8 / RGBA8)
 
 WEBP (RGB8 / RGBA8)
 
+ * Always save as "Linear" instead of "SRGB", if the target format support both SRGB & linear color space.
+
 ## Anti-Aliasing
 
 `r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).

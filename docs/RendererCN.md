@@ -857,6 +857,8 @@ PNG (RGB8 / RGBA8)
 
 WEBP (RGB8 / RGBA8)
 
+ * 你应当总是将贴图保存为Linear色彩空间，如果目标格式同时支持SRGB和Linear色彩空间。
+
 ## 抗锯齿
 
 `r_fxaa` 设为1启用快速近似抗锯齿 (FXAA).
