@@ -499,7 +499,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 }
 ```
 
-3. 眉毛部分的像素的alpha通道必须小于255, 可以利用 `replacetexture` 替换一张PNG图片来完成：
+3. 眉毛部分的像素的alpha通道必须小于255, 可以利用 `replacetexture` 将基础贴图替换为 PNG / BC7-DDS 贴图来完成：
 
 ![](/img/10.png)
 

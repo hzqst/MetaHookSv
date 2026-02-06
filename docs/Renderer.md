@@ -494,8 +494,8 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_face_C.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
-    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.png"
-    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.png"
+    "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C.dds"
+    "speculartexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_face_C_specular.dds"
 }
 ```
 
@@ -510,7 +510,7 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 }
 ```
 
-3. Eyebrow pixels must be marked with alpha < 255, which can be done by taking advantage of `replacetexture` with a PNG texture:
+3. Eyebrow pixels must be marked with alpha < 255, which can be done by taking advantage of `replacetexture` with a PNG / BC7-DDS texture:
 
 ![](/img/10.png)
 
@@ -649,9 +649,7 @@ to make the specified bone-based bodypart visible when rendering `[modelname].md
 #define STUDIO_NF_CELSHADE					0x1000
 #define STUDIO_NF_CELSHADE_FACE				0x2000
 #define STUDIO_NF_CELSHADE_HAIR				0x4000
-#define STUDIO_NF_HASOUTLINE				0x8000  //For internal unsage only.
 #define STUDIO_NF_DOUBLE_FACE				0x10000
-
 #define STUDIO_NF_NOOUTLINE					0x40000
 ```
 
