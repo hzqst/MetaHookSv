@@ -746,8 +746,9 @@ vec4 R_RenderDebugPoint(vec4 baseColor)
     vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
     vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
 
-	point_ndc.x = point_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
-	vertex_ndc.x = vertex_ndc.x * CameraUBO.viewport.x / CameraUBO.viewport.y;
+	vec4 viewport = GetCameraViewPort(0);
+	point_ndc.x = point_ndc.x * viewport.z / viewport.w;
+	vertex_ndc.x = vertex_ndc.x * viewport.z / viewport.w;
 
 	if(distance(point_ndc.xy, vertex_ndc.xy) < 0.01)
 	{
@@ -857,7 +858,8 @@ void main(void)
 
 	#if defined(DEBUG_ENABLED)
 
-		diffuseColor.b = flNormalMask;
+		diffuseColor.r = rawSpecularColor.r;
+		diffuseColor.b = rawSpecularColor.b;
 
 		diffuseColor = R_RenderDebugPoint(diffuseColor);
 
