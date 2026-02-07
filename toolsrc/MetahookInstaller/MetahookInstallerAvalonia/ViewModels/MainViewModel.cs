@@ -271,6 +271,11 @@ public class MainViewModel : ViewModelBase
         var sourceMetaHookPath = Path.Combine(basePath, "MetaHook.exe");
         var targetMetaHookPath = Path.Combine(gamePath, "MetaHook.exe");
         bool isNonBlobEngine = IsLegitimatePE(hwDllPath);
+        // 如果hw.dll是合法PE但Build目录中没有MetaHook.exe，回退到MetaHook_blob.exe
+        if (isNonBlobEngine && !File.Exists(sourceMetaHookPath))
+        {
+            isNonBlobEngine = false;
+        }
         if (isNonBlobEngine)
         {
             if (modName.Equals("svencoop", StringComparison.OrdinalIgnoreCase))
