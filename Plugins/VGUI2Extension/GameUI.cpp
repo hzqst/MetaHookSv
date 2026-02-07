@@ -508,10 +508,12 @@ bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFi
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -1675,10 +1677,12 @@ bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSyste
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -1806,10 +1810,12 @@ int CGameUIProxy::ActivateGameUI(void)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -1848,10 +1854,12 @@ int CGameUIProxy::ActivateDemoUI(void)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -1893,10 +1901,12 @@ int CGameUIProxy::HasExclusiveInput(void)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -2030,10 +2040,12 @@ bool CGameUIProxy::IsGameUIActive(void)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -2144,10 +2156,12 @@ int CGameUIProxy::ContinueProgressBar(int progressPoint, float progressFraction)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -2212,10 +2226,12 @@ int CGameUIProxy::SetProgressBarStatusText(const char* statusText)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -2445,10 +2461,12 @@ bool CGameConsoleProxy::IsConsoleVisible(void)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 

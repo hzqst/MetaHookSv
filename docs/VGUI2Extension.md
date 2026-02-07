@@ -32,7 +32,7 @@ Check **Launch Parameters**
 
 All VGUI2 elements will be proportional (scaling up base on your game resolution)
 
-The HiDpi Support is enabled by defalut if your system's dpi scaling > 100% and you are running on a non-HL25th engine
+The HiDpi Support is enabled by defalut if your system's dpi scaling > 100% and you are running on a non-HL25th engine. For HL25th-engine, the HiDpi is enabled by default.
 
 When HiDpi Support is enabled, the following paths will be added to the FileSystem's search paths with "SKIN" tag. VGUI2 control settings will be loaded from those sources.
 

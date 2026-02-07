@@ -199,10 +199,12 @@ int CBaseUIProxy::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
@@ -449,10 +451,12 @@ int CBaseUILegacyProxy::Key_Event(int down, int keynum, const char* pszCurrentBi
 	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
+		break;
 	}
 	default:
 	{
 		ret = real_ret;
+		break;
 	}
 	}
 
