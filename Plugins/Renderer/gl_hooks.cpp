@@ -573,6 +573,8 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	if (gPrivateFuncs.GL_Init)
 		return;
 
+	PVOID GL_Init_VA = NULL;
+
 	{
 		const char pattern[] = "\x68\x00\x1F\x00\x00\xFF";
 		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
@@ -666,7 +668,8 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 					if (ctx.bFoundPushString)
 					{
-						gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))ConvertDllInfoSpace(pCandidateFunction, DllInfo, RealDllInfo);
+						GL_Init_VA = pCandidateFunction;
+
 						break;
 					}
 				}
@@ -677,6 +680,73 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 			{
 				break;
 			}
+		}
+	}
+	
+	if (GL_Init_VA)
+	{
+		gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))ConvertDllInfoSpace(GL_Init_VA, DllInfo, RealDllInfo);
+
+		// 在 GL_Init 中定位 gl_extensions
+		// 模式: push 0x1F03 (GL_EXTENSIONS) -> call glGetString -> mov [imm32], eax
+		if (!gl_extensions && !gPrivateFuncs.SDL_GL_GetProcAddress)
+		{
+			typedef struct GL_Init_ExtSearch_s
+			{
+				const mh_dll_info_t& DllInfo;
+				const mh_dll_info_t& RealDllInfo;
+				PUCHAR push_GL_EXTENSIONS_address{};
+				int push_GL_EXTENSIONS_instCount{};
+			}GL_Init_ExtSearch;
+
+			GL_Init_ExtSearch extCtx = { DllInfo, RealDllInfo };
+
+			g_pMetaHookAPI->DisasmRanges(GL_Init_VA, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (GL_Init_ExtSearch*)context;
+
+				if (gl_extensions)
+					return TRUE;
+
+				// 检测 push 0x1F03 (GL_EXTENSIONS)
+				if (pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[0].imm == 0x1F03)
+				{
+					ctx->push_GL_EXTENSIONS_address = address;
+					ctx->push_GL_EXTENSIONS_instCount = instCount;
+				}
+
+				// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
+				if (ctx->push_GL_EXTENSIONS_address &&
+					address > ctx->push_GL_EXTENSIONS_address &&
+					address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
+					instCount > ctx->push_GL_EXTENSIONS_instCount &&
+					instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+				{
+					gl_extensions = (decltype(gl_extensions))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, &extCtx);
 		}
 	}
 
@@ -918,6 +988,7 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		{
 			Sig_FuncNotFound(GL_SetMode_call_qwglCreateContext);
 		}
+
 		Sig_VarNotFound(gl_extensions);
 
 		if ((g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25) &&
