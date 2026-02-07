@@ -458,7 +458,6 @@ public class MainViewModel : ViewModelBase
         private string _directory = directory;
         private uint _appid = appid;
         private string? _path = path;
-        private readonly string _installpath = Path.Combine(path, directory);
         private readonly Bitmap? _icon = (!string.IsNullOrEmpty(Path.Combine(path, directory, "game.ico")) &&
             File.Exists(Path.Combine(path, directory, "game.ico"))) ? new Bitmap(Path.Combine(path, directory, "game.ico")) : null;
         private bool _readonly = true;
@@ -467,7 +466,7 @@ public class MainViewModel : ViewModelBase
         public string Directory { get => _directory; set => _directory = value; }
         public uint AppID { get => _appid; set => _appid = value; }
         public string? GamePath { get => _path; set => _path = value; }
-        public string InstallPath { get => _installpath; }
+        public string InstallPath { get => Path.Combine(_path ?? "", _directory); }
         public Bitmap? GameIcon => _icon;
         public bool ReadOnly { get => _readonly; set => _readonly = value; }
     }
