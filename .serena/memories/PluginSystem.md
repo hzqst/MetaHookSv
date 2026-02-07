@@ -1,8 +1,8 @@
 # MetaHookSv：插件系统与开发流程
 
 ## 关键目录
-- 插件目录：`Plugins/`
-- 插件文档：`docs/`
+- 插件目录：`Plugins/XXXXX`，如：`Plugins/Renderer`
+- 插件文档：`docs/XXXXX.md`，如：`docs/Renderer.md`, `docs/RendererCN.md`
 
 ### 核心插件（示例）
 - `VGUI2Extension`：VGUI2 modding framework，许多 UI 相关插件的基础
@@ -11,6 +11,7 @@
 - `CaptionMod`：字幕/翻译/HiDPI 支持
 
 ### 工具类插件（示例）
+- `HeapPatch`：解决GoldSrc引擎固定堆资源过小的问题
 - `ResourceReplacer`：运行时资源替换
 - `ThreadGuard`：线程管理与清理
 - `PrecacheManager`：资源预缓存管理
