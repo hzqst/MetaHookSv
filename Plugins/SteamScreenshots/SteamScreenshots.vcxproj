@@ -163,7 +163,7 @@
     <ClCompile Include="..\..\include\HLSDK\common\parsemsg.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="plugins.cpp" />
-    <ClCompile Include="gl_catpure.cpp" />
+    <ClCompile Include="gl_capture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h" />
