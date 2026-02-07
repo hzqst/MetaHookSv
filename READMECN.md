@@ -170,7 +170,7 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 ### SteamScreenshots (只支持Sven Co-op)
 
-该插件捕获了`snapshots`截图命令，将其重定向到Steam客户端自带的截图功能上。
+该插件捕获了`snapshot`截图命令，将其重定向到Steam客户端自带的截图功能上。
 
 ### SCModelDownloader (只支持Sven Co-op)
 

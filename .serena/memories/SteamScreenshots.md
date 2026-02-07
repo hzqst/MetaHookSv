@@ -62,8 +62,7 @@ Q --> R[Set location and tag user]
 - 运行配置：在 `plugins_svencoop.lst` 中由 `SteamScreenshots.dll` 加载。
 
 ## 注意事项
-- 命令 hook 使用的是 `"snapshot"`（单数）；文档中存在 `snapshots`（复数）描述，属于文档与实现口径差异点。
-- 命令 hook 安装时机绑定在首次 `IN_ActivateMouse`，若该路径未执行则不会接管截图命令。
+- 命令 hook 安装时机绑定在首次 `IN_ActivateMouse`，若该路径未执行则不会接管截图命令。`IN_ActivateMouse`会在引擎注册完截图命令`snapshot`之后被引擎调用。
 - `ServerName` 最长保留 255 字节，来源依赖服务器消息；主菜单/未进图时会被清空。
 - 异步抓图依赖 OpenGL 3.2 + Sync API；不满足时回退同步抓图（可能引入瞬时阻塞）。
 - `ScreenshotCallback` 与 `OnSnapshotCallback` 默认假设 Steam 接口可用，代码中未做显式空指针防护。
