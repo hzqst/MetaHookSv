@@ -80,7 +80,6 @@ flowchart TD
   - 仓库脚本会在调用前写 `tools/steam_appid.txt`，并依赖 stdout 仅返回目录字符串。
 
 ## 注意事项
-- `main` 只使用 `argv[1]`（AppId）；脚本传入的第二参数 `InstallDir` 在源码中未被使用。
 - README/脚本语义表明：Steam 未登录、未拥有游戏或未安装时，目录查询可能失败。
 
 ## 调用方（可选）
