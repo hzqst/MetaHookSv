@@ -37,6 +37,12 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 
+	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
+	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
+	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
+	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
+	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
+
 	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
 	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
 
