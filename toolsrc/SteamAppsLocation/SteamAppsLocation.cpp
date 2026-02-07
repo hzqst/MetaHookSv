@@ -1,16 +1,8 @@
 ﻿#include <Windows.h>
 #include <steam_api.h>
-#include <detours.h>
 #include <string>
 #include <iostream>
 #include <filesystem>
-
-bool (S_CALLTYPE*IsSteamRunning)() = NULL;
-
-bool S_CALLTYPE NewIsSteamRunning()
-{
-	return true;
-}
 
 bool ReadRegistryValue(const std::wstring& keyPath, const std::wstring& valueName, std::wstring& outValue) {
 	HKEY hKey;
@@ -20,12 +12,12 @@ bool ReadRegistryValue(const std::wstring& keyPath, const std::wstring& valueNam
 		return false;
 	}
 
-	// Query the value using the Unicode function RegQueryValueExW
-	wchar_t value[255];
-	DWORD valueLength = sizeof(value);
+	// First call: query the required buffer size and type
+	DWORD valueLength = 0;
 	DWORD valueType;
-	if (RegQueryValueExW(hKey, valueName.c_str(), NULL, &valueType, (LPBYTE)value, &valueLength) != ERROR_SUCCESS) {
-		std::wcerr << L"[Error] Unable to read registry value." << std::endl;
+	LSTATUS status = RegQueryValueExW(hKey, valueName.c_str(), NULL, &valueType, NULL, &valueLength);
+	if (status != ERROR_SUCCESS) {
+		std::wcerr << L"[Error] Unable to query registry value size." << std::endl;
 		RegCloseKey(hKey);
 		return false;
 	}
@@ -37,7 +29,20 @@ bool ReadRegistryValue(const std::wstring& keyPath, const std::wstring& valueNam
 		return false;
 	}
 
-	outValue.assign(value, valueLength / sizeof(wchar_t) - 1); // -1 to exclude the null terminator
+	// Allocate buffer and read the actual value
+	outValue.resize(valueLength / sizeof(wchar_t));
+	status = RegQueryValueExW(hKey, valueName.c_str(), NULL, NULL, (LPBYTE)outValue.data(), &valueLength);
+	if (status != ERROR_SUCCESS) {
+		std::wcerr << L"[Error] Unable to read registry value." << std::endl;
+		RegCloseKey(hKey);
+		return false;
+	}
+
+	// Remove trailing null terminator(s) if present
+	while (!outValue.empty() && outValue.back() == L'\0') {
+		outValue.pop_back();
+	}
+
 	RegCloseKey(hKey);
 	return true;
 }
@@ -69,20 +74,6 @@ int main(int argc, const char **argv)
 		std::wcerr << L"[Error] AppId must be specified." << std::endl;
 		return 1;
 	}
-	
-	auto steamapi = GetModuleHandleA("steam_api.dll");
-	if (!steamapi)
-	{
-		std::wcerr << L"[Error] Failed to get steam_api." << std::endl;
-		return 2;
-	}
-
-	IsSteamRunning = (decltype(IsSteamRunning))GetProcAddress(steamapi, "SteamAPI_IsSteamRunning");
-	if (!IsSteamRunning)
-	{
-		std::wcerr << L"[Error] Failed to locate SteamAPI_IsSteamRunning." << std::endl;
-		return 3;
-	}
 
 	std::wstring SteamPath;
 	std::wstring SteamClientDll;
@@ -101,8 +92,17 @@ int main(int argc, const char **argv)
 	steamPathFs /= L"steamclient.dll";
 
 	// Normalize the paths to ensure they can be compared correctly
-	steamPathFs = std::filesystem::canonical(steamPathFs);
-	steamClientDllFs = std::filesystem::canonical(steamClientDllFs);
+	std::error_code ec;
+	steamPathFs = std::filesystem::canonical(steamPathFs, ec);
+	if (ec) {
+		std::wcerr << L"[Error] Failed to resolve steamclient.dll path: " << steamPathFs << L" (" << ec.message().c_str() << L")" << std::endl;
+		return 9;
+	}
+	steamClientDllFs = std::filesystem::canonical(steamClientDllFs, ec);
+	if (ec) {
+		std::wcerr << L"[Error] Failed to resolve SteamClientDll path: " << steamClientDllFs << L" (" << ec.message().c_str() << L")" << std::endl;
+		return 10;
+	}
 
 	if (steamPathFs != steamClientDllFs) {
 
@@ -111,7 +111,7 @@ int main(int argc, const char **argv)
 		// Write the new path back to the registry
 		if (!WriteRegistryValue(L"Software\\Valve\\Steam\\ActiveProcess", L"SteamClientDll", newSteamClientDllPath)) {
 			std::wcerr << L"[Error] Failed to set SteamClientDll to the expected one." << std::endl;
-			std::wcout << L"[Error] The SteamClientDll (" << steamClientDllFs << L") does not matches the expected one (" << steamClientDllFs << L"). You might be opening a cracked steam game before ? You can restart your steam client to fix this issue !" << std::endl;
+			std::wcerr << L"[Error] The SteamClientDll (" << steamClientDllFs << L") does not match the expected one (" << steamPathFs << L"). You might be opening a cracked steam game before? You can restart your Steam client to fix this issue!" << std::endl;
 			return 6;
 		}
 	}

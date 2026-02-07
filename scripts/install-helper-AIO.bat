@@ -43,7 +43,7 @@ if not "%GameDir%"=="" (
 
 echo %GameAppId% > "%SolutionDir%tools\steam_appid.txt"
 
-for /f "delims=" %%a in ('"%SolutionDir%\tools\SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
+for /f "delims=" %%a in ('"%SolutionDir%\tools\SteamAppsLocation" %GameAppId%') do set OutputString=%%a
 
 if not "%OutputString%"=="" (
     set "GameDir=%OutputString%"
