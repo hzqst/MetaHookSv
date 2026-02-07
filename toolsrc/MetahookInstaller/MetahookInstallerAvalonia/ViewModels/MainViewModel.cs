@@ -4,6 +4,8 @@ using MetahookInstallerAvalonia.Handler;
 using MetahookInstallerAvalonia.Lang;
 using Microsoft.Win32;
 using ReactiveUI;
+using Gameloop.Vdf;
+using Gameloop.Vdf.Linq;
 using ShellLink;
 using System;
 using System.Collections.Generic;
@@ -105,6 +107,16 @@ public class MainViewModel : ViewModelBase
             return false;
         }
     }
+    private static string ReadNullTerminatedAscii(BinaryReader reader)
+    {
+        var bytes = new System.Collections.Generic.List<byte>();
+        byte b;
+        while ((b = reader.ReadByte()) != 0)
+        {
+            bytes.Add(b);
+        }
+        return System.Text.Encoding.ASCII.GetString(bytes.ToArray());
+    }
     private static long RvaToFileOffset(BinaryReader stream, int lfanew, uint rva)
     {
         try
@@ -204,7 +216,7 @@ public class MainViewModel : ViewModelBase
                 if (nameFileOffset == -1)
                     continue;
                 stream.Position = nameFileOffset;
-                string moduleName = reader.ReadString().ToLowerInvariant();
+                string moduleName = ReadNullTerminatedAscii(reader).ToLowerInvariant();
                 if (moduleName == targetModule)
                     return true;
             }
@@ -487,15 +499,21 @@ public class MainViewModel : ViewModelBase
         var configPath = Path.Combine(_steamPath, "steamapps", "libraryfolders.vdf");
         if (File.Exists(configPath))
         {
-            var config = File.ReadAllText(configPath);
-            var lines = config.Split('\n');
-            foreach (var line in lines)
+            try
             {
-                if (line.Contains("\"path\""))
+                var vdf = VdfConvert.Deserialize(File.ReadAllText(configPath));
+                foreach (var entry in vdf.Value.Children<VProperty>())
                 {
-                    var path = line.Split('"')[3].Replace("\\\\", "\\");
-                    libraryFolders.Add(path);
+                    var pathToken = entry.Value["path"];
+                    if (pathToken != null)
+                    {
+                        libraryFolders.Add(pathToken.ToString());
+                    }
                 }
+            }
+            catch
+            {
+                // Fallback: ignore parse errors, return what we have
             }
         }
 
@@ -503,15 +521,16 @@ public class MainViewModel : ViewModelBase
     }
     private static string? GetInstallDirFromManifest(string manifest)
     {
-        var lines = manifest.Split('\n');
-        foreach (var line in lines)
+        try
         {
-            if (line.Contains("\"installdir\""))
-            {
-                return line.Split('"')[3];
-            }
+            var vdf = VdfConvert.Deserialize(manifest);
+            var installDir = vdf.Value["installdir"];
+            return installDir?.ToString();
         }
-        return null;
+        catch
+        {
+            return null;
+        }
     }
     private static string? GetSteamPath()
     {
@@ -570,7 +589,7 @@ public class MainViewModel : ViewModelBase
         }
         public int GetHashCode(PluginInfo obj)
         {
-            return obj?.Name?.GetHashCode() ?? 0;
+            return obj?.Name?.ToLowerInvariant().GetHashCode() ?? 0;
         }
     }
     private readonly ObservableCollection<PluginInfo> _plugins = [];

@@ -101,10 +101,7 @@ svencoop 目标为 svencoop.exe]
 - 历史脚本链路：`scripts/install-helper-*.bat` 与该 GUI 工具职责重叠，说明安装器逻辑由批处理向 UI 工具演进。
 
 ## 注意事项
-- `HasImportedModule` 用 `BinaryReader.ReadString()` 读取 PE 导入模块名（PE 中通常是 C 风格零结尾字符串），存在解析不稳风险，可能导致 SDL 依赖判定为假阴性。
-- `PluginInfoComparer` 的 `Equals` 是大小写不敏感，但 `GetHashCode` 直接用默认 `string.GetHashCode()`，与比较语义不完全一致，可能造成 `Distinct` 去重边界异常。
 - 路径发现与配置文件读写大量依赖当前工作目录（如 `./Build`、`./lang`），若启动目录变化，可能出现“找不到 Build/语言配置”的行为偏差。
-- `GetLibraryFolders` / `GetInstallDirFromManifest` 采用行文本拆分解析 VDF/ACF，鲁棒性弱于正式 VDF 解析器；遇到格式变化可能失效。
 - 卸载逻辑基于固定白名单路径删除，覆盖面有限且不做备份；用户手工放入同路径下的内容存在被删除风险。
 - 桌面工程未显式请求提权；当目标游戏目录在受保护路径（如 `Program Files`）时，安装/卸载可能抛出权限异常（代码中已提示但不自动提权）。
 

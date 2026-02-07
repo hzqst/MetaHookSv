@@ -28,6 +28,7 @@
     <PackageReference Include="Irihi.Ursa.ReactiveUIExtension" Version="1.1.0" />
     <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="1.13.0" />
     <PackageReference Include="ReactiveUI.Avalonia" Version="11.3.0" />
+    <PackageReference Include="Gameloop.Vdf" Version="0.6.2" />
     <PackageReference Include="securifybv.ShellLink" Version="0.1.0" />
     <PackageReference Include="Semi.Avalonia" Version="11.3.7" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" Version="11.3.6.6" />
