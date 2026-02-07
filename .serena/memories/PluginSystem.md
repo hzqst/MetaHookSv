@@ -23,15 +23,15 @@
 - `UtilThreadTask`：线程工具
 
 ## 新增插件的常见流程
-1. 在 VS 解决方案中创建新项目，放到合适的 solution folder
-2. 引用需要的 `PluginLibs` 依赖
-3. 在 `exportfuncs.cpp` 实现插件接口
-4. 把插件纳入构建脚本
-5. 更新配置中的插件加载列表（如 `plugins.lst`）
+1. 在 VS 解决方案中创建新项目，放到 Plugins/XXXXXX
+2. 引用需要的 `PluginLibs` 依赖 （可选）
+3. 完善插件本体代码的实现（可参考其他插件）
+4. 把插件纳入构建脚本 `scripts/build-Plugins.bat`
+5. 更新配置中的插件加载列表 `plugins.lst`
 
 ## 常见开发模式/约定
-- 插件通过 `exportfuncs.h` 导出标准入口点
-- 使用 MetaHook API 与引擎交互/安装 hook
+- 在 `plugins.cpp!IPluginsV4::LoadClient` 中替换`pExportFunc->`函数指针以接管 `client.dll` 的导出函数，如：`pExportFunc->HUD_Init = HUD_Init;`。此处需要我们实现自己的`HUD_Init`以完成对client的HUD_Init的接管。
+- 使用 MetaHook API 与引擎交互/安装 inline hook 或 vtable hook
 - 遵循已有插件的结构与命名
 
 ## 测试与调试
