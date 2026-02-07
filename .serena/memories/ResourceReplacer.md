@@ -41,7 +41,7 @@ flowchart TD
   D[IPluginsV4::LoadClient] --> E[接管 HUD_Init/HUD_VidInit/HUD_Shutdown]
   E --> F[HUD_Init 加载 resreplacer/default_global.gmr/.gsr]
   G[每张地图预缓存 CL_PrecacheResources] --> H[加载 maps/<map>.gmr/.gsr]
-  I[引擎调用 FS_Open("rb")] --> J[Mod_LoadModel_FS_Open 或 S_LoadSound_FS_Open]
+  I[引擎调用 FS_Open rb 模式] --> J[Mod_LoadModel_FS_Open 或 S_LoadSound_FS_Open]
   J --> K[ReplaceFileName: 地图规则优先, 全局规则后备]
   K --> L[命中: 用替换路径调用原 FS_Open]
   K --> M[未命中: 用原路径调用原 FS_Open]
