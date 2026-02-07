@@ -9,22 +9,10 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Detours">
-      <UniqueIdentifier>{fd2f072f-1919-41e2-bbeb-81903683851d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SteamAppsLocation.cpp">
       <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours_fork\src\detours.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours_fork\src\disasm.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\thirdparty\Detours_fork\src\modules.cpp">
-      <Filter>Detours</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
