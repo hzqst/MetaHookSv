@@ -7,7 +7,7 @@
 ### 核心插件（示例）
 - `VGUI2Extension`：VGUI2 modding framework，许多 UI 相关插件的基础
 - `Renderer`：图形增强渲染引擎
-- `BulletPhysics`：基于 Bullet Physics 的物理模拟
+- `BulletPhysics`：基于 Bullet Physics 的客户端物理模拟，用于支持布娃娃等物理效果。
 - `CaptionMod`：字幕/翻译/HiDPI 支持
 
 ### 工具类插件（示例）
