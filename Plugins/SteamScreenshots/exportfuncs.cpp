@@ -13,21 +13,78 @@ r_studio_interface_t **gpStudioInterface;
 
 char g_szServerName[256] = {0};
 
+namespace
+{
+	bool g_bLoggedSteamScreenshotsUnavailable = false;
+	bool g_bLoggedSteamUserUnavailable = false;
+	bool g_bLoggedSteamScreenshotsWriteUnavailable = false;
+
+	void Con_Printf_Once(bool& bAlreadyPrinted, const char* pszMessage)
+	{
+		if (bAlreadyPrinted)
+			return;
+
+		bAlreadyPrinted = true;
+		gEngfuncs.Con_Printf(pszMessage);
+	}
+}
 class CSnapshotManager
 {
 public:
-	STEAM_CALLBACK(CSnapshotManager, OnSnapshotCallback, ScreenshotReady_t);
+	STEAM_CALLBACK_MANUAL(CSnapshotManager, OnSnapshotCallback, ScreenshotReady_t, m_ScreenshotReadyCallback);
+	void TryRegisterCallback();
+	void UnregisterCallback();
+
+private:
+	bool m_bCallbackRegistered = false;
 };
 
 CSnapshotManager g_SnapshotManager;
 
+void CSnapshotManager::TryRegisterCallback()
+{
+	if (m_bCallbackRegistered)
+		return;
+
+	if (!SteamScreenshots() || !SteamUser())
+		return;
+
+	m_ScreenshotReadyCallback.Register(this, &CSnapshotManager::OnSnapshotCallback);
+	m_bCallbackRegistered = true;
+}
+
+void CSnapshotManager::UnregisterCallback()
+{
+	if (!m_bCallbackRegistered)
+		return;
+
+	m_ScreenshotReadyCallback.Unregister();
+	m_bCallbackRegistered = false;
+}
+
 void CSnapshotManager::OnSnapshotCallback(ScreenshotReady_t* pCallback)
 {
+	auto pSteamScreenshots = SteamScreenshots();
+
+	if (!pSteamScreenshots)
+	{
+		Con_Printf_Once(g_bLoggedSteamScreenshotsUnavailable, "[SteamScreenshots] Steam screenshots interface unavailable.\n");
+		return;
+	}
+
 	if (pCallback->m_eResult == k_EResultOK)
 	{
-		SteamScreenshots()->SetLocation(pCallback->m_hLocal, g_szServerName);
+		pSteamScreenshots->SetLocation(pCallback->m_hLocal, g_szServerName);
 
-		SteamScreenshots()->TagUser(pCallback->m_hLocal, SteamUser()->GetSteamID());
+		auto pSteamUser = SteamUser();
+		if (pSteamUser)
+		{
+			pSteamScreenshots->TagUser(pCallback->m_hLocal, pSteamUser->GetSteamID());
+		}
+		else
+		{
+			Con_Printf_Once(g_bLoggedSteamUserUnavailable, "[SteamScreenshots] Cannot tag user because Steam user interface is unavailable.\n");
+		}
 
 		gEngfuncs.Con_Printf("[SteamScreenshots] Snapshot saved.\n");
 	}
@@ -43,6 +100,8 @@ void CSnapshotManager::OnSnapshotCallback(ScreenshotReady_t* pCallback)
 
 void HUD_Shutdown(void)
 {
+	g_SnapshotManager.UnregisterCallback();
+
 	GL_ShutdownCapture();
 
 	gExportfuncs.HUD_Shutdown();
@@ -50,7 +109,15 @@ void HUD_Shutdown(void)
 
 void ScreenshotCallback(void* pBuf, size_t cbBufSize, int width, int height)
 {
-	SteamScreenshots()->WriteScreenshot(pBuf, cbBufSize, width, height);
+	auto pSteamScreenshots = SteamScreenshots();
+
+	if (!pSteamScreenshots)
+	{
+		Con_Printf_Once(g_bLoggedSteamScreenshotsWriteUnavailable, "[SteamScreenshots] Cannot write screenshot because Steam screenshots interface is unavailable.\n");
+		return;
+	}
+
+	pSteamScreenshots->WriteScreenshot(pBuf, cbBufSize, width, height);
 }
 
 void VID_Snapshot_f(void)
@@ -61,6 +128,8 @@ void VID_Snapshot_f(void)
 void HUD_Frame(double time)
 {
 	gExportfuncs.HUD_Frame(time);
+
+	g_SnapshotManager.TryRegisterCallback();
 
 	auto levelname = gEngfuncs.pfnGetLevelName();
 
@@ -83,7 +152,10 @@ int __MsgFunc_ServerName(const char *pszName, int iSize, void *pbuf)
 	strncpy(g_szServerName, szServerName, sizeof(g_szServerName) - 1);
 	g_szServerName[sizeof(g_szServerName) - 1] = 0;
 
-	return m_pfnServerName(pszName, iSize, pbuf);
+	if (m_pfnServerName)
+		return m_pfnServerName(pszName, iSize, pbuf);
+
+	return 0;
 }
 
 void IN_ActivateMouse(void)
@@ -102,6 +174,11 @@ void IN_ActivateMouse(void)
 
 		m_pfnServerName = HOOK_MESSAGE(ServerName);
 
+		g_SnapshotManager.TryRegisterCallback();
+
 		init = true;
 	}
 }
+
+
+
