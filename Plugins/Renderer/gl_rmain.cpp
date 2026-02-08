@@ -334,6 +334,7 @@ FBO_Container_t s_BackBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO2 = { 0 };
 FBO_Container_t s_BackBufferFBO3 = { 0 };
 FBO_Container_t s_BackBufferFBO4 = { 0 };
+FBO_Container_t s_BackBufferFBO5 = { 0 };
 FBO_Container_t s_GBufferFBO = { 0 };
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS] = { 0 };
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS] = { 0 };
@@ -2672,6 +2673,20 @@ void GL_GenerateFrameBuffers(void)
 		{
 			GL_FreeFBO(&s_BackBufferFBO4);
 			Sys_Error("Failed to initialize BackBufferFBO4!\n");
+		}
+	}
+
+	{
+		s_BackBufferFBO5.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO5.iHeight = R_GetSwapChainHeight();
+		GL_GenFrameBuffer(&s_BackBufferFBO5, "s_BackBufferFBO5");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO5, GL_RGBA8);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO5, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO5);
+			Sys_Error("Failed to initialize BackBufferFBO5!\n");
 		}
 	}
 
@@ -7386,6 +7401,11 @@ public:
 	void DrawCurrentEntity(bool bTransparent) override
 	{
 		R_DrawCurrentEntity(bTransparent);
+	}
+
+	FBO_Container_t* GetBackBufferFBO5() const override
+	{
+		return &s_BackBufferFBO5;
 	}
 };
 

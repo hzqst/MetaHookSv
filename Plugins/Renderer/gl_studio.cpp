@@ -2672,11 +2672,12 @@ void R_StudioDrawMesh_DrawPass(
 		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
 		{
 			//Texture unit 6 = Stencil texture
-			if (!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO3)
+			if (R_StudioHasHairShadow() && 
+				!(StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO4)
 			{
-				if (s_BackBufferFBO3.s_hBackBufferStencilView)
+				if (s_BackBufferFBO4.s_hBackBufferStencilView)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, s_BackBufferFBO3.s_hBackBufferStencilView);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_STENCIL, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferStencilView);
 
 					StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
 				}
@@ -2687,28 +2688,28 @@ void R_StudioDrawMesh_DrawPass(
 		{
 			//Texture unit 7 = Mix diffuse texture
 			if (R_StudioHasHairFaceColorMix() && 
-				!(StudioProgramState & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO4)
+				!(StudioProgramState & STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO5)
 			{
-				if (s_BackBufferFBO4.s_hBackBufferTex)
+				if (s_BackBufferFBO5.s_hBackBufferTex)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_MIX_DIFFUSE, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferTex);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_MIX_DIFFUSE, GL_TEXTURE_2D, s_BackBufferFBO5.s_hBackBufferTex);
 
 					StudioProgramState |= STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED;
 				}
 			}
 			//Texture unit 8 = Depth texture
 			if (R_StudioHasHairFaceColorMix() && 
-				!(StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO4)
+				!(StudioProgramState & STUDIO_DEPTH_TEXTURE_ENABLED) && GL_GetCurrentRenderingFBO() != &s_BackBufferFBO5)
 			{
-				if (s_BackBufferFBO4.s_hBackBufferDepthView)
+				if (s_BackBufferFBO5.s_hBackBufferDepthView)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferDepthView);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO5.s_hBackBufferDepthView);
 
 					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
 				}
-				else if (s_BackBufferFBO4.s_hBackBufferDepthTex)
+				else if (s_BackBufferFBO5.s_hBackBufferDepthTex)
 				{
-					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO4.s_hBackBufferDepthTex);
+					GL_BindTextureUnit(STUDIO_BIND_TEXTURE_DEPTH, GL_TEXTURE_2D, s_BackBufferFBO5.s_hBackBufferDepthTex);
 
 					StudioProgramState |= STUDIO_DEPTH_TEXTURE_ENABLED;
 				}
@@ -3647,14 +3648,14 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		r_draw_deferredtrans = true;
 	}
 
-	//Hair shadow pass, draw hair && face geometry onto s_BackBufferFBO3
+	//Hair shadow pass, draw hair && face geometry onto s_BackBufferFBO4
 	if (R_StudioHasHairShadow())
 	{
 		GL_BeginDebugGroup("R_StudioRenderModel - DrawShadowHairGeometryPass");
 
 		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
 
-		GL_BindFrameBuffer(&s_BackBufferFBO3);
+		GL_BindFrameBuffer(&s_BackBufferFBO4);
 
 		vec4_t clearcolor = { 0, 0, 0, 0 };
 		GL_ClearColor(clearcolor);
@@ -3680,14 +3681,14 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		GL_EndDebugGroup();
 	}
 
-	//HairFace color mix pass, draw face geometry onto s_BackBufferFBO4
+	//HairFace color mix pass, draw face geometry onto s_BackBufferFBO5
 	if (R_StudioHasHairFaceColorMix())
 	{
 		GL_BeginDebugGroup("R_StudioRenderModel - DrawHairFaceColorMixGeometryPass");
 
 		auto CurrentFBO = r_draw_gbuffer ? &s_GBufferFBO : GL_GetCurrentSceneFBO();
 
-		GL_BindFrameBuffer(&s_BackBufferFBO4);
+		GL_BindFrameBuffer(&s_BackBufferFBO5);
 
 		vec4_t clearcolor = { 0, 0, 0, 1 };
 		GL_ClearColor(clearcolor);
