@@ -61,7 +61,8 @@ flowchart TD
   - FACE 分支按头部朝向（`v_headfwd`）修正光向，减少极角下脸部跳变。
   - FACE + stencil 分支：命中 `STENCIL_MASK_HAS_SHADOW` 时强制 `litOrShadowArea = 0.0`。
   - 非 FACE 分支叠加 rim light / rim dark；HAIR 分支叠加 Kajiya strand specular。
-- `R_GenerateAdjustedNormal()`：FACE 允许在原法线与球化法线之间插值（`flNormalMask`）；与文档“蓝通道控制 face 球化法线比例”一致。
+- `R_GenerateAdjustedNormal()`：FACE 允许在原法线与球化法线之间插值（`flNormalMask`）；与文档"蓝通道控制 face 球化法线比例"一致。
+- FACE 分支垂直光修正（#795）：当 `lightdirWS.xy` 水平分量极小时（`length < 0.2`），Z-flattening 在 `normalize()` 后失效，导致"竖线阴影"伪影。修正方法：在 `litOrShadowArea` 计算后、stencil 检查前，用 `smoothstep(0.05, 0.2, length(lightdirWS.xy))` 检测垂直度，渐变至无阴影（`litOrShadowArea = 1.0`）。
 - HairFaceColorMix pass（frag `HAIR_FACE_COLOR_MIX_ENABLED`）：输出 face `diffuseColor`；若有 specular 贴图则 `diffuseColor.a *= rawSpecularColor.a`。
 - Hair normal pass 混色（frag `STUDIO_NF_CELSHADE_HAIR && MIX_DIFFUSE_TEXTURE_ENABLED`）：
   - 采样 `depthTex` 重建 `sceneWorldPos`；
