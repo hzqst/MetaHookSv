@@ -50,7 +50,7 @@ public:
 		m_pHDRExposure = new CCvarSlider(this, "HDRExposure", "#GameUI_HDRExposure", 0.1f, 2.0f, "r_hdr_exposure", false);
 		m_pHDRDarkness = new CCvarSlider(this, "HDRDarkness", "#GameUI_HDRDarkness", 0.1f, 2.0f, "r_hdr_darkness", false);
 		m_pBloomIntensity = new CCvarSlider(this, "BloomIntensity", "#GameUI_BloomIntensity", 0.0f, 1.0f, "r_hdr_blurwidth", false);
-		m_pShadowIntensity = new CCvarSlider(this, "ShadowIntensity", "#GameUI_ShadowIntensity", 0.0f, 1.0f, "r_shadow_intensity", false);
+		//m_pShadowIntensity = new CCvarSlider(this, "ShadowIntensity", "#GameUI_ShadowIntensity", 0.0f, 1.0f, "r_shadow_intensity", false);
 
 		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
 		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
@@ -94,7 +94,7 @@ public:
 		m_pHDRExposure->ApplyChanges();
 		m_pHDRDarkness->ApplyChanges();
 		m_pBloomIntensity->ApplyChanges();
-		m_pShadowIntensity->ApplyChanges();
+		//m_pShadowIntensity->ApplyChanges();
 		m_pTexGamma->ApplyChanges();
 		m_pLightGamma->ApplyChanges();
 
@@ -148,7 +148,7 @@ public:
 		m_pHDRExposure->Reset();
 		m_pHDRDarkness->Reset();
 		m_pBloomIntensity->Reset();
-		m_pShadowIntensity->Reset();
+		//m_pShadowIntensity->Reset();
 		m_pTexGamma->Reset();
 		m_pLightGamma->Reset();
 
@@ -211,7 +211,7 @@ private:
 	CCvarSlider *m_pHDRExposure;
 	CCvarSlider *m_pHDRDarkness;
 	CCvarSlider *m_pBloomIntensity;
-	CCvarSlider *m_pShadowIntensity;
+	//CCvarSlider *m_pShadowIntensity;
 	CCvarSlider *m_pTexGamma;
 	CCvarSlider *m_pLightGamma;
 };
