@@ -1,4 +1,4 @@
 {
     "classname" "sprite_efx"
-    "flags" "EF_NOBLOOM"
+    "flags" "FMODEL_NOBLOOM"
 }
