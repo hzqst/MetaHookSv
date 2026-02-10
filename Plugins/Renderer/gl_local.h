@@ -533,6 +533,7 @@ int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
+qboolean triapi_SpriteTexture(model_t* pSpriteModel, int frame);
 
 float* R_GetWorldMatrix();
 void R_PushWorldMatrix();

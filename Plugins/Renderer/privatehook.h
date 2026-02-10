@@ -122,6 +122,7 @@ typedef struct
 	int (*triapi_BoxInPVS)(float* mins, float* maxs);
 	void (*triapi_Fog)(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 	void (*triapi_FogParams)(float flDensity, qboolean bFogAffectsSkybox);
+	qboolean(*triapi_SpriteTexture)(model_t* pSpriteModel, int frame);
 	void (*Draw_Frame)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);
 	void (*Draw_SpriteFrameHoles)(mspriteframe_t* pFrame, unsigned short* pPalette, int x, int y, const wrect_t* prcSubRect);
 	void (*Draw_SpriteFrameHoles_SvEngine)(mspriteframe_t* pFrame, int x, int y, const wrect_t* prcSubRect);

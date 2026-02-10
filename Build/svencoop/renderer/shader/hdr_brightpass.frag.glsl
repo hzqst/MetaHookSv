@@ -24,5 +24,5 @@ void main()
 	vec4 vColor = texture(baseTex, texCoord.xy);
 	float fLumValue = dot(vec3(0.27, 0.67, 0.06), vColor.rgb);
 
-	out_Color = max(vColor * (fLumValue - CalcLum()) * 5.0, vec4(0.0, 0.0, 0.0, 1.0));
+	out_Color = min( max(vColor * (fLumValue - CalcLum()) * 5.0, vec4(0.0, 0.0, 0.0, 1.0)), vec4(16.0, 16.0, 16.0, 16.0));
 }

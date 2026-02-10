@@ -3,7 +3,3 @@
   "frame" "0"
   "replacetexture" "sprites/laserbeam_Frame_0.hdr"
 }
-{
-  "classname" "sprite_efx"
-  "flags" "FMODEL_NOBLOOM"
-}
