@@ -289,10 +289,19 @@ public:
 	{
 		auto nContentLength = UTIL_GetContentLength(ResponseInstance);
 
-		if (nContentLength >= 0 && size != nContentLength)
+		// Only fail if actual size is LESS than Content-Length (incomplete download)
+		// If actual size is greater, the Content-Length header might be outdated (common with CDN/cache)
+		// and the data will be validated by subsequent JSON parsing or integrity checks
+		if (nContentLength >= 0 && size < nContentLength)
 		{
-			gEngfuncs.Con_Printf("[SCModelDownloader] Content-Length mismatch for \"%s\": expect %d , got %d !\n", m_Url.c_str(), nContentLength, size);
+			gEngfuncs.Con_Printf("[SCModelDownloader] Content-Length mismatch for \"%s\": expect %d , got %d ! Download might be incomplete.\n", m_Url.c_str(), nContentLength, size);
 			return false;
+		}
+
+		// Warn if actual size is greater than Content-Length (likely outdated metadata)
+		if (nContentLength >= 0 && size > nContentLength)
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Warning: received more data than Content-Length for \"%s\": expect %d , got %d. Proceeding with validation...\n", m_Url.c_str(), nContentLength, size);
 		}
 
 		//do nothing
