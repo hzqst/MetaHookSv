@@ -19,6 +19,7 @@
 cvar_t *scmodel_autodownload = NULL;
 cvar_t *scmodel_downloadlatest = NULL;
 cvar_t* scmodel_cdn = NULL;
+cvar_t* scmodel_max_retry = NULL;
 
 cl_enginefunc_t gEngfuncs = {0};
 engine_studio_api_t IEngineStudio = { 0 };
@@ -37,6 +38,11 @@ bool SCModel_ShouldDownloadLatest()
 int SCModel_CDN()
 {
 	return (int)scmodel_cdn->value;
+}
+
+int SCModel_MaxRetry()
+{
+	return (int)scmodel_max_retry->value;
 }
 
 /*
@@ -112,6 +118,8 @@ void HUD_Init(void)
 	scmodel_downloadlatest = gEngfuncs.pfnRegisterVariable("scmodel_downloadlatest", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	scmodel_cdn = gEngfuncs.pfnRegisterVariable("scmodel_cdn", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	scmodel_max_retry = gEngfuncs.pfnRegisterVariable("scmodel_max_retry", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("scmodel_reload", SCModel_Reload_f);
 

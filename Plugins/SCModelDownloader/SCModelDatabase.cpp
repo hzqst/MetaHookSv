@@ -17,6 +17,7 @@
 
 bool SCModel_ShouldDownloadLatest();
 int SCModel_CDN();
+int SCModel_MaxRetry();
 void SCModel_ReloadModel(const char* name);
 
 static unsigned int g_uiAllocatedTaskId = 0;
@@ -173,6 +174,7 @@ private:
 	bool m_bFinished{};
 	bool m_bFailed{};
 	float m_flNextRetryTime{};
+	int m_iRetryCount{};
 	unsigned int m_uiTaskId{};
 
 protected:
@@ -267,7 +269,19 @@ public:
 	{
 		m_bResponding = false;
 		m_bFailed = true;
-		m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
+		m_iRetryCount++;
+
+		auto iMaxRetry = SCModel_MaxRetry();
+
+		if (iMaxRetry <= 0 || m_iRetryCount < iMaxRetry)
+		{
+			m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
+		}
+		else
+		{
+			m_flNextRetryTime = 0;
+			gEngfuncs.Con_Printf("[SCModelDownloader] Max retry (%d) reached for \"%s\", giving up.\n", iMaxRetry, m_Url.c_str());
+		}
 
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
