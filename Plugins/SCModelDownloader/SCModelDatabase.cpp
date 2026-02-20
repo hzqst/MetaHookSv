@@ -835,7 +835,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/versions.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb");
 
 				if (hFileHandleWrite)
 				{
@@ -967,7 +967,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/models.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb");
 
 				if (hFileHandleWrite)
 				{
