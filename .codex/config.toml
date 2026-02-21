@@ -1,0 +1,2 @@
+# ~/.codex/config.toml
+project_doc_fallback_filenames = ["CLAUDE.md"]
