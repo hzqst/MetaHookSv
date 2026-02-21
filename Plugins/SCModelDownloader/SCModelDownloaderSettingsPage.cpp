@@ -20,6 +20,8 @@ CSCModelDownloaderSettingsPage::CSCModelDownloaderSettingsPage(vgui::Panel* pare
 	m_pCDN->AddItem("none", NULL);
 	m_pCDN->AddItem("jsdelivr", NULL);
 
+	m_pMaxRetry = new CCvarTextEntry(this, "MaxRetry", "scmodel_max_retry");
+
 	LoadControlSettings("scmodeldownloader/SCModelDownloaderSettingsPage.res", "GAME");
 
 	vgui::ivgui()->AddTickSignal(GetVPanel());
@@ -46,6 +48,8 @@ void CSCModelDownloaderSettingsPage::ApplyChanges(void)
 
 	ApplyChangesToConVar(m_pAutoDownload->GetCvarName(), m_pAutoDownload->IsSelected());
 	ApplyChangesToConVar(m_pDownloadLatest->GetCvarName(), m_pDownloadLatest->IsSelected());
+
+	m_pMaxRetry->ApplyChanges();
 }
 
 void CSCModelDownloaderSettingsPage::OnApplyChanges(void)
@@ -57,6 +61,7 @@ void CSCModelDownloaderSettingsPage::OnResetData(void)
 {
 	m_pAutoDownload->Reset();
 	m_pDownloadLatest->Reset();
+	m_pMaxRetry->Reset();
 
 	auto scmodel_cdn = gEngfuncs.pfnGetCvarPointer("scmodel_cdn");
 

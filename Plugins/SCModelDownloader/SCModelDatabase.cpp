@@ -17,6 +17,7 @@
 
 bool SCModel_ShouldDownloadLatest();
 int SCModel_CDN();
+int SCModel_MaxRetry();
 void SCModel_ReloadModel(const char* name);
 
 static unsigned int g_uiAllocatedTaskId = 0;
@@ -173,6 +174,7 @@ private:
 	bool m_bFinished{};
 	bool m_bFailed{};
 	float m_flNextRetryTime{};
+	int m_iRetryCount{};
 	unsigned int m_uiTaskId{};
 
 protected:
@@ -267,7 +269,19 @@ public:
 	{
 		m_bResponding = false;
 		m_bFailed = true;
-		m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
+		m_iRetryCount++;
+
+		auto iMaxRetry = SCModel_MaxRetry();
+
+		if (iMaxRetry <= 0 || m_iRetryCount < iMaxRetry)
+		{
+			m_flNextRetryTime = (float)gEngfuncs.GetAbsoluteTime() + 5.0f;
+		}
+		else
+		{
+			m_flNextRetryTime = 0;
+			gEngfuncs.Con_Printf("[SCModelDownloader] Max retry (%d) reached for \"%s\", giving up.\n", iMaxRetry, m_Url.c_str());
+		}
 
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
 	}
@@ -289,10 +303,19 @@ public:
 	{
 		auto nContentLength = UTIL_GetContentLength(ResponseInstance);
 
-		if (nContentLength >= 0 && size != nContentLength)
+		// Only fail if actual size is LESS than Content-Length (incomplete download)
+		// If actual size is greater, the Content-Length header might be outdated (common with CDN/cache)
+		// and the data will be validated by subsequent JSON parsing or integrity checks
+		if (nContentLength >= 0 && size < nContentLength)
 		{
-			gEngfuncs.Con_Printf("[SCModelDownloader] Content-Length mismatch for \"%s\": expect %d , got %d !\n", m_Url.c_str(), nContentLength, size);
+			gEngfuncs.Con_Printf("[SCModelDownloader] Content-Length mismatch for \"%s\": expect %d , got %d ! Download might be incomplete.\n", m_Url.c_str(), nContentLength, size);
 			return false;
+		}
+
+		// Warn if actual size is greater than Content-Length (likely outdated metadata)
+		if (nContentLength >= 0 && size > nContentLength)
+		{
+			gEngfuncs.Con_Printf("[SCModelDownloader] Warning: received more data than Content-Length for \"%s\": expect %d , got %d. Proceeding with validation...\n", m_Url.c_str(), nContentLength, size);
 		}
 
 		//do nothing
@@ -826,7 +849,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/versions.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb");
 
 				if (hFileHandleWrite)
 				{
@@ -958,7 +981,7 @@ public:
 			{
 				std::string filePath = "scmodeldownloader/models.json";
 
-				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAME");
+				auto hFileHandleWrite = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb");
 
 				if (hFileHandleWrite)
 				{

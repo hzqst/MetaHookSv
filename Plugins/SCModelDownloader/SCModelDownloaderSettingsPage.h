@@ -39,4 +39,5 @@ private:
 	DEFINE_CVAR_CHECK_BUTTON(DownloadLatest);
 #undef DEFINE_CVAR_CHECK_BUTTON
 
+	CCvarTextEntry* m_pMaxRetry{};
 };

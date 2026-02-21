@@ -286,6 +286,7 @@ extern FBO_Container_t s_BackBufferFBO;
 extern FBO_Container_t s_BackBufferFBO2;
 extern FBO_Container_t s_BackBufferFBO3;
 extern FBO_Container_t s_BackBufferFBO4;
+extern FBO_Container_t s_BackBufferFBO5;
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BlendBufferFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
@@ -532,6 +533,7 @@ int triapi_BoxInPVS(float* mins, float* maxs);
 void triapi_GetMatrix(const int pname, float* matrix);
 void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn);
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox);
+qboolean triapi_SpriteTexture(model_t* pSpriteModel, int frame);
 
 float* R_GetWorldMatrix();
 void R_PushWorldMatrix();

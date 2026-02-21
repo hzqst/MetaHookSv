@@ -12364,6 +12364,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	gPrivateFuncs.triapi_FogParams = gEngfuncs.pTriAPI->FogParams;
+	gPrivateFuncs.triapi_SpriteTexture = gEngfuncs.pTriAPI->SpriteTexture;
 
 	EngineSurface_FillAddress(DllInfo, RealDllInfo);
 
@@ -12653,6 +12654,7 @@ void Engine_InstallHooks(void)
 	gEngfuncs.pTriAPI->BoxInPVS = triapi_BoxInPVS;
 	gEngfuncs.pTriAPI->Fog = triapi_Fog;
 	gEngfuncs.pTriAPI->FogParams = triapi_FogParams;
+	gEngfuncs.pTriAPI->SpriteTexture = triapi_SpriteTexture;
 
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);

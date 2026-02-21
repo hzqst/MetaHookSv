@@ -718,6 +718,12 @@ public:
             note that bTransparent must be true for transparent object.
     */
     virtual void DrawCurrentEntity(bool bTransparent) = 0;
+
+    /*
+        return s_BackBufferFBO5, which is RGBA8 D24S8, W x H = SwapChainWidth x SwapChainHeight
+    */
+    virtual FBO_Container_t* GetBackBufferFBO5() const = 0;
+
 };
 
 IMetaRenderer* MetaRenderer();

@@ -334,6 +334,7 @@ FBO_Container_t s_BackBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO2 = { 0 };
 FBO_Container_t s_BackBufferFBO3 = { 0 };
 FBO_Container_t s_BackBufferFBO4 = { 0 };
+FBO_Container_t s_BackBufferFBO5 = { 0 };
 FBO_Container_t s_GBufferFBO = { 0 };
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS] = { 0 };
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS] = { 0 };
@@ -1282,32 +1283,12 @@ public:
 	int RenderMode{ };
 	int DrawRenderMode{ };
 	GLuint hVAO{};
+	std::shared_ptr<CSpriteModelRenderData> pSpriteRenderData;
 };
 
 CTriAPICommand gTriAPICommand;
 IPMBRingBuffer* g_TriAPIVertexBuffer{};
 IPMBRingBuffer* g_TriAPIIndexBuffer{};
-
-void triapi_Shutdown()
-{
-	if (g_TriAPIVertexBuffer)
-	{
-		g_TriAPIVertexBuffer->Destroy();
-		g_TriAPIVertexBuffer = nullptr;
-	}
-
-	if (g_TriAPIIndexBuffer)
-	{
-		g_TriAPIIndexBuffer->Destroy();
-		g_TriAPIIndexBuffer = nullptr;
-	}
-
-	if (gTriAPICommand.hVAO)
-	{
-		GL_DeleteVAO(gTriAPICommand.hVAO);
-		gTriAPICommand.hVAO = 0;
-	}
-}
 
 void triapi_RenderMode(int mode)
 {
@@ -1342,6 +1323,29 @@ void triapi_EndClear()
 	gTriAPICommand.Positions.clear();
 	gTriAPICommand.Vertices.clear();
 	gTriAPICommand.Indices.clear();
+}
+
+void triapi_Shutdown()
+{
+	if (g_TriAPIVertexBuffer)
+	{
+		g_TriAPIVertexBuffer->Destroy();
+		g_TriAPIVertexBuffer = nullptr;
+	}
+
+	if (g_TriAPIIndexBuffer)
+	{
+		g_TriAPIIndexBuffer->Destroy();
+		g_TriAPIIndexBuffer = nullptr;
+	}
+
+	if (gTriAPICommand.hVAO)
+	{
+		GL_DeleteVAO(gTriAPICommand.hVAO);
+		gTriAPICommand.hVAO = 0;
+	}
+
+	gTriAPICommand.pSpriteRenderData.reset();
 }
 
 void triapi_End()
@@ -1751,6 +1755,34 @@ void triapi_End()
 	}
 	}
 
+	if (gTriAPICommand.pSpriteRenderData)
+	{
+		if (r_draw_opaque)
+		{
+			int iStencilRef = 0;
+
+			if ((gTriAPICommand.pSpriteRenderData->flags & FMODEL_NOBLOOM))
+			{
+				iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
+				//has stencil write-in
+				GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
+			}
+		}
+		else
+		{
+			int iStencilRef = 0;
+
+			if ((gTriAPICommand.pSpriteRenderData->flags & FMODEL_NOBLOOM))
+			{
+				iStencilRef |= STENCIL_MASK_NO_BLOOM;
+
+				//has stencil write-in
+				GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_NO_BLOOM);
+			}
+		}
+	}
+
 	triapi_program_t prog{};
 	R_UseTriAPIProgram(ProgramState, &prog);
 
@@ -1768,6 +1800,7 @@ void triapi_End()
 	//Restore pipeline state
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
+	GL_EndStencil();
 
 	GL_BindVAO(0);
 
@@ -1910,6 +1943,13 @@ void triapi_Fog(float* flFogColor, float flStart, float flEnd, qboolean bOn)
 void triapi_FogParams(float flDensity, qboolean bFogAffectsSkybox)
 {
 	gPrivateFuncs.triapi_FogParams(flDensity, bFogAffectsSkybox);
+}
+
+qboolean triapi_SpriteTexture(model_t* pSpriteModel, int frame)
+{
+	gTriAPICommand.pSpriteRenderData = R_GetSpriteRenderDataFromModel(pSpriteModel);
+
+	return gPrivateFuncs.triapi_SpriteTexture(pSpriteModel, frame);
 }
 
 void __stdcall triapi_glBegin(int GLPrimitiveCode)
@@ -2672,6 +2712,20 @@ void GL_GenerateFrameBuffers(void)
 		{
 			GL_FreeFBO(&s_BackBufferFBO4);
 			Sys_Error("Failed to initialize BackBufferFBO4!\n");
+		}
+	}
+
+	{
+		s_BackBufferFBO5.iWidth = R_GetSwapChainWidth();
+		s_BackBufferFBO5.iHeight = R_GetSwapChainHeight();
+		GL_GenFrameBuffer(&s_BackBufferFBO5, "s_BackBufferFBO5");
+		GL_FrameBufferColorTexture(&s_BackBufferFBO5, GL_RGBA8);
+		GL_FrameBufferDepthTexture(&s_BackBufferFBO5, GL_DEPTH24_STENCIL8);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO5);
+			Sys_Error("Failed to initialize BackBufferFBO5!\n");
 		}
 	}
 
@@ -7386,6 +7440,11 @@ public:
 	void DrawCurrentEntity(bool bTransparent) override
 	{
 		R_DrawCurrentEntity(bTransparent);
+	}
+
+	FBO_Container_t* GetBackBufferFBO5() const override
+	{
+		return &s_BackBufferFBO5;
 	}
 };
 
