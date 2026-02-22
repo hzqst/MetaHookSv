@@ -1,28 +1,28 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
-本文件用于指导在本仓库内以“渐进式披露”的方式进行 Agent Coding：优先从 Serena memories 获取高层信息，只在需要时再按需定位并读取具体文件/符号，避免一次性展开大量上下文。
+This file guides Agent Coding in this repository using a "progressive disclosure" approach: prioritize retrieving high-level information from Serena memories first, then locate and read specific files/symbols only when needed, instead of expanding a large amount of context at once.
 
-## Serena memories（保持上下文精简）
-1. 优先使用 `list_memories` 浏览当前项目已有 memories（不要默认全读）。
-2. 仅在需要时，用 `read_memory` 精确读取某个 memory（按需加载）。
-3. 如果 memory 信息不足/过期，再回退到读取仓库文件或用 Serena 的符号/搜索能力定点定位，并用 `write_memory` / `edit_memory` / `delete_memory` 维护记忆内容。
+## Serena memories (keep context concise)
+1. Prefer using `list_memories` to browse existing memories in the current project (do not read all of them by default).
+2. Use `read_memory` to precisely read a specific memory only when needed (on-demand loading).
+3. If memory information is insufficient or outdated, fall back to reading repository files or use Serena's symbol/search capabilities for targeted lookup, and maintain memory content with `write_memory` / `edit_memory` / `delete_memory`.
 
-## 本仓库的高层信息（优先读对应 memories）
-- 项目概览，代码库入口点：`project_overview`
-- 插件系统与开发流程：`plugin_system`
-- 重要注意事项：`metahooksv_notes`
+## High-level information in this repository (read corresponding memories first)
+- Project overview and codebase entry points: `project_overview`
+- Plugin system and development workflow: `plugin_system`
+- Important notes: `metahooksv_notes`
 
-## 当 memories 不足时的“源文件入口”（按需查询与读取）
-- 解决方案与构建：`MetaHook.sln`、`scripts/`
-- Loader 与核心逻辑：`src/`
-- 公共 API / 接口：`include/metahook.h`、`include/Interface/`
-- 插件与通用库：`Plugins/`、`PluginLibs/`
-- 插件加载配置：`plugins.lst`
+## "Source entry points" when memories are insufficient (query and read on demand)
+- Solution and build: `MetaHook.sln`, `scripts/`
+- Loader and core logic: `src/`
+- Public API / interfaces: `include/metahook.h`, `include/Interface/`
+- Plugins and shared libraries: `Plugins/`, `PluginLibs/`
+- Plugin loading configuration: `plugins.lst`
 
-## 渐进式披露要点
-- 先读 memories，再定位“单文件/单符号”；不要一次性读全仓库。
-- 探索代码优先用 Serena（符号总览/引用/搜索），只在必要时读取文件内容。
-- 外部依赖/库的用法优先用 Context7（按需查询）。
+## Progressive disclosure key points
+- Read memories first, then locate a single file/symbol; do not read the whole repository at once.
+- Prefer Serena for code exploration (symbol overview/references/search), and read file contents only when necessary.
+- Prefer Context7 for external dependency/library usage (query on demand).
 
 ## Important rules
 - **ALWAYS** call Serena's `activate_project` on agent startup
