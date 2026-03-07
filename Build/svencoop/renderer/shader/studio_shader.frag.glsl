@@ -798,9 +798,7 @@ void main(void)
 	
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
-	#if defined(CLIP_NEARPLANE_ENABLED)
 	ClipNearPlaneTest(flDistanceToFragment, r_nearplaneclip.x, r_nearplaneclip.y);
-	#endif
 
 	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
@@ -924,6 +922,7 @@ void main(void)
 	//lightmapColor.y = pow(lightmapColor.y, SceneUBO.r_lightmap_pow);
 	//lightmapColor.z = pow(lightmapColor.z, SceneUBO.r_lightmap_pow);
 	
+	//We should probably do this from cpu-side
 	//lightmapColor *= SceneUBO.r_lightmap_scale;
 
 	#if defined(GBUFFER_ENABLED)

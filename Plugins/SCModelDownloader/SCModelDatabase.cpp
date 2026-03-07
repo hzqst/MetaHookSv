@@ -507,11 +507,11 @@ public:
 
 				if (fileSize > 0)
 				{
-					if (m_expectedFileSize >= 0 && fileSize < m_expectedFileSize)
-					{
-						gEngfuncs.Con_Printf("[SCModelDownloader] Temp file \"%s\" size mismatch ! expect %d, got %d. The downloading progress might be interrupted.\n", filePathTmp.c_str(), m_expectedFileSize, fileSize);
-						return false;
-					}
+					//if (m_expectedFileSize >= 0 && fileSize < m_expectedFileSize)
+					//{
+					//	gEngfuncs.Con_Printf("[SCModelDownloader] Temp file \"%s\" size mismatch ! expect %d, got %d. The downloading progress might be interrupted.\n", filePathTmp.c_str(), m_expectedFileSize, fileSize);
+					//	return false;
+					//}
 
 					auto fileBuf = malloc(fileSize);
 
