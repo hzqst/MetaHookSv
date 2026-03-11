@@ -14,7 +14,7 @@ CWorldPortalModel::~CWorldPortalModel()
 {
 	if (hABO)
 	{
-		GL_DeleteVAO(hABO);
+		GL_DeleteBuffer(hABO);
 	}
 }
 

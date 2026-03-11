@@ -30,7 +30,7 @@ CWaterSurfaceModel::~CWaterSurfaceModel()
 
 	if (hABO)
 	{
-		GL_DeleteVAO(hABO);
+		GL_DeleteBuffer(hABO);
 		hABO = 0;
 	}
 
