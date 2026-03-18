@@ -11,6 +11,8 @@ Build/MetaHook_blob.exe
 Build/SDL2.dll
 Build/SDL3.dll
 
+tools/steam_appid.txt
+tools/global.props
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia/bin
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia/obj
 toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/bin
