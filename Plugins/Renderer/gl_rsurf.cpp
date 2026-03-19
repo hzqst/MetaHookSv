@@ -21,6 +21,58 @@ decalcache_t *gDecalCache = NULL;
 
 CDecalDrawBatch g_DecalDrawBatch = { 0 };
 
+static constexpr float DECAL_CULL_PADDING = 1.0f;
+
+static bool R_DecalBoxInPVS(vec3_t mins, vec3_t maxs)
+{
+	return PVSNode((*cl_worldmodel)->nodes, mins, maxs) != nullptr;
+}
+
+static void R_ClearCachedDecalBounds(CCachedDecal& cachedDecal)
+{
+	VectorClear(cachedDecal.origin);
+	VectorClear(cachedDecal.mins);
+	VectorClear(cachedDecal.maxs);
+	cachedDecal.boundsValid = false;
+}
+
+static void R_ClearCachedDecalDrawData(CCachedDecal& cachedDecal)
+{
+	cachedDecal.gltexturenum = 0;
+	cachedDecal.gltexturewidth = 0;
+	cachedDecal.gltextureheight = 0;
+	cachedDecal.pRenderMaterial = nullptr;
+	cachedDecal.startIndex = 0;
+	cachedDecal.indiceCount = 0;
+	cachedDecal.startInstance = 0;
+	cachedDecal.instanceCount = 0;
+}
+
+static void R_BuildCachedDecalBounds(float* v, int vertCount, CCachedDecal& cachedDecal)
+{
+	VectorCopy(v, cachedDecal.mins);
+	VectorCopy(v, cachedDecal.maxs);
+
+	for (int i = 0; i < vertCount; ++i, v += VERTEXSIZE)
+	{
+		cachedDecal.mins[0] = (v[0] < cachedDecal.mins[0]) ? v[0] : cachedDecal.mins[0];
+		cachedDecal.mins[1] = (v[1] < cachedDecal.mins[1]) ? v[1] : cachedDecal.mins[1];
+		cachedDecal.mins[2] = (v[2] < cachedDecal.mins[2]) ? v[2] : cachedDecal.mins[2];
+		cachedDecal.maxs[0] = (v[0] > cachedDecal.maxs[0]) ? v[0] : cachedDecal.maxs[0];
+		cachedDecal.maxs[1] = (v[1] > cachedDecal.maxs[1]) ? v[1] : cachedDecal.maxs[1];
+		cachedDecal.maxs[2] = (v[2] > cachedDecal.maxs[2]) ? v[2] : cachedDecal.maxs[2];
+	}
+
+	for (int i = 0; i < 3; ++i)
+	{
+		cachedDecal.mins[i] -= DECAL_CULL_PADDING;
+		cachedDecal.maxs[i] += DECAL_CULL_PADDING;
+		cachedDecal.origin[i] = (cachedDecal.mins[i] + cachedDecal.maxs[i]) * 0.5f;
+	}
+
+	cachedDecal.boundsValid = true;
+}
+
 void R_RecursiveWorldNode(mnode_t *node)
 {
 	gPrivateFuncs.R_RecursiveWorldNode(node);
@@ -1013,10 +1065,15 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 bool R_IsDecalCacheInvalidated(int decalIndex, texture_t *texture, const std::shared_ptr<CWorldSurfaceRenderMaterial>& pRenderMaterial)
 {
-	if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum != texture->gl_texturenum ||
-		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturewidth != texture->width ||
-		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltextureheight != texture->height ||
-		g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial != pRenderMaterial)
+	auto& cachedDecal = g_WorldSurfaceRenderer.vCachedDecals[decalIndex];
+
+	if (!cachedDecal.boundsValid ||
+		cachedDecal.indiceCount == 0 ||
+		cachedDecal.instanceCount == 0 ||
+		cachedDecal.gltexturenum != texture->gl_texturenum ||
+		cachedDecal.gltexturewidth != texture->width ||
+		cachedDecal.gltextureheight != texture->height ||
+		cachedDecal.pRenderMaterial != pRenderMaterial)
 	{
 		return true;
 	}
@@ -1055,6 +1112,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		if (plist)
 		{
 			int decalIndex = R_DecalIndex(plist);
+			auto& cachedDecal = g_WorldSurfaceRenderer.vCachedDecals[decalIndex];
 
 			auto ptexture = Draw_DecalTexture(plist->texture);
 
@@ -1067,6 +1125,8 @@ void R_DrawDecals(cl_entity_t *ent)
 				float *v = nullptr;
 
 				auto psurf = plist->psurface;
+				plist->flags &= ~FDECAL_VBO;
+				R_ClearCachedDecalDrawData(cachedDecal);
 
 				if (plist->flags & FDECAL_NOCLIP)
 				{
@@ -1085,30 +1145,43 @@ void R_DrawDecals(cl_entity_t *ent)
 
 				if (vertCount > 0)
 				{
+					R_BuildCachedDecalBounds(v, vertCount, cachedDecal);
+
+					if (R_CullBox(cachedDecal.mins, cachedDecal.maxs))
+						continue;
+
+					if (!R_DecalBoxInPVS(cachedDecal.mins, cachedDecal.maxs))
+						continue;
+
 					R_UploadDecalTextures(decalIndex, ptexture, pRenderMaterial);
 					R_UploadDecalVertexBuffer(decalIndex, vertCount, v, psurf, pRenderMaterial.get());
+					plist->flags |= FDECAL_VBO;
 				}
 				else
 				{
-					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum = 0;
-					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount = 0;
-					g_WorldSurfaceRenderer.vCachedDecals[decalIndex].instanceCount = 0;
+					R_ClearCachedDecalBounds(cachedDecal);
 				}
-
-				//Mark this decal as ready
-				plist->flags |= FDECAL_VBO;
 			}
 
-			if (g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount > 0)
+			if (cachedDecal.boundsValid)
+			{
+				if (R_CullBox(cachedDecal.mins, cachedDecal.maxs))
+					continue;
+
+				if (!R_DecalBoxInPVS(cachedDecal.mins, cachedDecal.maxs))
+					continue;
+			}
+
+			if (cachedDecal.indiceCount > 0)
 			{
 				if (g_DecalDrawBatch.BatchCount < MAX_DECALS)
 				{
-					g_DecalDrawBatch.GLTextureId[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].gltexturenum;
-					g_DecalDrawBatch.StartIndex[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startIndex;
-					g_DecalDrawBatch.IndiceCount[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].indiceCount;
-					g_DecalDrawBatch.pRenderMaterial[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].pRenderMaterial.get();
-					g_DecalDrawBatch.StartInstance[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].startInstance;
-					g_DecalDrawBatch.InstanceCount[g_DecalDrawBatch.BatchCount] = g_WorldSurfaceRenderer.vCachedDecals[decalIndex].instanceCount;
+					g_DecalDrawBatch.GLTextureId[g_DecalDrawBatch.BatchCount] = cachedDecal.gltexturenum;
+					g_DecalDrawBatch.StartIndex[g_DecalDrawBatch.BatchCount] = cachedDecal.startIndex;
+					g_DecalDrawBatch.IndiceCount[g_DecalDrawBatch.BatchCount] = cachedDecal.indiceCount;
+					g_DecalDrawBatch.pRenderMaterial[g_DecalDrawBatch.BatchCount] = cachedDecal.pRenderMaterial.get();
+					g_DecalDrawBatch.StartInstance[g_DecalDrawBatch.BatchCount] = cachedDecal.startInstance;
+					g_DecalDrawBatch.InstanceCount[g_DecalDrawBatch.BatchCount] = cachedDecal.instanceCount;
 					++g_DecalDrawBatch.BatchCount;
 				}
 			}

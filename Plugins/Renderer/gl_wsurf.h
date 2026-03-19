@@ -222,6 +222,9 @@ class CCachedDecal
 {
 public:
 	vec3_t origin{};
+	vec3_t mins{};
+	vec3_t maxs{};
+	bool boundsValid{};
 	GLuint gltexturenum{};
 	GLuint gltexturewidth{};
 	GLuint gltextureheight{};

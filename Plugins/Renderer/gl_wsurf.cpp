@@ -2450,6 +2450,10 @@ void R_ClearDecalCache(void)
 {
 	for (int i = 0; i < MAX_DECALS; ++i)
 	{
+		VectorClear(g_WorldSurfaceRenderer.vCachedDecals[i].origin);
+		VectorClear(g_WorldSurfaceRenderer.vCachedDecals[i].mins);
+		VectorClear(g_WorldSurfaceRenderer.vCachedDecals[i].maxs);
+		g_WorldSurfaceRenderer.vCachedDecals[i].boundsValid = false;
 		g_WorldSurfaceRenderer.vCachedDecals[i].indiceCount = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].instanceCount = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].pRenderMaterial = nullptr;
