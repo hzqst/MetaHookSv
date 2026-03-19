@@ -29,10 +29,25 @@ std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
 */
 std::map<void *, CEntityComponentContainer*> g_UnmanagedEntityRenderComponent;
 
+int EngineGetMaxClientEdicts(void);
+int EngineGetMaxTempEnts(void);
+
 void R_InitEntityComponents(void)
 {
 	g_ActiveEntityRenderComponents.reserve(64);
 	g_StaleEntityRenderComponents.reserve(64);
+
+	auto maxClientEdicts = EngineGetMaxClientEdicts();
+	if (maxClientEdicts > 0)
+	{
+		g_ClientEntityRenderComponents.reserve((size_t)maxClientEdicts);
+	}
+
+	auto maxTempEnts = EngineGetMaxTempEnts();
+	if (maxTempEnts > 0)
+	{
+		g_TempEntityRenderComponents.reserve((size_t)maxTempEnts);
+	}
 }
 
 void R_ShutdownEntityComponents(void)
@@ -83,8 +98,8 @@ void R_EntityComponents_StartFrame(void)
 	g_StaleEntityRenderComponents.insert(g_StaleEntityRenderComponents.end(), g_ActiveEntityRenderComponents.begin(), g_ActiveEntityRenderComponents.end());
 	g_ActiveEntityRenderComponents.clear();
 
-	g_ClientEntityRenderComponents.clear();
-	g_TempEntityRenderComponents.clear();
+	std::fill(g_ClientEntityRenderComponents.begin(), g_ClientEntityRenderComponents.end(), nullptr);
+	std::fill(g_TempEntityRenderComponents.begin(), g_TempEntityRenderComponents.end(), nullptr);
 	g_UnmanagedEntityRenderComponent.clear();
 }
 
@@ -166,12 +181,14 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 
 		if (index > 0)
 		{
-			if ((int)g_ClientEntityRenderComponents.size() < index + 1)
+			if ((size_t)index < g_ClientEntityRenderComponents.size())
+			{
+				pContainer = g_ClientEntityRenderComponents[(size_t)index];
+			}
+			else if (create_if_not_exists)
 			{
 				g_ClientEntityRenderComponents.resize((size_t)index + 1);
 			}
-
-			pContainer = g_ClientEntityRenderComponents[(size_t)index];
 
 			if (!pContainer && create_if_not_exists)
 			{
@@ -188,12 +205,14 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 
 		if (index >= 0)
 		{
-			if ((int)g_TempEntityRenderComponents.size() < index + 1)
+			if ((size_t)index < g_TempEntityRenderComponents.size())
+			{
+				pContainer = g_TempEntityRenderComponents[(size_t)index];
+			}
+			else if (create_if_not_exists)
 			{
 				g_TempEntityRenderComponents.resize((size_t)index + 1);
 			}
-
-			pContainer = g_TempEntityRenderComponents[(size_t)index];
 
 			if (!pContainer && create_if_not_exists)
 			{
