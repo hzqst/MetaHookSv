@@ -2454,6 +2454,12 @@ void R_ClearDecalCache(void)
 		VectorClear(g_WorldSurfaceRenderer.vCachedDecals[i].mins);
 		VectorClear(g_WorldSurfaceRenderer.vCachedDecals[i].maxs);
 		g_WorldSurfaceRenderer.vCachedDecals[i].boundsValid = false;
+		g_WorldSurfaceRenderer.vCachedDecals[i].psurface = nullptr;
+		g_WorldSurfaceRenderer.vCachedDecals[i].dx = 0;
+		g_WorldSurfaceRenderer.vCachedDecals[i].dy = 0;
+		g_WorldSurfaceRenderer.vCachedDecals[i].scale = 0;
+		g_WorldSurfaceRenderer.vCachedDecals[i].texture = 0;
+		g_WorldSurfaceRenderer.vCachedDecals[i].entityIndex = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].indiceCount = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].instanceCount = 0;
 		g_WorldSurfaceRenderer.vCachedDecals[i].pRenderMaterial = nullptr;

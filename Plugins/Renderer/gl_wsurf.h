@@ -225,6 +225,12 @@ public:
 	vec3_t mins{};
 	vec3_t maxs{};
 	bool boundsValid{};
+	msurface_t* psurface{};
+	float dx{};
+	float dy{};
+	float scale{};
+	short texture{};
+	short entityIndex{};
 	GLuint gltexturenum{};
 	GLuint gltexturewidth{};
 	GLuint gltextureheight{};
