@@ -2959,6 +2959,8 @@ bool SCR_IsLoadingVisible()
 void R_GameFrameStart()
 {
 	g_bHasLowerBody = false;
+
+	R_EntityComponents_StartFrame();
 }
 
 /*
@@ -3023,7 +3025,6 @@ void R_RenderFrameStart()
 	g_PostProcessGlowColorEntities.clear();
 	g_ViewModelAttachmentEntities.clear();
 
-	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
 	R_StudioStartFrame();
 	
