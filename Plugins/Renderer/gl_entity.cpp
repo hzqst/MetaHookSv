@@ -4,89 +4,88 @@
 #include <map>
 #include <algorithm>
 
+/*
+	The active components in current frame, every active components will stale at frame start.
+*/
+std::vector<CEntityComponentContainer*> g_ActiveEntityRenderComponents;
+
+/*
+	Stale components .
+*/
+std::vector<CEntityComponentContainer*> g_StaleEntityRenderComponents;
+
+/*
+	The entindex -> component mapping.
+*/
 std::vector<CEntityComponentContainer*> g_ClientEntityRenderComponents;
+
+/*
+	The tempent_index -> component mapping.
+*/
 std::vector<CEntityComponentContainer*> g_TempEntityRenderComponents;
 
-//For cl_viewent and client.dll VoiceStatus bakamono.
+/*
+	For cl_viewent and client.dll VoiceStatus fake entity -> component mapping.
+*/
 std::map<void *, CEntityComponentContainer*> g_UnmanagedEntityRenderComponent;
 
 void R_InitEntityComponents(void)
 {
-	g_ClientEntityRenderComponents.clear();
-	g_TempEntityRenderComponents.clear();
-	g_UnmanagedEntityRenderComponent.clear();
+	g_ActiveEntityRenderComponents.reserve(64);
+	g_StaleEntityRenderComponents.reserve(64);
 }
 
 void R_ShutdownEntityComponents(void)
 {
-	for (auto itor = g_ClientEntityRenderComponents.begin(); itor != g_ClientEntityRenderComponents.end(); itor++)
+	for (auto it : g_ActiveEntityRenderComponents)
 	{
-		auto pContainer = (*itor);
-
-		if (pContainer)
-		{
-			delete pContainer;
-		}
+		delete it;
 	}
+	g_ActiveEntityRenderComponents.clear();
+
+	for (auto it : g_StaleEntityRenderComponents)
+	{
+		delete it;
+	}
+	g_StaleEntityRenderComponents.clear();
+
 	g_ClientEntityRenderComponents.clear();
-
-	for (auto itor = g_TempEntityRenderComponents.begin(); itor != g_TempEntityRenderComponents.end(); itor++)
-	{
-		auto pContainer = (*itor);
-
-		if (pContainer)
-		{
-			delete pContainer;
-		}
-	}
 	g_TempEntityRenderComponents.clear();
-
-	for (auto itor = g_UnmanagedEntityRenderComponent.begin(); itor != g_UnmanagedEntityRenderComponent.end(); itor++)
-	{
-		auto pContainer = (*itor).second;
-
-		if (pContainer)
-		{
-			delete pContainer;
-		}
-	}
 	g_UnmanagedEntityRenderComponent.clear();
 }
 
 CEntityComponentContainer *R_AllocateEntityComponentContainer(void)
 {
-	return new CEntityComponentContainer();
+	CEntityComponentContainer* p{};
+
+	if (g_StaleEntityRenderComponents.size() > 0)
+	{
+		p = g_StaleEntityRenderComponents[g_StaleEntityRenderComponents.size() - 1];
+
+		g_StaleEntityRenderComponents.pop_back();
+
+		p->Reset();
+
+		g_ActiveEntityRenderComponents.emplace_back(p);
+
+		return p;
+	}
+
+	p = new CEntityComponentContainer();
+
+	g_ActiveEntityRenderComponents.emplace_back(p);
+
+	return p;
 }
 
 void R_EntityComponents_StartFrame(void)
 {
-	for (auto itor = g_ClientEntityRenderComponents.begin(); itor != g_ClientEntityRenderComponents.end(); itor++)
-	{
-		auto pContainer = (*itor);
+	g_StaleEntityRenderComponents.insert(g_StaleEntityRenderComponents.end(), g_ActiveEntityRenderComponents.begin(), g_ActiveEntityRenderComponents.end());
+	g_ActiveEntityRenderComponents.clear();
 
-		if (pContainer)
-		{
-			pContainer->Reset();
-		}
-	}
-	for (auto itor = g_TempEntityRenderComponents.begin(); itor != g_TempEntityRenderComponents.end(); itor++)
-	{
-		auto pContainer = (*itor);
-
-		if (pContainer)
-		{
-			pContainer->Reset();
-		}
-	}
-	for (auto itor = g_UnmanagedEntityRenderComponent.begin(); itor != g_UnmanagedEntityRenderComponent.end(); itor++)
-	{
-		auto pContainer = (*itor).second;
-
-		if (pContainer)
-		{
-			pContainer->Reset();
-		}
-	}
+	g_ClientEntityRenderComponents.clear();
+	g_TempEntityRenderComponents.clear();
+	g_UnmanagedEntityRenderComponent.clear();
 }
 
 int EngineGetMaxClientEdicts(void)
@@ -177,6 +176,7 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 			if (!pContainer && create_if_not_exists)
 			{
 				pContainer = R_AllocateEntityComponentContainer();
+
 				g_ClientEntityRenderComponents[(size_t)index] = pContainer;
 			}
 		}
@@ -216,6 +216,7 @@ CEntityComponentContainer * R_GetEntityComponentContainer(cl_entity_t *ent, bool
 		if (!pContainer && create_if_not_exists)
 		{
 			pContainer = R_AllocateEntityComponentContainer();
+
 			g_UnmanagedEntityRenderComponent[ent] = pContainer;
 		}
 	}
