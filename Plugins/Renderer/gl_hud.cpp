@@ -1941,6 +1941,9 @@ void R_CopyColor(FBO_Container_t* src, FBO_Container_t* dst)
 
 	GL_UseProgram(copy_color.program);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	GL_BindVAO(r_empty_vao);
 
 	GL_BindTextureUnit(0, GL_TEXTURE_2D, src->s_hBackBufferTex);
@@ -1952,6 +1955,8 @@ void R_CopyColor(FBO_Container_t* src, FBO_Container_t* dst)
 	GL_BindVAO(0);
 
 	GL_UseProgram(0);
+
+	glDisable(GL_BLEND);
 
 	GL_Finish2D();
 
