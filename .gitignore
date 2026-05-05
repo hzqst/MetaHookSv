@@ -22,6 +22,12 @@ toolsrc/MetahookInstaller/obj
 
 .vs/
 
+settings.local.json
+
+.vscode
+
+*.lnk
+
 # Prerequisites
 *.d
 
