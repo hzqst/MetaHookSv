@@ -440,10 +440,20 @@ std::shared_ptr<CSubLine> SubtitlePanel::AddLine(const std::shared_ptr<CDictiona
 
 static bool IsNonBreakableCharacter(wchar_t ch)
 {
-    if (ch == L'\0') 
-        return false;
+	if (ch == L'\0')
+		return false;
 
-    return (ch != L' ' && ch != L'\t' && ch != L'\r' && ch != L'\n');
+	// CJK body text is normally breakable between characters.
+	if ((ch >= 0x3040 && ch <= 0x30FF) || // Hiragana and Katakana
+		(ch >= 0x3400 && ch <= 0x4DBF) || // CJK Unified Ideographs Extension A
+		(ch >= 0x4E00 && ch <= 0x9FFF) || // CJK Unified Ideographs
+		(ch >= 0xAC00 && ch <= 0xD7AF) || // Hangul Syllables
+		(ch >= 0xF900 && ch <= 0xFAFF))   // CJK Compatibility Ideographs
+	{
+		return false;
+	}
+
+	return (ch != L' ' && ch != L'\t' && ch != L'\r' && ch != L'\n');
 }
 //2015-11-26 added htimescale for SubtitlePanel
 void SubtitlePanel::StartSubtitle(const std::shared_ptr<CDictionary>& dict, float flDurationTime, float flStartTime, const CStartSubtitleContext* pStartSubtitleContext)
