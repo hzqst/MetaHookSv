@@ -280,7 +280,7 @@ public:
 		else
 		{
 			m_flNextRetryTime = 0;
-			gEngfuncs.Con_Printf("[SCModelDownloader] Max retry (%d) reached for \"%s\", giving up.\n", iMaxRetry, m_Url.c_str());
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] Max retry (%d) reached for \"%s\", giving up.\n", iMaxRetry, m_Url.c_str());
 		}
 
 		SCModelDatabaseInternal()->DispatchQueryStateChangeCallback(this, GetState());
