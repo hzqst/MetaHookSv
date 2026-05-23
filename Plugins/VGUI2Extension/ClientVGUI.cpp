@@ -918,8 +918,8 @@ void CClientVGUIProxy::Start(void)
 		gPrivateFuncs.CWorldMap_vftable = *(PVOID**)g_pWorldMapPanel;
 
 		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
+			!((ULONG_PTR)gPrivateFuncs.CWorldMap_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMap_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
 		{
 			Sig_NotFound("CWorldMap");
 		}
@@ -954,8 +954,8 @@ void CClientVGUIProxy::Start(void)
 		gPrivateFuncs.CWorldMapMissionSelect_vftable = *(PVOID**)g_pWorldMapMissionSelectPanel;
 
 		if (
-			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_ClientDLLInfo.TextBase &&
-				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_ClientDLLInfo.TextBase + g_ClientDLLInfo.TextSize))
+			!((ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable > (ULONG_PTR)g_ClientDLLInfo.ImageBase &&
+				(ULONG_PTR)gPrivateFuncs.CWorldMapMissionSelect_vftable < (ULONG_PTR)g_ClientDLLInfo.ImageBase + g_ClientDLLInfo.ImageSize))
 		{
 			Sig_NotFound("CWorldMapMissionSelect_vftable");
 		}
