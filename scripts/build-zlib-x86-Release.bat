@@ -13,7 +13,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\zlib-fork" -B "%SolutionDir%thirdparty\build\zlib\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\zlib\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" -DZLIB_BUILD_TESTING=FALSE -DUSE_VCLTL=TRUE
+call cmake -S "%SolutionDir%thirdparty\zlib-fork" -B "%SolutionDir%thirdparty\build\zlib\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\zlib\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" -DZLIB_BUILD_TESTING=FALSE -DUSE_VCLTL=TRUE
 
 call cmake --build "%SolutionDir%thirdparty\build\zlib\x86\Release" --config Release --target install
 

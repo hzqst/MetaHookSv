@@ -13,7 +13,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-call cmake -G "Visual Studio 17 2022" -S "%SolutionDir%thirdparty\FreeImage_clone" -B "%SolutionDir%thirdparty\build\FreeImage\x86\Debug" -A Win32 -DCMAKE_PREFIX_PATH="%SolutionDir%thirdparty\install\zlib\x86\Debug" -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\FreeImage\x86\Debug" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" -DUSE_VCLTL=TRUE
+call cmake -S "%SolutionDir%thirdparty\FreeImage_clone" -B "%SolutionDir%thirdparty\build\FreeImage\x86\Debug" -A Win32 -DCMAKE_PREFIX_PATH="%SolutionDir%thirdparty\install\zlib\x86\Debug" -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\FreeImage\x86\Debug" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake" -DUSE_VCLTL=TRUE
 
 call cmake --build "%SolutionDir%thirdparty\build\FreeImage\x86\Debug" --config Debug --target install
 
