@@ -15,6 +15,8 @@ private:
 	size_t m_UsedSize{};
 	size_t m_CurrFrameSize{};
 	size_t m_FrameStartOffset{};
+	bool m_InFrame{};
+	bool m_LoggedOutOfFrameAllocate{};
 
 	struct FrameHeadAttribs
 	{
@@ -41,6 +43,8 @@ public:
 		m_UsedSize = 0;
 		m_CurrFrameSize = 0;
 		m_FrameStartOffset = 0;
+		m_InFrame = false;
+		m_LoggedOutOfFrameAllocate = false;
 
 		m_CompletedFrames.clear();
 
@@ -90,16 +94,19 @@ public:
 			m_MappedPtr = nullptr;
 		}
 
-		if (m_GLBufferTarget)
+		if (m_hGLBufferObject)
 		{
-			GL_DeleteBuffer(m_GLBufferTarget);
-			m_GLBufferTarget = 0;
+			GL_DeleteBuffer(m_hGLBufferObject);
+			m_hGLBufferObject = 0;
 		}
 
+		m_GLBufferTarget = 0;
 		m_Head = 0;
 		m_Tail = 0;
 		m_UsedSize = 0;
 		m_CurrFrameSize = 0;
+		m_FrameStartOffset = 0;
+		m_InFrame = false;
 	}
 
 	void Destroy()  override
@@ -119,100 +126,154 @@ public:
 
 private:
 	void ReleaseCompletedFrames();
-	void WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize);
+	bool WaitForAvailableSpace(size_t size);
+	bool WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize);
+	bool WaitAndReleaseFrame(std::deque<FrameHeadAttribs>::iterator it, GLuint64 timeout, const char* reason);
+	void ReleaseFrame(std::deque<FrameHeadAttribs>::iterator it);
+	void ResetAfterGpuDrain();
+	bool HasAvailableSpace(size_t size) const;
+	size_t WrapOffset(size_t offset) const;
 	bool DoRangesOverlap(size_t start1, size_t size1, size_t start2, size_t size2) const;
 	static bool IsPowerOfTwo(size_t value) { return value && !(value & (value - 1)); }
 };
 
 bool CPMBRingBuffer::Allocate(size_t size, CPMBRingBufferAllocation& allocation)
 {
+	allocation = {};
+
 	if (size == 0)
 		return false;
 
-	if (m_UsedSize + size > m_BufferSize)
+	if (!m_InFrame)
+	{
+		if (!m_LoggedOutOfFrameAllocate)
+		{
+			gEngfuncs.Con_Printf("[%s] Warning: Allocate called outside frame, requested=%u used=%u buffer=%u curr=%u completed=%u head=%u tail=%u\n",
+				m_BufferName.c_str(),
+				(unsigned int)size,
+				(unsigned int)m_UsedSize,
+				(unsigned int)m_BufferSize,
+				(unsigned int)m_CurrFrameSize,
+				(unsigned int)m_CompletedFrames.size(),
+				(unsigned int)m_Head,
+				(unsigned int)m_Tail);
+			m_LoggedOutOfFrameAllocate = true;
+		}
+
+		return false;
+	}
+
+	if (size > m_BufferSize)
 	{
 		return false;
 	}
 
-	size_t alignedHead = m_Head;
+	ReleaseCompletedFrames();
 
-	if (m_Head >= m_Tail)
+	while (!HasAvailableSpace(size))
 	{
-		// [----Tail####Head----]
-		if (alignedHead + size <= m_BufferSize)
+		if (!WaitForAvailableSpace(size))
 		{
-		
-			WaitForFrameIfOverlapping(alignedHead, size);
-
-			allocation.ptr = (char*)m_MappedPtr + alignedHead;
-			allocation.offset = alignedHead;
-			allocation.size = size;
-			allocation.valid = true;
-
-			size_t adjustedSize = size + (alignedHead - m_Head);
-			m_Head = alignedHead + size;
-			m_UsedSize += adjustedSize;
-			m_CurrFrameSize += adjustedSize;
-			return true;
-		}
-		else if (size <= m_Tail)
-		{
-			size_t wastedSpace = m_BufferSize - m_Head;
-
-			WaitForFrameIfOverlapping(0, size);
-
-			allocation.ptr = (char*)m_MappedPtr;
-			allocation.offset = 0;
-			allocation.size = size;
-			allocation.valid = true;
-
-			m_Head = size;
-			m_UsedSize += wastedSpace + size;
-			m_CurrFrameSize += wastedSpace + size;
-			return true;
+			return false;
 		}
 	}
-	else
+
+	for (;;)
 	{
-		// [####Head----Tail####]
-		if (alignedHead + size <= m_Tail)
-		{
-			WaitForFrameIfOverlapping(alignedHead, size);
+		size_t alignedHead = m_Head;
 
-			allocation.ptr = (char*)m_MappedPtr + alignedHead;
-			allocation.offset = alignedHead;
-			allocation.size = size;
-			allocation.valid = true;
-
-			size_t adjustedSize = size + (alignedHead - m_Head);
-			m_Head = alignedHead + size;
-			m_UsedSize += adjustedSize;
-			m_CurrFrameSize += adjustedSize;
-			return true;
-		}
-		else if (m_Tail + size <= m_BufferSize)
+		if (m_Head >= m_Tail)
 		{
-			size_t alignedTail = m_Tail;
-			if (alignedTail + size <= m_BufferSize)
+			// [----Tail####Head----]
+			if (alignedHead + size <= m_BufferSize)
 			{
-				size_t wastedSpace = m_Tail - m_Head;
+				if (!WaitForFrameIfOverlapping(alignedHead, size))
+				{
+					return false;
+				}
 
-				WaitForFrameIfOverlapping(alignedTail, size);
-
-				allocation.ptr = (char*)m_MappedPtr + alignedTail;
-				allocation.offset = alignedTail;
+				allocation.ptr = (char*)m_MappedPtr + alignedHead;
+				allocation.offset = alignedHead;
 				allocation.size = size;
 				allocation.valid = true;
 
-				m_Head = alignedTail + size;
-				m_UsedSize += wastedSpace + size + (alignedTail - m_Tail);
-				m_CurrFrameSize += wastedSpace + size + (alignedTail - m_Tail);
+				size_t adjustedSize = size + (alignedHead - m_Head);
+				m_Head = alignedHead + size;
+				m_UsedSize += adjustedSize;
+				m_CurrFrameSize += adjustedSize;
+				return true;
+			}
+			else if (size <= m_Tail)
+			{
+				size_t wastedSpace = m_BufferSize - m_Head;
+
+				if (!WaitForFrameIfOverlapping(0, size))
+				{
+					return false;
+				}
+
+				allocation.ptr = (char*)m_MappedPtr;
+				allocation.offset = 0;
+				allocation.size = size;
+				allocation.valid = true;
+
+				m_Head = size;
+				m_UsedSize += wastedSpace + size;
+				m_CurrFrameSize += wastedSpace + size;
 				return true;
 			}
 		}
-	}
+		else
+		{
+			// [####Head----Tail####]
+			if (alignedHead + size <= m_Tail)
+			{
+				if (!WaitForFrameIfOverlapping(alignedHead, size))
+				{
+					return false;
+				}
 
-	return false;
+				allocation.ptr = (char*)m_MappedPtr + alignedHead;
+				allocation.offset = alignedHead;
+				allocation.size = size;
+				allocation.valid = true;
+
+				size_t adjustedSize = size + (alignedHead - m_Head);
+				m_Head = alignedHead + size;
+				m_UsedSize += adjustedSize;
+				m_CurrFrameSize += adjustedSize;
+				return true;
+			}
+			else if (m_Tail + size <= m_BufferSize)
+			{
+				size_t alignedTail = m_Tail;
+				if (alignedTail + size <= m_BufferSize)
+				{
+					size_t wastedSpace = m_Tail - m_Head;
+
+					if (!WaitForFrameIfOverlapping(alignedTail, size))
+					{
+						return false;
+					}
+
+					allocation.ptr = (char*)m_MappedPtr + alignedTail;
+					allocation.offset = alignedTail;
+					allocation.size = size;
+					allocation.valid = true;
+
+					m_Head = alignedTail + size;
+					m_UsedSize += wastedSpace + size + (alignedTail - m_Tail);
+					m_CurrFrameSize += wastedSpace + size + (alignedTail - m_Tail);
+					return true;
+				}
+			}
+		}
+
+		if (m_CompletedFrames.empty() || !WaitAndReleaseFrame(m_CompletedFrames.begin(), GL_TIMEOUT_IGNORED, "fragmented allocation"))
+		{
+			return false;
+		}
+	}
 }
 
 void CPMBRingBuffer::BeginFrame()
@@ -221,6 +282,7 @@ void CPMBRingBuffer::BeginFrame()
 
 	m_CurrFrameSize = 0;
 	m_FrameStartOffset = m_Head;
+	m_InFrame = true;
 }
 
 void CPMBRingBuffer::EndFrame()
@@ -231,39 +293,32 @@ void CPMBRingBuffer::EndFrame()
 		if (fence)
 		{
 			m_CompletedFrames.emplace_back(fence, m_FrameStartOffset, m_CurrFrameSize);
+			m_CurrFrameSize = 0;
+			m_InFrame = false;
+			return;
 		}
 
-		//Don't print stats
-		//gEngfuncs.Con_DPrintf("%s: %d bytes used, from %d.\n", m_BufferName.c_str(), m_CurrFrameSize, m_FrameStartOffset);
+		GLenum error = glGetError();
+		gEngfuncs.Con_Printf("[%s] Warning: glFenceSync failed, glGetError=0x%X curr=%u used=%u buffer=%u completed=%u. Resetting ring buffer after glFinish.\n",
+			m_BufferName.c_str(),
+			(unsigned int)error,
+			(unsigned int)m_CurrFrameSize,
+			(unsigned int)m_UsedSize,
+			(unsigned int)m_BufferSize,
+			(unsigned int)m_CompletedFrames.size());
 
-		m_CurrFrameSize = 0;
+		glFinish();
+		ResetAfterGpuDrain();
 	}
+
+	m_InFrame = false;
 }
 
 void CPMBRingBuffer::ReleaseCompletedFrames()
 {
-	const size_t MIN_FRAMES_TO_KEEP = 3;
-
-	while (m_CompletedFrames.size() > MIN_FRAMES_TO_KEEP)
+	while (!m_CompletedFrames.empty())
 	{
-		const auto& oldestFrame = m_CompletedFrames.front();
-
-		GLenum result = glClientWaitSync(oldestFrame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
-		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
-		{
-			size_t frameEnd = oldestFrame.offset + oldestFrame.size;
-
-			if (frameEnd > m_BufferSize) {
-				frameEnd = frameEnd - m_BufferSize;
-			}
-
-			m_UsedSize -= oldestFrame.size;
-			m_Tail = frameEnd;
-
-			glDeleteSync(oldestFrame.fence);
-			m_CompletedFrames.pop_front();
-		}
-		else
+		if (!WaitAndReleaseFrame(m_CompletedFrames.begin(), 0, "completed frame release"))
 		{
 			break;
 		}
@@ -275,6 +330,101 @@ void CPMBRingBuffer::ReleaseCompletedFrames()
 		m_Head = 0;
 		m_Tail = 0;
 	}
+}
+
+bool CPMBRingBuffer::WaitForAvailableSpace(size_t size)
+{
+	while (!HasAvailableSpace(size))
+	{
+		if (m_CompletedFrames.empty())
+		{
+			return false;
+		}
+
+		if (!WaitAndReleaseFrame(m_CompletedFrames.begin(), GL_TIMEOUT_IGNORED, "available space"))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CPMBRingBuffer::WaitAndReleaseFrame(std::deque<FrameHeadAttribs>::iterator it, GLuint64 timeout, const char* reason)
+{
+	GLenum result = glClientWaitSync(it->fence, GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+	if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
+	{
+		ReleaseFrame(it);
+		return true;
+	}
+
+	if (result == GL_WAIT_FAILED)
+	{
+		gEngfuncs.Con_Printf("[%s] Warning: glClientWaitSync failed while waiting for %s (result=%u)\n",
+			m_BufferName.c_str(), reason, (unsigned int)result);
+	}
+
+	return false;
+}
+
+void CPMBRingBuffer::ReleaseFrame(std::deque<FrameHeadAttribs>::iterator it)
+{
+	size_t frameEnd = WrapOffset(it->offset + it->size);
+
+	if (it->size <= m_UsedSize)
+	{
+		m_UsedSize -= it->size;
+	}
+	else
+	{
+		m_UsedSize = 0;
+	}
+
+	if (it == m_CompletedFrames.begin())
+	{
+		m_Tail = frameEnd;
+	}
+
+	if (it->fence)
+	{
+		glDeleteSync(it->fence);
+	}
+
+	m_CompletedFrames.erase(it);
+}
+
+void CPMBRingBuffer::ResetAfterGpuDrain()
+{
+	for (auto& frame : m_CompletedFrames)
+	{
+		if (frame.fence)
+		{
+			glDeleteSync(frame.fence);
+		}
+	}
+	m_CompletedFrames.clear();
+
+	m_Head = 0;
+	m_Tail = 0;
+	m_UsedSize = 0;
+	m_CurrFrameSize = 0;
+	m_FrameStartOffset = 0;
+}
+
+bool CPMBRingBuffer::HasAvailableSpace(size_t size) const
+{
+	return size <= m_BufferSize && m_UsedSize <= m_BufferSize - size;
+}
+
+size_t CPMBRingBuffer::WrapOffset(size_t offset) const
+{
+	if (m_BufferSize == 0)
+	{
+		return 0;
+	}
+
+	return offset % m_BufferSize;
 }
 
 // 检测两个区域是否在 ring buffer 中重叠
@@ -328,7 +478,7 @@ bool CPMBRingBuffer::DoRangesOverlap(size_t start1, size_t size1, size_t start2,
 }
 
 // 如果新分配区域与正在被 GPU 使用的帧重叠,等待该帧完成
-void CPMBRingBuffer::WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize)
+bool CPMBRingBuffer::WaitForFrameIfOverlapping(size_t allocStart, size_t allocSize)
 {
 	// 遍历所有未完成的帧,检查是否与新分配区域重叠
 	auto it = m_CompletedFrames.begin();
@@ -339,41 +489,19 @@ void CPMBRingBuffer::WaitForFrameIfOverlapping(size_t allocStart, size_t allocSi
 		// 检测新分配区域 [allocStart, allocStart+allocSize) 是否与该帧 [frame.offset, frame.offset+frame.size) 重叠
 		if (DoRangesOverlap(allocStart, allocSize, frame.offset, frame.size))
 		{
-			// 检测到重叠!必须等待该帧完成
-			GLenum result = glClientWaitSync(frame.fence, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
-
-			if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED)
+			if (!WaitAndReleaseFrame(it, GL_TIMEOUT_IGNORED, "overlapping frame"))
 			{
-				// 该帧已完成,释放它
-				size_t frameEnd = frame.offset + frame.size;
-				if (frameEnd > m_BufferSize) {
-					frameEnd = frameEnd - m_BufferSize;
-				}
-
-				m_UsedSize -= frame.size;
-
-				// 只有当该帧是最老的帧时才更新 m_Tail
-				if (it == m_CompletedFrames.begin())
-				{
-					m_Tail = frameEnd;
-				}
-
-				glDeleteSync(frame.fence);
-				it = m_CompletedFrames.erase(it);
-
-				// 继续检查下一帧 (可能有多个重叠)
-				continue;
+				return false;
 			}
-			else if (result == GL_TIMEOUT_EXPIRED || result == GL_WAIT_FAILED)
-			{
-				// 等待失败 - 这不应该发生,因为我们用了 GL_TIMEOUT_IGNORED
-				gEngfuncs.Con_Printf("[%s] Warning: glClientWaitSync failed for overlapping frame (result=%d)\n",
-					m_BufferName.c_str(), result);
-			}
+
+			it = m_CompletedFrames.begin();
+			continue;
 		}
 
 		++it;
 	}
+
+	return true;
 }
 
 IPMBRingBuffer* GL_CreatePMBRingBuffer(const char* name, size_t bufferSize, GLenum bufferTarget)

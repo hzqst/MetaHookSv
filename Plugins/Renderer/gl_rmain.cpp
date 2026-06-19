@@ -3061,6 +3061,11 @@ void R_RenderEndFrame()
 {
 	R_StudioEndFrame();
 
+	for (const auto& cb : g_RenderCallbacks)
+	{
+		cb->OnRenderEndFrame();
+	}
+
 	if (g_TriAPIVertexBuffer)
 	{
 		g_TriAPIVertexBuffer->EndFrame();
@@ -3084,11 +3089,6 @@ void R_RenderEndFrame()
 	if (g_RectIndexBuffer)
 	{
 		g_RectIndexBuffer->EndFrame();
-	}
-
-	for (const auto& cb : g_RenderCallbacks)
-	{
-		cb->OnRenderEndFrame();
 	}
 }
 
