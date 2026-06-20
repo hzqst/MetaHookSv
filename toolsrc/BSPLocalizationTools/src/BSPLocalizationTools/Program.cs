@@ -2,6 +2,8 @@ using BSPLocalizationTools;
 
 try
 {
+    EnvironmentFileLoader.LoadFromCurrentDirectory();
+
     var options = CommandLineOptions.Parse(args, Environment.GetEnvironmentVariable);
     using var httpClient = new HttpClient
     {

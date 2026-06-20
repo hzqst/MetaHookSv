@@ -70,6 +70,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetahookInstallerAvalonia",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetahookInstallerAvalonia.Desktop", "toolsrc\MetahookInstaller\MetahookInstallerAvalonia.Desktop\MetahookInstallerAvalonia.Desktop.csproj", "{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSPLocalizationTools", "toolsrc\BSPLocalizationTools\src\BSPLocalizationTools\BSPLocalizationTools.csproj", "{1350FD09-F165-0E89-B345-BB622422F733}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -268,6 +270,14 @@ Global
 		{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D}.Release_blob|Win32.Build.0 = Release|Any CPU
 		{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D}.Release|Win32.ActiveCfg = Release|Any CPU
 		{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D}.Release|Win32.Build.0 = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Debug|Win32.Build.0 = Debug|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release_AVX2|Win32.ActiveCfg = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release_AVX2|Win32.Build.0 = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release_blob|Win32.ActiveCfg = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release_blob|Win32.Build.0 = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release|Win32.ActiveCfg = Release|Any CPU
+		{1350FD09-F165-0E89-B345-BB622422F733}.Release|Win32.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -296,6 +306,7 @@ Global
 		{A4450AD0-38A5-48D5-B5E5-D17B865DB89A} = {C675D02D-BDD8-431A-91A7-59AE873F1BD0}
 		{E5050FE7-73E6-58E4-A2C4-C5AC73F6D8E2} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
 		{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
+		{1350FD09-F165-0E89-B345-BB622422F733} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}

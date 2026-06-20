@@ -27,6 +27,19 @@ Output is written next to the BSP as `<map>_dictionary_<outlang>.csv`.
 - `-llm_effort=<effort>` or `BSPL10N_LLM_EFFORT`, defaults to `medium`.
 - `-llm_fake_as=codex` or `BSPL10N_LLM_FAKE_AS=codex`.
 
+The tool loads a `.env` file from the current directory or any parent directory before reading
+environment variables. Command line arguments override environment variables, and existing
+process environment variables override values from `.env`.
+
+Example `.env`:
+
+```env
+BSPL10N_LLM_MODEL=gpt-5.5
+BSPL10N_LLM_APIKEY=<key>
+BSPL10N_LLM_BASEURL=https://api.openai.com/v1
+BSPL10N_LLM_EFFORT=medium
+```
+
 ## Encodings
 
 - `schinese`: GBK/CP936.
