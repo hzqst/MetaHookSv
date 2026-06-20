@@ -19,9 +19,9 @@ public sealed class CommandLineOptionsTests
     {
         var env = new Dictionary<string, string?>
         {
-            ["BSPL10N_LLM_MODEL"] = "gpt-test",
-            ["BSPL10N_LLM_APIKEY"] = "key",
-            ["BSPL10N_LLM_BASEURL"] = "https://example.test/v1",
+            ["BSPL10N_LLM_MODEL"] = "gpt-5.4",
+            ["BSPL10N_LLM_APIKEY"] = "sk-",
+            ["BSPL10N_LLM_BASEURL"] = "https://api.openai.com/v1",
             ["BSPL10N_LLM_TEMPERATURE"] = "0.2",
             ["BSPL10N_LLM_EFFORT"] = "high",
             ["BSPL10N_LLM_FAKE_AS"] = "codex",
@@ -33,9 +33,9 @@ public sealed class CommandLineOptionsTests
 
         Assert.Equal("tchinese", options.OutLang);
         Assert.Equal("prompt.md", options.PromptFilePath);
-        Assert.Equal("gpt-test", options.LLM.Model);
-        Assert.Equal("key", options.LLM.ApiKey);
-        Assert.Equal("https://example.test/v1", options.LLM.BaseUrl);
+        Assert.Equal("gpt-5.4", options.LLM.Model);
+        Assert.Equal("sk-", options.LLM.ApiKey);
+        Assert.Equal("https://api.openai.com/v1", options.LLM.BaseUrl);
         Assert.Equal(0.2, options.LLM.Temperature);
         Assert.Equal("high", options.LLM.Effort);
         Assert.Equal("codex", options.LLM.FakeAs);

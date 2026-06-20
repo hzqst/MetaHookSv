@@ -24,7 +24,7 @@ public sealed class AppRunnerTests
                 bspPath,
                 "schinese",
                 null,
-                new LLMOptions("gpt-test", "key", null, null, "medium", null)),
+                new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
             CancellationToken.None);
 
         Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), output);

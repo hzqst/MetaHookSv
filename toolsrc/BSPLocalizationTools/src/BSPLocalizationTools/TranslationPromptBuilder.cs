@@ -5,7 +5,7 @@ namespace BSPLocalizationTools;
 public static class TranslationPromptBuilder
 {
     public const string BuiltInPrompt = """
-        Translate GoldSrc/Sven Co-op game_text messages into the requested target language.
+        Translate GoldSrc game_text messages into the requested target language.
         Preserve literal \n sequences, punctuation intensity, urgency, and proper nouns when appropriate.
         Return natural in-game text, not explanatory notes.
         """;
