@@ -12,7 +12,7 @@ public sealed class AppRunner(
             throw new FileNotFoundException("BSP file was not found.", options.BspPath);
         }
 
-        var prompt = ReadPrompt(options.PromptFilePath);
+        var prompt = ReadPrompt(options.BspPath, options.OutLang, options.PromptFilePath);
         var entries = extractor.Extract(options.BspPath);
         if (entries.Count == 0)
         {
@@ -43,18 +43,36 @@ public sealed class AppRunner(
         return Path.Combine(directory, $"{mapName}_dictionary_{outLang}.csv");
     }
 
-    private static string? ReadPrompt(string? promptFilePath)
+    private static string? ReadPrompt(string bspPath, string outLang, string? promptFilePath)
     {
-        if (string.IsNullOrWhiteSpace(promptFilePath))
+        if (!string.IsNullOrWhiteSpace(promptFilePath))
         {
-            return null;
+            if (!File.Exists(promptFilePath))
+            {
+                throw new FileNotFoundException("Prompt file was not found.", promptFilePath);
+            }
+
+            return File.ReadAllText(promptFilePath);
         }
 
-        if (!File.Exists(promptFilePath))
+        foreach (var defaultPromptPath in GetDefaultPromptPaths(bspPath, outLang))
         {
-            throw new FileNotFoundException("Prompt file was not found.", promptFilePath);
+            if (File.Exists(defaultPromptPath))
+            {
+                return File.ReadAllText(defaultPromptPath);
+            }
         }
 
-        return File.ReadAllText(promptFilePath);
+        return null;
+    }
+
+    private static IEnumerable<string> GetDefaultPromptPaths(string bspPath, string outLang)
+    {
+        var fullBspPath = Path.GetFullPath(bspPath);
+        var directory = Path.GetDirectoryName(fullBspPath) ?? Environment.CurrentDirectory;
+        var mapName = Path.GetFileNameWithoutExtension(fullBspPath);
+
+        yield return Path.Combine(directory, $"{mapName}_prompt_{outLang}.md");
+        yield return Path.Combine(directory, $"{mapName}_prompt.md");
     }
 }

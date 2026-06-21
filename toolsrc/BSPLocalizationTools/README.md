@@ -19,7 +19,9 @@ Output is written next to the BSP as `<map>_dictionary_<outlang>.csv`.
 
 - `-bsp=<path>`: required BSP file.
 - `-outlang=<lang>`: optional target language, defaults to `schinese`.
-- `-promptfile=<path>`: optional UTF-8 custom translation prompt.
+- `-promptfile=<path>`: optional UTF-8 custom translation prompt. When omitted, the tool looks
+  next to the BSP for `<map>_prompt_<outlang>.md`, then `<map>_prompt.md`, before falling back
+  to the built-in prompt.
 - `-llm_model=<model>` or `BSPL10N_LLM_MODEL`.
 - `-llm_apikey=<key>` or `BSPL10N_LLM_APIKEY`.
 - `-llm_baseurl=<url>` or `BSPL10N_LLM_BASEURL`.
