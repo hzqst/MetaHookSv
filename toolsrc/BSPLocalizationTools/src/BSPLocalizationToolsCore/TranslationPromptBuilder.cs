@@ -8,6 +8,7 @@ public static class TranslationPromptBuilder
         Translate GoldSrc game_text messages into the requested target language.
         Preserve literal \n sequences, punctuation intensity, urgency, and proper nouns when appropriate.
         Return natural in-game text, not explanatory notes.
+        Keep what it was if the given game_text message is non-translatable. i.e. when given game_text message is numeric only.
         """;
 
     public static IReadOnlyList<LLMMessage> Build(
