@@ -1,0 +1,40 @@
+﻿Title,Translation,Color,Duration,Speaker,Nextsubtitle,Delaytonextsubtitle,Style
+NETMESSAGE:THE CRYSTAL IS IN THE BUILDING IN CONSTRUCTION!\nFIND IT!,水晶就在正在施工的建筑里！\n找到它！,,,,,,
+NETMESSAGE:THE OSPREY IS COMING. PROTECT IT AT ALL COST!,鱼鹰直升机即将抵达。不惜一切代价保护它！,,,,,,
+NETMESSAGE:EVERYONE ABOARD? TIME TO GET OUT OF HERE!,所有人都上机了吗？该离开这里了！,,,,,,
+NETMESSAGE:30 seconds...,30秒...,,,,,,
+NETMESSAGE:5 seconds...,5秒...,,,,,,
+NETMESSAGE:THE OSPREY WAS DESTROYED...,鱼鹰直升机已被摧毁...,,,,,,
+NETMESSAGE:YOU HAVE 1MIN TO KILL ALL REMAINING BLACK OPS AROUND THE BUILDING\nOR THE ARMY WILL BOMB THE PLACE.,你有一分钟时间消灭建筑周围所有剩余的黑色行动队员\n否则军队将轰炸该区域。,,,,,,
+NETMESSAGE:YOU NEUTRALISED ALL THE BLACK OPS JUST IN TIME!,你及时消灭了所有黑色行动队员！,,,,,,
+NETMESSAGE:CONNECT THE PIPE TO THE AIRSHIP TO INFLATE IT.,将管道连接到飞艇以充气。,,,,,,
+NETMESSAGE:YOU CAN NOW INFLATE THE DIRIGEABLE.,你现在可以给飞艇充气了。,,,,,,
+NETMESSAGE:YOU WERE KILLED BEFORE YOU COULD RECOVER THE CRYSTAL.,你在回收水晶之前被杀了。,,,,,,
+NETMESSAGE:Updates and suggestions on scmapdb.com,更新和建议请访问scmapdb.com,,,,,,
+NETMESSAGE:Testing & Support:\n\nDraeli\nH2\nJoce\nLogidroid\nOuterbeast\nPyroxyde\nShepard\nSparks\nThe DecAlpeur\nTrempler\nWindawz,测试与支持：\n\nDraeli\nH2\nJoce\nLogidroid\nOuterbeast\nPyroxyde\nShepard\nSparks\nThe DecAlpeur\nTrempler\nWindawz,,,,,,
+NETMESSAGE:Music:\n\nMarino Matthews (marinomatthews.com)\nOpposing-Force\n\nSound effects:\n\ndeadsimpleneo\nsc_robination\nSven Co-op\nThey Hunger,音乐：\n\nMarino Matthews (marinomatthews.com)\nOpposing-Force\n\n音效：\n\ndeadsimpleneo\nsc_robination\nSven Co-op\nThey Hunger,,,,,,
+NETMESSAGE:Models:\n\nLoulimi\nNeophus\nPyroxyde\n\nAdditional models:\n\nAdamR\nginsmodels\nrevil\nsp_portal / DGF\nSven Co-op,模型：\n\nLoulimi\nNeophus\nPyroxyde\n\n附加模型：\n\nAdamR\nginsmodels\nrevil\nsp_portal / DGF\nSven Co-op,,,,,,
+NETMESSAGE:Additional textures from:\n\ndeathmission.wad\nGaryosavan\nGearbox Software\njp_security.wad\nnw.wad\nsubmerged.wad\nValve Software\nHalf-life HD textures - HL Source Enhanced Team,附加纹理来自：\n\ndeathmission.wad\nGaryosavan\nGearbox Software\njp_security.wad\nnw.wad\nsubmerged.wad\nValve Software\nHalf-life HD textures - HL Source Enhanced Team,,,,,,
+NETMESSAGE:Textures:\n\nLoulimi\nNeophus\nParanoia\nPoke 646\nPoke 646 Vendetta\nTextures.com,纹理：\n\nLoulimi\nNeophus\nParanoia\nPoke 646\nPoke 646 Vendetta\nTextures.com,,,,,,
+NETMESSAGE:FROM: #### \nTO: #### \nSUBJECT: OPERATION CROSSED PATHS,发件人：#### \n收件人：#### \n主题：交错路径行动,,,,,,
+"NETMESSAGE:THE PMC COMPLETED THE MISSION WITH UNEXPECTED EFFICIENCY. IN FACT, \n
+THEY HAVE CAPABILITIES EVEN US CAN ONLY SALIVATE OVER. \n
+I AM SURE THAT THIS LATEST DEVELOPMENT IS THE PROOF WE NEEDED TO DEEPEN \n
+OUR PARTNERSHIP.",PMC以出乎意料的效率完成了任务。事实上， \n\r\n他们拥有的能力连我们也只能垂涎。 \n\r\n我相信这一最新进展就是我们所需的证据，以深化 \n\r\n我们的合作伙伴关系。,,,,,,
+"NETMESSAGE:THIS IS A FACADE OF FAILURE.\n
+NOW THAT THE CRYSTAL IS DESTROYED, THE BALANCE OF POWER IS RESTORED FOR\n
+THE TIME BEING.\n
+AS OF NOW THE PMC SQUAD IS STILL OFFICIALLY MIA.",这是失败的假象。\n\r\n现在水晶已被摧毁，力量平衡暂时恢复了。\n\r\n截至目前，PMC小队仍被官方列为失踪。,,,,,,
+NETMESSAGE:Connector is too big to be moved to this stack!,连接器太大，无法移至该堆栈！,,,,,,
+NETMESSAGE:USE THE AIRSHIP TO ESCAPE...\n(IF YOU MANAGE TO GET IT WORKING),使用飞艇逃脱...\n（如果你能设法让它工作）,,,,,,
+NETMESSAGE:...OR ESCAPE BY FOOT!,...或者步行逃脱！,,,,,,
+NETMESSAGE:BOTH WAYS LEAD TO THE SAME PLACE!,两条路都通向同一个地方！,,,,,,
+NETMESSAGE:THERE SHOULD BE A WAY TO TURN OFF THAT COUNTDOWN...,应该有个办法关掉那个倒计时...,,,,,,
+NETMESSAGE:SNIPER RIFLE NOW GIVEN AT SPAWN!,现在出生点提供狙击步枪！,,,,,,
+NETMESSAGE:M249 NOW GIVEN AT SPAWN!,现在出生点提供M249！,,,,,,
+NETMESSAGE:COUNTDOWN DEACTIVATED.,倒计时已解除。,,,,,,
+NETMESSAGE:LONG-JUMP MODULE NOW GIVEN AT SPAWN!,现在出生点提供长跳模块！,,,,,,
+NETMESSAGE:YOU ARE MISSING SOME MAP FILES.\nDOWNLOAD THE MAP FROM SCMAPDB.COM,你缺少一些地图文件。\n请从SCMAPDB.COM下载地图。,,,,,,
+NETMESSAGE:REINFORCEMENTS CANNOT LAND UNTIL YOU DESTROY THE HELICOPTERS!,在摧毁直升机之前，增援无法着陆！,,,,,,
+NETMESSAGE:YOU RECOVERED THE CRYSTAL!\nNOW BRING DOWN THOSE CHOPPERS!,你找到了水晶！\n现在击落那些直升机！,,,,,,
+NETMESSAGE:ALL YOUR TEAM MUST GO UNDER THE OSPREY FOR EVAC!,你的所有队员必须进入鱼鹰直升机下方等待撤离！,,,,,,

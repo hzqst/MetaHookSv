@@ -1,0 +1,13 @@
+﻿Title,Translation,Color,Duration,Speaker,Nextsubtitle,Delaytonextsubtitle,Style
+NETMESSAGE:Follow the road and conquer the first outpost!,沿着道路前进，占领第一个前哨！,,,,,,
+NETMESSAGE:Move uphill and conquer the next outpost!,向上移动，占领下一个前哨！,,,,,,
+NETMESSAGE:Follow the trenches and conquer the next outpost!,沿着战壕前进，占领下一个前哨！,,,,,,
+NETMESSAGE:Use the mortar to breach the castle walls! Enter the castle!,使用迫击炮轰开城堡城墙！进入城堡！,,,,,,
+NETMESSAGE:Destroy the explosive crates and open the Castle doors!,摧毁爆炸箱，打开城堡大门！,,,,,,
+NETMESSAGE:Conquer the castle!,占领城堡！,,,,,,
+NETMESSAGE:Kill the King!,杀死国王！,,,,,,
+NETMESSAGE:The King is dead,国王死了,,,,,,
+NETMESSAGE:Press USE to resupply!,按使用键补给！,,,,,,
+NETMESSAGE:Press and hold USE to conquer this base!,按住使用键占领此基地！,,,,,,
+NETMESSAGE:Map created by the-middleman,地图作者：the-middleman,,,,,,
+NETMESSAGE:This map uses detailtextures.\nWrite r_detailtextures 1 in console!,此地图使用了细节纹理。\n在控制台输入 r_detailtextures 1！,,,,,,

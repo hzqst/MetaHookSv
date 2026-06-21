@@ -1,0 +1,27 @@
+﻿Title,Translation,Color,Duration,Speaker,Nextsubtitle,Delaytonextsubtitle,Style
+NETMESSAGE:start the game already....,开始游戏吧....,,,,,,
+NETMESSAGE:start the game already....,开始游戏吧....,,,,,,
+NETMESSAGE:start the game already....,开始游戏吧....,,,,,,
+NETMESSAGE:GameStart [00:00] \n GO! GO! GO!,游戏开始 [00:00] \n 冲！冲！冲！,,,,,,
+NETMESSAGE:GameStart [00:01],游戏开始 [00:01],,,,,,
+NETMESSAGE:GameStart [00:02],游戏开始 [00:02],,,,,,
+NETMESSAGE:GameStart [00:03],游戏开始 [00:03],,,,,,
+NETMESSAGE:GameStart [00:04],游戏开始 [00:04],,,,,,
+NETMESSAGE:GameStart [00:05],游戏开始 [00:05],,,,,,
+"NETMESSAGE:Sea of fire raid Open!
+
+",火海突袭 开启！\n\n,,,,,,
+"NETMESSAGE:Sea of fire raid Shut down!
+",火海突袭 关闭！\n,,,,,,
+"NETMESSAGE:Machine gun positional Open!
+
+",机枪阵地 开启！\n\n,,,,,,
+"NETMESSAGE:Machine gun positional Shut down!
+",机枪阵地 关闭！\n,,,,,,
+"NETMESSAGE:Particle wall
+ Open!
+
+",粒子墙\n 开启！\n\n,,,,,,
+"NETMESSAGE:Particle wall
+ Shut down!
+",粒子墙\n 关闭！\n,,,,,,

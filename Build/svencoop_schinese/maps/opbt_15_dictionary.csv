@@ -1,0 +1,5 @@
+﻿Title,Translation,Color,Duration,Speaker,Nextsubtitle,Delaytonextsubtitle,Style
+"NETMESSAGE:Nih (radio):\nHQ, we found it.\nThe military has been using the trains to transport the missiles.",Nih（无线电）：\n总部，我们找到了。\n军方一直在用火车运输导弹。,,,,,,
+"NETMESSAGE:Sven Viking (radio):\nCopy that, Chap squad leader.\nThe next objective will be cutting their communications and sabotaging their missile systems.\nTake the commandos to the Central Security Station located nearby the launch ramps.",Sven Viking（无线电）：\n收到，Chap小队队长。\n下一个目标是切断他们的通信并破坏他们的导弹系统。\n带领突击队前往发射坡道附近的中央安全站。,,,,,,
+"NETMESSAGE:Sniper (radio):\nRoger that, HQ.\nAmckern, dismantle the train and the missiles with Bug squad. Then block the tracks.\nFunc_Squad, transport the commandos.",Sniper（无线电）：\n明白，总部。\nAmckern，和Bug小队一起拆除火车和导弹。然后封锁铁轨。\nFunc_Squad，运送突击队。,,,,,,
+NETMESSAGE:IMPULSE 100,脉冲100,,,,,,
