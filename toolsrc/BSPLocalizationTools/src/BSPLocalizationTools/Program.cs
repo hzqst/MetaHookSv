@@ -1,25 +1,22 @@
-using BSPLocalizationTools;
+using Avalonia;
+using ReactiveUI.Avalonia;
 
-try
+namespace BSPLocalizationTools.GUI;
+
+internal static class Program
 {
-    EnvironmentFileLoader.LoadFromCurrentDirectory();
-
-    var options = CommandLineOptions.Parse(args, Environment.GetEnvironmentVariable);
-    using var httpClient = new HttpClient
+    [STAThread]
+    public static void Main(string[] args)
     {
-        Timeout = TimeSpan.FromMinutes(5),
-    };
-    var runner = new AppRunner(
-        new BspGameTextExtractor(),
-        new OpenAICompatibleLLMClient(httpClient),
-        new DictionaryCsvWriter());
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
-    var output = await runner.RunAsync(options, CancellationToken.None);
-    Console.WriteLine($"Wrote dictionary: {output}");
-    return 0;
-}
-catch (Exception ex)
-{
-    Console.Error.WriteLine("Error: " + ex.Message);
-    return 1;
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        return AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .WithInterFont()
+            .LogToTrace()
+            .UseReactiveUI();
+    }
 }

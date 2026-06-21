@@ -1,0 +1,99 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:BSPLocalizationTools.GUI.ViewModels"
+    x:Class="BSPLocalizationTools.GUI.Views.MainWindow"
+    x:DataType="vm:MainWindowViewModel"
+    Title="BSPLocalizationTools"
+    Width="980"
+    Height="680"
+    MinWidth="780"
+    MinHeight="560">
+  <Border Padding="16">
+    <TabControl>
+      <TabItem Header="Translate">
+        <Grid RowDefinitions="Auto,*,Auto,160" RowSpacing="12">
+          <Grid ColumnDefinitions="*,140,140" ColumnSpacing="8">
+            <TextBox Text="{Binding OutLang}" Watermark="Target language" />
+            <Button Grid.Column="1" Content="Add BSP" Click="AddBspButton_Click" />
+            <Button Grid.Column="2" Content="Clear" Click="ClearButton_Click" />
+          </Grid>
+
+          <ListBox
+              Grid.Row="1"
+              ItemsSource="{Binding Items}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:TranslationItemViewModel">
+                <Grid ColumnDefinitions="2*,*,2*,2*" ColumnSpacing="8" MinHeight="30">
+                  <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Status}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding OutputPath}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="3" Text="{Binding ErrorMessage}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Grid Grid.Row="2" ColumnDefinitions="*,120,120" ColumnSpacing="8">
+            <ProgressBar
+                Minimum="0"
+                Maximum="1"
+                Value="{Binding OverallProgress}"
+                Height="20"
+                VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="Start" Command="{Binding StartTranslationCommand}" />
+            <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelTranslationCommand}" />
+          </Grid>
+
+          <TextBox
+              Grid.Row="3"
+              Text="{Binding LogText}"
+              IsReadOnly="True"
+              AcceptsReturn="True"
+              TextWrapping="Wrap" />
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Settings">
+        <ScrollViewer>
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+            <TextBlock Text="Configuration file" FontWeight="SemiBold" />
+            <Grid Grid.Row="1" ColumnDefinitions="*,110,110" ColumnSpacing="8">
+              <TextBox Text="{Binding EnvPath}" />
+              <Button Grid.Column="1" Content="Load" Command="{Binding LoadConfigurationCommand}" />
+              <Button Grid.Column="2" Content="Save" Command="{Binding SaveConfigurationCommand}" />
+            </Grid>
+
+            <TextBlock Grid.Row="2" Text="Prompt file" FontWeight="SemiBold" />
+            <Grid Grid.Row="3" ColumnDefinitions="*,120" ColumnSpacing="8">
+              <TextBox Text="{Binding PromptFilePath}" Watermark="Optional prompt .md path" />
+              <Button Grid.Column="1" Content="Browse" Click="BrowsePromptButton_Click" />
+            </Grid>
+
+            <TextBlock Grid.Row="4" Text="LLM" FontWeight="SemiBold" />
+            <Grid Grid.Row="5" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+              <TextBlock Text="Model" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding LlmModel}" Watermark="gpt-5.5" />
+              <TextBlock Grid.Row="1" Text="API key" VerticalAlignment="Center" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LlmApiKey}" PasswordChar="*" />
+              <TextBlock Grid.Row="2" Text="Base URL" VerticalAlignment="Center" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LlmBaseUrl}" Watermark="https://api.openai.com/v1" />
+              <TextBlock Grid.Row="3" Text="Temperature" VerticalAlignment="Center" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LlmTemperature}" Watermark="optional" />
+              <TextBlock Grid.Row="4" Text="Reasoning effort" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding EffortOptions}" SelectedItem="{Binding LlmEffort}" />
+              <TextBlock Grid.Row="5" Text="Fake as" VerticalAlignment="Center" />
+              <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LlmFakeAs}" Watermark="codex" />
+            </Grid>
+
+            <TextBlock Grid.Row="6" Text="Defaults" FontWeight="SemiBold" />
+            <Grid Grid.Row="7" ColumnDefinitions="160,*" ColumnSpacing="8">
+              <TextBlock Text="Target language" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding OutLang}" />
+            </Grid>
+          </Grid>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+  </Border>
+</Window>

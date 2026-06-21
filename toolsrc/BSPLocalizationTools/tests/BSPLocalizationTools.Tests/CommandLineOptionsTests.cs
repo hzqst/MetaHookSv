@@ -49,4 +49,19 @@ public sealed class CommandLineOptionsTests
 
         Assert.Contains("Unknown argument", ex.Message);
     }
+
+    [Fact]
+    public void ToRequestMapsCliOptionsToCoreRequest()
+    {
+        var options = CommandLineOptions.Parse(
+            ["-bsp=map.bsp", "-outlang=tchinese", "-promptfile=prompt.md", "-llm_model=gpt-test"],
+            _ => null);
+
+        var request = options.ToRequest();
+
+        Assert.Equal("map.bsp", request.BspPath);
+        Assert.Equal("tchinese", request.OutLang);
+        Assert.Equal("prompt.md", request.PromptFilePath);
+        Assert.Equal("gpt-test", request.LLM.Model);
+    }
 }

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace BSPLocalizationTools.Tests;
 
-public sealed class AppRunnerTests
+public sealed class LocalizationRunnerTests
 {
     [Fact]
     public async Task RunWritesDictionaryNextToBsp()
@@ -11,7 +11,7 @@ public sealed class AppRunnerTests
         var bspPath = Path.Combine(temp.Path, "fake_map.bsp");
         File.WriteAllText(bspPath, "placeholder");
 
-        var runner = new AppRunner(
+        var runner = new LocalizationRunner(
             new FakeExtractor([
                 new GameTextEntry(0, "kinnkyuu jitai da!!\\n(We got a situation!!)"),
                 new GameTextEntry(1, "kinnkyuu jitai da!!\\n(We got a situation!!)"),
@@ -20,15 +20,16 @@ public sealed class AppRunnerTests
             new DictionaryCsvWriter());
 
         var output = await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 null,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
-        Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), output);
-        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output));
+        Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), output.OutputPath);
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output.OutputPath));
         Assert.Contains("NETMESSAGE:kinnkyuu jitai da!!\\n(We got a situation!!),緊急事態だ!!\\n（出大事儿了！！）", text);
         Assert.Equal(3, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }
@@ -45,11 +46,12 @@ public sealed class AppRunnerTests
         var runner = CreateRunner(llmClient);
 
         await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 null,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
         Assert.NotNull(llmClient.LastMessages);
@@ -68,11 +70,12 @@ public sealed class AppRunnerTests
         var runner = CreateRunner(llmClient);
 
         await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 null,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
         Assert.NotNull(llmClient.LastMessages);
@@ -90,11 +93,12 @@ public sealed class AppRunnerTests
         var runner = CreateRunner(llmClient);
 
         await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 null,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
         Assert.NotNull(llmClient.LastMessages);
@@ -114,11 +118,12 @@ public sealed class AppRunnerTests
         var runner = CreateRunner(llmClient);
 
         await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 null,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
         Assert.NotNull(llmClient.LastMessages);
@@ -139,20 +144,21 @@ public sealed class AppRunnerTests
         var runner = CreateRunner(llmClient);
 
         await runner.RunAsync(
-            new CommandLineOptions(
+            new LocalizationRequest(
                 bspPath,
                 "schinese",
                 explicitPromptPath,
                 new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
             CancellationToken.None);
 
         Assert.NotNull(llmClient.LastMessages);
         Assert.Equal("Use explicit prompt.", llmClient.LastMessages[0].Content);
     }
 
-    private static AppRunner CreateRunner(FakeLLMClient llmClient)
+    private static LocalizationRunner CreateRunner(FakeLLMClient llmClient)
     {
-        return new AppRunner(
+        return new LocalizationRunner(
             new FakeExtractor([new GameTextEntry(0, "hello")]),
             llmClient,
             new DictionaryCsvWriter());

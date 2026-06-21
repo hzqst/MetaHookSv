@@ -72,6 +72,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetahookInstallerAvalonia.D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSPLocalizationTools", "toolsrc\BSPLocalizationTools\src\BSPLocalizationTools\BSPLocalizationTools.csproj", "{1350FD09-F165-0E89-B345-BB622422F733}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSPLocalizationToolsCore", "toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCore\BSPLocalizationToolsCore.csproj", "{E2DE2738-E231-4E3E-8226-F409206C3345}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSPLocalizationToolsCLI", "toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCLI\BSPLocalizationToolsCLI.csproj", "{B5F89C3B-556F-48B6-8A49-4827794676FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -278,6 +282,22 @@ Global
 		{1350FD09-F165-0E89-B345-BB622422F733}.Release_blob|Win32.Build.0 = Release|Any CPU
 		{1350FD09-F165-0E89-B345-BB622422F733}.Release|Win32.ActiveCfg = Release|Any CPU
 		{1350FD09-F165-0E89-B345-BB622422F733}.Release|Win32.Build.0 = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Debug|Win32.Build.0 = Debug|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release_AVX2|Win32.ActiveCfg = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release_AVX2|Win32.Build.0 = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release_blob|Win32.ActiveCfg = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release_blob|Win32.Build.0 = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release|Win32.ActiveCfg = Release|Any CPU
+		{E2DE2738-E231-4E3E-8226-F409206C3345}.Release|Win32.Build.0 = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Debug|Win32.Build.0 = Debug|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release_AVX2|Win32.ActiveCfg = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release_AVX2|Win32.Build.0 = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release_blob|Win32.ActiveCfg = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release_blob|Win32.Build.0 = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release|Win32.ActiveCfg = Release|Any CPU
+		{B5F89C3B-556F-48B6-8A49-4827794676FB}.Release|Win32.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -307,6 +327,8 @@ Global
 		{E5050FE7-73E6-58E4-A2C4-C5AC73F6D8E2} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
 		{BECE7E3E-1C3C-04BC-1407-D1AB5314D60D} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
 		{1350FD09-F165-0E89-B345-BB622422F733} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
+		{E2DE2738-E231-4E3E-8226-F409206C3345} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
+		{B5F89C3B-556F-48B6-8A49-4827794676FB} = {CABC7A6F-E1C7-41E4-8A38-3F74C8B0E13C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}

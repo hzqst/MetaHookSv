@@ -1,29 +1,38 @@
 namespace BSPLocalizationTools;
 
-public sealed class AppRunner(
+public class LocalizationRunner(
     IGameTextExtractor extractor,
     ILLMClient llmClient,
     DictionaryCsvWriter csvWriter)
 {
-    public async Task<string> RunAsync(CommandLineOptions options, CancellationToken cancellationToken)
+    public virtual async Task<LocalizationResult> RunAsync(
+        LocalizationRequest request,
+        IProgress<TranslationProgress>? progress,
+        CancellationToken cancellationToken)
     {
-        if (!File.Exists(options.BspPath))
+        if (!File.Exists(request.BspPath))
         {
-            throw new FileNotFoundException("BSP file was not found.", options.BspPath);
+            throw new FileNotFoundException("BSP file was not found.", request.BspPath);
         }
 
-        var prompt = ReadPrompt(options.BspPath, options.OutLang, options.PromptFilePath);
-        var entries = extractor.Extract(options.BspPath);
+        Report(progress, request.BspPath, TranslationStage.ExtractingGameText, "Extracting game_text messages.");
+        cancellationToken.ThrowIfCancellationRequested();
+        var prompt = ReadPrompt(request.BspPath, request.OutLang, request.PromptFilePath);
+        var entries = extractor.Extract(request.BspPath);
         if (entries.Count == 0)
         {
             throw new InvalidOperationException("No game_text messages were found.");
         }
 
+        Report(progress, request.BspPath, TranslationStage.BuildingPrompt, "Building translation prompt.");
         var uniqueMessages = entries.Select(e => e.Message).Distinct(StringComparer.Ordinal).ToArray();
-        var llmMessages = TranslationPromptBuilder.Build(options.OutLang, prompt, uniqueMessages);
-        var response = await llmClient.CompleteTextAsync(llmMessages, options.LLM, cancellationToken);
-        var translations = TranslationResponseParser.Parse(response, uniqueMessages.Length);
+        var llmMessages = TranslationPromptBuilder.Build(request.OutLang, prompt, uniqueMessages);
 
+        Report(progress, request.BspPath, TranslationStage.RequestingTranslation, "Requesting LLM translation.");
+        var response = await llmClient.CompleteTextAsync(llmMessages, request.LLM, cancellationToken);
+
+        Report(progress, request.BspPath, TranslationStage.ParsingResponse, "Parsing LLM response.");
+        var translations = TranslationResponseParser.Parse(response, uniqueMessages.Length);
         var translatedBySource = uniqueMessages
             .Select((source, id) => new { source, translation = translations[id] })
             .ToDictionary(x => x.source, x => x.translation, StringComparer.Ordinal);
@@ -31,9 +40,11 @@ public sealed class AppRunner(
             .Select(e => new DictionaryRow("NETMESSAGE:" + e.Message, translatedBySource[e.Message]))
             .ToArray();
 
-        var outputPath = GetOutputPath(options.BspPath, options.OutLang);
-        csvWriter.Write(outputPath, options.OutLang, rows);
-        return outputPath;
+        Report(progress, request.BspPath, TranslationStage.WritingDictionary, "Writing dictionary CSV.");
+        var outputPath = GetOutputPath(request.BspPath, request.OutLang);
+        csvWriter.Write(outputPath, request.OutLang, rows);
+        Report(progress, request.BspPath, TranslationStage.Completed, $"Wrote dictionary: {outputPath}");
+        return new LocalizationResult(request.BspPath, outputPath);
     }
 
     public static string GetOutputPath(string bspPath, string outLang)
@@ -41,6 +52,15 @@ public sealed class AppRunner(
         var directory = Path.GetDirectoryName(Path.GetFullPath(bspPath)) ?? Environment.CurrentDirectory;
         var mapName = Path.GetFileNameWithoutExtension(bspPath);
         return Path.Combine(directory, $"{mapName}_dictionary_{outLang}.csv");
+    }
+
+    private static void Report(
+        IProgress<TranslationProgress>? progress,
+        string bspPath,
+        TranslationStage stage,
+        string message)
+    {
+        progress?.Report(new TranslationProgress(stage, bspPath, 1, 1, message));
     }
 
     private static string? ReadPrompt(string bspPath, string outLang, string? promptFilePath)

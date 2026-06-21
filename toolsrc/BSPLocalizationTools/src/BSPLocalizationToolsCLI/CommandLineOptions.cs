@@ -1,6 +1,7 @@
 using System.Globalization;
+using BSPLocalizationTools;
 
-namespace BSPLocalizationTools;
+namespace BSPLocalizationTools.CLI;
 
 public sealed record CommandLineOptions(
     string BspPath,
@@ -51,6 +52,11 @@ public sealed record CommandLineOptions(
                 ParseNullableDouble(GetOptional(values, "llm_temperature") ?? getEnv("BSPL10N_LLM_TEMPERATURE")),
                 GetOptional(values, "llm_effort") ?? getEnv("BSPL10N_LLM_EFFORT") ?? "medium",
                 NormalizeFakeAs(GetOptional(values, "llm_fake_as") ?? getEnv("BSPL10N_LLM_FAKE_AS"))));
+    }
+
+    public LocalizationRequest ToRequest()
+    {
+        return new LocalizationRequest(BspPath, OutLang, PromptFilePath, LLM);
     }
 
     private static string GetRequired(Dictionary<string, string> values, string key)

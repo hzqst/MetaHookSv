@@ -2,10 +2,16 @@
 
 Toolsets for GoldSrc BSP Localization.
 
-## Usage
+## Projects
+
+- `BSPLocalizationToolsCore`: shared localization library.
+- `BSPLocalizationToolsCLI`: command line wrapper.
+- `BSPLocalizationTools`: Avalonia GUI wrapper.
+
+## CLI Usage
 
 ```powershell
-dotnet run --project toolsrc\BSPLocalizationTools\src\BSPLocalizationTools -- `
+dotnet run --project toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCLI -- `
   "-bsp=toolsrc\BSPLocalizationTools\tests\maps\pizza_ya_san1.bsp" `
   "-outlang=schinese" `
   "-promptfile=path\to\prompt.md" `
@@ -33,6 +39,9 @@ The tool loads a `.env` file from the current directory or any parent directory 
 environment variables. Command line arguments override environment variables, and existing
 process environment variables override values from `.env`.
 
+The GUI reads and writes `.env` next to the running tool by default. Prompt configuration is stored
+as a prompt file path; prompt text remains in a UTF-8 `.md` file.
+
 Example `.env`:
 
 ```env
@@ -40,7 +49,16 @@ BSPL10N_LLM_MODEL=gpt-5.5
 BSPL10N_LLM_APIKEY=<key>
 BSPL10N_LLM_BASEURL=https://api.openai.com/v1
 BSPL10N_LLM_EFFORT=medium
+BSPL10N_DEFAULT_OUTLANG=schinese
+BSPL10N_DEFAULT_PROMPTFILE=path\to\prompt.md
 ```
+
+## GUI
+
+Run the Avalonia app from `toolsrc\BSPLocalizationTools\src\BSPLocalizationTools`.
+The **Translate** tab supports selecting one or more `.bsp` files, starting or canceling
+translation, and viewing per-file progress and logs. The **Settings** tab loads and saves LLM and
+prompt path settings to `.env`.
 
 ## Encodings
 
