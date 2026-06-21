@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <RootNamespace>BSPLocalizationTools.GUI</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -22,5 +23,30 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BSPLocalizationToolsCore\BSPLocalizationToolsCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Lang\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <LogicalName>BSPLocalizationTools.GUI.Lang.Resources.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Lang\Resources.zh-CN.resx">
+      <LogicalName>BSPLocalizationTools.GUI.Lang.Resources.zh-CN.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Lang\Resources.zh-TW.resx">
+      <LogicalName>BSPLocalizationTools.GUI.Lang.Resources.zh-TW.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Lang\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

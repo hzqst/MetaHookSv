@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 using System.Windows.Input;
+using BSPLocalizationTools.GUI.Lang;
 using ReactiveUI;
 
 namespace BSPLocalizationTools.GUI.ViewModels;
@@ -9,6 +10,7 @@ namespace BSPLocalizationTools.GUI.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private readonly BatchLocalizationRunner _batchRunner;
+    private readonly GuiLocalizer _localizer;
     private CancellationTokenSource? _translationCancellation;
     private string _outLang;
     private string? _promptFilePath;
@@ -22,13 +24,23 @@ public sealed class MainWindowViewModel : ViewModelBase
     private double _overallProgress;
     private bool _isTranslating;
     private string _logText = "";
+    private LocalizedStrings _strings;
+    private GuiLanguageOption _selectedGuiLanguage;
 
-    public MainWindowViewModel(BatchLocalizationRunner batchRunner, string envPath)
+    public MainWindowViewModel(
+        BatchLocalizationRunner batchRunner,
+        string envPath,
+        Func<CultureInfo>? systemCultureProvider = null)
     {
         _batchRunner = batchRunner;
+        _localizer = new GuiLocalizer(systemCultureProvider);
         _envPath = envPath;
         _outLang = ToolConfiguration.Default.DefaultOutLang;
         _llmEffort = ToolConfiguration.Default.LLM.Effort;
+        _localizer.SetLanguage(ToolConfiguration.Default.GuiLanguage);
+        _strings = LocalizedStrings.Current();
+        _selectedGuiLanguage = CreateLanguageOptions().First(o => o.Code == ToolConfiguration.Default.GuiLanguage);
+        RefreshLanguageOptions();
         LoadConfigurationCommand = ReactiveCommand.Create(LoadConfiguration);
         SaveConfigurationCommand = ReactiveCommand.Create(SaveConfiguration);
         StartTranslationCommand = ReactiveCommand.CreateFromTask(StartTranslationAsync, this.WhenAnyValue(
@@ -40,6 +52,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<TranslationItemViewModel> Items { get; } = [];
     public IReadOnlyList<string> EffortOptions { get; } = ["minimal", "low", "medium", "high"];
+    public ObservableCollection<GuiLanguageOption> GuiLanguageOptions { get; } = [];
     public ICommand LoadConfigurationCommand { get; }
     public ICommand SaveConfigurationCommand { get; }
     public ICommand StartTranslationCommand { get; }
@@ -117,6 +130,27 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _logText, value);
     }
 
+    public LocalizedStrings Strings
+    {
+        get => _strings;
+        private set => this.RaiseAndSetIfChanged(ref _strings, value);
+    }
+
+    public GuiLanguageOption SelectedGuiLanguage
+    {
+        get => _selectedGuiLanguage;
+        set
+        {
+            if (value == _selectedGuiLanguage)
+            {
+                return;
+            }
+
+            this.RaiseAndSetIfChanged(ref _selectedGuiLanguage, value);
+            ApplyGuiLanguage(value.Code);
+        }
+    }
+
     public static MainWindowViewModel CreateDefault()
     {
         var httpClient = new HttpClient
@@ -147,20 +181,20 @@ public sealed class MainWindowViewModel : ViewModelBase
     public void LoadConfiguration()
     {
         ApplyConfiguration(ToolConfigurationFile.Load(EnvPath));
-        AppendLog($"Loaded configuration: {EnvPath}");
+        AppendLog(string.Format(CultureInfo.CurrentCulture, Resources.LogLoadedConfiguration, EnvPath));
     }
 
     public void SaveConfiguration()
     {
         ToolConfigurationFile.Save(EnvPath, CreateConfiguration());
-        AppendLog($"Saved configuration: {EnvPath}");
+        AppendLog(string.Format(CultureInfo.CurrentCulture, Resources.LogSavedConfiguration, EnvPath));
     }
 
     public async Task StartTranslationAsync()
     {
         if (Items.Count == 0)
         {
-            AppendLog("No BSP files selected.");
+            AppendLog(Resources.LogNoBspFilesSelected);
             return;
         }
 
@@ -194,11 +228,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     public void CancelTranslation()
     {
         _translationCancellation?.Cancel();
-        AppendLog("Cancel requested.");
+        AppendLog(Resources.LogCancelRequested);
     }
 
     private void ApplyConfiguration(ToolConfiguration configuration)
     {
+        SelectedGuiLanguage = FindLanguageOption(configuration.GuiLanguage);
         OutLang = configuration.DefaultOutLang;
         PromptFilePath = configuration.DefaultPromptFilePath;
         LlmModel = configuration.LLM.Model;
@@ -220,14 +255,16 @@ public sealed class MainWindowViewModel : ViewModelBase
                 string.IsNullOrWhiteSpace(LlmEffort) ? ToolConfiguration.Default.LLM.Effort : LlmEffort.Trim(),
                 Normalize(LlmFakeAs)),
             string.IsNullOrWhiteSpace(OutLang) ? ToolConfiguration.Default.DefaultOutLang : OutLang.Trim(),
-            Normalize(PromptFilePath));
+            Normalize(PromptFilePath),
+            SelectedGuiLanguage.Code);
     }
 
     private void ResetItems()
     {
         foreach (var item in Items)
         {
-            item.Status = "Queued";
+            item.Stage = TranslationStage.Queued;
+            item.Status = _localizer.GetStageText(TranslationStage.Queued);
             item.OutputPath = null;
             item.ErrorMessage = null;
         }
@@ -238,13 +275,18 @@ public sealed class MainWindowViewModel : ViewModelBase
         var item = Items.FirstOrDefault(i => string.Equals(i.BspPath, progress.BspPath, StringComparison.OrdinalIgnoreCase));
         if (item is not null)
         {
-            item.Status = progress.Stage.ToString();
+            item.Stage = progress.Stage;
+            item.Status = _localizer.GetStageText(progress.Stage);
         }
 
         OverallProgress = progress.ItemCount == 0
             ? 0
             : Math.Clamp((double)progress.ItemIndex / progress.ItemCount, 0, 1);
-        AppendLog($"{Path.GetFileName(progress.BspPath)}: {progress.Message}");
+        AppendLog(string.Format(
+            CultureInfo.CurrentCulture,
+            Resources.LogProgress,
+            Path.GetFileName(progress.BspPath),
+            progress.Message));
     }
 
     private void ApplyResults(IReadOnlyList<LocalizationBatchItemResult> results)
@@ -259,7 +301,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             item.OutputPath = result.OutputPath;
             item.ErrorMessage = result.ErrorMessage;
-            item.Status = result.Succeeded ? "Completed" : "Failed";
+            item.Stage = result.Succeeded ? TranslationStage.Completed : TranslationStage.Failed;
+            item.Status = _localizer.GetStageText(item.Stage);
         }
     }
 
@@ -290,5 +333,54 @@ public sealed class MainWindowViewModel : ViewModelBase
     private static string? Normalize(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private void ApplyGuiLanguage(string languageCode)
+    {
+        _localizer.SetLanguage(languageCode);
+        RefreshLocalizedStrings();
+    }
+
+    private void RefreshLocalizedStrings()
+    {
+        Strings = LocalizedStrings.Current();
+        RefreshLanguageOptions();
+        foreach (var item in Items)
+        {
+            item.Status = _localizer.GetStageText(item.Stage);
+        }
+    }
+
+    private void RefreshLanguageOptions()
+    {
+        var selectedCode = _selectedGuiLanguage.Code;
+        GuiLanguageOptions.Clear();
+        foreach (var option in CreateLanguageOptions())
+        {
+            GuiLanguageOptions.Add(option);
+            if (option.Code == selectedCode)
+            {
+                _selectedGuiLanguage = option;
+                this.RaisePropertyChanged(nameof(SelectedGuiLanguage));
+            }
+        }
+    }
+
+    private GuiLanguageOption FindLanguageOption(string? code)
+    {
+        var normalized = GuiLocalizer.NormalizeConfiguredLanguage(code);
+        return GuiLanguageOptions.FirstOrDefault(o => o.Code == normalized)
+            ?? CreateLanguageOptions().First(o => o.Code == normalized);
+    }
+
+    private static IReadOnlyList<GuiLanguageOption> CreateLanguageOptions()
+    {
+        return
+        [
+            new GuiLanguageOption(GuiLocalizer.AutoLanguageCode, Resources.LanguageAuto),
+            new GuiLanguageOption(GuiLocalizer.EnglishLanguageCode, Resources.LanguageEnglish),
+            new GuiLanguageOption(GuiLocalizer.SimplifiedChineseLanguageCode, Resources.LanguageSimplifiedChinese),
+            new GuiLanguageOption(GuiLocalizer.TraditionalChineseLanguageCode, Resources.LanguageTraditionalChinese),
+        ];
     }
 }

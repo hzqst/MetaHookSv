@@ -1,4 +1,5 @@
 using BSPLocalizationTools.GUI.ViewModels;
+using System.Globalization;
 
 namespace BSPLocalizationTools.Tests;
 
@@ -14,7 +15,8 @@ public sealed class MainWindowViewModelTests
             new ToolConfiguration(
                 new LLMOptions("gpt-test", "sk-test", "https://example.test/v1", 0.1, "high", "codex"),
                 "tchinese",
-                "prompt.md"));
+                "prompt.md",
+                "zh-TW"));
         var vm = CreateViewModel(envPath, []);
 
         vm.LoadConfiguration();
@@ -27,6 +29,8 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("codex", vm.LlmFakeAs);
         Assert.Equal("tchinese", vm.OutLang);
         Assert.Equal("prompt.md", vm.PromptFilePath);
+        Assert.Equal("zh-TW", vm.SelectedGuiLanguage.Code);
+        Assert.Equal("翻譯", vm.Strings.TranslateTab);
     }
 
     [Fact]
@@ -39,6 +43,7 @@ public sealed class MainWindowViewModelTests
         vm.LlmApiKey = "sk-save";
         vm.OutLang = "schinese";
         vm.PromptFilePath = "prompt.md";
+        vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
 
         vm.SaveConfiguration();
         var loaded = ToolConfigurationFile.Load(envPath);
@@ -47,6 +52,37 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("sk-save", loaded.LLM.ApiKey);
         Assert.Equal("schinese", loaded.DefaultOutLang);
         Assert.Equal("prompt.md", loaded.DefaultPromptFilePath);
+        Assert.Equal("zh-CN", loaded.GuiLanguage);
+    }
+
+    [Fact]
+    public void ChangingGuiLanguageUpdatesLocalizedStringsImmediately()
+    {
+        var vm = CreateViewModel("unused.env", []);
+
+        Assert.Equal("Translate", vm.Strings.TranslateTab);
+
+        vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
+
+        Assert.Equal("翻译", vm.Strings.TranslateTab);
+        Assert.Equal("设置", vm.Strings.SettingsTab);
+    }
+
+    [Fact]
+    public async Task StartTranslationUpdatesStatusUsingSelectedGuiLanguage()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+        var vm = CreateViewModel(
+            Path.Combine(temp.Path, ".env"),
+            [new LocalizationBatchItemResult(bspPath, "map_dictionary_schinese.csv", true, null)]);
+        vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-TW");
+        vm.AddBspFiles([bspPath]);
+
+        await vm.StartTranslationAsync();
+
+        Assert.Equal("已完成", vm.Items[0].Status);
     }
 
     [Fact]
@@ -83,7 +119,8 @@ public sealed class MainWindowViewModelTests
     {
         return new MainWindowViewModel(
             new BatchLocalizationRunner(new FakeRunner(results)),
-            envPath);
+            envPath,
+            () => CultureInfo.GetCultureInfo("en-US"));
     }
 
     private sealed class FakeRunner(IReadOnlyList<LocalizationBatchItemResult> results) : LocalizationRunner(

@@ -23,6 +23,24 @@ public sealed class ToolConfigurationFileTests
         Assert.Equal("codex", loaded.LLM.FakeAs);
         Assert.Equal("tchinese", loaded.DefaultOutLang);
         Assert.Equal("prompts\\default.md", loaded.DefaultPromptFilePath);
+        Assert.Equal("auto", loaded.GuiLanguage);
+    }
+
+    [Fact]
+    public void SaveThenLoadRoundTripsGuiLanguage()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        var configuration = new ToolConfiguration(
+            ToolConfiguration.Default.LLM,
+            "schinese",
+            null,
+            "zh-TW");
+
+        ToolConfigurationFile.Save(envPath, configuration);
+        var loaded = ToolConfigurationFile.Load(envPath);
+
+        Assert.Equal("zh-TW", loaded.GuiLanguage);
     }
 
     [Fact]
@@ -34,6 +52,7 @@ public sealed class ToolConfigurationFileTests
 
         Assert.Equal("schinese", loaded.DefaultOutLang);
         Assert.Equal("medium", loaded.LLM.Effort);
+        Assert.Equal("auto", loaded.GuiLanguage);
         Assert.Null(loaded.DefaultPromptFilePath);
     }
 }

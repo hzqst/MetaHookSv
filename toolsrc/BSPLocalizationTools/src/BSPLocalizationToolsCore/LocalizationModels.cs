@@ -39,10 +39,12 @@ public sealed record TranslationProgress(
 public sealed record ToolConfiguration(
     LLMOptions LLM,
     string DefaultOutLang,
-    string? DefaultPromptFilePath)
+    string? DefaultPromptFilePath,
+    string GuiLanguage = "auto")
 {
     public static ToolConfiguration Default { get; } = new(
         new LLMOptions(null, null, null, null, "medium", null),
         "schinese",
-        null);
+        null,
+        "auto");
 }

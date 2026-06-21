@@ -7,9 +7,16 @@ public sealed class TranslationItemViewModel(string bspPath) : ViewModelBase
     private string _status = "Queued";
     private string? _outputPath;
     private string? _errorMessage;
+    private TranslationStage _stage = TranslationStage.Queued;
 
     public string BspPath { get; } = bspPath;
     public string FileName => Path.GetFileName(BspPath);
+
+    public TranslationStage Stage
+    {
+        get => _stage;
+        set => this.RaiseAndSetIfChanged(ref _stage, value);
+    }
 
     public string Status
     {

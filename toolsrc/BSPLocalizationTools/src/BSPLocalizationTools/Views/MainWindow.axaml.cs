@@ -15,11 +15,11 @@ public sealed partial class MainWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Select BSP files",
+            Title = ViewModel?.Strings.SelectBspFilesTitle ?? "Select BSP files",
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("GoldSrc BSP")
+                new FilePickerFileType(ViewModel?.Strings.GoldSrcBspFilter ?? "GoldSrc BSP")
                 {
                     Patterns = ["*.bsp"],
                 },
@@ -33,11 +33,11 @@ public sealed partial class MainWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Select prompt file",
+            Title = ViewModel?.Strings.SelectPromptFileTitle ?? "Select prompt file",
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Markdown")
+                new FilePickerFileType(ViewModel?.Strings.MarkdownFilter ?? "Markdown")
                 {
                     Patterns = ["*.md"],
                 },

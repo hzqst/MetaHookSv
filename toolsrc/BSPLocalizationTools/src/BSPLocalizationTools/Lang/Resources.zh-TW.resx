@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TranslateTab" xml:space="preserve">
+    <value>翻譯</value>
+  </data>
+  <data name="SettingsTab" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="TargetLanguage" xml:space="preserve">
+    <value>目標語言</value>
+  </data>
+  <data name="AddBsp" xml:space="preserve">
+    <value>新增 BSP</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>開始</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ConfigurationFile" xml:space="preserve">
+    <value>設定檔</value>
+  </data>
+  <data name="Load" xml:space="preserve">
+    <value>載入</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>儲存</value>
+  </data>
+  <data name="PromptFile" xml:space="preserve">
+    <value>提示詞檔案</value>
+  </data>
+  <data name="PromptFileWatermark" xml:space="preserve">
+    <value>可選的 prompt .md 路徑</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>瀏覽</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="ApiKey" xml:space="preserve">
+    <value>API 金鑰</value>
+  </data>
+  <data name="BaseUrl" xml:space="preserve">
+    <value>Base URL</value>
+  </data>
+  <data name="Temperature" xml:space="preserve">
+    <value>溫度</value>
+  </data>
+  <data name="ReasoningEffort" xml:space="preserve">
+    <value>推理強度</value>
+  </data>
+  <data name="FakeAs" xml:space="preserve">
+    <value>偽裝為</value>
+  </data>
+  <data name="Defaults" xml:space="preserve">
+    <value>預設值</value>
+  </data>
+  <data name="GuiLanguage" xml:space="preserve">
+    <value>GUI 語言</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>跟隨系統</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageSimplifiedChinese" xml:space="preserve">
+    <value>簡體中文</value>
+  </data>
+  <data name="LanguageTraditionalChinese" xml:space="preserve">
+    <value>繁體中文</value>
+  </data>
+  <data name="SelectBspFilesTitle" xml:space="preserve">
+    <value>選擇 BSP 檔案</value>
+  </data>
+  <data name="GoldSrcBspFilter" xml:space="preserve">
+    <value>GoldSrc BSP</value>
+  </data>
+  <data name="SelectPromptFileTitle" xml:space="preserve">
+    <value>選擇提示詞檔案</value>
+  </data>
+  <data name="MarkdownFilter" xml:space="preserve">
+    <value>Markdown</value>
+  </data>
+  <data name="StatusQueued" xml:space="preserve">
+    <value>已排隊</value>
+  </data>
+  <data name="StatusExtractingGameText" xml:space="preserve">
+    <value>正在擷取 game_text</value>
+  </data>
+  <data name="StatusBuildingPrompt" xml:space="preserve">
+    <value>正在建立提示詞</value>
+  </data>
+  <data name="StatusRequestingTranslation" xml:space="preserve">
+    <value>正在請求翻譯</value>
+  </data>
+  <data name="StatusParsingResponse" xml:space="preserve">
+    <value>正在解析回應</value>
+  </data>
+  <data name="StatusWritingDictionary" xml:space="preserve">
+    <value>正在寫入詞典</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="StatusFailed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="StatusCanceled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="LogLoadedConfiguration" xml:space="preserve">
+    <value>已載入設定：{0}</value>
+  </data>
+  <data name="LogSavedConfiguration" xml:space="preserve">
+    <value>已儲存設定：{0}</value>
+  </data>
+  <data name="LogNoBspFilesSelected" xml:space="preserve">
+    <value>未選擇 BSP 檔案。</value>
+  </data>
+  <data name="LogCancelRequested" xml:space="preserve">
+    <value>已請求取消。</value>
+  </data>
+  <data name="LogProgress" xml:space="preserve">
+    <value>{0}：{1}</value>
+  </data>
+</root>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>BSPLocalizationTools</value>
+  </data>
+  <data name="TranslateTab" xml:space="preserve">
+    <value>Translate</value>
+  </data>
+  <data name="SettingsTab" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="TargetLanguage" xml:space="preserve">
+    <value>Target language</value>
+  </data>
+  <data name="AddBsp" xml:space="preserve">
+    <value>Add BSP</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ConfigurationFile" xml:space="preserve">
+    <value>Configuration file</value>
+  </data>
+  <data name="Load" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="PromptFile" xml:space="preserve">
+    <value>Prompt file</value>
+  </data>
+  <data name="PromptFileWatermark" xml:space="preserve">
+    <value>Optional prompt .md path</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="Llm" xml:space="preserve">
+    <value>LLM</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="ApiKey" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="BaseUrl" xml:space="preserve">
+    <value>Base URL</value>
+  </data>
+  <data name="Temperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="ReasoningEffort" xml:space="preserve">
+    <value>Reasoning effort</value>
+  </data>
+  <data name="FakeAs" xml:space="preserve">
+    <value>Fake as</value>
+  </data>
+  <data name="Defaults" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+  <data name="GuiLanguage" xml:space="preserve">
+    <value>GUI language</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageSimplifiedChinese" xml:space="preserve">
+    <value>Simplified Chinese</value>
+  </data>
+  <data name="LanguageTraditionalChinese" xml:space="preserve">
+    <value>Traditional Chinese</value>
+  </data>
+  <data name="SelectBspFilesTitle" xml:space="preserve">
+    <value>Select BSP files</value>
+  </data>
+  <data name="GoldSrcBspFilter" xml:space="preserve">
+    <value>GoldSrc BSP</value>
+  </data>
+  <data name="SelectPromptFileTitle" xml:space="preserve">
+    <value>Select prompt file</value>
+  </data>
+  <data name="MarkdownFilter" xml:space="preserve">
+    <value>Markdown</value>
+  </data>
+  <data name="StatusQueued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="StatusExtractingGameText" xml:space="preserve">
+    <value>Extracting game_text</value>
+  </data>
+  <data name="StatusBuildingPrompt" xml:space="preserve">
+    <value>Building prompt</value>
+  </data>
+  <data name="StatusRequestingTranslation" xml:space="preserve">
+    <value>Requesting translation</value>
+  </data>
+  <data name="StatusParsingResponse" xml:space="preserve">
+    <value>Parsing response</value>
+  </data>
+  <data name="StatusWritingDictionary" xml:space="preserve">
+    <value>Writing dictionary</value>
+  </data>
+  <data name="StatusCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="StatusFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="StatusCanceled" xml:space="preserve">
+    <value>Canceled</value>
+  </data>
+  <data name="LogLoadedConfiguration" xml:space="preserve">
+    <value>Loaded configuration: {0}</value>
+  </data>
+  <data name="LogSavedConfiguration" xml:space="preserve">
+    <value>Saved configuration: {0}</value>
+  </data>
+  <data name="LogNoBspFilesSelected" xml:space="preserve">
+    <value>No BSP files selected.</value>
+  </data>
+  <data name="LogCancelRequested" xml:space="preserve">
+    <value>Cancel requested.</value>
+  </data>
+  <data name="LogProgress" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+</root>

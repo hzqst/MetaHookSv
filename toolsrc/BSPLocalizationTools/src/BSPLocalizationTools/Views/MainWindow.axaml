@@ -4,19 +4,19 @@
     xmlns:vm="clr-namespace:BSPLocalizationTools.GUI.ViewModels"
     x:Class="BSPLocalizationTools.GUI.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
-    Title="BSPLocalizationTools"
+    Title="{Binding Strings.AppTitle}"
     Width="980"
     Height="680"
     MinWidth="780"
     MinHeight="560">
   <Border Padding="16">
     <TabControl>
-      <TabItem Header="Translate">
+      <TabItem Header="{Binding Strings.TranslateTab}">
         <Grid RowDefinitions="Auto,*,Auto,160" RowSpacing="12">
           <Grid ColumnDefinitions="*,140,140" ColumnSpacing="8">
-            <TextBox Text="{Binding OutLang}" Watermark="Target language" />
-            <Button Grid.Column="1" Content="Add BSP" Click="AddBspButton_Click" />
-            <Button Grid.Column="2" Content="Clear" Click="ClearButton_Click" />
+            <TextBox Text="{Binding OutLang}" Watermark="{Binding Strings.TargetLanguage}" />
+            <Button Grid.Column="1" Content="{Binding Strings.AddBsp}" Click="AddBspButton_Click" />
+            <Button Grid.Column="2" Content="{Binding Strings.Clear}" Click="ClearButton_Click" />
           </Grid>
 
           <ListBox
@@ -24,9 +24,9 @@
               ItemsSource="{Binding Items}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:TranslationItemViewModel">
-                <Grid ColumnDefinitions="2*,*,2*,2*" ColumnSpacing="8" MinHeight="30">
-                  <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="1" Text="{Binding Status}" VerticalAlignment="Center" />
+                <Grid ColumnDefinitions="4*,200,2*,2*" ColumnSpacing="8" MinHeight="30">
+                  <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding Status}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="2" Text="{Binding OutputPath}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="3" Text="{Binding ErrorMessage}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </Grid>
@@ -41,8 +41,8 @@
                 Value="{Binding OverallProgress}"
                 Height="20"
                 VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="Start" Command="{Binding StartTranslationCommand}" />
-            <Button Grid.Column="2" Content="Cancel" Command="{Binding CancelTranslationCommand}" />
+            <Button Grid.Column="1" Content="{Binding Strings.Start}" Command="{Binding StartTranslationCommand}" />
+            <Button Grid.Column="2" Content="{Binding Strings.Cancel}" Command="{Binding CancelTranslationCommand}" />
           </Grid>
 
           <TextBox
@@ -54,42 +54,56 @@
         </Grid>
       </TabItem>
 
-      <TabItem Header="Settings">
+      <TabItem Header="{Binding Strings.SettingsTab}">
         <ScrollViewer>
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
-            <TextBlock Text="Configuration file" FontWeight="SemiBold" />
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+            <TextBlock Text="{Binding Strings.ConfigurationFile}" FontWeight="SemiBold" />
             <Grid Grid.Row="1" ColumnDefinitions="*,110,110" ColumnSpacing="8">
               <TextBox Text="{Binding EnvPath}" />
-              <Button Grid.Column="1" Content="Load" Command="{Binding LoadConfigurationCommand}" />
-              <Button Grid.Column="2" Content="Save" Command="{Binding SaveConfigurationCommand}" />
+              <Button Grid.Column="1" Content="{Binding Strings.Load}" Command="{Binding LoadConfigurationCommand}" />
+              <Button Grid.Column="2" Content="{Binding Strings.Save}" Command="{Binding SaveConfigurationCommand}" />
             </Grid>
 
-            <TextBlock Grid.Row="2" Text="Prompt file" FontWeight="SemiBold" />
+            <TextBlock Grid.Row="2" Text="{Binding Strings.PromptFile}" FontWeight="SemiBold" />
             <Grid Grid.Row="3" ColumnDefinitions="*,120" ColumnSpacing="8">
-              <TextBox Text="{Binding PromptFilePath}" Watermark="Optional prompt .md path" />
-              <Button Grid.Column="1" Content="Browse" Click="BrowsePromptButton_Click" />
+              <TextBox Text="{Binding PromptFilePath}" Watermark="{Binding Strings.PromptFileWatermark}" />
+              <Button Grid.Column="1" Content="{Binding Strings.Browse}" Click="BrowsePromptButton_Click" />
             </Grid>
 
-            <TextBlock Grid.Row="4" Text="LLM" FontWeight="SemiBold" />
+            <TextBlock Grid.Row="4" Text="{Binding Strings.Llm}" FontWeight="SemiBold" />
             <Grid Grid.Row="5" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
-              <TextBlock Text="Model" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Strings.Model}" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" Text="{Binding LlmModel}" Watermark="gpt-5.5" />
-              <TextBlock Grid.Row="1" Text="API key" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="{Binding Strings.ApiKey}" VerticalAlignment="Center" />
               <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LlmApiKey}" PasswordChar="*" />
-              <TextBlock Grid.Row="2" Text="Base URL" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="2" Text="{Binding Strings.BaseUrl}" VerticalAlignment="Center" />
               <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LlmBaseUrl}" Watermark="https://api.openai.com/v1" />
-              <TextBlock Grid.Row="3" Text="Temperature" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="3" Text="{Binding Strings.Temperature}" VerticalAlignment="Center" />
               <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LlmTemperature}" Watermark="optional" />
-              <TextBlock Grid.Row="4" Text="Reasoning effort" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="4" Text="{Binding Strings.ReasoningEffort}" VerticalAlignment="Center" />
               <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding EffortOptions}" SelectedItem="{Binding LlmEffort}" />
-              <TextBlock Grid.Row="5" Text="Fake as" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="5" Text="{Binding Strings.FakeAs}" VerticalAlignment="Center" />
               <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LlmFakeAs}" Watermark="codex" />
             </Grid>
 
-            <TextBlock Grid.Row="6" Text="Defaults" FontWeight="SemiBold" />
+            <TextBlock Grid.Row="6" Text="{Binding Strings.Defaults}" FontWeight="SemiBold" />
             <Grid Grid.Row="7" ColumnDefinitions="160,*" ColumnSpacing="8">
-              <TextBlock Text="Target language" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding Strings.TargetLanguage}" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" Text="{Binding OutLang}" />
+            </Grid>
+
+            <Grid Grid.Row="8" ColumnDefinitions="160,*" ColumnSpacing="8">
+              <TextBlock Text="{Binding Strings.GuiLanguage}" VerticalAlignment="Center" />
+              <ComboBox
+                  Grid.Column="1"
+                  ItemsSource="{Binding GuiLanguageOptions}"
+                  SelectedItem="{Binding SelectedGuiLanguage}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:GuiLanguageOption">
+                    <TextBlock Text="{Binding DisplayName}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
             </Grid>
           </Grid>
         </ScrollViewer>

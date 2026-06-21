@@ -13,6 +13,7 @@ public static class ToolConfigurationFile
     public const string LlmFakeAsKey = "BSPL10N_LLM_FAKE_AS";
     public const string DefaultOutLangKey = "BSPL10N_DEFAULT_OUTLANG";
     public const string DefaultPromptFileKey = "BSPL10N_DEFAULT_PROMPTFILE";
+    public const string GuiLanguageKey = "BSPL10N_GUI_LANGUAGE";
 
     public static string GetDefaultPath()
     {
@@ -33,10 +34,11 @@ public static class ToolConfigurationFile
                 Get(values, LlmApiKeyKey),
                 Get(values, LlmBaseUrlKey),
                 ParseTemperature(Get(values, LlmTemperatureKey)),
-                Get(values, LlmEffortKey) ?? ToolConfiguration.Default.LLM.Effort,
-                Get(values, LlmFakeAsKey)),
+            Get(values, LlmEffortKey) ?? ToolConfiguration.Default.LLM.Effort,
+            Get(values, LlmFakeAsKey)),
             Get(values, DefaultOutLangKey) ?? ToolConfiguration.Default.DefaultOutLang,
-            Get(values, DefaultPromptFileKey));
+            Get(values, DefaultPromptFileKey),
+            Get(values, GuiLanguageKey) ?? ToolConfiguration.Default.GuiLanguage);
     }
 
     public static void Save(string envPath, ToolConfiguration configuration)
@@ -59,6 +61,7 @@ public static class ToolConfigurationFile
             Format(LlmFakeAsKey, configuration.LLM.FakeAs),
             Format(DefaultOutLangKey, configuration.DefaultOutLang),
             Format(DefaultPromptFileKey, configuration.DefaultPromptFilePath),
+            Format(GuiLanguageKey, configuration.GuiLanguage),
         };
         File.WriteAllLines(envPath, lines, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
