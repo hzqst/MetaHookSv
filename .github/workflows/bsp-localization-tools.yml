@@ -1,0 +1,75 @@
+name: bsp-localization-tools
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - ".github/workflows/bsp-localization-tools.yml"
+      - "toolsrc/BSPLocalizationTools/**"
+
+permissions:
+  contents: write
+
+env:
+  SOLUTION_FILE_PATH: toolsrc\BSPLocalizationTools\BSPLocalizationTools.sln
+  BUILD_CONFIGURATION: Release
+  DOTNET_VERSION: 8.0.x
+  RUNTIME_IDENTIFIER: win-x64
+  OUTPUT_DIRECTORY: BSPLocalizationTools-Output
+  ARCHIVE_NAME: BSPLocalizationTools-windows-x64.7z
+
+jobs:
+  build:
+
+    runs-on: windows-2022
+    if: github.repository == 'hzqst/MetaHookSv'
+
+    steps:
+      - uses: hzqst/checkout@v2.3.4
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+
+      - name: Restore BSPLocalizationTools
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: dotnet restore "${{env.SOLUTION_FILE_PATH}}"
+        shell: cmd
+
+      - name: Test BSPLocalizationTools
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: dotnet test "${{env.SOLUTION_FILE_PATH}}" -c ${{env.BUILD_CONFIGURATION}} --no-restore
+        shell: cmd
+
+      - name: Publish BSPLocalizationTools GUI
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationTools\BSPLocalizationTools.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} --self-contained true -o "${{env.OUTPUT_DIRECTORY}}\GUI"
+        shell: cmd
+
+      - name: Publish BSPLocalizationTools CLI
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: dotnet publish "toolsrc\BSPLocalizationTools\src\BSPLocalizationToolsCLI\BSPLocalizationToolsCLI.csproj" -c ${{env.BUILD_CONFIGURATION}} -r ${{env.RUNTIME_IDENTIFIER}} --self-contained true -o "${{env.OUTPUT_DIRECTORY}}\CLI"
+        shell: cmd
+
+      - name: Copy README to output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: copy "toolsrc\BSPLocalizationTools\README.md" "%OUTPUT_DIRECTORY%" /y
+        shell: cmd
+
+      - name: Zipping BSPLocalizationTools
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: 7z a "%ARCHIVE_NAME%" "%OUTPUT_DIRECTORY%/*" -r "-x!*.pdb"
+        shell: cmd
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: MetaHookSv-${{ github.ref }}
+          files: |
+            BSPLocalizationTools-windows-x64.7z
