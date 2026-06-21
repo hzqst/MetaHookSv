@@ -115,14 +115,23 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
         
         /// <summary>
-        ///   查找类似 Clear 的本地化字符串。
+        ///   查找类似 Clear all tasks 的本地化字符串。
         /// </summary>
         public static string Clear {
             get {
                 return ResourceManager.GetString("Clear", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Clear completed tasks 的本地化字符串。
+        /// </summary>
+        public static string ClearCompletedTasks {
+            get {
+                return ResourceManager.GetString("ClearCompletedTasks", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Configuration file 的本地化字符串。
         /// </summary>
@@ -149,7 +158,16 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("FakeAs", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Failed to load game_text: {0} 的本地化字符串。
+        /// </summary>
+        public static string FailedToLoadGameText {
+            get {
+                return ResourceManager.GetString("FailedToLoadGameText", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 GoldSrc BSP 的本地化字符串。
         /// </summary>
@@ -329,7 +347,16 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("Model", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 No game_text messages were found. 的本地化字符串。
+        /// </summary>
+        public static string NoGameTextFound {
+            get {
+                return ResourceManager.GetString("NoGameTextFound", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Prompt file 的本地化字符串。
         /// </summary>
@@ -374,7 +401,16 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("ReasoningEffort", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Raw game_text - {0} 的本地化字符串。
+        /// </summary>
+        public static string RawGameTextTitle {
+            get {
+                return ResourceManager.GetString("RawGameTextTitle", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Reload file 的本地化字符串。
         /// </summary>
@@ -383,7 +419,16 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("ReloadPromptFromFile", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Remove 的本地化字符串。
+        /// </summary>
+        public static string RemoveTask {
+            get {
+                return ResourceManager.GetString("RemoveTask", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Save 的本地化字符串。
         /// </summary>
@@ -552,6 +597,15 @@ namespace BSPLocalizationTools.GUI.Lang {
         public static string TranslateTab {
             get {
                 return ResourceManager.GetString("TranslateTab", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 View raw game_text 的本地化字符串。
+        /// </summary>
+        public static string ViewRawGameText {
+            get {
+                return ResourceManager.GetString("ViewRawGameText", resourceCulture);
             }
         }
     }

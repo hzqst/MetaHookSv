@@ -25,7 +25,25 @@
     <value>添加 BSP</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>清空</value>
+    <value>清空所有任务</value>
+  </data>
+  <data name="ClearCompletedTasks" xml:space="preserve">
+    <value>清理已完成任务</value>
+  </data>
+  <data name="RemoveTask" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="ViewRawGameText" xml:space="preserve">
+    <value>查看原始 game_text</value>
+  </data>
+  <data name="RawGameTextTitle" xml:space="preserve">
+    <value>原始 game_text - {0}</value>
+  </data>
+  <data name="NoGameTextFound" xml:space="preserve">
+    <value>未找到 game_text 消息。</value>
+  </data>
+  <data name="FailedToLoadGameText" xml:space="preserve">
+    <value>加载 game_text 失败：{0}</value>
   </data>
   <data name="Start" xml:space="preserve">
     <value>开始</value>

@@ -3,6 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="clr-namespace:BSPLocalizationTools.GUI.ViewModels"
     x:Class="BSPLocalizationTools.GUI.Views.MainWindow"
+    x:Name="Root"
     x:DataType="vm:MainWindowViewModel"
     Title="{Binding Strings.AppTitle}"
     Width="980"
@@ -13,18 +14,37 @@
     <TabControl>
       <TabItem Header="{Binding Strings.TranslateTab}">
         <Grid RowDefinitions="Auto,*,Auto,160" RowSpacing="12">
-          <Grid ColumnDefinitions="*,140,140" ColumnSpacing="8">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
             <TextBox Text="{Binding OutLang}" Watermark="{Binding Strings.TargetLanguage}" />
             <Button Grid.Column="1" Content="{Binding Strings.AddBsp}" Click="AddBspButton_Click" />
-            <Button Grid.Column="2" Content="{Binding Strings.Clear}" Click="ClearButton_Click" />
+            <Button Grid.Column="2" Content="{Binding Strings.ClearCompletedTasks}" Command="{Binding ClearCompletedItemsCommand}" />
+            <Button Grid.Column="3" Content="{Binding Strings.Clear}" Command="{Binding ClearAllItemsCommand}" />
           </Grid>
 
           <ListBox
+              x:Name="MapListBox"
               Grid.Row="1"
-              ItemsSource="{Binding Items}">
+              ItemsSource="{Binding Items}"
+              KeyDown="MapListBox_KeyDown">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:TranslationItemViewModel">
-                <Grid ColumnDefinitions="4*,200,2*,2*" ColumnSpacing="8" MinHeight="30">
+                <Grid ColumnDefinitions="4*,200,2*,2*" ColumnSpacing="8" MinHeight="30" Background="Transparent" HorizontalAlignment="Stretch">
+                  <Grid.ContextMenu>
+                    <ContextMenu x:CompileBindings="False">
+                      <MenuItem
+                          Header="{Binding #Root.DataContext.Strings.RemoveTask}"
+                          Command="{Binding #Root.DataContext.RemoveItemCommand}"
+                          CommandParameter="{Binding}" />
+                      <MenuItem
+                          Header="{Binding #Root.DataContext.Strings.ViewRawGameText}"
+                          Click="ViewRawGameTextMenuItem_Click" />
+                    </ContextMenu>
+                  </Grid.ContextMenu>
                   <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="1" Text="{Binding Status}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Column="2" Text="{Binding OutputPath}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />

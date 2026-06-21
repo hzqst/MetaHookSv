@@ -187,6 +187,82 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void RemoveItemCommandRemovesSpecifiedTask()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.AddBspFiles(["first.bsp", "second.bsp"]);
+
+        vm.RemoveItemCommand.Execute(vm.Items[0]);
+
+        Assert.Equal(["second.bsp"], vm.Items.Select(i => i.BspPath).ToArray());
+    }
+
+    [Fact]
+    public void ClearCompletedItemsCommandRemovesOnlyCompletedTasks()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.AddBspFiles(["completed.bsp", "queued.bsp", "failed.bsp", "canceled.bsp", "running.bsp"]);
+        vm.Items[0].Stage = TranslationStage.Completed;
+        vm.Items[2].Stage = TranslationStage.Failed;
+        vm.Items[3].Stage = TranslationStage.Canceled;
+        vm.Items[4].Stage = TranslationStage.RequestingTranslation;
+
+        vm.ClearCompletedItemsCommand.Execute(null);
+
+        Assert.Equal(["queued.bsp", "failed.bsp", "canceled.bsp", "running.bsp"], vm.Items.Select(i => i.BspPath).ToArray());
+    }
+
+    [Fact]
+    public void ClearAllItemsCommandRemovesEveryTask()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.AddBspFiles(["first.bsp", "second.bsp"]);
+
+        vm.ClearAllItemsCommand.Execute(null);
+
+        Assert.Empty(vm.Items);
+    }
+
+    [Fact]
+    public void GetRawGameTextFormatsExtractedMessages()
+    {
+        var vm = CreateViewModel(
+            "unused.env",
+            [],
+            new ConfigurableExtractor([new GameTextEntry(0, "hello"), new GameTextEntry(1, "line 1\\nline 2")]));
+        vm.AddBspFiles(["map.bsp"]);
+
+        var text = vm.GetRawGameText(vm.Items[0]);
+
+        Assert.Contains("[0] hello", text);
+        Assert.Contains("[1] line 1\\nline 2", text);
+    }
+
+    [Fact]
+    public void GetRawGameTextReturnsLocalizedEmptyMessageWhenNoEntriesWereFound()
+    {
+        var vm = CreateViewModel("unused.env", [], new ConfigurableExtractor([]));
+        vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
+        vm.AddBspFiles(["empty.bsp"]);
+
+        var text = vm.GetRawGameText(vm.Items[0]);
+
+        Assert.Equal(vm.Strings.NoGameTextFound, text);
+    }
+
+    [Fact]
+    public void GetRawGameTextReturnsLocalizedFailureWhenExtractionFails()
+    {
+        var vm = CreateViewModel("unused.env", [], new ConfigurableExtractor(null, new InvalidOperationException("boom")));
+        vm.AddBspFiles(["broken.bsp"]);
+
+        var text = vm.GetRawGameText(vm.Items[0]);
+
+        Assert.Contains("Failed to load game_text", text);
+        Assert.Contains("boom", text);
+    }
+
+    [Fact]
     public async Task StartTranslationUpdatesItemStatusesAndOutputs()
     {
         using var temp = new TempDirectory();
@@ -206,12 +282,14 @@ public sealed class MainWindowViewModelTests
 
     private static MainWindowViewModel CreateViewModel(
         string envPath,
-        IReadOnlyList<LocalizationBatchItemResult> results)
+        IReadOnlyList<LocalizationBatchItemResult> results,
+        IGameTextExtractor? extractor = null)
     {
         return new MainWindowViewModel(
             new BatchLocalizationRunner(new FakeRunner(results)),
             envPath,
-            () => CultureInfo.GetCultureInfo("en-US"));
+            () => CultureInfo.GetCultureInfo("en-US"),
+            extractor);
     }
 
     private sealed class FakeRunner(IReadOnlyList<LocalizationBatchItemResult> results) : LocalizationRunner(
@@ -243,6 +321,21 @@ public sealed class MainWindowViewModelTests
     private sealed class FakeExtractor : IGameTextExtractor
     {
         public IReadOnlyList<GameTextEntry> Extract(string bspPath) => [new GameTextEntry(0, "hello")];
+    }
+
+    private sealed class ConfigurableExtractor(
+        IReadOnlyList<GameTextEntry>? entries,
+        Exception? exception = null) : IGameTextExtractor
+    {
+        public IReadOnlyList<GameTextEntry> Extract(string bspPath)
+        {
+            if (exception is not null)
+            {
+                throw exception;
+            }
+
+            return entries ?? [];
+        }
     }
 
     private sealed class FakeLLMClient : ILLMClient

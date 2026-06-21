@@ -28,7 +28,25 @@
     <value>Add BSP</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>Clear</value>
+    <value>Clear all tasks</value>
+  </data>
+  <data name="ClearCompletedTasks" xml:space="preserve">
+    <value>Clear completed tasks</value>
+  </data>
+  <data name="RemoveTask" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="ViewRawGameText" xml:space="preserve">
+    <value>View raw game_text</value>
+  </data>
+  <data name="RawGameTextTitle" xml:space="preserve">
+    <value>Raw game_text - {0}</value>
+  </data>
+  <data name="NoGameTextFound" xml:space="preserve">
+    <value>No game_text messages were found.</value>
+  </data>
+  <data name="FailedToLoadGameText" xml:space="preserve">
+    <value>Failed to load game_text: {0}</value>
   </data>
   <data name="Start" xml:space="preserve">
     <value>Start</value>

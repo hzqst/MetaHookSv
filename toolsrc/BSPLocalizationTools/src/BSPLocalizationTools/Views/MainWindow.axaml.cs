@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 using BSPLocalizationTools.GUI.ViewModels;
 
@@ -80,9 +82,52 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void ClearButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void ViewRawGameTextMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        ViewModel?.Items.Clear();
+        if (sender is not MenuItem { DataContext: TranslationItemViewModel item } || ViewModel is null)
+        {
+            return;
+        }
+
+        var dialog = new Window
+        {
+            Title = string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                ViewModel.Strings.RawGameTextTitle,
+                item.FileName),
+            Width = 720,
+            Height = 520,
+            MinWidth = 520,
+            MinHeight = 360,
+            Content = new Border
+            {
+                Padding = new Avalonia.Thickness(12),
+                Child = new TextBox
+                {
+                    Text = ViewModel.GetRawGameText(item),
+                    IsReadOnly = true,
+                    AcceptsReturn = true,
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    VerticalContentAlignment = VerticalAlignment.Top,
+                },
+            },
+        };
+
+        await dialog.ShowDialog(this);
+    }
+
+    private void MapListBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Delete ||
+            sender is not ListBox { SelectedItem: TranslationItemViewModel item } ||
+            ViewModel is null ||
+            !ViewModel.RemoveItemCommand.CanExecute(item))
+        {
+            return;
+        }
+
+        ViewModel.RemoveItemCommand.Execute(item);
+        e.Handled = true;
     }
 
     private MainWindowViewModel? ViewModel => DataContext as MainWindowViewModel;

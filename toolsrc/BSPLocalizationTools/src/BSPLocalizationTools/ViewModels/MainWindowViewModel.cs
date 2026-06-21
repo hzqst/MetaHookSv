@@ -10,6 +10,7 @@ namespace BSPLocalizationTools.GUI.ViewModels;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly BatchLocalizationRunner _batchRunner;
+    private readonly IGameTextExtractor _gameTextExtractor;
     private readonly GuiLocalizer _localizer;
     private CancellationTokenSource? _translationCancellation;
     private string _outLang;
@@ -30,9 +31,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         BatchLocalizationRunner batchRunner,
         string envPath,
-        Func<CultureInfo>? systemCultureProvider = null)
+        Func<CultureInfo>? systemCultureProvider = null,
+        IGameTextExtractor? gameTextExtractor = null)
     {
         _batchRunner = batchRunner;
+        _gameTextExtractor = gameTextExtractor ?? new BspGameTextExtractor();
         _localizer = new GuiLocalizer(systemCultureProvider);
         _envPath = envPath;
         _outLang = ToolConfiguration.Default.DefaultOutLang;
@@ -46,6 +49,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         LoadBuiltInPromptCommand = ReactiveCommand.Create(LoadBuiltInPrompt);
         ReloadPromptFromFileCommand = ReactiveCommand.Create(ReloadPromptFromFile);
         SavePromptCommand = ReactiveCommand.Create(SavePrompt);
+        RemoveItemCommand = ReactiveCommand.Create<TranslationItemViewModel>(RemoveItem, this.WhenAnyValue(
+            x => x.IsTranslating,
+            isTranslating => !isTranslating));
+        ClearCompletedItemsCommand = ReactiveCommand.Create(ClearCompletedItems, this.WhenAnyValue(
+            x => x.IsTranslating,
+            isTranslating => !isTranslating));
+        ClearAllItemsCommand = ReactiveCommand.Create(ClearAllItems, this.WhenAnyValue(
+            x => x.IsTranslating,
+            isTranslating => !isTranslating));
         StartTranslationCommand = ReactiveCommand.CreateFromTask(StartTranslationAsync, this.WhenAnyValue(
             x => x.IsTranslating,
             isTranslating => !isTranslating));
@@ -61,6 +73,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public ICommand LoadBuiltInPromptCommand { get; }
     public ICommand ReloadPromptFromFileCommand { get; }
     public ICommand SavePromptCommand { get; }
+    public ICommand RemoveItemCommand { get; }
+    public ICommand ClearCompletedItemsCommand { get; }
+    public ICommand ClearAllItemsCommand { get; }
     public ICommand StartTranslationCommand { get; }
     public ICommand CancelTranslationCommand { get; }
 
@@ -181,6 +196,57 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 Items.Add(new TranslationItemViewModel(path));
             }
+        }
+    }
+
+    public void RemoveItem(TranslationItemViewModel? item)
+    {
+        if (item is not null && !IsTranslating)
+        {
+            Items.Remove(item);
+        }
+    }
+
+    public void ClearCompletedItems()
+    {
+        if (IsTranslating)
+        {
+            return;
+        }
+
+        foreach (var item in Items.Where(i => i.Stage == TranslationStage.Completed).ToArray())
+        {
+            Items.Remove(item);
+        }
+    }
+
+    public void ClearAllItems()
+    {
+        if (!IsTranslating)
+        {
+            Items.Clear();
+        }
+    }
+
+    public string GetRawGameText(TranslationItemViewModel item)
+    {
+        try
+        {
+            var entries = _gameTextExtractor.Extract(item.BspPath);
+            if (entries.Count == 0)
+            {
+                return Strings.NoGameTextFound;
+            }
+
+            return string.Join(
+                Environment.NewLine,
+                entries.Select(entry => string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"[{entry.Index}] {entry.Message}")));
+        }
+        catch (Exception ex)
+        {
+            return string.Format(CultureInfo.CurrentCulture, Strings.FailedToLoadGameText, ex.Message);
         }
     }
 
