@@ -205,6 +205,15 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Built-in 的本地化字符串。
+        /// </summary>
+        public static string LoadBuiltInPrompt {
+            get {
+                return ResourceManager.GetString("LoadBuiltInPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 LLM 的本地化字符串。
         /// </summary>
         public static string Llm {
@@ -232,11 +241,38 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Failed to save prompt file: {0} 的本地化字符串。
+        /// </summary>
+        public static string LogFailedToSavePromptFile {
+            get {
+                return ResourceManager.GetString("LogFailedToSavePromptFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Loaded built-in prompt. 的本地化字符串。
+        /// </summary>
+        public static string LogLoadedBuiltInPrompt {
+            get {
+                return ResourceManager.GetString("LogLoadedBuiltInPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Loaded configuration: {0} 的本地化字符串。
         /// </summary>
         public static string LogLoadedConfiguration {
             get {
                 return ResourceManager.GetString("LogLoadedConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Loaded prompt file: {0} 的本地化字符串。
+        /// </summary>
+        public static string LogLoadedPromptFile {
+            get {
+                return ResourceManager.GetString("LogLoadedPromptFile", resourceCulture);
             }
         }
         
@@ -264,6 +300,15 @@ namespace BSPLocalizationTools.GUI.Lang {
         public static string LogSavedConfiguration {
             get {
                 return ResourceManager.GetString("LogSavedConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Saved prompt file: {0} 的本地化字符串。
+        /// </summary>
+        public static string LogSavedPromptFile {
+            get {
+                return ResourceManager.GetString("LogSavedPromptFile", resourceCulture);
             }
         }
         
@@ -304,6 +349,24 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Prompt editor 的本地化字符串。
+        /// </summary>
+        public static string PromptEditor {
+            get {
+                return ResourceManager.GetString("PromptEditor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Edit the prompt used when a prompt file is saved and selected 的本地化字符串。
+        /// </summary>
+        public static string PromptEditorWatermark {
+            get {
+                return ResourceManager.GetString("PromptEditorWatermark", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Reasoning effort 的本地化字符串。
         /// </summary>
         public static string ReasoningEffort {
@@ -313,11 +376,38 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
         
         /// <summary>
+        ///   查找类似 Reload file 的本地化字符串。
+        /// </summary>
+        public static string ReloadPromptFromFile {
+            get {
+                return ResourceManager.GetString("ReloadPromptFromFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Save 的本地化字符串。
         /// </summary>
         public static string Save {
             get {
                 return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Save prompt 的本地化字符串。
+        /// </summary>
+        public static string SavePromptFile {
+            get {
+                return ResourceManager.GetString("SavePromptFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Save prompt file 的本地化字符串。
+        /// </summary>
+        public static string SavePromptFileTitle {
+            get {
+                return ResourceManager.GetString("SavePromptFileTitle", resourceCulture);
             }
         }
         

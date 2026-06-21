@@ -10,12 +10,14 @@ public sealed class MainWindowViewModelTests
     {
         using var temp = new TempDirectory();
         var envPath = Path.Combine(temp.Path, ".env");
+        var promptPath = Path.Combine(temp.Path, "prompt.md");
+        File.WriteAllText(promptPath, "Use saved prompt.");
         ToolConfigurationFile.Save(
             envPath,
             new ToolConfiguration(
                 new LLMOptions("gpt-test", "sk-test", "https://example.test/v1", 0.1, "high", "codex"),
                 "tchinese",
-                "prompt.md",
+                promptPath,
                 "zh-TW"));
         var vm = CreateViewModel(envPath, []);
 
@@ -28,7 +30,8 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("high", vm.LlmEffort);
         Assert.Equal("codex", vm.LlmFakeAs);
         Assert.Equal("tchinese", vm.OutLang);
-        Assert.Equal("prompt.md", vm.PromptFilePath);
+        Assert.Equal(promptPath, vm.PromptFilePath);
+        Assert.Equal("Use saved prompt.", vm.PromptText);
         Assert.Equal("zh-TW", vm.SelectedGuiLanguage.Code);
         Assert.Equal("翻譯", vm.Strings.TranslateTab);
     }
@@ -56,16 +59,104 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void LoadConfigurationUsesBuiltInPromptWhenPromptFileIsMissing()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        ToolConfigurationFile.Save(
+            envPath,
+            new ToolConfiguration(
+                ToolConfiguration.Default.LLM,
+                "schinese",
+                Path.Combine(temp.Path, "missing.md")));
+        var vm = CreateViewModel(envPath, []);
+
+        vm.LoadConfiguration();
+
+        Assert.Equal(TranslationPromptBuilder.BuiltInPrompt, vm.PromptText);
+    }
+
+    [Fact]
+    public void ReloadPromptFromFileFallsBackToBuiltInPromptWhenPathIsBlank()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.PromptText = "Custom prompt";
+        vm.PromptFilePath = "";
+
+        vm.ReloadPromptFromFile();
+
+        Assert.Equal(TranslationPromptBuilder.BuiltInPrompt, vm.PromptText);
+    }
+
+    [Fact]
+    public void LoadBuiltInPromptReplacesEditedPrompt()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.PromptText = "Custom prompt";
+
+        vm.LoadBuiltInPrompt();
+
+        Assert.Equal(TranslationPromptBuilder.BuiltInPrompt, vm.PromptText);
+    }
+
+    [Fact]
+    public void SavePromptToFileWritesUtf8PromptAndUpdatesConfigurationPath()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        var promptPath = Path.Combine(temp.Path, "prompts", "custom.md");
+        var vm = CreateViewModel(envPath, []);
+        vm.PromptText = "Line 1\r\nLine 2";
+
+        vm.SavePromptToFile(promptPath);
+
+        Assert.Equal(promptPath, vm.PromptFilePath);
+        Assert.Equal("Line 1\r\nLine 2", File.ReadAllText(promptPath));
+
+        var bytes = File.ReadAllBytes(promptPath);
+        Assert.False(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
+
+        var loaded = ToolConfigurationFile.Load(envPath);
+        Assert.Equal(promptPath, loaded.DefaultPromptFilePath);
+    }
+
+    [Fact]
+    public void SavePromptUsesExistingPromptFilePath()
+    {
+        using var temp = new TempDirectory();
+        var promptPath = Path.Combine(temp.Path, "prompt.md");
+        var vm = CreateViewModel(Path.Combine(temp.Path, ".env"), []);
+        vm.PromptFilePath = promptPath;
+        vm.PromptText = "Existing path prompt.";
+
+        Assert.True(vm.SavePrompt());
+
+        Assert.Equal("Existing path prompt.", File.ReadAllText(promptPath));
+    }
+
+    [Fact]
+    public void SavePromptReturnsFalseWhenPromptFilePathIsBlank()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        vm.PromptFilePath = "";
+        vm.PromptText = "Unsaved prompt.";
+
+        Assert.False(vm.SavePrompt());
+    }
+
+    [Fact]
     public void ChangingGuiLanguageUpdatesLocalizedStringsImmediately()
     {
         var vm = CreateViewModel("unused.env", []);
 
         Assert.Equal("Translate", vm.Strings.TranslateTab);
+        Assert.Equal("Prompt editor", vm.Strings.PromptEditor);
 
         vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
 
         Assert.Equal("翻译", vm.Strings.TranslateTab);
         Assert.Equal("设置", vm.Strings.SettingsTab);
+        Assert.Equal("提示词编辑器", vm.Strings.PromptEditor);
     }
 
     [Fact]

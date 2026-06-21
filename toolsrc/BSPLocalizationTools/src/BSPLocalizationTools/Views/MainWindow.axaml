@@ -56,7 +56,8 @@
 
       <TabItem Header="{Binding Strings.SettingsTab}">
         <ScrollViewer>
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+          <Border Padding="0,0,20,0">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
             <TextBlock Text="{Binding Strings.ConfigurationFile}" FontWeight="SemiBold" />
             <Grid Grid.Row="1" ColumnDefinitions="*,110,110" ColumnSpacing="8">
               <TextBox Text="{Binding EnvPath}" />
@@ -70,8 +71,26 @@
               <Button Grid.Column="1" Content="{Binding Strings.Browse}" Click="BrowsePromptButton_Click" />
             </Grid>
 
-            <TextBlock Grid.Row="4" Text="{Binding Strings.Llm}" FontWeight="SemiBold" />
-            <Grid Grid.Row="5" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+            <TextBlock Grid.Row="4" Text="{Binding Strings.PromptEditor}" FontWeight="SemiBold" />
+            <Grid Grid.Row="5" RowDefinitions="Auto,Auto" RowSpacing="8">
+              <Grid ColumnDefinitions="*,150,150,150" ColumnSpacing="8">
+                <TextBlock Text="{Binding Strings.PromptEditorWatermark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1" Content="{Binding Strings.LoadBuiltInPrompt}" Command="{Binding LoadBuiltInPromptCommand}" />
+                <Button Grid.Column="2" Content="{Binding Strings.ReloadPromptFromFile}" Command="{Binding ReloadPromptFromFileCommand}" />
+                <Button Grid.Column="3" Content="{Binding Strings.SavePromptFile}" Click="SavePromptButton_Click" />
+              </Grid>
+              <TextBox
+                  Grid.Row="1"
+                  Text="{Binding PromptText}"
+                  AcceptsReturn="True"
+                  TextWrapping="Wrap"
+                  MinHeight="140"
+                  VerticalContentAlignment="Top"
+                  Watermark="{Binding Strings.PromptEditorWatermark}" />
+            </Grid>
+
+            <TextBlock Grid.Row="6" Text="{Binding Strings.Llm}" FontWeight="SemiBold" />
+            <Grid Grid.Row="7" ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
               <TextBlock Text="{Binding Strings.Model}" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" Text="{Binding LlmModel}" Watermark="gpt-5.5" />
               <TextBlock Grid.Row="1" Text="{Binding Strings.ApiKey}" VerticalAlignment="Center" />
@@ -86,13 +105,13 @@
               <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LlmFakeAs}" Watermark="codex" />
             </Grid>
 
-            <TextBlock Grid.Row="6" Text="{Binding Strings.Defaults}" FontWeight="SemiBold" />
-            <Grid Grid.Row="7" ColumnDefinitions="160,*" ColumnSpacing="8">
+            <TextBlock Grid.Row="8" Text="{Binding Strings.Defaults}" FontWeight="SemiBold" />
+            <Grid Grid.Row="9" ColumnDefinitions="160,*" ColumnSpacing="8">
               <TextBlock Text="{Binding Strings.TargetLanguage}" VerticalAlignment="Center" />
               <TextBox Grid.Column="1" Text="{Binding OutLang}" />
             </Grid>
 
-            <Grid Grid.Row="8" ColumnDefinitions="160,*" ColumnSpacing="8">
+            <Grid Grid.Row="10" ColumnDefinitions="160,*" ColumnSpacing="8">
               <TextBlock Text="{Binding Strings.GuiLanguage}" VerticalAlignment="Center" />
               <ComboBox
                   Grid.Column="1"
@@ -106,6 +125,7 @@
               </ComboBox>
             </Grid>
           </Grid>
+          </Border>
         </ScrollViewer>
       </TabItem>
     </TabControl>

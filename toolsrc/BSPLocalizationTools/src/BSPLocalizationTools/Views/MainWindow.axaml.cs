@@ -48,6 +48,35 @@ public sealed partial class MainWindow : Window
         if (files.Count > 0 && ViewModel is not null)
         {
             ViewModel.PromptFilePath = files[0].Path.LocalPath;
+            ViewModel.ReloadPromptFromFile();
+        }
+    }
+
+    private async void SavePromptButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (ViewModel is null || ViewModel.SavePrompt())
+        {
+            return;
+        }
+
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = ViewModel.Strings.SavePromptFileTitle,
+            SuggestedFileName = "prompt.md",
+            DefaultExtension = "md",
+            FileTypeChoices =
+            [
+                new FilePickerFileType(ViewModel.Strings.MarkdownFilter)
+                {
+                    Patterns = ["*.md"],
+                },
+                FilePickerFileTypes.TextPlain,
+            ],
+        });
+
+        if (file is not null)
+        {
+            ViewModel.SavePromptToFile(file.Path.LocalPath);
         }
     }
 

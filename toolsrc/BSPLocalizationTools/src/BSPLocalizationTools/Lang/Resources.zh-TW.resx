@@ -51,6 +51,21 @@
   <data name="Browse" xml:space="preserve">
     <value>瀏覽</value>
   </data>
+  <data name="PromptEditor" xml:space="preserve">
+    <value>提示詞編輯器</value>
+  </data>
+  <data name="PromptEditorWatermark" xml:space="preserve">
+    <value>編輯儲存並選取提示詞檔案後用於翻譯的 prompt</value>
+  </data>
+  <data name="LoadBuiltInPrompt" xml:space="preserve">
+    <value>內建</value>
+  </data>
+  <data name="ReloadPromptFromFile" xml:space="preserve">
+    <value>重新載入</value>
+  </data>
+  <data name="SavePromptFile" xml:space="preserve">
+    <value>儲存提示詞</value>
+  </data>
   <data name="Model" xml:space="preserve">
     <value>模型</value>
   </data>
@@ -96,6 +111,9 @@
   <data name="SelectPromptFileTitle" xml:space="preserve">
     <value>選擇提示詞檔案</value>
   </data>
+  <data name="SavePromptFileTitle" xml:space="preserve">
+    <value>儲存提示詞檔案</value>
+  </data>
   <data name="MarkdownFilter" xml:space="preserve">
     <value>Markdown</value>
   </data>
@@ -140,5 +158,17 @@
   </data>
   <data name="LogProgress" xml:space="preserve">
     <value>{0}：{1}</value>
+  </data>
+  <data name="LogLoadedBuiltInPrompt" xml:space="preserve">
+    <value>已載入內建提示詞。</value>
+  </data>
+  <data name="LogLoadedPromptFile" xml:space="preserve">
+    <value>已載入提示詞檔案：{0}</value>
+  </data>
+  <data name="LogSavedPromptFile" xml:space="preserve">
+    <value>已儲存提示詞檔案：{0}</value>
+  </data>
+  <data name="LogFailedToSavePromptFile" xml:space="preserve">
+    <value>儲存提示詞檔案失敗：{0}</value>
   </data>
 </root>

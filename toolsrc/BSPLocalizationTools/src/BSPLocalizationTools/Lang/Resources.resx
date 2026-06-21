@@ -54,6 +54,21 @@
   <data name="Browse" xml:space="preserve">
     <value>Browse</value>
   </data>
+  <data name="PromptEditor" xml:space="preserve">
+    <value>Prompt editor</value>
+  </data>
+  <data name="PromptEditorWatermark" xml:space="preserve">
+    <value>Edit the prompt used when a prompt file is saved and selected</value>
+  </data>
+  <data name="LoadBuiltInPrompt" xml:space="preserve">
+    <value>Built-in</value>
+  </data>
+  <data name="ReloadPromptFromFile" xml:space="preserve">
+    <value>Reload file</value>
+  </data>
+  <data name="SavePromptFile" xml:space="preserve">
+    <value>Save prompt</value>
+  </data>
   <data name="Llm" xml:space="preserve">
     <value>LLM</value>
   </data>
@@ -102,6 +117,9 @@
   <data name="SelectPromptFileTitle" xml:space="preserve">
     <value>Select prompt file</value>
   </data>
+  <data name="SavePromptFileTitle" xml:space="preserve">
+    <value>Save prompt file</value>
+  </data>
   <data name="MarkdownFilter" xml:space="preserve">
     <value>Markdown</value>
   </data>
@@ -146,5 +164,17 @@
   </data>
   <data name="LogProgress" xml:space="preserve">
     <value>{0}: {1}</value>
+  </data>
+  <data name="LogLoadedBuiltInPrompt" xml:space="preserve">
+    <value>Loaded built-in prompt.</value>
+  </data>
+  <data name="LogLoadedPromptFile" xml:space="preserve">
+    <value>Loaded prompt file: {0}</value>
+  </data>
+  <data name="LogSavedPromptFile" xml:space="preserve">
+    <value>Saved prompt file: {0}</value>
+  </data>
+  <data name="LogFailedToSavePromptFile" xml:space="preserve">
+    <value>Failed to save prompt file: {0}</value>
   </data>
 </root>

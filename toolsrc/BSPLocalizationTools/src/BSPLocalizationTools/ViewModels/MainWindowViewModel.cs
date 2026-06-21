@@ -7,7 +7,7 @@ using ReactiveUI;
 
 namespace BSPLocalizationTools.GUI.ViewModels;
 
-public sealed class MainWindowViewModel : ViewModelBase
+public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly BatchLocalizationRunner _batchRunner;
     private readonly GuiLocalizer _localizer;
@@ -43,6 +43,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         RefreshLanguageOptions();
         LoadConfigurationCommand = ReactiveCommand.Create(LoadConfiguration);
         SaveConfigurationCommand = ReactiveCommand.Create(SaveConfiguration);
+        LoadBuiltInPromptCommand = ReactiveCommand.Create(LoadBuiltInPrompt);
+        ReloadPromptFromFileCommand = ReactiveCommand.Create(ReloadPromptFromFile);
+        SavePromptCommand = ReactiveCommand.Create(SavePrompt);
         StartTranslationCommand = ReactiveCommand.CreateFromTask(StartTranslationAsync, this.WhenAnyValue(
             x => x.IsTranslating,
             isTranslating => !isTranslating));
@@ -55,6 +58,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ObservableCollection<GuiLanguageOption> GuiLanguageOptions { get; } = [];
     public ICommand LoadConfigurationCommand { get; }
     public ICommand SaveConfigurationCommand { get; }
+    public ICommand LoadBuiltInPromptCommand { get; }
+    public ICommand ReloadPromptFromFileCommand { get; }
+    public ICommand SavePromptCommand { get; }
     public ICommand StartTranslationCommand { get; }
     public ICommand CancelTranslationCommand { get; }
 
@@ -181,6 +187,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public void LoadConfiguration()
     {
         ApplyConfiguration(ToolConfigurationFile.Load(EnvPath));
+        LoadPromptFromConfiguredPath(logSuccess: false);
         AppendLog(string.Format(CultureInfo.CurrentCulture, Resources.LogLoadedConfiguration, EnvPath));
     }
 
