@@ -170,7 +170,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         get => _selectedGuiLanguage;
         set
         {
-            if (value == _selectedGuiLanguage)
+            if (value is null || value == _selectedGuiLanguage)
             {
                 return;
             }
@@ -442,16 +442,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void RefreshLanguageOptions()
     {
         var selectedCode = _selectedGuiLanguage.Code;
-        GuiLanguageOptions.Clear();
         foreach (var option in CreateLanguageOptions())
         {
-            GuiLanguageOptions.Add(option);
-            if (option.Code == selectedCode)
+            var existingOption = GuiLanguageOptions.FirstOrDefault(o => o.Code == option.Code);
+            if (existingOption is null)
             {
-                _selectedGuiLanguage = option;
-                this.RaisePropertyChanged(nameof(SelectedGuiLanguage));
+                GuiLanguageOptions.Add(option);
+                existingOption = option;
+            }
+
+            existingOption.DisplayName = option.DisplayName;
+            if (existingOption.Code == selectedCode)
+            {
+                _selectedGuiLanguage = existingOption;
             }
         }
+
+        this.RaisePropertyChanged(nameof(SelectedGuiLanguage));
     }
 
     private GuiLanguageOption FindLanguageOption(string? code)

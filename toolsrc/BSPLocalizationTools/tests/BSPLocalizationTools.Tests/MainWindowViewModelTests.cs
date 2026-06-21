@@ -164,6 +164,34 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void ChangingGuiLanguageKeepsSelectedOptionInstanceAndUpdatesDisplayNames()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        var options = vm.GuiLanguageOptions.ToArray();
+        var selectedOption = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
+
+        vm.SelectedGuiLanguage = selectedOption;
+
+        Assert.Same(options[0], vm.GuiLanguageOptions[0]);
+        Assert.Same(selectedOption, vm.SelectedGuiLanguage);
+        Assert.Contains(vm.GuiLanguageOptions, o => o.Code == "auto" && o.DisplayName == "跟随系统");
+        Assert.Contains(vm.GuiLanguageOptions, o => o.Code == "zh-CN" && o.DisplayName == "简体中文");
+    }
+
+    [Fact]
+    public void ChangingGuiLanguageIgnoresTransientNullSelection()
+    {
+        var vm = CreateViewModel("unused.env", []);
+        var selectedLanguage = vm.SelectedGuiLanguage;
+
+        var exception = Record.Exception(() => vm.SelectedGuiLanguage = null!);
+
+        Assert.Null(exception);
+        Assert.Same(selectedLanguage, vm.SelectedGuiLanguage);
+        Assert.Equal("Translate", vm.Strings.TranslateTab);
+    }
+
+    [Fact]
     public async Task StartTranslationUpdatesStatusUsingSelectedGuiLanguage()
     {
         using var temp = new TempDirectory();
