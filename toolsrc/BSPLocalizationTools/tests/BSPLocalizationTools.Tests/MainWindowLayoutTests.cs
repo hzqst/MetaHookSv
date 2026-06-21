@@ -111,6 +111,19 @@ public sealed class MainWindowLayoutTests
         Assert.Equal("{Binding Strings.AppendLanguageToCsvFileName}", (string?)checkBox.Attribute("Content"));
     }
 
+    [Fact]
+    public void SettingsSaveButtonUsesClickHandlerForSuccessDialog()
+    {
+        var document = XDocument.Load(GetMainWindowXamlPath());
+        XNamespace axaml = "https://github.com/avaloniaui";
+
+        var saveButton = document.Descendants(axaml + "Button").Single(e =>
+            (string?)e.Attribute("Content") == "{Binding Strings.Save}");
+
+        Assert.Equal("SaveConfigurationButton_Click", (string?)saveButton.Attribute("Click"));
+        Assert.Null((string?)saveButton.Attribute("Command"));
+    }
+
     private static string GetMainWindowXamlPath()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

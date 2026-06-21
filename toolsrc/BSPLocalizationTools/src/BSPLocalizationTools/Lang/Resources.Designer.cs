@@ -367,6 +367,15 @@ namespace BSPLocalizationTools.GUI.Lang {
         }
 
         /// <summary>
+        ///   查找类似 OK 的本地化字符串。
+        /// </summary>
+        public static string Ok {
+            get {
+                return ResourceManager.GetString("Ok", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 Prompt file 的本地化字符串。
         /// </summary>
         public static string PromptFile {
@@ -444,6 +453,24 @@ namespace BSPLocalizationTools.GUI.Lang {
         public static string Save {
             get {
                 return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Configuration saved successfully. 的本地化字符串。
+        /// </summary>
+        public static string SaveConfigurationSucceededMessage {
+            get {
+                return ResourceManager.GetString("SaveConfigurationSucceededMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Configuration saved 的本地化字符串。
+        /// </summary>
+        public static string SaveConfigurationSucceededTitle {
+            get {
+                return ResourceManager.GetString("SaveConfigurationSucceededTitle", resourceCulture);
             }
         }
         

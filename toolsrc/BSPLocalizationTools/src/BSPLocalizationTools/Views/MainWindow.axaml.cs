@@ -82,6 +82,20 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void SaveConfigurationButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (ViewModel is null)
+        {
+            return;
+        }
+
+        ViewModel.SaveConfiguration();
+        await ShowMessageDialogAsync(
+            ViewModel.Strings.SaveConfigurationSucceededTitle,
+            ViewModel.Strings.SaveConfigurationSucceededMessage,
+            ViewModel.Strings.Ok);
+    }
+
     private async void ViewRawGameTextMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is not MenuItem { DataContext: TranslationItemViewModel item } || ViewModel is null)
@@ -128,6 +142,47 @@ public sealed partial class MainWindow : Window
 
         ViewModel.RemoveItemCommand.Execute(item);
         e.Handled = true;
+    }
+
+    private async Task ShowMessageDialogAsync(string title, string message, string okText)
+    {
+        var okButton = new Button
+        {
+            Content = okText,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            MinWidth = 84,
+        };
+        Window? dialog = null;
+        okButton.Click += (_, _) => dialog?.Close();
+
+        dialog = new Window
+        {
+            Title = title,
+            Width = 380,
+            Height = 160,
+            MinWidth = 320,
+            MinHeight = 140,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new Border
+            {
+                Padding = new Avalonia.Thickness(16),
+                Child = new StackPanel
+                {
+                    Spacing = 16,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = message,
+                            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                        },
+                        okButton,
+                    },
+                },
+            },
+        };
+
+        await dialog.ShowDialog(this);
     }
 
     private MainWindowViewModel? ViewModel => DataContext as MainWindowViewModel;

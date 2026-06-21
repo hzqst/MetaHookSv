@@ -82,7 +82,7 @@
             <Grid Grid.Row="1" ColumnDefinitions="*,110,110" ColumnSpacing="8">
               <TextBox Text="{Binding EnvPath}" />
               <Button Grid.Column="1" Content="{Binding Strings.Load}" Command="{Binding LoadConfigurationCommand}" />
-              <Button Grid.Column="2" Content="{Binding Strings.Save}" Command="{Binding SaveConfigurationCommand}" />
+              <Button Grid.Column="2" Content="{Binding Strings.Save}" Click="SaveConfigurationButton_Click" />
             </Grid>
 
             <TextBlock Grid.Row="2" Text="{Binding Strings.PromptFile}" FontWeight="SemiBold" />

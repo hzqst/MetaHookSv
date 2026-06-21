@@ -63,6 +63,15 @@
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="SaveConfigurationSucceededTitle" xml:space="preserve">
+    <value>Configuration saved</value>
+  </data>
+  <data name="SaveConfigurationSucceededMessage" xml:space="preserve">
+    <value>Configuration saved successfully.</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
   <data name="PromptFile" xml:space="preserve">
     <value>Prompt file</value>
   </data>

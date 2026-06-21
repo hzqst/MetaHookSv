@@ -60,6 +60,15 @@
   <data name="Save" xml:space="preserve">
     <value>保存</value>
   </data>
+  <data name="SaveConfigurationSucceededTitle" xml:space="preserve">
+    <value>配置已保存</value>
+  </data>
+  <data name="SaveConfigurationSucceededMessage" xml:space="preserve">
+    <value>配置保存成功。</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>确定</value>
+  </data>
   <data name="PromptFile" xml:space="preserve">
     <value>提示词文件</value>
   </data>
