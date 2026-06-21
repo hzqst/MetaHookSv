@@ -35,6 +35,36 @@ public sealed class LocalizationRunnerTests
     }
 
     [Fact]
+    public async Task RunOmitsRowsWhenTranslationMatchesSourceText()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "fake_map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+
+        var runner = new LocalizationRunner(
+            new FakeExtractor([
+                new GameTextEntry(0, "Weapon Updated!!"),
+                new GameTextEntry(1, "hello"),
+            ]),
+            new FakeLLMClient("""{"translations":[{"id":0,"translation":"Weapon Updated!!"},{"id":1,"translation":"你好"}]}"""),
+            new DictionaryCsvWriter());
+
+        var output = await runner.RunAsync(
+            new LocalizationRequest(
+                bspPath,
+                "schinese",
+                null,
+                new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
+            CancellationToken.None);
+
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output.OutputPath));
+        Assert.DoesNotContain("NETMESSAGE:Weapon Updated!!", text);
+        Assert.Contains("NETMESSAGE:hello,你好", text);
+        Assert.Equal(2, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    [Fact]
     public async Task RunUsesOutLangPromptNextToBspWhenPromptFileIsMissing()
     {
         using var temp = new TempDirectory();
@@ -169,7 +199,7 @@ public sealed class LocalizationRunnerTests
         public IReadOnlyList<GameTextEntry> Extract(string bspPath) => entries;
     }
 
-    private sealed class FakeLLMClient : ILLMClient
+    private sealed class FakeLLMClient(string? response = null) : ILLMClient
     {
         public IReadOnlyList<LLMMessage>? LastMessages { get; private set; }
 
@@ -181,7 +211,7 @@ public sealed class LocalizationRunnerTests
             LastMessages = messages;
 
             return Task.FromResult(
-                """{"translations":[{"id":0,"translation":"緊急事態だ!!\\n（出大事儿了！！）"}]}""");
+                response ?? """{"translations":[{"id":0,"translation":"緊急事態だ!!\\n（出大事儿了！！）"}]}""");
         }
     }
 }
