@@ -171,6 +171,9 @@
   <data name="StatusCanceled" xml:space="preserve">
     <value>Canceled</value>
   </data>
+  <data name="StatusSkipped" xml:space="preserve">
+    <value>Skipped</value>
+  </data>
   <data name="LogLoadedConfiguration" xml:space="preserve">
     <value>Loaded configuration: {0}</value>
   </data>

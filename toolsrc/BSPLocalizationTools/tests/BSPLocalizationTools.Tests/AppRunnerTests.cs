@@ -28,8 +28,9 @@ public sealed class LocalizationRunnerTests
             null,
             CancellationToken.None);
 
-        Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), output.OutputPath);
-        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output.OutputPath));
+        var outputPath = Assert.IsType<string>(output.OutputPath);
+        Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), outputPath);
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(outputPath));
         Assert.Contains("NETMESSAGE:kinnkyuu jitai da!!\\n(We got a situation!!),緊急事態だ!!\\n（出大事儿了！！）", text);
         Assert.Equal(3, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }
@@ -61,6 +62,33 @@ public sealed class LocalizationRunnerTests
     }
 
     [Fact]
+    public async Task RunSkipsEmptyGameTextWithoutCallingLlmOrWritingCsv()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "empty_map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+        var llmClient = new FakeLLMClient();
+        var runner = new LocalizationRunner(
+            new FakeExtractor([]),
+            llmClient,
+            new DictionaryCsvWriter());
+
+        var output = await runner.RunAsync(
+            new LocalizationRequest(
+                bspPath,
+                "schinese",
+                null,
+                new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
+            CancellationToken.None);
+
+        Assert.True(output.Skipped);
+        Assert.Null(output.OutputPath);
+        Assert.Null(llmClient.LastMessages);
+        Assert.False(File.Exists(Path.Combine(temp.Path, "empty_map_dictionary_schinese.csv")));
+    }
+
+    [Fact]
     public async Task RunOmitsRowsWhenTranslationMatchesSourceText()
     {
         using var temp = new TempDirectory();
@@ -84,7 +112,8 @@ public sealed class LocalizationRunnerTests
             null,
             CancellationToken.None);
 
-        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output.OutputPath));
+        var outputPath = Assert.IsType<string>(output.OutputPath);
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(outputPath));
         Assert.DoesNotContain("NETMESSAGE:Weapon Updated!!", text);
         Assert.Contains("NETMESSAGE:hello,你好", text);
         Assert.Equal(2, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);

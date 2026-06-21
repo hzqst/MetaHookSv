@@ -9,13 +9,14 @@ public sealed record LocalizationRequest(
 
 public sealed record LocalizationBatchRequest(IReadOnlyList<LocalizationRequest> Items);
 
-public sealed record LocalizationResult(string BspPath, string OutputPath);
+public sealed record LocalizationResult(string BspPath, string? OutputPath, bool Skipped = false);
 
 public sealed record LocalizationBatchItemResult(
     string BspPath,
     string? OutputPath,
     bool Succeeded,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    bool Skipped = false);
 
 public enum TranslationStage
 {
@@ -28,6 +29,7 @@ public enum TranslationStage
     Completed,
     Failed,
     Canceled,
+    Skipped,
 }
 
 public sealed record TranslationProgress(

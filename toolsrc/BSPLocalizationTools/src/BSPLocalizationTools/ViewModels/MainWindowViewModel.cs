@@ -385,7 +385,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             item.OutputPath = result.OutputPath;
             item.ErrorMessage = result.ErrorMessage;
-            item.Stage = result.Succeeded ? TranslationStage.Completed : TranslationStage.Failed;
+            item.Stage = result.Skipped
+                ? TranslationStage.Skipped
+                : result.Succeeded
+                    ? TranslationStage.Completed
+                    : TranslationStage.Failed;
             item.Status = _localizer.GetStageText(item.Stage);
         }
     }

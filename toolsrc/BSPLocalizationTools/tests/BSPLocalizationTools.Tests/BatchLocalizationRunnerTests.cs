@@ -3,7 +3,7 @@ namespace BSPLocalizationTools.Tests;
 public sealed class BatchLocalizationRunnerTests
 {
     [Fact]
-    public async Task RunAsyncContinuesAfterItemFailure()
+    public async Task RunAsyncContinuesAfterSkippedItem()
     {
         using var temp = new TempDirectory();
         var first = Path.Combine(temp.Path, "first.bsp");
@@ -22,9 +22,12 @@ public sealed class BatchLocalizationRunnerTests
             new Progress<TranslationProgress>(progressEvents.Add),
             CancellationToken.None);
 
-        Assert.False(results[0].Succeeded);
+        Assert.True(results[0].Succeeded);
+        Assert.True(results[0].Skipped);
+        Assert.Null(results[0].OutputPath);
         Assert.True(results[1].Succeeded);
         Assert.Equal(2, results.Count);
+        Assert.Contains(progressEvents, e => e.BspPath == first && e.Stage == TranslationStage.Skipped);
         Assert.Contains(progressEvents, e => e.BspPath == second && e.Stage == TranslationStage.Completed);
     }
 

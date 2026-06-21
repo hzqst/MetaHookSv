@@ -518,6 +518,15 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("StatusCanceled", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Skipped 的本地化字符串。
+        /// </summary>
+        public static string StatusSkipped {
+            get {
+                return ResourceManager.GetString("StatusSkipped", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 Completed 的本地化字符串。

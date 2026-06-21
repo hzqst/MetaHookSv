@@ -17,13 +17,14 @@ public class LocalizationRunner(
 
         Report(progress, request.BspPath, TranslationStage.ExtractingGameText, "Extracting game_text messages.");
         cancellationToken.ThrowIfCancellationRequested();
-        var prompt = ReadPrompt(request.BspPath, request.OutLang, request.PromptFilePath);
         var entries = extractor.Extract(request.BspPath);
         if (entries.Count == 0)
         {
-            throw new InvalidOperationException("No game_text messages were found.");
+            Report(progress, request.BspPath, TranslationStage.Skipped, "Skipped because no game_text messages were found.");
+            return new LocalizationResult(request.BspPath, null, Skipped: true);
         }
 
+        var prompt = ReadPrompt(request.BspPath, request.OutLang, request.PromptFilePath);
         Report(progress, request.BspPath, TranslationStage.BuildingPrompt, "Building translation prompt.");
         var uniqueMessages = entries.Select(e => e.Message).Distinct(StringComparer.Ordinal).ToArray();
         var llmMessages = TranslationPromptBuilder.Build(request.OutLang, prompt, uniqueMessages);

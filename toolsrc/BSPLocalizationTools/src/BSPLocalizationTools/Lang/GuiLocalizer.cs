@@ -75,6 +75,7 @@ public sealed class GuiLocalizer(Func<CultureInfo>? systemCultureProvider = null
             TranslationStage.Completed => Resources.StatusCompleted,
             TranslationStage.Failed => Resources.StatusFailed,
             TranslationStage.Canceled => Resources.StatusCanceled,
+            TranslationStage.Skipped => Resources.StatusSkipped,
             _ => stage.ToString(),
         };
     }

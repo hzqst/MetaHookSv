@@ -16,7 +16,9 @@ try
         new DictionaryCsvWriter());
 
     var output = await runner.RunAsync(options.ToRequest(), null, CancellationToken.None);
-    Console.WriteLine($"Wrote dictionary: {output.OutputPath}");
+    Console.WriteLine(output.Skipped
+        ? "Skipped: no game_text messages were found."
+        : $"Wrote dictionary: {output.OutputPath}");
     return 0;
 }
 catch (Exception ex)

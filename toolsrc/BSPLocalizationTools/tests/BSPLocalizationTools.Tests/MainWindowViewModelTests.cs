@@ -285,6 +285,24 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task StartTranslationKeepsSkippedItemsSkipped()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "empty.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+        var vm = CreateViewModel(
+            Path.Combine(temp.Path, ".env"),
+            [new LocalizationBatchItemResult(bspPath, null, true, null, Skipped: true)]);
+        vm.AddBspFiles([bspPath]);
+
+        await vm.StartTranslationAsync();
+
+        Assert.Equal(TranslationStage.Skipped, vm.Items[0].Stage);
+        Assert.Equal("Skipped", vm.Items[0].Status);
+        Assert.Null(vm.Items[0].OutputPath);
+    }
+
+    [Fact]
     public async Task StartTranslationPassesAppendLanguageToCsvFileNameToRequests()
     {
         using var temp = new TempDirectory();
@@ -340,6 +358,17 @@ public sealed class MainWindowViewModelTests
             if (result is { Succeeded: true, OutputPath: not null })
             {
                 return Task.FromResult(new LocalizationResult(request.BspPath, result.OutputPath));
+            }
+
+            if (result is { Succeeded: true, Skipped: true })
+            {
+                progress?.Report(new TranslationProgress(
+                    TranslationStage.Skipped,
+                    request.BspPath,
+                    1,
+                    1,
+                    "Skipped empty game_text messages."));
+                return Task.FromResult(new LocalizationResult(request.BspPath, null, Skipped: true));
             }
 
             throw new InvalidOperationException(result?.ErrorMessage ?? "failed");

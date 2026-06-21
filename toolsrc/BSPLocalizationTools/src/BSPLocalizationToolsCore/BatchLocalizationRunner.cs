@@ -21,7 +21,7 @@ public sealed class BatchLocalizationRunner(LocalizationRunner runner)
             {
                 var itemProgress = CreateItemProgress(progress, i, request.Items.Count);
                 var result = await runner.RunAsync(item, itemProgress, cancellationToken);
-                results.Add(new LocalizationBatchItemResult(item.BspPath, result.OutputPath, true, null));
+                results.Add(new LocalizationBatchItemResult(item.BspPath, result.OutputPath, true, null, result.Skipped));
             }
             catch (OperationCanceledException ex)
             {

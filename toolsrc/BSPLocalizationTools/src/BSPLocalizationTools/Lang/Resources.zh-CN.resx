@@ -165,6 +165,9 @@
   <data name="StatusCanceled" xml:space="preserve">
     <value>已取消</value>
   </data>
+  <data name="StatusSkipped" xml:space="preserve">
+    <value>已跳过</value>
+  </data>
   <data name="LogLoadedConfiguration" xml:space="preserve">
     <value>已加载配置：{0}</value>
   </data>

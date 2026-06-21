@@ -31,6 +31,7 @@ public sealed class GuiLocalizerTests
     [InlineData(TranslationStage.Completed, "已完成")]
     [InlineData(TranslationStage.Failed, "失败")]
     [InlineData(TranslationStage.Canceled, "已取消")]
+    [InlineData(TranslationStage.Skipped, "已跳过")]
     public void GetStageTextLocalizesTranslationStages(TranslationStage stage, string expected)
     {
         var localizer = new GuiLocalizer(() => CultureInfo.GetCultureInfo("en-US"));
