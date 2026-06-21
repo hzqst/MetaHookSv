@@ -28,7 +28,7 @@ public sealed class AppRunnerTests
             CancellationToken.None);
 
         Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), output);
-        var text = Encoding.GetEncoding(936).GetString(File.ReadAllBytes(output));
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(output));
         Assert.Contains("NETMESSAGE:kinnkyuu jitai da!!\\n(We got a situation!!),緊急事態だ!!\\n（出大事儿了！！）", text);
         Assert.Equal(3, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }

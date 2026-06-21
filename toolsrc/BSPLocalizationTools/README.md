@@ -42,6 +42,4 @@ BSPL10N_LLM_EFFORT=medium
 
 ## Encodings
 
-- `schinese`: GBK/CP936.
-- `tchinese`: Big5/CP950.
-- Other languages: UTF-8 without BOM.
+CSV output is always written as UTF-8 with BOM.
