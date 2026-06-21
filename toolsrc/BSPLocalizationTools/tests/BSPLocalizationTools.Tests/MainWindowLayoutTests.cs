@@ -98,6 +98,19 @@ public sealed class MainWindowLayoutTests
         Assert.Equal("MapListBox_KeyDown", (string?)listBox.Attribute("KeyDown"));
     }
 
+    [Fact]
+    public void SettingsTabExposesAppendLanguageToCsvFileNameCheckBox()
+    {
+        var document = XDocument.Load(GetMainWindowXamlPath());
+        XNamespace axaml = "https://github.com/avaloniaui";
+
+        var checkBox = document.Descendants(axaml + "CheckBox").SingleOrDefault(e =>
+            (string?)e.Attribute("IsChecked") == "{Binding AppendLanguageToCsvFileName}");
+
+        Assert.NotNull(checkBox);
+        Assert.Equal("{Binding Strings.AppendLanguageToCsvFileName}", (string?)checkBox.Attribute("Content"));
+    }
+
     private static string GetMainWindowXamlPath()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

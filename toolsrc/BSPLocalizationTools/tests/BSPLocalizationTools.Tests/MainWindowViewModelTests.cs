@@ -18,7 +18,8 @@ public sealed class MainWindowViewModelTests
                 new LLMOptions("gpt-test", "sk-test", "https://example.test/v1", 0.1, "high", "codex"),
                 "tchinese",
                 promptPath,
-                "zh-TW"));
+                "zh-TW",
+                AppendLanguageToCsvFileName: false));
         var vm = CreateViewModel(envPath, []);
 
         vm.LoadConfiguration();
@@ -34,6 +35,7 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("Use saved prompt.", vm.PromptText);
         Assert.Equal("zh-TW", vm.SelectedGuiLanguage.Code);
         Assert.Equal("翻譯", vm.Strings.TranslateTab);
+        Assert.False(vm.AppendLanguageToCsvFileName);
     }
 
     [Fact]
@@ -47,6 +49,7 @@ public sealed class MainWindowViewModelTests
         vm.OutLang = "schinese";
         vm.PromptFilePath = "prompt.md";
         vm.SelectedGuiLanguage = vm.GuiLanguageOptions.Single(o => o.Code == "zh-CN");
+        vm.AppendLanguageToCsvFileName = false;
 
         vm.SaveConfiguration();
         var loaded = ToolConfigurationFile.Load(envPath);
@@ -56,6 +59,7 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("schinese", loaded.DefaultOutLang);
         Assert.Equal("prompt.md", loaded.DefaultPromptFilePath);
         Assert.Equal("zh-CN", loaded.GuiLanguage);
+        Assert.False(loaded.AppendLanguageToCsvFileName);
     }
 
     [Fact]
@@ -280,19 +284,42 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("map_dictionary_schinese.csv", vm.Items[0].OutputPath);
     }
 
+    [Fact]
+    public async Task StartTranslationPassesAppendLanguageToCsvFileNameToRequests()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+        var requests = new List<LocalizationRequest>();
+        var vm = CreateViewModel(
+            Path.Combine(temp.Path, ".env"),
+            [new LocalizationBatchItemResult(bspPath, "map_dictionary.csv", true, null)],
+            requestObserver: requests.Add);
+        vm.AppendLanguageToCsvFileName = false;
+        vm.AddBspFiles([bspPath]);
+
+        await vm.StartTranslationAsync();
+
+        var request = Assert.Single(requests);
+        Assert.False(request.AppendLanguageToCsvFileName);
+    }
+
     private static MainWindowViewModel CreateViewModel(
         string envPath,
         IReadOnlyList<LocalizationBatchItemResult> results,
-        IGameTextExtractor? extractor = null)
+        IGameTextExtractor? extractor = null,
+        Action<LocalizationRequest>? requestObserver = null)
     {
         return new MainWindowViewModel(
-            new BatchLocalizationRunner(new FakeRunner(results)),
+            new BatchLocalizationRunner(new FakeRunner(results, requestObserver)),
             envPath,
             () => CultureInfo.GetCultureInfo("en-US"),
             extractor);
     }
 
-    private sealed class FakeRunner(IReadOnlyList<LocalizationBatchItemResult> results) : LocalizationRunner(
+    private sealed class FakeRunner(
+        IReadOnlyList<LocalizationBatchItemResult> results,
+        Action<LocalizationRequest>? requestObserver) : LocalizationRunner(
         new FakeExtractor(),
         new FakeLLMClient(),
         new DictionaryCsvWriter())
@@ -302,6 +329,7 @@ public sealed class MainWindowViewModelTests
             IProgress<TranslationProgress>? progress,
             CancellationToken cancellationToken)
         {
+            requestObserver?.Invoke(request);
             progress?.Report(new TranslationProgress(
                 TranslationStage.Completed,
                 request.BspPath,

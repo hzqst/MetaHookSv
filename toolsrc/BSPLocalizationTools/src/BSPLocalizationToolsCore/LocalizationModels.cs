@@ -4,7 +4,8 @@ public sealed record LocalizationRequest(
     string BspPath,
     string OutLang,
     string? PromptFilePath,
-    LLMOptions LLM);
+    LLMOptions LLM,
+    bool AppendLanguageToCsvFileName = true);
 
 public sealed record LocalizationBatchRequest(IReadOnlyList<LocalizationRequest> Items);
 
@@ -40,11 +41,13 @@ public sealed record ToolConfiguration(
     LLMOptions LLM,
     string DefaultOutLang,
     string? DefaultPromptFilePath,
-    string GuiLanguage = "auto")
+    string GuiLanguage = "auto",
+    bool AppendLanguageToCsvFileName = true)
 {
     public static ToolConfiguration Default { get; } = new(
         new LLMOptions(null, null, null, null, "medium", null),
         "schinese",
         null,
-        "auto");
+        "auto",
+        true);
 }

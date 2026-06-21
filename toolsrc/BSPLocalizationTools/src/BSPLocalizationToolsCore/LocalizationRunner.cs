@@ -42,17 +42,20 @@ public class LocalizationRunner(
             .ToArray();
 
         Report(progress, request.BspPath, TranslationStage.WritingDictionary, "Writing dictionary CSV.");
-        var outputPath = GetOutputPath(request.BspPath, request.OutLang);
+        var outputPath = GetOutputPath(request.BspPath, request.OutLang, request.AppendLanguageToCsvFileName);
         csvWriter.Write(outputPath, request.OutLang, rows);
         Report(progress, request.BspPath, TranslationStage.Completed, $"Wrote dictionary: {outputPath}");
         return new LocalizationResult(request.BspPath, outputPath);
     }
 
-    public static string GetOutputPath(string bspPath, string outLang)
+    public static string GetOutputPath(string bspPath, string outLang, bool appendLanguageToCsvFileName = true)
     {
         var directory = Path.GetDirectoryName(Path.GetFullPath(bspPath)) ?? Environment.CurrentDirectory;
         var mapName = Path.GetFileNameWithoutExtension(bspPath);
-        return Path.Combine(directory, $"{mapName}_dictionary_{outLang}.csv");
+        var fileName = appendLanguageToCsvFileName
+            ? $"{mapName}_dictionary_{outLang}.csv"
+            : $"{mapName}_dictionary.csv";
+        return Path.Combine(directory, fileName);
     }
 
     private static void Report(

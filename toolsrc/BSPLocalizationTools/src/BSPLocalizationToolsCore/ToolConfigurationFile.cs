@@ -14,6 +14,7 @@ public static class ToolConfigurationFile
     public const string DefaultOutLangKey = "BSPL10N_DEFAULT_OUTLANG";
     public const string DefaultPromptFileKey = "BSPL10N_DEFAULT_PROMPTFILE";
     public const string GuiLanguageKey = "BSPL10N_GUI_LANGUAGE";
+    public const string AppendLanguageToCsvFileNameKey = "BSPL10N_APPEND_LANGUAGE_TO_CSV_FILENAME";
 
     public static string GetDefaultPath()
     {
@@ -38,7 +39,9 @@ public static class ToolConfigurationFile
             Get(values, LlmFakeAsKey)),
             Get(values, DefaultOutLangKey) ?? ToolConfiguration.Default.DefaultOutLang,
             Get(values, DefaultPromptFileKey),
-            Get(values, GuiLanguageKey) ?? ToolConfiguration.Default.GuiLanguage);
+            Get(values, GuiLanguageKey) ?? ToolConfiguration.Default.GuiLanguage,
+            ParseBoolean(Get(values, AppendLanguageToCsvFileNameKey)) ??
+                ToolConfiguration.Default.AppendLanguageToCsvFileName);
     }
 
     public static void Save(string envPath, ToolConfiguration configuration)
@@ -62,6 +65,7 @@ public static class ToolConfigurationFile
             Format(DefaultOutLangKey, configuration.DefaultOutLang),
             Format(DefaultPromptFileKey, configuration.DefaultPromptFilePath),
             Format(GuiLanguageKey, configuration.GuiLanguage),
+            Format(AppendLanguageToCsvFileNameKey, configuration.AppendLanguageToCsvFileName.ToString()),
         };
         File.WriteAllLines(envPath, lines, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
@@ -108,6 +112,18 @@ public static class ToolConfigurationFile
         return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : throw new InvalidOperationException($"{LlmTemperatureKey} must be a number.");
+    }
+
+    private static bool? ParseBoolean(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return bool.TryParse(value.Trim(), out var parsed)
+            ? parsed
+            : throw new InvalidOperationException($"{AppendLanguageToCsvFileNameKey} must be true or false.");
     }
 
     private static string Format(string key, string? value)

@@ -22,6 +22,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private string _llmEffort;
     private string? _llmFakeAs;
     private string _envPath;
+    private bool _appendLanguageToCsvFileName;
     private double _overallProgress;
     private bool _isTranslating;
     private string _logText = "";
@@ -40,6 +41,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _envPath = envPath;
         _outLang = ToolConfiguration.Default.DefaultOutLang;
         _llmEffort = ToolConfiguration.Default.LLM.Effort;
+        _appendLanguageToCsvFileName = ToolConfiguration.Default.AppendLanguageToCsvFileName;
         _localizer.SetLanguage(ToolConfiguration.Default.GuiLanguage);
         _strings = LocalizedStrings.Current();
         _selectedGuiLanguage = CreateLanguageOptions().First(o => o.Code == ToolConfiguration.Default.GuiLanguage);
@@ -131,6 +133,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         get => _llmFakeAs;
         set => this.RaiseAndSetIfChanged(ref _llmFakeAs, value);
+    }
+
+    public bool AppendLanguageToCsvFileName
+    {
+        get => _appendLanguageToCsvFileName;
+        set => this.RaiseAndSetIfChanged(ref _appendLanguageToCsvFileName, value);
     }
 
     public double OverallProgress
@@ -282,7 +290,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 item.BspPath,
                 OutLang,
                 Normalize(PromptFilePath),
-                CreateConfiguration().LLM)).ToArray();
+                CreateConfiguration().LLM,
+                AppendLanguageToCsvFileName)).ToArray();
             var progress = new Progress<TranslationProgress>(HandleProgress);
             var results = await _batchRunner.RunAsync(
                 new LocalizationBatchRequest(requests),
@@ -315,6 +324,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         LlmTemperature = configuration.LLM.Temperature?.ToString(CultureInfo.InvariantCulture);
         LlmEffort = configuration.LLM.Effort;
         LlmFakeAs = configuration.LLM.FakeAs;
+        AppendLanguageToCsvFileName = configuration.AppendLanguageToCsvFileName;
     }
 
     private ToolConfiguration CreateConfiguration()
@@ -329,7 +339,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Normalize(LlmFakeAs)),
             string.IsNullOrWhiteSpace(OutLang) ? ToolConfiguration.Default.DefaultOutLang : OutLang.Trim(),
             Normalize(PromptFilePath),
-            SelectedGuiLanguage.Code);
+            SelectedGuiLanguage.Code,
+            AppendLanguageToCsvFileName);
     }
 
     private void ResetItems()

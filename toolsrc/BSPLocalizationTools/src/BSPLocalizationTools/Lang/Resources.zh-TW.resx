@@ -105,6 +105,9 @@
   <data name="Defaults" xml:space="preserve">
     <value>預設值</value>
   </data>
+  <data name="AppendLanguageToCsvFileName" xml:space="preserve">
+    <value>在 CSV 檔名中追加語言</value>
+  </data>
   <data name="GuiLanguage" xml:space="preserve">
     <value>GUI 語言</value>
   </data>

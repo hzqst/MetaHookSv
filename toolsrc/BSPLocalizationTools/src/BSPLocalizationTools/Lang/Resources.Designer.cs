@@ -77,6 +77,15 @@ namespace BSPLocalizationTools.GUI.Lang {
                 return ResourceManager.GetString("ApiKey", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Append language to CSV file name 的本地化字符串。
+        /// </summary>
+        public static string AppendLanguageToCsvFileName {
+            get {
+                return ResourceManager.GetString("AppendLanguageToCsvFileName", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 BSPLocalizationTools 的本地化字符串。

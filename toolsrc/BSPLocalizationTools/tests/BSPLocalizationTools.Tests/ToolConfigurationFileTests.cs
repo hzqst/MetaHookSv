@@ -24,6 +24,7 @@ public sealed class ToolConfigurationFileTests
         Assert.Equal("tchinese", loaded.DefaultOutLang);
         Assert.Equal("prompts\\default.md", loaded.DefaultPromptFilePath);
         Assert.Equal("auto", loaded.GuiLanguage);
+        Assert.True(loaded.AppendLanguageToCsvFileName);
     }
 
     [Fact]
@@ -61,6 +62,36 @@ public sealed class ToolConfigurationFileTests
     }
 
     [Fact]
+    public void SaveThenLoadRoundTripsAppendLanguageToCsvFileName()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        var configuration = new ToolConfiguration(
+            ToolConfiguration.Default.LLM,
+            "schinese",
+            null,
+            "auto",
+            AppendLanguageToCsvFileName: false);
+
+        ToolConfigurationFile.Save(envPath, configuration);
+        var loaded = ToolConfigurationFile.Load(envPath);
+
+        Assert.False(loaded.AppendLanguageToCsvFileName);
+    }
+
+    [Fact]
+    public void LoadLegacyFileDefaultsAppendLanguageToCsvFileNameToTrue()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        File.WriteAllLines(envPath, [ToolConfigurationFile.DefaultOutLangKey + "=tchinese"]);
+
+        var loaded = ToolConfigurationFile.Load(envPath);
+
+        Assert.True(loaded.AppendLanguageToCsvFileName);
+    }
+
+    [Fact]
     public void LoadMissingFileReturnsDefaults()
     {
         using var temp = new TempDirectory();
@@ -70,6 +101,7 @@ public sealed class ToolConfigurationFileTests
         Assert.Equal("schinese", loaded.DefaultOutLang);
         Assert.Equal("medium", loaded.LLM.Effort);
         Assert.Equal("auto", loaded.GuiLanguage);
+        Assert.True(loaded.AppendLanguageToCsvFileName);
         Assert.Null(loaded.DefaultPromptFilePath);
     }
 }

@@ -111,6 +111,9 @@
   <data name="Defaults" xml:space="preserve">
     <value>Defaults</value>
   </data>
+  <data name="AppendLanguageToCsvFileName" xml:space="preserve">
+    <value>Append language to CSV file name</value>
+  </data>
   <data name="GuiLanguage" xml:space="preserve">
     <value>GUI language</value>
   </data>

@@ -35,6 +35,32 @@ public sealed class LocalizationRunnerTests
     }
 
     [Fact]
+    public async Task RunWritesDictionaryWithoutLanguageSuffixWhenRequested()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "fake_map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+
+        var runner = new LocalizationRunner(
+            new FakeExtractor([new GameTextEntry(0, "hello")]),
+            new FakeLLMClient("""{"translations":[{"id":0,"translation":"你好"}]}"""),
+            new DictionaryCsvWriter());
+
+        var output = await runner.RunAsync(
+            new LocalizationRequest(
+                bspPath,
+                "schinese",
+                null,
+                new LLMOptions("gpt-5.4", "sk-", null, null, "high", null),
+                AppendLanguageToCsvFileName: false),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary.csv"), output.OutputPath);
+        Assert.True(File.Exists(output.OutputPath));
+    }
+
+    [Fact]
     public async Task RunOmitsRowsWhenTranslationMatchesSourceText()
     {
         using var temp = new TempDirectory();

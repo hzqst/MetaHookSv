@@ -77,7 +77,7 @@
       <TabItem Header="{Binding Strings.SettingsTab}">
         <ScrollViewer>
           <Border Padding="0,0,20,0">
-          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
             <TextBlock Text="{Binding Strings.ConfigurationFile}" FontWeight="SemiBold" />
             <Grid Grid.Row="1" ColumnDefinitions="*,110,110" ColumnSpacing="8">
               <TextBox Text="{Binding EnvPath}" />
@@ -131,7 +131,12 @@
               <TextBox Grid.Column="1" Text="{Binding OutLang}" />
             </Grid>
 
-            <Grid Grid.Row="10" ColumnDefinitions="160,*" ColumnSpacing="8">
+            <CheckBox
+                Grid.Row="10"
+                Content="{Binding Strings.AppendLanguageToCsvFileName}"
+                IsChecked="{Binding AppendLanguageToCsvFileName}" />
+
+            <Grid Grid.Row="11" ColumnDefinitions="160,*" ColumnSpacing="8">
               <TextBlock Text="{Binding Strings.GuiLanguage}" VerticalAlignment="Center" />
               <ComboBox
                   Grid.Column="1"
