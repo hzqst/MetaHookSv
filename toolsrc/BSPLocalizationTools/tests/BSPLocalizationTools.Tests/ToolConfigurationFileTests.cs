@@ -27,6 +27,23 @@ public sealed class ToolConfigurationFileTests
     }
 
     [Fact]
+    public void SaveThenLoadRoundTripsWindowsPathContainingEscapeLikeSegments()
+    {
+        using var temp = new TempDirectory();
+        var envPath = Path.Combine(temp.Path, ".env");
+        var promptPath = @"C:\Users\runneradmin\AppData\Local\Temp\BSPLocalizationTools.Tests\prompt.md";
+        var configuration = new ToolConfiguration(
+            ToolConfiguration.Default.LLM,
+            "schinese",
+            promptPath);
+
+        ToolConfigurationFile.Save(envPath, configuration);
+        var loaded = ToolConfigurationFile.Load(envPath);
+
+        Assert.Equal(promptPath, loaded.DefaultPromptFilePath);
+    }
+
+    [Fact]
     public void SaveThenLoadRoundTripsGuiLanguage()
     {
         using var temp = new TempDirectory();

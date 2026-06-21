@@ -29,6 +29,32 @@ public sealed class BatchLocalizationRunnerTests
     }
 
     [Fact]
+    public async Task RunAsyncReportsNestedItemProgressBeforeReturning()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+        var progressEvents = new List<TranslationProgress>();
+        var runner = new BatchLocalizationRunner(CreateRunner());
+        var previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new QueuingSynchronizationContext());
+
+        try
+        {
+            await runner.RunAsync(
+                new LocalizationBatchRequest([new LocalizationRequest(bspPath, "schinese", null, CreateOptions())]),
+                new ListProgress(progressEvents),
+                CancellationToken.None);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        Assert.Contains(progressEvents, e => e.BspPath == bspPath && e.Stage == TranslationStage.Completed);
+    }
+
+    [Fact]
     public async Task RunAsyncStopsStartingNewItemsAfterCancellation()
     {
         using var temp = new TempDirectory();
@@ -87,6 +113,21 @@ public sealed class BatchLocalizationRunnerTests
             CancellationToken cancellationToken)
         {
             return Task.FromResult("""{"translations":[{"id":0,"translation":"你好"}]}""");
+        }
+    }
+
+    private sealed class ListProgress(List<TranslationProgress> events) : IProgress<TranslationProgress>
+    {
+        public void Report(TranslationProgress value)
+        {
+            events.Add(value);
+        }
+    }
+
+    private sealed class QueuingSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
         }
     }
 

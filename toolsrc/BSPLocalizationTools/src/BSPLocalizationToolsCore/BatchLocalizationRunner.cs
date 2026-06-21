@@ -46,7 +46,7 @@ public sealed class BatchLocalizationRunner(LocalizationRunner runner)
     {
         return progress is null
             ? null
-            : new Progress<TranslationProgress>(p =>
+            : new ForwardingProgress(p =>
                 Report(progress, p.Stage, p.BspPath, itemIndex, itemCount, p.Message));
     }
 
@@ -59,5 +59,13 @@ public sealed class BatchLocalizationRunner(LocalizationRunner runner)
         string message)
     {
         progress?.Report(new TranslationProgress(stage, bspPath, itemIndex + 1, itemCount, message));
+    }
+
+    private sealed class ForwardingProgress(Action<TranslationProgress> report) : IProgress<TranslationProgress>
+    {
+        public void Report(TranslationProgress value)
+        {
+            report(value);
+        }
     }
 }

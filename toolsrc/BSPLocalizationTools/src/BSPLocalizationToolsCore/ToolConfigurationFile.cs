@@ -122,9 +122,15 @@ public static class ToolConfigurationFile
             return "";
         }
 
-        return value
+        if (!value.Contains('\r', StringComparison.Ordinal) && !value.Contains('\n', StringComparison.Ordinal))
+        {
+            return value;
+        }
+
+        var escaped = value
             .Replace("\r", "\\r", StringComparison.Ordinal)
             .Replace("\n", "\\n", StringComparison.Ordinal);
+        return $"\"{escaped}\"";
     }
 
     private static string Unquote(string value)
@@ -132,10 +138,11 @@ public static class ToolConfigurationFile
         if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
         {
             value = value[1..^1];
+            return value
+                .Replace("\\n", "\n", StringComparison.Ordinal)
+                .Replace("\\r", "\r", StringComparison.Ordinal);
         }
 
-        return value
-            .Replace("\\n", "\n", StringComparison.Ordinal)
-            .Replace("\\r", "\r", StringComparison.Ordinal);
+        return value;
     }
 }
