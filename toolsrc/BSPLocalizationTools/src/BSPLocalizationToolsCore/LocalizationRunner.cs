@@ -37,9 +37,9 @@ public class LocalizationRunner(
         var translatedBySource = uniqueMessages
             .Select((source, id) => new { source, translation = translations[id] })
             .ToDictionary(x => x.source, x => x.translation, StringComparer.Ordinal);
-        var rows = entries
-            .Where(e => !string.Equals(e.Message, translatedBySource[e.Message], StringComparison.Ordinal))
-            .Select(e => new DictionaryRow("NETMESSAGE:" + e.Message, translatedBySource[e.Message]))
+        var rows = uniqueMessages
+            .Where(source => !string.Equals(source, translatedBySource[source], StringComparison.Ordinal))
+            .Select(source => new DictionaryRow("NETMESSAGE:" + source, translatedBySource[source]))
             .ToArray();
 
         Report(progress, request.BspPath, TranslationStage.WritingDictionary, "Writing dictionary CSV.");

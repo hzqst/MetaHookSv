@@ -14,7 +14,6 @@ public sealed class LocalizationRunnerTests
         var runner = new LocalizationRunner(
             new FakeExtractor([
                 new GameTextEntry(0, "kinnkyuu jitai da!!\\n(We got a situation!!)"),
-                new GameTextEntry(1, "kinnkyuu jitai da!!\\n(We got a situation!!)"),
             ]),
             new FakeLLMClient(),
             new DictionaryCsvWriter());
@@ -32,7 +31,7 @@ public sealed class LocalizationRunnerTests
         Assert.Equal(Path.Combine(temp.Path, "fake_map_dictionary_schinese.csv"), outputPath);
         var text = Encoding.UTF8.GetString(File.ReadAllBytes(outputPath));
         Assert.Contains("NETMESSAGE:kinnkyuu jitai da!!\\n(We got a situation!!),緊急事態だ!!\\n（出大事儿了！！）", text);
-        Assert.Equal(3, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Equal(2, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     [Fact]
@@ -117,6 +116,40 @@ public sealed class LocalizationRunnerTests
         Assert.DoesNotContain("NETMESSAGE:Weapon Updated!!", text);
         Assert.Contains("NETMESSAGE:hello,你好", text);
         Assert.Equal(2, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
+    }
+
+    [Fact]
+    public async Task RunWritesOneDictionaryRowForDuplicateGameTextMessages()
+    {
+        using var temp = new TempDirectory();
+        var bspPath = Path.Combine(temp.Path, "fake_map.bsp");
+        File.WriteAllText(bspPath, "placeholder");
+
+        var runner = new LocalizationRunner(
+            new FakeExtractor([
+                new GameTextEntry(0, "hello"),
+                new GameTextEntry(1, "hello"),
+                new GameTextEntry(2, "goodbye"),
+            ]),
+            new FakeLLMClient(
+                """{"translations":[{"id":0,"translation":"你好"},{"id":1,"translation":"再见"}]}"""),
+            new DictionaryCsvWriter());
+
+        var output = await runner.RunAsync(
+            new LocalizationRequest(
+                bspPath,
+                "schinese",
+                null,
+                new LLMOptions("gpt-5.4", "sk-", null, null, "high", null)),
+            null,
+            CancellationToken.None);
+
+        var outputPath = Assert.IsType<string>(output.OutputPath);
+        var text = Encoding.UTF8.GetString(File.ReadAllBytes(outputPath));
+        Assert.Contains("NETMESSAGE:hello,你好", text);
+        Assert.Equal(2, text.Split("NETMESSAGE:hello", StringSplitOptions.None).Length);
+        Assert.Contains("NETMESSAGE:goodbye,再见", text);
+        Assert.Equal(3, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     [Fact]
