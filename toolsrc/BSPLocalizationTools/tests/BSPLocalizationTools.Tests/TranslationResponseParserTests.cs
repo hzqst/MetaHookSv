@@ -16,6 +16,19 @@ public sealed class TranslationResponseParserTests
     }
 
     [Fact]
+    public void ParseConvertsRealNewlinesToLiteralBackslashN()
+    {
+        var parsed = TranslationResponseParser.Parse(
+            """
+            {"translations":[{"id":0,"translation":"第一行\n第二行\r\n第三行\r第四行"},{"id":1,"translation":"已有\\n字面量"}]}
+            """,
+            expectedCount: 2);
+
+        Assert.Equal("第一行\\n第二行\\n第三行\\n第四行", parsed[0]);
+        Assert.Equal("已有\\n字面量", parsed[1]);
+    }
+
+    [Fact]
     public void ParseRejectsMissingTranslation()
     {
         var ex = Assert.Throws<InvalidOperationException>(() =>

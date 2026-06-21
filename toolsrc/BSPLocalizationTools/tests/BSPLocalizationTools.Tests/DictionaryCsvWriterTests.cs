@@ -42,12 +42,13 @@ public sealed class DictionaryCsvWriterTests
         var path = Path.Combine(temp.Path, "map_dictionary_schinese.csv");
         var writer = new DictionaryCsvWriter();
 
-        writer.Write(path, "schinese", [new DictionaryRow("NETMESSAGE:a,b", "say \"hello\"\nnow")]);
+        writer.Write(path, "schinese", [new DictionaryRow("NETMESSAGE:a,b", "say \"hello\"\\nnow")]);
 
         var bytes = File.ReadAllBytes(path);
         Assert.True(StartsWithUtf8Bom(bytes));
         var text = Encoding.UTF8.GetString(bytes);
-        Assert.Contains("\"NETMESSAGE:a,b\",\"say \"\"hello\"\"\nnow\"", text);
+        Assert.Contains("\"NETMESSAGE:a,b\",\"say \"\"hello\"\"\\nnow\"", text);
+        Assert.Equal(2, text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     private static bool StartsWithUtf8Bom(byte[] bytes)

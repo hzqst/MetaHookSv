@@ -1,4 +1,7 @@
+using System.Globalization;
 using System.Text;
+using CsvHelper;
+using CsvHelper.Configuration;
 
 namespace BSPLocalizationTools;
 
@@ -18,23 +21,28 @@ public sealed class DictionaryCsvWriter
         }
 
         using var writer = new StreamWriter(outputPath, append: false, encoding);
-        writer.WriteLine(Header);
+        using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture));
+        WriteHeader(csv);
         foreach (var row in rows)
         {
-            writer.Write(Escape(row.Title));
-            writer.Write(',');
-            writer.Write(Escape(row.Translation));
-            writer.WriteLine(",,,,,,");
+            csv.WriteField(row.Title);
+            csv.WriteField(row.Translation);
+            for (var i = 0; i < 6; i++)
+            {
+                csv.WriteField(string.Empty);
+            }
+
+            csv.NextRecord();
         }
     }
 
-    private static string Escape(string value)
+    private static void WriteHeader(CsvWriter csv)
     {
-        if (value.IndexOfAny([',', '"', '\r', '\n']) < 0)
+        foreach (var header in Header.Split(','))
         {
-            return value;
+            csv.WriteField(header);
         }
 
-        return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+        csv.NextRecord();
     }
 }

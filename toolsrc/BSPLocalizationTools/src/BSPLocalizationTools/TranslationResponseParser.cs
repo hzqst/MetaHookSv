@@ -23,7 +23,7 @@ public static class TranslationResponseParser
                 throw new InvalidOperationException($"LLM response translation for id {id} is empty.");
             }
 
-            result[id] = translation;
+            result[id] = NormalizeLiteralNewlines(translation);
         }
 
         for (var i = 0; i < expectedCount; i++)
@@ -47,6 +47,14 @@ public static class TranslationResponseParser
         {
             throw new InvalidOperationException("LLM response must be valid JSON.", ex);
         }
+    }
+
+    private static string NormalizeLiteralNewlines(string value)
+    {
+        return value
+            .Replace("\r\n", "\\n", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal)
+            .Replace("\r", "\\n", StringComparison.Ordinal);
     }
 
     private static string StripCodeFence(string text)
