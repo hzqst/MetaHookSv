@@ -296,7 +296,7 @@ void main()
 
 #else
 
-	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 1.0);
 
 #endif
 
