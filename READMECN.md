@@ -60,6 +60,10 @@ A. 因为 [SDL3-over-SDL2 兼容层](https://github.com/libsdl-org/sdl2-compat) 
 
 尝试启用以下控制台参数：`r_studio_lazy_load 1`， `r_leaf_lazy_load 1`
 
+5. 为什么在 `sv_cheats 1` 之后，地形变全黑了 ?
+
+请设置 `r_lightmap 1`
+
 ## 一键安装方式 (GUI安装器)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。

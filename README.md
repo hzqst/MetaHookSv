@@ -54,6 +54,10 @@ Try launch parameter: `-metahook_early_unload_mirrored_dll` (This saves ~120MB s
 
 Try ConVars: `r_studio_lazy_load 1`, `r_leaf_lazy_load 1`
 
+5. Why the terrain become all black when `sv_cheats 1` ?
+
+Try `r_lightmap 1`.
+
 ## One Click Installation (GUI Installer)
 
 1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
