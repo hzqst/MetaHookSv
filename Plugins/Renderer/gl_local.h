@@ -839,6 +839,7 @@ extern int r_draw_hide_entity_index;
 extern int r_draw_classify;
 
 extern int r_renderview_pass;
+extern bool g_bIsRenderingView;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;

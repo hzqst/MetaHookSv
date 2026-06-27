@@ -148,6 +148,21 @@ const program_state_mapping_t s_SpriteProgramStateName[] = {
 { SPRITE_ORIENTED_ENABLED			  ,"SPRITE_ORIENTED_ENABLED"			},
 };
 
+const program_state_mapping_t s_TriAPIProgramStateName[] = {
+{ SPRITE_OIT_BLEND_ENABLED			  ,"SPRITE_OIT_BLEND_ENABLED"			},
+{ SPRITE_GAMMA_BLEND_ENABLED		  ,"SPRITE_GAMMA_BLEND_ENABLED"			},
+{ SPRITE_ALPHA_BLEND_ENABLED		  ,"SPRITE_ALPHA_BLEND_ENABLED"			},
+{ SPRITE_ADDITIVE_BLEND_ENABLED		  ,"SPRITE_ADDITIVE_BLEND_ENABLED"		},
+{ SPRITE_LINEAR_FOG_ENABLED			  ,"SPRITE_LINEAR_FOG_ENABLED"			},
+{ SPRITE_EXP_FOG_ENABLED			  ,"SPRITE_EXP_FOG_ENABLED"				},
+{ SPRITE_EXP2_FOG_ENABLED			  ,"SPRITE_EXP2_FOG_ENABLED"			},
+{ SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
+{ SPRITE_LERP_ENABLED				  ,"SPRITE_LERP_ENABLED"				},
+{ SPRITE_LINEAR_FOG_SHIFT_ENABLED		,"SPRITE_LINEAR_FOG_SHIFT_ENABLED"	},
+{ SPRITE_ALPHA_TEST_ENABLED				,"SPRITE_ALPHA_TEST_ENABLED"		},
+{ TRIAPI_HUD_SPACE_ENABLED				,"TRIAPI_HUD_SPACE_ENABLED"			},
+};
+
 void R_SaveSpriteProgramStates(void)
 {
 	std::vector<program_state_t> states;
@@ -209,6 +224,9 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 		if (state & SPRITE_ALPHA_TEST_ENABLED)
 			defs << "#define ALPHA_TEST_ENABLED\n";
 
+		if (state & TRIAPI_HUD_SPACE_ENABLED)
+			defs << "#define TRIAPI_HUD_SPACE_ENABLED\n";
+
 		auto def = defs.str();
 
 		CCompileShaderArgs args;
@@ -221,7 +239,7 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 
 		if (prog.program)
 		{
-
+			SHADER_UNIFORM(prog, u_hudMatrix, "u_hudMatrix");
 		}
 
 		g_TriAPIProgramTable[state] = prog;
@@ -234,6 +252,16 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
+
+		if ((state & TRIAPI_HUD_SPACE_ENABLED) && prog.u_hudMatrix != -1)
+		{
+			float hudMatrix[4][4];
+			auto worldMatrix = (float (*)[4][4])R_GetWorldMatrix();
+			auto projMatrix = (float (*)[4][4])R_GetProjectionMatrix();
+
+			Matrix4x4_Multiply(hudMatrix, (*worldMatrix), (*projMatrix));
+			glUniformMatrix4fv(prog.u_hudMatrix, 1, false, (const GLfloat*)hudMatrix);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -253,12 +281,12 @@ void R_SaveTriAPIProgramStates(void)
 		states.emplace_back(p.first);
 	}
 
-	R_SaveProgramStatesCaches("renderer/shader/triapi_cache.txt", states, s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName));
+	R_SaveProgramStatesCaches("renderer/shader/triapi_cache.txt", states, s_TriAPIProgramStateName, _ARRAYSIZE(s_TriAPIProgramStateName));
 }
 
 void R_LoadTriAPIProgramStates(void)
 {
-	R_LoadProgramStateCaches("renderer/shader/triapi_cache.txt", s_SpriteProgramStateName, _ARRAYSIZE(s_SpriteProgramStateName), [](program_state_t state) {
+	R_LoadProgramStateCaches("renderer/shader/triapi_cache.txt", s_TriAPIProgramStateName, _ARRAYSIZE(s_TriAPIProgramStateName), [](program_state_t state) {
 
 		R_UseTriAPIProgram(state, NULL);
 

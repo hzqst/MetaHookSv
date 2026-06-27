@@ -16,6 +16,7 @@ typedef struct sprite_program_s
 typedef struct triapi_program_s
 {
 	int program;
+	int u_hudMatrix = -1;
 }triapi_program_t;
 
 extern int *particletexture;
@@ -80,3 +81,5 @@ void R_FreeSpriteRenderData(const std::shared_ptr<CSpriteModelRenderData>& pRend
 #define SPRITE_PARALLEL_ORIENTED_ENABLED	0x8000ull
 #define SPRITE_PARALLEL_ENABLED				0x10000ull
 #define SPRITE_ORIENTED_ENABLED				0x20000ull
+
+#define TRIAPI_HUD_SPACE_ENABLED			0x40000ull

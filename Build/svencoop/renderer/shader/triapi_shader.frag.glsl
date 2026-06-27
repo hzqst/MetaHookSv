@@ -13,6 +13,19 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main()
 {
+#if defined(TRIAPI_HUD_SPACE_ENABLED)
+	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
+
+	#if defined(ALPHA_TEST_ENABLED)
+        float alpha = baseColor.a;
+        if (alpha < 0.001)
+            discard;
+	#endif
+
+	vec4 finalColor = baseColor * v_color;
+
+	out_Diffuse = finalColor;
+#else
 	ClipPlaneTest(v_worldpos.xyz, -GetCameraVForward( GetCameraViewIndex() ));
 
 	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
@@ -48,5 +61,6 @@ void main()
 	#endif
 
 	out_Diffuse = clamp(finalColor, 0.0, 64.0);
+#endif
 	
 }

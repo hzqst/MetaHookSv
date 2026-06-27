@@ -315,6 +315,7 @@ int r_draw_hide_entity_index = 0;
 int r_draw_classify = 0;
 
 int r_renderview_pass = 0;
+bool g_bIsRenderingView = false;
 
 std::vector<cl_entity_t*> g_PostProcessGlowStencilEntities;
 std::vector<cl_entity_t*> g_PostProcessGlowEnableDepthTestStencilEntities;
@@ -1571,6 +1572,13 @@ void triapi_End()
 	GL_BindVAO(gTriAPICommand.hVAO);
 
 	uint64_t ProgramState = 0;
+	const bool bDrawHUD = !g_bIsRenderingView;
+
+	if (bDrawHUD)
+	{
+		ProgramState |= TRIAPI_HUD_SPACE_ENABLED;
+		glDisable(GL_DEPTH_TEST);
+	}
 
 	switch (gTriAPICommand.DrawRenderMode)
 	{
@@ -1578,7 +1586,7 @@ void triapi_End()
 	{
 		glDisable(GL_BLEND);
 
-		if (!R_IsRenderingGBuffer())
+		if (!bDrawHUD && !R_IsRenderingGBuffer())
 		{
 			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
@@ -1613,17 +1621,17 @@ void triapi_End()
 			}
 		}
 
-		if (R_IsRenderingWaterView())
+		if (!bDrawHUD && R_IsRenderingWaterView())
 		{
 			ProgramState |= SPRITE_CLIP_ENABLED;
 		}
 
-		if (R_IsRenderingGammaBlending())
+		if (!bDrawHUD && R_IsRenderingGammaBlending())
 		{
 			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 		}
 
-		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		if (!bDrawHUD && r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
 		{
 			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
 		}
@@ -1635,11 +1643,13 @@ void triapi_End()
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
-		R_SetGBufferBlend(GL_ONE, GL_ONE);
+
+		if (!bDrawHUD)
+			R_SetGBufferBlend(GL_ONE, GL_ONE);
 
 		ProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
 
-		if (!R_IsRenderingGBuffer())
+		if (!bDrawHUD && !R_IsRenderingGBuffer())
 		{
 			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
@@ -1674,17 +1684,17 @@ void triapi_End()
 			}
 		}
 
-		if (R_IsRenderingWaterView())
+		if (!bDrawHUD && R_IsRenderingWaterView())
 		{
 			ProgramState |= SPRITE_CLIP_ENABLED;
 		}
 
-		if (R_IsRenderingGammaBlending())
+		if (!bDrawHUD && R_IsRenderingGammaBlending())
 		{
 			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 		}
 
-		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		if (!bDrawHUD && r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
 		{
 			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
 		}
@@ -1698,16 +1708,18 @@ void triapi_End()
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		if (!bDrawHUD)
+			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		ProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
-		if (R_IsRenderingWaterView())
+		if (!bDrawHUD && R_IsRenderingWaterView())
 		{
 			ProgramState |= SPRITE_CLIP_ENABLED;
 		}
 
-		if (!R_IsRenderingGBuffer())
+		if (!bDrawHUD && !R_IsRenderingGBuffer())
 		{
 			if ((ProgramState & SPRITE_ADDITIVE_BLEND_ENABLED) && (int)r_fog_trans->value <= 1)
 			{
@@ -1742,12 +1754,12 @@ void triapi_End()
 			}
 		}
 
-		if (R_IsRenderingGammaBlending())
+		if (!bDrawHUD && R_IsRenderingGammaBlending())
 		{
 			ProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 		}
 
-		if (r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+		if (!bDrawHUD && r_draw_oitblend && (ProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
 		{
 			ProgramState |= SPRITE_OIT_BLEND_ENABLED;
 		}
@@ -1755,7 +1767,7 @@ void triapi_End()
 	}
 	}
 
-	if (gTriAPICommand.pSpriteRenderData)
+	if (!bDrawHUD && gTriAPICommand.pSpriteRenderData)
 	{
 		if (r_draw_opaque)
 		{
@@ -3472,6 +3484,9 @@ void R_ClearPortalClipPlanes(void)
 
 void R_RenderView_SvEngine(int viewIdx)
 {
+	const bool wasRenderingView = g_bIsRenderingView;
+	g_bIsRenderingView = true;
+
 	GL_BeginDebugGroup("R_RenderView");
 
 	if (R_IsRenderingPortal())
@@ -3555,6 +3570,8 @@ void R_RenderView_SvEngine(int viewIdx)
 	}
 
 	GL_EndDebugGroup();
+
+	g_bIsRenderingView = wasRenderingView;
 }
 
 void R_RenderView(void)
