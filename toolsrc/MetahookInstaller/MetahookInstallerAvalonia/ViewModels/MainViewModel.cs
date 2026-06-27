@@ -770,6 +770,7 @@ public class MainViewModel : ViewModelBase
             new ("Half-Life Opposing Force", "gearbox", 50),
             new ("Half-Life Blue Shift", "bshift", 130),
             new ("Half-Life Echoes", "echoes", 70),
+            new ("Half-Life Field Intensity", "field_intensity", 70),
             new ("Half-Life MMod", "HL1MMod", 1761270),
             new ("Counter-Strike", "cstrike", 10),
             new ("Counter-Strike Condition Zero", "czero", 80),
