@@ -1142,6 +1142,8 @@ Dynamic lights are calculated on the fly in the game, which means they have a hi
 
 `distance` is the distance that spotlight is allowed to cast, in inches. for example `"distance" "3000"` (Only for spot light)
 
+`coneAngle` is the cone angle of spotlight, in radian. for example `"coneAngle" "0.5236"` (0.5236 = PI/6 = 30 degree)
+
 `ambient` is the ambient intensity of dynamic light. for example `"ambient" "0.0"`
 
 `diffuse` is the diffuse intensity of dynamic light. for example `"diffuse" "0.1"`

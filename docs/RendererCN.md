@@ -1132,6 +1132,8 @@ WEBP (RGB8 / RGBA8)
 
 `distance`是聚光灯允许投射的距离，以英寸为单位。例如`"distance" "3000"`（仅适用于聚光灯）
 
+`coneAngle` 是聚光灯的夹角弧度，例如 `"coneAngle" "0.5236"` (0.5236 = PI/6 = 30 度)
+
 `ambient`是动态光源的环境光强度。例如`"ambient" "0.0"`
 
 `diffuse`是动态光源的漫反射强度。例如`"diffuse" "0.1"`

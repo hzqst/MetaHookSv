@@ -4729,6 +4729,8 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t* ent)
 	PARSE_KEY_VALUE_STRING_WRITEREF(csm_lambda, UTIL_ParseStringAsVector1);
 	PARSE_KEY_VALUE_STRING_WRITEREF(csm_margin, UTIL_ParseStringAsVector1);
 
+	PARSE_KEY_VALUE_STRING_WRITEREF(coneAngle, UTIL_ParseStringAsVector1);
+
 #undef PARSE_KEY_VALUE_STRING
 #undef PARSE_KEY_VALUE_STRING_WRITEREF
 #undef PARSE_KEY_VALUE_STRING_WRITEINT
