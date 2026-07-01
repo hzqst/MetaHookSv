@@ -3059,10 +3059,14 @@ void R_RenderFrameStart()
 		r_draw_classify &= ~DRAW_CLASSIFY_TRANS_ENTITIES;
 	}
 
+	#if 0 //DO NOT RIP LIGHTMAP OFF
+
 	if ((int)r_lightmap->value <= 0 && AllowCheats())
 	{
 		r_draw_classify &= ~DRAW_CLASSIFY_LIGHTMAP;
 	}
+
+	#endif
 }
 
 /*
