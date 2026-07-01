@@ -14071,6 +14071,11 @@ void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealD
 	{
 		g_bIsAoMDC = true;
 	}
+
+	if (!stricmp(gEngfuncs.pfnGetGameDirectory(), "HL1MMod"))
+	{
+		g_bIsHL1MMOD = true;
+	}
 }
 
 void Client_InstallHooks()

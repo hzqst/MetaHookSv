@@ -2346,7 +2346,7 @@ void R_StudioDrawMesh_AnalysisPass(
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref,
-	const int flags)
+	program_state_t StudioProgramState)
 {
 	//Analysis pass
 	if (R_IsRenderingShadowView())
@@ -2375,22 +2375,22 @@ void R_StudioDrawMesh_AnalysisPass(
 	}
 	else
 	{
-		if (flags & STUDIO_NF_ALPHA)
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
 		{
 			r_draw_hasalpha = true;
 		}
 
-		if (flags & STUDIO_NF_ADDITIVE)
+		if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
 			r_draw_hasadditive = true;
 		}
 
-		if (flags & STUDIO_NF_CELSHADE_FACE)
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
 		{
 			r_draw_hasface = true;
 		}
 
-		if (flags & STUDIO_NF_CELSHADE_HAIR)
+		if (StudioProgramState & STUDIO_NF_CELSHADE_HAIR)
 		{
 			r_draw_hashair = true;
 		}
@@ -2405,12 +2405,10 @@ void R_StudioDrawMesh_DrawPass(
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref,
-	const int flags)
+	program_state_t StudioProgramState)
 {
 	if (!pRenderMesh->iIndiceCount)
 		return;
-
-	program_state_t StudioProgramState = flags;
 
 	if (R_IsRenderingShadowView())
 	{
@@ -2455,7 +2453,7 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		if (flags & STUDIO_NF_NOOUTLINE)
+		if (StudioProgramState & STUDIO_NF_NOOUTLINE)
 		{
 			return;
 		}
@@ -2465,9 +2463,9 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAlphaMeshes)
 	{
-		if (flags & STUDIO_NF_ALPHA)
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
 		{
-			StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+		
 		}
 		else
 		{
@@ -2476,9 +2474,9 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAdditiveMeshes)
 	{
-		if (flags & STUDIO_NF_ADDITIVE)
+		if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
-			StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+			
 		}
 		else
 		{
@@ -2487,9 +2485,9 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAlphaMeshes)
 	{
-		if (flags & STUDIO_NF_ALPHA)
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
 		{
-			StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+		
 		}
 		else
 		{
@@ -2498,7 +2496,7 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairShadowGeometry)
 	{
-		if ((flags & STUDIO_NF_CELSHADE_HAIR) || (flags & STUDIO_NF_CELSHADE_FACE))
+		if ((StudioProgramState & STUDIO_NF_CELSHADE_HAIR) || (StudioProgramState & STUDIO_NF_CELSHADE_FACE))
 		{
 			StudioProgramState |= STUDIO_HAIR_SHADOW_ENABLED;
 		}
@@ -2509,7 +2507,7 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else if ((*currententity)->curstate.renderfx == kRenderFxDrawHairFaceColorMixGeometry)
 	{
-		if (flags & STUDIO_NF_CELSHADE_FACE)
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
 		{
 			StudioProgramState |= STUDIO_HAIR_FACE_COLOR_MIX_ENABLED;
 		}
@@ -2520,11 +2518,11 @@ void R_StudioDrawMesh_DrawPass(
 	}
 	else
 	{
-		if (flags & STUDIO_NF_ALPHA)
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
 		{
 			if (!r_draw_opaque)
 			{
-				StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+				
 			}
 			else
 			{
@@ -2532,11 +2530,11 @@ void R_StudioDrawMesh_DrawPass(
 			}
 		}
 
-		if (flags & STUDIO_NF_ADDITIVE)
+		if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
 			if (!r_draw_opaque)
 			{
-				StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+				
 			}
 			else
 			{
@@ -2550,23 +2548,13 @@ void R_StudioDrawMesh_DrawPass(
 		}
 	}
 
-	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode == kRenderTransAdd )
-	{
-		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
-	}
-
 	if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 	{
 		StudioProgramState |= STUDIO_ADDITIVE_RENDER_MODE_ENABLED;
 	}
 
-	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.renderamt < 255)
-	{
-		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
-	}
-
 	//Disable shadow for transparent objects.
-	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_NF_ALPHA)))
+	if ((StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED) && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
 	{
 		return;
 	}
@@ -2652,7 +2640,7 @@ void R_StudioDrawMesh_DrawPass(
 		StudioProgramState |= STUDIO_GAMMA_BLEND_ENABLED;
 	}
 
-	if (r_draw_oitblend && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_NF_ALPHA)))
+	if (r_draw_oitblend && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
 	{
 		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
 	}
@@ -2934,7 +2922,7 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		//Transparent pass
 
-		if (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_NF_ALPHA))
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
 		{
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_BLEND);
@@ -2943,7 +2931,7 @@ void R_StudioDrawMesh_DrawPass(
 
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
-		else if (StudioProgramState & (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_NF_ADDITIVE))
+		else if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
 			glBlendFunc(GL_ONE, GL_ONE);
 			glEnable(GL_BLEND);
@@ -3211,34 +3199,53 @@ void R_StudioDrawMesh(
 	if (uskinref > ptexturehdr->numtextures)
 		return;
 
-	int flags = ptexture[uskinref].flags;
+	program_state_t StudioProgramState = (program_state_t)(ptexture[uskinref].flags & 0x00000000FFFFFFFFull);
 
 	//Lighting related flags are ignored when r_fullbright >= 2
 	if (r_fullbright->value >= 2)
 	{
-		flags &= STUDIO_NF_FULLBRIGHT_ALLOWBITS;
+		StudioProgramState &= STUDIO_NF_FULLBRIGHT_ALLOWBITS;
 	}
 	else
 	{
-		flags &= STUDIO_NF_RENDERER_ALLOWBITS;
+		StudioProgramState &= STUDIO_NF_RENDERER_ALLOWBITS;
 	}
 
 	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
 	{
-		flags |= STUDIO_NF_CHROME;
+		StudioProgramState |= STUDIO_NF_CHROME;
 	}
 
 	//STUDIO_NF_ALPHA and STUDIO_NF_ADDITIVE is ignored when rendermode not equal to kRenderNormal
 	//as those rendermode will ruin STUDIO_NF_ALPHA and STUDIO_NF_ADDITIVE
 	if ((*currententity)->curstate.rendermode != kRenderNormal)
 	{
-		flags &= ~STUDIO_NF_ALPHA;
-		flags &= ~STUDIO_NF_ADDITIVE;
+		StudioProgramState &= ~STUDIO_NF_ALPHA;
+		StudioProgramState &= ~STUDIO_NF_ADDITIVE;
 	}
 
 	if (!r_studio_celshade->value)
 	{
-		flags &= ~STUDIO_NF_CELSHADE_ALLBITS;
+		StudioProgramState &= ~STUDIO_NF_CELSHADE_ALLBITS;
+	}
+
+	if (StudioProgramState & STUDIO_NF_ADDITIVE)
+	{
+		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+	}
+
+	if (StudioProgramState & STUDIO_NF_ALPHA)
+	{
+		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+	}
+
+	if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+	{
+		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+	}
+	else if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.renderamt < 255)
+	{
+		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
 	}
 
 	if (r_draw_analyzingstudio)
@@ -3251,7 +3258,7 @@ void R_StudioDrawMesh(
 			ptexturehdr,
 			ptexture,
 			pskinref,
-			flags);
+			StudioProgramState);
 	}
 	else
 	{
@@ -3265,7 +3272,7 @@ void R_StudioDrawMesh(
 			ptexturehdr,
 			ptexture,
 			pskinref,
-			flags);
+			StudioProgramState);
 
 		GL_EndDebugGroup();
 	}

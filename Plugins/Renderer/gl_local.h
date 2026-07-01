@@ -844,3 +844,4 @@ extern bool g_bIsRenderingView;
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 extern bool g_bIsAoMDC;
+extern bool g_bIsHL1MMOD;

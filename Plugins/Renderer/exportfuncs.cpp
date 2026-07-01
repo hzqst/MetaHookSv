@@ -19,6 +19,7 @@ void *g_pGameStudioRenderer = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 bool g_bIsAoMDC = false;
+bool g_bIsHL1MMOD = false;
 
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
