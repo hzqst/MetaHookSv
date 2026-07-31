@@ -1207,7 +1207,7 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 		{
 			//Search for GameStudioRenderer_StudioCalcAttachments_vftable_index
 
-			for (int i = 4; i < 9; ++i)
+			for (int i = 4; i < 10; ++i)
 			{
 				typedef struct StudioCalcAttachments_SearchContext_s
 				{
@@ -1226,7 +1226,9 @@ void ClientStudio_FillAddress_StudioDrawModel(struct r_studio_interface_s** ppin
 
 				StudioCalcAttachments_SearchContext ctx = { DllInfo, RealDllInfo };
 
-				ctx.base = (void*)GetVFunctionFromVFTable(vftable, i, DllInfo, RealDllInfo, DllInfo);
+				PUCHAR base = (PUCHAR)GetVFunctionFromVFTable(vftable, i, DllInfo, RealDllInfo, DllInfo);
+
+				ctx.base = base;
 				ctx.vftable_index = i;
 				ctx.bFoundD4h = false;
 				ctx.bFoundD8h = false;
