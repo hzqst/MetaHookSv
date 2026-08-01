@@ -289,6 +289,8 @@ void main()
 #if defined(LEGACY_DLIGHT_ENABLED)
 
 	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
+	// GoldSrc clamps accumulated blocklights before light gamma conversion.
+	lightmapColor.xyz = clamp(lightmapColor.xyz, 0.0, 1.0);
 
 #endif
 
