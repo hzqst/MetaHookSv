@@ -1,0 +1,3 @@
+# Deleted blob files and removed blob support
+
+This commit removes blob support from the project: deletes LoadBlob.cpp, LoadBlob.h, Z.cpp, removes METAHOOK_BLOB_SUPPORT code paths and references, and prunes blob-only build scripts and configurations. Kept MetaHook core, CaptionMod and VGUI2Extension.
