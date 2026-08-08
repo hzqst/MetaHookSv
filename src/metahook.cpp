@@ -107,6 +107,7 @@ void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD 
 void(*g_pfnFreeBlob)(void** pBlobFootprint) = NULL;
 
 void* g_StudioInterfaceCall = NULL;
+void** g_ppStudioInterfaceCall = NULL;
 struct engine_studio_api_s* g_pEngineStudioAPI = NULL;
 struct r_studio_interface_t** g_pStudioAPI = NULL;
 
@@ -1221,6 +1222,7 @@ void MH_ResetAllVars(void)
 	g_pfnLoadBlobFile = NULL;
 	g_pfnFreeBlob = NULL;
 	g_StudioInterfaceCall = NULL;
+	g_ppStudioInterfaceCall = NULL;
 	g_pEngineStudioAPI = NULL;
 	g_pStudioAPI = NULL;
 	g_phClientModule = NULL;
@@ -2185,6 +2187,7 @@ void MH_LoadEngine_FindStudioInterface(const mh_dll_info_t& DllInfo, const mh_dl
 .text:10196EAA 83 C4 0C                                            add     esp, 0Ch
 		*/
 		char pattern2[] = "\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x2A\x83\xC4\x0C";
+		char pattern3[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x74\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x0C";
 		const char sigs_SvEngine[] = "Couldn't get client library studio model rendering";
 		const char sigs_GoldSrc[] = "Couldn't get client .dll studio model rendering";
 		const char* sigs = NULL;
@@ -2223,6 +2226,23 @@ void MH_LoadEngine_FindStudioInterface(const mh_dll_info_t& DllInfo, const mh_dl
 						g_pEngineStudioAPI = (decltype(g_pEngineStudioAPI))ConvertDllInfoSpace(g_pEngineStudioAPI_VA, DllInfo, RealDllInfo);
 
 						PVOID g_pStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceCall_VA + 4 + 5 + 1);
+						g_pStudioAPI = (decltype(g_pStudioAPI))ConvertDllInfoSpace(g_pStudioAPI_VA, DllInfo, RealDllInfo);
+
+						break;
+					}
+
+					auto pStudioInterfaceIndirectCall_VA = MH_SearchPattern((PUCHAR)PrintError_Call - 0x50, 0x50, pattern3, sizeof(pattern3) - 1);
+					if (pStudioInterfaceIndirectCall_VA)
+					{
+						g_StudioInterfaceCall = ConvertDllInfoSpace((PUCHAR)pStudioInterfaceIndirectCall_VA + 9, DllInfo, RealDllInfo);
+
+						PVOID g_ppStudioInterfaceCall_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 2);
+						g_ppStudioInterfaceCall = (void**)ConvertDllInfoSpace(g_ppStudioInterfaceCall_VA, DllInfo, RealDllInfo);
+
+						PVOID g_pEngineStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 10);
+						g_pEngineStudioAPI = (decltype(g_pEngineStudioAPI))ConvertDllInfoSpace(g_pEngineStudioAPI_VA, DllInfo, RealDllInfo);
+
+						PVOID g_pStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 15);
 						g_pStudioAPI = (decltype(g_pStudioAPI))ConvertDllInfoSpace(g_pStudioAPI_VA, DllInfo, RealDllInfo);
 
 						break;
@@ -2353,11 +2373,24 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_dwClientDLL_Initialize);
 
 	//Hook studio interface initialization
-	char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
-	*(int*)(CheckStudioInterfaceNewCall + 2 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 2 + 5);
-	MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
+	if (g_ppStudioInterfaceCall)
+	{
+		char CheckStudioInterfaceNewCall[] =
+			"\x8B\x0D\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A"
+			"\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
+		*(DWORD*)(CheckStudioInterfaceNewCall + 2) = (DWORD)g_ppStudioInterfaceCall;
+		*(int*)(CheckStudioInterfaceNewCall + 6 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 6 + 5);
+		MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
+	}
+	else
+	{
+		char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
+		*(int*)(CheckStudioInterfaceNewCall + 2 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 2 + 5);
+		MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
+	}
 
 	//8B C8          mov     ecx, eax
+	//8B 0D ?? ?? ?? ?? mov     ecx, [g_ppStudioInterfaceCall]
 	//E8 ?? ?? ?? ?? call
 	if (g_pfnLoadBlobFile)
 	{
