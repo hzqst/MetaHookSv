@@ -121,6 +121,7 @@ typedef struct hook_s hook_t;
 #define ENGINE_GOLDSRC 2
 #define ENGINE_SVENGINE 3
 #define ENGINE_GOLDSRC_HL25 4
+#define ENGINE_GOLDSRC_COF 5
 
 #define PLUGIN_LOAD_SUCCEEDED 0
 #define PLUGIN_LOAD_DUPLICATE 1

@@ -39,8 +39,8 @@ struct tagVTABLEDATA
 	PVOID pClassInstance;
 	int iTableIndex;
 	int iFuncIndex;
-	PVOID *pVirtualFuncTable;
-	PVOID *pVirtualFuncAddr;
+	PVOID* pVirtualFuncTable;
+	PVOID* pVirtualFuncAddr;
 };
 
 struct tagINLINEDATA
@@ -79,26 +79,26 @@ typedef struct hook_s
 
 	int iType;
 	bool bCommitted;
-	void *pOldFuncAddr;
-	void *pNewFuncAddr;
-	void **pOrginalCall;
-	struct hook_s *pNext;
+	void* pOldFuncAddr;
+	void* pNewFuncAddr;
+	void** pOrginalCall;
+	struct hook_s* pNext;
 	tagHOOKDATA hookData;
 }hook_t;
 
 typedef struct cvar_callback_entry_s
 {
 	cvar_callback_t callback;
-	cvar_t *pcvar;
-	struct cvar_callback_entry_s *next;
+	cvar_t* pcvar;
+	struct cvar_callback_entry_s* next;
 }cvar_callback_entry_t;
 
-cvar_callback_entry_t **cvar_callbacks = NULL;
+cvar_callback_entry_t** cvar_callbacks = NULL;
 cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
 std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
-usermsg_t **gClientUserMsgs = NULL;
-cmd_function_t *(*Cmd_GetCmdBase)(void) = NULL;
-void **g_pVideoMode = NULL;
+usermsg_t** gClientUserMsgs = NULL;
+cmd_function_t* (*Cmd_GetCmdBase)(void) = NULL;
+void** g_pVideoMode = NULL;
 svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
@@ -106,12 +106,12 @@ void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
 void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD dwBufferSize) = NULL;
 void(*g_pfnFreeBlob)(void** pBlobFootprint) = NULL;
 
-void *g_StudioInterfaceCall = NULL;
+void* g_StudioInterfaceCall = NULL;
 struct engine_studio_api_s* g_pEngineStudioAPI = NULL;
 struct r_studio_interface_t** g_pStudioAPI = NULL;
 
-CreateInterfaceFn *g_pClientFactory = NULL;
-HMODULE *g_phClientModule = NULL;
+CreateInterfaceFn* g_pClientFactory = NULL;
+HMODULE* g_phClientModule = NULL;
 
 BlobHandle_t g_hBlobEngine = NULL;
 BlobHandle_t g_hBlobClient = NULL;
@@ -120,12 +120,12 @@ HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
 
-hook_t *g_pHookBase = NULL;	
+hook_t* g_pHookBase = NULL;
 
-ULONG_PTR g_dwClientDLL_Initialize[1] = {0};
-cl_exportfuncs_t *g_pExportFuncs = NULL;
-void *g_ppExportFuncs = NULL;
-void *g_ppEngfuncs = NULL;
+ULONG_PTR g_dwClientDLL_Initialize[1] = { 0 };
+cl_exportfuncs_t* g_pExportFuncs = NULL;
+void* g_ppExportFuncs = NULL;
+void* g_ppEngfuncs = NULL;
 
 bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
@@ -139,35 +139,35 @@ HMEMORYMODULE g_hMirrorClient = NULL;
 
 ThreadPoolHandle_t g_ThreadPool = NULL;
 
-PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
-BOOL MH_UnHook(hook_t *pHook);
-hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCall);
-hook_t *MH_VFTHook(void *pClassInstance, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
+PVOID MH_GetNextCallAddr(void* pAddress, DWORD dwCount);
+BOOL MH_UnHook(hook_t* pHook);
+hook_t* MH_InlineHook(void* pOldFuncAddr, void* pNewFuncAddr, void** pOriginalCall);
+hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* pNewFuncAddr, void** pOriginalCall);
 hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall);
-hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOriginalCall);
-void *MH_GetClassFuncAddr(...);
+hook_t* MH_IATHook(HMODULE hModule, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOriginalCall);
+void* MH_GetClassFuncAddr(...);
 HMODULE MH_GetClientModule(void);
 PVOID MH_GetModuleBase(PVOID VirtualAddress);
 DWORD MH_GetModuleSize(PVOID ModuleBase);
 PVOID MH_GetClientBase(void);
 DWORD MH_GetClientSize(void);
-void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
+void* MH_SearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
 hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall);
-void MH_WriteDWORD(void *pAddress, DWORD dwValue);
-DWORD MH_ReadDWORD(void *pAddress);
-void MH_WriteBYTE(void *pAddress, BYTE ucValue);
-BYTE MH_ReadBYTE(void *pAddress);
-void MH_WriteNOP(void *pAddress, DWORD dwCount);
-DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize);
-DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize);
-DWORD MH_GetVideoMode(int *wide, int *height, int *bpp, bool *windowed);
+void MH_WriteDWORD(void* pAddress, DWORD dwValue);
+DWORD MH_ReadDWORD(void* pAddress);
+void MH_WriteBYTE(void* pAddress, BYTE ucValue);
+BYTE MH_ReadBYTE(void* pAddress);
+void MH_WriteNOP(void* pAddress, DWORD dwCount);
+DWORD MH_WriteMemory(void* pAddress, void* pData, DWORD dwDataSize);
+DWORD MH_ReadMemory(void* pAddress, void* pData, DWORD dwDataSize);
+DWORD MH_GetVideoMode(int* wide, int* height, int* bpp, bool* windowed);
 DWORD MH_GetEngineVersion(void);
-int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void *context);
+int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void* context);
 BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
-PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
+PVOID MH_GetSectionByName(PVOID ImageBase, const char* SectionName, ULONG* SectionSize);
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
-void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
+void* MH_ReverseSearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
 hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 CreateInterfaceFn MH_GetEngineFactory(void);
 HMEMORYMODULE MH_LoadMirrorDLL_Std(const char* szFileName);
@@ -190,18 +190,18 @@ typedef struct plugin_s
 	std::string basefilename;
 	HINTERFACEMODULE module;
 	size_t modulesize;
-	IBaseInterface *pPluginAPI;
+	IBaseInterface* pPluginAPI;
 	int iInterfaceVersion;
-	struct plugin_s *next;
+	struct plugin_s* next;
 }plugin_t;
 
-plugin_t *g_pPluginBase = NULL;
+plugin_t* g_pPluginBase = NULL;
 
-extern IFileSystem_HL25 *g_pFileSystem_HL25;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
 extern IFileSystem* g_pFileSystem;
 
-mh_interface_t gInterface = {0};
-mh_enginesave_t gMetaSave = {0};
+mh_interface_t gInterface = { 0 };
+mh_enginesave_t gMetaSave = { 0 };
 
 extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
@@ -318,7 +318,7 @@ bool MH_IsDebuggerPresent()
 	return IsDebuggerPresent() ? true : false;
 }
 
-cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callback)
+cvar_callback_t MH_HookCvarCallback(const char* cvar_name, cvar_callback_t callback)
 {
 	if (!gMetaSave.pEngineFuncs)
 		return NULL;
@@ -350,7 +350,7 @@ cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callb
 	return NULL;
 }
 
-bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *poldcallback)
+bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cvar_callback_t* poldcallback)
 {
 	if (!gMetaSave.pEngineFuncs)
 		return NULL;
@@ -426,12 +426,12 @@ usermsg_t* MH_GetUserMsgBase()
 	return (*gClientUserMsgs);
 }
 
-usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
+usermsg_t* MH_FindUserMsgHook(const char* szMsgName)
 {
 	if (!MH_GetUserMsgBase())
 		return NULL;
 
-	for (usermsg_t *msg = MH_GetUserMsgBase(); msg; msg = msg->next)
+	for (usermsg_t* msg = MH_GetUserMsgBase(); msg; msg = msg->next)
 	{
 		if (!strcmp(msg->name, szMsgName))
 			return msg;
@@ -440,9 +440,9 @@ usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
 	return NULL;
 }
 
-pfnUserMsgHook MH_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
+pfnUserMsgHook MH_HookUserMsg(const char* szMsgName, pfnUserMsgHook pfn)
 {
-	usermsg_t *msg = MH_FindUserMsgHook(szMsgName);
+	usermsg_t* msg = MH_FindUserMsgHook(szMsgName);
 
 	if (msg)
 	{
@@ -454,12 +454,12 @@ pfnUserMsgHook MH_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 	return NULL;
 }
 
-cmd_function_t *MH_FindCmd(const char *cmd_name)
+cmd_function_t* MH_FindCmd(const char* cmd_name)
 {
 	if (!Cmd_GetCmdBase)
 		return NULL;
 
-	for (cmd_function_t *cmd = Cmd_GetCmdBase(); cmd; cmd = cmd->next)
+	for (cmd_function_t* cmd = Cmd_GetCmdBase(); cmd; cmd = cmd->next)
 	{
 		if (!strcmp(cmd->name, cmd_name))
 			return cmd;
@@ -468,12 +468,12 @@ cmd_function_t *MH_FindCmd(const char *cmd_name)
 	return NULL;
 }
 
-cmd_function_t *MH_FindCmdPrev(const char *cmd_name)
+cmd_function_t* MH_FindCmdPrev(const char* cmd_name)
 {
 	if (!Cmd_GetCmdBase)
 		return NULL;
 
-	cmd_function_t *cmd;
+	cmd_function_t* cmd;
 
 	for (cmd = Cmd_GetCmdBase()->next; cmd->next; cmd = cmd->next)
 	{
@@ -484,12 +484,12 @@ cmd_function_t *MH_FindCmdPrev(const char *cmd_name)
 	return NULL;
 }
 
-xcommand_t MH_HookCmd(const char *cmd_name, xcommand_t newfuncs)
+xcommand_t MH_HookCmd(const char* cmd_name, xcommand_t newfuncs)
 {
 	if (!Cmd_GetCmdBase)
 		return NULL;
 
-	cmd_function_t *cmd = MH_FindCmd(cmd_name);
+	cmd_function_t* cmd = MH_FindCmd(cmd_name);
 
 	if (!cmd)
 		return NULL;
@@ -570,13 +570,13 @@ void MH_PrintPluginList(void)
 	gMetaSave.pEngineFuncs->Con_Printf("|%5s|%2s|%24s|%24s|\n", "index", "api", "plugin name", "plugin version");
 
 	int index = 0;
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next, index++)
 	{
-		const char *version = "";
+		const char* version = "";
 		switch (plug->iInterfaceVersion)
 		{
 		case 4:
-			version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+			version = ((IPluginsV4*)plug->pPluginAPI)->GetVersion();
 			break;
 		default:
 			break;
@@ -585,11 +585,11 @@ void MH_PrintPluginList(void)
 	}
 }
 
-int MH_LoadPlugin(const std::string &filepath, const std::string &filename, const std::string& basefilename)
+int MH_LoadPlugin(const std::string& filepath, const std::string& filename, const std::string& basefilename)
 {
 	bool bIsDuplicatePlugin = false;
 
-	for (plugin_t *p = g_pPluginBase; p; p = p->next)
+	for (plugin_t* p = g_pPluginBase; p; p = p->next)
 	{
 		if (!stricmp(p->filename.c_str(), filename.c_str()))
 		{
@@ -690,7 +690,7 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename, cons
 			//There is no such thing
 			break;
 		}
-		
+
 		Sys_FreeModule(hModule);
 
 		return PLUGIN_LOAD_INVALID;
@@ -722,7 +722,7 @@ bool MH_HasSSE()
 	auto SDL2 = GetModuleHandleA("SDL2.dll");
 	if (SDL2)
 	{
-		bool(__cdecl *SDL_HasSSE)() = (decltype(SDL_HasSSE))GetProcAddress(SDL2, "SDL_HasSSE");
+		bool(__cdecl * SDL_HasSSE)() = (decltype(SDL_HasSSE))GetProcAddress(SDL2, "SDL_HasSSE");
 		if (SDL_HasSSE)
 			return SDL_HasSSE();
 	}
@@ -735,7 +735,7 @@ bool MH_HasSSE2()
 	auto SDL2 = GetModuleHandleA("SDL2.dll");
 	if (SDL2)
 	{
-		bool(__cdecl *SDL_HasSSE2)() = (decltype(SDL_HasSSE2))GetProcAddress(SDL2, "SDL_HasSSE2");
+		bool(__cdecl * SDL_HasSSE2)() = (decltype(SDL_HasSSE2))GetProcAddress(SDL2, "SDL_HasSSE2");
 		if (SDL_HasSSE2)
 			return SDL_HasSSE2();
 	}
@@ -748,7 +748,7 @@ bool MH_HasAVX()
 	auto SDL2 = GetModuleHandleA("SDL2.dll");
 	if (SDL2)
 	{
-		bool(__cdecl *SDL_HasAVX)() = (decltype(SDL_HasAVX))GetProcAddress(SDL2, "SDL_HasAVX");
+		bool(__cdecl * SDL_HasAVX)() = (decltype(SDL_HasAVX))GetProcAddress(SDL2, "SDL_HasAVX");
 		if (SDL_HasAVX)
 			return SDL_HasAVX();
 	}
@@ -761,7 +761,7 @@ bool MH_HasAVX2()
 	auto SDL2 = GetModuleHandleA("SDL2.dll");
 	if (SDL2)
 	{
-		bool(__cdecl *SDL_HasAVX2)() = (decltype(SDL_HasAVX2))GetProcAddress(SDL2, "SDL_HasAVX2");
+		bool(__cdecl * SDL_HasAVX2)() = (decltype(SDL_HasAVX2))GetProcAddress(SDL2, "SDL_HasAVX2");
 		if (SDL_HasAVX2)
 			return SDL_HasAVX2();
 	}
@@ -769,7 +769,7 @@ bool MH_HasAVX2()
 	return false;
 }
 
-void MH_ReportError(const std::string &fileName, int result, int win32err)
+void MH_ReportError(const std::string& fileName, int result, int win32err)
 {
 	if (result == PLUGIN_LOAD_DUPLICATE)
 	{
@@ -792,7 +792,7 @@ void MH_ReportError(const std::string &fileName, int result, int win32err)
 
 		FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, win32err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
 
-		ss << (const char *)lpMsgBuf;
+		ss << (const char*)lpMsgBuf;
 
 		LocalFree(lpMsgBuf);
 
@@ -864,7 +864,7 @@ void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 				NewEnvPath << ";" << GameFullPath << GameName << "\\metahook\\dlls\\" << stringLine;
 			}
 
-			
+
 		}
 	}
 	infile.close();
@@ -874,23 +874,23 @@ void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 	std::function<void(const std::string&)> traverseDirectory = [&](const std::string& path) {
 		WIN32_FIND_DATAA findData;
 		HANDLE hFind = FindFirstFileA((path + "\\*").c_str(), &findData);
-		
+
 		if (hFind != INVALID_HANDLE_VALUE) {
 			do {
 				if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
 					continue;
-				
+
 				if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 					std::string subDirPath = path + "\\" + findData.cFileName;
 					NewEnvPathStream << ";" << subDirPath;
 					traverseDirectory(subDirPath);
 				}
 			} while (FindNextFileA(hFind, &findData));
-			
+
 			FindClose(hFind);
 		}
-	};
-	
+		};
+
 	traverseDirectory(dllsPath);
 #endif
 
@@ -905,7 +905,7 @@ void MH_RemoveDllPaths(void)
 	SetEnvironmentVariableA("PATH", g_szEnvPath);
 }
 
-void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
+void MH_LoadPlugins(const char* szGameName, const char* szGameFullPath)
 {
 	std::string aConfigFile = szGameName;
 	aConfigFile += "\\metahook\\configs\\plugins.lst";
@@ -1075,7 +1075,7 @@ void MH_TransactionHookUpdateThreads(void)
 
 			++num_threads_frozen;
 		}
-		
+
 		first_run = false;
 
 	} while (num_threads_frozen != 0);
@@ -1162,7 +1162,7 @@ int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_st
 	return r;
 }
 
-int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
+int ClientDLL_Initialize(struct cl_enginefuncs_s* pEnginefuncs, int iVersion)
 {
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
 	memcpy(gMetaSave.pEngineFuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
@@ -1180,21 +1180,21 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 	MH_TransactionHookBegin();
 
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next)
 	{
 		switch (plug->iInterfaceVersion)
 		{
 		case 4:
-			((IPluginsV4 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			((IPluginsV4*)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
 			break;
 		case 3:
-			((IPluginsV3 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			((IPluginsV3*)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
 			break;
 		case 2:
-			((IPluginsV2 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			((IPluginsV2*)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
 			break;
 		default:
-			((IPluginsV1 *)plug->pPluginAPI)->Init(g_pExportFuncs);
+			((IPluginsV1*)plug->pPluginAPI)->Init(g_pExportFuncs);
 			break;
 		}
 	}
@@ -1277,7 +1277,7 @@ PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_
 	return nullptr;
 }
 
-void MH_LoadEngine_FindBuildNumber(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
+void MH_LoadEngine_FindBuildNumber(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 #define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
 
@@ -1435,7 +1435,7 @@ void MH_LoadEngine_FindClientDLL_Init(const mh_dll_info_t& DllInfo, const mh_dll
 						return TRUE;
 
 					return FALSE;
-				});
+					});
 
 				if (ClientDll_Init_FunctionBase)
 				{
@@ -1470,7 +1470,7 @@ void MH_LoadEngine_FindClientDLL_Init(const mh_dll_info_t& DllInfo, const mh_dll
 							return TRUE;
 
 						return FALSE;
-					}, 0, &ctx);
+						}, 0, &ctx);
 				}
 			}
 		}
@@ -1532,7 +1532,7 @@ void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_
 					ClientDLL_HudInit_SearchContext ctx = { DllInfo , RealDllInfo, pfnHUDInit };
 
 					MH_DisasmRanges(ClientDLL_HudInit, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-						
+
 						auto pinst = (cs_insn*)inst;
 						auto ctx = (ClientDLL_HudInit_SearchContext*)context;
 
@@ -1561,6 +1561,16 @@ void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_
 						return FALSE;
 
 					}, 0, &ctx);
+				}
+				else
+				{
+#define HUDINIT_SIG2 "\xA1\x2A\x2A\x2A\x2A\x50\xE8"
+					auto PushClientModule = (PUCHAR)MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG2, sizeof(HUDINIT_SIG2) - 1);
+					if (PushClientModule)
+					{
+						auto target = *(PUCHAR*)(PushClientModule + 1);
+						g_phClientModule = (decltype(g_phClientModule))ConvertDllInfoSpace(target, DllInfo, RealDllInfo);
+					}
 				}
 			}
 			else
@@ -1604,7 +1614,7 @@ void MH_LoadEngine_FindVClientVGUI(const mh_dll_info_t& DllInfo, const mh_dll_in
 				{
 					PVOID g_pClientFactory_VA = ((PUCHAR)InitVGUI + 1);
 
-					g_pClientFactory = *(decltype(g_pClientFactory)*)ConvertDllInfoSpace(g_pClientFactory_VA, DllInfo, RealDllInfo) ;
+					g_pClientFactory = *(decltype(g_pClientFactory)*)ConvertDllInfoSpace(g_pClientFactory_VA, DllInfo, RealDllInfo);
 				}
 				else
 				{
@@ -1701,12 +1711,6 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 			{
 				const mh_dll_info_t& DllInfo;
 				const mh_dll_info_t& RealDllInfo;
-
-				ULONG_PTR candidate_disp{};
-				PVOID candidate_addr{};
-
-				int xor_exx_exx_instCount{};
-				int xor_exx_exx_reg{};
 			}VideoMode_SearchContext;
 
 			VideoMode_SearchContext ctx = { DllInfo, RealDllInfo };
@@ -1715,45 +1719,15 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (VideoMode_SearchContext*)context;
 
-				if (pinst->id == X86_INS_XOR &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
-				{
-					ctx->xor_exx_exx_reg = pinst->detail->x86.operands[0].reg;
-					ctx->xor_exx_exx_instCount = instCount;
-				}
-
-				if ((pinst->id == X86_INS_MOV &&
+				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0)
-					||
-					(pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize &&
-						pinst->detail->x86.operands[1].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-					||
-					(pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize &&
-						pinst->detail->x86.operands[1].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].reg == ctx->xor_exx_exx_reg &&
-						instCount == ctx->xor_exx_exx_instCount + 1)
-
-					)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					((pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0) ||
+						pinst->detail->x86.operands[1].type == X86_OP_REG))
 				{
 					typedef struct FindRet_SearchContext_s
 					{
@@ -1764,31 +1738,31 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 					MH_DisasmRanges(address, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
-							auto pinst = (cs_insn*)inst;
-							auto ctx = (FindRet_SearchContext*)context;
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (FindRet_SearchContext*)context;
 
-							if (!ctx->bFindRet && pinst->id == X86_INS_RET)
-							{
-								ctx->bFindRet = true;
-								return TRUE;
-							}
+						if (!ctx->bFindRet && pinst->id == X86_INS_RET)
+						{
+							ctx->bFindRet = true;
+							return TRUE;
+						}
 
-							if (address[0] == 0xCC)
-								return TRUE;
+						if (address[0] == 0xCC)
+							return TRUE;
 
-							if (address[0] == 0x90)
-								return TRUE;
+						if (address[0] == 0x90)
+							return TRUE;
 
-							if (instCount > 15)
-								return TRUE;
+						if (instCount > 15)
+							return TRUE;
 
-							return FALSE;
+						return FALSE;
 
-					}, 0, &ctx2);
+						}, 0, &ctx2);
 
 					if (ctx2.bFindRet)
 					{
-						g_pVideoMode = (decltype(g_pVideoMode))ConvertDllInfoSpace((PVOID) pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+						g_pVideoMode = (decltype(g_pVideoMode))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					}
 				}
 
@@ -1799,7 +1773,7 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 					return TRUE;
 
 				return FALSE;
-			}, 0, &ctx);
+				}, 0, &ctx);
 		}
 		else
 		{
@@ -1854,7 +1828,7 @@ void MH_LoadEngine_FindClientUserMsgs(const mh_dll_info_t& DllInfo, const mh_dll
 					{
 						PVOID gClientUserMsgs_VA = (PVOID)pinst->detail->x86.operands[1].mem.disp;
 
-						gClientUserMsgs = (decltype(gClientUserMsgs)) ConvertDllInfoSpace(gClientUserMsgs_VA, ctx->DllInfo, ctx->RealDllInfo);
+						gClientUserMsgs = (decltype(gClientUserMsgs))ConvertDllInfoSpace(gClientUserMsgs_VA, ctx->DllInfo, ctx->RealDllInfo);
 					}
 
 					if (gClientUserMsgs)
@@ -1864,7 +1838,7 @@ void MH_LoadEngine_FindClientUserMsgs(const mh_dll_info_t& DllInfo, const mh_dll
 						return TRUE;
 
 					return FALSE;
-				}, 0, &ctx);
+					}, 0, &ctx);
 			}
 		}
 	}
@@ -1925,12 +1899,20 @@ void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_
 			Cvar_DirectSet_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
 		if (Cvar_DirectSet_String)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
-			auto Cvar_DirectSet_Call = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (Cvar_DirectSet_Call)
-			{
-				PVOID Cvar_DirectSet_VA = MH_ReverseSearchFunctionBeginEx(Cvar_DirectSet_Call, 0x500, [](PUCHAR Candidate) {
+				// Locate .text references to the anchor string instead of assuming the
+				// instructions between the reference and the following call are fixed.
+				char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+				*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+
+				auto searchBegin = (PUCHAR)DllInfo.TextBase;
+				auto searchEnd = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
+				while (searchBegin < searchEnd)
+				{
+					auto Cvar_DirectSet_StringRef = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+					if (!Cvar_DirectSet_StringRef)
+						break;
+
+					PVOID Cvar_DirectSet_VA = MH_ReverseSearchFunctionBeginEx(Cvar_DirectSet_StringRef, 0x500, [](PUCHAR Candidate) {
 					//.text : 01D42120 81 EC 0C 04 00 00                                   sub     esp, 40Ch
 					//.text : 01D42126 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 					//.text : 01D4212B 33 C4
@@ -1973,11 +1955,17 @@ void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_
 						Candidate[5] == 0x00)
 						return TRUE;
 
-					return FALSE;
-					});
+						return FALSE;
+						});
 
-				g_pfnCvar_DirectSet = (decltype(g_pfnCvar_DirectSet))ConvertDllInfoSpace(Cvar_DirectSet_VA, DllInfo, RealDllInfo);
-			}
+					if (Cvar_DirectSet_VA)
+					{
+						g_pfnCvar_DirectSet = (decltype(g_pfnCvar_DirectSet))ConvertDllInfoSpace(Cvar_DirectSet_VA, DllInfo, RealDllInfo);
+						break;
+					}
+
+					searchBegin = (PUCHAR)Cvar_DirectSet_StringRef + sizeof(pattern) - 1;
+				}
 		}
 	}
 
@@ -2085,7 +2073,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 								return TRUE;
 
 							return FALSE;
-						}, 0, &ctx);
+							}, 0, &ctx);
 					}
 					else
 					{
@@ -2123,7 +2111,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 				{
 					PVOID LoadBlobFile_VA = MH_ReverseSearchFunctionBegin((PUCHAR)ExportPoint_Push, 0x300);
 					g_pfnLoadBlobFile = (decltype(g_pfnLoadBlobFile))ConvertDllInfoSpace(LoadBlobFile_VA, DllInfo, RealDllInfo);
-						
+
 					break;
 				}
 
@@ -2165,7 +2153,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 			else
 			{
 				const char pattern3[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50";
-				*(ULONG_PTR*)(pattern3 + sizeof(pattern2) - 1 - 5) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
+				*(ULONG_PTR*)(pattern3 + sizeof(pattern3) - 1 - 5) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
 				auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern3, sizeof(pattern3) - 1);
 				if (FreeBlob_Call)
 				{
@@ -2239,6 +2227,8 @@ void MH_LoadEngine_FindStudioInterface(const mh_dll_info_t& DllInfo, const mh_dl
 
 						break;
 					}
+
+					searchBegin = (PUCHAR)PrintError_Call + sizeof(pattern) - 1;
 				}
 				else
 				{
@@ -2389,18 +2379,18 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 	MH_TransactionHookBegin();
 
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next)
 	{
 		switch (plug->iInterfaceVersion)
 		{
 		case 4:
-			((IPluginsV4 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
+			((IPluginsV4*)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t*)*(void**)g_ppEngfuncs);
 			break;
 		case 3:
-			((IPluginsV3 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
+			((IPluginsV3*)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t*)*(void**)g_ppEngfuncs);
 			break;
 		case 2:
-			((IPluginsV2 *)plug->pPluginAPI)->LoadEngine();
+			((IPluginsV2*)plug->pPluginAPI)->LoadEngine();
 			break;
 		default:
 			break;
@@ -2421,7 +2411,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	InitLoadDllNotification();
 }
 
-hook_t *MH_NewHook(int iType)
+hook_t* MH_NewHook(int iType)
 {
 	auto h = new (std::nothrow) hook_t;
 
@@ -2437,7 +2427,7 @@ hook_t *MH_NewHook(int iType)
 	return h;
 }
 
-hook_t *MH_FindInlineHook(void *pOldFuncAddr, hook_t* pLastFoundHook)
+hook_t* MH_FindInlineHook(void* pOldFuncAddr, hook_t* pLastFoundHook)
 {
 	auto h = g_pHookBase;
 
@@ -2456,7 +2446,7 @@ hook_t *MH_FindInlineHook(void *pOldFuncAddr, hook_t* pLastFoundHook)
 	return NULL;
 }
 
-hook_t *MH_FindVFTHook(void * pClassInstance, int iTableIndex, int iFuncIndex, hook_t* pLastFoundHook)
+hook_t* MH_FindVFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, hook_t* pLastFoundHook)
 {
 	auto h = g_pHookBase;
 
@@ -2498,7 +2488,7 @@ hook_t* MH_FindVFTHookEx(void** pVFTable, int iFuncIndex, hook_t* pLastFoundHook
 	return NULL;
 }
 
-hook_t *MH_FindIATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, hook_t* pLastFoundHook)
+hook_t* MH_FindIATHook(HMODULE hModule, const char* pszModuleName, const char* pszFuncName, hook_t* pLastFoundHook)
 {
 	auto h = g_pHookBase;
 
@@ -2536,7 +2526,7 @@ hook_t* MH_FindInlinePatchHook(void* pInstructionAddress, hook_t* pLastFoundHook
 	return NULL;
 }
 
-void MH_FreeHook(hook_t *pHook)
+void MH_FreeHook(hook_t* pHook)
 {
 	if (pHook->bCommitted)
 	{
@@ -2570,7 +2560,7 @@ void MH_FreeAllHook(void)
 	if (!g_pHookBase)
 		return;
 
-	hook_t *next = NULL;
+	hook_t* next = NULL;
 
 	for (auto h = g_pHookBase; h; h = next)
 	{
@@ -2581,12 +2571,12 @@ void MH_FreeAllHook(void)
 	g_pHookBase = NULL;
 }
 
-BOOL MH_UnHook(hook_t *pHook)
+BOOL MH_UnHook(hook_t* pHook)
 {
 	if (!g_pHookBase)
 		return FALSE;
 
-	hook_t *h, **back;
+	hook_t* h, ** back;
 	back = &g_pHookBase;
 
 	while (1)
@@ -2627,7 +2617,7 @@ void MH_ExitGame(int iResult)
 		default:
 			break;
 		}
-}
+	}
 
 	//TODO check if there is any inlinehook left?
 	MH_FreeAllHook();
@@ -2725,7 +2715,7 @@ void MH_Shutdown(void)
 	}
 }
 
-hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall)
+hook_t* MH_InlineHook(void* pOldFuncAddr, void* pNewFuncAddr, void** pOrginalCall)
 {
 #if 0
 	auto p = (PUCHAR)_ReturnAddress();
@@ -2744,7 +2734,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	}
 #endif
 
-	hook_t *h = MH_NewHook(MH_HOOK_INLINE);
+	hook_t* h = MH_NewHook(MH_HOOK_INLINE);
 
 	if (!h)
 	{
@@ -2764,7 +2754,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	else
 	{
 		DetourTransactionBegin();
-		DetourAttach(&(void *&)h->hookData.inlinehook.pTrampolineCall, pNewFuncAddr);
+		DetourAttach(&(void*&)h->hookData.inlinehook.pTrampolineCall, pNewFuncAddr);
 		DetourTransactionCommit();
 
 		if (h->pOrginalCall)
@@ -2901,7 +2891,7 @@ hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAd
 				*(int*)(ctx->NewCodeBytes + 1) = ctx->pNewFuncAddr - (ctx->pSourceCode + 5);
 			}
 
-		}, &ctx);
+			}, &ctx);
 	}
 
 	if (!ctx.PatchLength)
@@ -2940,7 +2930,7 @@ hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAd
 }
 
 
-hook_t* MH_VFTHookEx(void ** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
+hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
 	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
 
@@ -3060,7 +3050,7 @@ hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* 
 	return h;
 }
 
-hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall, ULONG_PTR *pThunkFunction)
+hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall, ULONG_PTR* pThunkFunction)
 {
 	hook_t* h = MH_NewHook(MH_HOOK_IAT);
 
@@ -3102,21 +3092,21 @@ hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszMod
 	return h;
 }
 
-hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall)
+hook_t* MH_IATHook(HMODULE hModule, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall)
 {
 	auto pNtHeader = RtlImageNtHeader(hModule);
 
 	if (!pNtHeader)
 		return NULL;
 
-	auto pImport = (IMAGE_IMPORT_DESCRIPTOR *)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+	auto pImport = (IMAGE_IMPORT_DESCRIPTOR*)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-	while (pImport->Name && 0 != stricmp((const char *)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
+	while (pImport->Name && 0 != stricmp((const char*)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
 		pImport++;
 
 	auto hProcModule = GetModuleHandleA(pszModuleName);
 
-	if(!hProcModule)
+	if (!hProcModule)
 		return NULL;
 
 	ULONG_PTR dwFuncAddr = (ULONG_PTR)GetProcAddress(hProcModule, pszFuncName);
@@ -3124,14 +3114,14 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	if (!dwFuncAddr)
 		return NULL;
 
-	auto pThunk = (IMAGE_THUNK_DATA *)((ULONG_PTR)hModule + pImport->FirstThunk);
+	auto pThunk = (IMAGE_THUNK_DATA*)((ULONG_PTR)hModule + pImport->FirstThunk);
 
 	while (pThunk->u1.Function != dwFuncAddr && pThunk->u1.Function)
 	{
 		pThunk++;
 	}
 
-	if(!pThunk->u1.Function)
+	if (!pThunk->u1.Function)
 		return NULL;
 
 	return MH_CreateIATHook(hModule, NULL, pszModuleName, pszFuncName, pNewFuncAddr, pOrginalCall, &pThunk->u1.Function);
@@ -3207,18 +3197,18 @@ hook_t* MH_InlineHookTrampoline(void* pOldFuncAddr, void* pNewFuncAddr, void** p
 	return NULL;
 }
 
-void *MH_GetClassFuncAddr(...)
+void* MH_GetClassFuncAddr(...)
 {
 	DWORD address;
 
 	__asm
 	{
-		lea eax,address
+		lea eax, address
 		mov edx, [ebp + 8]
-		mov [eax], edx
+		mov[eax], edx
 	}
 
-	return (void *)address;
+	return (void*)address;
 }
 
 PVOID MH_GetModuleBase(PVOID VirtualAddress)
@@ -3236,7 +3226,7 @@ PVOID MH_GetModuleBase(PVOID VirtualAddress)
 
 DWORD MH_GetModuleSize(PVOID ModuleBase)
 {
-	return ((IMAGE_NT_HEADERS *)((PUCHAR)ModuleBase + ((IMAGE_DOS_HEADER *)ModuleBase)->e_lfanew))->OptionalHeader.SizeOfImage;
+	return ((IMAGE_NT_HEADERS*)((PUCHAR)ModuleBase + ((IMAGE_DOS_HEADER*)ModuleBase)->e_lfanew))->OptionalHeader.SizeOfImage;
 }
 
 HMODULE MH_GetEngineModule(void)
@@ -3266,7 +3256,7 @@ DWORD MH_GetEngineSize(void)
 
 HMODULE MH_GetClientModule(void)
 {
-	if(g_phClientModule)
+	if (g_phClientModule)
 		return (*g_phClientModule);
 
 	return NULL;
@@ -3312,19 +3302,19 @@ DWORD MH_GetClientSize(void)
 	return 0;
 }
 
-void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
+void* MH_SearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen)
 {
 	if (!pStartSearch)
 		return NULL;
 
-	if(!dwSearchLen)
+	if (!dwSearchLen)
 		return NULL;
 
-	if(!dwPatternLen)
+	if (!dwPatternLen)
 		return NULL;
 
-	char *dwStartAddr = (char *)pStartSearch;
-	char *dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
+	char* dwStartAddr = (char*)pStartSearch;
+	char* dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 
 	while (dwStartAddr < dwEndAddr)
 	{
@@ -3332,7 +3322,7 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 
 		for (DWORD i = 0; i < dwPatternLen; i++)
 		{
-			char code = *(char *)(dwStartAddr + i);
+			char code = *(char*)(dwStartAddr + i);
 
 			if (pPattern[i] != 0x2A && pPattern[i] != code)
 			{
@@ -3342,7 +3332,7 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 		}
 
 		if (found)
-			return (void *)dwStartAddr;
+			return (void*)dwStartAddr;
 
 		dwStartAddr++;
 	}
@@ -3382,10 +3372,10 @@ void* MH_SearchPatternNoWildCard(void* pStartSearch, DWORD dwSearchLen, const ch
 	return NULL;
 }
 
-void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
+void* MH_ReverseSearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen)
 {
-	char * dwStartAddr = (char *)pStartSearch;
-	char * dwEndAddr = dwStartAddr - dwSearchLen - dwPatternLen;
+	char* dwStartAddr = (char*)pStartSearch;
+	char* dwEndAddr = dwStartAddr - dwSearchLen - dwPatternLen;
 
 	while (dwStartAddr > dwEndAddr)
 	{
@@ -3393,7 +3383,7 @@ void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char 
 
 		for (DWORD i = 0; i < dwPatternLen; i++)
 		{
-			char code = *(char *)(dwStartAddr + i);
+			char code = *(char*)(dwStartAddr + i);
 
 			if (pPattern[i] != 0x2A && pPattern[i] != code)
 			{
@@ -3411,70 +3401,70 @@ void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char 
 	return 0;
 }
 
-void MH_WriteDWORD(void *pAddress, DWORD dwValue)
+void MH_WriteDWORD(void* pAddress, DWORD dwValue)
 {
 	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	if (VirtualProtect((void*)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
-		*(DWORD *)pAddress = dwValue;
-		VirtualProtect((void *)pAddress, 4, dwOldProtect, &dwOldProtect);
+		*(DWORD*)pAddress = dwValue;
+		VirtualProtect((void*)pAddress, 4, dwOldProtect, &dwOldProtect);
 	}
 }
 
-DWORD MH_ReadDWORD(void *pAddress)
+DWORD MH_ReadDWORD(void* pAddress)
 {
 	DWORD dwOldProtect = 0;
 	DWORD dwValue = 0;
 
-	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	if (VirtualProtect((void*)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
-		dwValue = *(DWORD *)pAddress;
-		VirtualProtect((void *)pAddress, 4, dwOldProtect, &dwOldProtect);
+		dwValue = *(DWORD*)pAddress;
+		VirtualProtect((void*)pAddress, 4, dwOldProtect, &dwOldProtect);
 	}
 
 	return dwValue;
 }
 
-void MH_WriteBYTE(void *pAddress, BYTE ucValue)
+void MH_WriteBYTE(void* pAddress, BYTE ucValue)
 {
 	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	if (VirtualProtect((void*)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
-		*(BYTE *)pAddress = ucValue;
-		VirtualProtect((void *)pAddress, 1, dwOldProtect, &dwOldProtect);
+		*(BYTE*)pAddress = ucValue;
+		VirtualProtect((void*)pAddress, 1, dwOldProtect, &dwOldProtect);
 	}
 }
 
-BYTE MH_ReadBYTE(void *pAddress)
+BYTE MH_ReadBYTE(void* pAddress)
 {
 	DWORD dwOldProtect = 0;
 	BYTE ucValue = 0;
 
-	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	if (VirtualProtect((void*)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
-		ucValue = *(BYTE *)pAddress;
-		VirtualProtect((void *)pAddress, 1, dwOldProtect, &dwOldProtect);
+		ucValue = *(BYTE*)pAddress;
+		VirtualProtect((void*)pAddress, 1, dwOldProtect, &dwOldProtect);
 	}
 
 	return ucValue;
 }
 
-void MH_WriteNOP(void *pAddress, DWORD dwCount)
+void MH_WriteNOP(void* pAddress, DWORD dwCount)
 {
 	DWORD dwOldProtect = 0;
 
 	if (VirtualProtect(pAddress, dwCount, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		for (DWORD i = 0; i < dwCount; i++)
-			*(BYTE *)((DWORD)pAddress + i) = 0x90;
+			*(BYTE*)((DWORD)pAddress + i) = 0x90;
 
 		VirtualProtect(pAddress, dwCount, dwOldProtect, &dwOldProtect);
 	}
 }
 
-DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize)
+DWORD MH_WriteMemory(void* pAddress, void* pData, DWORD dwDataSize)
 {
 	DWORD dwOldProtect = 0;
 
@@ -3487,7 +3477,7 @@ DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
-DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
+DWORD MH_ReadMemory(void* pAddress, void* pData, DWORD dwDataSize)
 {
 	DWORD dwOldProtect = 0;
 
@@ -3528,7 +3518,7 @@ void* MH_VideoMode()
 	return nullptr;
 }
 
-DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
+DWORD MH_GetVideoMode(int* width, int* height, int* bpp, bool* windowed)
 {
 	static int iSaveMode;
 	static int iSaveWidth, iSaveHeight, iSaveBPP;
@@ -3606,7 +3596,7 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 	}
 	else
 	{
-		const char *pszValues = registry->ReadString("EngineDLL", "hw.dll");
+		const char* pszValues = registry->ReadString("EngineDLL", "hw.dll");
 		int iEngineD3D = registry->ReadInt("EngineD3D");
 
 		if (!strcmp(pszValues, "hw.dll"))
@@ -3705,12 +3695,12 @@ CreateInterfaceFn MH_GetClientFactory(void)
 	return NULL;
 }
 
-PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
+PVOID MH_GetNextCallAddr(void* pAddress, DWORD dwCount)
 {
-	static BYTE *pbAddress = NULL;
+	static BYTE* pbAddress = NULL;
 
 	if (pAddress)
-		pbAddress = (BYTE *)pAddress;
+		pbAddress = (BYTE*)pAddress;
 	else
 		pbAddress = pbAddress + 5;
 
@@ -3718,7 +3708,7 @@ PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 	{
 		if (pbAddress[0] == 0xFF && pbAddress[1] == 0x15)
 		{
-			pbAddress = (BYTE*)(**(PVOID **)(pbAddress + 2));
+			pbAddress = (BYTE*)(**(PVOID**)(pbAddress + 2));
 		}
 		else if (pbAddress[0] == 0xFF && pbAddress[1] == 0x25)
 		{
@@ -3726,7 +3716,7 @@ PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 		}
 		else if (pbAddress[0] == 0xE8)
 		{
-			pbAddress = (BYTE*)(pbAddress + 5 + *(int *)(pbAddress + 1));
+			pbAddress = (BYTE*)(pbAddress + 5 + *(int*)(pbAddress + 1));
 		}
 		else if (pbAddress[0] == 0xE9)
 		{
@@ -3754,7 +3744,7 @@ int MH_GetEngineType(void)
 	return g_iEngineType;
 }
 
-const char *engineTypeNames[] = {
+const char* engineTypeNames[] = {
 	"Unknown",
 	"GoldSrc_Blob",
 	"GoldSrc",
@@ -3762,12 +3752,12 @@ const char *engineTypeNames[] = {
 	"GoldSrc_HL25",
 };
 
-const char *MH_GetEngineTypeName(void)
+const char* MH_GetEngineTypeName(void)
 {
 	return engineTypeNames[MH_GetEngineType()];
 }
 
-PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize)
+PVOID MH_GetSectionByName(PVOID ImageBase, const char* SectionName, ULONG* SectionSize)
 {
 	auto hBlob = BlobLoaderFindBlobByImageBase(ImageBase);
 
@@ -3855,9 +3845,9 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 			{
 				MH_ReverseSearchFunctionBegin_ctx2 ctx2 = { 0 };
 
-				MH_DisasmSingleInstruction(SearchPtr + 1, [](void *inst, PUCHAR address, size_t instLen, PVOID context) {
-					auto pinst = (cs_insn *)inst;
-					auto ctx = (MH_ReverseSearchFunctionBegin_ctx2 *)context;
+				MH_DisasmSingleInstruction(SearchPtr + 1, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
 
 					if (pinst->id == X86_INS_PUSH &&
 						pinst->detail->x86.op_count == 1 &&
@@ -3885,7 +3875,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 					ctx->instAddr = address;
 					ctx->instLen = instLen;
 
-				}, &ctx2);
+					}, &ctx2);
 
 				if (!ctx2.bPushRegister && !ctx2.bSubEspImm && !ctx2.bMovReg1000h)
 				{
@@ -3916,7 +3906,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 							ctx->bMovReg1000h = true;
 						}
 
-					}, &ctx2);
+						}, &ctx2);
 				}
 
 				if (ctx2.bPushRegister || ctx2.bSubEspImm || ctx2.bMovReg1000h)
@@ -3943,50 +3933,50 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 				auto walk = ctx.walks[ctx.walks.size() - 1];
 				ctx.walks.pop_back();
 
-				MH_DisasmRanges(walk.address, walk.len, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
-					auto pinst = (cs_insn *)inst;
-					auto ctx = (MH_ReverseSearchFunctionBegin_ctx *)context;
-
-					if (address == ctx->DesiredAddress)
+				MH_DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
-						ctx->bFoundDesiredAddress = true;
-						return TRUE;
-					}
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (MH_ReverseSearchFunctionBegin_ctx*)context;
 
-					if (ctx->code.size() > ctx->max_insts)
-						return TRUE;
-
-					if (ctx->code.find(address) != ctx->code.end())
-						return TRUE;
-
-					ctx->code.emplace(address);
-
-					if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM)
-					{
-						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-						auto foundbranch = ctx->branches.find(imm);
-						if (foundbranch == ctx->branches.end())
+						if (address == ctx->DesiredAddress)
 						{
-							ctx->branches.emplace(imm);
-							if (depth + 1 < ctx->max_depth)
-								ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							ctx->bFoundDesiredAddress = true;
+							return TRUE;
 						}
 
-						if (pinst->id == X86_INS_JMP)
+						if (ctx->code.size() > ctx->max_insts)
 							return TRUE;
-					}
 
-					if (address[0] == 0xCC)
-						return TRUE;
+						if (ctx->code.find(address) != ctx->code.end())
+							return TRUE;
 
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
+						ctx->code.emplace(address);
 
-					return FALSE;
-				}, walk.depth, &ctx);
+						if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM)
+						{
+							PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+							auto foundbranch = ctx->branches.find(imm);
+							if (foundbranch == ctx->branches.end())
+							{
+								ctx->branches.emplace(imm);
+								if (depth + 1 < ctx->max_depth)
+									ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							}
+
+							if (pinst->id == X86_INS_JMP)
+								return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, walk.depth, &ctx);
 			}
 
 			if (ctx.bFoundDesiredAddress)
@@ -4058,7 +4048,7 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 					ctx->instAddr = address;
 					ctx->instLen = instLen;
 
-				}, &ctx2);
+					}, &ctx2);
 
 				if (!ctx2.bPushRegister && !ctx2.bSubEspImm)
 				{
@@ -4089,7 +4079,7 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 							ctx->bMovReg1000h = true;
 						}
 
-					}, &ctx2);
+						}, &ctx2);
 				}
 
 				if (ctx2.bPushRegister || ctx2.bSubEspImm || ctx2.bMovReg1000h)
@@ -4174,7 +4164,7 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 	return NULL;
 }
 
-int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void *context)
+int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void* context)
 {
 	int instLen = 0;
 	csh handle = 0;
@@ -4182,10 +4172,10 @@ int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, voi
 	{
 		if (cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) == CS_ERR_OK)
 		{
-			cs_insn *insts = NULL;
+			cs_insn* insts = NULL;
 			size_t count = 0;
 
-			const uint8_t *addr = (uint8_t *)address;
+			const uint8_t* addr = (uint8_t*)address;
 			uint64_t vaddr = ((uint64_t)address & 0x00000000FFFFFFFFull);
 			size_t size = 15;
 
@@ -4220,7 +4210,7 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 	csh handle = 0;
 	if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) == CS_ERR_OK)
 	{
-		cs_insn *insts = NULL;
+		cs_insn* insts = NULL;
 		size_t count = 0;
 		int instCount = 1;
 
@@ -4230,7 +4220,7 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 
 			do
 			{
-				const uint8_t *addr = (uint8_t *)pAddress;
+				const uint8_t* addr = (uint8_t*)pAddress;
 				uint64_t vaddr = ((uint64_t)pAddress & 0x00000000FFFFFFFFull);
 				size_t size = 15;
 
@@ -4241,7 +4231,7 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 
 				bool accessable = !IsBadReadPtr(addr, size);
 
-				if(!accessable)
+				if (!accessable)
 					break;
 
 				count = cs_disasm(handle, addr, size, vaddr, 1, &insts);
@@ -4274,18 +4264,18 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 	return success;
 }
 
-BOOL MH_QueryPluginInfo(int fromindex, mh_plugininfo_t *info)
+BOOL MH_QueryPluginInfo(int fromindex, mh_plugininfo_t* info)
 {
 	int index = 0;
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next, index++)
 	{
 		if (index > fromindex)
 		{
-			const char *version = "";
+			const char* version = "";
 			switch (plug->iInterfaceVersion)
 			{
 			case 4:
-				version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+				version = ((IPluginsV4*)plug->pPluginAPI)->GetVersion();
 				break;
 			default:
 				break;
@@ -4307,18 +4297,18 @@ BOOL MH_QueryPluginInfo(int fromindex, mh_plugininfo_t *info)
 	return FALSE;
 }
 
-BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
+BOOL MH_GetPluginInfo(const char* name, mh_plugininfo_t* info)
 {
 	int index = 0;
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next, index++)
 	{
 		if (!stricmp(name, plug->filename.c_str()))
 		{
-			const char *version = "";
+			const char* version = "";
 			switch (plug->iInterfaceVersion)
 			{
 			case 4:
-				version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+				version = ((IPluginsV4*)plug->pPluginAPI)->GetVersion();
 				break;
 			default:
 				break;
@@ -4458,7 +4448,7 @@ HMEMORYMODULE MH_LoadMirrorDLL_Std(const char* szFileName)
 	return hMemoryModuleHandle;
 }
 
-HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char * szFileName)
+HMEMORYMODULE MH_LoadMirrorDLL_FileSystem(const char* szFileName)
 {
 	HMEMORYMODULE hMemoryModuleHandle = NULL;
 
@@ -4576,7 +4566,7 @@ static VOID NTAPI MH_ThreadPoolWorkItem(
 
 ThreadWorkItemHandle_t MH_CreateWorkItem(ThreadPoolHandle_t hThreadPool, fnThreadWorkItemCallback callback, void* ctx)
 {
-	MH_TpWorkContext_t *pTpWorkContext = new MH_TpWorkContext_t;
+	MH_TpWorkContext_t* pTpWorkContext = new MH_TpWorkContext_t;
 	if (!pTpWorkContext)
 		return nullptr;
 
