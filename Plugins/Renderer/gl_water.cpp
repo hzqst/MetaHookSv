@@ -490,6 +490,7 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 
 	unsigned int* pSrcBuf = (unsigned int*)pWaterModel->ripple_image;
 	unsigned int* pDstBuf = (unsigned int*)pWaterModel->ripple_data;
+	unsigned int* pDstBufBegin = pDstBuf;
 
 	int bufWide = pWaterModel->ripple_width;
 	int bufTall = pWaterModel->ripple_height;
@@ -531,7 +532,7 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 	if (!skipDrips)
 	{
 		int randBase = procFrame & 0xFF;
-		int randTexBase = pDstBuf[0] & 0xFFFF;
+		int randTexBase = pDstBufBegin[0] & 0xFFFF;
 		int rand1 = m_pPermutation[(randTexBase + (randBase++) % 0xFF) & (RANDOM_BYTES_SIZE - 1)] << 1;
 		int rand2 = m_pPermutation[(randTexBase + (randBase++)) & (RANDOM_BYTES_SIZE - 1)] << 1;
 		short dripsize = 96 + (m_pPermutation[(randBase % 0xFF)] >> 2);
