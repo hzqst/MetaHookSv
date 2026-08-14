@@ -366,6 +366,13 @@ void R_InitWater(void)
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
+void R_ClearWaterModelReferences(void)
+{
+	g_VisibleWaterSurfaceModels.clear();
+	g_VisibleWaterEntity.clear();
+	R_ClearEntityWaterModelReferences();
+}
+
 bool R_IsAboveWater(CWaterSurfaceModel* pWaterModel)
 {
 	if (pWaterModel->normal[2] > 0)
@@ -415,6 +422,28 @@ std::shared_ptr<CEnvWaterControl> R_FindWaterControl(msurface_t* surf)
 	}
 
 	return nullptr;
+}
+
+static GLuint R_CreateRippleTexture(const char* textureName, const void* data, int width, int height)
+{
+	gl_loadtexture_context_t loadContext{};
+	loadContext.internalformat = GL_RGBA8;
+	loadContext.width = width;
+	loadContext.height = height;
+	loadContext.wrap = GL_REPEAT;
+	loadContext.mipmap = true;
+	loadContext.mipmaps.emplace_back(0, data, width * height * sizeof(unsigned int), width, height);
+
+	auto textureId = GL_GenTexture();
+	auto previousTextureId = (*currenttexture);
+
+	glActiveTexture(GL_TEXTURE0);
+	GL_Bind(textureId);
+	GL_UploadUncompressedTexture(&loadContext, GL_TEXTURE_2D);
+	GL_SetTextureDebugNameFormat(textureId, "water ripple - %s", textureName);
+	GL_Bind(previousTextureId);
+
+	return textureId;
 }
 
 void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
@@ -527,9 +556,12 @@ void R_UpdateRippleTexture(CWaterSurfaceModel* pWaterModel, int framecount)
 		pBuffer1[yr * bufWide + xl] += dripsize;
 	}
 
-	glBindTexture(GL_TEXTURE_2D, pWaterModel->ripplemap);
+	auto previousTextureId = (*currenttexture);
+
+	glActiveTexture(GL_TEXTURE0);
+	GL_Bind(pWaterModel->ripplemap);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, pWaterModel->ripple_width, pWaterModel->ripple_height, GL_RGBA, GL_UNSIGNED_BYTE, pWaterModel->ripple_data);
-	glBindTexture(GL_TEXTURE_2D, (*currenttexture));
+	GL_Bind(previousTextureId);
 }
 
 std::shared_ptr<CWaterSurfaceModel> R_FindFlatWaterSurfaceModel(model_t* mod, msurface_t* surf, int direction, CWorldSurfaceWorldModel* pWorldModel, CWorldSurfaceLeaf* pLeaf)
@@ -658,10 +690,7 @@ std::shared_ptr<CWaterSurfaceModel> R_GetWaterSurfaceModel(model_t* mod, msurfac
 
 				glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pWaterModel->ripple_image);
 
-				char identifier[64] = { 0 };
-				snprintf(identifier, sizeof(identifier), "%s_ripple", surf->texinfo->texture->name);
-
-				pWaterModel->ripplemap = R_LoadRGBA8TextureFromMemory(identifier, pWaterModel->ripple_image, pWaterModel->ripple_width, pWaterModel->ripple_height, GLT_WORLD, true);
+				pWaterModel->ripplemap = R_CreateRippleTexture(surf->texinfo->texture->name, pWaterModel->ripple_image, pWaterModel->ripple_width, pWaterModel->ripple_height);
 
 				pWaterModel->ripple_spots[0] = (short*)malloc(imageSize * sizeof(short));
 				memset(pWaterModel->ripple_spots[0], 0, imageSize * sizeof(short));

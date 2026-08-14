@@ -135,6 +135,7 @@ bool R_IsAboveWater(CWaterSurfaceModel *pWaterModel);
 bool R_IsAboveWater(CWaterReflectCache* pWaterReflectCache);
 void R_InitWater(void);
 void R_ShutdownWater(void);
+void R_ClearWaterModelReferences(void);
 void R_RenderWaterPass(void);
 void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
