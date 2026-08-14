@@ -103,6 +103,19 @@ void R_EntityComponents_StartFrame(void)
 	g_UnmanagedEntityRenderComponent.clear();
 }
 
+void R_ClearEntityWaterModelReferences(void)
+{
+	for (auto component : g_ActiveEntityRenderComponents)
+	{
+		component->ResetWater();
+	}
+
+	for (auto component : g_StaleEntityRenderComponents)
+	{
+		component->ResetWater();
+	}
+}
+
 int EngineGetMaxClientEdicts(void)
 {
 	return (*cl_max_edicts);

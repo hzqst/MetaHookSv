@@ -3958,6 +3958,7 @@ void R_NewMap(void)
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_GenerateSceneUBO();
+	R_ClearWaterModelReferences();
 	R_FreeWorldResources();
 	R_FreePortalResouces();
 

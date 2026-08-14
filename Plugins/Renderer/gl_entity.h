@@ -34,11 +34,16 @@ public:
 class CEntityComponentContainer
 {
 public:
+	void ResetWater()
+	{
+		RenderWaterModels.clear();
+		ReflectCaches.clear();
+	}
+
 	void Reset()
 	{
 		Decals.clear();
-		RenderWaterModels.clear();
-		ReflectCaches.clear();
+		ResetWater();
 		DeferredStudioPasses.clear();
 	}
 
@@ -52,4 +57,5 @@ CEntityComponentContainer*R_GetEntityComponentContainer(cl_entity_t *ent, bool c
 void R_InitEntityComponents(void);
 void R_ShutdownEntityComponents(void);
 void R_EntityComponents_StartFrame(void);
+void R_ClearEntityWaterModelReferences(void);
 void R_AllocateEntityComponentsForVisEdicts();
