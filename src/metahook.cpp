@@ -2384,7 +2384,8 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	}
 	else
 	{
-		char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
+		char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
+		static_assert(sizeof(CheckStudioInterfaceNewCall) - 1 == 21, "Direct studio interface patch must preserve the result test.");
 		*(int*)(CheckStudioInterfaceNewCall + 2 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 2 + 5);
 		MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
 	}
