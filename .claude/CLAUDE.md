@@ -1,18 +1,19 @@
 # CLAUDE.md
 
-This file guides Agent Coding in this repository using a "progressive disclosure" approach: prioritize retrieving high-level information from Serena memories first, then locate and read specific files/symbols only when needed, instead of expanding a large amount of context at once.
+This file guides Agent Coding in this repository using a "progressive disclosure" approach: prioritize retrieving high-level information from the Basic Memory knowledge base first, then locate and read specific files/symbols only when needed, instead of expanding a large amount of context at once.
 
-## Serena memories (keep context concise)
-1. Prefer using `list_memories` to browse existing memories in the current project (do not read all of them by default).
-2. Use `read_memory` to precisely read a specific memory only when needed (on-demand loading).
-3. If memory information is insufficient or outdated, fall back to reading repository files or use Serena's symbol/search capabilities for targeted lookup, and maintain memory content with `write_memory` / `edit_memory` / `delete_memory`.
+## Basic Memory knowledge base (project-scoped, `memory/`)
+- Notes live in `memory/` (markdown with YAML frontmatter: `title`/`type`/`permalink`), tracked in git.
+- Basic Memory is registered as MCP server `basic-memory`, pinned to the `metahooksv` project (`--project metahooksv`).
+- Migrated from Serena memories (`.serena/memories` → `memory/`, 2026-08); prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note` / `edit_note`) for project knowledge.
+- Use the `basic-memory` CLI for project/health management (`basic-memory status`, `basic-memory project list`).
+- Local runtime data (`memory.db`, `config.json`) is gitignored and lives in `~/.basic-memory/`; note files stay in `memory/`.
 
-## High-level information in this repository (read corresponding memories first)
+## High-level information in this repository (read corresponding notes first)
 - Project overview and codebase entry points: `project_overview`
 - Plugin system and development workflow: `plugin_system`
-- Important notes: `metahooksv_notes`
 
-## "Source entry points" when memories are insufficient (query and read on demand)
+## "Source entry points" when notes are insufficient (query and read on demand)
 - Solution and build: `MetaHook.sln`, `scripts/`
 - Loader and core logic: `src/`
 - Public API / interfaces: `include/metahook.h`, `include/Interface/`
@@ -20,9 +21,6 @@ This file guides Agent Coding in this repository using a "progressive disclosure
 - Plugin loading configuration: `plugins.lst`
 
 ## Progressive disclosure key points
-- Read memories first, then locate a single file/symbol; do not read the whole repository at once.
-- Prefer Serena for code exploration (symbol overview/references/search), and read file contents only when necessary.
+- Read notes first, then locate a single file/symbol; do not read the whole repository at once.
+- Prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note`) for knowledge retrieval, and read file contents only when necessary.
 - Prefer Context7 for external dependency/library usage (query on demand).
-
-## Important rules
-- **ALWAYS** call Serena's `activate_project` on agent startup
