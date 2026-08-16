@@ -60,3 +60,7 @@ settings.local.json
 *.app
 
 *.vcxproj.user
+
+# Basic Memory knowledge base (memory.db, config, logs stay local)
+memory/*.db*
+memory/config.json
