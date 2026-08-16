@@ -22,3 +22,7 @@ This file guides Agent Coding in this repository using a "progressive disclosure
 - Read notes first, then locate a single file/symbol; do not read the whole repository at once.
 - Prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note`) for knowledge retrieval, and read file contents only when necessary.
 - Prefer Context7 for external dependency/library usage (query on demand).
+
+## Explore SKILLs
+
+- project-level SKILLs should be explored from `.claude/skills` even when we are using Codex.
