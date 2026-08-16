@@ -5,9 +5,7 @@ This file guides Agent Coding in this repository using a "progressive disclosure
 ## Basic Memory knowledge base (project-scoped, `memory/`)
 - Notes live in `memory/` (markdown with YAML frontmatter: `title`/`type`/`permalink`), tracked in git.
 - Basic Memory is registered as MCP server `basic-memory`, pinned to the `metahooksv` project (`--project metahooksv`).
-- Migrated from Serena memories (`.serena/memories` → `memory/`, 2026-08); prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note` / `edit_note`) for project knowledge.
-- Use the `basic-memory` CLI for project/health management (`basic-memory status`, `basic-memory project list`).
-- Local runtime data (`memory.db`, `config.json`) is gitignored and lives in `~/.basic-memory/`; note files stay in `memory/`.
+- Prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note` / `edit_note`) for project knowledge.
 
 ## High-level information in this repository (read corresponding notes first)
 - Project overview and codebase entry points: `project_overview`

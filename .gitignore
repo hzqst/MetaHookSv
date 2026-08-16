@@ -1,4 +1,5 @@
 # Build outputs
+install/
 output/
 Debug/
 Release/
