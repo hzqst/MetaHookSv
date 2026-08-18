@@ -1515,7 +1515,26 @@ void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_
 			auto RightHand_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
 			if (RightHand_PushString)
 			{
-				auto ClientDLL_HudInit_FunctionBase = MH_ReverseSearchFunctionBegin(RightHand_PushString, 0x100);
+				auto ClientDLL_HudInit_FunctionBase = MH_ReverseSearchFunctionBeginEx(RightHand_PushString, 0x100, [](PUCHAR Candidate) {
+					// mov eax, [pHudInitFunc]; test eax, eax; jz/jnz ...
+					if (Candidate[0] == 0xA1 &&
+						Candidate[5] == 0x85 &&
+						Candidate[6] == 0xC0 &&
+						(Candidate[7] == 0x74 || Candidate[7] == 0x75))
+						return TRUE;
+
+					// push ebp; mov ebp, esp; cmp dword ptr [pHudInitFunc], 0; jz/jnz ...
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC &&
+						Candidate[3] == 0x83 &&
+						Candidate[4] == 0x3D &&
+						Candidate[9] == 0x00 &&
+						(Candidate[10] == 0x74 || Candidate[10] == 0x75))
+						return TRUE;
+
+					return FALSE;
+					});
 				if (ClientDLL_HudInit_FunctionBase)
 				{
 					g_pfnClientDLL_HudInit = (decltype(g_pfnClientDLL_HudInit))ConvertDllInfoSpace(ClientDLL_HudInit_FunctionBase, DllInfo, RealDllInfo);
@@ -3942,77 +3961,10 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 				SearchPtr[1] != 0x90 &&
 				SearchPtr[1] != 0xCC)
 			{
-				MH_ReverseSearchFunctionBegin_ctx2 ctx2 = { 0 };
-
-				MH_DisasmSingleInstruction(SearchPtr + 1, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG)
-					{
-						ctx->bPushRegister = true;
-					}
-					else if (pinst->id == X86_INS_SUB &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[0].reg == X86_REG_ESP &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM)
-					{
-						ctx->bSubEspImm = true;
-					}
-					else if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm >= 0x1000)
-					{
-						ctx->bMovReg1000h = true;
-					}
-
-					ctx->instAddr = address;
-					ctx->instLen = instLen;
-
-					}, &ctx2);
-
-				if (!ctx2.bPushRegister && !ctx2.bSubEspImm)
-				{
-					MH_DisasmSingleInstruction(ctx2.instAddr + ctx2.instLen, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
-
-						if (pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG)
-						{
-							ctx->bPushRegister = true;
-						}
-						else if (pinst->id == X86_INS_SUB &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[0].reg == X86_REG_ESP &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM)
-						{
-							ctx->bSubEspImm = true;
-						}
-						else if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].imm >= 0x1000)
-						{
-							ctx->bMovReg1000h = true;
-						}
-
-						}, &ctx2);
-				}
-
-				if (ctx2.bPushRegister || ctx2.bSubEspImm || ctx2.bMovReg1000h)
-				{
-					bShouldCheck = true;
-					Candidate = SearchPtr + 1;
-				}
+				// Ex callers provide the entry predicate, so do not discard candidates
+				// based on the generic prologue heuristics used by the non-Ex variant.
+				bShouldCheck = true;
+				Candidate = SearchPtr + 1;
 			}
 		}
 
