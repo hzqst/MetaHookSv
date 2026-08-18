@@ -103,7 +103,7 @@ svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
-void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD dwBufferSize) = NULL;
+void(*g_pfnNLoadBlob)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD dwBufferSize) = NULL; //This is actually called NLoadBlob
 void(*g_pfnFreeBlob)(void** pBlobFootprint) = NULL;
 
 void* g_StudioInterfaceCall = NULL;
@@ -246,7 +246,7 @@ extern "C"
 	}
 }
 
-DWORD MH_LoadBlobFile(BYTE* pBuffer, void** pBlobFootPrint, void** pv, DWORD dwBufferSize)
+DWORD MH_NLoadBlob(BYTE* pBuffer, void** pBlobFootPrint, void** pv, DWORD dwBufferSize)
 {
 #if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
 	auto hBlob = LoadBlobFromBuffer(pBuffer, dwBufferSize, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
@@ -1219,7 +1219,7 @@ void MH_ResetAllVars(void)
 	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_pfnCvar_DirectSet = NULL;
-	g_pfnLoadBlobFile = NULL;
+	g_pfnNLoadBlob = NULL;
 	g_pfnFreeBlob = NULL;
 	g_StudioInterfaceCall = NULL;
 	g_ppStudioInterfaceCall = NULL;
@@ -2112,7 +2112,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 				if (ExportPoint_Push)
 				{
 					PVOID LoadBlobFile_VA = MH_ReverseSearchFunctionBegin((PUCHAR)ExportPoint_Push, 0x300);
-					g_pfnLoadBlobFile = (decltype(g_pfnLoadBlobFile))ConvertDllInfoSpace(LoadBlobFile_VA, DllInfo, RealDllInfo);
+					g_pfnNLoadBlob = (decltype(g_pfnNLoadBlob))ConvertDllInfoSpace(LoadBlobFile_VA, DllInfo, RealDllInfo);
 
 					break;
 				}
@@ -2125,13 +2125,13 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 			}
 		}
 
-		if (!g_pfnLoadBlobFile) {
+		if (!g_pfnNLoadBlob) {
 			MH_SysError("MH_LoadEngine: Failed to locate LoadBlobFile");
 			return;
 		}
 	}
 
-	if (g_pfnLoadBlobFile)
+	if (g_pfnNLoadBlob)
 	{
 		const char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x74";
 
@@ -2393,15 +2393,15 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	//8B C8          mov     ecx, eax
 	//8B 0D ?? ?? ?? ?? mov     ecx, [g_ppStudioInterfaceCall]
 	//E8 ?? ?? ?? ?? call
-	if (g_pfnLoadBlobFile)
+	if (g_pfnNLoadBlob)
 	{
-		MH_InlineHook(g_pfnLoadBlobFile, MH_LoadBlobFile, NULL);
+		MH_InlineHook(g_pfnNLoadBlob, MH_NLoadBlob, NULL);
 	}
 
 	/*
-.text:01D63B62 68 2C E2 3C 02                                      push    offset g_pBlobFootprint
-.text:01D63B67 E8 54 E2 FF FF                                      call    UnloadBlob
-.text:01D63B6C 6A 74                                               push    74h ; 't'
+		.text:01D63B62 68 2C E2 3C 02                                      push    offset g_pBlobFootprint
+		.text:01D63B67 E8 54 E2 FF FF                                      call    UnloadBlob
+		.text:01D63B6C 6A 74                                               push    74h ; 't'
 	*/
 	if (g_pfnFreeBlob)
 	{
