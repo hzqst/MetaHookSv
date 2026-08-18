@@ -102,14 +102,11 @@ void** g_pVideoMode = NULL;
 svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
+void(*g_pfnClientDLL_HudInit)(void) = NULL;
+void(*g_pfnClientDLL_HudInit_Original)(void) = NULL;
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
 void(*g_pfnNLoadBlob)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD dwBufferSize) = NULL; //This is actually called NLoadBlob
 void(*g_pfnFreeBlob)(void** pBlobFootprint) = NULL;
-
-void* g_StudioInterfaceCall = NULL;
-void** g_ppStudioInterfaceCall = NULL;
-struct engine_studio_api_s* g_pEngineStudioAPI = NULL;
-struct r_studio_interface_t** g_pStudioAPI = NULL;
 
 CreateInterfaceFn* g_pClientFactory = NULL;
 HMODULE* g_phClientModule = NULL;
@@ -1135,15 +1132,21 @@ void MH_TransactionHookCommit(void)
 	g_bTransactionHook = false;
 }
 
-int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_studio_interface_t** ppinterface, struct engine_studio_api_s* pstudio), int dummy)
+void MH_ClientDLL_HudInit(void)
 {
-	int r = 0;
+	const bool ownsTransaction = !MH_IsTransactionHookEnabled();
 
-	MH_TransactionHookBegin();
+	if (ownsTransaction)
+	{
+		MH_TransactionHookBegin();
+	}
 
-	r = pfn ? pfn(1, g_pStudioAPI, g_pEngineStudioAPI) : 0;
+	g_pfnClientDLL_HudInit_Original();
 
-	MH_TransactionHookCommit();
+	if (ownsTransaction)
+	{
+		MH_TransactionHookCommit();
+	}
 
 	if (CommandLine()->CheckParm("-metahook_early_unload_mirrored_dll"))
 	{
@@ -1159,8 +1162,6 @@ int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_st
 			g_hMirrorEngine = NULL;
 		}
 	}
-
-	return r;
 }
 
 int ClientDLL_Initialize(struct cl_enginefuncs_s* pEnginefuncs, int iVersion)
@@ -1218,13 +1219,11 @@ void MH_ResetAllVars(void)
 	g_pfnSys_Error = NULL;
 	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
+	g_pfnClientDLL_HudInit = NULL;
+	g_pfnClientDLL_HudInit_Original = NULL;
 	g_pfnCvar_DirectSet = NULL;
 	g_pfnNLoadBlob = NULL;
 	g_pfnFreeBlob = NULL;
-	g_StudioInterfaceCall = NULL;
-	g_ppStudioInterfaceCall = NULL;
-	g_pEngineStudioAPI = NULL;
-	g_pStudioAPI = NULL;
 	g_phClientModule = NULL;
 	g_ppExportFuncs = NULL;
 	g_ppEngfuncs = NULL;
@@ -1516,6 +1515,12 @@ void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_
 			auto RightHand_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
 			if (RightHand_PushString)
 			{
+				auto ClientDLL_HudInit_FunctionBase = MH_ReverseSearchFunctionBegin(RightHand_PushString, 0x100);
+				if (ClientDLL_HudInit_FunctionBase)
+				{
+					g_pfnClientDLL_HudInit = (decltype(g_pfnClientDLL_HudInit))ConvertDllInfoSpace(ClientDLL_HudInit_FunctionBase, DllInfo, RealDllInfo);
+				}
+
 #define HUDINIT_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A"
 				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG, sizeof(HUDINIT_SIG) - 1);
 				if (ClientDLL_HudInit)
@@ -1586,6 +1591,12 @@ void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_
 			MH_SysError("MH_LoadEngine: Failed to locate cl_righthand");
 			return;
 		}
+	}
+
+	if (!g_pfnClientDLL_HudInit)
+	{
+		MH_SysError("MH_LoadEngine: Failed to locate ClientDLL_HudInit");
+		return;
 	}
 
 	if (!g_phClientModule)
@@ -2172,106 +2183,6 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 	}
 }
 
-void MH_LoadEngine_FindStudioInterface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-		/*
-.text:10196E98 85 C0                                               test    eax, eax
-.text:10196E9A 74 27                                               jz      short loc_10196EC3
-.text:10196E9C 68 C8 B1 31 10                                      push    offset off_1031B1C8
-.text:10196EA1 68 D8 B0 31 10                                      push    offset off_1031B0D8
-.text:10196EA6 6A 01                                               push    1
-.text:10196EA8 FF D0                                               call    eax ; cl_funcs_pStudioInterface
-.text:10196EAA 83 C4 0C                                            add     esp, 0Ch
-		*/
-		char pattern2[] = "\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x2A\x83\xC4\x0C";
-		char pattern3[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x74\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x0C";
-		const char sigs_SvEngine[] = "Couldn't get client library studio model rendering";
-		const char sigs_GoldSrc[] = "Couldn't get client .dll studio model rendering";
-		const char* sigs = NULL;
-		size_t siglen = 0;
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			sigs = sigs_SvEngine;
-			siglen = sizeof(sigs_SvEngine) - 1;
-		}
-		else
-		{
-			sigs = sigs_GoldSrc;
-			siglen = sizeof(sigs_GoldSrc) - 1;
-		}
-
-		auto PrintError_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs, siglen);
-		if (!PrintError_String)
-			PrintError_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs, siglen);
-		if (PrintError_String)
-		{
-			*(DWORD*)(pattern + 1) = (DWORD)PrintError_String;
-
-			auto searchBegin = (PUCHAR)DllInfo.TextBase;
-			auto searchEnd = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-			while (1)
-			{
-				auto PrintError_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-				if (PrintError_Call)
-				{
-					auto pStudioInterfaceCall_VA = MH_SearchPattern((PUCHAR)PrintError_Call - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
-					if (pStudioInterfaceCall_VA)
-					{
-						g_StudioInterfaceCall = ConvertDllInfoSpace(pStudioInterfaceCall_VA, DllInfo, RealDllInfo);
-
-						PVOID g_pEngineStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceCall_VA + 4 + 1);
-						g_pEngineStudioAPI = (decltype(g_pEngineStudioAPI))ConvertDllInfoSpace(g_pEngineStudioAPI_VA, DllInfo, RealDllInfo);
-
-						PVOID g_pStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceCall_VA + 4 + 5 + 1);
-						g_pStudioAPI = (decltype(g_pStudioAPI))ConvertDllInfoSpace(g_pStudioAPI_VA, DllInfo, RealDllInfo);
-
-						break;
-					}
-
-					auto pStudioInterfaceIndirectCall_VA = MH_SearchPattern((PUCHAR)PrintError_Call - 0x50, 0x50, pattern3, sizeof(pattern3) - 1);
-					if (pStudioInterfaceIndirectCall_VA)
-					{
-						g_StudioInterfaceCall = ConvertDllInfoSpace((PUCHAR)pStudioInterfaceIndirectCall_VA + 9, DllInfo, RealDllInfo);
-
-						PVOID g_ppStudioInterfaceCall_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 2);
-						g_ppStudioInterfaceCall = (void**)ConvertDllInfoSpace(g_ppStudioInterfaceCall_VA, DllInfo, RealDllInfo);
-
-						PVOID g_pEngineStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 10);
-						g_pEngineStudioAPI = (decltype(g_pEngineStudioAPI))ConvertDllInfoSpace(g_pEngineStudioAPI_VA, DllInfo, RealDllInfo);
-
-						PVOID g_pStudioAPI_VA = *(PVOID*)((ULONG_PTR)pStudioInterfaceIndirectCall_VA + 15);
-						g_pStudioAPI = (decltype(g_pStudioAPI))ConvertDllInfoSpace(g_pStudioAPI_VA, DllInfo, RealDllInfo);
-
-						break;
-					}
-
-					searchBegin = (PUCHAR)PrintError_Call + sizeof(pattern) - 1;
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
-
-		if (!g_StudioInterfaceCall) {
-			MH_SysError("MH_LoadEngine: Failed to locate g_StudioInterfaceCall in ClientDLL_CheckStudioInterface");
-			return;
-		}
-		if (!g_pEngineStudioAPI) {
-			MH_SysError("MH_LoadEngine: Failed to locate g_pEngineStudioAPI in ClientDLL_CheckStudioInterface");
-			return;
-		}
-		if (!g_pStudioAPI) {
-			MH_SysError("MH_LoadEngine: Failed to locate g_pStudioAPI in ClientDLL_CheckStudioInterface");
-			return;
-		}
-	}
-}
-
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
 {
 	MH_ResetAllVars();
@@ -2363,7 +2274,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	MH_LoadEngine_FindCvarDirectSet(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 	MH_LoadEngine_PatchCvarCallbacks(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 	MH_LoadEngine_FindLoadBlobClient(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindStudioInterface(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 
 	//Hook client dll initialization
 	g_pExportFuncs = *(cl_exportfuncs_t**)g_ppExportFuncs;
@@ -2372,27 +2282,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_dwClientDLL_Initialize);
 
-	//Hook studio interface initialization
-	if (g_ppStudioInterfaceCall)
-	{
-		char CheckStudioInterfaceNewCall[] =
-			"\x8B\x0D\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A"
-			"\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
-		*(DWORD*)(CheckStudioInterfaceNewCall + 2) = (DWORD)g_ppStudioInterfaceCall;
-		*(int*)(CheckStudioInterfaceNewCall + 6 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 6 + 5);
-		MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
-	}
-	else
-	{
-		char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
-		static_assert(sizeof(CheckStudioInterfaceNewCall) - 1 == 21, "Direct studio interface patch must preserve the result test.");
-		*(int*)(CheckStudioInterfaceNewCall + 2 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 2 + 5);
-		MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
-	}
+	//Delay hooks installed during HUD_Init and studio interface initialization until HudInit returns.
+	MH_InlineHook(g_pfnClientDLL_HudInit, MH_ClientDLL_HudInit, (void**)&g_pfnClientDLL_HudInit_Original);
 
-	//8B C8          mov     ecx, eax
-	//8B 0D ?? ?? ?? ?? mov     ecx, [g_ppStudioInterfaceCall]
-	//E8 ?? ?? ?? ?? call
 	if (g_pfnNLoadBlob)
 	{
 		MH_InlineHook(g_pfnNLoadBlob, MH_NLoadBlob, NULL);
