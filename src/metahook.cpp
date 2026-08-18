@@ -93,7 +93,7 @@ typedef struct cvar_callback_entry_s
 	struct cvar_callback_entry_s* next;
 }cvar_callback_entry_t;
 
-cvar_callback_entry_t** cvar_callbacks = NULL;
+cvar_callback_entry_t** cvar_hooks = NULL;
 cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
 std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
 usermsg_t** gClientUserMsgs = NULL;
@@ -300,7 +300,7 @@ void MH_Cvar_DirectSet(cvar_t* var, char* value)
 {
 	g_pfnCvar_DirectSet(var, value);
 
-	auto v = (*cvar_callbacks);
+	auto v = (*cvar_hooks);
 
 	if (v)
 	{
@@ -329,10 +329,10 @@ cvar_callback_t MH_HookCvarCallback(const char* cvar_name, cvar_callback_t callb
 	if (!cvar)
 		return NULL;
 
-	if (!cvar_callbacks)
+	if (!cvar_hooks)
 		return NULL;
 
-	auto v = (*cvar_callbacks);
+	auto v = (*cvar_hooks);
 	if (v)
 	{
 		while (v->pcvar != cvar)
@@ -361,10 +361,10 @@ bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cv
 	if (!cvar)
 		return NULL;
 
-	if (!cvar_callbacks)
+	if (!cvar_hooks)
 		return NULL;
 
-	auto v = (*cvar_callbacks);
+	auto v = (*cvar_hooks);
 	if (v)
 	{
 		while (v->pcvar != cvar)
@@ -375,9 +375,9 @@ bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cv
 				auto newEntry = new cvar_callback_entry_t;
 				newEntry->callback = callback;
 				newEntry->pcvar = cvar;
-				newEntry->next = (*cvar_callbacks);
+				newEntry->next = (*cvar_hooks);
 
-				(*cvar_callbacks) = newEntry;
+				(*cvar_hooks) = newEntry;
 
 				g_ManagedCvarCallbacks.push_back(newEntry);
 
@@ -404,7 +404,7 @@ bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cv
 		newEntry->pcvar = cvar;
 		newEntry->next = NULL;
 
-		(*cvar_callbacks) = newEntry;
+		(*cvar_hooks) = newEntry;
 
 		g_ManagedCvarCallbacks.push_back(newEntry);
 
@@ -1210,7 +1210,7 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s* pEnginefuncs, int iVersion)
 void MH_ResetAllVars(void)
 {
 	Cmd_GetCmdBase = NULL;
-	cvar_callbacks = NULL;
+	cvar_hooks = NULL;
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	cl_parsefuncs = NULL;
@@ -1996,7 +1996,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (Cvar_Set_SearchContext*)context;
 
-			if (!cvar_callbacks)
+			if (!cvar_hooks)
 			{
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
@@ -2005,11 +2005,11 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0)
 				{
-					cvar_callbacks = (decltype(cvar_callbacks))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					cvar_hooks = (decltype(cvar_hooks))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
 			}
 
-			if (cvar_callbacks)
+			if (cvar_hooks)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2018,7 +2018,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 			return FALSE;
 			}, 0, &ctx);
 
-		if (!cvar_callbacks)
+		if (!cvar_hooks)
 		{
 			typedef struct CvarSet_SearchContext_s
 			{
@@ -2089,7 +2089,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 				return;
 			}
 
-			cvar_callbacks = &g_ManagedCvarCallbackList;
+			cvar_hooks = &g_ManagedCvarCallbackList;
 		}
 	}
 }
@@ -2657,9 +2657,9 @@ void MH_ExitGame(int iResult)
 	MH_FreeAllHook();
 
 	//Clear all built-in cvar callbacks
-	if (cvar_callbacks)
+	if (cvar_hooks)
 	{
-		(*cvar_callbacks) = NULL;
+		(*cvar_hooks) = NULL;
 	}
 
 	if (g_hMirrorClient)
