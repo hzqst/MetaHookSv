@@ -98,7 +98,7 @@ cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
 std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
 usermsg_t** gClientUserMsgs = NULL;
 cmd_function_t* (*Cmd_GetCmdBase)(void) = NULL;
-void** g_pVideoMode = NULL;
+void** videomode = NULL;
 svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
@@ -1213,7 +1213,7 @@ void MH_ResetAllVars(void)
 	Cmd_GetCmdBase = NULL;
 	cvar_hooks = NULL;
 	gClientUserMsgs = NULL;
-	g_pVideoMode = NULL;
+	videomode = NULL;
 	cl_parsefuncs = NULL;
 	g_pfnbuild_number = NULL;
 	g_pfnSys_Error = NULL;
@@ -1794,11 +1794,11 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 
 					if (ctx2.bFindRet)
 					{
-						g_pVideoMode = (decltype(g_pVideoMode))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+						videomode = (decltype(videomode))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 					}
 				}
 
-				if (g_pVideoMode)
+				if (videomode)
 					return TRUE;
 
 				if (address[0] == 0xCC)
@@ -1814,9 +1814,9 @@ void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info
 		}
 	}
 
-	if (!g_pVideoMode)
+	if (!videomode)
 	{
-		MH_SysError("MH_LoadEngine: Failed to locate g_pVideoMode");
+		MH_SysError("MH_LoadEngine: Failed to locate videomode");
 		return;
 	}
 }
@@ -3437,17 +3437,17 @@ DWORD MH_ReadMemory(void* pAddress, void* pData, DWORD dwDataSize)
 
 bool MH_VideoModeIsWindowed()
 {
-	if (g_pVideoMode && (*g_pVideoMode))
+	if (videomode && (*videomode))
 	{
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*g_pVideoMode);
+			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*videomode);
 
 			return pVideoMode->IsWindowedMode();
 		}
 		else
 		{
-			IVideoMode* pVideoMode = (IVideoMode*)(*g_pVideoMode);
+			IVideoMode* pVideoMode = (IVideoMode*)(*videomode);
 
 			return pVideoMode->IsWindowedMode();
 		}
@@ -3457,8 +3457,8 @@ bool MH_VideoModeIsWindowed()
 
 void* MH_VideoMode()
 {
-	if (g_pVideoMode)
-		return (*g_pVideoMode);
+	if (videomode)
+		return (*videomode);
 
 	return nullptr;
 }
@@ -3469,11 +3469,11 @@ DWORD MH_GetVideoMode(int* width, int* height, int* bpp, bool* windowed)
 	static int iSaveWidth, iSaveHeight, iSaveBPP;
 	static bool bSaveWindowed;
 
-	if (g_pVideoMode && (*g_pVideoMode))
+	if (videomode && (*videomode))
 	{
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*g_pVideoMode);
+			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*videomode);
 
 			auto mode = pVideoMode->GetCurrentMode();
 
@@ -3499,7 +3499,7 @@ DWORD MH_GetVideoMode(int* width, int* height, int* bpp, bool* windowed)
 		}
 		else
 		{
-			IVideoMode* pVideoMode = (IVideoMode*)(*g_pVideoMode);
+			IVideoMode* pVideoMode = (IVideoMode*)(*videomode);
 
 			auto mode = pVideoMode->GetCurrentMode();
 
