@@ -39,6 +39,9 @@
     <ClCompile Include="commandline.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="GameData.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
@@ -74,6 +77,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="LoadBlob.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="GameData.h">
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="sys.h">
