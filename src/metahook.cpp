@@ -102,7 +102,6 @@ cmd_function_t* (*Cmd_GetCmdBase)(void) = NULL;
 void** videomode = NULL;
 svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
-int(*g_pfnClientDLL_Init)(void) = NULL;
 void(*g_pfnClientDLL_HudInit)(void) = NULL;
 void(*g_pfnClientDLL_HudInit_Original)(void) = NULL;
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
@@ -1219,7 +1218,6 @@ void MH_ResetAllVars(void)
 	g_pfnbuild_number = NULL;
 	g_pfnSys_Error = NULL;
 	g_pClientFactory = NULL;
-	g_pfnClientDLL_Init = NULL;
 	g_pfnClientDLL_HudInit = NULL;
 	g_pfnClientDLL_HudInit_Original = NULL;
 	g_pfnCvar_DirectSet = NULL;
@@ -1279,43 +1277,6 @@ PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_
 	return nullptr;
 }
 
-void MH_LoadEngine_FindBuildNumber(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-#define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
-
-	auto buildnumber_call = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
-
-	if (buildnumber_call)
-	{
-		auto buildnumber_VA = MH_GetNextCallAddr(buildnumber_call, 1);
-		g_pfnbuild_number = (decltype(g_pfnbuild_number))ConvertDllInfoSpace(buildnumber_VA, DllInfo, RealDllInfo);
-	}
-
-	if (!g_pfnbuild_number)
-	{
-#define EXE_BUILD_STRING_SIG "Exe build: "
-		auto ExeBuild_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
-		if (!ExeBuild_String)
-			ExeBuild_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
-		if (ExeBuild_String)
-		{
-			char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD*)(pattern + 7) = (DWORD)ExeBuild_String;
-			auto ExeBuild_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (ExeBuild_PushString)
-			{
-				auto buildnumber_VA = MH_GetNextCallAddr(ExeBuild_PushString, 1);
-				g_pfnbuild_number = (decltype(g_pfnbuild_number))ConvertDllInfoSpace(buildnumber_VA, DllInfo, RealDllInfo);
-			}
-		}
-	}
-
-	if (!g_pfnbuild_number)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate buildnumber");
-	}
-}
-
 void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	//Judge actual engine type
@@ -1343,582 +1304,6 @@ void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_inf
 				}
 			}
 		}
-	}
-}
-
-void MH_LoadEngine_FindSysError(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define COULD_NOT_LINK_STRING_SIG_SVENGINE "Couldn't link client library function \"Initialize\"\n"
-		auto CouldNotLink_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
-		if (!CouldNotLink_String)
-			CouldNotLink_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
-		if (CouldNotLink_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-			*(DWORD*)(pattern + 1) = (DWORD)CouldNotLink_String;
-			auto CouldNotLink_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (CouldNotLink_PushString)
-			{
-				PVOID Sys_Error_VA = MH_GetNextCallAddr((PUCHAR)CouldNotLink_PushString + 5, 1);
-				g_pfnSys_Error = (decltype(g_pfnSys_Error))ConvertDllInfoSpace(Sys_Error_VA, DllInfo, RealDllInfo);
-			}
-		}
-	}
-	else
-	{
-#define COULD_NOT_LINK_STRING_SIG_GOLDSRC "could not link client.dll function Initialize\n\0"
-		auto CouldNotLink_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
-		if (!CouldNotLink_String)
-			CouldNotLink_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
-		if (CouldNotLink_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-			*(DWORD*)(pattern + 1) = (DWORD)CouldNotLink_String;
-			auto CouldNotLink_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (CouldNotLink_PushString)
-			{
-				PVOID Sys_Error_VA = MH_GetNextCallAddr((PUCHAR)CouldNotLink_PushString + 5, 1);;
-				g_pfnSys_Error = (decltype(g_pfnSys_Error))ConvertDllInfoSpace(Sys_Error_VA, DllInfo, RealDllInfo);
-			}
-		}
-	}
-}
-
-void MH_LoadEngine_FindClientDLL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-#define CLDLL_INIT_STRING_SIG "ScreenShake"
-		auto ClientDll_Init_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
-		if (!ClientDll_Init_String)
-			ClientDll_Init_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
-		if (ClientDll_Init_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD*)(pattern + 6) = (DWORD)ClientDll_Init_String;
-			auto ClientDll_Init_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (ClientDll_Init_PushString)
-			{
-				auto ClientDll_Init_FunctionBase = MH_ReverseSearchFunctionBeginEx(ClientDll_Init_PushString, 0x200, [](PUCHAR Candidate) {
-					//  .text : 01D19E10 81 EC 04 02 00 00                                   sub     esp, 204h
-					//	.text : 01D19E16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-					//	.text : 01D19E1B 33 C4 xor eax, esp
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00 &&
-						Candidate[6] == 0xA1 &&
-						Candidate[11] == 0x33 &&
-						Candidate[12] == 0xC4)
-						return TRUE;
-
-					//.text:01D0AF60 81 EC 00 04 00 00                                   sub     esp, 400h
-					//.text : 01D0AF66 8D 84 24 00 02 00 00                                lea     eax, [esp + 400h + Dest]
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00 &&
-						Candidate[6] == 0x8D &&
-						Candidate[8] == 0x24)
-						return TRUE;
-
-					//  .text : 01D0B180 55                                                  push    ebp
-					//	.text : 01D0B181 8B EC                                               mov     ebp, esp
-					//	.text : 01D0B183 81 EC 00 02 00 00                                   sub     esp, 200h
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC &&
-						Candidate[3] == 0x81 &&
-						Candidate[4] == 0xEC &&
-						Candidate[7] == 0x00 &&
-						Candidate[8] == 0x00)
-						return TRUE;
-
-					return FALSE;
-					});
-
-				if (ClientDll_Init_FunctionBase)
-				{
-					g_pfnClientDLL_Init = (decltype(g_pfnClientDLL_Init))ConvertDllInfoSpace(ClientDll_Init_FunctionBase, DllInfo, RealDllInfo);
-
-					typedef struct ClientDll_Init_SearchContext_s
-					{
-						const mh_dll_info_t& DllInfo;
-						const mh_dll_info_t& RealDllInfo;
-					}ClientDll_Init_SearchContext;
-
-					ClientDll_Init_SearchContext ctx = { DllInfo , RealDllInfo };
-
-					MH_DisasmRanges(ClientDll_Init_PushString, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (ClientDll_Init_SearchContext*)context;
-
-						if (address[0] == 0x6A && address[1] == 0x07 && address[2] == 0x68)
-						{
-							g_ppEngfuncs = (decltype(g_ppEngfuncs))ConvertDllInfoSpace(address + 3, ctx->DllInfo, ctx->RealDllInfo);
-						}
-						else if (address[0] == 0xFF && address[1] == 0x15)
-						{
-							g_ppExportFuncs = (decltype(g_ppExportFuncs))ConvertDllInfoSpace(address + 2, ctx->DllInfo, ctx->RealDllInfo);
-						}
-
-						if (g_ppExportFuncs && g_ppEngfuncs)
-							return TRUE;
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						return FALSE;
-						}, 0, &ctx);
-				}
-			}
-		}
-	}
-
-	if (!g_pfnClientDLL_Init)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate ClientDLL_Init");
-		return;
-	}
-
-	if (!g_ppEngfuncs)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate ppEngfuncs");
-		return;
-	}
-
-	if (!g_ppExportFuncs)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate ppExportFuncs");
-		return;
-	}
-
-	memcpy(gMetaSave.pEngineFuncs, *(void**)g_ppEngfuncs, sizeof(cl_enginefunc_t));
-
-	Cmd_GetCmdBase = (decltype(Cmd_GetCmdBase))gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle;
-}
-
-void MH_LoadEngine_FindClientDLL_HudInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-#define RIGHTHAND_STRING_SIG "cl_righthand\0"
-		auto RightHand_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
-		if (!RightHand_String)
-			RightHand_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
-		if (RightHand_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD*)(pattern + 1) = (DWORD)RightHand_String;
-			auto RightHand_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (RightHand_PushString)
-			{
-				auto ClientDLL_HudInit_FunctionBase = MH_ReverseSearchFunctionBeginEx(RightHand_PushString, 0x100, [](PUCHAR Candidate) {
-					// mov eax, [pHudInitFunc]; test eax, eax; jz/jnz ...
-					if (Candidate[0] == 0xA1 &&
-						Candidate[5] == 0x85 &&
-						Candidate[6] == 0xC0 &&
-						(Candidate[7] == 0x74 || Candidate[7] == 0x75))
-						return TRUE;
-
-					// push ebp; mov ebp, esp; cmp dword ptr [pHudInitFunc], 0; jz/jnz ...
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC &&
-						Candidate[3] == 0x83 &&
-						Candidate[4] == 0x3D &&
-						Candidate[9] == 0x00 &&
-						(Candidate[10] == 0x74 || Candidate[10] == 0x75))
-						return TRUE;
-
-					return FALSE;
-					});
-				if (ClientDLL_HudInit_FunctionBase)
-				{
-					g_pfnClientDLL_HudInit = (decltype(g_pfnClientDLL_HudInit))ConvertDllInfoSpace(ClientDLL_HudInit_FunctionBase, DllInfo, RealDllInfo);
-				}
-
-#define HUDINIT_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A"
-				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG, sizeof(HUDINIT_SIG) - 1);
-				if (ClientDLL_HudInit)
-				{
-					PVOID pfnHUDInit = *(PVOID*)((PUCHAR)ClientDLL_HudInit + 1);
-
-					ClientDLL_HudInit = (PUCHAR)ClientDLL_HudInit + sizeof(HUDINIT_SIG) - 1;
-
-					typedef struct ClientDLL_HudInit_SearchContext_s
-					{
-						const mh_dll_info_t& DllInfo;
-						const mh_dll_info_t& RealDllInfo;
-						PVOID pfnHUDInit{};
-					}ClientDLL_HudInit_SearchContext;
-
-					ClientDLL_HudInit_SearchContext ctx = { DllInfo , RealDllInfo, pfnHUDInit };
-
-					MH_DisasmRanges(ClientDLL_HudInit, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (ClientDLL_HudInit_SearchContext*)context;
-
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].mem.base == 0 &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-						{
-							PVOID target = (PVOID)pinst->detail->x86.operands[1].mem.disp;
-
-							if (target != ctx->pfnHUDInit)
-							{
-								g_phClientModule = (decltype(g_phClientModule))ConvertDllInfoSpace(target, ctx->DllInfo, ctx->RealDllInfo);
-							}
-						}
-
-						if (g_phClientModule)
-							return TRUE;
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						return FALSE;
-
-					}, 0, &ctx);
-				}
-				else
-				{
-#define HUDINIT_SIG2 "\xA1\x2A\x2A\x2A\x2A\x50\xE8"
-					auto PushClientModule = (PUCHAR)MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG2, sizeof(HUDINIT_SIG2) - 1);
-					if (PushClientModule)
-					{
-						auto target = *(PUCHAR*)(PushClientModule + 1);
-						g_phClientModule = (decltype(g_phClientModule))ConvertDllInfoSpace(target, DllInfo, RealDllInfo);
-					}
-				}
-			}
-			else
-			{
-				MH_SysError("MH_LoadEngine: Failed to locate push cl_righthand string");
-				return;
-			}
-		}
-		else
-		{
-			MH_SysError("MH_LoadEngine: Failed to locate cl_righthand");
-			return;
-		}
-	}
-
-	if (!g_pfnClientDLL_HudInit)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate ClientDLL_HudInit");
-		return;
-	}
-
-	if (!g_phClientModule)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate g_hClientModule");
-		return;
-	}
-}
-
-void MH_LoadEngine_FindVClientVGUI(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-#define VGUICLIENT001_STRING_SIG "VClientVGUI001\0"
-		auto VGUIClient001_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
-		if (!VGUIClient001_String)
-			VGUIClient001_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
-		if (VGUIClient001_String)
-		{
-			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
-			*(DWORD*)(pattern + 3) = (DWORD)VGUIClient001_String;
-			auto VGUIClient001_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (VGUIClient001_PushString)
-			{
-#define INITVGUI_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A"
-				auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG, sizeof(INITVGUI_SIG) - 1);
-				if (InitVGUI)
-				{
-					PVOID g_pClientFactory_VA = ((PUCHAR)InitVGUI + 1);
-
-					g_pClientFactory = *(decltype(g_pClientFactory)*)ConvertDllInfoSpace(g_pClientFactory_VA, DllInfo, RealDllInfo);
-				}
-				else
-				{
-#define INITVGUI_SIG2 "\x83\x3D\x2A\x2A\x2A\x2A\x00\x74\x2A"
-					auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG2, sizeof(INITVGUI_SIG2) - 1);
-					if (InitVGUI)
-					{
-						PVOID g_pClientFactory_VA = ((PUCHAR)InitVGUI + 2);
-
-						g_pClientFactory = *(decltype(g_pClientFactory)*)ConvertDllInfoSpace(g_pClientFactory_VA, DllInfo, RealDllInfo);
-					}
-				}
-			}
-		}
-	}
-
-	if (!g_pClientFactory)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate ClientFactory");
-		return;
-	}
-}
-
-void MH_LoadEngine_FindVideoMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-		PVOID VideoMode_SearchBase = NULL;
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-#define FULLSCREEN_STRING_SIG_SVENGINE "-fullscreen\0"
-			auto FullScreen_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
-			if (!FullScreen_String)
-				FullScreen_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
-			if (FullScreen_String)
-			{
-				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-				*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
-				auto FullScreen_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-				if (FullScreen_PushString)
-				{
-					FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
-
-					VideoMode_SearchBase = FullScreen_PushString;
-				}
-				else
-				{
-					MH_SysError("MH_LoadEngine: Failed to locate FullScreen_PushString");
-				}
-			}
-			else
-			{
-				MH_SysError("MH_LoadEngine: Failed to locate FullScreen_String");
-			}
-		}
-		else
-		{
-#define GL_STRING_SIG "-gl\0"
-			auto FullScreen_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, GL_STRING_SIG, sizeof(GL_STRING_SIG) - 1);
-			if (!FullScreen_String)
-				FullScreen_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, GL_STRING_SIG, sizeof(GL_STRING_SIG) - 1);
-
-#define FULLSCREEN_STRING_SIG "-fullscreen\0"
-			if (!FullScreen_String)
-				FullScreen_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
-			if (!FullScreen_String)
-				FullScreen_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
-
-			if (FullScreen_String)
-			{
-				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-				*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
-				auto FullScreen_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-				if (FullScreen_PushString)
-				{
-					FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
-
-					VideoMode_SearchBase = FullScreen_PushString;
-				}
-				else
-				{
-					MH_SysError("MH_LoadEngine: Failed to locate FullScreen_PushString");
-				}
-			}
-			else
-			{
-				MH_SysError("MH_LoadEngine: Failed to locate FullScreen_String");
-			}
-		}
-
-		if (VideoMode_SearchBase)
-		{
-			typedef struct VideoMode_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-			}VideoMode_SearchContext;
-
-			VideoMode_SearchContext ctx = { DllInfo, RealDllInfo };
-
-			MH_DisasmRanges(VideoMode_SearchBase, 0x400, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (VideoMode_SearchContext*)context;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					((pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == 0) ||
-						pinst->detail->x86.operands[1].type == X86_OP_REG))
-				{
-					typedef struct FindRet_SearchContext_s
-					{
-						bool bFindRet{};
-					}FindRet_SearchContext;
-
-					FindRet_SearchContext ctx2 = { };
-
-					MH_DisasmRanges(address, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (FindRet_SearchContext*)context;
-
-						if (!ctx->bFindRet && pinst->id == X86_INS_RET)
-						{
-							ctx->bFindRet = true;
-							return TRUE;
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (address[0] == 0x90)
-							return TRUE;
-
-						if (instCount > 15)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx2);
-
-					if (ctx2.bFindRet)
-					{
-						videomode = (decltype(videomode))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-					}
-				}
-
-				if (videomode)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				return FALSE;
-				}, 0, &ctx);
-		}
-		else
-		{
-			MH_SysError("MH_LoadEngine: Failed to locate VideoMode_SearchBase");
-			return;
-		}
-	}
-
-	if (!videomode)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate videomode");
-		return;
-	}
-}
-
-void MH_LoadEngine_FindClientUserMsgs(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-#define HUDTEXT_STRING_SIG "HudText\0"
-		auto HudText_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
-		if (!HudText_String)
-			HudText_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
-		if (HudText_String)
-		{
-			char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
-			*(DWORD*)(pattern + 2) = (DWORD)HudText_String;
-			auto HudText_PushString = MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-			if (HudText_PushString)
-			{
-				PVOID DispatchDirectUserMsg = (PVOID)MH_GetNextCallAddr((PUCHAR)HudText_PushString + 6, 1);
-
-				typedef struct DispatchDirectUserMsg_SearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-				}DispatchDirectUserMsg_SearchContext;
-
-				DispatchDirectUserMsg_SearchContext ctx = { DllInfo, RealDllInfo };
-
-				MH_DisasmRanges(DispatchDirectUserMsg, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (DispatchDirectUserMsg_SearchContext*)context;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.ImageBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
-					{
-						PVOID gClientUserMsgs_VA = (PVOID)pinst->detail->x86.operands[1].mem.disp;
-
-						gClientUserMsgs = (decltype(gClientUserMsgs))ConvertDllInfoSpace(gClientUserMsgs_VA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-
-					if (gClientUserMsgs)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					return FALSE;
-					}, 0, &ctx);
-			}
-		}
-	}
-
-	if (!gClientUserMsgs)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate gClientUserMsgs");
-		return;
-	}
-}
-
-void MH_LoadEngine_FindParseFuncs(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (1)
-	{
-		char pattern[] = "\x00\x00\x00\x00\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x01\x00\x00\x00\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x02\x00\x00\x00\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x03\x00\x00\x00";
-		auto searchBegin = (PUCHAR)DllInfo.DataBase;
-		auto searchEnd = (PUCHAR)DllInfo.DataBase + DllInfo.DataSize;
-		while (1)
-		{
-			auto pFound = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-			if (pFound)
-			{
-				auto pString_svc_bad = *(const char**)((PUCHAR)pFound + 4);
-
-				if (((PUCHAR)pString_svc_bad >= (PUCHAR)DllInfo.DataBase && (PUCHAR)pString_svc_bad < (PUCHAR)DllInfo.DataBase + DllInfo.DataSize) ||
-					((PUCHAR)pString_svc_bad >= (PUCHAR)DllInfo.RdataBase && (PUCHAR)pString_svc_bad < (PUCHAR)DllInfo.RdataBase + DllInfo.RdataSize))
-				{
-					if (!memcmp(pString_svc_bad, "svc_bad", sizeof("svc_bad")))
-					{
-						cl_parsefuncs = (decltype(cl_parsefuncs))ConvertDllInfoSpace(pFound, DllInfo, RealDllInfo);
-						break;
-					}
-				}
-				searchBegin = (PUCHAR)pFound + sizeof(pattern) - 1;
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if (!cl_parsefuncs)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate cl_parsefuncs");
-		return;
 	}
 }
 
@@ -2203,7 +1588,40 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 	}
 }
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
+static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
+{
+	mh_gamesymbol_status_t st = MH_ResolveGameSymbol(g_dwEngineBase, symbolName, expectedKind, outAddress);
+
+	if (st == MH_GAMESYMBOL_OK)
+		return true;
+
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t crcSt = MH_GetModuleCRC64(g_dwEngineBase, &crc64);
+
+	std::string modulePath;
+	if (g_hEngineModule)
+		MH_GetModuleFilePathA(g_hEngineModule, modulePath);
+
+	if (crcSt == MH_GAMESYMBOL_OK && !modulePath.empty())
+	{
+		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nModule: %s\nCRC64: %016llx\nReason: %s",
+			symbolName, modulePath.c_str(), (unsigned long long)crc64, MH_GetGameSymbolStatusString(st));
+	}
+	else if (crcSt == MH_GAMESYMBOL_OK)
+	{
+		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nCRC64: %016llx\nReason: %s",
+			symbolName, (unsigned long long)crc64, MH_GetGameSymbolStatusString(st));
+	}
+	else
+	{
+		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nReason: %s",
+			symbolName, MH_GetGameSymbolStatusString(st));
+	}
+
+	return false;
+}
+
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char* pszEngineDLL)
 {
 	MH_ResetAllVars();
 
@@ -2282,15 +1700,59 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		MirrorEngineDllInfo.RdataBase = MH_GetSectionByName(MirrorEngineDllInfo.ImageBase, ".rdata\0\0", &MirrorEngineDllInfo.RdataSize);
 	}
 
-	MH_LoadEngine_FindBuildNumber(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
+	// Establish the engine module source, mirror alias, and gamedata catalog.
+	{
+		if (g_hMirrorEngine)
+			GameData::RegisterMirrorAlias(MH_GetMirrorDLLBase(g_hMirrorEngine), g_dwEngineBase);
+
+		if (!g_hEngineModule && pszEngineDLL && pszEngineDLL[0])
+		{
+			std::string blobPath = szFullGamePath;
+			if (!blobPath.empty() && blobPath.back() != '\\' && blobPath.back() != '/')
+				blobPath += "\\";
+			blobPath += pszEngineDLL;
+			GameData::RegisterModuleFileSource(g_dwEngineBase, blobPath.c_str(), g_dwEngineSize);
+		}
+
+		std::string gamedataRoot = szFullGamePath;
+		if (!gamedataRoot.empty() && gamedataRoot.back() != '\\' && gamedataRoot.back() != '/')
+			gamedataRoot += "\\";
+		gamedataRoot += szGameName;
+		gamedataRoot += "\\metahook\\gamedata";
+		GameData::Initialize(gamedataRoot.c_str());
+	}
+
+	// Resolve the engine's final-consumption symbols from gamedata.
+	if (!MH_LoadEngine_ResolveSymbol("build_number", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnbuild_number))
+		return;
+
 	MH_LoadEngine_FindEngineType(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindSysError(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindClientDLL_Init(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindClientDLL_HudInit(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindVClientVGUI(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindVideoMode(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindClientUserMsgs(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindParseFuncs(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
+
+	if (!MH_LoadEngine_ResolveSymbol("Sys_Error", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnSys_Error))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("ClientDLL_HudInit", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnClientDLL_HudInit))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("g_ppEngfuncs", MH_GAMESYMBOL_KIND_GLOBAL, &g_ppEngfuncs))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("g_ppExportFuncs", MH_GAMESYMBOL_KIND_GLOBAL, &g_ppExportFuncs))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("g_phClientModule", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&g_phClientModule))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("g_pClientFactory", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&g_pClientFactory))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("videomode", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&videomode))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("gClientUserMsgs", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&gClientUserMsgs))
+		return;
+	if (!MH_LoadEngine_ResolveSymbol("cl_parsefuncs", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&cl_parsefuncs))
+		return;
+
+	memcpy(gMetaSave.pEngineFuncs, *(void**)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+	Cmd_GetCmdBase = (decltype(Cmd_GetCmdBase))gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle;
+
+	// The cvar branch and blob-client hooks still use the legacy locators until
+	// the required gamedata (cvar_hooks / Cvar_Set / Cvar_DirectSet / FreeBlob)
+	// is complete for every declared engine family.
 	MH_LoadEngine_FindCvarDirectSet(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 	MH_LoadEngine_PatchCvarCallbacks(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 	MH_LoadEngine_FindLoadBlobClient(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
