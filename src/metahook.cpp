@@ -4506,6 +4506,75 @@ void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
 	delete pTpWorkContext;
 }
 
+// ---------------------------------------------------------------------------
+// GameData public API - Phase 1 stubs (full implementation in GameData.cpp).
+// ---------------------------------------------------------------------------
+
+static_assert(MH_GAMESYMBOL_KIND_UNKNOWN == 0 && MH_GAMESYMBOL_KIND_FUNCTION == 1 && MH_GAMESYMBOL_KIND_GLOBAL == 2, "mh_gamesymbol_kind_t values are ABI-stable");
+static_assert(MH_GAMESYMBOL_OK == 0 &&
+	MH_GAMESYMBOL_INVALID_ARGUMENT == 1 &&
+	MH_GAMESYMBOL_OUTPUT_TOO_SMALL == 2 &&
+	MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE == 3 &&
+	MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE == 4 &&
+	MH_GAMESYMBOL_MODULE_HASH_FAILED == 5 &&
+	MH_GAMESYMBOL_MODULE_NOT_FOUND == 6 &&
+	MH_GAMESYMBOL_SYMBOL_NOT_FOUND == 7 &&
+	MH_GAMESYMBOL_UNSUPPORTED_KIND == 8 &&
+	MH_GAMESYMBOL_KIND_MISMATCH == 9 &&
+	MH_GAMESYMBOL_RVA_OUT_OF_RANGE == 10 &&
+	MH_GAMESYMBOL_CATALOG_CONFLICT == 11, "mh_gamesymbol_status_t values are ABI-stable");
+static_assert(MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY == 0x1, "game symbol flag values are ABI-stable");
+static_assert(sizeof(mh_pattern_t) == 20, "mh_pattern_t first-version size is ABI-stable");
+static_assert(sizeof(mh_gamesymbol_t) == 72, "mh_gamesymbol_t first-version size is ABI-stable");
+
+mh_gamesymbol_status_t MH_GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64)
+{
+	(void)moduleBase;
+	(void)outCRC64;
+	return MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE;
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_t* outSymbol)
+{
+	(void)moduleBase;
+	(void)symbolName;
+	(void)outSymbol;
+	return MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE;
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbolByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol)
+{
+	(void)moduleCRC64;
+	(void)symbolName;
+	(void)outSymbol;
+	return MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE;
+}
+
+mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
+{
+	(void)moduleBase;
+	(void)symbolName;
+	(void)expectedKind;
+	(void)outAddress;
+	return MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE;
+}
+
+PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength)
+{
+	(void)searchBase;
+	(void)searchLength;
+	(void)patternBytes;
+	(void)patternMask;
+	(void)patternLength;
+	return NULL;
+}
+
+const char* MH_GetGameSymbolStatusString(mh_gamesymbol_status_t status)
+{
+	(void)status;
+	return "gamedata unavailable";
+}
+
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
 	MH_UnHook,
@@ -4602,6 +4671,12 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_GetPluginInfoByBaseFileName,
 	MH_GetPluginModuleHandle,
 	MH_GetPluginModuleHandleByBaseFileName,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 	NULL
 };
 
@@ -4701,5 +4776,11 @@ metahook_api_t gMetaHookAPI =
 	MH_GetPluginInfoByBaseFileName,
 	MH_GetPluginModuleHandle,
 	MH_GetPluginModuleHandleByBaseFileName,
+	MH_GetModuleCRC64,
+	MH_QueryGameSymbol,
+	MH_QueryGameSymbolByCRC64,
+	MH_ResolveGameSymbol,
+	MH_SearchPatternMasked,
+	MH_GetGameSymbolStatusString,
 	NULL
 };

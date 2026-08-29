@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <winsani_out.h>
 #include <stdio.h>
+#include <stdint.h>
 
 typedef float vec_t;
 typedef float vec2_t[2];
@@ -108,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 108
+#define METAHOOK_API_VERSION 109
 
 typedef struct hook_s hook_t;
 
@@ -174,6 +175,86 @@ typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen,
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);
 typedef void (*LoadDllNotificationCallback)(mh_load_dll_notification_context_t*ctx);
+
+/*
+	Purpose: Kind of a resolved game symbol.
+	Enum values are part of the public ABI and must never be reordered or reused.
+*/
+typedef enum mh_gamesymbol_kind_e
+{
+	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
+	MH_GAMESYMBOL_KIND_FUNCTION = 1,
+	MH_GAMESYMBOL_KIND_GLOBAL = 2
+} mh_gamesymbol_kind_t;
+
+/*
+	Purpose: Result status of a game symbol query or resolution.
+	New statuses must be appended to the end only.
+*/
+typedef enum mh_gamesymbol_status_e
+{
+	MH_GAMESYMBOL_OK = 0,
+	MH_GAMESYMBOL_INVALID_ARGUMENT = 1,
+	MH_GAMESYMBOL_OUTPUT_TOO_SMALL = 2,
+	MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE = 3,
+	MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE = 4,
+	MH_GAMESYMBOL_MODULE_HASH_FAILED = 5,
+	MH_GAMESYMBOL_MODULE_NOT_FOUND = 6,
+	MH_GAMESYMBOL_SYMBOL_NOT_FOUND = 7,
+	MH_GAMESYMBOL_UNSUPPORTED_KIND = 8,
+	MH_GAMESYMBOL_KIND_MISMATCH = 9,
+	MH_GAMESYMBOL_RVA_OUT_OF_RANGE = 10,
+	MH_GAMESYMBOL_CATALOG_CONFLICT = 11
+} mh_gamesymbol_status_t;
+
+/*
+	Purpose: Flag bits carried by mh_gamesymbol_t::flags.
+	Unknown bits must be preserved and never interpreted by plugins.
+*/
+#define MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY 0x1
+
+/*
+	Purpose: Parsed signature pattern.
+
+	- text: canonical signature text from gamedata (NUL-terminated).
+	- bytes: parsed raw byte array (authoritative, lossless).
+	- mask[i] == 0 means wildcard; mask[i] != 0 means match bytes[i] exactly.
+	- legacyPattern: wildcards encoded as byte 0x2A; NULL when the signature
+	  contains a literal 0x2A byte.
+	- length: common length of bytes / mask / legacyPattern.
+*/
+typedef struct mh_pattern_s
+{
+	const char* text;
+	const BYTE* bytes;
+	const BYTE* mask;
+	const char* legacyPattern;
+	DWORD length;
+} mh_pattern_t;
+
+/*
+	Purpose: Normalized metadata of a resolved game symbol.
+
+	Callers must initialize cbSize to sizeof(mh_gamesymbol_t) before calling.
+	On failure the output fields are zeroed while cbSize is preserved.
+	Future fields may only be appended to the end.
+*/
+typedef struct mh_gamesymbol_s
+{
+	DWORD cbSize;
+	mh_gamesymbol_kind_t kind;
+	DWORD flags;
+	uint64_t moduleCRC64;
+
+	DWORD rva;
+	DWORD symbolSize;
+	DWORD signatureRva;
+	mh_pattern_t signature;
+
+	DWORD instructionOffset;
+	DWORD operandOffset;
+	DWORD instructionLength;
+} mh_gamesymbol_t;
 
 typedef struct metahook_api_s
 {
@@ -673,6 +754,59 @@ typedef struct metahook_api_s
 		Purpose: wrapper around MH_GetPluginInfoByBaseFileName, return HINTERFACEMODULE
 	*/
 	HINTERFACEMODULE(*GetPluginModuleHandleByBaseFileName)(const char* basefilename);
+
+	/*
+		Purpose: Compute the CRC-64/XZ of the original module file backing moduleBase.
+		Lazily reads and caches the file on first call. Does not resolve symbols.
+	*/
+	mh_gamesymbol_status_t(*GetModuleCRC64)(
+		PVOID moduleBase,
+		uint64_t* outCRC64);
+
+	/*
+		Purpose: Query normalized symbol metadata by module base + canonical symbol name.
+		Does not convert RVA to VA nor scan memory.
+	*/
+	mh_gamesymbol_status_t(*QueryGameSymbol)(
+		PVOID moduleBase,
+		const char* symbolName,
+		mh_gamesymbol_t* outSymbol);
+
+	/*
+		Purpose: Query normalized symbol metadata by module CRC64 + canonical symbol name.
+		No module image is involved, so RVA bounds are not validated.
+	*/
+	mh_gamesymbol_status_t(*QueryGameSymbolByCRC64)(
+		uint64_t moduleCRC64,
+		const char* symbolName,
+		mh_gamesymbol_t* outSymbol);
+
+	/*
+		Purpose: Resolve a symbol to its runtime virtual address (moduleBase + rva).
+		expectedKind must be FUNCTION or GLOBAL; returns KIND_MISMATCH otherwise.
+	*/
+	mh_gamesymbol_status_t(*ResolveGameSymbol)(
+		PVOID moduleBase,
+		const char* symbolName,
+		mh_gamesymbol_kind_t expectedKind,
+		PVOID* outAddress);
+
+	/*
+		Purpose: Search a pattern with an explicit mask. mask[i]==0 is a wildcard,
+		mask[i]!=0 requires an exact match of bytes[i]. Literal 0x2A has no special meaning.
+	*/
+	PVOID(*SearchPatternMasked)(
+		PVOID searchBase,
+		DWORD searchLength,
+		const BYTE* patternBytes,
+		const BYTE* patternMask,
+		DWORD patternLength);
+
+	/*
+		Purpose: Return a static, MetaHook-owned English string for a game symbol status.
+	*/
+	const char* (*GetGameSymbolStatusString)(
+		mh_gamesymbol_status_t status);
 
 	//Always terminate with a NULL
 	PVOID Terminator;
