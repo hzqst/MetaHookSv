@@ -1624,6 +1624,7 @@ static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_ki
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char* pszEngineDLL)
 {
 	MH_ResetAllVars();
+	GameData::ResetModuleIdentities();
 
 	if (!gMetaSave.pEngineFuncs)
 		gMetaSave.pEngineFuncs = new cl_enginefunc_t;
@@ -1700,10 +1701,14 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		MirrorEngineDllInfo.RdataBase = MH_GetSectionByName(MirrorEngineDllInfo.ImageBase, ".rdata\0\0", &MirrorEngineDllInfo.RdataSize);
 	}
 
-	// Establish the engine module source, mirror alias, and gamedata catalog.
+	// Establish a fresh gamedata catalog and this engine generation's module identities.
 	{
-		if (g_hMirrorEngine)
-			GameData::RegisterMirrorAlias(MH_GetMirrorDLLBase(g_hMirrorEngine), g_dwEngineBase);
+		std::string gamedataRoot = szFullGamePath;
+		if (!gamedataRoot.empty() && gamedataRoot.back() != '\\' && gamedataRoot.back() != '/')
+			gamedataRoot += "\\";
+		gamedataRoot += szGameName;
+		gamedataRoot += "\\metahook\\gamedata";
+		GameData::Initialize(gamedataRoot.c_str());
 
 		if (!g_hEngineModule && pszEngineDLL && pszEngineDLL[0])
 		{
@@ -1714,12 +1719,8 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 			GameData::RegisterModuleFileSource(g_dwEngineBase, blobPath.c_str(), g_dwEngineSize);
 		}
 
-		std::string gamedataRoot = szFullGamePath;
-		if (!gamedataRoot.empty() && gamedataRoot.back() != '\\' && gamedataRoot.back() != '/')
-			gamedataRoot += "\\";
-		gamedataRoot += szGameName;
-		gamedataRoot += "\\metahook\\gamedata";
-		GameData::Initialize(gamedataRoot.c_str());
+		if (g_hMirrorEngine)
+			GameData::RegisterMirrorAlias(MH_GetMirrorDLLBase(g_hMirrorEngine), g_dwEngineBase);
 	}
 
 	// Resolve the engine's final-consumption symbols from gamedata.

@@ -525,7 +525,10 @@ UNCOMPUTED -> COMPUTING -> READY
 - 第一个线程将状态切换为 `COMPUTING` 并在锁外执行文件 I/O。
 - 同一模块的其他线程等待 condition variable。
 - 不持有全局 catalog 锁执行哈希。
-- READY 和 FAILED 均缓存到进程退出。
+- READY 和 FAILED 仅缓存到当前模块加载实例结束。
+- 普通 PE、engine 与 Blob 的 unload notification 都会失效真实模块及其全部 mirror aliases。
+- loader critical region 内只写入固定容量的 lock-free pending invalidation slots，在后续安全查询点清理缓存。
+- 每次 engine session 开始清空全部 ModuleIdentity，作为 notification 缺失或加载失败路径的兜底。
 
 ### 7.5 Module source 类型
 
@@ -904,6 +907,8 @@ Visual Studio 或 CI 可能并行触发多个 MetaHook 配置。sync script 必�
 - [ ] 使用 `CRC_64_XZ` 流式读取原始文件。
 - [ ] 保证同一 module 的并发查询只计算一次。
 - [ ] 缓存 hash 成功值与失败状态。
+- [ ] 在普通 PE、engine 与 Blob 卸载时失效 ModuleIdentity 和 mirror aliases。
+- [ ] loader critical region 内延迟执行容器清理，并在新 engine session 开始时执行兜底 reset。
 - [ ] 文件在读取期间发生变化时返回 `MODULE_HASH_FAILED`。
 - [ ] 确保 hash I/O 不持有 catalog 全局锁。
 
@@ -1043,6 +1048,8 @@ scripts\build-Plugins.bat
 - `QueryGameSymbolByCRC64` 返回正确 metadata。
 - `QueryGameSymbol` 只在首次调用触发 hash。
 - 并发首次查询只读取一次文件。
+- 模块卸载后同一基址重新注册其他源文件时必须重新计算 CRC64。
+- 真实模块失效时 mirror alias 必须同步失效；loader-critical 延迟失效与 engine-session reset 均不得复用旧 CRC64。
 - `ResolveGameSymbol` kind 不匹配返回 `KIND_MISMATCH`。
 - `expectedKind == UNKNOWN` 返回 `INVALID_ARGUMENT`。
 - RVA 越界返回 `RVA_OUT_OF_RANGE`。

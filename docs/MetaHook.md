@@ -303,3 +303,5 @@ typedef struct mh_gamesymbol_s
 | `GetGameSymbolStatusString(status)` | Return a static, MetaHook-owned English string for a status. |
 
 `QueryGameSymbol` / `QueryGameSymbolByCRC64` require the caller to initialize `outSymbol->cbSize` to `sizeof(mh_gamesymbol_t)`; a smaller value returns `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`. On failure the output fields are zeroed while `cbSize` is preserved.
+
+APIs that accept `moduleBase` require the module to remain loaded for the duration of the call. MetaHook invalidates the module CRC cache and any mirror aliases when the module unloads; an address returned by `ResolveGameSymbol` is valid only until that module instance unloads.

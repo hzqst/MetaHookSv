@@ -34,6 +34,14 @@ namespace GameData
 	// module identity (and therefore the same CRC-64/XZ and hash cache).
 	void RegisterMirrorAlias(PVOID mirrorBase, PVOID realBase);
 
+	// Invalidate a loaded module identity and every mirror alias that refers to
+	// it. Loader-critical notifications are deferred until a safe query point.
+	void InvalidateModule(PVOID moduleBase, bool inLoaderCriticalRegion);
+
+	// Drop all loaded-module identities at the start of a new engine session.
+	// The immutable gamedata catalog is not affected.
+	void ResetModuleIdentities();
+
 	// Lazily compute (and cache) the CRC-64/XZ of the original module file
 	// backing moduleBase. The first call performs file I/O; later calls use the
 	// cached value or failure status. Concurrent first queries hash once.

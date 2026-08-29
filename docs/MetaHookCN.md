@@ -372,3 +372,5 @@ typedef struct mh_gamesymbol_s
 | `GetGameSymbolStatusString(status)` | 返回 MetaHook 持有的静态英文字符串。 |
 
 `QueryGameSymbol` / `QueryGameSymbolByCRC64` 要求调用方将 `outSymbol->cbSize` 初始化为 `sizeof(mh_gamesymbol_t)`；更小会返回 `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`。失败时输出字段会被清零，同时保留 `cbSize`。
+
+接受 `moduleBase` 的 API 要求模块在调用期间保持已加载。模块卸载时 MetaHook 会失效其 CRC 缓存及全部 mirror aliases；`ResolveGameSymbol` 返回的地址仅在该模块加载实例卸载前有效。

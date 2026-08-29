@@ -9,6 +9,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
+#include <atomic>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -22,6 +23,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+bool MH_IsInLdrCriticalRegion();
 
 namespace
 {
@@ -761,6 +764,17 @@ namespace
 	std::mutex g_modulesMutex;
 	std::unordered_map<PVOID, std::shared_ptr<ModuleIdentity>> g_modules;
 
+	// Ldr DLL notifications can run under the loader lock. Queue invalidations
+	// without allocating or taking g_modulesMutex, then drain them at the next
+	// safe module-cache access. Overflow conservatively invalidates everything.
+	constexpr size_t kPendingModuleInvalidationCapacity = 64;
+	std::atomic<PVOID> g_pendingModuleInvalidations[kPendingModuleInvalidationCapacity]{};
+	std::atomic<bool> g_resetModuleIdentitiesPending{ false };
+	static_assert(ATOMIC_POINTER_LOCK_FREE == 2,
+		"loader-critical module invalidation requires lock-free pointer atomics");
+	static_assert(ATOMIC_BOOL_LOCK_FREE == 2,
+		"loader-critical module invalidation requires lock-free flag atomics");
+
 	std::wstring AnsiToWide(const char* s)
 	{
 		if (!s || !*s)
@@ -804,13 +818,8 @@ namespace
 		return nt->OptionalHeader.SizeOfImage;
 	}
 
-	std::shared_ptr<ModuleIdentity> GetOrCreateModuleIdentity(PVOID moduleBase)
+	std::shared_ptr<ModuleIdentity> CreateModuleIdentity(PVOID moduleBase)
 	{
-		std::lock_guard<std::mutex> lock(g_modulesMutex);
-		auto it = g_modules.find(moduleBase);
-		if (it != g_modules.end())
-			return it->second;
-
 		auto id = std::make_shared<ModuleIdentity>();
 		id->moduleBase = moduleBase;
 
@@ -821,8 +830,110 @@ namespace
 			id->imageSize = GetPeImageSize(moduleBase);
 		}
 
-		g_modules[moduleBase] = id;
 		return id;
+	}
+
+	void QueueModuleInvalidation(PVOID moduleBase) noexcept
+	{
+		size_t start = (reinterpret_cast<uintptr_t>(moduleBase) >> 12) % kPendingModuleInvalidationCapacity;
+		for (size_t i = 0; i < kPendingModuleInvalidationCapacity; ++i)
+		{
+			auto& slot = g_pendingModuleInvalidations[(start + i) % kPendingModuleInvalidationCapacity];
+			PVOID current = slot.load(std::memory_order_acquire);
+			if (current == moduleBase)
+				return;
+			if (!current && slot.compare_exchange_strong(current, moduleBase,
+				std::memory_order_release, std::memory_order_relaxed))
+				return;
+			if (current == moduleBase)
+				return;
+		}
+
+		g_resetModuleIdentitiesPending.store(true, std::memory_order_release);
+	}
+
+	bool HasPendingModuleInvalidations() noexcept
+	{
+		if (g_resetModuleIdentitiesPending.load(std::memory_order_acquire))
+			return true;
+
+		for (auto& slot : g_pendingModuleInvalidations)
+		{
+			if (slot.load(std::memory_order_acquire))
+				return true;
+		}
+		return false;
+	}
+
+	void InvalidateModuleLocked(PVOID moduleBase)
+	{
+		auto it = g_modules.find(moduleBase);
+		if (it == g_modules.end())
+			return;
+
+		auto victim = it->second;
+		for (auto current = g_modules.begin(); current != g_modules.end();)
+		{
+			if (current->second == victim)
+				current = g_modules.erase(current);
+			else
+				++current;
+		}
+	}
+
+	void DrainPendingModuleInvalidations()
+	{
+		if (MH_IsInLdrCriticalRegion())
+			return;
+
+		bool resetAll = g_resetModuleIdentitiesPending.exchange(false, std::memory_order_acq_rel);
+		PVOID pending[kPendingModuleInvalidationCapacity];
+		size_t pendingCount = 0;
+		for (auto& slot : g_pendingModuleInvalidations)
+		{
+			PVOID moduleBase = slot.exchange(nullptr, std::memory_order_acq_rel);
+			if (moduleBase)
+				pending[pendingCount++] = moduleBase;
+		}
+
+		if (!resetAll && pendingCount == 0)
+			return;
+
+		std::unordered_map<PVOID, std::shared_ptr<ModuleIdentity>> staleModules;
+		{
+			std::lock_guard<std::mutex> lock(g_modulesMutex);
+			if (resetAll)
+			{
+				staleModules.swap(g_modules);
+			}
+			else
+			{
+				for (size_t i = 0; i < pendingCount; ++i)
+					InvalidateModuleLocked(pending[i]);
+			}
+		}
+	}
+
+	std::shared_ptr<ModuleIdentity> GetOrCreateModuleIdentity(PVOID moduleBase)
+	{
+		// Never reuse a possibly stale identity while a loader-lock notification
+		// is pending. The temporary identity is intentionally not cached.
+		if (MH_IsInLdrCriticalRegion() && HasPendingModuleInvalidations())
+			return CreateModuleIdentity(moduleBase);
+
+		DrainPendingModuleInvalidations();
+
+		{
+			std::lock_guard<std::mutex> lock(g_modulesMutex);
+			auto it = g_modules.find(moduleBase);
+			if (it != g_modules.end())
+				return it->second;
+		}
+
+		auto id = CreateModuleIdentity(moduleBase);
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		auto inserted = g_modules.emplace(moduleBase, id);
+		return inserted.first->second;
 	}
 
 	mh_gamesymbol_status_t ComputeCrc64FromFile(const std::wstring& path, uint64_t& out)
@@ -969,17 +1080,17 @@ namespace GameData
 		if (!moduleBase || !filePath || !*filePath)
 			return;
 
-		std::lock_guard<std::mutex> lock(g_modulesMutex);
-		auto& id = g_modules[moduleBase];
-		if (!id)
-		{
-			id = std::make_shared<ModuleIdentity>();
-			id->moduleBase = moduleBase;
-		}
+		DrainPendingModuleInvalidations();
+
+		auto id = std::make_shared<ModuleIdentity>();
+		id->moduleBase = moduleBase;
 		id->sourceType = ModuleSourceType::BlobFile;
 		id->sourcePath = AnsiToWide(filePath);
-		if (imageSize)
-			id->imageSize = imageSize;
+		id->imageSize = imageSize;
+
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		InvalidateModuleLocked(moduleBase);
+		g_modules[moduleBase] = id;
 	}
 
 	void RegisterMirrorAlias(PVOID mirrorBase, PVOID realBase)
@@ -990,6 +1101,33 @@ namespace GameData
 		auto realId = GetOrCreateModuleIdentity(realBase);
 		std::lock_guard<std::mutex> lock(g_modulesMutex);
 		g_modules[mirrorBase] = realId;
+	}
+
+	void InvalidateModule(PVOID moduleBase, bool inLoaderCriticalRegion)
+	{
+		if (!moduleBase)
+			return;
+
+		if (inLoaderCriticalRegion || MH_IsInLdrCriticalRegion())
+		{
+			QueueModuleInvalidation(moduleBase);
+			return;
+		}
+
+		DrainPendingModuleInvalidations();
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		InvalidateModuleLocked(moduleBase);
+	}
+
+	void ResetModuleIdentities()
+	{
+		g_resetModuleIdentitiesPending.store(false, std::memory_order_release);
+		for (auto& slot : g_pendingModuleInvalidations)
+			slot.store(nullptr, std::memory_order_release);
+
+		std::unordered_map<PVOID, std::shared_ptr<ModuleIdentity>> staleModules;
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		staleModules.swap(g_modules);
 	}
 
 	mh_gamesymbol_status_t GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64)
