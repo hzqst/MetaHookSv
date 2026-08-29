@@ -132,7 +132,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -164,7 +165,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_blob|Win32'">
@@ -198,7 +200,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -232,7 +235,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
