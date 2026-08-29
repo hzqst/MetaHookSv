@@ -15,6 +15,12 @@ tags:
 
 相关：[[meta-hook]] [[project-overview]]
 
+> **gamedata 迁移状态（2026-08-29）**：以下 10 个「最终消费」符号已改为由本地 gamedata catalog 经 `ResolveGameSymbol` 解析，不再使用镜像映像 + 签名/字符串/交叉引用扫描：
+> `build_number`、`Sys_Error`、`ClientDLL_HudInit`、`g_ppEngfuncs`、`g_ppExportFuncs`、`g_phClientModule`、`g_pClientFactory`、`videomode`、`gClientUserMsgs`、`cl_parsefuncs`。
+> 解析入口见 `src/metahook.cpp` 的 `MH_LoadEngine_ResolveSymbol`；catalog 初始化、模块来源注册与镜像别名注册见 `MH_LoadEngine` 中 `GameData::Initialize` / `RegisterModuleFileSource` / `RegisterMirrorAlias` 调用。
+>
+> cvar 分支（`cvar_hooks` / `Cvar_Set` / `Cvar_DirectSet`）与 blob client 的 `FreeBlob` 仍沿用旧扫描，原因是发布 gamedata 尚缺这些符号（`scripts/validate-gamedata.py` 会作为发布门禁阻断）。下表仍以旧定位方式为主，待数据补齐后再更新。
+
 ## 范围与共通定位过程
 
 - 统计范围包括：地址被保存到全局/局部变量，或作为反汇编起点、比较对象、hook/patch 目标使用的游戏内部对象。

@@ -291,3 +291,84 @@ MetaHook (V2)版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的�
 这样就可以允许不同插件同时 `SearchPattern` 和 hook 同一个函数，避免了因为前一个插件提前hook修改了引擎代码导致后一个插件搜索特征码失败等插件之间互相冲突的问题。
 
 事务开启时机：引擎调用所有插件的`LoadEngine`和`LoadClient`期间、引擎调用客户端的 `HUD_GetStudioModelInterface` 期间以及DllLoadNotification期间。
+# 游戏符号 API（API 109）
+
+MetaHookSv API 版本 109 新增了一套公开的游戏符号查询/解析 API。它由本地 gamedata catalog 支撑：catalog 在构建期同步（见 `scripts/sync-gamedata.ps1`），运行时从 `<game>\<mod>\metahook\gamedata\` 读取。
+
+插件在调用这些函数前应先检查 `g_pInterface->MetaHookAPIVersion >= 109`。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
+
+## 类型
+
+### `mh_gamesymbol_kind_t`
+
+```cpp
+typedef enum mh_gamesymbol_kind_e
+{
+	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
+	MH_GAMESYMBOL_KIND_FUNCTION = 1,
+	MH_GAMESYMBOL_KIND_GLOBAL = 2
+} mh_gamesymbol_kind_t;
+```
+
+### `mh_gamesymbol_status_t`
+
+```cpp
+typedef enum mh_gamesymbol_status_e
+{
+	MH_GAMESYMBOL_OK = 0,
+	MH_GAMESYMBOL_INVALID_ARGUMENT = 1,
+	MH_GAMESYMBOL_OUTPUT_TOO_SMALL = 2,
+	MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE = 3,
+	MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE = 4,
+	MH_GAMESYMBOL_MODULE_HASH_FAILED = 5,
+	MH_GAMESYMBOL_MODULE_NOT_FOUND = 6,
+	MH_GAMESYMBOL_SYMBOL_NOT_FOUND = 7,
+	MH_GAMESYMBOL_UNSUPPORTED_KIND = 8,
+	MH_GAMESYMBOL_KIND_MISMATCH = 9,
+	MH_GAMESYMBOL_RVA_OUT_OF_RANGE = 10,
+	MH_GAMESYMBOL_CATALOG_CONFLICT = 11
+} mh_gamesymbol_status_t;
+```
+
+### `mh_pattern_t` 与 `mh_gamesymbol_t`
+
+```cpp
+typedef struct mh_pattern_s
+{
+	const char* text;          // canonical signature 文本
+	const BYTE* bytes;         // 解析后的字节（权威、无损）
+	const BYTE* mask;          // 0 == 通配，非 0 == 精确匹配 bytes[i]
+	const char* legacyPattern; // 通配编码为 0x2A；若存在字面 0x2A 则为 NULL
+	DWORD length;
+} mh_pattern_t;
+
+typedef struct mh_gamesymbol_s
+{
+	DWORD cbSize;              // 调用前设为 sizeof(mh_gamesymbol_t)
+	mh_gamesymbol_kind_t kind;
+	DWORD flags;
+	uint64_t moduleCRC64;
+
+	DWORD rva;
+	DWORD symbolSize;
+	DWORD signatureRva;
+	mh_pattern_t signature;
+
+	DWORD instructionOffset;   // 仅 global
+	DWORD operandOffset;       // 仅 global
+	DWORD instructionLength;   // 仅 global
+} mh_gamesymbol_t;
+```
+
+## 函数
+
+| 函数 | 用途 |
+| --- | --- |
+| `GetModuleCRC64(moduleBase, &crc64)` | 惰性计算并缓存 `moduleBase` 对应原始模块文件的 CRC-64/XZ。 |
+| `QueryGameSymbolByCRC64(crc64, name, &symbol)` | 按模块 CRC64 + canonical（区分大小写）符号名查询规范化元数据。 |
+| `QueryGameSymbol(moduleBase, name, &symbol)` | 先计算模块哈希，再按 CRC64 查询；不把 RVA 转成 VA。 |
+| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | 解析为 `moduleBase + rva`；kind 不符时返回 `MH_GAMESYMBOL_KIND_MISMATCH`。 |
+| `SearchPatternMasked(base, len, bytes, mask, plen)` | 用显式 mask 搜索（字面 `0x2A` 无特殊含义）。 |
+| `GetGameSymbolStatusString(status)` | 返回 MetaHook 持有的静态英文字符串。 |
+
+`QueryGameSymbol` / `QueryGameSymbolByCRC64` 要求调用方将 `outSymbol->cbSize` 初始化为 `sizeof(mh_gamesymbol_t)`；更小会返回 `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`。失败时输出字段会被清零，同时保留 `cbSize`。
