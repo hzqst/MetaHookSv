@@ -995,3 +995,121 @@ namespace GameData
 		return st;
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Public game symbol API.
+// ---------------------------------------------------------------------------
+
+mh_gamesymbol_status_t MH_GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64)
+{
+	return GameData::GetModuleCRC64(moduleBase, outCRC64);
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbolByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol)
+{
+	return GameData::QueryByCRC64(moduleCRC64, symbolName, outSymbol);
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_t* outSymbol)
+{
+	if (!outSymbol || !symbolName || !*symbolName)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	DWORD cbSize = outSymbol->cbSize;
+	if (cbSize < sizeof(mh_gamesymbol_t))
+		return MH_GAMESYMBOL_OUTPUT_TOO_SMALL;
+
+	// Zero the output (preserving cbSize) so failures leave a clean struct.
+	memset(outSymbol, 0, cbSize);
+	outSymbol->cbSize = cbSize;
+
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t st = GameData::GetModuleCRC64(moduleBase, &crc64);
+	if (st != MH_GAMESYMBOL_OK)
+		return st;
+
+	return GameData::QueryByCRC64(crc64, symbolName, outSymbol);
+}
+
+mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
+{
+	if (!outAddress)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+	*outAddress = nullptr;
+
+	if (!moduleBase || !symbolName || !*symbolName)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	if (expectedKind != MH_GAMESYMBOL_KIND_FUNCTION && expectedKind != MH_GAMESYMBOL_KIND_GLOBAL)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	mh_gamesymbol_t sym;
+	sym.cbSize = sizeof(sym);
+	mh_gamesymbol_status_t st = MH_QueryGameSymbol(moduleBase, symbolName, &sym);
+	if (st != MH_GAMESYMBOL_OK)
+		return st;
+
+	if (sym.kind != expectedKind)
+		return MH_GAMESYMBOL_KIND_MISMATCH;
+
+	ULONG imageSize = GetOrCreateModuleIdentity(moduleBase)->imageSize;
+	if (imageSize != 0)
+	{
+		if (sym.rva >= imageSize)
+			return MH_GAMESYMBOL_RVA_OUT_OF_RANGE;
+		if (sym.symbolSize > imageSize - sym.rva)
+			return MH_GAMESYMBOL_RVA_OUT_OF_RANGE;
+	}
+	else if ((uint64_t)sym.rva + sym.symbolSize > UINT32_MAX)
+	{
+		return MH_GAMESYMBOL_RVA_OUT_OF_RANGE;
+	}
+
+	*outAddress = (PVOID)((BYTE*)moduleBase + sym.rva);
+	return MH_GAMESYMBOL_OK;
+}
+
+PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength)
+{
+	if (!searchBase || !patternBytes || !patternMask)
+		return nullptr;
+	if (searchLength == 0 || patternLength == 0 || patternLength > searchLength)
+		return nullptr;
+
+	const BYTE* base = (const BYTE*)searchBase;
+	for (DWORD i = 0; i <= searchLength - patternLength; ++i)
+	{
+		bool match = true;
+		for (DWORD j = 0; j < patternLength; ++j)
+		{
+			if (patternMask[j] != 0 && base[i + j] != patternBytes[j])
+			{
+				match = false;
+				break;
+			}
+		}
+		if (match)
+			return (PVOID)(base + i);
+	}
+	return nullptr;
+}
+
+const char* MH_GetGameSymbolStatusString(mh_gamesymbol_status_t status)
+{
+	switch (status)
+	{
+	case MH_GAMESYMBOL_OK: return "success";
+	case MH_GAMESYMBOL_INVALID_ARGUMENT: return "invalid argument";
+	case MH_GAMESYMBOL_OUTPUT_TOO_SMALL: return "output buffer is too small";
+	case MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE: return "gamedata is not available";
+	case MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE: return "module file path is unavailable";
+	case MH_GAMESYMBOL_MODULE_HASH_FAILED: return "failed to hash the module file";
+	case MH_GAMESYMBOL_MODULE_NOT_FOUND: return "module was not found in the gamedata";
+	case MH_GAMESYMBOL_SYMBOL_NOT_FOUND: return "symbol was not found in the matched gamedata snapshot";
+	case MH_GAMESYMBOL_UNSUPPORTED_KIND: return "symbol kind is not supported by this API version";
+	case MH_GAMESYMBOL_KIND_MISMATCH: return "symbol kind does not match the expected kind";
+	case MH_GAMESYMBOL_RVA_OUT_OF_RANGE: return "symbol rva is out of the module image bounds";
+	case MH_GAMESYMBOL_CATALOG_CONFLICT: return "symbol has conflicting duplicate records";
+	default: return "unknown game symbol status";
+	}
+}

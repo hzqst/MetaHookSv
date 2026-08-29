@@ -40,4 +40,12 @@ namespace GameData
 	mh_gamesymbol_status_t GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64);
 }
 
+// Public game symbol API entry points (implemented in GameData.cpp).
+mh_gamesymbol_status_t MH_GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64);
+mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_t* outSymbol);
+mh_gamesymbol_status_t MH_QueryGameSymbolByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol);
+mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress);
+PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength);
+const char* MH_GetGameSymbolStatusString(mh_gamesymbol_status_t status);
+
 #endif
