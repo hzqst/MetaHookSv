@@ -196,12 +196,16 @@ namespace
 
 	const rapidjson::Value* FindMember(const rapidjson::Value& obj, const char* name)
 	{
+		if (!obj.IsObject())
+			return nullptr;
 		auto it = obj.FindMember(name);
 		return (it != obj.MemberEnd()) ? &it->value : nullptr;
 	}
 
 	const rapidjson::Value* FindMember(const rapidjson::Value& obj, const std::string& name)
 	{
+		if (!obj.IsObject())
+			return nullptr;
 		auto it = obj.FindMember(name.c_str());
 		return (it != obj.MemberEnd()) ? &it->value : nullptr;
 	}
@@ -447,12 +451,25 @@ namespace
 
 	void LoadSnapshot(const std::string& root, const rapidjson::Value& version)
 	{
-		const char* gameVersion = version["gameVersion"].GetString();
-		const char* url = version["url"].GetString();
-		const char* expectedSha256 = version["sha256"].GetString();
+		const rapidjson::Value* gameVersionValue = FindMember(version, "gameVersion");
+		const rapidjson::Value* urlValue = FindMember(version, "url");
+		const rapidjson::Value* expectedSha256Value = FindMember(version, "sha256");
+		const rapidjson::Value* sizeValue = FindMember(version, "size");
+		if (!gameVersionValue || !gameVersionValue->IsString() ||
+			!urlValue || !urlValue->IsString() ||
+			!expectedSha256Value || !expectedSha256Value->IsString() ||
+			!sizeValue)
+		{
+			AddDiagnostic("snapshot index entry is missing gameVersion/url/sha256/size");
+			return;
+		}
+
+		const char* gameVersion = gameVersionValue->GetString();
+		const char* url = urlValue->GetString();
+		const char* expectedSha256 = expectedSha256Value->GetString();
 
 		uint64_t expectedSize = 0;
-		if (!GetSizeField(version["size"], expectedSize))
+		if (!GetSizeField(*sizeValue, expectedSize))
 		{
 			AddDiagnostic("snapshot '%s': invalid size", gameVersion);
 			return;
@@ -504,7 +521,12 @@ namespace
 		}
 
 		const rapidjson::Value* source = FindMember(doc, "source");
-		const rapidjson::Value* sourceSchema = source ? FindMember(*source, "snapshotSchemaVersion") : nullptr;
+		if (!source || !source->IsObject())
+		{
+			AddDiagnostic("snapshot '%s': missing source object", gameVersion);
+			return;
+		}
+		const rapidjson::Value* sourceSchema = FindMember(*source, "snapshotSchemaVersion");
 		if (!sourceSchema || !sourceSchema->IsInt() || sourceSchema->GetInt() != 6)
 		{
 			AddDiagnostic("snapshot '%s': unsupported source.snapshotSchemaVersion", gameVersion);
@@ -522,6 +544,11 @@ namespace
 		for (auto it = binaries->MemberBegin(); it != binaries->MemberEnd(); ++it)
 		{
 			const char* moduleName = it->name.GetString();
+			if (!it->value.IsObject())
+			{
+				AddDiagnostic("snapshot '%s': binaries.%s is not an object", gameVersion, moduleName);
+				continue;
+			}
 			const rapidjson::Value* win = FindMember(it->value, "windows");
 			if (!win || !win->IsObject())
 				continue;
@@ -548,10 +575,18 @@ namespace
 		for (const auto& rec : records->GetArray())
 		{
 			if (!rec.IsObject())
+			{
+				AddDiagnostic("snapshot '%s': a records entry is not an object", gameVersion);
 				continue;
+			}
 
 			const rapidjson::Value* platform = FindMember(rec, "platform");
-			if (!platform || !platform->IsString() || std::strcmp(platform->GetString(), "windows") != 0)
+			if (!platform || !platform->IsString())
+			{
+				AddDiagnostic("snapshot '%s': a records entry is missing platform", gameVersion);
+				continue;
+			}
+			if (std::strcmp(platform->GetString(), "windows") != 0)
 				continue;
 
 			const rapidjson::Value* module = FindMember(rec, "module");
@@ -559,7 +594,10 @@ namespace
 			const rapidjson::Value* kind = FindMember(rec, "kind");
 			if (!module || !module->IsString() || !symbolName || !symbolName->IsString() ||
 				!kind || !kind->IsString())
+			{
+				AddDiagnostic("snapshot '%s': a windows records entry is missing module/symbolName/kind", gameVersion);
 				continue;
+			}
 
 			auto crcIt = moduleCrc64.find(module->GetString());
 			if (crcIt == moduleCrc64.end())
@@ -578,6 +616,8 @@ namespace
 			{
 				if (!payload || !payload->IsObject() || !NormalizeFunction(*payload, record, error))
 				{
+					if (error.empty())
+						error = "function payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -586,6 +626,8 @@ namespace
 			{
 				if (!payload || !payload->IsObject() || !NormalizeGlobal(*payload, record, error))
 				{
+					if (error.empty())
+						error = "global payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -602,6 +644,12 @@ namespace
 
 	bool ValidateIndex(const rapidjson::Value& index)
 	{
+		if (!index.IsObject())
+		{
+			AddDiagnostic("index.json root is not an object");
+			return false;
+		}
+
 		const rapidjson::Value* schemaVersion = FindMember(index, "schemaVersion");
 		if (!schemaVersion || !schemaVersion->IsInt() || schemaVersion->GetInt() != 4)
 		{
@@ -660,7 +708,8 @@ namespace
 			}
 
 			uint64_t size = 0;
-			if (!GetSizeField(v["size"], size))
+			const rapidjson::Value* sizeValue = FindMember(v, "size");
+			if (!sizeValue || !GetSizeField(*sizeValue, size))
 			{
 				AddDiagnostic("index.json: invalid size for '%s'", gv.c_str());
 				return false;
@@ -862,8 +911,13 @@ namespace GameData
 		if (!ValidateIndex(index))
 			return false;
 
-		const rapidjson::Value& versions = index["versions"];
-		for (const auto& v : versions.GetArray())
+		const rapidjson::Value* versions = FindMember(index, "versions");
+		if (!versions || !versions->IsArray())
+		{
+			AddDiagnostic("index.json: 'versions' must be an array");
+			return false;
+		}
+		for (const auto& v : versions->GetArray())
 			LoadSnapshot(g_catalog.gamedataRoot, v);
 
 		g_catalog.available = true;
