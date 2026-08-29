@@ -13,9 +13,12 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <condition_variable>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <sys/stat.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -684,6 +687,141 @@ namespace
 		out->operandOffset = rec.operandOffset;
 		out->instructionLength = rec.instructionLength;
 	}
+
+	// -----------------------------------------------------------------------
+	// Module identity + lazy CRC-64/XZ hash cache.
+	// -----------------------------------------------------------------------
+
+	enum class ModuleSourceType { None, PeFile, BlobFile };
+	enum class ModuleHashState { Uncomputed, Computing, Ready, Failed };
+
+	struct ModuleIdentity
+	{
+		PVOID moduleBase = nullptr;
+		ULONG imageSize = 0;
+		ModuleSourceType sourceType = ModuleSourceType::None;
+		std::wstring sourcePath;
+
+		std::mutex mutex;
+		std::condition_variable cv;
+		ModuleHashState state = ModuleHashState::Uncomputed;
+		uint64_t crc64 = 0;
+		mh_gamesymbol_status_t failureStatus = MH_GAMESYMBOL_OK;
+	};
+
+	std::mutex g_modulesMutex;
+	std::unordered_map<PVOID, std::shared_ptr<ModuleIdentity>> g_modules;
+
+	std::wstring AnsiToWide(const char* s)
+	{
+		if (!s || !*s)
+			return std::wstring();
+		int len = MultiByteToWideChar(CP_ACP, 0, s, -1, nullptr, 0);
+		if (len <= 0)
+			return std::wstring();
+		std::wstring out(len, L'\0');
+		MultiByteToWideChar(CP_ACP, 0, s, -1, &out[0], len);
+		out.resize(len - 1); // drop the terminating null
+		return out;
+	}
+
+	bool GetModuleFilePathW(PVOID moduleBase, std::wstring& out)
+	{
+		std::wstring buf(MAX_PATH, L'\0');
+		DWORD len = GetModuleFileNameW((HMODULE)moduleBase, &buf[0], (DWORD)buf.size());
+		while (len == buf.size() && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+		{
+			buf.resize(buf.size() * 2);
+			len = GetModuleFileNameW((HMODULE)moduleBase, &buf[0], (DWORD)buf.size());
+		}
+		if (len == 0)
+		{
+			out.clear();
+			return false;
+		}
+		buf.resize(len);
+		out = buf;
+		return true;
+	}
+
+	ULONG GetPeImageSize(PVOID moduleBase)
+	{
+		auto dos = (PIMAGE_DOS_HEADER)moduleBase;
+		if (!dos || dos->e_magic != IMAGE_DOS_SIGNATURE)
+			return 0;
+		auto nt = (PIMAGE_NT_HEADERS)((BYTE*)moduleBase + dos->e_lfanew);
+		if (nt->Signature != IMAGE_NT_SIGNATURE)
+			return 0;
+		return nt->OptionalHeader.SizeOfImage;
+	}
+
+	std::shared_ptr<ModuleIdentity> GetOrCreateModuleIdentity(PVOID moduleBase)
+	{
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		auto it = g_modules.find(moduleBase);
+		if (it != g_modules.end())
+			return it->second;
+
+		auto id = std::make_shared<ModuleIdentity>();
+		id->moduleBase = moduleBase;
+
+		// Ordinary PE: discover the on-disk file path and image size.
+		if (GetModuleFilePathW(moduleBase, id->sourcePath) && !id->sourcePath.empty())
+		{
+			id->sourceType = ModuleSourceType::PeFile;
+			id->imageSize = GetPeImageSize(moduleBase);
+		}
+
+		g_modules[moduleBase] = id;
+		return id;
+	}
+
+	mh_gamesymbol_status_t ComputeCrc64FromFile(const std::wstring& path, uint64_t& out)
+	{
+		struct _stat64 before;
+		if (_wstat64(path.c_str(), &before) != 0)
+			return MH_GAMESYMBOL_MODULE_HASH_FAILED;
+
+		HANDLE hFile = CreateFileW(path.c_str(), GENERIC_READ,
+			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (hFile == INVALID_HANDLE_VALUE)
+			return MH_GAMESYMBOL_MODULE_HASH_FAILED;
+
+		Chocobo1::CRC_64_XZ crc;
+		std::vector<BYTE> buf(1024 * 1024); // 1 MiB chunks, matching the exporter
+
+		bool readOk = true;
+		for (;;)
+		{
+			DWORD read = 0;
+			if (!ReadFile(hFile, buf.data(), (DWORD)buf.size(), &read, NULL))
+			{
+				readOk = false;
+				break;
+			}
+			if (read == 0)
+				break;
+			crc.addData(buf.data(), read);
+			if (read < buf.size())
+				break; // final partial chunk
+		}
+		CloseHandle(hFile);
+
+		if (!readOk)
+			return MH_GAMESYMBOL_MODULE_HASH_FAILED;
+
+		// The file must not have changed while it was being read.
+		struct _stat64 after;
+		if (_wstat64(path.c_str(), &after) != 0 ||
+			after.st_size != before.st_size ||
+			after.st_mtime != before.st_mtime)
+			return MH_GAMESYMBOL_MODULE_HASH_FAILED;
+
+		crc.finalize();
+		out = static_cast<uint64_t>(crc);
+		return MH_GAMESYMBOL_OK;
+	}
 }
 
 namespace GameData
@@ -770,5 +908,90 @@ namespace GameData
 
 		FillSymbol(rec, moduleCRC64, outSymbol);
 		return MH_GAMESYMBOL_OK;
+	}
+
+	void RegisterModuleFileSource(PVOID moduleBase, const char* filePath, ULONG imageSize)
+	{
+		if (!moduleBase || !filePath || !*filePath)
+			return;
+
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		auto& id = g_modules[moduleBase];
+		if (!id)
+		{
+			id = std::make_shared<ModuleIdentity>();
+			id->moduleBase = moduleBase;
+		}
+		id->sourceType = ModuleSourceType::BlobFile;
+		id->sourcePath = AnsiToWide(filePath);
+		if (imageSize)
+			id->imageSize = imageSize;
+	}
+
+	void RegisterMirrorAlias(PVOID mirrorBase, PVOID realBase)
+	{
+		if (!mirrorBase || !realBase)
+			return;
+
+		auto realId = GetOrCreateModuleIdentity(realBase);
+		std::lock_guard<std::mutex> lock(g_modulesMutex);
+		g_modules[mirrorBase] = realId;
+	}
+
+	mh_gamesymbol_status_t GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64)
+	{
+		if (!moduleBase || !outCRC64)
+			return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+		auto id = GetOrCreateModuleIdentity(moduleBase);
+
+		{
+			std::unique_lock<std::mutex> lock(id->mutex);
+			if (id->state == ModuleHashState::Ready)
+			{
+				*outCRC64 = id->crc64;
+				return MH_GAMESYMBOL_OK;
+			}
+			if (id->state == ModuleHashState::Failed)
+				return id->failureStatus;
+			if (id->state == ModuleHashState::Computing)
+			{
+				id->cv.wait(lock, [&] { return id->state == ModuleHashState::Ready || id->state == ModuleHashState::Failed; });
+				if (id->state == ModuleHashState::Ready)
+				{
+					*outCRC64 = id->crc64;
+					return MH_GAMESYMBOL_OK;
+				}
+				return id->failureStatus;
+			}
+			// Uncomputed: claim it and compute outside the lock.
+			id->state = ModuleHashState::Computing;
+		}
+
+		mh_gamesymbol_status_t st;
+		uint64_t crc64 = 0;
+		if (id->sourceType == ModuleSourceType::None || id->sourcePath.empty())
+			st = MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE;
+		else
+			st = ComputeCrc64FromFile(id->sourcePath, crc64);
+
+		{
+			std::lock_guard<std::mutex> lock(id->mutex);
+			if (st == MH_GAMESYMBOL_OK)
+			{
+				id->crc64 = crc64;
+				id->state = ModuleHashState::Ready;
+			}
+			else
+			{
+				id->failureStatus = st;
+				id->state = ModuleHashState::Failed;
+			}
+		}
+		id->cv.notify_all();
+
+		if (st == MH_GAMESYMBOL_OK)
+			*outCRC64 = crc64;
+		return st;
 	}
 }
