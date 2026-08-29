@@ -885,7 +885,7 @@ namespace GameData
 			return MH_GAMESYMBOL_OUTPUT_TOO_SMALL;
 
 		// Zero the output (preserving cbSize) so any failure leaves a clean struct.
-		memset(outSymbol, 0, cbSize);
+		memset(outSymbol, 0, sizeof(mh_gamesymbol_t));
 		outSymbol->cbSize = cbSize;
 
 		if (!g_catalog.available)
@@ -1020,7 +1020,7 @@ mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolNa
 		return MH_GAMESYMBOL_OUTPUT_TOO_SMALL;
 
 	// Zero the output (preserving cbSize) so failures leave a clean struct.
-	memset(outSymbol, 0, cbSize);
+	memset(outSymbol, 0, sizeof(mh_gamesymbol_t));
 	outSymbol->cbSize = cbSize;
 
 	uint64_t crc64 = 0;
