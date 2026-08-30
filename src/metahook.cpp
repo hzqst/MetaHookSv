@@ -2173,23 +2173,6 @@ void MH_Shutdown(void)
 
 hook_t* MH_InlineHook(void* pOldFuncAddr, void* pNewFuncAddr, void** pOrginalCall)
 {
-#if 0
-	auto p = (PUCHAR)_ReturnAddress();
-
-	MEMORY_BASIC_INFORMATION mbi;
-	VirtualQuery(p, &mbi, sizeof(mbi));
-
-	if (mbi.Type == MEM_IMAGE)
-	{
-		char modname[256] = { 0 };
-		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
-
-		char test[256];
-		sprintf(test, "%p called MH_InlineHook, from %p to %p, %s+%X\n", p, pOldFuncAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
-		OutputDebugStringA(test);
-	}
-#endif
-
 	hook_t* h = MH_NewHook(MH_HOOK_INLINE);
 
 	if (!h)
@@ -2433,23 +2416,6 @@ hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void**
 
 		h->bCommitted = true;
 	}
-
-#if 0
-	auto p = (PUCHAR)_ReturnAddress();
-
-	MEMORY_BASIC_INFORMATION mbi;
-	VirtualQuery(p, &mbi, sizeof(mbi));
-
-	if (mbi.Type == MEM_IMAGE)
-	{
-		char modname[256] = { 0 };
-		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
-
-		char test[256];
-		sprintf(test, "%p called MH_VFTHook, from %p[%d] (%p) to %p, %s+%X\n", p, pClassInstance, iFuncIndex, info->pVirtualFuncAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
-		OutputDebugStringA(test);
-	}
-#endif
 
 	return h;
 }
