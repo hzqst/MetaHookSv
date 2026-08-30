@@ -53,16 +53,16 @@ struct tagINLINEPATCHDATA
 {
 	PVOID pInstructionAddress;
 	ULONG PatchLength;
-	UCHAR OriginalBytes[8];
-	UCHAR NewCodeBytes[8];
+	UCHAR OriginalBytes[15];
+	UCHAR NewCodeBytes[15];
 };
 
 union tagHOOKDATA
 {
-	tagIATDATA iathook;
-	tagVTABLEDATA vfthook;
-	tagINLINEDATA inlinehook;
-	tagINLINEPATCHDATA inlinepatch;
+	tagIATDATA IATHook;
+	tagVTABLEDATA VTableHook;
+	tagINLINEDATA InlineHook;
+	tagINLINEPATCHDATA InlinePatch;
 };
 
 typedef struct hook_s
@@ -75,7 +75,7 @@ typedef struct hook_s
 		pOrginalCall = NULL;
 		pNext = NULL;
 
-		memset(&hookData, 0, sizeof(hookData));
+		memset(&HookData, 0, sizeof(HookData));
 	}
 
 	int iType;
@@ -84,7 +84,7 @@ typedef struct hook_s
 	void* pNewFuncAddr;
 	void** pOrginalCall;
 	struct hook_s* pNext;
-	tagHOOKDATA hookData;
+	tagHOOKDATA HookData;
 }hook_t;
 
 typedef struct cvar_callback_entry_s
@@ -1088,36 +1088,36 @@ void MH_TransactionHookCommit(void)
 			if (pHook->iType == MH_HOOK_INLINE)
 			{
 				DetourTransactionBegin();
-				DetourAttach(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr);
+				DetourAttach(&pHook->HookData.InlineHook.pTrampolineCall, pHook->pNewFuncAddr);
 				DetourTransactionCommit();
 
 				if (pHook->pOrginalCall)
-					(*pHook->pOrginalCall) = pHook->hookData.inlinehook.pTrampolineCall;
+					(*pHook->pOrginalCall) = pHook->HookData.InlineHook.pTrampolineCall;
 			}
 			else if (pHook->iType == MH_HOOK_VFTABLE)
 			{
-				pHook->pOldFuncAddr = *pHook->hookData.vfthook.pVirtualFuncAddr;
+				pHook->pOldFuncAddr = *pHook->HookData.VTableHook.pVirtualFuncAddr;
 
-				MH_WriteMemory(pHook->hookData.vfthook.pVirtualFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
+				MH_WriteMemory(pHook->HookData.VTableHook.pVirtualFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
 
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
 			}
 			else if (pHook->iType == MH_HOOK_IAT)
 			{
-				pHook->pOldFuncAddr = *pHook->hookData.iathook.pImportFuncAddr;
+				pHook->pOldFuncAddr = *pHook->HookData.IATHook.pImportFuncAddr;
 
-				MH_WriteMemory(pHook->hookData.iathook.pImportFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
+				MH_WriteMemory(pHook->HookData.IATHook.pImportFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
 
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
 			}
 			else if (pHook->iType == MH_HOOK_INLINEPATCH)
 			{
-				pHook->pOldFuncAddr = MH_GetNextCallAddr(pHook->hookData.inlinepatch.pInstructionAddress, 1);
+				pHook->pOldFuncAddr = MH_GetNextCallAddr(pHook->HookData.InlinePatch.pInstructionAddress, 1);
 
-				memcpy(pHook->hookData.inlinepatch.OriginalBytes, (PUCHAR)pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.PatchLength);
-				MH_WriteMemory(pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.NewCodeBytes, pHook->hookData.inlinepatch.PatchLength);
+				memcpy(pHook->HookData.InlinePatch.OriginalBytes, (PUCHAR)pHook->HookData.InlinePatch.pInstructionAddress, pHook->HookData.InlinePatch.PatchLength);
+				MH_WriteMemory(pHook->HookData.InlinePatch.pInstructionAddress, pHook->HookData.InlinePatch.NewCodeBytes, pHook->HookData.InlinePatch.PatchLength);
 
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
@@ -1913,7 +1913,7 @@ hook_t* MH_FindVFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, ho
 	{
 		if (h->iType == MH_HOOK_VFTABLE)
 		{
-			if (h->hookData.vfthook.pClassInstance == pClassInstance && h->hookData.vfthook.iTableIndex == iTableIndex && h->hookData.vfthook.iFuncIndex == iFuncIndex)
+			if (h->HookData.VTableHook.pClassInstance == pClassInstance && h->HookData.VTableHook.iTableIndex == iTableIndex && h->HookData.VTableHook.iFuncIndex == iFuncIndex)
 			{
 				return h;
 			}
@@ -1934,7 +1934,7 @@ hook_t* MH_FindVFTHookEx(void** pVFTable, int iFuncIndex, hook_t* pLastFoundHook
 	{
 		if (h->iType == MH_HOOK_VFTABLE)
 		{
-			if (h->hookData.vfthook.pVirtualFuncTable == pVFTable && h->hookData.vfthook.iFuncIndex == iFuncIndex)
+			if (h->HookData.VTableHook.pVirtualFuncTable == pVFTable && h->HookData.VTableHook.iFuncIndex == iFuncIndex)
 			{
 				return h;
 			}
@@ -1955,7 +1955,7 @@ hook_t* MH_FindIATHook(HMODULE hModule, const char* pszModuleName, const char* p
 	{
 		if (h->iType == MH_HOOK_IAT)
 		{
-			if (h->hookData.iathook.hModule == hModule && 0 == stricmp(h->hookData.iathook.szModuleName, pszModuleName) && 0 == stricmp(h->hookData.iathook.szFuncName, pszFuncName))
+			if (h->HookData.IATHook.hModule == hModule && 0 == stricmp(h->HookData.IATHook.szModuleName, pszModuleName) && 0 == stricmp(h->HookData.IATHook.szFuncName, pszFuncName))
 				return h;
 		}
 	}
@@ -1974,7 +1974,7 @@ hook_t* MH_FindInlinePatchHook(void* pInstructionAddress, hook_t* pLastFoundHook
 	{
 		if (h->iType == MH_HOOK_INLINEPATCH)
 		{
-			if (h->hookData.inlinepatch.pInstructionAddress == pInstructionAddress)
+			if (h->HookData.InlinePatch.pInstructionAddress == pInstructionAddress)
 				return h;
 		}
 	}
@@ -1989,20 +1989,20 @@ void MH_FreeHook(hook_t* pHook)
 		if (pHook->iType == MH_HOOK_INLINE)
 		{
 			DetourTransactionBegin();
-			DetourDetach(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr);
+			DetourDetach(&pHook->HookData.InlineHook.pTrampolineCall, pHook->pNewFuncAddr);
 			DetourTransactionCommit();
 		}
 		else if (pHook->iType == MH_HOOK_VFTABLE)
 		{
-			MH_WriteMemory(pHook->hookData.vfthook.pVirtualFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
+			MH_WriteMemory(pHook->HookData.VTableHook.pVirtualFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
 		}
 		else if (pHook->iType == MH_HOOK_IAT)
 		{
-			MH_WriteMemory(pHook->hookData.iathook.pImportFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
+			MH_WriteMemory(pHook->HookData.IATHook.pImportFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
 		}
 		else if (pHook->iType == MH_HOOK_INLINEPATCH)
 		{
-			MH_WriteMemory(pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.OriginalBytes, pHook->hookData.inlinepatch.PatchLength);
+			MH_WriteMemory(pHook->HookData.InlinePatch.pInstructionAddress, pHook->HookData.InlinePatch.OriginalBytes, pHook->HookData.InlinePatch.PatchLength);
 		}
 
 		pHook->bCommitted = false;
@@ -2184,7 +2184,7 @@ hook_t* MH_InlineHook(void* pOldFuncAddr, void* pNewFuncAddr, void** pOrginalCal
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pOrginalCall = pOrginalCall;
 
-	h->hookData.inlinehook.pTrampolineCall = pOldFuncAddr;
+	h->HookData.InlineHook.pTrampolineCall = pOldFuncAddr;
 
 	if (g_bTransactionHook)
 	{
@@ -2193,12 +2193,12 @@ hook_t* MH_InlineHook(void* pOldFuncAddr, void* pNewFuncAddr, void** pOrginalCal
 	else
 	{
 		DetourTransactionBegin();
-		DetourAttach(&(void*&)h->hookData.inlinehook.pTrampolineCall, pNewFuncAddr);
+		DetourAttach(&(void*&)h->HookData.InlineHook.pTrampolineCall, pNewFuncAddr);
 		DetourTransactionCommit();
 
 		if (h->pOrginalCall)
 		{
-			(*h->pOrginalCall) = h->hookData.inlinehook.pTrampolineCall;
+			(*h->pOrginalCall) = h->HookData.InlineHook.pTrampolineCall;
 		}
 
 		h->bCommitted = true;
@@ -2280,7 +2280,7 @@ bool MH_IsBogusVFTableEntry(PVOID pVirtualFuncAddr, PVOID pOldFuncAddr)
 
 hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall)
 {
-	typedef struct
+	typedef struct MH_InlinePatchRedirectBranch_PatchContext_s
 	{
 		PUCHAR pSourceCode;
 		PUCHAR pNewFuncAddr;
@@ -2346,10 +2346,10 @@ hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAd
 	h->pOldFuncAddr = MH_GetNextCallAddr(pInstructionAddress, 1);
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pOrginalCall = pOrginalCall;
-	h->hookData.inlinepatch.pInstructionAddress = pInstructionAddress;
-	h->hookData.inlinepatch.PatchLength = ctx.PatchLength;
-	memcpy(h->hookData.inlinepatch.NewCodeBytes, ctx.NewCodeBytes, ctx.PatchLength);
-	memcpy(h->hookData.inlinepatch.OriginalBytes, (PUCHAR)pInstructionAddress, ctx.PatchLength);
+	h->HookData.InlinePatch.pInstructionAddress = pInstructionAddress;
+	h->HookData.InlinePatch.PatchLength = ctx.PatchLength;
+	memcpy(h->HookData.InlinePatch.NewCodeBytes, ctx.NewCodeBytes, ctx.PatchLength);
+	memcpy(h->HookData.InlinePatch.OriginalBytes, (PUCHAR)pInstructionAddress, ctx.PatchLength);
 
 	if (g_bTransactionHook)
 	{
@@ -2383,15 +2383,15 @@ hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void**
 	h->pOldFuncAddr = pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pOrginalCall = pOrginalCall;
-	h->hookData.vfthook.pClassInstance = NULL;
-	h->hookData.vfthook.iTableIndex = -1;
-	h->hookData.vfthook.iFuncIndex = iFuncIndex;
-	h->hookData.vfthook.pVirtualFuncTable = pVMT;
-	h->hookData.vfthook.pVirtualFuncAddr = pVMT + iFuncIndex;
+	h->HookData.VTableHook.pClassInstance = NULL;
+	h->HookData.VTableHook.iTableIndex = -1;
+	h->HookData.VTableHook.iFuncIndex = iFuncIndex;
+	h->HookData.VTableHook.pVirtualFuncTable = pVMT;
+	h->HookData.VTableHook.pVirtualFuncAddr = pVMT + iFuncIndex;
 
 	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
 	{
-		if (MH_IsBogusVFTableEntry(h->hookData.vfthook.pVirtualFuncAddr, h->pOldFuncAddr))
+		if (MH_IsBogusVFTableEntry(h->HookData.VTableHook.pVirtualFuncAddr, h->pOldFuncAddr))
 		{
 			MH_UnHook(h);
 
@@ -2409,7 +2409,7 @@ hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void**
 	}
 	else
 	{
-		MH_WriteMemory(h->hookData.vfthook.pVirtualFuncAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+		MH_WriteMemory(h->HookData.VTableHook.pVirtualFuncAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
 
 		if (h->pOrginalCall)
 			(*h->pOrginalCall) = h->pOldFuncAddr;
@@ -2435,15 +2435,15 @@ hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* 
 	h->pOldFuncAddr = pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pOrginalCall = pOrginalCall;
-	h->hookData.vfthook.pClassInstance = pClassInstance;
-	h->hookData.vfthook.iTableIndex = iTableIndex;
-	h->hookData.vfthook.iFuncIndex = iFuncIndex;
-	h->hookData.vfthook.pVirtualFuncTable = pVMT;
-	h->hookData.vfthook.pVirtualFuncAddr = pVMT + iFuncIndex;
+	h->HookData.VTableHook.pClassInstance = pClassInstance;
+	h->HookData.VTableHook.iTableIndex = iTableIndex;
+	h->HookData.VTableHook.iFuncIndex = iFuncIndex;
+	h->HookData.VTableHook.pVirtualFuncTable = pVMT;
+	h->HookData.VTableHook.pVirtualFuncAddr = pVMT + iFuncIndex;
 
 	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
 	{
-		if (MH_IsBogusVFTableEntry(h->hookData.vfthook.pVirtualFuncAddr, h->pOldFuncAddr))
+		if (MH_IsBogusVFTableEntry(h->HookData.VTableHook.pVirtualFuncAddr, h->pOldFuncAddr))
 		{
 			MH_UnHook(h);
 
@@ -2461,7 +2461,7 @@ hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* 
 	}
 	else
 	{
-		MH_WriteMemory(h->hookData.vfthook.pVirtualFuncAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+		MH_WriteMemory(h->HookData.VTableHook.pVirtualFuncAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
 
 		if (h->pOrginalCall)
 			(*h->pOrginalCall) = h->pOldFuncAddr;
@@ -2484,16 +2484,16 @@ hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszMod
 	h->pOldFuncAddr = (void*)(*pThunkFunction);
 	h->pNewFuncAddr = pNewFuncAddr;
 
-	h->hookData.iathook.hModule = hModule;
-	h->hookData.iathook.hBlob = hBlob;
+	h->HookData.IATHook.hModule = hModule;
+	h->HookData.IATHook.hBlob = hBlob;
 
-	h->hookData.iathook.pImportFuncAddr = (PVOID*)pThunkFunction;
+	h->HookData.IATHook.pImportFuncAddr = (PVOID*)pThunkFunction;
 
-	strncpy(h->hookData.iathook.szModuleName, pszModuleName, sizeof(h->hookData.iathook.szModuleName));
-	h->hookData.iathook.szModuleName[sizeof(h->hookData.iathook.szModuleName) - 1] = 0;
+	strncpy(h->HookData.IATHook.szModuleName, pszModuleName, sizeof(h->HookData.IATHook.szModuleName));
+	h->HookData.IATHook.szModuleName[sizeof(h->HookData.IATHook.szModuleName) - 1] = 0;
 
-	strncpy(h->hookData.iathook.szFuncName, pszFuncName, sizeof(h->hookData.iathook.szFuncName));
-	h->hookData.iathook.szFuncName[sizeof(h->hookData.iathook.szFuncName) - 1] = 0;
+	strncpy(h->HookData.IATHook.szFuncName, pszFuncName, sizeof(h->HookData.IATHook.szFuncName));
+	h->HookData.IATHook.szFuncName[sizeof(h->HookData.IATHook.szFuncName) - 1] = 0;
 
 	h->pOrginalCall = pOrginalCall;
 
@@ -2503,7 +2503,7 @@ hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszMod
 	}
 	else
 	{
-		MH_WriteMemory(h->hookData.iathook.pImportFuncAddr, &h->pNewFuncAddr, sizeof(PVOID));
+		MH_WriteMemory(h->HookData.IATHook.pImportFuncAddr, &h->pNewFuncAddr, sizeof(PVOID));
 
 		if (h->pOrginalCall)
 			(*h->pOrginalCall) = h->pOldFuncAddr;
