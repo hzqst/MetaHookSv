@@ -1,7 +1,7 @@
 ---
 title: metahook-privatevars
 type: reference
-permalink: metahooksv/metahook-privatevars
+permalink: metahook-privatevars
 tags:
 - metahook
 - private-vars
@@ -12,8 +12,6 @@ tags:
 # Game-private symbols used by `metahook.cpp`
 
 This document inventories the unexported private functions, private data slots, and private call sites that `src/metahook.cpp` locates in the game engine image and consumes in subsequent logic in the current version. Symbol names use the locally held variables in the code; names in parentheses indicate inferred game-side meanings based on use, rather than official debug-symbol names from the upstream binary.
-
-Related: [[meta-hook]] [[project-overview]]
 
 > **gamedata migration status (2026-08-30)**: The following ten "final-consumer" symbols are now resolved from the local gamedata catalog through `ResolveGameSymbol`, rather than through mirror-image plus signature/string/cross-reference scans:
 > `build_number`, `Sys_Error`, `ClientDLL_HudInit`, `cl_enginefuncs`, `cl_funcs`, `g_phClientModule`, `g_pClientFactory`, `videomode`, `gClientUserMsgs`, `cl_parsefuncs`.
