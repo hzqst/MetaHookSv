@@ -730,11 +730,11 @@ Reason: symbol was not found in the matched gamedata snapshot
 
 ### 11.5 验证与文档
 
-- `scripts/sync-gamedata.ps1`，新增
+- `scripts/sync-gamedata.py`，新增
   - 从固定 HTTPS index URL 下载 index 和全部声明 snapshots。
   - 在同卷 staging 目录完成 size、SHA-256 和 JSON 基础校验。
   - 使用事务式目录交换更新目标目录。
-  - 支持 `-ValidateOnly` 对现有目录执行离线完整性检查。
+  - 支持 `--validate-only` 对现有目录执行离线完整性检查。
 - `scripts/validate-gamedata.py`，建议新增
   - 校验本地 manifest、snapshot 完整性和 required profiles。
   - 作为发布门禁，不作为约束易变 JSON 内容的单元测试。
@@ -758,8 +758,11 @@ Reason: symbol was not found in the matched gamedata snapshot
 ```xml
 <GameSymbolsIndexUrl>https://hlnd2t.github.io/GoldSrc_VibeSignatures/gamesymbols/index.json</GameSymbolsIndexUrl>
 <GameDataOutputDirectory>$(MetaHookBaseDir)Build\svencoop\metahook\gamedata</GameDataOutputDirectory>
-<GameDataSyncCommand>powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$(MetaHookBaseDir)scripts\sync-gamedata.ps1" -IndexUrl "$(GameSymbolsIndexUrl)" -Destination "$(GameDataOutputDirectory)"</GameDataSyncCommand>
+<GameDataTempDirectory>$(MetaHookBaseDir)intermediate\GameDataSync</GameDataTempDirectory>
+<GameDataSyncCommand>python "$(MetaHookBaseDir)scripts\sync-gamedata.py" --index-url "$(GameSymbolsIndexUrl)" --target-dir "$(GameDataOutputDirectory)" --temp-root "$(GameDataTempDirectory)"</GameDataSyncCommand>
 ```
+
+构建环境必须在 `PATH` 中提供 Python 3.8 或更高版本。
 
 每个 MetaHook `PreBuildEvent` 按以下顺序执行：
 
@@ -800,10 +803,10 @@ sync script 必须：
 
 ### 12.4 staging 与校验
 
-staging 目录必须创建在目标目录的同一父目录和卷，例如：
+staging 目录必须创建在目标目录的同一卷，例如：
 
 ```text
-Build\svencoop\metahook\.gamedata.staging.<pid>.<guid>\
+intermediate\GameDataSync\metahook-gamedata-<random>\
 ```
 
 流程：
@@ -812,18 +815,18 @@ Build\svencoop\metahook\.gamedata.staging.<pid>.<guid>\
 2. 解析并校验 index schema。
 3. 下载每个 snapshot 到 staging。
 4. 检查实际文件长度等于 index `size`。
-5. 使用 PowerShell/.NET SHA-256 检查 index `sha256`。
+5. 使用 Python `hashlib.sha256` 检查 index `sha256`。
 6. 解析 snapshot JSON 并检查顶层 schemaVersion。
 7. 检查 staging 中不存在 index 未声明的额外文件。
 8. 全部成功后才进入目录交换阶段。
 
-构建期使用 PowerShell/.NET SHA-256，因为 launcher 尚未构建；运行时 catalog 仍使用 `Chocobo1::SHA2_256` 做独立校验。
+构建期使用 Python 标准库 SHA-256，因为 launcher 尚未构建；运行时 catalog 仍使用 `Chocobo1::SHA2_256` 做独立校验。
 
 ### 12.5 并发构建锁
 
 Visual Studio 或 CI 可能并行触发多个 MetaHook 配置。sync script 必须针对规范化 destination 获取跨进程互斥锁：
 
-- 首选基于 destination 派生名称的 .NET named mutex。
+- 使用位于共享临时根目录、基于 destination 派生名称的 Windows 文件锁。
 - 未获得锁的进程等待当前同步结束，而不是启动第二次交换。
 - 等待必须有 timeout；超时导致 Pre-build 失败。
 - 持锁范围覆盖下载、校验、目录交换和自身临时文件清理。
@@ -843,28 +846,28 @@ Visual Studio 或 CI 可能并行触发多个 MetaHook 配置。sync script 必�
 
 ### 12.7 清理与失败语义
 
-- 脚本只删除自己创建且已验证位于目标父目录内的 staging/backup。
+- 脚本只删除自己创建的 staging/backup。
 - 不对广泛路径、workspace root 或未解析变量执行递归删除。
 - 下载、解析、hash、rename 或 rollback 任何一步失败都打印明确文件和原因。
 - 网络失败不静默使用旧目录继续成功构建。
 - 已存在旧目录只作为 rollback 数据，不作为成功下载的替代品。
-- `finally` 释放 mutex 并清理仍属于本次执行的 staging。
+- `finally` 释放文件锁并清理仍属于本次执行的 staging。
 
 ### 12.8 可重复性与增量行为
 
-首版优先保证正确性，每次 Pre-build 都重新获取 index 并构建完整 staging。后续如需优化，可在不改变交换语义的前提下：
+每次 Pre-build 都重新获取 index 并构建完整 staging；在不改变交换语义的前提下：
 
-- 对内容寻址 snapshot 文件复用已经验证的本地副本。
+- 对内容寻址 snapshot 文件复用已经验证的本地副本；仅下载缺失、损坏或 digest 变化的 snapshot。
 - 使用 ETag/If-None-Match 获取 index。
 
-缓存优化不属于首版验收范围，也不得让未经本次 index 验证的文件进入 staging。
+任何复用文件都必须按本次 index 重新校验，未经验证的文件不得进入 staging。
 
 ## 13. 分阶段实施步骤
 
 ### Phase 0：数据与依赖前置门禁
 
 - [ ] 将父仓库 Chocobo1Hash gitlink 固定到已推送的 CRC64-XZ commit。
-- [ ] 实现 `scripts/sync-gamedata.ps1`。
+- [ ] 实现 `scripts/sync-gamedata.py`。
 - [ ] 将 sync 命令接入 MetaHook 全部 Pre-build 配置。
 - [ ] 通过 Pre-build 将 `index.json` 和全部 snapshots 原子同步到打包目录。
 - [ ] 确认实际文件名与 index `url` 一致。
@@ -997,7 +1000,7 @@ validator 是发布产物一致性检查，不应在普通单元测试中硬编�
 - 在 staging -> target rename 失败的故障注入下，backup 能恢复为目标。
 - 两个并发 sync 进程针对同一 destination 时被互斥锁串行化。
 - 成功后不存在属于本次运行的 staging 或 backup 残留。
-- `-ValidateOnly` 在无网络情况下能验证现有目录。
+- `--validate-only` 在无网络情况下能验证现有目录。
 
 测试应使用临时目标目录和受控 fixture index，不得对真实 `Build\svencoop\metahook\gamedata` 做破坏性故障注入。
 
@@ -1117,7 +1120,7 @@ gamedata resolved VA == legacy locator VA
 
 缓解：
 
-- 按 destination 使用 named mutex。
+- 按 destination 使用 Windows 文件锁。
 - 锁覆盖下载、校验、交换和清理全过程。
 - 锁等待超时明确失败，不并行写入目标目录。
 

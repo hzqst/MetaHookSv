@@ -293,7 +293,7 @@ MetaHook (V2)版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的�
 事务开启时机：引擎调用所有插件的`LoadEngine`和`LoadClient`期间、引擎调用客户端的 `HUD_GetStudioModelInterface` 期间以及DllLoadNotification期间。
 # 游戏符号 API（API 109）
 
-MetaHookSv API 版本 109 新增了一套公开的游戏符号查询/解析 API。它由本地 gamedata catalog 支撑：catalog 在构建期同步（见 `scripts/sync-gamedata.ps1`），运行时从 `<game>\<mod>\metahook\gamedata\` 读取。
+MetaHookSv API 版本 109 新增了一套公开的游戏符号查询/解析 API。它由本地 gamedata catalog 支撑：catalog 在构建期同步（见 `scripts/sync-gamedata.py`），运行时从 `<game>\<mod>\metahook\gamedata\` 读取。
 
 插件在调用这些函数前应先检查 `g_pInterface->MetaHookAPIVersion >= 109`。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
 

@@ -224,7 +224,7 @@ The transaction opening timing includes: during the engine's calls to all plugin
 
 # Game Symbol API (API 109)
 
-MetaHookSv API version 109 adds a public game symbol query/resolution API. It is backed by a local gamedata catalog that is synchronized at build time (see `scripts/sync-gamedata.ps1`) and read at runtime from `<game>\<mod>\metahook\gamedata\`.
+MetaHookSv API version 109 adds a public game symbol query/resolution API. It is backed by a local gamedata catalog that is synchronized at build time (see `scripts/sync-gamedata.py`) and read at runtime from `<game>\<mod>\metahook\gamedata\`.
 
 Plugins must check `g_pInterface->MetaHookAPIVersion >= 109` before calling these functions. All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
 
