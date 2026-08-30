@@ -20,7 +20,7 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 
 #define HOOK_MESSAGE(x) g_pMetaHookAPI->HookUserMsg(#x, __MsgFunc_##x);
 
-//Fuck Microsoft
+// Fuck Microsoft
 #ifdef PropertySheet
 #undef PropertySheet
 #endif
@@ -45,20 +45,20 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 #undef MessageBox
 #endif
 
-typedef void(*cvar_callback_t)(cvar_t *pcvar);
+typedef void (*cvar_callback_t)(cvar_t *pcvar);
 
 #ifndef __HLSDK_COMMAND__
 #define __HLSDK_COMMAND__
 
-typedef void(*xcommand_t)(void);
+typedef void (*xcommand_t)(void);
 
 typedef struct cmd_function_s
 {
-	struct cmd_function_s* next;
-	char* name;
+	struct cmd_function_s *next;
+	char *name;
 	xcommand_t function;
 	int flags;
-}cmd_function_t;
+} cmd_function_t;
 
 #endif
 
@@ -70,23 +70,23 @@ typedef struct usermsg_s
 	int index;
 	int size;
 	char name[16];
-	struct usermsg_s* next;
+	struct usermsg_s *next;
 	pfnUserMsgHook function;
-}usermsg_t;
+} usermsg_t;
 
 #endif
 
 #ifndef __ENGINE_SVC_FUNCS__
 #define __ENGINE_SVC_FUNCS__
 
-typedef void(*fn_parsefunc)(void);
+typedef void (*fn_parsefunc)(void);
 
 typedef struct svc_func_s
 {
-	unsigned char opcode;		// Opcode
+	unsigned char opcode; // Opcode
 	unsigned char padding[3];
-	const char* pszname;		// Display Name
-	fn_parsefunc pfnParse;		// Parse function
+	const char *pszname;   // Display Name
+	fn_parsefunc pfnParse; // Parse function
 } svc_func_t;
 
 #endif
@@ -130,23 +130,23 @@ typedef struct hook_s hook_t;
 #define PLUGIN_LOAD_INVALID 3
 #define PLUGIN_LOAD_NOMEM 4
 
-#define LOAD_DLL_NOTIFICATION_IS_BLOB		0x1
-#define LOAD_DLL_NOTIFICATION_IS_ENGINE		0x2
-#define LOAD_DLL_NOTIFICATION_IS_CLIENT		0x4
-#define LOAD_DLL_NOTIFICATION_IS_LOAD		0x8
-#define LOAD_DLL_NOTIFICATION_IS_UNLOAD		0x10
-#define LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION		0x20
+#define LOAD_DLL_NOTIFICATION_IS_BLOB 0x1
+#define LOAD_DLL_NOTIFICATION_IS_ENGINE 0x2
+#define LOAD_DLL_NOTIFICATION_IS_CLIENT 0x4
+#define LOAD_DLL_NOTIFICATION_IS_LOAD 0x8
+#define LOAD_DLL_NOTIFICATION_IS_UNLOAD 0x10
+#define LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION 0x20
 
-typedef void* BlobHandle_t;
+typedef void *BlobHandle_t;
 
 typedef HMODULE HMEMORYMODULE;
 
-typedef void* ThreadPoolHandle_t;
+typedef void *ThreadPoolHandle_t;
 
-typedef void* ThreadWorkItemHandle_t;
+typedef void *ThreadWorkItemHandle_t;
 
-//return true to free the WorkItem immediately
-typedef bool(*fnThreadWorkItemCallback)(void* ctx);
+// return true to free the WorkItem immediately
+typedef bool (*fnThreadWorkItemCallback)(void *ctx);
 
 typedef struct mh_load_dll_notification_context_s
 {
@@ -157,7 +157,7 @@ typedef struct mh_load_dll_notification_context_s
 	int flags;
 	LPCWSTR FullDllName;
 	LPCWSTR BaseDllName;
-}mh_load_dll_notification_context_t;
+} mh_load_dll_notification_context_t;
 
 typedef struct mh_dll_info_s
 {
@@ -169,12 +169,12 @@ typedef struct mh_dll_info_s
 	DWORD DataSize;
 	PVOID RdataBase;
 	DWORD RdataSize;
-}mh_dll_info_t;
+} mh_dll_info_t;
 
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);
-typedef void (*LoadDllNotificationCallback)(mh_load_dll_notification_context_t*ctx);
+typedef void (*LoadDllNotificationCallback)(mh_load_dll_notification_context_t *ctx);
 
 /*
 	Purpose: Kind of a resolved game symbol.
@@ -225,10 +225,10 @@ typedef enum mh_gamesymbol_status_e
 */
 typedef struct mh_pattern_s
 {
-	const char* text;
-	const BYTE* bytes;
-	const BYTE* mask;
-	const char* legacyPattern;
+	const char *text;
+	const BYTE *bytes;
+	const BYTE *mask;
+	const char *legacyPattern;
 	DWORD length;
 } mh_pattern_t;
 
@@ -302,17 +302,17 @@ typedef struct metahook_api_s
 		Purpose : Query module handle of engine dll
 		Return null if it's a BlobEngine
 	*/
-	HMODULE (*GetEngineModule)(void);
+	HMODULE (*GetEngineModule)();
 
 	/*
 		Purpose : Query module base of engine
 	*/
-	PVOID (*GetEngineBase)(void);
+	PVOID (*GetEngineBase)();
 
 	/*
 		Purpose : Query module size of engine
 	*/
-	DWORD (*GetEngineSize)(void);
+	DWORD (*GetEngineSize)();
 
 	/*
 		Purpose : Search pattern (signature) in given region, with wildcard 0x2A
@@ -377,22 +377,22 @@ typedef struct metahook_api_s
 	/*
 		Purpose : Return one of them :  ENGINE_UNKNOWN, ENGINE_GOLDSRC_BLOB, ENGINE_GOLDSRC, ENGINE_GOLDSRC_HL25, ENGINE_SVENGINE
 	*/
-	int (*GetEngineType)(void);
+	int (*GetEngineType)();
 
 	/*
 		Purpose : Return one of them : "Unknown", "GoldSrc_Blob", "GoldSrc", "GoldSrc_HL25", "SvEngine"
 	*/
-	const char *(*GetEngineTypeName)(void);
+	const char *(*GetEngineTypeName)();
 
 	/*
 		Purpose : Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
 	*/
-	PVOID(*ReverseSearchFunctionBegin)(PVOID SearchBegin, DWORD SearchSize);
+	PVOID (*ReverseSearchFunctionBegin)(PVOID SearchBegin, DWORD SearchSize);
 
 	/*
 		Purpose : Return the section base and section size of given image and section name.
 	*/
-	PVOID(*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
+	PVOID (*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 
 	/*
 		Purpose : Disassemble a instruction at given address, return result inside callback
@@ -415,22 +415,22 @@ typedef struct metahook_api_s
 		Purpose : Get module handle of client dll
 		Return null if it's a SecureClient
 	*/
-	HMODULE	(*GetClientModule)(void);
+	HMODULE (*GetClientModule)();
 
 	/*
 		Purpose: Get image base of client
 	*/
-	PVOID (*GetClientBase)(void);
+	PVOID (*GetClientBase)();
 
 	/*
 		Purpose: Get image size of client
 	*/
-	DWORD (*GetClientSize)(void);
+	DWORD (*GetClientSize)();
 
 	/*
 		Purpose: Get factory interface (CreateInterface) of client dll
 	*/
-	CreateInterfaceFn(*GetClientFactory)(void);
+	CreateInterfaceFn (*GetClientFactory)();
 
 	/*
 		Purpose: Query information of all loaded plugins.
@@ -473,7 +473,7 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Find existing console command, and set it's command callback to specified function pointer, return original callback function pointer.
 	*/
-	xcommand_t(*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
+	xcommand_t (*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
 
 	/*
 		Purpose: Popup an error message box and terminate game.
@@ -483,12 +483,12 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??, but with additional check
 	*/
-	PVOID(*ReverseSearchFunctionBeginEx)(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
+	PVOID (*ReverseSearchFunctionBeginEx)(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
 
 	/*
 		Purpose: Check if debugger is attached to current game process.
 	*/
-	bool(*IsDebuggerPresent)(void);
+	bool (*IsDebuggerPresent)(void);
 
 	/*
 		Purpose: Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the pOldCallback if exists.
@@ -496,17 +496,17 @@ typedef struct metahook_api_s
 
 		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
-	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *pOldCallback);
+	bool (*RegisterCvarCallback)(const char *cvar_name, cvar_callback_t callback, cvar_callback_t *pOldCallback);
 
 	/*
 		Purpose: Get handle to blob engine module
 	*/
-	BlobHandle_t(*GetBlobEngineModule)(void);
+	BlobHandle_t (*GetBlobEngineModule)(void);
 
 	/*
 		Purpose: Get handle to blob client module
 	*/
-	BlobHandle_t(*GetBlobClientModule)(void);
+	BlobHandle_t (*GetBlobClientModule)(void);
 
 	/*
 		Purpose: Get image base of blob module
@@ -521,17 +521,17 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Get section base and section size with the given section name, only ".text\0\0\0" and ".data\0\0\0" supported
 	*/
-	PVOID(*GetBlobSectionByName)(BlobHandle_t hBlob, const char* SectionName, ULONG* SectionSize);
+	PVOID (*GetBlobSectionByName)(BlobHandle_t hBlob, const char *SectionName, ULONG *SectionSize);
 
 	/*
 		Purpose: Find blob module with specified image base.
 	*/
-	BlobHandle_t(*BlobLoaderFindBlobByImageBase)(PVOID ImageBase);
+	BlobHandle_t (*BlobLoaderFindBlobByImageBase)(PVOID ImageBase);
 
 	/*
 		Purpose: Find blob module with specified virtual address.
 	*/
-	BlobHandle_t(*BlobLoaderFindBlobByVirtualAddress)(PVOID VirtualAddress);
+	BlobHandle_t (*BlobLoaderFindBlobByVirtualAddress)(PVOID VirtualAddress);
 
 	/*
 		Purpose: Register a load dll notification callback. the callback will be called whenever a dll or blob module is loaded or unloaded.
@@ -546,104 +546,104 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Check if the given pszModuleName is imported by hModule
 	*/
-	bool (*ModuleHasImport)(HMODULE hModule, const char* pszModuleName);
+	bool (*ModuleHasImport)(HMODULE hModule, const char *pszModuleName);
 
 	/*
 		Purpose: Check if the given pszModuleName and pszFuncName is imported by hModule
 	*/
-	bool (*ModuleHasImportEx)(HMODULE hModule, const char* pszModuleName, const char* pszFuncName);
+	bool (*ModuleHasImportEx)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName);
 
 	/*
 		Purpose: Check if the given pszModuleName is imported by hBlob
 	*/
-	bool (*BlobHasImport)(BlobHandle_t hBlob, const char* pszModuleName);
+	bool (*BlobHasImport)(BlobHandle_t hBlob, const char *pszModuleName);
 
 	/*
 		Purpose: Check if the given pszModuleName and pszFuncName is imported by hBlob
 	*/
-	bool (*BlobHasImportEx)(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName);
+	bool (*BlobHasImportEx)(BlobHandle_t hBlob, const char *pszModuleName, const char *pszFuncName);
 
 	/*
 		Purpose: Hook IAT in blob module
 	*/
-	hook_t* (*BlobIATHook)(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
+	hook_t *(*BlobIATHook)(BlobHandle_t hBlob, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall);
 
 	/*
 		Purpose: Get current loading game directory, even before it's passed to engine.
 	*/
 
-	const char* (*GetGameDirectory)();
+	const char *(*GetGameDirectory)();
 
 	/*
 		Purpose: Find command entry by the given cmd_name, return nullptr if not found.
 	*/
 
-	cmd_function_t* (*FindCmd)(const char* cmd_name);
+	cmd_function_t *(*FindCmd)(const char *cmd_name);
 
 	/*
 		Purpose : Install VFT hook directly by providing the table address
 		This will modify the content of Virtual Function Table
 	*/
-	hook_t* (*VFTHookEx)(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall);
+	hook_t *(*VFTHookEx)(void **pVFTable, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
 
 	/*
 		Purpose : Patch E8/E9 call/jmp instruction and redirect the call target
 	*/
-	hook_t* (*InlinePatchRedirectBranch)(void *pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall);
+	hook_t *(*InlinePatchRedirectBranch)(void *pInstructionAddress, void *pNewFuncAddr, void **pOrginalCall);
 
 	/*
 		Purpose : Find hook with given parameters.
 	*/
 
-	hook_t* (*FindInlineHook)(void* pOldFuncAddr, hook_t*pLastFoundHook);
+	hook_t *(*FindInlineHook)(void *pOldFuncAddr, hook_t *pLastFoundHook);
 
-	hook_t* (*FindVFTHook)(void* pClassInstance, int iTableIndex, int iFuncIndex, hook_t* pLastFoundHook);
+	hook_t *(*FindVFTHook)(void *pClassInstance, int iTableIndex, int iFuncIndex, hook_t *pLastFoundHook);
 
-	hook_t* (*FindVFTHookEx)(void** pVFTable, int iFuncIndex, hook_t* pLastFoundHook);
+	hook_t *(*FindVFTHookEx)(void **pVFTable, int iFuncIndex, hook_t *pLastFoundHook);
 
-	hook_t* (*FindIATHook)(HMODULE hModule, const char* pszModuleName, const char* pszFuncName, hook_t* pLastFoundHook);
+	hook_t *(*FindIATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, hook_t *pLastFoundHook);
 
-	hook_t* (*FindInlinePatchHook)(void* pInstructionAddress, hook_t* pLastFoundHook);
+	hook_t *(*FindInlinePatchHook)(void *pInstructionAddress, hook_t *pLastFoundHook);
 
 	/*
 		Purpose : Get gClientUserMsgs.
 	*/
-	usermsg_t* (*GetUserMsgBase)();
+	usermsg_t *(*GetUserMsgBase)();
 
 	/*
 		Purpose : Find usermsg_t * by name.
 	*/
-	usermsg_t* (*FindUserMsgHook)(const char* szMsgName);
+	usermsg_t *(*FindUserMsgHook)(const char *szMsgName);
 
 	/*
 		Purpose : Return the address of cl_parsefuncs tables.
 	*/
-	svc_func_t* (*GetCLParseFuncBase)();
+	svc_func_t *(*GetCLParseFuncBase)();
 
 	/*
 		Purpose : Find the parse function by given opcode
 	*/
-	fn_parsefunc(*FindCLParseFuncByOpcode)(unsigned char opcode);
+	fn_parsefunc (*FindCLParseFuncByOpcode)(unsigned char opcode);
 
 	/*
 		Purpose : Find the parse function by given name
 	*/
-	fn_parsefunc(*FindCLParseFuncByName)(const char* name);
+	fn_parsefunc (*FindCLParseFuncByName)(const char *name);
 
 	/*
 		Purpose : Hook the parse function by given opcode, returns the original parse function. returns NULL if the specified entry could not be found.
 	*/
-	fn_parsefunc(*HookCLParseFuncByOpcode)(unsigned char opcode, fn_parsefunc pfnNewParse);
+	fn_parsefunc (*HookCLParseFuncByOpcode)(unsigned char opcode, fn_parsefunc pfnNewParse);
 
 	/*
 		Purpose : Hook the parse function by given name, returns the original parse function. returns NULL if the specified entry could not be found.
 	*/
-	fn_parsefunc(*HookCLParseFuncByName)(const char* name, fn_parsefunc pfnNewParse);
+	fn_parsefunc (*HookCLParseFuncByName)(const char *name, fn_parsefunc pfnNewParse);
 
 	/*
 		Purpose : Search pattern (signature) in given region, with no wildcard
 	*/
-	void* (*SearchPatternNoWildCard)(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
+	void *(*SearchPatternNoWildCard)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 
 	/*
 		Purpose: Return the image base of the mirrored engine dll (with .code relocation fixed), not available on blob engine.
@@ -658,36 +658,32 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Return the image base of the mirrored client dll (with .code relocation fixed), not available on blob engine.
 	*/
-	PVOID(*GetMirrorClientBase)(VOID);
+	PVOID (*GetMirrorClientBase)(VOID);
 
 	/*
 		Purpose: Return the image size of the mirrored client dll (same as GetClientSize), not available on blob client (because blob client must be loaded at fixed image base).
 	*/
-	ULONG(*GetMirrorClientSize)(VOID);
+	ULONG (*GetMirrorClientSize)(VOID);
 
 	/*
 		Purpose: Load mirrored-dll with no execute permission. the dll is opened via fopen.
 	*/
-
-	HMEMORYMODULE (*LoadMirrorDLL_Std)(const char* szFileName);
+	HMEMORYMODULE (*LoadMirrorDLL_Std)(const char *szFileName);
 
 	/*
 		Purpose: Load mirrored-dll with no execute permission. the dll is opened via g_pFileSystem.
 	*/
-
-	HMEMORYMODULE (*LoadMirrorDLL_FileSystem)(const char* szFileName);
+	HMEMORYMODULE (*LoadMirrorDLL_FileSystem)(const char *szFileName);
 
 	/*
 		Purpose: Free the given mirrored-dll.
 	*/
-
 	void (*FreeMirrorDLL)(HMEMORYMODULE hMemoryModule);
 
 	/*
 		Purpose: Get ImageBase from the given mirrored-dll.
 	*/
-
-	PVOID(*GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
+	PVOID (*GetMirrorDLLBase)(HMEMORYMODULE hMemoryModule);
 
 	/*
 		Purpose: Get ImageSize from the given mirrored-dll.
@@ -698,12 +694,12 @@ typedef struct metahook_api_s
 	/*
 		Purpose: Get global thread pool pre-allocated by metahook launcher
 	*/
-	ThreadPoolHandle_t(*GetGlobalThreadPool)(void);
+	ThreadPoolHandle_t (*GetGlobalThreadPool)(void);
 
 	/*
 		Purpose: Create a private thread pool managed by the plugin.
 	*/
-	ThreadPoolHandle_t(*CreateThreadPool)(ULONG minThreads, ULONG maxThreads);
+	ThreadPoolHandle_t (*CreateThreadPool)(ULONG minThreads, ULONG maxThreads);
 
 	/*
 		Purpose: Create a workitem from given thread pool.
@@ -716,7 +712,7 @@ typedef struct metahook_api_s
 	void (*QueueWorkItem)(ThreadPoolHandle_t hThreadPool, ThreadWorkItemHandle_t hWorkItem);
 
 	/*
-		Purpose: Blocked until the queued workitem to complete. 
+		Purpose: Blocked until the queued workitem to complete.
 	*/
 	void (*WaitForWorkItemToComplete)(ThreadWorkItemHandle_t hWorkItem);
 
@@ -738,86 +734,90 @@ typedef struct metahook_api_s
 	/*
 		Purpose: return "IVideoMode* videomode";
 	*/
-	void* (*VideoMode)();
+	void *(*VideoMode)();
 
 	/*
 		Purpose: Get plugin info by basefilename. i.e. "Renderer", "BulletPhysics"
 	*/
-	BOOL(*GetPluginInfoByBaseFileName)(const char* basefilename, mh_plugininfo_t* info);
+	BOOL (*GetPluginInfoByBaseFileName)
+	(const char *basefilename, mh_plugininfo_t *info);
 
 	/*
 		Purpose: wrapper around MH_GetPluginInfo, return HINTERFACEMODULE
 	*/
-	HINTERFACEMODULE(*GetPluginModuleHandle)(const char* filename);
+	HINTERFACEMODULE (*GetPluginModuleHandle)
+	(const char *filename);
 
 	/*
 		Purpose: wrapper around MH_GetPluginInfoByBaseFileName, return HINTERFACEMODULE
 	*/
-	HINTERFACEMODULE(*GetPluginModuleHandleByBaseFileName)(const char* basefilename);
+	HINTERFACEMODULE (*GetPluginModuleHandleByBaseFileName)
+	(const char *basefilename);
 
 	/*
 		Purpose: Compute the CRC-64/XZ of the original module file backing moduleBase.
 		Lazily reads and caches the file on first call. Does not resolve symbols.
 	*/
-	mh_gamesymbol_status_t(*GetModuleCRC64)(
+	mh_gamesymbol_status_t (*GetModuleCRC64)(
 		PVOID moduleBase,
-		uint64_t* outCRC64);
+		uint64_t *outCRC64);
 
 	/*
 		Purpose: Query normalized symbol metadata by module base + canonical symbol name.
 		Does not convert RVA to VA nor scan memory.
 	*/
-	mh_gamesymbol_status_t(*QueryGameSymbol)(
+	mh_gamesymbol_status_t (*QueryGameSymbol)(
 		PVOID moduleBase,
-		const char* symbolName,
-		mh_gamesymbol_t* outSymbol);
+		const char *symbolName,
+		mh_gamesymbol_t *outSymbol);
 
 	/*
 		Purpose: Query normalized symbol metadata by module CRC64 + canonical symbol name.
 		No module image is involved, so RVA bounds are not validated.
 	*/
-	mh_gamesymbol_status_t(*QueryGameSymbolByCRC64)(
+	mh_gamesymbol_status_t (*QueryGameSymbolByCRC64)(
 		uint64_t moduleCRC64,
-		const char* symbolName,
-		mh_gamesymbol_t* outSymbol);
+		const char *symbolName,
+		mh_gamesymbol_t *outSymbol);
 
 	/*
 		Purpose: Resolve a symbol to its runtime virtual address (moduleBase + rva).
 		expectedKind must be FUNCTION or GLOBAL; returns KIND_MISMATCH otherwise.
 	*/
-	mh_gamesymbol_status_t(*ResolveGameSymbol)(
+	mh_gamesymbol_status_t (*ResolveGameSymbol)(
 		PVOID moduleBase,
-		const char* symbolName,
+		const char *symbolName,
 		mh_gamesymbol_kind_t expectedKind,
-		PVOID* outAddress);
+		PVOID *outAddress);
 
 	/*
 		Purpose: Search a pattern with an explicit mask. mask[i]==0 is a wildcard,
 		mask[i]!=0 requires an exact match of bytes[i]. Literal 0x2A has no special meaning.
 	*/
-	PVOID(*SearchPatternMasked)(
+	PVOID (*SearchPatternMasked)
+	(
 		PVOID searchBase,
 		DWORD searchLength,
-		const BYTE* patternBytes,
-		const BYTE* patternMask,
+		const BYTE *patternBytes,
+		const BYTE *patternMask,
 		DWORD patternLength);
 
 	/*
 		Purpose: Return a static, MetaHook-owned English string for a game symbol status.
 	*/
-	const char* (*GetGameSymbolStatusString)(
+	const char *(*GetGameSymbolStatusString)(
 		mh_gamesymbol_status_t status);
 
-	//Always terminate with a NULL
+	// Always terminate with a NULL
 	PVOID Terminator;
 
-}metahook_api_t;
+} metahook_api_t;
 
 typedef struct mh_enginesave_s
 {
 	cl_exportfuncs_t *pExportFuncs;
 	cl_enginefunc_t *pEngineFuncs;
-}mh_enginesave_t;
+} mh_enginesave_t;
 
 class ICommandLine;
 class IFileSystem;
@@ -829,9 +829,9 @@ typedef struct mh_interface_s
 	ICommandLine *CommandLine;
 	IFileSystem *FileSystem;
 	IRegistry *Registry;
-	IFileSystem_HL25* FileSystem_HL25;
+	IFileSystem_HL25 *FileSystem_HL25;
 	int MetaHookAPIVersion;
-}mh_interface_t;
+} mh_interface_t;
 
 #include <IPlugins.h>
 
