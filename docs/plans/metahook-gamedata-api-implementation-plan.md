@@ -3,7 +3,7 @@
 ## 文档状态
 
 - 状态：设计已确认，待实现
-- 最后更新：2026-08-29
+- 最后更新：2026-08-30
 - 目标仓库：`D:\MetaHookSv`
 - gamedata 生成仓库：`D:\GoldSrc_VibeSignatures`
 - 构建期 index URL：`https://hlnd2t.github.io/GoldSrc_VibeSignatures/gamesymbols/index.json`
@@ -603,15 +603,17 @@ catalog 初始化必须发生在任何 launcher gamedata 查询之前，但不�
 | `build_number` | function | `g_pfnbuild_number`、engine version/type |
 | `Sys_Error` | function | `g_pfnSys_Error` |
 | `ClientDLL_HudInit` | function | `g_pfnClientDLL_HudInit` hook |
-| `g_ppEngfuncs` | global | engine funcs 槽 |
-| `g_ppExportFuncs` | global | client export funcs 槽 |
+| `cl_enginefuncs` | global | 内嵌 engine funcs table object |
+| `cl_funcs` | global | 内嵌 client export funcs table object |
 | `g_phClientModule` | global | client module handle 槽 |
 | `g_pClientFactory` | global | client factory 槽 |
 | `videomode` | global | video mode 指针槽 |
 | `gClientUserMsgs` | global | user message 链表头槽 |
 | `cl_parsefuncs` | global | SVC parse table |
 
-`ClientDLL_Init`、`DispatchDirectUserMsg`、`VideoMode_Create`、`CBaseUI__Initialize` 等旧定位锚点不再属于 required profile。
+`cl_enginefuncs` 与 `cl_funcs` 的 `rva` 均遵循 direct-global 语义，即 `ResolveGameSymbol` 返回内嵌 object 本身的地址。`ClientDLL_Init`、`DispatchDirectUserMsg`、`VideoMode_Create`、`CBaseUI__Initialize` 等旧定位锚点不再属于 required profile。
+
+初始化接管是一个受时序约束的例外：`MH_LoadEngine` 执行时 `cl_funcs.pInitFunc` 尚未由后续 client 加载流程填充，不能直接对当前空字段执行 inline hook。launcher 使用 `cl_funcs` 记录自带的 `signatureRva + instructionOffset + operandOffset` 计算 `ClientDLL_Init` 间接调用的 operand，并验证该 operand 仍引用已解析的 direct-global `cl_funcs`；这不改变公共 resolver 合约，也不把 `ClientDLL_Init` 重新列为独立 required symbol。
 
 ### 9.2 Cvar 分支
 

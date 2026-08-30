@@ -3,6 +3,8 @@
 
 #include <metahook.h>
 
+#include <string>
+
 // GameData owns the local gamedata catalog, the signature parser, module
 // source/hash cache, and the public game symbol query API implementation.
 // The catalog is built once and frozen; all returned string/pattern pointers
@@ -17,6 +19,9 @@ namespace GameData
 	// isolated and recorded as internal diagnostics without failing the whole
 	// catalog.
 	bool Initialize(const char* gamedataRoot);
+
+	// Return all catalog diagnostics joined with newlines for error reporting.
+	std::string GetDiagnostics();
 
 	// Whether the catalog is available for queries.
 	bool IsAvailable();

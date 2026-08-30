@@ -1035,6 +1035,18 @@ namespace GameData
 		return true;
 	}
 
+	std::string GetDiagnostics()
+	{
+		std::string result;
+		for (const auto& diagnostic : g_catalog.diagnostics)
+		{
+			if (!result.empty())
+				result += '\n';
+			result += diagnostic;
+		}
+		return result;
+	}
+
 	bool IsAvailable()
 	{
 		return g_catalog.available;

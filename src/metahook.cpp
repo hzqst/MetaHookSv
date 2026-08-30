@@ -121,9 +121,9 @@ DWORD g_dwEngineSize = NULL;
 hook_t* g_pHookBase = NULL;
 
 ULONG_PTR g_dwClientDLL_Initialize[1] = { 0 };
+cl_enginefunc_t* g_pEngineFuncs = NULL;
 cl_exportfuncs_t* g_pExportFuncs = NULL;
-void* g_ppExportFuncs = NULL;
-void* g_ppEngfuncs = NULL;
+PVOID g_pClientDLLInitializeOperand = NULL;
 
 bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
@@ -1224,8 +1224,8 @@ void MH_ResetAllVars(void)
 	g_pfnNLoadBlob = NULL;
 	g_pfnFreeBlob = NULL;
 	g_phClientModule = NULL;
-	g_ppExportFuncs = NULL;
-	g_ppEngfuncs = NULL;
+	g_pEngineFuncs = NULL;
+	g_pClientDLLInitializeOperand = NULL;
 	g_hEngineModule = NULL;
 	g_hBlobEngine = NULL;
 	g_hBlobClient = NULL;
@@ -1621,6 +1621,46 @@ static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_ki
 	return false;
 }
 
+static bool MH_LoadEngine_ResolveGlobalOperand(const char* symbolName, PVOID globalAddress, PVOID* outOperand)
+{
+	if (!outOperand)
+		return false;
+
+	*outOperand = NULL;
+
+	mh_gamesymbol_t symbol = {};
+	symbol.cbSize = sizeof(symbol);
+	mh_gamesymbol_status_t st = MH_QueryGameSymbol(g_dwEngineBase, symbolName, &symbol);
+
+	if (st != MH_GAMESYMBOL_OK)
+	{
+		MH_SysError("MH_LoadEngine: Failed to query operand metadata for \"%s\"\nReason: %s",
+			symbolName, MH_GetGameSymbolStatusString(st));
+		return false;
+	}
+
+	const uint64_t operandEnd = (uint64_t)symbol.operandOffset + sizeof(DWORD);
+	const uint64_t operandRva = (uint64_t)symbol.signatureRva + symbol.instructionOffset + symbol.operandOffset;
+	if (symbol.kind != MH_GAMESYMBOL_KIND_GLOBAL ||
+		symbol.instructionLength == 0 ||
+		operandEnd > symbol.instructionLength ||
+		operandRva + sizeof(DWORD) > g_dwEngineSize)
+	{
+		MH_SysError("MH_LoadEngine: Invalid instruction operand metadata for \"%s\"", symbolName);
+		return false;
+	}
+
+	PVOID operand = (PVOID)((BYTE*)g_dwEngineBase + operandRva);
+	if (*(PVOID*)operand != globalAddress)
+	{
+		MH_SysError("MH_LoadEngine: Instruction operand for \"%s\" does not reference the resolved global", symbolName);
+		return false;
+	}
+
+	*outOperand = operand;
+	return true;
+}
+
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath, const char* pszEngineDLL)
 {
 	MH_ResetAllVars();
@@ -1708,7 +1748,13 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 			gamedataRoot += "\\";
 		gamedataRoot += szGameName;
 		gamedataRoot += "\\metahook\\gamedata";
-		GameData::Initialize(gamedataRoot.c_str());
+		if (!GameData::Initialize(gamedataRoot.c_str()))
+		{
+			std::string diagnostics = GameData::GetDiagnostics();
+			MH_SysError("MH_LoadEngine: Failed to load gamedata from: %s\nDiagnostics:\n%s",
+				gamedataRoot.c_str(), diagnostics.empty() ? "No diagnostics available." : diagnostics.c_str());
+			return;
+		}
 
 		if (!g_hEngineModule && pszEngineDLL && pszEngineDLL[0])
 		{
@@ -1733,9 +1779,11 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		return;
 	if (!MH_LoadEngine_ResolveSymbol("ClientDLL_HudInit", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnClientDLL_HudInit))
 		return;
-	if (!MH_LoadEngine_ResolveSymbol("g_ppEngfuncs", MH_GAMESYMBOL_KIND_GLOBAL, &g_ppEngfuncs))
+	if (!MH_LoadEngine_ResolveSymbol("cl_enginefuncs", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&g_pEngineFuncs))
 		return;
-	if (!MH_LoadEngine_ResolveSymbol("g_ppExportFuncs", MH_GAMESYMBOL_KIND_GLOBAL, &g_ppExportFuncs))
+	if (!MH_LoadEngine_ResolveSymbol("cl_funcs", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&g_pExportFuncs))
+		return;
+	if (!MH_LoadEngine_ResolveGlobalOperand("cl_funcs", g_pExportFuncs, &g_pClientDLLInitializeOperand))
 		return;
 	if (!MH_LoadEngine_ResolveSymbol("g_phClientModule", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&g_phClientModule))
 		return;
@@ -1748,7 +1796,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	if (!MH_LoadEngine_ResolveSymbol("cl_parsefuncs", MH_GAMESYMBOL_KIND_GLOBAL, (PVOID*)&cl_parsefuncs))
 		return;
 
-	memcpy(gMetaSave.pEngineFuncs, *(void**)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+	memcpy(gMetaSave.pEngineFuncs, g_pEngineFuncs, sizeof(cl_enginefunc_t));
 	Cmd_GetCmdBase = (decltype(Cmd_GetCmdBase))gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle;
 
 	// The cvar branch and blob-client hooks still use the legacy locators until
@@ -1758,12 +1806,11 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	MH_LoadEngine_PatchCvarCallbacks(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 	MH_LoadEngine_FindLoadBlobClient(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 
-	//Hook client dll initialization
-	g_pExportFuncs = *(cl_exportfuncs_t**)g_ppExportFuncs;
-
+	// Redirect ClientDLL_Init's indirect call through our wrapper. cl_funcs is
+	// populated only after the client DLL is loaded, so hooking its current
+	// (still null) Initialize field here would not preserve the load ordering.
 	g_dwClientDLL_Initialize[0] = (ULONG_PTR)ClientDLL_Initialize;
-
-	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_dwClientDLL_Initialize);
+	MH_WriteDWORD(g_pClientDLLInitializeOperand, (DWORD)g_dwClientDLL_Initialize);
 
 	//Delay hooks installed during HUD_Init and studio interface initialization until HudInit returns.
 	MH_InlineHook(g_pfnClientDLL_HudInit, MH_ClientDLL_HudInit, (void**)&g_pfnClientDLL_HudInit_Original);
@@ -1793,10 +1840,10 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		switch (plug->iInterfaceVersion)
 		{
 		case 4:
-			((IPluginsV4*)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t*)*(void**)g_ppEngfuncs);
+			((IPluginsV4*)plug->pPluginAPI)->LoadEngine(g_pEngineFuncs);
 			break;
 		case 3:
-			((IPluginsV3*)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t*)*(void**)g_ppEngfuncs);
+			((IPluginsV3*)plug->pPluginAPI)->LoadEngine(g_pEngineFuncs);
 			break;
 		case 2:
 			((IPluginsV2*)plug->pPluginAPI)->LoadEngine();

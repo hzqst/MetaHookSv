@@ -7,6 +7,7 @@ Release_AVX2/
 intermediate/
 Build/svencoop/metahook/dlls/
 Build/svencoop/metahook/plugins/
+Build/svencoop/metahook/gamedata/
 Build/MetaHook.exe
 Build/MetaHook_blob.exe
 Build/SDL2.dll
