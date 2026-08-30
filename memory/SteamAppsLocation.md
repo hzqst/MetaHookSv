@@ -6,17 +6,17 @@ permalink: metahooksv/steam-apps-location
 
 # SteamAppsLocation
 
-## 概述
-`toolsrc/SteamAppsLocation` 是一个 Windows 控制台工具：输入 Steam `AppId`，通过 Steamworks `SteamApps()->GetAppInstallDir` 输出游戏安装目录（stdout），供批处理脚本自动安装/调试流程消费。
+## Overview
+`toolsrc/SteamAppsLocation` is a Windows console tool. Given a Steam `AppId`, it outputs the game's installation directory to stdout through Steamworks `SteamApps()->GetAppInstallDir`, for consumption by automated installation/debugging flows in batch scripts.
 
-## 职责
-- 读取并校验命令行参数（至少需要 `argv[1]` 作为 AppId）。
-- 校验 `steam_api.dll` 可用性与 `SteamAPI_IsSteamRunning` 导出存在性。
-- 读取并在必要时修复注册表中的 `SteamClientDll` 路径（`HKCU\\Software\\Valve\\Steam\\ActiveProcess`）。
-- 初始化 Steam API，查询 App 安装目录，并将结果写入标准输出。
-- 使用明确的错误返回码（1~8）区分失败阶段。
+## Responsibilities
+- Reads and validates command-line arguments (requires at least `argv[1]` as the AppId).
+- Validates availability of `steam_api.dll` and the presence of the `SteamAPI_IsSteamRunning` export.
+- Reads and, when necessary, repairs the `SteamClientDll` path in the registry (`HKCU\\Software\\Valve\\Steam\\ActiveProcess`).
+- Initializes the Steam API, queries the App installation directory, and writes the result to standard output.
+- Uses explicit error return codes (1-8) to distinguish failure stages.
 
-## 涉及文件 (不要带行号)
+## Involved Files (No Line Numbers)
 - `toolsrc/SteamAppsLocation/SteamAppsLocation.cpp`
 - `toolsrc/SteamAppsLocation/SteamAppsLocation.vcxproj`
 - `scripts/debug-helper-AIO.bat`
@@ -28,67 +28,67 @@ permalink: metahooksv/steam-apps-location
 - `README.md`
 - `READMECN.md`
 
-## 架构
-核心流程集中在 `SteamAppsLocation.cpp` 的 3 个函数：
-- `ReadRegistryValue(keyPath, valueName, outValue)`：读取 `HKCU` 字符串值。
-- `WriteRegistryValue(keyPath, valueName, value)`：写回 `HKCU` 字符串值。
-- `main(argc, argv)`：参数校验 -> 运行时检查 -> 注册表路径修复 -> Steam API 查询 -> 输出目录。
+## Architecture
+The core flow is concentrated in three functions in `SteamAppsLocation.cpp`:
+- `ReadRegistryValue(keyPath, valueName, outValue)`: reads an `HKCU` string value.
+- `WriteRegistryValue(keyPath, valueName, value)`: writes an `HKCU` string value back.
+- `main(argc, argv)`: argument validation -> runtime checks -> registry-path repair -> Steam API query -> directory output.
 
-流程（源码行为）：
+Flow (source behavior):
 ```mermaid
 flowchart TD
-  A[启动 main] --> B{argc < 2?}
-  B -- 是 --> E1[stderr: AppId must be specified\nreturn 1]
-  B -- 否 --> C[GetModuleHandleA("steam_api.dll")]
-  C --> D{steam_api.dll 可用?}
-  D -- 否 --> E2[return 2]
-  D -- 是 --> F[GetProcAddress("SteamAPI_IsSteamRunning")]
-  F --> G{导出存在?}
-  G -- 否 --> E3[return 3]
-  G -- 是 --> H[读 HKCU\\Software\\Valve\\Steam : SteamPath]
-  H --> I{成功?}
-  I -- 否 --> E4[return 4]
-  I -- 是 --> J[读 HKCU\\Software\\Valve\\Steam\\ActiveProcess : SteamClientDll]
-  J --> K{成功?}
-  K -- 否 --> E5[return 5]
-  K -- 是 --> L[canonical(steamPath\\steamclient.dll) 与 canonical(SteamClientDll) 比较]
-  L --> M{不一致?}
-  M -- 是 --> N[写回 ActiveProcess\\SteamClientDll]
-  N --> O{写回成功?}
-  O -- 否 --> E6[return 6]
-  O -- 是 --> P[SteamAPI_Init]
-  M -- 否 --> P
-  P --> Q{初始化成功?}
-  Q -- 否 --> E8[return 8]
-  Q -- 是 --> R[SteamApps()->GetAppInstallDir(appId)]
-  R --> S{成功?}
-  S -- 否 --> E7[return 7]
-  S -- 是 --> T[stdout 输出安装目录]\nU[SteamAPI_Shutdown]\nV[return 0]
+  A[Start main] --> B{argc < 2?}
+  B -- Yes --> E1[stderr: AppId must be specified\nreturn 1]
+  B -- No --> C[GetModuleHandleA("steam_api.dll")]
+  C --> D{steam_api.dll available?}
+  D -- No --> E2[return 2]
+  D -- Yes --> F[GetProcAddress("SteamAPI_IsSteamRunning")]
+  F --> G{Export present?}
+  G -- No --> E3[return 3]
+  G -- Yes --> H[Read HKCU\\Software\\Valve\\Steam : SteamPath]
+  H --> I{Succeeded?}
+  I -- No --> E4[return 4]
+  I -- Yes --> J[Read HKCU\\Software\\Valve\\Steam\\ActiveProcess : SteamClientDll]
+  J --> K{Succeeded?}
+  K -- No --> E5[return 5]
+  K -- Yes --> L[Compare canonical(steamPath\\steamclient.dll) with canonical(SteamClientDll)]
+  L --> M{Mismatch?}
+  M -- Yes --> N[Write back ActiveProcess\\SteamClientDll]
+  N --> O{Write-back succeeded?}
+  O -- No --> E6[return 6]
+  O -- Yes --> P[SteamAPI_Init]
+  M -- No --> P
+  P --> Q{Initialization succeeded?}
+  Q -- No --> E8[return 8]
+  Q -- Yes --> R[SteamApps()->GetAppInstallDir(appId)]
+  R --> S{Succeeded?}
+  S -- No --> E7[return 7]
+  S -- Yes --> T[stdout outputs installation directory]\nU[SteamAPI_Shutdown]\nV[return 0]
 ```
 
-与仓库流程的关系：
-- `scripts/debug-helper-AIO.bat` / `scripts/install-helper-AIO.bat` 通过
-  `for /f ... ('"%SolutionDir%\\tools\\SteamAppsLocation" %GameAppId% InstallDir')` 捕获 stdout，并设置 `GameDir`。
-- `SteamAppsLocation.vcxproj` 的 `PostBuildEvent` 会把生成的 exe 复制到 `$(SolutionDir)tools\\`，与脚本调用路径一致。
-- CI (`windows.yml` / `windows_blob.yml`) 会把 `tools\\SteamAppsLocation.exe`、`tools\\steam_appid.txt`、`tools\\steam_api.dll` 打包到发布产物。
+Relationship to repository workflows:
+- `scripts/debug-helper-AIO.bat` / `scripts/install-helper-AIO.bat` use
+  `for /f ... ('"%SolutionDir%\\tools\\SteamAppsLocation" %GameAppId% InstallDir')` to capture stdout and set `GameDir`.
+- The `PostBuildEvent` in `SteamAppsLocation.vcxproj` copies the generated exe to `$(SolutionDir)tools\\`, matching the script invocation path.
+- CI (`windows.yml` / `windows_blob.yml`) packages `tools\\SteamAppsLocation.exe`, `tools\\steam_appid.txt`, and `tools\\steam_api.dll` into release artifacts.
 
-## 依赖
-- 外部库/SDK：
-  - Steamworks SDK（`include/SteamSDK`，链接 `steam_api.lib`，运行时依赖 `steam_api.dll`）。
-  - Windows API（注册表：`RegOpenKeyExW/RegQueryValueExW/RegSetValueExW`）。
-- C++ 标准库：`<filesystem>`（`canonical` 路径归一化比较）、`<string>`、`<iostream>`。
-- 工程配置：
-  - `ConfigurationType=Application`（控制台程序）
+## Dependencies
+- External libraries/SDKs:
+  - Steamworks SDK (`include/SteamSDK`, links `steam_api.lib`, runtime dependency on `steam_api.dll`).
+  - Windows API (registry: `RegOpenKeyExW/RegQueryValueExW/RegSetValueExW`).
+- C++ standard library: `<filesystem>` (normalized path comparison with `canonical`), `<string>`, `<iostream>`.
+- Project configuration:
+  - `ConfigurationType=Application` (console application)
   - `LanguageStandard=stdcpp20`
-  - `AdditionalIncludeDirectories` 包含 `include/SteamSDK` 与 `thirdparty/Detours_fork/src`
-- 运行时上下文：
-  - 依赖当前用户 `HKCU` 下 Steam 相关键值存在。
-  - 仓库脚本会在调用前写 `tools/steam_appid.txt`，并依赖 stdout 仅返回目录字符串。
+  - `AdditionalIncludeDirectories` includes `include/SteamSDK` and `thirdparty/Detours_fork/src`
+- Runtime context:
+  - Depends on Steam-related values under the current user's `HKCU`.
+  - Repository scripts write `tools/steam_appid.txt` before invocation and depend on stdout returning only the directory string.
 
-## 注意事项
-- README/脚本语义表明：Steam 未登录、未拥有游戏或未安装时，目录查询可能失败。
+## Notes
+- The README/script semantics indicate that directory lookup may fail when Steam is not logged in, the game is not owned, or the game is not installed.
 
-## 调用方（可选）
+## Callers (Optional)
 - `scripts/debug-helper-AIO.bat`
 - `scripts/install-helper-AIO.bat`
-- CI 打包流程：`.github/workflows/windows.yml`、`.github/workflows/windows_blob.yml`（发布时复制到 `Build-Output/tools`）
+- CI packaging workflow: `.github/workflows/windows.yml`, `.github/workflows/windows_blob.yml` (copied to `Build-Output/tools` at release time)

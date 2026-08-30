@@ -4,42 +4,42 @@ type: note
 permalink: metahooksv/draw-scene
 ---
 
-# Renderer Plugin - 3D场景绘制流程
+# Renderer Plugin - 3D Scene Rendering Flow
 
-## 入口函数: R_RenderScene
+## Entry function: R_RenderScene
 
-位置: `Plugins/Renderer/gl_rmain.cpp`
+Location: `Plugins/Renderer/gl_rmain.cpp`
 
-### 完整渲染流程
+### Complete rendering flow
 
 ```
 R_RenderScene()
-├── R_SetupFrame()              // 帧设置
-├── R_SetupGL()                 // OpenGL状态设置
-├── R_SetFrustum()              // 视锥体设置
-├── R_MarkLeaves()              // 标记可见叶节点
-├── R_BeginRenderGBuffer()      // 开始G-Buffer渲染 (延迟渲染)
-├── R_PrepareDrawWorld()        // 准备世界渲染
-├── R_DrawWorld()               // 绘制世界几何体
-├── R_DrawEntitiesOnList()      // 绘制不透明实体
-├── R_EndRenderOpaque()         // 结束不透明物体渲染
-├── ClientDLL_DrawNormalTriangles()  // 客户端DLL绘制普通三角形
-└── R_DrawTransEntities()       // 绘制透明实体
+├── R_SetupFrame()              // Frame setup
+├── R_SetupGL()                 // OpenGL state setup
+├── R_SetFrustum()              // Frustum setup
+├── R_MarkLeaves()              // Mark visible leaf nodes
+├── R_BeginRenderGBuffer()      // Begin G-Buffer rendering (deferred rendering)
+├── R_PrepareDrawWorld()        // Prepare world rendering
+├── R_DrawWorld()               // Draw world geometry
+├── R_DrawEntitiesOnList()      // Draw opaque entities
+├── R_EndRenderOpaque()         // Finish opaque-object rendering
+├── ClientDLL_DrawNormalTriangles()  // Client DLL draws normal triangles
+└── R_DrawTransEntities()       // Draw transparent entities
 ```
 
 ---
 
-## 详细流程分析
+## Detailed flow analysis
 
-### 1. R_SetupFrame() - 帧设置
-**位置**: `gl_rmain.cpp`
+### 1. R_SetupFrame() - Frame setup
+**Location**: `gl_rmain.cpp`
 
-**功能**:
-- 更新RefDef (参考定义)
-- 确定当前视点所在的BSP叶节点
-- 设置雾效 (水下雾、Sven Co-op雾、用户自定义雾)
+**Functionality**:
+- Update RefDef (reference definition).
+- Determine the BSP leaf node containing the current viewpoint.
+- Configure fog effects (underwater fog, Sven Co-op fog, and user-defined fog).
 
-**关键操作**:
+**Key operations**:
 ```cpp
 R_UpdateRefDef();
 (*r_viewleaf) = Mod_PointInLeaf(r_origin, (*cl_worldmodel));
@@ -48,27 +48,27 @@ R_RenderWaterFog() / R_RenderSvenFog() / R_RenderUserFog();
 
 ---
 
-### 2. R_SetupGL() - OpenGL状态设置
-**功能**: 设置OpenGL渲染状态、投影矩阵、视口等
+### 2. R_SetupGL() - OpenGL state setup
+**Functionality**: Configure OpenGL render state, the projection matrix, viewport, and more.
 
 ---
 
-### 3. R_SetFrustum() - 视锥体设置
-**功能**: 计算视锥体平面，用于视锥体剔除
+### 3. R_SetFrustum() - Frustum setup
+**Functionality**: Calculate frustum planes for frustum culling.
 
 ---
 
-### 4. R_MarkLeaves() - 标记可见叶节点
-**功能**: 使用PVS (Potentially Visible Set) 标记当前可见的BSP叶节点
+### 4. R_MarkLeaves() - Mark visible leaf nodes
+**Functionality**: Use PVS (Potentially Visible Set) to mark currently visible BSP leaf nodes.
 
 ---
 
-### 5. R_BeginRenderGBuffer() - 开始G-Buffer渲染
-**位置**: `gl_light.cpp`
+### 5. R_BeginRenderGBuffer() - Begin G-Buffer rendering
+**Location**: `gl_light.cpp`
 
-**功能**: 初始化延迟渲染的G-Buffer
+**Functionality**: Initialize the G-Buffer for deferred rendering.
 
-**关键操作**:
+**Key operations**:
 ```cpp
 r_draw_gbuffer = true;
 GL_BindFrameBuffer(&s_GBufferFBO);
@@ -76,81 +76,81 @@ R_SetGBufferMask(GBUFFER_MASK_ALL);
 GL_ClearColorDepthStencil(...);
 ```
 
-**G-Buffer内容**:
-- 位置 (Position)
-- 法线 (Normal)
-- 漫反射颜色 (Diffuse)
-- 高光信息 (Specular)
-- 深度 (Depth)
+**G-Buffer contents**:
+- Position
+- Normal
+- Diffuse color
+- Specular information
+- Depth
 
 ---
 
-### 6. R_PrepareDrawWorld() - 准备世界渲染
-**功能**: 准备世界几何体渲染所需的数据和状态
+### 6. R_PrepareDrawWorld() - Prepare world rendering
+**Functionality**: Prepare the data and state required to render world geometry.
 
 ---
 
-### 7. R_DrawWorld() - 绘制世界几何体
-**位置**: `gl_wsurf.cpp`
+### 7. R_DrawWorld() - Draw world geometry
+**Location**: `gl_wsurf.cpp`
 
-**功能**: 绘制BSP世界模型
+**Functionality**: Draw the BSP world model.
 
-**渲染流程**:
+**Rendering flow**:
 ```cpp
 R_DrawWorld()
 └── R_DrawWorldSurfaceModel(pModel, entity)
-    ├── R_DrawWorldSurfaceLeafSky()      // 天空表面
-    ├── R_DrawWorldSurfaceLeafStatic()   // 静态表面
-    ├── R_DrawWorldSurfaceLeafAnim()     // 动画表面
-    └── R_DrawWorldSurfaceLeafShadow()   // 阴影
+    ├── R_DrawWorldSurfaceLeafSky()      // Sky surfaces
+    ├── R_DrawWorldSurfaceLeafStatic()   // Static surfaces
+    ├── R_DrawWorldSurfaceLeafAnim()     // Animated surfaces
+    └── R_DrawWorldSurfaceLeafShadow()   // Shadows
 ```
 
-**表面类型**:
-- **Sky** - 天空盒表面
-- **Static** - 静态光照表面
-- **Anim** - 动画纹理表面
-- **Shadow** - 阴影投射
+**Surface types**:
+- **Sky** - Skybox surfaces
+- **Static** - Statically lit surfaces
+- **Anim** - Animated-texture surfaces
+- **Shadow** - Shadow casting
 
 ---
 
-### 8. R_DrawEntitiesOnList() - 绘制不透明实体
-**位置**: `gl_rmain.cpp`
+### 8. R_DrawEntitiesOnList() - Draw opaque entities
+**Location**: `gl_rmain.cpp`
 
-**功能**: 遍历可见实体列表，绘制不透明实体
+**Functionality**: Iterate the visible-entity list and draw opaque entities.
 
-**实体分类**:
+**Entity classification**:
 ```cpp
 for (int i = 0; i < (*cl_numvisedicts); ++i) {
     entity = cl_visedicts[i];
     
     if (rendermode != kRenderNormal) {
-        R_AddTEntity(entity);  // 添加到透明实体列表
+        R_AddTEntity(entity);  // Add to transparent-entity list
     }
     else if (model->type == mod_sprite && gl_spriteblend) {
-        R_AddTEntity(entity);  // Sprite混合
+        R_AddTEntity(entity);  // Sprite blending
     }
     else if (R_IsViewmodelAttachment(entity)) {
-        R_AddViewModelAttachmentEntity(entity);  // 视图模型附件
+        R_AddViewModelAttachmentEntity(entity);  // View-model attachment
     }
     else {
-        R_DrawCurrentEntity(false);  // 绘制当前实体
+        R_DrawCurrentEntity(false);  // Draw current entity
     }
 }
 ```
 
-**实体类型**:
-- **Studio模型** - 角色、武器等 (.mdl)
-- **Brush模型** - 门、电梯等可移动BSP模型
-- **Sprite** - 2D精灵 (.spr)
+**Entity types**:
+- **Studio model** - Characters, weapons, and so on (.mdl)
+- **Brush model** - Movable BSP models such as doors and elevators
+- **Sprite** - 2D sprites (.spr)
 
 ---
 
-### 9. R_EndRenderOpaque() - 结束不透明物体渲染
-**位置**: `gl_rmain.cpp`
+### 9. R_EndRenderOpaque() - Finish opaque-object rendering
+**Location**: `gl_rmain.cpp`
 
-**功能**: 完成G-Buffer渲染，执行延迟光照计算
+**Functionality**: Complete G-Buffer rendering and perform deferred-lighting calculations.
 
-**关键操作**:
+**Key operations**:
 ```cpp
 r_draw_opaque = false;
 if (R_IsRenderingGBuffer()) {
@@ -158,26 +158,26 @@ if (R_IsRenderingGBuffer()) {
 }
 ```
 
-**延迟光照流程**:
-1. G-Buffer完成几何信息存储
-2. 光照Pass计算所有动态光源
-3. 合成最终颜色到SceneFBO
+**Deferred-lighting flow**:
+1. The G-Buffer finishes storing geometry information.
+2. The lighting pass calculates all dynamic lights.
+3. The final color is composed into SceneFBO.
 
 ---
 
-### 10. ClientDLL_DrawNormalTriangles() - 客户端绘制
-**功能**: 调用客户端DLL的HUD_DrawNormalTriangles，允许游戏代码绘制自定义几何体
+### 10. ClientDLL_DrawNormalTriangles() - Client rendering
+**Functionality**: Call the client DLL's HUD_DrawNormalTriangles, allowing game code to draw custom geometry.
 
 ---
 
-### 11. R_DrawTransEntities() - 绘制透明实体
-**位置**: `gl_rmain.cpp`
+### 11. R_DrawTransEntities() - Draw transparent entities
+**Location**: `gl_rmain.cpp`
 
-**功能**: 绘制所有透明物体
+**Functionality**: Draw all transparent objects.
 
-**两种渲染模式**:
+**Two rendering modes**:
 
-#### A. OIT (Order-Independent Transparency) 模式
+#### A. OIT (Order-Independent Transparency) mode
 ```cpp
 if (g_bUseOITBlend) {
     R_ClearOITBuffer();
@@ -189,13 +189,13 @@ if (g_bUseOITBlend) {
 }
 ```
 
-**OIT特点**:
-- 透明物体顺序无关
-- 使用链表存储透明片段
-- GPU排序和混合
-- 性能开销较大
+**OIT characteristics**:
+- Independent of transparent-object order
+- Stores transparent fragments in linked lists
+- GPU sorting and blending
+- Higher performance overhead
 
-#### B. 传统Alpha混合模式
+#### B. Traditional alpha-blending mode
 ```cpp
 else {
     R_DrawTEntitiesOnList(onlyClientDraw);
@@ -204,24 +204,24 @@ else {
 }
 ```
 
-**传统模式特点**:
-- 需要从后向前排序
-- 标准Alpha混合
-- 性能较好
+**Traditional-mode characteristics**:
+- Requires back-to-front sorting
+- Standard alpha blending
+- Better performance
 
-**透明物体包括**:
-- 透明实体 (rendermode != kRenderNormal)
-- 透明三角形 (客户端DLL)
-- 粒子系统
+**Transparent objects include**:
+- Transparent entities (rendermode != kRenderNormal)
+- Transparent triangles (client DLL)
+- Particle systems
 
 ---
 
-## 渲染管线架构
+## Rendering-pipeline architecture
 
-### 延迟渲染管线 (Deferred Rendering)
+### Deferred rendering pipeline
 
 ```
-[几何Pass - Geometry Pass]
+[Geometry Pass]
     ↓
 [G-Buffer]
 ├── Position Buffer
@@ -230,104 +230,104 @@ else {
 ├── Specular Buffer
 └── Depth Buffer
     ↓
-[光照Pass - Lighting Pass]
-├── 动态点光源
-├── 聚光灯
-├── 方向光
-└── 环境光
+[Lighting Pass]
+├── Dynamic point lights
+├── Spotlights
+├── Directional lights
+└── Ambient light
     ↓
-[合成 - Composition]
+[Composition]
     ↓
-[透明Pass - Transparent Pass]
+[Transparent Pass]
     ↓
-[后期处理 - Post-Processing]
+[Post-Processing]
 ├── HDR
 ├── SSAO
 ├── SSR
 ├── FXAA
-└── Gamma校正
+└── Gamma correction
 ```
 
 ---
 
-## 关键数据结构
+## Key data structures
 
-### refdef_t - 渲染定义
+### refdef_t - Render definition
 ```cpp
 typedef struct refdef_s {
-    vrect_GoldSrc_t *vrect;      // 视口矩形
-    vec3_t *vieworg;              // 视点位置
-    vec3_t *viewangles;           // 视角
-    color24 *ambientlight;        // 环境光
-    qboolean *onlyClientDraws;    // 仅客户端绘制标志
+    vrect_GoldSrc_t *vrect;      // Viewport rectangle
+    vec3_t *vieworg;              // Viewpoint position
+    vec3_t *viewangles;           // View angles
+    color24 *ambientlight;        // Ambient light
+    qboolean *onlyClientDraws;    // Client-only drawing flag
 } refdef_t;
 ```
 
-### 全局渲染状态
+### Global render state
 ```cpp
 extern refdef_t r_refdef;
 extern float r_xfov, r_yfov;           // FOV
-extern bool r_fog_enabled;              // 雾效启用
-extern cl_entity_t* r_worldentity;      // 世界实体
-extern model_t** cl_worldmodel;         // 世界模型
+extern bool r_fog_enabled;              // Fog enabled
+extern cl_entity_t* r_worldentity;      // World entity
+extern model_t** cl_worldmodel;         // World model
 ```
 
 ---
 
-## 性能优化技术
+## Performance optimization techniques
 
-### 1. 视锥体剔除 (Frustum Culling)
-- `R_SetFrustum()` 计算视锥体平面
-- 剔除视锥体外的物体
+### 1. Frustum culling
+- `R_SetFrustum()` calculates frustum planes.
+- Cull objects outside the frustum.
 
-### 2. PVS剔除 (Potentially Visible Set)
-- `R_MarkLeaves()` 使用BSP的PVS数据
-- 只渲染可能可见的叶节点
+### 2. PVS culling (Potentially Visible Set)
+- `R_MarkLeaves()` uses BSP PVS data.
+- Render only potentially visible leaf nodes.
 
-### 3. VBO批量绘制
-- 使用Vertex Buffer Object
-- 减少Draw Call数量
+### 3. Batched VBO drawing
+- Use Vertex Buffer Objects.
+- Reduce the number of draw calls.
 
-### 4. 延迟渲染
-- 减少多光源场景的光照计算开销
-- 光照计算只在可见像素上进行
+### 4. Deferred rendering
+- Reduce the cost of lighting calculations in multi-light scenes.
+- Perform lighting calculations only on visible pixels.
 
-### 5. 异步资源加载
-- 后台线程加载模型和纹理
-- 避免主线程阻塞
+### 5. Asynchronous asset loading
+- Load models and textures on background threads.
+- Avoid blocking the main thread.
 
 ---
 
-## 调试工具
+## Debugging tools
 
-### OpenGL调试组
+### OpenGL debug groups
 ```cpp
 GL_BeginDebugGroup("R_RenderScene");
-// ... 渲染代码 ...
+// ... rendering code ...
 GL_EndDebugGroup();
 ```
 
-使用RenderDoc等工具可以查看每个调试组的渲染调用。
+RenderDoc and similar tools can inspect the rendering calls in each debug group.
 
 ---
 
-## 相关控制台变量 (CVars)
+## Relevant console variables (CVars)
 
-- `r_drawentities` - 是否绘制实体
-- `r_drawworld` - 是否绘制世界
-- `r_deferred_lighting` - 启用延迟光照
-- `gl_spriteblend` - Sprite混合模式
-- `r_fog` - 雾效设置
+- `r_drawentities` - Whether to draw entities
+- `r_drawworld` - Whether to draw the world
+- `r_deferred_lighting` - Enable deferred lighting
+- `gl_spriteblend` - Sprite blending mode
+- `r_fog` - Fog settings
 
 ---
 
-## 总结
+## Summary
 
-Renderer插件的3D场景绘制流程采用现代化的延迟渲染管线:
+The Renderer plugin's 3D scene rendering flow uses a modern deferred-rendering pipeline:
 
-1. **几何Pass** - 将场景几何信息写入G-Buffer
-2. **光照Pass** - 在屏幕空间计算光照
-3. **透明Pass** - 绘制透明物体
-4. **后期处理** - 应用各种图像效果
+1. **Geometry Pass** - Write scene geometry information to the G-Buffer.
+2. **Lighting Pass** - Calculate lighting in screen space.
+3. **Transparent Pass** - Draw transparent objects.
+4. **Post-Processing** - Apply various image effects.
 
-这种架构支持大量动态光源，同时保持良好的性能。通过VBO批量绘制、视锥体剔除、PVS剔除等优化技术，即使在复杂场景中也能维持高帧率。
+This architecture supports many dynamic lights while maintaining good performance. With optimization techniques such as batched VBO drawing, frustum culling, and PVS culling, it can sustain high frame rates even in complex scenes.

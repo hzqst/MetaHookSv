@@ -7,15 +7,15 @@ permalink: metahooksv/shadow-mapping
 # ShadowMapping
 
 ## Overview
-Renderer 的动态光 Shadow Mapping 系统在主场景 G-Buffer 几何阶段之前生成每个可见动态光的深度阴影纹理，并在延迟光照阶段按光源类型采样这些纹理。系统把引擎 `cl_dlights` 与地图 `light_dynamic` 实体统一为 `CDynamicLight`，再通过同一套遍历回调分别处理点光、聚光和方向光。
+Renderer's dynamic-light Shadow Mapping system generates depth shadow textures for each visible dynamic light before the main scene's G-Buffer geometry stage, then samples them by light type during deferred lighting. The system normalizes engine `cl_dlights` and map `light_dynamic` entities into `CDynamicLight`, then handles point, spot, and directional lights through the same traversal callbacks.
 
 ## Responsibilities
-- 将引擎动态光和地图动态光统一映射到 `CDynamicLight`，保存阴影尺寸、CSM 参数与阴影纹理句柄。
-- 在每个视图开始前构建 `g_VisibleDynamicLights`，只保留当前帧需要参与光照和阴影的光源。
-- 根据光源类型分配或复用阴影纹理：点光使用 cubemap，聚光使用单层 2D，方向光使用单层静态正交阴影和动态 CSM 纹理数组。
-- 通过 `r_draw_shadowview`、`r_draw_multiview`、`r_draw_lineardepth` 等状态复用 `R_RenderScene()` 生成 Shadow Map，而不是维护一套独立几何管线。
-- 在 `R_LightShadingPass()` 中把阴影矩阵、级联距离和深度纹理绑定到动态光着色器，完成延迟光照中的阴影衰减。
-- 通过 `IShadowTexture` 层次结构管理纹理大小、viewport、ready 状态、shadow matrix 和 CSM 分级距离。
+- Maps engine and map dynamic lights consistently to `CDynamicLight`, retaining shadow sizes, CSM parameters, and shadow texture handles.
+- Builds `g_VisibleDynamicLights` before each view, retaining only lights that participate in this frame's lighting and shadows.
+- Allocates or reuses shadow textures by light type: cubemaps for point lights, single-layer 2D textures for spotlights, and static single-layer orthographic shadows plus dynamic CSM texture arrays for directional lights.
+- Reuses `R_RenderScene()` to generate Shadow Maps through states such as `r_draw_shadowview`, `r_draw_multiview`, and `r_draw_lineardepth`, rather than maintaining a separate geometry pipeline.
+- Binds shadow matrices, cascade distances, and depth textures to the dynamic-light shader in `R_LightShadingPass()` to apply shadow attenuation in deferred lighting.
+- Uses the `IShadowTexture` hierarchy to manage texture size, viewport, ready state, shadow matrices, and CSM split distances.
 
 ## Involved Files & Symbols
 - `Plugins/Renderer/gl_rmain.cpp` - `R_RenderFrameStart`, `R_PreRenderView`, `R_RenderViewStart`, `R_RenderScene`, `R_EndRenderOpaque`
@@ -24,46 +24,46 @@ Renderer 的动态光 Shadow Mapping 系统在主场景 G-Buffer 几何阶段之
 - `Plugins/Renderer/gl_shadow.h` - `IShadowTexture`, `R_ShouldRenderShadow`, `R_RenderShadowMap`
 - `Plugins/Renderer/gl_shadow.cpp` - `CBaseShadowTexture`, `CSingleShadowTexture`, `CCubemapShadowTexture`, `CCascadedShadowTexture`, `R_ShouldCastShadow`, `R_SetupShadowMatrix`, `R_RenderShadowmapForDynamicLights`, `R_ResetShadowTextures`
 - `Plugins/Renderer/gl_wsurf.cpp` - `R_ParseBSPEntity_Light_Dynamic`, `R_DrawWorldSurfaceLeafShadow`, `R_DrawWorldSurfaceModelShadowProxy`
-- `Plugins/Renderer/gl_studio.cpp` - Shadow view 下的 `STUDIO_SHADOW_CASTER_ENABLED` 分支
+- `Plugins/Renderer/gl_studio.cpp` - `STUDIO_SHADOW_CASTER_ENABLED` branch in Shadow view
 - `Build/svencoop/renderer/shader/common.h` - `CSM_LEVELS`, `CameraUBO.numViews`
-- `Build/svencoop/renderer/shader/wsurf_shader.geom.glsl` - 多视图输出到 `gl_Layer`
-- `Build/svencoop/renderer/shader/studio_shader.geom.glsl` - 多视图输出到 `gl_Layer`
+- `Build/svencoop/renderer/shader/wsurf_shader.geom.glsl` - multiview output to `gl_Layer`
+- `Build/svencoop/renderer/shader/studio_shader.geom.glsl` - multiview output to `gl_Layer`
 - `Build/svencoop/renderer/shader/dlight_shader.frag.glsl` - `CalcShadowIntensityLinear`, `CalcCSMShadowIntensity`, `CalcCubemapShadowIntensity`
 
 ## Architecture
-Shadow Mapping 的帧内流程分为“光源准备 → Shadow Map 生成 → 延迟光照采样”三段：
+The per-frame Shadow Mapping workflow has three phases: light preparation → Shadow Map generation → deferred-lighting sampling.
 
-1. `R_RenderFrameStart()` 调用 `R_ProcessEngineDynamicLights()`，把 `cl_dlights` 转成 `g_EngineDynamicLights`。其中引擎 flashlight 会被映射为带 `dynamic_shadow_size = 256` 的聚光源；普通引擎点光默认不启用阴影。
-2. 地图加载阶段，`R_ParseBSPEntity_Light_Dynamic()` 解析 `light_dynamic` 实体，把 `shadow`、`static_shadow_size`、`dynamic_shadow_size`、`csm_lambda`、`csm_margin` 等参数写入 `g_BSPDynamicLights`。
-3. `R_PreRenderView()` 先调用 `R_RenderViewStart()`，把 `g_BSPDynamicLights` 和 `g_EngineDynamicLights` 中当前有效的光源送入 `R_AddVisibleDynamicLight()`，形成 `g_VisibleDynamicLights`。
-4. `R_PreRenderView()` 随后调用 `R_RenderShadowMap()`，后者先执行 `R_ResetShadowTextures()`，再由 `R_RenderShadowmapForDynamicLights()` 遍历可见光源生成 Shadow Map。
-5. Shadow pass 内部会切换到 `r_draw_shadowview` 模式，并根据需要启用 `r_draw_multiview`、`r_draw_nofrustumcull`、`r_draw_lineardepth`。几何阶段仍然复用 `R_RenderScene()`；`gl_wsurf.cpp` 和 `gl_studio.cpp` 只是在该模式下切换到 shadow caster shader 变体。
-6. 主场景几何绘制结束后，`R_EndRenderOpaque()` 触发 `R_EndRenderGBuffer()`；后者调用 `R_LightShadingPass()`，再次遍历 `g_VisibleDynamicLights`，把已生成的 Shadow Texture 绑定到动态光 shader，完成带阴影的延迟光照。
+1. `R_RenderFrameStart()` calls `R_ProcessEngineDynamicLights()`, converting `cl_dlights` into `g_EngineDynamicLights`. The engine flashlight is mapped to a spotlight with `dynamic_shadow_size = 256`; ordinary engine point lights do not enable shadows by default.
+2. During map loading, `R_ParseBSPEntity_Light_Dynamic()` parses `light_dynamic` entities and writes parameters including `shadow`, `static_shadow_size`, `dynamic_shadow_size`, `csm_lambda`, and `csm_margin` into `g_BSPDynamicLights`.
+3. `R_PreRenderView()` first calls `R_RenderViewStart()`, passes currently active lights from `g_BSPDynamicLights` and `g_EngineDynamicLights` to `R_AddVisibleDynamicLight()`, and forms `g_VisibleDynamicLights`.
+4. `R_PreRenderView()` then calls `R_RenderShadowMap()`, which first executes `R_ResetShadowTextures()` and then traverses visible lights through `R_RenderShadowmapForDynamicLights()` to generate Shadow Maps.
+5. The Shadow pass switches to `r_draw_shadowview` mode and enables `r_draw_multiview`, `r_draw_nofrustumcull`, and `r_draw_lineardepth` as needed. The geometry stage still reuses `R_RenderScene()`; `gl_wsurf.cpp` and `gl_studio.cpp` merely switch to shadow-caster shader variants in this mode.
+6. After main-scene geometry rendering finishes, `R_EndRenderOpaque()` triggers `R_EndRenderGBuffer()`; it calls `R_LightShadingPass()`, traverses `g_VisibleDynamicLights` again, binds generated Shadow Textures to the dynamic-light shader, and completes shadowed deferred lighting.
 
-不同光源的 Shadow Map 细节：
-- 点光：
-  - 静态阴影使用 `CCubemapShadowTexture`，仅在 `static_shadow_size > 0` 且纹理未 ready 时生成，主要面向世界几何。
-  - 动态阴影也使用 `CCubemapShadowTexture`，一次渲染 6 个视角，`CameraUBO.numViews = 6`，几何着色器通过 `gl_Layer` 输出到 6 个 cubemap 面。
-  - 如果存在静态阴影，动态阴影 pass 只画不透明实体；如果没有静态阴影，动态 pass 会一起画世界和实体。
-- 聚光：
-  - 当前只生成动态单层 2D Shadow Map，使用 `CSingleShadowTexture`。
-  - 投影矩阵由 `coneAngle * 2` 转成 FOV，启用 `r_draw_lineardepth`，shadow compare 使用线性深度版本。
-- 方向光：
-  - 静态阴影使用 `CSingleShadowTexture`，采用单层正交投影，只画世界几何。
-  - 动态阴影使用 `CCascadedShadowTexture`，底层是 `size x size x 4` 的 2D texture array。
-  - CSM 分割基于主视图 near/far plane 和主视图 FOV，使用线性/对数混合参数 `csm_lambda` 计算 4 个 split，再用 `csm_margin` 扩张每级联正交包围盒。
-  - 4 个级联的矩阵会一次性写入 `CameraUBO`，`R_RenderScene()` 只调用一次，多视图几何着色器通过 `gl_Layer` 输出到 texture array 的 4 层。
+Shadow Map details by light type:
+- Point lights:
+  - Static shadows use `CCubemapShadowTexture` and are generated only when `static_shadow_size > 0` and the texture is not ready, primarily for world geometry.
+  - Dynamic shadows also use `CCubemapShadowTexture`, rendering 6 views at once with `CameraUBO.numViews = 6`; the geometry shader writes to the 6 cubemap faces through `gl_Layer`.
+  - If a static shadow exists, the dynamic-shadow pass draws only opaque entities; otherwise, the dynamic pass draws both world geometry and entities.
+- Spotlights:
+  - Currently generate only dynamic single-layer 2D Shadow Maps, using `CSingleShadowTexture`.
+  - The projection matrix converts `coneAngle * 2` to FOV, enables `r_draw_lineardepth`, and uses the linear-depth variant for shadow comparison.
+- Directional lights:
+  - Static shadows use `CSingleShadowTexture` with a single-layer orthographic projection and draw only world geometry.
+  - Dynamic shadows use `CCascadedShadowTexture`, backed by a `size x size x 4` 2D texture array.
+  - CSM splits are based on the main view near/far plane and FOV. The linear/logarithmic blend parameter `csm_lambda` calculates 4 splits, and `csm_margin` expands each cascade's orthographic bounding box.
+  - The matrices for all 4 cascades are written to `CameraUBO` at once; `R_RenderScene()` is called only once, and the multiview geometry shader writes to the 4 layers of the texture array through `gl_Layer`.
 
-Shadow Map 到光照阶段的衔接：
-- `R_SetupShadowMatrix()` 负责生成 bias * projection * world 形式的 shadow matrix，供 shader 从世界坐标映射到阴影纹理空间。
-- `R_LightShadingPass()` 会根据纹理是否 ready 打开不同 shader 宏：
-  - 点光启用 static/dynamic cubemap shadow 宏，并可配合 PCF。
-  - 聚光启用 dynamic single-layer shadow 宏，并上传 `u_dynamicShadowMatrix`。
-  - 方向光可同时启用 static single-layer shadow 与 dynamic CSM 宏，上传 `u_staticShadowMatrix`、`u_csmMatrices` 和 `u_csmDistances`。
-- `dlight_shader.frag.glsl` 中：
-  - 点光通过 `CalcCubemapShadowIntensity()` 采样 cubemap shadow。
-  - 聚光通过 `CalcShadowIntensityLinear()` 采样单层 2D shadow。
-  - 方向光通过 `CalcCSMShadowIntensity()` 采样 `sampler2DArrayShadow csmTex`，并把静态方向光阴影与 CSM 结果取 `min`。
+Shadow Map integration with the lighting stage:
+- `R_SetupShadowMatrix()` generates a shadow matrix in bias * projection * world form, allowing shaders to map world coordinates into shadow-texture space.
+- `R_LightShadingPass()` enables different shader macros depending on whether textures are ready:
+  - Point lights enable static/dynamic cubemap-shadow macros and may use PCF.
+  - Spotlights enable the dynamic single-layer shadow macro and upload `u_dynamicShadowMatrix`.
+  - Directional lights can enable both static single-layer shadow and dynamic CSM macros, uploading `u_staticShadowMatrix`, `u_csmMatrices`, and `u_csmDistances`.
+- In `dlight_shader.frag.glsl`:
+  - Point lights sample cubemap shadows through `CalcCubemapShadowIntensity()`.
+  - Spotlights sample single-layer 2D shadows through `CalcShadowIntensityLinear()`.
+  - Directional lights sample `sampler2DArrayShadow csmTex` through `CalcCSMShadowIntensity()` and take `min` between the static directional-light shadow and CSM result.
 
 ```mermaid
 flowchart TD
@@ -95,23 +95,23 @@ Z --> AA["dlight_shader.frag.glsl samples shadow textures"]
 ```
 
 ## Dependencies
-- Renderer 延迟渲染链路：Shadow Map 生成要求 `R_CanRenderGBuffer()` 为真，因此依赖 deferred lighting / G-Buffer 可用。
-- 共享视图数据：`CameraUBO` 与 `CSM_LEVELS` 定义在 `Build/svencoop/renderer/shader/common.h`，供 CPU 和 shader 双方共享。
-- 几何着色器多视图输出：`wsurf_shader.geom.glsl` 与 `studio_shader.geom.glsl` 使用 `CameraUBO.numViews` 和 `gl_Layer` 把一次 draw 写入 cubemap 面或 CSM array layer。
-- 动态光来源：引擎 `cl_dlights` 通过 `R_ProcessEngineDynamicLights()` 更新；地图 `light_dynamic` 通过 `R_ParseBSPEntity_Light_Dynamic()` 载入。
-- 阴影开关：总开关为 `r_shadow`；flashlight 阴影相关参数还依赖 `r_flashlight_*` 系列控制变量。
+- Renderer deferred-rendering chain: Shadow Map generation requires `R_CanRenderGBuffer()` to be true, so it depends on available deferred lighting / G-Buffer support.
+- Shared view data: `CameraUBO` and `CSM_LEVELS` are defined in `Build/svencoop/renderer/shader/common.h` and shared by CPU and shader code.
+- Geometry-shader multiview output: `wsurf_shader.geom.glsl` and `studio_shader.geom.glsl` use `CameraUBO.numViews` and `gl_Layer` to write one draw into cubemap faces or CSM array layers.
+- Dynamic-light sources: engine `cl_dlights` are updated through `R_ProcessEngineDynamicLights()`; map `light_dynamic` is loaded through `R_ParseBSPEntity_Light_Dynamic()`.
+- Shadow switches: the global switch is `r_shadow`; flashlight-shadow parameters also depend on the `r_flashlight_*` control variables.
 
 ## Notes
-- `R_ShouldRenderShadow()` 会在 shadow view、水面视图、portal、dev overview 或 `r_shadow = 0` 时直接跳过整个 Shadow Map 生成阶段。
-- `R_ResetShadowTextures()` 只把当前帧可见光源的动态阴影纹理标记为 not ready；静态阴影纹理可跨帧缓存，仅在首次生成或尺寸变化后重建。
-- 点光和方向光的静态阴影 pass 会根据 `c_brush_polys` 是否大于 0 决定 `SetReady(true/false)`，表示静态世界几何是否真正写入了该阴影纹理。
-- 与光源绑定的模型可通过 `source_entity_index` 在阴影 pass 中被临时隐藏，避免发光体把自己投到自己的 Shadow Map 中。
-- `R_ShouldCastShadow()` 主要约束 studio 实体投射阴影；世界表面不走这个判定，而是在 `gl_wsurf.cpp` 中使用单独的世界阴影绘制路径或 shadow proxy。
-- 聚光当前没有对应的静态单层阴影分支；虽然后续参数结构允许传入 static shadow 指针，但生成与着色逻辑目前只使用动态 2D shadow。
-- 方向光 CSM 的 4 级联当前使用固定 `CSM_LEVELS = 4`，并基于包围截头棱锥的球半径估算正交尺寸，优先保证稳定和不裁边。
+- `R_ShouldRenderShadow()` directly skips the entire Shadow Map generation stage in shadow view, water view, portal, dev overview, or when `r_shadow = 0`.
+- `R_ResetShadowTextures()` marks only dynamic shadow textures of lights visible this frame as not ready; static shadow textures can be cached across frames and are rebuilt only on first generation or after a size change.
+- Static shadow passes for point and directional lights choose `SetReady(true/false)` based on whether `c_brush_polys` is greater than 0, indicating whether static world geometry actually wrote to the shadow texture.
+- A model bound to a light can be temporarily hidden through `source_entity_index` during the Shadow pass, preventing the light source from casting into its own Shadow Map.
+- `R_ShouldCastShadow()` primarily constrains studio entities casting shadows; world surfaces do not use this decision, instead using a separate world-shadow drawing path or shadow proxy in `gl_wsurf.cpp`.
+- Spotlights currently have no corresponding static single-layer shadow branch. Although later parameter structures permit a static-shadow pointer, generation and shading currently use only dynamic 2D shadows.
+- The 4 directional-light CSM cascades currently use fixed `CSM_LEVELS = 4`, estimating orthographic size from the bounding frustum sphere radius to prioritize stability and avoid clipping.
 
 ## Callers (optional)
-- `Plugins/Renderer/gl_rmain.cpp` - `R_RenderFrameStart` 调用 `R_ProcessEngineDynamicLights`
-- `Plugins/Renderer/gl_rmain.cpp` - `R_PreRenderView` 依次调用 `R_RenderViewStart`、`R_RenderShadowMap`、`R_RenderWaterPass`
-- `Plugins/Renderer/gl_shadow.cpp` - `R_RenderShadowMap` 调用 `R_ResetShadowTextures` 和 `R_RenderShadowmapForDynamicLights`
-- `Plugins/Renderer/gl_light.cpp` - `R_EndRenderGBuffer` 调用 `R_LightShadingPass`
+- `Plugins/Renderer/gl_rmain.cpp` - `R_RenderFrameStart` calls `R_ProcessEngineDynamicLights`
+- `Plugins/Renderer/gl_rmain.cpp` - `R_PreRenderView` calls `R_RenderViewStart`, `R_RenderShadowMap`, and `R_RenderWaterPass` in order
+- `Plugins/Renderer/gl_shadow.cpp` - `R_RenderShadowMap` calls `R_ResetShadowTextures` and `R_RenderShadowmapForDynamicLights`
+- `Plugins/Renderer/gl_light.cpp` - `R_EndRenderGBuffer` calls `R_LightShadingPass`

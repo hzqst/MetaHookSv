@@ -4,28 +4,28 @@ type: note
 permalink: metahooksv/draw-sprite
 ---
 
-# Renderer Plugin - Sprite绘制流程详解
+# Renderer Plugin - Detailed Sprite Rendering Flow
 
-## 概述
+## Overview
 
-Sprite是GoldSrc引擎中的2D精灵对象，用于渲染粒子效果、UI元素、特效等。Renderer插件实现了现代化的Sprite渲染系统，支持帧插值、多种混合模式和高级特效。
+Sprites are 2D sprite objects in the GoldSrc engine, used to render particle effects, UI elements, visual effects, and more. The Renderer plugin implements a modern Sprite rendering system that supports frame interpolation, multiple blend modes, and advanced effects.
 
 ---
 
-## Sprite绘制调用链
+## Sprite Rendering Call Chain
 
-### 完整调用流程
+### Complete Call Flow
 
 ```
 R_RenderScene()
-└── R_DrawEntitiesOnList()              // 不透明实体列表
+└── R_DrawEntitiesOnList()              // Opaque entity list
     └── R_DrawCurrentEntity(false)
         └── R_DrawSpriteEntity(false)
             └── R_DrawSpriteModel()
                 └── R_DrawSpriteModelInterpFrames()
 
 R_RenderScene()
-└── R_DrawTransEntities()               // 透明实体列表
+└── R_DrawTransEntities()               // Transparent entity list
     └── R_DrawTEntitiesOnList()
         └── R_DrawCurrentEntity(true)
             └── R_DrawSpriteEntity(true)
@@ -35,25 +35,25 @@ R_RenderScene()
 
 ---
 
-## 详细函数分析
+## Detailed Function Analysis
 
-### 1. R_DrawCurrentEntity() - 实体分发器
-**位置**: `gl_rmain.cpp:2358-2401`
+### 1. R_DrawCurrentEntity() - Entity Dispatcher
+**Location**: `gl_rmain.cpp:2358-2401`
 
-**功能**: 根据模型类型分发到不同的渲染函数
+**Purpose**: dispatches to different rendering functions based on model type
 
 ```cpp
 void R_DrawCurrentEntity(bool bTransparent) {
-    // 检查是否应该绘制
+    // Check whether the entity should be rendered
     if (R_IsHidingEntity((*currententity)))
         return;
     
-    // 透明物体计算混合值
+    // Calculate the blend value for transparent objects
     if (bTransparent) {
         (*r_blend) = CL_FxBlend((*currententity)) / 255.0;
     }
     
-    // 根据模型类型分发
+    // Dispatch based on model type
     switch ((*currententity)->model->type) {
         case mod_sprite:
             R_DrawSpriteEntity(bTransparent);
@@ -70,105 +70,105 @@ void R_DrawCurrentEntity(bool bTransparent) {
 
 ---
 
-### 2. R_DrawSpriteEntity() - Sprite实体准备
-**位置**: `gl_rmain.cpp:2198-2224`
+### 2. R_DrawSpriteEntity() - Sprite Entity Preparation
+**Location**: `gl_rmain.cpp:2198-2224`
 
-**功能**: 准备Sprite渲染所需的位置和混合参数
+**Purpose**: prepares position and blend parameters required for Sprite rendering
 
 ```cpp
 void R_DrawSpriteEntity(bool bTransparent) {
-    // 确定Sprite位置
+    // Determine the Sprite position
     if ((*currententity)->curstate.body) {
-        // 使用附着点位置
+        // Use the attachment-point position
         float* pAttachment = R_GetAttachmentPoint(...);
         VectorCopy(pAttachment, r_entorigin);
     } else {
-        // 使用实体原点
+        // Use the entity origin
         VectorCopy((*currententity)->origin, r_entorigin);
     }
     
-    // 处理Glow渲染模式的特殊混合
+    // Handle special blending for Glow render mode
     if (bTransparent && rendermode == kRenderGlow) {
         (*r_blend) *= R_GlowBlend((*currententity));
     }
     
-    // 调用实际绘制
+    // Perform the actual draw
     if ((*r_blend) > 0) {
         R_DrawSpriteModel((*currententity));
     }
 }
 ```
 
-**关键点**:
-- 支持附着点定位 (用于附着到其他实体)
-- Glow模式的距离衰减计算
-- 混合值过滤 (blend <= 0 不绘制)
+**Key points**:
+- Supports attachment-point positioning (for attachment to other entities)
+- Distance attenuation calculation for Glow mode
+- Blend-value filtering (does not draw when blend <= 0)
 
 ---
 
-### 3. R_DrawSpriteModel() - Sprite模型绘制入口
-**位置**: `gl_sprite.cpp:769-802`
+### 3. R_DrawSpriteModel() - Sprite Model Rendering Entry Point
+**Location**: `gl_sprite.cpp:769-802`
 
-**功能**: 获取Sprite帧并准备插值数据
+**Purpose**: obtains Sprite frames and prepares interpolation data
 
 ```cpp
 void R_DrawSpriteModel(cl_entity_t *ent) {
-    // 获取Sprite数据
+    // Obtain Sprite data
     auto pSprite = (msprite_t *)ent->model->cache.data;
     auto pSpriteRenderData = R_GetSpriteRenderDataFromModel(ent->model);
     
-    // 帧插值处理
+    // Frame interpolation handling
     float lerp = 0;
     mspriteframe_t* frame = nullptr;
     mspriteframe_t* oldframe = nullptr;
     
     if (R_SpriteAllowLerping(ent, pSprite)) {
-        // 启用帧插值
+        // Enable frame interpolation
         R_GetSpriteFrameInterpolant(ent, pSprite, &frame, &oldframe, &lerp);
     } else {
-        // 不插值，使用当前帧
+        // No interpolation; use the current frame
         int frameIndex = (int)ent->curstate.frame;
         oldframe = frame = R_GetSpriteFrame(pSprite, frameIndex);
     }
     
-    // 调用实际渲染
+    // Perform the actual render
     R_DrawSpriteModelInterpFrames(ent, pSpriteRenderData.get(), 
                                    pSprite, frame, oldframe, lerp);
 }
 ```
 
-**关键功能**:
-- **帧插值** - 平滑的动画过渡
-- **帧选择** - 根据实体状态选择正确的帧
-- **渲染数据缓存** - 避免重复加载
+**Key features**:
+- **Frame interpolation** - smooth animation transitions
+- **Frame selection** - chooses the correct frame based on entity state
+- **Render-data caching** - avoids repeated loading
 
 ---
 
-### 4. R_DrawSpriteModelInterpFrames() - 核心渲染函数
-**位置**: `gl_sprite.cpp:464-767`
+### 4. R_DrawSpriteModelInterpFrames() - Core Rendering Function
+**Location**: `gl_sprite.cpp:464-767`
 
-这是Sprite渲染的核心函数，包含完整的渲染管线设置。
+This is the core Sprite rendering function and contains complete render-pipeline setup.
 
-#### 4.1 渲染模式设置
+#### 4.1 Render-Mode Setup
 
 ```cpp
 void R_DrawSpriteModelInterpFrames(...) {
     program_state_t SpriteProgramState = 0;
     
-    // 计算颜色和混合
+    // Calculate color and blending
     colorVec color = { 0 };
     R_SpriteColor(&color, ent, (*r_blend) * 255);
     
-    // 根据渲染模式设置OpenGL状态
+    // Configure OpenGL state based on render mode
     switch (ent->curstate.rendermode) {
         case kRenderNormal:
-            // 不透明渲染
+            // Opaque rendering
             glDisable(GL_BLEND);
             break;
             
         case kRenderTransColor:
         case kRenderTransAlpha:
-            // Alpha混合
+            // Alpha blending
             glDepthMask(GL_FALSE);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -176,7 +176,7 @@ void R_DrawSpriteModelInterpFrames(...) {
             break;
             
         case kRenderTransAdd:
-            // 加法混合
+            // Additive blending
             glDepthMask(GL_FALSE);
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ONE);
@@ -184,7 +184,7 @@ void R_DrawSpriteModelInterpFrames(...) {
             break;
             
         case kRenderGlow:
-            // 发光效果 (无深度测试)
+            // Glow effect (without depth testing)
             glDisable(GL_DEPTH_TEST);
             glDepthMask(GL_FALSE);
             glEnable(GL_BLEND);
@@ -195,77 +195,77 @@ void R_DrawSpriteModelInterpFrames(...) {
 }
 ```
 
-#### 4.2 Sprite类型处理
+#### 4.2 Sprite-Type Handling
 
-Sprite支持5种朝向类型:
+Sprites support five orientation types:
 
 ```cpp
 int type = pSprite->type;
 
-// SvEngine支持自定义朝向
+// SvEngine supports custom orientations
 if (g_iEngineType == ENGINE_SVENGINE) {
     if (ent->curstate.effects & EF_SPRITE_CUSTOM_VP) {
         type = ent->curstate.sequence;
     }
 }
 
-// 有旋转角度时强制使用ORIENTED模式
+// Force ORIENTED mode when a rotation angle is present
 if (ent->angles[2] != 0 && type == SPR_VP_PARALLEL) {
     type = SPR_VP_PARALLEL_ORIENTED;
 }
 
 switch (type) {
     case SPR_VP_PARALLEL:
-        // 平行于视平面，始终面向相机
+        // Parallel to the view plane; always faces the camera
         SpriteProgramState |= SPRITE_PARALLEL_ENABLED;
         break;
         
     case SPR_VP_PARALLEL_UPRIGHT:
-        // 平行于视平面，但保持垂直
+        // Parallel to the view plane while remaining upright
         SpriteProgramState |= SPRITE_PARALLEL_UPRIGHT_ENABLED;
         break;
         
     case SPR_FACING_UPRIGHT:
-        // 面向相机，但保持垂直
+        // Faces the camera while remaining upright
         SpriteProgramState |= SPRITE_FACING_UPRIGHT_ENABLED;
         break;
         
     case SPR_ORIENTED:
-        // 固定朝向，不面向相机
+        // Fixed orientation; does not face the camera
         SpriteProgramState |= SPRITE_ORIENTED_ENABLED;
         break;
         
     case SPR_VP_PARALLEL_ORIENTED:
-        // 平行于视平面，支持旋转
+        // Parallel to the view plane, with rotation support
         SpriteProgramState |= SPRITE_PARALLEL_ORIENTED_ENABLED;
         break;
 }
 ```
 
-**Sprite类型说明**:
-- **SPR_VP_PARALLEL** - 广告牌模式，始终面向相机
-- **SPR_VP_PARALLEL_UPRIGHT** - 垂直广告牌，Y轴保持向上
-- **SPR_FACING_UPRIGHT** - 面向相机但保持垂直
-- **SPR_ORIENTED** - 固定朝向，用于贴花等
-- **SPR_VP_PARALLEL_ORIENTED** - 支持旋转的广告牌
+**Sprite type reference**:
+- **SPR_VP_PARALLEL** - billboard mode; always faces the camera
+- **SPR_VP_PARALLEL_UPRIGHT** - upright billboard; the Y axis remains upward
+- **SPR_FACING_UPRIGHT** - faces the camera while remaining upright
+- **SPR_ORIENTED** - fixed orientation, used for decals and similar objects
+- **SPR_VP_PARALLEL_ORIENTED** - rotatable billboard
 
-#### 4.3 特效标志设置
+#### 4.3 Effect-Flag Setup
 
 ```cpp
-// Alpha测试 (透明度裁剪)
+// Alpha test (alpha clipping)
 SpriteProgramState |= SPRITE_ALPHA_TEST_ENABLED;
 
-// 水面裁剪
+// Water-surface clipping
 if (R_IsRenderingWaterView()) {
     SpriteProgramState |= SPRITE_CLIP_ENABLED;
 }
 
-// G-Buffer渲染
+// G-Buffer rendering
 if (R_IsRenderingGBuffer()) {
     SpriteProgramState |= SPRITE_GBUFFER_ENABLED;
 }
 
-// 雾效
+// Fog
 if (R_IsRenderingFog()) {
     if (r_fog_mode == GL_LINEAR)
         SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
@@ -275,30 +275,30 @@ if (R_IsRenderingFog()) {
         SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 }
 
-// Gamma混合
+// Gamma blending
 if (R_IsRenderingGammaBlending()) {
     SpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 }
 
-// OIT混合 (顺序无关透明度)
+// OIT blending (order-independent transparency)
 if (r_draw_oitblend) {
     SpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
 }
 
-// 帧插值
+// Frame interpolation
 if (frame != oldframe) {
     SpriteProgramState |= SPRITE_LERP_ENABLED;
 }
 ```
 
-#### 4.4 着色器和绘制
+#### 4.4 Shaders and Drawing
 
 ```cpp
-// 选择着色器程序
+// Select the shader program
 sprite_program_t prog = { 0 };
 R_UseSpriteProgram(SpriteProgramState, &prog);
 
-// 设置Uniform变量
+// Set uniform variables
 if (prog.in_up_down_left_right != -1)
     glUniform4f(prog.in_up_down_left_right, 
                 frame->up, frame->down, frame->left, frame->right);
@@ -318,128 +318,128 @@ if (prog.in_scale != -1)
 if (prog.in_lerp != -1)
     glUniform1f(prog.in_lerp, lerp);
 
-// 绑定纹理
+// Bind textures
 GL_BindTextureUnit(0, GL_TEXTURE_2D, frame->gl_texturenum);
 
 if (SpriteProgramState & SPRITE_LERP_ENABLED) {
     GL_BindTextureUnit(1, GL_TEXTURE_2D, oldframe->gl_texturenum);
 }
 
-// 绘制四边形 (2个三角形)
+// Draw a quad (two triangles)
 const uint32_t indices[] = {0, 1, 2, 2, 3, 0};
 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, indices);
 ```
 
 ---
 
-## 数据结构
+## Data Structures
 
-### CSpriteModelRenderData - Sprite渲染数据
+### CSpriteModelRenderData - Sprite Render Data
 ```cpp
 class CSpriteModelRenderData {
 public:
-    int flags;                          // 特效标志 (FMODEL_NOBLOOM等)
-    model_t* model;                     // 关联的模型
+    int flags;                          // Effect flags (such as FMODEL_NOBLOOM)
+    model_t* model;                     // Associated model
     std::vector<std::shared_ptr<CSpriteModelRenderMaterial>> vSpriteMaterials;
 };
 ```
 
-### CSpriteModelRenderMaterial - Sprite材质
+### CSpriteModelRenderMaterial - Sprite Material
 ```cpp
 class CSpriteModelRenderMaterial {
 public:
-    std::string basetexture;            // 基础纹理名
+    std::string basetexture;            // Base texture name
     CGameModelRenderTexture textures[SPRITE_MAX_TEXTURE];
-    mspriteframe_t replaceframe;        // 替换帧数据
+    mspriteframe_t replaceframe;        // Replacement frame data
 };
 ```
 
-### sprite_program_t - Sprite着色器程序
+### sprite_program_t - Sprite Shader Program
 ```cpp
 typedef struct sprite_program_s {
-    int program;                        // 着色器程序ID
-    int in_up_down_left_right;         // 纹理坐标Uniform
-    int in_color;                       // 颜色Uniform
-    int in_origin;                      // 位置Uniform
-    int in_angles;                      // 角度Uniform
-    int in_scale;                       // 缩放Uniform
-    int in_lerp;                        // 插值系数Uniform
+    int program;                        // Shader program ID
+    int in_up_down_left_right;         // Texture-coordinate uniform
+    int in_color;                       // Color uniform
+    int in_origin;                      // Position uniform
+    int in_angles;                      // Angle uniform
+    int in_scale;                       // Scale uniform
+    int in_lerp;                        // Interpolation-factor uniform
 } sprite_program_t;
 ```
 
 ---
 
-## 渲染模式详解
+## Render Modes in Detail
 
-### kRenderNormal (0) - 不透明
-- 禁用混合
-- 写入深度缓冲
-- 标准光照
+### kRenderNormal (0) - Opaque
+- Blending disabled
+- Writes to the depth buffer
+- Standard lighting
 
-### kRenderTransColor (1) - 颜色透明
-- Alpha混合
-- 不写入深度
-- 使用rendercolor作为颜色
+### kRenderTransColor (1) - Color Transparency
+- Alpha blending
+- Does not write depth
+- Uses `rendercolor` as the color
 
-### kRenderTransAlpha (2) - Alpha透明
-- Alpha混合
-- 不写入深度
-- 使用renderamt作为透明度
+### kRenderTransAlpha (2) - Alpha Transparency
+- Alpha blending
+- Does not write depth
+- Uses `renderamt` as the opacity
 
-### kRenderTransAdd (4) - 加法混合
-- 加法混合 (GL_ONE, GL_ONE)
-- 不写入深度
-- 用于发光效果
+### kRenderTransAdd (4) - Additive Blending
+- Additive blending (`GL_ONE`, `GL_ONE`)
+- Does not write depth
+- Used for glow effects
 
-### kRenderGlow (3) - 发光
-- 加法混合
-- 禁用深度测试
-- 距离衰减
-- 用于光晕效果
-
----
-
-## 程序状态标志
-
-### 混合模式
-- `SPRITE_ALPHA_BLEND_ENABLED` - Alpha混合
-- `SPRITE_ADDITIVE_BLEND_ENABLED` - 加法混合
-- `SPRITE_GAMMA_BLEND_ENABLED` - Gamma空间混合
-
-### 特效
-- `SPRITE_ALPHA_TEST_ENABLED` - Alpha测试
-- `SPRITE_LERP_ENABLED` - 帧插值
-- `SPRITE_CLIP_ENABLED` - 水面裁剪
-- `SPRITE_OIT_BLEND_ENABLED` - 顺序无关透明度
-
-### 雾效
-- `SPRITE_LINEAR_FOG_ENABLED` - 线性雾
-- `SPRITE_EXP_FOG_ENABLED` - 指数雾
-- `SPRITE_EXP2_FOG_ENABLED` - 指数平方雾
-- `SPRITE_LINEAR_FOG_SHIFT_ENABLED` - 雾效偏移
-
-### 朝向类型
-- `SPRITE_PARALLEL_ENABLED` - 平行广告牌
-- `SPRITE_PARALLEL_UPRIGHT_ENABLED` - 垂直平行广告牌
-- `SPRITE_FACING_UPRIGHT_ENABLED` - 面向垂直
-- `SPRITE_ORIENTED_ENABLED` - 固定朝向
-- `SPRITE_PARALLEL_ORIENTED_ENABLED` - 可旋转广告牌
-
-### 渲染目标
-- `SPRITE_GBUFFER_ENABLED` - 写入G-Buffer
+### kRenderGlow (3) - Glow
+- Additive blending
+- Depth testing disabled
+- Distance attenuation
+- Used for halo effects
 
 ---
 
-## 帧插值系统
+## Program-State Flags
 
-### R_SpriteAllowLerping() - 判断是否允许插值
+### Blend Modes
+- `SPRITE_ALPHA_BLEND_ENABLED` - Alpha blending
+- `SPRITE_ADDITIVE_BLEND_ENABLED` - Additive blending
+- `SPRITE_GAMMA_BLEND_ENABLED` - Gamma-space blending
+
+### Effects
+- `SPRITE_ALPHA_TEST_ENABLED` - Alpha test
+- `SPRITE_LERP_ENABLED` - Frame interpolation
+- `SPRITE_CLIP_ENABLED` - Water-surface clipping
+- `SPRITE_OIT_BLEND_ENABLED` - Order-independent transparency
+
+### Fog
+- `SPRITE_LINEAR_FOG_ENABLED` - Linear fog
+- `SPRITE_EXP_FOG_ENABLED` - Exponential fog
+- `SPRITE_EXP2_FOG_ENABLED` - Exponential-squared fog
+- `SPRITE_LINEAR_FOG_SHIFT_ENABLED` - Fog offset
+
+### Orientation Types
+- `SPRITE_PARALLEL_ENABLED` - Parallel billboard
+- `SPRITE_PARALLEL_UPRIGHT_ENABLED` - Upright parallel billboard
+- `SPRITE_FACING_UPRIGHT_ENABLED` - Camera-facing upright
+- `SPRITE_ORIENTED_ENABLED` - Fixed orientation
+- `SPRITE_PARALLEL_ORIENTED_ENABLED` - Rotatable billboard
+
+### Render Target
+- `SPRITE_GBUFFER_ENABLED` - Writes to the G-Buffer
+
+---
+
+## Frame-Interpolation System
+
+### R_SpriteAllowLerping() - Determines Whether Interpolation Is Allowed
 ```cpp
 bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite) {
-    // 检查CVar设置
+    // Check the CVar setting
     if (!r_sprite_lerping->value)
         return false;
     
-    // 检查渲染模式
+    // Check the render mode
     if (ent->curstate.rendermode != kRenderNormal &&
         ent->curstate.rendermode != kRenderTransAdd)
         return false;
@@ -448,17 +448,17 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite) {
 }
 ```
 
-### R_GetSpriteFrameInterpolant() - 获取插值帧
+### R_GetSpriteFrameInterpolant() - Obtains Interpolated Frames
 ```cpp
 void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite,
                                   mspriteframe_t** frame,
                                   mspriteframe_t** oldframe,
                                   float* lerp) {
-    // 计算当前帧和上一帧
+    // Calculate the current and previous frames
     int currentFrame = (int)ent->curstate.frame;
     int lastFrame = (int)ent->latched.prevframe;
     
-    // 计算插值系数
+    // Calculate the interpolation factor
     *lerp = ent->curstate.framerate * (*cl_time - ent->latched.prevanimtime);
     *lerp = math_clamp(*lerp, 0.0f, 1.0f);
     
@@ -467,18 +467,18 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite,
 }
 ```
 
-**插值效果**:
-- 平滑的动画过渡
-- 消除帧跳跃
-- 提升视觉质量
+**Interpolation effects**:
+- Smooth animation transitions
+- Eliminates frame jumps
+- Improves visual quality
 
 ---
 
-## 外部文件支持
+## External File Support
 
-Sprite支持通过`_external.txt`文件自定义属性:
+Sprites support custom properties through `_external.txt` files:
 
-### sprite_efx - 特效标志
+### sprite_efx - Effect Flags
 ```
 {
     "classname" "sprite_efx"
@@ -486,7 +486,7 @@ Sprite支持通过`_external.txt`文件自定义属性:
 }
 ```
 
-### sprite_frame_texture - 帧纹理替换
+### sprite_frame_texture - Frame Texture Replacement
 ```
 {
     "classname" "sprite_frame_texture"
@@ -497,76 +497,76 @@ Sprite支持通过`_external.txt`文件自定义属性:
 
 ---
 
-## 性能优化
+## Performance Optimization
 
-### 1. 渲染数据缓存
-- `g_SpriteRenderDataCache` - 缓存Sprite渲染数据
-- 避免重复解析外部文件
-- 减少内存分配
+### 1. Render-Data Cache
+- `g_SpriteRenderDataCache` - caches Sprite render data
+- Avoids repeatedly parsing external files
+- Reduces memory allocations
 
-### 2. 着色器程序缓存
-- `g_SpriteProgramTable` - 缓存编译的着色器
-- 根据程序状态快速查找
-- 避免重复编译
+### 2. Shader-Program Cache
+- `g_SpriteProgramTable` - caches compiled shaders
+- Fast lookup by program state
+- Avoids repeated compilation
 
-### 3. 批量绘制
-- 使用索引绘制 (glDrawElements)
-- 减少状态切换
-- 优化GPU利用率
+### 3. Batched Drawing
+- Uses indexed drawing (`glDrawElements`)
+- Reduces state changes
+- Improves GPU utilization
 
-### 4. 早期剔除
-- 混合值检查 (blend <= 0)
-- 视锥体剔除
-- 距离剔除 (Glow模式)
-
----
-
-## 着色器系统
-
-### Sprite着色器文件
-- `sprite_shader.vert.glsl` - 顶点着色器
-- `sprite_shader.frag.glsl` - 片段着色器
-
-### 着色器变体
-根据`SpriteProgramState`标志组合生成不同的着色器变体:
-- 基础变体: 2^5 = 32种朝向和混合组合
-- 特效变体: 雾效、插值、裁剪等
-- 总计: 数百种着色器变体
-
-### 动态编译
-- 首次使用时编译
-- 缓存编译结果
-- 支持热重载
+### 4. Early Culling
+- Blend-value check (blend <= 0)
+- Frustum culling
+- Distance culling (Glow mode)
 
 ---
 
-## 调试和诊断
+## Shader System
 
-### OpenGL调试组
+### Sprite Shader Files
+- `sprite_shader.vert.glsl` - vertex shader
+- `sprite_shader.frag.glsl` - fragment shader
+
+### Shader Variants
+Different shader variants are generated from combinations of `SpriteProgramState` flags:
+- Base variants: 2^5 = 32 orientation and blend combinations
+- Effect variants: fog, interpolation, clipping, and more
+- Total: hundreds of shader variants
+
+### Dynamic Compilation
+- Compiled on first use
+- Compilation results cached
+- Supports hot reloading
+
+---
+
+## Debugging and Diagnostics
+
+### OpenGL Debug Group
 ```cpp
 GL_BeginDebugGroupFormat("R_DrawSpriteModelInterpFrames - %s", 
                          ent->model->name);
-// ... 渲染代码 ...
+// ... rendering code ...
 GL_EndDebugGroup();
 ```
 
-### 控制台变量
-- `r_sprite_lerping` - 启用/禁用帧插值
-- `gl_spriteblend` - Sprite混合模式
-- `r_drawentities` - 启用/禁用实体渲染
+### Console Variables
+- `r_sprite_lerping` - enables/disables frame interpolation
+- `gl_spriteblend` - Sprite blend mode
+- `r_drawentities` - enables/disables entity rendering
 
 ---
 
-## 总结
+## Summary
 
-Sprite渲染系统的特点:
+Characteristics of the Sprite rendering system:
 
-1. **灵活的渲染模式** - 支持5种混合模式
-2. **多种朝向类型** - 5种广告牌模式
-3. **帧插值** - 平滑的动画过渡
-4. **高级特效** - 雾效、OIT、G-Buffer支持
-5. **外部文件** - 可自定义纹理和属性
-6. **性能优化** - 缓存、批量绘制、早期剔除
-7. **着色器系统** - 动态编译、多变体支持
+1. **Flexible render modes** - supports five blend modes
+2. **Multiple orientation types** - five billboard modes
+3. **Frame interpolation** - smooth animation transitions
+4. **Advanced effects** - fog, OIT, and G-Buffer support
+5. **External files** - customizable textures and properties
+6. **Performance optimization** - caching, batched drawing, and early culling
+7. **Shader system** - dynamic compilation and multi-variant support
 
-Sprite系统是粒子效果、UI元素、特效的基础，通过现代化的渲染管线提供了高质量的视觉效果。
+The Sprite system is the foundation for particle effects, UI elements, and visual effects, providing high-quality visuals through a modern rendering pipeline.

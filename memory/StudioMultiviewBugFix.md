@@ -4,205 +4,205 @@ type: note
 permalink: metahooksv/studio-multiview-bug-fix
 ---
 
-# StudioModel Multiview 几何扭曲问题修复
+# Fixing StudioModel Multiview Geometry Distortion
 
-## 问题描述
+## Problem Description
 
-启用`STUDIO_MULTIVIEW_ENABLED`后，在RenderDoc中观察到StudioModel的顶点被变换到错误的坐标上，导致模型完全扭曲。而WorldSurface的渲染正常。
+After enabling `STUDIO_MULTIVIEW_ENABLED`, RenderDoc shows that StudioModel vertices are transformed to incorrect coordinates, completely distorting the model. WorldSurface rendering remains normal.
 
-## 根本原因
+## Root Cause
 
-在`studio_shader.vert.glsl`中存在**顶点位置不一致**的问题：
+`studio_shader.vert.glsl` contains a **vertex-position inconsistency**:
 
-### 问题代码
+### Problematic Code
 
 ```glsl
 void main(void)
 {
-    // 1. 骨骼变换得到outvert
+    // 1. Bone transformation produces outvert
     vec3 outvert = vec3(
         dot(vert, vertbone_matrix_0) + vertbone_matrix[0][3],
         dot(vert, vertbone_matrix_1) + vertbone_matrix[1][3],
         dot(vert, vertbone_matrix_2) + vertbone_matrix[2][3]
     );
     
-    // 2. 赋值给v_worldpos
-    v_worldpos = outvert;  // 第78行
+    // 2. Assign it to v_worldpos
+    v_worldpos = outvert;  // Line 78
     
-    // 3. 在某些渲染模式下，v_worldpos被修改
+    // 3. In certain rendering modes, v_worldpos is modified
     #if defined(OUTLINE_ENABLED)
         outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
-        v_worldpos = outvert;  // 第106行：v_worldpos被更新
+        v_worldpos = outvert;  // Line 106: v_worldpos is updated
     #elif defined(STUDIO_NF_CHROME)
         outvert = outvert + v_smoothnormal * StudioUBO.r_scale;
-        v_worldpos = outvert;  // 第111行：v_worldpos被更新
+        v_worldpos = outvert;  // Line 111: v_worldpos is updated
     #endif
     
-    // 4. 计算gl_Position时使用的是outvert（而不是v_worldpos）
-    gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);  // ❌ 错误！
+    // 4. gl_Position is calculated using outvert (rather than v_worldpos)
+    gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);  // ❌ Incorrect!
     
     v_projpos = gl_Position;
 }
 ```
 
-### 数据流分析
+### Data Flow Analysis
 
-**正常情况（无OUTLINE/CHROME）：**
+**Normal case (without OUTLINE/CHROME):**
 - `v_worldpos = outvert` ✅
-- `gl_Position` 使用 `outvert` ✅
-- 两者一致，geometry shader收到的`v_worldpos`正确
+- `gl_Position` uses `outvert` ✅
+- The two are consistent, and the geometry shader receives the correct `v_worldpos`
 
-**OUTLINE/CHROME模式：**
-- `v_worldpos = outvert + offset` ✅（修改后的位置）
-- `gl_Position` 使用 `outvert` ❌（未修改的位置）
-- **不一致！**
+**OUTLINE/CHROME modes:**
+- `v_worldpos = outvert + offset` ✅ (modified position)
+- `gl_Position` uses `outvert` ❌ (unmodified position)
+- **Inconsistent!**
 
-### Multiview下的问题
+### Problem in Multiview
 
-在几何着色器的multiview路径中：
+In the geometry shader's multiview path:
 
 ```glsl
-// 从vertex shader接收v_worldpos（可能包含OUTLINE/CHROME偏移）
+// Receive v_worldpos from the vertex shader (may include an OUTLINE/CHROME offset)
 vec4 worldPos = vec4(v_worldpos[i], 1.0);
 
-// 重新计算gl_Position
+// Recalculate gl_Position
 gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
 ```
 
-如果`v_worldpos`与vertex shader中计算`gl_Position`使用的顶点位置不一致，就会导致：
-1. **非multiview模式**：使用vertex shader的`gl_Position`（基于`outvert`）→ 正确
-2. **Multiview模式**：geometry shader重新计算（基于`v_worldpos`）→ 错误！
+If `v_worldpos` is inconsistent with the vertex position used to calculate `gl_Position` in the vertex shader, this causes:
+1. **Non-multiview mode**: uses the vertex shader's `gl_Position` (based on `outvert`) → correct
+2. **Multiview mode**: the geometry shader recalculates it (based on `v_worldpos`) → incorrect!
 
-结果就是模型在multiview模式下扭曲。
+The result is a distorted model in multiview mode.
 
-## 解决方案
+## Solution
 
-**修改`studio_shader.vert.glsl`第187行**，使用`v_worldpos`而不是`outvert`：
+**Modify line 187 of `studio_shader.vert.glsl`** to use `v_worldpos` instead of `outvert`:
 
 ```glsl
-// ❌ 修复前
+// ❌ Before the fix
 gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(outvert, 1.0);
 
-// ✅ 修复后
+// ✅ After the fix
 gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * vec4(v_worldpos, 1.0);
 ```
 
-### 为什么这样修复？
+### Why Does This Fix Work?
 
-1. **保证一致性**：
-   - Vertex shader使用`v_worldpos`计算`gl_Position`
-   - Geometry shader使用`v_worldpos`重新计算`gl_Position`
-   - 两者使用相同的输入数据
+1. **Ensures consistency**:
+   - The vertex shader uses `v_worldpos` to calculate `gl_Position`
+   - The geometry shader uses `v_worldpos` to recalculate `gl_Position`
+   - Both use the same input data
 
-2. **正确处理所有模式**：
-   - 普通模式：`v_worldpos = outvert`
-   - OUTLINE模式：`v_worldpos = outvert + offset`
-   - CHROME模式：`v_worldpos = outvert + offset`
-   - 所有模式下，`gl_Position`都基于最终的`v_worldpos`
+2. **Correctly handles every mode**:
+   - Regular mode: `v_worldpos = outvert`
+   - OUTLINE mode: `v_worldpos = outvert + offset`
+   - CHROME mode: `v_worldpos = outvert + offset`
+   - In every mode, `gl_Position` is based on the final `v_worldpos`
 
-3. **非multiview模式兼容**：
-   - Geometry shader的passthrough路径直接透传`gl_in[i].gl_Position`
-   - 现在这个`gl_Position`使用的是正确的`v_worldpos`
+3. **Compatible with non-multiview mode**:
+   - The geometry shader's passthrough path directly passes through `gl_in[i].gl_Position`
+   - This `gl_Position` now uses the correct `v_worldpos`
 
-## 为什么WorldSurface没有问题？
+## Why Does WorldSurface Have No Issue?
 
-对比WorldSurface的vertex shader：
+Compare the WorldSurface vertex shader:
 
 ```glsl
 vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
-worldpos4.xyz += v_normal.xyz * EntityUBO.scale;  // 修改worldpos4
-v_worldpos = worldpos4.xyz;                        // 同步到v_worldpos
+worldpos4.xyz += v_normal.xyz * EntityUBO.scale;  // Modify worldpos4
+v_worldpos = worldpos4.xyz;                        // Synchronize with v_worldpos
 
-// 使用worldpos4计算gl_Position（与v_worldpos一致）
+// Calculate gl_Position using worldpos4 (consistent with v_worldpos)
 gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldpos4;  ✅
 ```
 
-WorldSurface始终保持`v_worldpos`和用于计算`gl_Position`的变量同步，所以没有问题。
+WorldSurface always keeps `v_worldpos` synchronized with the variable used to calculate `gl_Position`, so it has no issue.
 
-## 验证方法
+## Verification Method
 
-### 1. 编译并测试
+### 1. Compile and Test
 
-重新编译着色器，启用multiview渲染：
+Recompile the shaders and enable multiview rendering:
 
 ```cpp
 r_draw_multiview = true;
 r_draw_shadowview = true;
 ```
 
-### 2. RenderDoc验证
+### 2. RenderDoc Validation
 
-在RenderDoc中检查：
+Inspect in RenderDoc:
 
-**修复前：**
-- StudioModel的顶点位置扭曲
-- 模型形状完全错误
-- 可能出现拉伸、反转等异常
+**Before the fix:**
+- StudioModel vertex positions are distorted
+- The model shape is completely wrong
+- Artifacts such as stretching and inversion may occur
 
-**修复后：**
-- StudioModel的顶点位置正确
-- 模型形状正常
-- 各个视角的深度正确
+**After the fix:**
+- StudioModel vertex positions are correct
+- The model shape is normal
+- Depth is correct for every view
 
-### 3. 对比测试
+### 3. Comparative Testing
 
-分别测试以下场景：
-- ✅ 普通StudioModel（无OUTLINE/CHROME）
-- ✅ OUTLINE模式的StudioModel
-- ✅ CHROME材质的StudioModel
+Test the following scenarios separately:
+- ✅ Regular StudioModel (without OUTLINE/CHROME)
+- ✅ StudioModel in OUTLINE mode
+- ✅ StudioModel with CHROME material
 - ✅ Multiview + Shadow rendering
 - ✅ Cubemap shadow
 - ✅ CSM shadow
 
-## 技术总结
+## Technical Summary
 
-### 问题的本质
+### Nature of the Problem
 
-**在引入几何着色器后，必须确保vertex shader传递给几何着色器的变量（如`v_worldpos`）与vertex shader自身用于计算`gl_Position`的变量完全一致。**
+**After introducing a geometry shader, the variable passed from the vertex shader to the geometry shader (such as `v_worldpos`) must be exactly consistent with the variable the vertex shader itself uses to calculate `gl_Position`.**
 
-否则：
-- 非multiview模式：使用vertex shader的`gl_Position` → 一个位置
-- Multiview模式：几何着色器用`v_worldpos`重新计算 → 另一个位置
-- 结果：同一顶点在两种模式下位置不同 → 扭曲
+Otherwise:
+- Non-multiview mode: uses the vertex shader's `gl_Position` → one position
+- Multiview mode: the geometry shader recalculates using `v_worldpos` → another position
+- Result: the same vertex has different positions in the two modes → distortion
 
-### 最佳实践
+### Best Practices
 
-在设计支持几何着色器的vertex shader时：
+When designing a vertex shader that supports a geometry shader:
 
-1. **统一变量**：用于`gl_Position`计算的变量应该与传递给几何着色器的变量一致
+1. **Use a single variable**: the variable used to calculate `gl_Position` should match the variable passed to the geometry shader
 
 ```glsl
-// ✅ 好的设计
+// ✅ Good design
 v_worldpos = finalPosition;
 gl_Position = projMatrix * viewMatrix * vec4(v_worldpos, 1.0);
 ```
 
-2. **避免局部变量**：不要在计算`gl_Position`时使用仅存在于main函数中的局部变量
+2. **Avoid local variables**: do not use a variable local only to `main` when calculating `gl_Position`
 
 ```glsl
-// ❌ 坏的设计
+// ❌ Bad design
 vec3 localPos = ...;
 v_worldpos = localPos + offset1;
-gl_Position = projMatrix * viewMatrix * vec4(localPos + offset2, 1.0);  // 不一致！
+gl_Position = projMatrix * viewMatrix * vec4(localPos + offset2, 1.0);  // Inconsistent!
 ```
 
-3. **测试所有路径**：确保所有着色器分支（如`#if defined`）都正确更新`v_worldpos`
+3. **Test every path**: ensure all shader branches (such as `#if defined`) correctly update `v_worldpos`
 
-### 调试技巧
+### Debugging Tips
 
-如果遇到类似问题：
+If you encounter a similar issue:
 
-1. **对比变量值**：在RenderDoc中对比vertex output和geometry input
-2. **检查条件编译**：查看所有`#if defined`分支是否正确处理
-3. **逐个测试**：分别测试multiview和非multiview模式
-4. **WorldSurface对照**：如果WorldSurface正常但StudioModel异常，说明问题在StudioModel特有逻辑
+1. **Compare variable values**: compare vertex output and geometry input in RenderDoc
+2. **Inspect conditional compilation**: check whether every `#if defined` branch is handled correctly
+3. **Test individually**: test multiview and non-multiview modes separately
+4. **Use WorldSurface as a reference**: if WorldSurface works but StudioModel fails, the issue is in StudioModel-specific logic
 
-## 相关文件
+## Related Files
 
-- 修改文件：`Build/svencoop/renderer/shader/studio_shader.vert.glsl`
-- 相关文件：`Build/svencoop/renderer/shader/studio_shader.geom.glsl`
-- 对照参考：`Build/svencoop/renderer/shader/wsurf_shader.vert.glsl`
+- Modified file: `Build/svencoop/renderer/shader/studio_shader.vert.glsl`
+- Related file: `Build/svencoop/renderer/shader/studio_shader.geom.glsl`
+- Reference comparison: `Build/svencoop/renderer/shader/wsurf_shader.vert.glsl`
 
-## 结论
+## Conclusion
 
-通过确保vertex shader中`gl_Position`的计算使用与`v_worldpos`相同的值，成功修复了StudioModel在multiview模式下的几何扭曲问题。这个修复不影响非multiview模式，并且正确处理了所有StudioModel的渲染模式（普通、OUTLINE、CHROME等）。
+By ensuring that the vertex shader calculates `gl_Position` using the same value as `v_worldpos`, the StudioModel geometry-distortion issue in multiview mode is resolved. This fix does not affect non-multiview mode and correctly handles every StudioModel rendering mode (regular, OUTLINE, CHROME, and so on).

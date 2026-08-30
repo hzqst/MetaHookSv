@@ -4,168 +4,168 @@ type: note
 permalink: metahooksv/bulletphysics-physics-config
 ---
 
-# BulletPhysics 物理配置（physics config）
+# BulletPhysics Physics Configuration
 
-> 目标：描述 BulletPhysics 插件里 **物理配置的加载 / 保存 / 使用** 全流程（配置文件 → 内存结构 → 物理对象构建/重建 → 落盘）。
+> Goal: describe the complete **physics-configuration loading / saving / usage** flow in the BulletPhysics plugin (configuration file → in-memory structure → physics-object construction/reconstruction → persistence).
 
-## 1) 配置的“单位”与存储位置
+## 1) Configuration Unit and Storage Location
 
-- **配置单位**：以 `model_t` 为粒度（模型/brushmodel/世界模型等），每个模型对应一个 `CClientPhysicObjectConfig`（静态/动态/布娃娃三选一）。
-- **存储容器**：`CBasePhysicManager::m_physicObjectConfigs`（按 `modelindex` 索引的 `CClientPhysicObjectConfigStorage`）。
-  - `Storage.state`：`PhysicConfigState_NotLoaded / Loaded / LoadedWithError`
-  - `Storage.modelname`：记录模型名（用于保存时拼接文件名）
-  - `Storage.pConfig`：配置对象（`shared_ptr`）
-- **配置对象的子结构**：
-  - `CClientPhysicObjectConfig` 包含 `RigidBodyConfigs / ConstraintConfigs / PhysicBehaviorConfigs`；若是 ragdoll 还包含 `AnimControlConfigs`。
-  - 每个子配置（刚体/约束/行为/动画控制/碰撞形状）都有 `configId`，并通过 `ClientPhysicManager()->AddPhysicConfig(configId, ptr)` 注册到全局配置表，方便 UI / 运行时引用。
+- **Configuration unit**: scoped to `model_t` (models, brushmodels, world models, and so on); each model maps to one `CClientPhysicObjectConfig` (static, dynamic, or ragdoll).
+- **Storage container**: `CBasePhysicManager::m_physicObjectConfigs` (`CClientPhysicObjectConfigStorage` indexed by `modelindex`).
+  - `Storage.state`: `PhysicConfigState_NotLoaded / Loaded / LoadedWithError`
+  - `Storage.modelname`: stores the model name (used to construct the filename when saving)
+  - `Storage.pConfig`: the configuration object (`shared_ptr`)
+- **Configuration substructures**:
+  - `CClientPhysicObjectConfig` contains `RigidBodyConfigs / ConstraintConfigs / PhysicBehaviorConfigs`; ragdolls additionally contain `AnimControlConfigs`.
+  - Every subconfiguration (rigid body, constraint, behavior, animation control, collision shape) has a `configId` and is registered in the global configuration table through `ClientPhysicManager()->AddPhysicConfig(configId, ptr)` for convenient UI/runtime references.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-## 2) 加载（Load）触发点
+## 2) Load Triggers
 
-### 2.1 换图加载
-- `CBasePhysicManager::NewMap()`：
-  - 清理旧物理对象：`RemoveAllPhysicObjects(...)`
-  - 清理 **BSP 生成** 的配置：`RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0)`
-  - 生成 brush 的碰撞索引数据（BSP mesh）并缓存
-  - 调用 `LoadPhysicObjectConfigs()` 预加载已知模型的配置
-  - 创建世界 brush 的物理对象：`CreatePhysicObjectForBrushModel(..., *cl_worldmodel)`
+### 2.1 Map-Change Loading
+- `CBasePhysicManager::NewMap()`:
+  - Removes old physics objects: `RemoveAllPhysicObjects(...)`
+  - Removes **BSP-generated** configurations: `RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromBSP, 0)`
+  - Generates and caches collision index data (BSP meshes) for brushes
+  - Calls `LoadPhysicObjectConfigs()` to preload configurations for known models
+  - Creates the physics object for the world brush: `CreatePhysicObjectForBrushModel(..., *cl_worldmodel)`
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-### 2.2 运行时按需加载
-- 当需要为某个实体创建物理对象时，会调用 `LoadPhysicObjectConfigForModel(mod)`；如果该 `modelindex` 仍是 `NotLoaded`，会在这里触发真正的“从文件/BSP”加载。
+### 2.2 Runtime On-Demand Loading
+- When a physics object is needed for an entity, `LoadPhysicObjectConfigForModel(mod)` is called. If that `modelindex` is still `NotLoaded`, this triggers the actual load from a file or BSP.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-## 3) 加载（Load）路径与优先级
+## 3) Load Paths and Priority
 
-### 3.1 Studio 模型：从文件加载（新格式优先）
-- 入口：`CBasePhysicManager::LoadPhysicObjectConfigFromFiles(model_t *mod, Storage)`
-- 文件名推导：
-  1) `modelname = mod->name`，去掉扩展名（如 `.mdl`）
-  2) 先尝试：`<modelname>_physics.txt`（**新格式**）
-  3) 再尝试：`<modelname>_ragdoll.txt`（**旧格式**/legacy）
-- 成功后：`OverwritePhysicObjectConfig(modelname, Storage, pConfig)`
+### 3.1 Studio Models: File Loading (New Format First)
+- Entry point: `CBasePhysicManager::LoadPhysicObjectConfigFromFiles(model_t *mod, Storage)`
+- Filename derivation:
+  1) `modelname = mod->name`, with its extension removed (for example, `.mdl`)
+  2) First attempts: `<modelname>_physics.txt` (**new format**)
+  3) Then attempts: `<modelname>_ragdoll.txt` (**old format**/legacy)
+- On success: `OverwritePhysicObjectConfig(modelname, Storage, pConfig)`
   - `Storage.state = Loaded`
   - `pConfig->modelName = modelname`
   - `pConfig->shortName = V_FileBase(modelname)`
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-### 3.2 Brush 模型：从 BSP/资源生成配置
-- 入口：`CBasePhysicManager::LoadPhysicObjectConfigFromBSP(mod, Storage)`
-- 逻辑：
-  - 从 brush 资源生成/加载三角网格索引数据
-  - 构造一个 `CClientCollisionShapeConfig`（`PhysicShape_TriangleMesh`，`resourcePath` 指向 brush 资源）
-  - 构造一个 `CClientRigidBodyConfig`（`mass=0`，指向上述 collision shape）
-  - 构造一个 `CClientStaticObjectConfig`，并设置 `flags |= PhysicObjectFlag_FromBSP`
+### 3.2 Brush Models: Generate Configuration from BSP/Resources
+- Entry point: `CBasePhysicManager::LoadPhysicObjectConfigFromBSP(mod, Storage)`
+- Logic:
+  - Generates or loads triangle-mesh index data from the brush resource
+  - Constructs a `CClientCollisionShapeConfig` (`PhysicShape_TriangleMesh`, with `resourcePath` pointing to the brush resource)
+  - Constructs a `CClientRigidBodyConfig` (`mass=0`, pointing to the collision shape above)
+  - Constructs a `CClientStaticObjectConfig` and sets `flags |= PhysicObjectFlag_FromBSP`
   - `OverwritePhysicObjectConfig(resourcePath, Storage, pStaticObjectConfig)`
-- 注意：这种 **BSP 生成的 config** 不是“文件配置”，默认不会落盘。
+- Note: this **BSP-generated config** is not a file configuration and is not persisted by default.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-## 4) 新格式文件（KeyValues）结构（读/写一致）
+## 4) New-Format File (KeyValues) Structure (Consistent for Reading/Writing)
 
-### 4.1 读取
-- `LoadPhysicObjectConfigFromNewFile(mod, filename)`：
+### 4.1 Reading
+- `LoadPhysicObjectConfigFromNewFile(mod, filename)`:
   - `KeyValues("PhysicObjectConfig")` + `LoadFromFile(g_pFileSystem[_HL25], filename)`
-  - 交给 `LoadPhysicObjectConfigFromKeyValues(mod, pKeyValues)`
-- `LoadPhysicObjectConfigFromKeyValues` 根据 `type` 字段分派：
+  - Passes it to `LoadPhysicObjectConfigFromKeyValues(mod, pKeyValues)`
+- `LoadPhysicObjectConfigFromKeyValues` dispatches based on the `type` field:
   - `"RagdollObject" / "StaticObject" / "DynamicObject"`
-- `LoadPhysicObjectFlagsFromKeyValues`：无条件设置 `flags |= PhysicObjectFlag_FromConfig`，并读取：
+- `LoadPhysicObjectFlagsFromKeyValues`: unconditionally sets `flags |= PhysicObjectFlag_FromConfig` and reads:
   - `barnacle` / `gargantua` / `overrideStudioCheckBBOX`
-- 完整性校验：`verifyBoneChunk`/`verifyModelFile` + 对应 `crc32...`；失败则返回 `nullptr`。
+- Integrity validation: `verifyBoneChunk`/`verifyModelFile` plus the corresponding `crc32...`; returns `nullptr` on failure.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-### 4.2 写出（序列化）
-- `SavePhysicObjectConfigToNewFile(filename, config)`：
-  - `ConvertPhysicObjectConfigToKeyValues(config)`（根节点同为 `KeyValues("PhysicObjectConfig")`）
+### 4.2 Writing (Serialization)
+- `SavePhysicObjectConfigToNewFile(filename, config)`:
+  - `ConvertPhysicObjectConfigToKeyValues(config)` (the root node is likewise `KeyValues("PhysicObjectConfig")`)
   - `KeyValues::SaveToFile(...)`
-- `AddBaseConfigToKeyValues` 写入：
-  - `type`（由 `UTIL_GetPhysicObjectConfigTypeName` 输出）
-  - `barnacle/gargantua/overrideStudioCheckBBOX`（flags → KV）
-- `AddVerifyStuffsFromKeyValues` 写入：
-  - `verifyBoneChunk/verifyModelFile` 与 `crc32BoneChunk/crc32ModelFile`
+- `AddBaseConfigToKeyValues` writes:
+  - `type` (produced by `UTIL_GetPhysicObjectConfigTypeName`)
+  - `barnacle/gargantua/overrideStudioCheckBBOX` (flags → KV)
+- `AddVerifyStuffsFromKeyValues` writes:
+  - `verifyBoneChunk/verifyModelFile` and `crc32BoneChunk/crc32ModelFile`
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-### 4.3 碰撞形状（collisionShape）KV 关键字段
-- 读取：`LoadCollisionShapeFromKeyValues` 支持字段：
+### 4.3 Key `collisionShape` Fields
+- Reading: `LoadCollisionShapeFromKeyValues` supports the following fields:
   - `type`, `direction`, `origin`, `angles`, `size`, `resourcePath`, `compoundShapes`
-- 写出：`AddCollisionShapeToKeyValues` 对应写回同名字段（只在非默认值时写部分字段）。
+- Writing: `AddCollisionShapeToKeyValues` writes the corresponding fields with the same names (some are written only when non-default).
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-## 5) 旧格式文件（legacy `_ragdoll.txt`）
+## 5) Old-Format Files (Legacy `_ragdoll.txt`)
 
-- `LoadPhysicObjectConfigFromLegacyFile(filename)`：`COM_LoadFile` 读全文，然后 `LoadPhysicObjectConfigFromLegacyFileBuffer(buf)`
-- legacy 是按 section 的文本格式（如 `[RigidBody]`, `[Constraint]` 等），逐行解析。
-- legacy 产物是 `CClientRagdollObjectConfig`，并显式设置：
+- `LoadPhysicObjectConfigFromLegacyFile(filename)`: reads the entire file with `COM_LoadFile`, then calls `LoadPhysicObjectConfigFromLegacyFileBuffer(buf)`
+- Legacy is a section-based text format (such as `[RigidBody]` and `[Constraint]`) parsed line by line.
+- The legacy result is a `CClientRagdollObjectConfig`, with the following flags set explicitly:
   - `flags |= PhysicObjectFlag_FromConfig`
   - `flags |= PhysicObjectFlag_OverrideStudioCheckBBox`
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
-## 6) 保存（Save）触发点与落盘规则
+## 6) Save Triggers and Persistence Rules
 
-### 6.1 触发入口
-- 控制台命令：`bv_save_configs` → `BV_SaveConfigs_f()`
-- Debug UI：`CPhysicDebugGUI::SaveOpenPrompt()` → `SaveConfirm()` → `BV_SaveConfigs_f()`
-- 上述入口都会先检查 `AllowCheats()`（通常受 `sv_cheats` 等约束）。
+### 6.1 Entry Points
+- Console command: `bv_save_configs` → `BV_SaveConfigs_f()`
+- Debug UI: `CPhysicDebugGUI::SaveOpenPrompt()` → `SaveConfirm()` → `BV_SaveConfigs_f()`
+- Both entry points first check `AllowCheats()` (typically governed by `sv_cheats` and similar constraints).
 
-相关实现：`Plugins/BulletPhysics/exportfuncs.cpp`, `Plugins/BulletPhysics/PhysicDebugGUI.cpp`
+Related implementation: `Plugins/BulletPhysics/exportfuncs.cpp`, `Plugins/BulletPhysics/PhysicDebugGUI.cpp`
 
-### 6.2 保存内容与条件
-- `CBasePhysicManager::SavePhysicObjectConfigs()` 遍历 `EngineGetNumKnownModel()`：
-  - 仅对 **已加载** 的 studio 模型配置尝试保存
-  - 调用 `SavePhysicObjectConfigToFile(mod->name, config)`
-- `SavePhysicObjectConfigToFile` 的“硬门槛”：
-  - 必须 `flags & PhysicObjectFlag_FromConfig`（即来自文件/或被 UI 标记成文件配置）
-  - 必须 `UTIL_IsPhysicObjectConfigModified(...) == true`
-- 文件名：`<mod->name 去扩展名>_physics.txt`（只写新格式，不回写 legacy）
-- 写成功后：`UTIL_SetPhysicObjectConfigUnmodified` 递归清掉对象/子配置的 `configModified`。
-- 写文件路径：优先尝试在 `GAMEDOWNLOAD` 目录写（会创建目录），失败再尝试默认路径。
+### 6.2 Save Content and Conditions
+- `CBasePhysicManager::SavePhysicObjectConfigs()` iterates over `EngineGetNumKnownModel()`:
+  - Attempts to save only configurations for **loaded** studio models
+  - Calls `SavePhysicObjectConfigToFile(mod->name, config)`
+- `SavePhysicObjectConfigToFile` has two strict prerequisites:
+  - `flags & PhysicObjectFlag_FromConfig` must be set (the configuration originated from a file or was marked as a file configuration by the UI)
+  - `UTIL_IsPhysicObjectConfigModified(...) == true` must hold
+- Filename: `<mod->name without extension>_physics.txt` (writes only the new format; never writes back legacy)
+- After a successful write, `UTIL_SetPhysicObjectConfigUnmodified` recursively clears `configModified` on the object and its subconfigurations.
+- Write path: first tries the `GAMEDOWNLOAD` directory (creating it as needed), then falls back to the default path on failure.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`, `Plugins/BulletPhysics/PhysicUTIL.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`, `Plugins/BulletPhysics/PhysicUTIL.cpp`
 
-## 7) Reload（重载）与编辑器创建新配置
+## 7) Reload and Creating New Configurations in the Editor
 
-### 7.1 重载配置
-- 控制台命令：`bv_reload_configs` → `BV_ReloadConfigs_f()`：
-  - `FreeAllIndexArrays(PhysicIndexArrayFlag_FromExternal, PhysicIndexArrayFlag_FromBSP)`（清掉外部 mesh，保留 BSP mesh）
-  - `RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0)`（清掉文件配置）
-  - `LoadPhysicObjectConfigs()` 重新加载
+### 7.1 Reloading Configurations
+- Console command: `bv_reload_configs` → `BV_ReloadConfigs_f()`:
+  - `FreeAllIndexArrays(PhysicIndexArrayFlag_FromExternal, PhysicIndexArrayFlag_FromBSP)` (removes external meshes while retaining BSP meshes)
+  - `RemoveAllPhysicObjectConfigs(PhysicObjectFlag_FromConfig, 0)` (removes file configurations)
+  - Reloads via `LoadPhysicObjectConfigs()`
 
-相关实现：`Plugins/BulletPhysics/exportfuncs.cpp`
+Related implementation: `Plugins/BulletPhysics/exportfuncs.cpp`
 
-### 7.2 Debug UI 创建空配置（让其可保存）
-- `CPhysicDebugGUI::OnCreateStaticObject/DynamicObject/RagdollObject`：
-  - 若该 `modelindex` 还没有 config，则 `CreateEmptyPhysicObjectConfigForModelIndex(modelindex, type)`
-  - 随后显式 `pConfig->flags |= PhysicObjectFlag_FromConfig`，确保后续 `bv_save_configs` 能落盘。
+### 7.2 Debug UI: Create an Empty Configuration (to Make It Saveable)
+- `CPhysicDebugGUI::OnCreateStaticObject/DynamicObject/RagdollObject`:
+  - If the `modelindex` has no configuration yet, calls `CreateEmptyPhysicObjectConfigForModelIndex(modelindex, type)`
+  - Then explicitly sets `pConfig->flags |= PhysicObjectFlag_FromConfig` so a later `bv_save_configs` can persist it.
 
-相关实现：`Plugins/BulletPhysics/PhysicDebugGUI.cpp`
+Related implementation: `Plugins/BulletPhysics/PhysicDebugGUI.cpp`
 
-## 8) 运行时如何“使用”配置
+## 8) How Configurations Are Used at Runtime
 
-- 实体走向：`CreatePhysicObjectForEntity` → `CreatePhysicObjectForStudioModel/BrushModel` → `CreatePhysicObjectFromConfig`。
-- `CreatePhysicObjectFromConfig`：
-  1) `LoadPhysicObjectConfigForModel(mod)` 拿到 config
-  2) `LoadAdditionalResourcesForConfig(config)`：为 `collisionShape.resourcePath` 触发 mesh/index array 缓存加载
-  3) 按 `config->type` 创建对应物理对象（Ragdoll/Dynamic/Static），并 `Build(CreationParam)`
-- 编辑器修改后生效：常见路径是 `ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig)`，将新的 config 重新喂给对象的 `Rebuild()`。
+- Entity flow: `CreatePhysicObjectForEntity` → `CreatePhysicObjectForStudioModel/BrushModel` → `CreatePhysicObjectFromConfig`.
+- `CreatePhysicObjectFromConfig`:
+  1) Obtains the configuration via `LoadPhysicObjectConfigForModel(mod)`
+  2) `LoadAdditionalResourcesForConfig(config)`: triggers mesh/index-array cache loading for `collisionShape.resourcePath`
+  3) Creates the matching physics object (Ragdoll/Dynamic/Static) according to `config->type`, then calls `Build(CreationParam)`
+- Applying editor changes: the common path is `ClientPhysicManager()->RebuildPhysicObjectEx2(pPhysicObject, pPhysicObjectConfig)`, which feeds the new configuration to the object's `Rebuild()`.
 
-相关实现：`Plugins/BulletPhysics/BasePhysicManager.cpp`
+Related implementation: `Plugins/BulletPhysics/BasePhysicManager.cpp`
 
 
-## KeyValues 配置格式（`*_physics.txt`，新格式）
+## KeyValues Configuration Format (`*_physics.txt`, New Format)
 
-> 该格式由 `Plugins/BulletPhysics/BasePhysicManager.cpp` 读写（`KeyValues("PhysicObjectConfig")`），用于描述 **Studio 模型**（`.mdl`）的物理对象配置。
+> This format is read and written by `Plugins/BulletPhysics/BasePhysicManager.cpp` (`KeyValues("PhysicObjectConfig")`) and describes physics-object configurations for **Studio models** (`.mdl`).
 >
-> 文件名推导：`<modelname 去扩展名>_physics.txt`（新格式，优先）；旧格式为 `<modelname 去扩展名>_ragdoll.txt`（legacy）。
+> Filename derivation: `<modelname without extension>_physics.txt` (new format, preferred); the old format is `<modelname without extension>_ragdoll.txt` (legacy).
 
-### 1) 顶层结构（总体示例）
+### 1) Top-Level Structure (Overall Example)
 
 ```text
 "PhysicObjectConfig"
@@ -210,136 +210,136 @@ permalink: metahooksv/bulletphysics-physics-config
 }
 ```
 
-### 2) 顶层参数说明（`"PhysicObjectConfig"` 直接子项）
+### 2) Top-Level Parameter Reference (Direct Children of `"PhysicObjectConfig"`)
 
-- `type`：物理对象类型字符串；决定后续会读取哪些分组。
-  - `StaticObject`：只读 `rigidBodies`
-  - `DynamicObject`：读 `rigidBodies` + `constraints`
-  - `RagdollObject`：读 `rigidBodies` + `constraints` + `physicBehaviors` + `animControls`
-- `barnacle`：为该物理对象打上 “Barnacle 相关” 标记（`PhysicObjectFlag_Barnacle`）。
-- `gargantua`：为该物理对象打上 “Gargantua 相关” 标记（`PhysicObjectFlag_Gargantua`）。
-- `overrideStudioCheckBBOX`：启用对 Studio 模型 `StudioCheckBBox` 等检查的覆盖标记（`PhysicObjectFlag_OverrideStudioCheckBBox`）。
-- `verifyBoneChunk`：是否对模型 bone chunk 做完整性校验（通过 `VerifyIntegrityForPhysicObjectConfig`）。
-- `crc32BoneChunk`：bone chunk 的 CRC32 字符串（用于校验）。
-- `verifyModelFile`：是否对模型文件整体做完整性校验（通过 `VerifyIntegrityForPhysicObjectConfig`）。
-- `crc32ModelFile`：模型文件的 CRC32 字符串（用于校验）。
-- `rigidBodies`：刚体配置表（子 Key 的 **名字** 就是刚体名，供 constraint/behavior 引用）。
-- `constraints`：约束配置表（子 Key 的 **名字** 就是约束名，供 behavior 引用）。
-- `physicBehaviors`：行为配置表（子 Key 的 **名字** 是行为名）。
-- `animControls`：动画控制配置列表（子 Key 名不重要，读取时不会使用 name）。
+- `type`: physics-object type string; determines which groups are subsequently read.
+  - `StaticObject`: reads only `rigidBodies`
+  - `DynamicObject`: reads `rigidBodies` + `constraints`
+  - `RagdollObject`: reads `rigidBodies` + `constraints` + `physicBehaviors` + `animControls`
+- `barnacle`: marks the physics object as Barnacle-related (`PhysicObjectFlag_Barnacle`).
+- `gargantua`: marks the physics object as Gargantua-related (`PhysicObjectFlag_Gargantua`).
+- `overrideStudioCheckBBOX`: enables the flag that overrides checks such as `StudioCheckBBox` for Studio models (`PhysicObjectFlag_OverrideStudioCheckBBox`).
+- `verifyBoneChunk`: whether to validate the integrity of the model bone chunk (through `VerifyIntegrityForPhysicObjectConfig`).
+- `crc32BoneChunk`: CRC32 string for the bone chunk (used for validation).
+- `verifyModelFile`: whether to validate the integrity of the entire model file (through `VerifyIntegrityForPhysicObjectConfig`).
+- `crc32ModelFile`: CRC32 string for the model file (used for validation).
+- `rigidBodies`: rigid-body configuration table (the **name** of each child key is the rigid-body name, referenced by constraints/behaviors).
+- `constraints`: constraint configuration table (the **name** of each child key is the constraint name, referenced by behaviors).
+- `physicBehaviors`: behavior configuration table (the **name** of each child key is the behavior name).
+- `animControls`: animation-control configuration list (child-key names are insignificant and are not used when reading).
 
-### 3) `rigidBodies`（刚体）参数说明
+### 3) `rigidBodies` (Rigid Body) Parameter Reference
 
-`rigidBodies` 下每个子 Key 的 name 会作为 `CClientRigidBodyConfig::name`；其中字段：
+The name of each child key under `rigidBodies` becomes `CClientRigidBodyConfig::name`; fields are as follows:
 
-- 状态/碰撞 flags（bool，存在且为 true 即生效）：
+- State/collision flags (bool; active when present and true):
   - `alwaysDynamic` / `alwaysKinematic` / `alwaysStatic`
   - `invertStateOnIdle` / `invertStateOnDeath`
   - `invertStateOnCaughtByBarnacle` / `invertStateOnBarnaclePulling` / `invertStateOnBarnacleChewing`
   - `invertStateOnGargantuaBite`
   - `noCollisionToWorld` / `noCollisionToStaticObject` / `noCollisionToDynamicObject` / `noCollisionToRagdollObject`
-- `debugDrawLevel`：调试绘制层级（用于 DebugDraw 过滤）。
-- `boneindex`：该刚体绑定的骨骼索引；`-1` 表示不绑定。
-- `origin`：局部偏移（字符串向量 `"x y z"`），解析为 `vec3_t`。
-- `angles`：局部旋转欧拉角（字符串向量 `"pitch yaw roll"`）。
-- `forward`：一个前向向量（字符串向量 `"x y z"`），用于部分约束/朝向计算。
-- `isLegacyConfig`：标记该刚体是否由 legacy 格式迁移/兼容（0/1）。
-- `pboneindex` / `pboneoffset`：legacy 兼容用的父骨信息与偏移。
-- 物理参数（float）：
-  - `mass`：质量（默认 `BULLET_DEFAULT_MASS`）。
-  - `density`：密度（默认 `BULLET_DEFAULT_DENSENTY`）。
-  - `linearFriction`：线性摩擦（默认 `BULLET_DEFAULT_LINEAR_FRICTION`）。
-  - `rollingFriction`：滚动/角摩擦（默认 `BULLET_DEFAULT_ANGULAR_FRICTION`）。
-  - `restitution`：弹性系数（默认 `BULLET_DEFAULT_RESTITUTION`）。
-  - `ccdRadius`：CCD 半径（默认 0）。
-  - `ccdThreshold`：CCD 阈值（默认 `BULLET_DEFAULT_CCD_THRESHOLD`）。
-  - `linearSleepingThreshold` / `angularSleepingThreshold`：睡眠阈值（默认 `BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD / BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD`）。
-  - `additionalDampingFactor` / `additionalLinearDampingThresholdSqr` / `additionalAngularDampingThresholdSqr`：额外阻尼相关参数（对应 Bullet 的额外阻尼设置）。
-- `collisionShape`：碰撞形状子结构（见下一节）。
+- `debugDrawLevel`: debug drawing level (used for DebugDraw filtering).
+- `boneindex`: index of the bone bound to this rigid body; `-1` means unbound.
+- `origin`: local offset (the string vector `"x y z"`), parsed as `vec3_t`.
+- `angles`: local Euler rotation (the string vector `"pitch yaw roll"`).
+- `forward`: a forward vector (the string vector `"x y z"`) used for certain constraint/orientation calculations.
+- `isLegacyConfig`: indicates whether the rigid body was migrated from or is compatible with the legacy format (0/1).
+- `pboneindex` / `pboneoffset`: parent-bone information and offset for legacy compatibility.
+- Physics parameters (float):
+  - `mass`: mass (default `BULLET_DEFAULT_MASS`).
+  - `density`: density (default `BULLET_DEFAULT_DENSENTY`).
+  - `linearFriction`: linear friction (default `BULLET_DEFAULT_LINEAR_FRICTION`).
+  - `rollingFriction`: rolling/angular friction (default `BULLET_DEFAULT_ANGULAR_FRICTION`).
+  - `restitution`: restitution coefficient (default `BULLET_DEFAULT_RESTITUTION`).
+  - `ccdRadius`: CCD radius (default 0).
+  - `ccdThreshold`: CCD threshold (default `BULLET_DEFAULT_CCD_THRESHOLD`).
+  - `linearSleepingThreshold` / `angularSleepingThreshold`: sleeping thresholds (default `BULLET_DEFAULT_LINEAR_SLEEPING_THRESHOLD / BULLET_DEFAULT_ANGULAR_SLEEPING_THRESHOLD`).
+  - `additionalDampingFactor` / `additionalLinearDampingThresholdSqr` / `additionalAngularDampingThresholdSqr`: additional damping parameters (corresponding to Bullet's additional-damping settings).
+- `collisionShape`: collision-shape substructure (see the next section).
 
-### 4) `collisionShape`（碰撞形状）参数说明
+### 4) `collisionShape` (Collision Shape) Parameter Reference
 
-`collisionShape` 对应 `CClientCollisionShapeConfig`，支持字段：
+`collisionShape` maps to `CClientCollisionShapeConfig` and supports these fields:
 
-- `type`：形状类型字符串（`None/Box/Sphere/Capsule/Cylinder/MultiSphere/TriangleMesh/Compound`）。
-- `direction`：形状主轴方向（`0=X, 1=Y, 2=Z`；默认 `1`）。
-- `origin`：局部偏移（字符串向量 `"x y z"`）。
-- `angles`：局部旋转（字符串向量 `"x y z"`）。
-- `size`：尺寸（字符串向量；支持 1/2/3 分量，解析顺序为 vec3→vec2→vec1）。
-- `resourcePath`：外部资源路径（主要用于 `TriangleMesh` 之类从资源加载 mesh 的形状）。
-- `compoundShapes`：仅对 `Compound` 有意义；为子形状列表（每个子 key 仍是一份 `collisionShape` 结构）。
+- `type`: shape-type string (`None/Box/Sphere/Capsule/Cylinder/MultiSphere/TriangleMesh/Compound`).
+- `direction`: shape primary-axis direction (`0=X, 1=Y, 2=Z`; default `1`).
+- `origin`: local offset (the string vector `"x y z"`).
+- `angles`: local rotation (the string vector `"x y z"`).
+- `size`: dimensions (string vector; supports 1/2/3 components, parsed in vec3→vec2→vec1 order).
+- `resourcePath`: external resource path (primarily for shapes such as `TriangleMesh` that load meshes from resources).
+- `compoundShapes`: meaningful only for `Compound`; a list of child shapes (each child key is still a `collisionShape` structure).
 
-### 5) `constraints`（约束）参数说明
+### 5) `constraints` (Constraint) Parameter Reference
 
-`constraints` 下每个子 Key 的 name 会作为 `CClientConstraintConfig::name`；通用字段：
+The name of each child key under `constraints` becomes `CClientConstraintConfig::name`; common fields are:
 
-- `type`：约束类型字符串（`None/ConeTwist/Hinge/Point/Slider/Dof6/Dof6Spring/Fixed`）。
-- `rigidbodyA` / `rigidbodyB`：引用刚体名（必须与 `rigidBodies` 下的子 key 名一致）。
-- `originA` / `anglesA` / `originB` / `anglesB`：局部框架信息（字符串向量 `"x y z"`）。
-- `forward`：辅助向量（字符串向量 `"x y z"`）。
-- 约束 flags（bool，存在且为 true 即生效）：
+- `type`: constraint-type string (`None/ConeTwist/Hinge/Point/Slider/Dof6/Dof6Spring/Fixed`).
+- `rigidbodyA` / `rigidbodyB`: referenced rigid-body names (must match child-key names under `rigidBodies`).
+- `originA` / `anglesA` / `originB` / `anglesB`: local-frame information (the string vector `"x y z"`).
+- `forward`: auxiliary vector (the string vector `"x y z"`).
+- Constraint flags (bool; active when present and true):
   - `barnacle` / `gargantua`
   - `deactiveOnNormalActivity` / `deactiveOnDeathActivity`
   - `deactiveOnCaughtByBarnacleActivity` / `deactiveOnBarnaclePullingActivity` / `deactiveOnBarnacleChewingActivity`
   - `deactiveOnGargantuaBiteActivity`
   - `dontResetPoseOnErrorCorrection`
   - `DeferredCreate`
-- 布尔配置（bool；未提供则使用默认值）：
-  - `disableCollision`（默认 true）
-  - `useGlobalJointFromA`（默认 true）
-  - `useLinearReferenceFrameA`（默认 true）
-  - `useLookAtOther`（默认 false）
-  - `useGlobalJointOriginFromOther`（默认 false）
-  - `useRigidBodyDistanceAsLinearLimit`（默认 false）
-  - `useSeperateLocalFrame`（默认 false）
-- `debugDrawLevel`：调试绘制层级（默认 `BULLET_DEFAULT_DEBUG_DRAW_LEVEL`）。
-- `maxTolerantLinearError`：最大可容忍的线性误差（默认 `BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR`）。
-- `isLegacyConfig`：legacy 兼容标记（默认 false）。
-- `boneindexA` / `boneindexB`：legacy 兼容骨骼索引（默认 `-1`）。
-- `offsetA` / `offsetB`：legacy 兼容偏移（字符串向量 `"x y z"`）。
+- Boolean configuration (bool; the default is used when omitted):
+  - `disableCollision` (default true)
+  - `useGlobalJointFromA` (default true)
+  - `useLinearReferenceFrameA` (default true)
+  - `useLookAtOther` (default false)
+  - `useGlobalJointOriginFromOther` (default false)
+  - `useRigidBodyDistanceAsLinearLimit` (default false)
+  - `useSeperateLocalFrame` (default false)
+- `debugDrawLevel`: debug drawing level (default `BULLET_DEFAULT_DEBUG_DRAW_LEVEL`).
+- `maxTolerantLinearError`: maximum tolerable linear error (default `BULLET_DEFAULT_MAX_TOLERANT_LINEAR_ERROR`).
+- `isLegacyConfig`: legacy-compatibility flag (default false).
+- `boneindexA` / `boneindexB`: legacy-compatible bone indices (default `-1`).
+- `offsetA` / `offsetB`: legacy-compatible offsets (the string vector `"x y z"`).
 
-`constraints/"<name>"/factors`：约束参数表（float；只对当前 `type` 的相关项生效；未设置时内部以 `NAN` 标记为“未提供”）。
+`constraints/"<name>"/factors`: constraint parameter table (float; only entries relevant to the current `type` take effect; omitted values are internally represented as `NAN`, meaning “not provided”).
 
-- `ConeTwist`：`ConeTwistSwingSpanLimit1/ConeTwistSwingSpanLimit2/ConeTwistTwistSpanLimit/ConeTwistSoftness/ConeTwistBiasFactor/ConeTwistRelaxationFactor/LinearERP/LinearCFM/AngularERP/AngularCFM`
-- `Hinge`：`HingeLowLimit/HingeHighLimit/HingeSoftness/HingeBiasFactor/HingeRelaxationFactor/AngularERP/AngularCFM/AngularStopERP/AngularStopCFM`
-- `Point`：`AngularERP/AngularCFM`
-- `Slider`：`SliderLowerLinearLimit/SliderUpperLinearLimit/SliderLowerAngularLimit/SliderUpperAngularLimit/LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
-- `Dof6`：`Dof6LowerLinearLimitX/Y/Z/Dof6UpperLinearLimitX/Y/Z/Dof6LowerAngularLimitX/Y/Z/Dof6UpperAngularLimitX/Y/Z/LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
-- `Dof6Spring`：在 `Dof6` 基础上增加
-  - `Dof6SpringEnableLinearSpringX/Y/Z`、`Dof6SpringEnableAngularSpringX/Y/Z`
-  - `Dof6SpringLinearStiffnessX/Y/Z`、`Dof6SpringAngularStiffnessX/Y/Z`
-  - `Dof6SpringLinearDampingX/Y/Z`、`Dof6SpringAngularDampingX/Y/Z`
-- `Fixed`：`LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
+- `ConeTwist`: `ConeTwistSwingSpanLimit1/ConeTwistSwingSpanLimit2/ConeTwistTwistSpanLimit/ConeTwistSoftness/ConeTwistBiasFactor/ConeTwistRelaxationFactor/LinearERP/LinearCFM/AngularERP/AngularCFM`
+- `Hinge`: `HingeLowLimit/HingeHighLimit/HingeSoftness/HingeBiasFactor/HingeRelaxationFactor/AngularERP/AngularCFM/AngularStopERP/AngularStopCFM`
+- `Point`: `AngularERP/AngularCFM`
+- `Slider`: `SliderLowerLinearLimit/SliderUpperLinearLimit/SliderLowerAngularLimit/SliderUpperAngularLimit/LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
+- `Dof6`: `Dof6LowerLinearLimitX/Y/Z/Dof6UpperLinearLimitX/Y/Z/Dof6LowerAngularLimitX/Y/Z/Dof6UpperAngularLimitX/Y/Z/LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
+- `Dof6Spring`: adds the following on top of `Dof6`
+  - `Dof6SpringEnableLinearSpringX/Y/Z`, `Dof6SpringEnableAngularSpringX/Y/Z`
+  - `Dof6SpringLinearStiffnessX/Y/Z`, `Dof6SpringAngularStiffnessX/Y/Z`
+  - `Dof6SpringLinearDampingX/Y/Z`, `Dof6SpringAngularDampingX/Y/Z`
+- `Fixed`: `LinearCFM/LinearStopERP/LinearStopCFM/AngularCFM/AngularStopERP/AngularStopCFM`
 
-### 6) `physicBehaviors`（行为）参数说明
+### 6) `physicBehaviors` (Behavior) Parameter Reference
 
-`physicBehaviors` 下每个子 Key 的 name 会作为 `CClientPhysicBehaviorConfig::name`；通用字段：
+The name of each child key under `physicBehaviors` becomes `CClientPhysicBehaviorConfig::name`; common fields are:
 
-- `type`：行为类型字符串：
+- `type`: behavior-type string:
   - `None/BarnacleDragOnRigidBody/BarnacleDragOnConstraint/BarnacleChew/BarnacleConstraintLimitAdjustment/GargantuaDragOnConstraint/FirstPersonViewCamera/ThirdPersonViewCamera/SimpleBuoyancy/RigidBodyRelocation`
-- `rigidbodyA` / `rigidbodyB`：引用刚体名（按行为类型决定是否使用）。
-- `constraint`：引用约束名（按行为类型决定是否使用）。
-- `barnacle` / `gargantua`：行为 flags（bool）。
-- `origin` / `angles`：行为的局部位姿（字符串向量 `"x y z"`）。
+- `rigidbodyA` / `rigidbodyB`: referenced rigid-body names (whether used depends on the behavior type).
+- `constraint`: referenced constraint name (whether used depends on the behavior type).
+- `barnacle` / `gargantua`: behavior flags (bool).
+- `origin` / `angles`: local pose of the behavior (the string vector `"x y z"`).
 
-`physicBehaviors/"<name>"/factors`：行为参数表（float；只对当前 `type` 的相关项生效；未设置时内部以 `NAN` 标记为“未提供”）。
+`physicBehaviors/"<name>"/factors`: behavior parameter table (float; only entries relevant to the current `type` take effect; omitted values are internally represented as `NAN`, meaning “not provided”).
 
-- `BarnacleDragOnRigidBody`：`BarnacleDragMagnitude/BarnacleDragExtraHeight`
-- `BarnacleDragOnConstraint`：`BarnacleDragMagnitude/BarnacleDragVelocity/BarnacleDragExtraHeight/BarnacleDragLimitAxis/BarnacleDragCalculateLimitFromActualPlayerOrigin/BarnacleDragUseServoMotor/BarnacleDragActivatedOnBarnaclePulling/BarnacleDragActivatedOnBarnacleChewing`
-- `BarnacleChew`：`BarnacleChewMagnitude/BarnacleChewInterval`
-- `BarnacleConstraintLimitAdjustment`：`BarnacleConstraintLimitAdjustmentExtraHeight/BarnacleConstraintLimitAdjustmentInterval/BarnacleConstraintLimitAdjustmentAxis`
-- `GargantuaDragOnConstraint`：`BarnacleDragMagnitude/BarnacleDragVelocity/BarnacleDragExtraHeight/BarnacleDragLimitAxis/BarnacleDragUseServoMotor`
-- `FirstPersonViewCamera` / `ThirdPersonViewCamera`：`CameraActivateOnIdle/CameraActivateOnDeath/CameraActivateOnCaughtByBarnacle/CameraSyncViewOrigin/CameraSyncViewAngles/CameraUseSimOrigin/CameraOriginalViewHeightStand/CameraOriginalViewHeightDuck/CameraMappedViewHeightStand/CameraMappedViewHeightDuck/CameraNewViewHeightDucking`
-- `SimpleBuoyancy`：`SimpleBuoyancyMagnitude/SimpleBuoyancyLinearDamping/SimpleBuoyancyAngularDamping`
+- `BarnacleDragOnRigidBody`: `BarnacleDragMagnitude/BarnacleDragExtraHeight`
+- `BarnacleDragOnConstraint`: `BarnacleDragMagnitude/BarnacleDragVelocity/BarnacleDragExtraHeight/BarnacleDragLimitAxis/BarnacleDragCalculateLimitFromActualPlayerOrigin/BarnacleDragUseServoMotor/BarnacleDragActivatedOnBarnaclePulling/BarnacleDragActivatedOnBarnacleChewing`
+- `BarnacleChew`: `BarnacleChewMagnitude/BarnacleChewInterval`
+- `BarnacleConstraintLimitAdjustment`: `BarnacleConstraintLimitAdjustmentExtraHeight/BarnacleConstraintLimitAdjustmentInterval/BarnacleConstraintLimitAdjustmentAxis`
+- `GargantuaDragOnConstraint`: `BarnacleDragMagnitude/BarnacleDragVelocity/BarnacleDragExtraHeight/BarnacleDragLimitAxis/BarnacleDragUseServoMotor`
+- `FirstPersonViewCamera` / `ThirdPersonViewCamera`: `CameraActivateOnIdle/CameraActivateOnDeath/CameraActivateOnCaughtByBarnacle/CameraSyncViewOrigin/CameraSyncViewAngles/CameraUseSimOrigin/CameraOriginalViewHeightStand/CameraOriginalViewHeightDuck/CameraMappedViewHeightStand/CameraMappedViewHeightDuck/CameraNewViewHeightDucking`
+- `SimpleBuoyancy`: `SimpleBuoyancyMagnitude/SimpleBuoyancyLinearDamping/SimpleBuoyancyAngularDamping`
 
-### 7) `animControls`（动画控制）参数说明（仅 `RagdollObject` 使用）
+### 7) `animControls` (Animation Control) Parameter Reference (Used Only by `RagdollObject`)
 
-`animControls` 是一个“列表”（子 key 名无意义），每个子项字段：
+`animControls` is a “list” (child-key names are insignificant); each item has these fields:
 
-- `sequence`：动作序列号（默认 -1）。
-- `gaitsequence`：步态序列号（默认 -1）。
-- `animframe`：动画帧（float，默认 0）。
-- `activityType`：活动类型（int）。
-- `flags`：标记位（int）。
-- `controller_0..3`：controller 值（int，默认 -1）。
-- `blending_0..3`：blending 值（int，默认 -1）。
+- `sequence`: animation sequence number (default -1).
+- `gaitsequence`: gait sequence number (default -1).
+- `animframe`: animation frame (float, default 0).
+- `activityType`: activity type (int).
+- `flags`: flag bits (int).
+- `controller_0..3`: controller values (int, default -1).
+- `blending_0..3`: blending values (int, default -1).

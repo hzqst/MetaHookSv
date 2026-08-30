@@ -6,19 +6,19 @@ permalink: metahooksv/scmodel-downloader
 
 # SCModelDownloader
 
-## 概述
-`Plugins/SCModelDownloader` 是 Sven Co-op 客户端玩家模型自动下载插件。它通过接管 `HUD_*` 导出与 `SetupPlayerModel` 调用链，在玩家模型切换时触发异步下载任务，校验并写入模型资源后热重载玩家模型；同时提供 GameUI 设置页、任务页和“切换到新版本模型”交互。
+## Overview
+`Plugins/SCModelDownloader` is an automatic player-model download plugin for the Sven Co-op client. By taking over `HUD_*` exports and the `SetupPlayerModel` call chain, it triggers asynchronous download tasks when a player's model changes, validates and writes model assets, then hot-reloads the player model; it also provides GameUI settings and task pages plus an interaction to "switch to the new-version model".
 
-## 职责
-- 接管 `HUD_Init/HUD_Frame/HUD_Shutdown/HUD_GetStudioModelInterface`，把数据库初始化、每帧任务驱动、清理逻辑挂到 client 生命周期。
-- 拦截 `R_StudioChangePlayerModel` 调用点，在模型切换时按条件（`scmodel_autodownload`）触发 `QueryModel`。
-- 维护模型元数据：`models.json`（可用模型索引）与 `versions.json`（旧名 -> 最新版本名映射）。
-- 维护查询任务队列与状态机（`Querying/Receiving/Failed/Finished`），并把状态变化分发给 UI。
-- 下载资源文件（`.mdl/.T|t.mdl/.bmp`）到临时文件，执行完整性校验后写入目标目录。
-- 管理本地玩家“跳过升级模型”列表（`skippedmodels.txt`），支持提示后切换/跳过。
-- 提供 VGUI2 界面：设置页（自动下载、下载最新版本、CDN、强制更新数据库）与任务列表页。
+## Responsibilities
+- Take over `HUD_Init/HUD_Frame/HUD_Shutdown/HUD_GetStudioModelInterface`, attaching database initialization, per-frame task driving, and cleanup logic to the client lifecycle.
+- Intercept the `R_StudioChangePlayerModel` call site and conditionally trigger `QueryModel` (`scmodel_autodownload`) when models change.
+- Maintain model metadata: `models.json` (available-model index) and `versions.json` (old name -> latest-version-name mapping).
+- Maintain the query-task queue and state machine (`Querying/Receiving/Failed/Finished`), and dispatch state changes to the UI.
+- Download asset files (`.mdl/.T|t.mdl/.bmp`) to temporary files, perform integrity validation, then write them to the destination directory.
+- Manage the local player's "skip model upgrade" list (`skippedmodels.txt`), supporting switching/skipping after a prompt.
+- Provide VGUI2 interfaces: a settings page (automatic download, download latest version, CDN, forced database update) and a task-list page.
 
-## 涉及文件 (不要带行号)
+## Involved files (without line numbers)
 - Plugins/SCModelDownloader/plugins.cpp
 - Plugins/SCModelDownloader/plugins.h
 - Plugins/SCModelDownloader/exportfuncs.cpp
@@ -50,74 +50,74 @@ permalink: metahooksv/scmodel-downloader
 - Build/svencoop/scmodeldownloader/gameui_schinese.txt
 - Build/svencoop/metahook/configs/plugins_svencoop.lst
 
-## 架构
-核心由三层组成：
-1. **入口与Hook层**（`plugins.cpp` + `exportfuncs.cpp` + `privatehook.cpp`）
-   - `LoadClient` 覆盖 HUD 导出函数。
-   - `HUD_GetStudioModelInterface` 中解析 `SetupPlayerModel`，定位并 patch 调向插件版 `R_StudioChangePlayerModel`。
-2. **下载与状态机层**（`SCModelDatabase.cpp`）
-   - `CSCModelDatabase` 持有任务队列、数据库、版本映射、回调列表。
-   - 任务类型：`QueryDatabase`、`QueryVersions`、`QueryTaskList`、`QueryModelResource`。
-3. **UI与交互层**（`GameUI.cpp` + 对话框/页面）
-   - 显示下载任务状态。
-   - 提供配置项与强制更新。
-   - 本地玩家换模时弹窗提示切换最新版本或跳过。
+## Architecture
+The core consists of three layers:
+1. **Entry and hook layer** (`plugins.cpp` + `exportfuncs.cpp` + `privatehook.cpp`)
+   - `LoadClient` replaces HUD exports.
+   - `HUD_GetStudioModelInterface` resolves `SetupPlayerModel`, locates its call site, and patches it to the plugin version of `R_StudioChangePlayerModel`.
+2. **Download and state-machine layer** (`SCModelDatabase.cpp`)
+   - `CSCModelDatabase` holds the task queue, database, version mapping, and callback list.
+   - Task types: `QueryDatabase`, `QueryVersions`, `QueryTaskList`, and `QueryModelResource`.
+3. **UI and interaction layer** (`GameUI.cpp` + dialogs/pages)
+   - Displays download-task status.
+   - Provides configuration options and forced updates.
+   - Prompts the local player to switch to the latest version or skip it when their model changes.
 
 ```mermaid
 flowchart TD
-  A[IPluginsV4::LoadClient] --> B[替换 HUD_* 导出]
-  B --> C[HUD_Init: 注册 cvar/命令 + SCModelDatabase.Init]
+  A[IPluginsV4::LoadClient] --> B[Replace HUD_* exports]
+  B --> C[HUD_Init: register cvar/commands + SCModelDatabase.Init]
   B --> D[HUD_Frame: SCModelDatabase.RunFrame + HTTPClient.RunFrame]
   B --> E[HUD_GetStudioModelInterface]
-  E --> F[解析 SetupPlayerModel 并重定向到 R_StudioChangePlayerModel]
+  E --> F[Resolve SetupPlayerModel and redirect to R_StudioChangePlayerModel]
 
-  F --> G[玩家模型变化]
+  F --> G[Player model changes]
   G --> H{scmodel_autodownload?}
   H -- yes --> I[SCModelDatabase.QueryModel]
-  I --> J[QueryTaskList: 拉取 <model>.json]
-  J --> K["生成 QueryModelResource(.mdl/.T|t.mdl/.bmp)"]
-  K --> L[流式下载到 .tmp]
-  L --> M[UtilAssetsIntegrity 校验]
-  M --> N[写入 models/player/...]
+  I --> J[QueryTaskList: fetch <model>.json]
+  J --> K["Create QueryModelResource(.mdl/.T|t.mdl/.bmp)"]
+  K --> L[Stream download to .tmp]
+  L --> M[UtilAssetsIntegrity validation]
+  M --> N[Write models/player/...]
   N --> O[OnModelFileWriteFinished]
-  O --> P[SCModel_ReloadModel 热重载]
+  O --> P[SCModel_ReloadModel hot reload]
 ```
 
-补充流程：
-- `RunFrame` 还会监听本地玩家当前模型变化，并触发 `ISCModelLocalPlayerModelChangeHandler`；`GameUI.cpp` 中据此检查 `versions.json` 映射，提示切换到更新版本。
-- 模型仓库使用分片：`repoId = SCModel_Hash(lowerName) % 32`，文件清单从 `scmodels_data_<repoId>` 拉取。
+Additional flow:
+- `RunFrame` also watches for changes to the local player's current model and triggers `ISCModelLocalPlayerModelChangeHandler`; based on this, `GameUI.cpp` checks the `versions.json` mapping and prompts the player to switch to an updated version.
+- The model repository is sharded: `repoId = SCModel_Hash(lowerName) % 32`, and file manifests are fetched from `scmodels_data_<repoId>`.
 
-## 依赖
-- **MetaHook/引擎接口**：`metahook_api_t`、`cl_enginefunc_t`、`engine_studio_api_t`、文件系统宏（`FILESYSTEM_ANY_*`）。
-- **动态库（运行时）**：
-  - `UtilHTTPClient_libcurl.dll`（优先）或 `UtilHTTPClient_SteamAPI.dll`（fallback）
+## Dependencies
+- **MetaHook/engine interfaces**: `metahook_api_t`, `cl_enginefunc_t`, `engine_studio_api_t`, and file-system macros (`FILESYSTEM_ANY_*`).
+- **Dynamic libraries (runtime)**:
+  - `UtilHTTPClient_libcurl.dll` (preferred) or `UtilHTTPClient_SteamAPI.dll` (fallback)
   - `UtilAssetsIntegrity.dll`
-  - `VGUI2Extension.dll`（UI回调注册依赖）
-- **第三方库（编译时）**：RapidJSON、Capstone、ScopeExit。
-- **网络端点**：
+  - `VGUI2Extension.dll` (required to register UI callbacks)
+- **Third-party libraries (build time)**: RapidJSON, Capstone, and ScopeExit.
+- **Network endpoints**:
   - `https://raw.githubusercontent.com/wootguy/pmodels/.../models.json`
   - `https://raw.githubusercontent.com/wootguy/scmodels/.../versions.json`
   - `https://wootdata.github.io/scmodels_data_<id>/models/player/...`
-  - `https://cdn.jsdelivr.net/...`（`scmodel_cdn=1` 时）
-- **本地数据/资源**：
+  - `https://cdn.jsdelivr.net/...` (when `scmodel_cdn=1`)
+- **Local data/assets**:
   - `scmodeldownloader/models.json`
   - `scmodeldownloader/versions.json`
   - `scmodeldownloader/skippedmodels.txt`
-  - `models/player/<name>/...`（下载产物）
+  - `models/player/<name>/...` (download output)
   - `Build/svencoop/scmodeldownloader/*.res, gameui_*.txt`
 
-## 注意事项
-- 当前签名定位 `R_StudioChangePlayerModel` 的核心路径仅在 `ENGINE_SVENGINE` 分支实现，且该插件也只在 `plugins_svencoop.lst` 中启用。
-- `BuildQueryList` 中已有注释提示：当数据库尚未可用时，模型查询可能失败；需要依赖后续数据库任务完成后再次触发查询。
-- 失败重试固定为 5 秒（`OnFailure` 设置 `m_flNextRetryTime`），网络抖动场景会持续重试。
-- `GetNewerVersionModel` 返回 `m_VersionMapping` 内部 `std::string` 的 `c_str()`；调用方应视为短期可用指针，不应长期缓存。
-- `EngineStudio_FillAddress_SetupPlayerModel` 基于反汇编模式匹配定位 `DM_PlayerState` 与 callsite，受引擎二进制变化影响较大。
-- UI回调中存在若干空实现（`Start/Shutdown/RunFrame` 等），当前主要功能集中在 KeyValues/TaskBar 回调与数据库回调。
+## Notes
+- The core signature-resolution path for `R_StudioChangePlayerModel` is currently implemented only in the `ENGINE_SVENGINE` branch, and this plugin is likewise enabled only in `plugins_svencoop.lst`.
+- A comment in `BuildQueryList` notes that model queries may fail before the database becomes available; they must be triggered again after subsequent database tasks complete.
+- Failed tasks retry after a fixed 5 seconds (`OnFailure` sets `m_flNextRetryTime`), so retries continue during network instability.
+- `GetNewerVersionModel` returns the `c_str()` of an internal `std::string` in `m_VersionMapping`; callers must treat it as a short-lived pointer and must not cache it long term.
+- `EngineStudio_FillAddress_SetupPlayerModel` uses disassembly pattern matching to locate `DM_PlayerState` and the callsite, making it highly susceptible to engine-binary changes.
+- Several UI callbacks have empty implementations (`Start/Shutdown/RunFrame`, etc.); current primary functionality is concentrated in KeyValues/TaskBar callbacks and database callbacks.
 
-## 调用方（可选）
-- 插件加载链：`IPluginsV4::LoadClient` 将 `HUD_*` 导出替换为本插件实现。
-- 运行时引擎调用链：`SetupPlayerModel` 被 patch 后调用到 `R_StudioChangePlayerModel`，触发自动下载入口。
-- UI调用链：
-  - `CTaskListPage` 通过 `RegisterQueryStateChangeCallback` + `EnumQueries` 刷新任务列表。
-  - `CSCModelDownloaderSettingsPage` 调 `BuildQueryDatabase/BuildQueryVersions` 强制更新。
-  - `CSCModelLocalPlayerModelChangeHandler` 调 `GetNewerVersionModel/QueryModel/AddSkippedModel`。
+## Callers (optional)
+- Plugin load chain: `IPluginsV4::LoadClient` replaces `HUD_*` exports with this plugin's implementation.
+- Runtime engine call chain: after `SetupPlayerModel` is patched, it calls `R_StudioChangePlayerModel`, triggering the automatic-download entry point.
+- UI call chain:
+  - `CTaskListPage` refreshes the task list through `RegisterQueryStateChangeCallback` + `EnumQueries`.
+  - `CSCModelDownloaderSettingsPage` calls `BuildQueryDatabase/BuildQueryVersions` to force an update.
+  - `CSCModelLocalPlayerModelChangeHandler` calls `GetNewerVersionModel/QueryModel/AddSkippedModel`.

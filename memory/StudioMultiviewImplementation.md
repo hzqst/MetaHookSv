@@ -1,34 +1,34 @@
 ---
-title: StudioMultiviewImplementation
+title: StudioModel Multiview Rendering Implementation
 type: note
 permalink: metahooksv/studio-multiview-implementation
 ---
 
-# StudioModel Multiview渲染实现文档
+# StudioModel Multiview Rendering Implementation
 
-## 概述
+## Overview
 
-本文档描述了为StudioModel渲染器实现多视角(Multiview)渲染功能。该实现遵循与WorldSurface相同的架构模式，允许在单次Draw调用中渲染多个视角，用于支持：
-1. **Cubemap Shadow Mapping** - 单次渲染6个视角到Cubemap
-2. **Cascaded Shadow Mapping (CSM)** - 单次渲染4个级联阴影到TextureArray
+This document describes the implementation of multiview rendering for the StudioModel renderer. This implementation follows the same architectural pattern as WorldSurface, allowing multiple views to be rendered in a single Draw call to support:
+1. **Cubemap Shadow Mapping** - Render six views to a Cubemap in a single pass
+2. **Cascaded Shadow Mapping (CSM)** - Render four cascaded shadows to a TextureArray in a single pass
 
-## 实现架构
+## Implementation Architecture
 
-### 1. Program State 标志位
+### 1. Program State Flag
 
-在 `Plugins/Renderer/gl_studio.h` 中添加了新的着色器状态位：
+A new shader state flag was added in `Plugins/Renderer/gl_studio.h`:
 
 ```cpp
 #define STUDIO_MULTIVIEW_ENABLED  0x10000000000000ull
 ```
 
-该标志位用于在编译着色器时启用multiview相关的宏定义和几何着色器。
+This flag is used to enable multiview-related macro definitions and the geometry shader when compiling shaders.
 
-### 2. C++代码修改
+### 2. C++ Code Changes
 
-#### 2.1 着色器编译 (gl_studio.cpp)
+#### 2.1 Shader Compilation (gl_studio.cpp)
 
-在 `R_UseStudioProgram` 函数中：
+In the `R_UseStudioProgram` function:
 
 ```cpp
 if (state & STUDIO_MULTIVIEW_ENABLED)
@@ -44,14 +44,14 @@ args.gsdefine = def.c_str();
 args.fsdefine = def.c_str();
 ```
 
-添加到program state映射表：
+Add to the program state mapping table:
 ```cpp
 { STUDIO_MULTIVIEW_ENABLED, "STUDIO_MULTIVIEW_ENABLED" },
 ```
 
-#### 2.2 运行时启用
+#### 2.2 Runtime Enablement
 
-在 `R_StudioDrawMesh_DrawPass` 函数中添加multiview检测：
+Add multiview detection in the `R_StudioDrawMesh_DrawPass` function:
 
 ```cpp
 program_state_t StudioProgramState = flags;
@@ -61,20 +61,20 @@ if (r_draw_multiview)
     StudioProgramState |= STUDIO_MULTIVIEW_ENABLED;
 }
 
-// ... 其他状态检测
+// ... other state checks
 ```
 
-### 3. 着色器实现
+### 3. Shader Implementation
 
 #### 3.1 Vertex Shader (studio_shader.vert.glsl)
 
-顶点着色器保持不变，继续输出 `v_` 前缀的变量：
-- `v_worldpos`, `v_normal`, `v_texcoord`, `v_packedbone` 等
-- 这些变量会被几何着色器接收
+The vertex shader remains unchanged and continues to output `v_`-prefixed variables:
+- `v_worldpos`, `v_normal`, `v_texcoord`, `v_packedbone`, and others
+- These variables are received by the geometry shader
 
-#### 3.2 Geometry Shader (studio_shader.geom.glsl) - 新增
+#### 3.2 Geometry Shader (studio_shader.geom.glsl) - New
 
-**输入配置：**
+**Input Configuration:**
 ```glsl
 layout(triangles) in;
 
@@ -85,7 +85,7 @@ layout(triangles) in;
 #endif
 ```
 
-**输入变量（AMD兼容，显式维度）：**
+**Input Variables (AMD-compatible, explicit dimensions):**
 ```glsl
 in vec3 v_worldpos[3];
 in vec3 v_normal[3];
@@ -103,31 +103,31 @@ in vec3 v_smoothnormal[3];
 #endif
 ```
 
-**核心逻辑：**
+**Core Logic:**
 
-启用multiview时：
+When multiview is enabled:
 ```glsl
 #ifdef STUDIO_MULTIVIEW_ENABLED
     int numViews = CameraUBO.numViews;
     
     for (int viewIdx = 0; viewIdx < numViews; ++viewIdx)
     {
-        gl_Layer = viewIdx;  // 设置TextureArray层
+        gl_Layer = viewIdx;  // Set the TextureArray layer
         
         for (int i = 0; i < 3; ++i)
         {
-            // 使用对应视角的矩阵变换
+            // Transform using the corresponding view matrices
             vec4 worldPos = vec4(v_worldpos[i], 1.0);
             gl_Position = GetCameraProjMatrix(viewIdx) * 
                          GetCameraWorldMatrix(viewIdx) * worldPos;
             
-            // 传递所有属性
+            // Pass through all attributes
             g_worldpos = v_worldpos[i];
             g_normal = v_normal[i];
             g_texcoord = v_texcoord[i];
             g_projpos = gl_Position;
             g_packedbone = v_packedbone[i];
-            // ... 其他属性
+            // ... other attributes
             
             EmitVertex();
         }
@@ -136,13 +136,13 @@ in vec3 v_smoothnormal[3];
 #endif
 ```
 
-未启用multiview时，简单透传：
+When multiview is disabled, simply pass through:
 ```glsl
 #else
     for (int i = 0; i < 3; ++i)
     {
         gl_Position = gl_in[i].gl_Position;
-        // 传递所有属性
+        // Pass through all attributes
         EmitVertex();
     }
     EndPrimitive();
@@ -151,20 +151,20 @@ in vec3 v_smoothnormal[3];
 
 #### 3.3 Fragment Shader (studio_shader.frag.glsl)
 
-通过预处理器宏适配输入来源：
+Adapt the input source through preprocessor macros:
 
 ```glsl
 #ifdef STUDIO_MULTIVIEW_ENABLED
-    // 来自几何着色器的 g_ 前缀变量
+    // g_-prefixed variables from the geometry shader
     #define v_worldpos g_worldpos
     #define v_normal g_normal
     #define v_texcoord g_texcoord
-    // ... 其他变量映射
+    // ... mappings for other variables
     
     in vec3 g_worldpos;
     in vec3 g_normal;
     in vec2 g_texcoord;
-    // ... 其他输入
+    // ... other inputs
     
     #if defined(STUDIO_NF_CELSHADE_FACE)
         in vec3 g_headfwd;
@@ -172,11 +172,11 @@ in vec3 v_smoothnormal[3];
         in vec3 g_headorigin;
     #endif
 #else
-    // 直接来自顶点着色器的 v_ 前缀变量
+    // v_-prefixed variables directly from the vertex shader
     in vec3 v_worldpos;
     in vec3 v_normal;
     in vec2 v_texcoord;
-    // ... 其他输入
+    // ... other inputs
     
     #if defined(STUDIO_NF_CELSHADE_FACE)
         in vec3 v_headfwd;
@@ -186,16 +186,16 @@ in vec3 v_smoothnormal[3];
 #endif
 ```
 
-这样片段着色器的其余代码无需修改，继续使用 `v_` 前缀访问变量。
+This allows the remaining fragment shader code to remain unchanged and continue using the `v_` prefix to access variables.
 
-## 使用方法
+## Usage
 
-### 启用StudioModel Multiview渲染
+### Enable StudioModel Multiview Rendering
 
 ```cpp
-// 1. 设置CameraUBO（与WorldSurface相同）
+// 1. Set CameraUBO (same as WorldSurface)
 camera_ubo_t CameraUBO{};
-for (int i = 0; i < 6; ++i)  // Cubemap的6个面
+for (int i = 0; i < 6; ++i)  // Six Cubemap faces
 {
     R_SetupCameraView(&CameraUBO.views[i]);
 }
@@ -203,22 +203,22 @@ CameraUBO.numViews = 6;
 GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, 
                       sizeof(CameraUBO), &CameraUBO);
 
-// 2. 启用multiview标志
+// 2. Enable the multiview flag
 r_draw_multiview = true;
 
-// 3. 绘制场景（WorldSurface和StudioModel都会使用multiview）
+// 3. Draw the scene (WorldSurface and StudioModel both use multiview)
 R_RenderScene();
 
-// 4. 恢复状态
+// 4. Restore state
 r_draw_multiview = false;
 ```
 
-### 应用场景
+### Use Cases
 
-#### 1. Cubemap Shadow - 角色模型阴影
+#### 1. Cubemap Shadow - Character Model Shadows
 
 ```cpp
-// 为点光源创建cubemap阴影
+// Create a cubemap shadow for a point light
 const vec3_t cubemapAngles[] = {
     {0, 0, 0}, {0, 180, 0}, {-90, 0, 0},
     {90, 0, 0}, {0, 90, 0}, {0, -90, 0}
@@ -236,14 +236,14 @@ CameraUBO.numViews = 6;
 GL_UploadSubDataToUBO(...);
 
 r_draw_multiview = true;
-R_DrawStudioModel(...);  // 单次渲染角色模型到6个方向
+R_DrawStudioModel(...);  // Render the character model to six directions in one pass
 r_draw_multiview = false;
 ```
 
-#### 2. CSM - 级联阴影（角色）
+#### 2. CSM - Cascaded Shadows (Characters)
 
 ```cpp
-// 为角色模型设置4级CSM
+// Set up four CSM cascades for character models
 camera_ubo_t CameraUBO{};
 for (int i = 0; i < 4; ++i)
 {
@@ -254,26 +254,26 @@ CameraUBO.numViews = 4;
 GL_UploadSubDataToUBO(...);
 
 r_draw_multiview = true;
-R_RenderScene();  // StudioModel自动使用multiview
+R_RenderScene();  // StudioModel automatically uses multiview
 r_draw_multiview = false;
 ```
 
-## StudioModel特殊考虑
+## StudioModel-Specific Considerations
 
-### 1. 骨骼动画兼容性
+### 1. Skeletal Animation Compatibility
 
-StudioModel使用骨骼动画系统，几何着色器需要传递 `v_packedbone` 属性：
+StudioModel uses a skeletal animation system, and the geometry shader needs to pass through the `v_packedbone` attribute:
 
 ```glsl
-flat in uint v_packedbone[3];   // 输入：3个顶点的骨骼索引
-flat out uint g_packedbone;      // 输出：当前顶点的骨骼索引
+flat in uint v_packedbone[3];   // Input: bone indices for three vertices
+flat out uint g_packedbone;      // Output: bone index for the current vertex
 ```
 
-这确保片段着色器可以正确访问骨骼信息进行后续计算。
+This ensures that the fragment shader can correctly access bone information for subsequent calculations.
 
-### 2. Celshade（卡通渲染）支持
+### 2. Celshade Support
 
-对于启用了 `STUDIO_NF_CELSHADE_FACE` 的模型，几何着色器需要传递额外的头部信息：
+For models with `STUDIO_NF_CELSHADE_FACE` enabled, the geometry shader needs to pass through additional head information:
 
 ```glsl
 #if defined(STUDIO_NF_CELSHADE_FACE)
@@ -287,49 +287,49 @@ flat out uint g_packedbone;      // 输出：当前顶点的骨骼索引
 #endif
 ```
 
-### 3. Glow效果兼容性
+### 3. Glow Effect Compatibility
 
-Glow渲染（发光外壳）与multiview兼容：
+Glow rendering (emissive shell) is compatible with multiview:
 - `STUDIO_GLOW_SHELL_ENABLED`
 - `STUDIO_GLOW_STENCIL_ENABLED`
 - `STUDIO_GLOW_COLOR_ENABLED`
 
-这些状态可以与 `STUDIO_MULTIVIEW_ENABLED` 同时启用。
+These states can be enabled simultaneously with `STUDIO_MULTIVIEW_ENABLED`.
 
-## 性能特点
+## Performance Characteristics
 
 ### StudioModel vs WorldSurface
 
-**相似点：**
-- 都能从N次Draw优化为1次Draw
-- 都减少状态切换和CPU开销
-- 都使用相同的CameraUBO结构
+**Similarities:**
+- Both can optimize N Draw calls into one Draw call
+- Both reduce state changes and CPU overhead
+- Both use the same CameraUBO structure
 
-**差异点：**
-1. **顶点数量**：
-   - WorldSurface：通常顶点数较多，但结构简单
-   - StudioModel：顶点数适中，但有骨骼动画计算
+**Differences:**
+1. **Vertex count**:
+   - WorldSurface: Usually has more vertices, but a simple structure
+   - StudioModel: Has a moderate vertex count, but includes skeletal animation calculations
 
-2. **着色器复杂度**：
-   - WorldSurface：主要是纹理和光照计算
-   - StudioModel：额外有骨骼变换、Celshade、Glow等效果
+2. **Shader complexity**:
+   - WorldSurface: Primarily texture and lighting calculations
+   - StudioModel: Additional skeletal transforms, Celshade, Glow, and other effects
 
-3. **性能提升**：
-   - WorldSurface：30-60%提升
-   - StudioModel：20-50%提升（因为着色器更复杂）
+3. **Performance improvement**:
+   - WorldSurface: 30-60% improvement
+   - StudioModel: 20-50% improvement (because the shader is more complex)
 
-### 最佳实践
+### Best Practices
 
-1. **选择性启用**：只在需要多视角渲染时启用（如阴影pass）
-2. **视角数量**：尽量减少numViews（CSM用4，Cubemap用6）
-3. **LOD配合**：对远距离角色使用低模，减少几何着色器负担
+1. **Enable selectively**: Enable only when multiview rendering is needed (such as a shadow pass)
+2. **Number of views**: Minimize numViews (4 for CSM, 6 for Cubemap)
+3. **Use with LOD**: Use low-poly models for distant characters to reduce geometry shader load
 
-## 与WorldSurface的协同
+## Coordination with WorldSurface
 
-由于两者使用相同的 `r_draw_multiview` 标志和 `CameraUBO`，可以在同一个渲染pass中同时启用：
+Because both use the same `r_draw_multiview` flag and `CameraUBO`, they can be enabled together in the same render pass:
 
 ```cpp
-// 设置统一的CameraUBO
+// Set a shared CameraUBO
 camera_ubo_t CameraUBO{};
 for (int i = 0; i < 6; ++i)
 {
@@ -338,24 +338,24 @@ for (int i = 0; i < 6; ++i)
 CameraUBO.numViews = 6;
 GL_UploadSubDataToUBO(...);
 
-// 启用multiview
+// Enable multiview
 r_draw_multiview = true;
 
-// 渲染整个场景
-R_RenderScene();  
-// - WorldSurface使用wsurf_shader.geom.glsl
-// - StudioModel使用studio_shader.geom.glsl
-// 两者都渲染到6个视角
+// Render the entire scene
+R_RenderScene();
+// - WorldSurface uses wsurf_shader.geom.glsl
+// - StudioModel uses studio_shader.geom.glsl
+// Both render to six views
 
 r_draw_multiview = false;
 ```
 
-## 调试技巧
+## Debugging Tips
 
-### 1. 验证StudioModel是否使用Multiview
+### 1. Verify Whether StudioModel Uses Multiview
 
 ```cpp
-// 在R_StudioDrawMesh_DrawPass中添加日志
+// Add logging in R_StudioDrawMesh_DrawPass
 if (r_draw_multiview)
 {
     gEngfuncs.Con_DPrintf("Studio using multiview for model: %s\n", 
@@ -363,53 +363,53 @@ if (r_draw_multiview)
 }
 ```
 
-### 2. 检查着色器编译
+### 2. Check Shader Compilation
 
-在着色器目录查看缓存文件：
-- `renderer/shader/studio_cache.txt` - 已编译的program state
+View the cache file in the shader directory:
+- `renderer/shader/studio_cache.txt` - compiled program states
 
-### 3. RenderDoc分析
+### 3. RenderDoc Analysis
 
-使用RenderDoc捕获帧：
-1. 检查 `gl_Layer` 是否正确设置（0-5或0-3）
-2. 验证每个layer的内容是否正确
-3. 对比multiview前后的draw call数量
+Capture a frame with RenderDoc:
+1. Check whether `gl_Layer` is set correctly (0-5 or 0-3)
+2. Verify whether the content of each layer is correct
+3. Compare the number of draw calls before and after multiview
 
-## AMD兼容性
+## AMD Compatibility
 
-与WorldSurface一样，StudioModel的几何着色器也遵循AMD兼容性要求：
+Like WorldSurface, StudioModel's geometry shader follows AMD compatibility requirements:
 
 ```glsl
-// ✅ 正确：显式指定所有维度
+// ✅ Correct: explicitly specify all dimensions
 in vec3 v_worldpos[3];
 in vec3 v_normal[3];
 flat in uint v_packedbone[3];
 
-// ❌ 错误：AMD不支持隐式维度
+// ❌ Incorrect: AMD does not support implicit dimensions
 in vec3 v_worldpos[];
 in vec3 v_normal[];
 ```
 
-## 局限性
+## Limitations
 
-1. **几何着色器开销**：对于高模角色可能有性能影响
-2. **不支持的特性**：某些高级StudioModel特性可能与multiview不兼容
-3. **内存占用**：多视角渲染增加GPU内存和带宽需求
+1. **Geometry shader overhead**: May affect performance for high-poly character models
+2. **Unsupported features**: Some advanced StudioModel features may be incompatible with multiview
+3. **Memory usage**: Multiview rendering increases GPU memory and bandwidth requirements
 
-## 未来优化
+## Future Optimizations
 
-1. **Mesh Shader**：使用Mesh Shader替代几何着色器（需OpenGL 4.6+）
-2. **Instancing**：探索使用instancing实现多视角渲染
-3. **动态启用**：根据模型复杂度动态决定是否使用multiview
+1. **Mesh Shader**: Use Mesh Shader instead of a geometry shader (requires OpenGL 4.6+)
+2. **Instancing**: Explore using instancing to implement multiview rendering
+3. **Dynamic enablement**: Dynamically decide whether to use multiview based on model complexity
 
-## 总结
+## Summary
 
-StudioModel的multiview实现：
-- ✅ 完全兼容现有的渲染管线
-- ✅ 支持所有StudioModel特性（骨骼动画、Celshade、Glow等）
-- ✅ 与WorldSurface协同工作
-- ✅ AMD/Intel/NVIDIA跨平台兼容
-- ✅ 显著减少draw call和状态切换
-- ⚠️ 需要权衡性能（根据场景复杂度）
+The StudioModel multiview implementation:
+- ✅ Fully compatible with the existing rendering pipeline
+- ✅ Supports all StudioModel features (skeletal animation, Celshade, Glow, and more)
+- ✅ Works in coordination with WorldSurface
+- ✅ Cross-platform compatibility across AMD/Intel/NVIDIA
+- ✅ Significantly reduces draw calls and state changes
+- ⚠️ Requires performance trade-offs based on scene complexity
 
-配合WorldSurface的multiview，整个场景（地图+角色）都可以在单次pass中渲染到多个视角！
+Together with WorldSurface multiview, the entire scene (map + characters) can be rendered to multiple views in a single pass!

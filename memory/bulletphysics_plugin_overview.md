@@ -1,98 +1,98 @@
 ---
-title: bulletphysics_plugin_overview
+title: BulletPhysics Plugin Overview
 type: note
 permalink: metahooksv/bulletphysics-plugin-overview
 ---
 
-# BulletPhysics 插件速览（MetaHookSv）
+# BulletPhysics Plugin Overview (MetaHookSv)
 
-## 位置与职责
-- 目录：`Plugins/BulletPhysics/`
-- 作用：在客户端侧为 GoldSrc/SvEngine 提供基于 **Bullet3** 的物理对象/布娃娃（ragdoll）模拟与调试 UI；通过 MetaHookSv 的插件接口接入并对引擎/客户端渲染与动画流程做必要 Hook。
+## Location and Responsibilities
+- Directory: `Plugins/BulletPhysics/`
+- Purpose: Provides client-side physics object/ragdoll simulation and debug UI for GoldSrc/SvEngine based on **Bullet3**; integrates through the MetaHookSv plugin interface and applies the required hooks to engine/client rendering and animation flows.
 
-## 目录结构（按功能分组）
-- 插件入口与 Hook：`plugins.cpp/.h`、`exportfuncs.cpp/.h`、`privatehook.cpp/.h`
-- 物理系统抽象层：`ClientPhysicManager.h`、`BasePhysicManager.cpp/.h`（大量配置/对象管理逻辑）
-- Bullet3 具体实现：`BulletPhysicManager.cpp/.h`（世界、步进、碰撞形状/约束创建等）
-- 物理对象与组件：
-  - Object：`BaseStaticObject* / BaseDynamicObject* / BaseRagdollObject*` + `BulletStaticObject* / BulletDynamicObject* / BulletRagdollObject*`
-  - RigidBody/Constraint：`BasePhysicRigidBody* / BasePhysicConstraint*` + `BulletPhysicRigidBody* / BulletPhysicConstraint*` 等
-  - Behaviors：Barnacle/Gargantua/浮力/相机等（`Bullet*Behavior.*`）
-- UI/调试器：`Viewport.*`、`PhysicDebugGUI.*`、大量 `*Page/*Panel/*Dialog`（编辑/检查/调试面板）
-- VGUI2Extension 依赖接入：`VGUI2ExtensionImport.*`、`BaseUI.cpp`、`GameUI.cpp`、`ClientVGUI.cpp`
-- 其他工具：`ClientEntityManager.*`（实体发射/inspect 状态管理）等
+## Directory Structure (Grouped by Function)
+- Plugin entry points and hooks: `plugins.cpp/.h`, `exportfuncs.cpp/.h`, `privatehook.cpp/.h`
+- Physics system abstraction layer: `ClientPhysicManager.h`, `BasePhysicManager.cpp/.h` (contains extensive configuration/object-management logic)
+- Bullet3 implementation: `BulletPhysicManager.cpp/.h` (world creation, stepping, collision shape/constraint creation, and more)
+- Physics objects and components:
+  - Objects: `BaseStaticObject* / BaseDynamicObject* / BaseRagdollObject*` + `BulletStaticObject* / BulletDynamicObject* / BulletRagdollObject*`
+  - Rigid bodies/constraints: `BasePhysicRigidBody* / BasePhysicConstraint*` + `BulletPhysicRigidBody* / BulletPhysicConstraint*`, etc.
+  - Behaviors: Barnacle/Gargantua/buoyancy/camera, and others (`Bullet*Behavior.*`)
+- UI/debugger: `Viewport.*`, `PhysicDebugGUI.*`, and many `*Page/*Panel/*Dialog` files (editing/inspection/debug panels)
+- VGUI2Extension dependency integration: `VGUI2ExtensionImport.*`, `BaseUI.cpp`, `GameUI.cpp`, `ClientVGUI.cpp`
+- Other utilities: `ClientEntityManager.*` (entity spawning/inspect-state management), etc.
 
-## 插件生命周期与核心入口
+## Plugin Lifecycle and Core Entry Points
 - `plugins.cpp`
-  - `IPluginsV4::Init(...)`：保存 `g_pMetaHookAPI/g_pInterface/g_pMetaSave`。
-  - `IPluginsV4::LoadEngine(cl_enginefunc_t*)`：
-    - 初始化文件系统指针（`g_pInterface->FileSystem` / HL25 兼容字段）。
-    - 记录引擎类型/BuildNum/模块区段信息（engine + mirror engine）。
-    - 注册 DLL 加载通知回调 `DllLoadNotification`（用于 `vgui2.dll` 发现后初始化 KeyValuesSystem）。
-    - 拷贝 `gEngfuncs`，做 `Engine_FillAddress(...)` + `Engine_InstallHook()`。
-    - 初始化 VGUI2Extension（`VGUI2Extension_Init()`），并注册 BaseUI/GameUI/ClientVGUI 回调。
-    - 创建全局物理管理器：`g_pClientPhysicManager = BulletPhysicManager_CreateInstance();`
-    - 调用 `glewInit()`（调试绘制用 OpenGL/GLEW）。
-  - `IPluginsV4::LoadClient(cl_exportfuncs_t*)`：
-    - 保存原始 `gExportfuncs`，并替换 `HUD_Init/HUD_*`、`V_CalcRefdef` 等导出函数。
-    - 记录 client dll（含 mirror）区段信息后执行 `Client_FillAddress(...)` 与 `Client_InstallHooks()`。
-  - `IPluginsV4::Shutdown()`：注销 DLL 通知回调。
-  - `IPluginsV4::ExitGame(int)`：销毁物理管理器、卸载 UI 回调与引擎 Hook，关闭 VGUI2Extension。
+  - `IPluginsV4::Init(...)`: Stores `g_pMetaHookAPI/g_pInterface/g_pMetaSave`.
+  - `IPluginsV4::LoadEngine(cl_enginefunc_t*)`:
+    - Initializes file-system pointers (`g_pInterface->FileSystem` / HL25 compatibility field).
+    - Records engine type, BuildNum, and module-section information (engine + mirror engine).
+    - Registers the DLL load-notification callback `DllLoadNotification` (used to initialize KeyValuesSystem after discovering `vgui2.dll`).
+    - Copies `gEngfuncs`, then calls `Engine_FillAddress(...)` + `Engine_InstallHook()`.
+    - Initializes VGUI2Extension (`VGUI2Extension_Init()`) and registers BaseUI/GameUI/ClientVGUI callbacks.
+    - Creates the global physics manager: `g_pClientPhysicManager = BulletPhysicManager_CreateInstance();`
+    - Calls `glewInit()` (for OpenGL/GLEW debug drawing).
+  - `IPluginsV4::LoadClient(cl_exportfuncs_t*)`:
+    - Stores the original `gExportfuncs` and replaces exported functions such as `HUD_Init/HUD_*` and `V_CalcRefdef`.
+    - Records client DLL (including mirror) section information, then executes `Client_FillAddress(...)` and `Client_InstallHooks()`.
+  - `IPluginsV4::Shutdown()`: Unregisters the DLL notification callback.
+  - `IPluginsV4::ExitGame(int)`: Destroys the physics manager, unloads UI callbacks and engine hooks, and shuts down VGUI2Extension.
 
-## 引擎/客户端 Hook（大方向）
+## Engine/Client Hooks (Overview)
 - `privatehook.cpp`
-  - `Engine_FillAddress(...)`：分项定位引擎内函数/全局变量（渲染、视图、临时实体、可见实体列表等）。
-  - `Engine_InstallHook()`：安装inline hook： `R_NewMap` + `R_RenderView`（SvEngine 用 `R_RenderView_SvEngine` 分支）。
-  - `Client_FillAddress(...)`：根据 game directory 识别 `dod/cstrike/czero/...`，设置 `g_bIsDayOfDefeat/g_bIsCounterStrike`，并补充部分地址。
+  - `Engine_FillAddress(...)`: Locates engine functions/global variables by category (rendering, view, temporary entities, visible entity list, and more).
+  - `Engine_InstallHook()`: Installs inline hooks for `R_NewMap` + `R_RenderView` (SvEngine uses the `R_RenderView_SvEngine` branch).
+  - `Client_FillAddress(...)`: Identifies `dod/cstrike/czero/...` based on the game directory, sets `g_bIsDayOfDefeat/g_bIsCounterStrike`, and resolves additional addresses.
 
-## cl_exportfuncs 覆盖点与运行时行为
+## cl_exportfuncs Override Points and Runtime Behavior
 - `exportfuncs.cpp`
-  - `HUD_Init()`：
-    - 调用原始 `gExportfuncs.HUD_Init()`，随后 `ClientPhysicManager()->Init()`。
-    - 注册/获取 cvar：`bv_debug_draw*`、`bv_simrate`、`bv_syncview`、`bv_force_updatebones`，以及 `sv_cheats/chase_active/...`。
-    - 注册命令：`bv_open_debug_ui`、`bv_reload_all`、`bv_reload_objects`、`bv_reload_configs`、`bv_save_configs`。
-    - 安装消息 Hook `ClCorpse`（若存在），并对 `efxapi_R_TempModel` 安装 inline hook。
-    - 初始化 `g_pViewPort`（若存在）。
-  - `HUD_GetStudioModelInterface(...)`：
-    - 获取 `engine_studio_api_s` 并安装 Studio/Renderer 相关 Hook（`EngineStudio_*`、`ClientStudio_*`）。
-    - 读取骨骼矩阵指针 `pbonetransform/plighttransform`，并缓存 `StudioCheckBBox` 等。
-  - `HUD_CreateEntities()`：
-    - 每帧枚举玩家与 client edicts（含校验 `messagenum/EF_NODRAW/modelindex` 等），标记实体“已发射”，并调用 `ClientPhysicManager()->CreatePhysicObjectForEntity(...)`。
-  - `HUD_TempEntUpdate(...)`：
-    - 遍历 temp entities，补建物理对象。
-    - `ClientPhysicManager()->SetGravity(cl_gravity)`。
-    - Sven 第三人称时用 `g_bIsUpdatingRefdef` 包裹强制更新视图（调用 `CAM_Think()` + `V_RenderView()`）。
-    - `UpdateAllPhysicObjects(...)` 后 `StepSimulation(frametime)`。
-  - `HUD_DrawTransparentTriangles()`：在 `AllowCheats()` 且 `bv_debug_draw` 打开时调用 `ClientPhysicManager()->DebugDraw()`。
-  - `R_NewMap()`（被引擎 inline hook）：执行原始 `R_NewMap` 后触发 `ClientPhysicManager()->NewMap()`、`ClientEntityManager()->NewMap()`、`g_pViewPort->NewMap()`。
-  - `V_CalcRefdef(ref_params_s*)`：在非暂停/非 intermission/非 portal 渲染等条件下，根据 `bv_syncview` 把相机与物理对象（spectator/本地玩家）同步。
+  - `HUD_Init()`:
+    - Calls the original `gExportfuncs.HUD_Init()`, then calls `ClientPhysicManager()->Init()`.
+    - Registers/obtains cvars: `bv_debug_draw*`, `bv_simrate`, `bv_syncview`, `bv_force_updatebones`, and `sv_cheats/chase_active/...`.
+    - Registers commands: `bv_open_debug_ui`, `bv_reload_all`, `bv_reload_objects`, `bv_reload_configs`, `bv_save_configs`.
+    - Installs the `ClCorpse` message hook (if present) and an inline hook for `efxapi_R_TempModel`.
+    - Initializes `g_pViewPort` (if present).
+  - `HUD_GetStudioModelInterface(...)`:
+    - Obtains `engine_studio_api_s` and installs Studio/Renderer-related hooks (`EngineStudio_*`, `ClientStudio_*`).
+    - Reads bone-matrix pointers `pbonetransform/plighttransform` and caches `StudioCheckBBox`, among others.
+  - `HUD_CreateEntities()`:
+    - Enumerates players and client edicts every frame (including validation of `messagenum/EF_NODRAW/modelindex`, etc.), marks entities as "spawned," and calls `ClientPhysicManager()->CreatePhysicObjectForEntity(...)`.
+  - `HUD_TempEntUpdate(...)`:
+    - Traverses temporary entities and creates any missing physics objects.
+    - Calls `ClientPhysicManager()->SetGravity(cl_gravity)`.
+    - During Sven third-person mode, wraps a forced view update with `g_bIsUpdatingRefdef` (calling `CAM_Think()` + `V_RenderView()`).
+    - Calls `UpdateAllPhysicObjects(...)`, then `StepSimulation(frametime)`.
+  - `HUD_DrawTransparentTriangles()`: Calls `ClientPhysicManager()->DebugDraw()` when `AllowCheats()` is true and `bv_debug_draw` is enabled.
+  - `R_NewMap()` (engine inline hook): After executing the original `R_NewMap`, triggers `ClientPhysicManager()->NewMap()`, `ClientEntityManager()->NewMap()`, and `g_pViewPort->NewMap()`.
+  - `V_CalcRefdef(ref_params_s*)`: Under conditions such as not paused, not in intermission, and not portal rendering, synchronizes the camera with physics objects (spectator/local player) according to `bv_syncview`.
 
-## Bullet3 物理世界与物理模拟步进
+## Bullet3 Physics World and Simulation Stepping
 - `BulletPhysicManager.cpp`
-  - `CBulletPhysicManager::Init()`：创建 Bullet world（collision config/dispatcher/broadphase/solver/world），设置 debug drawer 与 overlap filter callback，初始重力为 0。
-  - `CBulletPhysicManager::StepSimulation(double frametime)`：`stepSimulation(frametime, 4, 1.0f / GetSimulationTickRate())`。
-  - `CBulletPhysicManager::DebugDraw()`：根据 `bv_debug_draw_level_*` 与颜色 cvar 生成 `CPhysicDebugDrawContext`，按组件/对象过滤可视化并调用 `debugDrawWorld()`。
-  - `BulletPhysicManager_CreateInstance()`：返回 `new CBulletPhysicManager()`。
+  - `CBulletPhysicManager::Init()`: Creates the Bullet world (collision config/dispatcher/broadphase/solver/world), sets the debug drawer and overlap filter callback, and initializes gravity to 0.
+  - `CBulletPhysicManager::StepSimulation(double frametime)`: `stepSimulation(frametime, 4, 1.0f / GetSimulationTickRate())`.
+  - `CBulletPhysicManager::DebugDraw()`: Creates `CPhysicDebugDrawContext` according to `bv_debug_draw_level_*` and color cvars, filters visualizations by component/object, and calls `debugDrawWorld()`.
+  - `BulletPhysicManager_CreateInstance()`: Returns `new CBulletPhysicManager()`.
 
-## 调试 UI 与 VGUI2Extension
-- 依赖：`VGUI2Extension.dll`（`VGUI2ExtensionImport.cpp` 通过 `Sys_GetFactory` 获取 `IVGUI2Extension` 与 DPI/VGUI* 接口，失败会 `Sys_Error`）。
-- 典型交互：
-  - `bv_open_debug_ui` -> `CViewport::OpenPhysicDebugGUI()` -> `PhysicDebugGUI`。
-  - BaseUI/GameUI/ClientVGUI 通过 `IVGUI2Extension_*Callbacks` 注册回调，适配 UI 生命周期与输入/窗口过程。
+## Debug UI and VGUI2Extension
+- Dependency: `VGUI2Extension.dll` (`VGUI2ExtensionImport.cpp` obtains `IVGUI2Extension` and DPI/VGUI* interfaces through `Sys_GetFactory`; failure calls `Sys_Error`).
+- Typical interactions:
+  - `bv_open_debug_ui` -> `CViewport::OpenPhysicDebugGUI()` -> `PhysicDebugGUI`.
+  - BaseUI/GameUI/ClientVGUI register callbacks through `IVGUI2Extension_*Callbacks` to accommodate the UI lifecycle, input, and window procedure.
 
-## 构建与第三方依赖
-- `Plugins/BulletPhysics/BulletPhysics.vcxproj`：
-  - include：`$(Bullet3IncludeDirectory)`、`$(GLEWIncludeDirectory)`、`$(CapstoneIncludeDirectory)`、`$(ScopeExitIncludeDirectory)`、`$(TinyObjLoaderDirectory)`、`$(Chocobo1HashDirectory)` 等。
-  - libs：`$(Bullet3LibrariesDirectory)`、`$(GLEWLibrariesDirectory)` + `$(Bullet3LibraryFiles)`、`$(GLEWLibraryFiles)`。
-  - pre-build：执行 `$(Bullet3CheckRequirements)`（缺库时自动调用脚本编译 Bullet3）。
-- 变量来源：`tools/global_common.props`
-  - Bullet3：`thirdparty/install/bullet3/<Platform>/<Config>/...`，缺失时调用 `scripts/build-bullet3-<Platform>-<Config>.bat`。
-  - GLEW：`thirdparty/install/glew/<Platform>/<Config>/...`，缺失时调用 `scripts/build-glew-<Platform>-<Config>.bat`。
+## Build and Third-Party Dependencies
+- `Plugins/BulletPhysics/BulletPhysics.vcxproj`:
+  - include: `$(Bullet3IncludeDirectory)`, `$(GLEWIncludeDirectory)`, `$(CapstoneIncludeDirectory)`, `$(ScopeExitIncludeDirectory)`, `$(TinyObjLoaderDirectory)`, `$(Chocobo1HashDirectory)`, and others.
+  - libs: `$(Bullet3LibrariesDirectory)`, `$(GLEWLibrariesDirectory)` + `$(Bullet3LibraryFiles)`, `$(GLEWLibraryFiles)`.
+  - pre-build: Runs `$(Bullet3CheckRequirements)` (automatically invokes a script to build Bullet3 when libraries are missing).
+- Variable source: `tools/global_common.props`
+  - Bullet3: `thirdparty/install/bullet3/<Platform>/<Config>/...`; invokes `scripts/build-bullet3-<Platform>-<Config>.bat` when missing.
+  - GLEW: `thirdparty/install/glew/<Platform>/<Config>/...`; invokes `scripts/build-glew-<Platform>-<Config>.bat` when missing.
 
-## 常用 cvar/命令（调试工作流）
-- 命令：`bv_open_debug_ui`、`bv_reload_all`、`bv_reload_objects`、`bv_reload_configs`、`bv_save_configs`
-- cvar：`bv_debug_draw`、`bv_debug_draw_wallhack`、`bv_debug_draw_level_*`、`bv_debug_draw_*_color`、`bv_simrate`、`bv_syncview`、`bv_force_updatebones`
+## Common cvars/Commands (Debug Workflow)
+- Commands: `bv_open_debug_ui`, `bv_reload_all`, `bv_reload_objects`, `bv_reload_configs`, `bv_save_configs`
+- cvars: `bv_debug_draw`, `bv_debug_draw_wallhack`, `bv_debug_draw_level_*`, `bv_debug_draw_*_color`, `bv_simrate`, `bv_syncview`, `bv_force_updatebones`
 
-## 备注
-- `AllowCheats()`：SvEngine 下走 `allow_cheats` 指针，其它引擎走 `sv_cheats` cvar。
-- `ClientPhysicManager.h` 里声明了 `PhysXPhysicManager_CreateInstance()`，但在 `Plugins/BulletPhysics/` 目录内未找到实现；当前 `LoadEngine` 固定创建 Bullet 版本。
+## Notes
+- `AllowCheats()`: Uses the `allow_cheats` pointer under SvEngine; other engines use the `sv_cheats` cvar.
+- `ClientPhysicManager.h` declares `PhysXPhysicManager_CreateInstance()`, but no implementation was found within `Plugins/BulletPhysics/`; `LoadEngine` currently always creates the Bullet version.

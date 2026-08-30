@@ -4,91 +4,91 @@ type: note
 permalink: metahooksv/util-thread-task
 ---
 
-# UtilThreadTask（PluginLibs/UtilThreadTask）源码级分析
+# UtilThreadTask (PluginLibs/UtilThreadTask) Source-Level Analysis
 
-## 概述
-`PluginLibs/UtilThreadTask` 构建出一个独立的 `UtilThreadTask.dll`，通过 Valve/HLSDK 的 `CreateInterface` 机制对外暴露 `IUtilThreadTaskFactory`（接口版本 `UtilThreadTaskFactory_001`），用于创建一个“可跨线程投递、在调用方线程执行”的任务调度器 `IThreadedTaskScheduler`。
+## Overview
+`PluginLibs/UtilThreadTask` builds a standalone `UtilThreadTask.dll` that exposes `IUtilThreadTaskFactory` (interface version `UtilThreadTaskFactory_001`) through Valve/HLSDK's `CreateInterface` mechanism. It creates an `IThreadedTaskScheduler`: a task scheduler that can accept submissions across threads and runs tasks on the caller's thread.
 
-核心价值：给其它插件/模块提供一个轻量的“主线程任务队列”（也可理解为 deferred callback queue），支持按时间（`ShouldRun(time)`）决定何时执行，并提供简单的 FIFO/LIFO（`bQueueToBegin`）控制。
+Its core value is providing other plugins/modules with a lightweight "main-thread task queue" (also understood as a deferred callback queue), which decides when to run based on time (`ShouldRun(time)`) and offers simple FIFO/LIFO control through `bQueueToBegin`.
 
-## 职责
-- **对外暴露工厂接口**：`IUtilThreadTaskFactory::CreateThreadedTaskScheduler()` 用于创建调度器实例（`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`）。
-- **提供调度器实现**：`CThreadedTaskScheduler` 维护任务队列、支持任意线程 `QueueTask`、并在调用 `RunTask/RunTasks` 的线程中执行任务（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-- **定义任务/调度器 ABI**：接口在 `include/Interface/IUtilThreadTask.h`（`IThreadedTask` / `IThreadedTaskScheduler` / `IUtilThreadTaskFactory`）。
+## Responsibilities
+- **Exposes the factory interface**: `IUtilThreadTaskFactory::CreateThreadedTaskScheduler()` creates scheduler instances (`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`).
+- **Provides the scheduler implementation**: `CThreadedTaskScheduler` maintains the task queue, supports `QueueTask` from any thread, and runs tasks on the thread calling `RunTask/RunTasks` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+- **Defines the task/scheduler ABI**: Interfaces are in `include/Interface/IUtilThreadTask.h` (`IThreadedTask` / `IThreadedTaskScheduler` / `IUtilThreadTaskFactory`).
 
-## 架构
-- **接口层（公共 ABI）**：`include/Interface/IUtilThreadTask.h`
-  - `IThreadedTask`：`ShouldRun(time)` + `Run(time)` + `Destroy()`（`include/Interface/IUtilThreadTask.h`）。
-  - `IThreadedTaskScheduler`：入队、执行、等待清空、销毁、线程判定（`include/Interface/IUtilThreadTask.h`）。
-  - `IUtilThreadTaskFactory`：创建调度器（`include/Interface/IUtilThreadTask.h`）。
-- **实现层（DLL 内部实现）**：
-  - `CThreadedTaskScheduler`：真正的队列与执行逻辑（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-  - `ThreadedTaskScheduler_CreateInstance()`：创建实现实例（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-  - `CUtilThreadTaskFactory` + `EXPOSE_SINGLE_INTERFACE`：把工厂作为单例接口导出（`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`）。
-- **加载/使用层（调用方示例，非本目录但决定实际 workflow）**：
-  - `Plugins/Renderer/UtilThreadTask.cpp` 使用 `Sys_LoadModule`/`Sys_GetFactory` 获取工厂并创建 `g_pGameThreadTaskScheduler`（`Plugins/Renderer/UtilThreadTask.cpp`）。
-  - 每帧调用 `GameThreadTaskScheduler()->RunTasks(time, 0);` 驱动执行（`Plugins/Renderer/exportfuncs.cpp`）。
-  - 退出时调用 `WaitForAllTasksToComplete()` + `Destroy()` + `Sys_FreeModule()`（`Plugins/Renderer/UtilThreadTask.cpp`，`Plugins/Renderer/exportfuncs.cpp`）。
+## Architecture
+- **Interface layer (public ABI)**: `include/Interface/IUtilThreadTask.h`
+  - `IThreadedTask`: `ShouldRun(time)` + `Run(time)` + `Destroy()` (`include/Interface/IUtilThreadTask.h`).
+  - `IThreadedTaskScheduler`: queueing, execution, waiting for completion, destruction, and thread detection (`include/Interface/IUtilThreadTask.h`).
+  - `IUtilThreadTaskFactory`: scheduler creation (`include/Interface/IUtilThreadTask.h`).
+- **Implementation layer (inside the DLL)**:
+  - `CThreadedTaskScheduler`: the actual queue and execution logic (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+  - `ThreadedTaskScheduler_CreateInstance()`: creates implementation instances (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+  - `CUtilThreadTaskFactory` + `EXPOSE_SINGLE_INTERFACE`: exports the factory as a singleton interface (`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`).
+- **Loading/use layer (caller example; outside this directory but determines the actual workflow)**:
+  - `Plugins/Renderer/UtilThreadTask.cpp` uses `Sys_LoadModule`/`Sys_GetFactory` to obtain the factory and create `g_pGameThreadTaskScheduler` (`Plugins/Renderer/UtilThreadTask.cpp`).
+  - Every frame, `GameThreadTaskScheduler()->RunTasks(time, 0);` drives execution (`Plugins/Renderer/exportfuncs.cpp`).
+  - At shutdown, it calls `WaitForAllTasksToComplete()` + `Destroy()` + `Sys_FreeModule()` (`Plugins/Renderer/UtilThreadTask.cpp`, `Plugins/Renderer/exportfuncs.cpp`).
 
-## 核心实现与 Workflow
+## Core Implementation and Workflow
 
-### 1) 创建与线程归属
-- `CThreadedTaskScheduler` 构造时记录创建线程 `m_thread_id = std::this_thread::get_id()`（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-- `IsCurrentThreadCreatorThread()` 用于判断调用方是否为创建线程（常用于“必须在主线程执行”的断言/分支）（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
+### 1) Creation and Thread Ownership
+- `CThreadedTaskScheduler` records its creation thread in the constructor: `m_thread_id = std::this_thread::get_id()` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+- `IsCurrentThreadCreatorThread()` determines whether the caller is the creator thread (commonly for assertions/branches requiring main-thread execution) (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
 
-### 2) 投递任务（可跨线程）
-- `QueueTask(IThreadedTask* pTask, bool bQueueToBegin)`：持有 `std::recursive_mutex`，将任务放入 `std::list` 头/尾（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-  - `bQueueToBegin=true`：`push_front`（更像“高优先级”插队）。
-  - 否则 `push_back`：常规 FIFO。
+### 2) Task Submission (Cross-Thread Safe)
+- `QueueTask(IThreadedTask* pTask, bool bQueueToBegin)`: holds `std::recursive_mutex` and adds the task to the front/back of a `std::list` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+  - `bQueueToBegin=true`: `push_front` (similar to inserting at high priority).
+  - Otherwise, `push_back`: regular FIFO.
 
-### 3) 取出并执行（在调用 Run 的线程执行）
-- `GetTaskFromQueue(time)`：持锁遍历队列，找到第一个 `ShouldRun(time)==true` 的任务并从队列移除返回（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-- `RunTask(time)`：
-  1. `GetTaskFromQueue(time)` 取出可运行任务；
-  2. 调用 `pTask->Run(time)`；
-  3. 调用 `pTask->Destroy()` 释放对象（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
+### 3) Dequeue and Execution (Runs on the Thread Calling Run)
+- `GetTaskFromQueue(time)`: traverses the queue while locked, removes, and returns the first task for which `ShouldRun(time)==true` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+- `RunTask(time)`:
+  1. `GetTaskFromQueue(time)` retrieves a runnable task;
+  2. Calls `pTask->Run(time)`;
+  3. Calls `pTask->Destroy()` to release the object (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
 
-关键语义：
-- 调度器不直接 `delete pTask`，而是要求任务实现 `Destroy()`（接口层要求）——这与 Valve/HLSDK 的对象生命周期风格一致。
-- `RunTask` 在执行 `pTask->Run` 时不持有队列锁（锁在 `GetTaskFromQueue` 内部结束后释放），有利于避免长时间阻塞其它线程 `QueueTask`。
+Key semantics:
+- The scheduler does not directly `delete pTask`; it requires tasks to implement `Destroy()` (an interface requirement), consistent with Valve/HLSDK object-lifecycle conventions.
+- `RunTask` does not hold the queue lock while executing `pTask->Run` (the lock is released after `GetTaskFromQueue`), helping avoid long blocking of `QueueTask` calls from other threads.
 
-### 4) 批量执行
-- `RunTasks(time, maxTasks)` 循环调用 `RunTask`，直到队列中无可运行任务，或达到 `maxTasks` 限制（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
+### 4) Batch Execution
+- `RunTasks(time, maxTasks)` repeatedly calls `RunTask` until no runnable task remains or the `maxTasks` limit is reached (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
 
-### 5) 退出/清理
-- 调度器析构：持锁，对队列中残留任务逐个 `Destroy()` 并 `clear()`（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-- 调用方典型流程（以 Renderer 为例）：
-  - Init：加载 DLL -> `CreateInterface("UtilThreadTaskFactory_001")` -> `CreateThreadedTaskScheduler()`（`Plugins/Renderer/UtilThreadTask.cpp`）。
-  - Frame：每帧用当前 game time 驱动 `RunTasks(time, 0)`（`Plugins/Renderer/exportfuncs.cpp`）。
-  - Shutdown：`WaitForAllTasksToComplete()` -> `Destroy()` -> 卸载 DLL（`Plugins/Renderer/UtilThreadTask.cpp`）。
+### 5) Shutdown/Cleanup
+- Scheduler destruction: while locked, calls `Destroy()` on each remaining queued task, then `clear()` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+- Typical caller flow (Renderer example):
+  - Init: Load the DLL -> `CreateInterface("UtilThreadTaskFactory_001")` -> `CreateThreadedTaskScheduler()` (`Plugins/Renderer/UtilThreadTask.cpp`).
+  - Frame: Every frame, use current game time to drive `RunTasks(time, 0)` (`Plugins/Renderer/exportfuncs.cpp`).
+  - Shutdown: `WaitForAllTasksToComplete()` -> `Destroy()` -> unload the DLL (`Plugins/Renderer/UtilThreadTask.cpp`).
 
-## 依赖
-- **C++ 标准库**：`<list> <mutex> <thread>`（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`）。
-- **公共接口/Valve Interface 体系**：
-  - `include/Interface/IUtilThreadTask.h`（对外 ABI）。
-  - `include/HLSDK/common/interface.h` + `include/HLSDK/common/interface.cpp`（`CreateInterface`/`EXPOSE_*`/`Sys_LoadModule`/`Sys_GetFactory` 等约定；该 cpp 被 vcxproj 编译进 DLL，`PluginLibs/UtilThreadTask/UtilThreadTask.vcxproj`）。
-- **MetaHookSv**：`<metahook.h>`（`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`），调用方也通过 MetaHook 的系统接口加载/卸载模块（示例见 `Plugins/Renderer/UtilThreadTask.cpp`）。
+## Dependencies
+- **C++ standard library**: `<list> <mutex> <thread>` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`).
+- **Public interfaces/Valve interface system**:
+  - `include/Interface/IUtilThreadTask.h` (public ABI).
+  - `include/HLSDK/common/interface.h` + `include/HLSDK/common/interface.cpp` (conventions including `CreateInterface`/`EXPOSE_*`/`Sys_LoadModule`/`Sys_GetFactory`; the cpp is compiled into the DLL by the vcxproj, `PluginLibs/UtilThreadTask/UtilThreadTask.vcxproj`).
+- **MetaHookSv**: `<metahook.h>` (`PluginLibs/UtilThreadTask/UtilThreadTask.cpp`); callers also load/unload the module through MetaHook system interfaces (see `Plugins/Renderer/UtilThreadTask.cpp`).
 
-## 注意事项 / 已知问题（源码级）
+## Notes / Known Issues (Source-Level)
 
-### 1) `WaitForAllTasksToComplete()` 旧缺陷已修复
-位置：`PluginLibs/UtilThreadTask/ThreadedTask.cpp`
-- 当前实现会遍历队列中的任务，依次 `Run(FLT_MAX)` 然后 `Destroy()`，最后 `clear()`；不会再出现死循环/泄漏。
-- 仍需注意：该函数在持有队列锁时执行 `Run`，若任务执行耗时可能阻塞并发 `QueueTask`（通常只在 shutdown 路径调用，影响可接受）。
+### 1) The Former `WaitForAllTasksToComplete()` Defect Is Fixed
+Location: `PluginLibs/UtilThreadTask/ThreadedTask.cpp`
+- The current implementation traverses queued tasks, calling `Run(FLT_MAX)`, then `Destroy()`, and finally `clear()`; it no longer has an infinite-loop/leak issue.
+- Note that this function executes `Run` while holding the queue lock. Long-running tasks can block concurrent `QueueTask` calls (it is normally called only during shutdown, so the impact is acceptable).
 
-### 2) `RunTasks(time, maxTasks)` off-by-one 风险已修复
-位置：`PluginLibs/UtilThreadTask/ThreadedTask.cpp`
-- 当前循环条件使用 `maxTasks <= 0 || nRunTask < maxTasks`，当 `maxTasks>0` 时最多执行 `maxTasks` 个任务。
-- 当 `maxTasks<=0` 时保持“无限制”语义，与调用方传 `0` 的用法一致。
+### 2) The `RunTasks(time, maxTasks)` Off-by-One Risk Is Fixed
+Location: `PluginLibs/UtilThreadTask/ThreadedTask.cpp`
+- The current loop condition is `maxTasks <= 0 || nRunTask < maxTasks`, so when `maxTasks>0`, at most `maxTasks` tasks are executed.
+- When `maxTasks<=0`, it preserves unlimited semantics, consistent with callers passing `0`.
 
-### 3) “ThreadTask” 名称易误导：它不是线程池/后台线程
-- 调度器内部没有创建 worker thread，也没有 `condition_variable`。
-- “跨线程”只体现在 `QueueTask` 的线程安全；任务执行永远发生在调用 `RunTask/RunTasks` 的线程。
+### 3) The Name “ThreadTask” Can Mislead: It Is Not a Thread Pool/Background Thread
+- The scheduler creates no worker thread and has no `condition_variable`.
+- Its cross-thread nature only refers to `QueueTask` thread safety; tasks always execute on the thread calling `RunTask/RunTasks`.
 
-### 4) 任务实现必须正确实现生命周期
-- 调度器依赖 `IThreadedTask::Destroy()` 释放资源（`include/Interface/IUtilThreadTask.h`）。
-- 若任务不是 heap 分配或 `Destroy()` 未 `delete this`，会造成泄漏/崩溃。
+### 4) Task Implementations Must Implement the Lifecycle Correctly
+- The scheduler relies on `IThreadedTask::Destroy()` to release resources (`include/Interface/IUtilThreadTask.h`).
+- If a task was not heap-allocated or `Destroy()` does not `delete this`, leaks/crashes can result.
 
-### 5) `time` 语义
-- 调度器把 `time` 原样传递给 `ShouldRun/Run`；调用方应保证一致性（通常是 game time，例如 Renderer 使用 `gEngfuncs.GetAbsoluteTime()`，`Plugins/Renderer/exportfuncs.cpp`）。
-- `WaitForAllTasksToComplete()` 传 `FLT_MAX` 给 `Run`（`PluginLibs/UtilThreadTask/ThreadedTask.cpp`），如果任务逻辑依赖真实时间，可能产生副作用。
+### 5) `time` Semantics
+- The scheduler forwards `time` unchanged to `ShouldRun/Run`; callers must ensure consistency (normally game time; for example, the Renderer uses `gEngfuncs.GetAbsoluteTime()` in `Plugins/Renderer/exportfuncs.cpp`).
+- `WaitForAllTasksToComplete()` passes `FLT_MAX` to `Run` (`PluginLibs/UtilThreadTask/ThreadedTask.cpp`), which can have side effects if task logic depends on real time.

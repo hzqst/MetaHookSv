@@ -7,15 +7,15 @@ permalink: metahooksv/entity-component-container
 # EntityComponentContainer
 
 ## Overview
-`CEntityComponentContainer` 是 Renderer 插件里的按实体临时渲染附件容器，用来在一帧内为单个 `cl_entity_t` 挂接额外的渲染数据，而不直接修改实体结构本身。它把 decal、水面渲染数据和 studio 延迟 pass 这几类跨阶段数据统一缓存到实体级容器中，供后续绘制阶段消费。
+`CEntityComponentContainer` is a per-entity temporary render-attachment container in the Renderer plugin. It attaches extra render data to an individual `cl_entity_t` for one frame without directly modifying the entity structure itself. It centrally caches cross-stage data such as decals, water-rendering data, and deferred studio passes in an entity-level container for later drawing stages to consume.
 
 ## Responsibilities
-- 为单个实体维护一份可复用的渲染组件容器，并按 client entity、temp entity 或 fallback 指针进行索引。
-- 在帧开始时清空容器中的“本帧数据”，但保留容器对象本身，避免每帧反复分配/释放。
-- 在 `R_PrepareDecals` 阶段按实体收集 decal 列表，供 `R_DrawDecals` 读取。
-- 在 `R_RenderWaterPass` 阶段按实体收集可见水面模型和反射缓存，供 `R_DrawWaters` 读取。
-- 在 `StudioRenderModel_Template` 的 opaque 分析阶段记录延迟的 studio renderfx pass，供透明阶段重放。
-- 在 renderer 初始化/关闭阶段负责容器注册表的建立与彻底释放，并在 `HUD_CreateEntities` 中为当前可见实体预分配容器。
+- Maintains one reusable render-component container per entity, indexed by client entity, temp entity, or fallback pointer.
+- Clears the container's “current-frame data” at the start of a frame while retaining the container itself, avoiding repeated per-frame allocation/deallocation.
+- Collects decal lists per entity during `R_PrepareDecals` for `R_DrawDecals` to read.
+- Collects visible water-surface models and reflection caches per entity during `R_RenderWaterPass` for `R_DrawWaters` to read.
+- Records deferred studio renderfx passes during the opaque-analysis phase of `StudioRenderModel_Template` for replay during the transparent phase.
+- Creates and fully releases the container registries during renderer initialization/shutdown, and preallocates containers for currently visible entities in `HUD_CreateEntities`.
 
 ## Involved Files & Symbols
 - `Plugins/Renderer/gl_entity.h` - `CEntityComponentContainer`
@@ -37,18 +37,18 @@ permalink: metahooksv/entity-component-container
 - `Plugins/Renderer/exportfuncs.cpp` - `HUD_CreateEntities`
 
 ## Architecture
-核心结构分成“容器对象”和“三套全局注册表”。`CEntityComponentContainer` 本身只保存四类按实体归属的渲染附加数据：`Decals`、`RenderWaterModels`、`ReflectCaches`、`DeferredStudioPasses`。容器对象通过 `R_GetEntityComponentContainer` 进行统一访问和惰性分配。
+The core structure consists of “container objects” and “three global registries.” `CEntityComponentContainer` itself stores only four types of entity-owned render attachments: `Decals`, `RenderWaterModels`, `ReflectCaches`, and `DeferredStudioPasses`. Containers are accessed uniformly and allocated lazily through `R_GetEntityComponentContainer`.
 
-注册表分三类：
-- `g_ClientEntityRenderComponents`：按 `cl_entities` 基址上的 client entity 索引访问。
-- `g_TempEntityRenderComponents`：按 `gTempEnts` 中 `TEMPENTITY` 的槽位索引访问。
-- `g_UnmanagedEntityRenderComponent`：对不落在前两类连续内存范围内的实体指针做 map fallback。
+There are three registry types:
+- `g_ClientEntityRenderComponents`: accessed by the client-entity index in the `cl_entities` base array.
+- `g_TempEntityRenderComponents`: accessed by the slot index of `TEMPENTITY` in `gTempEnts`.
+- `g_UnmanagedEntityRenderComponent`: map fallback for entity pointers that do not fall in the contiguous-memory ranges of the first two types.
 
-`R_GetEntityComponentContainer` 的查找顺序固定为 client entity -> temp entity -> unmanaged fallback。对于命中的 client/temp 槽位，如果数组长度不够会先 `resize`，然后在 `create_if_not_exists=true` 时按需 `new CEntityComponentContainer()`。这使调用方可以在“收集阶段”用 `true` 建立容器，在“消费阶段”用 `false` 只读访问。
+`R_GetEntityComponentContainer` always searches in the order client entity -> temp entity -> unmanaged fallback. For a matching client/temp slot, it first `resize`s if the array is too short, then conditionally `new CEntityComponentContainer()` when `create_if_not_exists=true`. This lets callers use `true` to create containers during the “collection phase” and `false` for read-only access during the “consumption phase.”
 
-生命周期上，`R_InitEntityComponents` 只清空全局注册表；`R_ShutdownEntityComponents` 遍历三套注册表并 `delete` 容器；`R_EntityComponents_StartFrame` 每帧只调用 `Reset()` 清空容器内部向量，不销毁容器对象，所以容器分配是跨帧复用的。
+In lifecycle terms, `R_InitEntityComponents` only clears the global registries; `R_ShutdownEntityComponents` iterates the three registries and `delete`s their containers; `R_EntityComponents_StartFrame` calls `Reset()` each frame only to clear internal container vectors, without destroying containers. Container allocations are therefore reused across frames.
 
-从渲染流程看，这个组件充当跨 pass 的实体级 scratchpad：
+In the rendering flow, this component acts as an entity-level scratchpad shared across passes:
 ```mermaid
 flowchart TD
 A["HUD_CreateEntities"] --> B["R_AllocateEntityComponentsForVisEdicts()"]
@@ -68,27 +68,27 @@ R["StudioRenderModel_Template() transparent pass"] --> S["Replay DeferredStudioP
 T["CL_FxBlend()"] --> U["Check DeferredStudioPasses and return 255 when pending"]
 ```
 
-几个具体子流程如下：
-- Decal 路径：`R_PrepareDecals` 遍历引擎 decal 列表，按 `decal->entityIndex` 找到实体后写入 `Decals`；`R_DrawDecals` 再从该实体容器读取并绘制。
-- Water 路径：`R_RenderWaterPass` 为可见水面实体写入 `RenderWaterModels` 和对应的 `ReflectCaches`；`R_DrawWaters` 按相同索引成对读取这两组数组。
-- Studio 路径：`StudioRenderModel_Template` 在 opaque 分析阶段检测到 alpha/additive/glowshell 时，将对应 `renderfx` 记录进 `DeferredStudioPasses`；透明阶段再逐个重放，并在完成后清空该数组；`CL_FxBlend` 也会读取它，若存在待执行的 deferred studio pass，则直接返回 `255`。
+Specific subflows are as follows:
+- Decal path: `R_PrepareDecals` iterates the engine decal list, finds each entity by `decal->entityIndex`, and writes it to `Decals`; `R_DrawDecals` then reads and draws from that entity's container.
+- Water path: `R_RenderWaterPass` writes `RenderWaterModels` and corresponding `ReflectCaches` for visible water-surface entities; `R_DrawWaters` reads these two arrays in pairs at matching indices.
+- Studio path: when `StudioRenderModel_Template` detects alpha/additive/glowshell during opaque analysis, it records the matching `renderfx` in `DeferredStudioPasses`; the transparent phase then replays them one by one and clears the array afterward. `CL_FxBlend` also reads it and directly returns `255` if a deferred studio pass is pending.
 
 ## Dependencies
-- 引擎实体存储与可见列表：`cl_entities`、`cl_max_edicts`、`gTempEnts`、`cl_visedicts`、`cl_numvisedicts`、`r_worldentity`
-- 引擎查询接口：`gEngfuncs.GetEntityByIndex(0)`
-- Renderer 子系统：`gl_rsurf.cpp`、`gl_water.cpp`、`gl_studio.cpp`、`gl_rmain.cpp`、`exportfuncs.cpp`
-- 数据类型与渲染常量：`decal_t`、`CWaterSurfaceModel`、`CWaterReflectCache`、`kRenderFxDrawAlphaMeshes`、`kRenderFxDrawAdditiveMeshes`、`kRenderFxDrawGlowShell`
+- Engine entity storage and visible lists: `cl_entities`, `cl_max_edicts`, `gTempEnts`, `cl_visedicts`, `cl_numvisedicts`, `r_worldentity`
+- Engine query interface: `gEngfuncs.GetEntityByIndex(0)`
+- Renderer subsystems: `gl_rsurf.cpp`, `gl_water.cpp`, `gl_studio.cpp`, `gl_rmain.cpp`, `exportfuncs.cpp`
+- Data types and render constants: `decal_t`, `CWaterSurfaceModel`, `CWaterReflectCache`, `kRenderFxDrawAlphaMeshes`, `kRenderFxDrawAdditiveMeshes`, `kRenderFxDrawGlowShell`
 
 ## Notes
-- `Reset()` 只会清空向量，不会深度释放 `Decals` 和 `ReflectCaches` 指向的对象；这两类对象的所有权在容器外部。`RenderWaterModels` 使用 `shared_ptr`，清空时只会释放当前容器持有的引用。
-- `RenderWaterModels` 与 `ReflectCaches` 是并行数组：二者在 `R_RenderWaterPass` 中同一位置写入，并在 `R_DrawWaters` 中按同一索引读取，后续维护必须保证长度和顺序一致。
-- `R_InitEntityComponents()` 只是 `clear()` 三套注册表，不会释放历史容器对象；它依赖当前调用约束，即只在 `R_Init()` 的一次性初始化路径中调用，而真正的释放由 `R_ShutdownEntityComponents()` 完成。
-- 从 `R_GetEntityComponentContainer()` 的实现可以推断：`r_worldentity` 会先被规范化成 `GetEntityByIndex(0)`，但 client entity 分支只接受 `index > 0`，因此 world entity 的容器最终会落入 `g_UnmanagedEntityRenderComponent`。
-- 这些全局注册表都是可变全局状态，没有同步保护，按当前实现假定只在渲染相关主线程路径中访问。
+- `Reset()` only clears vectors; it does not deeply free objects pointed to by `Decals` and `ReflectCaches`, whose ownership remains outside the container. `RenderWaterModels` uses `shared_ptr`, so clearing releases only references held by the current container.
+- `RenderWaterModels` and `ReflectCaches` are parallel arrays: both are written at the same position in `R_RenderWaterPass` and read at the same index in `R_DrawWaters`; future maintenance must preserve matching length and order.
+- `R_InitEntityComponents()` merely `clear()`s the three registries and does not release historical containers. It relies on its current calling contract: it is used only in the one-time initialization path of `R_Init()`, while actual release is handled by `R_ShutdownEntityComponents()`.
+- The implementation of `R_GetEntityComponentContainer()` indicates that `r_worldentity` is first normalized to `GetEntityByIndex(0)`, but the client-entity branch accepts only `index > 0`; therefore, the world entity's container ultimately falls into `g_UnmanagedEntityRenderComponent`.
+- These global registries are mutable global state without synchronization protection; the current implementation assumes access only from rendering-related main-thread paths.
 
 ## Callers (optional)
-- `Plugins/Renderer/gl_rmain.cpp` - `R_Init`、`R_Shutdown`、`R_RenderFrameStart`、`CL_FxBlend`
+- `Plugins/Renderer/gl_rmain.cpp` - `R_Init`, `R_Shutdown`, `R_RenderFrameStart`, `CL_FxBlend`
 - `Plugins/Renderer/exportfuncs.cpp` - `HUD_CreateEntities`
-- `Plugins/Renderer/gl_rsurf.cpp` - `R_PrepareDecals`、`R_DrawDecals`
-- `Plugins/Renderer/gl_water.cpp` - `R_RenderWaterPass`、`R_DrawWaters`
+- `Plugins/Renderer/gl_rsurf.cpp` - `R_PrepareDecals`, `R_DrawDecals`
+- `Plugins/Renderer/gl_water.cpp` - `R_RenderWaterPass`, `R_DrawWaters`
 - `Plugins/Renderer/gl_studio.cpp` - `StudioRenderModel_Template`

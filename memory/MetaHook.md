@@ -6,19 +6,19 @@ permalink: metahooksv/meta-hook
 
 # MetaHook
 
-## 概述
-`MetaHook` 是 Loader 侧核心源码集合，负责启动游戏引擎（普通 PE 或 legacy blob）、定位引擎内部关键符号、安装 Hook、加载并驱动插件生命周期、转发 DLL 加载通知，以及在退出时回收资源。主执行链路以 `src/launcher.cpp` 为入口，以 `src/metahook.cpp` 为核心逻辑实现。
+## Overview
+`MetaHook` is the core source collection on the Loader side. It starts the game engine (a normal PE or legacy blob), locates key internal engine symbols, installs hooks, loads and drives plugin lifecycles, forwards DLL load notifications, and reclaims resources during shutdown. The main execution chain enters through `src/launcher.cpp`, with its core logic implemented in `src/metahook.cpp`.
 
-## 职责
-- 启动与重启控制：解析命令行、初始化注册表/文件系统、选择并加载 `hw.dll/sw.dll`，执行 `IEngineAPI::Run`。
-- 引擎适配与符号定位：按引擎类型（GoldSrc/SvEngine/HL25/blob）在代码段中做签名扫描与反汇编定位（build number、`ppEngfuncs`、`ppExportFuncs`、`gClientUserMsgs`、`cl_parsefuncs`、studio 接口等）。
-- Hook 基础设施：提供 inline/VFT/IAT/inline-patch 四类 hook，支持事务式提交（批量登记后统一 commit）。
-- 插件生命周期管理：按 `plugins.lst` 读取插件，协商 V4/V3/V2/V1 接口并调用 `Init/LoadEngine/LoadClient/ExitGame/Shutdown`。
-- Blob 模块加载：识别 blob 文件、解码+重定位+导入修复+入口调用，支持 blob 导入表 hook 查询。
-- DLL 加载通知：统一向插件分发 blob/Ldr 的 load/unload 事件，并携带 engine/client/blob/critical-region 标记。
-- 运行期能力暴露：通过 `gMetaHookAPI` / `gMetaHookAPI_LegacyV2` 向插件暴露内存读写、反汇编、模式搜索、模块查询、线程池、通知注册等能力。
+## Responsibilities
+- Startup and restart control: parses the command line, initializes the registry/filesystem, selects and loads `hw.dll/sw.dll`, and executes `IEngineAPI::Run`.
+- Engine adaptation and symbol location: performs signature scanning and disassembly-based location in code sections by engine type (GoldSrc/SvEngine/HL25/blob), including the build number, `ppEngfuncs`, `ppExportFuncs`, `gClientUserMsgs`, `cl_parsefuncs`, studio interfaces, and more.
+- Hook infrastructure: provides four hook types—inline, VFT, IAT, and inline-patch—and supports transactional commits (batch registration followed by a single commit).
+- Plugin lifecycle management: reads plugins from `plugins.lst`, negotiates V4/V3/V2/V1 interfaces, and calls `Init/LoadEngine/LoadClient/ExitGame/Shutdown`.
+- Blob module loading: recognizes blob files, decodes, relocates, repairs imports, invokes entry points, and supports blob import-table hook queries.
+- DLL load notifications: centrally distributes blob/Ldr load/unload events to plugins, carrying engine/client/blob/critical-region flags.
+- Runtime capability exposure: exposes memory read/write, disassembly, pattern search, module queries, thread pools, notification registration, and other capabilities to plugins through `gMetaHookAPI` / `gMetaHookAPI_LegacyV2`.
 
-## 涉及文件 (不要带行号)
+## Involved Files (No Line Numbers)
 - src/launcher.cpp
 - src/metahook.cpp
 - src/LoadBlob.cpp
@@ -33,29 +33,29 @@ permalink: metahooksv/meta-hook
 - include/metahook.h
 - include/Interface/IPlugins.h
 
-## 架构
-运行期主流程：
+## Architecture
+Main runtime flow:
 
 ```mermaid
 flowchart TD
   A[WinMain launcher.cpp]
-  B[初始化 CommandLine Registry FileSystem]
-  C{是否 Blob 引擎}
+  B[Initialize CommandLine Registry FileSystem]
+  C{Blob engine?}
   D[LoadBlobFile + RunDllMainForBlob + RunExportEntryForBlob]
   E[Sys_LoadModule + CreateInterface VENGINE_LAUNCHER_API_VERSION]
   F[MH_LoadEngine]
-  G[签名扫描并安装关键 Hook]
+  G[Signature scan and install key hooks]
   H[MH_LoadDllPaths + MH_LoadPlugins]
-  I[插件 LoadEngine]
+  I[Plugin LoadEngine]
   J[InitLoadDllNotification]
   K[EngineAPI Run]
-  L[ClientDLL_Initialize 触发插件 LoadClient]
-  M[MH_ExitGame + 卸载通知 + MH_Shutdown]
+  L[ClientDLL_Initialize triggers plugin LoadClient]
+  M[MH_ExitGame + unload notifications + MH_Shutdown]
 
   A --> B
   B --> C
-  C -->|是| D
-  C -->|否| E
+  C -->|Yes| D
+  C -->|No| E
   D --> F
   E --> F
   F --> G
@@ -67,32 +67,32 @@ flowchart TD
   K --> M
 ```
 
-关键源码分工：
-- `launcher.cpp`：进程入口、单实例互斥、引擎 DLL 选择、engine run 循环、重启/视频模式回退。
-- `metahook.cpp`：核心状态与 API 表、符号扫描、hook 管理、插件加载与生命周期、镜像 DLL、线程池。
-- `LoadBlob.cpp`：blob 格式校验/解码/装载/卸载、blob 查询、blob IAT hook。
-- `LoadDllNotification.cpp`：`LdrRegisterDllNotification` 优先、`LdrLoadDll` detour 兜底、统一事件分发。
-- `commandline.cpp`：命令行解析与改写，支持 `@file` 参数展开。
-- `registry.cpp`：`HKCU\Software\Valve\Half-Life\Settings` 读写封装。
-- `sys_launcher.cpp`：可执行路径与长路径工具函数。
-- `Z.cpp`：`.blob` 段静态缓冲（仅 blob-support/debug 构建启用）。
+Key source responsibilities:
+- `launcher.cpp`: process entry point, single-instance mutex, engine DLL selection, engine-run loop, restart/video-mode fallback.
+- `metahook.cpp`: core state and API tables, symbol scanning, hook management, plugin loading and lifecycle, image DLLs, thread pool.
+- `LoadBlob.cpp`: blob format validation/decoding/loading/unloading, blob queries, blob IAT hooks.
+- `LoadDllNotification.cpp`: prioritizes `LdrRegisterDllNotification`, falls back to an `LdrLoadDll` detour, and centralizes event dispatch.
+- `commandline.cpp`: command-line parsing and rewriting, supporting `@file` argument expansion.
+- `registry.cpp`: read/write wrapper for `HKCU\Software\Valve\Half-Life\Settings`.
+- `sys_launcher.cpp`: executable-path and long-path helper functions.
+- `Z.cpp`: static buffer for the `.blob` section (enabled only in blob-support/debug builds).
 
-## 依赖
-- 内部接口：`metahook.h`、`IPlugins.h`、`IEngineAPI.h`、`IFileSystem/IFileSystem_HL25`、`ICommandLine`、`IRegistry`。
-- 第三方能力：Detours（inline detour）、Capstone（反汇编/指令扫描）、MemoryModule/LoadDllMemoryApi（镜像 DLL 只读加载与重定位）。
-- 运行时资源：`<game>\metahook\configs\plugins.lst`、`<game>\metahook\plugins\*.dll`、`<game>\metahook\dlls`（递归加入 PATH）。
-- 插件 ABI：优先协商 `METAHOOK_PLUGIN_API_VERSION_V4`，依次回退到 V3/V2/V1。
+## Dependencies
+- Internal interfaces: `metahook.h`, `IPlugins.h`, `IEngineAPI.h`, `IFileSystem/IFileSystem_HL25`, `ICommandLine`, `IRegistry`.
+- Third-party capabilities: Detours (inline detours), Capstone (disassembly/instruction scanning), MemoryModule/LoadDllMemoryApi (read-only image-DLL loading and relocation).
+- Runtime assets: `<game>\metahook\configs\plugins.lst`, `<game>\metahook\plugins\*.dll`, `<game>\metahook\dlls` (recursively added to PATH).
+- Plugin ABI: first negotiates `METAHOOK_PLUGIN_API_VERSION_V4`, then falls back to V3/V2/V1 in order.
 
-## 注意事项
-- 插件调用顺序与 `plugins.lst` 书写顺序相反：`MH_LoadPlugin` 采用链表头插，`LoadEngine/LoadClient` 按链表从头遍历。
-- `MH_LoadPlugins` 中 `_SSE.dll` 分支出现重复尝试（同条件两次）。
-- `MH_FreeHooksForModule` 当前为 `TODO`，但 unload 通知路径中已调用该函数，模块卸载后的 hook 回收逻辑并未真正实现。
-- `LoadDllNotification` 在 `Ldr` critical region 内也会分发回调；插件回调若做阻塞或重入敏感操作，需要自行规避。
-- blob 支持受编译宏限制（`METAHOOK_BLOB_SUPPORT`）；非支持构建会直接报错要求使用 `metahook_blob.exe`。
-- `MH_LoadEngine` 依赖大量签名/反汇编定位，若引擎二进制布局变化，可能触发 `MH_SysError` 提前终止。
-- `launcher.cpp` 存在未参与当前主流程的辅助代码（如 `SetActiveProcess` 未被调用）。
+## Notes
+- Plugin invocation order is the reverse of the order written in `plugins.lst`: `MH_LoadPlugin` inserts at the head of a linked list, while `LoadEngine/LoadClient` traverse the list from its head.
+- The `_SSE.dll` branch in `MH_LoadPlugins` performs duplicate attempts (the same condition twice).
+- `MH_FreeHooksForModule` is currently `TODO`, although the unload-notification path already calls it; hook reclamation after module unloading is not actually implemented.
+- `LoadDllNotification` dispatches callbacks even inside the `Ldr` critical region; plugin callbacks must avoid blocking or reentrancy-sensitive operations themselves.
+- Blob support is limited by the `METAHOOK_BLOB_SUPPORT` compilation macro; unsupported builds directly error and require `metahook_blob.exe`.
+- `MH_LoadEngine` relies on extensive signature/disassembly-based location; if the engine binary layout changes, it may trigger early termination via `MH_SysError`.
+- `launcher.cpp` contains helper code that does not participate in the current main flow (for example, `SetActiveProcess` is not called).
 
-## 调用方（可选）
-- 启动调用方：`WinMain`（`src/launcher.cpp`）直接调用 `MH_LoadEngine` / `MH_ExitGame` / `MH_Shutdown`。
-- 引擎回调调用方：引擎在初始化 client 时回调 `ClientDLL_Initialize`，由 MetaHook 接管并触发插件 `LoadClient`。
-- 插件调用方：插件通过 `IPluginsV2+::Init` 获得 `metahook_api_t` 与 `mh_interface_t` 后反向调用 Loader 暴露能力。
+## Callers (Optional)
+- Startup caller: `WinMain` (`src/launcher.cpp`) directly calls `MH_LoadEngine` / `MH_ExitGame` / `MH_Shutdown`.
+- Engine callback caller: the engine calls `ClientDLL_Initialize` while initializing the client; MetaHook takes control and triggers plugin `LoadClient`.
+- Plugin caller: after obtaining `metahook_api_t` and `mh_interface_t` through `IPluginsV2+::Init`, plugins call back into Loader-exposed capabilities.

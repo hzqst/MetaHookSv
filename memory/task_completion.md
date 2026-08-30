@@ -44,8 +44,8 @@ permalink: metahooksv/task-completion
   **changes**
   [PluginName] Description of change
   
-  **改动**
-  [PluginName] 改动描述
+  **Changes**
+  [PluginName] Change description
   ```
 
 ## DO NOT Run Automatically

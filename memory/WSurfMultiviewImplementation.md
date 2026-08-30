@@ -4,33 +4,33 @@ type: note
 permalink: metahooksv/wsurf-multiview-implementation
 ---
 
-# WorldSurface Multiview渲染实现文档
+# WorldSurface Multiview Rendering Implementation
 
-## 概述
+## Overview
 
-本文档描述了为WorldSurface渲染器实现多视角(Multiview)渲染功能的完整方案。该功能允许在单次Draw调用中渲染多个视角，用于支持：
-1. **Cubemap Shadow Mapping** - 单次渲染6个视角到Cubemap
-2. **Cascaded Shadow Mapping (CSM)** - 单次渲染4个级联阴影到TextureArray
+This document describes the complete implementation of multiview rendering for the WorldSurface renderer. This feature renders multiple views in one draw call to support:
+1. **Cubemap Shadow Mapping** - Render six views to a cubemap in a single call
+2. **Cascaded Shadow Mapping (CSM)** - Render four cascaded shadows to a texture array in a single call
 
-## 实现架构
+## Implementation Architecture
 
-### 1. Program State 标志位
+### 1. Program State Flag
 
-在 `Plugins/Renderer/gl_wsurf.h` 中添加了新的着色器状态位：
+A new shader state flag was added in `Plugins/Renderer/gl_wsurf.h`:
 
 ```cpp
 #define WSURF_MULTIVIEW_ENABLED  0x20000000ull
 ```
 
-该标志位用于在编译着色器时启用multiview相关的宏定义和几何着色器。
+This flag enables multiview-related macro definitions and the geometry shader during shader compilation.
 
-### 2. C++代码修改
+### 2. C++ Code Changes
 
-#### 2.1 着色器编译 (gl_wsurf.cpp)
+#### 2.1 Shader Compilation (gl_wsurf.cpp)
 
-在 `R_UseWSurfProgram` 函数中：
-- 当 `state & WSURF_MULTIVIEW_ENABLED` 时，添加 `WSURF_MULTIVIEW_ENABLED` 宏定义
-- 当启用multiview时，指定几何着色器文件路径 `wsurf_shader.geom.glsl`
+In `R_UseWSurfProgram`:
+- When `state & WSURF_MULTIVIEW_ENABLED`, add the `WSURF_MULTIVIEW_ENABLED` macro definition.
+- When multiview is enabled, specify the geometry shader path `wsurf_shader.geom.glsl`.
 
 ```cpp
 if (state & WSURF_MULTIVIEW_ENABLED)
@@ -43,16 +43,16 @@ if (state & WSURF_MULTIVIEW_ENABLED)
 args.fsfile = "renderer\\shader\\wsurf_shader.frag.glsl";
 ```
 
-#### 2.2 运行时启用
+#### 2.2 Runtime Enablement
 
-在以下绘制函数中添加了multiview检测：
+Multiview checks were added to the following draw functions:
 - `R_DrawWorldSurfaceModelShadowProxyInternal`
 - `R_DrawWorldSurfaceLeafShadow`
 - `R_DrawWorldSurfaceLeafStatic`
 - `R_DrawWorldSurfaceLeafAnim`
 - `R_DrawWorldSurfaceLeafSky`
 
-当 `r_draw_multiview` 为 true 时，自动添加 `WSURF_MULTIVIEW_ENABLED` 标志：
+When `r_draw_multiview` is true, automatically add the `WSURF_MULTIVIEW_ENABLED` flag:
 
 ```cpp
 if (r_draw_multiview)
@@ -61,17 +61,17 @@ if (r_draw_multiview)
 }
 ```
 
-### 3. 着色器实现
+### 3. Shader Implementation
 
 #### 3.1 Vertex Shader (wsurf_shader.vert.glsl)
 
-顶点着色器保持不变，继续输出 `v_` 前缀的变量：
-- `v_worldpos`, `v_normal`, `v_tangent` 等
-- 这些变量会被几何着色器接收
+The vertex shader remains unchanged and continues outputting variables with the `v_` prefix:
+- `v_worldpos`, `v_normal`, `v_tangent`, etc.
+- These variables are received by the geometry shader.
 
-#### 3.2 Geometry Shader (wsurf_shader.geom.glsl) - 新增
+#### 3.2 Geometry Shader (wsurf_shader.geom.glsl) - New
 
-**输入配置：**
+**Input configuration:**
 ```glsl
 layout(triangles) in;
 
@@ -82,28 +82,28 @@ layout(triangles) in;
 #endif
 ```
 
-**核心逻辑：**
+**Core logic:**
 
-启用multiview时：
+When multiview is enabled:
 ```glsl
 #ifdef WSURF_MULTIVIEW_ENABLED
     int numViews = CameraUBO.numViews;
     
     for (int viewIdx = 0; viewIdx < numViews; ++viewIdx)
     {
-        gl_Layer = viewIdx;  // 设置TextureArray层
+        gl_Layer = viewIdx;  // Set the TextureArray layer
         
         for (int i = 0; i < 3; ++i)
         {
-            // 使用对应视角的矩阵变换
+            // Transform using the matrix for the corresponding view
             vec4 worldPos = vec4(v_worldpos[i], 1.0);
             gl_Position = GetCameraProjMatrix(viewIdx) * 
                          GetCameraWorldMatrix(viewIdx) * worldPos;
             
-            // 传递所有属性到片段着色器
+            // Pass all attributes to the fragment shader
             g_worldpos = v_worldpos[i];
             g_normal = v_normal[i];
-            // ... 其他属性
+            // ... other attributes
             
             EmitVertex();
         }
@@ -112,13 +112,13 @@ layout(triangles) in;
 #endif
 ```
 
-未启用multiview时，几何着色器简单透传：
+When multiview is disabled, the geometry shader simply passes through:
 ```glsl
 #else
     for (int i = 0; i < 3; ++i)
     {
         gl_Position = gl_in[i].gl_Position;
-        // 传递所有属性
+        // Pass all attributes
         EmitVertex();
     }
     EndPrimitive();
@@ -127,73 +127,73 @@ layout(triangles) in;
 
 #### 3.3 Fragment Shader (wsurf_shader.frag.glsl)
 
-通过预处理器宏适配输入来源：
+The input source is adapted through preprocessor macros:
 
 ```glsl
 #ifdef WSURF_MULTIVIEW_ENABLED
-    // 来自几何着色器的 g_ 前缀变量
+    // g_-prefixed variables from the geometry shader
     #define v_worldpos g_worldpos
     #define v_normal g_normal
-    // ... 其他变量映射
+    // ... other variable mappings
     
     in vec3 g_worldpos;
     in vec3 g_normal;
-    // ... 其他输入
+    // ... other inputs
 #else
-    // 直接来自顶点着色器的 v_ 前缀变量
+    // v_-prefixed variables directly from the vertex shader
     in vec3 v_worldpos;
     in vec3 v_normal;
-    // ... 其他输入
+    // ... other inputs
 #endif
 ```
 
-这样片段着色器的其余代码无需修改，继续使用 `v_` 前缀访问变量。
+This leaves the rest of the fragment shader unchanged, continuing to access variables through the `v_` prefix.
 
-## 使用方法
+## Usage
 
-### 前置条件
+### Prerequisites
 - OpenGL 4.4+ Core Profile
-- 支持几何着色器
-- 支持TextureArray渲染目标
+- Geometry shader support
+- TextureArray render-target support
 
-### 启用Multiview渲染
+### Enable Multiview Rendering
 
-1. **设置CameraUBO：**
+1. **Set CameraUBO:**
 ```cpp
 camera_ubo_t CameraUBO{};
 
-// 为每个视角设置变换矩阵
-for (int i = 0; i < 6; ++i)  // 例如：Cubemap的6个面
+// Set transformation matrices for each view
+ for (int i = 0; i < 6; ++i)  // For example: the six faces of a cubemap
 {
     R_SetupCameraView(&CameraUBO.views[i]);
 }
 
-CameraUBO.numViews = 6;  // 或者4用于CSM
+CameraUBO.numViews = 6;  // Or 4 for CSM
 
 GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, 
                       sizeof(CameraUBO), &CameraUBO);
 ```
 
-2. **启用multiview标志：**
+2. **Enable the multiview flag:**
 ```cpp
 r_draw_multiview = true;
 ```
 
-3. **绘制场景：**
+3. **Render the scene:**
 ```cpp
-// 正常调用绘制函数
+// Call the draw function normally
 R_RenderScene();
 ```
 
-4. **恢复状态：**
+4. **Restore state:**
 ```cpp
 r_draw_multiview = false;
 ```
 
-### Cubemap Shadow示例
+### Cubemap Shadow Example
 
 ```cpp
-// 设置6个立方体贴图面的视角
+// Set views for the six cubemap faces
 const vec3_t cubemapAngles[] = {
     {0, 0, 0},     // +X (right)
     {0, 180, 0},   // -X (left)
@@ -218,24 +218,24 @@ CameraUBO.numViews = 6;
 GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 r_draw_multiview = true;
-R_RenderScene();  // 单次Draw渲染6个面
+R_RenderScene();  // Render six faces in one draw call
 r_draw_multiview = false;
 ```
 
-### CSM优化示例
+### CSM Optimization Example
 
-当前CSM绘制到4096x4096画布的4个2048x2048区域。使用multiview后可以优化为：
+The current CSM renders to four 2048x2048 regions on a 4096x4096 canvas. With multiview, it can be optimized as follows:
 
 ```cpp
-// 创建2048x2048的TextureArray (4层)
+// Create a 2048x2048 TextureArray (4 layers)
 glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, 
              2048, 2048, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
-// 设置4个CSM级联的视角
+// Set views for the four CSM cascades
 camera_ubo_t CameraUBO{};
 for (int i = 0; i < 4; ++i)
 {
-    // 计算每个级联的视锥体
+    // Calculate the frustum for each cascade
     SetupCSMFrustum(i, &CameraUBO.views[i]);
 }
 
@@ -243,77 +243,77 @@ CameraUBO.numViews = 4;
 GL_UploadSubDataToUBO(g_WorldSurfaceRenderer.hCameraUBO, 0, sizeof(CameraUBO), &CameraUBO);
 
 r_draw_multiview = true;
-R_RenderScene();  // 单次Draw渲染4个CSM层
+R_RenderScene();  // Render four CSM layers in one draw call
 r_draw_multiview = false;
 
-// 几何着色器会自动设置gl_Layer，将每个视角渲染到对应的TextureArray层
+// The geometry shader automatically sets gl_Layer and renders each view to its matching TextureArray layer
 ```
 
-## 性能优化
+## Performance Optimization
 
-### 优势
-1. **减少Draw Call** - 从N次绘制优化为1次绘制
-2. **减少状态切换** - 不需要切换FBO和Viewport
-3. **减少CPU开销** - 只需要一次设置渲染状态
-4. **提高GPU效率** - 更好的批处理和并行化
+### Advantages
+1. **Fewer Draw Calls** - Reduce N draw calls to one
+2. **Fewer State Changes** - No need to switch FBOs and viewports
+3. **Lower CPU Overhead** - Rendering state needs to be set only once
+4. **Improved GPU Efficiency** - Better batching and parallelization
 
-### 注意事项
-1. **几何着色器开销** - 会增加一定的GPU开销，适合顶点数量适中的场景
-2. **最大顶点输出限制** - 当前设置为18个顶点(3*6)，适用于Cubemap
-3. **内存占用** - 几何着色器会占用更多GPU缓存
+### Notes
+1. **Geometry Shader Overhead** - Adds some GPU overhead and is suitable for scenes with a moderate vertex count
+2. **Maximum Vertex Output Limit** - Currently set to 18 vertices (3*6), suitable for cubemaps
+3. **Memory Usage** - Geometry shaders consume more GPU cache
 
-### 性能对比
+### Performance Comparison
 
-**传统方式（绘制6个Cubemap面）：**
-- 6次Draw Call
-- 6次FBO切换
-- 6次Viewport设置
-- 6次状态设置
+**Traditional approach (drawing six cubemap faces):**
+- 6 draw calls
+- 6 FBO switches
+- 6 viewport settings
+- 6 state settings
 
-**Multiview方式：**
-- 1次Draw Call
-- 1次状态设置
-- 几何着色器自动分发到6个层
+**Multiview approach:**
+- 1 draw call
+- 1 state setting
+- Geometry shader automatically distributes to six layers
 
-预期性能提升：**30-60%** (取决于场景复杂度)
+Expected performance improvement: **30-60%** (depending on scene complexity)
 
-## 扩展到其他着色器
+## Extending to Other Shaders
 
-相同的模式可以应用到：
-- **StudioModel** - 添加 `STUDIO_MULTIVIEW_ENABLED`
-- **Sprite** - 添加 `SPRITE_MULTIVIEW_ENABLED`
-- **TriAPI** - 添加 `TRIAPI_MULTIVIEW_ENABLED`
-- **Portal** - 添加 `PORTAL_MULTIVIEW_ENABLED`
+The same pattern can be applied to:
+- **StudioModel** - Add `STUDIO_MULTIVIEW_ENABLED`
+- **Sprite** - Add `SPRITE_MULTIVIEW_ENABLED`
+- **TriAPI** - Add `TRIAPI_MULTIVIEW_ENABLED`
+- **Portal** - Add `PORTAL_MULTIVIEW_ENABLED`
 
-每个都需要：
-1. 在头文件中定义状态位
-2. 在R_Use*Program函数中添加宏和几何着色器
-3. 创建对应的.geom.glsl文件
-4. 修改.frag.glsl支持g_前缀输入
+Each requires:
+1. Define a state flag in the header file.
+2. Add the macro and geometry shader in the `R_Use*Program` function.
+3. Create the corresponding `.geom.glsl` file.
+4. Modify `.frag.glsl` to support g_-prefixed input.
 
-## 调试建议
+## Debugging Recommendations
 
-1. **验证numViews** - 确保CameraUBO.numViews设置正确
-2. **检查矩阵** - 使用RenderDoc查看每个视角的变换矩阵
-3. **Layer验证** - 确认gl_Layer正确设置到对应的TextureArray层
-4. **性能分析** - 使用GPU分析工具对比multiview前后的性能
+1. **Validate numViews** - Ensure that `CameraUBO.numViews` is set correctly.
+2. **Check Matrices** - Use RenderDoc to inspect each view's transformation matrix.
+3. **Validate Layers** - Confirm that `gl_Layer` is set to the corresponding TextureArray layer.
+4. **Profile Performance** - Use GPU profiling tools to compare performance before and after multiview.
 
-## 已知限制
+## Known Limitations
 
-1. 几何着色器最大顶点输出为18 (适用于6视角)
-2. 需要OpenGL 4.3+支持
-3. 不支持MSAA的TextureArray (需要额外处理)
-4. 某些移动GPU对几何着色器支持有限
+1. Geometry shader maximum output is 18 vertices (suitable for six views).
+2. Requires OpenGL 4.3+ support.
+3. Does not support MSAA TextureArray targets (requires additional handling).
+4. Some mobile GPUs have limited geometry shader support.
 
-## 后续优化方向
+## Future Optimization Directions
 
-1. **Mesh Shader** - 使用Mesh Shader替代几何着色器 (需OpenGL 4.6+)
-2. **Multi-Draw Indirect** - 结合MDI进一步优化
-3. **Compute Culling** - 使用Compute Shader进行多视角剔除
-4. **View Instancing** - 探索ARB_shader_viewport_layer_array扩展
+1. **Mesh Shader** - Replace geometry shaders with Mesh Shaders (requires OpenGL 4.6+)
+2. **Multi-Draw Indirect** - Further optimize by combining with MDI
+3. **Compute Culling** - Use Compute Shaders for multiview culling
+4. **View Instancing** - Explore the ARB_shader_viewport_layer_array extension
 
-## 参考资料
+## References
 
-- OpenGL 4.4 Geometry Shader规范
-- NVIDIA Multi-View Rendering白皮书
-- Cascaded Shadow Maps实现指南
+- OpenGL 4.4 Geometry Shader Specification
+- NVIDIA Multi-View Rendering White Paper
+- Cascaded Shadow Maps Implementation Guide

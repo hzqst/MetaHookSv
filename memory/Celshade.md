@@ -6,24 +6,24 @@ permalink: metahooksv/celshade
 
 # Celshade
 
-## 概述
-Celshade 是 `Plugins/Renderer` 中 StudioModel 的风格化着色总管线，覆盖了基础 Celshade（分段明暗）、Outline、RimLight/RimDark、HairSpecular，以及与其强耦合的 HairShadow 与 Eyebrow-Passthrough（HairFaceColorMix）链路。
+## Overview
+Celshade is the overall stylized-shading pipeline for StudioModel in `Plugins/Renderer`. It covers base Celshade (stepped light and dark bands), Outline, RimLight/RimDark, HairSpecular, and the tightly coupled HairShadow and Eyebrow-Passthrough (HairFaceColorMix) paths.
 
-当前实现采用“Analysis + 多离屏几何 Pass + Normal Pass 屏幕空间采样”的组合：
-- Analysis 统计模型是否含 FACE/HAIR/透明网格；
-- HairShadow pass 把 FACE/HAIR 写入 FBO3 depth/stencil；
-- HairFaceColorMix pass 把 FACE 颜色+alpha 写入 FBO4；
-- Normal pass 在 FACE/Hair 分支分别采样 stencil 与 mixDiffuse/depth，完成阴影与透发效果。
+The current implementation combines “Analysis + multiple off-screen geometry passes + Normal Pass screen-space sampling”:
+- Analysis counts whether the model contains FACE/HAIR/transparent meshes.
+- The HairShadow pass writes FACE/HAIR into FBO3 depth/stencil.
+- The HairFaceColorMix pass writes FACE color + alpha into FBO4.
+- In their respective FACE/Hair branches, the Normal pass samples stencil and mixDiffuse/depth to produce shadows and translucency effects.
 
-## 职责
-- 维护 Celshade 资产标记协议（`STUDIO_NF_CELSHADE` / `STUDIO_NF_CELSHADE_FACE` / `STUDIO_NF_CELSHADE_HAIR`）与外部配置入口（`[model]_external.txt`）。
-- 在分析阶段统计 `r_draw_hasface / r_draw_hashair / r_draw_hasalpha / r_draw_hasadditive / r_draw_hasoutline`，驱动后续 pass 调度。
-- 通过 `renderfx` 切换 HairShadow 与 HairFaceColorMix 几何 pass，并管理 FBO3/FBO4 的绑定与清理。
-- 在 DrawPass 中构建 `StudioProgramState`，绑定 stencil/mixDiffuse/depth 等纹理输入并切换 shader 宏变体。
-- 在 shader 侧实现 face/body celshade、rim light/dark、hair Kajiya specular、face stencil 阴影压暗、hair 屏幕空间颜色混合。
-- 提供 cvar + 模型级覆盖（`studio_celshade_control`）双层参数体系，并支持 `r_studio_celshade_debug` 调试分支。
+## Responsibilities
+- Maintains the Celshade asset-flag protocol (`STUDIO_NF_CELSHADE` / `STUDIO_NF_CELSHADE_FACE` / `STUDIO_NF_CELSHADE_HAIR`) and the external configuration entry point (`[model]_external.txt`).
+- Counts `r_draw_hasface / r_draw_hashair / r_draw_hasalpha / r_draw_hasadditive / r_draw_hasoutline` during Analysis to drive subsequent pass scheduling.
+- Switches HairShadow and HairFaceColorMix geometry passes through `renderfx` and manages FBO3/FBO4 binding and clearing.
+- Builds `StudioProgramState` in DrawPass, binds texture inputs such as stencil/mixDiffuse/depth, and switches shader macro variants.
+- Implements face/body celshade, rim light/dark, Kajiya hair specular, face stencil-shadow darkening, and hair screen-space color mixing in shaders.
+- Provides a two-tier parameter system of cvars plus model-level overrides (`studio_celshade_control`), and supports the `r_studio_celshade_debug` debug branch.
 
-## 涉及文件 (不要带行号)
+## Involved Files (No Line Numbers)
 - docs/Renderer.md
 - Plugins/Renderer/enginedef.h
 - Plugins/Renderer/gl_common.h
@@ -34,114 +34,114 @@ Celshade 是 `Plugins/Renderer` 中 StudioModel 的风格化着色总管线，�
 - Build/svencoop/renderer/shader/studio_shader.vert.glsl
 - Build/svencoop/renderer/shader/studio_shader.frag.glsl
 
-## 架构
-整体流程（StudioModel Celshade）：
+## Architecture
+Overall workflow (StudioModel Celshade):
 
 ```mermaid
 flowchart TD
     A["model_external.txt"] --> B["studio_texture / studio_celshade_control"]
     B --> C["Analysis Pass"]
     C --> D{"has FACE + HAIR"}
-    D -- "否" --> E["Normal Pass + Outline"]
-    D -- "是" --> F{"r_studio_hair_shadow > 0"}
-    F -- "是" --> G["HairShadow Pass 写 FBO3 depth stencil"]
-    F -- "否" --> H["跳过 HairShadow"]
-    G --> I["HairFaceColorMix Pass 写 FBO4 color depth"]
+    D -- "No" --> E["Normal Pass + Outline"]
+    D -- "Yes" --> F{"r_studio_hair_shadow > 0"}
+    F -- "Yes" --> G["HairShadow Pass writes FBO3 depth stencil"]
+    F -- "No" --> H["Skip HairShadow"]
+    G --> I["HairFaceColorMix Pass writes FBO4 color depth"]
     H --> I
     I --> E
-    E --> J["FACE 读取 FBO3 stencil 并压暗阴影"]
-    E --> K["HAIR 读取 FBO4 mixDiffuse depth 并执行透发混色"]
+    E --> J["FACE reads FBO3 stencil and darkens shadows"]
+    E --> K["HAIR reads FBO4 mixDiffuse depth and performs translucent color mixing"]
 ```
 
-关键实现点：
-- 启用判定：
-  - `R_StudioHasHairShadow()`：`r_draw_hashair && r_draw_hasface && r_studio_hair_shadow>0 && !R_IsRenderingShadowView()`。
-  - `R_StudioHasHairFaceColorMix()`：`r_draw_hashair && r_draw_hasface && !R_IsRenderingShadowView()`。
-- 状态位到 shader 宏：`R_UseStudioProgram()` 将 `StudioProgramState` 映射为 `#define`（如 `HAIR_SHADOW_ENABLED`、`HAIR_FACE_COLOR_MIX_ENABLED`、`STENCIL_TEXTURE_ENABLED`、`MIX_DIFFUSE_TEXTURE_ENABLED`、`DEPTH_TEXTURE_ENABLED`）。
-- 纠错逻辑：若出现 `STUDIO_NF_CELSHADE_FACE/HAIR` 但缺少 `STUDIO_NF_CELSHADE`，`R_UseStudioProgram()` 会自动补上 `STUDIO_NF_CELSHADE`。
-- 全局开关：`R_StudioDrawMesh()` 在 mesh 级别执行 `if (!r_studio_celshade->value) flags &= ~STUDIO_NF_CELSHADE_ALLBITS;`，统一关断 Celshade 扩展位。
+Key implementation points:
+- Enable conditions:
+  - `R_StudioHasHairShadow()`: `r_draw_hashair && r_draw_hasface && r_studio_hair_shadow>0 && !R_IsRenderingShadowView()`.
+  - `R_StudioHasHairFaceColorMix()`: `r_draw_hashair && r_draw_hasface && !R_IsRenderingShadowView()`.
+- State flags to shader macros: `R_UseStudioProgram()` maps `StudioProgramState` to `#define` directives (such as `HAIR_SHADOW_ENABLED`, `HAIR_FACE_COLOR_MIX_ENABLED`, `STENCIL_TEXTURE_ENABLED`, `MIX_DIFFUSE_TEXTURE_ENABLED`, and `DEPTH_TEXTURE_ENABLED`).
+- Correction logic: if `STUDIO_NF_CELSHADE_FACE/HAIR` is present but `STUDIO_NF_CELSHADE` is missing, `R_UseStudioProgram()` automatically adds `STUDIO_NF_CELSHADE`.
+- Global switch: `R_StudioDrawMesh()` executes `if (!r_studio_celshade->value) flags &= ~STUDIO_NF_CELSHADE_ALLBITS;` at mesh level, disabling Celshade extension bits consistently.
 
-### Shader 核心
-- `R_StudioCelShade()`（frag）：
-  - 使用 `smoothstep(r_celshade_midpoint ± r_celshade_softness)` 生成明暗分段。
-  - FACE 分支按头部朝向（`v_headfwd`）修正光向，减少极角下脸部跳变。
-  - FACE + stencil 分支：命中 `STENCIL_MASK_HAS_SHADOW` 时强制 `litOrShadowArea = 0.0`。
-  - 非 FACE 分支叠加 rim light / rim dark；HAIR 分支叠加 Kajiya strand specular。
-- `R_GenerateAdjustedNormal()`：FACE 允许在原法线与球化法线之间插值（`flNormalMask`）；与文档"蓝通道控制 face 球化法线比例"一致。
-- FACE 分支垂直光修正（#795）：当 `lightdirWS.xy` 水平分量极小时（`length < 0.2`），Z-flattening 在 `normalize()` 后失效，导致"竖线阴影"伪影。修正方法：在 `litOrShadowArea` 计算后、stencil 检查前，用 `smoothstep(0.05, 0.2, length(lightdirWS.xy))` 检测垂直度，渐变至无阴影（`litOrShadowArea = 1.0`）。
-- HairFaceColorMix pass（frag `HAIR_FACE_COLOR_MIX_ENABLED`）：输出 face `diffuseColor`；若有 specular 贴图则 `diffuseColor.a *= rawSpecularColor.a`。
-- Hair normal pass 混色（frag `STUDIO_NF_CELSHADE_HAIR && MIX_DIFFUSE_TEXTURE_ENABLED`）：
-  - 采样 `depthTex` 重建 `sceneWorldPos`；
-  - 仅在 `distance(sceneWorldPos, vWorldPos) < 4.0` 时，使用 `mixDiffuseColor.a` 混合 face/hair 颜色，降低跨层误混。
-- HairShadow 顶点偏移（vert `HAIR_SHADOW_ENABLED && STUDIO_NF_CELSHADE_HAIR`）：沿调整后的光向 + Z 偏移应用 `r_hair_shadow_offset`。
+### Shader Core
+- `R_StudioCelShade()` (frag):
+  - Uses `smoothstep(r_celshade_midpoint ± r_celshade_softness)` to create stepped lighting bands.
+  - The FACE branch adjusts the light direction according to head direction (`v_headfwd`) to reduce facial popping at extreme angles.
+  - FACE + stencil branch: forces `litOrShadowArea = 0.0` when `STENCIL_MASK_HAS_SHADOW` is hit.
+  - Non-FACE branches add rim light / rim dark; the HAIR branch adds Kajiya strand specular.
+- `R_GenerateAdjustedNormal()`: FACE can interpolate between the original normal and a spherical normal (`flNormalMask`), consistent with the documentation statement “the blue channel controls the ratio of the face spherical normal.”
+- FACE vertical-light correction (#795): when the horizontal component of `lightdirWS.xy` is extremely small (`length < 0.2`), Z-flattening fails after `normalize()`, producing a “vertical line shadow” artifact. The correction detects verticality with `smoothstep(0.05, 0.2, length(lightdirWS.xy))` after calculating `litOrShadowArea` and before the stencil check, gradually transitioning to unshadowed (`litOrShadowArea = 1.0`).
+- HairFaceColorMix pass (frag `HAIR_FACE_COLOR_MIX_ENABLED`): outputs face `diffuseColor`; if a specular texture exists, applies `diffuseColor.a *= rawSpecularColor.a`.
+- Hair normal-pass color mixing (frag `STUDIO_NF_CELSHADE_HAIR && MIX_DIFFUSE_TEXTURE_ENABLED`):
+  - Samples `depthTex` to reconstruct `sceneWorldPos`.
+  - Only when `distance(sceneWorldPos, vWorldPos) < 4.0`, uses `mixDiffuseColor.a` to blend face/hair colors and reduce erroneous cross-layer mixing.
+- HairShadow vertex offset (vert `HAIR_SHADOW_ENABLED && STUDIO_NF_CELSHADE_HAIR`): applies `r_hair_shadow_offset` along the adjusted light direction plus Z offset.
 
-## 依赖
-- 标记位与 renderfx 协议：
-  - `STUDIO_NF_CELSHADE / FACE / HAIR`、`STUDIO_NF_CELSHADE_ALLBITS`。
-  - `kRenderFxDrawHairShadowGeometry`、`kRenderFxDrawHairFaceColorMixGeometry`、`kRenderFxDrawOutline`。
-- ProgramState 位：
-  - `STUDIO_HAIR_SHADOW_ENABLED`、`STUDIO_HAIR_FACE_COLOR_MIX_ENABLED`、`STUDIO_STENCIL_TEXTURE_ENABLED`、`STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED`、`STUDIO_DEPTH_TEXTURE_ENABLED`。
-- 离屏资源：
-  - `s_BackBufferFBO3`（stencil/depth 采样来源，含 stencil view）。
-  - `s_BackBufferFBO4`（face mix diffuse + depth 采样来源）。
-- 纹理槽位：
-  - `STUDIO_BIND_TEXTURE_STENCIL=6`、`STUDIO_BIND_TEXTURE_MIX_DIFFUSE=7`、`STUDIO_BIND_TEXTURE_DEPTH=8`。
-- stencil 位语义：
-  - `STENCIL_MASK_HAS_SHADOW=0x1`、`STENCIL_MASK_HAS_FACE=0x2`。
-- 参数来源：
-  - 全局 cvar：`r_studio_celshade*`、`r_studio_hair_*`、`r_studio_outline*`、`r_studio_rim*`、`r_studio_celshade_debug`。
-  - 模型级覆盖：`studio_celshade_control`（`R_StudioLoadExternalFile_Celshade`）。
-- 资产依赖：
-  - `studio_texture.flags`，以及可选 `replacetexture/speculartexture`（用于 eyebrow alpha 与 HDR 贴图工作流）。
+## Dependencies
+- Flag and renderfx protocol:
+  - `STUDIO_NF_CELSHADE / FACE / HAIR`, `STUDIO_NF_CELSHADE_ALLBITS`.
+  - `kRenderFxDrawHairShadowGeometry`, `kRenderFxDrawHairFaceColorMixGeometry`, `kRenderFxDrawOutline`.
+- ProgramState flags:
+  - `STUDIO_HAIR_SHADOW_ENABLED`, `STUDIO_HAIR_FACE_COLOR_MIX_ENABLED`, `STUDIO_STENCIL_TEXTURE_ENABLED`, `STUDIO_MIX_DIFFUSE_TEXTURE_ENABLED`, `STUDIO_DEPTH_TEXTURE_ENABLED`.
+- Off-screen resources:
+  - `s_BackBufferFBO3` (stencil/depth sampling source, including stencil view).
+  - `s_BackBufferFBO4` (face mix-diffuse + depth sampling source).
+- Texture slots:
+  - `STUDIO_BIND_TEXTURE_STENCIL=6`, `STUDIO_BIND_TEXTURE_MIX_DIFFUSE=7`, `STUDIO_BIND_TEXTURE_DEPTH=8`.
+- Stencil-bit semantics:
+  - `STENCIL_MASK_HAS_SHADOW=0x1`, `STENCIL_MASK_HAS_FACE=0x2`.
+  - Parameter sources:
+  - Global cvars: `r_studio_celshade*`, `r_studio_hair_*`, `r_studio_outline*`, `r_studio_rim*`, and `r_studio_celshade_debug`.
+  - Model-level override: `studio_celshade_control` (`R_StudioLoadExternalFile_Celshade`).
+- Asset dependencies:
+  - `studio_texture.flags`, plus optional `replacetexture/speculartexture` (for eyebrow alpha and HDR texture workflows).
 
-## 注意事项
-- `r_studio_celshade=0` 会在 mesh 入口清空 `STUDIO_NF_CELSHADE_ALLBITS`，所有 Celshade 扩展链路（含 HairShadow/HairFaceColorMix）都会失效。
-- HairFaceColorMix 启用条件不依赖 `r_studio_hair_shadow`：只要存在 FACE+HAIR 且非 ShadowView 就会执行该 pass。
-- Hair 混色阈值是固定世界空间距离 `4.0`，极端比例模型可能需要额外调参。
-- HairShadow pass 文档将 `r_studio_hair_shadow_offset` 描述为“screen space offset”，但实现是顶点几何偏移后再投影。
-- HairFaceColorMix pass 明确“不写 stencil”；face 阴影判定依赖前序 HairShadow pass 写入的 FBO3 stencil。
-- 若 `s_BackBufferFBO3.s_hBackBufferStencilView` 或 `s_BackBufferFBO4` 深度视图不可用，会导致阴影判定/透发混色退化。
-- GlowShell 分支会移除 Celshade 位并改为 `STUDIO_NF_FLATSHADE`，因此 Celshade 视觉不会直接叠到 GlowShell pass。
+## Notes
+- `r_studio_celshade=0` clears `STUDIO_NF_CELSHADE_ALLBITS` at the mesh entry point, disabling every Celshade extension path, including HairShadow/HairFaceColorMix.
+- The HairFaceColorMix enable condition does not depend on `r_studio_hair_shadow`: the pass runs whenever FACE+HAIR is present and the renderer is not in ShadowView.
+- The Hair color-mixing threshold is a fixed world-space distance of `4.0`; extremely scaled models may require additional tuning.
+- HairShadow pass documentation describes `r_studio_hair_shadow_offset` as a “screen space offset,” but the implementation applies a vertex-geometry offset before projection.
+- The HairFaceColorMix pass explicitly “does not write stencil”; face-shadow determination depends on the FBO3 stencil written by the preceding HairShadow pass.
+- If `s_BackBufferFBO3.s_hBackBufferStencilView` or the `s_BackBufferFBO4` depth view is unavailable, shadow determination/translucent color mixing degrades.
+- The GlowShell branch removes Celshade bits and changes to `STUDIO_NF_FLATSHADE`, so Celshade visuals do not directly layer onto the GlowShell pass.
 
-## 调用方（可选）
-- `StudioRenderModel_Template`：驱动 Analysis、HairShadow、HairFaceColorMix、Normal、Outline 等 pass。
-- `R_StudioDrawMesh`：统一处理 mesh flags（含 Celshade 开关），并分流到 AnalysisPass/DrawPass。
-- `R_StudioDrawMesh_AnalysisPass`：收集 `hasface/hashair` 等统计位。
-- `R_StudioDrawMesh_DrawPass`：根据 `renderfx + flags` 组装 `StudioProgramState`，完成纹理绑定、状态设置与 `glDrawElements`。
-- `R_UseStudioProgram`：状态位 -> shader 宏变体编译/缓存。
-- `R_CreateStudioRenderData` + `R_StudioLoadExternalFile`：初始化 CelshadeControl，并从 `studio_texture/studio_celshade_control` 加载覆盖参数。
+## Callers (Optional)
+- `StudioRenderModel_Template`: drives Analysis, HairShadow, HairFaceColorMix, Normal, Outline, and other passes.
+- `R_StudioDrawMesh`: consistently handles mesh flags (including the Celshade switch) and routes to AnalysisPass/DrawPass.
+- `R_StudioDrawMesh_AnalysisPass`: collects statistics flags such as `hasface/hashair`.
+- `R_StudioDrawMesh_DrawPass`: builds `StudioProgramState` from `renderfx + flags`, completes texture binding and state setup, and calls `glDrawElements`.
+- `R_UseStudioProgram`: compiles/caches shader macro variants from state flags.
+- `R_CreateStudioRenderData` + `R_StudioLoadExternalFile`: initializes CelshadeControl and loads override parameters from `studio_texture/studio_celshade_control`.
 
-## Pass渲染状态设置（按 Pass / Geometry 细分，重点 Stencil）
+## Pass Render-State Setup (By Pass / Geometry, Focused on Stencil)
 
 ### 1) Analysis Pass
-- 入口：`r_draw_analyzingstudio = true`。
-- 行为：仅统计 `r_draw_hasface / r_draw_hashair / r_draw_hasalpha / r_draw_hasadditive`。
-- stencil：无写入。
+- Entry: `r_draw_analyzingstudio = true`.
+- Behavior: counts only `r_draw_hasface / r_draw_hashair / r_draw_hasalpha / r_draw_hasadditive`.
+- Stencil: no writes.
 
-### 2) HairShadow Geometry Pass（`renderfx = kRenderFxDrawHairShadowGeometry`）
-- 调度：绑定 `s_BackBufferFBO3`，清 `depth/stencil`，`glDrawBuffer(GL_NONE)`。
-- Geometry 过滤：仅 `STUDIO_NF_CELSHADE_FACE` 或 `STUDIO_NF_CELSHADE_HAIR`。
-- stencil 写入：
-  - FACE：`GL_BeginStencilWrite(STENCIL_MASK_HAS_FACE, STENCIL_MASK_HAS_FACE | STENCIL_MASK_HAS_SHADOW)`。
-  - HAIR：`GL_BeginStencilWrite(STENCIL_MASK_HAS_SHADOW, STENCIL_MASK_HAS_SHADOW)`。
-- 状态：`glDisable(GL_BLEND)` + `glDepthMask(GL_TRUE)`；默认 `glCullFace(GL_FRONT)`，`DOUBLE_FACE` 则禁用剔除。
+### 2) HairShadow Geometry Pass (`renderfx = kRenderFxDrawHairShadowGeometry`)
+- Scheduling: binds `s_BackBufferFBO3`, clears `depth/stencil`, and calls `glDrawBuffer(GL_NONE)`.
+- Geometry filter: only `STUDIO_NF_CELSHADE_FACE` or `STUDIO_NF_CELSHADE_HAIR`.
+- Stencil writes:
+  - FACE: `GL_BeginStencilWrite(STENCIL_MASK_HAS_FACE, STENCIL_MASK_HAS_FACE | STENCIL_MASK_HAS_SHADOW)`.
+  - HAIR: `GL_BeginStencilWrite(STENCIL_MASK_HAS_SHADOW, STENCIL_MASK_HAS_SHADOW)`.
+- State: `glDisable(GL_BLEND)` + `glDepthMask(GL_TRUE)`; defaults to `glCullFace(GL_FRONT)`, while `DOUBLE_FACE` disables culling.
 
-### 3) HairFaceColorMix Geometry Pass（`renderfx = kRenderFxDrawHairFaceColorMixGeometry`）
-- 调度：绑定 `s_BackBufferFBO4`，清 color/depth/stencil。
-- Geometry 过滤：仅 `STUDIO_NF_CELSHADE_FACE`。
-- 输出：face `diffuseColor`（可与 `specular.a` 相乘后写入 alpha）。
-- stencil：不写（代码注释 `No need to write stencil here`）。
-- 状态：`glDisable(GL_BLEND)` + `glDepthMask(GL_TRUE)`。
+### 3) HairFaceColorMix Geometry Pass (`renderfx = kRenderFxDrawHairFaceColorMixGeometry`)
+- Scheduling: binds `s_BackBufferFBO4` and clears color/depth/stencil.
+- Geometry filter: only `STUDIO_NF_CELSHADE_FACE`.
+- Output: face `diffuseColor` (alpha may be written after multiplication with `specular.a`).
+- Stencil: no writes (code comment: `No need to write stencil here`).
+- State: `glDisable(GL_BLEND)` + `glDepthMask(GL_TRUE)`.
 
-### 4) Normal Pass（FACE）
-- 绑定：非 HairShadow/HairFaceColorMix 情况下，为 FACE 尝试绑定 `s_BackBufferFBO3.s_hBackBufferStencilView` 到 slot 6。
-- shader：`STUDIO_NF_CELSHADE_FACE && STENCIL_TEXTURE_ENABLED` 时读取 stencil，命中 `HAS_SHADOW` 强制阴影。
+### 4) Normal Pass (FACE)
+- Binding: outside HairShadow/HairFaceColorMix, attempts to bind `s_BackBufferFBO3.s_hBackBufferStencilView` to slot 6 for FACE.
+- Shader: reads the stencil when `STUDIO_NF_CELSHADE_FACE && STENCIL_TEXTURE_ENABLED`; a `HAS_SHADOW` hit forces shadowing.
 
-### 5) Normal Pass（HAIR）
-- 绑定：若启用 HairFaceColorMix，为 HAIR 绑定 `mixDiffuse`（slot 7）与 `depth`（slot 8）。
-- shader：重建场景世界坐标 + 距离阈值判定后，按 `mixDiffuse.a` 融合 face/hair 颜色（眉毛透发核心）。
+### 5) Normal Pass (HAIR)
+- Binding: if HairFaceColorMix is enabled, binds `mixDiffuse` (slot 7) and `depth` (slot 8) for HAIR.
+- Shader: after reconstructing the scene world position and checking the distance threshold, blends face/hair colors according to `mixDiffuse.a` (the core of eyebrow translucency).
 
-### 6) DrawPass 收尾（每个 mesh）
-- 恢复：`glDepthMask(GL_TRUE)`、`glDisable(GL_BLEND)`、`glEnable(GL_CULL_FACE)`、`glEnable(GL_DEPTH_TEST)`、`glDepthFunc(GL_LEQUAL)`。
-- 结束 stencil：`GL_EndStencil()`。
-- 解绑：按状态位解绑 depth/mixDiffuse/stencil/normal/parallax/specular/animated 纹理。
+### 6) DrawPass Cleanup (Each Mesh)
+- Restores: `glDepthMask(GL_TRUE)`, `glDisable(GL_BLEND)`, `glEnable(GL_CULL_FACE)`, `glEnable(GL_DEPTH_TEST)`, and `glDepthFunc(GL_LEQUAL)`.
+- Ends stencil: `GL_EndStencil()`.
+- Unbinds depth/mixDiffuse/stencil/normal/parallax/specular/animated textures according to state flags.

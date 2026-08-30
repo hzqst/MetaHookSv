@@ -7,259 +7,259 @@ permalink: metahooksv/renderer
 # Renderer Plugin Architecture
 
 ## Overview
-Renderer 插件是 MetaHookSv 的核心图形增强插件，为 GoldSrc 引擎游戏提供现代化的图形渲染功能。该插件实现了 OpenGL 渲染管线，支持多种高级图形特效。
+The Renderer plugin is MetaHookSv's core graphics-enhancement plugin, providing modern graphics rendering for GoldSrc engine games. It implements an OpenGL rendering pipeline and supports a variety of advanced visual effects.
 
-## 核心功能
+## Core Features
 
-### 渲染特性
-- **现代 OpenGL 渲染管线** - 基于 OpenGL 的完整渲染系统
-- **延迟光照 (Deferred Lighting)** - 高效的多光源渲染
-- **环境光遮蔽 (HBAO)** - Screen-space ambient occlusion
-- **高动态范围 (HDR)** - HDR 渲染和色调映射
-- **实时阴影** - 动态阴影投射和接收
-- **水面渲染** - 高级水面特效和折射
-- **Portal 渲染** - 传送门效果
-- **后期处理** - FXAA 抗锯齿、Gamma 校正等
+### Rendering Features
+- **Modern OpenGL Rendering Pipeline** - A complete OpenGL-based rendering system
+- **Deferred Lighting** - Efficient multi-light rendering
+- **Ambient Occlusion (HBAO)** - Screen-space ambient occlusion
+- **High Dynamic Range (HDR)** - HDR rendering and tone mapping
+- **Real-Time Shadows** - Dynamic shadow casting and reception
+- **Water Rendering** - Advanced water effects and refraction
+- **Portal Rendering** - Portal effects
+- **Post-Processing** - FXAA anti-aliasing, gamma correction, and more
 
-### 模型渲染
-- **Studio Model 渲染** - .mdl格式模型的渲染
-- **Sprite 渲染** - .spr格式的模型的渲染
-- **World Surface 渲染** - .bsp格式的模型的渲染
+### Model Rendering
+- **Studio Model Rendering** - Rendering of `.mdl`-format models
+- **Sprite Rendering** - Rendering of `.spr`-format models
+- **World Surface Rendering** - Rendering of `.bsp`-format models
 
-## 项目结构
+## Project Structure
 
-### 核心入口文件
-- `exportfuncs.cpp/h` - 插件导出函数，定义 HUD 接口入口点
-- `plugins.cpp` - 插件主逻辑和初始化
-- `gl_hooks.cpp` - OpenGL 函数钩子和渲染管线入口
+### Core Entry Files
+- `exportfuncs.cpp/h` - Plugin exported functions defining HUD interface entry points
+- `plugins.cpp` - Plugin main logic and initialization
+- `gl_hooks.cpp` - OpenGL function hooks and rendering-pipeline entry points
 
-### 渲染子系统
+### Rendering Subsystems
 
-#### 主要渲染模块
-- `gl_rmain.cpp` - 主渲染循环和场景管理
-- `gl_rmisc.cpp` `gl_draw.cpp` - OpenGL相关API调用封装
-- `gl_studio.cpp` - Studio 模型渲染 (角色/武器)
-- `gl_sprite.cpp` - Sprite 渲染
-- `gl_entity.cpp` - 实体相关渲染专用数据结构管理
-- `gl_water.cpp` - 水面渲染
-- `gl_rsurf.cpp` `gl_wsurf.cpp` - BSP地形渲染，wsurf for WorldSurface.
-- `gl_light.cpp` - 动态光照系统
-- `gl_shadow.cpp` - 阴影投射和接收
-- `gl_portal.cpp` - 传送门渲染
-- `gl_shader.cpp` - 着色器程序管理
-- `gl_ringbuffer.cpp` - 环形缓冲区
-- `gl_hud.cpp` - HUD 元素渲染
-- `BaseUI.cpp` - 基础 UI 组件
-- `EngineSurfaceHook.cpp` - 引擎表面钩子
+#### Main Rendering Modules
+- `gl_rmain.cpp` - Main rendering loop and scene management
+- `gl_rmisc.cpp` `gl_draw.cpp` - Wrappers for OpenGL-related API calls
+- `gl_studio.cpp` - Studio model rendering (characters/weapons)
+- `gl_sprite.cpp` - Sprite rendering
+- `gl_entity.cpp` - Management of rendering-specific data structures for entities
+- `gl_water.cpp` - Water rendering
+- `gl_rsurf.cpp` `gl_wsurf.cpp` - BSP terrain rendering; wsurf is for WorldSurface.
+- `gl_light.cpp` - Dynamic lighting system
+- `gl_shadow.cpp` - Shadow casting and reception
+- `gl_portal.cpp` - Portal rendering
+- `gl_shader.cpp` - Shader program management
+- `gl_ringbuffer.cpp` - Ring buffer
+- `gl_hud.cpp` - HUD element rendering
+- `BaseUI.cpp` - Base UI components
+- `EngineSurfaceHook.cpp` - Engine surface hooks
 
-#### 工具和实用程序
-- `gl_model.cpp` - 模型加载和处理
-- `gl_cvar.cpp` - 渲染相关控制台变量
-- `VideoMode.cpp` - 视频模式管理
-- `mathlib2.cpp` - 数学库扩展
-- `util.cpp` - 通用工具函数
-- `zone.cpp` - 内存管理
+#### Tools and Utilities
+- `gl_model.cpp` - Model loading and processing
+- `gl_cvar.cpp` - Rendering-related console variables
+- `VideoMode.cpp` - Video-mode management
+- `mathlib2.cpp` - Math-library extensions
+- `util.cpp` - General utility functions
+- `zone.cpp` - Memory management
 
-#### 平台和游戏特定
-- `CounterStrike.cpp/h` - Counter-Strike 特定渲染适配
-- `VGUI2ExtensionImport.cpp/h` - VGUI2 扩展接口
-- `GameUI.cpp` - 游戏 UI 适配
+#### Platform and Game Specific
+- `CounterStrike.cpp/h` - Counter-Strike-specific rendering adaptation
+- `VGUI2ExtensionImport.cpp/h` - VGUI2 extension interface
+- `GameUI.cpp` - Game UI adaptation
 
-#### 线程和任务管理
-- `LambdaThreadedTask.cpp/h` - Lambda 任务系统
-- `UtilThreadTask.cpp/h` - 线程任务工具
+#### Thread and Task Management
+- `LambdaThreadedTask.cpp/h` - Lambda task system
+- `UtilThreadTask.cpp/h` - Thread-task utilities
 
-#### 哈希和消息
-- `MurmurHash2.cpp/h` - MurmurHash2 实现
-- `parsemsg.cpp` - 消息解析
+#### Hashing and Messages
+- `MurmurHash2.cpp/h` - MurmurHash2 implementation
+- `parsemsg.cpp` - Message parsing
 
-### 头文件 (Headers)
+### Header Files
 
-#### 核心头文件
-- `gl_local.h` - 内部状态和全局变量定义 **(最重要)**
-- `gl_common.h` - 通用渲染定义和宏
-- `exportfuncs.h` - 导出函数接口定义
-- `privatehook.h` - 私有钩子定义
+#### Core Headers
+- `gl_local.h` - Internal state and global variable definitions **(most important)**
+- `gl_common.h` - Common rendering definitions and macros
+- `exportfuncs.h` - Exported-function interface definitions
+- `privatehook.h` - Private hook definitions
 
-#### 子系统头文件
-- `gl_shader.h` - 着色器系统
-- `gl_model.h` - 模型处理
-- `gl_water.h` - 水面渲染
-- `gl_sprite.h` - Sprite 渲染
-- `gl_studio.h` - Studio 模型渲染
-- `gl_hud.h` - HUD 系统
-- `gl_shadow.h` - 阴影系统
-- `gl_light.h` - 光照系统
-- `gl_wsurf.h` - 可变形表面
-- `gl_portal.h` - 传送门系统
-- `gl_entity.h` - 实体系统
-- `gl_ringbuffer.h` - 环形缓冲区
-- `gl_draw.h` - 2D 绘制
-- `gl_cvar.h` - 控制台变量
-- `qgl.h` - OpenGL 包装函数,本质只是对glew的引用
+#### Subsystem Headers
+- `gl_shader.h` - Shader system
+- `gl_model.h` - Model processing
+- `gl_water.h` - Water rendering
+- `gl_sprite.h` - Sprite rendering
+- `gl_studio.h` - Studio model rendering
+- `gl_hud.h` - HUD system
+- `gl_shadow.h` - Shadow system
+- `gl_light.h` - Lighting system
+- `gl_wsurf.h` - Deformable surfaces
+- `gl_portal.h` - Portal system
+- `gl_entity.h` - Entity system
+- `gl_ringbuffer.h` - Ring buffer
+- `gl_draw.h` - 2D drawing
+- `gl_cvar.h` - Console variables
+- `qgl.h` - OpenGL wrapper functions; essentially only a reference to GLEW
 
-#### 工具头文件
-- `mathlib2.h` - 数学库扩展
-- `plugins.h` - 插件接口
-- `zone.h` - 内存管理
-- `util.h` - 通用工具
-- `enginedef.h` - 引擎定义
-- `bspfile.h` - BSP 文件格式
-- `modelgen.h` - 模型生成
-- `spritegn.h` - Sprite 定义
+#### Utility Headers
+- `mathlib2.h` - Math-library extensions
+- `plugins.h` - Plugin interface
+- `zone.h` - Memory management
+- `util.h` - General utilities
+- `enginedef.h` - Engine definitions
+- `bspfile.h` - BSP file format
+- `modelgen.h` - Model generation
+- `spritegn.h` - Sprite definitions
 
-### 着色器资源
+### Shader Resources
 
-着色器文件位于 `Build\svencoop\renderer\shader\` 目录：
+Shader files are located in `Build\svencoop\renderer\shader\`:
 
-#### 后处理着色器
-- `pp_fxaa.frag.glsl` - FXAA 抗锯齿
-- `hdr_brightpass.frag.glsl` - HDR 亮部提取
-- `hdr_lumpass.frag.glsl` - HDR 光晕
-- `hdr_tonemap.frag.glsl` - HDR 色调映射
-- `gamma_correction.frag.glsl` - Gamma 校正
-- `gaussian_blur_16x.frag.glsl` - 高斯模糊
-- `down_sample.frag.glsl` - 降采样
+#### Post-Processing Shaders
+- `pp_fxaa.frag.glsl` - FXAA anti-aliasing
+- `hdr_brightpass.frag.glsl` - HDR bright-pass extraction
+- `hdr_lumpass.frag.glsl` - HDR bloom
+- `hdr_tonemap.frag.glsl` - HDR tone mapping
+- `gamma_correction.frag.glsl` - Gamma correction
+- `gaussian_blur_16x.frag.glsl` - Gaussian blur
+- `down_sample.frag.glsl` - Downsampling
 
-#### 几何着色器
-- `studio_shader.geom.glsl` - Studio 模型几何着色器
-- `wsurf_shader.geom.glsl` - WorldSurface 几何着色器
+#### Geometry Shaders
+- `studio_shader.geom.glsl` - Studio model geometry shader
+- `wsurf_shader.geom.glsl` - WorldSurface geometry shader
 
-#### 延迟渲染
-- `dlight_shader.vert.glsl/.frag.glsl` - 延迟光照
-- `dfinal_shader.frag.glsl` - 延迟渲染最终合成
-- `blit_oitblend.frag.glsl` - OIT 混合
+#### Deferred Rendering
+- `dlight_shader.vert.glsl/.frag.glsl` - Deferred lighting
+- `dfinal_shader.frag.glsl` - Deferred-rendering final composition
+- `blit_oitblend.frag.glsl` - OIT blending
 
-#### 水面和 Portal
-- `water_shader.vert.glsl/.frag.glsl` - 水面渲染
-- `portal_shader.vert.glsl/.frag.glsl` - 传送门渲染
+#### Water and Portal
+- `water_shader.vert.glsl/.frag.glsl` - Water rendering
+- `portal_shader.vert.glsl/.frag.glsl` - Portal rendering
 
-#### 通用着色器
-- `fullscreenquad.vert.glsl` - 全屏四边形
-- `fullscreentriangle.vert.glsl` - 全屏三角形
-- `pp_common.vert.glsl` - 通用后处理顶点着色器
+#### Common Shaders
+- `fullscreenquad.vert.glsl` - Full-screen quadrilateral
+- `fullscreentriangle.vert.glsl` - Full-screen triangle
+- `pp_common.vert.glsl` - Common post-processing vertex shader
 
-#### HUD 和调试
-- `hud_debug.vert.glsl/.frag.glsl` - HUD 调试着色器
-- `drawfilledrect_shader.vert.glsl/.frag.glsl` - 填充矩形
-- `drawtexturedrect_shader.vert.glsl/.frag.glsl` - 纹理矩形
+#### HUD and Debugging
+- `hud_debug.vert.glsl/.frag.glsl` - HUD debugging shaders
+- `drawfilledrect_shader.vert.glsl/.frag.glsl` - Filled rectangle
+- `drawtexturedrect_shader.vert.glsl/.frag.glsl` - Textured rectangle
 
-### 第三方依赖
+### Third-Party Dependencies
 
-#### 静态库
-- **GLEW** - OpenGL 扩展加载库
-- **FreeImage** - 图像格式支持
-- **Capstone** - 反汇编引擎
-- **SDL2/SDL3** - 跨平台多媒体库
-- **tinyobjloader** - OBJ 模型加载器
+#### Static Libraries
+- **GLEW** - OpenGL extension loading library
+- **FreeImage** - Image-format support
+- **Capstone** - Disassembly engine
+- **SDL2/SDL3** - Cross-platform multimedia libraries
+- **tinyobjloader** - OBJ model loader
 
-#### Source SDK 组件
-- 完整的 tier0, tier1, vstdlib 系统
-- 数学库 (mathlib)
-- 文件系统接口
-- 内存管理系统
+#### Source SDK Components
+- Complete tier0, tier1, and vstdlib systems
+- Math library (mathlib)
+- File-system interface
+- Memory-management system
 
-## 构建配置
+## Build Configuration
 
-### 配置类型
-- **Debug** - 调试版本，包含完整调试信息
-- **Release** - 优化版本，标准优化
-- **Release_AVX2** - AVX2 优化版本高性能渲染
+### Configuration Types
+- **Debug** - Debug build with complete debugging information
+- **Release** - Optimized build with standard optimizations
+- **Release_AVX2** - AVX2-optimized build for high-performance rendering
 
-### 关键编译设置
-- **C++ 标准**: C++20
-- **运行时库**: 多线程 (Release) / 多线程调试 (Debug)
-- **OpenGL**: 使用 GLEW 静态链接
-- **并行编译**: Release 模式启用 `/MP` 多核编译
+### Key Compilation Settings
+- **C++ Standard**: C++20
+- **Runtime Library**: Multi-threaded (Release) / Multi-threaded Debug (Debug)
+- **OpenGL**: Uses static linking for GLEW
+- **Parallel Compilation**: Enables `/MP` multi-core compilation in Release mode
 
-### 输出路径
+### Output Paths
 - **Debug**: `output\Win32\Debug\renderer.dll`
 - **Release**: `output\Win32\Release\renderer.dll`
 - **Release_AVX2**: `output\Win32\Release_AVX2\renderer.dll`
 
-### 部署
-构建后自动复制到游戏目录：
-- 主插件: `$(GameDir)/metahook/renderer/`
-- 依赖 DLL: `$(GameDir)/metahook/dlls/FreeImage/`
+### Deployment
+After building, files are automatically copied to the game directory:
+- Main plugin: `$(GameDir)/metahook/renderer/`
+- Dependent DLL: `$(GameDir)/metahook/dlls/FreeImage/`
 
-## 关键架构
+## Key Architecture
 
-### 渲染管线
+### Rendering Pipeline
 
-1. **主渲染循环** (`gl_rmain.cpp`)
-   - 场景管理和相机设置
-   - 渲染顺序控制
-   - Pass 管理
+1. **Main Rendering Loop** (`gl_rmain.cpp`)
+   - Scene management and camera setup
+   - Rendering-order control
+   - Pass management
 
-2. **延迟渲染** (`gl_rsurf.cpp`)
-   - G-Buffer 生成
-   - 几何信息存储
-   - 多渲染目标支持
+2. **Deferred Rendering** (`gl_rsurf.cpp`)
+   - G-buffer generation
+   - Geometry information storage
+   - Multiple-render-target support
 
-3. **光照处理** (`gl_light.cpp`)
-   - 动态光源收集
-   - 光源类型分类
-   - 光照计算优化
+3. **Lighting Processing** (`gl_light.cpp`)
+   - Dynamic light collection
+   - Light-type classification
+   - Lighting-calculation optimization
 
-4. **后期处理** (`gl_shader.cpp`)
-   - HDR 管线
-   - 抗锯齿
-   - 图像效果
+4. **Post-Processing** (`gl_shader.cpp`)
+   - HDR pipeline
+   - Anti-aliasing
+   - Image effects
 
-### 内存管理
-- 使用 Source SDK 的内存管理系统 (tier0)
-- 自定义内存池 (zone.cpp)
-- 资源生命周期管理
+### Memory Management
+- Uses the Source SDK memory-management system (tier0)
+- Custom memory pool (`zone.cpp`)
+- Resource lifetime management
 
-### 线程模型
-- 主线程渲染
-- 后台线程资源加载 (LambdaThreadedTask)
-- 异步着色器编译支持
+### Thread Model
+- Main-thread rendering
+- Background-thread resource loading (`LambdaThreadedTask`)
+- Asynchronous shader-compilation support
 
-## 开发指南
+## Development Guide
 
-### 关键开发文件
+### Key Development Files
 
-#### 需要修改渲染逻辑时
-1. 查看 `gl_local.h` 了解全局状态
-2. 在相应的子系统文件中添加功能 (如 `gl_light.cpp` 添加新光照效果)
-3. 在 `gl_hooks.cpp` 中添加必要的钩子
+#### When Modifying Rendering Logic
+1. Review `gl_local.h` to understand global state
+2. Add functionality in the appropriate subsystem file (for example, add a new lighting effect in `gl_light.cpp`)
+3. Add required hooks in `gl_hooks.cpp`
 
-#### 需要添加新的着色器时
-1. 在 `Build/svencoop/renderer/shader/` 目录添加 .glsl 文件
-2. 在 `gl_shader.cpp` 中加载和编译着色器
-3. 创建对应的渲染函数
+#### When Adding New Shaders
+1. Add `.glsl` files under `Build/svencoop/renderer/shader/`
+2. Load and compile the shaders in `gl_shader.cpp`
+3. Create the corresponding rendering functions
 
-#### 需要添加新的 CVars 时
-1. 在 `gl_cvar.cpp` 中注册控制台变量
-2. 在 `gl_cvar.h` 中添加声明
-3. 在相应渲染模块中使用
+#### When Adding New CVars
+1. Register console variables in `gl_cvar.cpp`
+2. Add declarations in `gl_cvar.h`
+3. Use them in the appropriate rendering modules
 
-### 常见开发任务
+### Common Development Tasks
 
-#### 添加新的渲染 Pass
-1. 在 `gl_rmain.cpp` 的主渲染循环中添加 Pass 调用
-2. 在相应的 .cpp 文件中实现 Pass 逻辑
-3. 在 `gl_shader.cpp` 中添加所需的着色器
+#### Add a New Rendering Pass
+1. Add the pass call to the main rendering loop in `gl_rmain.cpp`
+2. Implement the pass logic in the appropriate `.cpp` file
+3. Add the required shaders in `gl_shader.cpp`
 
-#### 修改光照模型
-1. 编辑 `gl_light.cpp` 中的光照计算函数
-2. 更新对应的着色器文件
-3. 测试不同光照参数
+#### Modify the Lighting Model
+1. Edit the lighting-calculation functions in `gl_light.cpp`
+2. Update the corresponding shader files
+3. Test different lighting parameters
 
-#### 优化渲染性能
-1. 检查 `gl_ringbuffer.cpp` 中的 GPU 使用情况
-2. 优化 `gl_model.cpp` 中的模型处理
-3. 使用 `gl_cvar.cpp` 中的性能 CVars 进行调优
+#### Optimize Rendering Performance
+1. Inspect GPU usage in `gl_ringbuffer.cpp`
+2. Optimize model processing in `gl_model.cpp`
+3. Tune using the performance CVars in `gl_cvar.cpp`
 
-## 依赖关系
+## Dependencies
 
-### 依赖的 MetaHook 插件
-- **VGUI2Extension** - VGUI2 接口支持 (可选，如果 没有加载VGUI2Extension则不提供GUI菜单)
+### Dependent MetaHook Plugins
+- **VGUI2Extension** - VGUI2 interface support (optional; no GUI menu is provided if VGUI2Extension is not loaded)
 
-### 依赖的 PluginLibs
-- 无直接依赖
+### Dependent PluginLibs
+- No direct dependencies
 
-### 依赖的游戏引擎
-- 所有支持的 GoldSrc 引擎变体
-- SvEngine (优先支持)
+### Dependent Game Engines
+- All supported GoldSrc engine variants
+- SvEngine (preferred support)

@@ -4,66 +4,66 @@ type: note
 permalink: metahooksv/csm-texture-array-optimization
 ---
 
-# CSM Texture Array优化文档
+# CSM Texture Array Optimization
 
-## 概述
+## Overview
 
-本文档记录了将Cascaded Shadow Mapping (CSM)从使用单个4096x4096纹理的四个区域优化为使用4096x4096x4纹理数组的实现过程。
+This document records the implementation of optimizing Cascaded Shadow Mapping (CSM) from four regions of a single 4096x4096 texture to a 4096x4096x4 texture array.
 
-## 优化前的实现
+## Implementation Before Optimization
 
-### 纹理布局
-- 使用单个4096x4096的2D深度纹理
-- 四个级联分别绘制到以下区域：
-  - Cascade 0: 左上 (0, 0) - (2048, 2048)
-  - Cascade 1: 右上 (2048, 0) - (4096, 2048)
-  - Cascade 2: 左下 (0, 2048) - (2048, 4096)
-  - Cascade 3: 右下 (2048, 2048) - (4096, 4096)
+### Texture Layout
+- Uses a single 4096x4096 2D depth texture
+- The four cascades are rendered into the following regions:
+  - Cascade 0: top-left (0, 0) - (2048, 2048)
+  - Cascade 1: top-right (2048, 0) - (4096, 2048)
+  - Cascade 2: bottom-left (0, 2048) - (2048, 4096)
+  - Cascade 3: bottom-right (2048, 2048) - (4096, 4096)
 
-### 渲染流程
-1. 绑定4096x4096的FBO深度纹理
-2. 对每个级联循环：
-   - 设置scissor test限制绘制区域
-   - 计算该级联的投影矩阵
-   - 使用`Matrix4x4_CreateCSMOffset`创建偏移矩阵，将投影坐标映射到正确的区域
-   - 更新CameraUBO (numViews = 1)
-   - 调用`R_RenderScene()`绘制该级联
-3. 总共需要4次绘制调用
+### Rendering Flow
+1. Binds the 4096x4096 FBO depth texture
+2. For each cascade:
+   - Sets the scissor test to constrain the draw region
+   - Computes that cascade's projection matrix
+   - Uses `Matrix4x4_CreateCSMOffset` to create an offset matrix that maps projection coordinates to the correct region
+   - Updates `CameraUBO` (`numViews = 1`)
+   - Calls `R_RenderScene()` to draw that cascade
+3. Requires four draw calls in total
 
-### 着色器采样
-- 使用`sampler2DShadow`
-- 采样坐标经过偏移矩阵变换，映射到0.5x0.5的子区域
-- 每个级联的纹理分辨率实际为2048x2048
+### Shader Sampling
+- Uses `sampler2DShadow`
+- Sample coordinates are transformed by the offset matrix and mapped to a 0.5x0.5 subregion
+- The effective texture resolution for each cascade is 2048x2048
 
-## 优化后的实现
+## Implementation After Optimization
 
-### 纹理布局
-- 使用4096x4096x4的2D纹理数组
-- 每个级联对应一个完整的4096x4096层：
+### Texture Layout
+- Uses a 4096x4096x4 2D texture array
+- Each cascade corresponds to a full 4096x4096 layer:
   - Cascade 0: Layer 0 (4096x4096)
   - Cascade 1: Layer 1 (4096x4096)
   - Cascade 2: Layer 2 (4096x4096)
   - Cascade 3: Layer 3 (4096x4096)
 
-### 渲染流程
-1. 创建纹理数组：`GL_GenShadowTextureArray(4096, 4096, 4, true)`
-2. 逐层清除深度纹理（使用`glFramebufferTextureLayer`）
-3. 绑定整个纹理数组到FBO（使用`glFramebufferTexture`）
-4. 预先计算所有4个级联的投影矩阵和阴影矩阵
-5. 将所有4个视角设置到CameraUBO (numViews = 4)
-6. 调用**一次**`R_RenderScene()`
-7. 几何着色器根据`gl_InvocationID`选择目标层并输出到对应的`gl_Layer`
+### Rendering Flow
+1. Creates the texture array: `GL_GenShadowTextureArray(4096, 4096, 4, true)`
+2. Clears the depth texture layer by layer (using `glFramebufferTextureLayer`)
+3. Binds the entire texture array to the FBO (using `glFramebufferTexture`)
+4. Precomputes projection and shadow matrices for all four cascades
+5. Configures all four views in `CameraUBO` (`numViews = 4`)
+6. Calls `R_RenderScene()` **once**
+7. The geometry shader selects the target layer based on `gl_InvocationID` and outputs to the corresponding `gl_Layer`
 
-### 着色器采样
-- 使用`sampler2DArrayShadow`
-- 采样坐标：`vec4(uv.xy, cascadeIndex, depth)`
-- 每个级联使用完整的4096x4096分辨率（提升了4倍！）
+### Shader Sampling
+- Uses `sampler2DArrayShadow`
+- Sample coordinates: `vec4(uv.xy, cascadeIndex, depth)`
+- Each cascade uses the full 4096x4096 resolution (a 4x improvement!)
 
-## 代码修改详情
+## Code Change Details
 
-### 1. 新增纹理数组创建函数
+### 1. Add Texture-Array Creation Functions
 
-**文件**: `Plugins/Renderer/gl_rmisc.cpp`
+**File**: `Plugins/Renderer/gl_rmisc.cpp`
 
 ```cpp
 void GL_CreateShadowTextureArray(int texid, int w, int h, int depth, bool immutable)
@@ -93,111 +93,111 @@ GLuint GL_GenShadowTextureArray(int w, int h, int depth, bool immutable)
 }
 ```
 
-### 2. 修改CCascadedShadowTexture
+### 2. Modify `CCascadedShadowTexture`
 
-**文件**: `Plugins/Renderer/gl_shadow.cpp`
+**File**: `Plugins/Renderer/gl_shadow.cpp`
 
 ```cpp
 CCascadedShadowTexture(uint32_t size, bool bStatic) : CBaseShadowTexture(size, bStatic)
 {
-	// 原来: m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
-	// 改为使用纹理数组
+	// Previously: m_depthtex = GL_GenShadowTexture(GL_TEXTURE_2D, size, size, true);
+	// Use a texture array instead
 	m_depthtex = GL_GenShadowTextureArray(size, size, CSM_LEVELS, true);
 }
 ```
 
-### 3. 重写CSM绘制逻辑
+### 3. Rewrite CSM Drawing Logic
 
-**文件**: `Plugins/Renderer/gl_shadow.cpp` (约788-880行)
+**File**: `Plugins/Renderer/gl_shadow.cpp` (approximately lines 788-880)
 
-主要变化：
-- 移除了`for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)`循环
-- 移除了scissor test相关代码
-- 移除了`Matrix4x4_CreateCSMOffset`的调用
-- 使用`glFramebufferTextureLayer`逐层清除深度
-- 使用`glFramebufferTexture`绑定整个纹理数组
-- 预先计算所有级联的矩阵并填充到`CameraUBO.views[0~3]`
-- 设置`CameraUBO.numViews = CSM_LEVELS`
-- 仅调用一次`R_RenderScene()`
+Main changes:
+- Removes the `for (int cascadeIndex = 0; cascadeIndex < CSM_LEVELS; ++cascadeIndex)` loop
+- Removes scissor-test-related code
+- Removes the call to `Matrix4x4_CreateCSMOffset`
+- Uses `glFramebufferTextureLayer` to clear depth layer by layer
+- Uses `glFramebufferTexture` to bind the entire texture array
+- Precomputes matrices for all cascades and fills `CameraUBO.views[0~3]`
+- Sets `CameraUBO.numViews = CSM_LEVELS`
+- Calls `R_RenderScene()` only once
 
-### 4. 更新纹理绑定
+### 4. Update Texture Binding
 
-**文件**: `Plugins/Renderer/gl_light.cpp`
+**File**: `Plugins/Renderer/gl_light.cpp`
 
 ```cpp
-// 绑定纹理时使用GL_TEXTURE_2D_ARRAY
+// Use GL_TEXTURE_2D_ARRAY when binding the texture
 GL_BindTextureUnit(DSHADE_BIND_CSM_TEXTURE, GL_TEXTURE_2D_ARRAY, pCSMShadowTexture->GetDepthTexture());
 
-// 更新u_csmTexel uniform
-// 原来: glUniform2f(prog.u_csmTexel, (size * 0.5f), 1.0f / (size * 0.5f));
-// 改为使用完整尺寸
+// Update the u_csmTexel uniform
+// Previously: glUniform2f(prog.u_csmTexel, (size * 0.5f), 1.0f / (size * 0.5f));
+// Use the full size instead
 glUniform2f(prog.u_csmTexel, size, 1.0f / size);
 ```
 
-### 5. 更新着色器采样
+### 5. Update Shader Sampling
 
-**文件**: `Build/svencoop/renderer/shader/dlight_shader.frag.glsl`
+**File**: `Build/svencoop/renderer/shader/dlight_shader.frag.glsl`
 
 ```glsl
-// 声明纹理为数组类型
+// Declare the texture as an array type
 #if defined(CSM_ENABLED)
 layout(binding = DSHADE_BIND_CSM_TEXTURE) uniform sampler2DArrayShadow csmTex;
 #endif
 
-// 采样时指定层索引
+// Specify the layer index when sampling
 vec4 sampleCoord = vec4(projCoords.xy + offset, float(cascadeIndex), projCoords.z);
 visibility += texture(csmTex, sampleCoord);
 ```
 
-## 性能优势
+## Performance Benefits
 
-### 绘制调用优化
-- **优化前**: 4次`R_RenderScene()`调用（每个级联一次）
-- **优化后**: 1次`R_RenderScene()`调用（多视角几何着色器）
-- **提升**: **4倍减少CPU开销**
+### Draw-Call Optimization
+- **Before optimization**: four `R_RenderScene()` calls (one per cascade)
+- **After optimization**: one `R_RenderScene()` call (multiview geometry shader)
+- **Improvement**: **4x reduction in CPU overhead**
 
-### 分辨率提升
-- **优化前**: 每个级联2048x2048像素
-- **优化后**: 每个级联4096x4096像素
-- **提升**: **4倍阴影质量**
+### Resolution Improvement
+- **Before optimization**: 2048x2048 pixels per cascade
+- **After optimization**: 4096x4096 pixels per cascade
+- **Improvement**: **4x shadow quality**
 
-### 显存占用
-- **优化前**: 4096 × 4096 × 4字节 = 64MB
-- **优化后**: 4096 × 4096 × 4层 × 4字节 = 256MB
-- **代价**: 增加192MB显存（现代GPU可接受）
+### VRAM Usage
+- **Before optimization**: 4096 × 4096 × 4 bytes = 64MB
+- **After optimization**: 4096 × 4096 × 4 layers × 4 bytes = 256MB
+- **Cost**: 192MB additional VRAM (acceptable on modern GPUs)
 
-### GPU利用率
-- 单次绘制调用减少了CPU-GPU同步开销
-- 几何着色器并行输出到多个层
-- 更好的内存访问局部性（每层独立）
+### GPU Utilization
+- A single draw call reduces CPU-GPU synchronization overhead
+- The geometry shader outputs to multiple layers in parallel
+- Better memory-access locality (layers are independent)
 
-## 与多视角渲染的配合
+## Integration with Multiview Rendering
 
-本优化充分利用了之前实现的多视角渲染功能：
+This optimization makes full use of the previously implemented multiview rendering feature:
 
-1. **几何着色器**（`wsurf_shader.geom.glsl`和`studio_shader.geom.glsl`）
-   - 检测`WSURF_MULTIVIEW_ENABLED`或`STUDIO_MULTIVIEW_ENABLED`宏
-   - 循环`CameraUBO.numViews`次
-   - 对每个视角设置`gl_Layer = viewIdx`
-   - 使用对应的投影和世界矩阵变换顶点
+1. **Geometry shaders** (`wsurf_shader.geom.glsl` and `studio_shader.geom.glsl`)
+   - Detect the `WSURF_MULTIVIEW_ENABLED` or `STUDIO_MULTIVIEW_ENABLED` macro
+   - Iterate `CameraUBO.numViews` times
+   - Set `gl_Layer = viewIdx` for each view
+   - Transform vertices using the corresponding projection and world matrices
 
-2. **CameraUBO结构**
+2. **`CameraUBO` structure**
    ```glsl
    layout(std140, binding = 0) uniform CameraUBO
    {
-       CameraView views[6];  // 支持最多6个视角（Cubemap）
-       int numViews;         // CSM使用4个
+       CameraView views[6];  // Supports up to six views (Cubemap)
+       int numViews;         // CSM uses four
    };
    ```
 
-3. **启用条件**
+3. **Enablement conditions**
    - `r_draw_multiview = true`
    - `r_draw_shadowview = true`
 
-## 注意事项
+## Notes
 
-### FBO层绑定
-- 清除深度时必须逐层绑定：
+### FBO Layer Binding
+- Layers must be bound individually when clearing depth:
   ```cpp
   for (int i = 0; i < CSM_LEVELS; ++i)
   {
@@ -206,39 +206,39 @@ visibility += texture(csmTex, sampleCoord);
       GL_ClearDepthStencil(1.0f, STENCIL_MASK_NONE, STENCIL_MASK_ALL);
   }
   ```
-- 渲染时绑定整个纹理数组：
+- Bind the entire texture array while rendering:
   ```cpp
   glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, 
                        texture, 0);
   ```
 
-### 投影矩阵计算
-- 不再需要偏移矩阵，每个级联使用标准正交投影
-- Shadow矩阵直接从正交投影矩阵和世界矩阵计算
-- 简化了数学计算，减少精度损失
+### Projection-Matrix Calculation
+- No offset matrix is needed; each cascade uses a standard orthographic projection
+- The shadow matrix is calculated directly from the orthographic projection and world matrices
+- This simplifies mathematical calculations and reduces precision loss
 
-### 着色器兼容性
-- 需要GLSL 4.30+支持`sampler2DArrayShadow`
-- AMD/Intel/NVIDIA均支持此特性
+### Shader Compatibility
+- Requires GLSL 4.30+ for `sampler2DArrayShadow`
+- AMD, Intel, and NVIDIA all support this feature
 
-## 后续优化方向
+## Future Optimization Directions
 
-1. **自适应CSM级数**
-   - 根据场景复杂度动态调整级联数量（2-4个）
+1. **Adaptive CSM cascade count**
+   - Dynamically adjust the number of cascades (2-4) based on scene complexity
 
-2. **每级联独立分辨率**
-   - 近处级联使用4096，远处级联使用2048或1024
+2. **Independent resolution per cascade**
+   - Use 4096 for near cascades and 2048 or 1024 for distant cascades
 
-3. **稳定化技术**
-   - 实现texel-snapping避免阴影边缘抖动
-   - 级联过渡使用更平滑的混合函数
+3. **Stabilization techniques**
+   - Implement texel snapping to avoid shadow-edge jitter
+   - Use smoother blend functions for cascade transitions
 
 4. **Cubemap Shadow Mapping**
-   - 点光源也可以使用类似技术
-   - 6个面 → 单次绘制到CubemapArray
+   - Point lights can use a similar technique
+   - Six faces → one draw to `CubemapArray`
 
-## 总结
+## Summary
 
-此次优化成功地将CSM渲染从多次绘制优化为单次绘制，并显著提升了阴影分辨率。虽然显存占用增加，但在现代GPU上这是可接受的代价，换来的是更流畅的渲染性能和更高质量的阴影效果。
+This optimization successfully changes CSM rendering from multiple draws to a single draw and significantly improves shadow resolution. Although it increases VRAM usage, that is an acceptable cost on modern GPUs in exchange for smoother rendering performance and higher-quality shadows.
 
-这一优化展示了几何着色器和纹理数组在现代图形渲染管线中的强大能力，为后续实现Cubemap Shadow Mapping等更复杂的阴影技术奠定了基础。
+This optimization demonstrates the power of geometry shaders and texture arrays in modern graphics rendering pipelines, laying a foundation for more complex shadow techniques such as Cubemap Shadow Mapping.

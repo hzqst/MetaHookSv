@@ -6,17 +6,17 @@ permalink: metahooksv/metahook-installer
 
 # MetahookInstaller
 
-## 概述
-`toolsrc/MetahookInstaller` 是一个基于 Avalonia + ReactiveUI 的 Windows 安装器工具（.NET 8）。它负责把仓库 `Build/` 目录中的 MetaHook 运行文件部署到目标 GoldSrc/Sven Co-op 游戏目录，并提供 `plugins.lst` 的可视化编辑能力（启用/禁用、排序、保存）。
+## Overview
+`toolsrc/MetahookInstaller` is a Windows installer tool based on Avalonia + ReactiveUI (.NET 8). It deploys MetaHook runtime files from the repository's `Build/` directory to a target GoldSrc/Sven Co-op game directory and provides visual editing for `plugins.lst` (enable/disable, ordering, and saving).
 
-## 职责
-- 自动发现 Steam 安装路径与 Steam Library，推断预设游戏的安装目录并生成可选 Mod 列表。
-- 执行安装流程：复制基础目录/Mod 目录、选择 `MetaHook.exe` 或 `MetaHook_blob.exe`、按需复制 `SDL2.dll/SDL3.dll`、落地 `plugins.lst`、创建启动快捷方式。
-- 执行卸载流程：删除安装器已知目录/文件（含快捷方式），并给出通知反馈。
-- 提供插件编辑器：读取 `metahook/configs/plugins.lst` 与 `metahook/plugins/*.dll`，支持拖拽排序、列表迁移、启用状态编辑、持久化保存。
-- 提供辅助功能：语言切换（`zh-CN` / `en-US`）、常用目录快速打开、Toast/Notification 提示。
+## Responsibilities
+- Automatically discover the Steam installation path and Steam Libraries, infer installation directories for preset games, and generate a selectable Mod list.
+- Perform installation: copy base/Mod directories, choose `MetaHook.exe` or `MetaHook_blob.exe`, copy `SDL2.dll/SDL3.dll` as needed, write `plugins.lst`, and create a launch shortcut.
+- Perform uninstallation: delete installer-known directories/files (including shortcuts) and provide notification feedback.
+- Provide a plugin editor: read `metahook/configs/plugins.lst` and `metahook/plugins/*.dll`, supporting drag-and-drop ordering, moving entries between lists, enable-state editing, and persistent saving.
+- Provide auxiliary functions: language switching (`zh-CN` / `en-US`), quick opening of common directories, and Toast/Notification prompts.
 
-## 涉及文件 (不要带行号)
+## Files Involved (Do Not Include Line Numbers)
 - `toolsrc/MetahookInstaller/Directory.Build.props`
 - `toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/Program.cs`
 - `toolsrc/MetahookInstaller/MetahookInstallerAvalonia.Desktop/MetahookInstallerAvalonia.Desktop.csproj`
@@ -45,8 +45,8 @@ permalink: metahooksv/metahook-installer
 - `scripts/install-helper-CopySDL2.bat`
 - `scripts/install-helper-CreateShortcut.bat`
 
-## 架构
-整体采用 **Desktop Host + Avalonia UI + ViewModel 业务编排** 的结构。
+## Architecture
+The overall structure uses **Desktop Host + Avalonia UI + ViewModel business orchestration**.
 
 ```mermaid
 flowchart TD
@@ -55,66 +55,66 @@ flowchart TD
     C --> D[MainView]
     D --> E[MainViewModel]
 
-    E --> F[安装/卸载流程]
-    E --> G[插件列表编辑流程]
-    E --> H[语言切换/目录打开/通知]
+    E --> F[Install/Uninstall Workflow]
+    E --> G[Plugin List Editing Workflow]
+    E --> H[Language Switching/Open Directory/Notifications]
 ```
 
-关键对象与数据结构：
-- `MainViewModel`：核心业务编排（安装、卸载、Steam 发现、插件编辑、命令装配）。
-- `ModInfo`：目标游戏/Mod 描述（`Name/Directory/AppID/GamePath/InstallPath`）。
-- `PluginInfo`：插件条目（`Name/Enabled/Index`）。
-- `PluginInfoComparer`：用于插件名去重（大小写不敏感比较）。
-- `ItemsListBoxDropHandler`：插件列表拖拽行为（Move/Swap/Copy）并回写索引。
+Key objects and data structures:
+- `MainViewModel`: Core business orchestration (installation, uninstallation, Steam discovery, plugin editing, command composition).
+- `ModInfo`: Target game/Mod description (`Name/Directory/AppID/GamePath/InstallPath`).
+- `PluginInfo`: Plugin entry (`Name/Enabled/Index`).
+- `PluginInfoComparer`: Deduplicates plugin names (case-insensitive comparison).
+- `ItemsListBoxDropHandler`: Plugin-list drag-and-drop behavior (Move/Swap/Copy) and index write-back.
 
-安装主流程（`MainViewModel.InstallMod`）：
+Main installation workflow (`MainViewModel.InstallMod`):
 ```mermaid
 flowchart TD
-    S[校验 Selected 与 liblist.gam] --> A[复制 Build/svencoop 到 InstallPath]
-    A --> B[复制 Build 下 modName 或 modName_ 前缀目录]
+    S[Validate Selected and liblist.gam] --> A[Copy Build/svencoop to InstallPath]
+    A --> B[Copy directories under Build prefixed with modName or modName_]
     B --> C{modName == svencoop?}
-    C -- 是 --> D[复制 Build/platform 到 GameRoot/platform]
-    C -- 否 --> E[跳过]
+    C -- Yes --> D[Copy Build/platform to GameRoot/platform]
+    C -- No --> E[Skip]
     D --> F
-    E --> F{hw.dll 是否合法 PE}
-    F -- 是 --> G[使用 MetaHook.exe;
-svencoop 目标为 svencoop.exe]
-    F -- 否 --> H[使用 MetaHook_blob.exe]
-    G --> I[复制启动器 EXE]
+    E --> F{Is hw.dll a valid PE?}
+    F -- Yes --> G[Use MetaHook.exe;
+    svencoop target uses svencoop.exe]
+    F -- No --> H[Use MetaHook_blob.exe]
+    G --> I[Copy launcher EXE]
     H --> I
-    I --> J{非 blob 且 hw.dll 导入 sdl2.dll?}
-    J -- 是 --> K[复制 SDL2.dll + SDL3.dll]
-    J -- 否 --> L[跳过 SDL 复制]
+    I --> J{Non-blob and hw.dll imports sdl2.dll?}
+    J -- Yes --> K[Copy SDL2.dll + SDL3.dll]
+    J -- No --> L[Skip SDL copy]
     K --> M
-    L --> M[若 plugins.lst 缺失: 从 plugins_svencoop/goldsrc.lst 生成]
-    M --> N[删除 plugins_svencoop.lst 与 plugins_goldsrc.lst]
-    N --> O[创建 MetaHook for <Game>.lnk]
+    L --> M[If plugins.lst is missing: generate it from plugins_svencoop/goldsrc.lst]
+    M --> N[Delete plugins_svencoop.lst and plugins_goldsrc.lst]
+    N --> O[Create MetaHook for <Game>.lnk]
 ```
 
-插件编辑流程（Page 2）：
-- `InitPluginList`：读取 `plugins.lst` 得到已配置列表；扫描 `metahook/plugins/*.dll` 生成可用列表；按插件名去重并计算显示索引。
-- `ToAvaliableCommand` / `ToPluginsCommand`：在“已启用/可用”列表之间移动条目。
-- 拖拽行为由 `ItemsListBoxDropHandler` 实现顺序调整，完成后统一调用 `RecaculatePluginIndex`。
-- `SavePluginList`：将 `_plugins` 回写为 `plugins.lst`，禁用项以前缀 `;` 表示。
+Plugin editing workflow (Page 2):
+- `InitPluginList`: Read `plugins.lst` to obtain configured entries; scan `metahook/plugins/*.dll` to generate the available list; deduplicate by plugin name and calculate display indices.
+- `ToAvaliableCommand` / `ToPluginsCommand`: Move entries between the “enabled/available” lists.
+- `ItemsListBoxDropHandler` adjusts order through drag-and-drop, then `RecaculatePluginIndex` is called consistently.
+- `SavePluginList`: Write `_plugins` back to `plugins.lst`; disabled items use the `;` prefix.
 
-## 依赖
-- 外部库（NuGet）：`Avalonia`、`ReactiveUI.Avalonia`、`Irihi.Ursa`、`Semi.Avalonia`、`Xaml.Behaviors.Avalonia`、`securifybv.ShellLink`。
-- Windows 依赖：注册表 `HKCU\Software\Valve\Steam`（读取 SteamPath）、`explorer.exe`、`.lnk` 快捷方式写入。
-- 仓库内契约依赖：
-  - `Build/` 目录内容（`MetaHook.exe` / `MetaHook_blob.exe` / `svencoop` / `platform` / `SDL2.dll` / `SDL3.dll` 等）。
-  - 游戏目录结构（`<mod>/liblist.gam`、`metahook/configs/plugins*.lst`、`metahook/plugins/*.dll`）。
-- 解决方案集成：`MetaHook.sln` 的 `Tools` 分组中包含 `MetahookInstallerAvalonia` 与 `MetahookInstallerAvalonia.Desktop`。
-- 历史脚本链路：`scripts/install-helper-*.bat` 与该 GUI 工具职责重叠，说明安装器逻辑由批处理向 UI 工具演进。
+## Dependencies
+- External libraries (NuGet): `Avalonia`, `ReactiveUI.Avalonia`, `Irihi.Ursa`, `Semi.Avalonia`, `Xaml.Behaviors.Avalonia`, `securifybv.ShellLink`.
+- Windows dependencies: registry `HKCU\Software\Valve\Steam` (reads SteamPath), `explorer.exe`, and `.lnk` shortcut writing.
+- Repository contract dependencies:
+  - `Build/` directory contents (`MetaHook.exe` / `MetaHook_blob.exe` / `svencoop` / `platform` / `SDL2.dll` / `SDL3.dll`, and others).
+  - Game directory structure (`<mod>/liblist.gam`, `metahook/configs/plugins*.lst`, `metahook/plugins/*.dll`).
+- Solution integration: the `Tools` group in `MetaHook.sln` includes `MetahookInstallerAvalonia` and `MetahookInstallerAvalonia.Desktop`.
+- Historical script chain: `scripts/install-helper-*.bat` overlaps with this GUI tool's responsibilities, showing that installer logic evolved from batch processing to a UI tool.
 
-## 注意事项
-- 路径发现与配置文件读写大量依赖当前工作目录（如 `./Build`、`./lang`），若启动目录变化，可能出现“找不到 Build/语言配置”的行为偏差。
-- 卸载逻辑基于固定白名单路径删除，覆盖面有限且不做备份；用户手工放入同路径下的内容存在被删除风险。
-- 桌面工程未显式请求提权；当目标游戏目录在受保护路径（如 `Program Files`）时，安装/卸载可能抛出权限异常（代码中已提示但不自动提权）。
+## Notes
+- Path discovery and configuration-file I/O depend heavily on the current working directory (such as `./Build` and `./lang`); if the launch directory changes, behavior may diverge by failing to find Build/language configuration.
+- Uninstallation deletes fixed allowlisted paths, has limited coverage, and does not back up files; user content manually placed under those paths risks deletion.
+- The desktop project does not explicitly request elevation; when the target game directory is protected (such as `Program Files`), installation/uninstallation may throw permission exceptions (the code prompts but does not elevate automatically).
 
-## 调用方（可选）
-- 启动调用链：`MetahookInstallerAvalonia.Desktop/Program.cs` -> `App.axaml.cs` -> `MainWindow`（`DataContext = new MainViewModel()`）。
-- UI 触发：
-  - `InstallerPage.axaml` 触发 `InstallCommand`、`UninstallCommand`。
-  - `EditorPage.axaml` 触发 `ToAvaliableCommand`、`ToPluginsCommand`、`ResetCommand`、`SaveCommand`。
-  - `MainWindow.axaml` 语言菜单触发 `ChangeLanguageCommand`。
-  - `MainView.axaml` 的目录按钮触发 `OpenFolderCommand`。
+## Callers (Optional)
+- Startup call chain: `MetahookInstallerAvalonia.Desktop/Program.cs` -> `App.axaml.cs` -> `MainWindow` (`DataContext = new MainViewModel()`).
+- UI triggers:
+  - `InstallerPage.axaml` triggers `InstallCommand` and `UninstallCommand`.
+  - `EditorPage.axaml` triggers `ToAvaliableCommand`, `ToPluginsCommand`, `ResetCommand`, and `SaveCommand`.
+  - The language menu in `MainWindow.axaml` triggers `ChangeLanguageCommand`.
+  - The directory button in `MainView.axaml` triggers `OpenFolderCommand`.

@@ -4,30 +4,30 @@ type: note
 permalink: metahooksv/draw-tri-api
 ---
 
-# Renderer Plugin - TriAPI绘制流程详解
+# Renderer Plugin - TriAPI Rendering Flow in Detail
 
-## 概述
+## Overview
 
-TriAPI (Triangle API) 是GoldSrc引擎提供给客户端DLL的即时模式绘图API，允许游戏代码直接绘制自定义几何体。Renderer插件拦截并重新实现了TriAPI，使用现代OpenGL的VBO批量绘制替代了原始的即时模式。
+TriAPI (Triangle API) is an immediate-mode drawing API that the GoldSrc engine provides to client DLLs, allowing game code to draw custom geometry directly. The Renderer plugin intercepts and reimplements TriAPI, replacing the original immediate mode with batched VBO drawing in modern OpenGL.
 
 ---
 
-## TriAPI调用链
+## TriAPI Call Chain
 
-### 完整调用流程
+### Complete Call Flow
 
 ```
 R_RenderScene()
-└── ClientDLL_DrawNormalTriangles()     // 不透明三角形
+└── ClientDLL_DrawNormalTriangles()     // Opaque triangles
     └── gPrivateFuncs.ClientDLL_DrawNormalTriangles()
-        └── [客户端DLL代码]
+        └── [Client DLL code]
             └── gEngfuncs.pTriAPI->...
 
 R_RenderScene()
-└── R_DrawTransEntities()               // 透明实体
+└── R_DrawTransEntities()               // Transparent entities
     └── ClientDLL_DrawTransparentTriangles()
         └── gPrivateFuncs.ClientDLL_DrawTransparentTriangles()
-            └── [客户端DLL代码]
+            └── [Client DLL code]
                 └── gEngfuncs.pTriAPI->...
                     ├── RenderMode()
                     ├── Begin()
@@ -39,54 +39,54 @@ R_RenderScene()
 
 ---
 
-## TriAPI接口函数
+## TriAPI Interface Functions
 
-### 核心绘制流程
+### Core Rendering Flow
 
 ```cpp
-// 1. 设置渲染模式
+// 1. Set render mode
 gEngfuncs.pTriAPI->RenderMode(kRenderTransAdd);
 
-// 2. 开始绘制
+// 2. Begin drawing
 gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
 
-// 3. 提交顶点
+// 3. Submit vertices
 gEngfuncs.pTriAPI->Color4ub(255, 255, 255, 255);
 gEngfuncs.pTriAPI->TexCoord2f(0.0f, 0.0f);
 gEngfuncs.pTriAPI->Vertex3f(x, y, z);
 
-// 4. 结束绘制
+// 4. Finish drawing
 gEngfuncs.pTriAPI->End();
 ```
 
-### TriAPI函数列表
+### TriAPI Function List
 
-#### 渲染控制
-- **RenderMode(int mode)** - 设置渲染模式
-- **Begin(int primitiveCode)** - 开始绘制图元
-- **End()** - 结束绘制并提交
+#### Rendering Control
+- **RenderMode(int mode)** - Sets the render mode
+- **Begin(int primitiveCode)** - Begins drawing a primitive
+- **End()** - Finishes drawing and submits it
 
-#### 顶点属性
-- **Color4f(float r, float g, float b, float a)** - 设置颜色 (浮点)
-- **Color4ub(byte r, byte g, byte b, byte a)** - 设置颜色 (字节)
-- **TexCoord2f(float s, float t)** - 设置纹理坐标
-- **Vertex3f(float x, float y, float z)** - 提交顶点
-- **Vertex3fv(float* v)** - 提交顶点 (数组)
+#### Vertex Attributes
+- **Color4f(float r, float g, float b, float a)** - Sets color (floating point)
+- **Color4ub(byte r, byte g, byte b, byte a)** - Sets color (byte)
+- **TexCoord2f(float s, float t)** - Sets texture coordinates
+- **Vertex3f(float x, float y, float z)** - Submits a vertex
+- **Vertex3fv(float* v)** - Submits a vertex (array)
 
-#### 其他功能
-- **Brightness(float brightness)** - 设置亮度
-- **Color4fRendermode(float r, float g, float b, float a)** - 带渲染模式的颜色
-- **GetMatrix(int mode, float* matrix)** - 获取矩阵
-- **BoxInPVS(float* mins, float* maxs)** - PVS可见性测试
-- **Fog(float* color, float start, float end, int enable)** - 雾效控制
-- **FogParams(float density, int skybox)** - 雾效参数
+#### Other Features
+- **Brightness(float brightness)** - Sets brightness
+- **Color4fRendermode(float r, float g, float b, float a)** - Color with render mode
+- **GetMatrix(int mode, float* matrix)** - Gets a matrix
+- **BoxInPVS(float* mins, float* maxs)** - PVS visibility test
+- **Fog(float* color, float start, float end, int enable)** - Fog control
+- **FogParams(float density, int skybox)** - Fog parameters
 
 ---
 
-## 详细函数分析
+## Detailed Function Analysis
 
-### 1. triapi_RenderMode() - 设置渲染模式
-**位置**: `gl_rmain.cpp:1310-1314`
+### 1. triapi_RenderMode() - Set Render Mode
+**Location**: `gl_rmain.cpp:1310-1314`
 
 ```cpp
 void triapi_RenderMode(int mode) {
@@ -94,18 +94,18 @@ void triapi_RenderMode(int mode) {
 }
 ```
 
-**支持的渲染模式**:
-- `kRenderNormal` (0) - 不透明
-- `kRenderTransColor` (1) - 颜色透明
-- `kRenderTransTexture` (2) - 纹理透明
-- `kRenderGlow` (3) - 发光
-- `kRenderTransAlpha` (4) - Alpha透明
-- `kRenderTransAdd` (5) - 加法混合
+**Supported render modes**:
+- `kRenderNormal` (0) - Opaque
+- `kRenderTransColor` (1) - Color transparency
+- `kRenderTransTexture` (2) - Texture transparency
+- `kRenderGlow` (3) - Glow
+- `kRenderTransAlpha` (4) - Alpha transparency
+- `kRenderTransAdd` (5) - Additive blending
 
 ---
 
-### 2. triapi_Begin() - 开始绘制
-**位置**: `gl_rmain.cpp:1315-1336`
+### 2. triapi_Begin() - Begin Drawing
+**Location**: `gl_rmain.cpp:1315-1336`
 
 ```cpp
 void triapi_Begin(int primitiveCode) {
@@ -124,19 +124,19 @@ void triapi_Begin(int primitiveCode) {
 }
 ```
 
-**图元类型**:
-- **TRI_TRIANGLES** - 独立三角形
-- **TRI_TRIANGLE_FAN** - 扇形三角形
-- **TRI_QUADS** - 四边形
-- **TRI_POLYGON** - 多边形
-- **TRI_LINES** - 线段
-- **TRI_TRIANGLE_STRIP** - 三角形带
-- **TRI_QUAD_STRIP** - 四边形带
+**Primitive types**:
+- **TRI_TRIANGLES** - Independent triangles
+- **TRI_TRIANGLE_FAN** - Triangle fan
+- **TRI_QUADS** - Quadrilaterals
+- **TRI_POLYGON** - Polygon
+- **TRI_LINES** - Line segments
+- **TRI_TRIANGLE_STRIP** - Triangle strip
+- **TRI_QUAD_STRIP** - Quadrilateral strip
 
 ---
 
-### 3. triapi_Color4f() / triapi_Color4ub() - 设置颜色
-**位置**: `gl_rmain.cpp:1775-1825`
+### 3. triapi_Color4f() / triapi_Color4ub() - Set Color
+**Location**: `gl_rmain.cpp:1775-1825`
 
 ```cpp
 void triapi_Color4f(float r, float g, float b, float a) {
@@ -145,9 +145,9 @@ void triapi_Color4f(float r, float g, float b, float a) {
     gTriAPICommand.DrawColor[2] = b;
     gTriAPICommand.DrawColor[3] = a;
     
-    // TransAlpha模式特殊处理
+    // Special handling for TransAlpha mode
     if (gTriAPICommand.RenderMode == kRenderTransAlpha) {
-        // 颜色预乘Alpha
+        // Premultiply color by alpha
     }
 }
 
@@ -161,8 +161,8 @@ void triapi_Color4ub(byte r, byte g, byte b, byte a) {
 
 ---
 
-### 4. triapi_TexCoord2f() - 设置纹理坐标
-**位置**: `gl_rmain.cpp:1876-1880`
+### 4. triapi_TexCoord2f() - Set Texture Coordinates
+**Location**: `gl_rmain.cpp:1876-1880`
 
 ```cpp
 void triapi_TexCoord2f(float s, float t) {
@@ -173,17 +173,17 @@ void triapi_TexCoord2f(float s, float t) {
 
 ---
 
-### 5. triapi_Vertex3f() / triapi_Vertex3fv() - 提交顶点
-**位置**: `gl_rmain.cpp:1830-1874`
+### 5. triapi_Vertex3f() / triapi_Vertex3fv() - Submit Vertices
+**Location**: `gl_rmain.cpp:1830-1874`
 
 ```cpp
 void triapi_Vertex3f(float x, float y, float z) {
     vec3_t pos = { x, y, z };
     
-    // 保存位置用于多边形三角化
+    // Store positions for polygon triangulation
     gTriAPICommand.Positions.emplace_back(pos);
     
-    // 构建顶点数据
+    // Build vertex data
     triapivertex_t vertex;
     VectorCopy(pos, vertex.pos);
     vertex.texcoord[0] = gTriAPICommand.TexCoord[0];
@@ -200,20 +200,20 @@ void triapi_Vertex3fv(float* v) {
 
 ---
 
-### 6. triapi_End() - 结束绘制并提交
-**位置**: `gl_rmain.cpp:1345-1773`
+### 6. triapi_End() - Finish Drawing and Submit
+**Location**: `gl_rmain.cpp:1345-1773`
 
-这是TriAPI最核心的函数，负责将收集的顶点转换为索引三角形并提交到GPU。
+This is the core TriAPI function. It converts collected vertices into indexed triangles and submits them to the GPU.
 
-#### 6.1 图元转换为三角形
+#### 6.1 Convert Primitives to Triangles
 
 ```cpp
 void triapi_End() {
     size_t n = gTriAPICommand.Vertices.size();
     
-    // 根据图元类型生成索引
+    // Generate indices according to primitive type
     if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLES) {
-        // 每3个顶点一个三角形
+        // One triangle per three vertices
         for (size_t i = 0; i < n; i += 3) {
             if (i + 2 < n) {
                 gTriAPICommand.Indices.push_back(i);
@@ -223,7 +223,7 @@ void triapi_End() {
         }
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_FAN) {
-        // 扇形: 所有三角形共享第一个顶点
+        // Fan: all triangles share the first vertex
         for (size_t i = 1; i < n - 1; ++i) {
             gTriAPICommand.Indices.push_back(0);
             gTriAPICommand.Indices.push_back(i);
@@ -231,14 +231,14 @@ void triapi_End() {
         }
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_QUADS) {
-        // 四边形转换为2个三角形
+        // Convert each quadrilateral to two triangles
         for (size_t i = 0; i < n; i += 4) {
             if (i + 3 < n) {
-                // 三角形1: v0, v1, v2
+                // Triangle 1: v0, v1, v2
                 gTriAPICommand.Indices.push_back(i + 0);
                 gTriAPICommand.Indices.push_back(i + 1);
                 gTriAPICommand.Indices.push_back(i + 2);
-                // 三角形2: v2, v3, v0
+                // Triangle 2: v2, v3, v0
                 gTriAPICommand.Indices.push_back(i + 2);
                 gTriAPICommand.Indices.push_back(i + 3);
                 gTriAPICommand.Indices.push_back(i + 0);
@@ -246,20 +246,20 @@ void triapi_End() {
         }
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_POLYGON) {
-        // 多边形三角化 (Ear Clipping算法)
+        // Polygon triangulation (Ear Clipping algorithm)
         R_PolygonToTriangleList(gTriAPICommand.Positions, 
                                 gTriAPICommand.Indices);
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_TRIANGLE_STRIP) {
-        // 三角形带: 每个新顶点与前两个顶点组成三角形
+        // Triangle strip: each new vertex forms a triangle with the preceding two vertices
         for (size_t i = 0; i < n - 2; ++i) {
             if (i % 2 == 0) {
-                // 偶数: 正序
+                // Even: forward order
                 gTriAPICommand.Indices.push_back(i);
                 gTriAPICommand.Indices.push_back(i + 1);
                 gTriAPICommand.Indices.push_back(i + 2);
             } else {
-                // 奇数: 反序 (保持绕序一致)
+                // Odd: reverse order (preserves winding order)
                 gTriAPICommand.Indices.push_back(i + 1);
                 gTriAPICommand.Indices.push_back(i);
                 gTriAPICommand.Indices.push_back(i + 2);
@@ -267,21 +267,21 @@ void triapi_End() {
         }
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_QUAD_STRIP) {
-        // 四边形带
+        // Quadrilateral strip
         for (size_t i = 0; i + 3 < n; i += 2) {
             uint32_t v0 = i, v1 = i + 1, v2 = i + 2, v3 = i + 3;
-            // 三角形1: v0, v1, v3
+            // Triangle 1: v0, v1, v3
             gTriAPICommand.Indices.push_back(v0);
             gTriAPICommand.Indices.push_back(v1);
             gTriAPICommand.Indices.push_back(v3);
-            // 三角形2: v0, v3, v2
+            // Triangle 2: v0, v3, v2
             gTriAPICommand.Indices.push_back(v0);
             gTriAPICommand.Indices.push_back(v3);
             gTriAPICommand.Indices.push_back(v2);
         }
     }
     else if (gTriAPICommand.GLPrimitiveCode == GL_LINES) {
-        // 线段: 直接使用顶点索引
+        // Line segments: use vertex indices directly
         for (size_t i = 0; i < n; i++) {
             gTriAPICommand.Indices.push_back(i);
         }
@@ -289,13 +289,13 @@ void triapi_End() {
 }
 ```
 
-#### 6.2 VAO和环形缓冲区初始化
+#### 6.2 VAO and Ring Buffer Initialization
 
 ```cpp
 if (!gTriAPICommand.hVAO) {
     gTriAPICommand.hVAO = GL_GenVAO();
     
-    // 创建环形缓冲区
+    // Create ring buffers
     if (!g_TriAPIVertexBuffer) {
         g_TriAPIVertexBuffer = GL_CreatePMBRingBuffer(
             "TriAPIVertexBuffer", 32 * 1024 * 1024, GL_ARRAY_BUFFER);
@@ -306,7 +306,7 @@ if (!gTriAPICommand.hVAO) {
             "TriAPIIndexBuffer", 8 * 1024 * 1024, GL_ELEMENT_ARRAY_BUFFER);
     }
     
-    // 配置VAO
+    // Configure the VAO
     GL_BindStatesForVAO(gTriAPICommand.hVAO, [] {
         glBindBuffer(GL_ARRAY_BUFFER, g_TriAPIVertexBuffer->GetGLBufferObject());
         
@@ -330,7 +330,7 @@ if (!gTriAPICommand.hVAO) {
 }
 ```
 
-#### 6.3 数据上传
+#### 6.3 Data Upload
 
 ```cpp
 uint32_t verticesCount = gTriAPICommand.Vertices.size();
@@ -339,7 +339,7 @@ uint32_t indiceCount = gTriAPICommand.Indices.size();
 size_t vertexDataSize = verticesCount * sizeof(triapivertex_t);
 size_t indexDataSize = indiceCount * sizeof(uint32_t);
 
-// 从环形缓冲区分配空间
+// Allocate space from the ring buffer
 CPMBRingBufferAllocation vertexAllocation;
 if (!g_TriAPIVertexBuffer->Allocate(vertexDataSize, vertexAllocation)) {
     gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIVertexBuffer full!\n");
@@ -352,7 +352,7 @@ if (!g_TriAPIIndexBuffer->Allocate(indexDataSize, indexAllocation)) {
     return;
 }
 
-// 拷贝数据
+// Copy data
 memcpy(vertexAllocation.ptr, gTriAPICommand.Vertices.data(), vertexDataSize);
 memcpy(indexAllocation.ptr, gTriAPICommand.Indices.data(), indexDataSize);
 
@@ -360,7 +360,7 @@ GLuint baseVertex = (GLuint)(vertexAllocation.offset / sizeof(triapivertex_t));
 GLuint baseIndex = (GLuint)(indexAllocation.offset / sizeof(uint32_t));
 ```
 
-#### 6.4 渲染状态设置
+#### 6.4 Rendering State Setup
 
 ```cpp
 uint64_t ProgramState = 0;
@@ -387,7 +387,7 @@ switch (gTriAPICommand.DrawRenderMode) {
         break;
 }
 
-// 雾效
+// Fog
 if (R_IsRenderingFog()) {
     if (r_fog_mode == GL_LINEAR)
         ProgramState |= SPRITE_LINEAR_FOG_ENABLED;
@@ -397,7 +397,7 @@ if (R_IsRenderingFog()) {
         ProgramState |= SPRITE_EXP2_FOG_ENABLED;
 }
 
-// 其他特效
+// Other effects
 if (R_IsRenderingWaterView())
     ProgramState |= SPRITE_CLIP_ENABLED;
 if (R_IsRenderingGammaBlending())
@@ -406,7 +406,7 @@ if (r_draw_oitblend)
     ProgramState |= SPRITE_OIT_BLEND_ENABLED;
 ```
 
-#### 6.5 绘制调用
+#### 6.5 Draw Call
 
 ```cpp
 triapi_program_t prog{};
@@ -425,56 +425,56 @@ if (gTriAPICommand.GLPrimitiveCode == GL_LINES) {
 GL_UseProgram(0);
 GL_BindVAO(0);
 
-// 恢复状态
+// Restore state
 glDisable(GL_BLEND);
 glDepthMask(GL_TRUE);
 ```
 
 ---
 
-## 数据结构
+## Data Structures
 
-### CTriAPICommand - TriAPI命令缓冲区
+### CTriAPICommand - TriAPI Command Buffer
 ```cpp
 class CTriAPICommand {
 public:
-    int GLPrimitiveCode;                    // OpenGL图元类型
-    vec2_t TexCoord;                        // 当前纹理坐标
-    vec4_t DrawColor;                       // 当前颜色
-    std::vector<vertex3f_t> Positions;      // 位置列表 (用于多边形三角化)
-    std::vector<triapivertex_t> Vertices;   // 顶点列表
-    std::vector<uint32_t> Indices;          // 索引列表
-    int RenderMode;                         // 渲染模式
-    int DrawRenderMode;                     // 绘制时的渲染模式
-    GLuint hVAO;                            // VAO句柄
+    int GLPrimitiveCode;                    // OpenGL primitive type
+    vec2_t TexCoord;                        // Current texture coordinates
+    vec4_t DrawColor;                       // Current color
+    std::vector<vertex3f_t> Positions;      // Position list (for polygon triangulation)
+    std::vector<triapivertex_t> Vertices;   // Vertex list
+    std::vector<uint32_t> Indices;          // Index list
+    int RenderMode;                         // Render mode
+    int DrawRenderMode;                     // Render mode at draw time
+    GLuint hVAO;                            // VAO handle
 };
 ```
 
-### triapivertex_t - TriAPI顶点格式
+### triapivertex_t - TriAPI Vertex Format
 ```cpp
 typedef struct triapivertex_s {
-    vec3_t pos;         // 位置
-    vec2_t texcoord;    // 纹理坐标
-    vec4_t color;       // 颜色
+    vec3_t pos;         // Position
+    vec2_t texcoord;    // Texture coordinates
+    vec4_t color;       // Color
 } triapivertex_t;
 ```
 
 ---
 
-## 环形缓冲区系统
+## Ring Buffer System
 
-### 为什么使用环形缓冲区?
+### Why Use Ring Buffers?
 
-传统的即时模式每次绘制都需要创建和销毁缓冲区，性能很差。环形缓冲区允许:
-1. **持久映射** - 缓冲区始终映射到CPU内存
-2. **无需同步** - 使用偏移避免GPU/CPU冲突
-3. **高效复用** - 循环使用同一块大缓冲区
+Traditional immediate mode must create and destroy buffers for every draw, resulting in poor performance. Ring buffers provide:
+1. **Persistent Mapping** - The buffer remains mapped to CPU memory.
+2. **No Synchronization** - Uses offsets to avoid GPU/CPU conflicts.
+3. **Efficient Reuse** - Cycles through one large buffer.
 
-### 环形缓冲区大小
-- **顶点缓冲区**: 32 MB
-- **索引缓冲区**: 8 MB
+### Ring Buffer Sizes
+- **Vertex buffer**: 32 MB
+- **Index buffer**: 8 MB
 
-### 帧管理
+### Frame Management
 ```cpp
 void R_BeginFrame() {
     if (g_TriAPIVertexBuffer)
@@ -493,30 +493,30 @@ void R_EndFrame() {
 
 ---
 
-## 着色器系统
+## Shader System
 
-### R_UseTriAPIProgram() - 选择TriAPI着色器
-**位置**: `gl_sprite.cpp:170-246`
+### R_UseTriAPIProgram() - Select TriAPI Shader
+**Location**: `gl_sprite.cpp:170-246`
 
 ```cpp
 void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput) {
     auto itor = g_TriAPIProgramTable.find(state);
     if (itor == g_TriAPIProgramTable.end()) {
-        // 编译新的着色器变体
+        // Compile a new shader variant
         triapi_program_t prog;
         
-        // 根据状态标志生成着色器代码
+        // Generate shader code according to state flags
         std::string defines;
         if (state & SPRITE_ALPHA_BLEND_ENABLED)
             defines += "#define ALPHA_BLEND\n";
         if (state & SPRITE_ADDITIVE_BLEND_ENABLED)
             defines += "#define ADDITIVE_BLEND\n";
-        // ... 更多标志
+        // ... additional flags
         
-        // 编译着色器
+        // Compile shader
         prog.program = R_CompileShader(vertexShader, fragmentShader, defines);
         
-        // 缓存
+        // Cache
         g_TriAPIProgramTable[state] = prog;
     }
     
@@ -525,38 +525,38 @@ void R_UseTriAPIProgram(program_state_t state, triapi_program_t* progOutput) {
 }
 ```
 
-### 着色器文件
-- `triapi_shader.vert.glsl` - 顶点着色器
-- `triapi_shader.frag.glsl` - 片段着色器
+### Shader Files
+- `triapi_shader.vert.glsl` - Vertex shader
+- `triapi_shader.frag.glsl` - Fragment shader
 
 ---
 
-## 使用示例
+## Usage Examples
 
-### 示例1: 绘制粒子
+### Example 1: Draw Particles
 ```cpp
 void R_DrawParticles() {
     gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
     gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
     
     for (particle_t* p = active_particles; p; p = p->next) {
-        // 计算四边形顶点
+        // Calculate quadrilateral vertices
         vec3_t up, right;
         VectorScale(vup, scale, up);
         VectorScale(vright, scale, right);
         
-        // 顶点1
+        // Vertex 1
         gEngfuncs.pTriAPI->Color4ub(rgba[0], rgba[1], rgba[2], rgba[3]);
         gEngfuncs.pTriAPI->TexCoord2f(0, 0);
         gEngfuncs.pTriAPI->Vertex3fv(p->org);
         
-        // 顶点2
+        // Vertex 2
         gEngfuncs.pTriAPI->TexCoord2f(1, 0);
         gEngfuncs.pTriAPI->Vertex3f(p->org[0] + up[0], 
                                     p->org[1] + up[1], 
                                     p->org[2] + up[2]);
         
-        // 顶点3
+        // Vertex 3
         gEngfuncs.pTriAPI->TexCoord2f(0, 1);
         gEngfuncs.pTriAPI->Vertex3f(p->org[0] + right[0], 
                                     p->org[1] + right[1], 
@@ -568,21 +568,21 @@ void R_DrawParticles() {
 }
 ```
 
-### 示例2: 绘制线框
+### Example 2: Draw a Wireframe
 ```cpp
 void DrawWireframeBox(vec3_t mins, vec3_t maxs) {
     gEngfuncs.pTriAPI->RenderMode(kRenderTransAdd);
     gEngfuncs.pTriAPI->Begin(TRI_LINES);
     gEngfuncs.pTriAPI->Color4f(1.0f, 0.0f, 0.0f, 1.0f);
     
-    // 底面
+    // Bottom face
     gEngfuncs.pTriAPI->Vertex3f(mins[0], mins[1], mins[2]);
     gEngfuncs.pTriAPI->Vertex3f(maxs[0], mins[1], mins[2]);
     
     gEngfuncs.pTriAPI->Vertex3f(maxs[0], mins[1], mins[2]);
     gEngfuncs.pTriAPI->Vertex3f(maxs[0], maxs[1], mins[2]);
     
-    // ... 更多边
+    // ... additional edges
     
     gEngfuncs.pTriAPI->End();
     gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
@@ -591,40 +591,40 @@ void DrawWireframeBox(vec3_t mins, vec3_t maxs) {
 
 ---
 
-## 性能优化
+## Performance Optimization
 
-### 1. 批量绘制
-- 所有TriAPI调用在`End()`时一次性提交
-- 减少Draw Call数量
-- 使用索引绘制
+### 1. Batched Drawing
+- All TriAPI calls are submitted together at `End()`.
+- Reduces the number of draw calls.
+- Uses indexed drawing.
 
-### 2. 环形缓冲区
-- 避免每帧创建/销毁缓冲区
-- 持久映射减少CPU开销
-- 循环复用内存
+### 2. Ring Buffers
+- Avoids creating/destroying buffers every frame.
+- Persistent mapping reduces CPU overhead.
+- Reuses memory cyclically.
 
-### 3. 着色器缓存
-- 编译的着色器变体被缓存
-- 避免重复编译
-- 快速查找
+### 3. Shader Cache
+- Compiled shader variants are cached.
+- Avoids repeated compilation.
+- Enables fast lookup.
 
-### 4. 图元转换优化
-- 所有图元类型转换为三角形
-- 统一的绘制路径
-- GPU友好的数据布局
+### 4. Primitive Conversion Optimization
+- Converts all primitive types to triangles.
+- Uses a unified drawing path.
+- Uses a GPU-friendly data layout.
 
 ---
 
-## 调试和诊断
+## Debugging and Diagnostics
 
-### OpenGL调试组
+### OpenGL Debug Group
 ```cpp
 GL_BeginDebugGroup("triapi_End");
-// ... 绘制代码 ...
+// ... drawing code ...
 GL_EndDebugGroup();
 ```
 
-### 缓冲区溢出检测
+### Buffer Overflow Detection
 ```cpp
 if (!g_TriAPIVertexBuffer->Allocate(vertexDataSize, vertexAllocation)) {
     gEngfuncs.Con_DPrintf("triapi_End: g_TriAPIVertexBuffer full!\n");
@@ -634,51 +634,51 @@ if (!g_TriAPIVertexBuffer->Allocate(vertexDataSize, vertexAllocation)) {
 
 ---
 
-## 与原始TriAPI的区别
+## Differences from the Original TriAPI
 
-### 原始GoldSrc TriAPI
-- 即时模式 (glBegin/glEnd)
-- 每次调用都提交到GPU
-- 性能较差
-- 不支持现代OpenGL
+### Original GoldSrc TriAPI
+- Immediate mode (glBegin/glEnd)
+- Submits to the GPU on every call
+- Lower performance
+- Does not support modern OpenGL
 
-### Renderer插件TriAPI
-- 批量模式 (VBO)
-- 收集所有顶点后一次性提交
-- 高性能
-- 使用现代OpenGL Core Profile
-- 支持高级特效 (雾效、OIT等)
-
----
-
-## 限制和注意事项
-
-### 1. 缓冲区大小限制
-- 顶点缓冲区: 32 MB
-- 索引缓冲区: 8 MB
-- 超出会打印警告并跳过绘制
-
-### 2. 图元类型限制
-- 只支持7种标准图元类型
-- 所有图元最终转换为三角形或线段
-
-### 3. 状态管理
-- 颜色和纹理坐标是"粘性"的
-- 需要在每个顶点前设置
-- RenderMode在Begin时锁定
+### Renderer Plugin TriAPI
+- Batched mode (VBO)
+- Collects all vertices and submits them together
+- High performance
+- Uses the modern OpenGL Core Profile
+- Supports advanced effects (fog, OIT, etc.)
 
 ---
 
-## 总结
+## Limitations and Notes
 
-TriAPI绘制系统的特点:
+### 1. Buffer Size Limits
+- Vertex buffer: 32 MB
+- Index buffer: 8 MB
+- Exceeding the limit prints a warning and skips drawing.
 
-1. **即时模式接口** - 保持与原始GoldSrc兼容
-2. **批量绘制实现** - 使用现代VBO技术
-3. **环形缓冲区** - 高效的内存管理
-4. **图元转换** - 统一转换为三角形
-5. **着色器系统** - 支持多种渲染模式和特效
-6. **性能优化** - 批量提交、缓存、索引绘制
-7. **调试支持** - OpenGL调试组、溢出检测
+### 2. Primitive Type Limits
+- Supports only seven standard primitive types.
+- All primitives are ultimately converted to triangles or line segments.
 
-TriAPI是客户端DLL绘制自定义几何体的主要方式，广泛用于粒子效果、调试可视化、HUD元素等。Renderer插件通过现代化的实现大幅提升了性能，同时保持了完全的API兼容性。
+### 3. State Management
+- Colors and texture coordinates are "sticky".
+- They must be set before each vertex.
+- `RenderMode` is locked at `Begin`.
+
+---
+
+## Summary
+
+Characteristics of the TriAPI rendering system:
+
+1. **Immediate-Mode Interface** - Maintains compatibility with the original GoldSrc implementation
+2. **Batched Rendering Implementation** - Uses modern VBO technology
+3. **Ring Buffers** - Efficient memory management
+4. **Primitive Conversion** - Uniformly converts primitives to triangles
+5. **Shader System** - Supports multiple render modes and effects
+6. **Performance Optimization** - Batched submission, caching, and indexed drawing
+7. **Debugging Support** - OpenGL debug groups and overflow detection
+
+TriAPI is the primary mechanism for client DLLs to draw custom geometry and is widely used for particle effects, debug visualization, HUD elements, and more. The Renderer plugin's modern implementation substantially improves performance while retaining complete API compatibility.

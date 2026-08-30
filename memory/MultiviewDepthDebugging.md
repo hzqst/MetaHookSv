@@ -4,49 +4,49 @@ type: note
 permalink: metahooksv/multiview-depth-debugging
 ---
 
-# Multiview深度问题调试指南
+# Multiview Depth-Issue Debugging Guide
 
-## 问题描述
+## Problem Description
 
-启用 `WSURF_MULTIVIEW_ENABLED` 或 `STUDIO_MULTIVIEW_ENABLED` 后，通过RenderDoc抓帧发现渲染出来的深度中的几何位置不正确。
+After enabling `WSURF_MULTIVIEW_ENABLED` or `STUDIO_MULTIVIEW_ENABLED`, a RenderDoc frame capture shows incorrect geometry positions in the rendered depth buffer.
 
-## 可能的原因分析
+## Analysis of Possible Causes
 
-### 1. 坐标变换流程回顾
+### 1. Coordinate Transformation Flow Review
 
-#### Vertex Shader (未启用几何着色器)
+#### Vertex Shader (Geometry Shader Disabled)
 ```glsl
-// 模型空间 → 世界空间
+// Model space → world space
 vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
 v_worldpos = worldpos4.xyz;
 
-// 世界空间 → 裁剪空间
+// World space → clip space
 gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldpos4;
 //           = projMatrix * viewMatrix * worldPos
 ```
 
-#### Geometry Shader (Multiview模式)
+#### Geometry Shader (Multiview Mode)
 ```glsl
-// 从vertex shader接收世界坐标
+// Receive world coordinates from the vertex shader
 vec4 worldPos = vec4(v_worldpos[i], 1.0);
 
-// 为每个视角重新计算裁剪空间坐标
+// Recalculate clip-space coordinates for every view
 gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
 ```
 
-### 2. 问题诊断检查点
+### 2. Diagnostic Checkpoints
 
-使用RenderDoc进行以下检查：
+Use RenderDoc for the following checks:
 
-#### 检查点1：验证CameraUBO数据
+#### Checkpoint 1: Validate CameraUBO Data
 ```cpp
-// 在R_SetupCameraView后，打印worldMatrix和projMatrix
+// Print worldMatrix and projMatrix after R_SetupCameraView
 camera_ubo_t CameraUBO{};
 for (int i = 0; i < numViews; ++i)
 {
     R_SetupCameraView(&CameraUBO.views[i]);
     
-    // 打印调试信息
+    // Print debugging information
     gEngfuncs.Con_Printf("View %d worldMatrix:\n", i);
     for (int row = 0; row < 4; ++row)
     {
@@ -59,84 +59,84 @@ for (int i = 0; i < numViews; ++i)
 }
 ```
 
-#### 检查点2：对比非multiview和multiview的gl_Position
+#### Checkpoint 2: Compare gl_Position Between Non-Multiview and Multiview
 
-在RenderDoc中：
-1. 捕获一帧非multiview渲染（r_draw_multiview = false）
-2. 捕获一帧multiview渲染（r_draw_multiview = true）
-3. 对比同一个顶点在两种模式下的：
-   - `v_worldpos` - 应该相同
-   - `gl_Position` - 对于view 0应该相同
+In RenderDoc:
+1. Capture one non-multiview rendering frame (`r_draw_multiview = false`)
+2. Capture one multiview rendering frame (`r_draw_multiview = true`)
+3. Compare the following for the same vertex in both modes:
+   - `v_worldpos` - should be identical
+   - `gl_Position` - should be identical for view 0
 
-#### 检查点3：检查gl_Layer
+#### Checkpoint 3: Inspect gl_Layer
 
-在RenderDoc中验证：
-- `gl_Layer` 是否正确设置为 0, 1, 2... numViews-1
-- 每个layer的深度纹理是否都有内容
-- 每个layer的内容是否对应正确的视角
+Verify in RenderDoc:
+- Whether `gl_Layer` is correctly set to 0, 1, 2... numViews-1
+- Whether every layer's depth texture has content
+- Whether each layer's content corresponds to the correct view
 
-### 3. 常见问题
+### 3. Common Problems
 
-#### 问题A：矩阵顺序错误
+#### Problem A: Incorrect Matrix Order
 
-**错误写法：**
+**Incorrect form:**
 ```glsl
-// ❌ 错误：矩阵顺序反了
+// ❌ Incorrect: the matrix order is reversed
 gl_Position = GetCameraWorldMatrix(viewIdx) * GetCameraProjMatrix(viewIdx) * worldPos;
 ```
 
-**正确写法：**
+**Correct form:**
 ```glsl
-// ✅ 正确：先view变换，再projection变换
+// ✅ Correct: apply the view transformation before the projection transformation
 gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
 ```
 
-#### 问题B：worldMatrix命名误导
+#### Problem B: Misleading worldMatrix Naming
 
-`CameraUBO.views[].worldMatrix` 实际上是 **view matrix**（世界空间→相机空间），不是模型空间→世界空间的变换。
+`CameraUBO.views[].worldMatrix` is actually a **view matrix** (world space → camera space), not a model-space-to-world-space transformation.
 
 ```cpp
-// 在R_SetupCameraView中
+// In R_SetupCameraView
 memcpy(view->worldMatrix, r_world_matrix, sizeof(mat4));
-// r_world_matrix实际上是view matrix!
+// r_world_matrix is actually a view matrix!
 ```
 
-#### 问题C：EntityMatrix遗漏
+#### Problem C: Missing EntityMatrix
 
-确认vertex shader中已经应用了EntityMatrix：
+Confirm that EntityMatrix has been applied in the vertex shader:
 ```glsl
 vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
 ```
 
-如果几何着色器收到的`v_worldpos`不包含EntityMatrix变换，那就是问题所在。
+If `v_worldpos` received by the geometry shader does not include the EntityMatrix transformation, that is the problem.
 
-#### 问题D：视角矩阵未更新
+#### Problem D: View Matrices Not Updated
 
-在设置multiview时，确保为每个视角都调用了：
+When setting up multiview, ensure the following is called for every view:
 ```cpp
 for (int i = 0; i < numViews; ++i)
 {
-    // 设置视角方向
+    // Set the view direction
     VectorCopy(viewAngles[i], (*r_refdef.viewangles));
     VectorCopy(viewOrigin, (*r_refdef.vieworg));
     
-    // 重新构建view matrix
+    // Rebuild the view matrix
     R_LoadIdentityForWorldMatrix();
     R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
     
-    // 保存到CameraUBO
+    // Save to CameraUBO
     R_SetupCameraView(&CameraUBO.views[i]);
 }
 ```
 
-### 4. 调试代码示例
+### 4. Debugging Code Examples
 
-#### 在Vertex Shader中添加调试输出
+#### Add Debug Output in the Vertex Shader
 
 ```glsl
 void main(void)
 {
-    // ... 正常计算 ...
+    // ... Normal calculations ...
     
     vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
     v_worldpos = worldpos4.xyz;
@@ -144,10 +144,10 @@ void main(void)
     gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldpos4;
     v_projpos = gl_Position;
     
-    // 调试：将世界坐标编码到颜色中（仅用于调试）
+    // Debug: encode world coordinates into color (for debugging only)
     #ifdef DEBUG_WORLDPOS
         v_debug_color = vec4(
-            (v_worldpos.x + 1000.0) / 2000.0,  // 假设场景在[-1000, 1000]范围
+            (v_worldpos.x + 1000.0) / 2000.0,  // Assume the scene is within [-1000, 1000]
             (v_worldpos.y + 1000.0) / 2000.0,
             (v_worldpos.z + 1000.0) / 2000.0,
             1.0
@@ -156,7 +156,7 @@ void main(void)
 }
 ```
 
-#### 在Geometry Shader中添加调试
+#### Add Debugging in the Geometry Shader
 
 ```glsl
 #ifdef WSURF_MULTIVIEW_ENABLED
@@ -168,18 +168,18 @@ void main(void)
         {
             vec4 worldPos = vec4(v_worldpos[i], 1.0);
             
-            // 调试：打印第一个三角形的世界坐标
+            // Debug: print the world coordinates of the first triangle
             #ifdef DEBUG_MULTIVIEW
                 if (gl_PrimitiveIDIn == 0 && i == 0)
                 {
-                    // 这在GLSL中无法直接打印，但可以编码到颜色
+                    // GLSL cannot print this directly, but it can encode it into color
                     g_debug_info = vec4(float(viewIdx), worldPos.xyz);
                 }
             #endif
             
             gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
             
-            // ... 传递其他属性 ...
+            // ... Pass through other attributes ...
             
             EmitVertex();
         }
@@ -188,10 +188,10 @@ void main(void)
 #endif
 ```
 
-#### 在C++中添加验证代码
+#### Add Validation Code in C++
 
 ```cpp
-// 在gl_shadow.cpp中，设置CameraUBO后添加
+// In gl_shadow.cpp, add this after setting CameraUBO
 camera_ubo_t CameraUBO{};
 
 for (int i = 0; i < 6; ++i)
@@ -203,7 +203,7 @@ for (int i = 0; i < 6; ++i)
     R_SetupPlayerViewWorldMatrix((*r_refdef.vieworg), (*r_refdef.viewangles));
     R_SetupCameraView(&CameraUBO.views[i]);
     
-    // 调试：验证view matrix
+    // Debug: validate the view matrix
     auto& view = CameraUBO.views[i];
     gEngfuncs.Con_DPrintf("Cubemap face %d:\n", i);
     gEngfuncs.Con_DPrintf("  viewpos: [%f, %f, %f]\n", 
@@ -211,12 +211,12 @@ for (int i = 0; i < 6; ++i)
     gEngfuncs.Con_DPrintf("  vpn: [%f, %f, %f]\n",
         view.vpn[0], view.vpn[1], view.vpn[2]);
     
-    // 验证一个测试点的变换
+    // Validate the transformation of a test point
     vec3_t testPoint = {100.0f, 0.0f, 0.0f};
     vec4_t worldPoint = {testPoint[0], testPoint[1], testPoint[2], 1.0f};
     vec4_t viewPoint;
     
-    // 手动矩阵变换
+    // Manual matrix transformation
     for (int row = 0; row < 4; ++row)
     {
         viewPoint[row] = 0.0f;
@@ -231,89 +231,89 @@ for (int i = 0; i < 6; ++i)
 }
 ```
 
-### 5. RenderDoc分析步骤
+### 5. RenderDoc Analysis Steps
 
-1. **捕获帧** - 在shadow pass时按F12捕获
+1. **Capture a Frame** - Press F12 during the shadow pass
 
-2. **查看Texture Viewer**
-   - 切换到Depth/Stencil view
-   - 如果是TextureArray，选择不同的array slice查看
+2. **Open Texture Viewer**
+   - Switch to Depth/Stencil view
+   - For a TextureArray, select different array slices to inspect
 
-3. **检查Draw Call**
-   - 找到WorldSurface或StudioModel的draw call
-   - 查看Vertex Input中的`in_vertex`和vertex output中的`v_worldpos`
-   - 确认`v_worldpos`是否合理
+3. **Inspect the Draw Call**
+   - Find the draw call for WorldSurface or StudioModel
+   - Inspect `in_vertex` in Vertex Input and `v_worldpos` in vertex output
+   - Confirm that `v_worldpos` is reasonable
 
-4. **检查Geometry Shader Output**
-   - 查看`gl_Layer`的值
-   - 查看`gl_Position`的值
-   - 对比不同层的`gl_Position`是否反映了不同的视角
+4. **Inspect Geometry Shader Output**
+   - Inspect the value of `gl_Layer`
+   - Inspect the value of `gl_Position`
+   - Compare whether `gl_Position` in different layers reflects different views
 
-5. **检查Uniform Buffer**
-   - 展开CameraUBO
-   - 查看`views[0]`, `views[1]`...的worldMatrix和projMatrix
-   - 验证`numViews`的值
+5. **Inspect the Uniform Buffer**
+   - Expand CameraUBO
+   - Inspect the worldMatrix and projMatrix of `views[0]`, `views[1]`, and so on
+   - Validate the value of `numViews`
 
-### 6. 已知问题排查
+### 6. Known-Issue Troubleshooting
 
-#### 如果所有视角的深度都一样
-→ 可能`gl_Layer`没有正确设置，或者几何着色器没有被调用
+#### If the Depth Is Identical for All Views
+→ `gl_Layer` may not be set correctly, or the geometry shader may not be invoked.
 
-#### 如果深度值都是0或1
-→ 可能projection matrix有问题，检查near/far plane设置
+#### If Depth Values Are All 0 or 1
+→ The projection matrix may be wrong; inspect near/far plane settings.
 
-#### 如果几何位置偏移
-→ 可能view matrix有问题，检查R_SetupPlayerViewWorldMatrix的调用
+#### If Geometry Positions Are Offset
+→ The view matrix may be wrong; inspect the `R_SetupPlayerViewWorldMatrix` call.
 
-#### 如果只有第一个视角正确
-→ 可能循环中viewIdx使用错误，或者CameraUBO只设置了views[0]
+#### If Only the First View Is Correct
+→ `viewIdx` may be used incorrectly in the loop, or CameraUBO may set only `views[0]`.
 
-### 7. 快速修复尝试
+### 7. Quick Fix Attempts
 
-如果问题是深度不正确，尝试以下修改：
+If the issue is incorrect depth, try the following changes:
 
-#### 修改A：确保使用正确的世界坐标
+#### Change A: Ensure the Correct World Coordinates Are Used
 
-在geometry shader中，确认v_worldpos已经是完整的世界坐标：
+In the geometry shader, confirm that v_worldpos is already the complete world coordinate:
 
 ```glsl
-// 在multiview路径中
+// In the multiview path
 vec4 worldPos = vec4(v_worldpos[i], 1.0);
 
-// 不要再应用EntityMatrix！因为v_worldpos已经包含了
+// Do not apply EntityMatrix again! v_worldpos already includes it
 gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
 ```
 
-#### 修改B：手动验证矩阵
+#### Change B: Manually Validate Matrices
 
-临时添加debug路径，使用view 0的矩阵：
+Temporarily add a debug path that uses the matrices for view 0:
 
 ```glsl
 #ifdef DEBUG_USE_VIEW0
-    // 临时：所有视角都使用view 0的矩阵
+    // Temporary: all views use the matrices for view 0
     gl_Position = GetCameraProjMatrix(0) * GetCameraWorldMatrix(0) * worldPos;
 #else
     gl_Position = GetCameraProjMatrix(viewIdx) * GetCameraWorldMatrix(viewIdx) * worldPos;
 #endif
 ```
 
-如果使用view 0正确，说明其他view的矩阵有问题。
+If view 0 is correct, the matrices for the other views are faulty.
 
-### 8. 期望的结果
+### 8. Expected Result
 
-正确实现后，RenderDoc应该显示：
-- 每个TextureArray层有不同视角的深度
-- Cubemap的6个面应该看到不同方向的几何
-- CSM的4个层应该看到不同距离范围的几何
-- 深度值应该在合理范围内（不全是0或1）
-- 几何位置应该与场景实际布局一致
+After correct implementation, RenderDoc should show:
+- Depth from a different view in every TextureArray layer
+- Geometry from different directions in all six Cubemap faces
+- Geometry from different distance ranges in all four CSM layers
+- Depth values within a reasonable range (not all 0 or 1)
+- Geometry positions consistent with the scene's actual layout
 
-## 总结
+## Summary
 
-最可能的问题：
-1. ✅ CameraUBO的view matrix设置不正确
-2. ✅ 几何着色器中的矩阵乘法顺序错误
-3. ✅ `v_worldpos`不是真正的世界坐标
-4. ✅ 只有第一个view的矩阵被正确设置
+Most likely issues:
+1. ✅ The view matrix in CameraUBO is set incorrectly
+2. ✅ Matrix multiplication order in the geometry shader is wrong
+3. ✅ `v_worldpos` is not the true world coordinate
+4. ✅ Only the first view's matrices are set correctly
 
-请使用RenderDoc按照上述步骤逐一排查！
+Use RenderDoc to investigate them one by one according to the steps above.
