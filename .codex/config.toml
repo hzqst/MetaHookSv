@@ -5,6 +5,8 @@ project_doc_fallback_filenames = [".claude/CLAUDE.md"]
 approval_policy = "never"
 sandbox_mode    = "workspace-write"
 
-[mcp.servers.basic-memory]
-command = "basic-memory"
-args = ["mcp", "--project", "metahooksv"]
+[mcp_servers.basic-memory]
+command = "uvx"
+args = ["basic-memory", "mcp", "--project", "metahooksv"]
+startup_timeout_sec = 120
+tool_timeout_sec = 300

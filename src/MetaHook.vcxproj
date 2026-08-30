@@ -107,7 +107,7 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);$(MemoryModulePPIncludeDirectory)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MemoryModulePPIncludeDirectory);$(RapidJsonIncludeDirectory);$(Chocobo1HashDirectory)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -126,19 +126,26 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
-      <Command>$(ExePostBuildCommand)</Command>
+      <Command>$(ExePostBuildCommand)
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\gamedata"
+
+
+if exist "$(MetaHookGameDirectory)" if not "$(MetaHookGameDirectory)" == "" xcopy "$(MetaHookBaseDir)Build\svencoop\metahook\gamedata\*" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\gamedata\" /E /I /Y</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);$(MemoryModulePPIncludeDirectory)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MemoryModulePPIncludeDirectory);$(RapidJsonIncludeDirectory);$(Chocobo1HashDirectory)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -164,13 +171,14 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_blob|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);$(MemoryModulePPIncludeDirectory)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MemoryModulePPIncludeDirectory);$(RapidJsonIncludeDirectory);$(Chocobo1HashDirectory)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;METAHOOK_BLOB_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -198,7 +206,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -232,7 +241,8 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>$(CapstoneCheckRequirements)</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GameDataSyncCommand)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -241,6 +251,7 @@
     <ClCompile Include="..\thirdparty\Detours_fork\src\disasm.cpp" />
     <ClCompile Include="..\thirdparty\Detours_fork\src\modules.cpp" />
     <ClCompile Include="commandline.cpp" />
+    <ClCompile Include="GameData.cpp" />
     <ClCompile Include="LoadDllNotification.cpp" />
     <ClCompile Include="launcher.cpp" />
     <ClCompile Include="LoadBlob.cpp" />
@@ -257,6 +268,7 @@
     <ClInclude Include="..\include\cdll_export.h" />
     <ClInclude Include="..\include\Interface\IPlugins.h" />
     <ClInclude Include="..\include\metahook.h" />
+    <ClInclude Include="GameData.h" />
     <ClInclude Include="LoadDllNotification.h" />
     <ClInclude Include="LoadBlob.h" />
     <ClInclude Include="sys.h" />

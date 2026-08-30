@@ -221,3 +221,87 @@ If a plugin appears twice in the loading list or is loaded by another DLL in som
 During the engine's call to all plugins' `LoadEngine`, a "transaction" will be opened for all `InlineHook`, `VFTHook`, and `IATHook` requests. The hooks will only take effect after all plugins' `LoadEngine` interface calls have completed. This allows different plugins to simultaneously `SearchPattern` and hook the same function, avoiding conflicts where the previous plugin's early hook modifies the engine code, causing the subsequent plugin's pattern search to fail.
 
 The transaction opening timing includes: during the engine's calls to all plugins' `LoadEngine` and `LoadClient`, during the engine's call to the client's `HUD_GetStudioModelInterface`, and during the DllLoadNotification period.
+
+# Game Symbol API (API 109)
+
+MetaHookSv API version 109 adds a public game symbol query/resolution API. It is backed by a local gamedata catalog that is synchronized at build time (see `scripts/sync-gamedata.py`) and read at runtime from `<game>\<mod>\metahook\gamedata\`.
+
+Plugins must check `g_pInterface->MetaHookAPIVersion >= 109` before calling these functions. All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
+
+## Types
+
+### `mh_gamesymbol_kind_t`
+
+```cpp
+typedef enum mh_gamesymbol_kind_e
+{
+	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
+	MH_GAMESYMBOL_KIND_FUNCTION = 1,
+	MH_GAMESYMBOL_KIND_GLOBAL = 2
+} mh_gamesymbol_kind_t;
+```
+
+### `mh_gamesymbol_status_t`
+
+```cpp
+typedef enum mh_gamesymbol_status_e
+{
+	MH_GAMESYMBOL_OK = 0,
+	MH_GAMESYMBOL_INVALID_ARGUMENT = 1,
+	MH_GAMESYMBOL_OUTPUT_TOO_SMALL = 2,
+	MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE = 3,
+	MH_GAMESYMBOL_MODULE_PATH_UNAVAILABLE = 4,
+	MH_GAMESYMBOL_MODULE_HASH_FAILED = 5,
+	MH_GAMESYMBOL_MODULE_NOT_FOUND = 6,
+	MH_GAMESYMBOL_SYMBOL_NOT_FOUND = 7,
+	MH_GAMESYMBOL_UNSUPPORTED_KIND = 8,
+	MH_GAMESYMBOL_KIND_MISMATCH = 9,
+	MH_GAMESYMBOL_RVA_OUT_OF_RANGE = 10,
+	MH_GAMESYMBOL_CATALOG_CONFLICT = 11
+} mh_gamesymbol_status_t;
+```
+
+### `mh_pattern_t` and `mh_gamesymbol_t`
+
+```cpp
+typedef struct mh_pattern_s
+{
+	const char* text;          // canonical signature text
+	const BYTE* bytes;         // parsed bytes (authoritative, lossless)
+	const BYTE* mask;          // 0 == wildcard, non-zero == match bytes[i]
+	const char* legacyPattern; // wildcards encoded as 0x2A; NULL if a literal 0x2A is present
+	DWORD length;
+} mh_pattern_t;
+
+typedef struct mh_gamesymbol_s
+{
+	DWORD cbSize;              // set to sizeof(mh_gamesymbol_t) before calling
+	mh_gamesymbol_kind_t kind;
+	DWORD flags;
+	uint64_t moduleCRC64;
+
+	DWORD rva;
+	DWORD symbolSize;
+	DWORD signatureRva;
+	mh_pattern_t signature;
+
+	DWORD instructionOffset;   // global only
+	DWORD operandOffset;       // global only
+	DWORD instructionLength;   // global only
+} mh_gamesymbol_t;
+```
+
+## Functions
+
+| Function | Purpose |
+| --- | --- |
+| `GetModuleCRC64(moduleBase, &crc64)` | Lazily compute and cache the CRC-64/XZ of the original module file backing `moduleBase`. |
+| `QueryGameSymbolByCRC64(crc64, name, &symbol)` | Query normalized metadata by module CRC64 + canonical (case-sensitive) symbol name. |
+| `QueryGameSymbol(moduleBase, name, &symbol)` | Hash the module, then query by CRC64. Does not convert RVA to VA. |
+| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | Resolve to `moduleBase + rva`; returns `MH_GAMESYMBOL_KIND_MISMATCH` if the kind differs. |
+| `SearchPatternMasked(base, len, bytes, mask, plen)` | Search with an explicit mask (literal `0x2A` has no special meaning). |
+| `GetGameSymbolStatusString(status)` | Return a static, MetaHook-owned English string for a status. |
+
+`QueryGameSymbol` / `QueryGameSymbolByCRC64` require the caller to initialize `outSymbol->cbSize` to `sizeof(mh_gamesymbol_t)`; a smaller value returns `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`. On failure the output fields are zeroed while `cbSize` is preserved.
+
+APIs that accept `moduleBase` require the module to remain loaded for the duration of the call. MetaHook invalidates the module CRC cache and any mirror aliases when the module unloads; an address returned by `ResolveGameSymbol` is valid only until that module instance unloads.

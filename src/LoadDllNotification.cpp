@@ -5,6 +5,7 @@
 #include <Detours.h>
 #include "LoadBlob.h"
 #include "LoadDllNotification.h"
+#include "GameData.h"
 
 PVOID MH_GetEngineBase(void);
 PVOID MH_GetClientBase(void);
@@ -29,7 +30,7 @@ typedef NTSTATUS(NTAPI* LDR_REGISTER_DLL_NOTIFICATION)(
 static std::shared_mutex g_LoadDllNotificationCallbackLock;
 static std::vector<LoadDllNotificationCallback> g_LoadDllNotificationCallbacks;
 static PVOID g_LdrNotificationCookie = NULL;
-static bool g_IsInLdrCriticalRegion = false;
+static thread_local unsigned int g_LdrCriticalRegionDepth = 0;
 
 NTSTATUS (NTAPI *g_pfnLdrLoadDll)(PWSTR a1, PULONG a2, PUNICODE_STRING a3, PVOID* a4) = NULL;
 
@@ -64,7 +65,7 @@ void UnicodeToWString(_In_ PCUNICODE_STRING ustr, _Out_ std::wstring& out)
 
 bool MH_IsInLdrCriticalRegion()
 {
-	return g_IsInLdrCriticalRegion;
+	return g_LdrCriticalRegionDepth != 0;
 }
 
 void MH_ClearDllLoaderNotificationCallback()
@@ -138,6 +139,9 @@ void MH_DispatchLoadBlobNotificationCallback(BlobHandle_t hBlob, int flags)
 
 		MH_FreeHooksForModule(ctx.ImageBase, ctx.ImageSize);
 	}
+
+	if (ctx.flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
+		GameData::InvalidateModule(ctx.ImageBase, (ctx.flags & LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION) != 0);
 }
 
 void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCUNICODE_STRING BaseDllName, PVOID ImageBase, ULONG ImageSize, int flags)
@@ -203,6 +207,9 @@ void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCU
 			callback(&ctx);
 		}
 	}
+
+	if (ctx.flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
+		GameData::InvalidateModule(ctx.ImageBase, (ctx.flags & LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION) != 0);
 }
 
 PLDR_DATA_TABLE_ENTRY GetLdrEntryInfoByDllBase(PVOID DllBase)
@@ -248,7 +255,7 @@ VOID CALLBACK LdrDllNotificationCallback(
 	_In_     PLDR_DLL_NOTIFICATION_DATA NotificationData,
 	_In_opt_ PVOID Context)
 {
-	g_IsInLdrCriticalRegion = true;
+	++g_LdrCriticalRegionDepth;
 	if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_LOADED)
 	{
 		auto& args = NotificationData->Loaded;
@@ -267,7 +274,7 @@ VOID CALLBACK LdrDllNotificationCallback(
 			MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_UNLOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
 		}
 	}
-	g_IsInLdrCriticalRegion = false;
+	--g_LdrCriticalRegionDepth;
 }
 
 void InitLoadDllNotification(void)
