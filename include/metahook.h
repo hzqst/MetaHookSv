@@ -76,8 +76,8 @@ typedef struct usermsg_s
 
 #endif
 
-#ifndef __ENGINR_SVC_FUNCS__
-#define __ENGINR_SVC_FUNCS__
+#ifndef __ENGINE_SVC_FUNCS__
+#define __ENGINE_SVC_FUNCS__
 
 typedef void(*fn_parsefunc)(void);
 
@@ -100,7 +100,7 @@ typedef struct mh_plugininfo_s
 	int InterfaceVersion;
 	void *PluginModuleBase;
 	size_t PluginModuleSize;
-}mh_plugininfo_t;
+} mh_plugininfo_t;
 
 #include <cdll_export.h>
 #include <cdll_int.h>
