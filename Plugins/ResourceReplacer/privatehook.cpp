@@ -9,11 +9,7 @@
 
 #include "ResourceReplacer.h"
 
-#define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
-#define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05\x00\x00\xA1"
-#define S_LOADSOUND_SIG_8308 "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
-#define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
-#define S_LOADSOUND_SIG_BLOB "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
+static_assert(METAHOOK_API_VERSION >= 109, "ResourceReplacer resolves engine private symbols from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
 
 private_funcs_t gPrivateFuncs = {  };
 
@@ -21,6 +17,163 @@ std::set<PVOID> S_LoadSound_call_FS_Open;
 std::set<PVOID> Mod_LoadModel_call_FS_Open;
 
 static hook_t* g_phook_CL_PrecacheResources = NULL;
+
+// gamedata 解析失败时打印诊断（符号名 / buildnum / CRC64 / 状态串）并 Sys_Error 终止。
+// 返回值即真实镜像 VA，直接写入 gPrivateFuncs 对应字段。
+static PVOID ResolveGameSymbolOrError(const char* symbolName)
+{
+	PVOID va = NULL;
+	auto st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, MH_GAMESYMBOL_KIND_FUNCTION, &va);
+
+	if (st == MH_GAMESYMBOL_OK)
+		return va;
+
+	uint64_t crc64 = 0;
+	auto crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
+
+	if (crcSt == MH_GAMESYMBOL_OK)
+	{
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(st));
+	}
+	else
+	{
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
+			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(st));
+	}
+
+	return NULL;
+}
+
+typedef struct FS_Open_SearchContext_s
+{
+	const mh_dll_info_t& DllInfo;
+	const mh_dll_info_t& RealDllInfo;
+
+	PVOID fsOpenRealVA{};
+	size_t callWindowBytes{};
+	std::set<PVOID>& outCallSites;
+
+	size_t max_insts{};
+	int max_depth{};
+	std::set<PVOID> code;
+	std::set<PVOID> branches;
+	std::vector<walk_context_t> walks;
+
+	bool mismatchWarned{};
+
+	PVOID address_rb{};
+	int instCount_rb{};
+
+	FS_Open_SearchContext_s(const mh_dll_info_t& dllInfo, const mh_dll_info_t& realDllInfo, std::set<PVOID>& out)
+		: DllInfo(dllInfo), RealDllInfo(realDllInfo), outCallSites(out)
+	{
+	}
+
+}FS_Open_SearchContext;
+
+// 从 rootVA（搜索空间地址）有界走查 push "rb"; call FS_Open 指令序列，收集 call-site（转回真实镜像）。
+// gamedata 符号模型表达不了函数内部的 call 指令地址，此走查是 call-site 重定向的功能本体。
+static void FindFSOpenCallSites(PVOID rootVA, const mh_dll_info_t& SearchDllInfo,
+                                const mh_dll_info_t& RealDllInfo,
+                                PVOID fsOpenRealVA, size_t callWindowBytes,
+                                std::set<PVOID>& outCallSites)
+{
+	FS_Open_SearchContext ctx(SearchDllInfo, RealDllInfo, outCallSites);
+
+	ctx.fsOpenRealVA = fsOpenRealVA;
+	ctx.callWindowBytes = callWindowBytes;
+
+	ctx.max_insts = 1000;
+	ctx.max_depth = 16;
+	ctx.walks.emplace_back(rootVA, 0x1000, 0);
+
+	while (ctx.walks.size())
+	{
+		auto walk = ctx.walks[ctx.walks.size() - 1];
+		ctx.walks.pop_back();
+
+		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (FS_Open_SearchContext*)context;
+
+			if (ctx->code.size() > ctx->max_insts)
+				return TRUE;
+
+			if (ctx->code.find(address) != ctx->code.end())
+				return TRUE;
+
+			ctx->code.emplace(address);
+
+			if (!ctx->address_rb &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				(
+					((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
+					((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
+					))
+			{
+				auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
+				if (!memcmp(pString, "rb", sizeof("rb") - 1))
+				{
+					ctx->instCount_rb = instCount;
+					ctx->address_rb = address;
+				}
+			}
+
+			if (address[0] == 0xE8 && instLen == 5 &&
+				ctx->address_rb && address > ctx->address_rb && address <= (PUCHAR)ctx->address_rb + ctx->callWindowBytes &&
+				instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5)
+			{
+				// FS_Open 以 gamedata 为权威，disasm 恢复的 call 目标仅作交叉校验。
+				auto callTargetRealVA = ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
+
+				if (!ctx->mismatchWarned && callTargetRealVA != ctx->fsOpenRealVA)
+				{
+					ctx->mismatchWarned = true;
+					gEngfuncs.Con_DPrintf("[ResourceReplacer] Warning: disasm-recovered FS_Open call target 0x%p does not match gamedata FS_Open 0x%p\n",
+						callTargetRealVA, ctx->fsOpenRealVA);
+				}
+
+				auto realAddress = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
+
+				ctx->outCallSites.emplace(realAddress);
+
+				return TRUE;
+			}
+
+			if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+				auto foundbranch = ctx->branches.find(imm);
+				if (foundbranch == ctx->branches.end())
+				{
+					ctx->branches.emplace(imm);
+					if (depth + 1 < ctx->max_depth)
+						ctx->walks.emplace_back(imm, 0x300, depth + 1);
+				}
+
+				if (pinst->id == X86_INS_JMP)
+					return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, walk.depth, &ctx);
+	}
+}
 
 qboolean CL_PrecacheResources()
 {
@@ -78,404 +231,50 @@ FileHandle_t S_LoadSound_FS_Open(const char* pFileName, const char* pOptions)
 
 void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID S_LoadSound_VA = NULL;
+	auto S_LoadSound_VA = ResolveGameSymbolOrError("S_LoadSound");
 
-	/*
-.text:01D98912 68 F0 52 ED 01                                      push    offset aSLoadsoundCoul ; "S_LoadSound: Couldn't load %s\n"
-.text:01D98917 E8 24 70 F9 FF                                      call    sub_1D2F940
-.text:01D9891C 83 C4 08                                            add     esp, 8
-		*/
-	const char sigs[] = "S_LoadSound: Couldn't load %s";
-	auto S_LoadSound_String = Search_Pattern_Data(sigs, DllInfo);
-	if (!S_LoadSound_String)
-		S_LoadSound_String = Search_Pattern_Rdata(sigs, DllInfo);
-	if (S_LoadSound_String)
+	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))S_LoadSound_VA;
+
+	// 走查在搜索空间（mirror 存在时为 mirror 副本）进行，入口需要从真实镜像映射过去。
+	FindFSOpenCallSites(ConvertDllInfoSpace(S_LoadSound_VA, RealDllInfo, DllInfo), DllInfo, RealDllInfo, gPrivateFuncs.FS_Open, 0x30, S_LoadSound_call_FS_Open);
+
+	if (S_LoadSound_call_FS_Open.empty())
 	{
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-		*(DWORD*)(pattern + 1) = (DWORD)S_LoadSound_String;
-		auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
-		if (S_LoadSound_PushString)
-		{
-			S_LoadSound_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
-
-				if (Candidate[0] == 0x55 &&
-					Candidate[1] == 0x8B &&
-					Candidate[2] == 0xEC)
-				{
-					return TRUE;
-				}
-
-				if (Candidate[0] == 0x83 &&
-					Candidate[1] == 0xEC)
-				{
-					return TRUE;
-				}
-
-				//.text:01D98710 81 EC 48 05 00 00                                   sub     esp, 548h
-				if (Candidate[0] == 0x81 &&
-					Candidate[1] == 0xEC &&
-					Candidate[4] == 0x00 &&
-					Candidate[5] == 0x00)
-				{
-					return TRUE;
-				}
-
-				return FALSE;
-				});
-		}
-	}
-
-	if (!S_LoadSound_VA)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_SVENGINE, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_HL25, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_NEW, DllInfo);
-			if (!S_LoadSound_VA)
-				S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_8308, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			S_LoadSound_VA = Search_Pattern(S_LOADSOUND_SIG_BLOB, DllInfo);
-		}
-	}
-
-	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))ConvertDllInfoSpace(S_LoadSound_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(S_LoadSound);
-
-	{
-		typedef struct S_LoadSound_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-
-			PVOID base{};
-			size_t max_insts{};
-			int max_depth{};
-			std::set<PVOID> code;
-			std::set<PVOID> branches;
-			std::vector<walk_context_t> walks;
-
-			PVOID address_rb{};
-			int instCount_rb{};
-		}S_LoadSound_SearchContext;
-
-		S_LoadSound_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		ctx.base = S_LoadSound_VA;
-
-		ctx.max_insts = 1000;
-		ctx.max_depth = 16;
-		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-		while (ctx.walks.size())
-		{
-			auto walk = ctx.walks[ctx.walks.size() - 1];
-			ctx.walks.pop_back();
-
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (S_LoadSound_SearchContext*)context;
-
-				if (ctx->code.size() > ctx->max_insts)
-					return TRUE;
-
-				if (ctx->code.find(address) != ctx->code.end())
-					return TRUE;
-
-				ctx->code.emplace(address);
-
-				if (!ctx->address_rb &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-						))
-				{
-					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-					if (!memcmp(pString, "rb", sizeof("rb") - 1))
-					{
-						ctx->instCount_rb = instCount;
-						ctx->address_rb = address;
-					}
-				}
-
-				if (address[0] == 0xE8 && instLen == 5 &&
-					ctx->address_rb && address > ctx->address_rb && address <= (PUCHAR)ctx->address_rb + 0x30 &&
-					instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5)
-				{
-					if (!gPrivateFuncs.FS_Open)
-					{
-						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
-					}
-					
-					auto realAddress = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-					S_LoadSound_call_FS_Open.emplace(realAddress);
-
-					return TRUE;
-				}
-
-				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM)
-				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x300, depth + 1);
-					}
-
-					if (pinst->id == X86_INS_JMP)
-						return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, walk.depth, &ctx);
-		}
-
-		if (S_LoadSound_call_FS_Open.empty())
-		{
-			Sys_Error("S_LoadSound.FS_Open not found");
-			return;
-		}
+		Sys_Error("S_LoadSound.FS_Open not found");
+		return;
 	}
 }
 
 void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID Mod_LoadModel_VA = NULL;
+	auto Mod_LoadModel_VA = ResolveGameSymbolOrError("Mod_LoadModel");
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))Mod_LoadModel_VA;
+
+	// 走查在搜索空间（mirror 存在时为 mirror 副本）进行，入口需要从真实镜像映射过去。
+	FindFSOpenCallSites(ConvertDllInfoSpace(Mod_LoadModel_VA, RealDllInfo, DllInfo), DllInfo, RealDllInfo, gPrivateFuncs.FS_Open, 0x50, Mod_LoadModel_call_FS_Open);
+
+	if (Mod_LoadModel_call_FS_Open.empty())
 	{
-		const char sigs1[] = "Mod_LoadModel: Could not load";
-		auto Mod_NumForName_String = Search_Pattern_Data(sigs1, DllInfo);
-		if (!Mod_NumForName_String)
-			Mod_NumForName_String = Search_Pattern_Rdata(sigs1, DllInfo);
-		Sig_VarNotFound(Mod_NumForName_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-		*(DWORD*)(pattern + 1) = (DWORD)Mod_NumForName_String;
-		auto Mod_NumForName_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(Mod_NumForName_PushString);
-
-		Mod_LoadModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_NumForName_PushString, 0x500, [](PUCHAR Candidate) {
-
-			//.text:01D40B30 81 EC 0C 01 00 00                                   sub     esp, 10Ch
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC &&
-				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00)
-				return TRUE;
-
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC)
-				return TRUE;
-
-			return FALSE;
-			});
-	}
-	else
-	{
-		const char sigs1[] = "Mod_NumForName: %s not found";
-		auto Mod_NumForName_String = Search_Pattern_Data(sigs1, DllInfo);
-		if (!Mod_NumForName_String)
-			Mod_NumForName_String = Search_Pattern_Rdata(sigs1, DllInfo);
-		Sig_VarNotFound(Mod_NumForName_String);
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-		*(DWORD*)(pattern + 1) = (DWORD)Mod_NumForName_String;
-		auto Mod_NumForName_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(Mod_NumForName_PushString);
-
-		Mod_LoadModel_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_NumForName_PushString, 0x500, [](PUCHAR Candidate) {
-
-			//.text:01D40B30 81 EC 0C 01 00 00                                   sub     esp, 10Ch
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC &&
-				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00)
-				return TRUE;
-
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC)
-				return TRUE;
-
-			return FALSE;
-			});
-	}
-
-	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))ConvertDllInfoSpace(Mod_LoadModel_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(Mod_LoadModel);
-
-	if (1)
-	{
-		typedef struct Mod_LoadModel_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-
-			PVOID base{};
-			size_t max_insts{};
-			int max_depth{};
-			std::set<PVOID> code;
-			std::set<PVOID> branches;
-			std::vector<walk_context_t> walks;
-
-			int instCount_rb{};
-			PUCHAR address_rb{};
-		}Mod_LoadModel_SearchContext;
-
-		Mod_LoadModel_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		ctx.base = Mod_LoadModel_VA;
-
-		ctx.max_insts = 1000;
-		ctx.max_depth = 16;
-		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-		while (ctx.walks.size())
-		{
-			auto walk = ctx.walks[ctx.walks.size() - 1];
-			ctx.walks.pop_back();
-
-			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (Mod_LoadModel_SearchContext*)context;
-
-				if (ctx->code.size() > ctx->max_insts)
-					return TRUE;
-
-				if (ctx->code.find(address) != ctx->code.end())
-					return TRUE;
-
-				ctx->code.emplace(address);
-
-				if (!ctx->address_rb &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					(
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
-						((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-						))
-				{
-					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-					if (!memcmp(pString, "rb", sizeof("rb")))
-					{
-						ctx->instCount_rb = instCount;
-						ctx->address_rb = address;
-					}
-				}
-
-				if (address[0] == 0xE8 && instLen == 5 && ctx->address_rb
-					&& instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5
-					&& address > ctx->address_rb && address <= ctx->address_rb + 0x50)
-				{
-					if (!gPrivateFuncs.FS_Open)
-					{
-						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
-					}
-
-					auto realAddress = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-					Mod_LoadModel_call_FS_Open.emplace(realAddress);
-
-					return TRUE;
-				}
-
-				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM)
-				{
-					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-					auto foundbranch = ctx->branches.find(imm);
-					if (foundbranch == ctx->branches.end())
-					{
-						ctx->branches.emplace(imm);
-						if (depth + 1 < ctx->max_depth)
-							ctx->walks.emplace_back(imm, 0x300, depth + 1);
-					}
-
-					if (pinst->id == X86_INS_JMP)
-						return TRUE;
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, walk.depth, &ctx);
-		}
-
-		if (Mod_LoadModel_call_FS_Open.empty())
-		{
-			Sys_Error("Mod_LoadModel.FS_Open not found");
-			return;
-		}
+		Sys_Error("Mod_LoadModel.FS_Open not found");
+		return;
 	}
 }
 
-void Engine_FillAddress_CL_PrecacheResources(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_CL_PrecacheResources(void)
 {
-	PVOID CL_PrecacheResources_VA = NULL;
-
-	const char sigs1[] = "#GameUI_PrecachingResources";
-	auto CL_PrecacheResources_String = Search_Pattern_Data(sigs1, DllInfo);
-	if (!CL_PrecacheResources_String)
-		CL_PrecacheResources_String = Search_Pattern_Rdata(sigs1, DllInfo);
-	Sig_VarNotFound(CL_PrecacheResources_String);
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-	*(DWORD*)(pattern + 1) = (DWORD)CL_PrecacheResources_String;
-
-	auto CL_PrecacheResources_PushString = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(CL_PrecacheResources_PushString);
-
-	CL_PrecacheResources_VA = g_pMetaHookAPI->ReverseSearchFunctionBegin(CL_PrecacheResources_PushString, 0x50);
-
-	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))ConvertDllInfoSpace(CL_PrecacheResources_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(CL_PrecacheResources);
+	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))ResolveGameSymbolOrError("CL_PrecacheResources");
 }
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))ResolveGameSymbolOrError("FS_Open");
+
 	Engine_FillAddress_S_LoadSound(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_Mod_LoadModel(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_PrecacheResources(DllInfo, RealDllInfo);
+	Engine_FillAddress_CL_PrecacheResources();
 }
 
 void Engine_InstallHooks()

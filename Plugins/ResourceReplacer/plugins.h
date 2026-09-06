@@ -8,6 +8,9 @@ extern IFileSystem* g_pFileSystem;
 extern int g_iEngineType;
 extern DWORD g_dwEngineBuildnum;
 
+extern mh_dll_info_t g_EngineDLLInfo;
+extern mh_dll_info_t g_MirrorEngineDLLInfo;
+
 #define MHPluginName "ResourceReplacer"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);
 #define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
