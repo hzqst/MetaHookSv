@@ -33,7 +33,6 @@ jobs:
     env:
       RELEASE_NOTES_PROVIDER: ${{ vars.RELEASE_NOTES_PROVIDER || 'codex' }}
       RELEASE_NOTES_MODEL: ${{ vars.RELEASE_NOTES_MODEL }}
-      RELEASE_NOTES_BASE_URL: ${{ vars.RELEASE_NOTES_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +63,7 @@ jobs:
 
       - name: Generate release notes
         env:
+          RELEASE_NOTES_BASE_URL: ${{ secrets.RELEASE_NOTES_BASE_URL }}
           RELEASE_NOTES_API_KEY: ${{ secrets.RELEASE_NOTES_API_KEY }}
         run: python scripts/release.py notes --input "$RUNNER_TEMP/release-context.txt" --output "$RUNNER_TEMP/release-notes.md"
 

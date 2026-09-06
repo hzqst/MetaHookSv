@@ -13,8 +13,12 @@ Create an Environment named `release` in the repository settings. Configure:
 | --- | --- | --- |
 | Variable | `RELEASE_NOTES_PROVIDER` | `codex` (default) or `claude` |
 | Variable | `RELEASE_NOTES_MODEL` | Exact model identifier supported by your endpoint; required |
-| Variable | `RELEASE_NOTES_BASE_URL` | Publicly reachable private HTTPS API base URL; required |
+| Secret | `RELEASE_NOTES_BASE_URL` | Publicly reachable private HTTPS API base URL; required |
 | Secret | `RELEASE_NOTES_API_KEY` | Private API credential; required |
+
+Both secrets are injected only into the notes-generation step. If the base URL
+was previously configured as an Environment variable, recreate it as an Environment
+secret with the same name and remove the old variable; there is no variable fallback.
 
 Codex requires a **Responses-compatible** service: the script appends `/responses`
 to the base URL (include `/v1` in the base URL if your service requires it), uses
