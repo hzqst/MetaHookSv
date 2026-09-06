@@ -33,6 +33,8 @@ settings.local.json
 # zcode (local skills link)
 .zcode/skills
 
+__pycache__
+
 *.lnk
 
 # Prerequisites
