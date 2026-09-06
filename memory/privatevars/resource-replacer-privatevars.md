@@ -65,6 +65,7 @@ flowchart TD
 - `FS_Open` is resolved from the first qualifying call target. Both audio and model scans must still produce at least one call site; otherwise the plugin reports a fatal symbol-location failure.
 - Only `CL_PrecacheResources` has a plugin-owned inline-hook handle. The call-site redirections have no corresponding handles in this module and are not explicitly restored by `Engine_UninstallHooks`.
 - The resolver currently uses signature/string/disassembly scanning; unlike the migrated engine-core symbols documented in [[metahook-privatevars]], this plugin has no gamedata-backed `ResolveGameSymbol` path.
+- Upstream gamedata status (2026-09-06 sync): all four symbols now ship in every non-empty snapshot (svencoop-10257 windows RVAs: S_LoadSound 0x99080, Mod_LoadModel 0x51be0, FS_Open 0x4e8d0, CL_PrecacheResources 0x26540), removing the data blocker for a future migration. Call-site discovery inside S_LoadSound / Mod_LoadModel still requires the bounded capstone walk, since the gamedata model cannot express intra-function call-instruction addresses. cstrike/czero/czeror snapshots remain empty (0 records).
 
 ## Callers
 

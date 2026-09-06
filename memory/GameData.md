@@ -70,12 +70,10 @@ flowchart TD
 ```
 
 ## Dependencies
-
 - `thirdparty/rapidjson`（submodule）— 解析 index.json 与 snapshot JSON。
 - `thirdparty/Chocobo1Hash`（submodule，gitlink `f455b0e`）— `Chocobo1::CRC_64_XZ`（模块身份哈希，refl poly `0xC96C5795D7870F42`）与 `Chocobo1::SHA2_256`（snapshot 完整性校验）。需在 `<windows.h>` 之前包含以免 `min/max` 宏污染。
 - Windows API — `GetModuleFileNameW` / `CreateFileW` / `_wstat64` 用于普通 PE 来源发现与文件流式哈希；loader lock 判定 `MH_IsInLdrCriticalRegion`。
 - 数据资源 — 打包 `Build\svencoop\metahook\gamedata\`（gitignore），运行时 `<game>\<mod>\metahook\gamedata\`。
-
 ## Notes
 
 - catalog 构建后冻结，不重载；返回给插件的 `signature.text` / `bytes` / `mask` / `legacyPattern` 指向稳定 heap-owned 存储，有效至进程退出。
@@ -85,7 +83,8 @@ flowchart TD
 - 符号名查找区分大小写；键为 `(moduleCRC64, symbolName)`。完全相同的重复记录去重，内容冲突标记 `CATALOG_CONFLICT`；未类型化 kind 标记 `unsupportedKind` 查询返回 `UNSUPPORTED_KIND`。
 - `cbSize` 契约：调用方先置 `cbSize = sizeof(mh_gamesymbol_t)`，过小返回 `OUTPUT_TOO_SMALL`；失败时输出字段清零但保留 `cbSize`。
 - `ResolveGameSymbol` 只接受 `FUNCTION`/`GLOBAL`，并做 rva 与 `rva + symbolSize` 的溢出和映像边界检查；不校验内存 signature，也不做跨版本扫描。
-- 当前发布数据缺口：svencoop-10257 尚缺 `videomode` / `cvar_hooks` / `Cvar_DirectSet`，因此 cvar 分支与 blob 客户端 `FreeBlob` 仍走旧扫描；`scripts/validate-gamedata.py` 作为门禁阻断发布，数据补齐前不迁移。
+- 迁移策略（2026-09-06 确认，适用所有插件 gamedata 移植）：凡 gamedata 已能准确定位的符号一律 gamedata-only，**不保留** signature/字符串/反查 fallback，失败即 fatal（诊断格式对齐 launcher `MH_LoadEngine_ResolveSymbol`：符号名 + CRC64 + 状态串）；数据防线前移到 `validate-gamedata.py` 的 `COMMON_REQUIRED` 门禁，缺口靠上游补数（`D:\GoldSrc_VibeSignatures`）解决。首个适用：ResourceReplacer（计划见 `docs/plans/resource-replacer-gamedata-migration-plan.md`，call-site 类 gamedata 表达不了的信息仍可有界 disasm，但那是功能本体而非 fallback）。
+- 发布数据状态（2026-09-06 同步）：上游已补齐 `S_LoadSound` / `Mod_LoadModel` / `FS_Open` / `CL_PrecacheResources`（ResourceReplacer 所需，见 [[resource-replacer-privatevars]]），非空 snapshot 均含 windows 记录；但 cvar 分支（cvar_hooks 或 Cvar_Set + Cvar_DirectSet）与 blob 客户端 FreeBlob 仍缺，`scripts/validate-gamedata.py` 门禁仍因此 fail；cstrike/czero/czeror 各版本 snapshot 仍为 0 记录空壳。
 - `Build\svencoop\metahook\gamedata\` 被 gitignore，由 Pre-build 的 `sync-gamedata.py` 通过同卷 staging + 事务式目录交换生成；commit `6b8f6f65 "remove gamedata."` 删除了原先跟踪的 JSON 载荷。
 
 ## Callers
