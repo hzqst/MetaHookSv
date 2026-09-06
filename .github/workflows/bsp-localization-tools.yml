@@ -1,16 +1,14 @@
 name: bsp-localization-tools
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
   pull_request:
     paths:
       - ".github/workflows/bsp-localization-tools.yml"
       - "toolsrc/BSPLocalizationTools/**"
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   SOLUTION_FILE_PATH: toolsrc\BSPLocalizationTools\BSPLocalizationTools.sln
@@ -66,10 +64,20 @@ jobs:
         run: 7z a "%ARCHIVE_NAME%" "%OUTPUT_DIRECTORY%/*" -r "-x!*.pdb"
         shell: cmd
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Verify release archive
+        shell: pwsh
+        run: |
+          if (!(Test-Path -LiteralPath $env:ARCHIVE_NAME -PathType Leaf) -or (Get-Item -LiteralPath $env:ARCHIVE_NAME).Length -eq 0) {
+            throw "Missing or empty archive: $env:ARCHIVE_NAME"
+          }
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: MetaHookSv-${{ github.ref }}
-          files: |
+          name: release-bsp-localization-tools
+          path: |
             BSPLocalizationTools-windows-x64.7z
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          overwrite: true

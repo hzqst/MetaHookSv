@@ -1,12 +1,11 @@
-name: windows
+name: windows-blob
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
   pull_request:
-    tags:
-      - "v*"
+
+permissions:
+  contents: read
 
 env:
   # Path to the solution file relative to the root of the project.
@@ -111,11 +110,23 @@ jobs:
           -x!*.exp
         shell: cmd
         
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Verify release archives
+        shell: pwsh
+        run: |
+          foreach ($name in @('MetaHookSv-windows-x86-blob-support.7z', 'MetaHookSv-windows-x86-blob-support-debug-info.7z')) {
+            if (!(Test-Path -LiteralPath $name -PathType Leaf) -or (Get-Item -LiteralPath $name).Length -eq 0) {
+              throw "Missing or empty archive: $name"
+            }
+          }
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: MetaHookSv-${{ github.ref }}
-          files: |
+          name: release-windows-blob
+          path: |
             MetaHookSv-windows-x86-blob-support.7z
             MetaHookSv-windows-x86-blob-support-debug-info.7z
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          overwrite: true

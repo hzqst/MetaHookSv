@@ -1,0 +1,117 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    if: github.repository == 'hzqst/MetaHookSv'
+    uses: ./.github/workflows/windows.yml
+
+  windows-blob:
+    if: github.repository == 'hzqst/MetaHookSv'
+    uses: ./.github/workflows/windows_blob.yml
+
+  bsp-localization-tools:
+    if: github.repository == 'hzqst/MetaHookSv'
+    uses: ./.github/workflows/bsp-localization-tools.yml
+
+  notes:
+    needs: [windows, windows-blob, bsp-localization-tools]
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 30
+    env:
+      RELEASE_NOTES_PROVIDER: ${{ vars.RELEASE_NOTES_PROVIDER || 'codex' }}
+      RELEASE_NOTES_MODEL: ${{ vars.RELEASE_NOTES_MODEL }}
+      RELEASE_NOTES_BASE_URL: ${{ vars.RELEASE_NOTES_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prepare release context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/release.py context --output "$RUNNER_TEMP/release-context.txt"
+
+      - name: Install selected CLI
+        shell: bash
+        run: |
+          case "$RELEASE_NOTES_PROVIDER" in
+            codex) npm install --global @openai/codex@0.114.0 ;;
+            claude) npm install --global @anthropic-ai/claude-code@2.1.79 ;;
+            *) echo 'Unsupported RELEASE_NOTES_PROVIDER'; exit 1 ;;
+          esac
+
+      - name: Generate release notes
+        env:
+          RELEASE_NOTES_API_KEY: ${{ secrets.RELEASE_NOTES_API_KEY }}
+        run: python scripts/release.py notes --input "$RUNNER_TEMP/release-context.txt" --output "$RUNNER_TEMP/release-notes.md"
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+
+  publish:
+    needs: [windows, windows-blob, bsp-localization-tools, notes]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: release-assets/release-windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-windows-blob
+          path: release-assets/release-windows-blob
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bsp-localization-tools
+          path: release-assets/release-bsp-localization-tools
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes
+
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/release.py publish --assets release-assets --notes release-notes/release-notes.md
