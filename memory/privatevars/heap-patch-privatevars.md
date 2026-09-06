@@ -52,7 +52,7 @@ flowchart TD
 
 ## Notes
 - The plugin installs **no inline hooks**: it neither detours `Sys_InitMemory` nor redirects any call site. `Engine_UninstallHooks` is an empty stub, so the immediate overwrites are never restored (harmless because the engine image is reloaded per process).
-- The four prologue signature macros `SYS_INITMEMORY_SIG_HL25` / `_8308` / `_NEW` / `_BLOB` (`Plugins/HeapPatch/privatehook.cpp`) are leftover legacy locators with no remaining references in the plugin.
+- The four leftover prologue signature macros `SYS_INITMEMORY_SIG_HL25` / `_8308` / `_NEW` / `_BLOB` were removed from `Plugins/HeapPatch/privatehook.cpp` on 2026-09-06; they had no remaining references in the plugin.
 - The disassembly comment inside `Engine_FillAddress_Sys_InitMemory` shows an unrelated `S_LoadSound: Couldn't load %s` snippet as a generic `push; call` example; the actual anchor string is `"Available memory less than"`.
 - Migration status (2026-09-06): still legacy scanning. A future gamedata migration would need `Sys_InitMemory` in the catalog for the walk root; the intra-function immediate operands (heap-limit constants per engine family/buildnum) are functional core in the same sense as `ResourceReplacer`'s `FS_Open` call sites — the gamedata model cannot express intra-instruction operand addresses, so the bounded walk must remain.
 
