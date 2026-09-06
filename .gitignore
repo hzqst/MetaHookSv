@@ -30,6 +30,9 @@ settings.local.json
 
 .vscode
 
+# zcode (local skills link)
+.zcode/skills
+
 *.lnk
 
 # Prerequisites
