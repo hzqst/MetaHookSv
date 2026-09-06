@@ -18,8 +18,8 @@ std::set<PVOID> Mod_LoadModel_call_FS_Open;
 
 static hook_t* g_phook_CL_PrecacheResources = NULL;
 
-// gamedata 解析失败时打印诊断（符号名 / buildnum / CRC64 / 状态串）并 Sys_Error 终止。
-// 返回值即真实镜像 VA，直接写入 gPrivateFuncs 对应字段。
+// On gamedata resolution failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
+// The return value is the real-image VA, written directly into the corresponding gPrivateFuncs field.
 static PVOID ResolveGameSymbolOrError(const char* symbolName)
 {
 	PVOID va = NULL;
@@ -72,8 +72,10 @@ typedef struct FS_Open_SearchContext_s
 
 }FS_Open_SearchContext;
 
-// 从 rootVA（搜索空间地址）有界走查 push "rb"; call FS_Open 指令序列，收集 call-site（转回真实镜像）。
-// gamedata 符号模型表达不了函数内部的 call 指令地址，此走查是 call-site 重定向的功能本体。
+// Bounded walk from rootVA (an address in the search space) for the push "rb"; call FS_Open instruction
+// sequence, collecting call sites (converted back to the real image).
+// The gamedata symbol model cannot express call instruction addresses inside a function, so this walk
+// is the functional core of call-site redirection.
 static void FindFSOpenCallSites(PVOID rootVA, const mh_dll_info_t& SearchDllInfo,
                                 const mh_dll_info_t& RealDllInfo,
                                 PVOID fsOpenRealVA, size_t callWindowBytes,
@@ -129,7 +131,7 @@ static void FindFSOpenCallSites(PVOID rootVA, const mh_dll_info_t& SearchDllInfo
 				ctx->address_rb && address > ctx->address_rb && address <= (PUCHAR)ctx->address_rb + ctx->callWindowBytes &&
 				instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5)
 			{
-				// FS_Open 以 gamedata 为权威，disasm 恢复的 call 目标仅作交叉校验。
+				// gamedata is authoritative for FS_Open; the disasm-recovered call target is only cross-checked against it.
 				auto callTargetRealVA = ConvertDllInfoSpace(GetCallAddress(address), ctx->DllInfo, ctx->RealDllInfo);
 
 				if (!ctx->mismatchWarned && callTargetRealVA != ctx->fsOpenRealVA)
@@ -235,7 +237,7 @@ void Engine_FillAddress_S_LoadSound(const mh_dll_info_t& DllInfo, const mh_dll_i
 
 	gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))S_LoadSound_VA;
 
-	// 走查在搜索空间（mirror 存在时为 mirror 副本）进行，入口需要从真实镜像映射过去。
+	// The walk runs in the search space (the mirror copy when a mirror exists), so the entry point must be mapped from the real image.
 	FindFSOpenCallSites(ConvertDllInfoSpace(S_LoadSound_VA, RealDllInfo, DllInfo), DllInfo, RealDllInfo, gPrivateFuncs.FS_Open, 0x30, S_LoadSound_call_FS_Open);
 
 	if (S_LoadSound_call_FS_Open.empty())
@@ -251,7 +253,7 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 
 	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))Mod_LoadModel_VA;
 
-	// 走查在搜索空间（mirror 存在时为 mirror 副本）进行，入口需要从真实镜像映射过去。
+	// The walk runs in the search space (the mirror copy when a mirror exists), so the entry point must be mapped from the real image.
 	FindFSOpenCallSites(ConvertDllInfoSpace(Mod_LoadModel_VA, RealDllInfo, DllInfo), DllInfo, RealDllInfo, gPrivateFuncs.FS_Open, 0x50, Mod_LoadModel_call_FS_Open);
 
 	if (Mod_LoadModel_call_FS_Open.empty())
