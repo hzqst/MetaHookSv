@@ -3686,6 +3686,9 @@ void R_InitWSurf(void)
 
 void R_FreeWorldResources(void)
 {
+	// Release frame-held water models before their owning leaves on map changes and shutdown.
+	R_ClearWaterModelReferences();
+
 	g_WorldSurfaceRenderer.pCurrentWorldLeaf.reset();
 	g_WorldSurfaceRenderer.pCurrentWaterLeaf.reset();
 	g_WorldSurfaceRenderer.vWorldMaterials.clear();
