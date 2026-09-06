@@ -2,7 +2,7 @@
 
 ## 文档状态
 
-- 状态：设计已确认方向（gamedata-only，不保留定位 fallback），待实现
+- 状态：已实施（2026-09-06，Step 1-6 完成；实机冒烟与失败路径验证待 Sven Co-op 环境执行）
 - 最后更新：2026-09-06
 - 目标仓库：`D:\MetaHookSv`
 - 数据基线：2026-09-06 从 `https://hlnd2t.github.io/GoldSrc_VibeSignatures/gamesymbols/index.json` 同步的 gamedata（16 snapshot）

@@ -34,6 +34,11 @@ COMMON_REQUIRED = [
     "videomode",
     "gClientUserMsgs",
     "cl_parsefuncs",
+    # ResourceReplacer (plugins resolve these via ResolveGameSymbol)
+    "S_LoadSound",
+    "Mod_LoadModel",
+    "FS_Open",
+    "CL_PrecacheResources",
 ]
 
 # gameVersion -> engine family. Only these gameVersions are declared supported.
