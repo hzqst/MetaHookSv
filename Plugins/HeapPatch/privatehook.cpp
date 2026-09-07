@@ -114,6 +114,14 @@ void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, con
 			}
 			else
 			{
+				//FIXME: the "0x8000000 && buildnum >= 6153" gate below is known to be
+				//wrong for Cry of Fear. cof-5936 (buildnum 5936 < 6153) keeps both the
+				//40MB minimum and the 128MB maximum immediates (0x2800000 and 0x8000000)
+				//inside Sys_InitMemory, so its 128MB mov/cmp sites are skipped and only
+				//the 40MB minimum gets collected/patched. The engine-side heap-limit
+				//immediates per build should be re-derived from the actual binaries
+				//(GoldSrc_VibeSignatures bin_artifacts Sys_InitMemory) instead of buildnum.
+				// Check D:/GoldSrc_VibeSignatures to inspect real binaries before fixing this!!!
 				if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
