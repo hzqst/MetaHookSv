@@ -20,7 +20,7 @@ Both secrets are injected only into the notes-generation step. If the base URL
 was previously configured as an Environment variable, recreate it as an Environment
 secret with the same name and remove the old variable; there is no variable fallback.
 
-Codex requires a **Responses-compatible** service: the script appends `/responses`
+Codex requires a **Responses-compatible** service: the CLI appends `/responses`
 to the base URL (include `/v1` in the base URL if your service requires it), uses
 Bearer authentication, and expects Responses SSE events including
 `response.completed`. A Chat Completions-only endpoint is not sufficient.
@@ -74,10 +74,33 @@ Deleted/unresolvable historical tags and releases on unrelated branches are
 skipped. Without a baseline, the notes identify the first release and use all
 reachable commits plus a diff against the empty tree.
 
-The prompt contains commit subjects/bodies, file statistics, filtered source diff,
-and the latest three other official release bodies as style examples. Input is
-capped at 200 KiB of UTF-8: commits receive up to 72 KiB, statistics 24 KiB,
-historical examples 24 KiB, and diffs use the remaining space. Truncation is marked.
+The initial prompt contains commit subjects/bodies, file statistics, filtered source
+diff, and the latest three other official release bodies as style examples. It is
+capped at 96 KiB of UTF-8: commits receive up to 40 KiB, statistics 12 KiB,
+historical examples 12 KiB, and diffs use the remaining space. Truncation is marked.
+The AI can then investigate history itself through the local `release_git`
+stdio MCP server. Its `git_history` tool executes only these read-only queries:
+
+- `log`: commit subjects/bodies, with optional `base..revision` scope and bounded
+  `limit` and `skip` pagination.
+- `show`: a commit patch, or a tracked text file at a selected revision and path.
+- `diff`: compare an explicit base revision with the selected revision.
+- `ls-tree`: list tracked paths at a selected revision.
+
+For example, the AI can request `{"command":"log","limit":10}`, then
+`{"command":"show","revision":"HEAD","path":"Plugins/Renderer/gl_rmain.cpp"}`.
+The model chooses queries; Python validates their structured arguments and invokes
+Git without a shell. Arbitrary options, write subcommands, absolute paths, path
+traversal and revisions outside the release commit's ancestry are rejected.
+There is no general shell, editor, patch, fetch or push tool. Git subprocesses
+receive no API/GitHub credentials; external diff/textconv, hooks, filesystem
+monitoring, optional index locks and remote transports are disabled.
+
+Each query has a 30-second timeout and returns at most 16 KiB. At most 32 queries
+are accepted per attempt. Initial evidence plus returned Git evidence is capped
+at 200 KiB per attempt; CLI protocol overhead is not included. Narrow a query or
+paginate when output is truncated. A budget error tells the AI to use evidence
+already collected rather than inventing omitted details.
 Binary bodies, `thirdparty`, build outputs and common generated/lock files are
 excluded from source diffs; filenames may still appear in statistics. Review
 whether this source material may be sent to your configured API before enabling it.
@@ -92,15 +115,22 @@ publication; there is no automatic fallback to generic notes.
 The pinned packages are `@openai/codex@0.114.0` and
 `@anthropic-ai/claude-code@2.1.79`. They run outside the checkout in fresh temporary
 home/work directories with an allowlisted environment and no GitHub/artifact
-tokens. Claude disables tools, MCP, settings sources, skills and session storage.
-Codex uses a local model catalog, read-only sandbox, disabled shell/patch/search
-features, and no repository instructions. Because Codex still exposes built-in
-utility tools, a loopback-only adapter removes all upstream tools, forces
-`tool_choice: none`, and buffers/validates Responses SSE before delivering it to
-the CLI. Tool-call responses are rejected before execution. Only the adapter
-receives the real API key; Codex receives an ephemeral loopback credential.
-The loopback hop is HTTP on the same runner; the private upstream connection is
-HTTPS. Response buffering is capped at 2 MiB. No external proxy is deployed.
+tokens. Claude disables built-in tools, settings sources, skills and session
+storage; strict MCP configuration exposes only `mcp__release_git__git_history`,
+with other permission requests denied noninteractively. Codex uses a local model
+catalog, read-only sandbox, disabled shell/patch/search features, no repository
+instructions, and the same allowlisted MCP tool. Its event validator rejects
+tool activity outside that allowlist. Repository write prevention comes from not
+exposing general execution/editing tools and from constructing only validated
+read-only Git commands, not from asking the model to obey a prompt. The stdio
+server is not an OS sandbox for arbitrary commands and does not allow them.
+
+Both CLIs connect directly to the private HTTPS API and receive the API key only
+through their isolated process environment. The former loopback HTTP request
+filter is removed; tool calls must now round-trip through your private service.
+The endpoint must support Responses function calls (Codex) or Anthropic tool use
+(Claude), not just text generation. Repository instructions and tool results are
+untrusted source data; they must not change the release task or permission policy.
 
 Raw CLI output, prompts and credentials are not printed or uploaded for debugging.
 The notes artifact is retained if the later publisher fails. AI summaries still
@@ -132,7 +162,9 @@ git diff --check
 ```
 
 The tests cover ancestry, first release, byte limits, provider validation,
-credential isolation, retries, tool-call rejection, assets, tag movement, upload
+credential isolation, retries, read-only Git queries, write/argument injection
+rejection, unchanged repository contents (including `.git`), query budgets,
+assets, tag movement, upload
 failure/retry and refusal to overwrite a public release. They do not snapshot
 workflow, prompt or documentation text.
 
@@ -144,7 +176,10 @@ RELEASE_CLI_SMOKE=1 python3 -B -m unittest discover -s scripts/tests -p 'test_re
 ```
 
 These tests use loopback HTTP, synthetic responses and a fake key, deliberately
-calling the adapter beneath the production HTTPS validation. They do not create
+calling the CLI beneath the production HTTPS validation. They verify that both
+real CLIs return Git history/source evidence to the model, reject Git write
+requests, and cannot execute a native shell write against the test repository.
+They do not create
 a GitHub release or call a paid API. Tests are not a substitute for hosted-runner
 acceptance: in a controlled test repository, adjust repository guards in **all four workflows**,
 configure the Environment, push a disposable `v*` tag and verify both providers,

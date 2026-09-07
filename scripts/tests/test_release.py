@@ -268,7 +268,9 @@ class NotesTests(unittest.TestCase):
             with self.assertRaises(release.ReleaseError):
                 release.validate_notes(text)
 
-    def test_codex_tool_execution_is_rejected(self):
+    def test_codex_only_accepts_allowlisted_git_tool_events(self):
+        release.validate_codex_events(json.dumps({"type": "item.completed", "item": {
+            "type": "mcp_tool_call", "server": "release_git", "tool": "git_history"}}))
         for item_type in ("command_execution", "mcp_tool_call", "file_change", "web_search"):
             events = json.dumps({"type": "item.completed", "item": {"type": item_type}})
             with self.assertRaises(release.ReleaseError):
@@ -287,7 +289,7 @@ class NotesTests(unittest.TestCase):
             self.assertNotIn("private-key", command)
             self.assertEqual([], list(work.iterdir()))
             if command[0] == "codex":
-                self.assertNotEqual("private-key", environment["RELEASE_NOTES_API_KEY"])
+                self.assertEqual("private-key", environment["RELEASE_NOTES_API_KEY"])
                 output = Path(command[command.index("--output-last-message") + 1])
                 output.write_text(NOTES, encoding="utf-8")
                 return json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": NOTES}})
@@ -303,16 +305,6 @@ class NotesTests(unittest.TestCase):
         with patch.object(release, "run_cli_once", return_value=NOTES + "private-key"):
             with self.assertRaises(release.ReleaseError):
                 release.generate_notes("context", "claude", "model", "https://api.invalid", "private-key")
-
-    def test_responses_tool_calls_are_blocked_before_cli_receives_them(self):
-        for kind in ("function_call", "custom_tool_call", "web_search_call", "mcp_call"):
-            stream = ("data: " + json.dumps({"type": "response.output_item.added", "item": {"type": kind}}) + "\n\n").encode()
-            with self.assertRaises(release.ReleaseError):
-                release.validate_response_stream(stream)
-        with self.assertRaises(release.ReleaseError):
-            release.validate_response_stream(b"data: [DONE]\n\n")
-        release.validate_response_stream(b'data: {"type":"response.completed","response":{"output":[]}}\n\n')
-
 
 if __name__ == "__main__":
     unittest.main()
