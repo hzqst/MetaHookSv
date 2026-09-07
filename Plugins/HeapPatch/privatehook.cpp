@@ -5,54 +5,65 @@
 #include "plugins.h"
 #include "privatehook.h"
 
+static_assert(METAHOOK_API_VERSION >= 109, "HeapPatch resolves engine private symbols from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
+
 private_funcs_t gPrivateFuncs = { 0 };
 
 static std::set<PVOID> g_Sys_InitMemory_Patches;
 
-void Engine_FillAddress_Sys_InitMemory(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+// Heap-limit immediates observed in Sys_InitMemory (GoldSrc_VibeSignatures bin_artifacts):
+// SvEngine: 512MB only.
+// GoldSrc blob (3248-4554): 32MB + 40MB.
+// GoldSrc 6153+ / HL25 / Cry of Fear: 40MB + 128MB.
+// cof-5936 (build 5936) ships 128MB despite buildnum < 6153, so 128MB is not gated on buildnum.
+enum : long long
 {
-	PVOID Sys_InitMemory_VA = nullptr;
+	kHeapLimitImm32MB = 0x2000000,
+	kHeapLimitImm40MB = 0x2800000,
+	kHeapLimitImm128MB = 0x8000000,
+	kHeapLimitImm512MB = 0x20000000,
+};
 
-	/*
-.text:01D98912 68 F0 52 ED 01                                      push    offset aSLoadsoundCoul ; "S_LoadSound: Couldn't load %s\n"
-.text:01D98917 E8 24 70 F9 FF                                      call    sub_1D2F940
-.text:01D9891C 83 C4 08                                            add     esp, 8
-	*/
-	const char sigs[] = "Available memory less than";
-	auto Sys_InitMemory_String = Search_Pattern_Data(sigs, DllInfo);
-	if (!Sys_InitMemory_String)
-		Sys_InitMemory_String = Search_Pattern_Rdata(sigs, DllInfo);
-	if (Sys_InitMemory_String)
+static bool IsHeapLimitImmediate(long long imm)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return imm == kHeapLimitImm512MB;
+
+	return imm == kHeapLimitImm32MB
+		|| imm == kHeapLimitImm40MB
+		|| imm == kHeapLimitImm128MB;
+}
+
+// On gamedata resolution failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
+// The return value is the real-image VA, written directly into the corresponding gPrivateFuncs field.
+static PVOID ResolveGameSymbolOrError(const char* symbolName)
+{
+	PVOID va = NULL;
+	auto st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, MH_GAMESYMBOL_KIND_FUNCTION, &va);
+
+	if (st == MH_GAMESYMBOL_OK)
+		return va;
+
+	uint64_t crc64 = 0;
+	auto crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
+
+	if (crcSt == MH_GAMESYMBOL_OK)
 	{
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		*(DWORD*)(pattern + 1) = (DWORD)Sys_InitMemory_String;
-		auto Sys_InitMemory_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
-		if (Sys_InitMemory_PushString)
-		{
-			//Inlined in HL25
-			Sys_InitMemory_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Sys_InitMemory_PushString, 0x500, [](PUCHAR Candidate) {
-
-				if (Candidate[0] == 0x55 &&
-					Candidate[1] == 0x8B &&
-					Candidate[2] == 0xEC)
-				{
-					return TRUE;
-				}
-
-				if (Candidate[0] == 0x83 &&
-					Candidate[1] == 0xEC)
-				{
-					return TRUE;
-				}
-
-				return FALSE;
-			});
-		}
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(st));
+	}
+	else
+	{
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
+			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(st));
 	}
 
-	gPrivateFuncs.Sys_InitMemory = (decltype(gPrivateFuncs.Sys_InitMemory))ConvertDllInfoSpace(Sys_InitMemory_VA, DllInfo, RealDllInfo);
+	return NULL;
+}
 
-	Sig_FuncNotFound(Sys_InitMemory);
+void Engine_FillAddress_Sys_InitMemory()
+{
+	gPrivateFuncs.Sys_InitMemory = (decltype(gPrivateFuncs.Sys_InitMemory))ResolveGameSymbolOrError("Sys_InitMemory");
 }
 
 void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -73,6 +84,7 @@ void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, con
 
 	Sys_InitMemory_SearchContext ctx = { DllInfo, RealDllInfo, g_Sys_InitMemory_Patches };
 
+	// The walk runs in the search space (the mirror copy when a mirror exists), so the entry point must be mapped from the real image.
 	ctx.base = ConvertDllInfoSpace(gPrivateFuncs.Sys_InitMemory, RealDllInfo, DllInfo);
 
 	ctx.max_insts = 1000;
@@ -97,46 +109,16 @@ void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, con
 
 			ctx->code.emplace(address);
 
-			if (g_iEngineType == ENGINE_SVENGINE)
+			if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				IsHeapLimitImmediate(pinst->detail->x86.operands[1].imm))
 			{
-				if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0x20000000//512MB
-					)
-				{
-					auto patch_addr_VA = (PVOID)(address + pinst->detail->x86.encoding.imm_offset);
+				auto patch_addr_VA = (PVOID)(address + pinst->detail->x86.encoding.imm_offset);
 
-					auto patch_addr = ConvertDllInfoSpace(patch_addr_VA, ctx->DllInfo, ctx->RealDllInfo);
+				auto patch_addr = ConvertDllInfoSpace(patch_addr_VA, ctx->DllInfo, ctx->RealDllInfo);
 
-					ctx->patches.emplace(patch_addr);
-				}
-			}
-			else
-			{
-				//FIXME: the "0x8000000 && buildnum >= 6153" gate below is known to be
-				//wrong for Cry of Fear. cof-5936 (buildnum 5936 < 6153) keeps both the
-				//40MB minimum and the 128MB maximum immediates (0x2800000 and 0x8000000)
-				//inside Sys_InitMemory, so its 128MB mov/cmp sites are skipped and only
-				//the 40MB minimum gets collected/patched. The engine-side heap-limit
-				//immediates per build should be re-derived from the actual binaries
-				//(GoldSrc_VibeSignatures bin_artifacts Sys_InitMemory) instead of buildnum.
-				// Check D:/GoldSrc_VibeSignatures to inspect real binaries before fixing this!!!
-				if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					((pinst->detail->x86.operands[1].imm == 0x2000000 && g_dwEngineBuildnum < 6153)//32MB
-						||
-						(pinst->detail->x86.operands[1].imm == 0x2800000)//40MB
-						|| (pinst->detail->x86.operands[1].imm == 0x8000000 && g_dwEngineBuildnum >= 6153))//128MB
-					)
-				{
-					auto patch_addr_VA = (PVOID)(address + pinst->detail->x86.encoding.imm_offset);
-
-					auto patch_addr = ConvertDllInfoSpace(patch_addr_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-					ctx->patches.emplace(patch_addr);
-				}
+				ctx->patches.emplace(patch_addr);
 			}
 
 			if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
@@ -175,7 +157,7 @@ void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, con
 
 void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	Engine_FillAddress_Sys_InitMemory(DllInfo, RealDllInfo);
+	Engine_FillAddress_Sys_InitMemory();
 	Engine_FillAddress_Sys_InitMemory_Patches(DllInfo, RealDllInfo);
 }
 
