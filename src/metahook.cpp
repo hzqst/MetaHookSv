@@ -290,7 +290,7 @@ void MH_FreeBlobProxy(void** pBlobFootPrint)
 
 void MH_FreeHooksForModule(PVOID ImageBase, ULONG ImageSize)
 {
-	//TODO
+	//Do we really need to free all hooks for module?
 }
 
 void MH_Cvar_DirectSet(cvar_t* var, char* value)
@@ -2079,7 +2079,6 @@ void MH_ExitGame(int iResult)
 		}
 	}
 
-	//TODO check if there is any inlinehook left?
 	MH_FreeAllHook();
 
 	//Clear all built-in cvar callbacks
