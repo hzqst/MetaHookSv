@@ -1309,7 +1309,7 @@ void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	//TODO: 改完从gamedata取Cvar_DirectSet
+	//TODO: 从gamedata取Cvar_DirectSet
 	if (1)
 	{
 		const char sigs1[] = "***PROTECTED***";
@@ -1438,6 +1438,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 
 		if (!cvar_hooks)
 		{
+			//TODO: "Cvar_Set: variable %s not found" 怎么办?
 			typedef struct CvarSet_SearchContext_s
 			{
 				const mh_dll_info_t& DllInfo;
