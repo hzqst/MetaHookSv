@@ -38,7 +38,7 @@ flowchart TD
     A[metahook.cpp: CreateInterface V4 + Init] --> B[HeapPatch::LoadEngine]
     B --> C[Collect Engine/MirrorEngine section information]
     C --> D[Engine_FillAddress]
-    D --> D1[Locate Sys_InitMemory function]
+    D --> D1[Resolve Sys_InitMemory from gamedata]
     D --> D2[Disassemble, scan, and collect patch addresses]
     D2 --> E[Engine_InstallHooks]
     E --> E1[Read -heaplimit_override]
@@ -48,24 +48,24 @@ flowchart TD
 ```
 
 Key implementation points:
-- `Engine_FillAddress_Sys_InitMemory`: Locates `Sys_InitMemory` in reverse through the string `"Available memory less than"` and converts address space between mirror and real DLLs.
-- `Engine_FillAddress_Sys_InitMemory_Patches`: Uses `DisasmRanges` to traverse branches and match `MOV/CMP` immediates;
+- `Engine_FillAddress_Sys_InitMemory`: Resolves `Sys_InitMemory` gamedata-only via `ResolveGameSymbol` (MetaHook API 109) against the real engine image; failure is fatal with symbol / buildnum / CRC64 / status diagnostics.
+- `Engine_FillAddress_Sys_InitMemory_Patches`: Maps the real-image entry into the search space (mirror when present) and uses `DisasmRanges` to traverse branches and match `MOV/CMP` immediates;
   - `ENGINE_SVENGINE`: Matches `0x20000000` (512 MB)
-  - Non-`ENGINE_SVENGINE`: Matches `0x2000000` (32 MB, old builds), `0x2800000` (40 MB), or `0x8000000` (128 MB, new builds)
+  - Non-`ENGINE_SVENGINE`: Matches `0x2000000` (32 MB, blob), `0x2800000` (40 MB), and `0x8000000` (128 MB, including Cry of Fear; not gated on buildnum)
 - `Engine_InstallHooks`: The default limit is 256 MB; when `-heaplimit_override` is provided, it is clamped to `[32, 1024]` MB and written back to every patch address.
 
 ## Dependencies
-- MetaHook API: `SearchPattern` / `ReverseSearchFunctionBeginEx` / `DisasmRanges` / `WriteDWORD` / `GetEngineType` / `GetEngineBuildnum` / section-query interfaces.
+- MetaHook API: `ResolveGameSymbol` / `GetModuleCRC64` / `GetGameSymbolStatusString` / `DisasmRanges` / `WriteDWORD` / `GetEngineType` / `GetEngineBuildnum` / section-query interfaces.
 - Capstone: used for instruction-level parsing (`privatehook.cpp`; the project includes `$(CapstoneIncludeDirectory)` and `$(CapstoneCheckRequirements)`).
 - Plugin-system lifecycle: `src/metahook.cpp` centrally dispatches `Init/LoadEngine/LoadClient/ExitGame/Shutdown`.
 - Build and load integration: `MetaHook.sln`, `scripts/build-Plugins.bat`, `plugins_goldsrc.lst`, and `plugins_svencoop.lst`.
 
 ## Notes
 - `Engine_UninstallHooks()` is currently empty: this plugin is a one-time patch whose writes take effect immediately and whose original immediates are not reverted during `ExitGame`.
-- Patch sites depend heavily on signatures and disassembly results; if the `Sys_InitMemory` pattern changes and no site matches, `Sys_Error("Sys_InitMemory imm not found")` is triggered.
+- Patch sites depend on gamedata for the function entry and on disassembly for intra-function immediates; if no heap-limit immediate matches, `Sys_Error("Sys_InitMemory imm not found")` is triggered. Missing gamedata for `Sys_InitMemory` is a separate fatal (`Failed to resolve "Sys_InitMemory"` with CRC64 / status).
 - `-heaplimit_override` is measured in MB and forcibly constrained to `32~1024`; out-of-range values are clamped.
 - `g_Sys_InitMemory_Patches` is collected through control-flow traversal and limited by `max_insts=1000` and `max_depth=16`; extreme instruction layouts may be missed.
-- `privatehook.cpp` defines several `SYS_INITMEMORY_SIG_*` constants at the top, but the current main flow actually uses reverse location through a string plus push/call.
+- Cry of Fear (`cof-5936`) includes the 128 MB (`0x8000000`) maximum in `Sys_InitMemory`; that immediate is collected together with 40 MB and is not gated on `buildnum >= 6153`.
 
 ## Callers (optional)
 - `src/metahook.cpp`:

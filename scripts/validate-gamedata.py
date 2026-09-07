@@ -39,6 +39,8 @@ COMMON_REQUIRED = [
     "Mod_LoadModel",
     "FS_Open",
     "CL_PrecacheResources",
+    # HeapPatch (plugins resolve these via ResolveGameSymbol)
+    "Sys_InitMemory",
 ]
 
 # gameVersion -> engine family. Only these gameVersions are declared supported.

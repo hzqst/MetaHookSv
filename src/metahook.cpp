@@ -1279,9 +1279,9 @@ PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_
 
 void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	//Judge actual engine type
 	if (g_iEngineType == ENGINE_UNKNOWN)
 	{
+		//TODO:通过gamedata来识别Cry of Fear并给g_iEngineType赋予ENGINE_GOLDSRC_COF、如果hw是hl-9000以上则给ENGINE_GOLDSRC_HL25、否则给ENGINE_GOLDSRC
 		auto factory = MH_GetEngineFactory();
 
 		if (factory("SCEngineClient002", NULL) ||
@@ -1309,6 +1309,7 @@ void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	//TODO: 改完从gamedata取Cvar_DirectSet
 	if (1)
 	{
 		const char sigs1[] = "***PROTECTED***";
@@ -1396,6 +1397,7 @@ void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_
 
 void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	//TODO cvar_hooks改为从gamedata取
 	PVOID Cvar_Set = ConvertDllInfoSpace((void*)gMetaSave.pEngineFuncs->Cvar_Set, RealDllInfo, DllInfo);
 
 	if (Cvar_Set)
@@ -1512,6 +1514,7 @@ void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll
 
 void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+	//TODO: 改为从gamedata取
 	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		const char pattern[] = "\x85\xBC\x32\x7A\xFF";
@@ -1549,6 +1552,7 @@ void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll
 
 	if (g_pfnNLoadBlob)
 	{
+		//TODO: 改为从gamedata取
 		const char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x74";
 
 		auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
