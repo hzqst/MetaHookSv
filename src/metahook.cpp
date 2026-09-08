@@ -1277,7 +1277,7 @@ PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_
 	return nullptr;
 }
 
-void MH_LoadEngine_FindEngineType(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void MH_LoadEngine_DetermineEngineType(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (g_iEngineType == ENGINE_UNKNOWN)
 	{
