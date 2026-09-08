@@ -170,12 +170,12 @@ def validate_index(index):
 def validate_snapshot(doc, game_version):
     """Return (errors, module_crc64: dict[str, int], symbol_records: dict)."""
     errors = []
-    if doc.get("schemaVersion") != 3:
-        errors.append(f"'{game_version}': snapshot schemaVersion must be 3")
+    if doc.get("schemaVersion") != 4:
+        errors.append(f"'{game_version}': snapshot schemaVersion must be 4")
         return errors, {}, {}
     source = doc.get("source")
-    if not isinstance(source, dict) or source.get("snapshotSchemaVersion") != 6:
-        errors.append(f"'{game_version}': source.snapshotSchemaVersion must be 6")
+    if not isinstance(source, dict) or source.get("snapshotSchemaVersion") != 7:
+        errors.append(f"'{game_version}': source.snapshotSchemaVersion must be 7")
         return errors, {}, {}
 
     binaries = doc.get("binaries")

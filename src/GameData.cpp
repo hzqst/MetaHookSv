@@ -28,6 +28,12 @@ bool MH_IsInLdrCriticalRegion();
 
 namespace
 {
+	// Gamedata contract versions emitted by the upstream dataset generator
+	// (gamesymbols_json.py); keep in sync with scripts/sync-gamedata.py.
+	constexpr int kIndexSchemaVersion = 4;
+	constexpr int kSnapshotSchemaVersion = 4;
+	constexpr int kSnapshotContractVersion = 7;
+
 	// -----------------------------------------------------------------------
 	// Internal record / module / catalog model (stable heap-owned storage).
 	// -----------------------------------------------------------------------
@@ -517,7 +523,7 @@ namespace
 		}
 
 		const rapidjson::Value* schemaVersion = FindMember(doc, "schemaVersion");
-		if (!schemaVersion || !schemaVersion->IsInt() || schemaVersion->GetInt() != 3)
+		if (!schemaVersion || !schemaVersion->IsInt() || schemaVersion->GetInt() != kSnapshotSchemaVersion)
 		{
 			AddDiagnostic("snapshot '%s': unsupported schemaVersion", gameVersion);
 			return;
@@ -530,7 +536,7 @@ namespace
 			return;
 		}
 		const rapidjson::Value* sourceSchema = FindMember(*source, "snapshotSchemaVersion");
-		if (!sourceSchema || !sourceSchema->IsInt() || sourceSchema->GetInt() != 6)
+		if (!sourceSchema || !sourceSchema->IsInt() || sourceSchema->GetInt() != kSnapshotContractVersion)
 		{
 			AddDiagnostic("snapshot '%s': unsupported source.snapshotSchemaVersion", gameVersion);
 			return;
@@ -654,9 +660,9 @@ namespace
 		}
 
 		const rapidjson::Value* schemaVersion = FindMember(index, "schemaVersion");
-		if (!schemaVersion || !schemaVersion->IsInt() || schemaVersion->GetInt() != 4)
+		if (!schemaVersion || !schemaVersion->IsInt() || schemaVersion->GetInt() != kIndexSchemaVersion)
 		{
-			AddDiagnostic("index.json: unsupported schemaVersion (expected 4)");
+			AddDiagnostic("index.json: unsupported schemaVersion (expected %d)", kIndexSchemaVersion);
 			return false;
 		}
 

@@ -19,7 +19,7 @@ GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalo
 ## Responsibilities
 
 - 构建并冻结只读 catalog（`GameData::Initialize`），初始化后不可重载，所有返回指针在进程退出前有效。
-- 校验 index（schema v4）与每个 snapshot（schema v3 / `source.snapshotSchemaVersion` v6）的路径安全、size、SHA-256（`Chocobo1::SHA2_256`）。
+- 校验 index（schema v4）与每个 snapshot（schema v4 / `source.snapshotSchemaVersion` v7）的路径安全、size、SHA-256（`Chocobo1::SHA2_256`）。
 - 只提取 `platform == "windows"` 的记录，将 `function` / `global` payload 规范化为 `GameSymbolRecord`；单 snapshot 失败隔离为 diagnostics，不破坏整个 catalog。
 - 将 signature 文本编译为 `(bytes, mask, legacyPattern)` 三态。
 - 按 `moduleBase` 管理 `ModuleIdentity`（普通 PE / Blob 文件 / None），懒计算并缓存模块 CRC-64/XZ，处理 mirror alias 与 unload 失效。
@@ -60,7 +60,7 @@ flowchart TD
     B --> C["Read + validate index.json (schema v4)"]
     C --> D["Per version entry: LoadSnapshot"]
     D --> E["Verify size + SHA-256 (SHA2_256)"]
-    E --> F["Parse snapshot JSON (schema v3 / source v6)"]
+    E --> F["Parse snapshot JSON (schema v4 / source v7)"]
     F --> G["Normalize 'windows' records -> GameSymbolRecord"]
     G --> H["Build crc64 -> ModuleCatalog -> symbolName map"]
     H --> I["Freeze catalog, available=true"]
@@ -96,7 +96,8 @@ flowchart TD
 - `cbSize` 契约：调用方先置 `cbSize = sizeof(mh_gamesymbol_t)`，过小返回 `OUTPUT_TOO_SMALL`；失败时输出字段清零但保留 `cbSize`。
 - `ResolveGameSymbol` 只接受 `FUNCTION`/`GLOBAL`，并做 rva 与 `rva + symbolSize` 的溢出和映像边界检查；不校验内存 signature，也不做跨版本扫描。
 - 迁移历史（规则见上文“架构约定”）：ResourceReplacer（计划见 `docs/plans/resource-replacer-gamedata-migration-plan.md`，2026-09-06 已实施——4 符号 gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，详见 [[resource-replacer-privatevars]]）；HeapPatch（2026-09-07 已实施——`Sys_InitMemory` gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，函数体内 heap-limit immediate 仍走有界 disasm，详见 [[heap-patch-privatevars]]）。仅对 gamedata 尚未提供且功能本体需要的指令信息保留相应操作；不能将 call-site 一概视为 gamedata 无法表达，已提供地址的符号必须直接 Resolve。
-- 发布数据状态（2026-09-06 同步）：上游已补齐 `S_LoadSound` / `Mod_LoadModel` / `FS_Open` / `CL_PrecacheResources`（ResourceReplacer）与 `Sys_InitMemory`（HeapPatch，见 [[heap-patch-privatevars]]），非空 snapshot 均含 windows 记录；但 cvar 分支（cvar_hooks 或 Cvar_Set + Cvar_DirectSet）与 blob 客户端 FreeBlob 仍缺，`scripts/validate-gamedata.py` 门禁仍因此 fail；cstrike/czero/czeror 各版本 snapshot 仍为 0 记录空壳。
+- 上游契约升级（2026-09-08，schema 7 / dataset schema 4）：每个 module/platform 增加必需布尔 `isBlob`（仅通过完整 Metahook blob 解密/重建/校验的 Windows 二进制为 true；非 Windows 必须 false），并移除旧 `path`。MetaHook 只消费 `binaries.*.windows.crc64`，不读取 `isBlob`（遵循上文“信任上游”约定）。
+- 发布数据状态（2026-09-08 同步）：`scripts/validate-gamedata.py` 门禁通过（16 snapshots / 5 engine families），cvar 分支与 blob 客户端符号已补齐；含 windows 记录的为 cof-5936（31）、hl-10210（58）、hl-8684（59）、hl-6153/hl-4554/hl-3647/hl-3329/hl-3266/hl-3248（各 31）、svencoop-10257（48），cstrike/czero/czeror 各版本仍为 0 记录空壳。
 - `Build\svencoop\metahook\gamedata\` 被 gitignore，由 Pre-build 的 `sync-gamedata.py` 通过同卷 staging + 事务式目录交换生成；commit `6b8f6f65 "remove gamedata."` 删除了原先跟踪的 JSON 载荷。
 
 ## Callers
