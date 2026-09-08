@@ -44,11 +44,15 @@ COMMON_REQUIRED = [
 ]
 
 # gameVersion -> engine family. Only these gameVersions are declared supported.
+# hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with
+# build number 4554 <= 9000, so the launcher's rule-based mapping reports
+# ENGINE_GOLDSRC for it. Both families require the same blob symbols, so the
+# gate result is unchanged.
 ENGINE_FAMILIES = {
     "ENGINE_SVENGINE": ["svencoop-10257"],
     "ENGINE_GOLDSRC_HL25": ["hl-10210"],
-    "ENGINE_GOLDSRC": ["hl-8684", "hl-6153"],
-    "ENGINE_GOLDSRC_BLOB": ["hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554"],
+    "ENGINE_GOLDSRC": ["hl-8684", "hl-6153", "hl-4554"],
+    "ENGINE_GOLDSRC_BLOB": ["hl-3248", "hl-3266", "hl-3329", "hl-3647"],
     "ENGINE_GOLDSRC_COF": ["cof-5936"],
 }
 
