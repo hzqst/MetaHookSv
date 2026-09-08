@@ -1461,14 +1461,30 @@ static bool MH_LoadEngine_FindLoadBlobClient(void)
 	mh_gamesymbol_status_t loadBlobSt = MH_IsGameSymbolAvailable(g_dwEngineBase, "NLoadBlob");
 	mh_gamesymbol_status_t freeBlobSt = MH_IsGameSymbolAvailable(g_dwEngineBase, "FreeBlob");
 
+	// Only SYMBOL_NOT_FOUND means "the symbol is absent"; any other failure must
+	// abort instead of being silently treated as absence.
+	if (loadBlobSt != MH_GAMESYMBOL_OK && loadBlobSt != MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		MH_LoadEngine_ReportSymbolFailure("NLoadBlob", loadBlobSt);
+		return false;
+	}
+	if (freeBlobSt != MH_GAMESYMBOL_OK && freeBlobSt != MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		MH_LoadEngine_ReportSymbolFailure("FreeBlob", freeBlobSt);
+		return false;
+	}
+
+	const bool loadBlobPresent = (loadBlobSt == MH_GAMESYMBOL_OK);
+	const bool freeBlobPresent = (freeBlobSt == MH_GAMESYMBOL_OK);
+
 	if (bothRequired)
 	{
-		if (loadBlobSt != MH_GAMESYMBOL_OK)
+		if (!loadBlobPresent)
 		{
 			MH_LoadEngine_ReportSymbolFailure("NLoadBlob", loadBlobSt);
 			return false;
 		}
-		if (freeBlobSt != MH_GAMESYMBOL_OK)
+		if (!freeBlobPresent)
 		{
 			MH_LoadEngine_ReportSymbolFailure("FreeBlob", freeBlobSt);
 			return false;
@@ -1476,9 +1492,6 @@ static bool MH_LoadEngine_FindLoadBlobClient(void)
 	}
 	else
 	{
-		const bool loadBlobPresent = (loadBlobSt == MH_GAMESYMBOL_OK);
-		const bool freeBlobPresent = (freeBlobSt == MH_GAMESYMBOL_OK);
-
 		if (loadBlobPresent != freeBlobPresent)
 		{
 			if (!loadBlobPresent)
