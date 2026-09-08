@@ -42,6 +42,18 @@ GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalo
 
 ## Architecture
 
+### 架构约定：可信上游与 gamedata-only 定位（2026-09-08 确认）
+
+- [constraint] 始终信任上游 gamedata 提供的数据正确。复用现有查询、解析和发布门禁；后续实现与审查不因假设上游提供错误 RVA、错误长度或跨 snapshot 元数据冲突而新增防御体系。既有校验和错误状态处理继续保留。
+- [decision] 能由 gamedata 定位的符号，最终地址统一通过 `MH_LoadEngine_ResolveSymbol` / `MH_ResolveGameSymbol` 获取；插件使用对应的 `g_pMetaHookAPI->ResolveGameSymbol`。不保留 signature、字符串或反查定位 fallback。
+- **触发信号 / 适用范围**：launcher、插件及共享代码新增或迁移 gamedata 消费逻辑，以及相关 spec、代码审查；这是长期架构约定，不限于 #850。
+- **根因 / 约束**：上游负责符号数据的正确性，消费端复用统一查询与地址解析职责，避免重复定位及额外防御体系。
+- **正确做法**：元数据查询和存在性判断不替代最终地址 Resolve；缺少必需数据按既有失败诊断处理，补数由上游完成。对于已提供地址的 call-site 也直接消费 gamedata，不再通过函数体 disasm 重新定位。
+- **验证方式**：审查最终地址来源、确认旧定位 fallback 已移除，运行现有发布门禁及与行为直接相关的定向验证；不为上述假设的错误上游数据新增防御性测试体系。
+- **决策来源**：用户在 [issue #850](https://github.com/hzqst/MetaHookSv/issues/850) 修订讨论中明确要求将这两条提升为 Basic Memory 架构约定。规则已确认不代表 #850 的代码已实现。
+
+### 组件数据流
+
 ```mermaid
 flowchart TD
     A["src/metahook.cpp MH_LoadEngine"] --> B["GameData::Initialize(gamedataRoot)"]
@@ -83,7 +95,7 @@ flowchart TD
 - 符号名查找区分大小写；键为 `(moduleCRC64, symbolName)`。完全相同的重复记录去重，内容冲突标记 `CATALOG_CONFLICT`；未类型化 kind 标记 `unsupportedKind` 查询返回 `UNSUPPORTED_KIND`。
 - `cbSize` 契约：调用方先置 `cbSize = sizeof(mh_gamesymbol_t)`，过小返回 `OUTPUT_TOO_SMALL`；失败时输出字段清零但保留 `cbSize`。
 - `ResolveGameSymbol` 只接受 `FUNCTION`/`GLOBAL`，并做 rva 与 `rva + symbolSize` 的溢出和映像边界检查；不校验内存 signature，也不做跨版本扫描。
-- 迁移策略（2026-09-06 确认，适用所有插件 gamedata 移植）：凡 gamedata 已能准确定位的符号一律 gamedata-only，**不保留** signature/字符串/反查 fallback，失败即 fatal（诊断格式对齐 launcher `MH_LoadEngine_ResolveSymbol`：符号名 + CRC64 + 状态串）；数据防线前移到 `validate-gamedata.py` 的 `COMMON_REQUIRED` 门禁，缺口靠上游补数（`D:\GoldSrc_VibeSignatures`）解决。已适用：ResourceReplacer（计划见 `docs/plans/resource-replacer-gamedata-migration-plan.md`，2026-09-06 已实施——4 符号 gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，详见 [[resource-replacer-privatevars]]）；HeapPatch（2026-09-07 已实施——`Sys_InitMemory` gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，函数体内 heap-limit immediate 仍走有界 disasm，详见 [[heap-patch-privatevars]]）。call-site / 指令操作数类 gamedata 表达不了的信息仍可有界 disasm，但那是功能本体而非 fallback。
+- 迁移历史（规则见上文“架构约定”）：ResourceReplacer（计划见 `docs/plans/resource-replacer-gamedata-migration-plan.md`，2026-09-06 已实施——4 符号 gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，详见 [[resource-replacer-privatevars]]）；HeapPatch（2026-09-07 已实施——`Sys_InitMemory` gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，函数体内 heap-limit immediate 仍走有界 disasm，详见 [[heap-patch-privatevars]]）。仅对 gamedata 尚未提供且功能本体需要的指令信息保留相应操作；不能将 call-site 一概视为 gamedata 无法表达，已提供地址的符号必须直接 Resolve。
 - 发布数据状态（2026-09-06 同步）：上游已补齐 `S_LoadSound` / `Mod_LoadModel` / `FS_Open` / `CL_PrecacheResources`（ResourceReplacer）与 `Sys_InitMemory`（HeapPatch，见 [[heap-patch-privatevars]]），非空 snapshot 均含 windows 记录；但 cvar 分支（cvar_hooks 或 Cvar_Set + Cvar_DirectSet）与 blob 客户端 FreeBlob 仍缺，`scripts/validate-gamedata.py` 门禁仍因此 fail；cstrike/czero/czeror 各版本 snapshot 仍为 0 记录空壳。
 - `Build\svencoop\metahook\gamedata\` 被 gitignore，由 Pre-build 的 `sync-gamedata.py` 通过同卷 staging + 事务式目录交换生成；commit `6b8f6f65 "remove gamedata."` 删除了原先跟踪的 JSON 载荷。
 

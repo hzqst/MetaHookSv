@@ -15,6 +15,12 @@ MetaHookSv is a client-side modding framework for GoldSrc engine based games, sp
 - **Plugin Libraries** (`PluginLibs/`): Shared utility libraries used by plugins.
 - **Public APIs / Interfaces** (`include/metahook.h`, `include/Interface/`): Framework and plugin interface definitions.
 
+## GameData Architecture Conventions
+
+- Trust upstream gamedata correctness; reuse existing query, parsing, and release gates without adding defensive systems for hypothetical bad RVAs, lengths, or cross-snapshot metadata conflicts.
+- Resolve final symbol addresses through `MH_LoadEngine_ResolveSymbol` / `MH_ResolveGameSymbol` (plugins use `ResolveGameSymbol`). Do not retain signature, string, or reverse-search location fallbacks for symbols available in gamedata.
+- These conventions apply to launcher and plugin implementation and review. See [[GameData]] for the confirmed architectural decisions, scope, and verification guidance (2026-09-08, issue #850).
+
 ## Tech Stack
 - **Language**: C++ (C++20 standard)
 - **Build System**: MSBuild (Visual Studio 2022, vc143 toolset)
