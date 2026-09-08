@@ -396,6 +396,34 @@ namespace
 		return true;
 	}
 
+	// A patch record is a single instruction address (call/jump) that callers
+	// may redirect. Its address is patch_rva; the patch signature is metadata
+	// only and is never interpreted as a function body or length.
+	bool NormalizePatch(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	{
+		const rapidjson::Value* patchRva = FindMember(payload, "patch_rva");
+		if (!patchRva || !patchRva->IsString())
+		{
+			error = "patch payload is missing patch_rva";
+			return false;
+		}
+
+		if (!ParseHexU32(patchRva->GetString(), rec.rva))
+		{
+			error = "invalid patch_rva";
+			return false;
+		}
+
+		rec.kind = MH_GAMESYMBOL_KIND_PATCH;
+		rec.symbolSize = 0;
+		rec.signatureRva = 0;
+		rec.instructionOffset = 0;
+		rec.operandOffset = 0;
+		rec.instructionLength = 0;
+		rec.flags = 0;
+		return true;
+	}
+
 	// -----------------------------------------------------------------------
 	// Catalog assembly.
 	// -----------------------------------------------------------------------
@@ -637,6 +665,16 @@ namespace
 				{
 					if (error.empty())
 						error = "global payload must be an object";
+					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
+					continue;
+				}
+			}
+			else if (std::strcmp(kindStr, "patch") == 0)
+			{
+				if (!payload || !payload->IsObject() || !NormalizePatch(*payload, record, error))
+				{
+					if (error.empty())
+						error = "patch payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -1093,6 +1131,24 @@ namespace GameData
 		return MH_GAMESYMBOL_OK;
 	}
 
+	bool GetGameVersion(uint64_t moduleCRC64, const char** outGameVersion)
+	{
+		if (!outGameVersion)
+			return false;
+
+		*outGameVersion = nullptr;
+
+		if (!g_catalog.available)
+			return false;
+
+		auto mit = g_catalog.modules.find(moduleCRC64);
+		if (mit == g_catalog.modules.end())
+			return false;
+
+		*outGameVersion = mit->second->gameVersion.c_str();
+		return true;
+	}
+
 	void RegisterModuleFileSource(PVOID moduleBase, const char* filePath, ULONG imageSize)
 	{
 		if (!moduleBase || !filePath || !*filePath)
@@ -1250,7 +1306,9 @@ mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbol
 	if (!moduleBase || !symbolName || !*symbolName)
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
-	if (expectedKind != MH_GAMESYMBOL_KIND_FUNCTION && expectedKind != MH_GAMESYMBOL_KIND_GLOBAL)
+	if (expectedKind != MH_GAMESYMBOL_KIND_FUNCTION &&
+		expectedKind != MH_GAMESYMBOL_KIND_GLOBAL &&
+		expectedKind != MH_GAMESYMBOL_KIND_PATCH)
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
 	mh_gamesymbol_t sym;
@@ -1277,6 +1335,21 @@ mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbol
 
 	*outAddress = (PVOID)((BYTE*)moduleBase + sym.rva);
 	return MH_GAMESYMBOL_OK;
+}
+
+mh_gamesymbol_status_t MH_IsGameSymbolAvailable(PVOID moduleBase, const char* symbolName)
+{
+	if (!moduleBase || !symbolName || !*symbolName)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t st = GameData::GetModuleCRC64(moduleBase, &crc64);
+	if (st != MH_GAMESYMBOL_OK)
+		return st;
+
+	mh_gamesymbol_t sym;
+	sym.cbSize = sizeof(sym);
+	return MH_QueryGameSymbolByCRC64(crc64, symbolName, &sym);
 }
 
 PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength)
