@@ -291,11 +291,13 @@ MetaHook (V2)版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的�
 这样就可以允许不同插件同时 `SearchPattern` 和 hook 同一个函数，避免了因为前一个插件提前hook修改了引擎代码导致后一个插件搜索特征码失败等插件之间互相冲突的问题。
 
 事务开启时机：引擎调用所有插件的`LoadEngine`和`LoadClient`期间、引擎调用客户端的 `HUD_GetStudioModelInterface` 期间以及DllLoadNotification期间。
-# 游戏符号 API（API 109）
+# 游戏符号 API（API 109，API 110 扩展）
 
 MetaHookSv API 版本 109 新增了一套公开的游戏符号查询/解析 API。它由本地 gamedata catalog 支撑：catalog 在构建期同步（见 `scripts/sync-gamedata.py`），运行时从 `<game>\<mod>\metahook\gamedata\` 读取。
 
-插件在调用这些函数前应先检查 `g_pInterface->MetaHookAPIVersion >= 109`。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
+API 版本 110 在末尾追加 `MH_GAMESYMBOL_KIND_PATCH` 与 `IsGameSymbolAvailable` 槽位，不移动任何已有槽位。
+
+插件在调用这些函数前应先检查 `g_pInterface->MetaHookAPIVersion >= 109`（使用 API 110 新增内容时需 `>= 110`）。所有返回的字符串/pattern 指针都由 MetaHook 持有、进程退出前有效；请勿释放或修改。
 
 ## 类型
 
@@ -306,9 +308,12 @@ typedef enum mh_gamesymbol_kind_e
 {
 	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
 	MH_GAMESYMBOL_KIND_FUNCTION = 1,
-	MH_GAMESYMBOL_KIND_GLOBAL = 2
+	MH_GAMESYMBOL_KIND_GLOBAL = 2,
+	MH_GAMESYMBOL_KIND_PATCH = 3
 } mh_gamesymbol_kind_t;
 ```
+
+`PATCH` 表示可被重定向的单条 call/jump 指令地址（`patch_rva`）；其 signature 仅为元数据，不会被当作函数体或长度解释。
 
 ### `mh_gamesymbol_status_t`
 
@@ -367,10 +372,13 @@ typedef struct mh_gamesymbol_s
 | `GetModuleCRC64(moduleBase, &crc64)` | 惰性计算并缓存 `moduleBase` 对应原始模块文件的 CRC-64/XZ。 |
 | `QueryGameSymbolByCRC64(crc64, name, &symbol)` | 按模块 CRC64 + canonical（区分大小写）符号名查询规范化元数据。 |
 | `QueryGameSymbol(moduleBase, name, &symbol)` | 先计算模块哈希，再按 CRC64 查询；不把 RVA 转成 VA。 |
-| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | 解析为 `moduleBase + rva`；kind 不符时返回 `MH_GAMESYMBOL_KIND_MISMATCH`。 |
+| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | 解析为 `moduleBase + rva`；`expectedKind` 必须为 FUNCTION / GLOBAL / PATCH，kind 不符时返回 `MH_GAMESYMBOL_KIND_MISMATCH`。 |
 | `SearchPatternMasked(base, len, bytes, mask, plen)` | 用显式 mask 搜索（字面 `0x2A` 无特殊含义）。 |
 | `GetGameSymbolStatusString(status)` | 返回 MetaHook 持有的静态英文字符串。 |
+| `IsGameSymbolAvailable(moduleBase, name)`（API 110） | 精确、区分大小写的符号名存在时返回 `MH_GAMESYMBOL_OK`，不存在时返回 `MH_GAMESYMBOL_SYMBOL_NOT_FOUND`，其它失败保留原状态码（绝不转换为“不存在”）。不返回地址。 |
 
 `QueryGameSymbol` / `QueryGameSymbolByCRC64` 要求调用方将 `outSymbol->cbSize` 初始化为 `sizeof(mh_gamesymbol_t)`；更小会返回 `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`。失败时输出字段会被清零，同时保留 `cbSize`。
+
+`IsGameSymbolAvailable` 不支持通配符或数字区间语法。需要连续编号记录族（如 `Cvar_Set_to_Cvar_DirectSet_callsite_0..N`）的调用方自行拼接精确名字，先用 `IsGameSymbolAvailable` 探测存在性，仅对存在的名字调用 `ResolveGameSymbol` 取地址。
 
 接受 `moduleBase` 的 API 要求模块在调用期间保持已加载。模块卸载时 MetaHook 会失效其 CRC 缓存及全部 mirror aliases；`ResolveGameSymbol` 返回的地址仅在该模块加载实例卸载前有效。

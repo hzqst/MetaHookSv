@@ -30,6 +30,12 @@ namespace GameData
 	// The caller must initialize outSymbol->cbSize to sizeof(mh_gamesymbol_t).
 	mh_gamesymbol_status_t QueryByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol);
 
+	// Look up the catalog gameVersion for a module CRC-64. Returns false and sets
+	// *outGameVersion to nullptr when outGameVersion is null, the catalog is
+	// unavailable, or the CRC-64 is not catalogued. The returned string is owned
+	// by the frozen catalog and stays valid until process exit.
+	bool GetGameVersion(uint64_t moduleCRC64, const char** outGameVersion);
+
 	// Register the on-disk source file for a module base. Used by the launcher
 	// for blob engines whose in-memory image is not backed by a normal PE file.
 	// Must be called before any query that resolves moduleBase.
@@ -58,6 +64,7 @@ mh_gamesymbol_status_t MH_GetModuleCRC64(PVOID moduleBase, uint64_t* outCRC64);
 mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_t* outSymbol);
 mh_gamesymbol_status_t MH_QueryGameSymbolByCRC64(uint64_t moduleCRC64, const char* symbolName, mh_gamesymbol_t* outSymbol);
 mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress);
+mh_gamesymbol_status_t MH_IsGameSymbolAvailable(PVOID moduleBase, const char* symbolName);
 PVOID MH_SearchPatternMasked(PVOID searchBase, DWORD searchLength, const BYTE* patternBytes, const BYTE* patternMask, DWORD patternLength);
 const char* MH_GetGameSymbolStatusString(mh_gamesymbol_status_t status);
 

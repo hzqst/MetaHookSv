@@ -1259,338 +1259,43 @@ bool MH_GetModuleFilePathA(HMODULE hModule, std::string& filePath)
 	return true;
 }
 
-#define RVA_from_VA(name, dllinfo) (ULONG)((ULONG_PTR)name##_VA - (ULONG_PTR)dllinfo.ImageBase)
-#define VA_from_RVA(name, dllinfo) ((ULONG_PTR)dllinfo.ImageBase + (ULONG_PTR)name##_RVA)
-#define Convert_VA_to_RVA(name, dllinfo) if(name##_VA) name##_RVA = ((ULONG_PTR)name##_VA - (ULONG_PTR)dllinfo.ImageBase)
-#define Convert_RVA_to_VA(name, dllinfo) if(name##_RVA) name##_VA = (decltype(name##_VA))VA_from_RVA(name, dllinfo)
-
-PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)
+// Format the engine module identity (path / CRC64) for loader diagnostics.
+static std::string MH_LoadEngine_FormatModuleIdentity(uint64_t crc64, bool hasCRC64)
 {
-	if ((ULONG_PTR)addr > (ULONG_PTR)SrcDllInfo.ImageBase && (ULONG_PTR)addr < (ULONG_PTR)SrcDllInfo.ImageBase + SrcDllInfo.ImageSize)
-	{
-		auto addr_VA = (ULONG_PTR)addr;
-		auto addr_RVA = RVA_from_VA(addr, SrcDllInfo);
+	std::string text;
 
-		return (PVOID)VA_from_RVA(addr, TargetDllInfo);
+	std::string modulePath;
+	if (g_hEngineModule)
+		MH_GetModuleFilePathA(g_hEngineModule, modulePath);
+
+	if (!modulePath.empty())
+	{
+		text += "Module: ";
+		text += modulePath;
+		text += "\n";
 	}
 
-	return nullptr;
+	if (hasCRC64)
+	{
+		char buffer[32];
+		snprintf(buffer, sizeof(buffer), "%016llx", (unsigned long long)crc64);
+		text += "CRC64: ";
+		text += buffer;
+		text += "\n";
+	}
+
+	return text;
 }
 
-void MH_LoadEngine_DetermineEngineType(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+static void MH_LoadEngine_ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
 {
-	if (g_iEngineType == ENGINE_UNKNOWN)
-	{
-		//TODO:通过gamedata来识别Cry of Fear并给g_iEngineType赋予ENGINE_GOLDSRC_COF、如果hw是hl-9000以上则给ENGINE_GOLDSRC_HL25、否则给ENGINE_GOLDSRC
-		auto factory = MH_GetEngineFactory();
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t crcSt = MH_GetModuleCRC64(g_dwEngineBase, &crc64);
 
-		if (factory("SCEngineClient002", NULL) ||
-			factory("SCEngineClient001", NULL))
-		{
-			g_iEngineType = ENGINE_SVENGINE;
-		}
-		else
-		{
-			if (g_pfnbuild_number() > 9000)
-			{
-				g_iEngineType = ENGINE_GOLDSRC_HL25;
-			}
-			else
-			{
-#define HALF_LIFE_STRING_SIG "Half-Life %i/%s (hw build %d)"
-				if (MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, HALF_LIFE_STRING_SIG, sizeof(HALF_LIFE_STRING_SIG) - 1))
-				{
-					g_iEngineType = ENGINE_GOLDSRC;
-				}
-			}
-		}
-	}
-}
-
-void MH_LoadEngine_FindCvarDirectSet(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	//TODO: 从gamedata取Cvar_DirectSet
-	if (1)
-	{
-		const char sigs1[] = "***PROTECTED***";
-		auto Cvar_DirectSet_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
-		if (!Cvar_DirectSet_String)
-			Cvar_DirectSet_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
-		if (Cvar_DirectSet_String)
-		{
-				// Locate .text references to the anchor string instead of assuming the
-				// instructions between the reference and the following call are fixed.
-				char pattern[] = "\x68\x2A\x2A\x2A\x2A";
-				*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
-
-				auto searchBegin = (PUCHAR)DllInfo.TextBase;
-				auto searchEnd = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-				while (searchBegin < searchEnd)
-				{
-					auto Cvar_DirectSet_StringRef = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-					if (!Cvar_DirectSet_StringRef)
-						break;
-
-					PVOID Cvar_DirectSet_VA = MH_ReverseSearchFunctionBeginEx(Cvar_DirectSet_StringRef, 0x500, [](PUCHAR Candidate) {
-					//.text : 01D42120 81 EC 0C 04 00 00                                   sub     esp, 40Ch
-					//.text : 01D42126 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-					//.text : 01D4212B 33 C4
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00 &&
-						Candidate[6] == 0xA1 &&
-						Candidate[11] == 0x33 &&
-						Candidate[12] == 0xC4)
-						return TRUE;
-
-					//.text : 01D2E530 55                                                  push    ebp
-					//.text : 01D2E531 8B EC                                               mov     ebp, esp
-					//.text : 01D2E533 81 EC 00 04 00 00                                   sub     esp, 400h
-					if (Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC &&
-						Candidate[3] == 0x81 &&
-						Candidate[4] == 0xEC &&
-						Candidate[7] == 0x00 &&
-						Candidate[8] == 0x00)
-						return TRUE;
-
-					//01D311B0 - 8B 4C 24 08           - mov ecx,[esp+08]
-					//01D311B4 - 81 EC 00040000        - sub esp,00000400 { 1024 }
-					//3248
-					if (Candidate[0] == 0x8B &&
-						Candidate[1] == 0x4C &&
-						Candidate[2] == 0x24 &&
-						Candidate[3] == 0x08 &&
-						Candidate[4] == 0x81 &&
-						Candidate[5] == 0xEC)
-						return TRUE;
-
-					//.text:01D2E240 81 EC 00 04 00 00                                   sub     esp, 400h
-					if (Candidate[0] == 0x81 &&
-						Candidate[1] == 0xEC &&
-						Candidate[4] == 0x00 &&
-						Candidate[5] == 0x00)
-						return TRUE;
-
-						return FALSE;
-						});
-
-					if (Cvar_DirectSet_VA)
-					{
-						g_pfnCvar_DirectSet = (decltype(g_pfnCvar_DirectSet))ConvertDllInfoSpace(Cvar_DirectSet_VA, DllInfo, RealDllInfo);
-						break;
-					}
-
-					searchBegin = (PUCHAR)Cvar_DirectSet_StringRef + sizeof(pattern) - 1;
-				}
-		}
-	}
-
-	if (!g_pfnCvar_DirectSet)
-	{
-		MH_SysError("MH_LoadEngine: Failed to locate Cvar_DirectSet");
-		return;
-	}
-}
-
-void MH_LoadEngine_PatchCvarCallbacks(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	//TODO cvar_hooks改为从gamedata取
-	PVOID Cvar_Set = ConvertDllInfoSpace((void*)gMetaSave.pEngineFuncs->Cvar_Set, RealDllInfo, DllInfo);
-
-	if (Cvar_Set)
-	{
-		typedef struct Cvar_Set_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}Cvar_Set_SearchContext;
-
-		Cvar_Set_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		MH_DisasmRanges(Cvar_Set, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (Cvar_Set_SearchContext*)context;
-
-			if (!cvar_hooks)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0)
-				{
-					cvar_hooks = (decltype(cvar_hooks))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if (cvar_hooks)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-
-		if (!cvar_hooks)
-		{
-			//TODO: "Cvar_Set: variable %s not found" 怎么办?
-			typedef struct CvarSet_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				bool bCallManipulated{};
-			}CvarSet_SearchContext;
-
-			CvarSet_SearchContext ctx = { DllInfo, RealDllInfo };
-
-			const char sigs1[] = "Cvar_Set: variable %s not found\n";
-			auto Cvar_DirectSet_String = MH_SearchPattern(DllInfo.DataBase, DllInfo.DataSize, sigs1, sizeof(sigs1) - 1);
-			if (!Cvar_DirectSet_String)
-				Cvar_DirectSet_String = MH_SearchPattern(DllInfo.RdataBase, DllInfo.RdataSize, sigs1, sizeof(sigs1) - 1);
-			if (Cvar_DirectSet_String)
-			{
-				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-				*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
-
-				auto searchBegin = (PUCHAR)DllInfo.TextBase;
-				auto searchEnd = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-				while (1)
-				{
-					auto Cvar_Set_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-					if (Cvar_Set_Call)
-					{
-						searchBegin = (PUCHAR)Cvar_Set_Call + sizeof(pattern) - 1;
-
-						MH_DisasmRanges(searchBegin, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-							auto pinst = (cs_insn*)inst;
-							auto ctx = (CvarSet_SearchContext*)context;
-
-							if (address[0] == 0xE8 || address[0] == 0xE9)
-							{
-								auto callTarget = (PVOID)pinst->detail->x86.operands[0].imm;
-								auto callTarget_RealDllBased = ConvertDllInfoSpace(callTarget, ctx->DllInfo, ctx->RealDllInfo);
-
-								if (callTarget_RealDllBased == g_pfnCvar_DirectSet)
-								{
-									//auto dwNewRVA = (ULONG_PTR)MH_Cvar_DirectSet - (ULONG_PTR)(address + 5);
-									//MH_WriteDWORD(address + 1, dwNewRVA);
-									auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-									MH_InlinePatchRedirectBranch(address_RealDllBased, MH_Cvar_DirectSet, NULL);
-
-									ctx->bCallManipulated = true;
-								}
-							}
-
-							if (address[0] == 0xCC)
-								return TRUE;
-
-							if (address[0] == 0x90)
-								return TRUE;
-
-							return FALSE;
-							}, 0, &ctx);
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
-
-			if (!ctx.bCallManipulated) {
-				MH_SysError("MH_LoadEngine: Failed to locate call inside Cvar_Set");
-				return;
-			}
-
-			cvar_hooks = &g_ManagedCvarCallbackList;
-		}
-	}
-}
-
-void MH_LoadEngine_FindLoadBlobClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	//TODO: 改为从gamedata取
-	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB || g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		const char pattern[] = "\x85\xBC\x32\x7A\xFF";
-		const char pattern2[] = "\x6A\x00\x6A\x01\x6A\x00";
-
-		auto searchBegin = (PUCHAR)DllInfo.TextBase;
-		auto searchEnd = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (1)
-		{
-			auto ExportPoint_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-			if (ExportPoint_Call)
-			{
-				auto ExportPoint_Push = MH_SearchPattern((PUCHAR)ExportPoint_Call - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
-				if (ExportPoint_Push)
-				{
-					PVOID LoadBlobFile_VA = MH_ReverseSearchFunctionBegin((PUCHAR)ExportPoint_Push, 0x300);
-					g_pfnNLoadBlob = (decltype(g_pfnNLoadBlob))ConvertDllInfoSpace(LoadBlobFile_VA, DllInfo, RealDllInfo);
-
-					break;
-				}
-
-				searchBegin = (PUCHAR)ExportPoint_Call + sizeof(pattern) - 1;
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		if (!g_pfnNLoadBlob) {
-			MH_SysError("MH_LoadEngine: Failed to locate LoadBlobFile");
-			return;
-		}
-	}
-
-	if (g_pfnNLoadBlob)
-	{
-		//TODO: 改为从gamedata取
-		const char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x74";
-
-		auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern, sizeof(pattern) - 1);
-		if (FreeBlob_Call)
-		{
-			PVOID FreeBlob_VA = MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
-			g_pfnFreeBlob = (decltype(g_pfnFreeBlob))ConvertDllInfoSpace(FreeBlob_VA, DllInfo, RealDllInfo);
-		}
-		else
-		{
-			const char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A";
-			*(ULONG_PTR*)(pattern2 + sizeof(pattern2) - 1 - 4) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
-
-			auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern2, sizeof(pattern2) - 1);
-			if (FreeBlob_Call)
-			{
-				PVOID FreeBlob_VA = MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
-				g_pfnFreeBlob = (decltype(g_pfnFreeBlob))ConvertDllInfoSpace(FreeBlob_VA, DllInfo, RealDllInfo);
-			}
-			else
-			{
-				const char pattern3[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50";
-				*(ULONG_PTR*)(pattern3 + sizeof(pattern3) - 1 - 5) = (ULONG_PTR)ConvertDllInfoSpace(g_phClientModule, RealDllInfo, DllInfo);
-				auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(DllInfo.TextBase, DllInfo.TextSize, pattern3, sizeof(pattern3) - 1);
-				if (FreeBlob_Call)
-				{
-					PVOID FreeBlob_VA = MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
-					g_pfnFreeBlob = (decltype(g_pfnFreeBlob))ConvertDllInfoSpace(FreeBlob_VA, DllInfo, RealDllInfo);
-				}
-			}
-		}
-
-		if (!g_pfnFreeBlob) {
-			MH_SysError("MH_LoadEngine: Failed to locate FreeBlob");
-			return;
-		}
-	}
+	MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\n%sReason: %s",
+		symbolName,
+		MH_LoadEngine_FormatModuleIdentity(crc64, crcSt == MH_GAMESYMBOL_OK).c_str(),
+		MH_GetGameSymbolStatusString(status));
 }
 
 static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
@@ -1600,30 +1305,214 @@ static bool MH_LoadEngine_ResolveSymbol(const char* symbolName, mh_gamesymbol_ki
 	if (st == MH_GAMESYMBOL_OK)
 		return true;
 
+	MH_LoadEngine_ReportSymbolFailure(symbolName, st);
+	return false;
+}
+
+// Map a catalog gameVersion to an engine family. Only gameVersions whose prefix
+// and build number are known are accepted; anything else is "unconfirmed".
+static int MH_LoadEngine_EngineTypeFromGameVersion(const char* gameVersion)
+{
+	if (!gameVersion)
+		return ENGINE_UNKNOWN;
+
+	if (strncmp(gameVersion, "svencoop-", 9) == 0)
+		return ENGINE_SVENGINE;
+
+	if (strncmp(gameVersion, "cof-", 4) == 0)
+		return ENGINE_GOLDSRC_COF;
+
+	if (strncmp(gameVersion, "hl-", 3) == 0)
+	{
+		const char* p = gameVersion + 3;
+		if (!*p)
+			return ENGINE_UNKNOWN;
+
+		unsigned long long build = 0;
+		for (; *p; ++p)
+		{
+			if (*p < '0' || *p > '9')
+				return ENGINE_UNKNOWN;
+
+			build = build * 10 + (unsigned long long)(*p - '0');
+			if (build > 0xFFFFFFFFull)
+				return ENGINE_UNKNOWN;
+		}
+
+		return build > 9000 ? ENGINE_GOLDSRC_HL25 : ENGINE_GOLDSRC;
+	}
+
+	return ENGINE_UNKNOWN;
+}
+
+// Confirm the engine version from gamedata, then classify the engine family.
+// Blob engines were already classified as ENGINE_GOLDSRC_BLOB by MH_LoadEngine
+// and keep that value; this function only fills in non-blob engines.
+static bool MH_LoadEngine_DetermineEngineType(void)
+{
 	uint64_t crc64 = 0;
 	mh_gamesymbol_status_t crcSt = MH_GetModuleCRC64(g_dwEngineBase, &crc64);
 
-	std::string modulePath;
-	if (g_hEngineModule)
-		MH_GetModuleFilePathA(g_hEngineModule, modulePath);
-
-	if (crcSt == MH_GAMESYMBOL_OK && !modulePath.empty())
+	if (crcSt != MH_GAMESYMBOL_OK)
 	{
-		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nModule: %s\nCRC64: %016llx\nReason: %s",
-			symbolName, modulePath.c_str(), (unsigned long long)crc64, MH_GetGameSymbolStatusString(st));
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sReason: failed to compute the engine module CRC64 (%s)",
+			MH_LoadEngine_FormatModuleIdentity(0, false).c_str(),
+			MH_GetGameSymbolStatusString(crcSt));
+		return false;
 	}
-	else if (crcSt == MH_GAMESYMBOL_OK)
+
+	const char* gameVersion = nullptr;
+	if (!GameData::GetGameVersion(crc64, &gameVersion) || !gameVersion)
 	{
-		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nCRC64: %016llx\nReason: %s",
-			symbolName, (unsigned long long)crc64, MH_GetGameSymbolStatusString(st));
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sReason: the engine module CRC64 is not present in the gamedata catalog",
+			MH_LoadEngine_FormatModuleIdentity(crc64, true).c_str());
+		return false;
+	}
+
+	int engineType = MH_LoadEngine_EngineTypeFromGameVersion(gameVersion);
+
+	if (engineType == ENGINE_UNKNOWN)
+	{
+		MH_SysError("MH_LoadEngine: Unable to determine engine version\n%sGameVersion: %s\nReason: unsupported gameVersion prefix or malformed build number",
+			MH_LoadEngine_FormatModuleIdentity(crc64, true).c_str(), gameVersion);
+		return false;
+	}
+
+	if (g_iEngineType == ENGINE_UNKNOWN)
+		g_iEngineType = engineType;
+
+	return true;
+}
+
+static bool MH_LoadEngine_FindCvarDirectSet(void)
+{
+	return MH_LoadEngine_ResolveSymbol("Cvar_DirectSet", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnCvar_DirectSet);
+}
+
+static bool MH_LoadEngine_PatchCvarCallbacks(void)
+{
+	// Native callback list: use the engine's own linked list head directly.
+	mh_gamesymbol_status_t nativeSt = MH_IsGameSymbolAvailable(g_dwEngineBase, "cvar_hooks");
+
+	if (nativeSt == MH_GAMESYMBOL_OK)
+	{
+		PVOID address = NULL;
+		if (!MH_LoadEngine_ResolveSymbol("cvar_hooks", MH_GAMESYMBOL_KIND_GLOBAL, &address))
+			return false;
+
+		cvar_hooks = (cvar_callback_entry_t**)address;
+		return true;
+	}
+
+	if (nativeSt != MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		MH_LoadEngine_ReportSymbolFailure("cvar_hooks", nativeSt);
+		return false;
+	}
+
+	// Managed list: redirect every Cvar_Set -> Cvar_DirectSet call site to our
+	// wrapper and keep the callback entries in MetaHook's own list.
+	for (int index = 0;; ++index)
+	{
+		char symbolName[64];
+		snprintf(symbolName, sizeof(symbolName), "Cvar_Set_to_Cvar_DirectSet_callsite_%d", index);
+
+		mh_gamesymbol_status_t callSiteSt = MH_IsGameSymbolAvailable(g_dwEngineBase, symbolName);
+
+		if (callSiteSt == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+		{
+			// Numbering is contiguous from 0; the first missing index ends the
+			// enumeration, unless even the first call site is missing.
+			if (index == 0)
+			{
+				MH_LoadEngine_ReportSymbolFailure(symbolName, callSiteSt);
+				return false;
+			}
+			break;
+		}
+
+		if (callSiteSt != MH_GAMESYMBOL_OK)
+		{
+			MH_LoadEngine_ReportSymbolFailure(symbolName, callSiteSt);
+			return false;
+		}
+
+		PVOID callSiteAddress = NULL;
+		if (!MH_LoadEngine_ResolveSymbol(symbolName, MH_GAMESYMBOL_KIND_PATCH, &callSiteAddress))
+			return false;
+
+		if (!MH_InlinePatchRedirectBranch(callSiteAddress, MH_Cvar_DirectSet, NULL))
+		{
+			MH_SysError("MH_LoadEngine: Failed to redirect the cvar branch at \"%s\"", symbolName);
+			return false;
+		}
+	}
+
+	cvar_hooks = &g_ManagedCvarCallbackList;
+	return true;
+}
+
+static bool MH_LoadEngine_FindLoadBlobClient(void)
+{
+	// Only SvEngine may ship without the blob client hooks; every other engine
+	// family requires both symbols, and one without the other is always an error.
+	const bool bothRequired = (g_iEngineType != ENGINE_SVENGINE);
+
+	mh_gamesymbol_status_t loadBlobSt = MH_IsGameSymbolAvailable(g_dwEngineBase, "NLoadBlob");
+	mh_gamesymbol_status_t freeBlobSt = MH_IsGameSymbolAvailable(g_dwEngineBase, "FreeBlob");
+
+	// Only SYMBOL_NOT_FOUND means "the symbol is absent"; any other failure must
+	// abort instead of being silently treated as absence.
+	if (loadBlobSt != MH_GAMESYMBOL_OK && loadBlobSt != MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		MH_LoadEngine_ReportSymbolFailure("NLoadBlob", loadBlobSt);
+		return false;
+	}
+	if (freeBlobSt != MH_GAMESYMBOL_OK && freeBlobSt != MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+	{
+		MH_LoadEngine_ReportSymbolFailure("FreeBlob", freeBlobSt);
+		return false;
+	}
+
+	const bool loadBlobPresent = (loadBlobSt == MH_GAMESYMBOL_OK);
+	const bool freeBlobPresent = (freeBlobSt == MH_GAMESYMBOL_OK);
+
+	if (bothRequired)
+	{
+		if (!loadBlobPresent)
+		{
+			MH_LoadEngine_ReportSymbolFailure("NLoadBlob", loadBlobSt);
+			return false;
+		}
+		if (!freeBlobPresent)
+		{
+			MH_LoadEngine_ReportSymbolFailure("FreeBlob", freeBlobSt);
+			return false;
+		}
 	}
 	else
 	{
-		MH_SysError("MH_LoadEngine: Failed to resolve \"%s\"\nReason: %s",
-			symbolName, MH_GetGameSymbolStatusString(st));
+		if (loadBlobPresent != freeBlobPresent)
+		{
+			if (!loadBlobPresent)
+			{
+				MH_LoadEngine_ReportSymbolFailure("NLoadBlob", loadBlobSt);
+				return false;
+			}
+			MH_LoadEngine_ReportSymbolFailure("FreeBlob", freeBlobSt);
+			return false;
+		}
+
+		if (!loadBlobPresent)
+			return true;
 	}
 
-	return false;
+	if (!MH_LoadEngine_ResolveSymbol("NLoadBlob", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnNLoadBlob))
+		return false;
+	if (!MH_LoadEngine_ResolveSymbol("FreeBlob", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnFreeBlob))
+		return false;
+
+	return true;
 }
 
 static bool MH_LoadEngine_ResolveGlobalOperand(const char* symbolName, PVOID globalAddress, PVOID* outOperand)
@@ -1722,30 +1611,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
 
-	mh_dll_info_t EngineDllInfo = { 0 };
-
-	if (g_dwEngineBase)
-	{
-		EngineDllInfo.ImageBase = g_dwEngineBase;
-		EngineDllInfo.ImageSize = g_dwEngineSize;
-
-		EngineDllInfo.TextBase = MH_GetSectionByName(EngineDllInfo.ImageBase, ".text\0\0\0", &EngineDllInfo.TextSize);
-		EngineDllInfo.DataBase = MH_GetSectionByName(EngineDllInfo.ImageBase, ".data\0\0\0", &EngineDllInfo.DataSize);
-		EngineDllInfo.RdataBase = MH_GetSectionByName(EngineDllInfo.ImageBase, ".rdata\0\0", &EngineDllInfo.RdataSize);
-	}
-
-	mh_dll_info_t MirrorEngineDllInfo = { 0 };
-
-	if (g_hMirrorEngine)
-	{
-		MirrorEngineDllInfo.ImageBase = MH_GetMirrorDLLBase(g_hMirrorEngine);
-		MirrorEngineDllInfo.ImageSize = MH_GetMirrorDLLSize(g_hMirrorEngine);
-
-		MirrorEngineDllInfo.TextBase = MH_GetSectionByName(MirrorEngineDllInfo.ImageBase, ".text\0\0\0", &MirrorEngineDllInfo.TextSize);
-		MirrorEngineDllInfo.DataBase = MH_GetSectionByName(MirrorEngineDllInfo.ImageBase, ".data\0\0\0", &MirrorEngineDllInfo.DataSize);
-		MirrorEngineDllInfo.RdataBase = MH_GetSectionByName(MirrorEngineDllInfo.ImageBase, ".rdata\0\0", &MirrorEngineDllInfo.RdataSize);
-	}
-
 	// Establish a fresh gamedata catalog and this engine generation's module identities.
 	{
 		std::string gamedataRoot = szFullGamePath;
@@ -1774,11 +1639,15 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 			GameData::RegisterMirrorAlias(MH_GetMirrorDLLBase(g_hMirrorEngine), g_dwEngineBase);
 	}
 
+	// Confirm the game version and engine family before anything else, so an
+	// uncatalogued engine reports "unable to determine engine version" instead
+	// of a missing build_number.
+	if (!MH_LoadEngine_DetermineEngineType())
+		return;
+
 	// Resolve the engine's final-consumption symbols from gamedata.
 	if (!MH_LoadEngine_ResolveSymbol("build_number", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnbuild_number))
 		return;
-
-	MH_LoadEngine_FindEngineType(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
 
 	if (!MH_LoadEngine_ResolveSymbol("Sys_Error", MH_GAMESYMBOL_KIND_FUNCTION, (PVOID*)&g_pfnSys_Error))
 		return;
@@ -1804,12 +1673,14 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	memcpy(gMetaSave.pEngineFuncs, g_pEngineFuncs, sizeof(cl_enginefunc_t));
 	Cmd_GetCmdBase = (decltype(Cmd_GetCmdBase))gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle;
 
-	// The cvar branch and blob-client hooks still use the legacy locators until
-	// the required gamedata (cvar_hooks / Cvar_Set / Cvar_DirectSet / FreeBlob)
-	// is complete for every declared engine family.
-	MH_LoadEngine_FindCvarDirectSet(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_PatchCvarCallbacks(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
-	MH_LoadEngine_FindLoadBlobClient(MirrorEngineDllInfo.ImageBase ? MirrorEngineDllInfo : EngineDllInfo, EngineDllInfo);
+	if (!MH_LoadEngine_FindCvarDirectSet())
+		return;
+
+	if (!MH_LoadEngine_PatchCvarCallbacks())
+		return;
+
+	if (!MH_LoadEngine_FindLoadBlobClient())
+		return;
 
 	// Redirect ClientDLL_Init's indirect call through our wrapper. cl_funcs is
 	// populated only after the client DLL is loaded, so hooking its current
@@ -3176,6 +3047,7 @@ const char* engineTypeNames[] = {
 	"GoldSrc",
 	"SvEngine",
 	"GoldSrc_HL25",
+	"GoldSrc_CoF",
 };
 
 const char* MH_GetEngineTypeName(void)
@@ -3991,7 +3863,7 @@ void MH_DeleteWorkItem(ThreadWorkItemHandle_t hWorkItem)
 // GameData public API - implemented in GameData.cpp.
 // ---------------------------------------------------------------------------
 
-static_assert(MH_GAMESYMBOL_KIND_UNKNOWN == 0 && MH_GAMESYMBOL_KIND_FUNCTION == 1 && MH_GAMESYMBOL_KIND_GLOBAL == 2, "mh_gamesymbol_kind_t values are ABI-stable");
+static_assert(MH_GAMESYMBOL_KIND_UNKNOWN == 0 && MH_GAMESYMBOL_KIND_FUNCTION == 1 && MH_GAMESYMBOL_KIND_GLOBAL == 2 && MH_GAMESYMBOL_KIND_PATCH == 3, "mh_gamesymbol_kind_t values are ABI-stable");
 static_assert(MH_GAMESYMBOL_OK == 0 &&
 	MH_GAMESYMBOL_INVALID_ARGUMENT == 1 &&
 	MH_GAMESYMBOL_OUTPUT_TOO_SMALL == 2 &&
@@ -4110,6 +3982,7 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	NULL,
 	NULL,
 	NULL,
+	NULL,
 	NULL
 };
 
@@ -4215,5 +4088,6 @@ metahook_api_t gMetaHookAPI =
 	MH_ResolveGameSymbol,
 	MH_SearchPatternMasked,
 	MH_GetGameSymbolStatusString,
+	MH_IsGameSymbolAvailable,
 	NULL
 };

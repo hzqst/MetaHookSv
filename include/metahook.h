@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 109
+#define METAHOOK_API_VERSION 110
 
 typedef struct hook_s hook_t;
 
@@ -184,7 +184,8 @@ typedef enum mh_gamesymbol_kind_e
 {
 	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
 	MH_GAMESYMBOL_KIND_FUNCTION = 1,
-	MH_GAMESYMBOL_KIND_GLOBAL = 2
+	MH_GAMESYMBOL_KIND_GLOBAL = 2,
+	MH_GAMESYMBOL_KIND_PATCH = 3
 } mh_gamesymbol_kind_t;
 
 /*
@@ -782,7 +783,7 @@ typedef struct metahook_api_s
 
 	/*
 		Purpose: Resolve a symbol to its runtime virtual address (moduleBase + rva).
-		expectedKind must be FUNCTION or GLOBAL; returns KIND_MISMATCH otherwise.
+		expectedKind must be FUNCTION, GLOBAL or PATCH; returns KIND_MISMATCH otherwise.
 	*/
 	mh_gamesymbol_status_t (*ResolveGameSymbol)(
 		PVOID moduleBase,
@@ -807,6 +808,17 @@ typedef struct metahook_api_s
 	*/
 	const char *(*GetGameSymbolStatusString)(
 		mh_gamesymbol_status_t status);
+
+	/*
+		Purpose: Test whether an exact catalog symbol name is available for moduleBase.
+		symbolName is case-sensitive and exact: no wildcard or numeric-range syntax.
+		Returns MH_GAMESYMBOL_OK when present, MH_GAMESYMBOL_SYMBOL_NOT_FOUND when
+		absent, and the original status for every other failure (never converted to
+		"not found"). Only tests availability; call ResolveGameSymbol for an address.
+	*/
+	mh_gamesymbol_status_t (*IsGameSymbolAvailable)(
+		PVOID moduleBase,
+		const char *symbolName);
 
 	// Always terminate with a NULL
 	PVOID Terminator;

@@ -222,11 +222,13 @@ During the engine's call to all plugins' `LoadEngine`, a "transaction" will be o
 
 The transaction opening timing includes: during the engine's calls to all plugins' `LoadEngine` and `LoadClient`, during the engine's call to the client's `HUD_GetStudioModelInterface`, and during the DllLoadNotification period.
 
-# Game Symbol API (API 109)
+# Game Symbol API (API 109, extended in API 110)
 
 MetaHookSv API version 109 adds a public game symbol query/resolution API. It is backed by a local gamedata catalog that is synchronized at build time (see `scripts/sync-gamedata.py`) and read at runtime from `<game>\<mod>\metahook\gamedata\`.
 
-Plugins must check `g_pInterface->MetaHookAPIVersion >= 109` before calling these functions. All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
+API version 110 appends `MH_GAMESYMBOL_KIND_PATCH` and the `IsGameSymbolAvailable` slot without moving any existing slot.
+
+Plugins must check `g_pInterface->MetaHookAPIVersion >= 109` (or `>= 110` for the API 110 additions) before calling these functions. All returned string/pattern pointers are owned by MetaHook and remain valid until process exit; do not free or modify them.
 
 ## Types
 
@@ -237,9 +239,12 @@ typedef enum mh_gamesymbol_kind_e
 {
 	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
 	MH_GAMESYMBOL_KIND_FUNCTION = 1,
-	MH_GAMESYMBOL_KIND_GLOBAL = 2
+	MH_GAMESYMBOL_KIND_GLOBAL = 2,
+	MH_GAMESYMBOL_KIND_PATCH = 3
 } mh_gamesymbol_kind_t;
 ```
+
+`PATCH` denotes a single call/jump instruction address (`patch_rva`) that can be redirected; its signature is metadata only and is never interpreted as a function body or length.
 
 ### `mh_gamesymbol_status_t`
 
@@ -298,10 +303,13 @@ typedef struct mh_gamesymbol_s
 | `GetModuleCRC64(moduleBase, &crc64)` | Lazily compute and cache the CRC-64/XZ of the original module file backing `moduleBase`. |
 | `QueryGameSymbolByCRC64(crc64, name, &symbol)` | Query normalized metadata by module CRC64 + canonical (case-sensitive) symbol name. |
 | `QueryGameSymbol(moduleBase, name, &symbol)` | Hash the module, then query by CRC64. Does not convert RVA to VA. |
-| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | Resolve to `moduleBase + rva`; returns `MH_GAMESYMBOL_KIND_MISMATCH` if the kind differs. |
+| `ResolveGameSymbol(moduleBase, name, expectedKind, &address)` | Resolve to `moduleBase + rva`; `expectedKind` must be FUNCTION, GLOBAL or PATCH, and a mismatch returns `MH_GAMESYMBOL_KIND_MISMATCH`. |
 | `SearchPatternMasked(base, len, bytes, mask, plen)` | Search with an explicit mask (literal `0x2A` has no special meaning). |
 | `GetGameSymbolStatusString(status)` | Return a static, MetaHook-owned English string for a status. |
+| `IsGameSymbolAvailable(moduleBase, name)` (API 110) | Return `MH_GAMESYMBOL_OK` when the exact, case-sensitive name exists, `MH_GAMESYMBOL_SYMBOL_NOT_FOUND` when it does not, and the original status for every other failure (never converted to "not found"). It does not return an address. |
 
 `QueryGameSymbol` / `QueryGameSymbolByCRC64` require the caller to initialize `outSymbol->cbSize` to `sizeof(mh_gamesymbol_t)`; a smaller value returns `MH_GAMESYMBOL_OUTPUT_TOO_SMALL`. On failure the output fields are zeroed while `cbSize` is preserved.
+
+`IsGameSymbolAvailable` accepts no wildcard or numeric-range syntax. Callers that need a contiguous family of numbered records, such as `Cvar_Set_to_Cvar_DirectSet_callsite_0..N`, build each exact name themselves, probe with `IsGameSymbolAvailable`, and call `ResolveGameSymbol` only for names that exist.
 
 APIs that accept `moduleBase` require the module to remain loaded for the duration of the call. MetaHook invalidates the module CRC cache and any mirror aliases when the module unloads; an address returned by `ResolveGameSymbol` is valid only until that module instance unloads.

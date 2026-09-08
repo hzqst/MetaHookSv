@@ -6,11 +6,11 @@ Checks (see docs/plans/metahook-gamedata-api-implementation-plan.md, section 14)
   1. index.json schema, path safety, file existence, size and SHA-256.
   2. snapshot schema and Windows binary metadata.
   3. signature token legality.
-  4. function / global required field completeness.
+  4. function / global / patch required field completeness.
   5. (CRC64, symbolName) conflicts.
   6. common required symbols for every declared engine family.
-  7. cvar alternative: cvar_hooks OR (Cvar_Set + Cvar_DirectSet + Cvar_Set.symbolSize).
-  8. blob conditional symbols (NLoadBlob + FreeBlob).
+  7. cvar alternative: cvar_hooks (global) OR Cvar_Set_to_Cvar_DirectSet_callsite_0 (patch).
+  8. blob conditional symbols (NLoadBlob + FreeBlob), and the SvEngine pairing rule.
   9. DWORD field ranges and global signatureRva derivation.
 
 Exit code is 0 when the catalog is release-consistent, non-zero otherwise.
@@ -34,6 +34,7 @@ COMMON_REQUIRED = [
     "videomode",
     "gClientUserMsgs",
     "cl_parsefuncs",
+    "Cvar_DirectSet",
     # ResourceReplacer (plugins resolve these via ResolveGameSymbol)
     "S_LoadSound",
     "Mod_LoadModel",
@@ -58,7 +59,7 @@ ENGINE_FAMILIES = {
 
 # Engine families that load a (possibly blob) client and therefore need the
 # NLoadBlob / FreeBlob hooks.
-BLOB_CLIENT_FAMILIES = ("ENGINE_GOLDSRC", "ENGINE_GOLDSRC_BLOB", "ENGINE_GOLDSRC_HL25")
+BLOB_CLIENT_FAMILIES = ("ENGINE_GOLDSRC", "ENGINE_GOLDSRC_BLOB", "ENGINE_GOLDSRC_HL25", "ENGINE_GOLDSRC_COF")
 
 # gameVersion -> engine family lookup.
 GAME_TO_FAMILY = {}
@@ -270,6 +271,23 @@ def validate_snapshot(doc, game_version):
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
+        elif kind == "patch":
+            p = payload if isinstance(payload, dict) else {}
+            patch_name = p.get("patch_name")
+            patch_rva = parse_hex_u32(p.get("patch_rva"))
+            patch_sig = p.get("patch_sig")
+            patch_sig_disp = parse_hex_u32(p.get("patch_sig_disp"))
+            if (not isinstance(patch_name, str) or patch_rva is None or
+                    not isinstance(patch_sig, str) or patch_sig_disp is None):
+                errors.append(f"'{game_version}': patch '{name}' missing/invalid patch_name/patch_rva/patch_sig/patch_sig_disp")
+                continue
+            if not validate_signature(patch_sig):
+                errors.append(f"'{game_version}': patch '{name}' has a malformed signature")
+                continue
+            rec = {"kind": "patch", "rva": patch_rva, "sig_disp": patch_sig_disp}
+            if name in symbols and symbols[name] != rec:
+                errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
+            symbols[name] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue
@@ -284,21 +302,28 @@ def validate_required(symbols, family, game_version):
         if sym not in symbols:
             errors.append(f"'{game_version}' ({family}): missing common required symbol '{sym}'")
 
-    # cvar branch
-    if "cvar_hooks" not in symbols:
-        has_cvar_set = "Cvar_Set" in symbols and "Cvar_DirectSet" in symbols
-        has_size = "Cvar_Set" in symbols and isinstance(symbols["Cvar_Set"], dict) and symbols["Cvar_Set"].get("size", 0) > 0
-        if not (has_cvar_set and has_size):
-            errors.append(
-                f"'{game_version}' ({family}): missing cvar branch "
-                f"(need cvar_hooks or Cvar_Set + Cvar_DirectSet + Cvar_Set.symbolSize)"
-            )
+    # cvar branch: the engine's native callback list, or at least one managed
+    # Cvar_Set -> Cvar_DirectSet call-site redirect.
+    has_native = isinstance(symbols.get("cvar_hooks"), dict) and symbols["cvar_hooks"].get("kind") == "global"
+    has_managed = (isinstance(symbols.get("Cvar_Set_to_Cvar_DirectSet_callsite_0"), dict) and
+                   symbols["Cvar_Set_to_Cvar_DirectSet_callsite_0"].get("kind") == "patch")
+    if not (has_native or has_managed):
+        errors.append(
+            f"'{game_version}' ({family}): missing cvar branch "
+            f"(need cvar_hooks global or Cvar_Set_to_Cvar_DirectSet_callsite_0 patch)"
+        )
 
     # blob client hooks
     if family in BLOB_CLIENT_FAMILIES:
         for sym in ("NLoadBlob", "FreeBlob"):
             if sym not in symbols:
                 errors.append(f"'{game_version}' ({family}): missing blob client symbol '{sym}'")
+    elif family == "ENGINE_SVENGINE":
+        # SvEngine may ship without the blob client hooks, but only as a pair.
+        if ("NLoadBlob" in symbols) != ("FreeBlob" in symbols):
+            errors.append(
+                f"'{game_version}' ({family}): NLoadBlob and FreeBlob must both be present or both absent"
+            )
 
     return errors
 
