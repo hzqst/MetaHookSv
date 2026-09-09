@@ -2494,6 +2494,8 @@ hook_t* MH_InlineHookTrampoline(void* pOldFuncAddr, void* pNewFuncAddr, void** p
 	return NULL;
 }
 
+//auto pfn = (void (__thiscall *)(void* pthis))pMetaHookAPI->GetClassFuncAddr(&CClass::Method);
+//unused
 void* MH_GetClassFuncAddr(...)
 {
 	DWORD address;
