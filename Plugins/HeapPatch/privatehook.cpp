@@ -1,164 +1,117 @@
 #include <metahook.h>
 #include <capstone.h>
+#include <string>
 #include <vector>
-#include <set>
 #include "plugins.h"
 #include "privatehook.h"
 
-static_assert(METAHOOK_API_VERSION >= 109, "HeapPatch resolves engine private symbols from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
+static_assert(METAHOOK_API_VERSION >= 110, "HeapPatch consumes gamedata PATCH symbols through IsGameSymbolAvailable and requires MetaHook API 110");
 
-private_funcs_t gPrivateFuncs = { 0 };
-
-static std::set<PVOID> g_Sys_InitMemory_Patches;
-
-// Heap-limit immediates observed in Sys_InitMemory (GoldSrc_VibeSignatures bin_artifacts):
-// SvEngine: 512MB only.
-// GoldSrc blob (3248-4554): 32MB + 40MB.
-// GoldSrc 6153+ / HL25 / Cry of Fear: 40MB + 128MB.
-// cof-5936 (build 5936) ships 128MB despite buildnum < 6153, so 128MB is not gated on buildnum.
-enum : long long
+struct HeapLimitPatchSite
 {
-	kHeapLimitImm32MB = 0x2000000,
-	kHeapLimitImm40MB = 0x2800000,
-	kHeapLimitImm128MB = 0x8000000,
-	kHeapLimitImm512MB = 0x20000000,
+	std::string symbolName;
+	PVOID instructionAddress;
 };
 
-static bool IsHeapLimitImmediate(long long imm)
+static std::vector<HeapLimitPatchSite> g_Sys_InitMemory_HeapLimitPatches;
+
+// On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
+static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
-		return imm == kHeapLimitImm512MB;
-
-	return imm == kHeapLimitImm32MB
-		|| imm == kHeapLimitImm40MB
-		|| imm == kHeapLimitImm128MB;
-}
-
-// On gamedata resolution failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
-// The return value is the real-image VA, written directly into the corresponding gPrivateFuncs field.
-static PVOID ResolveGameSymbolOrError(const char* symbolName)
-{
-	PVOID va = NULL;
-	auto st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, MH_GAMESYMBOL_KIND_FUNCTION, &va);
-
-	if (st == MH_GAMESYMBOL_OK)
-		return va;
-
 	uint64_t crc64 = 0;
-	auto crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
+	mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
 
 	if (crcSt == MH_GAMESYMBOL_OK)
 	{
 		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
-			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(st));
+			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
 	else
 	{
 		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
-			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(st));
+			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
 	}
+}
 
+// The return value is the real-image VA of the gamedata record.
+static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind_t expectedKind)
+{
+	PVOID va = NULL;
+	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, expectedKind, &va);
+
+	if (st == MH_GAMESYMBOL_OK)
+		return va;
+
+	ReportSymbolFailure(symbolName, st);
 	return NULL;
 }
 
-void Engine_FillAddress_Sys_InitMemory()
+void Engine_FillAddress(void)
 {
-	gPrivateFuncs.Sys_InitMemory = (decltype(gPrivateFuncs.Sys_InitMemory))ResolveGameSymbolOrError("Sys_InitMemory");
-}
-
-void Engine_FillAddress_Sys_InitMemory_Patches(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	typedef struct Sys_InitMemory_SearchContext_
+	// The heap-limit patch set is numbered contiguously from 0; trust the upstream
+	// numbering and stop at the first missing index.
+	for (int index = 0;; ++index)
 	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		std::set<PVOID>& patches;
+		char symbolName[64];
+		snprintf(symbolName, sizeof(symbolName), "Sys_InitMemory_HeapLimitPatches_%d", index);
 
-		PVOID base{};
-		size_t max_insts{};
-		int max_depth{};
-		std::set<PVOID> code;
-		std::set<PVOID> branches;
-		std::vector<walk_context_t> walks;
-	}Sys_InitMemory_SearchContext;
+		mh_gamesymbol_status_t st = g_pMetaHookAPI->IsGameSymbolAvailable(g_EngineDLLInfo.ImageBase, symbolName);
 
-	Sys_InitMemory_SearchContext ctx = { DllInfo, RealDllInfo, g_Sys_InitMemory_Patches };
+		if (st == MH_GAMESYMBOL_SYMBOL_NOT_FOUND)
+		{
+			// Only the first index may legitimately be absent as an enumeration end;
+			// without index 0 the required patch set is missing.
+			if (index == 0)
+				ReportSymbolFailure(symbolName, st);
 
-	// The walk runs in the search space (the mirror copy when a mirror exists), so the entry point must be mapped from the real image.
-	ctx.base = ConvertDllInfoSpace(gPrivateFuncs.Sys_InitMemory, RealDllInfo, DllInfo);
+			return;
+		}
 
-	ctx.max_insts = 1000;
-	ctx.max_depth = 16;
-	ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+		if (st != MH_GAMESYMBOL_OK)
+		{
+			ReportSymbolFailure(symbolName, st);
+			return;
+		}
 
-	while (ctx.walks.size())
-	{
-		auto walk = ctx.walks[ctx.walks.size() - 1];
-		ctx.walks.pop_back();
+		PVOID instructionAddress = ResolveGameSymbolOrError(symbolName, MH_GAMESYMBOL_KIND_PATCH);
 
-		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		if (!instructionAddress)
+			return;
 
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (Sys_InitMemory_SearchContext*)context;
-
-			if (ctx->code.size() > ctx->max_insts)
-				return TRUE;
-
-			if (ctx->code.find(address) != ctx->code.end())
-				return TRUE;
-
-			ctx->code.emplace(address);
-
-			if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				IsHeapLimitImmediate(pinst->detail->x86.operands[1].imm))
-			{
-				auto patch_addr_VA = (PVOID)(address + pinst->detail->x86.encoding.imm_offset);
-
-				auto patch_addr = ConvertDllInfoSpace(patch_addr_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				ctx->patches.emplace(patch_addr);
-			}
-
-			if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-				auto foundbranch = ctx->branches.find(imm);
-				if (foundbranch == ctx->branches.end())
-				{
-					ctx->branches.emplace(imm);
-					if (depth + 1 < ctx->max_depth)
-						ctx->walks.emplace_back(imm, 0x1000, depth + 1);
-				}
-
-				if (pinst->id == X86_INS_JMP)
-					return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, walk.depth, &ctx);
-	}
-
-	if (ctx.patches.size() == 0)
-	{
-		Sys_Error("Sys_InitMemory imm not found");
-		return;
+		g_Sys_InitMemory_HeapLimitPatches.push_back({ symbolName, instructionAddress });
 	}
 }
 
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+// Decode exactly one instruction at the gamedata-provided address and return the
+// address of its DWORD immediate. Nothing is searched or re-located: a decode
+// failure or an unexpected layout is fatal.
+static PVOID FindHeapLimitImmediate(PVOID instructionAddress, const char* symbolName)
 {
-	Engine_FillAddress_Sys_InitMemory();
-	Engine_FillAddress_Sys_InitMemory_Patches(DllInfo, RealDllInfo);
+	PVOID immediateAddress = NULL;
+
+	g_pMetaHookAPI->DisasmSingleInstruction(instructionAddress, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto out = (PVOID*)context;
+		const auto& x86 = pinst->detail->x86;
+
+		if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_CMP) &&
+			x86.op_count == 2 &&
+			x86.operands[1].type == X86_OP_IMM &&
+			x86.encoding.imm_size == sizeof(DWORD) &&
+			(size_t)x86.encoding.imm_offset + sizeof(DWORD) <= instLen)
+		{
+			*out = address + x86.encoding.imm_offset;
+		}
+
+		}, &immediateAddress);
+
+	if (!immediateAddress)
+	{
+		Sys_Error("\"%s\" at 0x%p is not a MOV/CMP with a DWORD immediate", symbolName, instructionAddress);
+	}
+
+	return immediateAddress;
 }
 
 void Engine_InstallHooks()
@@ -176,50 +129,19 @@ void Engine_InstallHooks()
 
 		HeapLimitOverrideInBytes = (DWORD)HeapLimitOverride * 1024 * 1024;
 	}
-	for (auto patch : g_Sys_InitMemory_Patches)
+
+	for (const auto& patch : g_Sys_InitMemory_HeapLimitPatches)
 	{
-		g_pMetaHookAPI->WriteDWORD(patch, HeapLimitOverrideInBytes);
+		PVOID immediateAddress = FindHeapLimitImmediate(patch.instructionAddress, patch.symbolName.c_str());
+
+		if (!immediateAddress)
+			return;
+
+		g_pMetaHookAPI->WriteDWORD(immediateAddress, HeapLimitOverrideInBytes);
 	}
 }
 
 void Engine_UninstallHooks()
 {
 
-}
-
-PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)
-{
-	if ((ULONG_PTR)addr > (ULONG_PTR)SrcDllInfo.ImageBase && (ULONG_PTR)addr < (ULONG_PTR)SrcDllInfo.ImageBase + SrcDllInfo.ImageSize)
-	{
-		auto addr_VA = (ULONG_PTR)addr;
-		auto addr_RVA = RVA_from_VA(addr, SrcDllInfo);
-
-		return (PVOID)VA_from_RVA(addr, TargetDllInfo);
-	}
-
-	return nullptr;
-}
-
-PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo)
-{
-	if ((ULONG_PTR)vftable > (ULONG_PTR)RealDllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)RealDllInfo.ImageBase + RealDllInfo.ImageSize)
-	{
-		ULONG_PTR vftable_VA = (ULONG_PTR)vftable;
-		ULONG vftable_RVA = RVA_from_VA(vftable, RealDllInfo);
-		auto vftable_DllInfo = (decltype(vftable))VA_from_RVA(vftable, DllInfo);
-
-		auto vf_VA = (ULONG_PTR)vftable_DllInfo[index];
-		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
-
-		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
-	}
-	else if ((ULONG_PTR)vftable > (ULONG_PTR)DllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)DllInfo.ImageBase + DllInfo.ImageSize)
-	{
-		auto vf_VA = (ULONG_PTR)vftable[index];
-		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
-
-		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
-	}
-
-	return vftable[index];
 }
