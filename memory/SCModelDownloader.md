@@ -11,7 +11,7 @@ permalink: metahooksv/scmodel-downloader
 
 ## Responsibilities
 - Take over `HUD_Init/HUD_Frame/HUD_Shutdown/HUD_GetStudioModelInterface`, attaching database initialization, per-frame task driving, and cleanup logic to the client lifecycle.
-- Intercept the `R_StudioChangePlayerModel` call site and conditionally trigger `QueryModel` (`scmodel_autodownload`) when models change.
+- Inline-hook the two player-model callers `R_StudioDrawPlayer` and `studioapi_SetupPlayerModel`, rebuild the engine's model-change predicate at the caller entry, and conditionally trigger `QueryModel` (`scmodel_autodownload`) with the state the original caller just wrote.
 - Maintain model metadata: `models.json` (available-model index) and `versions.json` (old name -> latest-version-name mapping).
 - Maintain the query-task queue and state machine (`Querying/Receiving/Failed/Finished`), and dispatch state changes to the UI.
 - Download asset files (`.mdl/.T|t.mdl/.bmp`) to temporary files, perform integrity validation, then write them to the destination directory.
@@ -54,7 +54,7 @@ permalink: metahooksv/scmodel-downloader
 The core consists of three layers:
 1. **Entry and hook layer** (`plugins.cpp` + `exportfuncs.cpp` + `privatehook.cpp`)
    - `LoadClient` replaces HUD exports.
-   - `HUD_GetStudioModelInterface` resolves `SetupPlayerModel`, locates its call site, and patches it to the plugin version of `R_StudioChangePlayerModel`.
+   - `LoadEngine` -> `Engine_FillAddress` resolves the five private symbols from gamedata; `HUD_GetStudioModelInterface` saves `IEngineStudio`, resolves `developer`, then installs the two caller inline hooks. See [[scmodeldownloader-privatevars]].
 2. **Download and state-machine layer** (`SCModelDatabase.cpp`)
    - `CSCModelDatabase` holds the task queue, database, version mapping, and callback list.
    - Task types: `QueryDatabase`, `QueryVersions`, `QueryTaskList`, and `QueryModelResource`.
@@ -69,7 +69,7 @@ flowchart TD
   B --> C[HUD_Init: register cvar/commands + SCModelDatabase.Init]
   B --> D[HUD_Frame: SCModelDatabase.RunFrame + HTTPClient.RunFrame]
   B --> E[HUD_GetStudioModelInterface]
-  E --> F[Resolve SetupPlayerModel and redirect to R_StudioChangePlayerModel]
+  E --> F["Save IEngineStudio, resolve developer, InlineHook R_StudioDrawPlayer + studioapi_SetupPlayerModel"]
 
   F --> G[Player model changes]
   G --> H{scmodel_autodownload?}
@@ -107,11 +107,11 @@ Additional flow:
   - `Build/svencoop/scmodeldownloader/*.res, gameui_*.txt`
 
 ## Notes
-- The core signature-resolution path for `R_StudioChangePlayerModel` is currently implemented only in the `ENGINE_SVENGINE` branch, and this plugin is likewise enabled only in `plugins_svencoop.lst`.
+- Since issue #855 (2026-09-09) every private address is resolved from gamedata (`R_StudioDrawPlayer` / `studioapi_SetupPlayerModel` / `Host_IsSinglePlayerGame` functions, `DM_PlayerState` / `cl_players_model` globals); the plugin no longer consumes `R_StudioChangePlayerModel` or its call sites, and the signature search / CFG walk / call-site patch are deleted. The plugin is still enabled only in `plugins_svencoop.lst`, so only the `ENGINE_SVENGINE` (`cl_players_sc`) branch is exercised; details in [[scmodeldownloader-privatevars]].
 - A comment in `BuildQueryList` notes that model queries may fail before the database becomes available; they must be triggered again after subsequent database tasks complete.
 - Failed tasks retry after a fixed 5 seconds (`OnFailure` sets `m_flNextRetryTime`), so retries continue during network instability.
 - `GetNewerVersionModel` returns the `c_str()` of an internal `std::string` in `m_VersionMapping`; callers must treat it as a short-lived pointer and must not cache it long term.
-- `EngineStudio_FillAddress_SetupPlayerModel` uses disassembly pattern matching to locate `DM_PlayerState` and the callsite, making it highly susceptible to engine-binary changes.
+- `Engine_FillAddress` no longer disassembles anything: `DM_PlayerState` comes from a GLOBAL record and `cl_players` / `cl_players_sc` are recovered from the `cl_players_model` member address minus `offsetof(player_info_t, model)` (0x130), with `sizeof(player_info_sc_t) == 0x250` asserted at compile time. A missing symbol aborts with a specific `Failed to resolve "<symbol>"` diagnostic instead of a bare `Could not found`.
 - Several UI callbacks have empty implementations (`Start/Shutdown/RunFrame`, etc.); current primary functionality is concentrated in KeyValues/TaskBar callbacks and database callbacks.
 
 ## Callers (optional)

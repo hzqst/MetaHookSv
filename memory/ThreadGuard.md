@@ -52,12 +52,11 @@ flowchart TD
     L --> M[WaitForAliveThreadsToShutdown]
 ```
 
-Supplement: `Engine_FillAddress` locates `IEngine** engine` through the signature string `"Sys_InitArgv( OrigCmd )"` + disassembly scanning, enabling `GetEngineDLLState()` to determine `DLL_CLOSE/DLL_RESTART`.
+Supplement: since issue #855 (2026-09-09) `Engine_FillAddress(void)` resolves `IEngine** engine` from gamedata (`ResolveGameSymbol(real base, "engine", MH_GAMESYMBOL_KIND_GLOBAL)`); the old `"Sys_InitArgv( OrigCmd )"` string anchor + disassembly scan is deleted. `GetEngineDLLState()` still dereferences the slot once to determine `DLL_CLOSE/DLL_RESTART`. See [[threadguard-privatevars]].
 
 ## Dependencies
-- **MetaHook API**: `RegisterLoadDllNotificationCallback` / `IATHook` / `BlobIATHook` / `UnHook` / `SearchPattern` / `DisasmRanges` / `HookCmd` / `FindCmd`, and more.
+- **MetaHook API**: `RegisterLoadDllNotificationCallback` / `IATHook` / `BlobIATHook` / `UnHook` / `HookCmd` / `FindCmd`, and the gamedata trio `ResolveGameSymbol` / `GetModuleCRC64` / `GetGameSymbolStatusString`.
 - **Win32 threading and module APIs**: `CreateThread`, `DuplicateHandle`, `WaitForSingleObject`, `WaitForMultipleObjects`, `Sleep`, `ExitThread`, `CloseHandle`, `FreeLibrary`.
-- **Capstone** (`capstone.h`): used for instruction-level scanning decisions in `Engine_FillAddress`.
 - **Engine interface**: `IEngine::GetState()` (`IEngine.h`) gates the termination phase.
 
 ## Notes
@@ -66,8 +65,7 @@ Supplement: `Engine_FillAddress` locates `IEngine** engine` through the signatur
 - Actual waiting for thread exit occurs only when `GetEngineDLLState()` is `DLL_CLOSE` or `DLL_RESTART`.
 - `GameUI.dll` / `ServerBrowser.dll` skip thread hooks when they depend on `steam_api.dll` and do not import `CreateThread` (they are considered to use the callback model).
 - `server.dll`-related hooks are enabled only under the `svencoop` directory (`ServerDLL_InstallHook` has an explicit gate).
-- `Engine_FillAddress` strongly depends on the signature string and code layout; location failure triggers `Sys_Error("CEngine not found")`, making it sensitive to engine-version changes.
-- `privatehook.h` declares `Engine_InstallHook` / `Engine_UninstallHook` without parameters, whereas `privatehook.cpp` actually defines parameterized versions; this inconsistency between declaration and implementation style is a maintenance risk.
+- Since #855 `Engine_FillAddress` is gamedata-only: it resolves GLOBAL `engine` with the real module base and aborts with a specific `Failed to resolve "engine"` diagnostic (symbol / buildnum / CRC64 / status) instead of the old silent-null `Sys_Error("CEngine not found")`. Mirror-space conversion, section preparation and the unused no-argument `Engine_InstallHook` / `Engine_UninstallHook` declarations were removed.
 - `ThreadManager.cpp` contains `#if 0`-disabled code related to the “closed thread” flow, indicating that only the alive-thread path is currently maintained.
 
 ## Callers (Optional)
