@@ -116,7 +116,7 @@ static PVOID FindHeapLimitImmediate(PVOID instructionAddress, const char* symbol
 
 void Engine_InstallHooks()
 {
-	auto HeapLimitOverride = (g_iEngineType == ENGINE_SVENGINE) ? 256 : 256;
+	auto HeapLimitOverride = 256;
 	DWORD HeapLimitOverrideInBytes = (DWORD)HeapLimitOverride * 1024 * 1024;
 
 	const char* pszHeapLimitOverride = NULL;

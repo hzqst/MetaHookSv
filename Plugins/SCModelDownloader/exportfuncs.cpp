@@ -81,7 +81,7 @@ void SCModel_ReloadAllModels()
 	when the named model is not in use. Evaluated at the caller entry, before the engine
 	mutates DM_PlayerState, so it reproduces the engine's own test.
 */
-static bool SCModel_IsModelChangeTriggered(int playerindex, cl_entity_t* currentEntity)
+static bool SCModel_IsModelChanged(int playerindex, cl_entity_t* currentEntity)
 {
 	const char* playerModelName = (g_iEngineType == ENGINE_SVENGINE)
 		? cl_players_sc[playerindex].model
@@ -121,16 +121,16 @@ int R_StudioDrawPlayer(int flags, entity_state_t* pplayer)
 	cl_entity_t* currentEntity = IEngineStudio.GetCurrentEntity();
 	const int playerindex = pplayer->number - 1;
 
-	bool triggered = false;
+	bool bModelChanged = false;
 
 	if (playerindex >= 0 && playerindex < gEngfuncs.GetMaxClients())
 	{
-		triggered = SCModel_IsModelChangeTriggered(playerindex, currentEntity);
+		bModelChanged = SCModel_IsModelChanged(playerindex, currentEntity);
 	}
 
 	const int result = gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
 
-	if (triggered)
+	if (bModelChanged)
 	{
 		SCModel_OnPlayerModelChanged(playerindex, currentEntity);
 	}
@@ -142,11 +142,11 @@ model_t* studioapi_SetupPlayerModel(int playerindex)
 {
 	cl_entity_t* currentEntity = IEngineStudio.GetCurrentEntity();
 
-	const bool triggered = SCModel_IsModelChangeTriggered(playerindex, currentEntity);
+	const bool bModelChanged = SCModel_IsModelChanged(playerindex, currentEntity);
 
 	model_t* result = gPrivateFuncs.studioapi_SetupPlayerModel(playerindex);
 
-	if (triggered)
+	if (bModelChanged)
 	{
 		SCModel_OnPlayerModelChanged(playerindex, currentEntity);
 	}
