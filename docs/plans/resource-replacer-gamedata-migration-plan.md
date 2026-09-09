@@ -3,7 +3,8 @@
 ## 文档状态
 
 - 状态：已实施（2026-09-06，Step 1-6 完成；实机冒烟与失败路径验证待 Sven Co-op 环境执行）
-- 最后更新：2026-09-06
+- 最后更新：2026-09-09
+- 后续变更：第 1 节目标 2/3 与第 107 行起的 `FindFSOpenCallSites` 走查已被 [issue #853](https://github.com/hzqst/MetaHookSv/issues/853) 取代——上游现已提供 `S_LoadSound_to_FS_Open_callsite_N` / `Mod_LoadModel_to_FS_Open_callsite_N` PATCH 记录，走查、`"rb"` 搜索与交叉校验全部删除。本文件仅保留为当时的实施记录。
 - 目标仓库：`D:\MetaHookSv`
 - 数据基线：2026-09-06 从 `https://hlnd2t.github.io/GoldSrc_VibeSignatures/gamesymbols/index.json` 同步的 gamedata（16 snapshot）
 - 参考仓库（本地检出版）：
