@@ -66,6 +66,7 @@ Both callers gate the same engine block on `(developer.value || !Host_IsSinglePl
 - Order per call: evaluate predicate -> call the original exactly once, saving the return value -> if triggered, `SCModel_OnPlayerModelChanged(i, currentEntity)` (reads the state the caller just wrote: `model == currentEntity->model || !model`, then non-empty `name[0]`, then `SCModel_AutoDownload()` -> `SCModelDatabase()->QueryModel(name)`) -> return the saved value unchanged.
 - The entry never clears `state->name`, never writes `state->model`, never calls `Mod_ForName`; the `else`-branch `name[0] = 0` and the skin reset stay inside the original caller. Because the `else` branch clears the name before the change, the post-call query naturally skips it - same outcome as the old call-site wrapper.
 - Query timing differs from the old design only in that `R_StudioDrawPlayer`'s query now runs after the whole draw function returns instead of inside the model-change block; the state read is unchanged (the caller does not modify `DM_PlayerState` after that block).
+- Engine-side coverage: all four `R_StudioChangePlayerModel()` call sites in `engine/r_studio.c` (3183 / 3193 in `R_StudioDrawPlayer`, 5044 / 5054 in `studioapi_SetupPlayerModel`) sit inside the two hooked callers, so the caller-hook design loses no trigger path. The old wrapper only redirected the `SetupPlayerModel` sites, so the `R_StudioDrawPlayer` paths are a net addition.
 
 ## Architecture
 
