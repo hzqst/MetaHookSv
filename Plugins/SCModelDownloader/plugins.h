@@ -12,9 +12,6 @@ extern int g_iEngineType;
 extern DWORD g_dwEngineBuildnum;
 
 extern mh_dll_info_t g_EngineDLLInfo;
-extern mh_dll_info_t g_MirrorEngineDLLInfo;
-extern mh_dll_info_t g_ClientDLLInfo;
-extern mh_dll_info_t g_MirrorClientDLLInfo;
 
 #define MHPluginName "SCModelDownloader"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);

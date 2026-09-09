@@ -1,15 +1,21 @@
 #include <metahook.h>
 #include "plugins.h"
 #include "privatehook.h"
+#include "exportfuncs.h"
 
-#define R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE "\x2A\x33\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x0B"
+static_assert(METAHOOK_API_VERSION >= 109, "SCModelDownloader resolves the engine player-model symbols from gamedata and requires MetaHook API 109 (ResolveGameSymbol)");
 
 private_funcs_t gPrivateFuncs = {0};
 
 player_model_t(*DM_PlayerState)[MAX_CLIENTS];
 
+player_info_t* cl_players = nullptr;
+player_info_sc_t* cl_players_sc = nullptr;
+
+static hook_t* g_phook_R_StudioDrawPlayer = NULL;
+static hook_t* g_phook_studioapi_SetupPlayerModel = NULL;
+
 static HMODULE g_hServerBrowser = NULL;
-static hook_t * g_phook_R_StudioChangePlayerModel = NULL;
 
 void NewSteamAPI_Shutdown()
 {
@@ -50,81 +56,77 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 	}
 }
 
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+// On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
+static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
 {
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t crcSt = g_pMetaHookAPI->GetModuleCRC64(g_EngineDLLInfo.ImageBase, &crc64);
+
+	if (crcSt == MH_GAMESYMBOL_OK)
+	{
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nCRC64: %016llx\nReason: %s",
+			symbolName, g_dwEngineBuildnum, (unsigned long long)crc64, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+	}
+	else
+	{
+		Sys_Error("Failed to resolve \"%s\"\nEngine buildnum: %d\nReason: %s",
+			symbolName, g_dwEngineBuildnum, g_pMetaHookAPI->GetGameSymbolStatusString(status));
+	}
+}
+
+// The return value is the real-image VA of the gamedata record.
+static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind_t expectedKind)
+{
+	PVOID va = NULL;
+	mh_gamesymbol_status_t st = g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, symbolName, expectedKind, &va);
+
+	if (st == MH_GAMESYMBOL_OK)
+		return va;
+
+	ReportSymbolFailure(symbolName, st);
+	return NULL;
+}
+
+void Engine_FillAddress(void)
+{
+	gPrivateFuncs.R_StudioDrawPlayer = (decltype(gPrivateFuncs.R_StudioDrawPlayer))ResolveGameSymbolOrError("R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.studioapi_SetupPlayerModel = (decltype(gPrivateFuncs.studioapi_SetupPlayerModel))ResolveGameSymbolOrError("studioapi_SetupPlayerModel", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ResolveGameSymbolOrError("Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
+
+	DM_PlayerState = (decltype(DM_PlayerState))ResolveGameSymbolOrError("DM_PlayerState", MH_GAMESYMBOL_KIND_GLOBAL);
+
+	auto* clPlayersModel = (unsigned char*)ResolveGameSymbolOrError("cl_players_model", MH_GAMESYMBOL_KIND_GLOBAL);
+
+	if (!clPlayersModel)
+		return;
+
+	// cl_players_model is the address of the cl.players[0].model member itself,
+	// not a pointer slot: subtract the member offset to recover the array head.
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		auto R_StudioChangePlayerModel_VA = Search_Pattern(R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.R_StudioChangePlayerModel = (decltype(gPrivateFuncs.R_StudioChangePlayerModel))ConvertDllInfoSpace(R_StudioChangePlayerModel_VA, DllInfo, RealDllInfo);
+		cl_players_sc = reinterpret_cast<player_info_sc_t*>(clPlayersModel - offsetof(player_info_t, model));
 	}
-
-	Sig_FuncNotFound(R_StudioChangePlayerModel);
+	else
+	{
+		cl_players = reinterpret_cast<player_info_t*>(clPlayersModel - offsetof(player_info_t, model));
+	}
 }
 
 void Engine_InstallHook(void)
 {
-/*
-* Cannot install inlinehook because:
-* only 4 bytes available in the prologue
-.text:01D90DE0                                     ; void R_StudioChangePlayerModel()
-.text:01D90DE0                                     R_StudioChangePlayerModel proc near     ; CODE XREF: StudioDrawModel+9D↑p
-.text:01D90DE0                                                                             ; StudioDrawModel:loc_1D8A540↑p ...
-.text:01D90DE0 56                                                  push    esi
-.text:01D90DE1 33 D2                                               xor     edx, edx
-.text:01D90DE3 57                                                  push    edi
-*/
+	Install_InlineHook(R_StudioDrawPlayer);
+	Install_InlineHook(studioapi_SetupPlayerModel);
 
-//	Install_InlineHook(R_StudioChangePlayerModel);
+	if (!g_phook_R_StudioDrawPlayer || !g_phook_studioapi_SetupPlayerModel)
+	{
+		Uninstall_Hook(R_StudioDrawPlayer);
+		Uninstall_Hook(studioapi_SetupPlayerModel);
+		Sys_Error("%s", "Failed to install the player-model hooks");
+	}
 }
 
 void Engine_UninstallHook(void)
 {
-//	Uninstall_Hook(R_StudioChangePlayerModel);
-}
-
-void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-
-}
-
-void Client_InstallHooks(void)
-{
-
-}
-
-PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo)
-{
-	if ((ULONG_PTR)addr > (ULONG_PTR)SrcDllInfo.ImageBase && (ULONG_PTR)addr < (ULONG_PTR)SrcDllInfo.ImageBase + SrcDllInfo.ImageSize)
-	{
-		auto addr_VA = (ULONG_PTR)addr;
-		auto addr_RVA = RVA_from_VA(addr, SrcDllInfo);
-
-		return (PVOID)VA_from_RVA(addr, TargetDllInfo);
-	}
-
-	return nullptr;
-}
-
-PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo)
-{
-	if ((ULONG_PTR)vftable > (ULONG_PTR)RealDllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)RealDllInfo.ImageBase + RealDllInfo.ImageSize)
-	{
-		ULONG_PTR vftable_VA = (ULONG_PTR)vftable;
-		ULONG vftable_RVA = RVA_from_VA(vftable, RealDllInfo);
-		auto vftable_DllInfo = (decltype(vftable))VA_from_RVA(vftable, DllInfo);
-
-		auto vf_VA = (ULONG_PTR)vftable_DllInfo[index];
-		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
-
-		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
-	}
-	else if ((ULONG_PTR)vftable > (ULONG_PTR)DllInfo.ImageBase && (ULONG_PTR)vftable < (ULONG_PTR)DllInfo.ImageBase + DllInfo.ImageSize)
-	{
-		auto vf_VA = (ULONG_PTR)vftable[index];
-		ULONG vf_RVA = RVA_from_VA(vf, DllInfo);
-
-		return (PVOID)VA_from_RVA(vf, OutputDllInfo);
-	}
-
-	return vftable[index];
+	Uninstall_Hook(R_StudioDrawPlayer);
+	Uninstall_Hook(studioapi_SetupPlayerModel);
 }
