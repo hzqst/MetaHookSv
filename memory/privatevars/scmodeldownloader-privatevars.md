@@ -6,75 +6,101 @@ tags:
 - scmodeldownloader
 - private-vars
 - private-funcs
+- gamedata
 - symbol-locating
 - reference
 ---
 
 # Game-private symbols used by `SCModelDownloader`
 
-This document inventories the unexported game symbols that `Plugins/SCModelDownloader` locates in the engine image and consumes. Symbol names are the plugin's local fields; the parenthetical names describe the inferred engine-side role rather than official debug-symbol names. Unlike the other `privatevars` notes, this plugin is **not** gamedata-based: it still uses a `.text` signature and a bounded control-flow disassembly walk.
+This document inventories the unexported game symbols that `Plugins/SCModelDownloader` locates in the engine image and consumes. Since issue #855 (2026-09-09) the location is **gamedata-only** and the plugin no longer consumes `R_StudioChangePlayerModel`, its call sites, or any disassembly walk. Symbol names are the gamedata record names; the parenthetical names describe the inferred engine-side role.
 
 ## Scope and shared resolution process
-- The scope covers three located items: the private function `R_StudioChangePlayerModel`, the private global array `DM_PlayerState`, and the `SetupPlayerModel` -> `R_StudioChangePlayerModel` call sites that get redirected. The plugin dereferences no other private slot, vtable, or global.
-- Out of scope: the `HUD_*` export-table takeover (`IPluginsV4::LoadClient`), and the `serverbrowser.dll` -> `steam_api.dll!SteamAPI_Shutdown` IAT hook (`ServerBrowser_InstallHook` / `DllLoadNotification`, a third-party DLL import rather than an engine-private symbol). The public interfaces `engine_studio_api_t` / `r_studio_interface_t` are used as anchors only.
-- Public MetaHook APIs, saved engine interfaces, and ordinary plugin state (for example `g_EngineDLLInfo`, `g_MirrorEngineDLLInfo`, `g_iEngineType`, `g_dwEngineBuildnum`) are excluded.
-- **No gamedata**: there is no `ResolveGameSymbol` / `IsGameSymbolAvailable` call, no gamedata symbol diagnostic, and no `METAHOOK_API_VERSION` `static_assert` in this plugin. `scripts/validate-gamedata.py` gates no SCModelDownloader symbol.
-- Two address spaces are in play. `IPluginsV4::LoadEngine` passes `g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo` as the scan space (`DllInfo`) and `g_EngineDLLInfo` as the runtime space (`RealDllInfo`); `HUD_GetStudioModelInterface` passes the same pair to `EngineStudio_FillAddress`. Everything found by scanning is converted `DllInfo` -> `RealDllInfo` through the plugin-local `ConvertDllInfoSpace` before being stored or used as a hook target.
-- Timing: `Engine_FillAddress` resolves the private function during `LoadEngine`; the `SetupPlayerModel` walk runs later, when the engine calls `HUD_GetStudioModelInterface`. Every miss is fatal through `Sys_Error` (`Sig_FuncNotFound` / `Sig_VarNotFound` / `Sig_NotFound`), so the plugin either resolves everything or aborts.
+- The scope covers five located items: the two player-model callers `R_StudioDrawPlayer` and `studioapi_SetupPlayerModel` (inline-hooked), the single-player predicate `Host_IsSinglePlayerGame`, the per-client state array `DM_PlayerState`, and the `cl.players[0].model` member address `cl_players_model`.
+- Out of scope: the `HUD_*` export-table takeover (`IPluginsV4::LoadClient`) and the `serverbrowser.dll` -> `steam_api.dll!SteamAPI_Shutdown` IAT hook (`ServerBrowser_InstallHook` / `DllLoadNotification`, a third-party DLL import rather than an engine-private symbol). The public interfaces `engine_studio_api_t` / `r_studio_interface_t` are used only as public API (cvar lookup, `GetCurrentEntity`), not as anchors.
+- Public MetaHook APIs, saved engine interfaces, and ordinary plugin state (`g_EngineDLLInfo`, `g_iEngineType`, `g_dwEngineBuildnum`, `gEngfuncs.GetMaxClients()`) are excluded.
+- **gamedata-only**: every address comes from `g_pMetaHookAPI->ResolveGameSymbol(g_EngineDLLInfo.ImageBase, name, kind, &address)` against the **real** engine module base; no mirror-space conversion, signature search, string search, control-flow walk or call-site patch remains. `privatehook.cpp` carries `static_assert(METAHOOK_API_VERSION >= 109, ...)`; `scripts/validate-gamedata.py` gates all five symbols (plus the three functions) as common required symbols with expected kinds.
+- Timing: `Engine_FillAddress` runs during `IPluginsV4::LoadEngine` and resolves all five symbols; the two inline hooks are installed later from `HUD_GetStudioModelInterface` **after** `memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio))` and after `developer` is fetched, so no handler can run against an uninitialised `IEngineStudio`.
+- Failure is fatal and specific: a non-`MH_GAMESYMBOL_OK` status prints `Failed to resolve "<symbol>"` with buildnum, CRC64 (when available) and the status string, then aborts via `Sys_Error`.
 
 ## Private functions
 
-| Local symbol / inferred game symbol | Declaration location | Resolution mechanism | Subsequent use |
+| Local symbol / gamedata name | Declaration location | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
-| `gPrivateFuncs.R_StudioChangePlayerModel` (`R_StudioChangePlayerModel`, the engine's per-entity player-model application routine, called from `StudioDrawModel` / `StudioDrawPlayer` per the in-source disassembly comment) | `Plugins/SCModelDownloader/privatehook.h` (`private_funcs_t`), instance zero-initialized at `Plugins/SCModelDownloader/privatehook.cpp` | `Engine_FillAddress` runs only for `g_iEngineType == ENGINE_SVENGINE`: `Search_Pattern(R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE, DllInfo)` scans `DllInfo.TextBase..+TextSize` with a 14-byte wildcard-`0x2A` pattern, then `ConvertDllInfoSpace(..., DllInfo, RealDllInfo)` yields the real-image VA. No string anchor, no reverse function-begin search, no gamedata. `Sig_FuncNotFound` is fatal. | Two consumers: the plugin's `R_StudioChangePlayerModel()` wrapper calls it as the original body after the call-site redirect, and the `SetupPlayerModel` walk compares in-image `CALL` targets against it to find the redirect sites. No inline hook is installed. |
+| `gPrivateFuncs.R_StudioDrawPlayer` (`R_StudioDrawPlayer`, `int (int flags, entity_state_t *pplayer)`) | `Plugins/SCModelDownloader/privatehook.h` (`private_funcs_t`), instance zero-initialized at `privatehook.cpp` | `ResolveGameSymbol(..., "R_StudioDrawPlayer", MH_GAMESYMBOL_KIND_FUNCTION)` | `Install_InlineHook(R_StudioDrawPlayer)` from `Engine_InstallHook`; the plugin function (defined in `exportfuncs.cpp`) evaluates the entry predicate, calls the trampoline exactly once, then runs the download query and returns the trampoline's value. |
+| `gPrivateFuncs.studioapi_SetupPlayerModel` (`studioapi_SetupPlayerModel`, `model_t *(int playerindex)`) | same | `ResolveGameSymbol(..., "studioapi_SetupPlayerModel", MH_GAMESYMBOL_KIND_FUNCTION)` | same pattern; the parameter index is used directly (the engine contract already requires a valid index). |
+| `gPrivateFuncs.Host_IsSinglePlayerGame` (`Host_IsSinglePlayerGame`, `int (void)`) | same | `ResolveGameSymbol(..., "Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION)` | Short-circuit operand of the trigger predicate: `(g_pDeveloper->value \|\| !Host_IsSinglePlayerGame()) && modelName[0]`. |
+
+`R_StudioChangePlayerModel` is **no longer** located, resolved, patched or called. Its own inlining status and whether it exists as a standalone function no longer affect the plugin.
 
 ## Private global variables
 
-| Local symbol / inferred game object | Declaration location | Resolution mechanism | Subsequent use |
+| Local symbol / gamedata name | Declaration location | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
-| `DM_PlayerState` (`DM_PlayerState[MAX_CLIENTS]`, the engine's per-client player-model state array; element stride `0x20C`) | `Plugins/SCModelDownloader/privatehook.h` (extern), defined at `Plugins/SCModelDownloader/privatehook.cpp` as `player_model_t(*DM_PlayerState)[MAX_CLIENTS]` | Located by `EngineStudio_FillAddress_SetupPlayerModel` (`Plugins/SCModelDownloader/exportfuncs.cpp`), not by `Engine_FillAddress`. The walk root is the public `pstudio->SetupPlayerModel` (real-image VA) converted to `DllInfo` space; a null root is fatal. A bounded `DisasmRanges` walk then accepts the first instruction matching either `LEA reg, [reg*scale + disp]` or `ADD reg, imm` whose displacement/immediate lies inside `DllInfo.DataBase..+DataSize`; the matched operand is converted to `RealDllInfo` space. `Sig_VarNotFound` is fatal. | Read and written by the plugin: `R_StudioChangePlayerModel` reads `[index-1].model` / `.name`, and `SCModel_ReloadModel` / `SCModel_ReloadAllModels` clear `name[0]` and `model` to force the engine to reload a player's model. |
+| `DM_PlayerState` (`player_model_t DM_PlayerState[MAX_CLIENTS]`, element stride `0x20C`) | `Plugins/SCModelDownloader/privatehook.h` (extern), defined at `privatehook.cpp` as `player_model_t(*DM_PlayerState)[MAX_CLIENTS]` | `ResolveGameSymbol(..., "DM_PlayerState", MH_GAMESYMBOL_KIND_GLOBAL)` in `Engine_FillAddress` | Read/written by the plugin: the trigger predicate reads `[i].name` / `.model`; `SCModel_ReloadModel` / `SCModel_ReloadAllModels` clear `name[0]` and `model` to force a reload. Array-address semantics - never a pointer slot. |
+| `cl_players_model` (`&cl.players[0].model`, the member address itself) | consumed in `Engine_FillAddress` (`privatehook.cpp`) | `ResolveGameSymbol(..., "cl_players_model", MH_GAMESYMBOL_KIND_GLOBAL)`; the returned address is the **member**, so the array head is recovered by subtracting `offsetof(player_info_t, model)`. Not a pointer slot, no extra dereference. | `g_iEngineType == ENGINE_SVENGINE` -> `cl_players_sc = (player_info_sc_t*)(modelAddress - offsetof(player_info_t, model))`; otherwise `cl_players = (player_info_t*)(...)`. |
 
-## Redirected engine call sites
+Plugin-owned globals (not gamedata symbols) declared in `privatehook.cpp` with `extern` in `privatehook.h`: `player_info_t* cl_players` and `player_info_sc_t* cl_players_sc`; only the one matching the current engine is assigned.
 
-| Local state | Source and meaning | Use |
+## Layout / ABI contract (compile-time asserted in `privatehook.h`)
+
+| Assertion | Value | Evidence |
 | --- | --- | --- |
-| `SetupPlayerModel_SearchContext::addr_call_R_StudioChangePlayerModel` (`std::set<PVOID>`) | Real-image VAs of `CALL rel32` instructions encountered by the walk whose immediate target, converted to `RealDllInfo` space, equals `gPrivateFuncs.R_StudioChangePlayerModel`. | An empty set is fatal (`Sig_NotFound(call_R_StudioChangePlayerModel)`); otherwise each address is passed to `g_pMetaHookAPI->InlinePatchRedirectBranch(addr, R_StudioChangePlayerModel, NULL)`. |
-| `SetupPlayerModel_SearchContext::addr_call` (`std::set<PVOID>`) | Real-image VAs of every in-image `CALL` the walk sees, regardless of target. | Gate only: the `DM_PlayerState` pattern match is restricted to instructions visited before the first in-image call is recorded, which is what fixed the invalid `DM_PlayerState` address (commit `749067d3`). |
-| `SetupPlayerModel_SearchContext::{code, branches, walks}` | Walk bookkeeping: visited instructions, already-queued branch targets, and the pending `(address, len, depth)` work list seeded with `(SetupPlayerModel, 0x1000, 0)`. | Bounds the walk: `max_insts = 1000` visited instructions, `max_depth = 16` branch levels; scanning of a window stops at `RET`, `0xCC`, an unconditional `JMP`, or a repeated instruction. |
+| `sizeof(player_model_t) == 0x20C` | 524 | `char name[260]; char modelname[260]; model_t* model;` matches the engine's `imul reg, 20Ch` stride. |
+| `offsetof(player_info_t, model) == 0x130` | 304 | Upstream `find-cl_players_model.py`: `player_info_t.model` is at `+0x130` in every validated family (DWARF-verified on hl-8684 / hl-10210 hw.so). |
+| `sizeof(player_info_sc_t) == 0x250` | 592 | Matches the SvEngine `cl.players` element stride reported by the upstream locator (`0x250` everywhere except WON `0x24C`); the plugin's `player_info_sc_t` is the base struct plus `hashedcdkey[16]` + `uint64 m_nSteamID`. |
+
+`cl_players_model` is not a pointer slot: `MH_ResolveGameSymbol` returns `moduleBase + gv_rva` and the upstream `gv_va` is exactly `&cl.players[0].model`, so `modelAddress - offsetof(player_info_t, model)` is the array head.
+
+## Trigger predicate and query timing
+
+Both callers gate the same engine block on `(developer.value || !Host_IsSinglePlayerGame()) && cl.players[i].model[0]`, then compare `DM_PlayerState[i].name` against `cl.players[i].model` (case-sensitive `Q_strcmp(...) != 0`), else compare `DM_PlayerState[i].model` against `currententity->model`.
+
+- The plugin rebuilds that predicate at the **caller entry**, before the engine mutates `DM_PlayerState`, so the result is identical to the engine's own test:
+  - `playerModelName = (g_iEngineType == ENGINE_SVENGINE) ? cl_players_sc[i].model : cl_players[i].model`
+  - `usesNamedModel = (g_pDeveloper->value || !gPrivateFuncs.Host_IsSinglePlayerGame()) && playerModelName[0]` (short-circuit preserved)
+  - `usesNamedModel ? strcmp(DM_PlayerState[i].name, playerModelName) != 0 : DM_PlayerState[i].model != currentEntity->model`
+- `R_StudioDrawPlayer` derives the index as `pplayer->number - 1` (never `currententity->index`, never the possibly-stale `r_playerindex`) and keeps the engine's bound semantics: outside `[0, gEngfuncs.GetMaxClients())` it reads no array and triggers no query, but still calls the trampoline once and returns its value. This is what makes the `deadplayer` path (called from `R_StudioDrawModel` with a copied `entity_state_t` whose `number` is the owner player, while `currententity` is the corpse) read the correct player.
+- `studioapi_SetupPlayerModel` uses its parameter index directly (engine precondition: valid index).
+- Both handlers snapshot `cl_entity_t* currentEntity = IEngineStudio.GetCurrentEntity()` at entry and pass it to the query, so the comparison uses the same entity the engine used and does not re-read changed globals after the call.
+- Order per call: evaluate predicate -> call the original exactly once, saving the return value -> if triggered, `SCModel_OnPlayerModelChanged(i, currentEntity)` (reads the state the caller just wrote: `model == currentEntity->model || !model`, then non-empty `name[0]`, then `SCModel_AutoDownload()` -> `SCModelDatabase()->QueryModel(name)`) -> return the saved value unchanged.
+- The entry never clears `state->name`, never writes `state->model`, never calls `Mod_ForName`; the `else`-branch `name[0] = 0` and the skin reset stay inside the original caller. Because the `else` branch clears the name before the change, the post-call query naturally skips it - same outcome as the old call-site wrapper.
+- Query timing differs from the old design only in that `R_StudioDrawPlayer`'s query now runs after the whole draw function returns instead of inside the model-change block; the state read is unchanged (the caller does not modify `DM_PlayerState` after that block).
+- Engine-side coverage: all four `R_StudioChangePlayerModel()` call sites in `engine/r_studio.c` (3183 / 3193 in `R_StudioDrawPlayer`, 5044 / 5054 in `studioapi_SetupPlayerModel`) sit inside the two hooked callers, so the caller-hook design loses no trigger path. The old wrapper only redirected the `SetupPlayerModel` sites, so the `R_StudioDrawPlayer` paths are a net addition.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    A["IPluginsV4::LoadEngine"] --> B["Engine_FillAddress(DllInfo, RealDllInfo)"]
-    B --> C["ENGINE_SVENGINE only: Search_Pattern(.text)"]
-    C --> D["ConvertDllInfoSpace -> gPrivateFuncs.R_StudioChangePlayerModel"]
-    E["HUD_GetStudioModelInterface(pstudio)"] --> F["EngineStudio_FillAddress_SetupPlayerModel"]
-    F --> G["root = ConvertDllInfoSpace(pstudio->SetupPlayerModel, Real->Dll)"]
-    G --> H["DisasmRanges CFG walk (max 1000 insts / depth 16)"]
-    H --> I["LEA/ADD with .data operand -> DM_PlayerState (real image)"]
-    H --> J["CALL target == R_StudioChangePlayerModel -> collect site"]
-    J --> K["InlinePatchRedirectBranch(site, plugin R_StudioChangePlayerModel)"]
-    K --> L["Wrapper calls gPrivateFuncs.R_StudioChangePlayerModel(), then QueryModel"]
+    A["IPluginsV4::LoadEngine"] --> B["Engine_FillAddress()"]
+    B --> C["ResolveGameSymbol: 3 FUNCTION + 2 GLOBAL (real base)"]
+    C --> D["recover cl_players / cl_players_sc from cl_players_model"]
+    E["HUD_GetStudioModelInterface"] --> F["memcpy IEngineStudio; developer = IEngineStudio.GetCvar()"]
+    F --> G["Engine_InstallHook(): InlineHook both callers"]
+    G --> H["R_StudioDrawPlayer handler"]
+    G --> I["studioapi_SetupPlayerModel handler"]
+    H --> J["entry predicate -> trampoline once -> query"]
+    I --> J
+    J --> K["SCModelDatabase::QueryModel(state->name)"]
 ```
 
 ## Dependencies
-- `Plugins/SCModelDownloader/plugins.cpp` - builds `g_EngineDLLInfo` / `g_MirrorEngineDLLInfo`, calls `Engine_FillAddress` / `Engine_InstallHook`, and installs the `HUD_GetStudioModelInterface` replacement.
-- `Plugins/SCModelDownloader/exportfuncs.cpp` - runs the `SetupPlayerModel` walk, redirects the call sites, and consumes `DM_PlayerState`.
-- MetaHook APIs `SearchPattern`, `DisasmRanges`, `InlinePatchRedirectBranch`, `GetSectionByName`, `GetEngineBase` / `GetEngineSize`, `GetMirrorEngineBase` / `GetMirrorEngineSize`, `GetEngineType`, `GetEngineBuildnum`, `SysError`.
-- Capstone `cs_insn` fields (`id`, `detail->x86.op_count`, `operands[].type/imm/mem.{base,disp,scale}`) inside the walk callback.
-- Public `engine_studio_api_t::SetupPlayerModel` (walk root) and `r_studio_interface_t`.
+- `Plugins/SCModelDownloader/plugins.cpp` - sets `g_EngineDLLInfo.ImageBase`, calls `Engine_FillAddress()`, installs the `HUD_GetStudioModelInterface` replacement and the DLL-load notification.
+- `Plugins/SCModelDownloader/exportfuncs.cpp` - defines both handlers, `SCModel_IsModelChangeTriggered`, `SCModel_OnPlayerModelChanged`, resolves `developer` and calls `Engine_InstallHook()` in `HUD_GetStudioModelInterface`.
+- `Plugins/SCModelDownloader/privatehook.cpp` - resolves the five symbols and owns `g_phook_R_StudioDrawPlayer` / `g_phook_studioapi_SetupPlayerModel` plus install/uninstall.
+- MetaHook APIs `ResolveGameSymbol`, `GetModuleCRC64`, `GetGameSymbolStatusString`, `InlineHook` / `UnHook` (through `Install_InlineHook` / `Uninstall_Hook`), `RegisterLoadDllNotificationCallback`, `ModuleHasImport` / `ModuleHasImportEx`, `IATHook`, `SysError`.
+- Public `engine_studio_api_t::GetCurrentEntity` / `GetCvar`, `cl_enginefunc_t::GetMaxClients`, and the public `r_studio_interface_t` (whose `StudioDrawPlayer` slot is the same engine function, so the inline hook also covers client-DLL calls).
 
 ## Notes
-- `Engine_InstallHook` is a no-op: the inline hook on `R_StudioChangePlayerModel` is commented out because only 4 prologue bytes are available (`push esi; xor edx, edx; push edi`). Interception happens exclusively through the `E8` call-site redirects, so only the `SetupPlayerModel` caller is affected.
-- `Engine_UninstallHook`, `EngineStudio_InstalHooks`, `ClientStudio_FillAddress`, and `ClientStudio_InstallHooks` are empty stubs: the branch redirects are never restored, which is harmless because the engine image is reloaded per process.
-- `InlinePatchRedirectBranch` is called with `pOrginalCall == NULL`; the original body is reached through `gPrivateFuncs.R_StudioChangePlayerModel()` inside the wrapper rather than through a per-site trampoline.
-- The signature is SVEngine-only. On any other engine type `gPrivateFuncs.R_StudioChangePlayerModel` stays null and `Sig_FuncNotFound` aborts the load, so this plugin does not run outside Sven Co-op.
-- `LEA` acceptance has an operator-precedence quirk: the source reads `(disp in .data && mem.base != 0 && mem.scale == 1) || mem.scale == 4`, so a `lea reg, [reg*4 + disp]` is accepted without the `.data` range check and without requiring a non-zero base. The `ADD reg, imm` branch always requires `imm` inside `.data`.
-- `player_model_t` is a local re-declaration of the engine layout: `char name[260]; char modelname[260]; model_t* model;` = `0x20C` bytes, matching the `imul ..., 20Ch` stride visible in the `SetupPlayerModel` disassembly comments. The plugin only reads `name` / `model`; `modelname` is never touched.
-- `GetVFunctionFromVFTable` (`Plugins/SCModelDownloader/privatehook.cpp`) is declared and defined but has no caller in this plugin - dead helper.
-- History: the `addr_call` gate that limits the `DM_PlayerState` search to the region before `SetupPlayerModel`'s first in-image call was added in commit `749067d3` ("Fix invalid address DM_PlayerState").
+- `Install_InlineHook` is idempotent (`if(!g_phook_##fn)`), so repeated `HUD_GetStudioModelInterface` calls do not double-install; the handlers call the trampoline stored in `gPrivateFuncs.*`, never themselves. The engine image is per-process, so no stale trampoline is left behind; `Engine_UninstallHook` is the symmetric cleanup.
+- Deleted by #855: `R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE`, `SetupPlayerModel_SearchContext` (`code` / `branches` / `walks` / `addr_call` / `addr_call_R_StudioChangePlayerModel`), the `LEA` / `ADD` operand heuristics, the `CALL`-target match, `InlinePatchRedirectBranch` call-site redirects, `ConvertDllInfoSpace`, `GetVFunctionFromVFTable`, `walk_context_t`, `<set>` / `<vector>` / `<capstone.h>` dependencies, and the mirror / `.text` / `.data` / `.rdata` section preparation in `plugins.cpp` (which also dropped the unused `g_MirrorEngineDLLInfo` / `g_ClientDLLInfo` / `g_MirrorClientDLLInfo`).
+- Retained behaviours: model reload command (`scmodel_reload` -> `SCModel_ReloadAllModels`), cache / download policy, original HUD export calls, and the `steam_api.dll!SteamAPI_Shutdown` IAT hook.
+- The plugin is still enabled only in `Build/svencoop/metahook/configs/plugins_svencoop.lst`; the `cl_players` (non-SvEngine) branch is therefore not exercised by the shipped configuration, and `sizeof(player_info_t)` (0x238) does not match the GoldSrc `cl.players` strides reported upstream (0x24C WON / 0x250). Only the SvEngine path is ABI-verified end to end.
+- Verified 2026-09-09 against `svencoop-10257` (build 10257): `R_StudioDrawPlayer` rva `0x8a390`, `studioapi_SetupPlayerModel` rva `0x92a00`, `Host_IsSinglePlayerGame` rva `0x66ab0`, `DM_PlayerState` gv_rva `0x6866308`, `cl_players_model` gv_rva `0xa0bce8`. `scripts/validate-gamedata.py` passes (16 snapshots / 5 engine families) and `SCModelDownloader.dll` (Release | Win32) builds and contains no `Could not found` / scan-scaffold strings.
 
 ## Callers
-- `IPluginsV4::LoadEngine` (`Plugins/SCModelDownloader/plugins.cpp`) calls `Engine_FillAddress` and `Engine_InstallHook`.
-- `HUD_GetStudioModelInterface` (`Plugins/SCModelDownloader/exportfuncs.cpp`), installed as a `cl_exportfuncs_t` replacement, calls `EngineStudio_FillAddress` and then the original export.
+- `IPluginsV4::LoadEngine` (`Plugins/SCModelDownloader/plugins.cpp`) calls `Engine_FillAddress()`.
+- `HUD_GetStudioModelInterface` (`Plugins/SCModelDownloader/exportfuncs.cpp`), installed as a `cl_exportfuncs_t` replacement, saves `IEngineStudio`, resolves `developer`, calls `Engine_InstallHook()`, then chains the original export.
+- Engine render path: `R_StudioDrawModel` -> `R_StudioDrawPlayer` (including the `deadplayer` path) and client-DLL -> `studioapi_SetupPlayerModel`.
+
+Related: [[game-data]] [[scmodel-downloader]] [[private-symbols-disasm-workflow]]

@@ -42,6 +42,14 @@ COMMON_REQUIRED = {
     "CL_PrecacheResources": "function",
     # PrecacheManager (plugin resolves this via ResolveGameSymbol)
     "cl_resourcesonhand": "global",
+    # SCModelDownloader (plugin resolves these via ResolveGameSymbol)
+    "R_StudioDrawPlayer": "function",
+    "studioapi_SetupPlayerModel": "function",
+    "Host_IsSinglePlayerGame": "function",
+    "DM_PlayerState": "global",
+    "cl_players_model": "global",
+    # ThreadGuard (plugin resolves the engine IEngine* slot via ResolveGameSymbol)
+    "engine": "global",
 }
 
 # Numbered patch sets required for every declared engine family. Each set is

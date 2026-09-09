@@ -1,7 +1,6 @@
 #include <metahook.h>
 #include <studio.h>
 #include <r_studioint.h>
-#include <capstone.h>
 #include <cl_entity.h>
 #include <com_model.h>
 #include <cvardef.h>
@@ -13,8 +12,7 @@
 #include "UtilHTTPClient.h"
 #include "UtilAssetsIntegrity.h"
 
-#include <set>
-#include <vector>
+static cvar_t* g_pDeveloper = NULL;
 
 cvar_t *scmodel_autodownload = NULL;
 cvar_t *scmodel_downloadlatest = NULL;
@@ -75,25 +73,89 @@ void SCModel_ReloadAllModels()
 	}
 }
 
-void R_StudioChangePlayerModel(void)
+static const char * EngineGetPlayerModelName(int playerindex)
 {
-	gPrivateFuncs.R_StudioChangePlayerModel();
+	return (g_iEngineType == ENGINE_SVENGINE) ? cl_players_sc[playerindex].model : cl_players[playerindex].model;
+}
 
-	int index = IEngineStudio.GetCurrentEntity()->index;
+/*
+	Purpose: Rebuild the engine's model-change trigger predicate for one player.
 
-	if (index >= 1 && index <= 32)
+	Both callers gate the same block on ( developer.value || !Host_IsSinglePlayerGame() )
+	&& cl.players[i].model[0], then compare the player's model name, or the entity model
+	when the named model is not in use. Evaluated at the caller entry, before the engine
+	mutates DM_PlayerState, so it reproduces the engine's own test.
+*/
+
+static bool SCModel_IsModelChanged(int playerindex, cl_entity_t* currentEntity)
+{
+	const char* playerModelName = EngineGetPlayerModelName(playerindex);
+
+	const bool usesNamedModel =
+		(g_pDeveloper->value || !gPrivateFuncs.Host_IsSinglePlayerGame())
+		&& playerModelName[0];
+
+	if (usesNamedModel)
+		return strcmp((*DM_PlayerState)[playerindex].name, playerModelName) != 0;
+
+	return (*DM_PlayerState)[playerindex].model != currentEntity->model;
+}
+
+/*
+	Purpose: Query the database with the state the original caller just wrote.
+*/
+static void SCModel_OnPlayerModelChanged(int playerindex, cl_entity_t* currentEntity)
+{
+	player_model_t* state = &(*DM_PlayerState)[playerindex];
+
+	if (state->model == currentEntity->model || !state->model)
 	{
-		if ((*DM_PlayerState)[index - 1].model == IEngineStudio.GetCurrentEntity()->model || !(*DM_PlayerState)[index - 1].model)
+		if (state->name[0])
 		{
-			if ((*DM_PlayerState)[index - 1].name[0])
+			if (SCModel_AutoDownload())
 			{
-				if (SCModel_AutoDownload())
-				{
-					SCModelDatabase()->QueryModel((*DM_PlayerState)[index - 1].name);
-				}
+				SCModelDatabase()->QueryModel(state->name);
 			}
 		}
 	}
+}
+
+int R_StudioDrawPlayer(int flags, entity_state_t* pplayer)
+{
+	cl_entity_t* currentEntity = IEngineStudio.GetCurrentEntity();
+	const int playerindex = pplayer->number - 1;
+
+	bool bModelChanged = false;
+
+	if (playerindex >= 0 && playerindex < gEngfuncs.GetMaxClients())
+	{
+		bModelChanged = SCModel_IsModelChanged(playerindex, currentEntity);
+	}
+
+	const int result = gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
+
+	if (bModelChanged)
+	{
+		SCModel_OnPlayerModelChanged(playerindex, currentEntity);
+	}
+
+	return result;
+}
+
+model_t* studioapi_SetupPlayerModel(int playerindex)
+{
+	cl_entity_t* currentEntity = IEngineStudio.GetCurrentEntity();
+
+	const bool bModelChanged = SCModel_IsModelChanged(playerindex, currentEntity);
+
+	model_t* result = gPrivateFuncs.studioapi_SetupPlayerModel(playerindex);
+
+	if (bModelChanged)
+	{
+		SCModel_OnPlayerModelChanged(playerindex, currentEntity);
+	}
+
+	return result;
 }
 
 void SCModel_Reload_f(void)
@@ -136,200 +198,20 @@ void HUD_Shutdown(void)
 	UtilHTTPClient_Shutdown();
 }
 
-void EngineStudio_FillAddress_SetupPlayerModel(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	PVOID SetupPlayerModel = ConvertDllInfoSpace(pstudio->SetupPlayerModel, RealDllInfo, DllInfo);
-
-	if (!SetupPlayerModel)
-	{
-		Sig_NotFound(SetupPlayerModel);
-	}
-
-	typedef struct SetupPlayerModel_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID base{};
-		size_t max_insts{};
-		int max_depth{};
-		std::set<PVOID> code;
-		std::set<PVOID> branches;
-		std::vector<walk_context_t> walks;
-		int StudioSetRemapColors_instcount{};
-		std::set<PVOID> addr_call;
-		std::set<PVOID> addr_call_R_StudioChangePlayerModel;
-	}SetupPlayerModel_SearchContext;
-
-	SetupPlayerModel_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	ctx.base = SetupPlayerModel;
-
-	ctx.max_insts = 1000;
-	ctx.max_depth = 16;
-	ctx.walks.emplace_back(ctx.base, 0x1000, 0);
-
-	while (ctx.walks.size())
-	{
-		auto walk = ctx.walks[ctx.walks.size() - 1];
-		ctx.walks.pop_back();
-
-		g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (SetupPlayerModel_SearchContext*)context;
-
-			if (ctx->code.size() > ctx->max_insts)
-				return TRUE;
-
-			if (ctx->code.find(address) != ctx->code.end())
-				return TRUE;
-
-			ctx->code.emplace(address);
-
-			if (pinst->id == X86_INS_CALL &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[0].imm >= (ULONG_PTR)ctx->DllInfo.ImageBase &&
-				pinst->detail->x86.operands[0].imm < (ULONG_PTR)ctx->DllInfo.ImageBase + ctx->DllInfo.ImageSize)
-			{
-				PVOID calltarget_pfn = (PVOID)pinst->detail->x86.operands[0].imm;
-				PVOID calltarget_RealDllBased = ConvertDllInfoSpace(calltarget_pfn, ctx->DllInfo, ctx->RealDllInfo);
-
-				auto address_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-				if (calltarget_RealDllBased == gPrivateFuncs.R_StudioChangePlayerModel)
-				{
-					ctx->addr_call_R_StudioChangePlayerModel.emplace(address_RealDllBased);
-				}
-
-				ctx->addr_call.emplace(address_RealDllBased);
-			}
-
-			if (!DM_PlayerState && ctx->addr_call.empty())
-			{
-				/*
-.text:101F3A90 ; int __cdecl SetupPlayerModel(int)
-.text:101F3A90 SetupPlayerModel proc near              ; DATA XREF: .data:1031C25C��o
-.text:101F3A90
-.text:101F3A90 arg_0           = dword ptr  8
-.text:101F3A90
-.text:101F3A90                 push    ebp
-.text:101F3A91                 mov     ebp, esp
-.text:101F3A93                 movss   xmm0, dword_1031B54C
-.text:101F3A9B                 push    ebx
-.text:101F3A9C                 mov     ebx, [ebp+arg_0]
-.text:101F3A9F                 push    esi
-.text:101F3AA0                 push    edi
-.text:101F3AA1                 imul    edi, ebx, 20Ch
-.text:101F3AA7                 ucomiss xmm0, ds:dword_102B3730
-.text:101F3AAE                 lea     esi, DM_PlayerState[edi]				
-				*/
-				if (pinst->id == X86_INS_LEA &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-					pinst->detail->x86.operands[1].mem.base != 0 &&
-					pinst->detail->x86.operands[1].mem.scale == 1 || pinst->detail->x86.operands[1].mem.scale == 4)
-				{
-					DM_PlayerState = (decltype(DM_PlayerState))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				/*
-.text:01D92A00 SetupPlayerModel proc near              ; DATA XREF: .data:01EE2914��o
-.text:01D92A00
-.text:01D92A00 arg_0           = dword ptr  4
-.text:01D92A00
-.text:01D92A00                 fld     developer_value
-.text:01D92A06                 fldz
-.text:01D92A08                 push    esi
-.text:01D92A09                 fucompp
-.text:01D92A0B                 fnstsw  ax
-.text:01D92A0D                 push    edi
-.text:01D92A0E                 mov     edi, [esp+8+arg_0]
-.text:01D92A12                 imul    esi, edi, 20Ch
-.text:01D92A18                 add     esi, offset DM_PlayerState
-				*/
-				if (pinst->id == X86_INS_ADD &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					DM_PlayerState = (decltype(DM_PlayerState))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].imm, ctx->DllInfo, ctx->RealDllInfo);
-				}
-			}
-
-			if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM)
-			{
-				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
-				auto foundbranch = ctx->branches.find(imm);
-				if (foundbranch == ctx->branches.end())
-				{
-					ctx->branches.emplace(imm);
-					if (depth + 1 < ctx->max_depth)
-						ctx->walks.emplace_back(imm, 0x1000, depth + 1);
-				}
-
-				if (pinst->id == X86_INS_JMP)
-					return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, walk.depth, &ctx);
-	}
-
-	Sig_VarNotFound(DM_PlayerState);
-
-	if (ctx.addr_call_R_StudioChangePlayerModel.empty()) {
-		Sig_NotFound(call_R_StudioChangePlayerModel);
-	}
-
-	for (auto addr : ctx.addr_call_R_StudioChangePlayerModel)
-	{
-		g_pMetaHookAPI->InlinePatchRedirectBranch(addr, R_StudioChangePlayerModel, NULL);
-	}
-}
-
-void EngineStudio_FillAddress(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	EngineStudio_FillAddress_SetupPlayerModel(pstudio, DllInfo, RealDllInfo);
-}
-
-void EngineStudio_InstalHooks()
-{
-
-}
-
-void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
-{
-	
-}
-
-void ClientStudio_InstallHooks()
-{
-}
-
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
-	EngineStudio_FillAddress(pstudio, g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
-	EngineStudio_InstalHooks();
-
 	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
 	gpStudioInterface = ppinterface;
 
-	ClientStudio_FillAddress(ppinterface);
-	ClientStudio_InstallHooks();
+	g_pDeveloper = IEngineStudio.GetCvar("developer");
+
+	if (!g_pDeveloper)
+	{
+		Sys_Error("%s", "Failed to resolve the \"developer\" cvar");
+		return 0;
+	}
+
+	Engine_InstallHook();
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
 
