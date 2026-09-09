@@ -73,6 +73,11 @@ void SCModel_ReloadAllModels()
 	}
 }
 
+static const char * EngineGetPlayerModelName(int playerindex)
+{
+	return (g_iEngineType == ENGINE_SVENGINE) ? cl_players_sc[playerindex].model : cl_players[playerindex].model;
+}
+
 /*
 	Purpose: Rebuild the engine's model-change trigger predicate for one player.
 
@@ -81,11 +86,10 @@ void SCModel_ReloadAllModels()
 	when the named model is not in use. Evaluated at the caller entry, before the engine
 	mutates DM_PlayerState, so it reproduces the engine's own test.
 */
+
 static bool SCModel_IsModelChanged(int playerindex, cl_entity_t* currentEntity)
 {
-	const char* playerModelName = (g_iEngineType == ENGINE_SVENGINE)
-		? cl_players_sc[playerindex].model
-		: cl_players[playerindex].model;
+	const char* playerModelName = EngineGetPlayerModelName(playerindex);
 
 	const bool usesNamedModel =
 		(g_pDeveloper->value || !gPrivateFuncs.Host_IsSinglePlayerGame())
