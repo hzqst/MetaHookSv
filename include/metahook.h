@@ -227,10 +227,10 @@ typedef enum mh_gamesymbol_status_e
 typedef struct mh_pattern_s
 {
 	const char *text;
-	const BYTE *bytes;
-	const BYTE *mask;
+	const uint8_t *bytes;
+	const uint8_t *mask;
 	const char *legacyPattern;
-	DWORD length;
+	uint32_t length;
 } mh_pattern_t;
 
 /*

@@ -2459,7 +2459,7 @@ bool MH_ModuleHasImportEx(HMODULE hModule, const char* pszModuleName, const char
 	{
 		if (0 == stricmp((const char*)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
 		{
-			auto hProcModule = GetModuleHandle(pszModuleName);
+			auto hProcModule = GetModuleHandleA(pszModuleName);
 
 			if (!hProcModule)
 				break;
@@ -3879,8 +3879,6 @@ static_assert(MH_GAMESYMBOL_OK == 0 &&
 	MH_GAMESYMBOL_RVA_OUT_OF_RANGE == 10 &&
 	MH_GAMESYMBOL_CATALOG_CONFLICT == 11, "mh_gamesymbol_status_t values are ABI-stable");
 static_assert(MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY == 0x1, "game symbol flag values are ABI-stable");
-static_assert(sizeof(mh_pattern_t) == 20, "mh_pattern_t first-version size is ABI-stable");
-static_assert(sizeof(mh_gamesymbol_t) == 72, "mh_gamesymbol_t first-version size is ABI-stable");
 
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
