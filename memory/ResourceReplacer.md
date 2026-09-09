@@ -37,12 +37,12 @@ The plugin performs replacement through patches at internal engine `FS_Open` cal
 Core objects and layers:
 - **Rule layer**: `CResourceReplacer` (`m_MapEntries` / `m_GlobalEntries`) manages rule sets; entry types are `CPlainResourceReplaceEntry` and `CRegexResourceReplaceEntry`.
 - **Lifecycle layer**: `HUD_Init` loads global rules, `HUD_VidInit` clears map rules, and `HUD_Shutdown` releases all rules.
-- **Engine-hook layer**: `Engine_FillAddress*` performs signature/disassembly-based location; `Engine_InstallHooks` redirects target engine calls to plugin wrapper functions.
+- **Engine-hook layer**: `Engine_FillAddress` resolves everything gamedata-only (function entries plus the numbered `FS_Open` call-site PATCH records); `Engine_InstallHooks` verifies each call-site opcode and redirects target engine calls to plugin wrapper functions.
 - **Replacement execution layer**: `Mod_LoadModel_FS_Open` / `S_LoadSound_FS_Open` invoke `ReplaceFileName` for `rb` reads.
 
 ```mermaid
 flowchart TD
-  A[Plugin load: IPluginsV4::LoadEngine] --> B[Engine_FillAddress* locates S_LoadSound/Mod_LoadModel/CL_PrecacheResources]
+  A[Plugin load: IPluginsV4::LoadEngine] --> B[Engine_FillAddress resolves FS_Open/CL_PrecacheResources and numbered FS_Open call-site PATCH records from gamedata]
   B --> C[Engine_InstallHooks installs branch patches and InlineHook]
   D[IPluginsV4::LoadClient] --> E[Takes over HUD_Init/HUD_VidInit/HUD_Shutdown]
   E --> F[HUD_Init loads resreplacer/default_global.gmr/.gsr]
@@ -59,8 +59,7 @@ Key behavioral details:
 - Map rule file names: removes the extension from `pfnGetLevelName()` and appends `.gmr/.gsr` (for example, `maps/foo.bsp` -> `maps/foo.gmr/.gsr`).
 
 ## Dependencies
-- MetaHook API: `SearchPattern*`, `ReverseSearchFunctionBegin*`, `DisasmRanges`, `InlinePatchRedirectBranch`, `InlineHook/UnHook`, and `GetEngineType/GetEngineBuildnum`.
-- Capstone: used to traverse instruction streams and locate `FS_Open` call sites.
+- MetaHook API: `ResolveGameSymbol`, `IsGameSymbolAvailable`, `GetModuleCRC64`, `GetGameSymbolStatusString`, `InlinePatchRedirectBranch`, `InlineHook/UnHook`, and `GetEngineType/GetEngineBuildnum`.
 - Engine exports/interfaces: `COM_LoadFile`, `COM_FreeFile`, `pfnGetLevelName`, and `cl_exportfuncs_t`.
 - SourceSDK/utility functions: `V_GetFileExtension`, `stricmp`, `TrimString`, and `RemoveFileExtension`.
 - Project integration: `plugins_goldsrc.lst` (loading), `MetaHook.sln`, and `scripts/build-Plugins.bat` (building).
@@ -70,7 +69,7 @@ Key behavioral details:
 - Extensions before and after replacement must match (such as `.mdl/.spr/.wav`), otherwise replacement is rejected even when a rule matches.
 - The plugin does not verify that the replacement target file actually exists; a missing target can cause an error/failure during resource loading.
 - Replacement occurs only when `FS_Open` has `pOptions == "rb"`; other open modes do not participate.
-- Address discovery relies on signatures and disassembly heuristics (especially identifying `FS_Open` through calls near the `"rb"` string); an unknown engine build may trigger `Sys_Error`.
+- Address discovery is gamedata-only: `FS_Open` / `CL_PrecacheResources` function entries plus `S_LoadSound_to_FS_Open_callsite_0..N` / `Mod_LoadModel_to_FS_Open_callsite_0..N` PATCH records. Before each redirect the plugin re-reads the target byte and accepts only `0xE8` / `0xE9` (five-byte `rel32` call / jmp), aborting without rewriting a site that other code already changed; an unknown engine build or a missing symbol triggers `Sys_Error`.
 - `LoadGlobalReplaceList` does not proactively clear global rules before loading; the current design relies on the `HUD_Init` lifecycle normally running only once.
 
 ## Callers (optional)

@@ -8,7 +8,8 @@ Checks (see docs/plans/metahook-gamedata-api-implementation-plan.md, section 14)
   3. signature token legality.
   4. function / global / patch required field completeness.
   5. (CRC64, symbolName) conflicts.
-  6. common required symbols for every declared engine family.
+  6. common required symbols (expected kind) and numbered patch sets for every
+     declared engine family.
   7. cvar alternative: cvar_hooks (global) OR Cvar_Set_to_Cvar_DirectSet_callsite_0 (patch).
   8. blob conditional symbols (NLoadBlob + FreeBlob), and the SvEngine pairing rule.
   9. DWORD field ranges and global signatureRva derivation.
@@ -23,26 +24,35 @@ import json
 import os
 import sys
 
-COMMON_REQUIRED = [
-    "build_number",
-    "Sys_Error",
-    "ClientDLL_HudInit",
-    "cl_enginefuncs",
-    "cl_funcs",
-    "g_phClientModule",
-    "g_pClientFactory",
-    "videomode",
-    "gClientUserMsgs",
-    "cl_parsefuncs",
-    "Cvar_DirectSet",
-    # ResourceReplacer (plugins resolve these via ResolveGameSymbol)
-    "S_LoadSound",
-    "Mod_LoadModel",
-    "FS_Open",
-    "CL_PrecacheResources",
-    # HeapPatch (plugins resolve these via ResolveGameSymbol)
-    "Sys_InitMemory",
-]
+# symbol -> expected record kind, required for every declared engine family.
+COMMON_REQUIRED = {
+    "build_number": "function",
+    "Sys_Error": "function",
+    "ClientDLL_HudInit": "function",
+    "cl_enginefuncs": "global",
+    "cl_funcs": "global",
+    "g_phClientModule": "global",
+    "g_pClientFactory": "global",
+    "videomode": "global",
+    "gClientUserMsgs": "global",
+    "cl_parsefuncs": "global",
+    "Cvar_DirectSet": "function",
+    # ResourceReplacer (plugin resolves these via ResolveGameSymbol)
+    "FS_Open": "function",
+    "CL_PrecacheResources": "function",
+    # PrecacheManager (plugin resolves this via ResolveGameSymbol)
+    "cl_resourcesonhand": "global",
+}
+
+# Numbered patch sets required for every declared engine family. Each set is
+# numbered contiguously from 0 and must contain at least index 0.
+NUMBERED_PATCH_SETS = (
+    # HeapPatch
+    "Sys_InitMemory_HeapLimitPatches",
+    # ResourceReplacer
+    "S_LoadSound_to_FS_Open_callsite",
+    "Mod_LoadModel_to_FS_Open_callsite",
+)
 
 # gameVersion -> engine family. Only these gameVersions are declared supported.
 # hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with
@@ -298,9 +308,25 @@ def validate_snapshot(doc, game_version):
 def validate_required(symbols, family, game_version):
     """Return a list of required-symbol failures for a single gameVersion."""
     errors = []
-    for sym in COMMON_REQUIRED:
-        if sym not in symbols:
+    for sym, kind in COMMON_REQUIRED.items():
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
             errors.append(f"'{game_version}' ({family}): missing common required symbol '{sym}'")
+        elif rec.get("kind") != kind:
+            errors.append(f"'{game_version}' ({family}): '{sym}' must be a {kind} record")
+
+    for prefix in NUMBERED_PATCH_SETS:
+        index = 0
+        while True:
+            name = f"{prefix}_{index}"
+            rec = symbols.get(name)
+            if rec is None:
+                if index == 0:
+                    errors.append(f"'{game_version}' ({family}): missing required patch '{name}'")
+                break
+            if rec.get("kind") != "patch":
+                errors.append(f"'{game_version}' ({family}): '{name}' must be a patch record")
+            index += 1
 
     # cvar branch: the engine's native callback list, or at least one managed
     # Cvar_Set -> Cvar_DirectSet call-site redirect.

@@ -35,5 +35,4 @@ typedef struct resource_s
 
 extern resource_t *cl_resourcesonhand;
 
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
-PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
+void Engine_FillAddress(void);
