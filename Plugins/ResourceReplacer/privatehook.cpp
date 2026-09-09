@@ -14,14 +14,14 @@ private_funcs_t gPrivateFuncs = {  };
 
 static hook_t* g_phook_CL_PrecacheResources = NULL;
 
-struct FS_OpenCallSite
+struct CallSite_t
 {
 	std::string symbolName;
 	PVOID address;
 };
 
-static std::vector<FS_OpenCallSite> g_S_LoadSound_FS_OpenCallSites;
-static std::vector<FS_OpenCallSite> g_Mod_LoadModel_FS_OpenCallSites;
+static std::vector<CallSite_t> g_S_LoadSound_FS_OpenCallSites;
+static std::vector<CallSite_t> g_Mod_LoadModel_FS_OpenCallSites;
 
 // On gamedata failure, print diagnostics (symbol / buildnum / CRC64 / status string) and abort via Sys_Error.
 static void ReportSymbolFailure(const char* symbolName, mh_gamesymbol_status_t status)
@@ -56,7 +56,7 @@ static PVOID ResolveGameSymbolOrError(const char* symbolName, mh_gamesymbol_kind
 
 // The call-site set is numbered contiguously from 0; trust the upstream numbering
 // and stop at the first missing index. Every set is required, so index 0 must exist.
-static void CollectFSOpenCallSites(const char* symbolPrefix, std::vector<FS_OpenCallSite>& outCallSites)
+static void CollectFSOpenCallSites(const char* symbolPrefix, std::vector<CallSite_t>& outCallSites)
 {
 	for (int index = 0;; ++index)
 	{
@@ -91,7 +91,7 @@ static void CollectFSOpenCallSites(const char* symbolPrefix, std::vector<FS_Open
 // Only a five-byte E8 rel32 / E9 rel32 is accepted, so a site that other code
 // already rewrote is reported instead of being overwritten. This detects a changed
 // opcode, not an existing E8/E9 redirect installed by another plugin.
-static bool RedirectCallSite(const FS_OpenCallSite& callSite, PVOID newFunc)
+static bool RedirectCallSite(const CallSite_t& callSite, PVOID newFunc)
 {
 	PUCHAR opcode = (PUCHAR)callSite.address;
 
