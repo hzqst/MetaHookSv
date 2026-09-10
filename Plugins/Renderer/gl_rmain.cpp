@@ -686,12 +686,21 @@ bool R_ShouldDrawGlowColorWallHackBehindWallOnly()
 }
 
 /*
-	Purpose: Check if we are rendering glow shell
+	Purpose: Check if we are rendering glow shell for studio model
 */
 
-bool R_IsRenderingGlowShell()
+bool R_IsRenderingGlowShellForStudioModel()
 {
 	return ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) || (*currententity)->curstate.renderfx == kRenderFxDrawGlowShell;
+}
+
+/*
+	Purpose: Check if we are rendering glow shell for world model
+*/
+
+bool R_IsRenderingGlowShellForWorldModel()
+{
+	return (*currententity)->curstate.renderfx == kRenderFxDrawGlowShell;
 }
 
 /*

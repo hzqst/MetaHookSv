@@ -2061,7 +2061,7 @@ int R_GetStudioRemapKey(cl_entity_t* e, model_t *mod)
 
 void R_StudioSetupSkinEx(const CStudioModelRenderData* pRenderData, studiohdr_t* ptexturehdr, int index, CStudioSetupSkinContext* context)
 {
-	if (R_IsRenderingGlowShell())
+	if (R_IsRenderingGlowShellForStudioModel())
 		return;
 
 	if (!ptexturehdr->textureindex)
@@ -2154,7 +2154,7 @@ void R_StudioDrawRenderDataBegin(const std::shared_ptr<CStudioModelRenderData>& 
 
 	StudioUBO.r_scale = 0;
 
-	if (R_IsRenderingGlowShell())
+	if (R_IsRenderingGlowShellForStudioModel())
 	{
 		StudioUBO.r_origin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
 		StudioUBO.r_origin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
@@ -2441,7 +2441,7 @@ void R_StudioDrawMesh_DrawPass(
 	{
 		StudioProgramState |= STUDIO_GLOW_COLOR_ENABLED | STUDIO_NF_DOUBLE_FACE;
 	}
-	else if (R_IsRenderingGlowShell())
+	else if (R_IsRenderingGlowShellForStudioModel())
 	{
 		StudioProgramState |= (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_GLOW_SHELL_ENABLED | STUDIO_NF_CHROME);
 

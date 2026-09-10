@@ -3471,7 +3471,7 @@ void R_DrawWorldSurfaceModel(const std::shared_ptr<CWorldSurfaceModel>& pModel, 
 	EntityUBO.r_scrollSpeed = R_ScrollSpeed();
 	EntityUBO.r_scale = 0;
 
-	if (R_IsRenderingGlowShell())
+	if (R_IsRenderingGlowShellForWorldModel())
 	{
 		EntityUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
 		EntityUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;

@@ -18,8 +18,9 @@ Typical use here: capture a frame with a [[renderer]] feature enabled, then insp
 | --- | --- |
 | CLI entry point | `rdc` (on `PATH` via `%USERPROFILE%\.local\bin`) |
 | Source / editable install | `D:\rdc-cli` (`uv tool install -e .`) |
-| RenderDoc Python module | **1.43**, built from `D:\renderdoc-fork` (x64 Release) |
+| RenderDoc Python module | **1.43**, built from `D:\renderdoc-fork` (x64 Release — the module itself is x64-only) |
 | Module install dir | `%LOCALAPPDATA%\rdc\renderdoc` (a default rdc search path) |
+| 32-bit components | `%LOCALAPPDATA%\rdc\renderdoc\x86\` — `renderdoccmd.exe`, `renderdocshim32.dll`, `renderdoc.dll`, 32-bit **1.43** (fork `Release\|Win32`); required for every GoldSrc / MetaHook target |
 | Health check | `rdc doctor` — expect every line `[ok]` |
 
 The module is built against **Python 3.13**. `rdc doctor` reports `win-python-version` as a failure if the running interpreter ever stops matching it.
@@ -71,6 +72,51 @@ rdc capture-list
 rdc capture-copy 0 frame.rdc
 ```
 
+## 32-bit Targets
+
+Every MetaHook game and the standalone Steam `svencoop.exe` are **PE32 (32-bit)**. RenderDoc captures an alt-bitness target by farming off to a `renderdoccmd` of the *target's* bitness (the `capaltbit` command), which must sit next to the module:
+
+| File under the module dir | Role |
+| --- | --- |
+| `x86\renderdoccmd.exe` | alt-bit launcher; runs `capaltbit`, injects from its own directory |
+| `x86\renderdocshim32.dll` | shim loaded into the target |
+| `x86\renderdoc.dll` | the injected 32-bit RenderDoc |
+
+The 1.43 module is an **x64-only** build — `rdc setup-renderdoc` stages only `renderdoc.pyd`, `renderdoc.dll` and `renderdoccmd.exe` (x64) — so `x86\` is absent by default and every 32-bit attempt fails with a misleading error:
+
+```
+inject failed (code <Internal error: Can't run 32-bit renderdoccmd to capture 32-bit program.
+If this is a locally built RenderDoc you must build both 32-bit and 64-bit versions.>)
+```
+
+That text is emitted whenever `CreateProcessW` of the alt-bit `renderdoccmd` fails (`renderdoc/os/win32/win32_process.cpp`); the real cause is the missing `x86\` files, not a bitness mismatch in `renderdoccmd` itself.
+
+### Build and install
+
+The fork's `Win32\Release` already has `renderdoc.dll` and `qrenderdoc.exe` but not `renderdoccmd` / `renderdocshim32.dll`. Build just those two (`renderdoc.lib` and the drivers are already there):
+
+```bash
+MSBUILD="/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe"
+export MSYS2_ARG_CONV_EXCL='*'                 # Git Bash rewrites /p:... into paths
+cd /d/renderdoc-fork
+# use -p: / -m (dash), not /p: / /m — MSYS turns leading-slash switches into filenames
+"$MSBUILD" renderdocshim/renderdocshim.vcxproj -p:Configuration=Release -p:Platform=Win32 -p:SolutionDir=D:/renderdoc-fork/ -m -v:m
+"$MSBUILD" renderdoccmd/renderdoccmd.vcxproj   -p:Configuration=Release -p:Platform=Win32 -p:SolutionDir=D:/renderdoc-fork/ -m -v:m
+```
+
+Installing `renderdoccmd` relinks `Win32/Release/renderdoc.dll` as a dependency, so all three outputs end up same-source. Copy them in:
+
+```bash
+cp D:/renderdoc-fork/Win32/Release/{renderdoccmd.exe,renderdocshim32.dll,renderdoc.dll} \
+   "$LOCALAPPDATA/rdc/renderdoc/x86/"
+```
+
+Verify each is `PE32` (not `PE32+`) and that `renderdoccmd.exe version` reports `x86 v1.43`.
+
+### Path resolution
+
+For the installed (non-development) layout the x64 module derives the alt-bit paths from its own directory: it strips the filename and appends `x86\renderdoccmd.exe` (and `x86\renderdocshim32.dll`), so placing the files there is the whole configuration — no env var, no config file. The dev-layout branches (`\x64\Release\` → `\Win32\Release\`) never trigger for `%LOCALAPPDATA%\rdc\renderdoc`.
+
 ## Inspecting a Capture
 
 ```bash
@@ -117,6 +163,7 @@ CI-style assertions use diff(1)-compatible exit codes (`0`=pass, `1`=fail, `2`=e
 
 - **Run `rdc doctor` first** — it reports module, renderdoccmd, adb and platform toolchain status.
 - **`ident=0` / injection failed** — run the terminal as Administrator; some drivers and overlay software block injection.
+- **`inject failed ... Can't run 32-bit renderdoccmd to capture 32-bit program`** — the module's `x86\` folder is missing or incomplete; the message is misleading (it is not about `renderdoccmd`'s own bitness). Build and install the 32-bit components — see [32-bit Targets](#32-bit-targets).
 - **Anti-cheat games cannot be captured.** EAC / BattlEye / Vanguard reject injection by design. The `-insecure` MetaHook launchers and their mods are unaffected.
 - **`--frame N` times out** — raise `--timeout`, or fall back to `--trigger` plus a manual trigger.
 - **`no constant block at set=... binding=...`** — that stage has no UBO at those indices; enumerate them with `rdc ls /draws/<EID>/cbuffer/<stage>` first.
