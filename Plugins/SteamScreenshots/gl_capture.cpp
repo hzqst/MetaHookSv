@@ -25,10 +25,13 @@ void GL_ShutdownCaptureImageBuffer()
 
 void GL_InitCapturePBO(int width, int height)
 {
+	int originalPBO = 0;
+	glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &originalPBO);
+
 	glGenBuffers(1, &g_CapturePBO);
 	glBindBuffer(GL_PIXEL_PACK_BUFFER, g_CapturePBO);
 	glBufferData(GL_PIXEL_PACK_BUFFER, width * height * 3, 0, GL_STREAM_READ);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, originalPBO);
 }
 
 void GL_ShutdownCapturePBO()
@@ -49,6 +52,44 @@ void GL_ShutdownCaptureSyncObject()
 	}
 }
 
+static void GL_ReadCapturePixels(GLuint pbo, void* pixels)
+{
+	int originalFBO = 0;
+	int originalPBO = 0;
+	int originalAlignment = 0;
+	int originalRowLength = 0;
+	int originalSkipRows = 0;
+	int originalSkipPixels = 0;
+	const bool hasPBO = (GLEW_VERSION_2_1 || GLEW_ARB_pixel_buffer_object) && glBindBuffer;
+
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &originalFBO);
+	glGetIntegerv(GL_PACK_ALIGNMENT, &originalAlignment);
+	glGetIntegerv(GL_PACK_ROW_LENGTH, &originalRowLength);
+	glGetIntegerv(GL_PACK_SKIP_ROWS, &originalSkipRows);
+	glGetIntegerv(GL_PACK_SKIP_PIXELS, &originalSkipPixels);
+	if (hasPBO)
+	{
+		glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &originalPBO);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+	}
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+	// Both the allocation and the image flip use tightly packed RGB rows.
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+	glReadPixels(0, 0, g_CaptureImageWidth, g_CaptureImageHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, originalAlignment);
+	glPixelStorei(GL_PACK_ROW_LENGTH, originalRowLength);
+	glPixelStorei(GL_PACK_SKIP_ROWS, originalSkipRows);
+	glPixelStorei(GL_PACK_SKIP_PIXELS, originalSkipPixels);
+	if (hasPBO)
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, originalPBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, originalFBO);
+}
+
 void GL_BeginSyncCapture(fnGLQueryCaptureCallback callback)
 {
 	int glwidth, glheight;
@@ -63,13 +104,7 @@ void GL_BeginSyncCapture(fnGLQueryCaptureCallback callback)
 		g_CaptureImageHeight = glheight;
 	}
 	
-	int originalFBO = 0;
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &originalFBO);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-	glReadPixels(0, 0, g_CaptureImageWidth, g_CaptureImageHeight, GL_RGB, GL_UNSIGNED_BYTE, g_CaptureImageBuffer);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, originalFBO);
+	GL_ReadCapturePixels(0, g_CaptureImageBuffer);
 
 	GLubyte* pBuf = (GLubyte*)g_CaptureImageBuffer;
 
@@ -105,19 +140,9 @@ void GL_BeginAsyncCapture(fnGLQueryCaptureCallback callback)
 		g_CaptureImageHeight = glheight;
 	}
 
-	int originalFBO = 0;
-	int originalPBO = 0;
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &originalFBO);
-	glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &originalPBO);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, g_CapturePBO);
-
-	glReadPixels(0, 0, g_CaptureImageWidth, g_CaptureImageHeight, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	GL_ReadCapturePixels(g_CapturePBO, nullptr);
 
 	g_CaptureSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, originalPBO);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, originalFBO);
 }
 
 void GL_BeginCapture(fnGLQueryCaptureCallback callback)
@@ -131,6 +156,13 @@ void GL_QueryAsyncCapture(fnGLQueryCaptureCallback callback)
 		return;
 
 	GLenum wait = glClientWaitSync(g_CaptureSyncObject, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+	if (wait == GL_WAIT_FAILED)
+	{
+		GL_ShutdownCaptureSyncObject();
+		gEngfuncs.Con_Printf("[SteamScreenshots] Cannot capture screenshot: GPU fence wait failed.\n");
+		return;
+	}
+
 	if (wait == GL_ALREADY_SIGNALED || wait == GL_CONDITION_SATISFIED)
 	{
 		int originalPBO = 0;
@@ -174,8 +206,15 @@ void GL_ShutdownCapture()
 	GL_ShutdownCaptureSyncObject();
 }
 
-void GL_InitCapture()
+bool GL_InitCapture()
 {
+	// GL_READ_FRAMEBUFFER requires core/ARB framebuffer support, not just EXT_framebuffer_object.
+	if (!(GLEW_VERSION_3_0 || GLEW_ARB_framebuffer_object) || !glBindFramebuffer)
+	{
+		gEngfuncs.Con_Printf("[SteamScreenshots] Framebuffer capture unavailable; keeping the engine snapshot command.\n");
+		return false;
+	}
+
 	g_pMetaHookAPI->GetVideoMode(&g_CaptureImageWidth, &g_CaptureImageHeight, NULL, NULL);
 
 	if (GLEW_VERSION_3_2 && glFenceSync && glClientWaitSync)
@@ -189,4 +228,5 @@ void GL_InitCapture()
 	}
 
 	GL_InitCaptureImageBuffer(g_CaptureImageWidth, g_CaptureImageHeight);
+	return true;
 }

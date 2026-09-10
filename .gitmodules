@@ -45,3 +45,6 @@
 [submodule "thirdparty/csv-parser-fork"]
 	path = thirdparty/csv-parser-fork
 	url = https://github.com/hzqst/csv-parser-fork
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = https://github.com/glfw/glfw.git

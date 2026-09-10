@@ -166,11 +166,11 @@ void IN_ActivateMouse(void)
 
 	if (!init)
 	{
-		GL_InitCapture();
-
-		//cmd "snapshot" is registered after HUD_Init
-
-		g_pMetaHookAPI->HookCmd("snapshot", VID_Snapshot_f);
+		if (GL_InitCapture())
+		{
+			//cmd "snapshot" is registered after HUD_Init
+			g_pMetaHookAPI->HookCmd("snapshot", VID_Snapshot_f);
+		}
 
 		m_pfnServerName = HOOK_MESSAGE(ServerName);
 
