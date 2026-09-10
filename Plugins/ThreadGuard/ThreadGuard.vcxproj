@@ -128,6 +128,7 @@
     <ClCompile Include="privatehook.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="enginedef.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="ThreadManager.h" />
     <ClInclude Include="exportfuncs.h" />

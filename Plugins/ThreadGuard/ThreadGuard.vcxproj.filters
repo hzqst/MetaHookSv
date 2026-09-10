@@ -43,5 +43,8 @@
     <ClInclude Include="privatehook.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="enginedef.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
