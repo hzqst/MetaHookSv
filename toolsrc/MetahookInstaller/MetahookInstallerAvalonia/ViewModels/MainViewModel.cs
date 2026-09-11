@@ -1,5 +1,7 @@
-﻿using Avalonia.Controls.Notifications;
+﻿using Avalonia;
+using Avalonia.Controls.Notifications;
 using Avalonia.Media.Imaging;
+using Avalonia.Styling;
 using MetahookInstallerAvalonia.Handler;
 using MetahookInstallerAvalonia.Lang;
 using Microsoft.Win32;
@@ -754,6 +756,9 @@ public class MainViewModel : ViewModelBase
     private readonly ICommand _changeLanguage;
     public ICommand ChangeLanguageCommand => _changeLanguage;
 
+    private readonly ICommand _changeTheme;
+    public ICommand ChangeThemeCommand => _changeTheme;
+
     private readonly ICommand _toastWarning;
     public ICommand ToastWarningCommand => _toastWarning;
 
@@ -930,6 +935,27 @@ public class MainViewModel : ViewModelBase
                    Process.Start(startInfo);
                    Environment.Exit(0);
                }
+           },
+           _ => true
+        );
+        _changeTheme = new Command(
+           obj =>
+           {
+               if (obj is not string theme)
+               {
+                   return;
+               }
+               if (Application.Current is { } app)
+               {
+                   app.RequestedThemeVariant = theme switch
+                   {
+                       "Light" => ThemeVariant.Light,
+                       "Dark" => ThemeVariant.Dark,
+                       _ => ThemeVariant.Default,
+                   };
+               }
+               var settingPath = Path.Combine(".", "theme");
+               File.WriteAllText(settingPath, theme);
            },
            _ => true
         );

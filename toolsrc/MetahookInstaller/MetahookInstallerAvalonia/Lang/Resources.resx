@@ -264,4 +264,13 @@
   <data name="UninstallationFailed" xml:space="preserve">
     <value>Uninstallation failed due to an error.</value>
   </data>
+  <data name="Theme_System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Theme_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Theme_Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
 </root>

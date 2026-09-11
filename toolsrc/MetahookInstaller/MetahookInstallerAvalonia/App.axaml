@@ -6,6 +6,96 @@
              x:Class="MetahookInstallerAvalonia.App"
              RequestedThemeVariant="Default">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="BackgroundColor">#00000000</Color>
+                    <Color x:Key="BackgroundAcrylicColor">#11F9F9F9</Color>
+                    <Color x:Key="SurfaceColor">#11FFFFFF</Color>
+                    <Color x:Key="SurfaceLightColor">#F5F5F5</Color>
+                    <Color x:Key="SurfaceAcrylicColor">#66FFFFFF</Color>
+                    <Color x:Key="PrimaryColor">#3498DB</Color>
+                    <Color x:Key="PrimaryLightColor">#E6F4FF</Color>
+                    <Color x:Key="TextPrimaryColor">#2C3E50</Color>
+                    <Color x:Key="TextSecondaryColor">#555555</Color>
+                    <Color x:Key="BorderColor">#EEEEEE</Color>
+                    <Color x:Key="BorderLightColor">#DDDDDD</Color>
+                    <Color x:Key="ShadowColor">#15000000</Color>
+                    <Color x:Key="WindowBackgroundColor">#99FFFFFF</Color>
+                    <Color x:Key="TitleBarBackgroundColor">#BBEEEEEE</Color>
+                    <Color x:Key="ContentBackgroundColor">#CCFFFFFF</Color>
+                    <Color x:Key="TitleBarButtonBackgroundColor">#DDDDDDDD</Color>
+                    <Color x:Key="TitleBarButtonHoverColor">#334155</Color>
+                    <Color x:Key="TitleBarForegroundColor">#FF111111</Color>
+                    <!-- 派生资源 -->
+                    <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
+                    <SolidColorBrush x:Key="BackgroundAcrylicBrush" Color="{DynamicResource BackgroundAcrylicColor}" />
+                    <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+                    <SolidColorBrush x:Key="SurfaceLightBrush" Color="{DynamicResource SurfaceLightColor}" />
+                    <SolidColorBrush x:Key="SurfaceAcrylicBrush" Color="{DynamicResource SurfaceAcrylicColor}" />
+                    <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
+                    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{DynamicResource PrimaryLightColor}" />
+                    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+                    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+                    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
+                    <SolidColorBrush x:Key="BorderLightBrush" Color="{DynamicResource BorderLightColor}" />
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{DynamicResource WindowBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="{DynamicResource TitleBarBackgroundColor}" />
+                    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="{DynamicResource ContentBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarButtonBackgroundBrush" Color="{DynamicResource TitleBarButtonBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverBrush" Color="{DynamicResource TitleBarButtonHoverColor}" />
+                    <SolidColorBrush x:Key="TitleBarForegroundBrush" Color="{DynamicResource TitleBarForegroundColor}" />
+                    <!-- 阴影资源 -->
+                    <DropShadowEffect x:Key="SmallShadow" BlurRadius="5" Color="{DynamicResource ShadowColor}"/>
+                    <DropShadowEffect x:Key="MediumShadow" BlurRadius="8" Color="{DynamicResource ShadowColor}"/>
+                    <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="BackgroundColor">#00000000</Color>
+                    <Color x:Key="BackgroundAcrylicColor">#11FFFFFF</Color>
+                    <Color x:Key="SurfaceColor">#1FFFFFFF</Color>
+                    <Color x:Key="SurfaceLightColor">#FF333333</Color>
+                    <Color x:Key="SurfaceAcrylicColor">#22FFFFFF</Color>
+                    <Color x:Key="PrimaryColor">#4AA3E8</Color>
+                    <Color x:Key="PrimaryLightColor">#334A90C8</Color>
+                    <Color x:Key="TextPrimaryColor">#FFECECEC</Color>
+                    <Color x:Key="TextSecondaryColor">#FFB0B8C0</Color>
+                    <Color x:Key="BorderColor">#FF3A3A3A</Color>
+                    <Color x:Key="BorderLightColor">#FF4A4A4A</Color>
+                    <Color x:Key="ShadowColor">#40000000</Color>
+                    <Color x:Key="WindowBackgroundColor">#CC1B1B1B</Color>
+                    <Color x:Key="TitleBarBackgroundColor">#BB202020</Color>
+                    <Color x:Key="ContentBackgroundColor">#CC2A2A2A</Color>
+                    <Color x:Key="TitleBarButtonBackgroundColor">#33FFFFFF</Color>
+                    <Color x:Key="TitleBarButtonHoverColor">#4DFFFFFF</Color>
+                    <Color x:Key="TitleBarForegroundColor">#FFECECEC</Color>
+                    <!-- 派生资源 -->
+                    <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
+                    <SolidColorBrush x:Key="BackgroundAcrylicBrush" Color="{DynamicResource BackgroundAcrylicColor}" />
+                    <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+                    <SolidColorBrush x:Key="SurfaceLightBrush" Color="{DynamicResource SurfaceLightColor}" />
+                    <SolidColorBrush x:Key="SurfaceAcrylicBrush" Color="{DynamicResource SurfaceAcrylicColor}" />
+                    <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
+                    <SolidColorBrush x:Key="PrimaryLightBrush" Color="{DynamicResource PrimaryLightColor}" />
+                    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+                    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+                    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
+                    <SolidColorBrush x:Key="BorderLightBrush" Color="{DynamicResource BorderLightColor}" />
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{DynamicResource WindowBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="{DynamicResource TitleBarBackgroundColor}" />
+                    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="{DynamicResource ContentBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarButtonBackgroundBrush" Color="{DynamicResource TitleBarButtonBackgroundColor}" />
+                    <SolidColorBrush x:Key="TitleBarButtonHoverBrush" Color="{DynamicResource TitleBarButtonHoverColor}" />
+                    <SolidColorBrush x:Key="TitleBarForegroundBrush" Color="{DynamicResource TitleBarForegroundColor}" />
+                    <!-- 阴影资源 -->
+                    <DropShadowEffect x:Key="SmallShadow" BlurRadius="5" Color="{DynamicResource ShadowColor}"/>
+                    <DropShadowEffect x:Key="MediumShadow" BlurRadius="8" Color="{DynamicResource ShadowColor}"/>
+                    <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
     <Application.Styles>
         <FluentTheme />
         <semi:SemiTheme />
