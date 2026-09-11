@@ -4,35 +4,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Styles.Resources>
-        <Color x:Key="BackgroundColor">#00000000</Color>
-        <Color x:Key="BackgroundAcrylicColor">#11F9F9F9</Color>
-        <Color x:Key="SurfaceColor">#11FFFFFF</Color>
-        <Color x:Key="SurfaceLightColor">#F5F5F5</Color>
-        <Color x:Key="SurfaceAcrylicColor">#66FFFFFF</Color>
-        <Color x:Key="PrimaryColor">#3498DB</Color>
-        <Color x:Key="PrimaryLightColor">#E6F4FF</Color>
-        <Color x:Key="TextPrimaryColor">#2C3E50</Color>
-        <Color x:Key="TextSecondaryColor">#555555</Color>
-        <Color x:Key="BorderColor">#EEEEEE</Color>
-        <Color x:Key="BorderLightColor">#DDDDDD</Color>
-        <Color x:Key="ShadowColor">#15000000</Color>
-        <!-- 派生资源 -->
-        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
-        <SolidColorBrush x:Key="BackgroundAcrylicBrush" Color="{DynamicResource BackgroundAcrylicColor}" />
-        <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
-        <SolidColorBrush x:Key="SurfaceLightBrush" Color="{DynamicResource SurfaceLightColor}" />
-        <SolidColorBrush x:Key="SurfaceAcrylicBrush" Color="{DynamicResource SurfaceAcrylicColor}" />
-        <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
-        <SolidColorBrush x:Key="PrimaryLightBrush" Color="{DynamicResource PrimaryLightColor}" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
-        <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
-        <SolidColorBrush x:Key="BorderLightBrush" Color="{DynamicResource BorderLightColor}" />
-        <!-- 阴影资源 -->
-        <DropShadowEffect x:Key="SmallShadow" BlurRadius="5" Color="{DynamicResource ShadowColor}"/>
-        <DropShadowEffect x:Key="MediumShadow" BlurRadius="8" Color="{DynamicResource ShadowColor}"/>
-        <DropShadowEffect x:Key="LargeShadow" BlurRadius="12" Color="{DynamicResource ShadowColor}"/>
-
         <behaviors:ItemsListBoxDropHandler x:Key="ItemsDropHandler" />
     </Styles.Resources>
  <!-- 基础样式 -->

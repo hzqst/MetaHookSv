@@ -329,7 +329,34 @@ namespace MetahookInstallerAvalonia.Lang {
                 return ResourceManager.GetString("MainMenuTitle", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   查找类似 Dark 的本地化字符串。
+        /// </summary>
+        public static string Theme_Dark {
+            get {
+                return ResourceManager.GetString("Theme_Dark", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Light 的本地化字符串。
+        /// </summary>
+        public static string Theme_Light {
+            get {
+                return ResourceManager.GetString("Theme_Light", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 System 的本地化字符串。
+        /// </summary>
+        public static string Theme_System {
+            get {
+                return ResourceManager.GetString("Theme_System", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   查找类似 Mod Path: 的本地化字符串。
         /// </summary>

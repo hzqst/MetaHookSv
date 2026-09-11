@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using MetahookInstallerAvalonia.ViewModels;
 using MetahookInstallerAvalonia.Views;
 using System;
@@ -23,6 +24,16 @@ public partial class App : Application
         {
             string lang = File.ReadAllText(settingPath);
             Lang.Resources.Culture = new CultureInfo(lang);
+        }
+        var themePath = Path.Combine(".", "theme");
+        if (File.Exists(themePath))
+        {
+            RequestedThemeVariant = File.ReadAllText(themePath).Trim() switch
+            {
+                "Light" => ThemeVariant.Light,
+                "Dark" => ThemeVariant.Dark,
+                _ => ThemeVariant.Default,
+            };
         }
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

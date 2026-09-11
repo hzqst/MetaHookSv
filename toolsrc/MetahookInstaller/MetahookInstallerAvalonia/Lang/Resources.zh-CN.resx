@@ -264,4 +264,13 @@
   <data name="UninstallationFailed" xml:space="preserve">
     <value>卸载失败，发生错误。</value>
   </data>
+  <data name="Theme_System" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="Theme_Light" xml:space="preserve">
+    <value>浅色</value>
+  </data>
+  <data name="Theme_Dark" xml:space="preserve">
+    <value>深色</value>
+  </data>
 </root>
