@@ -8371,18 +8371,9 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 	/*
 		//Global pointers that link into engine vars
 		float* r_blend = NULL;
-		void *cl_frames = NULL;
 		int *cl_parsecount = NULL;
-
-		//Global vars
-		int size_of_frame = sizeof(frame_t);
 	*/
 	PVOID R_DrawTEntitiesOnList_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawTEntitiesOnList, RealDllInfo, DllInfo);
-
-	if (g_dwEngineBuildnum <= 8684)
-	{
-		size_of_frame = 0x42B8;
-	}
 
 	typedef struct R_DrawTEntitiesOnList_SearchContext_s
 	{
@@ -8500,34 +8491,6 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 			//.text:01D923DE 23 05 AC D2 30 02                                   and     eax, cl_parsecount
 			//.text:01D88CC0 8B 0D 04 AE D8 02                                   mov     ecx, cl_parsecount
 			cl_parsecount = (decltype(cl_parsecount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-		else if (!cl_frames && ctx->parsemod_instcount &&
-			instCount < ctx->parsemod_instcount + 20 &&
-			pinst->id == X86_INS_LEA &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base != 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			//.text:01D923F0 8D 80 F4 D5 30 02                                   lea     eax, cl_frames[eax]
-			//.text:01D88CE8 8D 84 CA 4C B1 D8 02                                lea     eax, cl_frames_1[edx+ecx*8]
-			cl_frames = (decltype(cl_frames))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-		else if (ctx->parsemod_instcount &&
-			instCount < ctx->parsemod_instcount + 5 &&
-			pinst->id == X86_INS_IMUL &&
-			pinst->detail->x86.op_count == 3 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG &&
-			pinst->detail->x86.operands[2].type == X86_OP_IMM &&
-			pinst->detail->x86.operands[2].imm > 0x4000 &&
-			pinst->detail->x86.operands[2].imm < 0xF000)
-		{
-			//.text:01D923E4 69 C8 D8 84 00 00                                   imul    ecx, eax, 84D8h
-			size_of_frame = pinst->detail->x86.operands[2].imm;
 		}
 		else if (
 			pinst->id == X86_INS_MOVSX &&
@@ -8699,7 +8662,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 			}
 		}
 
-		if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && gPrivateFuncs.pfnDrawTransparentTriangles)
+		if (r_blend && cl_parsecount && ctx->r_entorigin_candidate_count >= 3 && gPrivateFuncs.ClientDLL_DrawTransparentTriangles && gPrivateFuncs.pfnDrawTransparentTriangles)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -8712,9 +8675,7 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 	}, 0, &ctx);
 
 	Sig_VarNotFound(r_blend);
-	Sig_VarNotFound(cl_frames);
 	Sig_VarNotFound(cl_parsecount);
-	Sig_VarNotFound(size_of_frame);
 	Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
 	Sig_FuncNotFound(pfnDrawTransparentTriangles);
 

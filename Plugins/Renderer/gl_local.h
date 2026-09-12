@@ -165,8 +165,6 @@ extern struct playermove_s* pmove;
 extern struct playermove_10152_s* pmove_10152;
 
 extern int *cl_viewentity;
-extern void *cl_frames;
-extern int size_of_frame;
 extern int *cl_parsecount;
 extern int *cl_waterlevel;
 extern int *envmap;
@@ -467,7 +465,8 @@ void R_SetRenderMode(cl_entity_t *pEntity);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);
-entity_state_t *R_GetPlayerState(int index);
+// Accepts a zero-based player slot; returns nullptr for an invalid slot.
+entity_state_t *R_GetPlayerState(int playerIndex);
 bool CL_IsDevOverviewMode(void);
 int CL_FxBlend(cl_entity_t *entity);
 void R_DrawCurrentEntity(bool bTransparent);

@@ -107,8 +107,6 @@ cl_entity_t** cl_entities = nullptr;
 TEMPENTITY* gTempEnts = nullptr;
 
 int* cl_viewentity = nullptr;
-void* cl_frames = nullptr;
-int size_of_frame = sizeof(frame_t);
 int* cl_parsecount = nullptr;
 int* cl_waterlevel = nullptr;
 double* cl_time = nullptr;
@@ -2247,15 +2245,12 @@ void R_AddTEntity(cl_entity_t* ent)
 	}
 }
 
-entity_state_t* R_GetPlayerState(int index)
+entity_state_t* R_GetPlayerState(int playerIndex)
 {
-	if (!(index >= 0 && index <= MAX_CLIENTS))
-	{
-		Sys_Error("R_GetPlayerState: Invalid index %d !", index);
+	if (playerIndex < 0 || playerIndex >= MAX_CLIENTS || playerIndex >= gEngfuncs.GetMaxClients())
 		return nullptr;
-	}
 
-	return ((entity_state_t*)((char*)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
+	return IEngineStudio.GetPlayerState(playerIndex);
 }
 
 void R_DrawSpriteEntity(bool bTransparent)
@@ -2306,6 +2301,10 @@ void R_DrawStudioEntity(bool bTransparent)
 {
 	if ((*currententity)->player)
 	{
+		auto state = R_GetPlayerState((*currententity)->index - 1);
+		if (!state)
+			return;
+
 		if (R_IsLowerBodyEntity((*currententity)))
 		{
 			if (R_IsRenderingPortal())
@@ -2313,11 +2312,11 @@ void R_DrawStudioEntity(bool bTransparent)
 				return;
 			}
 
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetPlayerState((*currententity)->index));
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, state);
 		}
 		else
 		{
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, state);
 		}
 	}
 	else
@@ -2374,7 +2373,14 @@ void R_DrawStudioEntity(bool bTransparent)
 
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
+					auto state = R_GetPlayerState((*currententity)->index - 1);
+					if (!state)
+					{
+						(*currententity) = saved_currententity;
+						return;
+					}
+
+					(*gpStudioInterface)->StudioDrawPlayer(0, state);
 				}
 				else
 				{
@@ -2386,8 +2392,12 @@ void R_DrawStudioEntity(bool bTransparent)
 
 			if ((*currententity)->player)
 			{
+				auto state = R_GetPlayerState((*currententity)->index - 1);
+				if (!state)
+					return;
+
 				GL_BeginDebugGroupFormat("StudioDrawPlayer - %s", (*currententity)->model->name);
-				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, state);
 				GL_EndDebugGroup();
 			}
 			else
@@ -5386,9 +5396,9 @@ void R_EmitFlashlights()
 
 		for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
 		{
-			auto state = R_GetPlayerState(i + 1);
+			auto state = R_GetPlayerState(i);
 
-			if (state->messagenum != (*cl_parsecount))
+			if (!state || state->messagenum != (*cl_parsecount))
 				continue;
 
 			if (!state->modelindex || (state->effects & EF_NODRAW))
@@ -5500,9 +5510,9 @@ void R_CreateLowerBodyModel()
 	if (EngineIsEntityInVisibleList(LocalPlayer))
 		return;
 
-	auto state = R_GetPlayerState(LocalPlayer->index);
+	auto state = R_GetPlayerState(LocalPlayer->index - 1);
 
-	if (!state->modelindex || (state->effects & EF_NODRAW))
+	if (!state || !state->modelindex || (state->effects & EF_NODRAW))
 		return;
 
 	auto pitch = (*r_refdef.viewangles)[0] * -1;

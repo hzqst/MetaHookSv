@@ -263,3 +263,14 @@ After building, files are automatically copied to the game directory:
 ### Dependent Game Engines
 - All supported GoldSrc engine variants
 - SvEngine (preferred support)
+
+
+## Player State Indexing (2026-09-12)
+
+- Trigger: issue #865 exposed confusion between one-based player entity numbers and zero-based player-state slots; Renderer used a scanned address with the member offset and entity-number adjustment folded into it.
+- Constraint: player entity numbers are `1..maxclients`, while `IEngineStudio.GetPlayerState` accepts slots `0..maxclients-1`. A legacy scanned address must not be treated as the raw frame-ring base.
+- Implementation: `Plugins/Renderer/gl_rmain.cpp::R_GetPlayerState(playerIndex)` now matches BulletPhysics: reject negative slots, slots at or above `MAX_CLIENTS`, and slots at or above `GetMaxClients()` with `nullptr`, then delegate to `IEngineStudio.GetPlayerState`. The contract is documented in `gl_local.h`.
+- Callers: `R_DrawStudioEntity` and `R_CreateLowerBodyModel` convert entity indices with `index - 1`; `R_EmitFlashlights` passes its zero-based loop index directly. Unavailable states skip the affected drawing/lighting work; attachment preparation restores `currententity` before returning.
+- Dependencies: removed Renderer `cl_frames` / `size_of_frame` globals, declarations, scans, version constants, and mandatory lookup checks from `gl_hooks.cpp`. Keep `cl_parsecount` for network-state freshness checks. Studio API is saved by `HUD_GetStudioModelInterface` before rendering.
+- Verification: Renderer `Release | Win32` and `Release_AVX2 | Win32` builds exited 0; DLL hashes match the corresponding Build copies; `git diff --check` passed. Build warnings occurred in untouched source. Game runtime behavior remains unverified; smoke-test player models, follower attachments, multiplayer flashlights, and lower-body rendering.
+- Scope: Renderer player-state access only; other private-address discovery remains unchanged.
