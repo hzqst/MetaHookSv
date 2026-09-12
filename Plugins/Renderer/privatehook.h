@@ -61,6 +61,7 @@ typedef struct
 	void (*GL_EndRendering)(void);
 	void (*EmitWaterPolys)(msurface_t* fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
+	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
 	void (*R_RecursiveWorldNode)(mnode_t* node);
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t* fa);

@@ -3293,7 +3293,7 @@ void Engine_FillAddress_GL_EnableMultitexture(const mh_dll_info_t& DllInfo, cons
 
 void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_DrawSequentialPoly)
+	if (gPrivateFuncs.R_DrawSequentialPoly || gPrivateFuncs.R_DrawSequentialPoly_HL25)
 		return;
 
 	PVOID R_DrawSequentialPoly_VA = 0;
@@ -3301,10 +3301,14 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE, DllInfo);
+		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25, DllInfo);
+		gPrivateFuncs.R_DrawSequentialPoly_HL25 = (decltype(gPrivateFuncs.R_DrawSequentialPoly_HL25))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_DrawSequentialPoly_HL25);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
@@ -3313,15 +3317,16 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 		//try another signature
 		if (!R_DrawSequentialPoly_VA)
 			R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW2, DllInfo);
+
+		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_BLOB, DllInfo);
+		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
+		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
-
-	gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(R_DrawSequentialPoly);
 
 	/*
 		//Global pointers that link into engine vars
@@ -3748,7 +3753,7 @@ void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		PVOID R_DrawSequentialPoly_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawSequentialPoly, RealDllInfo, DllInfo);
+		PVOID R_DrawSequentialPoly_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawSequentialPoly_HL25, RealDllInfo, DllInfo);
 
 		if (!R_DrawSequentialPoly_VA)
 		{
@@ -3900,7 +3905,7 @@ void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_i
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			PVOID R_DrawSequentialPoly_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawSequentialPoly, RealDllInfo, DllInfo);
+			PVOID R_DrawSequentialPoly_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawSequentialPoly_HL25, RealDllInfo, DllInfo);
 
 			auto R_DrawWorld_VA = Search_Pattern_From(R_DrawSequentialPoly_VA, R_DRAWWORLD_SIG_HL25, DllInfo);
 			gPrivateFuncs.R_DrawWorld = (decltype(gPrivateFuncs.R_DrawWorld))ConvertDllInfoSpace(R_DrawWorld_VA, DllInfo, RealDllInfo);
