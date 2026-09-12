@@ -101,7 +101,7 @@ typedef struct
 	void(*DT_Initialize)(void);
 	mnode_t* (*PVSNode)(mnode_t* node, vec3_t emins, vec3_t emaxs);
 	void(*R_LoadSkys)(void);
-	void(*R_LoadSkyboxInt_SvEngine)(const char* name);
+	qboolean(*R_LoadSkyboxInt_SvEngine)(const char* name);
 	void(*R_LoadSkyBox_SvEngine)(const char* name);
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void* a1);
