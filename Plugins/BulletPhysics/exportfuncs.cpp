@@ -135,13 +135,7 @@ entity_state_t *R_GetPlayerState(int playerIndex)
 	if (playerIndex < 0 || playerIndex >= MAX_CLIENTS || playerIndex >= gEngfuncs.GetMaxClients())
 		return nullptr;
 
-#if 1
 	return IEngineStudio.GetPlayerState(playerIndex);
-#else
-	//gamedata cl_frames is the frame_t ring base; the per-client entity states
-	//live in frame_t::playerstate, so the member offset must be added explicitly.
-	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + offsetof(frame_t, playerstate) + sizeof(entity_state_t) * playerIndex));
-#endif
 }
 
 bool CL_IsFirstPersonMode(cl_entity_t *player)
