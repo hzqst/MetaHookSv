@@ -31,8 +31,9 @@ namespace
 	// Gamedata contract versions emitted by the upstream dataset generator
 	// (gamesymbols_json.py); keep in sync with scripts/sync-gamedata.py.
 	constexpr int kIndexSchemaVersion = 4;
-	constexpr int kSnapshotSchemaVersion = 4;
-	constexpr int kSnapshotContractVersion = 7;
+	constexpr int kSnapshotSchemaVersion = 5;
+	constexpr int kSnapshotContractVersion = 8;
+	constexpr int kAnalysisOutputContractVersion = 3;
 
 	// -----------------------------------------------------------------------
 	// Internal record / module / catalog model (stable heap-owned storage).
@@ -54,6 +55,8 @@ namespace
 		DWORD instructionOffset = 0;
 		DWORD operandOffset = 0;
 		DWORD instructionLength = 0;
+
+		uint32_t scalarValue = 0;   // valid only when kind == MH_GAMESYMBOL_KIND_SCALAR
 
 		bool conflicted = false;   // duplicate key with differing content
 		bool unsupportedKind = false; // kind not typed by this API version
@@ -393,6 +396,11 @@ namespace
 		rec.operandOffset = instDisp;
 		rec.instructionLength = instLength;
 		rec.flags = 0;
+
+		const rapidjson::Value* allowAcross = FindMember(payload, "gv_sig_allow_across_function_boundary");
+		if (allowAcross && allowAcross->IsBool() && allowAcross->GetBool())
+			rec.flags |= MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY;
+
 		return true;
 	}
 
@@ -421,6 +429,30 @@ namespace
 		rec.operandOffset = 0;
 		rec.instructionLength = 0;
 		rec.flags = 0;
+		return true;
+	}
+
+	// A scalar record carries a uint32 value instead of an address. The value is
+	// consumed verbatim: no image base, no dereference, no instruction extraction.
+	bool NormalizeScalar(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	{
+		const rapidjson::Value* scalarName = FindMember(payload, "scalar_name");
+		const rapidjson::Value* scalarValue = FindMember(payload, "scalar_value");
+		if (!scalarName || !scalarName->IsString() || !scalarValue || !scalarValue->IsUint())
+		{
+			error = "scalar payload is missing scalar_name/scalar_value";
+			return false;
+		}
+
+		rec.kind = MH_GAMESYMBOL_KIND_SCALAR;
+		rec.rva = 0;
+		rec.symbolSize = 0;
+		rec.signatureRva = 0;
+		rec.instructionOffset = 0;
+		rec.operandOffset = 0;
+		rec.instructionLength = 0;
+		rec.flags = 0;
+		rec.scalarValue = scalarValue->GetUint();
 		return true;
 	}
 
@@ -462,6 +494,7 @@ namespace
 			a.instructionOffset == b.instructionOffset &&
 			a.operandOffset == b.operandOffset &&
 			a.instructionLength == b.instructionLength &&
+			a.scalarValue == b.scalarValue &&
 			a.unsupportedKind == b.unsupportedKind;
 	}
 
@@ -567,6 +600,12 @@ namespace
 		if (!sourceSchema || !sourceSchema->IsInt() || sourceSchema->GetInt() != kSnapshotContractVersion)
 		{
 			AddDiagnostic("snapshot '%s': unsupported source.snapshotSchemaVersion", gameVersion);
+			return;
+		}
+		const rapidjson::Value* analysisContract = FindMember(*source, "analysisOutputContractVersion");
+		if (!analysisContract || !analysisContract->IsInt() || analysisContract->GetInt() != kAnalysisOutputContractVersion)
+		{
+			AddDiagnostic("snapshot '%s': unsupported source.analysisOutputContractVersion", gameVersion);
 			return;
 		}
 
@@ -675,6 +714,16 @@ namespace
 				{
 					if (error.empty())
 						error = "patch payload must be an object";
+					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
+					continue;
+				}
+			}
+			else if (std::strcmp(kindStr, "scalar") == 0)
+			{
+				if (!payload || !payload->IsObject() || !NormalizeScalar(*payload, record, error))
+				{
+					if (error.empty())
+						error = "scalar payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -1131,6 +1180,36 @@ namespace GameData
 		return MH_GAMESYMBOL_OK;
 	}
 
+	mh_gamesymbol_status_t QueryScalarByCRC64(uint64_t moduleCRC64, const char* symbolName, uint32_t* outValue)
+	{
+		if (!outValue || !symbolName || !*symbolName)
+			return MH_GAMESYMBOL_INVALID_ARGUMENT;
+		*outValue = 0;
+
+		if (!g_catalog.available)
+			return MH_GAMESYMBOL_GAMEDATA_UNAVAILABLE;
+
+		auto mit = g_catalog.modules.find(moduleCRC64);
+		if (mit == g_catalog.modules.end())
+			return MH_GAMESYMBOL_MODULE_NOT_FOUND;
+
+		ModuleCatalog& mc = *mit->second;
+		auto sit = mc.symbols.find(symbolName);
+		if (sit == mc.symbols.end())
+			return MH_GAMESYMBOL_SYMBOL_NOT_FOUND;
+
+		GameSymbolRecord& rec = *sit->second;
+		if (rec.conflicted)
+			return MH_GAMESYMBOL_CATALOG_CONFLICT;
+		if (rec.unsupportedKind)
+			return MH_GAMESYMBOL_UNSUPPORTED_KIND;
+		if (rec.kind != MH_GAMESYMBOL_KIND_SCALAR)
+			return MH_GAMESYMBOL_KIND_MISMATCH;
+
+		*outValue = rec.scalarValue;
+		return MH_GAMESYMBOL_OK;
+	}
+
 	bool GetGameVersion(uint64_t moduleCRC64, const char** outGameVersion)
 	{
 		if (!outGameVersion)
@@ -1295,6 +1374,24 @@ mh_gamesymbol_status_t MH_QueryGameSymbol(PVOID moduleBase, const char* symbolNa
 		return st;
 
 	return GameData::QueryByCRC64(crc64, symbolName, outSymbol);
+}
+
+mh_gamesymbol_status_t MH_QueryGameSymbolScalar(PVOID moduleBase, const char* symbolName, uint32_t* outValue)
+{
+	if (!outValue || !symbolName || !*symbolName)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	*outValue = 0;
+
+	if (!moduleBase)
+		return MH_GAMESYMBOL_INVALID_ARGUMENT;
+
+	uint64_t crc64 = 0;
+	mh_gamesymbol_status_t st = GameData::GetModuleCRC64(moduleBase, &crc64);
+	if (st != MH_GAMESYMBOL_OK)
+		return st;
+
+	return GameData::QueryScalarByCRC64(crc64, symbolName, outValue);
 }
 
 mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t expectedKind, PVOID* outAddress)
