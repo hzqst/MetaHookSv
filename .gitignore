@@ -29,6 +29,7 @@ toolsrc/BSPLocalizationTools/**/.env
 settings.local.json
 
 .vscode
+.pytest_cache
 
 # zcode (local skills link)
 .zcode/skills
