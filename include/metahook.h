@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 110
+#define METAHOOK_API_VERSION 111
 
 typedef struct hook_s hook_t;
 
@@ -185,7 +185,11 @@ typedef enum mh_gamesymbol_kind_e
 	MH_GAMESYMBOL_KIND_UNKNOWN = 0,
 	MH_GAMESYMBOL_KIND_FUNCTION = 1,
 	MH_GAMESYMBOL_KIND_GLOBAL = 2,
-	MH_GAMESYMBOL_KIND_PATCH = 3
+	MH_GAMESYMBOL_KIND_PATCH = 3,
+	// A scalar is a plain uint32 value tied to the matched binary identity, not
+	// an address. It is never resolved by ResolveGameSymbol; query it with
+	// QueryGameSymbolScalar instead.
+	MH_GAMESYMBOL_KIND_SCALAR = 4
 } mh_gamesymbol_kind_t;
 
 /*
@@ -819,6 +823,18 @@ typedef struct metahook_api_s
 	mh_gamesymbol_status_t (*IsGameSymbolAvailable)(
 		PVOID moduleBase,
 		const char *symbolName);
+
+	/*
+		Purpose: Query a scalar (uint32) gamedata value by module base + canonical name.
+		A scalar is a plain value tied to the matched binary identity: no image base
+		is added and the value must never be dereferenced or treated as an address.
+		Returns MH_GAMESYMBOL_KIND_MISMATCH when the symbol exists with a non-scalar
+		kind; use ResolveGameSymbol for FUNCTION / GLOBAL / PATCH.
+	*/
+	mh_gamesymbol_status_t (*QueryGameSymbolScalar)(
+		PVOID moduleBase,
+		const char *symbolName,
+		uint32_t *outValue);
 
 	// Always terminate with a NULL
 	PVOID Terminator;

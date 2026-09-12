@@ -27,8 +27,9 @@ DEFAULT_INDEX_URL = (
 INDEX_URL_ENVIRONMENT_VARIABLE = "GOLDSRC_VIBESIGNATURES_INDEX_URL"
 INDEX_FILE_NAME = "index.json"
 SUPPORTED_INDEX_SCHEMA_VERSION = 4
-SUPPORTED_SNAPSHOT_SCHEMA_VERSION = 4
-SUPPORTED_SNAPSHOT_CONTRACT_VERSION = 7
+SUPPORTED_SNAPSHOT_SCHEMA_VERSION = 5
+SUPPORTED_SNAPSHOT_CONTRACT_VERSION = 8
+SUPPORTED_ANALYSIS_OUTPUT_CONTRACT_VERSION = 3
 MAXIMUM_INDEX_BYTES = 1024 * 1024
 MAXIMUM_SNAPSHOT_BYTES = 16 * 1024 * 1024
 MAXIMUM_VERSIONS = 4096
@@ -403,12 +404,19 @@ def validate_snapshot_contents(contents: bytes, entry: SnapshotEntry) -> None:
         "{} source".format(description),
         0xFFFFFFFF,
     )
-    require_uint(
+    analysis_output_contract_version = require_uint(
         source,
         "analysisOutputContractVersion",
         "{} source".format(description),
         0xFFFFFFFF,
     )
+    if analysis_output_contract_version != SUPPORTED_ANALYSIS_OUTPUT_CONTRACT_VERSION:
+        raise UpdateError(
+            "{} uses unsupported analysis output contract {}".format(
+                description,
+                analysis_output_contract_version,
+            )
+        )
     config_sha256 = require_string(
         source,
         "configSha256",

@@ -62,6 +62,12 @@ NUMBERED_PATCH_SETS = (
     "Mod_LoadModel_to_FS_Open_callsite",
 )
 
+# scalar -> owning module, required for every declared engine family. Scalars
+# are plain uint32 values consumed verbatim (no image base, no dereference).
+REQUIRED_SCALARS = {
+    "size_of_frame": "engine",
+}
+
 # gameVersion -> engine family. Only these gameVersions are declared supported.
 # hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with
 # build number 4554 <= 9000, so the launcher's rule-based mapping reports
@@ -193,12 +199,15 @@ def validate_index(index):
 def validate_snapshot(doc, game_version):
     """Return (errors, module_crc64: dict[str, int], symbol_records: dict)."""
     errors = []
-    if doc.get("schemaVersion") != 4:
-        errors.append(f"'{game_version}': snapshot schemaVersion must be 4")
+    if doc.get("schemaVersion") != 5:
+        errors.append(f"'{game_version}': snapshot schemaVersion must be 5")
         return errors, {}, {}
     source = doc.get("source")
-    if not isinstance(source, dict) or source.get("snapshotSchemaVersion") != 7:
-        errors.append(f"'{game_version}': source.snapshotSchemaVersion must be 7")
+    if not isinstance(source, dict) or source.get("snapshotSchemaVersion") != 8:
+        errors.append(f"'{game_version}': source.snapshotSchemaVersion must be 8")
+        return errors, {}, {}
+    if source.get("analysisOutputContractVersion") != 3:
+        errors.append(f"'{game_version}': source.analysisOutputContractVersion must be 3")
         return errors, {}, {}
 
     binaries = doc.get("binaries")
@@ -222,6 +231,8 @@ def validate_snapshot(doc, game_version):
             errors.append(f"'{game_version}': module '{mod}': invalid size")
         if not is_lower_hex(sha, 64):
             errors.append(f"'{game_version}': module '{mod}': invalid sha256")
+        if not isinstance(win.get("isBlob"), bool):
+            errors.append(f"'{game_version}': module '{mod}': isBlob must be a boolean")
         if crc64 is not None:
             module_crc64[mod] = crc64
 
@@ -306,6 +317,21 @@ def validate_snapshot(doc, game_version):
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
+        elif kind == "scalar":
+            p = payload if isinstance(payload, dict) else {}
+            scalar_name = p.get("scalar_name")
+            scalar_value = p.get("scalar_value")
+            if not isinstance(scalar_name, str) or not scalar_name:
+                errors.append(f"'{game_version}': scalar '{name}' missing/invalid scalar_name")
+                continue
+            if (not isinstance(scalar_value, int) or isinstance(scalar_value, bool)
+                    or not 0 <= scalar_value <= 0xFFFFFFFF):
+                errors.append(f"'{game_version}': scalar '{name}' has an invalid uint32 scalar_value")
+                continue
+            rec = {"kind": "scalar", "value": scalar_value, "module": mod}
+            if name in symbols and symbols[name] != rec:
+                errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
+            symbols[name] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue
@@ -335,6 +361,15 @@ def validate_required(symbols, family, game_version):
             if rec.get("kind") != "patch":
                 errors.append(f"'{game_version}' ({family}): '{name}' must be a patch record")
             index += 1
+
+    for sym, module in REQUIRED_SCALARS.items():
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}' ({family}): missing required scalar '{sym}'")
+        elif rec.get("kind") != "scalar":
+            errors.append(f"'{game_version}' ({family}): '{sym}' must be a scalar record")
+        elif rec.get("module") != module:
+            errors.append(f"'{game_version}' ({family}): '{sym}' must belong to module '{module}'")
 
     # cvar branch: the engine's native callback list, or at least one managed
     # Cvar_Set -> Cvar_DirectSet call-site redirect.

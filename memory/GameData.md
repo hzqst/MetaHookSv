@@ -8,6 +8,7 @@ tags:
 - symbol-catalog
 - api-109
 - api-110
+- api-111
 - crc64
 ---
 
@@ -15,24 +16,24 @@ tags:
 
 ## Overview
 
-GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalog）组件：从 `<game>\<mod>\metahook\gamedata\index.json` 读取并冻结一份只读符号表，按 `(moduleCRC64, symbolName)` 查询符号元数据，并通过 `moduleBase` 懒计算模块原始文件的 CRC-64/XZ。公共接口以 MetaHook API 109 暴露（`metahook_api_t` 尾部的 6 个函数槽），API 110 追加 `MH_GAMESYMBOL_KIND_PATCH` 与 `IsGameSymbolAvailable` 槽位（不改动旧槽位偏移）。
+GameData 是 launcher 与 V3/V4 插件共享的本地游戏符号目录（catalog）组件：从 `<game>\<mod>\metahook\gamedata\index.json` 读取并冻结一份只读符号表，按 `(moduleCRC64, symbolName)` 查询符号元数据，并通过 `moduleBase` 懒计算模块原始文件的 CRC-64/XZ。公共接口以 MetaHook API 109 暴露（`metahook_api_t` 尾部的 6 个函数槽），API 110 追加 `MH_GAMESYMBOL_KIND_PATCH` 与 `IsGameSymbolAvailable` 槽位，API 111 追加 `MH_GAMESYMBOL_KIND_SCALAR` 与 `QueryGameSymbolScalar` 槽位（均不改动旧槽位偏移）。
 
 ## Responsibilities
 
 - 构建并冻结只读 catalog（`GameData::Initialize`），初始化后不可重载，所有返回指针在进程退出前有效。
-- 校验 index（schema v4）与每个 snapshot（schema v4 / `source.snapshotSchemaVersion` v7）的路径安全、size、SHA-256（`Chocobo1::SHA2_256`）。
-- 只提取 `platform == "windows"` 的记录，将 `function` / `global` / `patch` payload 规范化为 `GameSymbolRecord`；单 snapshot 失败隔离为 diagnostics，不破坏整个 catalog。`patch` 记录正规化为 `MH_GAMESYMBOL_KIND_PATCH`，地址取 `patch_rva`，不把 signature 当函数长度。
+- 校验 index（schema v4）与每个 snapshot（dataset schema v5 / `source.snapshotSchemaVersion` v8 / `source.analysisOutputContractVersion` v3）的路径安全、size、SHA-256（`Chocobo1::SHA2_256`）。旧代际（dataset schema 4 / source contract 7）被明确拒绝并记为 diagnostic。
+- 只提取 `platform == "windows"` 的记录，将 `function` / `global` / `patch` / `scalar` payload 规范化为 `GameSymbolRecord`；单 snapshot 失败隔离为 diagnostics，不破坏整个 catalog。`patch` 记录正规化为 `MH_GAMESYMBOL_KIND_PATCH`，地址取 `patch_rva`，不把 signature 当函数长度。`scalar` 记录正规化为 `MH_GAMESYMBOL_KIND_SCALAR`，只保留 uint32 `scalar_value`（地址字段全 0，不加 image base、不解引用）。
 - 将 signature 文本编译为 `(bytes, mask, legacyPattern)` 三态。
 - 按 `moduleBase` 管理 `ModuleIdentity`（普通 PE / Blob 文件 / None），懒计算并缓存模块 CRC-64/XZ，处理 mirror alias 与 unload 失效。
-- 实现公共 API：`MH_GetModuleCRC64`、`MH_QueryGameSymbol`、`MH_QueryGameSymbolByCRC64`、`MH_ResolveGameSymbol`、`MH_SearchPatternMasked`、`MH_GetGameSymbolStatusString`，以及 API 110 的 `MH_IsGameSymbolAvailable`（仅返回状态码：存在 `OK`、不存在 `SYMBOL_NOT_FOUND`、其它失败保留原状态；不返回地址）。
+- 实现公共 API：`MH_GetModuleCRC64`、`MH_QueryGameSymbol`、`MH_QueryGameSymbolByCRC64`、`MH_ResolveGameSymbol`、`MH_SearchPatternMasked`、`MH_GetGameSymbolStatusString`，API 110 的 `MH_IsGameSymbolAvailable`（仅返回状态码：存在 `OK`、不存在 `SYMBOL_NOT_FOUND`、其它失败保留原状态；不返回地址），以及 API 111 的 `MH_QueryGameSymbolScalar`（按 `moduleBase` + 名字返回 uint32；非 scalar kind 返回 `KIND_MISMATCH`）。
 - 提供 launcher 内部 getter `GameData::GetGameVersion(moduleCRC64, &gameVersion)`（不进入 `metahook_api_t`），用于按引擎模块 CRC 反查 catalog 中的 gameVersion。
 - 提供 `GameData::RegisterModuleFileSource`（Blob engine）与 `RegisterMirrorAlias` 供 launcher 注册模块来源。
 
 ## Involved Files & Symbols
 
-- `src/GameData.h` — `GameData` namespace 声明（`Initialize`/`QueryByCRC64`/`GetGameVersion`/`GetModuleCRC64`/`RegisterModuleFileSource`/`RegisterMirrorAlias`/`InvalidateModule`/`ResetModuleIdentities`）与公共 `MH_*` 入口。
-- `src/GameData.cpp` — 实现 `GameDataCatalog` 构建（`Initialize`/`LoadSnapshot`/`ValidateIndex`）、签名解析 `ParseSignature`、payload 规范化 `NormalizeFunction`/`NormalizeGlobal`/`NormalizePatch`、模块哈希状态机 `GetModuleCRC64`/`ComputeCrc64FromFile`、公共 API 与 `MH_GetGameSymbolStatusString`。
-- `include/metahook.h` — `METAHOOK_API_VERSION 110`、`mh_gamesymbol_kind_t`（含 `MH_GAMESYMBOL_KIND_PATCH`）/`mh_gamesymbol_status_t`/`mh_pattern_t`/`mh_gamesymbol_t`、`metahook_api_t` 新增的 7 个函数槽（第 6 个为 `IsGameSymbolAvailable`）。
+- `src/GameData.h` — `GameData` namespace 声明（`Initialize`/`QueryByCRC64`/`QueryScalarByCRC64`/`GetGameVersion`/`GetModuleCRC64`/`RegisterModuleFileSource`/`RegisterMirrorAlias`/`InvalidateModule`/`ResetModuleIdentities`）与公共 `MH_*` 入口。
+- `src/GameData.cpp` — 实现 `GameDataCatalog` 构建（`Initialize`/`LoadSnapshot`/`ValidateIndex`）、签名解析 `ParseSignature`、payload 规范化 `NormalizeFunction`/`NormalizeGlobal`/`NormalizePatch`/`NormalizeScalar`、模块哈希状态机 `GetModuleCRC64`/`ComputeCrc64FromFile`、公共 API 与 `MH_GetGameSymbolStatusString`。
+- `include/metahook.h` — `METAHOOK_API_VERSION 111`、`mh_gamesymbol_kind_t`（含 `MH_GAMESYMBOL_KIND_PATCH` / `MH_GAMESYMBOL_KIND_SCALAR`）/`mh_gamesymbol_status_t`/`mh_pattern_t`/`mh_gamesymbol_t`、`metahook_api_t` 新增的 8 个函数槽（第 6 个为 `IsGameSymbolAvailable`，第 8 个为 `QueryGameSymbolScalar`）。
 - `src/metahook.cpp` — launcher 集成：`MH_LoadEngine_FormatModuleIdentity` / `MH_LoadEngine_ReportSymbolFailure` / `MH_LoadEngine_ResolveSymbol` / `MH_LoadEngine_ResolveGlobalOperand`、`MH_LoadEngine_DetermineEngineType` / `MH_LoadEngine_FindCvarDirectSet` / `MH_LoadEngine_PatchCvarCallbacks` / `MH_LoadEngine_FindLoadBlobClient`（均 gamedata-only），以及 `MH_LoadEngine` 中 catalog 初始化与来源注册。
 - `src/LoadDllNotification.cpp` / `.h` — DLL 加/卸载通知中调用 `GameData::InvalidateModule`（第 144、212 行）与 `MH_IsInLdrCriticalRegion`（第 66 行）。
 - `scripts/sync-gamedata.py` — Pre-build 从固定 HTTPS index 下载、校验并事务式替换打包目录。
@@ -62,7 +63,7 @@ flowchart TD
     B --> C["Read + validate index.json (schema v4)"]
     C --> D["Per version entry: LoadSnapshot"]
     D --> E["Verify size + SHA-256 (SHA2_256)"]
-    E --> F["Parse snapshot JSON (schema v4 / source v7)"]
+    E --> F["Parse snapshot JSON (dataset v5 / source v8 / analysis v3)"]
     F --> G["Normalize 'windows' records -> GameSymbolRecord"]
     G --> H["Build crc64 -> ModuleCatalog -> symbolName map"]
     H --> I["Freeze catalog, available=true"]
@@ -96,11 +97,13 @@ flowchart TD
 - signature 只接受空格分隔的两位十六进制字节与 `??` wildcard；`bytes + mask` 为权威无损表示（`mask[i]==0` 通配），`legacyPattern` 仅在签名不含字面量 `0x2A` 字节时生成，否则为 `NULL`。
 - 符号名查找区分大小写；键为 `(moduleCRC64, symbolName)`。完全相同的重复记录去重，内容冲突标记 `CATALOG_CONFLICT`；未类型化 kind 标记 `unsupportedKind` 查询返回 `UNSUPPORTED_KIND`。
 - `patch` 记录只消费 `patch_rva`（`symbolSize`/`signatureRva`/指令字段均为 0），不按 signature 搜索内存，也不改写长度；`MH_ResolveGameSymbol` 现在接受 `FUNCTION`/`GLOBAL`/`PATCH` 三种 expected kind。
+- `scalar` 记录只保留 uint32 `scalar_value`，地址字段全 0；`QueryGameSymbolScalar`（`MH_QueryGameSymbolScalar` / `QueryScalarByCRC64`）返回 `KIND_MISMATCH` 当名字对应非 scalar kind，`ResolveGameSymbol` 因 `expectedKind` 只能为 `FUNCTION`/`GLOBAL`/`PATCH` 而拒绝 scalar。经 `QueryGameSymbol` 查询 scalar 时 `kind == MH_GAMESYMBOL_KIND_SCALAR`、地址字段全 0。
 - `IsGameSymbolAvailable` 是纯存在性查询（`moduleBase` + 精确名字），不返回地址、不做 expected kind 检查；`OK`/`SYMBOL_NOT_FOUND` 之外的失败保留原状态码。连续编号的 call-site 由调用方自行拼接名字并循环探测，API 不做枚举。
 - `cbSize` 契约：调用方先置 `cbSize = sizeof(mh_gamesymbol_t)`，过小返回 `OUTPUT_TOO_SMALL`；失败时输出字段清零但保留 `cbSize`。
 - `ResolveGameSymbol` 只接受 `FUNCTION`/`GLOBAL`，并做 rva 与 `rva + symbolSize` 的溢出和映像边界检查；不校验内存 signature，也不做跨版本扫描。
 - 迁移历史（规则见上文“架构约定”）：ResourceReplacer（计划见 `docs/plans/resource-replacer-gamedata-migration-plan.md`，2026-09-06 已实施——4 符号 gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，详见 [[resource-replacer-privatevars]]）；HeapPatch（2026-09-07 已实施——`Sys_InitMemory` gamedata-only、旧扫描全删、`COMMON_REQUIRED` 门禁已纳入，函数体内 heap-limit immediate 仍走有界 disasm，详见 [[heap-patch-privatevars]]）；launcher `src/metahook.cpp`（issue #850，2026-09-08 已实施——引擎族改为 catalog gameVersion → 前缀/版本阈值规则，`Cvar_DirectSet`、`cvar_hooks`、`Cvar_Set_to_Cvar_DirectSet_callsite_N`、`NLoadBlob`、`FreeBlob` 全部 gamedata-only，旧字符串/反查/pattern 扫描与 `MH_DisasmRanges` 定位全部删除，详见 [[metahook-privatevars]]）；HeapPatch / ResourceReplacer / PrecacheManager 三个插件（issue #853，2026-09-09 已实施——`Sys_InitMemory_HeapLimitPatches_N`、`S_LoadSound_to_FS_Open_callsite_N`、`Mod_LoadModel_to_FS_Open_callsite_N` 与 `cl_resourcesonhand` 全部 gamedata-only；`DisasmRanges` 控制流遍历、`"rb"` / `#GameUI_PrecachingResources` 字符串搜索、push pattern、`FindFSOpenCallSites`、`ConvertDllInfoSpace` 与镜像空间准备全部删除，详见 [[heap-patch-privatevars]] [[resource-replacer-privatevars]] [[precache-manager-privatevars]]）；ThreadGuard / SCModelDownloader 两个插件（issue #855，2026-09-09 已实施——ThreadGuard 的 `engine` GLOBAL 与 SCModelDownloader 的 `R_StudioDrawPlayer` / `studioapi_SetupPlayerModel` / `Host_IsSinglePlayerGame` FUNCTION、`DM_PlayerState` / `cl_players_model` GLOBAL 全部 gamedata-only；SCModelDownloader 改为 inline hook 两个 caller 并重建触发谓词，`R_StudioChangePlayerModel` FUNCTION 与 call-site PATCH 依赖、签名搜索、CFG 遍历、`ConvertDllInfoSpace` 与镜像空间准备全部删除，详见 [[threadguard-privatevars]] [[scmodeldownloader-privatevars]]）。仅对 gamedata 尚未提供且功能本体需要的指令信息保留相应操作；不能将 call-site 一概视为 gamedata 无法表达，已提供地址的符号必须直接 Resolve。PATCH 记录语义是目标**指令地址**：需要立即数位置时在真实地址上单条反汇编取 `encoding.imm_offset`，不新增立即数地址符号，也不按 `patch_sig` 重新定位。
 - 上游契约升级（2026-09-08，schema 7 / dataset schema 4）：每个 module/platform 增加必需布尔 `isBlob`（仅通过完整 Metahook blob 解密/重建/校验的 Windows 二进制为 true；非 Windows 必须 false），并移除旧 `path`。MetaHook 只消费 `binaries.*.windows.crc64`，不读取 `isBlob`（遵循上文“信任上游”约定）。
+- 上游契约升级（2026-09-12，dataset schema 5 / source snapshot contract 8 / analysis output contract 3，issue #865 前置）：新增 `kind: scalar`（payload 仅 `scalar_name` + uint32 `scalar_value`）。`src/GameData.cpp` 常量切到 `kSnapshotSchemaVersion 5` / `kSnapshotContractVersion 8` / `kAnalysisOutputContractVersion 3`，新增 `NormalizeScalar` 与公共 `QueryGameSymbolScalar`（API 111）；不再接受 schema 4 / contract 7 数据（逐 snapshot 记为 `unsupported schemaVersion`）。`scripts/sync-gamedata.py` 的 `SUPPORTED_SNAPSHOT_SCHEMA_VERSION 5` / `SUPPORTED_SNAPSHOT_CONTRACT_VERSION 8` / `SUPPORTED_ANALYSIS_OUTPUT_CONTRACT_VERSION 3`、`scripts/validate-gamedata.py` 的 `REQUIRED_SCALARS`（`size_of_frame` 属于 engine module，10 个受支持 engine 版本均覆盖）与 `isBlob` 布尔校验同步升级；行为测试见 `scripts/tests/test_gamedata_contract.py`。`gv_sig_allow_across_function_boundary` 现已在 `NormalizeGlobal` 中解析进 `flags`。`mh_gamesymbol_t` 布局与 `MetahookAPIVersion` 旧槽位不变；scalar 只经新槽位（第 8 个函数槽）获取，避免破坏旧插件 ABI。index 仍为 schema 4。
 - 发布数据状态（2026-09-09 同步，release `v20260909c` / source `ecac7773`）：`scripts/validate-gamedata.py` 门禁通过（16 snapshots / 5 engine families），cvar 分支、blob 客户端符号与 #855 的 6 个符号已补齐；门禁按 kind 校验的 `COMMON_REQUIRED` 现含 `cl_resourcesonhand` global 与 `R_StudioDrawPlayer` / `studioapi_SetupPlayerModel` / `Host_IsSinglePlayerGame` function、`DM_PlayerState` / `cl_players_model` / `engine` global，`NUMBERED_PATCH_SETS` 为 `Sys_InitMemory_HeapLimitPatches`、`S_LoadSound_to_FS_Open_callsite`、`Mod_LoadModel_to_FS_Open_callsite`（从 `_0` 起连续、kind 必须为 patch）；含 windows 记录的为 cof-5936（46）、hl-10210（80）、hl-8684（80）、hl-6153（43）、hl-4554/hl-3647/hl-3329/hl-3266/hl-3248（各 44）、svencoop-10257（75），cstrike/czero/czeror 各版本仍为 0 记录空壳。发布流程注意：`release-build.yml` 的 `publish-release` 曾在创建 tag 时返回 403 `Resource not accessible by integration`（run 34360429634，临时性；重跑 run 34363903670 后成功），发布未完成时 `hlnd2t.github.io` 的 index 不会更新，`sync-gamedata.py` 也就拉不到新数据。
 - `Build\svencoop\metahook\gamedata\` 被 gitignore，由 Pre-build 的 `sync-gamedata.py` 通过同卷 staging + 事务式目录交换生成；commit `6b8f6f65 "remove gamedata."` 删除了原先跟踪的 JSON 载荷。
 
@@ -108,6 +111,6 @@ flowchart TD
 
 - `src/metahook.cpp` — `MH_LoadEngine_ResolveSymbol`（`MH_ResolveGameSymbol` / `MH_GetModuleCRC64` / `MH_GetGameSymbolStatusString`）、`MH_LoadEngine_ResolveGlobalOperand`（`MH_QueryGameSymbol`）、`MH_LoadEngine_DetermineEngineType`（`MH_GetModuleCRC64` + `GameData::GetGameVersion`）、`MH_LoadEngine_PatchCvarCallbacks` / `MH_LoadEngine_FindLoadBlobClient`（`MH_IsGameSymbolAvailable`）、`MH_LoadEngine`（`GameData::Initialize` / `RegisterModuleFileSource` / `RegisterMirrorAlias` / `ResetModuleIdentities`）。
 - `src/LoadDllNotification.cpp` — 加/卸载通知中 `GameData::InvalidateModule(ctx.ImageBase, inCritRegion)`。
-- V3/V4 插件 — 通过 `metahook_api_t` API 109 的 6 个函数槽调用；API 110 起可用 `IsGameSymbolAvailable`（第 7 槽）。
+- V3/V4 插件 — 通过 `metahook_api_t` API 109 的 6 个函数槽调用；API 110 起可用 `IsGameSymbolAvailable`（第 7 槽）；API 111 起可用 `QueryGameSymbolScalar`（第 8 槽）。
 
 Related: [[metahook-privatevars]] [[project-overview]] [[plugin-system]]
