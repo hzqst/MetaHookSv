@@ -762,13 +762,16 @@ bool CPhysicDebugGUI::UpdateInspectedClientEntity(bool bSelected)
 		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
 		{
 			playerindex = ent->curstate.renderamt;
-			curstate = R_GetPlayerState(playerindex);
+			curstate = R_GetPlayerState(playerindex - 1);
 		}
 		else if (ClientEntityManager()->IsEntityPlayer(ent))
 		{
 			playerindex = ent->curstate.number;
-			curstate = R_GetPlayerState(playerindex);
+			curstate = R_GetPlayerState(playerindex - 1);
 		}
+
+		if (!curstate)
+			return false;
 
 		wchar_t wszModelName[64] = { 0 };
 

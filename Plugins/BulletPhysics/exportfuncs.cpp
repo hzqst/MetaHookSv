@@ -130,17 +130,18 @@ bool AllowCheats()
 	return (sv_cheats->value != 0) ? true : false;
 }
 
-entity_state_t *R_GetPlayerState(int entindex)
+entity_state_t *R_GetPlayerState(int playerIndex)
 {
-	if (!(entindex >= 0 && entindex <= MAX_CLIENTS))
-	{
-		Sys_Error("R_GetPlayerState: Invalid index %d !", entindex);
+	if (playerIndex < 0 || playerIndex >= MAX_CLIENTS || playerIndex >= gEngfuncs.GetMaxClients())
 		return nullptr;
-	}
 
+#if 1
+	return IEngineStudio.GetPlayerState(playerIndex);
+#else
 	//gamedata cl_frames is the frame_t ring base; the per-client entity states
 	//live in frame_t::playerstate, so the member offset must be added explicitly.
-	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + offsetof(frame_t, playerstate) + sizeof(entity_state_t) * entindex));
+	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + offsetof(frame_t, playerstate) + sizeof(entity_state_t) * playerIndex));
+#endif
 }
 
 bool CL_IsFirstPersonMode(cl_entity_t *player)
@@ -773,11 +774,11 @@ void HUD_CreateEntities(void)
 
 	auto localplayer = gEngfuncs.GetLocalPlayer();
 
-	for (int i = 0; i < MAX_CLIENTS; ++i)
+	for (int i = 0; i < gEngfuncs.GetMaxClients(); ++i)
 	{
 		auto state = R_GetPlayerState(i);
 
-		if (state->messagenum != (*cl_parsecount))
+		if (!state || state->messagenum != (*cl_parsecount))
 			continue;
 
 		if (!state->modelindex || (state->effects & EF_NODRAW))

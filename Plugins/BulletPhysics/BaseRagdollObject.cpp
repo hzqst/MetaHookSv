@@ -33,8 +33,12 @@ entity_state_t* CBaseRagdollObject::GetClientEntityState() const
 {
 	if (ClientEntityManager()->IsEntityDeadPlayer(m_entity) || ClientEntityManager()->IsEntityPlayer(m_entity))
 	{
-		if (m_playerindex >= 0)
-			return R_GetPlayerState(m_playerindex);
+		if (m_playerindex > 0)
+		{
+			auto state = R_GetPlayerState(m_playerindex - 1);
+			if (state)
+				return state;
+		}
 	}
 
 	return &m_entity->curstate;

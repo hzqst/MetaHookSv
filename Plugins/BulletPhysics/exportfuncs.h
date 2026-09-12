@@ -64,7 +64,8 @@ void V_CalcRefdef(struct ref_params_s* pparams);
 
 void HUD_PostRunCmd(struct local_state_s* from, struct local_state_s* to, struct usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed);
 
-entity_state_t* R_GetPlayerState(int index);
+// Accepts a zero-based player slot; returns nullptr for an invalid slot.
+entity_state_t* R_GetPlayerState(int playerIndex);
 
 void V_RenderView(void);
 
