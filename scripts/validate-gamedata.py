@@ -68,6 +68,71 @@ REQUIRED_SCALARS = {
     "size_of_frame": "engine",
 }
 
+# BulletPhysics consumer gate. Engine-side private symbols are required for
+# every declared engine family; client-side symbols only for game versions
+# whose snapshot publishes a client module. The six engine-only builds
+# (hl-3248/3266/3329/3647/4554/6153) publish no client module, so the client
+# Studio path cannot be gamedata-only for them and is intentionally excluded.
+BULLETPHYSICS_ENGINE_FUNCTIONS = (
+    "R_NewMap",
+    "R_RenderView",
+    "V_RenderView",
+    "R_CullBox",
+    "R_StudioDrawModel",
+    "R_StudioDrawPlayer",
+    "R_StudioSetupBones",
+)
+BULLETPHYSICS_ENGINE_GLOBALS = (
+    "cl_max_edicts",
+    "cl_entities",
+    "gTempEnts",
+    "cl_viewentity",
+    "mod_known",
+    "mod_numknown",
+    "cl_frames",
+    "cl_parsecount",
+    "cl_numvisedicts",
+    "cl_visedicts",
+    "r_worldentity",
+    "cl_worldmodel",
+    "currententity",
+    "pstudiohdr",
+    "r_origin",
+)
+BULLETPHYSICS_SVENGINE_GLOBALS = ("allow_cheats",)
+
+# gameVersion -> snapshot that publishes a client module.
+BULLETPHYSICS_CLIENT_GAMES = (
+    "svencoop-10257",
+    "hl-8684",
+    "hl-10210",
+    "cof-5936",
+    "cstrike-8684",
+    "cstrike-10210",
+    "czero-8684",
+    "czero-10210",
+    "czeror-8684",
+    "czeror-10210",
+)
+BULLETPHYSICS_CLIENT_GLOBALS = ("g_iUser1", "g_iUser2", "g_pGameStudioRenderer")
+BULLETPHYSICS_CLIENT_VFUNCS = (
+    "GameStudioRenderer_StudioDrawModel",
+    "GameStudioRenderer_StudioDrawPlayer",
+    "GameStudioRenderer_StudioSetupBones",
+)
+BULLETPHYSICS_SVEN_CLIENT_GLOBALS = (
+    "g_bRenderingPortals_SCClient",
+    "g_ViewEntityIndex_SCClient",
+    "g_pitchdrift",
+)
+BULLETPHYSICS_CS_CLIENT_GAMES = (
+    "cstrike-8684",
+    "cstrike-10210",
+    "czero-8684",
+    "czero-10210",
+)
+BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
+
 # gameVersion -> engine family. Only these gameVersions are declared supported.
 # hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with
 # build number 4554 <= 9000, so the launcher's rule-based mapping reports
@@ -332,6 +397,25 @@ def validate_snapshot(doc, game_version):
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
+        elif kind == "virtualFunction":
+            p = payload if isinstance(payload, dict) else {}
+            func_rva = parse_hex_u32(p.get("func_rva"))
+            func_size = parse_hex_u32(p.get("func_size"))
+            vfunc_sig = p.get("vfunc_sig")
+            vfunc_index = p.get("vfunc_index")
+            vtable_name = p.get("vtable_name")
+            if (func_rva is None or func_size is None or not isinstance(vfunc_sig, str) or
+                    not isinstance(vfunc_index, int) or isinstance(vfunc_index, bool) or
+                    not isinstance(vtable_name, str) or not vtable_name):
+                errors.append(f"'{game_version}': virtualFunction '{name}' missing/invalid func_rva/func_size/vfunc_sig/vfunc_index/vtable_name")
+                continue
+            if not validate_signature(vfunc_sig):
+                errors.append(f"'{game_version}': virtualFunction '{name}' has a malformed signature")
+                continue
+            rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size}
+            if name in symbols and symbols[name] != rec:
+                errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
+            symbols[name] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue
@@ -371,6 +455,27 @@ def validate_required(symbols, family, game_version):
         elif rec.get("module") != module:
             errors.append(f"'{game_version}' ({family}): '{sym}' must belong to module '{module}'")
 
+    # BulletPhysics engine-side consumer gate.
+    for sym in BULLETPHYSICS_ENGINE_FUNCTIONS:
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine function '{sym}'")
+        elif rec.get("kind") != "function":
+            errors.append(f"'{game_version}' ({family}): '{sym}' must be a function record")
+    for sym in BULLETPHYSICS_ENGINE_GLOBALS:
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
+        elif rec.get("kind") != "global":
+            errors.append(f"'{game_version}' ({family}): '{sym}' must be a global record")
+    if family == "ENGINE_SVENGINE":
+        for sym in BULLETPHYSICS_SVENGINE_GLOBALS:
+            rec = symbols.get(sym)
+            if not isinstance(rec, dict):
+                errors.append(f"'{game_version}' ({family}): missing BulletPhysics engine global '{sym}'")
+            elif rec.get("kind") != "global":
+                errors.append(f"'{game_version}' ({family}): '{sym}' must be a global record")
+
     # cvar branch: the engine's native callback list, or at least one managed
     # Cvar_Set -> Cvar_DirectSet call-site redirect.
     has_native = isinstance(symbols.get("cvar_hooks"), dict) and symbols["cvar_hooks"].get("kind") == "global"
@@ -393,6 +498,50 @@ def validate_required(symbols, family, game_version):
             errors.append(
                 f"'{game_version}' ({family}): NLoadBlob and FreeBlob must both be present or both absent"
             )
+
+    return errors
+
+
+def validate_bulletphysics_client(symbols, game_version):
+    """Return BulletPhysics client-side consumer failures for a game version."""
+    errors = []
+    for sym in BULLETPHYSICS_CLIENT_GLOBALS:
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing BulletPhysics client global '{sym}'")
+        elif rec.get("kind") != "global":
+            errors.append(f"'{game_version}': '{sym}' must be a global record")
+    for sym in BULLETPHYSICS_CLIENT_VFUNCS:
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing BulletPhysics client virtualFunction '{sym}'")
+        elif rec.get("kind") != "virtualFunction":
+            errors.append(f"'{game_version}': '{sym}' must be a virtualFunction record")
+
+    if game_version == "svencoop-10257":
+        for sym in BULLETPHYSICS_SVEN_CLIENT_GLOBALS:
+            rec = symbols.get(sym)
+            if not isinstance(rec, dict):
+                errors.append(f"'{game_version}': missing Sven Co-op client global '{sym}'")
+            elif rec.get("kind") != "global":
+                errors.append(f"'{game_version}': '{sym}' must be a global record")
+    if game_version in BULLETPHYSICS_CS_CLIENT_GAMES:
+        rec = symbols.get("g_PlayerExtraInfo")
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing Counter-Strike client global 'g_PlayerExtraInfo'")
+        elif rec.get("kind") != "global":
+            errors.append(f"'{game_version}': 'g_PlayerExtraInfo' must be a global record")
+        rec = symbols.get("GameStudioRenderer__StudioDrawPlayer")
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing Counter-Strike client virtualFunction 'GameStudioRenderer__StudioDrawPlayer'")
+        elif rec.get("kind") != "virtualFunction":
+            errors.append(f"'{game_version}': 'GameStudioRenderer__StudioDrawPlayer' must be a virtualFunction record")
+    if game_version in BULLETPHYSICS_CZDS_CLIENT_GAMES:
+        rec = symbols.get("g_PlayerExtraInfo_CZDS")
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing Condition Zero client global 'g_PlayerExtraInfo_CZDS'")
+        elif rec.get("kind") != "global":
+            errors.append(f"'{game_version}': 'g_PlayerExtraInfo_CZDS' must be a global record")
 
     return errors
 
@@ -458,6 +607,14 @@ def main():
                 continue
             symbols = game_symbols[gv][1]
             all_errors.extend(validate_required(symbols, family, gv))
+
+    # BulletPhysics client-side consumer gate (only for client-bearing games).
+    for gv in BULLETPHYSICS_CLIENT_GAMES:
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (BulletPhysics client gate)")
+            continue
+        symbols = game_symbols[gv][1]
+        all_errors.extend(validate_bulletphysics_client(symbols, gv))
 
     if all_errors:
         for e in all_errors:

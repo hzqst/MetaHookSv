@@ -24,9 +24,7 @@ DWORD g_dwEngineBuildnum = 0;
 DWORD g_dwVideoMode = VIDEOMODE_SOFTWARE;
 
 mh_dll_info_t g_EngineDLLInfo = { 0 };
-mh_dll_info_t g_MirrorEngineDLLInfo = { 0 };
 mh_dll_info_t g_ClientDLLInfo = { 0 };
-mh_dll_info_t g_MirrorClientDLLInfo = { 0 };
 
 static HMODULE g_hVGUI2 = NULL;
 
@@ -70,27 +68,18 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
-	g_pFileSystem = g_pInterface->FileSystem;	
+	if (g_pInterface->MetaHookAPIVersion < METAHOOK_API_VERSION)
+	{
+		Sys_Error("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
+	}
+
+	g_pFileSystem = g_pInterface->FileSystem;
 	if (!g_pFileSystem)//backward compatibility
 		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
 
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_EngineDLLInfo.ImageBase = g_pMetaHookAPI->GetEngineBase();
-	g_EngineDLLInfo.ImageSize = g_pMetaHookAPI->GetEngineSize();
-	g_EngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_EngineDLLInfo.TextSize);
-	g_EngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_EngineDLLInfo.DataSize);
-	g_EngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_EngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_EngineDLLInfo.RdataSize);
-
-	g_MirrorEngineDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorEngineBase();
-	g_MirrorEngineDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorEngineSize();
-
-	if (g_MirrorEngineDLLInfo.ImageBase)
-	{
-		g_MirrorEngineDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".text\x0\x0\x0", &g_MirrorEngineDLLInfo.TextSize);
-		g_MirrorEngineDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".data\x0\x0\x0", &g_MirrorEngineDLLInfo.DataSize);
-		g_MirrorEngineDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorEngineDLLInfo.ImageBase, ".rdata\x0\x0", &g_MirrorEngineDLLInfo.RdataSize);
-	}
 
 	g_dwVideoMode = g_pMetaHookAPI->GetVideoMode(nullptr, nullptr, nullptr, nullptr);
 
@@ -98,7 +87,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	Engine_FillAddress(g_MirrorEngineDLLInfo.ImageBase ? g_MirrorEngineDLLInfo : g_EngineDLLInfo, g_EngineDLLInfo);
+	Engine_FillAddress(g_EngineDLLInfo.ImageBase);
 	Engine_InstallHook();
 
 	VGUI2Extension_Init();
@@ -127,22 +116,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_PostRunCmd = HUD_PostRunCmd;
 
 	g_ClientDLLInfo.ImageBase = g_pMetaHookAPI->GetClientBase();
-	g_ClientDLLInfo.ImageSize = g_pMetaHookAPI->GetClientSize();
-	g_ClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".text\0\0\0", &g_ClientDLLInfo.TextSize);
-	g_ClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".data\0\0\0", &g_ClientDLLInfo.DataSize);
-	g_ClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_ClientDLLInfo.ImageBase, ".rdata\0\0", &g_ClientDLLInfo.RdataSize);
 
-	g_MirrorClientDLLInfo.ImageBase = g_pMetaHookAPI->GetMirrorClientBase();
-	g_MirrorClientDLLInfo.ImageSize = g_pMetaHookAPI->GetMirrorClientSize();
-
-	if (g_MirrorClientDLLInfo.ImageBase)
-	{
-		g_MirrorClientDLLInfo.TextBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".text\0\0\0", &g_MirrorClientDLLInfo.TextSize);
-		g_MirrorClientDLLInfo.DataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".data\0\0\0", &g_MirrorClientDLLInfo.DataSize);
-		g_MirrorClientDLLInfo.RdataBase = g_pMetaHookAPI->GetSectionByName(g_MirrorClientDLLInfo.ImageBase, ".rdata\0\0", &g_MirrorClientDLLInfo.RdataSize);
-	}
-
-	Client_FillAddress(g_MirrorClientDLLInfo.ImageBase ? g_MirrorClientDLLInfo : g_ClientDLLInfo, g_ClientDLLInfo);
+	Client_FillAddress(g_ClientDLLInfo.ImageBase);
 	Client_InstallHooks();
 }
 

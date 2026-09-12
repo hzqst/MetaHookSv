@@ -77,6 +77,25 @@ def scalar_record(name="size_of_frame", value=17080, module="engine",
     }
 
 
+def virtual_function_record(name="GameStudioRenderer_StudioDrawModel", module="engine",
+                            payload=None):
+    if payload is None:
+        payload = {
+            "func_rva": "0x1000",
+            "func_size": "0x20",
+            "vfunc_sig": "55 8B EC",
+            "vfunc_index": 2,
+            "vtable_name": "GameStudioRenderer",
+        }
+    return {
+        "platform": "windows",
+        "module": module,
+        "symbolName": name,
+        "kind": "virtualFunction",
+        "payload": payload,
+    }
+
+
 class SnapshotContractTests(unittest.TestCase):
     def test_accepts_new_scalar_contract(self):
         doc = make_snapshot([function_record(), scalar_record()])
@@ -120,6 +139,33 @@ class SnapshotContractTests(unittest.TestCase):
         errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
         self.assertTrue(any("missing/invalid scalar_name" in e for e in errors), errors)
 
+    def test_accepts_virtual_function_record(self):
+        doc = make_snapshot([virtual_function_record()])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20},
+            symbols["GameStudioRenderer_StudioDrawModel"],
+        )
+
+    def test_rejects_virtual_function_missing_fields(self):
+        for missing in ("func_rva", "func_size", "vfunc_sig", "vfunc_index", "vtable_name"):
+            payload = {
+                "func_rva": "0x1000",
+                "func_size": "0x20",
+                "vfunc_sig": "55 8B EC",
+                "vfunc_index": 2,
+                "vtable_name": "GameStudioRenderer",
+            }
+            del payload[missing]
+            doc = make_snapshot([virtual_function_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(
+                any("missing/invalid func_rva/func_size/vfunc_sig/vfunc_index/vtable_name" in e
+                    for e in errors),
+                (missing, errors),
+            )
+
 
 class RequiredScalarGateTests(unittest.TestCase):
     def complete_symbols(self):
@@ -132,6 +178,10 @@ class RequiredScalarGateTests(unittest.TestCase):
         for name in ("NLoadBlob", "FreeBlob"):
             symbols[name] = {"kind": "function"}
         symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "engine"}
+        for name in validate.BULLETPHYSICS_ENGINE_FUNCTIONS:
+            symbols[name] = {"kind": "function"}
+        for name in validate.BULLETPHYSICS_ENGINE_GLOBALS:
+            symbols[name] = {"kind": "global"}
         return symbols
 
     def test_scalar_gate_passes_when_present(self):
@@ -157,6 +207,88 @@ class RequiredScalarGateTests(unittest.TestCase):
         symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "client"}
         errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
         self.assertTrue(any("must belong to module 'engine'" in e for e in errors), errors)
+
+
+class BulletPhysicsEngineGateTests(unittest.TestCase):
+    def complete_symbols(self):
+        symbols = {}
+        for name, kind in validate.COMMON_REQUIRED.items():
+            symbols[name] = {"kind": kind}
+        for prefix in validate.NUMBERED_PATCH_SETS:
+            symbols[f"{prefix}_0"] = {"kind": "patch"}
+        symbols["cvar_hooks"] = {"kind": "global"}
+        for name in ("NLoadBlob", "FreeBlob"):
+            symbols[name] = {"kind": "function"}
+        symbols["size_of_frame"] = {"kind": "scalar", "value": 17080, "module": "engine"}
+        for name in validate.BULLETPHYSICS_ENGINE_FUNCTIONS:
+            symbols[name] = {"kind": "function"}
+        for name in validate.BULLETPHYSICS_ENGINE_GLOBALS:
+            symbols[name] = {"kind": "global"}
+        return symbols
+
+    def test_engine_gate_flags_missing_function(self):
+        symbols = self.complete_symbols()
+        del symbols["R_RenderView"]
+        errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
+        self.assertTrue(any("missing BulletPhysics engine function 'R_RenderView'" in e for e in errors), errors)
+
+    def test_engine_gate_flags_wrong_global_kind(self):
+        symbols = self.complete_symbols()
+        symbols["cl_frames"] = {"kind": "function"}
+        errors = validate.validate_required(symbols, "ENGINE_GOLDSRC", "hl-8684")
+        self.assertTrue(any("'cl_frames' must be a global record" in e for e in errors), errors)
+
+    def test_svengine_requires_allow_cheats(self):
+        symbols = self.complete_symbols()
+        errors = validate.validate_required(symbols, "ENGINE_SVENGINE", "svencoop-10257")
+        self.assertTrue(any("missing BulletPhysics engine global 'allow_cheats'" in e for e in errors), errors)
+
+
+class BulletPhysicsClientGateTests(unittest.TestCase):
+    def complete_client_symbols(self):
+        symbols = {}
+        for name in validate.BULLETPHYSICS_CLIENT_GLOBALS:
+            symbols[name] = {"kind": "global"}
+        for name in validate.BULLETPHYSICS_CLIENT_VFUNCS:
+            symbols[name] = {"kind": "virtualFunction"}
+        return symbols
+
+    def test_client_gate_passes_for_hl(self):
+        self.assertEqual(
+            [],
+            validate.validate_bulletphysics_client(self.complete_client_symbols(), "hl-8684"),
+        )
+
+    def test_client_gate_flags_missing_vfunc(self):
+        symbols = self.complete_client_symbols()
+        del symbols["GameStudioRenderer_StudioDrawPlayer"]
+        errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
+        self.assertTrue(any("missing BulletPhysics client virtualFunction" in e for e in errors), errors)
+
+    def test_client_gate_flags_wrong_kind(self):
+        symbols = self.complete_client_symbols()
+        symbols["g_pGameStudioRenderer"] = {"kind": "function"}
+        errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
+        self.assertTrue(any("must be a global record" in e for e in errors), errors)
+
+    def test_sven_client_gate_requires_sven_globals(self):
+        symbols = self.complete_client_symbols()
+        errors = validate.validate_bulletphysics_client(symbols, "svencoop-10257")
+        self.assertTrue(any("missing Sven Co-op client global 'g_pitchdrift'" in e for e in errors), errors)
+        for name in validate.BULLETPHYSICS_SVEN_CLIENT_GLOBALS:
+            symbols[name] = {"kind": "global"}
+        self.assertEqual([], validate.validate_bulletphysics_client(symbols, "svencoop-10257"))
+
+    def test_cs_client_gate_requires_extra_symbols(self):
+        symbols = self.complete_client_symbols()
+        errors = validate.validate_bulletphysics_client(symbols, "cstrike-8684")
+        self.assertTrue(any("g_PlayerExtraInfo" in e for e in errors), errors)
+        self.assertTrue(any("GameStudioRenderer__StudioDrawPlayer" in e for e in errors), errors)
+
+    def test_czds_client_gate_requires_czds_array(self):
+        symbols = self.complete_client_symbols()
+        errors = validate.validate_bulletphysics_client(symbols, "czeror-8684")
+        self.assertTrue(any("g_PlayerExtraInfo_CZDS" in e for e in errors), errors)
 
 
 def make_sync_entry(contents, game_version="hl-8684", contract=8, file_count=0):
