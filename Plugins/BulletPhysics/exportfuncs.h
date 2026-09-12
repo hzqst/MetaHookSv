@@ -23,7 +23,6 @@ extern cl_entity_t** cl_entities;
 extern int* cl_numvisedicts;
 extern cl_entity_t** cl_visedicts;
 
-extern float* g_ChromeOrigin;
 extern float* r_origin;
 
 extern model_t* cl_sprite_white;

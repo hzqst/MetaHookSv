@@ -3,72 +3,27 @@
 #include <studio.h>
 #include <com_model.h>
 
-typedef struct walk_context_s
-{
-	walk_context_s(void *a, size_t l, int d) : address(a), len(l), depth(d)
-	{
-
-	}
-	void* address;
-	size_t len;
-	int depth;
-}walk_context_t;
-
 typedef struct
 {
-	//engine stuffs
+	//engine render / view functions
 	void(*R_NewMap)(void);
-	void(*R_RecursiveWorldNode)(void *node);
-	void(*R_DrawTEntitiesOnList)(int onlyClientDraw);
-	//void(*V_SetRefParams)(ref_params_t *);
-	void (*V_RenderView)(void);
-	void (*R_RenderView)(void);
-	void (*R_RenderView_SvEngine)(int viewIdx);
+	void(*V_RenderView)(void);
+	void(*R_RenderView)(void);
+	void(*R_RenderView_SvEngine)(int viewIdx);
 	qboolean(*R_CullBox)(vec3_t mins, vec3_t maxs);
 
-	//client stuffs
-	//void (*V_CalcNormalRefdef)(ref_params_t*);
+	//Engine StudioRenderer
+	void (*R_StudioSetupBones)(void);
+	int (*R_StudioDrawModel)(int flags);
+	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
 
 	//Client GameStudioRenderer
 	void(__fastcall* GameStudioRenderer_StudioSetupBones)(void* pthis, int);
-	void(__fastcall* GameStudioRenderer_StudioMergeBones)(void* pthis, int, model_t* pSubModel);
-	void(__fastcall* GameStudioRenderer_StudioSaveBones)(void* pthis, int);
 	int(__fastcall* GameStudioRenderer_StudioDrawModel)(void* pthis, int, int flags);
 	int(__fastcall* GameStudioRenderer_StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
-	int(__fastcall* GameStudioRenderer__StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
-	void(__fastcall* GameStudioRenderer_StudioRenderModel)(void* pthis, int);
-	void(__fastcall* GameStudioRenderer_StudioRenderFinal)(void* pthis, int);
 
-	int GameStudioRenderer_StudioCalcAttachments_vftable_index;
-	int GameStudioRenderer_StudioSetupBones_vftable_index;
-	int GameStudioRenderer_StudioSaveBones_vftable_index;
-	int GameStudioRenderer_StudioMergeBones_vftable_index;
-	int GameStudioRenderer_StudioDrawModel_vftable_index;
-	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
-	int GameStudioRenderer__StudioDrawPlayer_vftable_index;
-	int GameStudioRenderer_StudioRenderModel_vftable_index;
-	int GameStudioRenderer_StudioRenderFinal_vftable_index;
-
-	//Engine StudioRenderer
-	int (*R_StudioDrawModel)(int flags);
-	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
-	void (*R_StudioSetupBones)(void);
-	void (*R_StudioMergeBones)(void);
-	void (*R_StudioSaveBones)(void);
-	void (*R_StudioRenderModel)(void);
-	void (*R_StudioRenderFinal)(void);
-
-	//IEngineStudio
+	//IEngineStudio / efxapi (public interface-derived, not game-private)
 	int (*studioapi_StudioCheckBBox)(void);
-
-	void (*FirstPerson_f)(void);
-	void (*ThreadPerson_f)(void);
-
-	//Engine model managment
-	// unused
-	//void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);
-
-	//efxapi
 	TEMPENTITY	*(*efxapi_R_TempModel)(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 }private_funcs_t;
 
@@ -78,27 +33,24 @@ void R_RenderView();
 
 TEMPENTITY* efxapi_R_TempModel(float* pos, float* dir, float* angles, float life, int modelIndex, int soundtype);
 
-void Engine_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+//Resolve a gamedata symbol for a module, failing loudly when it is absent.
+PVOID GamedataResolveRequired(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind);
+
+void Engine_FillAddress(PVOID engineBase);
 void Engine_InstallHook(void);
 void Engine_UninstallHook(void);
-void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo);
+void Client_FillAddress(PVOID clientBase);
 void Client_InstallHooks(void);
 void ClientStudio_InstallHooks();
 void EngineStudio_InstallHooks(void);
 void ClientStudio_UninstallHooks(void);
 void EngineStudio_UninstallHooks(void);
 
-PVOID ConvertDllInfoSpace(PVOID addr, const mh_dll_info_t& SrcDllInfo, const mh_dll_info_t& TargetDllInfo);
-PVOID GetVFunctionFromVFTable(PVOID* vftable, int index, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo, const mh_dll_info_t& OutputDllInfo);
-
 extern studiohdr_t** pstudiohdr;
-extern model_t** r_model;
 extern void* g_pGameStudioRenderer;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4];
 
-//extern int* r_framecount;
-//extern int *r_visframecount;
 extern int *cl_parsecount;
 extern void *cl_frames;
 extern int size_of_frame;
@@ -110,7 +62,6 @@ extern TEMPENTITY *gTempEnts;
 
 extern int* allow_cheats;
 
-extern int* g_iWaterLevel;
 extern bool* g_bRenderingPortals_SCClient;
 extern int* g_ViewEntityIndex_SCClient;
 
@@ -162,8 +113,8 @@ typedef struct extra_player_info_s
 
 static_assert(sizeof(extra_player_info_t) == 0x74, "Size check");
 
-typedef struct extra_player_info_czds_s 
-{                      
+typedef struct extra_player_info_czds_s
+{
     short frags;//0
 	short deaths;   //2
 	short playerclass;//4
@@ -175,23 +126,6 @@ typedef struct extra_player_info_czds_s
 }extra_player_info_czds_t;
 
 static_assert(sizeof(extra_player_info_czds_t) == 0x1C, "Size check");
-
- typedef struct team_info_s  // sizeof=0x28
- {                                       // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+8F/o
-                                         // TeamFortressViewport::MsgFunc_TeamNames(char const*,int,void *)+31/o ...
-     char name[16];
-     short frags;
-     short deaths;                     // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+17B/o
-     short ping;                       // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+135/o
-     short packetloss;
-     short ownteam;
-     short players;
-     int already_drawn;                  // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+1EB/w
-     int scores_overriden;               // XREF: CClientScoreBoardDialog::UpdateTeamInfo(void)+1C/o
-     int teamnumber;
- } team_info_t;
-
- static_assert(sizeof(team_info_t) == 0x28, "Size check");
 
 extern cvar_t *cl_minmodels;
 extern cvar_t *cl_min_t;

@@ -456,6 +456,53 @@ namespace
 		return true;
 	}
 
+	// A virtual function record is an address-bearing function entry recovered
+	// from its owning vtable slot. The rva is consumed as a normal function
+	// address; vfunc_index/vtable_name are validated but not stored.
+	bool NormalizeVirtualFunction(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	{
+		const rapidjson::Value* funcRva = FindMember(payload, "func_rva");
+		const rapidjson::Value* funcSize = FindMember(payload, "func_size");
+		const rapidjson::Value* vfuncSig = FindMember(payload, "vfunc_sig");
+		const rapidjson::Value* vfuncIndex = FindMember(payload, "vfunc_index");
+		const rapidjson::Value* vtableName = FindMember(payload, "vtable_name");
+		if (!funcRva || !funcRva->IsString() || !funcSize || !funcSize->IsString() ||
+			!vfuncSig || !vfuncSig->IsString() ||
+			!vfuncIndex || !vfuncIndex->IsInt() ||
+			!vtableName || !vtableName->IsString())
+		{
+			error = "virtualFunction payload is missing func_rva/func_size/vfunc_sig/vfunc_index/vtable_name";
+			return false;
+		}
+
+		if (!ParseHexU32(funcRva->GetString(), rec.rva))
+		{
+			error = "invalid func_rva";
+			return false;
+		}
+		if (!ParseHexU32(funcSize->GetString(), rec.symbolSize))
+		{
+			error = "invalid func_size";
+			return false;
+		}
+		if (!ParseSignature(vfuncSig->GetString(), rec.signatureBytes, rec.signatureMask, rec.legacyPattern, error))
+			return false;
+
+		rec.kind = MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION;
+		rec.signatureText = vfuncSig->GetString();
+		rec.signatureRva = rec.rva;
+		rec.instructionOffset = 0;
+		rec.operandOffset = 0;
+		rec.instructionLength = 0;
+		rec.flags = 0;
+
+		const rapidjson::Value* allowAcross = FindMember(payload, "vfunc_sig_allow_across_function_boundary");
+		if (allowAcross && allowAcross->IsBool() && allowAcross->GetBool())
+			rec.flags |= MH_GAMESYMBOL_FLAG_SIGNATURE_ALLOW_ACROSS_FUNCTION_BOUNDARY;
+
+		return true;
+	}
+
 	// -----------------------------------------------------------------------
 	// Catalog assembly.
 	// -----------------------------------------------------------------------
@@ -724,6 +771,16 @@ namespace
 				{
 					if (error.empty())
 						error = "scalar payload must be an object";
+					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
+					continue;
+				}
+			}
+			else if (std::strcmp(kindStr, "virtualFunction") == 0)
+			{
+				if (!payload || !payload->IsObject() || !NormalizeVirtualFunction(*payload, record, error))
+				{
+					if (error.empty())
+						error = "virtualFunction payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -1405,7 +1462,8 @@ mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbol
 
 	if (expectedKind != MH_GAMESYMBOL_KIND_FUNCTION &&
 		expectedKind != MH_GAMESYMBOL_KIND_GLOBAL &&
-		expectedKind != MH_GAMESYMBOL_KIND_PATCH)
+		expectedKind != MH_GAMESYMBOL_KIND_PATCH &&
+		expectedKind != MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION)
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
 	mh_gamesymbol_t sym;

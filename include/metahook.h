@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 111
+#define METAHOOK_API_VERSION 112
 
 typedef struct hook_s hook_t;
 
@@ -189,7 +189,11 @@ typedef enum mh_gamesymbol_kind_e
 	// A scalar is a plain uint32 value tied to the matched binary identity, not
 	// an address. It is never resolved by ResolveGameSymbol; query it with
 	// QueryGameSymbolScalar instead.
-	MH_GAMESYMBOL_KIND_SCALAR = 4
+	MH_GAMESYMBOL_KIND_SCALAR = 4,
+	// A virtual function is an address-bearing record whose rva is the function
+	// entry point taken from its owning vtable slot. ResolveGameSymbol accepts it
+	// and returns moduleBase + rva exactly like FUNCTION.
+	MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION = 5
 } mh_gamesymbol_kind_t;
 
 /*
@@ -787,7 +791,8 @@ typedef struct metahook_api_s
 
 	/*
 		Purpose: Resolve a symbol to its runtime virtual address (moduleBase + rva).
-		expectedKind must be FUNCTION, GLOBAL or PATCH; returns KIND_MISMATCH otherwise.
+		expectedKind must be FUNCTION, GLOBAL, PATCH or VIRTUAL_FUNCTION; returns
+		KIND_MISMATCH otherwise.
 	*/
 	mh_gamesymbol_status_t (*ResolveGameSymbol)(
 		PVOID moduleBase,

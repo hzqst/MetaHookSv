@@ -19,12 +19,13 @@ This document inventories the unexported engine (`hw.dll`) and client (`client.d
 
 ## Scope and shared resolution process
 - The scope covers the engine render/view functions (`R_NewMap`, `R_RenderView`, `V_RenderView`, `R_CullBox`, `R_DrawTEntitiesOnList`), the engine/client Studio renderer functions and their vtable indices, and the engine/client global slots (`cl_max_edicts`, `cl_entities`, `cl_visedicts`, `mod_known`, `gTempEnts`, `allow_cheats`, `cl_frames`, `g_iUser1/2`, `g_pitchdrift`, `g_PlayerExtraInfo*`, and the Studio API data pointers).
-- **Not gamedata-based.** Unlike `ResourceReplacer` / `HeapPatch` / `PrecacheManager`, this plugin still resolves **every** symbol by signature scan + `DisasmRanges` control-flow analysis; it does not call `ResolveGameSymbol` / `IsGameSymbolAvailable`, carries no `MH_GAMESYMBOL_*` records, and has no `scripts/validate-gamedata.py` coverage. There is no gamedata fallback.
+- **gamedata-only (2026-09-12, issue #865).** Every engine/client private symbol is now resolved through `g_pMetaHookAPI->ResolveGameSymbol` (FUNCTION / GLOBAL / VIRTUAL_FUNCTION) or `QueryGameSymbolScalar` (size_of_frame). All signature scans, string/push patterns, `ReverseSearchFunctionBeginEx`, `DisasmRanges` control-flow walks, vtable-index derivation, `ConvertDllInfoSpace`, `GetVFunctionFromVFTable`, the mirror module images and the Capstone dependency were deleted. There is no scan fallback. `scripts/validate-gamedata.py` now carries a BulletPhysics consumer gate. The table entries below that describe the old scan mechanisms are historical; the gamedata inventory section at the end is authoritative.
 - Public MetaHook APIs, saved engine interfaces, and ordinary plugin state (for example `g_EngineDLLInfo`, `g_MirrorEngineDLLInfo`, `g_ClientDLLInfo`, `g_iEngineType`, `g_dwEngineBuildnum`, `g_dwVideoMode`) are excluded. So are functions obtained from public interface tables (`gEngfuncs.*`, `pExportFuncs->*`, `pstudio->*`, `gEngfuncs.pEfxAPI->*`) even though they are stored in `gPrivateFuncs` — see the boundary section.
-- **Two address spaces.** Scanning/analysis runs on the "mirror" module image (`g_MirrorEngineDLLInfo` / `g_MirrorClientDLLInfo`, a non-relocated copy whose `.text`/`.data`/`.rdata` bases let signatures hold stable absolute operands); the located address is then mapped to the real loaded module with `ConvertDllInfoSpace(addr, DllInfo, RealDllInfo)` (RVA-preserving) before being stored. `privatehook.h` also exposes `GetVFunctionFromVFTable`, which resolves a vtable slot in a chosen `OutputDllInfo` space. `IPluginsV4::LoadEngine` / `LoadClient` pass `g_MirrorXxx.ImageBase ? g_MirrorXxx : g_Xxx` as the scan space and `g_Xxx` as the real space.
+- **Module bases.** `Engine_FillAddress(g_EngineDLLInfo.ImageBase)` / `Client_FillAddress(g_ClientDLLInfo.ImageBase)` pass the real module base to `ResolveGameSymbol`; MetaHook derives the module CRC-64/XZ from the on-disk file (or a registered blob source) and returns `moduleBase + rva`. No mirror image or RVA remapping is involved.
 - Most entry points are idempotent (`if (gPrivateFuncs.X) return;`) and share the scan strategy: string anchor in `.data`/`.rdata` -> build a `push <string>` / `call` pattern with the string VA patched into the immediate field -> `ReverseSearchFunctionBeginEx` to recover the function prologue -> `DisasmRanges` to extract the target operand. Per-engine-type `.text` signatures (`*_SIG_SVENGINE` / `_HL25` / `_NEW` / `_BLOB`) are the fallback when the string path fails.
 - Missing results are reported via `Sig_NotFound` / `Sig_VarNotFound` / `Sig_FuncNotFound` -> `Sys_Error("Could not found: <name> ... buildnum")` (fatal). `ClientStudio_FillAddress` additionally requires at least one of `g_pGameStudioRenderer` / `R_StudioRenderModel`.
-- `HUD_GetStudioModelInterface` is a second resolution entry point (client export takeover): it copies the public `engine_studio_api_t`, resolves the Studio API data pointers, installs engine-studio hooks, then resolves the client/engine Studio renderer functions and installs those hooks.
+- `HUD_GetStudioModelInterface` is a second entry point (client export takeover): it copies the public `engine_studio_api_t`, installs the engine-studio `StudioCheckBBox` hook, then resolves the client `g_pGameStudioRenderer` global + its `GameStudioRenderer_*` virtual functions and installs those hooks. Engine-side render/view, engine Studio functions and Studio globals are already resolved at `LoadEngine`.
+- **Failure policy for old builds.** The 6 upstream engine-only builds (hl-3248/3266/3329/3647/4554/6153) publish no client module, so the client-side symbols can never be resolved. The plugin fails loudly (`Sys_Error`) exactly as it would on any missing gamedata symbol; it does not silently skip hooks or fall back to scanning.
 
 ## Private functions
 
@@ -153,7 +154,7 @@ flowchart TD
 - Public `engine_studio_api_t`, `cl_enginefunc_t`, `r_studio_interface_t`, and `gEngfuncs.pfnGetGameDirectory()` (game-directory branch selection).
 
 ## Notes
-- **No gamedata migration.** This plugin is the exception among the recently migrated plugins: it still relies entirely on signatures/disassembly and the mirror-image scan space, so engine-update breakage manifests as a `Sys_Error("Could not found: ...")` at load instead of a gamedata validation failure at build time.
+- **gamedata validation surface.** Engine-update breakage now manifests as a gamedata validator failure at build/publish time (`scripts/validate-gamedata.py` BulletPhysics gate) or a clear `Sys_Error` at load, not as an opaque signature miss.
 - **Resolved but not consumed elsewhere** (dead fields in this plugin): `R_DrawTEntitiesOnList`, `R_StudioRenderModel`, `R_StudioRenderFinal`, `R_StudioMergeBones`, `R_StudioSaveBones`, the client `GameStudioRenderer_StudioRenderModel` / `_StudioRenderFinal` / `_StudioCalcAttachments` / `__StudioDrawPlayer` virtuals (vtable-index anchors only), and the globals `g_ChromeOrigin` and `r_model`. Several engine studio functions are located because they anchor the vtable indices rather than because they are called.
 - Glue consumed only inside `exportfuncs.cpp`/`privatehook.cpp` (no external plugin consumers): `cl_viewentity`, `cl_frames`, `size_of_frame`, `mod_known`, `mod_numknown`, `g_iUser2`, `g_pitchdrift`, `pstudiohdr`, `g_pGameStudioRenderer`, `g_bRenderingPortals_SCClient`.
 - `R_RenderView` and `R_StudioDrawPlayer`/`R_StudioDrawModel` are resolved from **two different spaces**: the engine render hook targets the engine function, while the client `GameStudioRenderer_*` hook targets the client DLL's `CGameStudioRenderer` virtuals; both are installed so client- and engine-side renders are covered.
@@ -170,3 +171,57 @@ flowchart TD
 - `HUD_Init` installs the `efxapi_R_TempModel` hook; `Engine_UninstallHook` / `ClientStudio_UninstallHooks` / `EngineStudio_UninstallHooks` restore them.
 
 Related: [[bulletphysics-plugin-overview]] [[private-symbols-disasm-workflow]] [[vgui2-extension]]
+
+
+## gamedata inventory and consumer semantics (2026-09-12, issue #865)
+
+All names below are the canonical gamedata symbol names; `module` and `kind` are the snapshot values.
+
+### Engine module (`ResolveGameSymbol` with `g_EngineDLLInfo.ImageBase`)
+
+| Symbol | Kind | Plugin field / type | Consumer |
+| --- | --- | --- | --- |
+| `R_NewMap` | function | `gPrivateFuncs.R_NewMap` | hooked (`R_NewMap` wrapper) |
+| `R_RenderView` | function | `gPrivateFuncs.R_RenderView` / `R_RenderView_SvEngine` | hooked; SvEngine variant takes `int viewIdx` |
+| `V_RenderView` | function | `gPrivateFuncs.V_RenderView` | forced refresh in `HUD_TempEntUpdate` |
+| `R_CullBox` | function | `gPrivateFuncs.R_CullBox` | `BasePhysicManager` bbox visibility |
+| `R_StudioDrawModel` / `R_StudioDrawPlayer` / `R_StudioSetupBones` | function | `gPrivateFuncs.R_Studio*` | hooked (engine Studio path) |
+| `cl_max_edicts` | global | `int* cl_max_edicts` (`*ptr`) | edict range checks |
+| `cl_entities` | global | `cl_entity_t** cl_entities` (`*ptr`) | entity base |
+| `gTempEnts` | global | `TEMPENTITY* gTempEnts` (static array base) | temp-entity array |
+| `cl_viewentity` | global | `int* cl_viewentity` (`*ptr`) | `CL_IsFirstPersonMode` |
+| `mod_known` | global | `void* mod_known` (static array base) | model index lookups |
+| `mod_numknown` | global | `int* mod_numknown` (`*ptr`) | known-model count |
+| `cl_frames` | global | `void* cl_frames` (**frame_t ring base**) | `R_GetPlayerState` |
+| `cl_parsecount` | global | `int* cl_parsecount` (`*ptr`) | `R_GetPlayerState` + messagenum |
+| `cl_numvisedicts` / `cl_visedicts` | global | `int*` / `cl_entity_t**` | visible-entity list |
+| `r_worldentity` | global | `cl_entity_t* r_worldentity` (object base) | world entity skip |
+| `cl_worldmodel` | global | `model_t** cl_worldmodel` (`*ptr`) | world model |
+| `currententity` / `pstudiohdr` / `r_origin` | global | `cl_entity_t**` / `studiohdr_t**` / `float*` | Studio handlers / debug draw |
+| `allow_cheats` | global | `int* allow_cheats` (`*ptr`) | SvEngine-only `AllowCheats` |
+| `size_of_frame` | scalar | `int size_of_frame` | frame stride; value consumed verbatim |
+
+### Client module (`ResolveGameSymbol` with `g_ClientDLLInfo.ImageBase`)
+
+| Symbol | Kind | Plugin field | Notes |
+| --- | --- | --- | --- |
+| `g_iUser1` / `g_iUser2` | global | `int*` (`*ptr`) | required for every client-bearing game (matches the release gate) |
+| `g_bRenderingPortals_SCClient` / `g_ViewEntityIndex_SCClient` / `g_pitchdrift` | global | typed ptrs | Sven Co-op only; required there |
+| `g_PlayerExtraInfo` | global | `extra_player_info_t(*)[65]` | cstrike / czero |
+| `g_PlayerExtraInfo_CZDS` | global | `extra_player_info_czds_t(*)[65]` | czeror |
+| `g_pGameStudioRenderer` | global | `void*` (renderer object address) | required; client Studio presence gate |
+| `GameStudioRenderer_StudioDrawModel` / `_StudioDrawPlayer` / `_StudioSetupBones` | virtualFunction | `__fastcall` fn ptrs | hooked (client Studio path) |
+
+### `cl_frames` semantics (critical)
+
+Upstream `cl_frames` is the `frame_t` ring base: the snapshot locates it at the `Q_memset(cl_frames, 0, size_of_frame * count)` destination in `CL_ReallocateDynamicData` (e.g. hl-10210 `gv_inst_offset 0x6d`). The per-client `entity_state_t` array is `frame_t::playerstate` (offset 24 = `offsetof(frame_t, playerstate)`, defined in `Plugins/BulletPhysics/enginedef.h`). Therefore `R_GetPlayerState` must add that member offset explicitly:
+
+```cpp
+(char*)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + offsetof(frame_t, playerstate) + sizeof(entity_state_t) * entindex
+```
+
+Do **not** treat `cl_frames` as the playerstate member base (or vice versa) — that is the "frame 首地址 vs 成员数组首地址" trap called out in the issue.
+
+### Removed machinery
+
+`#include <capstone.h>` and the Capstone include/check from the project, all `*_SIG_*` macros, `Search_Pattern*` macros, `GetCallAddress`, `ReverseSearchFunctionBeginEx` callers, `DisasmRanges` walks, `ConvertDllInfoSpace`, `GetVFunctionFromVFTable`, `walk_context_t`, mirror `mh_dll_info_t` fields, and the dead resolved-only fields (`R_DrawTEntitiesOnList`, `R_StudioRenderModel/RenderFinal/MergeBones/SaveBones`, the `GameStudioRenderer_*` dead virtuals and all `_vftable_index` anchors, `r_model`, `g_ChromeOrigin`, `g_iWaterLevel`, `R_RecursiveWorldNode`, `FirstPerson_f`, `ThreadPerson_f`).
