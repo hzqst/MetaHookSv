@@ -1,0 +1,326 @@
+---
+title: renderer-privatevars
+type: reference
+permalink: metahooksv/privatevars/renderer-privatevars
+tags:
+- renderer
+- private-vars
+- private-funcs
+- private-globals
+- symbol-locating
+- signature-scan
+- disasm
+- vtable
+- reference
+---
+
+# Game-private symbols used by `Renderer`
+
+This document inventories the unexported engine (`hw.dll`) and client (`client.dll`) functions, vtable-indexed virtuals, global data slots and patched call sites that `Plugins/Renderer` locates and consumes. Symbol names are the plugin's local `gPrivateFuncs.*` fields and extern global pointers; parenthetical names describe the inferred engine-side role rather than official debug-symbol names.
+
+## Scope and shared resolution process
+
+- The scope covers the engine OpenGL/context layer, the world/view render pipeline (render-view, scene, setup, world surfaces, skybox, sprites, particles, decals, lightmaps), the engine and client Studio renderers, the engine VGUI2 `EngineSurface` virtual table, the engine `CVideoMode` startup-graphics functions, the Sven Co-op client portal manager and CS/CZ client globals, plus the engine/client global data slots those paths read. All of it is located by scanning the engine/client images.
+- Public MetaHook APIs, saved engine interfaces, and ordinary plugin state (`g_EngineDLLInfo`, `g_MirrorEngineDLLInfo`, `g_ClientDLLInfo`, `g_MirrorClientDLLInfo`, `g_iEngineType`, `g_dwEngineBuildnum`, `g_pFileSystem`) are excluded. So are symbols obtained from public interface tables — `gEngfuncs.*` (including `pTriAPI`, `pEfxAPI`, `pfnSetFilterMode`, `pfnSetFilterColor`, `pfnSetFilterBrightness`), `gExportfuncs`/`pExportFuncs`, and the `pstudio->*` `engine_studio_api_t` — even where they are copied into `gPrivateFuncs` or used as scan anchors; they are listed in the boundary section.
+- **Locating is centralised.** Every locator lives in `Plugins/Renderer/gl_hooks.cpp` (`Engine_FillAddress_*` at lines 495–12329, dispatched by `Engine_FillAddress` at 12330; `Client_FillAddress_*` at 13212–14137), `Plugins/Renderer/EngineSurfaceHook.cpp` (`EngineSurface_FillAddress` at 1480) and `Plugins/Renderer/exportfuncs.cpp` (`EngineStudio_FillAddress` at 988, `ClientStudio_FillAddress` at 1767). `Plugins/Renderer/VideoMode.cpp` is a 27-line stub whose `VideoMode_FillAddress`/`InstallHooks`/`UninstallHooks` have empty bodies; the `CVideoMode_Common`/`CGame_DrawStartupVideo` symbols are actually resolved in `gl_hooks.cpp`. The remaining source files (`gl_rmain.cpp`, `gl_wsurf.cpp`, `gl_studio.cpp`, `gl_draw.cpp`, …) contain **no** locator primitives — they only define hook handler bodies and consume the extern slots.
+- **Two module images.** Scans run on the scan image `DllInfo` (the mirror image `g_MirrorEngineDLLInfo` / `g_MirrorClientDLLInfo` when `ImageBase != 0`, otherwise the real image). Results are mapped to the real image with `ConvertDllInfoSpace(addr, Src, Target)` (`gl_hooks.cpp`), which returns `Target.ImageBase + (addr - Src.ImageBase)` when `addr` is inside `Src.ImageBase..+ImageSize`, else `nullptr`. Some locators use the older two-step `Convert_VA_to_RVA` / `VA_from_RVA(name, RealDllInfo)`. `Engine_FillAddress(mirror ? mirror : real, real)` / `Client_FillAddress(mirror ? mirror : real, real)` are the entry calls (`plugins.cpp:87`, `:146`).
+- **Vtable resolution.** `GetVFunctionFromVFTable(vftable, index, DllInfo, RealDllInfo, OutputDllInfo)` (`gl_hooks.cpp:14116`) remaps the vftable into `DllInfo` space, indexes it, and remaps the entry into `OutputDllInfo` space. It is used for the client `CGameStudioRenderer` virtuals; the engine `EngineSurface` virtuals are instead hooked directly by hardcoded index (`VFTHook`).
+- **Locator primitives.** `Search_Pattern` (`.text`), `Search_Pattern_Data`/`_Rdata` (string anchors), `Search_Pattern_From[_Size]` (bounded scan from an already-resolved function), `Search_Pattern_NoWildCard*`; `\x2A` is a wildcard byte. `ReverseSearchFunctionBegin[Ex]` recovers a function prologue from a body match. `g_pMetaHookAPI->DisasmRanges` (Capstone) walks a bounded instruction window to extract call targets (`E8`/`FF 15` imm), absolute memory operands (`[imm32]`), struct-offset operands (`[reg+disp]`), and `push imm32`/`mov reg,imm` data-slot addresses. `GetCallAddress`/`GetNextCallAddr` read a relative call operand; `InlinePatchRedirectBranch` redirects a private call/jmp site (`E8`/`E9`).
+- **Per-engine signatures.** Many `.text` signatures have `*_SIG_SVENGINE` / `_HL25` / `_NEW` / `_NEW2` / `_BLOB` / `_COMMON` variants selected by `g_iEngineType` (`ENGINE_SVENGINE`, `ENGINE_GOLDSRC_HL25`, `ENGINE_GOLDSRC`, `ENGINE_GOLDSRC_BLOB`); the `#define` catalogue is `gl_hooks.cpp:10-423`. Some symbols are inlined on certain engines (signature `""`) and are tracked by a plugin `*_inlined` flag instead.
+- **Failure policy.** Missing required symbols call `Sig_FuncNotFound`/`Sig_NotFound`/`Sig_VarNotFound`/`Sig_AddrNotFound` → fatal `Sys_Error("Could not found: <name> … Engine buildnum: <n>")`. Several symbols are intentionally optional (engine-specific branches, `SCClientDLL001`-gated Sven client symbols, `CVideoMode`/`NET_DrawRect` on non-matching engines) and stay null without error.
+
+## `Engine_FillAddress` dispatch order
+
+`Engine_FillAddress` copies SDL2 exports (`GetProcAddress(GetModuleHandle("SDL2.dll"), …)`, excluded) and the public `gEngfuncs.pTriAPI->*` pointers, resolves `SvEngine_glewInit` from the engine export `_glewInit@0` (gated on the `SCEngineClient002` factory), then calls ~111 locators in a fixed order. Order is observable in the rare case two locators fill the same field. Highlights:
+
+1. `EngineSurface_FillAddress`, `VideoMode_FillAddress` (stub).
+2. Capability probes: `HasOfficialFBOSupport`, `HasOfficialGLTexAllocSupport`.
+3. Context: `GL_Init`, `GL_SetMode`, `GL_Shutdown`, `GL_Bind`, `GL_SelectTexture`, `GL_LoadTexture2`, `R_CullBox`, `R_SetupFrame`.
+4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
+5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
+6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, `R_AddTEntity`, `Hunk_AllocName`.
+7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_SimOrgVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `DT_Initialize`, `PVSNode`.
+8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`.
+
+## Engine-private functions
+
+### OpenGL context, textures and 2D
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.GL_Init` (`GL_Init`) | `void (*)(void)` | `Engine_FillAddress_GL_Init`: `.text` `68 00 1F 00 00 FF` (`push 0x1F00; call/jmp`); `ReverseSearchFunctionBeginEx(+0x80)` accepts prologue `83 EC 14`/`55 8B EC 83 EC`/`90 68 00 1F 00 00`; `DisasmRanges(+0x120)` requires a `PUSH` string `"Failed to query GL vendor"` (`GL_VENDOR: %s`). | `Install_InlineHook(GL_Init)`; plugin wrapper calls original then `glewInit`/`SDL_InitGL`, resets `(*gl_extensions)`. |
+| `gPrivateFuncs.GL_SetMode` / `GL_SetModeLegacy` | `qboolean (*)(void*,HDC*,HGLRC*)` / `(..., int fD3D, const char*, const char*)` | `Engine_FillAddress_GL_SetMode`: per-engine `GL_SETMODE_SIG_*`. Stored as `GL_SetMode` when `SDL_GL_GetProcAddress` is set, else as `GL_SetModeLegacy`; BLOB always legacy. | `Install_InlineHook(GL_SetMode)` or `(GL_SetModeLegacy)`; wrappers in `gl_rmain.cpp`. |
+| `gPrivateFuncs.GL_SelectPixelFormat` | `qboolean (*)(HDC)` | Same locator when legacy: `GL_SELECTPIXELFORMAT_SIG_BLOB` (`A1 … 56 85 C0 57 0F 85 … C7 05`). | `Install_InlineHook(GL_SelectPixelFormat)`; plugin stub returns `true`, never calls original. |
+| `gPrivateFuncs.GL_Shutdown` + `Sys_ShutdownGame_call_GL_Shutdown` | `void (*)(void)` + call site | `Engine_FillAddress_GL_Shutdown`: per-engine `GL_SHUTDOWN_SIG_*`; VA advanced to the trailing `E8`; `GL_Shutdown = GetCallAddress(that)`, the call-site address stored separately. | **Not hooked**; `Engine_InstallHooks` → `InlinePatchRedirectBranch(Sys_ShutdownGame_call_GL_Shutdown, GL_Shutdown, NULL)`. |
+| `gPrivateFuncs.GL_Bind` | `void (*)(int texnum)` | `Engine_FillAddress_GL_Bind`: per-engine `GL_BIND_SIG_*`. | `Install_InlineHook(GL_Bind)`; handler re-implements bind (original call commented out) and calls `GL_SelectTexture`. Also an equality anchor in the texture-alloc redirect. |
+| `gPrivateFuncs.GL_SelectTexture` | `void (*)(GLenum)` | `Engine_FillAddress_GL_SelectTexture`: SVEngine/HL25 `Search_Pattern_From(GL_Bind, *_SIG_*)`; GoldSrc `_NEW`/`_NEW2`; BLOB `_BLOB`. | Not hooked; called by the plugin `GL_SelectTexture`. |
+| `gPrivateFuncs.GL_LoadTexture2` | `int (*)(char* name,int type,int w,int h,byte* data,qboolean mipmap,int palType,byte* pPal,int filter)` | `Engine_FillAddress_GL_LoadTexture2`: SVEngine anchor `"NULL Texture\n"`, others `"Texture Overflow: MAX_GLTEXTURES"` → `68 <str> E8 [83 C4 04]`; `ReverseSearchFunctionBeginEx(+0x500)`; fallback `GL_LOADTEXTURE2_SIG_*`; re-based via `Convert_VA_to_RVA`/`VA_from_RVA`. | `Install_InlineHook(GL_LoadTexture2)`; also the scan start for `R_CullBox`. |
+| `gPrivateFuncs.realloc_SvEngine` (`realloc`) | `void* (*)(void*, size_t)` | SVEngine only: within `+0x50` of the max-textures match, `51 E8 ?? ?? ?? ?? 83 C4 08` → `GetCallAddress(addr+1)`. | Grows the SvEngine texture array (`gl_draw.cpp:1355`). |
+| `gPrivateFuncs.GL_UnloadTexture` | `void (*)(const char*)` | Derived inside `Engine_FillAddress_R_StudioSetupSkin`: an `E8` near `PUSH/MOV [reg+0x120]`. | Resolved only (hook declared but never installed). |
+| `gPrivateFuncs.GL_UnloadTextures` | `void (*)(void)` | `Engine_FillAddress_R_NewMap`: last 5-byte `E8` before `RET` in the `R_NewMap` body. | `Install_InlineHook(GL_UnloadTextures)`; wrapper `gl_draw.cpp:661`. |
+| `gPrivateFuncs.GL_LoadFilterTexture` | `void (*)(void)` | `Engine_FillAddress_GL_LoadFilterTexture`: sig-only, per-engine `GL_LOADFILTERTEXTURE_SIG_*`. | `Install_InlineHook(GL_LoadFilterTexture)`; wrapper `gl_draw.cpp:722`. |
+| `gPrivateFuncs.GL_BuildLightmaps` | `void (*)(void)` | Call #4 of the four consecutive `E8` in `R_NewMap`; standalone `Engine_FillAddress_GL_BuildLightmaps` uses `GL_BUILDLIGHTMAPS_SIG_*`. | `Install_InlineHook(GL_BuildLightmaps)`; wrapper `gl_rsurf.cpp:365`. |
+| `gPrivateFuncs.BuildGammaTable` | `void (*)(float gamma)` | `Engine_FillAddress_BuildGammaTable`: non-SvEngine `00 00 20 40 E8` (`2.0f; call`, target in `.text`); SvEngine no inline; fallback `BUILDGAMMATABLE_SIG_*`. | `Install_InlineHook(BuildGammaTable)`; wrapper fills `texgammatable`. |
+| `gPrivateFuncs.GL_Set2D` / `GL_Finish2D` | `void (*)(void)` | `Engine_FillAddress_GL_Set2D`/`_GL_Finish2D`: sig-only per engine (`GL_SET2D_SIG_*` / `GL_FINISH2D_SIG_*`); HL25 `Set2D` adds `VA += 1`. | `Install_InlineHook(GL_Set2D)` / `(GL_Finish2D)`. |
+| `gPrivateFuncs.GL_BeginRendering` / `GL_EndRendering` | `void (*)(int*,int*,int*,int*)` / `void (*)(void)` | `Engine_FillAddress_GL_BeginRendering` sig-only; `_GL_EndRendering` prefers `GL_ENDRENDERING_SIG_COMMON_GOLDSRC` + reverse-search, else per-engine (GoldSrc picks `_NEW` when `g_bHasOfficialFBOSupport` else `_BLOB`); requires `GL_BeginRendering`. | `Install_InlineHook(GL_BeginRendering)` / `(GL_EndRendering)`; handlers call the originals. |
+| `gPrivateFuncs.DT_Initialize` | `void (*)(void)` | `Engine_FillAddress_DT_Initialize`: `68 73 85 00 00 68 00 23 00 00 FF` (`glTexEnvf` detail-texture call) + `ReverseSearchFunctionBeginEx(+0x100)`. | `Install_InlineHook(DT_Initialize)` (empty wrapper). |
+| `gPrivateFuncs.SDL_InitGL` (engine SDL2 wrapper) | `void (*)(void)` | `Engine_FillAddress_GL_SetMode` BFS walk (GoldSrc/HL25 + `SDL_GL_GetProcAddress`): last direct `E8` before a `push 0x1F03` (`GL_EXTENSIONS`). | Called by the SvEngine branch of the plugin `GL_SetMode`. |
+| `gPrivateFuncs.SvEngine_glewInit` (`_glewInit@0`) | `decltype(glewInit)*` | `GetProcAddress(GetEngineModule(), "_glewInit@0")`, gated on `SCEngineClient002`. | Called during engine GL init. |
+
+### Render view / scene / frame
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.R_RenderView` / `R_RenderView_SvEngine` | `void (*)(void)` / `void (*)(int viewIdx)` | `Engine_FillAddress_R_RenderView`: string `"R_RenderView: NULL worldmodel"` → `75 2A 68 <str>`; `ReverseSearchFunctionBeginEx(+0x100)`; fallback `R_RENDERVIEW_SIG_*`. SvEngine stores `_SvEngine`, others `R_RenderView`. Also yields `c_*_polys`, `r_worldentity`, `cl_worldmodel`. | `Install_InlineHook` (engine-type branch); wrappers in `gl_rmain.cpp`. |
+| `gPrivateFuncs.V_RenderView` | `void (*)(void)` | `Engine_FillAddress_V_RenderView`: `68 00 40 00 00 FF` (`push 4000h` glClear mask) → `DisasmRanges(+5,+0x120)` call to `R_RenderView` → `ReverseSearchFunctionBeginEx(+0x300)`; fallback `V_RENDERVIEW_SIG_*`. Also yields `cls_state`, `cls_signon`, `r_soundOrigin`, `r_playerViewportAngles`. | Wrapper `V_RenderView` calls original but is not hooked. |
+| `gPrivateFuncs.R_RenderScene` | `void (*)(void)` | `Engine_FillAddress_R_RenderScene`: `DisasmRanges(R_RenderView,+0x500)` — if a callee is `R_SetupGL` the plugin sets `R_RenderScene_inlined`; else the callee that calls `R_SetupGL` is `R_RenderScene`; fallback `R_RENDERSCENE_SIG_*`. | Resolved only; search base for fog/render-scene var passes. |
+| `gPrivateFuncs.R_SetupGL` | `void (*)(void)` | `Engine_FillAddress_R_SetupGL`: `68 E2 0B 00 00 FF … 68 C0 0B … 68 71 0B …` (glDisable/glEnable caps) + `ReverseSearchFunctionBeginEx(+0x600)`; fallback `R_SETUPGL_SIG_*` (buildnum-gated SVENGINE/HL25 variants). Also yields the matrices below. | Resolved only; anchor for `R_RenderScene`. |
+| `gPrivateFuncs.R_SetupFrame` (+ `R_SetupFrame_inlined`) | `void (*)(void)` | `Engine_FillAddress_R_SetupFrame`: SVEngine/HL25 set `R_SetupFrame_inlined`; else `R_SETUPFRAME_SIG_NEW/_NEW2/_BLOB`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_ForceCVars` / `R_CheckVariables` / `R_AnimateLight` | `void (*)(qboolean mp)` / `void (*)(void)` / `void (*)(void)` | Same locator: `R_SETUPFRAME_CALL_SIG` `0F 9F C0 50 E8 … E8 … E8` gives call #1/#2/#3; `_SIG2` gives only `R_CheckVariables`/`R_AnimateLight` and sets `R_ForceCVars_inlined`. | `Install_InlineHook(R_ForceCVars)`; wrappers call the originals. |
+| `gPrivateFuncs.R_NewMap` (+ `R_ClearParticles`,`R_DecalInit`,`V_InitLevel`) | `void (*)(void)` | `Engine_FillAddress_R_NewMap`: string `"Setting up renderer...\n"` → `68 <str> E8`; first `E8` target; fallback `R_NEWMAP_SIG_*`. `R_NEWMAP`-body four consecutive `E8` give `R_ClearParticles`/`R_DecalInit`/`V_InitLevel`/`GL_BuildLightmaps`. | `Install_InlineHook(R_NewMap)`; others resolved only. |
+| `gPrivateFuncs.R_PolyBlend` / `V_FadeAlpha` | `void (*)(void)` / `float (*)(void)` | `Engine_FillAddress_R_PolyBlend`: per-engine `R_POLYBLEND_*`; `DisasmRanges(+0x100)` first `E8` → `V_FadeAlpha`. | Not hooked; plugin reimplements `R_PolyBlend`, calls `V_FadeAlpha`. |
+| `gPrivateFuncs.S_ExtraUpdate` | `void (*)(void)` | `Engine_FillAddress_S_ExtraUpdate`: per-engine `S_EXTRAUPDATE_*`. | Resolved only; called by the plugin path. |
+| `gPrivateFuncs.R_MarkLeaves` | `void (*)(void)` | Sig-only `R_MARKLEAVES_SIG_*`; also yields `r_viewleaf`, `r_oldviewleaf`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_DrawViewModel` | `void (*)(void)` | `Engine_FillAddress_R_DrawViewModel`: SVEngine inlined; else in `R_RenderView+0x1000`, three consecutive `E8` where call #2 = `R_PolyBlend`, call #3 = `S_ExtraUpdate` → call #1. Also yields `envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`, `cl_light_level`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_DrawParticles` / `R_FreeDeadParticles` / `R_TracerDraw` / `R_BeamDrawList` | `void (*)(void)` / `void (*)(particle_t**)` / `void (*)(void)` / `void (*)(void)` | `Engine_FillAddress_R_DrawParticles`: `83 C4 04 68 C0 0B 00 00` + `DisasmRanges(+0x100)` requiring `PUSH 0x2200/0x2300` and `PUSH 0x302/0x303` + reverse-search; fallback `R_DRAWPARTICLES_SIG_*`. `R_FreeDeadParticles` = `MOV ESI,[active_particles]` preceded by `E8`; `R_TracerDraw`/`R_BeamDrawList` from inline `R_TRACERDRAW_SIG` (`GetCallAddress(addr+6)`/`addr+11`). | Not hooked; plugin `R_DrawParticles` calls `R_FreeDeadParticles`/`R_TracerDraw`/`R_BeamDrawList`. |
+| `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | `Engine_FillAddress_R_AddTEntity`: SVEngine string `"Can't add transparent entity. Too many"` + `50 68 <str> E8`; others `"AddTentity: Too many objects"` + `68 <str> E8`; `ReverseSearchFunctionBegin(+0x50)`. Also yields `transObjects`/`maxTransObjs`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_AddDynamicLights` | `void (*)(msurface_t*)` | `Engine_FillAddress_R_AddDynamicLights`: BFS call-site walk rooted at `R_BuildLightMap` matching `PUSH reg; E8; 83 C4 04`; fallback `R_ADDDYNAMICLIGHTS_SIG_*`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_BuildLightMap` | `void (*)(msurface_t*, byte*, int)` | `Engine_FillAddress_R_BuildLightMap`: string `"Error: lightmap for texture %s too large"` → `68 <str> E8 83 C4 18` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_BUILDLIGHTMAP_SIG_*`. | Resolved only (prerequisite of `R_AddDynamicLights`). |
+| `gPrivateFuncs.R_RenderDynamicLightmaps` | `void (*)(msurface_t*)` | Found during the `R_DrawSequentialPoly` BFS (callee with trailing imm `0x14` and `PUSH 0x200`), and re-resolved by `Engine_FillAddress_R_RenderDynamicLightmaps` (per-engine `R_RENDERDYNAMICLIGHTMAPS_SIG_*`) while null. Also yields `d_lightstylevalue`, `lightmap_polys`, `lightmap_modified`. | Resolved only. |
+| `gPrivateFuncs.R_TextureAnimation` | `texture_t* (*)(msurface_t*)` | Sig-only `R_TEXTUREANIMATION_SIG_*`; also yields `rtable`. | Resolved only. |
+| `gPrivateFuncs.R_DrawSequentialPoly` | `void (*)(msurface_t*, int)` | Sig-only `R_DRAWSEQUENTIALPOLY_SIG_*`; also root of the lightmap/decal BFS (`lightmap_textures`, `lightmap_rectchange`, `lightmaps`, `gDecalSurfs`, `gDecalSurfCount`). | Resolved only. |
+| `gPrivateFuncs.R_RecursiveWorldNode` | `void (*)(mnode_t*)` | SvEngine sig; HL25 from `R_DrawSequentialPoly`; GoldSrc/BLOB from `R_DrawBrushModel`; fallback `R_RECURSIVEWORLDNODE_SIG_*`. Also yields `r_framecount`/`r_visframecount`/`skychain`/`waterchain`. | Called by the plugin (`gl_rsurf.cpp:78`). |
+| `gPrivateFuncs.R_DrawWorld` | `void (*)(void)` | `Engine_FillAddress_R_DrawWorld`: `68 B8 0B 00 00 8D` + `DisasmRanges(+5)` needing `LEA [ebp/esp+disp]` + `6A 00` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWWORLD_SIG_*`. Also yields `modelorg`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_DrawBrushModel` | `void (*)(cl_entity_t*)` | Sig-only `R_DRAWBRUSHMODEL_SIG_*`. | Resolved only (base for `R_RecursiveWorldNode`/`R_DrawWorld`). |
+| `gPrivateFuncs.EmitWaterPolys` | `void (*)(msurface_t*, int)` | Sig-only `EMITWATERPOLYS_SIG_*`. | Resolved only. |
+| `gPrivateFuncs.Mod_PointInLeaf` | `mleaf_t* (*)(vec3_t, model_t*)` | `Engine_FillAddress_Mod_PointInLeaf`: string `"Mod_PointInLeaf: bad model\0"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x100)`; fallback `MOD_POINTINLEAF_SIG_*`. | `Install_InlineHook(Mod_PointInLeaf)`. |
+| `gPrivateFuncs.PVSNode` (`R_PVSNode`) | `mnode_t* (*)(mnode_t*, vec3_t, vec3_t)` | `Engine_FillAddress_PVSNode`: `FF B0 A4 00 00 00 E8 ?? ?? ?? ?? 83 C4 0C` → `GetCallAddress(addr+6)`; fallback `PVSNODE_COMMON_GOLDSRC` (`addr+8`). | `Install_InlineHook(PVSNode)`. |
+| `gPrivateFuncs.VID_UpdateWindowVars` | `void (*)(RECT*, int, int)` | `Engine_FillAddress_VID_UpdateWindowVars`: SVEngine sig then `Search_Pattern_From_Size(+0x50,"50 E8")`; else per-engine `VID_UPDATEWINDOWVARS_SIG_*`. Also yields `window_rect`. | Resolved only. |
+| `gPrivateFuncs.R_DrawTEntitiesOnList` | `void (*)(int onlyClientDraw)` | `Engine_FillAddress_R_DrawTEntitiesOnList`: string `"Non-sprite set to glow"` → `68 <str> E8 8B` + `ReverseSearchFunctionBeginEx(+0x500)`; fallback `R_DRAWTENTITIESONLIST_SIG_*`. Also yields `r_blend`, `cl_parsecount`, `cl_frames`, `size_of_frame`, `r_entorigin`. | Resolved only (plugin reimplements). |
+
+### Skybox, models, cache and memory
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.R_LoadSkys` / `R_LoadSkyBox_SvEngine` / `R_LoadSkyboxInt_SvEngine` | `void (*)(void)` / `void (*)(const char*)` / `void (*)(const char*)` | `Engine_FillAddress_R_LoadSkybox`: anchor `"SKY: "`; SvEngine `R_LoadSkys`/`_SvEngine` from `75 2A 68 <str>` / `E8 … 68 <"desert"> E8 … 83 C4 0C` + reverse-search; non-SvEngine `R_LoadSkys` from `68 <str> C7 … 00 00`. Also yields `gSkyTexNumber`, `r_loading_skybox`. | `Install_InlineHook(R_LoadSkys)` / `(R_LoadSkyBox_SvEngine)`; `R_LoadSkyboxInt_SvEngine` resolved only. |
+| `gPrivateFuncs.Mod_LoadStudioModel` | `void (*)(model_t*, void*)` | String `"bogus\0"` → `68 <str> ?? E8` + `ReverseSearchFunctionBeginEx(+0x50)`. | `Install_InlineHook(Mod_LoadStudioModel)`; wrapper calls original. |
+| `gPrivateFuncs.Mod_LoadBrushModel` | `void (*)(model_t*, void*)` | String `"Mod_LoadBrushModel: %s has wrong version number"` → `68 <str> 6A 01 E8`/`68 <str> E8` + reverse-search. | Resolved only (hook declared but never installed). |
+| `gPrivateFuncs.Mod_LoadModel` | `model_t* (*)(model_t*, qboolean, qboolean)` | String `"Loading '%s'\n"` (SvEngine) / `"loading %s\n"` → `68 <str> E8 83 C4` + reverse-search. Also yields `loadname`, `loadmodel`. | Resolved only. |
+| `gPrivateFuncs.Mod_LoadSpriteModel` / `Mod_LoadSpriteFrame` / `Mod_UnloadSpriteTextures` | `void (*)(model_t*,void*)` / `void* (*)(void*,mspriteframe_t**,int)` / `void (*)(model_t*)` | `Engine_FillAddress_Mod_LoadSpriteModel`: SVEngine string `"Sprite \"%s\" has wrong version number"`, others `"Mod_LoadSpriteModel: Invalid # of frame"` → `68 <str> E8 … 83 C4` + reverse-search (+0x100 SvEngine / +0x300 others); fallback `MOD_LOADSPRITEMODEL_*`. `Mod_LoadSpriteFrame` derived: callee in `+0x240` starting `PUSH 0x300`. `Mod_UnloadSpriteTextures` sig-only `MOD_UNLOADSPRITETEXTURES_*`. Also yields `gSpriteMipMap`. | `Install_InlineHook(Mod_LoadSpriteModel)` / `(Mod_UnloadSpriteTextures)`; `Mod_LoadSpriteFrame` resolved only. |
+| `gPrivateFuncs.Cache_Alloc` | `void* (*)(cache_user_t*, int, const char*)` | String `"Cache_Alloc: already allocated"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x80)`. Also yields `cache_head`. | Wrapper `zone.cpp:10` forwards to it. |
+| `gPrivateFuncs.Hunk_AllocName` | `void* (*)(int, const char*)` | String `"Hunk_Alloc: bad size: %i"`; SvEngine `68 <str> 0F AE E8 E8 … 83 C4 08`, others `68 <str> E8 … 83 C4 08` + reverse-search; `Convert_VA_to_RVA`. | Wrapper `zone.cpp:5` forwards to it. |
+| `gPrivateFuncs.Host_ClearMemory` | `void (*)(qboolean)` | String `"Clearing memory\n"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x80)`. | `Install_InlineHook(Host_ClearMemory)`; wrapper calls `Mod_ClearModel` then original. Not restored on uninstall. |
+
+### Dynamic lights, decals, Studio and sprites
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.CL_AllocDlight` / `CL_AllocElight` | `dlight_t* (*)(int key)` | Anchor is the public `gEngfuncs.pEfxAPI->CL_AllocDlight`/`CL_AllocElight` mapped real→scan (`ConvertDllInfoSpace`), leading `E9` skipped; dead `if(0)` inline patterns; fallback `CL_ALLOC*_SIG_*`. `CL_AllocDlight` also yields `cl_dlights`, `r_dlightactive`; `CL_AllocElight` yields `cl_elights`. | Resolved only (plugin uses the public `pEfxAPI->CL_AllocDlight`). |
+| `gPrivateFuncs.R_GLStudioDrawPoints` | `void (*)(void)` | `Engine_FillAddress_R_GLStudioDrawPoints`: `75 2A 68 44 0B 00 00 FF 15 …` + single-instruction `MOV [mem],1` + `ReverseSearchFunctionBeginEx(+0x1000)` (four prologue forms) + `DisasmRanges(+0x100)` requiring `[reg+0x54]` and `[reg+0x60]`; fallback `R_GLSTUDIODRAWPOINTS_SIG_*`. | `Install_InlineHook(R_GLStudioDrawPoints)`; handler re-implements, never calls original. |
+| `gPrivateFuncs.R_StudioLighting` | `void (*)(float* lv, int bone, int flags, vec3_t normal)` | Sig-only `R_STUDIOLIGHTING_SIG_*`; also yields `r_ambientlight`, `r_shadelight`, `r_blightvec`, `r_plightvec`, `lightgammatable` (BFS). | Resolved only. |
+| `gPrivateFuncs.R_StudioChrome` | `void (*)(int* pchrome, int bone, vec3_t normal)` | Sig-only `R_STUDIOCHROME_SIG_*`. | Resolved only. |
+| `gPrivateFuncs.R_LightLambert` | `void (*)(float (*light)[4], float* normal, float* src, float* lambert)` | Sig-only `R_LIGHTLAMBERT_SIG_*`. | Resolved only. |
+| `gPrivateFuncs.R_StudioSetupSkin` / `R_StudioGetSkin` | `void (*)(studiohdr_t*, int)` / `skin_t* (*)(int keynum, int index)` | `Engine_FillAddress_R_StudioSetupSkin`: string `"DM_Base.bmp"` → `68 <str> C7 44 24 …` + `ReverseSearchFunctionBeginEx(+0x300)`; `R_StudioGetSkin` = `E8` target in `+0x800` whose body contains `CMP reg,0xB`; `GL_UnloadTexture` from the same walk. Also yields `tmp_palette`. | Resolved only. |
+| `gPrivateFuncs.Draw_MiptexTexture` | `void (*)(cachewad_t*, byte*)` | String `"Draw_MiptexTexture: Bad cached wad %s\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x80)`; fallback `DRAW_MIPTEXTEXTURE_SIG_*`. Also yields `gfCustomBuild`, `szCustName`. | Resolved only (hook declared but never installed). |
+| `gPrivateFuncs.Draw_DecalTexture` | `texture_t* (*)(int index)` | String `"Failed to load custom decal for player"` → `68 <str> E8 83 C4 0C` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `DRAW_DECALTEXTURE_SIG_*`. Also yields `decal_wad`, `Draw_CustomCacheGet` (4 pushes + `83 C4 10`), `Draw_CacheGet` (2 pushes + `83 C4 08`). | Wrapper `gl_draw.cpp:1820` forwards to it. |
+| `gPrivateFuncs.R_GetSpriteFrame` | `mspriteframe_t* (*)(msprite_t*, int)` | String `"Sprite:  no pSprite!!!"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x120)`; fallback `R_GETSPRITEFRAME_SIG`/`_SIG2`. | `Install_InlineHook(R_GetSpriteFrame)`; handler calls original from `R_SpriteLoadExternalFile_FrameTexture`. |
+| `gPrivateFuncs.R_DrawSpriteModel` | `void (*)(cl_entity_t*)` | String `"R_DrawSpriteModel:  couldn"` → `68 <str> E8 83 C4` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_DRAWSRPITEMODEL_SIG_*`. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_LightStrength` (+ `R_LightStrength_inlined`) | `void (*)(int bone, float* vert, float (*light)[4])` | SVEngine `R_LIGHTSTRENGTH_SIG_SVENGINE` (+10152); HL25 inlined; GoldSrc `_NEW`/`_NEW2`; BLOB `_BLOB`. Also yields `locallight`, `numlights`. | Resolved only. |
+| `gPrivateFuncs.R_RotateForEntity` | `void (*)(float* origin, cl_entity_t* ent)` | GoldSrc inline `R_ROTATEFORENTITY_GOLDSRC` → `GetCallAddress(addr+len-1)`; fallback SVENGINE/HL25/NEW. | Resolved only (plugin reimplements). |
+| `gPrivateFuncs.R_GlowBlend` (+ `R_GlowBlend_inlined`) | `float (*)(cl_entity_t*)` | SVEngine/HL25 inlined; GoldSrc `R_GLOW_BLEND_SIG_NEW`/`_NEW2`; BLOB `_BLOB`. | Wrapper calls original when non-null. |
+| `gPrivateFuncs.SCR_BeginLoadingPlaque` | `void (*)(qboolean reconnect)` | Single sig `SCR_BEGIN_LOADING_PLAQUE` (`6A 01 E8 … A1 … 83 C4 04 83 F8 03`); also yields `scr_drawloading`. | Resolved only. |
+| `gPrivateFuncs.Host_IsSinglePlayerGame` | `qboolean (*)(void)` | String `"setpause;"` → `68 <str> E8 … 83 C4` + `ReverseSearchPattern(+0x50,"55 8B EC E8",4)`; the `E8` followed by `85 C0` is the target; fallback `HOST_IS_SINGLE_PLAYER_GAME_*`. | Wrapper `gl_rmain.cpp:824`. |
+| `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | See render-view table. | Resolved only. |
+| `gPrivateFuncs.R_RenderFinalFog` | `void (*)(void)` | SvEngine `R_RenderFinalFog_VA` is the `push 0B60h` instruction inside the render-view body; HL25/GoldSrc `GetCallAddress(addr+9)`; `VA_from_RVA`. Also yields `g_bUserFogOn`, `g_UserFogDensity/Color/Start/End`. | Resolved only. |
+| `gPrivateFuncs.Draw_Frame` / `Draw_SpriteFrameHoles[_SvEngine]` / `Draw_SpriteFrameAdditive[_SvEngine]` / `Draw_SpriteFrameGeneric[_SvEngine]` / `Draw_FillRGBA` / `Draw_FillRGBABlend` / `NET_DrawRect` / `D_FillRect` / `Draw_Pic` | 2D draw helpers | `Engine_FillAddress_*`: sig-only per engine (`DRAW_*_SIG_*`); `Draw_Frame` also yields `giScissorTest`, `scissor_x/y/width/height`; `NET_DrawRect` and `D_FillRect` share the same SvEngine byte signature, `NET_DrawRect` is SvEngine-only. | `Install_InlineHook` each; handlers in `gl_rmain.cpp`. |
+
+### Engine Studio renderer (located in `exportfuncs.cpp`)
+
+Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfuncs.cpp:988`) calls eleven locators, each using a public `pstudio-><Member>` as a real→scan anchor followed by `DisasmRanges` collecting `.data` operands. No scan fallbacks; missing symbols are fatal.
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.CL_FxBlend` (engine entity alpha-blend) | `int (*)(cl_entity_t*)` | `EngineStudio_FillAddress_StudioSetRenderamt` (529): anchor `pstudio->StudioSetRenderamt`; first 5-byte `E8` → target. | `Install_InlineHook(CL_FxBlend)`; wrapper `gl_rmain.cpp:1030`. |
+| `currententity` | `cl_entity_t**` | `_GetCurrentEntity` (143): `pstudio->GetCurrentEntity`; `DisasmRanges(+0x10)` first `MOV EAX,[.data]`. | Current entity for every Studio pass. |
+| `r_framecount` / `cl_time` / `cl_oldtime` | `int*` / `double*` / `double*` | `_GetTimes` (199): `pstudio->GetTimes`; `DisasmRanges(+0x50)` collects `.data` candidates — `candidates[0]` = `r_framecount`, first `FLD`/`MOVSD` = `cl_time`, second = `cl_oldtime`. | Frame counter and client time. |
+| `r_model` | `model_t**` | `_SetRenderModel` (309): `pstudio->SetRenderModel`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | Resolved only. |
+| `pstudiohdr` | `studiohdr_t**` | `_StudioSetHeader` (358): `pstudio->StudioSetHeader`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | Studio bone/header paths. |
+| `g_ForcedFaceFlags` | `int*` | `_SetForceFaceFlags` (409): `pstudio->SetForceFaceFlags`; `DisasmRanges(+0x10)` first `MOV [.data],reg`. | `R_IsRenderingChrome`. |
+| `r_topcolor` / `r_bottomcolor` | `int*` / `int*` | `_StudioSetRemapColors` (462): `pstudio->StudioSetRemapColors`; `DisasmRanges(+0x50)` first two distinct `.data` stores. | Skin remap invalidation. |
+| `r_blend` | `float*` | Same as `CL_FxBlend` locator: `DisasmRanges(+0x50)` first `FSTP [abs]` (`base==0`). A second independent resolution exists in `gl_hooks.cpp:8460`; both `if (!r_blend)`-guarded. | Studio blend. |
+| `pauxverts`/`auxverts`, `pvlightvalues`/`lightvalues` | glow-shell vertex/light arrays | `_SetupRenderer` (585): `pstudio->SetupRenderer`; `DisasmRanges(+0x50)` first/second `C7 05 [imm32],imm32` (`len 10`), slot at `+2`, array base at `+6`. | Resolved only. |
+| `pbodypart` / `psubmodel` | `mstudiobodyparts_t**` / `mstudiomodel_t**` | `_StudioSetupModel` (652): `pstudio->StudioSetupModel`; `DisasmRanges(+0x50)` first/second `MOV [reg+0],imm32` with imm in `.data`. | `psubmodel` used in `R_StudioDrawSubmodel`; `pbodypart` resolved only. |
+| `r_origin` / `g_ChromeOrigin` | `float*` / `float*` | `_SetChromeOrigin` (715): `pstudio->SetChromeOrigin`; `DisasmRanges(+0x50)` collects `FLD`/`MOV`/`MOVQ`/`MOV imm` and `MOV`/`MOVQ`/`FSTP` store candidates; `qsort` ascending, lowest wins. | `r_origin` heavily used; `g_ChromeOrigin` resolved only. |
+| `r_colormix` | `float*` (3 floats) | `_StudioSetupLighting` (870): `pstudio->StudioSetupLighting`; `DisasmRanges(+0x200)` arms after `AND reg,0xFF00`, collects `.data` stores, accepts last/first three 4-byte-consecutive. | Studio UBO colour. |
+
+## Engine-private global variables
+
+### View, matrices, refdef and scene state (`gl_hooks.cpp`)
+
+| Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `r_world_matrix` / `r_projection_matrix` / `gWorldToScreen` / `gScreenToWorld` | `float*` | `Engine_FillAddress_R_SetupGL`: `r_world_matrix` from `68 <m> 68 A6 0B 00 00`; `r_projection_matrix` from `68 <m> 68 A7 0B 00 00`; `gWorldToScreen`/`gScreenToWorld` from `68 <a> 68 <b> E8 … 83 C4` (`+6`/`+1`). | Matrix stack, screen/world transforms. |
+| `vertical_fov_SvEngine` | `qboolean*` | `R_SetupGL` (SvEngine): `50 FF 15 … 83 3D <slot> 00` → `*(addr+9)`. | `r_vertical_fov` default. |
+| `r_refdef` (`r_refdef_SvEngine` / `r_refdef_GoldSrc`) | `refdef_t` / engine-layout pointers | `Engine_FillAddress_RenderSceneVars`: on `E8 … 68 <refdef> … 83`, the pushed imm at `address-4` is the engine refdef; SvEngine vs GoldSrc layout selected by engine type. | `R_GetRefDef()` and view/refdef consumers. |
+| `gDevOverview` | `overviewInfo_t*` | `Engine_FillAddress_RenderSceneVars2`: `DisasmRanges(CL_SetDevOverView,+0x300)`; first `PUSH 0x30` after instruction 100 arms, then up to 6 `FLD`/`MOVSS [.data]` candidates; `qsort` ascending, lowest wins. | Camera/zoom math. |
+| `cl_waterlevel` | `int*` | `Engine_FillAddress_RenderSceneVars2`: `CMP [.data],2` or `MOV reg,[.data]` then `CMP reg,2` within `+0x30`. | Fog / camera. |
+| `cl_waterlevel` also set by `WaterVars`; `gWaterColor` / `cshift_water` | `colorVec*` / `cshift_t*` | `Engine_FillAddress_WaterVars`: HL25 `GWATERCOLOR_SIG_HL25` (`addr+4`), else `GWATERCOLOR_SIG` (`addr+2`); `cshift_water = gWaterColor_VA + 12`. | Water/fog colour. |
+| `cl_simorg` | `vec_t*` | `Engine_FillAddress_CL_SimOrgVars`: per-engine patterns embedding the `[esi/edi+0B48h]` destination offsets; source slot at `addr+2`/`+4`. | Simulated origin. |
+| `cl_viewentity` | `int*` | `Engine_FillAddress_CL_ViewEntityVars`: SvEngine `CL_VIEWENTITY_SIG_SVENGINE` ptr at `+10`; GoldSrc `A1 <disp> 48 3B ?` + `DisasmRanges(+0x100)` requiring `CMP [.data],0x200`, ptr at `+1`. | Third-person camera / entity lookup. |
+| `scrfov` | `float*` | `Engine_FillAddress_ScrFov`: SvEngine `D9 05 <scrfov> D9 5C 24 1C …`; others `C7 05 <a> 00 00 16 43` (150.0f) then `C7 05 <scrfov> 00 00 20 41` (10.0f). | Viewmodel FOV. |
+| `g_bUserFogOn` / `g_UserFogDensity` / `g_UserFogColor` / `g_UserFogStart` / `g_UserFogEnd` | `int*` / `float*` | `Engine_FillAddress_R_RenderFinalFog`: per-engine patterns for `g_bUserFogOn`; the four float slots bound by following `PUSH` of `GL_FOG_DENSITY`/`_COLOR`/`_START`/`_END`. | User-fog upload. |
+| `cls_state` / `cls_signon` / `scr_drawloading` | `cactive_t*` / `int*` / `qboolean*` | `cls_state`/`cls_signon` from `V_RenderView` (`CMP [.data],5`/`,2`); `scr_drawloading` from `SCR_BeginLoadingPlaque` (`MOV [.data],1`). | Client state. |
+| `r_soundOrigin` / `r_playerViewportAngles` | `vec_t*` | `V_RenderView`: zeroed-register stores plus `FLDZ`+`FST[P]` candidates; if six candidates, `qsort` → `[0]` and `[3]`. | `r_playerViewportAngles` used; `r_soundOrigin` resolved only. |
+| `frustum` / `vpn` / `vup` / `vright` | `mplane_t*` / `vec_t*` | `Engine_FillAddress_R_CullBox`: `MOV ESI,imm(.data)` → `frustum`; then `68 <frustum> 68 … 68 … E8` pattern gives `vpn`/`vup`; `68 <vpn> 68 … 68 <frustum+0x28>` gives `vright`. | `R_SetFrustum` culling. |
+| `envmap` / `cl_stats` / `cl_weaponstarttime` / `cl_weaponsequence` / `cl_light_level` | `int*` / `float*` | `Engine_FillAddress_R_DrawViewModel`: per-engine patterns, operand offsets differ by engine type. | Viewmodel/env-map selection. |
+| `pmovevars` | `movevars_t*` | `Engine_FillAddress_MoveVars`: SvEngine `56 8B 74 24 08 6A 2C 56 E8 … D9 05`; others `E8 <MSG_ReadFloat> D9 1D <gravity> …`. | `zmax`, `skyName`. |
+| `r_framecount` / `r_visframecount` | `int*` | `Engine_FillAddress_R_RecursiveWorldNodeVars`: `MOV reg,[reg+0]` (or `[reg+4]`) then `MOV/CMP reg,[.data]`. | Frame/leaf counters. |
+| `skychain` / `waterchain` | `msurface_t**` | Same walk: `TEST reg8,imm` `imm==4` → `skychain`, `imm==0x10` → `waterchain`. | World-surface chains. |
+| `r_viewleaf` / `r_oldviewleaf` | `mleaf_t**` | `Engine_FillAddress_R_MarkLeaves`: `MOV ECX,[.data]` / `MOV [.data],ECX`. | PVS tracking. |
+| `r_entorigin` / `r_blend` / `cl_parsecount` / `cl_frames` / `size_of_frame` | `vec_t*` / `float*` / `int*` / `void*` / `int` | `Engine_FillAddress_R_DrawTEntitiesOnListVars`: `r_blend` after fog-disable; `cl_parsecount` = `MOV EAX,[abs]` whose live value is `63`; `cl_frames` = `LEA` within `+20`; `size_of_frame` = `IMUL imm 0x4000..0xF000`; `r_entorigin` after `MOVSX [reg+0x2E8]`. Defaults `size_of_frame=0x42B8` for buildnum ≤ 8684. | `R_GetPlayerState` and sprite attachment origin. |
+| `rtable` | `int (*)[20][20]` | `Engine_FillAddress_R_TextureAnimation`: `MOV ESI,imm(.data)`. | Animated-texture random table. |
+| `modelorg` | `vec_t*` | `Engine_FillAddress_R_DrawWorld`: `DisasmRanges(+0x130)` `MOV`/`MOVSS`/`FSTP [.data]` candidates, `qsort`, consecutive-run heuristic. | Resolved only. |
+| `window_rect` | `RECT*` | `Engine_FillAddress_VID_UpdateWindowVars`: HL25 `MOVUPS [abs],xmm`; else `MOV [abs],reg` within `+0x40`. | `GL_EndRendering` destination rect. |
+| `pmainwindow` | `void**` | `Engine_FillAddress_EngineSurface_pushMakeCurrent` (see EngineSurface). | Main window handle. |
+
+### Textures, particles, sprites, temp-entities, edicts and models
+
+| Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gl_extensions` | `const char**` | `Engine_FillAddress_GL_Init` (and `GL_SetMode` BFS): `push 0x1F03` (`GL_EXTENSIONS`) then `MOV [.data],EAX`. | GL extension reset. |
+| `vid_d3d` / `currenttexture` / `oldtarget` | `float*` / `int*` / `int*` | `GL_SetMode` BFS (`MOV [.data],0x3F800000`); `GL_Bind` `DisasmRanges(+0x50)` first `MOV [mem],EAX`; `GL_SelectTexture` first `MOV [mem],ESI`. | `currenttexture` mirrored by the plugin; `vid_d3d`/`oldtarget` resolved only. |
+| `gltextures` / `gltextures_SvEngine` / `maxgltextures_SvEngine` / `peakgltextures_SvEngine` / `numgltextures` / `allocated_textures` / `gHostSpawnCount` | texture-array bookkeeping | `Engine_FillAddress_GL_LoadTexture2` `DisasmRanges` (non-SvEngine: `MOV reg,[.data]`/`MOV reg,imm` after a self-`XOR`; SvEngine: `8B 15 … 8B 1D` for `gltextures_SvEngine`, `6B C1 54 89 0D` for `maxgltextures`, `03 35 … 3B 15` for `peakgltextures`, `66 8B …` for `gHostSpawnCount`). `allocated_textures` chosen from the trailing `MOV [.data],reg` when `!g_bHasOfficialGLTexAllocSupport`. | Texture enumeration/unload/growth. |
+| `particletexture` / `active_particles` | `int*` / `particle_t**` | `Engine_FillAddress_R_DrawParticles`: first `PUSH [.data]` or `MOV reg,[.data]` not followed by `33 C5`/`33 C4`; `active_particles` = the `MOV ESI,[.data]` preceding `E8` that anchors `R_FreeDeadParticles`. | Particle rendering. |
+| `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
+| `cl_dlights` / `r_dlightactive` / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | From `CL_AllocDlight`/`CL_AllocElight`: after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`. | Dynamic-light rendering. |
+| `decal_wad` / `gfCustomBuild` / `szCustName` | `cachewad_t**` / `qboolean*` / `char (*)[10]` | `Engine_FillAddress_Draw_DecalTexture` BFS / `_Draw_MiptexTexture` `DisasmRanges(+0x500)`. | Custom-decal WAD lookup. |
+| `gSkyTexNumber` / `r_loading_skybox` | `int*` / `int*` | `Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`. | Resolved only. |
+| `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
+| `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
+| `loadname` / `loadmodel` | `char (*)[64]` / `model_t**` | `Engine_FillAddress_Mod_LoadModel`: first `PUSH imm(.data)` near the `"loading %s"` printf; then first `MOV [.data],reg`. | Resolved only. |
+| `cl_max_edicts` / `cl_entities` | `int*` / `cl_entity_t**` | `Engine_FillAddress_CL_ReallocateDynamicData`: string `"CL_Reallocate cl_entities\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x100)`; `MOV reg,[.data]`+`83 C4 04` or `IMUL reg,reg,[.data],imm`; `cl_entities` = first `MOV [.data],EAX` after the call. | Edict ranges. |
+| `cl_numvisedicts` / `cl_visedicts` | `int*` / `cl_entity_t**` | `Engine_FillAddress_VisEdicts`: `.text` `8B 0D <slot> 81 F9 00 ?,00 00`; `DisasmRanges(+0x150)` `MOV [disp+ecx*4],reg` → array base. | Visible-entity list. |
+| `host_basepal` | `word**` | `Engine_FillAddress_BasePalette`: `68 <"palette.lmp"> 68 00 08 00 00 E8 … 83 C4 08 A3 <slot>`. | Palette lookup. |
+| `r_missingtexture` / `r_notexture_mip` | `texture_t**` | `Engine_FillAddress_MissingTexture`/`_NoTexture`: strings `"**missing**"` / `"**empty**"` → `6A 00 68 <str> E8 …`; first `MOV reg,[.data]` after the call. | Fallback textures. |
+| `cache_head` | `cache_system_t*` | `Engine_FillAddress_Cache_Alloc` `DisasmRanges(+0x500)` `CMP reg,imm(.data)`. | LRU list. |
+| `gSpriteMipMap` | `int*` | `Engine_FillAddress_Mod_LoadSpriteFrame` `DisasmRanges(+0x300)` `CMP [.data],0` / `MOV reg,[.data]`+`TEST`. | Sprite mipmap enable. |
+| `detTexSupported` | `bool*` | `Engine_FillAddress_DT_Initialize`: `MOV byte [.data],1` within `+0x100` of the glTexEnvf call. | Detail-texture flag. |
+
+### Filter, move and texture-mode globals (`gl_hooks.cpp`)
+
+| Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gl_filter_min` / `gl_filter_max` | `int*` | `Engine_FillAddress_GL_FilterMinMaxVars`: per-engine `GL_FILTER_SIG_*` embedding the `fild gl_filter_min` site and the two `glTexParameterf` slots; `gl_filter_max` read at `addr + Sig_Length(pattern)`. | Texture filtering. |
+| `filterMode` / `filterColorRed` / `filterColorGreen` / `filterColorBlue` / `filterBrightness` | `int*` / `float*` | `Engine_FillAddress_SetFilterMode`/`_SetFilterColor`/`_SetFilterBrightness`: anchor = public `gEngfuncs.pfnSetFilterMode`/`pfnSetFilterColor`/`pfnSetFilterBrightness` mapped real→scan; `DisasmRanges(+0x50)` first store (colour: up to 3 candidates `FSTP`/`MOVSS`/`MOV`, `qsort` ascending → R/G/B). | Screen filter. |
+
+### VideoMode offsets (`gl_hooks.cpp`)
+
+| Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.CVideoMode_Common_DrawStartupGraphic` | `void (__fastcall*)(void*, int, void*)` | `Engine_FillAddress_DrawStartupGraphic`: per-engine `DRAWSTARTUPGRAPHIC_SVENGINE`/`_HL25`/`_NEW`/`_NEW2`/`_BLOB` `Search_Pattern`. | `Install_InlineHook`; wrapper reads the offsets below. |
+| `offset_CVideoMode_Common_m_ImageID_Size` (+ derived `_m_ImageID`, `_m_iBaseResX`, `_m_iBaseResY`) | `int` fields | `DisasmRanges(DrawStartupGraphic,+0x100)`: `CMP [reg+disp],reg` / `MOV reg,[reg+disp]`+`TEST` / `CMP [reg+disp],0` with `disp` in `0x100..0x400`; `m_ImageID = _Size - sizeof(CUtlMemory<bimage_t>)`, `_m_iBaseResX = _Size+8`, `_m_iBaseResY = _Size+12`. | Startup-graphic wrapper. |
+| `gPrivateFuncs.CGame_DrawStartupVideo` | `void (__fastcall*)(void*, int, const char*, void*)` | `Engine_FillAddress_DrawStartupVideo`: HL25 only, `DRAWSTARTUPVIDEO_HL25`; other engines leave null. | `Install_InlineHook` (install unconditional). |
+
+### Sven Co-op client and CS/CZ globals (`Client_FillAddress_*`, `gl_hooks.cpp`)
+
+| Local symbol / inferred game object | Declaration / type | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `g_bRenderingPortals_SCClient` | `bool*` | `Client_FillAddress_RenderingPortals`: `6A 00 6A 00 6A 00 8B ? FF 50 ?` + `DisasmRanges(+0x80)` `MOV [.data],1`. | Portal-pass gating. |
+| `g_iWaterLevel` | `int*` | `Client_FillAddress_WaterLevel`: `A3 <slot> 83 …` ptr at `addr+1`. | `V_CalcRefdef` fog gate. |
+| `g_iFogColor_SCClient` / `g_iStartDist_SCClient` / `g_iEndDist_SCClient` | `float*` | `Client_FillAddress_FogParams`: `68 01 26 00 00 68 65 0B 00 00` (`GL_LINEAR`,`GL_FOG`) + `DisasmRanges(+0x300)` `MOVSS xmm,[.data]` candidates; requires ≥5 with last three 4-byte-adjacent; assigns `[0]`/`[3]`/`[4]`. | Sven fog params. |
+| `g_ViewEntityIndex_SCClient` | `int*` | `Client_FillAddress_ViewEntityIndex` (buildnum ≥ 10182): `FF 15 … 85 C0 ? ? 8B 00 ? 05` + `DisasmRanges(+0x80)` `CMP reg,[.data]`. | Studio view-entity save/restore. |
+| `g_iUser1` / `g_iUser2` | `int*` | `Client_FillAddress_CL_IsThirdPerson`: anchor = client `CL_IsThirdPerson` (from `pExportFuncs`/`GetProcAddress`); `DisasmRanges(+0x100)` up to 16 `.data` candidates; last two accepted when adjacent. | Spectator resolution. |
+| `g_PlayerExtraInfo` / `g_PlayerExtraInfo_CZDS` | `extra_player_info_t (*)[65]` / `extra_player_info_czds_t (*)[65]` | `Client_FillAddress_PlayerExtraInfo` (CS `cstrike`/`czero`/`czeror` only): `.text` three consecutive 16-bit stores `66 89 ? ? ? ? ?` → `DisasmRanges(+0x100)` up to 4 `.data` 16-bit candidates; `qsort`; verify `playerclass`/`teamnumber` adjacency, base = `Candidates[last] - offsetof(teamnumber)`. HL25 fallback pattern adds a wildcard per store. | `CounterStrike_IsVIP` / `CounterStrike_GetTeamNumber`. |
+
+## Engine-private call sites and branch redirects
+
+| Symbol | Patch kind | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `Sys_ShutdownGame_call_GL_Shutdown` | `InlinePatchRedirectBranch` → plugin `GL_Shutdown` | `Engine_FillAddress_GL_Shutdown` (call site stored during resolution). | Engine shutdown re-enters the plugin handler. |
+| `GL_SetMode_call_qwglCreateContext` | `InlinePatchRedirectBranch` → `CoreProfile_qwglCreateContext` | `Engine_FillAddress_GL_SetMode` BFS: `MOV reg,[reg]` then within `+3` a `PUSH reg` whose next bytes are `FF 15`. | Non-SvEngine GL context creation. |
+| `R_ResetLatched` engine call site | `InlinePatchRedirectBranch` → `R_ResetLatched_Patched` | `R_PatchResetLatched`: `.text` `6A 01 ? ? ? 08 03 00 00` + `DisasmRanges(+0x50)` waits for a `MOV [reg+0x308]` then the next `E8`; `GetCallAddress`; no-op on HL25. | `cl_fixmodelinterpolationartifacts` fix; original kept in `gPrivateFuncs.R_ResetLatched`. |
+| `mov eax, ds:allocated_textures` sites | 5-byte rewrite to `call GL_RedirectedGenTexture` | `R_RedirectEngineLegacyOpenGLTextureAllocation`: per-hit `DisasmRanges(+0x100)` accepts a `.data` write-back `MOV` or an `E8` target equal to `GL_Bind`; no-op when `g_bHasOfficialGLTexAllocSupport`. | Legacy texture allocation through the plugin `GL_GenTexture`. |
+| engine imports (`opengl32.dll`/`SDL2.dll`/`kernel32.dll!GetProcAddress`) | `IATHook` / `BlobIATHook` | `R_RedirectEngineLegacyOpenGLCallAPI`, branch by engine type (SvEngine vs SDL2 vs blob vs other). | Core-profile GL wrappers (`CoreProfile_*`). |
+| Sven client legacy GL call sites (`glTexEnvf`, `glBegin`, `glEnd`, `glColor4f`, `glEnable`, `glDisable`, `glCopyTexSubImage2D`, `glClear`) | `InlinePatchRedirectBranch` each | `R_RedirectClientLegacyOpenGLCall`, per-site byte patterns; `glDisable(GL_CLIPPLANE0)` instead rewrites the `mov esi, ds:glDisable` operand to `g_glDisable_ClipPlane`. | Sven client core-profile routing. |
+| Sven client `AngleVectors` call in the portal path | `InlinePatchRedirectBranch` → `ClientPortalManager_AngleVectors` | `C7 82 E8 00 00 00 01 00 00 00 50 8D 42 18 50 51 E8`. | Sets `g_pCurrentClientPortal = a1 - 12`. |
+
+## Sven Co-op client portal manager (`Client_FillAddress_SCClient`)
+
+Gated on the `SCClientDLL001` client factory; on non-Sven clients all fields stay null and the hooks are skipped.
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.ClientPortalManager_DrawPortalSurface` | `void (__fastcall*)(void*, int, void*, msurface_t*, GLuint)` | `Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface`: `6A 01 6A 01 6A 01 6A 01 FF 15 … 68 E1 0D 00 00` + `DisasmRanges(+4,+0x50)` first `E8` = `GetOriginalSurfaceTexture`; `ReverseSearchFunctionBeginEx(pFound,+0x600)` predicate `83 EC` = `DrawPortalSurface`. | `Install_InlineHook(DrawPortalSurface)`; handler does not call original. |
+| `gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture` | `mtexinfo_t* (__fastcall*)(void*, int, msurface_t*)` | Same locator (first `E8`). | Called by `R_GetPortalSurfaceModel`. |
+| `gPrivateFuncs.ClientPortalManager_EnableClipPlane` | `void (__fastcall*)(void*, int, int, vec3_t, vec3_t, vec3_t)` | `Client_FillAddress_ClientPortalManager_EnableClipPlane`: prologue with security cookie `83 EC ? A1 … 33 C4 ? 44 24 … F3 0F`. | `Install_InlineHook(EnableClipPlane)`. |
+| `gPrivateFuncs.ClientPortalManager_RenderPortals` | `void (__fastcall*)(void*, int)` | `Client_FillAddress_ClientPortalManager_RenderPoratals`: SEH prologue `55 8B EC 6A FF 68 … 64 A1 00 00 00 00 50 83 EC 6C …`. | `Install_InlineHook(RenderPortals)`; records `g_pClientPortalManager`. |
+| `gPrivateFuncs.ClientPortalManager_ResetAll` | `void (__fastcall*)(void*, int)` | `Client_FillAddress_ClientPortalManager_ResetAll`: `C7 45 ? FF FF FF FF A3 ? ? ? ? E8 ? ? ? ? 8B 0D` → `GetCallAddress(addr+12)`. | **Hook commented out**; wrapper unreferenced. |
+| `gPrivateFuncs.UpdatePlayerPitch` | `void (__cdecl*)(cl_entity_t*, float)` | `Client_FillAddress_UpdatePlayerPitch`: `FF 73 40 E8 ? ? ? ? 83 C4 08 80 3D ? ? ? ? 00` → `GetCallAddress(addr+3)`. | `Install_InlineHook(UpdatePlayerPitch)`; handler `gl_studio.cpp:5064`. |
+| `gPrivateFuncs.SCClientDLL_glewInit` (`_glewInit@0`) | `decltype(glewInit)*` | `GetProcAddress(GetClientModule(), "_glewInit@0")`. | Called at the end of `Client_InstallHooks`. |
+| Private `ClientPortal` / `ClientPortalManager` struct offsets | literals in `gl_portal.cpp` | Build-num gated: `origin`/`angles` at `+0`/`+12` (≥10000) else entity at `+0x70` (≥8948); `mode` at `+0x40` (≥10000) / `+0x28` (≥8948); texture id/w/h at `+204`/`+208`/`+212`; manager vector begin/end at `+140`. | `ClientPortal_GetPortalTransform` / `_Mode` / `_GetIndex`. |
+
+## Engine `EngineSurface` (`EngineSurfaceHook.cpp`)
+
+The engine VGUI2 surface (`EngineSurface007` → `IEngineSurface`/`IEngineSurface_HL25`, and `VGUI_Surface026`) is obtained from `g_pMetaHookAPI->GetEngineFactory()`; the plugin then hooks methods by hardcoded vtable index with `VFTHook(obj, 0, index, wrapper, &original)`. `EngineSurface_FillAddress` resolves the function pointers only to validate indices and to drive two disasm roots. `EngineSurface_InstallHooks` installs 19 engine-surface hooks (+`VGUI_Surface026::DrawSetTexture` at index 27); every wrapper replaces the engine method and never calls the saved original, except `BaseUISurface_DrawSetTexture`.
+
+| Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.enginesurface_pushMakeCurrent` | `void (__fastcall*)(void*, int, int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace)` | `GetVFunctionFromVFTable(vftable, index=1, …)`; also the scan root for `pmainwindow`/`g_bScissor`/`g_ScissorRect`. | VFTHook index 1; wrapper replaces engine method. |
+| `enginesurface_popMakeCurrent` / `drawFilledRect` / `drawOutlinedRect` / `drawLine` / `drawPolyLine` / `drawTexturedPolygon` / `drawSetTextureRGBA` / `drawSetTexture` / `drawTexturedRect` / `drawTexturedRectAdd` / `createNewTextureID` / `drawPrintCharAdd` / `drawSetTextureFile` / `drawGetTextureSize` / `isTextureIDValid` / `drawSetSubTextureRGBA` / `drawFlushText` / `drawSetTextureBGRA` / `drawUpdateRegionTextureBGRA` | surface virtuals | Hardcoded `index_enginesurface_*`; HL25 uses a higher-index layout than GoldSrc/SvEngine. `drawTexturedRectAdd` is hooked on HL25 only; `drawTexturedPolygon` is hooked by index but its field is never populated. `drawFlushText` is the scan root for `g_iVertexBufferEntriesUsed`/`g_VertexBuffer`. | VFTHook per index; wrappers reimplement via `R_Draw*`. |
+| `BaseUISurface_DrawSetTexture` (`VGUI_Surface026::DrawSetTexture`) | `void (__fastcall*)(void*, int, int textureId)` | `engineFactory("VGUI_Surface026")`; hardcoded `index_BaseUISurface_DrawSetTexture = 27`. | `VFTHook`; the only wrapper that calls the saved original. |
+| `offset_enginesurface_drawColor` / `drawTextColor` | `int` | Hardcoded by engine type (`4`/`20` SvEngine vs `8`/`24` others) in `EngineSurface_FillAddress`, not disassembled. | Draw/text colour member reads. |
+| `g_iVertexBufferEntriesUsed` / `g_VertexBuffer` | `int*` / `EngineSurfaceVertexBuffer_t (*)[256]` | `Engine_FillAddress_EngineSurface_drawFlushText`: `DisasmRanges` mirror body `+0x150`; `CMP [abs],imm` or `MOV reg,[abs]`+`CMP reg,imm`; then first `PUSH imm32(.data)` = `g_VertexBuffer`. | Engine vertex-buffer flush. |
+| `g_bScissor` / `g_ScissorRect` | `bool*` / `RECT*` | `Engine_FillAddress_EngineSurface_pushMakeCurrent`: `DisasmRanges` mirror body `+0x500`; `MOV [.data],1` = `g_bScissor`; up to 4 successive `MOV [.data],reg`, `qsort`, lowest = `g_ScissorRect`. | Scissor clipping. |
+| `pmainwindow` | `void**` | Same function: `MOV reg,[.data]` within first 35 instructions, validated by `MOV reg,[candReg]`/`PUSH [candReg]` within `+6`. | `Sys_GetMainWindow()`. |
+
+## Client `CGameStudioRenderer` virtual table (`ClientStudio_FillAddress`)
+
+`g_pGameStudioRenderer` is the client singleton; the plugin reads `vftable = *(PVOID**)g_pGameStudioRenderer` and resolves virtuals by index with `GetVFunctionFromVFTable`. The index is derived by disassembling the client-supplied `(*ppinterface)->StudioDrawPlayer`/`StudioDrawModel` thunk (a leading `E9` jmp is skipped). This pass scans the **client** image; `ClientStudio_FillAddress_EngineStudioDrawPlayer` scans the **engine** image for the engine `R_Studio*` functions from the same thunks.
+
+| Local symbol / inferred engine symbol | Vtable index | Resolution mechanism | Subsequent use |
+| --- | --- | --- | --- |
+| `gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer` | default `3` | `DisasmRanges(client StudioDrawPlayer,+0x200)`: `CALL [reg+disp]` `disp 8..0x200` → `index=disp/4`; or `CALL imm` matching `vftable[i]` for `i=1..3`. | Hooked; → `StudioDrawPlayer_Template`. |
+| `gPrivateFuncs.GameStudioRenderer_StudioDrawModel` | default `2` | `DisasmRanges(thunk,+0x80)` same detection. | Resolved only. |
+| `gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer` (CS only) | default `25` | CS only: `DisasmRanges(StudioDrawPlayer,+0x100)` `CALL [reg+disp]` `disp 0x60..0x70`. | BFS root for `StudioRenderModel`. |
+| `gPrivateFuncs.GameStudioRenderer_StudioRenderModel` | derived | BFS over `StudioDrawPlayer`/`__StudioDrawPlayer` (`max_insts=1000`, `max_depth=16`): `CALL [abs]` whose slot == `IEngineStudio.StudioSetRemapColors`, then within `+6` a `CALL [reg+disp]` `disp 0x30..0x80`. | Hooked; → `StudioRenderModel_Template`. |
+| `gPrivateFuncs.GameStudioRenderer_StudioRenderFinal` | default `RenderModel+1` | `DisasmRanges(StudioRenderModel,+0x100)` `CALL [reg+disp]` `disp` just above `RenderModel*4`. | Hooked. |
+| `gPrivateFuncs.GameStudioRenderer_StudioCalcAttachments` | anchor | BFS over vtable entries `4..9`; match on push of `"Too many attachments on %s\n"` or member offsets `0xD4`/`0xD8`. | Index anchor only. |
+| `gPrivateFuncs.GameStudioRenderer_StudioSetupBones` / `_StudioSaveBones` / `_StudioMergeBones` | `CalcAttachments -1 / +1 / +2` | `GetVFunctionFromVFTable`. | Hooked. |
+| `gPrivateFuncs.R_StudioDrawPlayer` / `R_StudioDrawModel` | engine image | `(*ppinterface)->StudioDrawPlayer`/`StudioDrawModel` mapped real→engine-scan, `E9` skipped, mapped scan→real. | `R_StudioDrawPlayer` hooked → `StudioDrawPlayer_Template`; `R_StudioDrawModel` resolved only. |
+| `gPrivateFuncs.R_StudioRenderModel` | engine image | `Search_Pattern("50 E8 ? ? ? ? 83 C4 10 E8 ? ? ? ? E8 ? ? ? ? 8B")` → `GetCallAddress(addr+9)`. | Hooked; second half of the `ClientStudio_FillAddress` success gate. |
+| `gPrivateFuncs.R_StudioRenderFinal` | engine image | `DisasmRanges(R_StudioRenderModel,+0x80)` first 5-byte `E8`. | Hooked. |
+| `gPrivateFuncs.R_StudioSetupBones` | engine image | string `"Bip01 Spine\0"` → `68 <str> ?? E8 … 83 C4 08 85 C0` + `ReverseSearchFunctionBeginEx(+0x1000)`. | Hooked; discriminator for `R_StudioSaveBones`. |
+| `gPrivateFuncs.R_StudioMergeBones` | engine image | `Search_Pattern_From_Size(EngineStudioDrawModelThunk,+0x250,"83 B8 08 03 00 00 0C")` + `DisasmRanges(+0x80)` first `E8`. | Hooked. |
+| `gPrivateFuncs.R_StudioSaveBones` | engine image | Second distinct `E8` target in the same walk. | Hooked. |
+| `g_pGameStudioRenderer` | client `.data` singleton | `DisasmRanges(client StudioDrawPlayer,+0x200)` first `MOV ECX,imm(.data)`. | Vtable base for all `GameStudioRenderer_*`. |
+
+## Boundary: public-API-derived pointers (not engine-private)
+
+Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from the private inventory:
+
+- `triapi_*` (15) — copied from `gEngfuncs.pTriAPI->*`, reassigned back in `Engine_InstallHooks`.
+- `studioapi_GL_SetRenderMode` / `_SetupRenderer` / `_RestoreRenderer` / `_StudioDynamicLight` / `_StudioCheckBBox` — `pstudio->*`, hooked by `EngineStudio_InstalHooks`.
+- SDL2 exports (`SDL_GetWindowPosition`, `SDL_GL_SetAttribute`, `SDL_GetWindowSize`, `SDL_GL_SwapWindow`, `SDL_GL_GetProcAddress`, `SDL_CreateWindow`, `SDL_GL_ExtensionSupported`) — plain `GetProcAddress`.
+- `pbonetransform` / `plighttransform` / `rotationmatrix` (from `pstudio->StudioGetBoneTransform`/`GetLightTransform`/`GetRotationMatrix`), `r_smodels_total` / `r_amodels_drawn` (`pstudio->GetModelCounters`), `cl_viewent` (`gEngfuncs.GetViewModel`), `cl_sprite_white` / `cl_sprite_shell` (`IEngineStudio.Mod_ForName`), `cl_minmodels` / `cl_min_t` / `cl_min_ct` (public cvars).
+
+## Hooks installed
+
+- **Engine** (`Engine_InstallHooks`, `gl_hooks.cpp:12594`): `GL_Init`, `GL_SetMode`/`GL_SetModeLegacy`+`GL_SelectPixelFormat`, `GL_Bind`, `GL_LoadTexture2`, `GL_UnloadTextures`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `R_RenderView`/`R_RenderView_SvEngine`, `R_NewMap`, `R_CullBox`, `R_ForceCVars`, `Mod_PointInLeaf`, `R_GLStudioDrawPoints`, `R_GetSpriteFrame`, `Mod_LoadStudioModel`, `Mod_LoadSpriteModel`, `Mod_UnloadSpriteTextures`, `BuildGammaTable`, `Host_ClearMemory`, `DT_Initialize`, `PVSNode`, `R_LoadSkys`/`R_LoadSkyBox_SvEngine`, `CVideoMode_Common_DrawStartupGraphic`, `CGame_DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrame*[_SvEngine]`, `Draw_FillRGBA`/`Draw_FillRGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`, plus the `Sys_ShutdownGame_call_GL_Shutdown` branch redirect.
+- **Client** (`Client_InstallHooks`, `gl_hooks.cpp:14081`): `ClientPortalManager_DrawPortalSurface`, `_EnableClipPlane`, `_RenderPortals`, `UpdatePlayerPitch`; `SCClientDLL_glewInit()` invoked. `ClientPortalManager_ResetAll` hook is commented out.
+- **Studio** (`EngineStudio_InstalHooks` / `ClientStudio_InstallHooks`, `exportfuncs.cpp`): `CL_FxBlend`, the five `studioapi_*`, and the engine/client `R_Studio*`/`GameStudioRenderer_*` set. Note `EngineStudio_InstalHooks` runs before `ClientStudio_FillAddress`, so the engine Studio render hooks are effectively installed by the guarded `ClientStudio_InstallHooks` calls.
+- **EngineSurface** (`EngineSurface_InstallHooks`): 19 `enginesurface_*` VFTHooks + `VGUI_Surface026::DrawSetTexture`. `EngineSurface_UninstallHooks` is empty — no surface hook is ever restored.
+
+## Dependencies
+
+- `Plugins/Renderer/plugins.cpp` — provides the real/mirror module bases and drives `Engine_FillAddress` / `Client_FillAddress` / install-uninstall.
+- MetaHook APIs `SearchPattern`, `ReverseSearchFunctionBegin[Ex]`, `DisasmRanges`, `GetNextCallAddr`, `GetVFunctionFromVFTable`, `InlineHook`, `InlinePatchRedirectBranch`, `IATHook`, `BlobIATHook`, `VFTHook`, `GetEngineFactory`, `GetClientFactory`, `GetSectionByName`, `GetModuleCRC64`, `SysError`.
+- Capstone (`cs_insn`, `X86_INS_*`) for `DisasmRanges`.
+
+## Notes
+
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `NET_DrawRect` (engine-dependent), `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `loadname`, `loadmodel`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
+- **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
+- **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
+- **Build-num gates.** `g_ViewEntityIndex_SCClient` requires buildnum ≥ 10182; `size_of_frame` defaults to `0x42B8` for buildnum ≤ 8684; `R_SetupGL`/`R_LoadSkybox` pick signatures by buildnum thresholds (10152, 9899).
+- **`g_bHasOfficialFBOSupport` / `g_bHasOfficialGLTexAllocSupport`** are capability flags, not addresses: the former from the presence of the string `"FBO backbuffer rendering disabled"`, the latter from whether a `0x16A8`-based texture-alloc pattern exists. They select signatures and gate the legacy texture-allocation redirect.
