@@ -249,7 +249,7 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
         symbols = {}
         for name in validate.BULLETPHYSICS_CLIENT_GLOBALS:
             symbols[name] = {"kind": "global"}
-        for name in validate.BULLETPHYSICS_CLIENT_VFUNCS:
+        for name in validate.BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS:
             symbols[name] = {"kind": "virtualFunction"}
         return symbols
 
@@ -259,15 +259,30 @@ class BulletPhysicsClientGateTests(unittest.TestCase):
             validate.validate_bulletphysics_client(self.complete_client_symbols(), "hl-8684"),
         )
 
-    def test_client_gate_flags_missing_vfunc(self):
+    def test_client_gate_tolerates_absent_optional_vfunc(self):
         symbols = self.complete_client_symbols()
         del symbols["GameStudioRenderer_StudioDrawPlayer"]
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
-        self.assertTrue(any("missing BulletPhysics client virtualFunction" in e for e in errors), errors)
+        self.assertEqual([], errors)
+
+    def test_client_gate_flags_wrong_kind_optional_vfunc(self):
+        symbols = self.complete_client_symbols()
+        symbols["GameStudioRenderer_StudioDrawPlayer"] = {"kind": "global"}
+        errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
+        self.assertTrue(
+            any("GameStudioRenderer_StudioDrawPlayer' must be a virtualFunction record" in e for e in errors),
+            errors,
+        )
+
+    def test_client_gate_flags_missing_global(self):
+        symbols = self.complete_client_symbols()
+        del symbols["g_iUser2"]
+        errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
+        self.assertTrue(any("missing BulletPhysics client global" in e for e in errors), errors)
 
     def test_client_gate_flags_wrong_kind(self):
         symbols = self.complete_client_symbols()
-        symbols["g_pGameStudioRenderer"] = {"kind": "function"}
+        symbols["g_iUser1"] = {"kind": "function"}
         errors = validate.validate_bulletphysics_client(symbols, "hl-8684")
         self.assertTrue(any("must be a global record" in e for e in errors), errors)
 

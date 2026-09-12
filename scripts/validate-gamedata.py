@@ -114,8 +114,10 @@ BULLETPHYSICS_CLIENT_GAMES = (
     "czeror-8684",
     "czeror-10210",
 )
-BULLETPHYSICS_CLIENT_GLOBALS = ("g_iUser1", "g_iUser2", "g_pGameStudioRenderer")
-BULLETPHYSICS_CLIENT_VFUNCS = (
+BULLETPHYSICS_CLIENT_GLOBALS = ("g_iUser1", "g_iUser2")
+# Resolved with required=false: clients without the client studio renderer keep the
+# engine-side hooks only, so these are validated for kind when present, never for presence.
+BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS = (
     "GameStudioRenderer_StudioDrawModel",
     "GameStudioRenderer_StudioDrawPlayer",
     "GameStudioRenderer_StudioSetupBones",
@@ -511,11 +513,11 @@ def validate_bulletphysics_client(symbols, game_version):
             errors.append(f"'{game_version}': missing BulletPhysics client global '{sym}'")
         elif rec.get("kind") != "global":
             errors.append(f"'{game_version}': '{sym}' must be a global record")
-    for sym in BULLETPHYSICS_CLIENT_VFUNCS:
+    for sym in BULLETPHYSICS_CLIENT_OPTIONAL_VFUNCS:
         rec = symbols.get(sym)
-        if not isinstance(rec, dict):
-            errors.append(f"'{game_version}': missing BulletPhysics client virtualFunction '{sym}'")
-        elif rec.get("kind") != "virtualFunction":
+        if rec is None:
+            continue
+        if not isinstance(rec, dict) or rec.get("kind") != "virtualFunction":
             errors.append(f"'{game_version}': '{sym}' must be a virtualFunction record")
 
     if game_version == "svencoop-10257":

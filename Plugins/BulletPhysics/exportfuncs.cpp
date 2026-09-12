@@ -503,10 +503,7 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 
 void ClientStudio_FillAddress(PVOID clientBase)
 {
-	//The client studio renderer is optional: SvEngine clients without g_pGameStudioRenderer keep the engine-side hooks only.
-	g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))
-		GamedataResolvePtr(clientBase, "g_pGameStudioRenderer", MH_GAMESYMBOL_KIND_GLOBAL, false);
-
+	//The client studio renderer is optional: clients without these virtuals keep the engine-side hooks only.
 	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
 		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))

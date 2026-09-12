@@ -50,7 +50,6 @@ void ClientStudio_UninstallHooks(void);
 void EngineStudio_UninstallHooks(void);
 
 extern studiohdr_t** pstudiohdr;
-extern void* g_pGameStudioRenderer;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4];
 

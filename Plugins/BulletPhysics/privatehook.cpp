@@ -15,7 +15,6 @@ static_assert(METAHOOK_API_VERSION >= 112, "BulletPhysics resolves all game-priv
 private_funcs_t gPrivateFuncs = {0};
 
 studiohdr_t** pstudiohdr = NULL;
-void* g_pGameStudioRenderer = NULL;
 int* cl_parsecount = NULL;
 void* cl_frames = NULL;
 int size_of_frame = 0;
