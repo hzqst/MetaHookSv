@@ -6073,10 +6073,8 @@ qboolean GL_SelectPixelFormat(HDC hDC)
 	return true;
 }
 
-qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
+static qboolean GL_SetMode_Internal(void)
 {
-#if 1
-
 	if (gPrivateFuncs.SvEngine_glewInit)
 	{
 		auto err = gPrivateFuncs.SvEngine_glewInit();
@@ -6095,12 +6093,33 @@ qboolean GL_SetMode(void* window, HDC* pmaindc, HGLRC* pbaseRC)
 
 	(*gl_extensions) = "";
 	return 1;
+}
+
+qboolean GL_SetMode_SvEngine(void* window, HDC* pmaindc, HGLRC* pbaseRC)
+{
+#if 1
+	return GL_SetMode_Internal();
 #else
-	auto r = gPrivateFuncs.GL_SetMode(window, pmaindc, pbaseRC);
+	auto r = gPrivateFuncs.GL_SetMode_SvEngine(window, pmaindc, pbaseRC);
 
 	if (r)
 	{
-		
+
+	}
+	return r;
+#endif
+}
+
+qboolean GL_SetMode_GoldSrc(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine)
+{
+#if 1
+	return GL_SetMode_Internal();
+#else
+	auto r = gPrivateFuncs.GL_SetMode_GoldSrc(window, pmaindc, pbaseRC, fD3D, pszDriver, pszCmdLine);
+
+	if (r)
+	{
+
 	}
 	return r;
 #endif

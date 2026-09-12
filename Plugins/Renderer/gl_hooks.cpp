@@ -423,7 +423,8 @@
 #define DRAW_PIC_SVENGINE "\x83\xEC\x08\x83\x7C\x24\x14\x00\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x3D"
 
 static hook_t* g_phook_GL_Init = NULL;
-static hook_t* g_phook_GL_SetMode = NULL;
+static hook_t* g_phook_GL_SetMode_SvEngine = NULL;
+static hook_t* g_phook_GL_SetMode_GoldSrc = NULL;
 static hook_t* g_phook_GL_SetModeLegacy = NULL;
 static hook_t* g_phook_GL_SelectPixelFormat = NULL;
 static hook_t* g_phook_GL_Bind = NULL;
@@ -755,7 +756,7 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 
 void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.GL_SetMode || gPrivateFuncs.GL_SetModeLegacy)
+	if (gPrivateFuncs.GL_SetMode_SvEngine || gPrivateFuncs.GL_SetMode_GoldSrc || gPrivateFuncs.GL_SetModeLegacy)
 		return;
 
 	PVOID GL_SetMode_VA{};
@@ -763,16 +764,16 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+		gPrivateFuncs.GL_SetMode_SvEngine = (decltype(gPrivateFuncs.GL_SetMode_SvEngine))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
 
-		Sig_FuncNotFound(GL_SetMode);
+		Sig_FuncNotFound(GL_SetMode_SvEngine);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		GL_SetMode_VA = Search_Pattern(GL_SETMODE_SIG_HL25, DllInfo);
-		gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+		gPrivateFuncs.GL_SetMode_GoldSrc = (decltype(gPrivateFuncs.GL_SetMode_GoldSrc))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
 
-		Sig_FuncNotFound(GL_SetMode);
+		Sig_FuncNotFound(GL_SetMode_GoldSrc);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
@@ -782,8 +783,8 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 
 		if (gPrivateFuncs.SDL_GL_GetProcAddress)
 		{
-			gPrivateFuncs.GL_SetMode = (decltype(gPrivateFuncs.GL_SetMode))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
-			Sig_FuncNotFound(GL_SetMode);
+			gPrivateFuncs.GL_SetMode_GoldSrc = (decltype(gPrivateFuncs.GL_SetMode_GoldSrc))ConvertDllInfoSpace(GL_SetMode_VA, DllInfo, RealDllInfo);
+			Sig_FuncNotFound(GL_SetMode_GoldSrc);
 		}
 		else
 		{
@@ -992,7 +993,7 @@ void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_in
 		Sig_VarNotFound(gl_extensions);
 
 		if ((g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25) &&
-			(gPrivateFuncs.SDL_GL_GetProcAddress || gPrivateFuncs.GL_SetMode))
+			(gPrivateFuncs.SDL_GL_GetProcAddress || gPrivateFuncs.GL_SetMode_GoldSrc))
 		{
 			Sig_FuncNotFound(SDL_InitGL);
 		}
@@ -12561,9 +12562,13 @@ void Engine_InstallHooks(void)
 		Install_InlineHook(GL_SetModeLegacy);
 		Install_InlineHook(GL_SelectPixelFormat);
 	}
+	else if (gPrivateFuncs.GL_SetMode_GoldSrc)
+	{
+		Install_InlineHook(GL_SetMode_GoldSrc);
+	}
 	else
 	{
-		Install_InlineHook(GL_SetMode);
+		Install_InlineHook(GL_SetMode_SvEngine);
 	}
 
 	g_pMetaHookAPI->InlinePatchRedirectBranch(gPrivateFuncs.Sys_ShutdownGame_call_GL_Shutdown, GL_Shutdown, NULL);
@@ -12647,9 +12652,13 @@ void Engine_UninstallHooks(void)
 		Uninstall_Hook(GL_SetModeLegacy);
 		Uninstall_Hook(GL_SelectPixelFormat);
 	}
+	else if (gPrivateFuncs.GL_SetMode_GoldSrc)
+	{
+		Uninstall_Hook(GL_SetMode_GoldSrc);
+	}
 	else
 	{
-		Uninstall_Hook(GL_SetMode);
+		Uninstall_Hook(GL_SetMode_SvEngine);
 	}
 	Uninstall_Hook(GL_Bind);
 	Uninstall_Hook(GL_Set2D);

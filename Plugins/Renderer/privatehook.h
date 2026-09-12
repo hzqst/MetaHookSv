@@ -49,7 +49,8 @@ typedef struct
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_Init)(void);
-	qboolean (*GL_SetMode)(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+	qboolean (*GL_SetMode_SvEngine)(void* window, HDC* pmaindc, HGLRC* pbaseRC);
+	qboolean (*GL_SetMode_GoldSrc)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);//SDL builds of GoldSrc/HL25 still keep the six-arg ABI, fD3D/pszDriver/pszCmdLine are forwarded to QGL_Init
 	qboolean (*GL_SetModeLegacy)(void* window, HDC* pmaindc, HGLRC* pbaseRC, int fD3D, const char* pszDriver, const char* pszCmdLine);
 	qboolean (*GL_SelectPixelFormat)(HDC hDC);
 	void* Sys_ShutdownGame_call_GL_Shutdown;
