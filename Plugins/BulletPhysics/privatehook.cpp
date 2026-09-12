@@ -57,16 +57,6 @@ PVOID GamedataResolveRequired(PVOID moduleBase, const char* symbolName, mh_games
 	return address;
 }
 
-PVOID GamedataResolveOptional(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
-{
-	PVOID address = nullptr;
-
-	if (g_pMetaHookAPI->ResolveGameSymbol(moduleBase, symbolName, kind, &address) != MH_GAMESYMBOL_OK)
-		return nullptr;
-
-	return address;
-}
-
 void Engine_FillAddress(PVOID engineBase)
 {
 	//Engine render / view functions
@@ -127,10 +117,9 @@ void Engine_FillAddress(PVOID engineBase)
 
 void Client_FillAddress(PVOID clientBase)
 {
-	//Observer state is only consumed behind null checks; leave it null where the
-	//game does not publish it.
-	g_iUser1 = (decltype(g_iUser1))GamedataResolveOptional(clientBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
-	g_iUser2 = (decltype(g_iUser2))GamedataResolveOptional(clientBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
+	//Observer state is required by the release gate for every client-bearing game.
+	g_iUser1 = (decltype(g_iUser1))GamedataResolveRequired(clientBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iUser2 = (decltype(g_iUser2))GamedataResolveRequired(clientBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 

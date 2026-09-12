@@ -36,9 +36,6 @@ TEMPENTITY* efxapi_R_TempModel(float* pos, float* dir, float* angles, float life
 //Resolve a gamedata symbol for a module, failing loudly when it is absent.
 PVOID GamedataResolveRequired(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind);
 
-//Resolve a gamedata symbol for a module, returning nullptr when it is absent.
-PVOID GamedataResolveOptional(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind);
-
 void Engine_FillAddress(PVOID engineBase);
 void Engine_InstallHook(void);
 void Engine_UninstallHook(void);

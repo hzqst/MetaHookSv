@@ -205,7 +205,7 @@ All names below are the canonical gamedata symbol names; `module` and `kind` are
 
 | Symbol | Kind | Plugin field | Notes |
 | --- | --- | --- | --- |
-| `g_iUser1` / `g_iUser2` | global | `int*` (`*ptr`) | optional (null-guarded) |
+| `g_iUser1` / `g_iUser2` | global | `int*` (`*ptr`) | required for every client-bearing game (matches the release gate) |
 | `g_bRenderingPortals_SCClient` / `g_ViewEntityIndex_SCClient` / `g_pitchdrift` | global | typed ptrs | Sven Co-op only; required there |
 | `g_PlayerExtraInfo` | global | `extra_player_info_t(*)[65]` | cstrike / czero |
 | `g_PlayerExtraInfo_CZDS` | global | `extra_player_info_czds_t(*)[65]` | czeror |
