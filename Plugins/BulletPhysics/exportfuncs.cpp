@@ -503,15 +503,16 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 
 void ClientStudio_FillAddress(PVOID clientBase)
 {
+	//The client studio renderer is optional: SvEngine clients without g_pGameStudioRenderer keep the engine-side hooks only.
 	g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))
-		GamedataResolveRequired(clientBase, "g_pGameStudioRenderer", MH_GAMESYMBOL_KIND_GLOBAL);
+		GamedataResolvePtr(clientBase, "g_pGameStudioRenderer", MH_GAMESYMBOL_KIND_GLOBAL, false);
 
 	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))
-		GamedataResolveRequired(clientBase, "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
-		GamedataResolveRequired(clientBase, "GameStudioRenderer_StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 	gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))
-		GamedataResolveRequired(clientBase, "GameStudioRenderer_StudioSetupBones", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
+		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioSetupBones", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION, false);
 }
 
 

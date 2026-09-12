@@ -33,8 +33,11 @@ void R_RenderView();
 
 TEMPENTITY* efxapi_R_TempModel(float* pos, float* dir, float* angles, float life, int modelIndex, int soundtype);
 
-//Resolve a gamedata symbol for a module, failing loudly when it is absent.
-PVOID GamedataResolveRequired(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind);
+//Resolve a gamedata symbol for a module. When required, absence is fatal; otherwise nullptr is returned.
+PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind, bool required);
+
+//Read a gamedata scalar value for a module. When required, absence is fatal; otherwise 0 is returned.
+uint32_t GamedataResolveScalar(PVOID moduleBase, const char* symbolName, bool required);
 
 void Engine_FillAddress(PVOID engineBase);
 void Engine_InstallHook(void);
