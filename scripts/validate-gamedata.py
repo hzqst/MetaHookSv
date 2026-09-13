@@ -418,6 +418,24 @@ def validate_snapshot(doc, game_version):
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
+        elif kind == "vtable":
+            p = payload if isinstance(payload, dict) else {}
+            vtable_rva = parse_hex_u32(p.get("vtable_rva"))
+            vtable_size = parse_hex_u32(p.get("vtable_size"))
+            vtable_symbol = p.get("vtable_symbol")
+            vtable_numvfunc = p.get("vtable_numvfunc")
+            if (vtable_rva is None or vtable_size is None or
+                    not isinstance(vtable_symbol, str) or not vtable_symbol or
+                    not isinstance(vtable_numvfunc, int) or isinstance(vtable_numvfunc, bool)):
+                errors.append(f"'{game_version}': vtable '{name}' missing/invalid vtable_rva/vtable_size/vtable_symbol/vtable_numvfunc")
+                continue
+            if vtable_size != vtable_numvfunc * 4:
+                errors.append(f"'{game_version}': vtable '{name}': vtable_size does not match vtable_numvfunc")
+                continue
+            rec = {"kind": "vtable", "rva": vtable_rva, "size": vtable_size}
+            if name in symbols and symbols[name] != rec:
+                errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
+            symbols[name] = rec
         else:
             # unsupported kind is tolerated by the catalog; skip.
             continue

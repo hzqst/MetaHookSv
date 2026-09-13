@@ -503,6 +503,43 @@ namespace
 		return true;
 	}
 
+	// A vtable record is the virtual function table array itself (typically in
+	// .rdata). The rva is the array address and symbolSize its byte length;
+	// vtable_symbol/vtable_numvfunc are validated but not stored.
+	bool NormalizeVTable(const rapidjson::Value& payload, GameSymbolRecord& rec, std::string& error)
+	{
+		const rapidjson::Value* vtableRva = FindMember(payload, "vtable_rva");
+		const rapidjson::Value* vtableSize = FindMember(payload, "vtable_size");
+		const rapidjson::Value* vtableSymbol = FindMember(payload, "vtable_symbol");
+		const rapidjson::Value* vtableNumvfunc = FindMember(payload, "vtable_numvfunc");
+		if (!vtableRva || !vtableRva->IsString() || !vtableSize || !vtableSize->IsString() ||
+			!vtableSymbol || !vtableSymbol->IsString() ||
+			!vtableNumvfunc || !vtableNumvfunc->IsUint())
+		{
+			error = "vtable payload is missing vtable_rva/vtable_size/vtable_symbol/vtable_numvfunc";
+			return false;
+		}
+
+		if (!ParseHexU32(vtableRva->GetString(), rec.rva))
+		{
+			error = "invalid vtable_rva";
+			return false;
+		}
+		if (!ParseHexU32(vtableSize->GetString(), rec.symbolSize))
+		{
+			error = "invalid vtable_size";
+			return false;
+		}
+
+		rec.kind = MH_GAMESYMBOL_KIND_VTABLE;
+		rec.signatureRva = 0;
+		rec.instructionOffset = 0;
+		rec.operandOffset = 0;
+		rec.instructionLength = 0;
+		rec.flags = 0;
+		return true;
+	}
+
 	// -----------------------------------------------------------------------
 	// Catalog assembly.
 	// -----------------------------------------------------------------------
@@ -781,6 +818,16 @@ namespace
 				{
 					if (error.empty())
 						error = "virtualFunction payload must be an object";
+					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
+					continue;
+				}
+			}
+			else if (std::strcmp(kindStr, "vtable") == 0)
+			{
+				if (!payload || !payload->IsObject() || !NormalizeVTable(*payload, record, error))
+				{
+					if (error.empty())
+						error = "vtable payload must be an object";
 					AddDiagnostic("snapshot '%s': symbol '%s': %s", gameVersion, symbolName->GetString(), error.c_str());
 					continue;
 				}
@@ -1463,7 +1510,8 @@ mh_gamesymbol_status_t MH_ResolveGameSymbol(PVOID moduleBase, const char* symbol
 	if (expectedKind != MH_GAMESYMBOL_KIND_FUNCTION &&
 		expectedKind != MH_GAMESYMBOL_KIND_GLOBAL &&
 		expectedKind != MH_GAMESYMBOL_KIND_PATCH &&
-		expectedKind != MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION)
+		expectedKind != MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION &&
+		expectedKind != MH_GAMESYMBOL_KIND_VTABLE)
 		return MH_GAMESYMBOL_INVALID_ARGUMENT;
 
 	mh_gamesymbol_t sym;
