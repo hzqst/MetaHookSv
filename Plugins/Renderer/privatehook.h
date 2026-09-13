@@ -63,6 +63,7 @@ typedef struct
 	void (*R_DrawSequentialPoly)(msurface_t* s, int face);
 	void (*R_DrawSequentialPoly_HL25)(msurface_t* s, int face, qboolean cleanUpShaderState);//HL25 added the third stack arg, callee gates shader/program cleanup on it
 	void (*R_RecursiveWorldNode)(mnode_t* node);
+	void (*R_RecursiveWorldNode_HL25)(mnode_t* node, qboolean cleanUpShaderState);//HL25 added the second arg, it is propagated through recursion and into R_DrawSequentialPoly's cleanUpShaderState
 	texture_t* (*R_TextureAnimation)(msurface_t* fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t* fa);
 	void(*R_RotateForEntity)(float* origin, cl_entity_t* ent);

@@ -75,6 +75,13 @@ static void R_BuildCachedDecalBounds(float* v, int vertCount, CCachedDecal& cach
 
 void R_RecursiveWorldNode(mnode_t *node)
 {
+	if (gPrivateFuncs.R_RecursiveWorldNode_HL25)
+	{
+		//HL25's R_DrawWorld passes (gl_reduce_shader_changes == 0), true matches the engine default
+		gPrivateFuncs.R_RecursiveWorldNode_HL25(node, true);
+		return;
+	}
+
 	gPrivateFuncs.R_RecursiveWorldNode(node);
 }
 

@@ -3741,7 +3741,7 @@ void Engine_FillAddress_R_DrawBrushModel(const mh_dll_info_t& DllInfo, const mh_
 
 void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_RecursiveWorldNode)
+	if (gPrivateFuncs.R_RecursiveWorldNode || gPrivateFuncs.R_RecursiveWorldNode_HL25)
 		return;
 
 	PVOID R_RecursiveWorldNode_VA = 0;
@@ -3762,7 +3762,7 @@ void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const
 
 		R_RecursiveWorldNode_VA = Search_Pattern_From(R_DrawSequentialPoly_VA, R_RECURSIVEWORLDNODE_SIG_HL25, DllInfo);
 
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
+		gPrivateFuncs.R_RecursiveWorldNode_HL25 = (decltype(gPrivateFuncs.R_RecursiveWorldNode_HL25))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
@@ -3794,7 +3794,14 @@ void Engine_FillAddress_R_RecursiveWorldNode(const mh_dll_info_t& DllInfo, const
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))ConvertDllInfoSpace(R_RecursiveWorldNode_VA, DllInfo, RealDllInfo);
 	}
 
-	Sig_FuncNotFound(R_RecursiveWorldNode);
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		Sig_FuncNotFound(R_RecursiveWorldNode_HL25);
+	}
+	else
+	{
+		Sig_FuncNotFound(R_RecursiveWorldNode);
+	}
 }
 
 void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -8714,7 +8721,12 @@ void Engine_FillAddress_R_RecursiveWorldNodeVars(const mh_dll_info_t& DllInfo, c
 		msurface_t **waterchain = NULL;
 	*/
 
-	PVOID R_RecursiveWorldNode_VA = ConvertDllInfoSpace(gPrivateFuncs.R_RecursiveWorldNode, RealDllInfo, DllInfo);
+	PVOID R_RecursiveWorldNode_VA = NULL;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		R_RecursiveWorldNode_VA = ConvertDllInfoSpace(gPrivateFuncs.R_RecursiveWorldNode_HL25, RealDllInfo, DllInfo);
+	else
+		R_RecursiveWorldNode_VA = ConvertDllInfoSpace(gPrivateFuncs.R_RecursiveWorldNode, RealDllInfo, DllInfo);
 
 	if (!R_RecursiveWorldNode_VA)
 	{
