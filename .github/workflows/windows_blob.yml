@@ -8,7 +8,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # github.workflow is the caller's workflow name under workflow_call, which can
+  # collide with the caller's own concurrency group and deadlock the run
+  group: windows-blob-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
