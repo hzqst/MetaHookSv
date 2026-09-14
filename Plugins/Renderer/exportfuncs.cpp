@@ -715,17 +715,6 @@ void ClientStudio_FillAddress(struct r_studio_interface_s** ppinterface)
 	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))
 		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 
-	//Counter-Strike only extra indirection used as the StudioRenderModel BFS root.
-	//NOTE: this runs before the caller sets g_bIsCounterStrike, so the game
-	//directory is tested directly here.
-	const char* gameDir = gEngfuncs.pfnGetGameDirectory();
-
-	if (!strcmp(gameDir, "cstrike") || !strcmp(gameDir, "czero") || !strcmp(gameDir, "czeror"))
-	{
-		gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer__StudioDrawPlayer))
-			GamedataResolvePtr(clientBase, "GameStudioRenderer__StudioDrawPlayer", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
-	}
-
 	gPrivateFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderModel))
 		GamedataResolvePtr(clientBase, "GameStudioRenderer_StudioRenderModel", MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION);
 	gPrivateFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal))

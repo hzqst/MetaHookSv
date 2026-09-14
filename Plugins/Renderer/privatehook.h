@@ -237,7 +237,6 @@ typedef struct
 	void(__fastcall* GameStudioRenderer_StudioSaveBones)(void* pthis, int);
 	int(__fastcall* GameStudioRenderer_StudioDrawModel)(void* pthis, int, int flags);
 	int(__fastcall* GameStudioRenderer_StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
-	int(__fastcall* GameStudioRenderer__StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
 	void(__fastcall* GameStudioRenderer_StudioRenderModel)(void* pthis, int);
 	void(__fastcall* GameStudioRenderer_StudioRenderFinal)(void* pthis, int);
 
