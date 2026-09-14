@@ -35,9 +35,9 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
-	if (g_pInterface->MetaHookAPIVersion < 107)
+	if (g_pInterface->MetaHookAPIVersion < 112)
 	{
-		Sys_Error("MetaHookAPIVersion 107 is required!");
+		Sys_Error("MetaHookAPIVersion 112 is required!");
 	}
 
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);

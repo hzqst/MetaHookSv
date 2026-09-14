@@ -93,18 +93,6 @@
 #define R_SETUPFRAME_SIG_HL25 ""     //inlined
 #define R_SETUPFRAME_SIG_SVENGINE "" //inlined
 
-#define GL_BIND_SIG_BLOB      "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x10\x25\xFF\xFF\x00\x00"
-#define GL_BIND_SIG_NEW2      GL_BIND_SIG_BLOB
-#define GL_BIND_SIG_NEW       "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
-#define GL_BIND_SIG_HL25      "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF0\x0F\xB7\xC0\xC1\xFE\x10\x4E\x39"
-#define GL_BIND_SIG_SVENGINE  "\x8B\x44\x24\x04\x39\x05\x2A\x2A\x2A\x2A\x2A\x2A\x50\x68\xE1\x0D\x00\x00\xA3\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\xC3"
-
-#define GL_SELECTTEXTURE_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x74\x24\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
-#define GL_SELECTTEXTURE_SIG_NEW2 GL_SELECTTEXTURE_SIG_BLOB
-#define GL_SELECTTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x75\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
-#define GL_SELECTTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x56\x8B\x75\x08\x56\xFF\x15"
-#define GL_SELECTTEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x2A\x2A\x2A\x24\x08\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xA1"
-
 #define GL_LOADTEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x8B\x4C\x24\x20\x8B\x54\x24\x1C\x50\x8B\x44\x24\x1C\x51\x8B\x4C\x24\x1C\x52\x8B\x54\x24\x1C\x50\x8B\x44\x24\x1C"
 #define GL_LOADTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x8B\x4D\x24\x8B\x55\x20\x50\x8B\x45\x1C\x51\x8B\x4D\x18\x52\x8B\x55\x14\x50\x8B\x45\x10\x51"
 
@@ -127,31 +115,6 @@
 #define GL_SHUTDOWN_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x8B\x02\x51\x50\xE8"
 #define GL_SHUTDOWN_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x30\xE8"
 #define GL_SHUTDOWN_SIG_SVENGINE GL_SHUTDOWN_SIG_HL25
-
-#define GL_SET2D_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
-#define GL_SET2D_SIG_NEW2 GL_SET2D_SIG_BLOB
-#define GL_SET2D_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x50"
-#define GL_SET2D_SIG_HL25 "\xCC\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x01\x17\x00\x00"
-#define GL_SET2D_SIG_SVENGINE "\x56\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x01\x17\x00\x00"
-
-#define GL_FINISH2D_SIG_BLOB "\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x00\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x68\x71\x0B\x00\x00"
-#define GL_FINISH2D_SIG_NEW2 GL_FINISH2D_SIG_BLOB
-#define GL_FINISH2D_SIG_NEW  GL_FINISH2D_SIG_BLOB
-#define GL_FINISH2D_SIG_HL25 GL_FINISH2D_SIG_BLOB
-#define GL_FINISH2D_SIG_SVENGINE "\x56\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\xFF\xD6\x68\x00\x17\x00\x00"
-
-#define GL_BEGINRENDERING_SIG_BLOB "\x8B\x44\x24\x08\x8B\x4C\x24\x04\x8B\x54\x24\x0C\xC7\x00\x00\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\xC7\x01\x00\x00\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\x2B\xC1"
-#define GL_BEGINRENDERING_SIG_NEW2 GL_BEGINRENDERING_SIG_BLOB
-#define GL_BEGINRENDERING_SIG_NEW "\x55\x8B\xEC\x8B\x45\x0C\x8B\x4D\x08\x56\x57\xC7\x00\x00\x00\x00\x00\xC7\x01\x00\x00\x00\x00\xE8"
-#define GL_BEGINRENDERING_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x0C\x2A\x2A\xC7\x00\x00\x00\x00\x00\x8B\x45\x08\xC7\x00\x00\x00\x00\x00"
-#define GL_BEGINRENDERING_SIG_SVENGINE "\x8B\x44\x24\x08\x56\x57\xC7\x00\x00\x00\x00\x00\x8B\x44\x24\x0C\xC7\x00\x00\x00\x00\x00\xE8"
-
-#define GL_ENDRENDERING_SIG_BLOB "\xFF\x25\x2A\x2A\x2A\x2A\x90"
-#define GL_ENDRENDERING_SIG_NEW2 GL_ENDRENDERING_SIG_BLOB
-#define GL_ENDRENDERING_SIG_NEW "\x55\x8B\xEC\x83\xEC\x34\xA1\x2A\x2A\x2A\x2A\x53\x33\xDB"
-#define GL_ENDRENDERING_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x6A\x00"
-#define GL_ENDRENDERING_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00"
-#define GL_ENDRENDERING_SIG_COMMON_GOLDSRC "\x68\x01\x26\x00\x00\x68\x00\x40\x00\x00"
 
 #define EMITWATERPOLYS_SIG_BLOB "\x83\xEC\x1C\x33\xD2\x55\x56\x8B\x74\x24\x28\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52"
 #define EMITWATERPOLYS_SIG_NEW2 EMITWATERPOLYS_SIG_BLOB
@@ -335,13 +298,6 @@
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
-#define HOST_IS_SINGLE_PLAYER_GAME_BLOB      "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW3      HOST_IS_SINGLE_PLAYER_GAME_BLOB
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW2      "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW       "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_HL25      "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE  "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
-
 #define MOD_UNLOADSPRITETEXTURES_BLOB     "\x81\xEC\x2A\x2A\x00\x00\xB8\x01\x00\x00\x00\x2A\x8B\x2A\x24\x08\x01\x00\x00\x2A\x2A\x2A\x2A\x44"
 #define MOD_UNLOADSPRITETEXTURES_NEW2     MOD_UNLOADSPRITETEXTURES_BLOB
 #define MOD_UNLOADSPRITETEXTURES_NEW      "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
@@ -362,12 +318,6 @@
 #define DRAWSTARTUPGRAPHIC_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x8B\xF1\x33\xDB\x2A\x89\x75\xE0\x39\x9E\x2A\x01\x00\x00"
 #define DRAWSTARTUPGRAPHIC_HL25 "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x70\x53\x56\x57"
 #define DRAWSTARTUPGRAPHIC_SVENGINE "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x7C\x53\x56\x57"
-
-#define DRAWSTARTUPVIDEO_BLOB ""
-#define DRAWSTARTUPVIDEO_NEW2 ""
-#define DRAWSTARTUPVIDEO_NEW ""
-#define DRAWSTARTUPVIDEO_HL25 "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x81\xEC\x48\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xF0"
-#define DRAWSTARTUPVIDEO_SVENGINE ""
 
 #define DRAW_FRAME_BLOB "\x83\xEC\x14\xDB\x44\x24\x1C\x53\x55\x56\x8B\x74\x24\x24\xD9\x5C\x24\x28"
 #define DRAW_FRAME_NEW2 "\x83\xEC\x14\xDB\x44\x24\x1C\x56\x8B\x74\x24\x1C\xB8\x00\x00\x80\x3F"
@@ -574,184 +524,68 @@ void Engine_FillAddress_GL_Init(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	if (gPrivateFuncs.GL_Init)
 		return;
 
-	PVOID GL_Init_VA = NULL;
+	gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Init", MH_GAMESYMBOL_KIND_FUNCTION);
 
+	// 在 GL_Init 中定位 gl_extensions
+	// 模式: push 0x1F03 (GL_EXTENSIONS) -> call glGetString -> mov [imm32], eax
+	if (!gl_extensions && !gPrivateFuncs.SDL_GL_GetProcAddress)
 	{
-		const char pattern[] = "\x68\x00\x1F\x00\x00\xFF";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
+		typedef struct GL_Init_ExtSearch_s
 		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
+			const mh_dll_info_t& RealDllInfo;
+			PUCHAR push_GL_EXTENSIONS_address{};
+			int push_GL_EXTENSIONS_instCount{};
+		}GL_Init_ExtSearch;
+
+		GL_Init_ExtSearch extCtx = { RealDllInfo };
+
+		g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GL_Init, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (GL_Init_ExtSearch*)context;
+
+			if (gl_extensions)
+				return TRUE;
+
+			// 检测 push 0x1F03 (GL_EXTENSIONS)
+			if (pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[0].imm == 0x1F03)
 			{
-				auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x80, [](PUCHAR Candidate) {
-
-					//.text:01D5E540 83 EC 14                                            sub     esp, 14h
-					//	.text : 01D5E543 56                                                  push    esi
-					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
-						Candidate[0] == 0x83 &&
-						Candidate[1] == 0xEC &&
-						Candidate[2] == 0x14 &&
-						Candidate[3] >= 0x50 &&
-						Candidate[3] <= 0x57)
-						return TRUE;
-
-					//.text : 01D82A50 55                                                  push    ebp
-					//.text : 01D82A51 8B EC                                               mov     ebp, esp
-					//.text:01D4BE83 83 EC 14                                            sub     esp, 14h
-					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
-						Candidate[0] == 0x55 &&
-						Candidate[1] == 0x8B &&
-						Candidate[2] == 0xEC &&
-						Candidate[3] == 0x83 &&
-						Candidate[4] == 0xEC)
-						return TRUE;
-
-					if (Candidate[-1] == 0x90 &&
-						Candidate[0] == 0x68 &&
-						Candidate[1] == 0x00 &&
-						Candidate[2] == 0x1F &&
-						Candidate[3] == 0x00 &&
-						Candidate[4] == 0x00)
-						return TRUE;
-
-					return FALSE;
-				});
-
-				if (pCandidateFunction)
-				{
-					typedef struct GL_Init_SearchContext_s
-					{
-						const mh_dll_info_t& DllInfo;
-						const mh_dll_info_t& RealDllInfo;
-						bool bFoundPushString{};
-					}GL_Init_SearchContext;
-
-					GL_Init_SearchContext ctx = { DllInfo, RealDllInfo };
-
-					g_pMetaHookAPI->DisasmRanges(pCandidateFunction, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (GL_Init_SearchContext*)context;
-
-						if (pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-							(//Check if imm is inside .data or .rdata
-								((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-									(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize) ||
-								((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.RdataBase &&
-									(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.RdataBase + ctx->DllInfo.RdataSize)
-								))
-						{
-							auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1) ||
-								!memcmp(pString, "Failed to query gl vendor", sizeof("Failed to query gl vendor") - 1) ||
-								!memcmp(pString, "GL_VENDOR: %s", sizeof("GL_VENDOR: %s") - 1))
-							{
-								ctx->bFoundPushString = true;
-							}
-						}
-
-						if (ctx->bFoundPushString)
-							return TRUE;
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						}, 0, &ctx);
-
-					if (ctx.bFoundPushString)
-					{
-						GL_Init_VA = pCandidateFunction;
-
-						break;
-					}
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
+				ctx->push_GL_EXTENSIONS_address = address;
+				ctx->push_GL_EXTENSIONS_instCount = instCount;
 			}
-			else
+
+			// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
+			if (ctx->push_GL_EXTENSIONS_address &&
+				address > ctx->push_GL_EXTENSIONS_address &&
+				address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
+				instCount > ctx->push_GL_EXTENSIONS_instCount &&
+				instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->RealDllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 			{
-				break;
+				gl_extensions = (decltype(gl_extensions))pinst->detail->x86.operands[0].mem.disp;
 			}
-		}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &extCtx);
 	}
-	
-	if (GL_Init_VA)
-	{
-		gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))ConvertDllInfoSpace(GL_Init_VA, DllInfo, RealDllInfo);
-
-		// 在 GL_Init 中定位 gl_extensions
-		// 模式: push 0x1F03 (GL_EXTENSIONS) -> call glGetString -> mov [imm32], eax
-		if (!gl_extensions && !gPrivateFuncs.SDL_GL_GetProcAddress)
-		{
-			typedef struct GL_Init_ExtSearch_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				PUCHAR push_GL_EXTENSIONS_address{};
-				int push_GL_EXTENSIONS_instCount{};
-			}GL_Init_ExtSearch;
-
-			GL_Init_ExtSearch extCtx = { DllInfo, RealDllInfo };
-
-			g_pMetaHookAPI->DisasmRanges(GL_Init_VA, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (GL_Init_ExtSearch*)context;
-
-				if (gl_extensions)
-					return TRUE;
-
-				// 检测 push 0x1F03 (GL_EXTENSIONS)
-				if (pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[0].imm == 0x1F03)
-				{
-					ctx->push_GL_EXTENSIONS_address = address;
-					ctx->push_GL_EXTENSIONS_instCount = instCount;
-				}
-
-				// 检测 mov [mem], eax 在 push GL_EXTENSIONS 之后
-				if (ctx->push_GL_EXTENSIONS_address &&
-					address > ctx->push_GL_EXTENSIONS_address &&
-					address < ctx->push_GL_EXTENSIONS_address + 0x30 &&
-					instCount > ctx->push_GL_EXTENSIONS_instCount &&
-					instCount < ctx->push_GL_EXTENSIONS_instCount + 10 &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					gl_extensions = (decltype(gl_extensions))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-				}, 0, &extCtx);
-		}
-	}
-
-	Sig_FuncNotFound(GL_Init);
 }
 
 void Engine_FillAddress_GL_SetMode(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -1210,52 +1044,16 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 	if (gPrivateFuncs.GL_Bind)
 		return;
 
-	PVOID GL_Bind_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		GL_Bind_VA = Search_Pattern(GL_BIND_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))ConvertDllInfoSpace((PVOID)GL_Bind_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		GL_Bind_VA = Search_Pattern(GL_BIND_SIG_HL25, DllInfo);
-		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))ConvertDllInfoSpace((PVOID)GL_Bind_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		GL_Bind_VA = Search_Pattern(GL_BIND_SIG_NEW, DllInfo);
-
-		if (!GL_Bind_VA)
-			GL_Bind_VA = Search_Pattern(GL_BIND_SIG_NEW2, DllInfo);
-
-		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))ConvertDllInfoSpace((PVOID)GL_Bind_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		GL_Bind_VA = Search_Pattern(GL_BIND_SIG_BLOB, DllInfo);
-		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))ConvertDllInfoSpace((PVOID)GL_Bind_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_Bind);
+	gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Bind", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	/*
 		//Global pointers that link into engine vars.
 		int *currenttexture = NULL;
 	*/
 
-	typedef struct
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} GL_BindVars_SearchContext;
-
-	GL_BindVars_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges((void*)GL_Bind_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+	g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GL_Bind, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
-			auto ctx = (GL_BindVars_SearchContext*)context;
 
 			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -1265,7 +1063,7 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 				pinst->detail->x86.operands[1].reg == X86_REG_EAX)
 			{//.text:01D3C0C2 A3 40 22 E4 01 mov     currenttexture, eax
 
-				currenttexture = (decltype(currenttexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				currenttexture = (decltype(currenttexture))pinst->detail->x86.operands[0].mem.disp;
 			}
 
 			if (currenttexture)
@@ -1278,7 +1076,7 @@ void Engine_FillAddress_GL_Bind(const mh_dll_info_t& DllInfo, const mh_dll_info_
 				return TRUE;
 
 			return FALSE;
-		}, 0, &ctx);
+		}, 0, NULL);
 
 	Sig_VarNotFound(currenttexture);
 }
@@ -1288,54 +1086,15 @@ void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_
 	if (gPrivateFuncs.GL_SelectTexture)
 		return;
 
-	PVOID GL_SelectTexture_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		PVOID GL_Bind_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_Bind, RealDllInfo, DllInfo);
-
-		GL_SelectTexture_VA = Search_Pattern_From(GL_Bind_VA, GL_SELECTTEXTURE_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))ConvertDllInfoSpace((PVOID)GL_SelectTexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		PVOID GL_Bind_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_Bind, RealDllInfo, DllInfo);
-
-		GL_SelectTexture_VA = Search_Pattern_From(GL_Bind_VA, GL_SELECTTEXTURE_SIG_HL25, DllInfo);
-		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))ConvertDllInfoSpace((PVOID)GL_SelectTexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		GL_SelectTexture_VA = Search_Pattern(GL_SELECTTEXTURE_SIG_NEW, DllInfo);
-		if(!GL_SelectTexture_VA)
-			GL_SelectTexture_VA = Search_Pattern(GL_SELECTTEXTURE_SIG_NEW2, DllInfo);
-
-		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))ConvertDllInfoSpace((PVOID)GL_SelectTexture_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		GL_SelectTexture_VA = Search_Pattern(GL_SELECTTEXTURE_SIG_BLOB, DllInfo);
-		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))ConvertDllInfoSpace((PVOID)GL_SelectTexture_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_SelectTexture);
+	gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_SelectTexture", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	/*
 		//Global pointers that link into engine vars.
 		  int *oldtarget = NULL;
 	*/
 
-	typedef struct GL_SelectTextureVars_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} GL_SelectTextureVars_SearchContext;
-
-	GL_SelectTextureVars_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges((void*)GL_SelectTexture_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+	g_pMetaHookAPI->DisasmRanges((void*)gPrivateFuncs.GL_SelectTexture, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 		auto pinst = (cs_insn*)inst;
-		auto ctx = (GL_SelectTextureVars_SearchContext*)context;
 
 		if (pinst->id == X86_INS_MOV &&
 			pinst->detail->x86.op_count == 2 &&
@@ -1345,7 +1104,7 @@ void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_
 			pinst->detail->x86.operands[1].reg == X86_REG_ESI)
 		{//.text:01D4FE37 89 35 08 82 ED 01 mov     oldtarget, esi
 
-			oldtarget = (decltype(oldtarget))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			oldtarget = (decltype(oldtarget))pinst->detail->x86.operands[0].mem.disp;
 		}
 
 		if (oldtarget)
@@ -1358,7 +1117,7 @@ void Engine_FillAddress_GL_SelectTexture(const mh_dll_info_t& DllInfo, const mh_
 			return TRUE;
 
 		return FALSE;
-	}, 0, &ctx);
+	}, 0, NULL);
 
 	Sig_VarNotFound(oldtarget);
 }
@@ -2279,79 +2038,8 @@ void Engine_FillAddress_R_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(c_alias_polys);
 	Sig_VarNotFound(c_brush_polys);
 
-	{
-		typedef struct R_RenderView_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			PVOID Candidate[2]{ };
-			int CandidateCount{};
-		}R_RenderView_SearchContext;
-
-		R_RenderView_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(R_RenderView_VA, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_RenderView_SearchContext*)context;
-
-			if (ctx->CandidateCount < 2 &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0)
-			{
-				ctx->Candidate[ctx->CandidateCount] = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				ctx->CandidateCount++;
-			}
-
-			if (ctx->CandidateCount < 2 &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				if (0 == memcmp(address + instLen, "\x85\xC0", 2))
-				{
-					ctx->Candidate[ctx->CandidateCount] = ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-					ctx->CandidateCount++;
-				}
-			}
-
-			if (instCount >= 30)
-				return TRUE;
-
-			if(ctx->CandidateCount >= 2)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-		}, 0, & ctx);
-
-		if (ctx.CandidateCount == 2)
-		{
-			r_worldentity = (decltype(r_worldentity))((PUCHAR)ctx.Candidate[0] - offsetof(cl_entity_t, model));
-			cl_worldmodel = (decltype(cl_worldmodel))ctx.Candidate[1];
-		}
-	}
-	Sig_VarNotFound(r_worldentity);
-	Sig_VarNotFound(cl_worldmodel);
+	r_worldentity = (decltype(r_worldentity))GamedataResolvePtr(RealDllInfo.ImageBase, "r_worldentity", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_worldmodel = (decltype(cl_worldmodel))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_worldmodel", MH_GAMESYMBOL_KIND_GLOBAL);
 }
 
 void Engine_FillAddress_V_RenderView(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -4331,181 +4019,9 @@ void Engine_FillAddress_R_MarkLeaves(const mh_dll_info_t& DllInfo, const mh_dll_
 	Sig_VarNotFound(r_oldviewleaf);
 }
 
-void Engine_FillAddress_GL_Set2D(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_Set2D)
-		return;
-
-	PUCHAR GL_Set2D_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		GL_Set2D_VA = (PUCHAR)Search_Pattern(GL_SET2D_SIG_SVENGINE, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		GL_Set2D_VA = (PUCHAR)Search_Pattern(GL_SET2D_SIG_HL25, DllInfo);
-		if (GL_Set2D_VA)
-			GL_Set2D_VA += 1;
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		GL_Set2D_VA = (PUCHAR)Search_Pattern(GL_SET2D_SIG_NEW, DllInfo);
-
-		if (!GL_Set2D_VA)
-			GL_Set2D_VA = (PUCHAR)Search_Pattern(GL_SET2D_SIG_NEW2, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		GL_Set2D_VA = (PUCHAR)Search_Pattern(GL_SET2D_SIG_BLOB, DllInfo);
-	}
-
-	if (GL_Set2D_VA)
-	{
-		gPrivateFuncs.GL_Set2D = (decltype(gPrivateFuncs.GL_Set2D))ConvertDllInfoSpace((PVOID)GL_Set2D_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_Set2D);
-}
-
-void Engine_FillAddress_GL_Finish2D(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_Finish2D)
-		return;
-
-	PUCHAR GL_Finish2D_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		GL_Finish2D_VA = (PUCHAR)Search_Pattern(GL_FINISH2D_SIG_SVENGINE, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		GL_Finish2D_VA = (PUCHAR)Search_Pattern(GL_FINISH2D_SIG_HL25, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		GL_Finish2D_VA = (PUCHAR)Search_Pattern(GL_FINISH2D_SIG_NEW, DllInfo);
-
-		if (!GL_Finish2D_VA)
-			GL_Finish2D_VA = (PUCHAR)Search_Pattern(GL_FINISH2D_SIG_NEW2, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		GL_Finish2D_VA = (PUCHAR)Search_Pattern(GL_FINISH2D_SIG_BLOB, DllInfo);
-	}
-
-	if (GL_Finish2D_VA)
-	{
-		gPrivateFuncs.GL_Finish2D = (decltype(gPrivateFuncs.GL_Finish2D))ConvertDllInfoSpace((PVOID)GL_Finish2D_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_Finish2D);
-}
-
-void Engine_FillAddress_GL_BeginRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_BeginRendering)
-		return;
-
-	PVOID GL_BeginRendering_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		GL_BeginRendering_VA = (PVOID)Search_Pattern(GL_BEGINRENDERING_SIG_SVENGINE, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		GL_BeginRendering_VA = (PVOID)Search_Pattern(GL_BEGINRENDERING_SIG_HL25, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		GL_BeginRendering_VA = (PVOID)Search_Pattern(GL_BEGINRENDERING_SIG_NEW, DllInfo);
-
-		if (!GL_BeginRendering_VA)
-			GL_BeginRendering_VA = (PVOID)Search_Pattern(GL_BEGINRENDERING_SIG_NEW2, DllInfo);
-
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		GL_BeginRendering_VA = (PVOID)Search_Pattern(GL_BEGINRENDERING_SIG_BLOB, DllInfo);
-	}
-
-	if (GL_BeginRendering_VA)
-	{
-		gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))ConvertDllInfoSpace(GL_BeginRendering_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_BeginRendering);
-}
-
-void Engine_FillAddress_GL_EndRendering(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.GL_EndRendering)
-		return;
-
-	PVOID GL_EndRendering_VA = 0;
-
-	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		auto addr = Search_Pattern(GL_ENDRENDERING_SIG_COMMON_GOLDSRC, DllInfo);
-
-		if (addr)
-		{
-			GL_EndRendering_VA = (PVOID)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x500, [](PUCHAR Candidate) {
-
-				if (Candidate[0] == 0x55 &&
-					Candidate[1] == 0x8B &&
-					Candidate[2] == 0xEC &&
-					Candidate[3] == 0x83)
-					return TRUE;
-
-				return FALSE;
-				});
-		}
-	}
-
-	if (!GL_EndRendering_VA)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			GL_EndRendering_VA = Search_Pattern(GL_ENDRENDERING_SIG_SVENGINE, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			GL_EndRendering_VA = Search_Pattern(GL_ENDRENDERING_SIG_HL25, DllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			PVOID GL_BeginRendering_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_BeginRendering, RealDllInfo, DllInfo);
-
-			if (g_bHasOfficialFBOSupport)
-			{
-				GL_EndRendering_VA = Search_Pattern_From_Size(GL_BeginRendering_VA, 0x100, GL_ENDRENDERING_SIG_NEW);
-			}
-			else
-			{
-				GL_EndRendering_VA = Search_Pattern_From_Size(GL_BeginRendering_VA, 0x100, GL_ENDRENDERING_SIG_BLOB);
-			}
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			PVOID GL_BeginRendering_VA = ConvertDllInfoSpace(gPrivateFuncs.GL_BeginRendering, RealDllInfo, DllInfo);
-
-			GL_EndRendering_VA = Search_Pattern_From_Size(GL_BeginRendering_VA, 0x100, GL_ENDRENDERING_SIG_BLOB);
-		}
-	}
-
-	if (GL_EndRendering_VA)
-	{
-		gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))ConvertDllInfoSpace(GL_EndRendering_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(GL_EndRendering);
-}
-
 void Engine_FillAddress_EmitWaterPolys(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
+
 	if (gPrivateFuncs.EmitWaterPolys)
 		return;
 
@@ -7259,91 +6775,6 @@ void Engine_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, con
 	}
 }
 
-void Engine_FillAddress_Host_IsSinglePlayerGame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (gPrivateFuncs.Host_IsSinglePlayerGame)
-		return;
-
-	PVOID Host_IsSinglePlayerGame_VA = 0;
-
-	if (1)
-	{
-		const char sigs[] = "setpause;";
-		auto setpause_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!setpause_String)
-			setpause_String = Search_Pattern_Rdata(sigs, DllInfo);
-		if (setpause_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-			*(DWORD*)(pattern + 1) = (DWORD)setpause_String;
-			auto setpause_PushString = (PUCHAR)Search_Pattern(pattern, DllInfo);
-			if (setpause_PushString)
-			{
-				auto setpause_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchPattern(setpause_PushString, 0x50, "\x55\x8B\xEC\xE8", Sig_Length("\x55\x8B\xEC\xE8"));
-				if (setpause_Function)
-				{
-					typedef struct Host_IsSinglePlayerGame_SearchContext_s
-					{
-						const mh_dll_info_t& DllInfo;
-						const mh_dll_info_t& RealDllInfo;
-					} Host_IsSinglePlayerGame_SearchContext;
-
-					Host_IsSinglePlayerGame_SearchContext ctx = { DllInfo, RealDllInfo };
-
-					g_pMetaHookAPI->DisasmRanges(setpause_Function, setpause_PushString - setpause_Function, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (Host_IsSinglePlayerGame_SearchContext*)context;
-
-						if (address[0] == 0xE8 && instLen == 5 &&
-							address[5] == 0x85 && address[6] == 0xC0)
-						{
-							gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-					}, 0, &ctx);
-				}
-			}
-		}
-	}
-
-	if (!gPrivateFuncs.Host_IsSinglePlayerGame)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE, DllInfo);
-			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25, DllInfo);
-			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW, DllInfo);
-			if (!Host_IsSinglePlayerGame_VA)
-				Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2, DllInfo);
-			if (!Host_IsSinglePlayerGame_VA)
-				Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW3, DllInfo);
-			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			Host_IsSinglePlayerGame_VA = Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB, DllInfo);
-			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))ConvertDllInfoSpace(Host_IsSinglePlayerGame_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_FuncNotFound(Host_IsSinglePlayerGame);
-}
-
 void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
@@ -8080,73 +7511,6 @@ void Engine_FillAddress_R_AllocTransObjectsVars(const mh_dll_info_t& DllInfo, co
 	Sig_VarNotFound(numTransObjs);
 }
 
-void Engine_FillAddress_VisEdicts(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars.
-		int *cl_numvisedicts = NULL;
-		cl_entity_t **cl_visedicts = NULL;
-	*/
-
-	PVOID cl_numvisedicts_VA = 0;
-	PVOID cl_visedicts_VA = 0;
-
-	{
-		/*
-		 //CL_CreateVisibleEntity
-			.text:01D0C7AF 8B 0D 50 F9 F0 02                                   mov     ecx, dword_2F0F950
-			.text:01D0C7B5 81 F9 00 02 00 00                                   cmp     ecx, 200h
-		*/
-		char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x2A\x00\x00";
-		auto CL_CreateVisibleEntity_Pattern = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(CL_CreateVisibleEntity_Pattern);
-
-		cl_numvisedicts_VA = *(PVOID*)((PUCHAR)CL_CreateVisibleEntity_Pattern + 2);
-		cl_numvisedicts = (decltype(cl_numvisedicts))ConvertDllInfoSpace(cl_numvisedicts_VA, DllInfo, RealDllInfo);
-
-		typedef struct VisEdicts_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		} VisEdicts_SearchContext;
-
-		VisEdicts_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(CL_CreateVisibleEntity_Pattern, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (VisEdicts_SearchContext*)context;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == X86_REG_ECX &&
-				pinst->detail->x86.operands[0].mem.scale == 4 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{
-				//.text:01D198C9 89 04 8D 00 3A 6E 02                                mov     cl_visedicts[ecx*4], eax
-				//.text:01D0C7C5 89 14 8D C0 F0 D5 02                                mov     cl_visedicts[ecx*4], edx
-
-				cl_visedicts = (decltype(cl_visedicts))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (cl_visedicts)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-	}
-
-	Sig_VarNotFound(cl_visedicts);
-	Sig_VarNotFound(cl_numvisedicts);
-}
-
 void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -8386,6 +7750,8 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 		float* r_blend = NULL;
 		int *cl_parsecount = NULL;
 	*/
+	cl_parsecount = (decltype(cl_parsecount))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_parsecount", MH_GAMESYMBOL_KIND_GLOBAL);
+
 	PVOID R_DrawTEntitiesOnList_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawTEntitiesOnList, RealDllInfo, DllInfo);
 
 	typedef struct R_DrawTEntitiesOnList_SearchContext_s
@@ -8393,7 +7759,6 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 		const mh_dll_info_t& DllInfo;
 		const mh_dll_info_t& RealDllInfo;
 		int disableFog_instcount{};
-		int parsemod_instcount{};
 		int getskin_instcount{};
 		int r_entorigin_candidate_count{};
 		int push2300_instcount{};
@@ -8473,37 +7838,6 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 		{
 			// F3 0F 11 05 54 40 1B 11                             movss   r_blend, xmm0
 			r_blend = (decltype(r_blend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-		else if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			//.text:01D923D9 A1 DC 72 ED 01                                      mov     eax, cl_parsemod
-			//.text:01D88CBB A1 CC AF E3 01                                      mov     eax, cl_parsemod
-			DWORD value = *(DWORD*)pinst->detail->x86.operands[1].mem.disp;
-			if (value == 63)
-			{
-				ctx->parsemod_instcount = instCount;
-			}
-		}
-		else if (!cl_parsecount && ctx->parsemod_instcount &&
-			instCount < ctx->parsemod_instcount + 3 &&
-			(pinst->id == X86_INS_MOV || pinst->id == X86_INS_AND) &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			//.text:01D923DE 23 05 AC D2 30 02                                   and     eax, cl_parsecount
-			//.text:01D88CC0 8B 0D 04 AE D8 02                                   mov     ecx, cl_parsecount
-			cl_parsecount = (decltype(cl_parsecount))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 		}
 		else if (
 			pinst->id == X86_INS_MOVSX &&
@@ -8688,7 +8022,6 @@ void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, 
 	}, 0, &ctx);
 
 	Sig_VarNotFound(r_blend);
-	Sig_VarNotFound(cl_parsecount);
 	Sig_FuncNotFound(ClientDLL_DrawTransparentTriangles);
 	Sig_FuncNotFound(pfnDrawTransparentTriangles);
 
@@ -10105,213 +9438,6 @@ void Engine_FillAddress_CL_SimOrgVars(const mh_dll_info_t& DllInfo, const mh_dll
 	Sig_VarNotFound(cl_simorg);
 }
 
-void Engine_FillAddress_CL_ViewEntityVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars
-		int *cl_viewentity = NULL;
-	*/
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_SVENGINE);
-		Sig_AddrNotFound(cl_viewentity);
-		PVOID cl_viewentity_VA = *(PVOID*)(addr + 10);
-		cl_viewentity = (decltype(cl_viewentity))ConvertDllInfoSpace(cl_viewentity_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
-#define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
-		auto addr = (PUCHAR)Search_Pattern_From_Size((void*)DllInfo.TextBase, DllInfo.TextSize, CL_VIEWENTITY_SIG_GOLDSRC);
-		Sig_AddrNotFound(cl_viewentity);
-
-		typedef struct CL_ViewEntity_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			bool found_cmp_200{};
-		} CL_ViewEntity_SearchContext;
-
-		CL_ViewEntity_SearchContext ctx = { DllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (CL_ViewEntity_SearchContext*)context;
-
-			if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0x200)
-			{
-				ctx->found_cmp_200 = true;
-			}
-
-			if (ctx->found_cmp_200)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-		if (ctx.found_cmp_200)
-		{
-			PVOID cl_viewentity_VA = *(PVOID*)(addr + 1);
-			cl_viewentity = (decltype(cl_viewentity))ConvertDllInfoSpace(cl_viewentity_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_VarNotFound(cl_viewentity);
-}
-
-void Engine_FillAddress_CL_ReallocateDynamicData(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars
-		int *cl_max_edicts = NULL;
-		cl_entity_t *cl_entities = NULL;
-	*/
-
-	//Search "CL_Reallocate cl_entities"
-	const char sigs[] = "CL_Reallocate cl_entities\n";
-	auto CL_Reallocate_String = Search_Pattern_Data(sigs, DllInfo);
-	if (!CL_Reallocate_String)
-		CL_Reallocate_String = Search_Pattern_Rdata(sigs, DllInfo);
-	Sig_VarNotFound(CL_Reallocate_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-	*(DWORD*)(pattern + 1) = (DWORD)CL_Reallocate_String;
-	PVOID CL_Reallocate_Call = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(CL_Reallocate_Call);
-
-	PVOID CL_ReallocateDynamicData_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CL_Reallocate_Call, 0x100, [](PUCHAR Candidate) {
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC)
-		{
-			return TRUE;
-		}
-
-		if (Candidate[0] == 0x8B &&
-			Candidate[1] == 0x44 &&
-			Candidate[2] == 0x24)
-		{
-			return TRUE;
-		}
-
-		if (Candidate[0] == 0xFF &&
-			Candidate[2] == 0x24)
-		{
-			return TRUE;
-		}
-
-		return FALSE;
-	});
-
-	Sig_VarNotFound(CL_ReallocateDynamicData_VA);
-
-	typedef struct CL_ReallocateDynamicData_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID CL_Reallocate_Call{};
-	} CL_ReallocateDynamicData_SearchContext;
-
-	CL_ReallocateDynamicData_SearchContext ctx = { DllInfo, RealDllInfo, CL_Reallocate_Call };
-
-	g_pMetaHookAPI->DisasmRanges(CL_ReallocateDynamicData_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (CL_ReallocateDynamicData_SearchContext*)context;
-
-		if (!cl_max_edicts && pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			// mov     eax, cl_max_edicts
-			// add     esp, 4
-			if (0 == memcmp(address + instLen, "\x83\xC4\x04", 3))
-			{
-				cl_max_edicts = (decltype(cl_max_edicts))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-		}
-
-		if (!cl_max_edicts && pinst->id == X86_INS_IMUL &&
-			pinst->detail->x86.op_count == 3 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[2].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			cl_max_edicts = (decltype(cl_max_edicts))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (!cl_entities && address > (PUCHAR)ctx->CL_Reallocate_Call && pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG &&
-			pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-		{
-			cl_entities = (decltype(cl_entities))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-		}
-
-		if (cl_entities && cl_max_edicts)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-	}, 0, &ctx);
-
-	Sig_VarNotFound(cl_max_edicts);
-	Sig_VarNotFound(cl_entities);
-}
-
-void Engine_FillAddress_TempEntsVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars
-		TEMPENTITY *gTempEnts = NULL;
-	*/
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GTEMPENTS_SIG_SVENGINE, DllInfo);
-		Sig_AddrNotFound(gTempEnts);
-		PVOID gTempEnts_VA = *(PVOID*)(addr + 8);
-		gTempEnts = (decltype(gTempEnts))ConvertDllInfoSpace(gTempEnts_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
-#define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GTEMPENTS_SIG_NEW, DllInfo);
-		Sig_AddrNotFound(gTempEnts);
-		PVOID gTempEnts_VA = *(PVOID*)(addr + 8);
-		gTempEnts = (decltype(gTempEnts))ConvertDllInfoSpace(gTempEnts_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_VarNotFound(gTempEnts);
-}
-
 void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -10343,85 +9469,6 @@ void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 	Sig_VarNotFound(gWaterColor);
 	Sig_VarNotFound(cshift_water);
-}
-
-void Engine_FillAddress_ModKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-	//Global pointers that link into engine vars
-		model_t *mod_known = NULL;
-	*/
-
-	const char pattern[] = "\xB8\x9D\x82\x97\x53\x81\xE9";
-	ULONG_PTR addr = (ULONG_PTR)Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound(mod_known);
-
-	PVOID mod_known_VA = *(PVOID*)(addr + 7);
-	mod_known = (decltype(mod_known))ConvertDllInfoSpace(mod_known_VA, DllInfo, RealDllInfo);
-
-	Sig_VarNotFound(mod_known);
-}
-
-void Engine_FillAddress_Mod_NumKnown(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-		//Global pointers that link into engine vars
-		int *mod_numknown = NULL;
-	*/
-
-	typedef struct Mod_NumKnown_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} Mod_NumKnown_SearchContext;
-
-	const char sigs[] = "Cached models:\n";
-	auto Mod_Print_String = Search_Pattern_Data(sigs, DllInfo);
-	if (!Mod_Print_String)
-		Mod_Print_String = Search_Pattern_Rdata(sigs, DllInfo);
-	Sig_VarNotFound(Mod_Print_String);
-
-	char pattern[] = "\x57\x68\x2A\x2A\x2A\x2A\xE8";
-	*(DWORD*)(pattern + 2) = (DWORD)Mod_Print_String;
-	auto Mod_Print_Call = Search_Pattern(pattern, DllInfo);
-	Sig_VarNotFound(Mod_Print_Call);
-
-	Mod_NumKnown_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(Mod_Print_Call, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (Mod_NumKnown_SearchContext*)context;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{//A1 84 5C 32 02 mov     eax, mod_numknown
-				mod_numknown = (decltype(mod_numknown))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-			else if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{//39 3D 44 32 90 03 cmp     mod_numknown, edi
-				mod_numknown = (decltype(mod_numknown))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (mod_numknown)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-	Sig_VarNotFound(mod_numknown);
 }
 
 void Engine_FillAddress_Mod_LoadStudioModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -11829,20 +10876,11 @@ void Engine_FillAddress_DrawStartupVideo(const mh_dll_info_t& DllInfo, const mh_
 	if (gPrivateFuncs.CGame_DrawStartupVideo)
 		return;
 
-	PVOID DrawStartupVideo_VA = 0;
-
 	//Only available in HL25
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		DrawStartupVideo_VA = Search_Pattern(DRAWSTARTUPVIDEO_HL25, DllInfo);
-		gPrivateFuncs.CGame_DrawStartupVideo = (decltype(gPrivateFuncs.CGame_DrawStartupVideo))ConvertDllInfoSpace((PVOID)DrawStartupVideo_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 		return;
-	}
 
-	Sig_FuncNotFound(CGame_DrawStartupVideo);
+	gPrivateFuncs.CGame_DrawStartupVideo = (decltype(gPrivateFuncs.CGame_DrawStartupVideo))GamedataResolvePtr(RealDllInfo.ImageBase, "CGame_DrawStartupVideo", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_Draw_Frame(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -12409,13 +11447,13 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_MarkLeaves(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_GL_Set2D(DllInfo, RealDllInfo);
+	gPrivateFuncs.GL_Set2D = (decltype(gPrivateFuncs.GL_Set2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Set2D", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Engine_FillAddress_GL_Finish2D(DllInfo, RealDllInfo);
+	gPrivateFuncs.GL_Finish2D = (decltype(gPrivateFuncs.GL_Finish2D))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_Finish2D", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Engine_FillAddress_GL_BeginRendering(DllInfo, RealDllInfo);
+	gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_BeginRendering", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Engine_FillAddress_GL_EndRendering(DllInfo, RealDllInfo);
+	gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))GamedataResolvePtr(RealDllInfo.ImageBase, "GL_EndRendering", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	Engine_FillAddress_EmitWaterPolys(DllInfo, RealDllInfo);
 
@@ -12463,7 +11501,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_SCR_BeginLoadingPlaque(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_Host_IsSinglePlayerGame(DllInfo, RealDllInfo);
+	gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))GamedataResolvePtr(RealDllInfo.ImageBase, "Host_IsSinglePlayerGame", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	Engine_FillAddress_Mod_UnloadSpriteTextures(DllInfo, RealDllInfo);
 
@@ -12477,7 +11515,8 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_GL_EndRenderingVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_VisEdicts(DllInfo, RealDllInfo);
+	cl_numvisedicts = (decltype(cl_numvisedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_numvisedicts", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_visedicts = (decltype(cl_visedicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_visedicts", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Engine_FillAddress_R_AllocTransObjectsVars(DllInfo, RealDllInfo);
 
@@ -12509,17 +11548,17 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_CL_SimOrgVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_CL_ViewEntityVars(DllInfo, RealDllInfo);
+	cl_viewentity = (decltype(cl_viewentity))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_viewentity", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	Engine_FillAddress_CL_ReallocateDynamicData(DllInfo, RealDllInfo);
+	cl_max_edicts = (decltype(cl_max_edicts))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_max_edicts", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_entities = (decltype(cl_entities))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_entities", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	Engine_FillAddress_TempEntsVars(DllInfo, RealDllInfo);
+	gTempEnts = (decltype(gTempEnts))GamedataResolvePtr(RealDllInfo.ImageBase, "gTempEnts", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Engine_FillAddress_WaterVars(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_ModKnown(DllInfo, RealDllInfo);
-
-	Engine_FillAddress_Mod_NumKnown(DllInfo, RealDllInfo);
+	mod_known = (decltype(mod_known))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_known", MH_GAMESYMBOL_KIND_GLOBAL);
+	mod_numknown = (decltype(mod_numknown))GamedataResolvePtr(RealDllInfo.ImageBase, "mod_numknown", MH_GAMESYMBOL_KIND_GLOBAL);
 
 	Engine_FillAddress_Mod_LoadStudioModel(DllInfo, RealDllInfo);
 
@@ -13467,61 +12506,6 @@ void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh
 	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))ConvertDllInfoSpace(ClientPortalManager_EnableClipPlane_VA, DllInfo, RealDllInfo);
 }
 
-void Client_FillAddress_RenderingPortals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-.text:1004EAA8 6A 00                                               push    0
-.text:1004EAAA 6A 00                                               push    0
-.text:1004EAAC 6A 00                                               push    0
-.text:1004EAAE 8B 01                                               mov     eax, [ecx]
-.text:1004EAB0 FF 50 2C                                            call    dword ptr [eax+2Ch]
-.text:1004EAB3 8B 35 A4 A1 11 10                                   mov     esi, ds:glDisable
-.text:1004EAB9 33 D2                                               xor     edx, edx
-.text:1004EABB C6 05 0D C8 63 10 01                                mov     g_bRenderingPortals, 1
-	*/
-
-	const char pattern[] = "\x6A\x00\x6A\x00\x6A\x00\x8B\x2A\xFF\x50\x2A";
-	auto addr = Search_Pattern(pattern, DllInfo);
-	Sig_AddrNotFound(g_bRenderingPortals);
-
-	typedef struct RenderingPortals_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	}RenderingPortals_SearchContext;
-
-	RenderingPortals_SearchContext ctx = { DllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (RenderingPortals_SearchContext*)context;
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-			pinst->detail->x86.operands[1].imm == 1)
-		{
-			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			return TRUE;
-		}
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-	}, 0, &ctx);
-
-	Sig_VarNotFound(g_bRenderingPortals_SCClient);
-}
-
 void Client_FillAddress_WaterLevel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -13621,52 +12605,6 @@ void Client_FillAddress_FogParams(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(g_iEndDist_SCClient);
 }
 
-void Client_FillAddress_ViewEntityIndex(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	if (g_dwEngineBuildnum >= 10182)
-	{
-		const char pattern[] = "\xFF\x15\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x00\x2A\x05";
-		auto addr = Search_Pattern(pattern, DllInfo);
-		Sig_AddrNotFound(g_ViewEntityIndex_SCClient);
-
-		typedef struct ViewEntityIndex_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		}ViewEntityIndex_SearchContext;
-
-		ViewEntityIndex_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(addr, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (ViewEntityIndex_SearchContext*)context;
-
-			if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-			}, 0, &ctx);
-
-		Sig_VarNotFound(g_ViewEntityIndex_SCClient);
-	}
-}
-
 void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
@@ -13684,374 +12622,32 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_ClientPortalManager_EnableClipPlane(DllInfo, RealDllInfo);
 			Client_FillAddress_ClientPortalManager_RenderPoratals(DllInfo, RealDllInfo);
 			Client_FillAddress_UpdatePlayerPitch(DllInfo, RealDllInfo);
-			Client_FillAddress_RenderingPortals(DllInfo, RealDllInfo);
-			Client_FillAddress_ViewEntityIndex(DllInfo, RealDllInfo);
 			Client_FillAddress_WaterLevel(DllInfo, RealDllInfo);
 			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
+
+			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
+			g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ViewEntityIndex_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
 
 			g_bIsSvenCoop = true;
 		}
 	}
 }
 
-void Client_FillAddress_CL_IsThirdPerson(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	PVOID CL_IsThirdPerson = ConvertDllInfoSpace((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, RealDllInfo, DllInfo);
-
-	if (!CL_IsThirdPerson)
-	{
-		if (g_pMetaHookAPI->GetClientModule())
-		{
-			CL_IsThirdPerson = ConvertDllInfoSpace(GetProcAddress(g_pMetaHookAPI->GetClientModule(), "CL_IsThirdPerson"), RealDllInfo, DllInfo);
-		}
-	}
-
-	if (CL_IsThirdPerson)
-	{
-		typedef struct CL_IsThirdPerson_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			ULONG_PTR CandidateVA[16]{};
-			int iNumCandidates{};
-		}CL_IsThirdPerson_SearchContext;
-
-		CL_IsThirdPerson_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(CL_IsThirdPerson, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto ctx = (CL_IsThirdPerson_SearchContext*)context;
-			auto pinst = (cs_insn*)inst;
-
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDI
-						) &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					ctx->CandidateVA[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
-
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{
-					ctx->CandidateVA[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-		}, 0, &ctx);
-
-		if (ctx.iNumCandidates >= 3 && ctx.CandidateVA[ctx.iNumCandidates - 1] == ctx.CandidateVA[ctx.iNumCandidates - 2] + sizeof(int))
-		{
-			g_iUser1 = (decltype(g_iUser1))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[ctx.iNumCandidates - 2], DllInfo, RealDllInfo);
-			g_iUser2 = (decltype(g_iUser2))ConvertDllInfoSpace((PVOID)ctx.CandidateVA[ctx.iNumCandidates - 1], DllInfo, RealDllInfo);
-		}
-	}
-}
-
-void Client_FillAddress_PlayerExtraInfo(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-	 //Global pointers that link into client dll vars.
-	extra_player_info_t(*g_PlayerExtraInfo)[65] = NULL;
-	extra_player_info_czds_t(*g_PlayerExtraInfo_CZDS)[65] = NULL;
-	*/
-
-	//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
-	/*
-	.text:019A4575 66 85 C0                                            test    ax, ax
-	.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
-	.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
-	.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
-	.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
-	*/
-	if (1)
-	{
-		char pattern[] = "\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				typedef struct MsgFunc_ScoreInfo_SearchContext_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					ULONG_PTR Candidates[4]{};
-					int iNumCandidates{};
-				} MsgFunc_ScoreInfo_SearchContext;
-
-				MsgFunc_ScoreInfo_SearchContext ctx = { DllInfo, RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto ctx = (MsgFunc_ScoreInfo_SearchContext*)context;
-					auto pinst = (cs_insn*)inst;
-
-					if (ctx->iNumCandidates < 4)
-					{
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].size == 2)
-						{
-							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
-								)
-							{
-								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-								ctx->iNumCandidates++;
-							}
-						}
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].size == 2 &&
-							pinst->detail->x86.operands[1].imm == 0)
-						{
-							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
-								)
-							{
-								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-								ctx->iNumCandidates++;
-							}
-						}
-					}
-
-					if (ctx->iNumCandidates == 4)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-				}, 0, &ctx);
-
-				if (ctx.iNumCandidates >= 3)
-				{
-					std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
-						return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-						});
-
-					if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
-					{
-						if (ctx.Candidates[ctx.iNumCandidates - 2] +
-							(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass))
-							==
-							ctx.Candidates[ctx.iNumCandidates - 1])
-						{
-							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
-							g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
-							break;
-						}
-					}
-					else
-					{
-						if (ctx.Candidates[ctx.iNumCandidates - 2] +
-							(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
-							== ctx.Candidates[ctx.iNumCandidates - 1])
-						{
-							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
-							g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
-							break;
-						}
-					}
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if (!g_PlayerExtraInfo)
-	{
-		//For HL25
-		char pattern[] = "\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x2A";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				typedef struct MsgFunc_ScoreInfo_ctx_s
-				{
-					const mh_dll_info_t& DllInfo;
-					const mh_dll_info_t& RealDllInfo;
-					ULONG_PTR Candidates[4]{};
-					int iNumCandidates{};
-				} MsgFunc_ScoreInfo_ctx;
-
-				MsgFunc_ScoreInfo_ctx ctx = { DllInfo, RealDllInfo };
-
-				g_pMetaHookAPI->DisasmRanges((void*)pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto ctx = (MsgFunc_ScoreInfo_ctx*)context;
-					auto pinst = (cs_insn*)inst;
-
-					if (ctx->iNumCandidates < 4)
-					{
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].size == 2)
-						{
-							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
-								)
-							{
-								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-								ctx->iNumCandidates++;
-							}
-						}
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].size == 2 &&
-							pinst->detail->x86.operands[1].imm == 0)
-						{
-							if (ctx->Candidates[0] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[1] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[2] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp &&
-								ctx->Candidates[3] != (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp
-								)
-							{
-								ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-								ctx->iNumCandidates++;
-							}
-						}
-					}
-
-					if (ctx->iNumCandidates == 4)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, &ctx);
-
-				if (ctx.iNumCandidates >= 3)
-				{
-					std::qsort(ctx.Candidates, ctx.iNumCandidates, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
-						return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-						});
-
-					if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
-					{
-						if (ctx.Candidates[ctx.iNumCandidates - 2] +
-							(offsetof(extra_player_info_czds_t, teamnumber) - offsetof(extra_player_info_czds_t, playerclass))
-							==
-							ctx.Candidates[ctx.iNumCandidates - 1])
-						{
-							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_czds_t, teamnumber));
-							g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
-							break;
-						}
-					}
-					else
-					{
-						if (ctx.Candidates[ctx.iNumCandidates - 2] +
-							(offsetof(extra_player_info_t, teamnumber) - offsetof(extra_player_info_t, playerclass))
-							== ctx.Candidates[ctx.iNumCandidates - 1])
-						{
-							PVOID playerExtraInfo_VA = (PVOID)(ctx.Candidates[ctx.iNumCandidates - 1] - offsetof(extra_player_info_t, teamnumber));
-							g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))ConvertDllInfoSpace(playerExtraInfo_VA, ctx.DllInfo, ctx.RealDllInfo);
-							break;
-						}
-					}
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror")) {
-		Sig_VarNotFound(g_PlayerExtraInfo_CZDS);
-	}
-	else {
-		Sig_VarNotFound(g_PlayerExtraInfo);
-	}
-}
-
 void Client_FillAddress(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	Client_FillAddress_CL_IsThirdPerson(DllInfo, RealDllInfo);
+	g_iUser1 = (decltype(g_iUser1))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser1", MH_GAMESYMBOL_KIND_GLOBAL);
+	g_iUser2 = (decltype(g_iUser2))GamedataResolvePtr(RealDllInfo.ImageBase, "g_iUser2", MH_GAMESYMBOL_KIND_GLOBAL);
+
 	Client_FillAddress_SCClient(DllInfo, RealDllInfo);
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
 		g_bIsCounterStrike = true;
 
-		Client_FillAddress_PlayerExtraInfo(DllInfo, RealDllInfo);
+		if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+			g_PlayerExtraInfo_CZDS = (decltype(g_PlayerExtraInfo_CZDS))GamedataResolvePtr(RealDllInfo.ImageBase, "g_PlayerExtraInfo_CZDS", MH_GAMESYMBOL_KIND_GLOBAL);
+		else
+			g_PlayerExtraInfo = (decltype(g_PlayerExtraInfo))GamedataResolvePtr(RealDllInfo.ImageBase, "g_PlayerExtraInfo", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "aomdc"))

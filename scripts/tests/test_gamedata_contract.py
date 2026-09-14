@@ -96,6 +96,23 @@ def virtual_function_record(name="GameStudioRenderer_StudioDrawModel", module="e
     }
 
 
+def vtable_record(name="GameStudioRenderer", module="engine", payload=None):
+    if payload is None:
+        payload = {
+            "vtable_rva": "0x2000",
+            "vtable_size": "0x78",
+            "vtable_symbol": "GameStudioRenderer",
+            "vtable_numvfunc": 30,
+        }
+    return {
+        "platform": "windows",
+        "module": module,
+        "symbolName": name,
+        "kind": "vtable",
+        "payload": payload,
+    }
+
+
 class SnapshotContractTests(unittest.TestCase):
     def test_accepts_new_scalar_contract(self):
         doc = make_snapshot([function_record(), scalar_record()])
@@ -165,6 +182,46 @@ class SnapshotContractTests(unittest.TestCase):
                     for e in errors),
                 (missing, errors),
             )
+
+    def test_accepts_vtable_record(self):
+        doc = make_snapshot([vtable_record()])
+        errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
+        self.assertEqual([], errors, errors)
+        self.assertEqual(
+            {"kind": "vtable", "rva": 0x2000, "size": 0x78},
+            symbols["GameStudioRenderer"],
+        )
+
+    def test_rejects_vtable_missing_fields(self):
+        for missing in ("vtable_rva", "vtable_size", "vtable_symbol", "vtable_numvfunc"):
+            payload = {
+                "vtable_rva": "0x2000",
+                "vtable_size": "0x78",
+                "vtable_symbol": "GameStudioRenderer",
+                "vtable_numvfunc": 30,
+            }
+            del payload[missing]
+            doc = make_snapshot([vtable_record(payload=payload)])
+            errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+            self.assertTrue(
+                any("missing/invalid vtable_rva/vtable_size/vtable_symbol/vtable_numvfunc" in e
+                    for e in errors),
+                (missing, errors),
+            )
+
+    def test_rejects_vtable_size_numvfunc_mismatch(self):
+        payload = {
+            "vtable_rva": "0x2000",
+            "vtable_size": "0x78",
+            "vtable_symbol": "GameStudioRenderer",
+            "vtable_numvfunc": 28,
+        }
+        doc = make_snapshot([vtable_record(payload=payload)])
+        errors, _, _ = validate.validate_snapshot(doc, "hl-8684")
+        self.assertTrue(
+            any("vtable_size does not match vtable_numvfunc" in e for e in errors),
+            errors,
+        )
 
 
 class RequiredScalarGateTests(unittest.TestCase):

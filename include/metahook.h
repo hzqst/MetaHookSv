@@ -109,7 +109,7 @@ typedef struct mh_plugininfo_s
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 112
+#define METAHOOK_API_VERSION 113
 
 typedef struct hook_s hook_t;
 
@@ -193,7 +193,12 @@ typedef enum mh_gamesymbol_kind_e
 	// A virtual function is an address-bearing record whose rva is the function
 	// entry point taken from its owning vtable slot. ResolveGameSymbol accepts it
 	// and returns moduleBase + rva exactly like FUNCTION.
-	MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION = 5
+	MH_GAMESYMBOL_KIND_VIRTUAL_FUNCTION = 5,
+	// A vtable is an address-bearing record whose rva is the virtual function
+	// table array itself (typically in .rdata). ResolveGameSymbol accepts it and
+	// returns moduleBase + rva; consumers index the returned pointer array by
+	// vfunc index. No new API function slots were added for this kind.
+	MH_GAMESYMBOL_KIND_VTABLE = 6
 } mh_gamesymbol_kind_t;
 
 /*
