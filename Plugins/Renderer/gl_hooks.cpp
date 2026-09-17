@@ -2354,119 +2354,8 @@ void Engine_FillAddress_R_DrawWorld(const mh_dll_info_t& DllInfo, const mh_dll_i
 
 	gPrivateFuncs.R_DrawWorld = (decltype(gPrivateFuncs.R_DrawWorld))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawWorld", MH_GAMESYMBOL_KIND_FUNCTION);
 
+	modelorg = (decltype(modelorg))GamedataResolvePtr(RealDllInfo.ImageBase, "modelorg", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	{
-		auto R_DrawWorld_VA = ConvertDllInfoSpace(gPrivateFuncs.R_DrawWorld, RealDllInfo, DllInfo);
-
-		/*
-			 //Global pointers that link into engine vars
-			 vec_t *modelorg = NULL;
-		 */
-
-		typedef struct R_DrawWorld_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			int candidate_count{};
-			ULONG_PTR candidateVA[10]{};
-		} R_DrawWorld_SearchContext;
-
-		R_DrawWorld_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(R_DrawWorld_VA, 0x130, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (R_DrawWorld_SearchContext*)context;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{//.text:01D49479 89 15 C0 96 BC 02                                   mov     modelorg, edx
-
-				if (!ctx->candidateVA[ctx->candidate_count] && ctx->candidate_count < 10)
-				{
-					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->candidate_count++;
-				}
-			}
-			else if (pinst->id == X86_INS_MOVSS &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{// movss   dword ptr modelorg, xmm0
-
-				if (!ctx->candidateVA[ctx->candidate_count] && ctx->candidate_count < 10)
-				{
-					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->candidate_count++;
-				}
-			}
-			else if (pinst->id == X86_INS_FSTP &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-			{//.text:01D49479 89 15 C0 96 BC 02                                   mov     modelorg, edx
-
-				if (!ctx->candidateVA[ctx->candidate_count] && ctx->candidate_count < 10)
-				{
-					ctx->candidateVA[ctx->candidate_count] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
-					ctx->candidate_count++;
-				}
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[0].imm == 0x100
-				)
-			{
-				return TRUE;
-			}
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-		if (ctx.candidate_count >= 3)
-		{
-			std::qsort(ctx.candidateVA, ctx.candidate_count, sizeof(ctx.candidateVA[0]), [](const void* a, const void* b) {
-				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
-				});
-
-			//other, other, other, modelorg[0], modelorg[1], modelorg[2]
-			if (ctx.candidateVA[ctx.candidate_count - 3] + 4 == ctx.candidateVA[ctx.candidate_count - 2] &&
-				ctx.candidateVA[ctx.candidate_count - 2] + 4 == ctx.candidateVA[ctx.candidate_count - 1])
-			{
-				modelorg = (decltype(modelorg)) ((PVOID)ctx.candidateVA[ctx.candidate_count - 3]);
-			}
-			//modelorg[0], modelorg[1], modelorg[2], other, other, other
-			else if (ctx.candidateVA[0] + 4 == ctx.candidateVA[1] &&
-				ctx.candidateVA[1] + 4 == ctx.candidateVA[2])
-			{
-				modelorg = (decltype(modelorg))((PVOID)ctx.candidateVA[0]);
-			}
-		}
-		else if (ctx.candidate_count == 1)
-		{
-			modelorg = (decltype(modelorg))((PVOID)ctx.candidateVA[0]);
-		}
-
-		Sig_VarNotFound(modelorg);
-	}
 }
 
 void Engine_FillAddress_R_DrawViewModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -2927,9 +2816,11 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 	gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TracerDraw", MH_GAMESYMBOL_KIND_FUNCTION);
 	gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_BeamDrawList", MH_GAMESYMBOL_KIND_FUNCTION);
 
+	active_particles = (decltype(active_particles))GamedataResolvePtr(RealDllInfo.ImageBase, "active_particles", MH_GAMESYMBOL_KIND_GLOBAL);
+
 	PVOID R_DrawParticles_VA = (PVOID)gPrivateFuncs.R_DrawParticles;
 
-
+	//particletexture is catalog-uncovered and is still read from the resolved body.
 	typedef struct R_DrawParticles_SearchContext_s
 	{
 		const mh_dll_info_t& DllInfo;
@@ -2952,7 +2843,7 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
 			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
-			particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
+			particletexture = (decltype(particletexture))((PVOID)pinst->detail->x86.operands[0].mem.disp);
 		}
 
 		if (!particletexture &&
@@ -2978,28 +2869,11 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			}
 			else
 			{
-				particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
+				particletexture = (decltype(particletexture))((PVOID)pinst->detail->x86.operands[1].mem.disp);
 			}
 		}
 
-		if (!active_particles &&
-			pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[0].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
-			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[1].mem.base == 0 &&
-			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-		{
-			if (address[-5] == 0xE8)
-			{
-				active_particles = (decltype(active_particles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
-			}
-		}
-
-		if (particletexture && active_particles)
+		if (particletexture)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -3011,8 +2885,8 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 		return FALSE;
 		}, 0, &ctx);
 
-	Sig_VarNotFound(active_particles);
 	Sig_VarNotFound(particletexture);
+
 
 }
 

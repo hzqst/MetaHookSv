@@ -390,15 +390,27 @@ Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
 (field, locator, wrapper, consumer); the `R_GLOW_BLEND_*` sig macros and the
 now-unused `R_ForceCVars_inlined` / `GlowBlend_inlined` fields were removed.
 
+**Follow-up (same issue, 2026-09-17): `modelorg` and `active_particles`**
+
+Both are published as engine GLOBALs for all 11 identities and the retained
+heuristics for them were unreliable after the root switched to the real image,
+so they were migrated as well (78 symbols total): `Engine_FillAddress_R_DrawWorld`
+and `Engine_FillAddress_R_DrawParticles` now resolve them through
+`ResolveGameSymbol` and only `particletexture` (catalog-uncovered) is still
+scanned. A sweep for every catalog symbol that is still assigned outside a
+`GamedataResolve*` call (matching bare-symbol assignments against the whole
+`records[]` name set) now reports no remaining locator, so this class of
+"catalog-covered but still scanned" symbol is exhausted.
+
 **Residual scanning (intentionally kept, catalog-uncovered)**
 
 `R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
-`GL_UnloadTextures`, `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`, the
-`gl_extensions` / `vid_d3d` / texture-array / fog / scissor / modelorg /
-viewmodel / sky / loadname / view-leaf / lightmap variable slots, `CL_FxBlend`'s
-sibling `r_blend`, and every symbol outside the 76 (EngineSurface virtuals,
-portal/DrawNormalTriangles scans, `R_AddTEntity`, `R_TextureAnimation`,
-`R_LightStrength`, `R_Studio*` engine vars, etc.).
+`GL_UnloadTextures`, `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`,
+`particletexture`, the `gl_extensions` / `vid_d3d` / texture-array / fog /
+scissor / viewmodel / sky / loadname / view-leaf / lightmap variable slots,
+`CL_FxBlend`'s sibling `r_blend`, and every symbol outside the list
+(EngineSurface virtuals, portal/DrawNormalTriangles scans, `R_AddTEntity`,
+`R_TextureAnimation`, `R_LightStrength`, `R_Studio*` engine vars, etc.).
 
 **Release gate**: `scripts/validate-gamedata.py` now carries a Renderer consumer
 gate (`RENDERER_*` tables + `validate_renderer`) covering the 46 + 76 required

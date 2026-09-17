@@ -188,9 +188,10 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "S_ExtraUpdate", "V_FadeAlpha", "V_RenderView",
 )
 RENDERER_ENGINE_ALL_GLOBALS = (
-    "cl_entities", "cl_max_edicts", "cl_numvisedicts", "cl_parsecount", "cl_viewentity",
-    "cl_visedicts", "cl_worldmodel", "currententity", "gTempEnts", "g_ChromeOrigin",
-    "mod_known", "mod_numknown", "pstudiohdr", "r_model", "r_origin", "r_worldentity",
+    "active_particles", "cl_entities", "cl_max_edicts", "cl_numvisedicts", "cl_parsecount",
+    "cl_viewentity", "cl_visedicts", "cl_worldmodel", "currententity", "gTempEnts",
+    "g_ChromeOrigin", "mod_known", "mod_numknown", "modelorg", "pstudiohdr", "r_model",
+    "r_origin", "r_worldentity",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
