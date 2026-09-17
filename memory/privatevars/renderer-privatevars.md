@@ -402,6 +402,17 @@ scanned. A sweep for every catalog symbol that is still assigned outside a
 `records[]` name set) now reports no remaining locator, so this class of
 "catalog-covered but still scanned" symbol is exhausted.
 
+**Root-consistency fix**: the retained `Mod_LoadModel` pass had kept a
+mirror-based root (`ConvertDllInfoSpace(gPrivateFuncs.Mod_LoadModel, RealDllInfo, DllInfo)`)
+while the `"Loading '%s'\n"` / `"loading %s\n"` anchor it searched for was
+already read from the real image, so the embedded absolute address never
+matched and `Mod_LoadModel_PushString` resolution would `Sys_Error` whenever
+the mirror engine image existed. Both retained passes now root on the resolved
+real address with real-image bounds. A sweep for
+`ConvertDllInfoSpace(gPrivateFuncs.*, RealDllInfo, DllInfo)` confirms the
+remaining back-conversions all belong to **unmigrated** locators that keep the
+scan image consistently for both root and pattern.
+
 **Residual scanning (intentionally kept, catalog-uncovered)**
 
 `R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
