@@ -5265,27 +5265,13 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 		float *g_UserFogEnd = NULL;
 	*/
 	PVOID R_RenderFinalFog_VA = 0;
-	ULONG R_RenderFinalFog_RVA = 0;
-
-	PVOID SearchBase_VA = 0;
-
-	if (gPrivateFuncs.R_RenderScene)
-		SearchBase_VA = gPrivateFuncs.R_RenderScene;
-	else if (gPrivateFuncs.R_RenderView_SvEngine)
-		SearchBase_VA = gPrivateFuncs.R_RenderView_SvEngine;
-	else if (gPrivateFuncs.R_RenderView)
-		SearchBase_VA = gPrivateFuncs.R_RenderView;
-
-	// Convert SearchBase_VA to DllInfo-based
-	if (SearchBase_VA)
-	{
-		ULONG SearchBase_RVA = 0;
-		Convert_VA_to_RVA(SearchBase, RealDllInfo);
-		Convert_RVA_to_VA(SearchBase, DllInfo);
-	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		//SvEngine inlines R_RenderFinalFog into the render-view body and publishes
+		//no catalog record, so the push 0B60h instruction stays the anchor.
+		PVOID SearchBase_VA = gPrivateFuncs.R_RenderView_SvEngine ? (PVOID)gPrivateFuncs.R_RenderView_SvEngine : (PVOID)gPrivateFuncs.R_RenderView;
+
 		typedef struct R_RenderFinalFog_SearchContext_s
 		{
 			const mh_dll_info_t& DllInfo;
@@ -5297,7 +5283,7 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 			bool bFoundPushB65h{};
 		} R_RenderFinalFog_SearchContext;
 
-		R_RenderFinalFog_SearchContext ctx = { DllInfo, RealDllInfo, R_RenderFinalFog_VA };
+		R_RenderFinalFog_SearchContext ctx = { RealDllInfo, RealDllInfo, R_RenderFinalFog_VA };
 
 		g_pMetaHookAPI->DisasmRanges((void*)SearchBase_VA, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
@@ -5308,14 +5294,13 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 					pinst->detail->x86.operands[1].imm == 0)
 				{
-					g_bUserFogOn = (decltype(g_bUserFogOn))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					g_bUserFogOn = (decltype(g_bUserFogOn))((PVOID)pinst->detail->x86.operands[0].mem.disp);
 				}
-
 				else if (pinst->id == X86_INS_PUSH &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
@@ -5351,36 +5336,40 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 				return FALSE;
 			}, 0, &ctx);
 
-		Convert_VA_to_RVA(R_RenderFinalFog, DllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(SearchBase_VA, 0x600, sigs);
-
-		if (addr)
-		{
-			g_bUserFogOn = (decltype(g_bUserFogOn))ConvertDllInfoSpace((PVOID)(*(ULONG_PTR*)(addr + 2)), DllInfo, RealDllInfo);
-
-			R_RenderFinalFog_VA = (PVOID)GetCallAddress(addr + 9);
-			Convert_VA_to_RVA(R_RenderFinalFog, DllInfo);
-		}
+		gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))R_RenderFinalFog_VA;
 	}
 	else
 	{
-		const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(SearchBase_VA, 0x600, sigs);
+		gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))GamedataResolvePtr(RealDllInfo.ImageBase, "R_RenderFinalFog", MH_GAMESYMBOL_KIND_FUNCTION);
+		R_RenderFinalFog_VA = (PVOID)gPrivateFuncs.R_RenderFinalFog;
 
-		if (addr)
+		//g_bUserFogOn remains catalog-uncovered: locate the R_RenderFinalFog call
+		//inside the render-view body on the real image and read the pushed slot.
+		PVOID SearchBase_VA = gPrivateFuncs.R_RenderScene ? (PVOID)gPrivateFuncs.R_RenderScene : (PVOID)gPrivateFuncs.R_RenderView;
+
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			R_RenderFinalFog_VA = (PVOID)GetCallAddress(addr + 9);
-			g_bUserFogOn = (decltype(g_bUserFogOn))ConvertDllInfoSpace((PVOID)(*(ULONG_PTR*)(addr + 1)), DllInfo, RealDllInfo);
+			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
+			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(SearchBase_VA, 0x600, sigs);
 
-			Convert_VA_to_RVA(R_RenderFinalFog, DllInfo);
+			if (addr)
+			{
+				g_bUserFogOn = (decltype(g_bUserFogOn))((PVOID)(*(ULONG_PTR*)(addr + 2)));
+			}
+		}
+		else
+		{
+			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
+			ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(SearchBase_VA, 0x600, sigs);
+
+			if (addr)
+			{
+				g_bUserFogOn = (decltype(g_bUserFogOn))((PVOID)(*(ULONG_PTR*)(addr + 1)));
+			}
 		}
 	}
 
-	if (R_RenderFinalFog_RVA)
+	if (R_RenderFinalFog_VA)
 	{
 		typedef struct R_RenderFinalFog_VarsContext_s
 		{
@@ -5389,7 +5378,7 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 			ULONG_PTR candidateVA{};
 		} R_RenderFinalFog_VarsContext;
 
-		R_RenderFinalFog_VarsContext ctx = { DllInfo, RealDllInfo };
+		R_RenderFinalFog_VarsContext ctx = { RealDllInfo, RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges(R_RenderFinalFog_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn*)inst;
@@ -5405,22 +5394,22 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 
 				if (!g_UserFogDensity && pushvalue == GL_FOG_DENSITY)
 				{
-					g_UserFogDensity = (decltype(g_UserFogDensity))ConvertDllInfoSpace((PVOID)ctx->candidateVA, ctx->DllInfo, ctx->RealDllInfo);
+					g_UserFogDensity = (decltype(g_UserFogDensity))((PVOID)ctx->candidateVA);
 					ctx->candidateVA = 0;
 				}
 				else if (!g_UserFogColor && pushvalue == GL_FOG_COLOR)
 				{
-					g_UserFogColor = (decltype(g_UserFogColor))ConvertDllInfoSpace((PVOID)ctx->candidateVA, ctx->DllInfo, ctx->RealDllInfo);
+					g_UserFogColor = (decltype(g_UserFogColor))((PVOID)ctx->candidateVA);
 					ctx->candidateVA = 0;
 				}
 				else if (!g_UserFogStart && pushvalue == GL_FOG_START)
 				{
-					g_UserFogStart = (decltype(g_UserFogStart))ConvertDllInfoSpace((PVOID)ctx->candidateVA, ctx->DllInfo, ctx->RealDllInfo);
+					g_UserFogStart = (decltype(g_UserFogStart))((PVOID)ctx->candidateVA);
 					ctx->candidateVA = 0;
 				}
 				else if (!g_UserFogEnd && pushvalue == GL_FOG_END)
 				{
-					g_UserFogEnd = (decltype(g_UserFogEnd))ConvertDllInfoSpace((PVOID)ctx->candidateVA, ctx->DllInfo, ctx->RealDllInfo);
+					g_UserFogEnd = (decltype(g_UserFogEnd))((PVOID)ctx->candidateVA);
 					ctx->candidateVA = 0;
 				}
 			}
@@ -5430,38 +5419,32 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
+			{
 				ctx->candidateVA = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 			}
 			else if (pinst->id == X86_INS_FLD &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
+			{
 				ctx->candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 			}
 			else if (pinst->id == X86_INS_PUSH &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize
-				)
-			{//.text:01D88E84 A1 E0 23 73 02                                      mov     eax, flFogDensity
-
+				(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->RealDllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
+			{
 				ctx->candidateVA = (ULONG_PTR)pinst->detail->x86.operands[0].imm;
 			}
-
 			else if (pinst->id == X86_INS_MOVSS &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{//F3 0F 10 05 B4 ED 1A 11                             movss   xmm0, flFogDensity
-
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
+			{
 				ctx->candidateVA = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 			}
 
@@ -5476,15 +5459,15 @@ void Engine_FillAddress_R_RenderFinalFog(const mh_dll_info_t& DllInfo, const mh_
 
 			return FALSE;
 		}, 0, &ctx);
-
-		gPrivateFuncs.R_RenderFinalFog = (decltype(gPrivateFuncs.R_RenderFinalFog))VA_from_RVA(R_RenderFinalFog, RealDllInfo);
 	}
 
+	Sig_VarNotFound(g_bUserFogOn);
 	Sig_VarNotFound(g_UserFogDensity);
 	Sig_VarNotFound(g_UserFogColor);
 	Sig_VarNotFound(g_UserFogStart);
 	Sig_VarNotFound(g_UserFogEnd);
 }
+
 
 void Engine_FillAddress_R_DrawTEntitiesOnListVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
