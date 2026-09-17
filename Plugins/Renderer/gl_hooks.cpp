@@ -7192,22 +7192,22 @@ void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 #define GWATERCOLOR_SIG_HL25 "\x66\x0F\x6E\x05\x2A\x2A\x2A\x2A\xF2\x0F\x10\x0D\x2A\x2A\x2A\x2A\xF3\x0F\xE6\xC0\x68\x01\x26\x00\x00"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GWATERCOLOR_SIG_HL25, DllInfo);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GWATERCOLOR_SIG_HL25, RealDllInfo);
 		Sig_AddrNotFound(gWaterColor);
 		PVOID gWaterColor_VA = *(PVOID*)((PUCHAR)addr + 4);
 		PVOID cshift_water_VA = (PVOID)((ULONG_PTR)gWaterColor_VA + 12);
-		gWaterColor = (decltype(gWaterColor))ConvertDllInfoSpace(gWaterColor_VA, DllInfo, RealDllInfo);
-		cshift_water = (decltype(cshift_water))ConvertDllInfoSpace(cshift_water_VA, DllInfo, RealDllInfo);
+		gWaterColor = (decltype(gWaterColor))(gWaterColor_VA);
+		cshift_water = (decltype(cshift_water))(cshift_water_VA);
 	}
 	else
 	{
 #define GWATERCOLOR_SIG "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GWATERCOLOR_SIG, DllInfo);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(GWATERCOLOR_SIG, RealDllInfo);
 		Sig_AddrNotFound(gWaterColor);
 		PVOID gWaterColor_VA = *(PVOID*)((PUCHAR)addr + 2);
 		PVOID cshift_water_VA = (PVOID)((ULONG_PTR)gWaterColor_VA + 12);
-		gWaterColor = (decltype(gWaterColor))ConvertDllInfoSpace(gWaterColor_VA, DllInfo, RealDllInfo);
-		cshift_water = (decltype(cshift_water))ConvertDllInfoSpace(cshift_water_VA, DllInfo, RealDllInfo);
+		gWaterColor = (decltype(gWaterColor))(gWaterColor_VA);
+		cshift_water = (decltype(cshift_water))(cshift_water_VA);
 	}
 
 	Sig_VarNotFound(gWaterColor);
@@ -7222,65 +7222,23 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 		model_t **loadmodel = NULL;
 	*/
 
-	PVOID Mod_LoadModel_String = NULL;
+	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadModel", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		const char sigs[] = "Loading '%s'\n";
-		Mod_LoadModel_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!Mod_LoadModel_String)
-			Mod_LoadModel_String = Search_Pattern_Rdata(sigs, DllInfo);
-	}
-	else
-	{
-		const char sigs[] = "loading %s\n";
-		Mod_LoadModel_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!Mod_LoadModel_String)
-			Mod_LoadModel_String = Search_Pattern_Rdata(sigs, DllInfo);
-	}
+	PVOID Mod_LoadModel_VA = (PVOID)gPrivateFuncs.Mod_LoadModel;
 
+	//The loadname/loadmodel slots are still extracted from the printf call inside
+	//the resolved body.
+	const char* sigs = (g_iEngineType == ENGINE_SVENGINE) ? "Loading '%s'\n" : "loading %s\n";
+	PVOID Mod_LoadModel_String = Search_Pattern_Data(sigs, RealDllInfo);
+	if (!Mod_LoadModel_String)
+		Mod_LoadModel_String = Search_Pattern_Rdata(sigs, RealDllInfo);
 	Sig_VarNotFound(Mod_LoadModel_String);
 
 	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
 	*(DWORD*)(pattern + 1) = (DWORD)Mod_LoadModel_String;
-	auto Mod_LoadModel_PushString = Search_Pattern(pattern, DllInfo);
+	PVOID Mod_LoadModel_PushString = (PVOID)Search_Pattern_From_Size(Mod_LoadModel_VA, 0x800, pattern);
 	Sig_VarNotFound(Mod_LoadModel_PushString);
 
-	PVOID Mod_LoadModel_VA = (PVOID)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_PushString, 0x600, [](PUCHAR Candidate) {
-		//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
-
-		/*
-			.text:01D51990 81 EC 50 01 00 00                                            sub     esp, 150h
-		*/
-		if (Candidate[0] == 0x81 &&
-			Candidate[1] == 0xEC &&
-			Candidate[3] == 0x01 &&
-			Candidate[4] == 0x00 &&
-			Candidate[5] == 0x00)
-		{
-			return TRUE;
-		}
-
-		//.text : 01D40030 55                                                  push    ebp
-		//.text : 01D40031 8B EC                                               mov     ebp, esp
-		//.text : 01D40033 81 EC 0C 01 00 00                                   sub     esp, 10Ch
-		if (Candidate[0] == 0x55 &&
-			Candidate[1] == 0x8B &&
-			Candidate[2] == 0xEC &&
-			Candidate[3] == 0x81 &&
-			Candidate[4] == 0xEC &&
-			Candidate[6] == 0x01 &&
-			Candidate[7] == 0x00 &&
-			Candidate[8] == 0x00)
-		{
-			return TRUE;
-		}
-
-		return FALSE;
-	});
-
-	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))ConvertDllInfoSpace(Mod_LoadModel_VA, DllInfo, RealDllInfo);
-	Sig_FuncNotFound(Mod_LoadModel);
 
 	typedef struct Mod_LoadModel_SearchContext_s
 	{
@@ -7289,7 +7247,7 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 		PVOID loadname_nextaddr{};
 	} Mod_LoadModel_SearchContext;
 
-	Mod_LoadModel_SearchContext ctx = { DllInfo, RealDllInfo };
+	Mod_LoadModel_SearchContext ctx = { RealDllInfo, RealDllInfo };
 
 	g_pMetaHookAPI->DisasmRanges((PUCHAR)Mod_LoadModel_PushString + 5, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -8254,37 +8212,15 @@ void Engine_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 
 void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID detTexSupportedCallVA = 0;
-	{
-		/*
-	.text:01D4780A 68 73 85 00 00                                      push    8573h           ; pname
-	.text:01D4780F 68 00 23 00 00                                      push    2300h           ; target
-	.text:01D47814 FF D6                                               call    esi ; glTexEnvf
-			*/
-		const char pattern[] = "\x68\x73\x85\x00\x00\x68\x00\x23\x00\x00\xFF";
+	gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))GamedataResolvePtr(RealDllInfo.ImageBase, "DT_Initialize", MH_GAMESYMBOL_KIND_FUNCTION);
 
-		auto addr = Search_Pattern(pattern, DllInfo);
-		Sig_AddrNotFound(detTexSupportedCallVA);
+	PVOID DT_Initialize_VA = (PVOID)gPrivateFuncs.DT_Initialize;
 
-		detTexSupportedCallVA = addr;
-
-		PVOID DT_Initialize_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx((void*)detTexSupportedCallVA, 0x100, [](PUCHAR Candidate) {
-
-			if (Candidate[-1] == 0xC3 &&
-				Candidate[0] == 0x56 &&
-				Candidate[1] == 0x68)
-				return TRUE;
-
-			if (Candidate[0] == 0x68 &&
-				Candidate[5] == 0xE8)
-				return TRUE;
-
-			return FALSE;
-		});
-		gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))ConvertDllInfoSpace(DT_Initialize_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(DT_Initialize);
+	//detTexSupported remains catalog-uncovered: locate the glTexEnvf detail-texture
+	//call inside the resolved body and read the flag it sets.
+	const char pattern[] = "\x68\x73\x85\x00\x00\x68\x00\x23\x00\x00\xFF";
+	PVOID detTexSupportedCallVA = (PVOID)Search_Pattern_From_Size(DT_Initialize_VA, 0x200, pattern);
+	Sig_VarNotFound(detTexSupportedCallVA);
 
 	{
 		typedef struct DT_Initialize_SearchContext_s
@@ -8293,7 +8229,7 @@ void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll
 			const mh_dll_info_t& RealDllInfo;
 		} DT_Initialize_SearchContext;
 
-		DT_Initialize_SearchContext ctx = { DllInfo, RealDllInfo };
+		DT_Initialize_SearchContext ctx = { RealDllInfo, RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges(detTexSupportedCallVA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
