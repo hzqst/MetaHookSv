@@ -9387,118 +9387,33 @@ void R_PatchResetLatched(const mh_dll_info_t &DllInfo, const mh_dll_info_t& Real
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		return;
 
-	const char pattern[] = "\x6A\x01\x2A\x2A\x2A\x08\x03\x00\x00";
+	//CL_LinkPacketEntities calls R_ResetLatched at two consecutive call sites; the
+	//interpolation fix must cover both, so every numbered call-site record is
+	//redirected and the resolved function itself feeds R_ResetLatched_Patched.
+	char symbolName[96];
 
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-	while (SearchBegin < SearchLimit)
+	for (int index = 0; ; ++index)
 	{
-		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-		if (pFound)
-		{
-			typedef struct PatchResetLatched_SearchContext_s
-			{
-				const mh_dll_info_t& DllInfo;
-				const mh_dll_info_t& RealDllInfo;
-				bool bFoundMov308h{};
-				bool bFoundResetLatched{};
-			}PatchResetLatched_SearchContext;
+		snprintf(symbolName, sizeof(symbolName), "CL_LinkPacketEntities_to_R_ResetLatched_callsite_%d", index);
 
-			PatchResetLatched_SearchContext ctx = { DllInfo, RealDllInfo };
+		PVOID callsite = GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, symbolName, MH_GAMESYMBOL_KIND_PATCH);
 
-			g_pMetaHookAPI->DisasmRanges(pFound, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (PatchResetLatched_SearchContext*)context;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base != 0 &&
-					pinst->detail->x86.operands[0].mem.disp == 0x308 &&
-					(pinst->detail->x86.operands[1].type == X86_OP_REG || pinst->detail->x86.operands[1].type == X86_OP_IMM))
-				{
-					ctx->bFoundMov308h = true;
-					return FALSE;
-				}
-
-				if (ctx->bFoundMov308h && address[0] == 0xE8 && instLen == 5)
-				{
-					ctx->bFoundResetLatched = true;
-
-					PVOID R_ResetLatched_VA = GetCallAddress(address);
-
-					gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))ConvertDllInfoSpace(R_ResetLatched_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-					auto Call_R_ResetLatched_RealDllBased = ConvertDllInfoSpace(address, ctx->DllInfo, ctx->RealDllInfo);
-
-					g_pMetaHookAPI->InlinePatchRedirectBranch(Call_R_ResetLatched_RealDllBased, R_ResetLatched_Patched, NULL);
-
-					return TRUE;
-				}
-
-				if (ctx->bFoundResetLatched)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-			}, 0, &ctx);
-
-			if (ctx.bFoundResetLatched)
-			{
-				break;
-			}
-
-			SearchBegin = pFound + Sig_Length(pattern);
-		}
-		else
-		{
+		if (!callsite)
 			break;
-		}
+
+		g_pMetaHookAPI->InlinePatchRedirectBranch(callsite, R_ResetLatched_Patched, NULL);
 	}
+
+	gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))GamedataResolvePtr(RealDllInfo.ImageBase, "R_ResetLatched", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Client_FillAddress_ClientPortalManager_ResetAll(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-		.text:1004ADE3 ;   } // starts at 1004ADCD
-		.text:1004ADE5                 mov     [ebp+var_4], 0FFFFFFFFh
-		.text:1004ADEC                 mov     dword_1063C808, eax
-		.text:1004ADF1                 call    ClientPortalManager_ResetAll
-		.text:1004ADF6                 mov     ecx, dword_1063C808
-		.text:1004ADFC
-		.text:1004ADFC loc_1004ADFC:                           ; CODE XREF: HUD_DrawNormalTriangles_0+2B↑j
-		.text:1004ADFC                 call    sub_1004F010
-		.text:1004AE01                 mov     ecx, [ebp+var_C]
-		.text:1004AE04                 mov     large fs:0, ecx
-		.text:1004AE0B                 pop     ecx
-		.text:1004AE0C                 mov     esp, ebp
-		.text:1004AE0E                 pop     ebp
-		.text:1004AE0F                 retn
-		.text:1004AE0F ; } // starts at 1004AD90
-		.text:1004AE0F HUD_DrawNormalTriangles_0 endp
-	*/
+	if (gPrivateFuncs.ClientPortalManager_ResetAll)
+		return;
 
-	PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-	PUCHAR SearchLimit = SearchBegin + DllInfo.TextSize;
+	gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_ResetAll", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	const char pattern[] = "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D";
-
-	ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-
-	Sig_AddrNotFound(ClientPortalManager_ResetAll);
-
-	auto ClientPortalManager_ResetAll_VA = GetCallAddress(addr + 12);
-
-	gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))ConvertDllInfoSpace(ClientPortalManager_ResetAll_VA, DllInfo, RealDllInfo);
-
-	Sig_FuncNotFound(ClientPortalManager_ResetAll);
 }
 
 void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortalSurface(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -9593,64 +9508,29 @@ void Client_FillAddress_ClientPortalManager_GetOriginalSurfaceTexture_DrawPortal
 
 void Client_FillAddress_ClientPortalManager_EnableClipPlane(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-.text:1004F870                                     ClientPortalManager_EnableClipPlane proc near
-.text:1004F870 83 EC 58                                            sub     esp, 58h
-.text:1004F873 A1 40 E2 1B 10                                      mov     eax, ___security_cookie
-.text:1004F878 33 C4                                               xor     eax, esp
-.text:1004F87A 89 44 24 54                                         mov     [esp+58h+var_4], eax
-.text:1004F87E 8B 4C 24 68                                         mov     ecx, [esp+58h+arg_C]
-.text:1004F882 8D 54 24 24                                         lea     edx, [esp+58h+var_34]
-.text:1004F886 8B 44 24 60                                         mov     eax, [esp+58h+arg_4]
-	*/
-	const char pattern[] = "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x2A\x44\x24\x2A\x2A\x2A\x24\x2A\x2A\x2A\x24\x2A\x2A\x44\x24\x2A\xF3\x0F";
-	auto addr = Search_Pattern(pattern, DllInfo);
+	if (gPrivateFuncs.ClientPortalManager_EnableClipPlane)
+		return;
 
-	Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
+	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "ClientPortalManager_EnableClipPlane", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
 }
 
 void Client_FillAddress_ClientPortalManager_RenderPoratals(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-.text:1004E4F0                                     ; __unwind { // SEH_1004E4F0
-.text:1004E4F0 55                                                  push    ebp
-.text:1004E4F1 8B EC                                               mov     ebp, esp
-.text:1004E4F3 6A FF                                               push    0FFFFFFFFh
-.text:1004E4F5 68 F5 4B 11 10                                      push    offset SEH_1004E4F0
-.text:1004E4FA 64 A1 00 00 00 00                                   mov     eax, large fs:0
-.text:1004E500 50                                                  push    eax
-.text:1004E501 83 EC 6C                                            sub     esp, 6Ch
-.text:1004E504 53                                                  push    ebx
-.text:1004E505 56                                                  push    esi
-	*/
-	const char pattern[] = "\x55\x8B\xEC\x6A\xFF\x68\x2A\x2A\x2A\x2A\x64\xA1\x00\x00\x00\x00\x50\x83\xEC\x6C\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x50";
-	auto addr = Search_Pattern(pattern, DllInfo);
+	if (gPrivateFuncs.ClientPortalManager_RenderPortals)
+		return;
 
-	Sig_AddrNotFound(ClientPortalManager_RenderPortals);
+	gPrivateFuncs.ClientPortalManager_RenderPortals = (decltype(gPrivateFuncs.ClientPortalManager_RenderPortals))GamedataResolvePtr(RealDllInfo.ImageBase, "ClientPortalManager_RenderPortals", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	gPrivateFuncs.ClientPortalManager_RenderPortals = (decltype(gPrivateFuncs.ClientPortalManager_RenderPortals))ConvertDllInfoSpace(addr, DllInfo, RealDllInfo);
 }
 
 void Client_FillAddress_UpdatePlayerPitch(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-		FF 73 40 E8 ?? ?? ?? ?? 83 C4 08 80 3D ?? ?? ?? ?? 00
+	if (gPrivateFuncs.UpdatePlayerPitch)
+		return;
 
-		.text:10056F86 FF 73 40                                            push    dword ptr [ebx+40h] ; a1
-		.text:10056F89 E8 62 B6 01 00                                      call    UpdatePlayerPitch
-		.text:10056F8E 83 C4 08                                            add     esp, 8
-		.text:10056F91 80 3D 05 C8 63 10 00                                cmp     g_bIsRenderingPortals, 0
-	*/
-	const char pattern[] = "\xFF\x73\x40\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x80\x3D\x2A\x2A\x2A\x2A\x00";
-	auto addr = Search_Pattern(pattern, DllInfo);
+	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))GamedataResolvePtr(RealDllInfo.ImageBase, "UpdatePlayerPitch", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Sig_AddrNotFound(UpdatePlayerPitch);
-
-	PVOID ClientPortalManager_EnableClipPlane_VA = GetCallAddress(addr + 3);
-
-	gPrivateFuncs.UpdatePlayerPitch = (decltype(gPrivateFuncs.UpdatePlayerPitch))ConvertDllInfoSpace(ClientPortalManager_EnableClipPlane_VA, DllInfo, RealDllInfo);
 }
 
 void Client_FillAddress_WaterLevel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
