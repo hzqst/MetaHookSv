@@ -342,3 +342,70 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
 - **Build-num gates.** `g_ViewEntityIndex_SCClient` requires buildnum ≥ 10182; `size_of_frame` defaults to `0x42B8` for buildnum ≤ 8684; `R_SetupGL`/`R_LoadSkybox` pick signatures by buildnum thresholds (10152, 9899).
 - **`g_bHasOfficialFBOSupport` / `g_bHasOfficialGLTexAllocSupport`** are capability flags, not addresses: the former from the presence of the string `"FBO backbuffer rendering disabled"`, the latter from whether a `0x16A8`-based texture-alloc pattern exists. They select signatures and gate the legacy texture-allocation redirect.
+
+## Issue #873 migration (2026-09-17): 76 more catalog-backed symbols
+
+Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
+(71 FUNCTION, 1 GLOBAL, 4 PATCH) now resolve exclusively through
+`ResolveGameSymbol`; their signature / string / `DisasmRanges` locators, sig
+`#define`s and thunk derivations were deleted.
+
+**Resolution rules used**
+
+- Standalone locators were removed and the dispatch inlines
+  `GamedataResolvePtr(RealDllInfo.ImageBase, "<canonical>", kind)`; the 46
+  already migrated entries (`e7e818a0`) were left untouched.
+- A new `GamedataResolvePtrIfAvailable` (`plugins.h`) powers conditionally
+  required symbols; it consults `IsGameSymbolAvailable` and returns `nullptr`
+  when the current identity publishes no record, so an explicitly isolated
+  legacy branch can stay.
+- Retained variable-extraction disasm passes are now rooted at the
+  gamedata-resolved **real** address and walk the real image
+  (`ctx = { RealDllInfo, RealDllInfo }`); operand displacements are assigned
+  verbatim with no `ConvertDllInfoSpace`.
+- PATCH records are the target instruction address: `GL_SetMode_call_qwglCreateContext`
+  and `Sys_ShutdownGame_to_GL_Shutdown_callsite_0` resolve directly;
+  `R_PatchResetLatched` redirects every numbered
+  `CL_LinkPacketEntities_to_R_ResetLatched_callsite_N` (both `_0` and `_1`) and
+  resolves `R_ResetLatched` itself. HL25 keeps its skip.
+
+**Identity / ABI branches (all preserved)**
+
+| Group | Coverage | Rationale |
+| --- | --- | --- |
+| `ALL` (11 identities) | most engine functions/globals + patches | base symbol is published everywhere |
+| non-SvEngine | `D_FillRect`, `Draw_FillRGBA`, `Draw_FillRGBABlend`, base `Draw_SpriteFrame*`, `R_LoadSkys`, `R_RenderFinalFog`, `GL_SetMode_call_qwglCreateContext` | SvEngine uses a variant or the slot is unused |
+| `E8` (cof + 8 hl) | `GL_SelectPixelFormat`, `GlowBlend`, `Mod_UnloadSpriteTextures` | inlined on HL25 and SvEngine |
+| SvEngine only | `Draw_SpriteFrame*_SvEngine`, `NET_DrawRect`, `R_LoadSkyBox_SvEngine`, `allow_cheats` | variant symbols |
+| hl-10210 only | `CGame_DrawStartupVideo` | HL25-only startup video |
+| hl-10210 + hl-6153/8684 | `GL_SetMode` (SvEngine ABI split into `_SvEngine`/`_GoldSrc`) | SDL / six-arg ABI |
+| cof + hl-3248..4554 | `GL_SetModeLegacy` | non-SDL legacy ABI; CoF now reaches the legacy branch |
+| hl-10210 + hl-6153/8684 | `SDL_InitGL` | SDL builds only |
+| all but svencoop-10257 | `R_RenderScene` | 10257 inlines it (`IsGameSymbolAvailable` gate) |
+| all but svencoop-8948 | `R_DrawViewModel` | 8948 has no record and stays inlined |
+| svencoop only | client portal functions/globals | `SCClientDLL001` factory |
+| svencoop-10257 only | `ClientPortalManager_EnableClipPlane`, `g_ViewEntityIndex_SCClient` | 8948 publishes neither; `g_ViewEntityIndex_SCClient` is resolved with `GamedataResolvePtrIfAvailable` and its consumers are already null-guarded |
+
+`R_GlowBlend` was renamed to the engine's real name `GlowBlend` everywhere
+(field, locator, wrapper, consumer); the `R_GLOW_BLEND_*` sig macros and the
+now-unused `R_ForceCVars_inlined` / `GlowBlend_inlined` fields were removed.
+
+**Residual scanning (intentionally kept, catalog-uncovered)**
+
+`R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
+`GL_UnloadTextures`, `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`, the
+`gl_extensions` / `vid_d3d` / texture-array / fog / scissor / modelorg /
+viewmodel / sky / loadname / view-leaf / lightmap variable slots, `CL_FxBlend`'s
+sibling `r_blend`, and every symbol outside the 76 (EngineSurface virtuals,
+portal/DrawNormalTriangles scans, `R_AddTEntity`, `R_TextureAnimation`,
+`R_LightStrength`, `R_Studio*` engine vars, etc.).
+
+**Release gate**: `scripts/validate-gamedata.py` now carries a Renderer consumer
+gate (`RENDERER_*` tables + `validate_renderer`) covering the 46 + 76 required
+symbols per engine family / identity with kind **and module** checks; snapshot
+records now retain their owning module. Behaviour tests live in
+`scripts/tests/test_gamedata_contract.py::RendererGateTests`.
+
+**Not verified**: in-game smoke tests on SvEngine / HL25 / GoldSrc / Blob / CoF
+were not run from this environment; only `Release|Win32` builds of `MetaHook`
+and `Renderer` plus the catalog gate and contract tests were executed.
