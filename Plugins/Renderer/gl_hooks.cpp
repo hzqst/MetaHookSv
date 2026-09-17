@@ -6610,51 +6610,13 @@ void Engine_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, c
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		PVOID CL_IsDevOverviewMode_VA = ConvertDllInfoSpace(gPrivateFuncs.CL_IsDevOverviewMode, RealDllInfo, DllInfo);
-
-		typedef struct CL_IsDevOverviewMode_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-		} CL_IsDevOverviewMode_SearchContext;
-
-		CL_IsDevOverviewMode_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges(CL_IsDevOverviewMode_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-		
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (CL_IsDevOverviewMode_SearchContext*)context;
-
-			if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0)
-			{
-				allow_cheats = (decltype(allow_cheats))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
-			if (allow_cheats)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-		Sig_VarNotFound(allow_cheats);
+		allow_cheats = (decltype(allow_cheats))GamedataResolvePtr(RealDllInfo.ImageBase, "allow_cheats", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 	else
 	{
 		//GoldSrc doesn't have such "int *allow_cheats;"
 	}
+
 }
 
 void Engine_FillAddress_R_DecalInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
