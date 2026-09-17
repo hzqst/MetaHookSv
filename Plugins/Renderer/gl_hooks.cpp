@@ -5940,21 +5940,31 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 		int *gSkyTexNumber = NULL;
 	*/
 
+	/*
+		//Global pointers that link into engine vars
+		int *gSkyTexNumber = NULL;
+	*/
+
 	PVOID R_LoadSkyboxInt_SvEngine_VA = 0;
 	PVOID R_LoadSkyBox_SvEngine_VA = 0;
 	PVOID R_LoadSkys_VA = 0;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		gPrivateFuncs.R_LoadSkyBox_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyBox_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "R_LoadSkyBox_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
+		R_LoadSkyBox_SvEngine_VA = (PVOID)gPrivateFuncs.R_LoadSkyBox_SvEngine;
+
+		//R_LoadSkyboxInt_SvEngine stays catalog-uncovered: the "SKY: " anchor and the
+		//gSkyTexNumber extraction remain isolated to SvEngine.
 		const char sigs[] = "SKY: ";
-		auto R_LoadSkys_String = Search_Pattern_Data(sigs, DllInfo);
+		auto R_LoadSkys_String = Search_Pattern_Data(sigs, RealDllInfo);
 		if (!R_LoadSkys_String)
-			R_LoadSkys_String = Search_Pattern_Rdata(sigs, DllInfo);
+			R_LoadSkys_String = Search_Pattern_Rdata(sigs, RealDllInfo);
 		Sig_VarNotFound(R_LoadSkys_String);
 
 		char pattern[] = "\x75\x2A\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 3) = (DWORD)R_LoadSkys_String;
-		auto R_LoadSkys_PushString = Search_Pattern(pattern, DllInfo);
+		auto R_LoadSkys_PushString = Search_Pattern(pattern, RealDllInfo);
 		Sig_VarNotFound(R_LoadSkys_PushString);
 
 		R_LoadSkyboxInt_SvEngine_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
@@ -5970,143 +5980,9 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 
 			return FALSE;
 			});
+		gPrivateFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyboxInt_SvEngine))R_LoadSkyboxInt_SvEngine_VA;
 
 		//SvEngine always has g_bHasOfficialGLTexAllocSupport == true
-
-		typedef struct R_LoadSkys_SearchContext_s
-		{
-			const mh_dll_info_t& DllInfo;
-			const mh_dll_info_t& RealDllInfo;
-			int candidate_register{};
-			int candidate_instcount{};
-			ULONG_PTR candidate_gSkyTexNumberVA{};
-		} R_LoadSkys_SearchContext;
-
-		R_LoadSkys_SearchContext ctx = { DllInfo, RealDllInfo };
-
-		g_pMetaHookAPI->DisasmRanges((void*)R_LoadSkyboxInt_SvEngine_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn*)inst;
-				auto ctx = (R_LoadSkys_SearchContext*)context;
-
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D4F9D8 BE 60 34 34 02 mov     esi, offset gSkyTexNumber
-
-					ctx->candidate_gSkyTexNumberVA = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
-					ctx->candidate_register = pinst->detail->x86.operands[0].reg;
-					ctx->candidate_instcount = instCount;
-				}
-				else if (ctx->candidate_gSkyTexNumberVA &&
-					pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
-					pinst->detail->x86.operands[0].mem.disp == 0 &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					instCount < ctx->candidate_instcount + 5)
-				{//text:01D4F9DD 39 3E cmp     [esi], edi
-					gSkyTexNumber = (decltype(gSkyTexNumber))ConvertDllInfoSpace((PVOID)ctx->candidate_gSkyTexNumberVA, ctx->DllInfo, ctx->RealDllInfo);
-				}
-				else if (pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base != 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-				{//.text:01D5FC00 FF B6 80 69 00 08                                   push    gSkyTexNumber[esi]
-					gSkyTexNumber = (decltype(gSkyTexNumber))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				if (gSkyTexNumber)
-					return TRUE;
-
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-			}, 0, &ctx);
-
-		const char sigs2[] = "desert\0";
-		auto R_LoadSkyBox_String = Search_Pattern_Rdata(sigs2, DllInfo);
-		Sig_VarNotFound(R_LoadSkyBox_String);
-
-		char pattern2[] = "\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
-		*(DWORD*)(pattern2 + 6) = (DWORD)R_LoadSkyBox_String;
-		auto R_LoadSkyBox_PushString = Search_Pattern(pattern2, DllInfo);
-		Sig_VarNotFound(R_LoadSkyBox_PushString);
-
-		R_LoadSkyBox_SvEngine_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkyBox_PushString, 0x200, [](PUCHAR Candidate) {
-			/*
-				.text:01D5FEF0                                     ; void __cdecl R_LoadSkyName(const char *name)
-				.text:01D5FEF0                                     R_LoadSkyName   proc near               ; CODE XREF: sub_1D042D0+E��p
-				.text:01D5FEF0                                                                             ; R_LoadSkys_0+5��p ...
-				.text:01D5FEF0
-				.text:01D5FEF0                                     name            = dword ptr  4
-				.text:01D5FEF0
-				.text:01D5FEF0 83 3D 98 69 00 08 00                                cmp     r_loading_skybox, 0
-			*/
-			if (Candidate[0] == 0x83 &&
-				Candidate[1] == 0x3D &&
-				Candidate[6] == 0x00)
-			{
-				return TRUE;
-			}
-
-			return FALSE;
-			});
-	}
-	else
-	{
-		const char sigs[] = "SKY: ";
-		auto R_LoadSkys_String = Search_Pattern_Data(sigs, DllInfo);
-		if (!R_LoadSkys_String)
-			R_LoadSkys_String = Search_Pattern_Rdata(sigs, DllInfo);
-		Sig_VarNotFound(R_LoadSkys_String);
-
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xC7\x2A\x2A\x2A\x2A\x00\x00";
-		*(DWORD*)(pattern + 1) = (DWORD)R_LoadSkys_String;
-		auto R_LoadSkys_PushString = Search_Pattern(pattern, DllInfo);
-		Sig_VarNotFound(R_LoadSkys_PushString);
-
-		R_LoadSkys_VA = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
-			//.text : 01D5FC10 81 EC 28 01 00 00                                   sub     esp, 128h
-			//.text : 01D5FC16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-			//.text : 01D5FC1B 33 C4 xor eax, esp
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC &&
-				Candidate[6] == 0xA1 &&
-				Candidate[11] == 0x33 &&
-				Candidate[12] == 0xC4)
-				return TRUE;
-
-			//  .text : 01D4F9C2 55                                                  push    ebp
-			//	.text : 01D4F9C3 8B EC                                               mov     ebp, esp
-			//	.text : 01D4F9C5 83 EC 6C                                            sub     esp, 6Ch
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC &&
-				Candidate[3] == 0x83 &&
-				Candidate[4] == 0xEC)
-				return TRUE;
-
-			//.text:01D5AC7C 83 EC 6C                                            sub     esp, 6Ch
-			//.text:01D5AC7F A1 D8 33 38 02                                      mov     eax, dword_23833D8
-			if (Candidate[0] == 0x83 &&
-				Candidate[1] == 0xEC &&
-				Candidate[3] == 0xA1)
-				return TRUE;
-
-			return FALSE;
-		});
-
 		if (g_bHasOfficialGLTexAllocSupport)
 		{
 			typedef struct R_LoadSkys_SearchContext_s
@@ -6118,9 +5994,9 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 				ULONG_PTR candidate_gSkyTexNumberVA{};
 			} R_LoadSkys_SearchContext;
 
-			R_LoadSkys_SearchContext ctx = { DllInfo, RealDllInfo };
+			R_LoadSkys_SearchContext ctx = { RealDllInfo, RealDllInfo };
 
-			g_pMetaHookAPI->DisasmRanges((void*)R_LoadSkys_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			g_pMetaHookAPI->DisasmRanges((void*)R_LoadSkyboxInt_SvEngine_VA, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
 					auto pinst = (cs_insn*)inst;
 					auto ctx = (R_LoadSkys_SearchContext*)context;
@@ -6129,8 +6005,8 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 						pinst->detail->x86.op_count == 2 &&
 						pinst->detail->x86.operands[0].type == X86_OP_REG &&
 						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+						(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->RealDllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 					{//.text:01D4F9D8 BE 60 34 34 02 mov     esi, offset gSkyTexNumber
 
 						ctx->candidate_gSkyTexNumberVA = (ULONG_PTR)pinst->detail->x86.operands[1].imm;
@@ -6146,28 +6022,16 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 						pinst->detail->x86.operands[1].type == X86_OP_REG &&
 						instCount < ctx->candidate_instcount + 5)
 					{//text:01D4F9DD 39 3E cmp     [esi], edi
-						gSkyTexNumber = (decltype(gSkyTexNumber))ConvertDllInfoSpace((PVOID)ctx->candidate_gSkyTexNumberVA, ctx->DllInfo, ctx->RealDllInfo);
-					}
-					else if (ctx->candidate_gSkyTexNumberVA &&
-						pinst->id == X86_INS_CMP &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
-						pinst->detail->x86.operands[0].mem.disp == 0 &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == 0 &&
-						instCount < ctx->candidate_instcount + 5)
-					{//.text:102506E6 83 3E 00 cmp     dword ptr [esi], 0
-						gSkyTexNumber = (decltype(gSkyTexNumber))ConvertDllInfoSpace((PVOID)ctx->candidate_gSkyTexNumberVA, ctx->DllInfo, ctx->RealDllInfo);
+						gSkyTexNumber = (decltype(gSkyTexNumber))((PVOID)ctx->candidate_gSkyTexNumberVA);
 					}
 					else if (pinst->id == X86_INS_PUSH &&
 						pinst->detail->x86.op_count == 1 &&
 						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 						pinst->detail->x86.operands[0].mem.base != 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 					{//.text:01D5FC00 FF B6 80 69 00 08                                   push    gSkyTexNumber[esi]
-						gSkyTexNumber = (decltype(gSkyTexNumber))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+						gSkyTexNumber = (decltype(gSkyTexNumber))((PVOID)pinst->detail->x86.operands[0].mem.disp);
 					}
 
 					if (gSkyTexNumber)
@@ -6183,19 +6047,10 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 				}, 0, &ctx);
 		}
 	}
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gPrivateFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyboxInt_SvEngine))ConvertDllInfoSpace(R_LoadSkyboxInt_SvEngine_VA, DllInfo, RealDllInfo);
-		gPrivateFuncs.R_LoadSkyBox_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyBox_SvEngine))ConvertDllInfoSpace(R_LoadSkyBox_SvEngine_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(R_LoadSkyboxInt_SvEngine);
-		Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
-	}
 	else
 	{
-		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))ConvertDllInfoSpace(R_LoadSkys_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(R_LoadSkys);
+		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))GamedataResolvePtr(RealDllInfo.ImageBase, "R_LoadSkys", MH_GAMESYMBOL_KIND_FUNCTION);
+		R_LoadSkys_VA = (PVOID)gPrivateFuncs.R_LoadSkys;
 	}
 
 	if (g_bHasOfficialGLTexAllocSupport)
@@ -6222,7 +6077,7 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 			const mh_dll_info_t& RealDllInfo;
 		} R_LoadSkyboxVars_SearchContext;
 
-		R_LoadSkyboxVars_SearchContext ctx = { DllInfo, RealDllInfo };
+		R_LoadSkyboxVars_SearchContext ctx = { RealDllInfo, RealDllInfo };
 
 		g_pMetaHookAPI->DisasmRanges((void*)SearchBase_VA, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
@@ -6236,16 +6091,15 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0)
 				{
-					r_loading_skybox = (decltype(r_loading_skybox))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					r_loading_skybox = (decltype(r_loading_skybox))((PVOID)pinst->detail->x86.operands[1].mem.disp);
 				}
 				else if (pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 					pinst->detail->x86.operands[1].imm == 0)
 				{
-					r_loading_skybox = (decltype(r_loading_skybox))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+					r_loading_skybox = (decltype(r_loading_skybox))((PVOID)pinst->detail->x86.operands[0].mem.disp);
 				}
 
 				if (r_loading_skybox)
@@ -6262,6 +6116,7 @@ void Engine_FillAddress_R_LoadSkybox(const mh_dll_info_t& DllInfo, const mh_dll_
 	}
 
 	Sig_VarNotFound(r_loading_skybox);
+
 }
 
 void Engine_FillAddress_GL_FilterMinMaxVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
