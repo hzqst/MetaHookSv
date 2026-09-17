@@ -6749,10 +6749,10 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 		if (pinst->id == X86_INS_PUSH &&
 			pinst->detail->x86.op_count == 1 &&
 			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->RealDllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
-			loadname = (decltype(loadname))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
+			loadname = (decltype(loadname))((PVOID)pinst->detail->x86.operands[0].imm);
 			ctx->loadname_nextaddr = address + instLen;
 			return TRUE;
 		}
@@ -6778,7 +6778,7 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 		const mh_dll_info_t& RealDllInfo;
 	} Mod_LoadModel_SearchContext2;
 
-	Mod_LoadModel_SearchContext2 ctx2 = { DllInfo, RealDllInfo };
+	Mod_LoadModel_SearchContext2 ctx2 = { RealDllInfo, RealDllInfo };
 
 	g_pMetaHookAPI->DisasmRanges(ctx.loadname_nextaddr, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -6791,10 +6791,10 @@ void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base == 0 &&
 			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
-			loadmodel = (decltype(loadmodel))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			loadmodel = (decltype(loadmodel))((PVOID)pinst->detail->x86.operands[0].mem.disp);
 			return TRUE;
 		}
 
