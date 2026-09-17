@@ -8560,40 +8560,14 @@ void Engine_FillAddress_Draw_SpriteFrameHoles(const mh_dll_info_t& DllInfo, cons
 	if (gPrivateFuncs.Draw_SpriteFrameHoles || gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine)
 		return;
 
-	PVOID Draw_SpriteFrameHoles_VA = 0;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_SVENGINE, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameHoles_SvEngine);
+		gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameHoles_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else
 	{
-		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_HL25, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameHoles);
+		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameHoles", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_NEW, DllInfo);
-		if(!Draw_SpriteFrameHoles_VA)
-			Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_NEW2, DllInfo);
-
-		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameHoles);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		Draw_SpriteFrameHoles_VA = Search_Pattern(DRAW_SPRITEFRAMEHOLES_BLOB, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameHoles = (decltype(gPrivateFuncs.Draw_SpriteFrameHoles))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameHoles_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameHoles);
-	}
-
 }
 
 void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -8601,40 +8575,14 @@ void Engine_FillAddress_Draw_SpriteFrameAdditive(const mh_dll_info_t& DllInfo, c
 	if (gPrivateFuncs.Draw_SpriteFrameAdditive || gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine)
 		return;
 
-	PVOID Draw_SpriteFrameAdditive_VA = 0;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_SVENGINE, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameAdditive_SvEngine);
+		gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameAdditive_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else
 	{
-		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_HL25, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
+		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameAdditive", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_NEW, DllInfo);
-		if (!Draw_SpriteFrameAdditive_VA)
-			Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_NEW2, DllInfo);
-
-		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		Draw_SpriteFrameAdditive_VA = Search_Pattern(DRAW_SPRITEFRAMEADDITIVE_BLOB, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameAdditive = (decltype(gPrivateFuncs.Draw_SpriteFrameAdditive))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameAdditive_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameAdditive);
-	}
-
 }
 
 void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -8642,38 +8590,13 @@ void Engine_FillAddress_Draw_SpriteFrameGeneric(const mh_dll_info_t& DllInfo, co
 	if (gPrivateFuncs.Draw_SpriteFrameGeneric || gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine)
 		return;
 
-	PVOID Draw_SpriteFrameGeneric_VA = 0;
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_SVENGINE, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameGeneric_SvEngine);
+		gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric_SvEngine))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameGeneric_SvEngine", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else
 	{
-		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_HL25, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_NEW, DllInfo);
-		if (!Draw_SpriteFrameGeneric_VA)
-			Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_NEW2, DllInfo);
-
-		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		Draw_SpriteFrameGeneric_VA = Search_Pattern(DRAW_SPRITEFRAMEGENERIC_BLOB, DllInfo);
-		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))ConvertDllInfoSpace((PVOID)Draw_SpriteFrameGeneric_VA, DllInfo, RealDllInfo);
-
-		Sig_FuncNotFound(Draw_SpriteFrameGeneric);
+		gPrivateFuncs.Draw_SpriteFrameGeneric = (decltype(gPrivateFuncs.Draw_SpriteFrameGeneric))GamedataResolvePtr(RealDllInfo.ImageBase, "Draw_SpriteFrameGeneric", MH_GAMESYMBOL_KIND_FUNCTION);
 	}
 }
 
@@ -8682,19 +8605,10 @@ void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_
 	if (gPrivateFuncs.NET_DrawRect)
 		return;
 
-	PVOID NET_DrawRect_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		NET_DrawRect_VA = Search_Pattern(NET_DRAWRECT_SVENGINE, DllInfo);
-		gPrivateFuncs.NET_DrawRect = (decltype(gPrivateFuncs.NET_DrawRect))ConvertDllInfoSpace((PVOID)NET_DrawRect_VA, DllInfo, RealDllInfo);
-	}
-	else
-	{
+	if (g_iEngineType != ENGINE_SVENGINE)
 		return;
-	}
 
-	Sig_FuncNotFound(NET_DrawRect);
+		gPrivateFuncs.NET_DrawRect = (decltype(gPrivateFuncs.NET_DrawRect))GamedataResolvePtr(RealDllInfo.ImageBase, "NET_DrawRect", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 //SvEngine publishes no catalog record for Mod_UnloadSpriteTextures, Draw_FillRGBA,
