@@ -9459,7 +9459,9 @@ void Client_FillAddress_SCClient(const mh_dll_info_t& DllInfo, const mh_dll_info
 			Client_FillAddress_FogParams(DllInfo, RealDllInfo);
 
 			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_bRenderingPortals_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
-			g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))GamedataResolvePtr(RealDllInfo.ImageBase, "g_ViewEntityIndex_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
+			//Only svencoop-10257 publishes this slot; 8948 keeps it null and the
+			//studio view-entity save/restore is skipped there.
+			g_ViewEntityIndex_SCClient = (decltype(g_ViewEntityIndex_SCClient))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "g_ViewEntityIndex_SCClient", MH_GAMESYMBOL_KIND_GLOBAL);
 
 			g_bIsSvenCoop = true;
 		}

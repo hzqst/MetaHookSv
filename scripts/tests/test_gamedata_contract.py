@@ -161,7 +161,7 @@ class SnapshotContractTests(unittest.TestCase):
         errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
         self.assertEqual([], errors, errors)
         self.assertEqual(
-            {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20},
+            {"kind": "virtualFunction", "rva": 0x1000, "size": 0x20, "module": "engine"},
             symbols["GameStudioRenderer_StudioDrawModel"],
         )
 
@@ -188,7 +188,7 @@ class SnapshotContractTests(unittest.TestCase):
         errors, _, symbols = validate.validate_snapshot(doc, "hl-8684")
         self.assertEqual([], errors, errors)
         self.assertEqual(
-            {"kind": "vtable", "rva": 0x2000, "size": 0x78},
+            {"kind": "vtable", "rva": 0x2000, "size": 0x78, "module": "engine"},
             symbols["GameStudioRenderer"],
         )
 
@@ -437,6 +437,155 @@ class SyncContractTests(unittest.TestCase):
         }
         with self.assertRaises(sync.UpdateError):
             sync.parse_index(json.dumps(index).encode("utf-8"), "test index")
+
+
+class RendererGateTests(unittest.TestCase):
+    def complete_engine_symbols(self, game_version):
+        symbols = {}
+
+        def add(names, kind):
+            for n in names:
+                symbols[n] = {"kind": kind, "module": "engine"}
+
+        add(validate.RENDERER_ENGINE_ALL_FUNCTIONS, "function")
+        add(validate.RENDERER_ENGINE_ALL_GLOBALS, "global")
+        add(validate.RENDERER_ENGINE_ALL_PATCHES, "patch")
+        for prefix in validate.RENDERER_NUMBERED_PATCH_SETS:
+            symbols[f"{prefix}_0"] = {"kind": "patch", "module": "engine"}
+            symbols[f"{prefix}_1"] = {"kind": "patch", "module": "engine"}
+        if game_version in validate.RENDERER_NON_SVENGINE_GAMES:
+            add(validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function")
+            add(validate.RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch")
+        if game_version in validate.RENDERER_E8_GAMES:
+            add(validate.RENDERER_ENGINE_E8_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_SVENGINE_GAMES:
+            add(validate.RENDERER_ENGINE_SVENGINE_FUNCTIONS, "function")
+            add(validate.RENDERER_SVENGINE_GLOBALS, "global")
+        if game_version in validate.RENDERER_HL25_GAMES:
+            add(validate.RENDERER_ENGINE_HL25_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_SETMODE_GAMES:
+            add(validate.RENDERER_SETMODE_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_SETMODE_LEGACY_GAMES:
+            add(validate.RENDERER_SETMODE_LEGACY_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_SDL_GAMES:
+            add(validate.RENDERER_SDL_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_NOT_SVENGINE_10257_GAMES:
+            add(validate.RENDERER_NOT_SVENGINE_10257_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_NOT_SVENGINE_8948_GAMES:
+            add(validate.RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function")
+        symbols.update(self.complete_client_symbols(game_version))
+        return symbols
+
+    def complete_client_symbols(self, game_version):
+        symbols = {}
+
+        def add(names, kind):
+            for n in names:
+                symbols[n] = {"kind": kind, "module": "client"}
+
+        if game_version in validate.RENDERER_SVENGINE_GAMES:
+            add(validate.RENDERER_CLIENT_SVEN_FUNCTIONS, "function")
+            add(validate.RENDERER_CLIENT_SVEN_GLOBALS, "global")
+        if game_version in validate.RENDERER_SVEN_10257_GAMES:
+            add(validate.RENDERER_CLIENT_10257_FUNCTIONS, "function")
+            add(validate.RENDERER_CLIENT_10257_GLOBALS, "global")
+        if game_version in validate.RENDERER_CLIENT_GAMES:
+            add(validate.RENDERER_CLIENT_STUDIO_GLOBALS, "global")
+            add(validate.RENDERER_CLIENT_STUDIO_VFUNCS, "virtualFunction")
+        if game_version in validate.RENDERER_CS_CLIENT_GAMES:
+            add(("g_PlayerExtraInfo",), "global")
+        if game_version in validate.RENDERER_CZDS_CLIENT_GAMES:
+            add(("g_PlayerExtraInfo_CZDS",), "global")
+        return symbols
+
+    def test_gate_passes_for_every_declared_identity(self):
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            symbols.update(self.complete_client_symbols(gv))
+            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
+        for gv in validate.RENDERER_CLIENT_GAMES:
+            if gv in validate.RENDERER_ALL_GAMES:
+                continue
+            symbols = self.complete_client_symbols(gv)
+            self.assertEqual([], validate.validate_renderer(symbols, gv, include_engine=False), gv)
+
+    def test_gate_flags_missing_engine_function(self):
+        symbols = self.complete_engine_symbols("hl-8684")
+        del symbols["R_NewMap"]
+        errors = validate.validate_renderer(symbols, "hl-8684")
+        self.assertTrue(any("missing Renderer engine function 'R_NewMap'" in e for e in errors), errors)
+
+    def test_gate_flags_kind_mismatch(self):
+        symbols = self.complete_engine_symbols("hl-8684")
+        symbols["R_NewMap"] = {"kind": "global", "module": "engine"}
+        errors = validate.validate_renderer(symbols, "hl-8684")
+        self.assertTrue(any("'R_NewMap' must be a function record" in e for e in errors), errors)
+
+    def test_gate_flags_module_mismatch(self):
+        symbols = self.complete_engine_symbols("hl-8684")
+        symbols["R_NewMap"] = {"kind": "function", "module": "client"}
+        errors = validate.validate_renderer(symbols, "hl-8684")
+        self.assertTrue(any("'R_NewMap' must belong to module 'engine'" in e for e in errors), errors)
+
+    def test_gate_requires_numbered_patch_set(self):
+        symbols = self.complete_engine_symbols("hl-8684")
+        for name in list(symbols):
+            if name.startswith("CL_LinkPacketEntities_to_R_ResetLatched_callsite"):
+                del symbols[name]
+        errors = validate.validate_renderer(symbols, "hl-8684")
+        self.assertTrue(any("missing required Renderer patch "
+                            "'CL_LinkPacketEntities_to_R_ResetLatched_callsite_0'" in e for e in errors), errors)
+
+    def test_gate_treats_svengine_variants_as_required(self):
+        symbols = self.complete_engine_symbols("svencoop-10257")
+        del symbols["Draw_SpriteFrameHoles_SvEngine"]
+        errors = validate.validate_renderer(symbols, "svencoop-10257")
+        self.assertTrue(any("Draw_SpriteFrameHoles_SvEngine" in e for e in errors), errors)
+
+    def test_gate_does_not_require_base_symbol_for_svengine(self):
+        symbols = self.complete_engine_symbols("svencoop-10257")
+        self.assertNotIn("Draw_SpriteFrameHoles", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "svencoop-10257"))
+
+    def test_gate_does_not_require_legacy_setmode_for_sdl_build(self):
+        symbols = self.complete_engine_symbols("hl-8684")
+        self.assertNotIn("GL_SetModeLegacy", symbols)
+        self.assertIn("GL_SetMode", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "hl-8684"))
+
+    def test_gate_requires_legacy_setmode_for_cof(self):
+        symbols = self.complete_engine_symbols("cof-5936")
+        self.assertIn("GL_SetModeLegacy", symbols)
+        self.assertNotIn("GL_SetMode", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "cof-5936"))
+        del symbols["GL_SetModeLegacy"]
+        errors = validate.validate_renderer(symbols, "cof-5936")
+        self.assertTrue(any("GL_SetModeLegacy" in e for e in errors), errors)
+
+    def test_gate_does_not_require_sdl_initgl_without_sdl(self):
+        symbols = self.complete_engine_symbols("hl-4554")
+        self.assertNotIn("SDL_InitGL", symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "hl-4554"))
+
+    def test_gate_render_scene_is_not_applicable_for_svengine_10257(self):
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            if gv == "svencoop-10257":
+                self.assertNotIn("R_RenderScene", symbols)
+            else:
+                self.assertIn("R_RenderScene", symbols)
+            self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
+
+    def test_gate_requires_client_virtuals_for_client_games(self):
+        symbols = self.complete_client_symbols("hl-8684")
+        del symbols["GameStudioRenderer_StudioSetupBones"]
+        errors = validate.validate_renderer(symbols, "hl-8684", include_engine=False)
+        self.assertTrue(any("GameStudioRenderer_StudioSetupBones" in e for e in errors), errors)
+
+    def test_gate_does_not_require_client_virtuals_without_client_module(self):
+        symbols = self.complete_client_symbols("hl-4554")
+        self.assertEqual({}, symbols)
+        self.assertEqual([], validate.validate_renderer(symbols, "hl-4554", include_engine=False))
 
 
 if __name__ == "__main__":
