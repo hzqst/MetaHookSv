@@ -123,9 +123,6 @@ int(*rtable)[20][20] = nullptr;
 model_t* mod_known = nullptr;
 int* mod_numknown = nullptr;
 
-char (*loadname)[64] = nullptr;
-model_t** loadmodel = nullptr;
-
 int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;

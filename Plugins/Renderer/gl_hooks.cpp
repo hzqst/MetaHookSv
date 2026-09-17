@@ -6706,113 +6706,6 @@ void Engine_FillAddress_WaterVars(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	Sig_VarNotFound(cshift_water);
 }
 
-void Engine_FillAddress_Mod_LoadModel(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
-{
-	/*
-	 //Global pointers that link into engine vars.
-		char (*loadname)[64] = NULL;
-		model_t **loadmodel = NULL;
-	*/
-
-	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadModel", MH_GAMESYMBOL_KIND_FUNCTION);
-
-	PVOID Mod_LoadModel_VA = (PVOID)gPrivateFuncs.Mod_LoadModel;
-
-	//The loadname/loadmodel slots are still extracted from the printf call inside
-	//the resolved body.
-	const char* sigs = (g_iEngineType == ENGINE_SVENGINE) ? "Loading '%s'\n" : "loading %s\n";
-	PVOID Mod_LoadModel_String = Search_Pattern_Data(sigs, RealDllInfo);
-	if (!Mod_LoadModel_String)
-		Mod_LoadModel_String = Search_Pattern_Rdata(sigs, RealDllInfo);
-	Sig_VarNotFound(Mod_LoadModel_String);
-
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
-	*(DWORD*)(pattern + 1) = (DWORD)Mod_LoadModel_String;
-	PVOID Mod_LoadModel_PushString = (PVOID)Search_Pattern_From_Size(Mod_LoadModel_VA, 0x800, pattern);
-	Sig_VarNotFound(Mod_LoadModel_PushString);
-
-
-	typedef struct Mod_LoadModel_SearchContext_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-		PVOID loadname_nextaddr{};
-	} Mod_LoadModel_SearchContext;
-
-	Mod_LoadModel_SearchContext ctx = { RealDllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges((PUCHAR)Mod_LoadModel_PushString + 5, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (Mod_LoadModel_SearchContext*)context;
-
-		if (pinst->id == X86_INS_PUSH &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-		{
-			loadname = (decltype(loadname))((PVOID)pinst->detail->x86.operands[0].imm);
-			ctx->loadname_nextaddr = address + instLen;
-			return TRUE;
-		}
-
-		if (loadname)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-
-		}, 0, &ctx);
-
-	Sig_VarNotFound(loadname);
-
-	typedef struct Mod_LoadModel_SearchContext2_s
-	{
-		const mh_dll_info_t& DllInfo;
-		const mh_dll_info_t& RealDllInfo;
-	} Mod_LoadModel_SearchContext2;
-
-	Mod_LoadModel_SearchContext2 ctx2 = { RealDllInfo, RealDllInfo };
-
-	g_pMetaHookAPI->DisasmRanges(ctx.loadname_nextaddr, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-		auto pinst = (cs_insn*)inst;
-		auto ctx = (Mod_LoadModel_SearchContext2*)context;
-
-		if (pinst->id == X86_INS_MOV &&
-			pinst->detail->x86.op_count == 2 &&
-			pinst->detail->x86.operands[1].type == X86_OP_REG &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
-		{
-			loadmodel = (decltype(loadmodel))((PVOID)pinst->detail->x86.operands[0].mem.disp);
-			return TRUE;
-		}
-
-		if (loadmodel)
-			return TRUE;
-
-		if (address[0] == 0xCC)
-			return TRUE;
-
-		if (pinst->id == X86_INS_RET)
-			return TRUE;
-
-		return FALSE;
-	}, 0, &ctx2);
-
-	Sig_VarNotFound(loadmodel);
-}
-
 void Engine_FillAddress_BasePalette(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	/*
@@ -8391,7 +8284,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	gPrivateFuncs.Mod_LoadBrushModel = (decltype(gPrivateFuncs.Mod_LoadBrushModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadBrushModel", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	Engine_FillAddress_Mod_LoadModel(DllInfo, RealDllInfo);
+	gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_LoadModel", MH_GAMESYMBOL_KIND_FUNCTION);
 
 	Engine_FillAddress_BasePalette(DllInfo, RealDllInfo);
 

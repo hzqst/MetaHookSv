@@ -199,9 +199,6 @@ extern screenfade_t* cl_sf;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
-extern char(*loadname)[64];
-extern model_t **loadmodel;
-
 //client dll
 
 extern int *g_iUser1;
