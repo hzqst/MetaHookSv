@@ -2108,37 +2108,17 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	if (gPrivateFuncs.R_DrawSequentialPoly || gPrivateFuncs.R_DrawSequentialPoly_HL25)
 		return;
 
-	PVOID R_DrawSequentialPoly_VA = 0;
+	PVOID R_DrawSequentialPoly_VA = (PVOID)GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawSequentialPoly", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE, DllInfo);
-		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(R_DrawSequentialPoly);
+		gPrivateFuncs.R_DrawSequentialPoly_HL25 = (decltype(gPrivateFuncs.R_DrawSequentialPoly_HL25))R_DrawSequentialPoly_VA;
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else
 	{
-		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25, DllInfo);
-		gPrivateFuncs.R_DrawSequentialPoly_HL25 = (decltype(gPrivateFuncs.R_DrawSequentialPoly_HL25))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(R_DrawSequentialPoly_HL25);
+		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))R_DrawSequentialPoly_VA;
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW, DllInfo);
 
-		//try another signature
-		if (!R_DrawSequentialPoly_VA)
-			R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW2, DllInfo);
-
-		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(R_DrawSequentialPoly);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		R_DrawSequentialPoly_VA = Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_BLOB, DllInfo);
-		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))ConvertDllInfoSpace(R_DrawSequentialPoly_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(R_DrawSequentialPoly);
-	}
 
 	/*
 		//Global pointers that link into engine vars
@@ -2171,7 +2151,7 @@ void Engine_FillAddress_R_DrawSequentialPoly(const mh_dll_info_t& DllInfo, const
 	} R_DrawSequentialPoly_SearchContext;
 
 	R_DrawSequentialPoly_SearchContext ctx = {
-		DllInfo,
+		RealDllInfo,
 		RealDllInfo
 	};
 
@@ -3102,160 +3082,13 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 	if (gPrivateFuncs.R_DrawParticles)
 		return;
 
-	PVOID R_DrawParticles_VA = 0;
+	gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_DrawParticles", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GamedataResolvePtr(RealDllInfo.ImageBase, "R_FreeDeadParticles", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))GamedataResolvePtr(RealDllInfo.ImageBase, "R_TracerDraw", MH_GAMESYMBOL_KIND_FUNCTION);
+	gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))GamedataResolvePtr(RealDllInfo.ImageBase, "R_BeamDrawList", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	{
-		/*
-			.text:01D82DA6 83 C4 04                                            add     esp, 4
-			.text:01D82DA9 68 C0 0B 00 00                                      push    0BC0h           ; cap
-		*/
-		const char pattern[] = "\x83\xC4\x04\x68\xC0\x0B\x00\x00";
-		PUCHAR SearchBegin = (PUCHAR)DllInfo.TextBase;
-		PUCHAR SearchLimit = (PUCHAR)DllInfo.TextBase + DllInfo.TextSize;
-		while (SearchBegin < SearchLimit)
-		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
-			{
-				typedef struct R_DrawParticle_SearchContext_s
-				{
-					bool bFound2200h{};
-					bool bFound2300h{};
-					bool bFound303h{};
-					bool bFound302h{};
-				}R_DrawParticle_SearchContext;
+	PVOID R_DrawParticles_VA = (PVOID)gPrivateFuncs.R_DrawParticles;
 
-				R_DrawParticle_SearchContext ctx = { };
-
-				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (R_DrawParticle_SearchContext*)context;
-
-					/*
-						.text:01D82DC1 68 00 22 00 00                                      push    2200h           ; pname
-						.text:01D82DC6 68 00 23 00 00                                      push    2300h           ; target
-						.text:01D82DCB FF 15 20 13 E6 01                                   call    ds:glTexEnvf
-					*/
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[0].imm == 0x2200)
-					{
-						ctx->bFound2200h = true;
-					}
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[0].imm == 0x2300)
-					{
-						ctx->bFound2300h = true;
-					}
-
-					/*
-						.text:01D82DD1 68 03 03 00 00                                      push    303h            ; dfactor
-						.text:01D82DD6 68 02 03 00 00                                      push    302h            ; sfactor
-						.text:01D82DDB FF 15 18 13 E6 01                                   call    ds:glBlendFunc
-					*/
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[0].imm == 0x302)
-					{
-						ctx->bFound302h = true;
-					}
-
-					if (pinst->id == X86_INS_PUSH &&
-						pinst->detail->x86.op_count == 1 &&
-						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[0].imm == 0x303)
-					{
-						ctx->bFound303h = true;
-					}
-
-					if (ctx->bFound2200h && ctx->bFound2300h && ctx->bFound302h && ctx->bFound303h)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-					}, 0, &ctx);
-
-				if (ctx.bFound2200h && ctx.bFound2300h && ctx.bFound302h && ctx.bFound303h)
-				{
-					R_DrawParticles_VA = (decltype(R_DrawParticles_VA))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x100, [](PUCHAR Candidate) {
-
-						if (Candidate[0] == 0x83 &&
-							Candidate[1] == 0xEC &&
-							Candidate[3] == 0xA1)
-							return TRUE;
-
-						if (Candidate[0] == 0x55 &&
-							Candidate[1] == 0x8B &&
-							Candidate[2] == 0xEC &&
-							Candidate[3] == 0x83)
-							return TRUE;
-
-						if (Candidate[0] == 0x81 &&
-							Candidate[1] == 0xEC &&
-							Candidate[4] == 0 &&
-							Candidate[5] == 0 &&
-							Candidate[6] == 0xA1)
-							return TRUE;
-
-						return FALSE;
-						});
-
-					gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
-					break;
-				}
-
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if (!gPrivateFuncs.R_DrawParticles)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE, DllInfo);
-			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_HL25, DllInfo);
-			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC)
-		{
-			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_NEW, DllInfo);
-
-			if (!R_DrawParticles_VA)
-				R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_NEW2, DllInfo);
-
-			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
-		}
-		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-		{
-			R_DrawParticles_VA = Search_Pattern(R_DRAWPARTICLES_SIG_BLOB, DllInfo);
-			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))ConvertDllInfoSpace(R_DrawParticles_VA, DllInfo, RealDllInfo);
-		}
-	}
-
-	Sig_FuncNotFound(R_DrawParticles);
 
 	typedef struct R_DrawParticles_SearchContext_s
 	{
@@ -3263,7 +3096,7 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 		const mh_dll_info_t& RealDllInfo;
 	} R_DrawParticles_SearchContext;
 
-	R_DrawParticles_SearchContext ctx = { DllInfo, RealDllInfo };
+	R_DrawParticles_SearchContext ctx = { RealDllInfo, RealDllInfo };
 
 	g_pMetaHookAPI->DisasmRanges(R_DrawParticles_VA, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -3276,10 +3109,10 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base == 0 &&
 			pinst->detail->x86.operands[0].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
-			particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+			particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
 		}
 
 		if (!particletexture &&
@@ -3289,8 +3122,8 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[1].mem.base == 0 &&
 			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
 			//Skip this shit
 			//.text:101EBCA6 A1 F4 36 32 10                                      mov     eax, ___security_cookie
@@ -3305,7 +3138,7 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			}
 			else
 			{
-				particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				particletexture = (decltype(particletexture))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
 			}
 		}
 
@@ -3317,16 +3150,12 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[1].mem.base == 0 &&
 			pinst->detail->x86.operands[1].mem.index == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->RealDllInfo.DataBase &&
+			(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->RealDllInfo.DataBase + ctx->RealDllInfo.DataSize)
 		{
 			if (address[-5] == 0xE8)
 			{
-				PVOID R_FreeDeadParticles_VA = GetCallAddress(address - 5);
-
-				gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))ConvertDllInfoSpace(R_FreeDeadParticles_VA, ctx->DllInfo, ctx->RealDllInfo);
-
-				active_particles = (decltype(active_particles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
+				active_particles = (decltype(active_particles))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->RealDllInfo, ctx->RealDllInfo);
 			}
 		}
 
@@ -3345,20 +3174,6 @@ void Engine_FillAddress_R_DrawParticles(const mh_dll_info_t& DllInfo, const mh_d
 	Sig_VarNotFound(active_particles);
 	Sig_VarNotFound(particletexture);
 
-	{
-#define R_TRACERDRAW_SIG "\xFF\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x00\xE8\x2A\x2A\x2A\x2A"
-		auto addr = (ULONG_PTR)Search_Pattern_From_Size((void*)R_DrawParticles_VA, 0x800, R_TRACERDRAW_SIG);
-		Sig_AddrNotFound(R_TracerDraw);
-
-		PVOID R_TracerDraw_VA = GetCallAddress(addr + 6);
-		gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))ConvertDllInfoSpace(R_TracerDraw_VA, DllInfo, RealDllInfo);
-
-		PVOID R_BeamDrawList_VA = GetCallAddress(addr + 11);
-		gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))ConvertDllInfoSpace(R_BeamDrawList_VA, DllInfo, RealDllInfo);
-	}
-
-	Sig_FuncNotFound(R_TracerDraw);
-	Sig_FuncNotFound(R_BeamDrawList);
 }
 
 void Engine_FillAddress_CL_AllocDlight(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
