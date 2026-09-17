@@ -947,11 +947,11 @@ void R_RotateForEntity(cl_entity_t* e, float out[4][4])
 	Matrix4x4_CreateFromEntity(out, angles, modelpos, 1);
 }
 
-float R_GlowBlend(cl_entity_t* entity)
+float GlowBlend(cl_entity_t* entity)
 {
-	if (gPrivateFuncs.R_GlowBlend)
+	if (gPrivateFuncs.GlowBlend)
 	{
-		return gPrivateFuncs.R_GlowBlend(entity);
+		return gPrivateFuncs.GlowBlend(entity);
 	}
 
 	//pmove->PM_PlayerTrace might be NULL in the first frame because it's not initalized yet.
@@ -2268,7 +2268,7 @@ void R_DrawSpriteEntity(bool bTransparent)
 	if (bTransparent)
 	{
 		if ((*currententity)->curstate.rendermode == kRenderGlow)
-			(*r_blend) *= R_GlowBlend((*currententity));
+			(*r_blend) *= GlowBlend((*currententity));
 	}
 	else
 	{

@@ -89,7 +89,7 @@ typedef struct
 	void (*R_DrawSpriteModel)(cl_entity_t* ent);
 	mspriteframe_t* (*R_GetSpriteFrame)(msprite_t* pSprite, int frame);
 	int (*CL_FxBlend)(cl_entity_t* ent);
-	float(*R_GlowBlend)(cl_entity_t* ent);
+	float(*GlowBlend)(cl_entity_t* ent);
 	void (*VID_UpdateWindowVars)(RECT* prc, int x, int y);
 	mleaf_t* (*Mod_PointInLeaf)(vec3_t p, model_t* model);
 	void* (*realloc_SvEngine)(void*, size_t);
@@ -269,7 +269,7 @@ typedef struct
 	bool R_SetupFrame_inlined;
 	bool R_RenderScene_inlined;
 	bool R_LightStrength_inlined;
-	bool R_GlowBlend_inlined;
+	bool GlowBlend_inlined;
 
 }private_funcs_t;
 

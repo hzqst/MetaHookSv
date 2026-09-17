@@ -290,11 +290,6 @@
 #define R_LIGHTSTRENGTH_SIG_NEW2  "\x8B\x4C\x24\x04\x8B\x15\x2A\x2A\x2A\x2A\x83\xEC\x0C\x8B\x04\x2A\x2A\x2A\x2A\x2A\x3B\xC2"
 #define R_LIGHTSTRENGTH_SIG_BLOB  "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x0C\x55\x8B\x2A\x24\x2A\x2A\x8B"
 
-#define R_GLOW_BLEND_SIG_SVENGINE ""//inlined
-#define R_GLOW_BLEND_SIG_HL25     ""//inlined
-#define R_GLOW_BLEND_SIG_NEW      "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
-#define R_GLOW_BLEND_SIG_NEW2      "\x83\xEC\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x44\x24\x0C\x2A\x2A\xD9"
-#define R_GLOW_BLEND_SIG_BLOB      "\x81\xEC\x2A\x2A\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D"
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
@@ -4738,40 +4733,19 @@ void Engine_FillAddress_R_RotateForEntity(const mh_dll_info_t& DllInfo, const mh
 	Sig_FuncNotFound(R_RotateForEntity);
 }
 
-void Engine_FillAddress_R_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_GlowBlend(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	if (gPrivateFuncs.R_GlowBlend)
+	if (gPrivateFuncs.GlowBlend)
 		return;
 
-	PVOID R_GlowBlend_VA = 0;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//GlowBlend is inlined on SvEngine and HL25 and has no catalog record there.
+	if (g_iEngineType == ENGINE_SVENGINE || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		//Inlined
-		gPrivateFuncs.R_GlowBlend_inlined = true;
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		//Inlined
-		gPrivateFuncs.R_GlowBlend_inlined = true;
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_NEW, DllInfo);
-		if (!R_GlowBlend_VA)
-			R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_NEW2, DllInfo);
-		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))ConvertDllInfoSpace(R_GlowBlend_VA, DllInfo, RealDllInfo);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		R_GlowBlend_VA = Search_Pattern(R_GLOW_BLEND_SIG_BLOB, DllInfo);
-		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))ConvertDllInfoSpace(R_GlowBlend_VA, DllInfo, RealDllInfo);
+		gPrivateFuncs.GlowBlend_inlined = true;
+		return;
 	}
 
-	if (!gPrivateFuncs.R_GlowBlend_inlined)
-	{
-		Sig_FuncNotFound(R_GlowBlend);
-	}
+	gPrivateFuncs.GlowBlend = (decltype(gPrivateFuncs.GlowBlend))GamedataResolvePtr(RealDllInfo.ImageBase, "GlowBlend", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
 void Engine_FillAddress_SCR_BeginLoadingPlaque(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -8670,7 +8644,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_R_RotateForEntity(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_R_GlowBlend(DllInfo, RealDllInfo);
+	Engine_FillAddress_GlowBlend(DllInfo, RealDllInfo);
 
 	Engine_FillAddress_SCR_BeginLoadingPlaque(DllInfo, RealDllInfo);
 
