@@ -372,14 +372,19 @@ void EngineStudio_FillAddress_StudioSetRemapColors(struct engine_studio_api_s* p
 
 void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	PVOID StudioSetRenderamt = ConvertDllInfoSpace(pstudio->StudioSetRenderamt, RealDllInfo, DllInfo);
+	gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))GamedataResolvePtr(RealDllInfo.ImageBase, "CL_FxBlend", MH_GAMESYMBOL_KIND_FUNCTION);
 
-	if (!StudioSetRenderamt)
+	//r_blend stays catalog-uncovered and is still read from the engine's
+	//StudioSetRenderamt body through the public studio API pointer.
+	if (!r_blend)
 	{
-		Sig_NotFound(StudioSetRenderamt);
-	}
+		PVOID StudioSetRenderamt = ConvertDllInfoSpace(pstudio->StudioSetRenderamt, RealDllInfo, DllInfo);
 
-	{
+		if (!StudioSetRenderamt)
+		{
+			Sig_NotFound(StudioSetRenderamt);
+		}
+
 		typedef struct
 		{
 			const mh_dll_info_t& DllInfo;
@@ -393,13 +398,7 @@ void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pst
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (StudioSetRenderamt_SearchContext*)context;
 
-				if (!gPrivateFuncs.CL_FxBlend && 
-					address[0] == 0xE8 && instLen == 5)
-				{
-					gPrivateFuncs.CL_FxBlend = (decltype(gPrivateFuncs.CL_FxBlend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].imm, ctx->DllInfo, ctx->RealDllInfo);
-				}
-
-				else if (!r_blend && 
+				if (!r_blend &&
 					pinst->id == X86_INS_FSTP &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -408,7 +407,7 @@ void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pst
 					r_blend = (decltype(r_blend))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
 				}
 
-				if (gPrivateFuncs.CL_FxBlend && r_blend)
+				if (r_blend)
 					return TRUE;
 
 				if (address[0] == 0xCC)
@@ -419,11 +418,9 @@ void EngineStudio_FillAddress_StudioSetRenderamt(struct engine_studio_api_s* pst
 
 				return FALSE;
 			}, 0, &ctx);
-
 	}
 
 	Sig_VarNotFound(r_blend);
-	Sig_FuncNotFound(CL_FxBlend);
 }
 
 void EngineStudio_FillAddress_SetupRenderer(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)

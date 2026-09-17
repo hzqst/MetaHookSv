@@ -265,11 +265,9 @@ typedef struct
 	void(__cdecl* SDL_InitGL)();
 	decltype(glewInit)* SvEngine_glewInit;
 
-	bool R_ForceCVars_inlined;
 	bool R_SetupFrame_inlined;
 	bool R_RenderScene_inlined;
 	bool R_LightStrength_inlined;
-	bool GlowBlend_inlined;
 
 }private_funcs_t;
 
