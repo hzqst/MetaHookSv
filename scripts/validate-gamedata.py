@@ -139,12 +139,14 @@ BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
 # Renderer consumer gate (issues #865 and #873).
 #
 # Plugins/Renderer resolves every symbol below through ResolveGameSymbol. The
-# 46 entries migrated by #865 and the 76 migrated by #873 are all pinned here so
-# a catalog update cannot silently drop a record the plugin still requires.
+# 46 entries migrated by #865, the 76 migrated by #873 and the 19 migrated by
+# the #873 follow-up are all pinned here so a catalog update cannot silently
+# drop a record the plugin still requires.
 # Groups mirror the plugin's engine-family / identity branches:
 #   ALL              - every declared engine family
 #   NON_SVENGINE     - all but svencoop (base symbol, SvEngine has a variant)
 #   E8               - cof + the 8 hl builds (HL25 and SvEngine inline these)
+#   NON_BLOB         - all but the four blob builds (which inline the symbol)
 #   SVENGINE / HL25  - variant symbols published by a single family
 #   explicit game sets for the SDL and GL_SetMode ABI branches
 # Unlike BulletPhysics, Renderer's seven client Studio virtualFunctions and
@@ -166,14 +168,19 @@ RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
 RENDERER_NOT_SVENGINE_10257_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-10257")
 RENDERER_NOT_SVENGINE_8948_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-8948")
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
+# The blob builds inline DT_Initialize into CheckMultiTextureExtensions, so they
+# publish no standalone record for it and the plugin resolves it optionally.
+RENDERER_BLOB_GAMES = ("hl-3248", "hl-3266", "hl-3329", "hl-3647")
+RENDERER_NON_BLOB_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g not in RENDERER_BLOB_GAMES)
 # gameVersion -> snapshot that publishes a client module (same set as BulletPhysics).
 RENDERER_CLIENT_GAMES = BULLETPHYSICS_CLIENT_GAMES
 RENDERER_CS_CLIENT_GAMES = BULLETPHYSICS_CS_CLIENT_GAMES
 RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
 
 RENDERER_ENGINE_ALL_FUNCTIONS = (
-    "BuildGammaTable", "CL_FxBlend", "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc",
-    "DT_Initialize", "Draw_DecalTexture", "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
+    "BuildGammaTable", "CL_AllocDlight", "CL_AllocElight", "CL_FxBlend",
+    "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc", "Draw_DecalTexture",
+    "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
     "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
     "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
     "Host_ClearMemory", "Host_IsSinglePlayerGame", "Hunk_AllocName", "Mod_LoadBrushModel",
@@ -188,10 +195,13 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "S_ExtraUpdate", "V_FadeAlpha", "V_RenderView",
 )
 RENDERER_ENGINE_ALL_GLOBALS = (
-    "active_particles", "cl_entities", "cl_max_edicts", "cl_numvisedicts", "cl_parsecount",
-    "cl_viewentity", "cl_visedicts", "cl_worldmodel", "currententity", "gTempEnts",
-    "g_ChromeOrigin", "mod_known", "mod_numknown", "modelorg", "pstudiohdr", "r_model",
-    "r_origin", "r_worldentity",
+    "active_particles", "c_brush_polys", "cache_head", "cl_dlights", "cl_elights",
+    "cl_entities", "cl_light_level", "cl_max_edicts", "cl_numvisedicts", "cl_oldtime",
+    "cl_parsecount", "cl_simorg", "cl_stats", "cl_time", "cl_viewentity", "cl_visedicts",
+    "cl_waterlevel", "cl_weaponsequence", "cl_weaponstarttime", "cl_worldmodel",
+    "cshift_water", "currententity", "currenttexture", "detTexSupported", "envmap",
+    "gTempEnts", "g_ChromeOrigin", "mod_known", "mod_numknown", "modelorg", "pstudiohdr",
+    "r_model", "r_origin", "r_worldentity",
 )
 RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
 RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
@@ -200,12 +210,15 @@ RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
     "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
 )
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
+#SvEngine renamed the alias-poly counter to c_model_polys.
+RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys",)
 RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend", "Mod_UnloadSpriteTextures")
 RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
     "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
     "Draw_SpriteFrameHoles_SvEngine", "NET_DrawRect", "R_LoadSkyBox_SvEngine",
 )
-RENDERER_SVENGINE_GLOBALS = ("allow_cheats",)
+RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys")
+RENDERER_NON_BLOB_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
 RENDERER_SETMODE_FUNCTIONS = ("GL_SetMode",)
 RENDERER_SETMODE_LEGACY_FUNCTIONS = ("GL_SetModeLegacy",)
@@ -702,6 +715,9 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
         if game_version in RENDERER_NON_SVENGINE_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_GLOBALS, "global", "engine")
+        if game_version in RENDERER_NON_BLOB_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_NON_BLOB_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_E8_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_E8_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SVENGINE_GAMES:
