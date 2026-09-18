@@ -146,7 +146,8 @@ BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
 #   ALL              - every declared engine family
 #   NON_SVENGINE     - all but svencoop (base symbol, SvEngine has a variant)
 #   E8               - cof + the 8 hl builds (HL25 and SvEngine inline these)
-#   NON_BLOB         - all but the four blob builds (which inline the symbol)
+#   MTEX_PROBE       - engines that expose the multitexture probe standalone,
+#                      vs INLINED_MTEX_PROBE which fold it into GL_Init
 #   SVENGINE / HL25  - variant symbols published by a single family
 #   explicit game sets for the SDL and GL_SetMode ABI branches
 # Unlike BulletPhysics, Renderer's seven client Studio virtualFunctions and
@@ -168,10 +169,14 @@ RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
 RENDERER_NOT_SVENGINE_10257_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-10257")
 RENDERER_NOT_SVENGINE_8948_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-8948")
 RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
-# The blob builds inline DT_Initialize into CheckMultiTextureExtensions, so they
-# publish no standalone record for it and the plugin resolves it optionally.
-RENDERER_BLOB_GAMES = ("hl-3248", "hl-3266", "hl-3329", "hl-3647")
-RENDERER_NON_BLOB_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g not in RENDERER_BLOB_GAMES)
+# Renderer neuters exactly one legacy multitexture / detail-texture init per engine.
+# HL/CoF/blob publish the probe as CheckMultiTextureExtensions; HL25 and SvEngine
+# inline it into GL_Init on Windows and publish only the standalone DT_Initialize
+# that GL_Init still calls. (SvEngine's InitMultitexturing is linux-only, so no
+# Windows snapshot carries it; the plugin still tries it before DT_Initialize.)
+RENDERER_INLINED_MTEX_PROBE_GAMES = ("hl-10210", "svencoop-10257", "svencoop-8948")
+RENDERER_MTEX_PROBE_GAMES = tuple(g for g in RENDERER_ALL_GAMES
+                                  if g not in RENDERER_INLINED_MTEX_PROBE_GAMES)
 # gameVersion -> snapshot that publishes a client module (same set as BulletPhysics).
 RENDERER_CLIENT_GAMES = BULLETPHYSICS_CLIENT_GAMES
 RENDERER_CS_CLIENT_GAMES = BULLETPHYSICS_CS_CLIENT_GAMES
@@ -218,7 +223,8 @@ RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
     "Draw_SpriteFrameHoles_SvEngine", "NET_DrawRect", "R_LoadSkyBox_SvEngine",
 )
 RENDERER_SVENGINE_GLOBALS = ("allow_cheats", "c_model_polys")
-RENDERER_NON_BLOB_FUNCTIONS = ("DT_Initialize",)
+RENDERER_MTEX_PROBE_FUNCTIONS = ("CheckMultiTextureExtensions",)
+RENDERER_INLINED_MTEX_PROBE_FUNCTIONS = ("DT_Initialize",)
 RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
 RENDERER_SETMODE_FUNCTIONS = ("GL_SetMode",)
 RENDERER_SETMODE_LEGACY_FUNCTIONS = ("GL_SetModeLegacy",)
@@ -716,8 +722,10 @@ def validate_renderer(symbols, game_version, include_engine=True, include_client
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch", "engine")
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_GLOBALS, "global", "engine")
-        if game_version in RENDERER_NON_BLOB_GAMES:
-            errors += _renderer_check(symbols, game_version, RENDERER_NON_BLOB_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_MTEX_PROBE_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_MTEX_PROBE_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_INLINED_MTEX_PROBE_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_INLINED_MTEX_PROBE_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_E8_GAMES:
             errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_E8_FUNCTIONS, "function", "engine")
         if game_version in RENDERER_SVENGINE_GAMES:

@@ -457,8 +457,10 @@ class RendererGateTests(unittest.TestCase):
             add(validate.RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function")
             add(validate.RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch")
             add(validate.RENDERER_ENGINE_NON_SVENGINE_GLOBALS, "global")
-        if game_version in validate.RENDERER_NON_BLOB_GAMES:
-            add(validate.RENDERER_NON_BLOB_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_MTEX_PROBE_GAMES:
+            add(validate.RENDERER_MTEX_PROBE_FUNCTIONS, "function")
+        if game_version in validate.RENDERER_INLINED_MTEX_PROBE_GAMES:
+            add(validate.RENDERER_INLINED_MTEX_PROBE_FUNCTIONS, "function")
         if game_version in validate.RENDERER_E8_GAMES:
             add(validate.RENDERER_ENGINE_E8_FUNCTIONS, "function")
         if game_version in validate.RENDERER_SVENGINE_GAMES:
@@ -579,17 +581,27 @@ class RendererGateTests(unittest.TestCase):
                 self.assertIn("R_RenderScene", symbols)
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
-    def test_gate_does_not_require_dt_initialize_for_blob_builds(self):
-        for gv in validate.RENDERER_BLOB_GAMES:
+    def test_gate_requires_exactly_one_multitexture_init_per_identity(self):
+        for gv in validate.RENDERER_ALL_GAMES:
             symbols = self.complete_engine_symbols(gv)
-            self.assertNotIn("DT_Initialize", symbols)
+            if gv in validate.RENDERER_INLINED_MTEX_PROBE_GAMES:
+                self.assertIn("DT_Initialize", symbols, gv)
+                self.assertNotIn("CheckMultiTextureExtensions", symbols, gv)
+            else:
+                self.assertIn("CheckMultiTextureExtensions", symbols, gv)
+                self.assertNotIn("DT_Initialize", symbols, gv)
             self.assertEqual([], validate.validate_renderer(symbols, gv), gv)
 
-    def test_gate_requires_dt_initialize_for_non_blob_builds(self):
+    def test_gate_flags_missing_multitexture_probe(self):
         symbols = self.complete_engine_symbols("hl-8684")
-        self.assertIn("DT_Initialize", symbols)
-        del symbols["DT_Initialize"]
+        del symbols["CheckMultiTextureExtensions"]
         errors = validate.validate_renderer(symbols, "hl-8684")
+        self.assertTrue(any("CheckMultiTextureExtensions" in e for e in errors), errors)
+
+    def test_gate_flags_missing_dt_initialize_where_probe_is_inlined(self):
+        symbols = self.complete_engine_symbols("hl-10210")
+        del symbols["DT_Initialize"]
+        errors = validate.validate_renderer(symbols, "hl-10210")
         self.assertTrue(any("DT_Initialize" in e for e in errors), errors)
 
     def test_gate_alias_poly_counter_follows_engine_family(self):
