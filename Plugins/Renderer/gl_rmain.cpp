@@ -6390,9 +6390,12 @@ void __fastcall CGame_DrawStartupVideo(void* pgame, int dummy, const char* filen
 	//not available yet.
 }
 
-void DT_Initialize()
+void LegacyMultiTextureInit()
 {
 	//Fuck Valve
+	//The engine's legacy multitexture / detail-texture init issues fixed-function calls
+	//(glEnable(GL_TEXTURE_2D), glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_ARB / GL_RGB_SCALE, ...))
+	//that are not valid under the Core profile context we ask GL_SetMode to create.
 }
 
 static int ValidateWRect(const wrect_t* prc)

@@ -225,7 +225,7 @@ static hook_t* g_phook_GL_UnloadTexture = NULL;
 static hook_t* g_phook_GL_LoadFilterTexture = NULL;
 static hook_t* g_phook_GL_LoadTexture2 = NULL;
 static hook_t* g_phook_GL_BuildLightmaps = NULL;
-static hook_t* g_phook_DT_Initialize = NULL;
+static hook_t* g_phook_LegacyMultiTextureInit = NULL;
 static hook_t* g_phook_Mod_LoadStudioModel = NULL;
 static hook_t* g_phook_Mod_LoadBrushModel = NULL;
 static hook_t* g_phook_Mod_LoadSpriteModel = NULL;
@@ -6967,13 +6967,30 @@ void Engine_FillAddress_NoTexture(const mh_dll_info_t& DllInfo, const mh_dll_inf
 	}
 }
 
-void Engine_FillAddress_DT_Initialize(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
+void Engine_FillAddress_LegacyMultiTextureInit(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	detTexSupported = (decltype(detTexSupported))GamedataResolvePtr(RealDllInfo.ImageBase, "detTexSupported", MH_GAMESYMBOL_KIND_GLOBAL);
 
-	//The blob builds inline DT_Initialize into CheckMultiTextureExtensions and publish no
-	//record for it; there is no standalone body to neuter there, so the hook is skipped.
-	gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, "DT_Initialize", MH_GAMESYMBOL_KIND_FUNCTION);
+	//We only need to neuter one function per engine: the legacy multitexture probe is the
+	//sole caller of DT_Initialize wherever both exist, so hooking the probe covers both.
+	//HL/CoF/blob call it CheckMultiTextureExtensions, SvEngine calls it InitMultitexturing.
+	//HL25 and SvEngine inline the probe into GL_Init on Windows and publish no record for
+	//it, so those fall back to the standalone DT_Initialize that GL_Init still calls.
+	static const char* s_LegacyMultiTextureInitNames[] = {
+		"CheckMultiTextureExtensions",
+		"InitMultitexturing",
+		"DT_Initialize",
+	};
+
+	for (auto name : s_LegacyMultiTextureInitNames)
+	{
+		gPrivateFuncs.LegacyMultiTextureInit = (decltype(gPrivateFuncs.LegacyMultiTextureInit))GamedataResolvePtrIfAvailable(RealDllInfo.ImageBase, name, MH_GAMESYMBOL_KIND_FUNCTION);
+
+		if (gPrivateFuncs.LegacyMultiTextureInit)
+			break;
+	}
+
+	Sig_FuncNotFound(LegacyMultiTextureInit);
 }
 
 void Engine_FillAddress_DrawStartupGraphic(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
@@ -7628,7 +7645,7 @@ void Engine_FillAddress(const mh_dll_info_t &DllInfo, const mh_dll_info_t& RealD
 
 	Engine_FillAddress_NoTexture(DllInfo, RealDllInfo);
 
-	Engine_FillAddress_DT_Initialize(DllInfo, RealDllInfo);
+	Engine_FillAddress_LegacyMultiTextureInit(DllInfo, RealDllInfo);
 
 	gPrivateFuncs.PVSNode = (decltype(gPrivateFuncs.PVSNode))GamedataResolvePtr(RealDllInfo.ImageBase, "PVSNode", MH_GAMESYMBOL_KIND_FUNCTION);
 
@@ -7702,9 +7719,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);
 
-	//Left null on the blob builds, which inline DT_Initialize.
-	if (gPrivateFuncs.DT_Initialize)
-		Install_InlineHook(DT_Initialize);
+	Install_InlineHook(LegacyMultiTextureInit);
 
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadSpriteModel);
@@ -7790,7 +7805,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(GL_LoadFilterTexture);
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(GL_BuildLightmaps);
-	Uninstall_Hook(DT_Initialize);
+	Uninstall_Hook(LegacyMultiTextureInit);
 
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_LoadSpriteModel);
