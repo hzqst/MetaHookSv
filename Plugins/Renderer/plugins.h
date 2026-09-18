@@ -45,6 +45,18 @@ inline PVOID GamedataResolvePtr(PVOID moduleBase, const char* symbolName, mh_gam
 	return address;
 }
 
+//Resolve a conditionally required gamedata symbol. Returns nullptr when the
+//current binary identity publishes no record, so callers can keep an explicitly
+//isolated legacy branch; a symbol that is present but fails to resolve is fatal,
+//mirroring GamedataResolvePtr.
+inline PVOID GamedataResolvePtrIfAvailable(PVOID moduleBase, const char* symbolName, mh_gamesymbol_kind_t kind)
+{
+	if (g_pMetaHookAPI->IsGameSymbolAvailable(moduleBase, symbolName) != MH_GAMESYMBOL_OK)
+		return nullptr;
+
+	return GamedataResolvePtr(moduleBase, symbolName, kind);
+}
+
 #define Sig_Length(a) (sizeof(a)-1)
 #define Search_Pattern(sig, dllinfo) g_pMetaHookAPI->SearchPattern(dllinfo.TextBase, dllinfo.TextSize, sig, Sig_Length(sig))
 #define Search_Pattern_Data(sig, dllinfo) g_pMetaHookAPI->SearchPattern(dllinfo.DataBase, dllinfo.DataSize, sig, Sig_Length(sig))

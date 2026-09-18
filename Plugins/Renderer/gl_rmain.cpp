@@ -123,9 +123,6 @@ int(*rtable)[20][20] = nullptr;
 model_t* mod_known = nullptr;
 int* mod_numknown = nullptr;
 
-char (*loadname)[64] = nullptr;
-model_t** loadmodel = nullptr;
-
 int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
@@ -947,11 +944,11 @@ void R_RotateForEntity(cl_entity_t* e, float out[4][4])
 	Matrix4x4_CreateFromEntity(out, angles, modelpos, 1);
 }
 
-float R_GlowBlend(cl_entity_t* entity)
+float GlowBlend(cl_entity_t* entity)
 {
-	if (gPrivateFuncs.R_GlowBlend)
+	if (gPrivateFuncs.GlowBlend)
 	{
-		return gPrivateFuncs.R_GlowBlend(entity);
+		return gPrivateFuncs.GlowBlend(entity);
 	}
 
 	//pmove->PM_PlayerTrace might be NULL in the first frame because it's not initalized yet.
@@ -2268,7 +2265,7 @@ void R_DrawSpriteEntity(bool bTransparent)
 	if (bTransparent)
 	{
 		if ((*currententity)->curstate.rendermode == kRenderGlow)
-			(*r_blend) *= R_GlowBlend((*currententity));
+			(*r_blend) *= GlowBlend((*currententity));
 	}
 	else
 	{

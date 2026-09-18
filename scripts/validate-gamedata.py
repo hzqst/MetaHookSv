@@ -135,6 +135,97 @@ BULLETPHYSICS_CS_CLIENT_GAMES = (
 )
 BULLETPHYSICS_CZDS_CLIENT_GAMES = ("czeror-8684", "czeror-10210")
 
+# ---------------------------------------------------------------------------
+# Renderer consumer gate (issues #865 and #873).
+#
+# Plugins/Renderer resolves every symbol below through ResolveGameSymbol. The
+# 46 entries migrated by #865 and the 76 migrated by #873 are all pinned here so
+# a catalog update cannot silently drop a record the plugin still requires.
+# Groups mirror the plugin's engine-family / identity branches:
+#   ALL              - every declared engine family
+#   NON_SVENGINE     - all but svencoop (base symbol, SvEngine has a variant)
+#   E8               - cof + the 8 hl builds (HL25 and SvEngine inline these)
+#   SVENGINE / HL25  - variant symbols published by a single family
+#   explicit game sets for the SDL and GL_SetMode ABI branches
+# Unlike BulletPhysics, Renderer's seven client Studio virtualFunctions and
+# g_iUser1/g_iUser2 are required resolves, so they are presence-checked too.
+# ---------------------------------------------------------------------------
+RENDERER_ALL_GAMES = (
+    "cof-5936", "hl-10210", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
+    "hl-4554", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948",
+)
+RENDERER_NON_SVENGINE_GAMES = tuple(g for g in RENDERER_ALL_GAMES if not g.startswith("svencoop-"))
+RENDERER_E8_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329", "hl-3647",
+                     "hl-4554", "hl-6153", "hl-8684")
+RENDERER_SVENGINE_GAMES = ("svencoop-10257", "svencoop-8948")
+RENDERER_HL25_GAMES = ("hl-10210",)
+RENDERER_SDL_GAMES = ("hl-10210", "hl-6153", "hl-8684")
+RENDERER_SETMODE_GAMES = ("hl-10210", "hl-6153", "hl-8684", "svencoop-10257", "svencoop-8948")
+RENDERER_SETMODE_LEGACY_GAMES = ("cof-5936", "hl-3248", "hl-3266", "hl-3329",
+                                 "hl-3647", "hl-4554")
+RENDERER_NOT_SVENGINE_10257_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-10257")
+RENDERER_NOT_SVENGINE_8948_GAMES = tuple(g for g in RENDERER_ALL_GAMES if g != "svencoop-8948")
+RENDERER_SVEN_10257_GAMES = ("svencoop-10257",)
+# gameVersion -> snapshot that publishes a client module (same set as BulletPhysics).
+RENDERER_CLIENT_GAMES = BULLETPHYSICS_CLIENT_GAMES
+RENDERER_CS_CLIENT_GAMES = BULLETPHYSICS_CS_CLIENT_GAMES
+RENDERER_CZDS_CLIENT_GAMES = BULLETPHYSICS_CZDS_CLIENT_GAMES
+
+RENDERER_ENGINE_ALL_FUNCTIONS = (
+    "BuildGammaTable", "CL_FxBlend", "CVideoMode_Common_DrawStartupGraphic", "Cache_Alloc",
+    "DT_Initialize", "Draw_DecalTexture", "Draw_Frame", "Draw_Pic", "GL_BeginRendering",
+    "GL_Bind", "GL_BuildLightmaps", "GL_EndRendering", "GL_Finish2D", "GL_Init",
+    "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
+    "Host_ClearMemory", "Host_IsSinglePlayerGame", "Hunk_AllocName", "Mod_LoadBrushModel",
+    "Mod_LoadModel", "Mod_LoadSpriteFrame", "Mod_LoadSpriteModel", "Mod_LoadStudioModel",
+    "Mod_PointInLeaf", "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
+    "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
+    "R_DrawTEntitiesOnList", "R_DrawWorld", "R_ForceCVars", "R_FreeDeadParticles",
+    "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
+    "R_RecursiveWorldNode", "R_RenderView", "R_ResetLatched", "R_SetupGL",
+    "R_StudioDrawModel", "R_StudioDrawPlayer", "R_StudioMergeBones", "R_StudioRenderFinal",
+    "R_StudioRenderModel", "R_StudioSaveBones", "R_StudioSetupBones", "R_TracerDraw",
+    "S_ExtraUpdate", "V_FadeAlpha", "V_RenderView",
+)
+RENDERER_ENGINE_ALL_GLOBALS = (
+    "active_particles", "cl_entities", "cl_max_edicts", "cl_numvisedicts", "cl_parsecount",
+    "cl_viewentity", "cl_visedicts", "cl_worldmodel", "currententity", "gTempEnts",
+    "g_ChromeOrigin", "mod_known", "mod_numknown", "modelorg", "pstudiohdr", "r_model",
+    "r_origin", "r_worldentity",
+)
+RENDERER_ENGINE_ALL_PATCHES = ("Sys_ShutdownGame_to_GL_Shutdown_callsite_0",)
+RENDERER_NUMBERED_PATCH_SETS = ("CL_LinkPacketEntities_to_R_ResetLatched_callsite",)
+RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
+    "D_FillRect", "Draw_FillRGBA", "Draw_FillRGBABlend", "Draw_SpriteFrameAdditive",
+    "Draw_SpriteFrameGeneric", "Draw_SpriteFrameHoles", "R_LoadSkys", "R_RenderFinalFog",
+)
+RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
+RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend", "Mod_UnloadSpriteTextures")
+RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
+    "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
+    "Draw_SpriteFrameHoles_SvEngine", "NET_DrawRect", "R_LoadSkyBox_SvEngine",
+)
+RENDERER_SVENGINE_GLOBALS = ("allow_cheats",)
+RENDERER_ENGINE_HL25_FUNCTIONS = ("CGame_DrawStartupVideo",)
+RENDERER_SETMODE_FUNCTIONS = ("GL_SetMode",)
+RENDERER_SETMODE_LEGACY_FUNCTIONS = ("GL_SetModeLegacy",)
+RENDERER_SDL_FUNCTIONS = ("SDL_InitGL",)
+RENDERER_NOT_SVENGINE_10257_FUNCTIONS = ("R_RenderScene",)
+RENDERER_NOT_SVENGINE_8948_FUNCTIONS = ("R_DrawViewModel",)
+RENDERER_CLIENT_SVEN_FUNCTIONS = (
+    "ClientPortalManager_RenderPortals", "ClientPortalManager_ResetAll", "UpdatePlayerPitch",
+)
+RENDERER_CLIENT_SVEN_GLOBALS = ("g_bRenderingPortals_SCClient",)
+RENDERER_CLIENT_10257_FUNCTIONS = ("ClientPortalManager_EnableClipPlane",)
+RENDERER_CLIENT_10257_GLOBALS = ("g_ViewEntityIndex_SCClient",)
+RENDERER_CLIENT_STUDIO_VFUNCS = (
+    "GameStudioRenderer_StudioDrawModel", "GameStudioRenderer_StudioDrawPlayer",
+    "GameStudioRenderer_StudioMergeBones", "GameStudioRenderer_StudioRenderFinal",
+    "GameStudioRenderer_StudioRenderModel", "GameStudioRenderer_StudioSaveBones",
+    "GameStudioRenderer_StudioSetupBones",
+)
+RENDERER_CLIENT_STUDIO_GLOBALS = ("g_iUser1", "g_iUser2", "g_pGameStudioRenderer")
+
 # gameVersion -> engine family. Only these gameVersions are declared supported.
 # hl-4554 belongs to ENGINE_GOLDSRC: its hw.dll is a plain PE (isBlob false) with
 # build number 4554 <= 9000, so the launcher's rule-based mapping reports
@@ -336,7 +427,7 @@ def validate_snapshot(doc, game_version):
             if not validate_signature(sig):
                 errors.append(f"'{game_version}': function '{name}' has a malformed signature")
                 continue
-            rec = {"kind": "function", "rva": rva, "size": size}
+            rec = {"kind": "function", "rva": rva, "size": size, "module": mod}
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
@@ -363,7 +454,8 @@ def validate_snapshot(doc, game_version):
                 errors.append(f"'{game_version}': global '{name}' has a malformed signature")
                 continue
             rec = {"kind": "global", "rva": gv_rva, "sig_rva": gv_sig_va - image_base,
-                   "inst_off": inst_off, "inst_disp": inst_disp, "inst_len": inst_len}
+                   "inst_off": inst_off, "inst_disp": inst_disp, "inst_len": inst_len,
+                   "module": mod}
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
@@ -380,7 +472,7 @@ def validate_snapshot(doc, game_version):
             if not validate_signature(patch_sig):
                 errors.append(f"'{game_version}': patch '{name}' has a malformed signature")
                 continue
-            rec = {"kind": "patch", "rva": patch_rva, "sig_disp": patch_sig_disp}
+            rec = {"kind": "patch", "rva": patch_rva, "sig_disp": patch_sig_disp, "module": mod}
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
@@ -414,7 +506,7 @@ def validate_snapshot(doc, game_version):
             if not validate_signature(vfunc_sig):
                 errors.append(f"'{game_version}': virtualFunction '{name}' has a malformed signature")
                 continue
-            rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size}
+            rec = {"kind": "virtualFunction", "rva": func_rva, "size": func_size, "module": mod}
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
@@ -432,7 +524,7 @@ def validate_snapshot(doc, game_version):
             if vtable_size != vtable_numvfunc * 4:
                 errors.append(f"'{game_version}': vtable '{name}': vtable_size does not match vtable_numvfunc")
                 continue
-            rec = {"kind": "vtable", "rva": vtable_rva, "size": vtable_size}
+            rec = {"kind": "vtable", "rva": vtable_rva, "size": vtable_size, "module": mod}
             if name in symbols and symbols[name] != rec:
                 errors.append(f"'{game_version}': conflicting duplicate symbol '{name}'")
             symbols[name] = rec
@@ -566,6 +658,88 @@ def validate_bulletphysics_client(symbols, game_version):
     return errors
 
 
+def _renderer_check(symbols, game_version, names, kind, module):
+    """Return Renderer failures for one (symbol, kind, module) group."""
+    errors = []
+    for sym in names:
+        rec = symbols.get(sym)
+        if not isinstance(rec, dict):
+            errors.append(f"'{game_version}': missing Renderer {module} {kind} '{sym}'")
+            continue
+        if rec.get("kind") != kind:
+            errors.append(f"'{game_version}': '{sym}' must be a {kind} record")
+        elif rec.get("module") != module:
+            errors.append(f"'{game_version}': '{sym}' must belong to module '{module}'")
+    return errors
+
+
+def validate_renderer(symbols, game_version, include_engine=True, include_client=True):
+    """Return Renderer consumer failures for a declared game version.
+
+    include_engine is False for the client-only snapshots (cstrike / czero /
+    czeror) whose engine symbols are not published.
+    """
+    errors = []
+    if include_engine:
+        errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_FUNCTIONS, "function", "engine")
+        errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_GLOBALS, "global", "engine")
+        errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_ALL_PATCHES, "patch", "engine")
+
+        # Numbered patch sets: contiguous from _0.
+        for prefix in RENDERER_NUMBERED_PATCH_SETS:
+            index = 0
+            while True:
+                name = f"{prefix}_{index}"
+                rec = symbols.get(name)
+                if rec is None:
+                    if index == 0:
+                        errors.append(f"'{game_version}': missing required Renderer patch '{name}'")
+                    break
+                if rec.get("kind") != "patch":
+                    errors.append(f"'{game_version}': '{name}' must be a patch record")
+                index += 1
+
+        if game_version in RENDERER_NON_SVENGINE_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS, "function", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_NON_SVENGINE_PATCHES, "patch", "engine")
+        if game_version in RENDERER_E8_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_E8_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_SVENGINE_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_SVENGINE_FUNCTIONS, "function", "engine")
+            errors += _renderer_check(symbols, game_version, RENDERER_SVENGINE_GLOBALS, "global", "engine")
+        if game_version in RENDERER_HL25_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_ENGINE_HL25_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_SETMODE_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_SETMODE_LEGACY_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_SETMODE_LEGACY_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_SDL_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_SDL_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_NOT_SVENGINE_10257_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_NOT_SVENGINE_10257_FUNCTIONS, "function", "engine")
+        if game_version in RENDERER_NOT_SVENGINE_8948_GAMES:
+            errors += _renderer_check(symbols, game_version, RENDERER_NOT_SVENGINE_8948_FUNCTIONS, "function", "engine")
+
+    # Client-side consumer gate.
+    if not include_client:
+        return errors
+    if game_version in RENDERER_SVENGINE_GAMES:
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_FUNCTIONS, "function", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_SVEN_GLOBALS, "global", "client")
+    if game_version in RENDERER_SVEN_10257_GAMES:
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_FUNCTIONS, "function", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_10257_GLOBALS, "global", "client")
+    if game_version in RENDERER_CLIENT_GAMES:
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_STUDIO_GLOBALS, "global", "client")
+        errors += _renderer_check(symbols, game_version, RENDERER_CLIENT_STUDIO_VFUNCS, "virtualFunction", "client")
+    if game_version in RENDERER_CS_CLIENT_GAMES:
+        errors += _renderer_check(symbols, game_version, ("g_PlayerExtraInfo",), "global", "client")
+    if game_version in RENDERER_CZDS_CLIENT_GAMES:
+        errors += _renderer_check(symbols, game_version, ("g_PlayerExtraInfo_CZDS",), "global", "client")
+
+    return errors
+
+
 def main():
     parser = argparse.ArgumentParser(description="Validate packaged MetaHook gamedata")
     parser.add_argument("directory", help="path to the packaged gamedata directory")
@@ -635,6 +809,15 @@ def main():
             continue
         symbols = game_symbols[gv][1]
         all_errors.extend(validate_bulletphysics_client(symbols, gv))
+
+    # Renderer consumer gate: engine + client for the declared families, client
+    # only for the snapshots that publish no engine records.
+    for gv in RENDERER_ALL_GAMES + tuple(g for g in RENDERER_CLIENT_GAMES if g not in RENDERER_ALL_GAMES):
+        if gv not in game_symbols:
+            all_errors.append(f"'{gv}': snapshot not loaded (Renderer gate)")
+            continue
+        symbols = game_symbols[gv][1]
+        all_errors.extend(validate_renderer(symbols, gv, include_engine=gv in RENDERER_ALL_GAMES))
 
     if all_errors:
         for e in all_errors:

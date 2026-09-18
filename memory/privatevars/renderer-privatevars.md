@@ -124,7 +124,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_LoadSkys` / `R_LoadSkyBox_SvEngine` / `R_LoadSkyboxInt_SvEngine` | `void (*)(void)` / `void (*)(const char*)` / `qboolean (*)(const char*)` | `Engine_FillAddress_R_LoadSkybox`: anchor `"SKY: "`; SvEngine `R_LoadSkys`/`_SvEngine` from `75 2A 68 <str>` / `E8 … 68 <"desert"> E8 … 83 C4 0C` + reverse-search; non-SvEngine `R_LoadSkys` from `68 <str> C7 … 00 00`. Also yields `gSkyTexNumber`, `r_loading_skybox`. | `Install_InlineHook(R_LoadSkys)` / `(R_LoadSkyBox_SvEngine)`; `R_LoadSkyboxInt_SvEngine` resolved only. |
 | `gPrivateFuncs.Mod_LoadStudioModel` | `void (*)(model_t*, void*)` | String `"bogus\0"` → `68 <str> ?? E8` + `ReverseSearchFunctionBeginEx(+0x50)`. | `Install_InlineHook(Mod_LoadStudioModel)`; wrapper calls original. |
 | `gPrivateFuncs.Mod_LoadBrushModel` | `void (*)(model_t*, void*)` | String `"Mod_LoadBrushModel: %s has wrong version number"` → `68 <str> 6A 01 E8`/`68 <str> E8` + reverse-search. | Resolved only (hook declared but never installed). |
-| `gPrivateFuncs.Mod_LoadModel` | `model_t* (*)(model_t*, qboolean, qboolean)` | String `"Loading '%s'\n"` (SvEngine) / `"loading %s\n"` → `68 <str> E8 83 C4` + reverse-search. Also yields `loadname`, `loadmodel`. | Resolved only. |
+| `gPrivateFuncs.Mod_LoadModel` | `model_t* (*)(model_t*, qboolean, qboolean)` | ~~String `"Loading '%s'\n"` (SvEngine) / `"loading %s\n"` → `68 <str> E8 83 C4` + reverse-search.~~ Gamedata FUNCTION resolution (2026-09-18); the old pass also yielded the now-deleted `loadname` / `loadmodel`. | Resolved only. |
 | `gPrivateFuncs.Mod_LoadSpriteModel` / `Mod_LoadSpriteFrame` / `Mod_UnloadSpriteTextures` | `void (*)(model_t*,void*)` / `void* (*)(void*,mspriteframe_t**,int)` / `void (*)(model_t*)` | `Engine_FillAddress_Mod_LoadSpriteModel`: SVEngine string `"Sprite \"%s\" has wrong version number"`, others `"Mod_LoadSpriteModel: Invalid # of frame"` → `68 <str> E8 … 83 C4` + reverse-search (+0x100 SvEngine / +0x300 others); fallback `MOD_LOADSPRITEMODEL_*`. `Mod_LoadSpriteFrame` derived: callee in `+0x240` starting `PUSH 0x300`. `Mod_UnloadSpriteTextures` sig-only `MOD_UNLOADSPRITETEXTURES_*`. Also yields `gSpriteMipMap`. | `Install_InlineHook(Mod_LoadSpriteModel)` / `(Mod_UnloadSpriteTextures)`; `Mod_LoadSpriteFrame` resolved only. |
 | `gPrivateFuncs.Cache_Alloc` | `void* (*)(cache_user_t*, int, const char*)` | String `"Cache_Alloc: already allocated"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x80)`. Also yields `cache_head`. | Wrapper `zone.cpp:10` forwards to it. |
 | `gPrivateFuncs.Hunk_AllocName` | `void* (*)(int, const char*)` | String `"Hunk_Alloc: bad size: %i"`; SvEngine `68 <str> 0F AE E8 E8 … 83 C4 08`, others `68 <str> E8 … 83 C4 08` + reverse-search; `Convert_VA_to_RVA`. | Wrapper `zone.cpp:5` forwards to it. |
@@ -216,7 +216,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `gSkyTexNumber` / `r_loading_skybox` | `int*` / `int*` | `Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`. | Resolved only. |
 | `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
 | `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
-| `loadname` / `loadmodel` | `char (*)[64]` / `model_t**` | `Engine_FillAddress_Mod_LoadModel`: first `PUSH imm(.data)` near the `"loading %s"` printf; then first `MOV [.data],reg`. | Resolved only. |
+| ~~`loadname` / `loadmodel`~~ | ~~`char (*)[64]` / `model_t**`~~ | **Deleted (2026-09-18).** The locator (`PUSH imm(.data)` near the `"loading %s"` printf; then first `MOV [.data],reg`) and the extern/definitions were removed: both slots were written but never read anywhere in the plugin. The upstream catalog does publish them (engine GLOBAL, 11/11). | — |
 | `cl_max_edicts` / `cl_entities` | `int*` / `cl_entity_t**` | `Engine_FillAddress_CL_ReallocateDynamicData`: string `"CL_Reallocate cl_entities\n"` → `68 <str> E8` + `ReverseSearchFunctionBeginEx(+0x100)`; `MOV reg,[.data]`+`83 C4 04` or `IMUL reg,reg,[.data],imm`; `cl_entities` = first `MOV [.data],EAX` after the call. | Edict ranges. |
 | `cl_numvisedicts` / `cl_visedicts` | `int*` / `cl_entity_t**` | `Engine_FillAddress_VisEdicts`: `.text` `8B 0D <slot> 81 F9 00 ?,00 00`; `DisasmRanges(+0x150)` `MOV [disp+ecx*4],reg` → array base. | Visible-entity list. |
 | `host_basepal` | `word**` | `Engine_FillAddress_BasePalette`: `68 <"palette.lmp"> 68 00 08 00 00 E8 … 83 C4 08 A3 <slot>`. | Palette lookup. |
@@ -336,9 +336,108 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `NET_DrawRect` (engine-dependent), `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `loadname`, `loadmodel`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called: `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `NET_DrawRect` (engine-dependent), `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `gl_mtexable`, `mtexenabled`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `oldtarget`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
 - **Build-num gates.** `g_ViewEntityIndex_SCClient` requires buildnum ≥ 10182; `size_of_frame` defaults to `0x42B8` for buildnum ≤ 8684; `R_SetupGL`/`R_LoadSkybox` pick signatures by buildnum thresholds (10152, 9899).
 - **`g_bHasOfficialFBOSupport` / `g_bHasOfficialGLTexAllocSupport`** are capability flags, not addresses: the former from the presence of the string `"FBO backbuffer rendering disabled"`, the latter from whether a `0x16A8`-based texture-alloc pattern exists. They select signatures and gate the legacy texture-allocation redirect.
+
+## Issue #873 migration (2026-09-17): 76 more catalog-backed symbols
+
+Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
+(71 FUNCTION, 1 GLOBAL, 4 PATCH) now resolve exclusively through
+`ResolveGameSymbol`; their signature / string / `DisasmRanges` locators, sig
+`#define`s and thunk derivations were deleted.
+
+**Resolution rules used**
+
+- Standalone locators were removed and the dispatch inlines
+  `GamedataResolvePtr(RealDllInfo.ImageBase, "<canonical>", kind)`; the 46
+  already migrated entries (`e7e818a0`) were left untouched.
+- A new `GamedataResolvePtrIfAvailable` (`plugins.h`) powers conditionally
+  required symbols; it consults `IsGameSymbolAvailable` and returns `nullptr`
+  when the current identity publishes no record, so an explicitly isolated
+  legacy branch can stay.
+- Retained variable-extraction disasm passes are now rooted at the
+  gamedata-resolved **real** address and walk the real image
+  (`ctx = { RealDllInfo, RealDllInfo }`); operand displacements are assigned
+  verbatim with no `ConvertDllInfoSpace`.
+- PATCH records are the target instruction address: `GL_SetMode_call_qwglCreateContext`
+  and `Sys_ShutdownGame_to_GL_Shutdown_callsite_0` resolve directly;
+  `R_PatchResetLatched` redirects every numbered
+  `CL_LinkPacketEntities_to_R_ResetLatched_callsite_N` (both `_0` and `_1`) and
+  resolves `R_ResetLatched` itself. HL25 keeps its skip.
+
+**Identity / ABI branches (all preserved)**
+
+| Group | Coverage | Rationale |
+| --- | --- | --- |
+| `ALL` (11 identities) | most engine functions/globals + patches | base symbol is published everywhere |
+| non-SvEngine | `D_FillRect`, `Draw_FillRGBA`, `Draw_FillRGBABlend`, base `Draw_SpriteFrame*`, `R_LoadSkys`, `R_RenderFinalFog`, `GL_SetMode_call_qwglCreateContext` | SvEngine uses a variant or the slot is unused |
+| `E8` (cof + 8 hl) | `GL_SelectPixelFormat`, `GlowBlend`, `Mod_UnloadSpriteTextures` | inlined on HL25 and SvEngine |
+| SvEngine only | `Draw_SpriteFrame*_SvEngine`, `NET_DrawRect`, `R_LoadSkyBox_SvEngine`, `allow_cheats` | variant symbols |
+| hl-10210 only | `CGame_DrawStartupVideo` | HL25-only startup video |
+| hl-10210 + hl-6153/8684 | `GL_SetMode` (SvEngine ABI split into `_SvEngine`/`_GoldSrc`) | SDL / six-arg ABI |
+| cof + hl-3248..4554 | `GL_SetModeLegacy` | non-SDL legacy ABI; CoF now reaches the legacy branch |
+| hl-10210 + hl-6153/8684 | `SDL_InitGL` | SDL builds only |
+| all but svencoop-10257 | `R_RenderScene` | 10257 inlines it (`IsGameSymbolAvailable` gate) |
+| all but svencoop-8948 | `R_DrawViewModel` | 8948 has no record and stays inlined |
+| svencoop only | client portal functions/globals | `SCClientDLL001` factory |
+| svencoop-10257 only | `ClientPortalManager_EnableClipPlane`, `g_ViewEntityIndex_SCClient` | 8948 publishes neither; `g_ViewEntityIndex_SCClient` is resolved with `GamedataResolvePtrIfAvailable` and its consumers are already null-guarded |
+
+`R_GlowBlend` was renamed to the engine's real name `GlowBlend` everywhere
+(field, locator, wrapper, consumer); the `R_GLOW_BLEND_*` sig macros and the
+now-unused `R_ForceCVars_inlined` / `GlowBlend_inlined` fields were removed.
+
+**Follow-up (same issue, 2026-09-17): `modelorg` and `active_particles`**
+
+Both are published as engine GLOBALs for all 11 identities and the retained
+heuristics for them were unreliable after the root switched to the real image,
+so they were migrated as well (78 symbols total): `Engine_FillAddress_R_DrawWorld`
+and `Engine_FillAddress_R_DrawParticles` now resolve them through
+`ResolveGameSymbol` and only `particletexture` (catalog-uncovered) is still
+scanned. A sweep for every catalog symbol that is still assigned outside a
+`GamedataResolve*` call (matching bare-symbol assignments against the whole
+`records[]` name set) now reports no remaining locator, so this class of
+"catalog-covered but still scanned" symbol is exhausted.
+
+**Root-consistency fix and removal (2026-09-18): `loadname` / `loadmodel`**
+
+The retained `Mod_LoadModel` pass had kept a mirror-based root
+(`ConvertDllInfoSpace(gPrivateFuncs.Mod_LoadModel, RealDllInfo, DllInfo)`) while
+the `"Loading '%s'\n"` / `"loading %s\n"` anchor it searched for was already read
+from the real image, so the embedded absolute address never matched and
+`Mod_LoadModel_PushString` resolution would `Sys_Error` whenever the mirror
+engine image existed. That was first fixed by rooting both passes on the resolved
+real address, then the whole pass was removed: the two slots are written but
+never read anywhere in the plugin, so `loadname` / `loadmodel` (extern in
+`gl_local.h`, definitions in `gl_rmain.cpp`), the printf anchor,
+`Mod_LoadModel_VA`, both `DisasmRanges` walks and the standalone
+`Engine_FillAddress_Mod_LoadModel` were all deleted; `gPrivateFuncs.Mod_LoadModel`
+is now an inline `ResolveGameSymbol` in the dispatch (the upstream catalog does
+publish both as engine GLOBALs on 11/11 identities, release
+`2026-09-17T15:27:45Z`, but nothing consumes them). A sweep for
+`ConvertDllInfoSpace(gPrivateFuncs.*, RealDllInfo, DllInfo)` confirms the
+remaining back-conversions all belong to **unmigrated** locators that keep the
+scan image consistently for both root and pattern.
+
+**Residual scanning (intentionally kept, catalog-uncovered)**
+
+`R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
+`GL_UnloadTextures`, `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`,
+`particletexture`, the `gl_extensions` / `vid_d3d` / texture-array / fog /
+scissor / viewmodel / sky / view-leaf / lightmap variable slots,
+`CL_FxBlend`'s sibling `r_blend`, and every symbol outside the list
+(EngineSurface virtuals, portal/DrawNormalTriangles scans, `R_AddTEntity`,
+`R_TextureAnimation`, `R_LightStrength`, `R_Studio*` engine vars, etc.).
+
+**Release gate**: `scripts/validate-gamedata.py` now carries a Renderer consumer
+gate (`RENDERER_*` tables + `validate_renderer`) covering the 46 + 76 required
+symbols per engine family / identity with kind **and module** checks; snapshot
+records now retain their owning module. Behaviour tests live in
+`scripts/tests/test_gamedata_contract.py::RendererGateTests`.
+
+**Not verified**: in-game smoke tests on SvEngine / HL25 / GoldSrc / Blob / CoF
+were not run from this environment; only `Release|Win32` builds of `MetaHook`
+and `Renderer` plus the catalog gate and contract tests were executed.
