@@ -58,7 +58,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
 6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, `R_AddTEntity`, `Hunk_AllocName`.
-7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `DT_Initialize`, `PVSNode`.
+7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `LegacyMultiTextureInit`, `PVSNode`.
 8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`.
 
 ## Engine-private functions
@@ -82,7 +82,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.BuildGammaTable` | `void (*)(float gamma)` | `Engine_FillAddress_BuildGammaTable`: non-SvEngine `00 00 20 40 E8` (`2.0f; call`, target in `.text`); SvEngine no inline; fallback `BUILDGAMMATABLE_SIG_*`. | `Install_InlineHook(BuildGammaTable)`; wrapper fills `texgammatable`. |
 | `gPrivateFuncs.GL_Set2D` / `GL_Finish2D` | `void (*)(void)` | `Engine_FillAddress_GL_Set2D`/`_GL_Finish2D`: sig-only per engine (`GL_SET2D_SIG_*` / `GL_FINISH2D_SIG_*`); HL25 `Set2D` adds `VA += 1`. | `Install_InlineHook(GL_Set2D)` / `(GL_Finish2D)`. |
 | `gPrivateFuncs.GL_BeginRendering` / `GL_EndRendering` | `void (*)(int*,int*,int*,int*)` / `void (*)(void)` | `Engine_FillAddress_GL_BeginRendering` sig-only; `_GL_EndRendering` prefers `GL_ENDRENDERING_SIG_COMMON_GOLDSRC` + reverse-search, else per-engine (GoldSrc picks `_NEW` when `g_bHasOfficialFBOSupport` else `_BLOB`); requires `GL_BeginRendering`. | `Install_InlineHook(GL_BeginRendering)` / `(GL_EndRendering)`; handlers call the originals. |
-| `gPrivateFuncs.DT_Initialize` | `void (*)(void)` | `Engine_FillAddress_DT_Initialize`: `68 73 85 00 00 68 00 23 00 00 FF` (`glTexEnvf` detail-texture call) + `ReverseSearchFunctionBeginEx(+0x100)`. | `Install_InlineHook(DT_Initialize)` (empty wrapper). |
+| `gPrivateFuncs.LegacyMultiTextureInit` (`CheckMultiTextureExtensions` / `InitMultitexturing` / `DT_Initialize`) | `void (*)(void)` | `Engine_FillAddress_LegacyMultiTextureInit`: gamedata, first of the three the identity publishes. | `Install_InlineHook(LegacyMultiTextureInit)` (empty wrapper). |
 | `gPrivateFuncs.SDL_InitGL` (engine SDL2 wrapper) | `void (*)(void)` | `Engine_FillAddress_GL_SetMode` BFS walk (GoldSrc/HL25 + `SDL_GL_GetProcAddress`): last direct `E8` before a `push 0x1F03` (`GL_EXTENSIONS`). | Called by the plugin's `GL_SetMode_SvEngine`/`GL_SetMode_GoldSrc` wrappers (via `GL_SetMode_Internal`). |
 | `gPrivateFuncs.SvEngine_glewInit` (`_glewInit@0`) | `decltype(glewInit)*` | `GetProcAddress(GetEngineModule(), "_glewInit@0")`, gated on `SCEngineClient002`. | Called during engine GL init. |
 
@@ -223,7 +223,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `r_missingtexture` / `r_notexture_mip` | `texture_t**` | `Engine_FillAddress_MissingTexture`/`_NoTexture`: strings `"**missing**"` / `"**empty**"` → `6A 00 68 <str> E8 …`; first `MOV reg,[.data]` after the call. | Fallback textures. |
 | `cache_head` | `cache_system_t*` | `Engine_FillAddress_Cache_Alloc` `DisasmRanges(+0x500)` `CMP reg,imm(.data)`. | LRU list. |
 | `gSpriteMipMap` | `int*` | `Engine_FillAddress_Mod_LoadSpriteFrame` `DisasmRanges(+0x300)` `CMP [.data],0` / `MOV reg,[.data]`+`TEST`. | Sprite mipmap enable. |
-| `detTexSupported` | `bool*` | `Engine_FillAddress_DT_Initialize`: `MOV byte [.data],1` within `+0x100` of the glTexEnvf call. | Detail-texture flag. |
+| `detTexSupported` | `bool*` | `Engine_FillAddress_LegacyMultiTextureInit`: gamedata `GLOBAL`. | Detail-texture flag; forced false in the plugin's GL init. |
 
 ### Filter, move and texture-mode globals (`gl_hooks.cpp`)
 
@@ -323,7 +323,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Hooks installed
 
-- **Engine** (`Engine_InstallHooks`, `gl_hooks.cpp:12594`): `GL_Init`, `GL_SetMode_SvEngine`/`GL_SetMode_GoldSrc`/`GL_SetModeLegacy`(+`GL_SelectPixelFormat` with legacy), `GL_Bind`, `GL_LoadTexture2`, `GL_UnloadTextures`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `R_RenderView`/`R_RenderView_SvEngine`, `R_NewMap`, `R_CullBox`, `R_ForceCVars`, `Mod_PointInLeaf`, `R_GLStudioDrawPoints`, `R_GetSpriteFrame`, `Mod_LoadStudioModel`, `Mod_LoadSpriteModel`, `Mod_UnloadSpriteTextures`, `BuildGammaTable`, `Host_ClearMemory`, `DT_Initialize`, `PVSNode`, `R_LoadSkys`/`R_LoadSkyBox_SvEngine`, `CVideoMode_Common_DrawStartupGraphic`, `CGame_DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrame*[_SvEngine]`, `Draw_FillRGBA`/`Draw_FillRGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`, plus the `Sys_ShutdownGame_call_GL_Shutdown` branch redirect.
+- **Engine** (`Engine_InstallHooks`, `gl_hooks.cpp:12594`): `GL_Init`, `GL_SetMode_SvEngine`/`GL_SetMode_GoldSrc`/`GL_SetModeLegacy`(+`GL_SelectPixelFormat` with legacy), `GL_Bind`, `GL_LoadTexture2`, `GL_UnloadTextures`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `R_RenderView`/`R_RenderView_SvEngine`, `R_NewMap`, `R_CullBox`, `R_ForceCVars`, `Mod_PointInLeaf`, `R_GLStudioDrawPoints`, `R_GetSpriteFrame`, `Mod_LoadStudioModel`, `Mod_LoadSpriteModel`, `Mod_UnloadSpriteTextures`, `BuildGammaTable`, `Host_ClearMemory`, `LegacyMultiTextureInit`, `PVSNode`, `R_LoadSkys`/`R_LoadSkyBox_SvEngine`, `CVideoMode_Common_DrawStartupGraphic`, `CGame_DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrame*[_SvEngine]`, `Draw_FillRGBA`/`Draw_FillRGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`, plus the `Sys_ShutdownGame_call_GL_Shutdown` branch redirect.
 - **Client** (`Client_InstallHooks`, `gl_hooks.cpp:14081`): `ClientPortalManager_DrawPortalSurface`, `_EnableClipPlane`, `_RenderPortals`, `UpdatePlayerPitch`; `SCClientDLL_glewInit()` invoked. `ClientPortalManager_ResetAll` hook is commented out.
 - **Studio** (`EngineStudio_InstalHooks` / `ClientStudio_InstallHooks`, `exportfuncs.cpp`): `CL_FxBlend`, the five `studioapi_*`, and the engine/client `R_Studio*`/`GameStudioRenderer_*` set. Note `EngineStudio_InstalHooks` runs before `ClientStudio_FillAddress`, so the engine Studio render hooks are effectively installed by the guarded `ClientStudio_InstallHooks` calls.
 - **EngineSurface** (`EngineSurface_InstallHooks`): 19 `enginesurface_*` VFTHooks + `VGUI_Surface026::DrawSetTexture`. `EngineSurface_UninstallHooks` is empty — no surface hook is ever restored.
@@ -480,21 +480,11 @@ deleted).
 **Behaviour fix: `DT_Initialize` on the blob builds**
 
 `ce9396e3` upstream dropped the `DT_Initialize` registration for `hl-3248` /
-`3266` / `3329` / `3647` because those builds inline it into
-`CheckMultiTextureExtensions`, so the address they used to publish pointed at no
-standalone body. The plugin's `GamedataResolvePtr` therefore started to
-`Sys_Error` at startup on all four. It now uses
-`GamedataResolvePtrIfAvailable`, and `InstallHooks` guards the install
-(`if (gPrivateFuncs.DT_Initialize) Install_InlineHook(DT_Initialize);` —
-`Install_InlineHook` does not null-check, `Uninstall_Hook` already keys off
-`g_phook_DT_Initialize`). Restoring the old `ReverseSearchFunctionBeginEx` from
-the `glTexEnvf(0x2300, 0x8573)` call site was rejected: it reproduces the same
-bogus address the catalog deliberately stopped publishing — on a blob build that
-reverse search lands on the enclosing `CheckMultiTextureExtensions`, so the
-empty-body hook (`DT_Initialize` in `gl_rmain.cpp`, "Fuck Valve") would have
-neutered the whole multitexture probe. Skipping the hook is safe because the
-actual neuter is `(*detTexSupported) = false` in the plugin's GL init
-(`gl_rmain.cpp:6153`); the empty hook is only belt-and-suspenders.
+`3266` / `3329` / `3647`, so the plugin's `GamedataResolvePtr` started to
+`Sys_Error` at startup on all four. The interim fix was
+`GamedataResolvePtrIfAvailable` plus a guarded install; it was superseded the
+same day by the `LegacyMultiTextureInit` retarget (next section), which gives
+every identity a hook target again.
 
 **Retained scans (still catalog-uncovered)**
 
@@ -519,13 +509,88 @@ actual neuter is `(*detTexSupported) = false` in the plugin's GL init
 `RENDERER_ENGINE_ALL_FUNCTIONS`; the 16 all-identity globals added to
 `RENDERER_ENGINE_ALL_GLOBALS`; `c_model_polys` added to
 `RENDERER_SVENGINE_GLOBALS`; new `RENDERER_ENGINE_NON_SVENGINE_GLOBALS`
-(`c_alias_polys`); `DT_Initialize` moved out of the ALL group into new
-`RENDERER_BLOB_GAMES` / `RENDERER_NON_BLOB_GAMES` + `RENDERER_NON_BLOB_FUNCTIONS`.
+(`c_alias_polys`); `DT_Initialize` moved out of the ALL group (see the next
+section for the final grouping).
 `scripts/tests/test_gamedata_contract.py::RendererGateTests` gained
-`test_gate_does_not_require_dt_initialize_for_blob_builds`,
-`test_gate_requires_dt_initialize_for_non_blob_builds` and
 `test_gate_alias_poly_counter_follows_engine_family`.
 
-**Verified**: 49/49 contract tests pass; `validate-gamedata.py` passes over the
+**Verified**: contract tests pass; `validate-gamedata.py` passes over the
 21 synced snapshots; `Renderer` builds `Release|Win32` with no new warnings.
 **Not verified**: in-game smoke tests on any engine family.
+
+## `LegacyMultiTextureInit` retarget (2026-09-18)
+
+Upstream `a41a675c` published `CheckMultiTextureExtensions` (HL / CoF / blob)
+and `InitMultitexturing` (SvEngine). `gPrivateFuncs.DT_Initialize` was renamed
+to `gPrivateFuncs.LegacyMultiTextureInit` and now holds whichever of the three
+the running engine publishes, resolved in this order by
+`Engine_FillAddress_LegacyMultiTextureInit` (each via
+`GamedataResolvePtrIfAvailable`, fatal only if all three miss):
+
+1. `CheckMultiTextureExtensions`
+2. `InitMultitexturing`
+3. `DT_Initialize`
+
+The hook body (`LegacyMultiTextureInit` in `gl_rmain.cpp`, formerly
+`DT_Initialize`) stays empty: the point is to suppress the engine's
+fixed-function init — `glEnable(GL_TEXTURE_2D)`,
+`glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB)`,
+`glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 2.0f)` — which is invalid under the
+Core profile context created by the `GL_SetMode_call_qwglCreateContext` patch.
+`Install_InlineHook(LegacyMultiTextureInit)` is unconditional again.
+
+**Why one hook is enough (verified against the binaries, not inferred)**
+
+Disassembling `bin/<tag>/engine/hw{,.decrypt}.dll` at the recorded RVAs:
+
+| Windows identity | probe record | `DT_Initialize` record | relationship |
+| --- | --- | --- | --- |
+| cof-5936, hl-4554, hl-6153, hl-8684 | `CheckMultiTextureExtensions` | published | the probe **calls** `DT_Initialize`, and that is its **only** `E8` xref in `.text` — hooking the probe covers both |
+| hl-3248 / 3266 / 3329 / 3647 | `CheckMultiTextureExtensions` | none | see below |
+| hl-10210, svencoop-10257, svencoop-8948 | inlined into `GL_Init` (linux-only record) | published | `GL_Init` calls `DT_Initialize` directly (twice on SvEngine); hooking the function covers every call site |
+
+`InitMultitexturing` is linux-only on both SvEngine tags, so no Windows snapshot
+carries it today; it is kept in the candidate list for forward compatibility.
+
+**Correction to the upstream blob story.** `ce9396e3` says `DT_Initialize` is
+"inlined into `CheckMultiTextureExtensions`" on the blob builds. It is not.
+Each blob `hw.decrypt.dll` contains a standalone, `0x8d`-byte `DT_Initialize`
+(hl-3248 `0x35590`, hl-3266 `0x35570`, hl-3329 `0x35220`, hl-3647 `0x35390`) —
+same size and same `push <cvar>; call Cvar_RegisterVariable` ×2 prologue as the
+hl-6153 / hl-8684 bodies, ending in `mov byte ptr [detTexSupported], 1`. It has
+**zero `E8` xrefs**: it is dead code that never executes, and
+`CheckMultiTextureExtensions` does not call it (the probe body carries no
+`push 8573h` at all). Consequences:
+
+- The pre-#873 `ReverseSearchFunctionBeginEx` locator *did* find the right
+  function on blob (prologue rule `Candidate[0] == 0x68 && Candidate[5] == 0xE8`
+  matches `0x35590`); it just hooked a function nobody calls.
+- The blob `DT_Initialize` gamedata record published before `ce9396e3` pointed
+  at `CheckMultiTextureExtensions` (`0x18d` bytes, FPU-compare prologue), so
+  between #873 and the retarget the blob builds were neutering the multitexture
+  probe instead. The retarget makes that deliberate and uniform.
+
+**Consumer gate (final grouping)**
+
+`RENDERER_INLINED_MTEX_PROBE_GAMES` = hl-10210, svencoop-10257, svencoop-8948 →
+require `DT_Initialize`. `RENDERER_MTEX_PROBE_GAMES` = the other 8 → require
+`CheckMultiTextureExtensions`. `DT_Initialize` is no longer required on
+cof-5936 / hl-4554 / hl-6153 / hl-8684: it is published there but the plugin
+resolves the probe first and never consumes it. Tests:
+`test_gate_requires_exactly_one_multitexture_init_per_identity`,
+`test_gate_flags_missing_multitexture_probe`,
+`test_gate_flags_missing_dt_initialize_where_probe_is_inlined`.
+
+**Behaviour delta.** On cof-5936 / hl-4554 / hl-6153 / hl-8684 the multitexture
+probe itself is now neutered as well, so `gl_mtexable` stays 0 and
+`qglMTexCoord2fARB` / `qglActiveTextureARB` stay null. Safe for the plugin:
+`gl_mtexable` / `mtexenabled` are resolved but never read, the plugin's
+`GL_EnableMultitexture` / `GL_DisableMultitexture` wrappers
+(`gl_draw.cpp:622-630`) have no callers, and the engine's own
+`GL_EnableMultitexture` gates on `gl_mtexable` before touching the ARB entry
+points.
+
+**Verified**: 50/50 contract tests; `validate-gamedata.py` over the 21 snapshots
+re-synced at `2026-09-18T10:58:44Z` (the release carrying `a41a675c`); `Renderer`
+`Release|Win32` builds with no new warnings. **Not verified**: in-game smoke
+tests on any engine family.
