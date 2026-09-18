@@ -149,6 +149,11 @@ void EngineStudio_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, cons
 		Sig_NotFound(GetTimes);
 	}
 
+	cl_time = (decltype(cl_time))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_time", MH_GAMESYMBOL_KIND_GLOBAL);
+	cl_oldtime = (decltype(cl_oldtime))GamedataResolvePtr(RealDllInfo.ImageBase, "cl_oldtime", MH_GAMESYMBOL_KIND_GLOBAL);
+
+	//r_framecount remains catalog-uncovered: it is the first engine global the
+	//studio GetTimes thunk reads.
 	typedef struct GetTimes_SearchContext_t
 	{
 		const mh_dll_info_t& DllInfo;
@@ -196,35 +201,6 @@ void EngineStudio_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, cons
 				}
 			}
 
-			if (pinst->id == X86_INS_FLD &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{
-				if (!cl_time)
-					cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				else if (!cl_oldtime)
-					cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[0].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-			if (pinst->id == X86_INS_MOVSD &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->DllInfo.DataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->DllInfo.DataBase + ctx->DllInfo.DataSize)
-			{// movsd   xmm0, cl_time	
-
-				if (!cl_time)
-					cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-				else if (!cl_oldtime)
-					cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)pinst->detail->x86.operands[1].mem.disp, ctx->DllInfo, ctx->RealDllInfo);
-			}
-
 			if (address[0] == 0xCC)
 				return TRUE;
 
@@ -239,15 +215,7 @@ void EngineStudio_FillAddress_GetTimes(struct engine_studio_api_s* pstudio, cons
 		r_framecount = (decltype(r_framecount))ConvertDllInfoSpace((PVOID)ctx.candidates[0], DllInfo, RealDllInfo);
 	}
 
-	if (ctx.candidate_count == 5)
-	{
-		cl_time = (decltype(cl_time))ConvertDllInfoSpace((PVOID)ctx.candidates[1], DllInfo, RealDllInfo);
-		cl_oldtime = (decltype(cl_oldtime))ConvertDllInfoSpace((PVOID)ctx.candidates[3], DllInfo, RealDllInfo);
-	}
-
 	Sig_VarNotFound(r_framecount);
-	Sig_VarNotFound(cl_time);
-	Sig_VarNotFound(cl_oldtime);
 }
 
 void EngineStudio_FillAddress_SetForceFaceFlags(struct engine_studio_api_s* pstudio, const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
