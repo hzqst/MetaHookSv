@@ -40,7 +40,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 - `CGame_DrawStartupVideo` — HL25-only gate kept (`g_iEngineType == ENGINE_GOLDSRC_HL25`); other engines leave it null by design.
 - `R_StudioDrawPlayer`, `R_StudioDrawModel`, `R_StudioRenderModel`, `R_StudioRenderFinal`, `R_StudioSetupBones`, `R_StudioMergeBones`, `R_StudioSaveBones` — the whole `ClientStudio_FillAddress_StudioDrawPlayer/_StudioDrawModel/_EngineStudioDrawPlayer` thunk-disasm machinery was deleted.
 
-**Retained disasm roots (real-image):** `Engine_FillAddress_GL_Init` still extracts `gl_extensions` (when `!SDL_GL_GetProcAddress`), `_GL_Bind` still extracts `currenttexture`, `_GL_SelectTexture` still extracts `oldtarget` — each walking the gamedata-resolved function on the real image with `RealDllInfo` section bounds and assigning displacements verbatim (no `ConvertDllInfoSpace`).
+**Retained disasm roots (real-image):** `Engine_FillAddress_GL_Init` still extracts `gl_extensions` (when `!SDL_GL_GetProcAddress`), `_GL_SelectTexture` still extracts `oldtarget` — each walking the gamedata-resolved function on the real image with `RealDllInfo` section bounds and assigning displacements verbatim (no `ConvertDllInfoSpace`). `_GL_Bind`'s `currenttexture` extraction was dropped by the 2026-09-18 follow-up (see below), which resolves that global from gamedata.
 
 **Engine globals (kind GLOBAL, 10/10):** `currententity`, `r_model`, `pstudiohdr`, `r_origin`, `g_ChromeOrigin` (deleted `EngineStudio_FillAddress_GetCurrentEntity/_SetRenderModel/_StudioSetHeader/_SetChromeOrigin`), `cl_viewentity` (deleted `_CL_ViewEntityVars`), `cl_max_edicts` + `cl_entities` (deleted `_CL_ReallocateDynamicData`), `cl_numvisedicts` + `cl_visedicts` (deleted `_VisEdicts`), `mod_known` + `mod_numknown` (deleted `_ModKnown`/`_Mod_NumKnown`), `gTempEnts` (deleted `_TempEntsVars`), `r_worldentity` + `cl_worldmodel` (replaced the candidate-disasm tail of `Engine_FillAddress_R_RenderView`), `cl_parsecount` (resolved at the top of `_R_DrawTEntitiesOnListVars`; the parsemod/parsecount disasm branches were removed while `r_blend`/`r_entorigin`/`ClientDLL_DrawTransparentTriangles` extraction remains).
 
@@ -58,7 +58,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 4. View/scene: `R_SetupGL`, `R_RenderView`, `V_RenderView`, `R_RenderScene`, `R_NewMap`, `GL_LoadFilterTexture`, `GL_BuildLightmaps`, `R_BuildLightMap`, `R_AddDynamicLights`, `GL_Disable/EnableMultitexture`, `R_DrawSequentialPoly`, `R_TextureAnimation`, `R_DrawBrushModel`, `R_RecursiveWorldNode`, `R_DrawWorld`, `R_DrawViewModel`, `R_MarkLeaves`.
 5. 2D: `GL_Set2D`, `GL_Finish2D`, `GL_BeginRendering`, `GL_EndRendering`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `Mod_PointInLeaf`, `R_DrawTEntitiesOnList`, `BuildGammaTable`.
 6. Effects/Studio: `R_DrawParticles`, `CL_AllocDlight`, `CL_AllocElight`, `R_GLStudioDrawPoints`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `Host_ClearMemory`, `Cache_Alloc`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `R_GetSpriteFrame`, `R_DrawSpriteModel`, `R_LightStrength`, `R_RotateForEntity`, `R_GlowBlend`, `SCR_BeginLoadingPlaque`, `Host_IsSinglePlayerGame`, `Mod_UnloadSpriteTextures`, `Mod_LoadSpriteModel`, `Mod_LoadSpriteFrame`, `R_AddTEntity`, `Hunk_AllocName`.
-7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_SimOrgVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `DT_Initialize`, `PVSNode`.
+7. Globals passes: `GL_EndRenderingVars`, `VisEdicts`, `R_AllocTransObjectsVars`, `R_RenderFinalFog`, `R_DrawTEntitiesOnListVars`, `R_RecursiveWorldNodeVars`, `R_LoadSkybox`, `GL_FilterMinMaxVars`, `ScrFov`, `RenderSceneVars`, `RenderSceneVars2`, `CL_IsDevOverviewModeVars`, `R_DecalInit`, `R_RenderDynamicLightmaps`, `R_StudioChromeVars`, `CL_ViewEntityVars`, `CL_ReallocateDynamicData`, `TempEntsVars`, `WaterVars`, `ModKnown`, `Mod_NumKnown`, `Mod_LoadStudioModel`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `BasePalette`, `R_LightStrengthVars`, `SetFilterMode`, `SetFilterColor`, `SetFilterBrightness`, `MoveVars`, `MissingTexture`, `NoTexture`, `DT_Initialize`, `PVSNode`.
 8. VideoMode/draw: `DrawStartupGraphic`, `DrawStartupVideo`, `Draw_Frame`, `Draw_SpriteFrameHoles/Additive/Generic`, `Draw_FillRGBA/RGBABlend`, `NET_DrawRect`, `D_FillRect`, `Draw_Pic`.
 
 ## Engine-private functions
@@ -441,3 +441,91 @@ records now retain their owning module. Behaviour tests live in
 **Not verified**: in-game smoke tests on SvEngine / HL25 / GoldSrc / Blob / CoF
 were not run from this environment; only `Release|Win32` builds of `MetaHook`
 and `Renderer` plus the catalog gate and contract tests were executed.
+
+## Issue #873 follow-up (2026-09-18): 19 newly published symbols
+
+Baseline `f8c9c9c0` (merge of PR #874), branch `dev`. Upstream
+`GoldSrc_VibeSignatures` added the records in `929deb15` and `b09de35d`
+(release `2026-09-17T15:27:45Z` onwards); everything the catalog newly covers is
+now resolved through `ResolveGameSymbol` and the corresponding signature /
+`DisasmRanges` locators were deleted.
+
+**Engine functions (kind FUNCTION, 11/11 identities): 2**
+
+- `CL_AllocDlight` — the efx-API derivation
+  (`gEngfuncs.pEfxAPI->CL_AllocDlight` + `ReverseSearchFunctionBeginEx`) and the
+  `CL_ALLOCDLIGHT_SIG_{BLOB,NEW2,NEW,HL25,SVENGINE}` fallbacks are gone.
+- `CL_AllocElight` — same for `CL_ALLOCELIGHT_SIG_*`.
+
+**Engine globals (kind GLOBAL): 17 slots / 18 record names**
+
+`currenttexture` (was the retained `GL_Bind` disasm), `c_brush_polys`,
+the alias-poly counter (`c_alias_polys` on the 9 non-SvEngine identities,
+`c_model_polys` on `svencoop-10257`/`8948` — same slot, renamed engine-side),
+`envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`,
+`cl_light_level` (all five replaced the three-branch
+`Engine_FillAddress_R_DrawViewModel` scan), `cl_dlights`, `cl_elights`,
+`cache_head` (its 0x500-byte CMP-shape pass deleted), `cl_waterlevel`
+(its three heuristics and the `std::map` candidate tracking in
+`_RenderSceneVars2` deleted, `#include <map>` dropped), `cl_simorg`
+(`Engine_FillAddress_CL_SimOrgVars` and `CL_SIMORG_SIG*` deleted, now inline in
+the dispatch), `cshift_water` (the `+12` derivation dropped),
+`detTexSupported`, `cl_time` + `cl_oldtime` (the `FLD` / `MOVSD` branches and
+the `candidate_count == 5` block of `EngineStudio_FillAddress_GetTimes`
+deleted).
+
+`studioapi_GetTimes` is published too but intentionally unused — the public
+`pstudio->GetTimes` already yields that address.
+
+**Behaviour fix: `DT_Initialize` on the blob builds**
+
+`ce9396e3` upstream dropped the `DT_Initialize` registration for `hl-3248` /
+`3266` / `3329` / `3647` because those builds inline it into
+`CheckMultiTextureExtensions`, so the address they used to publish pointed at no
+standalone body. The plugin's `GamedataResolvePtr` therefore started to
+`Sys_Error` at startup on all four. It now uses
+`GamedataResolvePtrIfAvailable`, and `InstallHooks` guards the install
+(`if (gPrivateFuncs.DT_Initialize) Install_InlineHook(DT_Initialize);` —
+`Install_InlineHook` does not null-check, `Uninstall_Hook` already keys off
+`g_phook_DT_Initialize`). Restoring the old `ReverseSearchFunctionBeginEx` from
+the `glTexEnvf(0x2300, 0x8573)` call site was rejected: it reproduces the same
+bogus address the catalog deliberately stopped publishing — on a blob build that
+reverse search lands on the enclosing `CheckMultiTextureExtensions`, so the
+empty-body hook (`DT_Initialize` in `gl_rmain.cpp`, "Fuck Valve") would have
+neutered the whole multitexture probe. Skipping the hook is safe because the
+actual neuter is `(*detTexSupported) = false` in the plugin's GL init
+(`gl_rmain.cpp:6153`); the empty hook is only belt-and-suspenders.
+
+**Retained scans (still catalog-uncovered)**
+
+- `r_dlightactive` — now walked from the gamedata-resolved `CL_AllocDlight`
+  body on the real image: anchor on `push 0x28` (the
+  `memset(cl_dlights, 0, 0x28)` argument), then the first `MOV reg,[mem]`
+  within 8 instructions, with `OR [mem],1` as fallback.
+- `r_framecount` — first engine global the studio `GetTimes` thunk reads; the
+  two MOV-candidate collectors in `EngineStudio_FillAddress_GetTimes` are kept.
+- `gWaterColor` — both `GWATERCOLOR_SIG_HL25` / `GWATERCOLOR_SIG` branches kept
+  in `Engine_FillAddress_WaterVars`, read from the `V_CalcRefdef` water-cshift
+  call site.
+- `particletexture`, plus `ClientDLL_DrawNormalTriangles` / `gDevOverview`,
+  which shared the deleted `cl_waterlevel` scan in `_RenderSceneVars2` — that
+  pass still runs in `DllInfo` space (it was never switched to the real image by
+  #873) and its exit condition is now
+  `if (gPrivateFuncs.ClientDLL_DrawNormalTriangles) return TRUE;`.
+
+**Consumer gate**
+
+`scripts/validate-gamedata.py`: `CL_AllocDlight` / `CL_AllocElight` added to
+`RENDERER_ENGINE_ALL_FUNCTIONS`; the 16 all-identity globals added to
+`RENDERER_ENGINE_ALL_GLOBALS`; `c_model_polys` added to
+`RENDERER_SVENGINE_GLOBALS`; new `RENDERER_ENGINE_NON_SVENGINE_GLOBALS`
+(`c_alias_polys`); `DT_Initialize` moved out of the ALL group into new
+`RENDERER_BLOB_GAMES` / `RENDERER_NON_BLOB_GAMES` + `RENDERER_NON_BLOB_FUNCTIONS`.
+`scripts/tests/test_gamedata_contract.py::RendererGateTests` gained
+`test_gate_does_not_require_dt_initialize_for_blob_builds`,
+`test_gate_requires_dt_initialize_for_non_blob_builds` and
+`test_gate_alias_poly_counter_follows_engine_family`.
+
+**Verified**: 49/49 contract tests pass; `validate-gamedata.py` passes over the
+21 synced snapshots; `Renderer` builds `Release|Win32` with no new warnings.
+**Not verified**: in-game smoke tests on any engine family.
