@@ -190,7 +190,8 @@ RENDERER_ENGINE_ALL_FUNCTIONS = (
     "GL_LoadFilterTexture", "GL_LoadTexture2", "GL_SelectTexture", "GL_Set2D", "GL_Shutdown",
     "Host_ClearMemory", "Host_IsSinglePlayerGame", "Hunk_AllocName", "Mod_LoadBrushModel",
     "Mod_LoadModel", "Mod_LoadSpriteFrame", "Mod_LoadSpriteModel", "Mod_LoadStudioModel",
-    "Mod_PointInLeaf", "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
+    "Mod_PointInLeaf", "Mod_UnloadSpriteTextures",
+    "PVSNode", "R_AnimateLight", "R_BeamDrawList", "R_CheckVariables",
     "R_CullBox", "R_DrawBrushModel", "R_DrawParticles", "R_DrawSequentialPoly",
     "R_DrawTEntitiesOnList", "R_DrawWorld", "R_ForceCVars", "R_FreeDeadParticles",
     "R_GLStudioDrawPoints", "R_GetSpriteFrame", "R_MarkLeaves", "R_NewMap", "R_PolyBlend",
@@ -217,7 +218,7 @@ RENDERER_ENGINE_NON_SVENGINE_FUNCTIONS = (
 RENDERER_ENGINE_NON_SVENGINE_PATCHES = ("GL_SetMode_call_qwglCreateContext",)
 #SvEngine renamed the alias-poly counter to c_model_polys.
 RENDERER_ENGINE_NON_SVENGINE_GLOBALS = ("c_alias_polys",)
-RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend", "Mod_UnloadSpriteTextures")
+RENDERER_ENGINE_E8_FUNCTIONS = ("GL_SelectPixelFormat", "GlowBlend")
 RENDERER_ENGINE_SVENGINE_FUNCTIONS = (
     "Draw_SpriteFrameAdditive_SvEngine", "Draw_SpriteFrameGeneric_SvEngine",
     "Draw_SpriteFrameHoles_SvEngine", "NET_DrawRect", "R_LoadSkyBox_SvEngine",

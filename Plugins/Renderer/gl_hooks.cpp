@@ -169,9 +169,6 @@
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
-#define MOD_UNLOADSPRITETEXTURES_BLOB     "\x81\xEC\x2A\x2A\x00\x00\xB8\x01\x00\x00\x00\x2A\x8B\x2A\x24\x08\x01\x00\x00\x2A\x2A\x2A\x2A\x44"
-#define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
-
 #define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
 
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
@@ -7339,25 +7336,20 @@ void Engine_FillAddress_NET_DrawRect(const mh_dll_info_t& DllInfo, const mh_dll_
 		gPrivateFuncs.NET_DrawRect = (decltype(gPrivateFuncs.NET_DrawRect))GamedataResolvePtr(RealDllInfo.ImageBase, "NET_DrawRect", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
-//SvEngine publishes no catalog record for Mod_UnloadSpriteTextures, Draw_FillRGBA,
-//Draw_FillRGBABlend or D_FillRect, so those identities keep the legacy signature
-//scan while every catalog-covered identity resolves from gamedata.
+//Every engine identity publishes Mod_UnloadSpriteTextures as a standalone body that
+//SPR_Shutdown still calls out of line, SvEngine and HL25 included, so the inline hook
+//on it covers the HUD sprite list too and there is no branch left to keep.
 void Engine_FillAddress_Mod_UnloadSpriteTextures(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Mod_UnloadSpriteTextures)
 		return;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		auto Mod_UnloadSpriteTextures_VA = Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE, DllInfo);
-		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))ConvertDllInfoSpace(Mod_UnloadSpriteTextures_VA, DllInfo, RealDllInfo);
-		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
-		return;
-	}
-
 	gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))GamedataResolvePtr(RealDllInfo.ImageBase, "Mod_UnloadSpriteTextures", MH_GAMESYMBOL_KIND_FUNCTION);
 }
 
+//SvEngine publishes no catalog record for Draw_FillRGBA, Draw_FillRGBABlend or
+//D_FillRect, so those identities keep the legacy signature scan while every
+//catalog-covered identity resolves from gamedata.
 void Engine_FillAddress_Draw_FillRGBA(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
 	if (gPrivateFuncs.Draw_FillRGBA)

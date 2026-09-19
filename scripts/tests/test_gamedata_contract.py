@@ -604,6 +604,14 @@ class RendererGateTests(unittest.TestCase):
         errors = validate.validate_renderer(symbols, "hl-10210")
         self.assertTrue(any("DT_Initialize" in e for e in errors), errors)
 
+    def test_gate_requires_mod_unloadspritetextures_on_every_identity(self):
+        for gv in validate.RENDERER_ALL_GAMES:
+            symbols = self.complete_engine_symbols(gv)
+            del symbols["Mod_UnloadSpriteTextures"]
+            errors = validate.validate_renderer(symbols, gv)
+            self.assertTrue(any("Mod_UnloadSpriteTextures" in e for e in errors), (gv, errors))
+        self.assertNotIn("Mod_UnloadSpriteTextures", validate.RENDERER_ENGINE_E8_FUNCTIONS)
+
     def test_gate_alias_poly_counter_follows_engine_family(self):
         symbols = self.complete_engine_symbols("hl-8684")
         self.assertIn("c_alias_polys", symbols)

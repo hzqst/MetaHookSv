@@ -125,7 +125,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.Mod_LoadStudioModel` | `void (*)(model_t*, void*)` | String `"bogus\0"` → `68 <str> ?? E8` + `ReverseSearchFunctionBeginEx(+0x50)`. | `Install_InlineHook(Mod_LoadStudioModel)`; wrapper calls original. |
 | `gPrivateFuncs.Mod_LoadBrushModel` | `void (*)(model_t*, void*)` | String `"Mod_LoadBrushModel: %s has wrong version number"` → `68 <str> 6A 01 E8`/`68 <str> E8` + reverse-search. | Resolved only (hook declared but never installed). |
 | `gPrivateFuncs.Mod_LoadModel` | `model_t* (*)(model_t*, qboolean, qboolean)` | ~~String `"Loading '%s'\n"` (SvEngine) / `"loading %s\n"` → `68 <str> E8 83 C4` + reverse-search.~~ Gamedata FUNCTION resolution (2026-09-18); the old pass also yielded the now-deleted `loadname` / `loadmodel`. | Resolved only. |
-| `gPrivateFuncs.Mod_LoadSpriteModel` / `Mod_LoadSpriteFrame` / `Mod_UnloadSpriteTextures` | `void (*)(model_t*,void*)` / `void* (*)(void*,mspriteframe_t**,int)` / `void (*)(model_t*)` | `Engine_FillAddress_Mod_LoadSpriteModel`: SVEngine string `"Sprite \"%s\" has wrong version number"`, others `"Mod_LoadSpriteModel: Invalid # of frame"` → `68 <str> E8 … 83 C4` + reverse-search (+0x100 SvEngine / +0x300 others); fallback `MOD_LOADSPRITEMODEL_*`. `Mod_LoadSpriteFrame` derived: callee in `+0x240` starting `PUSH 0x300`. `Mod_UnloadSpriteTextures` sig-only `MOD_UNLOADSPRITETEXTURES_*`. Also yields `gSpriteMipMap`. | `Install_InlineHook(Mod_LoadSpriteModel)` / `(Mod_UnloadSpriteTextures)`; `Mod_LoadSpriteFrame` resolved only. |
+| `gPrivateFuncs.Mod_LoadSpriteModel` / `Mod_LoadSpriteFrame` / `Mod_UnloadSpriteTextures` | `void (*)(model_t*,void*)` / `void* (*)(void*,mspriteframe_t**,int)` / `void (*)(model_t*)` | `Engine_FillAddress_Mod_LoadSpriteModel`: SVEngine string `"Sprite \"%s\" has wrong version number"`, others `"Mod_LoadSpriteModel: Invalid # of frame"` → `68 <str> E8 … 83 C4` + reverse-search (+0x100 SvEngine / +0x300 others); fallback `MOD_LOADSPRITEMODEL_*`. `Mod_LoadSpriteFrame` derived: callee in `+0x240` starting `PUSH 0x300`. ~~`Mod_UnloadSpriteTextures` sig-only `MOD_UNLOADSPRITETEXTURES_*`.~~ `Mod_UnloadSpriteTextures` gamedata FUNCTION resolution on every identity (2026-09-19); `MOD_UNLOADSPRITETEXTURES_{BLOB,SVENGINE}` deleted. Also yields `gSpriteMipMap`. | `Install_InlineHook(Mod_LoadSpriteModel)` / `(Mod_UnloadSpriteTextures)`; `Mod_LoadSpriteFrame` resolved only. |
 | `gPrivateFuncs.Cache_Alloc` | `void* (*)(cache_user_t*, int, const char*)` | String `"Cache_Alloc: already allocated"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x80)`. Also yields `cache_head`. | Wrapper `zone.cpp:10` forwards to it. |
 | `gPrivateFuncs.Hunk_AllocName` | `void* (*)(int, const char*)` | String `"Hunk_Alloc: bad size: %i"`; SvEngine `68 <str> 0F AE E8 E8 … 83 C4 08`, others `68 <str> E8 … 83 C4 08` + reverse-search; `Convert_VA_to_RVA`. | Wrapper `zone.cpp:5` forwards to it. |
 | `gPrivateFuncs.Host_ClearMemory` | `void (*)(qboolean)` | String `"Clearing memory\n"` → `68 <str> E8 83 C4 04` + `ReverseSearchFunctionBeginEx(+0x80)`. | `Install_InlineHook(Host_ClearMemory)`; wrapper calls `Mod_ClearModel` then original. Not restored on uninstall. |
@@ -375,7 +375,7 @@ Baseline `26b17bd0`. All 76 dependencies the published catalog already covered
 | --- | --- | --- |
 | `ALL` (11 identities) | most engine functions/globals + patches | base symbol is published everywhere |
 | non-SvEngine | `D_FillRect`, `Draw_FillRGBA`, `Draw_FillRGBABlend`, base `Draw_SpriteFrame*`, `R_LoadSkys`, `R_RenderFinalFog`, `GL_SetMode_call_qwglCreateContext` | SvEngine uses a variant or the slot is unused |
-| `E8` (cof + 8 hl) | `GL_SelectPixelFormat`, `GlowBlend`, `Mod_UnloadSpriteTextures` | inlined on HL25 and SvEngine |
+| `E8` (cof + 8 hl) | `GL_SelectPixelFormat`, `GlowBlend` | inlined on HL25 and SvEngine |
 | SvEngine only | `Draw_SpriteFrame*_SvEngine`, `NET_DrawRect`, `R_LoadSkyBox_SvEngine`, `allow_cheats` | variant symbols |
 | hl-10210 only | `CGame_DrawStartupVideo` | HL25-only startup video |
 | hl-10210 + hl-6153/8684 | `GL_SetMode` (SvEngine ABI split into `_SvEngine`/`_GoldSrc`) | SDL / six-arg ABI |
@@ -594,3 +594,65 @@ points.
 re-synced at `2026-09-18T10:58:44Z` (the release carrying `a41a675c`); `Renderer`
 `Release|Win32` builds with no new warnings. **Not verified**: in-game smoke
 tests on any engine family.
+
+## `Mod_UnloadSpriteTextures` full gamedata migration (2026-09-19)
+
+`Engine_FillAddress_Mod_UnloadSpriteTextures` no longer has an engine branch: it
+is one unconditional `GamedataResolvePtr(..., "Mod_UnloadSpriteTextures",
+MH_GAMESYMBOL_KIND_FUNCTION)` for every identity. The SvEngine
+`Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE, DllInfo)` +
+`ConvertDllInfoSpace` + `Sig_FuncNotFound` branch is gone, and both
+`MOD_UNLOADSPRITETEXTURES_BLOB` (already dead) and
+`MOD_UNLOADSPRITETEXTURES_SVENGINE` were deleted from the `#define` catalogue.
+
+**Catalog coverage (why the branch was removable).** All 11 engine identities
+publish an engine-module `function` record for `Mod_UnloadSpriteTextures` —
+Windows on all 11, plus Linux on hl-8684, hl-10210, svencoop-8948 and
+svencoop-10257. The old comment ("SvEngine publishes no catalog record for
+`Mod_UnloadSpriteTextures`, `Draw_FillRGBA`, `Draw_FillRGBABlend` or
+`D_FillRect`") was stale for this one symbol only; it now covers just the other
+three and moved above `Engine_FillAddress_Draw_FillRGBA`.
+
+**`SPR_Shutdown` is not an extra hook site.** `Mod_UnloadSpriteTextures` is
+*not* inlined into `SPR_Shutdown` on any supported identity, so the existing
+`Install_InlineHook(Mod_UnloadSpriteTextures)` already covers the HUD sprite
+list that `ClientDLL_Shutdown` → `SPR_Shutdown` walks. Disassembling
+`bin/<tag>/engine/hw.dll` at the recorded `SPR_Shutdown` RVA shows exactly the
+call shape of the reference `SPR_Shutdown` (`HLND2T engine/cl_draw.c:128`) — one
+`E8` to the recorded `Mod_UnloadSpriteTextures` RVA plus two `E8`s to the same
+`Mem_Free` helper:
+
+| Windows identity | `SPR_Shutdown` | `Mod_UnloadSpriteTextures` | calls it |
+| --- | --- | --- | --- |
+| cof-5936 | `0x29391` (`0xcd`) | `0x661ab` | yes |
+| hl-4554 | `0x1e680` (`0x84`) | `0x4e380` | yes |
+| hl-6153 | `0x11500` (`0x84`) | `0x41790` | yes |
+| hl-8684 | `0x117e0` (`0x84`) | `0x42890` | yes |
+| hl-10210 | `0x19d140` (`0x8f`) | `0x2417b0` | yes |
+| svencoop-8948 | `0x21250` (`0x8f`) | `0x9e20` | yes |
+| svencoop-10257 | `0x212c0` (`0x8f`) | `0x9c80` | yes |
+
+hl-3248 / 3266 / 3329 / 3647 ship an encrypted `hw.dll`, so they were not
+byte-checked here; upstream's `[[SPR_Shutdown locator]]` /
+`[[Mod_UnloadSpriteTextures locator]]` make that caller edge a fail-closed
+discovery invariant (the producer requires one caller that calls the target
+once, calls one free helper twice and walks a 12-byte `SPRITELIST`) and report
+15/15 validated engine/platform targets, blob builds included.
+
+**Pitfall worth remembering.** `CL_Disconnect` calls
+`SPR_Shutdown_NoModelFree`, which clears `gSpriteList` / `gSpriteCount` but
+deliberately never calls `Mod_UnloadSpriteTextures`. Sprite textures are not
+leaked on disconnect: the `model_t`s stay in `mod_known` and the plugin's
+`Host_ClearMemory` / `GL_UnloadTextures` hooks flush them on the next map load.
+Adding a `SPR_Shutdown` hook would not change that path either.
+
+**Consumer gate.** `Mod_UnloadSpriteTextures` moved from
+`RENDERER_ENGINE_E8_FUNCTIONS` (cof + 8 hl) into `RENDERER_ENGINE_ALL_FUNCTIONS`
+(all 11), so the gate now fails if any identity drops the record.
+`RENDERER_ENGINE_E8_FUNCTIONS` keeps only `GL_SelectPixelFormat` and
+`GlowBlend`, which really are inlined on HL25 / SvEngine. Test:
+`test_gate_requires_mod_unloadspritetextures_on_every_identity`.
+
+**Verified**: 51/51 contract tests; `validate-gamedata.py` over the 21 packaged
+snapshots; `Renderer` `Release|Win32` builds with no new warnings. **Not
+verified**: in-game smoke tests on any engine family.
