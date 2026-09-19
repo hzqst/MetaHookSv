@@ -4700,18 +4700,14 @@ void Engine_FillAddress_RenderSceneVars2(const mh_dll_info_t& DllInfo, const mh_
 
 void Engine_FillAddress_CL_IsDevOverviewModeVars(const mh_dll_info_t& DllInfo, const mh_dll_info_t& RealDllInfo)
 {
-	/*
-	//Sven Co-op only
-		int* allow_cheats = NULL;
-	*/
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		// int* allow_cheats = NULL;
 		allow_cheats = (decltype(allow_cheats))GamedataResolvePtr(RealDllInfo.ImageBase, "allow_cheats", MH_GAMESYMBOL_KIND_GLOBAL);
 	}
 	else
 	{
-		//GoldSrc doesn't have such "int *allow_cheats;"
+		// GoldSrc doesn't have such "int *allow_cheats;"
 	}
 
 }
