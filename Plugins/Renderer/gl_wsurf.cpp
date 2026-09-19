@@ -27,8 +27,6 @@ bool r_ortho = false;
 
 colorVec* gWaterColor = NULL;
 cshift_t* cshift_water = NULL;
-int* gSkyTexNumber = NULL;
-int* r_loading_skybox = NULL;
 
 std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 

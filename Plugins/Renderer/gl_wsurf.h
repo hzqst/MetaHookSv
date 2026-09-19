@@ -343,8 +343,6 @@ void R_LoadBaseDecalTextures(void);
 void R_LoadBaseDetailTextures(void);
 void R_LoadMapDetailTextures(void);
 
-void R_AddDynamicLights(msurface_t *surf);
-void R_RenderDynamicLightmaps(msurface_t *fa);
 
 void R_DrawDecals(cl_entity_t *ent);
 void R_PrepareDecals(void);

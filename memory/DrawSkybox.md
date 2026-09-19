@@ -18,18 +18,18 @@ permalink: metahooksv/draw-skybox
 
 ## Involved Files & Symbols
 - `Plugins/Renderer/gl_hooks.cpp` - `Engine_FillAddress_R_LoadSkybox`, `Engine_InstallHooks`
-- `Plugins/Renderer/privatehook.h` - `gPrivateFuncs.R_LoadSkys`, `gPrivateFuncs.R_LoadSkyboxInt_SvEngine`, `gPrivateFuncs.R_LoadSkyBox_SvEngine`
+- `Plugins/Renderer/privatehook.h` - `gPrivateFuncs.R_LoadSkys`, `gPrivateFuncs.R_LoadSkyBox_SvEngine`
 - `Plugins/Renderer/gl_rmain.cpp` - `R_FreeSkyboxTextures`, `R_LoadLegacySkyTextures`, `R_LoadDetailSkyTextures`, `R_LoadSkyInternal`, `R_LoadSkyBox_SvEngine`, `R_LoadSkys`, `R_RenderScene`
 - `Plugins/Renderer/gl_wsurf.cpp` - `R_GenerateIndicesForTexChain`, `R_GenerateTexChain`, `R_WorldSurfaceLeafHasSky`, `R_DrawSkyBox`, `R_DrawWorldSurfaceLeafSky`, `R_DrawWorldSurfaceModel`, `R_DrawWorld`
 - `Plugins/Renderer/gl_wsurf.h` - `CWorldSurfaceRenderer::vSkyboxTextureId`
 - `Plugins/Renderer/gl_draw.cpp` - `GL_Texturemode_internal`, `GL_UnloadTextures`
-- `Plugins/Renderer/gl_local.h` - `r_detailskytextures`, `r_wsurf_sky_fog`, `r_loading_skybox`
+- `Plugins/Renderer/gl_local.h` - `r_detailskytextures`, `r_wsurf_sky_fog`
 
 ## Architecture
 Skybox loading and rendering can be divided into the following stages:
 
 1. Loading stage
-`gl_hooks.cpp` first uses `Engine_FillAddress_R_LoadSkybox()` to locate the engine's internal sky-loading entry points and related variables through disassembly, then installs inline hooks by engine type in `Engine_InstallHooks()`. The GoldSrc branch hooks `R_LoadSkys()`, which obtains the sky name from `pmovevars->skyName`; the SvEngine branch hooks `R_LoadSkyBox_SvEngine(name)`, which receives the sky name directly.
+`gl_hooks.cpp` resolves the engine's internal sky-loading entry points from gamedata in `Engine_FillAddress_R_LoadSkybox()` (`R_LoadSkys` for GoldSrc, `R_LoadSkyBox_SvEngine` for SvEngine), then installs inline hooks by engine type in `Engine_InstallHooks()`. The GoldSrc branch hooks `R_LoadSkys()`, which obtains the sky name from `pmovevars->skyName`; the SvEngine branch hooks `R_LoadSkyBox_SvEngine(name)`, which receives the sky name directly.
 
 2. Texture loading stage
 Both hook entry points first call `R_FreeSkyboxTextures()` to clear `vSkyboxTextureId[12]`, then enter `R_LoadSkyInternal()`. Specifically:
@@ -87,7 +87,7 @@ R --> S
 - `R_FreeSkyboxTextures()` only clears skybox slots and does not directly delete GL texture objects; the actual unified cleanup is in `GL_UnloadTextures()`, whose comment states that `R_NewMap` triggers the process.
 - `R_LoadLegacySkyTextures()` / `R_LoadDetailSkyTextures()` immediately return `false` when any face fails and do not roll back texture slots already written in that attempt. Therefore, if a load fails partway through, the array can temporarily retain partially written results until the next clear.
 - Although `R_DrawWorldSurfaceModel()` is also reused by `R_DrawBrushModel()`, pre-world skybox rendering occurs only in the world-model branch where `pModel->m_model == (*cl_worldmodel)`; ordinary brush entities do not trigger `R_DrawSkyBox()`.
-- `r_loading_skybox` is resolved from an internal engine variable in `gl_hooks.cpp`, but does not further participate in the local skybox flow in the current `Renderer` code.
+- `r_loading_skybox` (= the engine's `gLoadSky`) / `gSkyTexNumber` and the SvEngine-only `R_LoadSkyboxInt_SvEngine` locator were deleted on 2026-09-19: they were resolved into write-only globals/fields with no reader anywhere in `Renderer`, so they were removed rather than migrated to the catalog (which had just begun publishing them). See `renderer-privatevars.md`.
 - `R_DrawWorldSurfaceLeafSky()` runs after the color mask is disabled in the water-view branch. From its current call site, it appears to maintain sky-surface geometry/depth-related state for reflection views rather than directly render the six skybox face textures. This is an inference based on the call context.
 
 ## Callers (optional)

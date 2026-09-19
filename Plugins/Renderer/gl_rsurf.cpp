@@ -85,10 +85,6 @@ void R_RecursiveWorldNode(mnode_t *node)
 	gPrivateFuncs.R_RecursiveWorldNode(node);
 }
 
-void R_AddDynamicLights(msurface_t *surf)
-{
-	//All moved to shader
-}
 
 decal_t* EngineGetDecalByIndex(int index)
 {
@@ -193,10 +189,6 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 	}
 }
 
-void R_RenderDynamicLightmaps(msurface_t *fa)
-{
-	//All moved to shader
-}
 
 int AllocBlock(int w, int h, int *x, int *y)
 {

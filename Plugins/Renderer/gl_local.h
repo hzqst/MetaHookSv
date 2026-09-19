@@ -108,7 +108,6 @@ extern int *numTransObjs;
 extern transObjRef **transObjects;
 extern mleaf_t **r_viewleaf;
 extern mleaf_t **r_oldviewleaf;
-extern int *r_loading_skybox;
 
 extern RECT *window_rect;
 
@@ -299,8 +298,6 @@ extern FBO_Container_t *g_CurrentRenderingFBO;
 
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
-
-extern int *gSkyTexNumber;
 
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;

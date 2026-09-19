@@ -103,8 +103,8 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 | `gPrivateFuncs.R_DrawViewModel` | `void (*)(void)` | `Engine_FillAddress_R_DrawViewModel`: SVEngine inlined; else in `R_RenderView+0x1000`, three consecutive `E8` where call #2 = `R_PolyBlend`, call #3 = `S_ExtraUpdate` → call #1. Also yields `envmap`, `cl_stats`, `cl_weaponstarttime`, `cl_weaponsequence`, `cl_light_level`. | Resolved only (plugin reimplements). |
 | `gPrivateFuncs.R_DrawParticles` / `R_FreeDeadParticles` / `R_TracerDraw` / `R_BeamDrawList` | `void (*)(void)` / `void (*)(particle_t**)` / `void (*)(void)` / `void (*)(void)` | `Engine_FillAddress_R_DrawParticles`: `83 C4 04 68 C0 0B 00 00` + `DisasmRanges(+0x100)` requiring `PUSH 0x2200/0x2300` and `PUSH 0x302/0x303` + reverse-search; fallback `R_DRAWPARTICLES_SIG_*`. `R_FreeDeadParticles` = `MOV ESI,[active_particles]` preceded by `E8`; `R_TracerDraw`/`R_BeamDrawList` from inline `R_TRACERDRAW_SIG` (`GetCallAddress(addr+6)`/`addr+11`). | Not hooked; plugin `R_DrawParticles` calls `R_FreeDeadParticles`/`R_TracerDraw`/`R_BeamDrawList`. |
 | `gPrivateFuncs.R_AddTEntity` | `void (*)(cl_entity_t*)` | `Engine_FillAddress_R_AddTEntity`: SVEngine string `"Can't add transparent entity. Too many"` + `50 68 <str> E8`; others `"AddTentity: Too many objects"` + `68 <str> E8`; `ReverseSearchFunctionBegin(+0x50)`. Also yields `transObjects`/`maxTransObjs`. | Resolved only (plugin reimplements). |
-| `gPrivateFuncs.R_AddDynamicLights` | `void (*)(msurface_t*)` | `Engine_FillAddress_R_AddDynamicLights`: BFS call-site walk rooted at `R_BuildLightMap` matching `PUSH reg; E8; 83 C4 04`; fallback `R_ADDDYNAMICLIGHTS_SIG_*`. | Resolved only (plugin reimplements). |
-| `gPrivateFuncs.R_BuildLightMap` | `void (*)(msurface_t*, byte*, int)` | `Engine_FillAddress_R_BuildLightMap`: string `"Error: lightmap for texture %s too large"` → `68 <str> E8 83 C4 18` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_BUILDLIGHTMAP_SIG_*`. | Resolved only (prerequisite of `R_AddDynamicLights`). |
+| ~~`gPrivateFuncs.R_AddDynamicLights`~~ | `void (*)(msurface_t*)` | ~~BFS call-site walk rooted at `R_BuildLightMap` matching `PUSH reg; E8; 83 C4 04`; fallback `R_ADDDYNAMICLIGHTS_SIG_*`~~ | Deleted 2026-09-19 — never called, never hooked (see last section). |
+| ~~`gPrivateFuncs.R_BuildLightMap`~~ | `void (*)(msurface_t*, byte*, int)` | ~~string `"Error: lightmap for texture %s too large"` → `68 <str> E8 83 C4 18` + `ReverseSearchFunctionBeginEx(+0x300)`; fallback `R_BUILDLIGHTMAP_SIG_*`~~ | Deleted 2026-09-19 — its only consumer was the `R_AddDynamicLights` BFS root (see last section). |
 | `gPrivateFuncs.R_RenderDynamicLightmaps` | `void (*)(msurface_t*)` | Found during the `R_DrawSequentialPoly` BFS (callee with trailing imm `0x14` and `PUSH 0x200`), and re-resolved by `Engine_FillAddress_R_RenderDynamicLightmaps` (per-engine `R_RENDERDYNAMICLIGHTMAPS_SIG_*`) while null. Also yields `d_lightstylevalue`, `lightmap_polys`, `lightmap_modified`. | Resolved only. |
 | `gPrivateFuncs.R_TextureAnimation` | `texture_t* (*)(msurface_t*)` | Sig-only `R_TEXTUREANIMATION_SIG_*`; also yields `rtable`. | Resolved only. |
 | `gPrivateFuncs.R_DrawSequentialPoly` / `R_DrawSequentialPoly_HL25` | `void (*)(msurface_t*, int)` / `void (*)(msurface_t*, int, qboolean cleanUpShaderState)` | Sig-only `R_DRAWSEQUENTIALPOLY_SIG_*`; HL25 stores its own three-arg field (HL25 callers push a third 32-bit bool and the callee reads it to gate shader/program cleanup); also root of the lightmap/decal BFS (`lightmap_textures`, `lightmap_rectchange`, `lightmaps`, `gDecalSurfs`, `gDecalSurfCount`). The HL25 field is also the disassembly anchor for `R_RecursiveWorldNode` and `R_DrawWorld`. | Resolved only. |
@@ -121,7 +121,7 @@ All of the following are resolved via `GamedataResolvePtr` (kind `FUNCTION` / `G
 
 | Local symbol / inferred engine symbol | Signature of field | Resolution mechanism | Subsequent use |
 | --- | --- | --- | --- |
-| `gPrivateFuncs.R_LoadSkys` / `R_LoadSkyBox_SvEngine` / `R_LoadSkyboxInt_SvEngine` | `void (*)(void)` / `void (*)(const char*)` / `qboolean (*)(const char*)` | `Engine_FillAddress_R_LoadSkybox`: anchor `"SKY: "`; SvEngine `R_LoadSkys`/`_SvEngine` from `75 2A 68 <str>` / `E8 … 68 <"desert"> E8 … 83 C4 0C` + reverse-search; non-SvEngine `R_LoadSkys` from `68 <str> C7 … 00 00`. Also yields `gSkyTexNumber`, `r_loading_skybox`. | `Install_InlineHook(R_LoadSkys)` / `(R_LoadSkyBox_SvEngine)`; `R_LoadSkyboxInt_SvEngine` resolved only. |
+| `gPrivateFuncs.R_LoadSkys` / `R_LoadSkyBox_SvEngine` (plus the deleted `R_LoadSkyboxInt_SvEngine`) | `void (*)(void)` / `void (*)(const char*)` / ~~`qboolean (*)(const char*)`~~ | Gamedata FUNCTION resolution for `R_LoadSkys` (non-SvEngine) / `R_LoadSkyBox_SvEngine` (SvEngine), 2026-09-17. ~~`Engine_FillAddress_R_LoadSkybox`'s `"SKY: "` reverse-search, the SvEngine `gSkyTexNumber` BFS and the anchored vars BFS~~ deleted 2026-09-19 together with `R_LoadSkyboxInt_SvEngine` / `gSkyTexNumber` / `r_loading_skybox` (no consumers) — see last section. | `Install_InlineHook(R_LoadSkys)` / `(R_LoadSkyBox_SvEngine)`. |
 | `gPrivateFuncs.Mod_LoadStudioModel` | `void (*)(model_t*, void*)` | String `"bogus\0"` → `68 <str> ?? E8` + `ReverseSearchFunctionBeginEx(+0x50)`. | `Install_InlineHook(Mod_LoadStudioModel)`; wrapper calls original. |
 | `gPrivateFuncs.Mod_LoadBrushModel` | `void (*)(model_t*, void*)` | String `"Mod_LoadBrushModel: %s has wrong version number"` → `68 <str> 6A 01 E8`/`68 <str> E8` + reverse-search. | Resolved only (hook declared but never installed). |
 | `gPrivateFuncs.Mod_LoadModel` | `model_t* (*)(model_t*, qboolean, qboolean)` | ~~String `"Loading '%s'\n"` (SvEngine) / `"loading %s\n"` → `68 <str> E8 83 C4` + reverse-search.~~ Gamedata FUNCTION resolution (2026-09-18); the old pass also yielded the now-deleted `loadname` / `loadmodel`. | Resolved only. |
@@ -213,7 +213,7 @@ Entry point `EngineStudio_FillAddress(pstudio, DllInfo, RealDllInfo)` (`exportfu
 | `gTempEnts` | `TEMPENTITY*` | `Engine_FillAddress_TempEntsVars`: SvEngine `68 00 E0 5F 00 6A 00 68 <gTempEnts> A3`, others `68 30 68 17 00 6A 00 68 <gTempEnts> E8`; ptr at `addr+8`. | Temp-entity index lookup. |
 | `cl_dlights` / `r_dlightactive` / `cl_elights` | `dlight_t*` / `int*` / `dlight_t*` | From `CL_AllocDlight`/`CL_AllocElight`: after `PUSH 0x28`, a `PUSH imm(.data)` / `MOV reg,[.data]` / `OR [.data],1`. | Dynamic-light rendering. |
 | `decal_wad` / `gfCustomBuild` / `szCustName` | `cachewad_t**` / `qboolean*` / `char (*)[10]` | `Engine_FillAddress_Draw_DecalTexture` BFS / `_Draw_MiptexTexture` `DisasmRanges(+0x500)`. | Custom-decal WAD lookup. |
-| `gSkyTexNumber` / `r_loading_skybox` | `int*` / `int*` | `Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`. | Resolved only. |
+| ~~`gSkyTexNumber` / `r_loading_skybox`~~ | `int*` / `int*` | ~~`Engine_FillAddress_R_LoadSkybox`: `MOV reg,imm(.data)` validated by `CMP [reg],reg`/`PUSH [reg+disp]`; `MOV eax,[.data]` or `CMP [.data],0`~~ | Deleted 2026-09-19 — write-only, no consumers (see last section). |
 | `giScissorTest` / `scissor_x` / `scissor_y` / `scissor_width` / `scissor_height` | `qboolean*` / `int*` | `Engine_FillAddress_Draw_Frame`: `MOV reg,[.data]`+`TEST`, or `CMP [.data],0`, or `CMP [.data],xor_reg`; four `PUSH/MOV [.data]` candidates `qsort`ed. | `giScissorTest` used; scissor rect resolved only. |
 | `mod_known` / `mod_numknown` | `model_t*` / `int*` | `Engine_FillAddress_ModKnown`: `.text` `B8 9D 82 97 53 81 E9`, ptr at `+7`; `_Mod_NumKnown`: string `"Cached models:\n"` → `57 68 <str> E8` + `DisasmRanges(+0x50)`. | Model index/count. |
 | ~~`loadname` / `loadmodel`~~ | ~~`char (*)[64]` / `model_t**`~~ | **Deleted (2026-09-18).** The locator (`PUSH imm(.data)` near the `"loading %s"` printf; then first `MOV [.data],reg`) and the extern/definitions were removed: both slots were written but never read anywhere in the plugin. The upstream catalog does publish them (engine GLOBAL, 11/11). | — |
@@ -336,7 +336,7 @@ Stored in `gPrivateFuncs` but sourced from public interfaces, so excluded from t
 
 ## Notes
 
-- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, `R_BuildLightMap`, `R_AddDynamicLights`, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, `gSkyTexNumber`, `r_loading_skybox`, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
+- **Dead / resolved-only fields.** Many `gPrivateFuncs` fields are located but never hooked or called (the multitexture pair and its globals were removed on 2026-09-19 — see the last section): `R_SetupGL`, `R_RenderScene`, `R_SetupFrame`, `R_PolyBlend` (reimplemented), `S_ExtraUpdate`, `GL_SelectTexture`, `R_TextureAnimation`, `R_DrawSequentialPoly[_HL25]`, `R_DrawBrushModel`, `R_DrawWorld` (reimplemented), `R_DrawViewModel`, `R_MarkLeaves`, `EmitWaterPolys`, `VID_UpdateWindowVars`, `R_DrawTEntitiesOnList`, `R_ClearParticles`, `V_InitLevel`, ~~`R_BuildLightMap`~~, ~~`R_AddDynamicLights`~~, `R_RenderDynamicLightmaps`, `R_DrawParticles` (reimplemented), `CL_AllocDlight`/`CL_AllocElight`, `R_StudioLighting`, `R_StudioChrome`, `R_LightLambert`, `R_StudioSetupSkin`, `R_StudioGetSkin`, `GL_UnloadTexture`, `Draw_MiptexTexture`, `Draw_DecalTexture`, `Draw_CustomCacheGet`/`Draw_CacheGet`, `R_DrawSpriteModel`, `Mod_LoadSpriteFrame`, `SCR_BeginLoadingPlaque`, `R_LightStrength`, `R_RotateForEntity`, `R_AddTEntity`, `R_RenderFinalFog`, `Mod_LoadBrushModel`, `Mod_LoadModel`, `ClientPortalManager_ResetAll` (hook commented), `GameStudioRenderer_StudioDrawModel`, `R_StudioDrawModel`, and many `*Vars` globals (`cls_state`, `cls_signon`, `r_soundOrigin`, `lightmap_textures`, `lightmap_rectchange`, `gDecalSurfs`, `modelorg`, `vid_d3d`, `g_ChromeOrigin`, ~~`gSkyTexNumber`~~, ~~`r_loading_skybox`~~, `lightmap_polys`, `lightmap_modified`, `chrome`, `chromeage`, `locallight`, `numlights`, scissor rect, `pmainwindow` consumers).
 - **Inlined-function flags.** `R_ForceCVars_inlined`, `R_SetupFrame_inlined`, `R_RenderScene_inlined`, `R_LightStrength_inlined`, `R_GlowBlend_inlined` indicate the engine inlined the target; the plugin then uses call-site-sensitive logic instead of a direct hook.
 - **Duplicate resolution sites.** `r_blend` is resolved both by `Engine_FillAddress_R_DrawTEntitiesOnListVars` (gl_hooks) and `EngineStudio_FillAddress_StudioSetRenderamt` (exportfuncs); `R_RenderDynamicLightmaps` by the `R_DrawSequentialPoly` BFS and its own locator; `r_framecount` by `_GetTimes` and a shadowing local in `gl_hooks.cpp:8744`. Both `if (!field)`-guarded, so first wins.
 - **Hook/uninstall asymmetry.** `Host_ClearMemory` is installed but never unhooked; `ClientPortalManager_DrawPortalSurface`'s hook is installed but `EngineSurface_UninstallHooks` is empty; `GameStudioRenderer_StudioDrawPlayer` is installed but not uninstalled.
@@ -426,7 +426,7 @@ scan image consistently for both root and pattern.
 
 `R_SetupFrame`; `R_ClearParticles` / `R_DecalInit` / `V_InitLevel` (callees),
 ~~`GL_UnloadTextures`~~ (wrong — it was already published; see the 2026-09-19
-section), `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`,
+section), ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
 `particletexture`, the `gl_extensions` / `vid_d3d` / texture-array / fog /
 scissor / viewmodel / sky / view-leaf / lightmap variable slots,
 `CL_FxBlend`'s sibling `r_blend`, and every symbol outside the list
@@ -796,7 +796,7 @@ catalog-uncovered.
 
 **Residual scanning after this pass** (unchanged from the #873 list except for
 the entries above): `R_SetupFrame`, `R_ClearParticles` / `R_DecalInit` /
-`V_InitLevel`, `R_LoadSkyboxInt_SvEngine`, `realloc_SvEngine`,
+`V_InitLevel`, ~~`R_LoadSkyboxInt_SvEngine`~~, `realloc_SvEngine`,
 `particletexture`, `r_dlightactive`, `r_framecount`, `gWaterColor`,
 `vpn` / `vup` / `vright`, `lightmap_polys` / `lightmap_modified`,
 `gl_extensions` / `vid_d3d` / texture-array / fog / scissor / viewmodel / sky /
@@ -898,3 +898,94 @@ code into a release-blocking dependency.
 are byte-identical to the pre-change baseline; `validate-gamedata.py` passes over
 the 21 snapshots; 91 passed / 2 skipped across `scripts/tests` (25 Renderer gate
 tests). **Not verified**: in-game smoke tests on any engine family.
+
+## Dead-code removal (2026-09-19): `R_AddDynamicLights` and its `R_BuildLightMap` anchor
+
+Direct follow-up to the section above, in answer to the review question *"is
+`R_AddDynamicLights` also unused at the semantic level?"* — **it is, in both of
+its forms**, and deleting it exposed a second consumer-less resolve behind it.
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| plugin stub `R_AddDynamicLights` | definition `gl_rsurf.cpp:88`, declaration `gl_wsurf.h:346` | **zero callers** — body was `//All moved to shader` |
+| `gPrivateFuncs.R_AddDynamicLights` | field `privatehook.h:77`, locator `Engine_FillAddress_R_AddDynamicLights` (`gl_hooks.cpp:1444-1566`), `g_phook_R_AddDynamicLights` | never called (`git log -S 'gPrivateFuncs.R_AddDynamicLights('` empty across all history), never `Install_InlineHook`-ed |
+| `gPrivateFuncs.R_BuildLightMap` | field `privatehook.h:76`, locator `Engine_FillAddress_R_BuildLightMap` (`gl_hooks.cpp:1379-1442`), `g_phook_R_BuildLightMap` | only remaining reader was the `R_AddDynamicLights` BFS root (`gl_hooks.cpp:1450`); never called (`git log -S 'gPrivateFuncs.R_BuildLightMap('` empty) |
+
+**When the plugin stub died.** `f8607c28` "Rewrite GL_BuildLightmaps"
+(2023-02-23) commented out its last caller (`// R_AddDynamicLights(psurf);`); the
+body had already become a no-op once lighting moved into `R_BuildLightMap`, which
+the plugin reimplements itself (`gl_rsurf.cpp:124`, still live, called from
+`R_BuildSurfaceLightmap` at `gl_rsurf.cpp:268`). The engine's own `R_BuildLightMap`
+address was therefore never needed by the plugin at all.
+
+**Deleted**
+
+- Plugin stub `R_AddDynamicLights` and its `gl_wsurf.h` declaration.
+- `Engine_FillAddress_R_BuildLightMap` (64 lines) and
+  `Engine_FillAddress_R_AddDynamicLights` (~123 lines), plus both dispatch calls.
+- Both `private_funcs_t` fields and both `g_phook_*` variables (unused file-scope
+  statics; MSVC emits no warning for these, so they had gone unnoticed).
+- All four `R_BUILDLIGHTMAP_SIG_{BLOB,NEW,HL25,SVENGINE}` and all four
+  `R_ADDDYNAMICLIGHTS_SIG_{SVENGINE,HL25,NEW,BLOB}` macros.
+
+**Also removed in the same pass.** The plugin-local `R_RenderDynamicLightmaps`
+stub (empty body `//All moved to shader`, decl `gl_wsurf.h:346`) had zero callers
+too; it was deleted as well. It was a *different* symbol from the live
+`gPrivateFuncs.R_RenderDynamicLightmaps`, which stays: that field is resolved by
+`Engine_FillAddress_R_RenderDynamicLightmaps` and consumed as the
+`lightmap_polys` / `lightmap_modified` disasm root at `gl_hooks.cpp:5018`. The
+plugin-local `R_BuildLightMap` (`gl_rsurf.cpp:124`) is a live reimplementation —
+kept.
+
+**Rule, third instance.** Same failure mode as `loadname` / `loadmodel`
+(2026-09-18) and the multitexture pair: the plugin carried a full sig-scan
+locator (8 macros + 2 resolver functions) for a symbol nothing read. The
+`R_BuildLightMap` case adds a corollary: when resolver B exists *only* as the
+anchor for resolver A, deleting A must delete B too, or the anchor becomes the
+next piece of dead code.
+
+**Verified**: `Renderer` `Release|Win32` builds clean (same 9 pre-existing
+warnings; one shifted by -4 lines); `validate-gamedata.py` passes over 21
+snapshots / 5 engine families; 91 passed / 2 skipped / 26 subtests across
+`scripts/tests`. **Not verified**: in-game smoke tests on any engine family.
+
+## Dead-code removal (2026-09-19): the sky-var mirror and `R_LoadSkyboxInt_SvEngine`
+
+The catalog re-sync of `2026-09-19T12:42:08Z` newly published `gSkyTexNumber`
+(engine GLOBAL, 11/11), `gLoadSky` (engine GLOBAL, 11/11) and
+`R_LoadSkyboxInt_SvEngine` (engine FUNCTION, 2/11 — the two SvEngine identities).
+All three were **deleted rather than migrated**: the plugin has no reader for any
+of them. (`gLoadSky` is the engine's real name for the local `r_loading_skybox`.)
+
+| Symbol | Every reference before this change | Verdict |
+| --- | --- | --- |
+| `gSkyTexNumber` | def `gl_wsurf.cpp:30`, extern `gl_local.h:303`, SvEngine BFS in `Engine_FillAddress_R_LoadSkybox` | **write-only** |
+| `r_loading_skybox` (= engine `gLoadSky`) | def `gl_wsurf.cpp:31`, extern `gl_local.h:111`, vars BFS anchored on `R_LoadSkyBox_SvEngine`/`R_LoadSkys` | **write-only**; `DrawSkybox.md` already stated it "does not further participate in the local skybox flow" |
+| `gPrivateFuncs.R_LoadSkyboxInt_SvEngine` | field `privatehook.h:105`, `"SKY: "` search + `ReverseSearchFunctionBeginEx(0x600)` | write-only; its sole purpose was to root the `gSkyTexNumber` BFS |
+
+**Deleted**
+
+- The entire `Engine_FillAddress_R_LoadSkybox` disasm body (185 → 11 lines):
+  `"SKY: "` data/`.rdata` string search, the `75 ?? 68 <str>` push-site probe,
+  the `ReverseSearchFunctionBeginEx` walk, and both `DisasmRanges` BFS blocks
+  (SvEngine `gSkyTexNumber` extractor over `0x100`, vars BFS over `0x50`). The
+  function is now two `GamedataResolvePtr` calls: `R_LoadSkyBox_SvEngine` on
+  SvEngine, `R_LoadSkys` otherwise. The `R_LoadSkyBox_SvEngine_VA` / `R_LoadSkys_VA`
+  locals and the two stale commented-out local declarations went with it.
+- `private_funcs_t::R_LoadSkyboxInt_SvEngine`, plus the `gSkyTexNumber` /
+  `r_loading_skybox` globals (`gl_wsurf.cpp`) and both `gl_local.h` externs.
+
+**Not added to the gate.** `R_LoadSkyboxInt_SvEngine` is published but nothing
+consumes it, so it is deliberately not wired to gamedata and not added to any
+`RENDERER_*` table — the same rule as the multitexture pair.
+
+**Rule, fourth instance.** `loadname` / `loadmodel` (2026-09-18), the multitexture
+pair, `R_BuildLightMap` / `R_AddDynamicLights`, and now these three are all the
+same failure mode: a published record is not evidence that the consumer needs it.
+A freshly synced catalog is a reason to *re-check* the locator, not a reason to
+wire it up.
+
+**Verified**: `Renderer` `Release|Win32` builds clean (same 9 warnings);
+`validate-gamedata.py` passes over 21 snapshots / 5 engine families; 91 passed /
+2 skipped / 26 subtests across `scripts/tests`. **Not verified**: in-game smoke
+tests on any engine family.
